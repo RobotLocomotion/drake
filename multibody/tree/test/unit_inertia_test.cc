@@ -29,11 +29,23 @@ using symbolic::Variable;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
-// Test default constructor which leaves entries initialized to NaN for a
-// quick detection of un-initialized values.
-GTEST_TEST(UnitInertia, DefaultConstructor) {
-  UnitInertia<double> I;
-  ASSERT_TRUE(I.IsNaN());
+GTEST_TEST(UnitInertia, DefaultConstructorOrConstructorWithOneArgument) {
+  // Test default constructor which leaves entries initialized to NaN for a
+  // quick detection of uninitialized values.
+  const RotationalInertia<double> default_unit_inertia;
+  ASSERT_TRUE(default_unit_inertia.IsNaN());
+
+  // Test the one argument UnitInertia constructor with one of its values.
+  const RotationalInertia<double> I0(InertiaValue::kNaN);
+  EXPECT_TRUE(I0.IsNaN());
+
+  // Test the one argument RotationalInertia constructor with its other value.
+  // Note: By default in SDformat, all the moments of inertia are 1.0 and
+  // all the products of inertia are 0.0.
+  const RotationalInertia<double> I1(InertiaValue::kSdf);
+  EXPECT_TRUE(I1.CouldBePhysicallyValid());
+  EXPECT_EQ(I1.get_moments(), Vector3<double>(1, 1, 1));
+  EXPECT_EQ(I1.get_products(), Vector3<double>::Zero());
 }
 
 // Test constructor for a diagonal unit inertia with all elements equal.

@@ -25,6 +25,15 @@
 namespace drake {
 namespace multibody {
 
+/// Enumeration that indicates whether the one-argument constructors for a
+/// RotationalInertia, UnitInertia, and SpatialInertia make objects that are
+/// filled with NaNs or construct inertias that are consistent with the default
+/// values specified in the SDFormat <inertial> tag, found at:
+/// http://sdformat.org/spec?elem=link
+enum class InertiaValue {
+  kNaN,
+  kSdf
+};
 /// This class describes the mass distribution (inertia properties) of a
 /// body or composite body about a particular point.  Herein, "composite body"
 /// means one body or a collection of bodies that are welded together.  In this
@@ -166,9 +175,20 @@ class RotationalInertia {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
 
-  /// Constructs a rotational inertia that has all its moments/products of
-  /// inertia equal to NaN (helps quickly detect uninitialized values).
-  RotationalInertia() {}
+  /// Creates a rotational inertia that depends on the argument inertiaValue.
+  /// @param[in] inertiaValue The type of rotational inertia to be constructed.
+  /// If inertiaValue is omitted or inertiaValue is InertiaValue::kNaN, the
+  /// constructed rotational inertia has moments and products of inertia set to
+  /// NaN, which can be helpful in quickly detecting an uninitialized rotational
+  /// inertia. If inertiaValue is InertiaValue::kSdf, the spatial inertia has
+  /// moments of inertia Ixx = Iyy = Izz = 1 and products of inertia
+  /// Ixy = Ixz = Iyx = 0.
+  explicit RotationalInertia(InertiaValue inertiaValue = InertiaValue::kNaN) {
+    const bool is_nan = inertiaValue == InertiaValue::kNaN;
+    const T Ikk = is_nan ? NAN : 1.0;  // Generic moment of inertia.
+    const T Iij = is_nan ? NAN : 0.0;  // Generic product of inertia.
+    set_moments_and_products_no_validity_check(Ikk, Ikk, Ikk, Iij, Iij, Iij);
+  }
 
   /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with each product of inertia set to zero.

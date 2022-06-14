@@ -48,90 +48,28 @@ SpatialInertia<double> MakeArbitrarySpatialInertia() {
                                                         I_Bcm_W);
 }
 
-// Test default constructor which leaves entries initialized to NaN for a
-// quick detection of uninitialized values.
-GTEST_TEST(SpatialInertia, DefaultConstructor) {
+GTEST_TEST(SpatialInertia, DefaultConstructorOrConstructorWithOneArgument) {
+  // Test default constructor which leaves entries initialized to NaN for a
+  // quick detection of uninitialized values.
   SpatialInertia<double> I;
   ASSERT_TRUE(I.IsNaN());
-}
 
-GTEST_TEST(SpatialInertia, MakeSolidBoxSpatialInertia) {
-  // Drake allows a spatial inertia to have zero mass and/or zero inertia.
-  const double mass_0 = 0;
-  const double Lx0 = 0, Ly0 = 0, Lz0 = 0;
-  const SpatialInertia<double> M0 =
-      SpatialInertia<double>::MakeSolidBox(mass_0, Lx0, Ly0, Lz0);
-  EXPECT_TRUE(M0.IsPhysicallyValid());
-  EXPECT_EQ(M0.get_mass(), mass_0);
-  EXPECT_EQ(M0.get_com(), Vector3<double>::Zero());
-  const Vector3<double> M0_unit_moments = M0.get_unit_inertia().get_moments();
-  const Vector3<double> M0_unit_products = M0.get_unit_inertia().get_products();
-  EXPECT_EQ(M0_unit_moments, Vector3<double>::Zero());
-  EXPECT_EQ(M0_unit_products, Vector3<double>::Zero());
+  // Test the one argument SpatialInertia constructor with one of its values.
+  const SpatialInertia<double> M0(InertiaValue::kNaN);
+  ASSERT_TRUE(M0.IsNaN());
 
-  // Test a particle spatial inertia (non-zero mass, lengths = zero).
-  const double mass_9 = 9;
-  const SpatialInertia<double> MP =
-      SpatialInertia<double>::MakeSolidBox(mass_9, Lx0, Ly0, Lz0);
-  EXPECT_TRUE(MP.IsPhysicallyValid());
-  EXPECT_EQ(MP.get_mass(), mass_9);
-  EXPECT_EQ(MP.get_com(), Vector3<double>::Zero());
-  const Vector3<double> MP_unit_moments = MP.get_unit_inertia().get_moments();
-  const Vector3<double> MP_unit_products = MP.get_unit_inertia().get_products();
-  EXPECT_EQ(MP_unit_moments, Vector3<double>::Zero());
-  EXPECT_EQ(MP_unit_products, Vector3<double>::Zero());
-
-  // Test arbitrary parameter values for MakeSolidBox().
-  const double mass = 3;
-  const double Lx = 4, Ly = 5, Lz = 6;
-  const SpatialInertia<double> M1 =
-      SpatialInertia<double>::MakeSolidBox(mass, Lx, Ly, Lz);
+  // Test the one argument SpatialInertia constructor with its other value.
+  // Note: By default in SDformat, the mass is 1.0, the body's center of mass is
+  // coincident with the body origin (i.e., the center of mass offset is zero),
+  // the moments of inertia are 1.0 and the products of inertia are 0.0.
+  const SpatialInertia<double> M1(InertiaValue::kSdf);
   EXPECT_TRUE(M1.IsPhysicallyValid());
-  EXPECT_EQ(M1.get_mass(), mass);
-  EXPECT_TRUE(CompareMatrices(
-      M1.get_com(), Vector3<double>(Lx / 2, 0, 0), kEpsilon));
+  EXPECT_EQ(M1.get_mass(), 1.0);  // The default mass in SDformat is 1.0
+  EXPECT_EQ(M1.get_com(), Vector3<double>::Zero());
   const Vector3<double> M1_unit_moments = M1.get_unit_inertia().get_moments();
   const Vector3<double> M1_unit_products = M1.get_unit_inertia().get_products();
-  const double I_shift = (Lx / 2) * (Lx / 2);  // Unit inertia shift term.
-  const double Ixx = 1.0 / 12.0 * (Ly * Ly + Lz * Lz);  // Unit inertia for xx.
-  const double Iyy = 1.0 / 12.0 * (Lx * Lx + Lz * Lz) + I_shift;
-  const double Izz = 1.0 / 12.0 * (Lx * Lx + Ly * Ly) + I_shift;
-  EXPECT_TRUE(CompareMatrices(
-      M1_unit_moments, Vector3<double>(Ixx, Iyy, Izz), kEpsilon));
+  EXPECT_EQ(M1_unit_moments, Vector3<double>(1, 1, 1));
   EXPECT_EQ(M1_unit_products, Vector3<double>::Zero());
-
-  // Test default mass and length parameters for MakeSolidBox().
-  const double default_mass = 2;
-  const double default_length = 3;
-  const SpatialInertia<double> M2 = SpatialInertia<double>::MakeSolidBox();
-  EXPECT_TRUE(M2.IsPhysicallyValid());
-  EXPECT_EQ(M2.get_mass(), default_mass);
-  EXPECT_TRUE(CompareMatrices(
-      M2.get_com(), Vector3<double>(default_length / 2, 0, 0), kEpsilon));
-  const Vector3<double> M2_unit_moments = M2.get_unit_inertia().get_moments();
-  const Vector3<double> M2_unit_products = M2.get_unit_inertia().get_products();
-  const double I2 = default_length * default_length / 6.0;
-  const double J2 = I2 + (default_length / 2) * (default_length / 2);
-  EXPECT_TRUE(CompareMatrices(
-      M2_unit_moments, Vector3<double>(I2, J2, J2), kEpsilon));
-  EXPECT_EQ(M2_unit_products, Vector3<double>::Zero());
-
-  // Ensure an exception is thrown if mass is negative.
-  const std::string expected_mass_msg =
-      "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
-      "mass = -2(\\.0)? is negative.\n";
-  DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>::MakeSolidBox(
-      -default_mass, Lx, Ly, Lz), expected_mass_msg);
-
-  // Ensure an exception is thrown if one of the lengths is negative.
-  const std::string expected_length_msg = "A length argument to "
-                                   "UnitInertia::SolidBox\\(\\) is negative.";
-  DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>::MakeSolidBox(
-      default_mass, -Lx, Ly, Lz), expected_length_msg);
-  DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>::MakeSolidBox(
-      default_mass, Lx, -Ly, Lz), expected_length_msg);
-  DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>::MakeSolidBox(
-      default_mass, Lx, Ly, -Lz), expected_length_msg);
 }
 
 // Test the construction from the mass, center of mass, and unit inertia of a

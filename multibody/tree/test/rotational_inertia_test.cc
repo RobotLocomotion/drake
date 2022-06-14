@@ -41,13 +41,26 @@ using symbolic::Variable;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
-// Test default constructor - all elements should be NaN. Also test IsNaN().
-GTEST_TEST(RotationalInertia, DefaultRotationalInertiaConstructorIsNaN) {
+GTEST_TEST(RotationalInertia, DefaultConstructorOrConstructorWithOneArgument) {
+  // Test default constructor which leaves entries initialized to NaN for a
+  // quick detection of uninitialized values.
   const RotationalInertia<double> default_rotational_inertia;
   Matrix3d inertia_matrix = default_rotational_inertia.CopyToFullMatrix3();
   EXPECT_TRUE(inertia_matrix.array().isNaN().all());
   EXPECT_TRUE(default_rotational_inertia.IsNaN());
   EXPECT_FALSE(default_rotational_inertia.IsZero());
+
+  // Test the one argument RotationalInertia constructor with one of its values.
+  const RotationalInertia<double> I0(InertiaValue::kNaN);
+  EXPECT_TRUE(I0.IsNaN());
+
+  // Test the one argument RotationalInertia constructor with its other value.
+  // Note: By default in SDformat, all the moments of inertia are 1.0 and
+  // all the products of inertia are 0.0.
+  const RotationalInertia<double> I1(InertiaValue::kSdf);
+  EXPECT_TRUE(I1.CouldBePhysicallyValid());
+  EXPECT_EQ(I1.get_moments(), Vector3<double>(1, 1, 1));
+  EXPECT_EQ(I1.get_products(), Vector3<double>::Zero());
 }
 
 GTEST_TEST(RotationalInertia, TestIsZeroAndIsNanFunctions) {
