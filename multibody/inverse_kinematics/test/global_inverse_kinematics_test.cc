@@ -5,6 +5,7 @@
 using Eigen::Vector3d;
 
 using drake::solvers::SolutionResult;
+using drake::math::RigidTransformd;
 
 namespace drake {
 namespace multibody {
@@ -83,7 +84,16 @@ TEST_F(KukaTest, ReachableWithCost) {
       ee_idx_,                         // body index
       Vector3d::Zero(),                // p_BQ
       ee_desired_pose.translation(),   // lower bound
-      ee_desired_pose.translation());  // upper bound
+      ee_desired_pose.translation(),   // upper bound
+      RigidTransformd());
+  global_ik_.AddWorldRelativePositionConstraint(
+      ee_idx_,
+      Vector3d::Zero(),
+      plant_->world_body().index(),
+      Vector3d::Zero(),
+      ee_desired_pose.translation(),   // lower bound
+      ee_desired_pose.translation(),   // upper bound
+      RigidTransformd());
   global_ik_.AddWorldOrientationConstraint(
       ee_idx_,  // body index
       Eigen::Quaterniond(
@@ -132,6 +142,7 @@ TEST_F(KukaTest, ReachableWithCost) {
     EXPECT_LE((q_w_cost - q).norm(), (q_no_cost - q).norm());
   }
 }
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
