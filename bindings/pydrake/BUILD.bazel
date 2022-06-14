@@ -147,6 +147,7 @@ drake_pybind_library(
     py_deps = [
         ":math_py",
         ":module_py",
+        "//bindings/pydrake/solvers",
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/systems:lcm_py",
     ],
