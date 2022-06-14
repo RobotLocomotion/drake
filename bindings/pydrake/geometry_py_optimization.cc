@@ -3,6 +3,7 @@
  pydrake.geometry.optimization module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry_py.h"
@@ -28,6 +29,8 @@ void DefineGeometryOptimization(py::module m) {
   using namespace drake::geometry::optimization;
   m.doc() = "Local bindings for `drake::geometry::optimization`";
   constexpr auto& doc = pydrake_doc.drake.geometry.optimization;
+
+  py::module::import("pydrake.solvers.mathematicalprogram");
 
   // ConvexSet
   {
@@ -303,6 +306,36 @@ void DefineGeometryOptimization(py::module m) {
       py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
       doc.IrisInConfigurationSpace.doc);
 
+  // SppOptions
+  {
+    const auto& cls_doc = doc.SppOptions;
+    py::class_<SppOptions>(m, "SppOptions", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def_readwrite("convex_relaxation", &SppOptions::convex_relaxation,
+            cls_doc.convex_relaxation.doc)
+        .def_property("solver",
+            py::cpp_function([](SppOptions& self) { return self.solver; },
+                py_rvp::reference_internal),
+            py::cpp_function(
+                [](SppOptions& self, solvers::SolverInterface* solver) {
+                  self.solver = solver;
+                },
+                // Keep alive, reference: `self` keeps `solver` alive.
+                py::keep_alive<1, 2>()),  // BR
+            cls_doc.solver.doc)
+        .def_readwrite("solver_options", &SppOptions::solver_options,
+            cls_doc.solver_options.doc)
+        .def("__repr__", [](const SppOptions& self) {
+          return py::str(
+              "SppOptions("
+              "convex_relaxation={}, "
+              "solver={}, "
+              "solver_options={}, "
+              ")")
+              .format(self.convex_relaxation, self.solver, self.solver_options);
+        });
+  }
+
   // GraphOfConvexSets
   {
     const auto& cls_doc = doc.GraphOfConvexSets;
@@ -375,26 +408,46 @@ void DefineGeometryOptimization(py::module m) {
             .def("SolveShortestPath",
                 overload_cast_explicit<solvers::MathematicalProgramResult,
                     GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
-                    bool, const solvers::SolverInterface*,
-                    const std::optional<solvers::SolverOptions>&>(
-                    &GraphOfConvexSets::SolveShortestPath),
+                    const SppOptions&>(&GraphOfConvexSets::SolveShortestPath),
                 py::arg("source_id"), py::arg("target_id"),
-                py::arg("convex_relaxation") = false,
-                py::arg("solver") = nullptr,
-                py::arg("solver_options") = std::nullopt,
+                py::arg("options") = SppOptions(),
                 cls_doc.SolveShortestPath.doc_by_id)
             .def("SolveShortestPath",
+                overload_cast_explicit<solvers::MathematicalProgramResult,
+                    const GraphOfConvexSets::Vertex&,
+                    const GraphOfConvexSets::Vertex&, const SppOptions&>(
+                    &GraphOfConvexSets::SolveShortestPath),
+                py::arg("source"), py::arg("target"),
+                py::arg("options") = SppOptions(),
+                cls_doc.SolveShortestPath.doc_by_reference);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    graph_of_convex_sets
+        .def("SolveShortestPath",
+            WrapDeprecated(cls_doc.SolveShortestPath.doc_deprecated_by_id,
+                overload_cast_explicit<solvers::MathematicalProgramResult,
+                    GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
+                    bool, const solvers::SolverInterface*,
+                    const std::optional<solvers::SolverOptions>&>(
+                    &GraphOfConvexSets::SolveShortestPath)),
+            py::arg("source_id"), py::arg("target_id"),
+            py::arg("convex_relaxation"), py::arg("solver") = nullptr,
+            py::arg("solver_options") = std::nullopt,
+            cls_doc.SolveShortestPath.doc_deprecated_by_id)
+        .def("SolveShortestPath",
+            WrapDeprecated(
+                cls_doc.SolveShortestPath.doc_deprecated_by_reference,
                 overload_cast_explicit<solvers::MathematicalProgramResult,
                     const GraphOfConvexSets::Vertex&,
                     const GraphOfConvexSets::Vertex&, bool,
                     const solvers::SolverInterface*,
                     const std::optional<solvers::SolverOptions>&>(
-                    &GraphOfConvexSets::SolveShortestPath),
-                py::arg("source"), py::arg("target"),
-                py::arg("convex_relaxation") = false,
-                py::arg("solver") = nullptr,
-                py::arg("solver_options") = std::nullopt,
-                cls_doc.SolveShortestPath.doc_by_reference);
+                    &GraphOfConvexSets::SolveShortestPath)),
+            py::arg("source"), py::arg("target"), py::arg("convex_relaxation"),
+            py::arg("solver") = nullptr,
+            py::arg("solver_options") = std::nullopt,
+            cls_doc.SolveShortestPath.doc_deprecated_by_reference);
+#pragma GCC diagnostic pop
 
     BindIdentifier<GraphOfConvexSets::VertexId>(
         graph_of_convex_sets, "VertexId", doc.GraphOfConvexSets.VertexId.doc);
