@@ -427,6 +427,7 @@ template class SurfaceVolumeIntersector<PolyMeshBuilder<AutoDiffXd>, Obb>;
 
 // Deformables use Aabb for the bounding volumes of deformable tetrahedra.
 template class SurfaceVolumeIntersector<DeformableContactBuilder<double>, Aabb>;
+template class SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb>;
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
     &CalcIntersection<T>,
