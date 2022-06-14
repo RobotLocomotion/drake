@@ -31,6 +31,11 @@ struct GraphOfConvexSetsOptions {
   relaxation is tight. */
   bool convex_relaxation{true};
 
+  /** Performs a preprocessing step to remove edges that cannot lie on the
+  path from source to target. In most cases, preprocessing causes a net
+  reduction in computation by reducing the size of the optimization solved. */
+  bool preprocessing{true};
+
   /** Optimizer to be used to solve the shortest path optimization problem. If
   not set, the best solver for the given problem is selected. Note that if the
   solver cannot handle the type of optimization problem generated, the calling
@@ -345,6 +350,9 @@ class GraphOfConvexSets {
   @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   std::vector<const Edge*> Edges() const;
 
+  /** Removes all constraints added to any edge with AddPhiConstraint. */
+  void ClearAllPhiConstraints();
+
   /** Returns a Graphviz string describing the graph vertices and edges.  If
   `results` is supplied, then the graph will be annotated with the solution
   values.
@@ -442,6 +450,12 @@ class GraphOfConvexSets {
           std::nullopt) const;
 
  private:
+  /* Facilitates testing. */
+  friend class PreprocessShortestPathTest;
+
+  std::set<EdgeId> PreprocessShortestPath(VertexId source_id,
+                                          VertexId target_id) const;
+
   std::map<VertexId, std::unique_ptr<Vertex>> vertices_{};
   std::map<EdgeId, std::unique_ptr<Edge>> edges_{};
 };
