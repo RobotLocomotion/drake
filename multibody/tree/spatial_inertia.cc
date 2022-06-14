@@ -8,11 +8,12 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-SpatialInertia<T> SpatialInertia<T>::MakeSolidBox(T mass, T Lx, T Ly, T Lz) {
-  const UnitInertia<T> G_BBcm_B = UnitInertia<T>::SolidBox(Lx, Ly, Lz);
-  const Vector3<T> p_BoBcm_B(Lx / 2, 0, 0);  // Position from Bo to Bcm.
-  const UnitInertia<T> G_BBo_B = G_BBcm_B.ShiftFromCenterOfMass(-p_BoBcm_B);
-  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+SpatialInertia<T>::SpatialInertia(InertiaValue inertiaValue) {
+  const bool is_NaN = inertiaValue == InertiaValue::kNaN;
+  mass_ = is_NaN ? NAN : 1.0;
+  const T xyz = is_NaN ? NAN : 0.0;  // Generic value for center of mass offset.
+  p_PScm_E_ = Vector3<T>(xyz, xyz, xyz);  // Position from Bo to Bcm.
+  G_SP_E_ = UnitInertia<T>(inertiaValue);
 }
 
 template <typename T>
