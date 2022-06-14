@@ -873,6 +873,117 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     result = solvers::Solve(prog, {}, options.solver_options);
   }
 
+  // Implements the rounding scheme put forth in Section 4.2 of
+  // "Motion Planning around Obstacles with Convex Optimization":
+  // https://arxiv.org/abs/2205.04422
+  if (options.convex_relaxation && options.max_rounded_paths > 0) {
+    DRAKE_THROW_UNLESS(options.max_rounding_trials > 0);
+    RandomGenerator generator(options.rounding_seed);
+    std::uniform_real_distribution<double> uniform;
+    std::vector<std::vector<const Edge*>> paths;
+    std::map<EdgeId, double> flows;
+    for (const auto& [edge_id, e] : edges_) {
+      if (!e->phi_value_.value_or(true) || unusable_edges.count(edge_id)) {
+        flows.emplace(edge_id, 0);
+      } else {
+        flows.emplace(edge_id, result.GetSolution(relaxed_phi[edge_id]));
+      }
+    }
+    int num_trials = 0;
+    MathematicalProgramResult best_result;
+    while (paths.size() < options.max_rounded_paths &&
+           num_trials < options.max_rounding_trials) {
+      num_trials++;
+
+      // Find candidate path by traversing the graph with a depth first search
+      // where edges are taken with prbability proportional to their flow.
+      std::vector<VertexId> visited_vertex_ids{source_id};
+      std::vector<VertexId> path_vertex_ids{source_id};
+      std::vector<const Edge*> new_path;
+      while (path_vertex_ids.back() != target_id) {
+        std::vector<const Edge*> candidate_edges;
+        for (const Edge* e : outgoing_edges[path_vertex_ids.back()]) {
+          if (std::find(visited_vertex_ids.begin(), visited_vertex_ids.end(),
+                        e->v().id()) == visited_vertex_ids.end() &&
+              flows[e->id()] > options.flow_tolerance) {
+            candidate_edges.emplace_back(e);
+          }
+        }
+
+        if (candidate_edges.size() == 0) {
+          path_vertex_ids.pop_back();
+          new_path.pop_back();
+        } else {
+          Eigen::VectorXd candidate_flows(candidate_edges.size());
+          for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
+            candidate_flows(ii) = flows[candidate_edges[ii]->id()];
+          }
+          double edge_sample = uniform(generator) * candidate_flows.sum();
+          for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
+            if (edge_sample >= candidate_flows(ii)) {
+              edge_sample -= candidate_flows(ii);
+            } else {
+              visited_vertex_ids.push_back(candidate_edges[ii]->v().id());
+              path_vertex_ids.push_back(candidate_edges[ii]->v().id());
+              new_path.emplace_back(candidate_edges[ii]);
+              break;
+            }
+          }
+        }
+      }
+
+      if (std::find(paths.begin(), paths.end(), new_path) != paths.end()) {
+        continue;
+      }
+      paths.push_back(new_path);
+
+      // Optimize path
+      std::vector<Binding<Constraint>> added_constraints;
+      for (const auto& [edge_id, e] : edges_) {
+        if (e->phi_value_.has_value() || unusable_edges.count(edge_id)) {
+          continue;
+        }
+        if (std::find(new_path.begin(), new_path.end(), e.get()) !=
+            new_path.end()) {
+          added_constraints.push_back(
+              prog.AddBoundingBoxConstraint(1, 1, relaxed_phi.at(edge_id)));
+        } else {
+          added_constraints.push_back(
+              prog.AddBoundingBoxConstraint(0, 0, relaxed_phi.at(edge_id)));
+          added_constraints.push_back(prog.AddLinearEqualityConstraint(
+              static_cast<const VectorX<Expression>>(e->y_),
+              VectorXd::Zero(e->y_.size())));
+          added_constraints.push_back(prog.AddLinearEqualityConstraint(
+              static_cast<const VectorX<Expression>>(e->z_),
+              VectorXd::Zero(e->z_.size())));
+          added_constraints.push_back(prog.AddLinearEqualityConstraint(
+              static_cast<const VectorX<Expression>>(e->ell_),
+              VectorXd::Zero(e->ell_.size())));
+        }
+      }
+
+      MathematicalProgramResult rounded_result;
+      if (options.solver) {
+        options.solver->Solve(prog, {}, options.solver_options,
+                              &rounded_result);
+      } else {
+        rounded_result = solvers::Solve(prog, {}, options.solver_options);
+      }
+
+      // Check path quality and early termination
+      if (rounded_result.is_success() &&
+          (num_trials == 1 || rounded_result.get_optimal_cost() <
+                                  best_result.get_optimal_cost())) {
+        best_result = rounded_result;
+      }
+
+      for (Binding<Constraint>& con : added_constraints) {
+        prog.RemoveConstraint(con);
+      }
+    }
+    result = best_result;
+  }
+
   // Push the placeholder variables and excluded edge variables into the result,
   // so that they can be accessed as if they were variables included in the
   // optimization.

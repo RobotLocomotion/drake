@@ -127,6 +127,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//solvers:choose_best_solver",
         "//solvers:clp_solver",
+        "//solvers:csdp_solver",
         "//solvers:gurobi_solver",
         "//solvers:ipopt_solver",
         "//solvers:mosek_solver",
