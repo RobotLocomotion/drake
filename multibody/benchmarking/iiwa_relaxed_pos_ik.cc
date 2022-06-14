@@ -40,8 +40,6 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
   const int kNumRandGoals = 10;
   // The number of random initial guesses for each goal.
   const int kNumRandInitGuess = 2;
-  // The tolerance for constraint satisfaction check.
-  const double kConstraintTol = 1e-4;
 
   // Find the model file for Kuka iiwa.
   const std::string iiwa_path = FindResourceOrThrow(
@@ -106,19 +104,10 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
         // Set the initial guess.
         prog->SetInitialGuess(relaxed_ik.q(), q0.col(j));
 
-        // Solve the problem.
+        // Solve the problem. The success of optimization is not checked as
+        // we're rather interested in measuring the speed of constraint
+        // evaluation.
         auto result = solvers::Solve(*prog);
-
-        // Confirm that the optimization has succeeded.
-        // This is done only for SNOPT b/c IPOPT exceeds the maximum number of
-        // iterations in a few cases while still meeting the task constraints.
-        if (result.get_solver_id() == solvers::SnoptSolver::id())
-          DRAKE_DEMAND(result.is_success());
-
-        // Check whether the task constraint is met by providing extra margin to
-        // account for solver tolerances.
-        DRAKE_DEMAND(pos_constraint->CheckSatisfied(result.GetSolution(),
-                                                    kConstraintTol));
       }
     }
   }
