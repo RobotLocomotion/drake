@@ -1214,6 +1214,91 @@ TEST_F(PreprocessShortestPathTest, CheckResults) {
   }
 }
 
+GTEST_TEST(ShortestPathTest, RoundedSolution) {
+  GraphOfConvexSets spp;
+
+  Vertex* source = spp.AddVertex(Point(Vector2d(-1.5, -1.5)));
+  Vertex* target = spp.AddVertex(Point(Vector2d(1.5, 1.5)));
+  Vertex* p1 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(2, -1))
+                        .CartesianPower(2));
+  Vertex* p2 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(-1, 2))
+                        .CartesianPower(2));
+  Vertex* p3 = spp.AddVertex(
+      HPolyhedron::MakeBox(Vector2d(1, -2), Vector2d(2, 2)).CartesianPower(2));
+  Vertex* p4 = spp.AddVertex(
+      HPolyhedron::MakeBox(Vector2d(-2, 1), Vector2d(2, 2)).CartesianPower(2));
+
+  spp.AddEdge(*source, *p1);
+  spp.AddEdge(*source, *p2);
+  spp.AddEdge(*p1, *p3);
+  spp.AddEdge(*p2, *p4);
+  spp.AddEdge(*p3, *target);
+  spp.AddEdge(*p4, *target);
+
+  spp.AddEdge(*p1, *p2);
+  spp.AddEdge(*p2, *p1);
+  spp.AddEdge(*p3, *p4);
+  spp.AddEdge(*p4, *p3);
+
+  spp.AddEdge(*p3, *p1);
+  spp.AddEdge(*p4, *p2);
+
+  // |xu - xv|₂
+  Matrix<double, 2, 4> A;
+  A.leftCols(2) = Matrix2d::Identity();
+  A.rightCols(2) = -Matrix2d::Identity();
+  auto cost = std::make_shared<solvers::L2NormCost>(A, Vector2d::Zero());
+
+  for (const auto& e : spp.Edges()) {
+    if (e->u().id() != source->id()) {
+      e->AddCost(solvers::Binding(cost, e->xu()));
+    }
+    e->AddConstraint(e->xu().tail<2>() == e->xv().head<2>());
+  }
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.round_solution = false;
+  auto relaxed_result =
+      spp.SolveShortestPath(source->id(), target->id(), options);
+  ASSERT_TRUE(relaxed_result.is_success());
+
+  options.round_solution = true;
+  auto rounded_result =
+      spp.SolveShortestPath(source->id(), target->id(), options);
+  ASSERT_TRUE(rounded_result.is_success());
+
+  EXPECT_LT(relaxed_result.get_optimal_cost(),
+            rounded_result.get_optimal_cost());
+
+  const auto& edges = spp.Edges();
+  for (size_t ii = 0; ii < edges.size(); ii++) {
+    if (ii < 6) {
+      EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0.5, 1e-6);
+    } else if (ii < 10) {
+      EXPECT_LT(relaxed_result.GetSolution(edges[ii]->phi()), 0.5);
+      EXPECT_GT(relaxed_result.GetSolution(edges[ii]->phi()), 0);
+    } else {
+      EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0, 1e-6);
+    }
+    EXPECT_TRUE(rounded_result.GetSolution(edges[ii]->phi()) == 0 ||
+                rounded_result.GetSolution(edges[ii]->phi()) == 1);
+  }
+
+  if (!MixedIntegerSolverAvailable()) {
+    return;
+  }
+
+  options.convex_relaxation = false;
+  options.round_solution = false;
+  auto mip_result = spp.SolveShortestPath(source->id(), target->id(), options);
+  EXPECT_NEAR(rounded_result.get_optimal_cost(), mip_result.get_optimal_cost(),
+              1e-6);
+}
+
 GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   GraphOfConvexSets spp;
 

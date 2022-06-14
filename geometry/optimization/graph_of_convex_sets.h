@@ -36,6 +36,26 @@ struct GraphOfConvexSetsOptions {
   reduction in computation by reducing the size of the optimization solved. */
   bool preprocessing{true};
 
+  /** Round solution after solving convex relaxation. If convex_relaxation is
+  false, this option is ignored. */
+  bool round_solution{false};
+
+  /** Maximum number of unique paths to search for during random rounding. If
+  convex_relaxation is false, this option is ignored. */
+  size_t max_rounded_paths{10};
+
+  /** Maximum number of trials to find a novel path during random rounding. If
+  convex_relaxation is false, this option is ignored. */
+  int max_rounding_trials{100};
+
+  /** Tolerance for ignoring flow along a given edge during random rounding. If
+  convex_relaxation is false, this option is ignored. */
+  double flow_tolerance{1e-5};
+
+  /** Random seed to use for random rounding. If convex_relaxation is false,
+  this option is ignored. */
+  int rounding_seed{0};
+
   /** Optimizer to be used to solve the shortest path optimization problem. If
   not set, the best solver for the given problem is selected. Note that if the
   solver cannot handle the type of optimization problem generated, the calling

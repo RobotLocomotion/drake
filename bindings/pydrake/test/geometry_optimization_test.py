@@ -413,6 +413,11 @@ class TestGeometryOptimization(unittest.TestCase):
         options = mut.GraphOfConvexSetsOptions()
         options.convex_relaxation = True
         options.preprocessing = False
+        options.round_solution = True
+        options.max_rounded_paths = 2
+        options.max_rounding_trials = 5
+        options.flow_tolerance = 1e-6
+        options.rounding_seed = 1
         options.solver = ClpSolver()
         options.solver_options = SolverOptions()
         self.assertIn("convex_relaxation", repr(options))
