@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
@@ -109,7 +110,7 @@ class GlobalInverseKinematics {
 
   /**
    * Adds the constraint that the position of a point `Q` on a body `B`
-   * (whose index is `body_idx`), is within a box in a specified frame `F`.
+   * (whose index is `body_index`), is within a box in a specified frame `F`.
    * The constraint is that the point `Q`'s position should lie within a
    * bounding box in the frame `F`. Namely
    *
@@ -127,14 +128,14 @@ class GlobalInverseKinematics {
    * SO(3), due to the McCormick envelope relaxation, this constraint is subject
    * to the accumulated error from the root of the kinematics tree.
    *
-   * @param body_idx The index of the body on which the position of a point is
+   * @param body_index The index of the body on which the position of a point is
    * constrained.
    * @param p_BQ The position of the point Q measured and expressed in the
    * body frame B.
    * @param box_lb_F The lower bound of the box in frame `F`.
    * @param box_ub_F The upper bound of the box in frame `F`.
    * @param X_WF. The frame in which the box is specified. This
-   * frame is represented by an isometry transform X_WF, the transform from
+   * frame is represented by a RigidTransform X_WF, the transform from
    * the constraint frame F to the world frame W. Namely if the position of
    * the point `Q` in the world frame is `p_WQ`, then the constraint is
    *
@@ -149,9 +150,49 @@ class GlobalInverseKinematics {
    * variables.
    */
   solvers::Binding<solvers::LinearConstraint> AddWorldPositionConstraint(
-      BodyIndex body_idx, const Eigen::Vector3d& p_BQ,
+      BodyIndex body_index, const Eigen::Vector3d& p_BQ,
       const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
-      const Eigen::Isometry3d& X_WF = Eigen::Isometry3d::Identity());
+      const math::RigidTransformd& X_WF = math::RigidTransformd());
+
+  /** @exclude_from_pydrake_mkdoc */
+  DRAKE_DEPRECATED(
+      "2022-10-01",
+      "Use the method taking a RigidTransform instead of Isometry3d.")
+  solvers::Binding<solvers::LinearConstraint> AddWorldPositionConstraint(
+      BodyIndex body_index, const Eigen::Vector3d& p_BQ,
+      const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
+      const Eigen::Isometry3d& X_WF);
+
+  /**
+   * Adds the constraint that the position of a point `Q` on a body `B`
+   * relative to a point `P` on body `A`, is within a box in a specified frame
+   * `F`. Using monogram notation we have:
+   *
+   *    box_lb_F <= p_FQ - p_FP <= box_ub_F
+   *
+   * where p_FQ and p_FP are the position of the points measured and expressed
+   * in `F`.  The inequality is imposed elementwise.  See
+   * AddWorldPositionConstraint for more details.
+   *
+   * @param body_index_B The index of the body B.
+   * @param p_BQ The position of the point Q measured and expressed in the body
+   * frame B.
+   * @param body_index_A The index of the body A.
+   * @param p_AP The position of the point P measured and expressed in the body
+   * frame A.
+   * @param box_lb_F The lower bound of the box in frame `F`.
+   * @param box_ub_F The upper bound of the box in frame `F`.
+   * @param X_WF. Defines the frame in which the box is specified. @default is
+   * the identity transform.
+   * @retval binding The newly added constraint, together with the bound
+   * variables.
+   */
+  solvers::Binding<solvers::LinearConstraint>
+  AddWorldRelativePositionConstraint(
+      BodyIndex body_index_B, const Eigen::Vector3d& p_BQ,
+      BodyIndex body_index_A, const Eigen::Vector3d& p_AP,
+      const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
+      const math::RigidTransformd& X_WF = math::RigidTransformd());
 
   /**
    * Adds a constraint that the angle between the body orientation and the
@@ -167,7 +208,7 @@ class GlobalInverseKinematics {
    *
    *     2 * cos(angle_tol) + 1 <= trace(R1ᵀ * R2) <= 3
    *
-   * @param body_idx The index of the body whose orientation will be
+   * @param body_index The index of the body whose orientation will be
    * constrained.
    * @param desired_orientation The desired orientation of the body.
    * @param angle_tol The tolerance on the angle between the body orientation
@@ -176,7 +217,7 @@ class GlobalInverseKinematics {
    * variables.
    */
   solvers::Binding<solvers::LinearConstraint> AddWorldOrientationConstraint(
-      BodyIndex body_idx, const Eigen::Quaterniond& desired_orientation,
+      BodyIndex body_index, const Eigen::Quaterniond& desired_orientation,
       double angle_tol);
 
   /** Penalizes the deviation to the desired posture.
@@ -331,10 +372,10 @@ class GlobalInverseKinematics {
  private:
   // This is an utility function for `ReconstructGeneralizedPositionSolution`.
   // This function computes the joint generalized position on the body with
-  // index body_idx. Note that the orientation of the parent link of the body
-  // body_idx should have been reconstructed, in reconstruct_R_WB.
+  // index body_index. Note that the orientation of the parent link of the body
+  // body_index should have been reconstructed, in reconstruct_R_WB.
   void ReconstructGeneralizedPositionSolutionForBody(
-      const solvers::MathematicalProgramResult& result, BodyIndex body_idx,
+      const solvers::MathematicalProgramResult& result, BodyIndex body_index,
       const std::map<BodyIndex, JointIndex>& body_to_joint_map,
       const std::unordered_set<BodyIndex>& weld_to_world_body_index_set,
       Eigen::Ref<Eigen::VectorXd> q,
