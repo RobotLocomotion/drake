@@ -139,6 +139,14 @@ void DoScalarIndependentDefinitions(py::module m) {
         .value("kQDot", Enum::kQDot, enum_doc.kQDot.doc)
         .value("kV", Enum::kV, enum_doc.kV.doc);
   }
+
+  {
+    using Enum = InertiaValue;
+    constexpr auto& enum_doc = doc.InertiaValue;
+    py::enum_<Enum>(m, "InertiaValue", enum_doc.doc)
+        .value("kNaN", Enum::kNaN, enum_doc.kNaN.doc)
+        .value("kSdf", Enum::kSdf, enum_doc.kSdf.doc);
+  }
 }
 
 /**
@@ -849,7 +857,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "RotationalInertia", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<InertiaValue>(),
+            py::arg("inertiaValue") = InertiaValue::kNaN,
+            cls_doc.ctor.doc_1args)
         .def(py::init<const T&, const T&, const T&>(), py::arg("Ixx"),
             py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args)
         .def(py::init<const T&, const T&, const T&, const T&, const T&,
@@ -930,15 +940,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, RotationalInertia<T>>(
         m, "UnitInertia", param, cls_doc.doc);
     cls  // BR
-        .def(py::init(), cls_doc.ctor.doc_0args)
+        .def(py::init<InertiaValue>(),
+            py::arg("inertiaValue") = InertiaValue::kNaN,
+            cls_doc.ctor.doc_1args_inertiaValue)
         .def(py::init<const T&, const T&, const T&>(), py::arg("Ixx"),
-            py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args)
+            py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args_Ixx_Iyy_Izz)
         .def(py::init<const T&, const T&, const T&, const T&, const T&,
                  const T&>(),
             py::arg("Ixx"), py::arg("Iyy"), py::arg("Izz"), py::arg("Ixy"),
-            py::arg("Ixz"), py::arg("Iyz"), cls_doc.ctor.doc_6args)
+            py::arg("Ixz"), py::arg("Iyz"),
+            cls_doc.ctor.doc_6args_Ixx_Iyy_Izz_Ixy_Ixz_Iyz)
         .def(py::init([](const RotationalInertia<T>& I) { return Class(I); }),
-            py::arg("I"), cls_doc.ctor.doc_1args)
+            py::arg("I"), cls_doc.ctor.doc_1args_I)
         .def("SetFromRotationalInertia", &Class::SetFromRotationalInertia,
             py::arg("I"), py::arg("mass"), py_rvp::reference,
             cls_doc.SetFromRotationalInertia.doc)
@@ -992,10 +1005,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("MakeFromCentralInertia", &Class::MakeFromCentralInertia,
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("I_SScm_E"),
             cls_doc.MakeFromCentralInertia.doc)
-        .def_static("MakeSolidBox", &Class::MakeSolidBox, py::arg("mass") = 2,
-            py::arg("Lx") = 3, py::arg("Ly") = 3, py::arg("Lz") = 3,
-            cls_doc.MakeSolidBox.doc)
-        .def(py::init(), cls_doc.ctor.doc_0args)
+        .def(py::init<InertiaValue>(),
+            py::arg("inertiaValue") = InertiaValue::kNaN,
+            cls_doc.ctor.doc_1args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),
