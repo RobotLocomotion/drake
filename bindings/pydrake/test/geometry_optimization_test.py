@@ -410,6 +410,13 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertFalse(region.PointInSet([3.0]))
 
     def test_graph_of_convex_sets(self):
+        options = mut.GraphOfConvexSetsOptions()
+        options.convex_relaxation = True
+        options.preprocessing = False
+        options.solver = ClpSolver()
+        options.solver_options = SolverOptions()
+        self.assertIn("convex_relaxation", repr(options))
+
         spp = mut.GraphOfConvexSets()
         source = spp.AddVertex(set=mut.Point([0.1]), name="source")
         target = spp.AddVertex(set=mut.Point([0.2]), name="target")
@@ -423,8 +430,6 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(
             spp.SolveShortestPath(source=source, target=target),
             MathematicalProgramResult)
-        options = mut.GraphOfConvexSetsOptions()
-        options.solver = ClpSolver()
         self.assertIsInstance(spp.SolveShortestPath(
             source_id=source.id(), target_id=target.id(), options=options),
             MathematicalProgramResult)
@@ -493,6 +498,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(edge0.GetConstraints()), 2)
         edge0.AddPhiConstraint(phi_value=False)
         edge0.ClearPhiConstraints()
+        edge1.AddPhiConstraint(phi_value=True)
+        spp.ClearAllPhiConstraints()
 
         # Remove Edges
         self.assertEqual(len(spp.Edges()), 2)
