@@ -317,9 +317,12 @@ class ThreePoints : public ::testing::Test {
   Edge* e_on_{nullptr};
   Edge* e_off_{nullptr};
   Substitution subs_on_off_{};
+  SppOptions options;
 };
 
-TEST_F(ThreePoints, LinearCost1) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TEST_F(ThreePoints, DeprecatedSolveShortestPath) {
   e_on_->AddCost(1.0);
   e_off_->AddCost(1.0);
   auto result = g_.SolveShortestPath(source_->id(), target_->id(), true);
@@ -350,9 +353,9 @@ TEST_F(ThreePoints, LinearCost1) {
     EXPECT_NEAR(e_off_->GetSolutionCost(result3), 0.0, 1e-6);
   }
 
-  SolverOptions options;
+  SolverOptions solver_options;
   auto result4 =
-      g_.SolveShortestPath(*source_, *target_, true, nullptr, options);
+      g_.SolveShortestPath(*source_, *target_, true, nullptr, solver_options);
   ASSERT_TRUE(result4.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result4), 1.0, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result4), 0.0, 1e-6);
@@ -363,11 +366,57 @@ TEST_F(ThreePoints, LinearCost1) {
       CompareMatrices(target_->GetSolution(result4), p_target_.x(), 1e-6));
   EXPECT_TRUE(sink_->GetSolution(result4).hasNaN());
 }
+#pragma GCC diagnostic pop
+
+TEST_F(ThreePoints, LinearCost1) {
+  e_on_->AddCost(1.0);
+  e_off_->AddCost(1.0);
+  auto result = g_.SolveShortestPath(source_->id(), target_->id(), options);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+
+  EXPECT_TRUE(
+      CompareMatrices(e_on_->GetSolutionPhiXu(result), p_source_.x(), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(e_on_->GetSolutionPhiXv(result), p_target_.x(), 1e-6));
+  EXPECT_TRUE(CompareMatrices(e_off_->GetSolutionPhiXu(result),
+                              0 * p_source_.x(), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(e_off_->GetSolutionPhiXv(result), 0 * p_sink_.x(), 1e-6));
+
+  // Alternative signatures.
+  auto result2 = g_.SolveShortestPath(*source_, *target_, options);
+  ASSERT_TRUE(result2.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result2), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result2), 0.0, 1e-6);
+
+  options.solver_options = SolverOptions();
+  auto result4 = g_.SolveShortestPath(*source_, *target_, options);
+  ASSERT_TRUE(result4.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result4), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result4), 0.0, 1e-6);
+
+  EXPECT_TRUE(
+      CompareMatrices(source_->GetSolution(result4), p_source_.x(), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(target_->GetSolution(result4), p_target_.x(), 1e-6));
+  EXPECT_TRUE(sink_->GetSolution(result4).hasNaN());
+
+  if (solvers::ClpSolver::is_available()) {
+    solvers::ClpSolver clp;
+    options.solver = &clp;
+    auto result3 = g_.SolveShortestPath(*source_, *target_, options);
+    ASSERT_TRUE(result3.is_success());
+    EXPECT_NEAR(e_on_->GetSolutionCost(result3), 1.0, 1e-6);
+    EXPECT_NEAR(e_off_->GetSolutionCost(result3), 0.0, 1e-6);
+  }
+}
 
 TEST_F(ThreePoints, ConvexRelaxation) {
   e_on_->AddCost(1.0);
   e_off_->AddCost(1.0);
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(result.GetSolution(e_on_->phi()), 1.0, 1e-6);
   EXPECT_NEAR(result.GetSolution(e_off_->phi()), 0.0, 1e-6);
@@ -376,7 +425,8 @@ TEST_F(ThreePoints, ConvexRelaxation) {
     return;
   }
 
-  auto result2 = g_.SolveShortestPath(*source_, *target_, false);
+  options.convex_relaxation = false;
+  auto result2 = g_.SolveShortestPath(*source_, *target_, options);
   ASSERT_TRUE(result2.is_success());
   EXPECT_NEAR(result2.GetSolution(e_on_->phi()), 1.0, 1e-6);
   EXPECT_NEAR(result2.GetSolution(e_off_->phi()), 0.0, 1e-6);
@@ -393,7 +443,7 @@ TEST_F(ThreePoints, LinearCost2) {
   auto cost = std::make_shared<solvers::LinearCost>(a, b);
   e_on_->AddCost(solvers::Binding(cost, {}));
   e_off_->AddCost(solvers::Binding(cost, {}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result), b, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
@@ -404,7 +454,7 @@ TEST_F(ThreePoints, LinearCost3) {
   const double b = 1.23;
   e_on_->AddCost(a.dot(e_on_->xu()) + b);
   e_off_->AddCost(a.dot(e_off_->xu()) + b);
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result), a.dot(p_source_.x()) + b, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
@@ -413,7 +463,7 @@ TEST_F(ThreePoints, LinearCost3) {
 TEST_F(ThreePoints, LinearCost4) {
   const double b = -1.23;
   e_on_->AddCost(b);
-  DRAKE_EXPECT_THROWS_MESSAGE(g_.SolveShortestPath(*source_, *target_, true),
+  DRAKE_EXPECT_THROWS_MESSAGE(g_.SolveShortestPath(*source_, *target_, options),
                               "Constant costs must be non-negative.*");
 }
 
@@ -421,7 +471,7 @@ TEST_F(ThreePoints, QuadraticCost) {
   e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
   e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
 
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -441,7 +491,7 @@ TEST_F(ThreePoints, QuadraticCost2) {
                         .squaredNorm();
   e_on_->AddCost(cost);
   e_off_->AddCost(cost.Substitute(subs_on_off_));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -463,7 +513,7 @@ TEST_F(ThreePoints, QuadraticCost3) {
                     4.2;
   e_on_->AddCost(cost);
   e_off_->AddCost(cost.Substitute(subs_on_off_));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   ASSERT_TRUE(result.is_success());
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
@@ -479,7 +529,7 @@ TEST_F(ThreePoints, QuadraticCost4) {
       2.0 * R.transpose() * R, 2.0 * R.transpose() * d, d.dot(d));
   e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
   e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -495,9 +545,8 @@ TEST_F(ThreePoints, QuadraticCost5) {
   e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm() - 2.0);
   e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm() - 2.0);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-    g_.SolveShortestPath(*source_, *target_, true),
-    ".* must be strictly non-negative.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(g_.SolveShortestPath(*source_, *target_, options),
+                              ".* must be strictly non-negative.*");
 }
 
 TEST_F(ThreePoints, L1NormCost) {
@@ -508,7 +557,7 @@ TEST_F(ThreePoints, L1NormCost) {
   auto cost = std::make_shared<solvers::L1NormCost>(A, Vector2d::Zero());
   e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
   e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -529,7 +578,7 @@ TEST_F(ThreePoints, L1NormCost2) {
   auto cost = std::make_shared<solvers::L1NormCost>(A, b);
   e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
   e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -551,7 +600,7 @@ TEST_F(ThreePoints, L2NormCost) {
   auto cost = std::make_shared<solvers::L2NormCost>(A, Vector2d::Zero());
   e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
   e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -572,7 +621,7 @@ TEST_F(ThreePoints, L2NormCost2) {
   auto cost = std::make_shared<solvers::L2NormCost>(A, b);
   e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
   e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -593,7 +642,7 @@ TEST_F(ThreePoints, LInfNormCost) {
   auto cost = std::make_shared<solvers::LInfNormCost>(A, Vector2d::Zero());
   e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
   e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -614,7 +663,7 @@ TEST_F(ThreePoints, LInfNormCost2) {
   auto cost = std::make_shared<solvers::LInfNormCost>(A, b);
   e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
   e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -638,7 +687,7 @@ TEST_F(ThreePoints, PerspectiveQuadraticCost) {
   auto cost = std::make_shared<solvers::PerspectiveQuadraticCost>(A, b);
   e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
   e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -672,6 +721,7 @@ class ThreeBoxes : public ::testing::Test {
   Vertex* target_{nullptr};
   Vertex* sink_{nullptr};
   Substitution subs_on_off_{};
+  SppOptions options;
 };
 
 // Ipopt fails to solve the QuadraticCost and L2NormCost tests above (both of
@@ -689,8 +739,10 @@ class ThreeBoxes : public ::testing::Test {
 TEST_F(ThreeBoxes, IpoptTest) {
   e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
   e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
-  solvers::IpoptSolver solver;
-  auto result = g_.SolveShortestPath(*source_, *target_, true, &solver);
+
+  solvers::IpoptSolver ipopt;
+  options.solver = &ipopt;
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   ASSERT_TRUE(result.is_success());
 }
 
@@ -698,7 +750,7 @@ TEST_F(ThreeBoxes, LinearEqualityConstraint) {
   const Vector2d b{.5, .3};
   e_on_->AddConstraint(e_on_->xv() == b);
   e_off_->AddConstraint(e_off_->xv() == b);
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(target_->GetSolution(result), b, 1e-6));
   EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
@@ -717,7 +769,7 @@ TEST_F(ThreeBoxes, LinearEqualityConstraint2) {
       solvers::Binding(constraint, {e_on_->xu(), e_on_->xv()}));
   e_off_->AddConstraint(
       solvers::Binding(constraint, {e_off_->xu(), e_off_->xv()}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(
       CompareMatrices(Aeq.leftCols(2) * source_->GetSolution(result) +
@@ -730,7 +782,7 @@ TEST_F(ThreeBoxes, LinearConstraint) {
   const Vector2d b{.5, .3};
   e_on_->AddConstraint(e_on_->xv() >= b);
   e_off_->AddConstraint(e_off_->xv() >= b);
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE((target_->GetSolution(result).array() >= b.array() - 1e-6).all());
   EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
@@ -748,7 +800,7 @@ TEST_F(ThreeBoxes, LinearConstraint2) {
       solvers::Binding(constraint, {e_on_->xu(), e_on_->xv()}));
   e_off_->AddConstraint(
       solvers::Binding(constraint, {e_off_->xu(), e_off_->xv()}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(((A.leftCols(2) * source_->GetSolution(result) +
                 A.rightCols(2) * target_->GetSolution(result))
@@ -789,7 +841,7 @@ GTEST_TEST(ShortestPathTest, ClassicalShortestPath) {
   spp.AddEdge(vid[2], vid[4])->AddCost(3.0);
   spp.AddEdge(vid[0], vid[4])->AddCost(6.0);
 
-  auto result = spp.SolveShortestPath(vid[0], vid[4], true);
+  auto result = spp.SolveShortestPath(vid[0], vid[4]);
   ASSERT_TRUE(result.is_success());
 
   for (const auto& e : spp.Edges()) {
@@ -850,7 +902,7 @@ GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
   spp.AddEdge(*v[5], *v[4])
       ->AddCost(solvers::Binding(cost, {v[5]->x(), v[4]->x()}));
 
-  auto result = spp.SolveShortestPath(*v[0], *v[5], true);
+  auto result = spp.SolveShortestPath(*v[0], *v[5]);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -897,7 +949,7 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
   // Confirm that variables for edges are set when no on/off constraint is
   // imposed.
   {
-    auto result = spp.SolveShortestPath(*v[0], *v[3], true);
+    auto result = spp.SolveShortestPath(*v[0], *v[3]);
     if (result.get_solver_id() == solvers::IpoptSolver::id()) {
       return;  // See IpoptTest for details.
     }
@@ -917,7 +969,7 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
   // optimization problem.
   edge_13->AddPhiConstraint(false);
   {
-    auto result = spp.SolveShortestPath(*v[0], *v[3], true);
+    auto result = spp.SolveShortestPath(*v[0], *v[3]);
     EXPECT_TRUE(result.is_success());
     EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXu(result),
                                 Vector2d::Zero(), 1e-6));
@@ -930,7 +982,7 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
   // Confirm that variables for edges that are turned on are properly set.
   edge_13->AddPhiConstraint(true);
   {
-    auto result = spp.SolveShortestPath(*v[0], *v[3], true);
+    auto result = spp.SolveShortestPath(*v[0], *v[3]);
     if (result.get_solver_id() == solvers::IpoptSolver::id()) {
       return;  // See IpoptTest for details.
     }
@@ -1020,7 +1072,9 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
     return;
   }
 
-  auto result = spp.SolveShortestPath(source->id(), target->id(), false);
+  SppOptions options;
+  options.convex_relaxation = false;
+  auto result = spp.SolveShortestPath(source->id(), target->id(), options);
   ASSERT_TRUE(result.is_success());
 
   const std::forward_list<Vertex*> shortest_path{source, p1, e2, target};
@@ -1038,7 +1092,8 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   // higher cost.
   source_to_p2->AddPhiConstraint(true);
   {
-    auto new_result = spp.SolveShortestPath(source->id(), target->id(), false);
+    auto new_result =
+        spp.SolveShortestPath(source->id(), target->id(), options);
     ASSERT_TRUE(new_result.is_success());
 
     const std::forward_list<Vertex*> new_shortest_path{source, p2, e2, target};
@@ -1062,7 +1117,8 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   // higher cost.
   source_to_p1->AddPhiConstraint(false);
   {
-    auto new_result = spp.SolveShortestPath(source->id(), target->id(), false);
+    auto new_result =
+        spp.SolveShortestPath(source->id(), target->id(), options);
     ASSERT_TRUE(new_result.is_success());
 
     const std::forward_list<Vertex*> new_shortest_path{source, p2, e2, target};
@@ -1111,7 +1167,7 @@ GTEST_TEST(ShortestPathTest, Figure9) {
     e->AddCost(solvers::Binding(cost, {e->xu(), e->xv()}));
   }
 
-  auto result = spp.SolveShortestPath(source->id(), target->id(), true);
+  auto result = spp.SolveShortestPath(source->id(), target->id());
   ASSERT_TRUE(result.is_success());
 
   const double kTol = 2e-4;  // Gurobi required this large tolerance.
@@ -1139,7 +1195,7 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   EXPECT_THAT(
       g.GetGraphvizString(),
       AllOf(HasSubstr("source"), HasSubstr("target"), HasSubstr("edge")));
-  auto result = g.SolveShortestPath(*source, *target, true);
+  auto result = g.SolveShortestPath(*source, *target);
   EXPECT_THAT(g.GetGraphvizString(result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
                     HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ =")));
