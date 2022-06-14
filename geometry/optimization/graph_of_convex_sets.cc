@@ -216,6 +216,11 @@ std::vector<const Edge*> GraphOfConvexSets::Edges() const {
   }
   return edges;
 }
+void GraphOfConvexSets::ClearAllPhiConstraints() {
+  for (const auto& e : edges_) {
+    e.second->ClearPhiConstraints();
+  }
+}
 
 // TODO(russt): We could get fancy and dim the color of the nodes/edges
 // according to phi, using e.g. https://graphviz.org/docs/attr-types/color/ .
@@ -258,11 +263,153 @@ std::string GraphOfConvexSets::GetGraphvizString(
   return graphviz.str();
 }
 
+std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
+    VertexId source_id, VertexId target_id) const {
+  DRAKE_DEMAND(vertices_.find(source_id) != vertices_.end());
+  DRAKE_DEMAND(vertices_.find(target_id) != vertices_.end());
+
+  std::map<VertexId, std::vector<int>> incoming_edges;
+  std::map<VertexId, std::vector<int>> outgoing_edges;
+  std::set<EdgeId> unusable_edges;
+
+  int edge_count = 0;
+  for (const auto& [edge_id, e] : edges_) {
+    outgoing_edges[e->u().id()].push_back(edge_count);
+    incoming_edges[e->v().id()].push_back(edge_count);
+
+    // Turn off edges into source
+    if (e->v().id() == source_id || e->u().id() == target_id) {
+      unusable_edges.insert(edge_id);
+    }
+    edge_count++;
+  }
+
+  int nE = edges_.size();
+
+  MathematicalProgram prog;
+
+  VectorXDecisionVariable f = prog.NewContinuousVariables(nE, "flow_su");
+  Binding<solvers::BoundingBoxConstraint> f_limits =
+      prog.AddBoundingBoxConstraint(VectorXd::Zero(nE), VectorXd::Ones(nE), f);
+  VectorXDecisionVariable g = prog.NewContinuousVariables(nE, "flow_vt");
+  Binding<solvers::BoundingBoxConstraint> g_limits =
+      prog.AddBoundingBoxConstraint(VectorXd::Zero(nE), VectorXd::Ones(nE), g);
+
+  std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_f;
+  std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_g;
+  std::map<VertexId, Binding<LinearConstraint>> degree;
+  for (const auto& [vertex_id, v] : vertices_) {
+    std::vector<int> Ev_in = incoming_edges[vertex_id];
+    std::vector<int> Ev_out = outgoing_edges[vertex_id];
+    std::vector<int> Ev = Ev_in;
+    Ev.insert(Ev.end(), Ev_out.begin(), Ev_out.end());
+
+    RowVectorXd A_flow(Ev.size());
+    A_flow << RowVectorXd::Ones(Ev_in.size()),
+        -1 * RowVectorXd::Ones(Ev_out.size());
+    VectorXDecisionVariable fv(Ev.size());
+    VectorXDecisionVariable gv(Ev.size());
+    for (size_t ii = 0; ii < Ev.size(); ++ii) {
+      fv(ii) = f(Ev[ii]);
+      gv(ii) = g(Ev[ii]);
+    }
+
+    // Conservation of flow for f.
+    if (vertex_id == source_id) {
+      conservation_f.insert(
+          {vertex_id, prog.AddLinearEqualityConstraint(A_flow, -1, fv)});
+    } else {
+      conservation_f.insert(
+          {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 0, fv)});
+    }
+
+    // Conservation of flow for g.
+    if (vertex_id == target_id) {
+      conservation_g.insert(
+          {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 1, gv)});
+    } else {
+      conservation_g.insert(
+          {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 0, gv)});
+    }
+
+    // Degree constraints (redundant if indegree of w is 0).
+    RowVectorXd A_degree = RowVectorXd::Ones(2 * Ev_in.size());
+    VectorXDecisionVariable fgin(2 * Ev_in.size());
+    for (size_t ii = 0; ii < Ev_in.size(); ++ii) {
+      fgin(ii) = f(Ev_in[ii]);
+      fgin(Ev_in.size() + ii) = g(Ev_in[ii]);
+    }
+    degree.insert({vertex_id, prog.AddLinearConstraint(A_degree, 0, 1, fgin)});
+  }
+
+  for (const auto& [edge_id, e] : edges_) {
+    // Update bounds of consevation of flow.
+    if (e->u().id() == source_id) {
+      f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
+      conservation_f.at(e->u().id())
+          .evaluator()
+          ->set_bounds(Vector1d(0), Vector1d(0));
+    } else {
+      conservation_f.at(e->u().id())
+          .evaluator()
+          ->set_bounds(Vector1d(1), Vector1d(1));
+    }
+    if (e->v().id() == target_id) {
+      g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
+      conservation_g.at(e->v().id())
+          .evaluator()
+          ->set_bounds(Vector1d(0), Vector1d(0));
+    } else {
+      conservation_g.at(e->v().id())
+          .evaluator()
+          ->set_bounds(Vector1d(-1), Vector1d(-1));
+    }
+
+    // Update bounds of degree constraints.
+    degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(0));
+
+    // Check if edge e = (u,v) is redundant.
+    auto result = Solve(prog);
+    if (!result.is_success()) {
+      unusable_edges.insert(edge_id);
+    }
+
+    // Reset constraint bounds.
+    if (e->u().id() == source_id) {
+      f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Ones(nE));
+      conservation_f.at(e->u().id())
+          .evaluator()
+          ->set_bounds(Vector1d(-1), Vector1d(-1));
+    } else {
+      conservation_f.at(e->u().id())
+          .evaluator()
+          ->set_bounds(Vector1d(0), Vector1d(0));
+    }
+    if (e->v().id() == target_id) {
+      g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Ones(nE));
+      conservation_g.at(e->v().id())
+          .evaluator()
+          ->set_bounds(Vector1d(1), Vector1d(1));
+    } else {
+      conservation_g.at(e->v().id())
+          .evaluator()
+          ->set_bounds(Vector1d(0), Vector1d(0));
+    }
+    degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(1));
+  }
+  return unusable_edges;
+}
+
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     VertexId source_id, VertexId target_id,
     const GraphOfConvexSetsOptions& options) const {
   DRAKE_DEMAND(vertices_.find(source_id) != vertices_.end());
   DRAKE_DEMAND(vertices_.find(target_id) != vertices_.end());
+
+  std::set<EdgeId> unusable_edges;
+  if (options.preprocessing) {
+    unusable_edges = PreprocessShortestPath(source_id, target_id);
+  }
 
   MathematicalProgram prog;
 
@@ -275,10 +422,12 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   std::vector<Variable> excluded_phi;
 
   for (const auto& [edge_id, e] : edges_) {
-    // If an edge is turned off (ϕ = 0), don't include it in the optimization.
-    if (!e->phi_value_.value_or(true)) {
-      // Track excluded edges (ϕ = 0) so that their variables can be set in the
-      // optimization result.
+    // If an edge is turned off (ϕ = 0) or excluded by preprocessing, don't
+    // include it in the optimization.
+    if (!e->phi_value_.value_or(true) ||
+        unusable_edges.find(edge_id) != unusable_edges.end()) {
+      // Track excluded edges (ϕ = 0 and preprocessed) so that their variables
+      // can be set in the optimization result.
       excluded_edges.emplace_back(e.get());
       if (options.convex_relaxation) {
         Variable phi("phi_excluded");
@@ -683,6 +832,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   }
   result.set_decision_variable_index(decision_variable_index);
   result.set_x_val(x_val);
+
   return result;
 }
 
