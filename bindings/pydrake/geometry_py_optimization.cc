@@ -348,15 +348,32 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.convex_relaxation.doc)
         .def_readwrite("preprocessing",
             &GraphOfConvexSetsOptions::preprocessing, cls_doc.preprocessing.doc)
+        .def_readwrite("max_rounded_paths",
+            &GraphOfConvexSetsOptions::max_rounded_paths,
+            cls_doc.max_rounded_paths.doc)
+        .def_readwrite("max_rounding_trials",
+            &GraphOfConvexSetsOptions::max_rounding_trials,
+            cls_doc.max_rounding_trials.doc)
+        .def_readwrite("flow_tolerance",
+            &GraphOfConvexSetsOptions::flow_tolerance,
+            cls_doc.flow_tolerance.doc)
+        .def_readwrite("rounding_seed",
+            &GraphOfConvexSetsOptions::rounding_seed, cls_doc.rounding_seed.doc)
         .def("__repr__", [](const GraphOfConvexSetsOptions& self) {
           return py::str(
               "GraphOfConvexSetsOptions("
               "convex_relaxation={}, "
               "preprocessing={}, "
+              "max_rounded_paths={}, "
+              "max_rounding_trials={}, "
+              "flow_tolerance={}, "
+              "rounding_seed={}, "
               "solver={}, "
               "solver_options={}, "
               ")")
-              .format(self.convex_relaxation, self.preprocessing, self.solver,
+              .format(self.convex_relaxation, self.preprocessing,
+                  self.max_rounded_paths, self.max_rounding_trials,
+                  self.flow_tolerance, self.rounding_seed, self.solver,
                   self.solver_options);
         });
 

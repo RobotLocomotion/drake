@@ -13,6 +13,7 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/clp_solver.h"
+#include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mosek_solver.h"
@@ -1214,6 +1215,109 @@ TEST_F(PreprocessShortestPathTest, CheckResults) {
     EXPECT_NEAR(e->GetSolutionCost(result1), e->GetSolutionCost(result2),
                 1e-10);
   }
+}
+
+/* This test rounds the shortest path on a graph with two paths around an
+obstacle.
+┌──────┐     ┌────┐     ┌────┐
+|source├────►│ p1 │◄───►│ p3 │─────────┐
+└───┬──┘     └─▲──┘     └─▲──┘         |
+    │          |          |            |
+    │        ┌─▼──┐     ┌─▼──┐     ┌───▼────┐
+    └───────►│ p2 │◄───►│ p4 │────►│ target │
+             └────┘     └────┘     └────────┘
+
+*/
+GTEST_TEST(ShortestPathTest, RoundedSolution) {
+  GraphOfConvexSets spp;
+
+  Vertex* source = spp.AddVertex(Point(Vector2d(-1.5, -1.5)));
+  Vertex* target = spp.AddVertex(Point(Vector2d(1.5, 1.5)));
+  Vertex* p1 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(2, -1)));
+  Vertex* p2 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, -2), Vector2d(-1, 2)));
+  Vertex* p3 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(1, -2), Vector2d(2, 2)));
+  Vertex* p4 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, 1), Vector2d(2, 2)));
+
+  // Edges pointing towards target
+  spp.AddEdge(*source, *p1);
+  spp.AddEdge(*source, *p2);
+  spp.AddEdge(*p1, *p3);
+  spp.AddEdge(*p2, *p4);
+  spp.AddEdge(*p3, *target);
+  spp.AddEdge(*p4, *target);
+
+  // Edges between parallel vertices
+  spp.AddEdge(*p1, *p2);
+  spp.AddEdge(*p2, *p1);
+  spp.AddEdge(*p3, *p4);
+  spp.AddEdge(*p4, *p3);
+
+  // Edges pointing towards source
+  spp.AddEdge(*p3, *p1);
+  spp.AddEdge(*p4, *p2);
+
+  // |xu - xv|₂
+  Matrix<double, 2, 4> A;
+  A.leftCols(2) = Matrix2d::Identity();
+  A.rightCols(2) = -Matrix2d::Identity();
+  auto cost = std::make_shared<solvers::L2NormCost>(A, Vector2d::Zero());
+
+  for (const auto& e : spp.Edges()) {
+    if (e->u().id() != source->id()) {
+      e->AddCost(solvers::Binding(cost, {e->xu(), e->xv()}));
+    }
+  }
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 0;
+  auto relaxed_result =
+      spp.SolveShortestPath(source->id(), target->id(), options);
+  ASSERT_TRUE(relaxed_result.is_success());
+
+  options.preprocessing = true;
+  options.max_rounded_paths = 10;
+  auto rounded_result =
+      spp.SolveShortestPath(source->id(), target->id(), options);
+  ASSERT_TRUE(rounded_result.is_success());
+
+  EXPECT_LT(relaxed_result.get_optimal_cost(),
+            rounded_result.get_optimal_cost());
+
+  const auto& edges = spp.Edges();
+  for (size_t ii = 0; ii < edges.size(); ++ii) {
+    if (ii < 6) {
+      if (relaxed_result.get_solver_id() == solvers::CsdpSolver::id()) {
+        // Csdp does not balance the two paths as closely as other solvers.
+        EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0.5, 1e-2);
+      } else {
+        EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0.5, 1e-6);
+      }
+    } else if (ii < 10) {
+      EXPECT_LT(relaxed_result.GetSolution(edges[ii]->phi()), 0.5);
+      EXPECT_GT(relaxed_result.GetSolution(edges[ii]->phi()), 0);
+    } else {
+      EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0, 1e-6);
+    }
+    EXPECT_TRUE(rounded_result.GetSolution(edges[ii]->phi()) == 0 ||
+                rounded_result.GetSolution(edges[ii]->phi()) == 1);
+  }
+
+  if (!MixedIntegerSolverAvailable()) {
+    return;
+  }
+
+  options.convex_relaxation = false;
+  options.preprocessing = false;
+  options.max_rounded_paths = 0;
+  auto mip_result = spp.SolveShortestPath(source->id(), target->id(), options);
+  EXPECT_NEAR(rounded_result.get_optimal_cost(), mip_result.get_optimal_cost(),
+              2e-6);
 }
 
 GTEST_TEST(ShortestPathTest, TobiasToyExample) {
