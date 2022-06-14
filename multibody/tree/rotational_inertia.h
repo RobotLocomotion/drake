@@ -30,10 +30,8 @@ namespace multibody {
 /// filled with NaNs or construct inertias that are consistent with the default
 /// values specified in the SDFormat <inertial> tag, found at:
 /// http://sdformat.org/spec?elem=link
-enum class InertiaValue {
-  kNaN,
-  kSdf
-};
+enum class InertiaValue {kNaN, kSdf};
+
 /// This class describes the mass distribution (inertia properties) of a
 /// body or composite body about a particular point.  Herein, "composite body"
 /// means one body or a collection of bodies that are welded together.  In this
