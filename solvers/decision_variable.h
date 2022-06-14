@@ -25,7 +25,7 @@ using VariableRefList = std::list<Eigen::Ref<const VectorXDecisionVariable>>;
  * Concatenates each element in \p var_list into a single Eigen vector of
  * decision variables, returns this concatenated vector.
  */
-VectorXDecisionVariable ConcatenateVariableRefList(
+[[nodiscard]] VectorXDecisionVariable ConcatenateVariableRefList(
     const VariableRefList& var_list);
 }  // end namespace solvers
 }  // end namespace drake

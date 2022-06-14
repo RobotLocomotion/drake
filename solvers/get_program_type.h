@@ -12,6 +12,6 @@ namespace solvers {
  * either an LP or an SDP), then we choose the type corresponding to a smaller
  * set of programs (LP in this case).
  */
-ProgramType GetProgramType(const MathematicalProgram& prog);
+[[nodiscard]] ProgramType GetProgramType(const MathematicalProgram& prog);
 }  // namespace solvers
 }  // namespace drake

@@ -116,51 +116,58 @@ class SdpaFreeFormat {
 
   ~SdpaFreeFormat();
 
-  const std::vector<BlockInX>& X_blocks() const { return X_blocks_; }
+  [[nodiscard]] const std::vector<BlockInX>& X_blocks() const {
+    return X_blocks_;
+  }
 
   using FreeVariableIndex = TypeSafeIndex<class FreeVariableTag>;
 
-  const std::vector<std::variant<DecisionVariableInSdpaX, FreeVariableIndex,
-                                 double, std::nullptr_t>>&
+  [[nodiscard]] const std::vector<std::variant<
+      DecisionVariableInSdpaX, FreeVariableIndex, double, std::nullptr_t>>&
   prog_var_in_sdpa() const {
     return prog_var_in_sdpa_;
   }
 
-  const std::vector<std::vector<Eigen::Triplet<double>>>& A_triplets() const {
+  [[nodiscard]] const std::vector<std::vector<Eigen::Triplet<double>>>&
+  A_triplets() const {
     return A_triplets_;
   }
 
-  const std::vector<Eigen::Triplet<double>>& B_triplets() const {
+  [[nodiscard]] const std::vector<Eigen::Triplet<double>>& B_triplets() const {
     return B_triplets_;
   }
 
   /** The right-hand side of the linear equality constraints. */
-  const Eigen::VectorXd& g() const { return g_; }
+  [[nodiscard]] const Eigen::VectorXd& g() const { return g_; }
 
   int num_X_rows() const { return num_X_rows_; }
 
-  int num_free_variables() const { return num_free_variables_; }
+  [[nodiscard]] int num_free_variables() const { return num_free_variables_; }
 
-  const std::vector<Eigen::Triplet<double>>& C_triplets() const {
+  [[nodiscard]] const std::vector<Eigen::Triplet<double>>& C_triplets() const {
     return C_triplets_;
   }
 
-  const std::vector<Eigen::Triplet<double>>& d_triplets() const {
+  [[nodiscard]] const std::vector<Eigen::Triplet<double>>& d_triplets() const {
     return d_triplets_;
   }
 
-  const std::vector<Eigen::SparseMatrix<double>>& A() const { return A_; }
+  [[nodiscard]] const std::vector<Eigen::SparseMatrix<double>>& A() const {
+    return A_;
+  }
 
-  const Eigen::SparseMatrix<double>& B() const { return B_; }
+  [[nodiscard]] const Eigen::SparseMatrix<double>& B() const { return B_; }
 
-  const Eigen::SparseMatrix<double>& C() const { return C_; }
+  [[nodiscard]] const Eigen::SparseMatrix<double>& C() const { return C_; }
 
-  const Eigen::SparseMatrix<double>& d() const { return d_; }
+  [[nodiscard]] const Eigen::SparseMatrix<double>& d() const { return d_; }
 
   /** The SDPA format doesn't include the constant term in the cost, but
    * MathematicalProgram does. We store the constant cost term here.
    */
-  double constant_min_cost_term() const { return constant_min_cost_term_; }
+  [[nodiscard]] double constant_min_cost_term() const {
+    return constant_min_cost_term_;
+  }
 
   /**
    * For the following problem
