@@ -46,8 +46,8 @@ class UnitInertia : public RotationalInertia<T> {
   /// If inertiaValue is omitted or inertiaValue is InertiaValue::kNaN, the
   /// constructed unit inertia has moments and products of inertia set to NaN,
   /// which can be helpful in quickly detecting an uninitialized unit inertia.
-  /// If inertiaValue is InertiaValue::kSdf, the unit inertia has moments of
-  /// inertia Ixx = Iyy = Izz = 1 and products of inertia Ixy = Ixz = Iyx = 0.
+  /// If inertiaValue is InertiaValue::kSdformat, the unit inertia has moments
+  /// of inertia Ixx = Iyy = Izz = 1 and products of inertia Ixy = Ixz = Iyx = 0.
   explicit UnitInertia(InertiaValue inertiaValue = InertiaValue::kNaN)
       : RotationalInertia<T>(inertiaValue) {}
 
