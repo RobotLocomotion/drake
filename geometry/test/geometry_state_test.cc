@@ -104,15 +104,15 @@ class GeometryStateTester {
   }
 
   const IdPoseMap<T>& get_geometry_world_poses() const {
-    return state_->X_WGs_;
+    return state_->kinematics_data_.X_WGs;
   }
 
   const vector<RigidTransform<T>>& get_frame_world_poses() const {
-    return state_->X_WF_;
+    return state_->kinematics_data_.X_WFs;
   }
 
   const vector<RigidTransform<T>>& get_frame_parent_poses() const {
-    return state_->X_PF_;
+    return state_->kinematics_data_.X_PFs;
   }
 
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses) {

@@ -54,6 +54,47 @@ using GeometryIdSet = std::unordered_set<GeometryId>;
 
 //@}
 
+// TODO(xuchenhan-tri): These data should live in cache entries. Furthermore,
+// they should be broken up by source so that inputs can be pulled
+// independently. For now, they are big blobs of memory.
+// Kinematics data that depend on time-dependent input values (e.g., current
+// frame poses).
+// @tparam_default_scalar
+template <typename T>
+struct KinematicsData {
+  int num_frames() const { return X_WFs.size(); }
+
+  int num_deformable_geometries() const { return q_WGs.size(); }
+
+  // Map from a frame's index to the _current_ pose of the frame F it identifies
+  // relative to its parent frame P, i.e., X_PF.
+  std::vector<math::RigidTransform<T>> X_PFs;
+
+  // The pose of every geometry relative to the _world_ frame (regardless of
+  // roles) keyed by the corresponding geometry's id. After a complete state
+  // update from input poses,
+  //   X_WGs[i] == X_WFₙ · X_FₙFₙ₋₁ · ... · X_F₁F · G_i.X_FG()
+  // Where F is the parent frame of geometry G_i, Fₖ₊₁ is the parent frame of
+  // frame Fₖ, and the world frame W is the parent of frame Fₙ.
+  // In other words, it is the full evaluation of the kinematic chain from the
+  // geometry to the world frame.
+  std::unordered_map<GeometryId, math::RigidTransform<T>> X_WGs;
+
+  // The configuration of every deformable geometry relative to the _world_
+  // frame (regardless of roles) keyed by the corresponding geometry's id.
+  std::unordered_map<GeometryId, VectorX<T>> q_WGs;
+
+  // The pose of each frame relative to the _world_ frame.
+  // Furthermore, after a
+  // complete state update from input poses,
+  //   X_WFs[i] == X_WFₙ X_FₙFₙ₋₁ ... X_Fᵢ₊₂Fᵢ₊₁ X_PF[i]
+  // Where Fᵢ₊₁ is the parent frame of frame i, Fₖ₊₁ is the parent frame of
+  // frame Fₖ, and the world frame W is the parent of frame Fₙ.
+  // In other words, it is the full evaluation of the kinematic chain from
+  // frame i to the world frame.
+  std::vector<math::RigidTransform<T>> X_WFs;
+};
+
 // TODO(SeanCurtis-TRI): Move GeometryState into `internal` namespace (and then
 //  I can kill the `@note` in the class documentation).
 
@@ -147,9 +188,7 @@ class GeometryState {
   std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
 
   /** Implementation of SceneGraphInspector::GetGeometryVersion().  */
-  const GeometryVersion& geometry_version() const {
-      return geometry_version_;
-  }
+  const GeometryVersion& geometry_version() const { return geometry_version_; }
 
   //@}
 
@@ -427,7 +466,8 @@ class GeometryState {
 
   /** Implementation of QueryObject::ComputePointPairPenetration().  */
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const {
-    return geometry_engine_->ComputePointPairPenetration(X_WGs_);
+    return geometry_engine_->ComputePointPairPenetration(
+        kinematics_data_.X_WGs);
   }
 
   /** Implementation of QueryObject::ComputeContactSurfaces().  */
@@ -436,7 +476,8 @@ class GeometryState {
                             std::vector<ContactSurface<T>>>
   ComputeContactSurfaces(
       HydroelasticContactRepresentation representation) const {
-    return geometry_engine_->ComputeContactSurfaces(representation, X_WGs_);
+    return geometry_engine_->ComputeContactSurfaces(representation,
+                                                    kinematics_data_.X_WGs);
   }
 
   /** Implementation of QueryObject::ComputeContactSurfacesWithFallback().  */
@@ -449,7 +490,7 @@ class GeometryState {
     DRAKE_DEMAND(surfaces != nullptr);
     DRAKE_DEMAND(point_pairs != nullptr);
     return geometry_engine_->ComputeContactSurfacesWithFallback(
-        representation, X_WGs_, surfaces, point_pairs);
+        representation, kinematics_data_.X_WGs, surfaces, point_pairs);
   }
 
   /** Implementation of QueryObject::FindCollisionCandidates().  */
@@ -458,9 +499,7 @@ class GeometryState {
   }
 
   /** Implementation of QueryObject::HasCollisions().  */
-  bool HasCollisions() const {
-    return geometry_engine_->HasCollisions();
-  }
+  bool HasCollisions() const { return geometry_engine_->HasCollisions(); }
 
   //@}
 
@@ -487,22 +526,22 @@ class GeometryState {
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       double max_distance) const {
     return geometry_engine_->ComputeSignedDistancePairwiseClosestPoints(
-        X_WGs_, max_distance);
+        kinematics_data_.X_WGs, max_distance);
   }
 
   /** Implementation of
    QueryObject::ComputeSignedDistancePairClosestPoints().  */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
       GeometryId id_A, GeometryId id_B) const {
-    return geometry_engine_->ComputeSignedDistancePairClosestPoints(id_A, id_B,
-                                                                    X_WGs_);
+    return geometry_engine_->ComputeSignedDistancePairClosestPoints(
+        id_A, id_B, kinematics_data_.X_WGs);
   }
 
   /** Implementation of QueryObject::ComputeSignedDistanceToPoint().  */
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ, double threshold) const {
-    return geometry_engine_->ComputeSignedDistanceToPoint(p_WQ, X_WGs_,
-                                                          threshold);
+    return geometry_engine_->ComputeSignedDistanceToPoint(
+        p_WQ, kinematics_data_.X_WGs, threshold);
   }
 
   //@}
@@ -608,14 +647,15 @@ class GeometryState {
         dest[i] = s[i].template cast<T>();
       }
     };
-    convert_pose_vector(source.X_PF_, &X_PF_);
-    convert_pose_vector(source.X_WF_, &X_WF_);
+    convert_pose_vector(source.kinematics_data_.X_PFs, &kinematics_data_.X_PFs);
+    convert_pose_vector(source.kinematics_data_.X_WFs, &kinematics_data_.X_WFs);
 
     // Now convert the id -> pose map.
     {
-      std::unordered_map<GeometryId, math::RigidTransform<T>>& dest = X_WGs_;
+      std::unordered_map<GeometryId, math::RigidTransform<T>>& dest =
+          kinematics_data_.X_WGs;
       const std::unordered_map<GeometryId, math::RigidTransform<U>>& s =
-          source.X_WGs_;
+          source.kinematics_data_.X_WGs;
       for (const auto& id_pose_pair : s) {
         const GeometryId id = id_pose_pair.first;
         const math::RigidTransform<U>& X_WG_source = id_pose_pair.second;
@@ -625,8 +665,9 @@ class GeometryState {
 
     // Now convert the id -> configuration map.
     {
-      std::unordered_map<GeometryId, VectorX<T>>& dest = q_WGs_;
-      const std::unordered_map<GeometryId, VectorX<U>>& s = source.q_WGs_;
+      std::unordered_map<GeometryId, VectorX<T>>& dest = kinematics_data_.q_WGs;
+      const std::unordered_map<GeometryId, VectorX<U>>& s =
+          source.kinematics_data_.q_WGs;
       for (const auto& id_configuration_pair : s) {
         const GeometryId id = id_configuration_pair.first;
         const VectorX<U>& q_WG_source = id_configuration_pair.second;
@@ -650,8 +691,8 @@ class GeometryState {
   // exception to be thrown. The ids can be optionally filtered based on role.
   // If `role` is nullopt, no filtering takes place. Otherwise, just those
   // geometries with the given role will be returned.
-  std::unordered_set<GeometryId> CollectIds(
-      const GeometrySet& geometry_set, std::optional<Role> role) const;
+  std::unordered_set<GeometryId> CollectIds(const GeometrySet& geometry_set,
+                                            std::optional<Role> role) const;
 
   // Sets the kinematic poses for the frames indicated by the given ids.
   // @param poses The frame id and pose values.
@@ -856,44 +897,11 @@ class GeometryState {
   //      index of this vector.
   std::vector<FrameId> frame_index_to_id_map_;
 
-  // ---------------------------------------------------------------------
-  // These values depend on time-dependent input values (e.g., current frame
-  // poses).
-
-  // TODO(SeanCurtis-TRI): These values are place holders. Ultimately, they
-  // will live in the cache. Furthermore, they will be broken up by source
-  // so that inputs can be pulled independently. This work will be done when
-  // the cache PR lands. For now, they are big blobs of memory.
-
-  // Map from a frame's index to the _current_ pose of the frame F it identifies
-  // relative to its parent frame P, i.e., X_PF.
-  // TODO(SeanCurtis-TRI): Rename this to X_PFs_ to reflect multiplicity.
-  std::vector<math::RigidTransform<T>> X_PF_;
-
-  // The pose of every geometry relative to the _world_ frame (regardless of
-  // roles) keyed by the corresponding geometry's id. After a complete state
-  // update from input poses,
-  //   X_WGs_[i] == X_WFₙ · X_FₙFₙ₋₁ · ... · X_F₁F · G_i.X_FG()
-  // Where F is the parent frame of geometry G_i, Fₖ₊₁ is the parent frame of
-  // frame Fₖ, and the world frame W is the parent of frame Fₙ.
-  // In other words, it is the full evaluation of the kinematic chain from the
-  // geometry to the world frame.
-  std::unordered_map<GeometryId, math::RigidTransform<T>> X_WGs_;
-
-  // The configuration of every deformable geometry relative to the _world_
-  // frame (regardless of roles) keyed by the corresponding geometry's id.
-  std::unordered_map<GeometryId, VectorX<T>> q_WGs_;
-
-  // The pose of each frame relative to the _world_ frame.
-  // frames_.size() == X_WF_.size() is an invariant. Furthermore, after a
-  // complete state update from input poses,
-  //   X_WF_[i] == X_WFₙ X_FₙFₙ₋₁ ... X_Fᵢ₊₂Fᵢ₊₁ X_PF_[i]
-  // Where Fᵢ₊₁ is the parent frame of frame i, Fₖ₊₁ is the parent frame of
-  // frame Fₖ, and the world frame W is the parent of frame Fₙ.
-  // In other words, it is the full evaluation of the kinematic chain from
-  // frame i to the world frame.
-  // TODO(SeanCurtis-TRI): Rename this to X_WFs_ to reflect multiplicity.
-  std::vector<math::RigidTransform<T>> X_WF_;
+  // Kinematics data for all frames and all deformable geometries.
+  // frames_.size() == kinematics_data_.num_frames() and
+  // NumDeformableGeometries() == kinematics_data_.num_deformable_geometries()
+  // are two invariants.
+  KinematicsData<T> kinematics_data_;
 
   // The underlying geometry engine. The topology of the engine does _not_
   // change with respect to time. But its values do. This straddles the two
