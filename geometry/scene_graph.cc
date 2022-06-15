@@ -428,7 +428,8 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
   using std::to_string;
 
   const GeometryState<T>& state = geometry_state(context);
-  KinematicsData<T>& kinematics_data = state.mutable_kinematics_data();
+  internal::KinematicsData<T>& kinematics_data =
+      state.mutable_kinematics_data();
 
   // Process all sources *except*:
   //   - the internal source and
@@ -464,7 +465,8 @@ template <typename T>
 void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
                                             int*) const {
   const GeometryState<T>& state = geometry_state(context);
-  KinematicsData<T>& kinematics_data = state.mutable_kinematics_data();
+  internal::KinematicsData<T>& kinematics_data =
+      state.mutable_kinematics_data();
   // Process all sources *except*:
   //   - the internal source and
   //   - sources with no deformable geometries.

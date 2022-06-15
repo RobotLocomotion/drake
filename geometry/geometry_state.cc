@@ -1154,7 +1154,7 @@ unordered_set<GeometryId> GeometryState<T>::CollectIds(
 template <typename T>
 void GeometryState<T>::SetFramePoses(
     const SourceId source_id, const FramePoseVector<T>& poses,
-    KinematicsData<T>* kinematics_data) const {
+    internal::KinematicsData<T>* kinematics_data) const {
   // TODO(SeanCurtis-TRI): Down the road, make this validation depend on
   // ASSERT_ARMED.
   ValidateFrameIds(source_id, poses);
@@ -1168,7 +1168,7 @@ void GeometryState<T>::SetFramePoses(
 template <typename T>
 void GeometryState<T>::SetGeometryConfiguration(
     SourceId source_id, const GeometryConfigurationVector<T>& configurations,
-    KinematicsData<T>* kinematics_data) const {
+    internal::KinematicsData<T>* kinematics_data) const {
   const GeometryIdSet& g_ids =
       GetValueOrThrow(source_id, source_deformable_geometry_id_map_);
   for (const auto g_id : g_ids) {
@@ -1237,7 +1237,7 @@ void GeometryState<T>::ValidateRegistrationAndSetTopology(
 
 template <typename T>
 void GeometryState<T>::FinalizePoseUpdate(
-      const KinematicsData<T>& kinematics_data,
+      const internal::KinematicsData<T>& kinematics_data,
       internal::ProximityEngine<T>* proximity_engine,
       std::vector<render::RenderEngine*> render_engines) const {
   proximity_engine->UpdateWorldPoses(kinematics_data.X_WGs);
@@ -1308,7 +1308,8 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
 template <typename T>
 void GeometryState<T>::UpdatePosesRecursively(
     const internal::InternalFrame& frame, const RigidTransform<T>& X_WP,
-    const FramePoseVector<T>& poses, KinematicsData<T>* kinematics_data) const {
+    const FramePoseVector<T>& poses,
+    internal::KinematicsData<T>* kinematics_data) const {
   const auto frame_id = frame.id();
   const auto& X_PF = poses.value(frame_id);
   // Cache this transform for later use.
