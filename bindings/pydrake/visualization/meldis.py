@@ -257,6 +257,8 @@ class _ContactApplet:
         params.prefix = "/CONTACT_RESULTS/hydroelastic"
         self._hydro_helper = _HydroelasticContactVisualizer(meshcat, params)
 
+
+
     def on_contact_results(self, message):
         """Handler for lcmt_contact_results_for_viz. Note that only point
            hydroelastic contact force and moment vectors are shown; contact
@@ -272,6 +274,29 @@ class _ContactApplet:
                 contact_point=lcm_item.contact_point))
         self._point_helper.Update(viz_items)
 
+        # Converts poly_data from a hydro lcm message to
+        def convert_faces(poly_data):
+            poly_index = 0
+            faces = []
+            while(poly_index < len(poly_data)):
+                ci = poly_data[poly_index]
+                p0 = poly_index + 1
+                v0 = poly_data[p0]
+                for i in range(1, ci-1):
+                    v1 = poly_data[p0 + i]
+                    v2 = poly_data[p0 + i+1]
+                faces.append([v0, v1, v2])
+                poly_index += ci + 1
+            return np.array(faces).transpose()
+
+        def convert_verts(p_WV):
+            verts = np.zeros((3, len(p_WV)))
+            for i in range(len(p_WV)):
+                verts[0, i] = p_WV[i].x
+                verts[1, i] = p_WV[i].y
+                verts[2, i] = p_WV[i].z
+            return verts
+
         # Handle hydroelastic contact pairs
         viz_items = []
         for lcm_item in message.hydroelastic_contacts:
@@ -280,7 +305,10 @@ class _ContactApplet:
                 body_B=lcm_item.body2_name,
                 centroid_W=lcm_item.centroid_W,
                 force_C_W=lcm_item.force_C_W,
-                moment_C_W=lcm_item.moment_C_W))
+                moment_C_W=lcm_item.moment_C_W,
+                p_WV=convert_verts(lcm_item.p_WV),
+                faces=convert_faces(lcm_item.poly_data),
+                pressure=lcm_item.pressure))
         self._hydro_helper.Update(viz_items)
 
 

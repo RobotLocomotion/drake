@@ -109,6 +109,25 @@ void HydroelasticContactVisualizer::Update(
           RigidTransformd(RotationMatrixd::MakeXRotation(M_PI),
                           Vector3d{0, 0, height + arrowhead_height}));
     }
+
+    // Contact surface
+    {
+      double min_pressure = item.pressure.minCoeff();
+      double max_pressure = item.pressure.maxCoeff();
+
+      Eigen::Matrix3Xd colors(3, item.pressure.size());
+      for (int i = 0; i < item.pressure.size(); ++i) {
+        colors(0, i) = std::sqrt((item.pressure[i] - min_pressure) / max_pressure);
+        colors(1, i) = 0.0;
+        colors(2, i) = 0.0;
+      }
+
+      meshcat_->SetTriangleColorMesh(path + "/contact_surface", item.p_WV,
+                                item.faces, colors,
+                                true, 2.0);
+      meshcat_->SetTransform(path + "/contact_surface",
+                             RigidTransformd(-item.centroid_W));
+    }
   }
 
   // Update meshcat visibility to match the active status.

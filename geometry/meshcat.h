@@ -271,6 +271,13 @@ class Meshcat {
                        bool wireframe = false,
                        double wireframe_line_width = 1.0);
 
+  void SetTriangleColorMesh(std::string_view path,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                       const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
+                       bool wireframe = false,
+                       double wireframe_line_width = 1.0);
+
   // TODO(russt): Provide a more general SetObject(std::string_view path,
   // msgpack::object object) that would allow users to pass through anything
   // that meshcat.js / three.js can handle.  Possible this could use
