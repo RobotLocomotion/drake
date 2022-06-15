@@ -185,6 +185,23 @@ class SurfaceVolumeIntersector {
    (one sample per polygon in `surface_MN_M`). */
   std::vector<Vector3<T>>& mutable_grad_eM_M() { return grad_eM_Ms_; }
 
+ protected:
+  /* Subclass of SurfaceVolumeIntersector can override this function to add
+   more data per contact polygon. For example,
+   DeformableSurfaceVolumeIntersector is a subclass of
+   SurfaceVolumeIntersector.
+   DeformableSurfaceVolumeIntersector::CalcContactPolygon() can call
+   SurfaceVolumeIntersector::CalcContactPolygon() and then add more data
+   on its contact polygon.  */
+  void CalcContactPolygon(
+      const VolumeMeshFieldLinear<double, double>& volume_field_M,
+      const TriangleSurfaceMesh<double>& surface_N,
+      const math::RigidTransform<T>& X_MN,
+      const math::RigidTransform<double>& X_MN_d,
+      MeshBuilder* builder_M,
+      const bool filter_face_normal_along_field_gradient,
+      const int tet_index, const int tri_index);
+
  private:
   /* Intersects a triangle with a tetrahedron, returning the portion of the
    triangle with non-zero area contained in the tetrahedron.

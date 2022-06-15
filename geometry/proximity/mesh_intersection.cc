@@ -290,71 +290,78 @@ void SurfaceVolumeIntersector<MeshBuilder, BvType>::SampleVolumeFieldOnSurface(
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
     const math::RigidTransform<T>& X_MN, MeshBuilder* builder_M,
     const bool filter_face_normal_along_field_gradient) {
-  const VolumeMesh<double>& vol_mesh_M = volume_field_M.mesh();
-
   const math::RigidTransform<double>& X_MN_d = convert_to_double(X_MN);
-  auto callback = [&volume_field_M, &surface_N,
-                   &vol_mesh_M, &X_MN_d, &X_MN,
-                   &builder_M, &filter_face_normal_along_field_gradient,
-                   this](int tet_index, int tri_index) -> BvttCallbackResult {
-    if (filter_face_normal_along_field_gradient) {
-      if (!this->IsFaceNormalAlongPressureGradient(
-          volume_field_M, surface_N, X_MN_d, tet_index, tri_index)) {
-        return BvttCallbackResult::Continue;
-      }
-    }
 
-    // TODO(SeanCurtis-TRI): This redundantly transforms surface mesh vertex
-    //  positions. Specifically, each vertex will be transformed M times (once
-    //  per tetrahedron). Even with broadphase culling, this vertex will get
-    //  transformed once for each tet-tri pair where the tri is incidental
-    //  to the vertex and the tet-tri pair can't be conservatively culled.
-    //  This is O(mn), where m is the number of faces incident to the vertex
-    //  and n is the number of tet BVs that overlap this triangle BV. However,
-    //  if the broadphase culling determines the surface and volume are
-    //  disjoint regions, *no* vertices will be transformed. Unclear what the
-    //  best balance for best average performance.
-    const std::vector<Vector3<T>>& polygon_vertices_M =
-        this->ClipTriangleByTetrahedron(tet_index, vol_mesh_M, tri_index,
-                                        surface_N, X_MN);
+  std::vector<std::pair<int, int>> candidate_tet_tri_pairs;
+  bvh_M.Collide(bvh_N, X_MN_d,
+                [&candidate_tet_tri_pairs](
+                    int tet_index, int tri_index) -> BvttCallbackResult {
+                  candidate_tet_tri_pairs.emplace_back(tet_index, tri_index);
+                  return BvttCallbackResult::Continue;
+                });
 
-    if (polygon_vertices_M.size() < 3) return BvttCallbackResult::Continue;
-
-    // Add the vertices to the builder (with corresponding pressure values) and
-    // construct index-based polygon representation.
-    polygon_vertex_indices_.clear();
-    for (const auto& p_MV : polygon_vertices_M) {
-      polygon_vertex_indices_.push_back(builder_M->AddVertex(
-          p_MV, volume_field_M.EvaluateCartesian(tet_index, p_MV)));
-    }
-
-    const Vector3<T> nhat_M =
-        X_MN.rotation() * surface_N.face_normal(tri_index).template cast<T>();
-    // The gradient of the pressure field in the volume mesh is *also* the
-    // gradient of the pressure field on the contact surface. That's not
-    // generally true, but is for the special case of compliant-rigid case.
-    // So, we use it both for AddPolygon() as grad_e_MN_M and as grad_e_M when
-    // we store it per-face below.
-    const Vector3<T> grad_e_MN_M = volume_field_M.EvaluateGradient(tet_index);
-    const int num_new_faces = builder_M->AddPolygon(
-        polygon_vertex_indices_, nhat_M, grad_e_MN_M, tet_index);
-
-    // TODO(SeanCurtis-TRI) This represents a *second* iteration on the vertices
-    //  of the polygon. Rolling this into the builder would allow us to reduce
-    //  the loops.
-    // Store the constituent pressure gradient values from the soft mesh for
-    // each face in the contact surface.
-    for (int i = 0; i < num_new_faces; ++i) {
-      this->grad_eM_Ms_.push_back(grad_e_MN_M);
-    }
-
-    return BvttCallbackResult::Continue;
-  };
-  bvh_M.Collide(bvh_N, X_MN_d, callback);
+  for (const auto& [tet_index, tri_index] : candidate_tet_tri_pairs) {
+    CalcContactPolygon(volume_field_M,
+                       surface_N, X_MN, X_MN_d,
+                       builder_M,
+                       filter_face_normal_along_field_gradient,
+                       tet_index, tri_index);
+  }
 
   if (builder_M->num_faces() == 0) return;
-
   std::tie(mesh_M_, field_M_) = builder_M->MakeMeshAndField();
+}
+
+template <typename MeshBuilder, typename BvType>
+void SurfaceVolumeIntersector<MeshBuilder, BvType>::CalcContactPolygon(
+    const VolumeMeshFieldLinear<double, double>& volume_field_M,
+    const TriangleSurfaceMesh<double>& surface_N,
+    const math::RigidTransform<T>& X_MN,
+    const math::RigidTransform<double>& X_MN_d,
+    MeshBuilder* builder_M,
+    const bool filter_face_normal_along_field_gradient,
+    const int tet_index, const int tri_index) {
+  const VolumeMesh<double>& vol_mesh_M = volume_field_M.mesh();
+
+  if (filter_face_normal_along_field_gradient) {
+    if (!this->IsFaceNormalAlongPressureGradient(
+        volume_field_M, surface_N, X_MN_d, tet_index, tri_index)) {
+      return;
+    }
+  }
+  const std::vector<Vector3<T>>& polygon_vertices_M =
+      this->ClipTriangleByTetrahedron(tet_index, vol_mesh_M, tri_index,
+                                      surface_N, X_MN);
+
+  if (polygon_vertices_M.size() < 3) return;
+
+  // Add the vertices to the builder (with corresponding pressure values) and
+  // construct index-based polygon representation.
+  polygon_vertex_indices_.clear();
+  for (const auto& p_MV : polygon_vertices_M) {
+    polygon_vertex_indices_.push_back(builder_M->AddVertex(
+        p_MV, volume_field_M.EvaluateCartesian(tet_index, p_MV)));
+  }
+
+  const Vector3<T> nhat_M =
+      X_MN.rotation() * surface_N.face_normal(tri_index).template cast<T>();
+  // The gradient of the pressure field in the volume mesh is *also* the
+  // gradient of the pressure field on the contact surface. That's not
+  // generally true, but is for the special case of compliant-rigid case.
+  // So, we use it both for AddPolygon() as grad_e_MN_M and as grad_e_M when
+  // we store it per-face below.
+  const Vector3<T> grad_e_MN_M = volume_field_M.EvaluateGradient(tet_index);
+  const int num_new_faces = builder_M->AddPolygon(
+      polygon_vertex_indices_, nhat_M, grad_e_MN_M, tet_index);
+
+  // TODO(SeanCurtis-TRI) This represents a *second* iteration on the vertices
+  //  of the polygon. Rolling this into the builder would allow us to reduce
+  //  the loops.
+  // Store the constituent pressure gradient values from the soft mesh for
+  // each face in the contact surface.
+  for (int i = 0; i < num_new_faces; ++i) {
+    this->grad_eM_Ms_.push_back(grad_e_MN_M);
+  }
 }
 
 template <typename T>
