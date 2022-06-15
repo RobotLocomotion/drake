@@ -58,7 +58,7 @@ class SosConstraintTest : public ::testing::Test {
       // This decision_variable_i in the polynomial should be a decision
       // variable in the MathematicalProgram.
       DRAKE_EXPECT_NO_THROW(
-          prog_.FindDecisionVariableIndex(decision_variable_i));
+          unused(prog_.FindDecisionVariableIndex(decision_variable_i)));
       switch (degree_type) {
         case DegreeType::kAny: {
           break;

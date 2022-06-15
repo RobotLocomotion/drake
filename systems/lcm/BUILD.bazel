@@ -73,9 +73,12 @@ drake_cc_library(
     name = "lcm_interface_system",
     srcs = ["lcm_interface_system.cc"],
     hdrs = ["lcm_interface_system.h"],
+    interface_deps = [
+        "//lcm:drake_lcm_params",
+        "//systems/framework:leaf_system",
+    ],
     deps = [
         "//lcm:drake_lcm",
-        "//systems/framework:leaf_system",
     ],
 )
 

@@ -28,6 +28,13 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+_DM_CONTROL_MUJOCO_FILES = forward_files(
+    srcs = ["@dm_control_internal//:" + x for x in dm_control_mujoco_files()],
+    dest_prefix = "",
+    strip_prefix = "@dm_control_internal//:",
+    visibility = ["//visibility:private"],
+)
+
 drake_cc_package_library(
     name = "parsing",
     visibility = ["//visibility:public"],
@@ -213,6 +220,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
+        ":detail_mujoco_parser",
         ":detail_parsing_workspace",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
@@ -330,7 +338,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//multibody/benchmarks/acrobot:models",
-    ],
+    ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":parser",
         "//common:filesystem",
@@ -421,13 +429,6 @@ drake_cc_googletest(
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
     ],
-)
-
-_DM_CONTROL_MUJOCO_FILES = forward_files(
-    srcs = ["@dm_control_internal//:" + x for x in dm_control_mujoco_files()],
-    dest_prefix = "",
-    strip_prefix = "@dm_control_internal//:",
-    visibility = ["//visibility:private"],
 )
 
 drake_cc_googletest(

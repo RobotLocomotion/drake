@@ -23,7 +23,7 @@ namespace solvers {
  * the constraints, it is guaranteed that b1_and_b2 = b1 ∧ b2.
  * @pre b1, b2, b1_and_b2 are all linear expressions.
  */
-Binding<LinearConstraint> CreateLogicalAndConstraint(
+[[nodiscard]] Binding<LinearConstraint> CreateLogicalAndConstraint(
     const symbolic::Expression& b1, const symbolic::Expression& b2,
     const symbolic::Expression& b1_and_b2);
 
@@ -45,7 +45,7 @@ Binding<LinearConstraint> CreateLogicalAndConstraint(
  * the constraints, it is guaranteed that b1_or_b2 = b1 ∨ b2.
  * @pre b1, b2, b1_or_b2 are all linear expressions.
  */
-Binding<LinearConstraint> CreateLogicalOrConstraint(
+[[nodiscard]] Binding<LinearConstraint> CreateLogicalOrConstraint(
     const symbolic::Expression& b1, const symbolic::Expression& b2,
     const symbolic::Expression& b1_or_b2);
 
@@ -68,7 +68,7 @@ Binding<LinearConstraint> CreateLogicalOrConstraint(
  * the constraints, it is guaranteed that b1_xor_b2 = b1 ⊕ b2.
  * @pre b1, b2, b1_xor_b2 are all linear expressions.
  */
-Binding<LinearConstraint> CreateLogicalXorConstraint(
+[[nodiscard]] Binding<LinearConstraint> CreateLogicalXorConstraint(
     const symbolic::Expression& b1, const symbolic::Expression& b2,
     const symbolic::Expression& b1_xor_b2);
 
@@ -85,7 +85,7 @@ Binding<LinearConstraint> CreateLogicalXorConstraint(
  * function CreateBinaryCodeMatchConstraint({b1, b2, b3}, {0, 1, 1}, match) to
  * create the constraint.
  */
-Binding<LinearConstraint> CreateBinaryCodeMatchConstraint(
+[[nodiscard]] Binding<LinearConstraint> CreateBinaryCodeMatchConstraint(
     const VectorX<symbolic::Expression>& code,
     const Eigen::Ref<const Eigen::VectorXi>& expected,
     const symbolic::Expression& match);

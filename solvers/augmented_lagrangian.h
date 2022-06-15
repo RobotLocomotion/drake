@@ -85,7 +85,7 @@ class AugmentedLagrangianNonsmooth {
    * @return The mathematical program for which the augmented Lagrangian is
    * computed.
    */
-  const MathematicalProgram& prog() const { return *prog_; }
+  [[nodiscard]] const MathematicalProgram& prog() const { return *prog_; }
 
   /**
    * @return Whether the bounding box constraint x_lo <= x <=
@@ -212,7 +212,7 @@ class AugmentedLagrangianSmooth {
    * @return The mathematical program for which the augmented Lagrangian is
    * computed.
    */
-  const MathematicalProgram& prog() const { return *prog_; }
+  [[nodiscard]] const MathematicalProgram& prog() const { return *prog_; }
 
   /**
    * @return Whether the bounding box constraint x_lo <= x <=
