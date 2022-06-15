@@ -464,7 +464,7 @@ template <typename T>
 void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
                                             int*) const {
   const GeometryState<T>& state = geometry_state(context);
-  GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
+  KinematicsData<T>& kinematics_data = state.mutable_kinematics_data();
   // Process all sources *except*:
   //   - the internal source and
   //   - sources with no deformable geometries.
@@ -486,7 +486,7 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
         const auto& configs =
             configuration_port
                 .template Eval<GeometryConfigurationVector<T>>(context);
-        mutable_state.SetGeometryConfiguration(source_id, configs);
+        state.SetGeometryConfiguration(source_id, configs, &kinematics_data);
       }
     }
   }

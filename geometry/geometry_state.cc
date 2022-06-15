@@ -1167,11 +1167,12 @@ void GeometryState<T>::SetFramePoses(
 
 template <typename T>
 void GeometryState<T>::SetGeometryConfiguration(
-    SourceId source_id, const GeometryConfigurationVector<T>& configurations) {
+    SourceId source_id, const GeometryConfigurationVector<T>& configurations,
+    KinematicsData<T>* kinematics_data) const {
   const GeometryIdSet& g_ids =
       GetValueOrThrow(source_id, source_deformable_geometry_id_map_);
   for (const auto g_id : g_ids) {
-    kinematics_data_.q_WGs[g_id] = configurations.value(g_id);
+    kinematics_data->q_WGs[g_id] = configurations.value(g_id);
   }
 }
 

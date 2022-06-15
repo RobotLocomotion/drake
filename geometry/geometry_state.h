@@ -706,9 +706,13 @@ class GeometryState {
 
   // Sets the kinematic configurations for the deformable geometries associated
   // with the given source.
+  // @param[in]  configurations  The geometry id and configuration values.
+  // @param[out] kinematics_data The updated kinematics data that contains the
+  //                             deformable geometry configurations.
   // @pre source_id is a registered source.
   void SetGeometryConfiguration(
-      SourceId source_id, const GeometryConfigurationVector<T>& configurations);
+      SourceId source_id, const GeometryConfigurationVector<T>& configurations,
+      KinematicsData<T>* kinematics_data) const;
 
   // Confirms that the set of ids provided include _all_ of the frames
   // registered to the set's source id and that no extra frames are included.

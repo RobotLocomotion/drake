@@ -125,8 +125,9 @@ class GeometryStateTester {
   }
 
   void SetGeometryConfiguration(
-      SourceId source_id, const GeometryConfigurationVector<T>& configuration) {
-    state_->SetGeometryConfiguration(source_id, configuration);
+      SourceId source_id, const GeometryConfigurationVector<T>& configuration,
+      KinematicsData<T>* kinematics_data) {
+    state_->SetGeometryConfiguration(source_id, configuration, kinematics_data);
   }
 
   void FinalizePoseUpdate() {
@@ -1690,7 +1691,8 @@ TEST_F(GeometryStateTest, SetGeometryConfiguration) {
 
   GeometryConfigurationVector<double> configurations;
   configurations.set_value(g_id, new_configuration);
-  gs_tester_.SetGeometryConfiguration(s_id, configurations);
+  gs_tester_.SetGeometryConfiguration(
+      s_id, configurations, &gs_tester_.mutable_kinematics_data());
   EXPECT_EQ(new_configuration,
             geometry_state_.get_configurations_in_world(g_id));
 }
