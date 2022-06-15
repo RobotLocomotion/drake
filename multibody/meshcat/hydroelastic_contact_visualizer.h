@@ -17,21 +17,30 @@ namespace internal {
 /* Like multibody::HydroelasticContactInfo, but only the visualization info.
    TODO(joemasterjohn): Add the mesh geometry and pressure values. */
 struct HydroelasticContactVisualizerItem {
-  HydroelasticContactVisualizerItem(std::string body_A_, std::string body_B_,
-                                    const Eigen::Vector3d& centroid_W_,
-                                    const Eigen::Vector3d& force_C_W_,
-                                    const Eigen::Vector3d& moment_C_W_)
+  HydroelasticContactVisualizerItem(
+      std::string body_A_, std::string body_B_,
+      const Eigen::Vector3d& centroid_W_, const Eigen::Vector3d& force_C_W_,
+      const Eigen::Vector3d& moment_C_W_,
+      const Eigen::Matrix3Xd& p_WV_,
+      const Eigen::Matrix3Xi& faces_,
+      const Eigen::VectorXd& pressure_)
       : body_A(std::move(body_A_)),
         body_B(std::move(body_B_)),
         centroid_W(centroid_W_),
         force_C_W(force_C_W_),
-        moment_C_W(moment_C_W_) {}
+        moment_C_W(moment_C_W_),
+        p_WV(p_WV_),
+        faces(faces_),
+        pressure(pressure_) {}
 
   std::string body_A;
   std::string body_B;
   Eigen::Vector3d centroid_W;
   Eigen::Vector3d force_C_W;
   Eigen::Vector3d moment_C_W;
+  Eigen::Matrix3Xd p_WV;
+  Eigen::Matrix3Xi faces;
+  Eigen::VectorXd pressure;
 };
 
 /* HydroelasticContactVisualizer publishes hydroelastic contact results for
