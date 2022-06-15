@@ -80,8 +80,7 @@ const VectorX<T>& QueryObject<T>::GetConfigurationsInWorld(
     GeometryId geometry_id) const {
   ThrowIfNotCallable();
 
-  // TODO(xuchenhan-tri): Update this function when mesh vertex positions can be
-  // updated from input ports.
+  FullConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.get_configurations_in_world(geometry_id);
 }
