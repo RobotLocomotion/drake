@@ -100,6 +100,11 @@ enum class ContactModel {
   kPointContactOnly = kPoint,
 };
 
+enum class ContactSolver {
+  kTamsi,
+  kSap,
+};
+
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -1586,6 +1591,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception iff called post-finalize.
   void set_contact_model(ContactModel model);
 
+  /// Sets the contact solver type.
+  /// @throws std::exception iff called post-finalize.
+  void set_contact_solver(ContactSolver solver_type);
 
   /// Return the default value for contact representation, given the desired
   /// time step. Discrete systems default to use polygons; continuous systems
@@ -4853,6 +4861,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // with the default value in multibody_plant_config.h; there are already
   // assertions in the cc file that enforce this.
   ContactModel contact_model_{ContactModel::kHydroelasticWithFallback};
+
+  // The solver type used by the (discrete) plant. Keep this in sync
+  // with the default value in multibody_plant_config.h; there are already
+  // assertions in the cc file that enforce this.
+  ContactSolver solver_type_{ContactSolver::kTamsi};
 
   // User's choice of the representation of contact surfaces in discrete
   // systems. The default value is dependent on whether the system is

@@ -22,6 +22,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/sparse_linear_operator.h"
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
@@ -364,6 +365,8 @@ MultibodyPlant<T>::MultibodyPlant(double time_step)
   DRAKE_DEMAND(contact_model_ == ContactModel::kHydroelasticWithFallback);
   DRAKE_DEMAND(MultibodyPlantConfig{}.contact_model ==
                "hydroelastic_with_fallback");
+  DRAKE_DEMAND(solver_type_ == ContactSolver::kTamsi);
+  DRAKE_DEMAND(MultibodyPlantConfig{}.contact_solver == "tamsi");
 }
 
 template <typename T>
@@ -487,6 +490,12 @@ template <typename T>
 void MultibodyPlant<T>::set_contact_model(ContactModel model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   contact_model_ = model;
+}
+
+template <typename T>
+void MultibodyPlant<T>::set_contact_solver(ContactSolver solver_type) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  solver_type_ = solver_type;
 }
 
 template <typename T>
@@ -806,6 +815,12 @@ void MultibodyPlant<T>::Finalize() {
     ExcludeCollisionsWithVisualGeometry();
   }
   FinalizePlantOnly();
+
+  // Set discrete update manger.
+  if (solver_type_ == ContactSolver::kSap) {
+    SetDiscreteUpdateManager(
+        std::make_unique<internal::CompliantContactManager<T>>());
+  }
 }
 
 template<typename T>

@@ -19,6 +19,8 @@ AddResult AddMultibodyPlant(
   result.plant.set_stiction_tolerance(config.stiction_tolerance);
   result.plant.set_contact_model(
       internal::GetContactModelFromString(config.contact_model));
+  result.plant.set_contact_solver(
+      internal::GetContactSolverFromString(config.contact_solver));
   result.plant.set_contact_surface_representation(
       internal::GetContactSurfaceRepresentationFromString(
           config.contact_surface_representation));
@@ -50,6 +52,27 @@ constexpr std::array<std::pair<ContactModel, const char*>, 3> kContactModels{{
   MakeContactModelPair(ContactModel::kPointContactOnly),
   MakeContactModelPair(ContactModel::kHydroelasticsOnly),
   MakeContactModelPair(ContactModel::kHydroelasticWithFallback),
+}};
+
+// Use a switch() statement here, to ensure the compiler sends us a reminder
+// when somebody add a new value to the enum. New values must be listed here
+// as well as in the list of kContactSolvers below.
+constexpr const char* ContactSolverToChars(ContactSolver contact_solver) {
+  switch (contact_solver) {
+    case ContactSolver::kTamsi:
+      return "tamsi";
+    case ContactSolver::kSap:
+      return "sap";
+  }
+}
+
+constexpr auto MakeContactSolverPair(ContactSolver value) {
+  return std::pair(value, ContactSolverToChars(value));
+}
+
+constexpr std::array<std::pair<ContactSolver, const char*>, 3> kContactSolvers{{
+  MakeContactSolverPair(ContactSolver::kTamsi),
+  MakeContactSolverPair(ContactSolver::kSap),
 }};
 
 // Take an alias to limit verbosity, especially in the constexpr boilerplate.
@@ -91,6 +114,25 @@ ContactModel GetContactModelFromString(std::string_view contact_model) {
 std::string GetStringFromContactModel(ContactModel contact_model) {
   for (const auto& [value, name] : kContactModels) {
     if (value == contact_model) {
+      return name;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
+ContactSolver GetContactSolverFromString(std::string_view contact_solver) {
+  for (const auto& [value, name] : kContactSolvers) {
+    if (name == contact_solver) {
+      return value;
+    }
+  }
+  throw std::logic_error(
+      fmt::format("Unknown contact_solver: '{}'", contact_solver));
+}
+
+std::string GetStringFromContactSolver(ContactSolver contact_solver) {
+  for (const auto& [value, name] : kContactSolvers) {
+    if (value == contact_solver) {
       return name;
     }
   }

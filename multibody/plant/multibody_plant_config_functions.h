@@ -29,6 +29,16 @@ ContactModel GetContactModelFromString(std::string_view contact_model);
 std::string GetStringFromContactModel(ContactModel contact_model);
 
 // (Exposed for unit testing only.)
+// Parses a string name for a contact solver and returns the enumerated value.
+// Valid string names are listed in MultibodyPlantConfig's class overview.
+// @throws std::exception if an invalid string is passed in.
+ContactSolver GetContactSolverFromString(std::string_view contact_solver);
+
+// (Exposed for unit testing only.)
+// Returns the string name of an enumerated value for a contact model.
+std::string GetStringFromContactSolver(ContactSolver contact_solver);
+
+// (Exposed for unit testing only.)
 // Parses a string name for a contact representation and returns the enumerated
 // value.  Valid string names are listed in MultibodyPlantConfig's class
 // overview.

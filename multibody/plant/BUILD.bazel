@@ -18,7 +18,6 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":calc_distance_and_time_derivative",
-        ":compliant_contact_manager",
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
@@ -36,21 +35,6 @@ drake_cc_package_library(
         ":propeller",
         ":tamsi_solver",
         ":wing",
-    ],
-)
-
-drake_cc_library(
-    name = "compliant_contact_manager",
-    srcs = ["compliant_contact_manager.cc"],
-    hdrs = ["compliant_contact_manager.h"],
-    deps = [
-        ":multibody_plant_core",
-        "//multibody/contact_solvers:contact_solver_utils",
-        "//multibody/contact_solvers/sap:sap_contact_problem",
-        "//multibody/contact_solvers/sap:sap_friction_cone_constraint",
-        "//multibody/contact_solvers/sap:sap_limit_constraint",
-        "//multibody/contact_solvers/sap:sap_solver",
-        "//multibody/triangle_quadrature",
     ],
 )
 
@@ -112,11 +96,13 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
+        "compliant_contact_manager.cc",
         "discrete_update_manager.cc",
         "multibody_plant.cc",
         "physical_model.cc",
     ],
     hdrs = [
+        "compliant_contact_manager.h",
         "discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
@@ -142,6 +128,7 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody/contact_solvers:contact_solver",
         "//multibody/contact_solvers:sparse_linear_operator",
+        "//multibody/contact_solvers/sap",
         "//multibody/hydroelastics:hydroelastic_engine",
         "//multibody/topology:multibody_graph",
         "//multibody/tree",
@@ -366,7 +353,6 @@ drake_cc_googletest(
         "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
-        ":compliant_contact_manager",
         ":plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
