@@ -53,6 +53,7 @@ drake_cc_googletest(
     deps = [
         ":free_body",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//multibody/test_utilities:floating_body_plant",
         "//systems/analysis:simulator",
     ],

@@ -12,6 +12,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/benchmarks/free_body/free_body.h"
@@ -312,6 +313,32 @@ void  TestDrakeSolutionForVariousInitialValues(
   std::unique_ptr<systems::ContinuousState<double>> stateDt =
       axisymmetric_plant.AllocateTimeDerivatives();
   drake::systems::ContinuousState<double>* stateDt_drake = stateDt.get();
+
+  // Set the initial value to an invalid quaternion and ensure Drake throws
+  // an appropriate error message.
+  const Quaterniond bad_quat(0, 0, 0, 0);
+  const Vector3d p_NoBcm_N(0, 0, 0);  // Valid and irrelevant.
+  const Vector3d w_NB_N(0, 0, 0);     // Valid and irrelevant.
+  const Vector3d v_NBcm_N(0, 0, 0);   // Valid and irrelevant.
+  Eigen::Matrix<double, 13, 1> state_initial;
+  state_initial << bad_quat.w(), bad_quat.x(), bad_quat.y(), bad_quat.z(),
+                   p_NoBcm_N, w_NB_N, v_NBcm_N;
+  systems::VectorBase<double>& state_drake =
+      context.get_mutable_continuous_state_vector();
+  state_drake.SetFromVector(state_initial);
+
+  // A zero quaternion should throw an exception.
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        axisymmetric_plant.CalcTimeDerivatives(context, stateDt_drake),
+        "Error: Rotation matrix contains an element that is infinity or NaN.");
+  } else {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        axisymmetric_plant.CalcTimeDerivatives(context, stateDt_drake),
+        "Encountered singular articulated body hinge inertia for body node"
+        " index 1. Please ensure that this body has non-zero inertia along"
+        " all axes of motion.");
+  }
 
   // Test a variety of initial normalized quaternions.
   // Since cylinder B is axis-symmetric for axis Bz, iterate on BodyXY rotation
