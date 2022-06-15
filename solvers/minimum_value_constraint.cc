@@ -136,6 +136,8 @@ MinimumValueConstraint::MinimumValueConstraint(
       minimum_value_{minimum_value},
       influence_value_{minimum_value + influence_value_offset},
       max_num_values_{max_num_values} {
+  DRAKE_DEMAND(influence_value_offset > 0);
+  DRAKE_DEMAND(std::isfinite(influence_value_offset));
   set_penalty_function(QuadraticallySmoothedHingeLoss);
 }
 
