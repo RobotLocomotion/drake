@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/deformable_contact_geometries.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
@@ -90,8 +91,11 @@ GTEST_TEST(DeformableContactSurface, SmokeTest) {
   const std::vector<int> kExpectedTetrahedronIndexOfPolygons{0, 3, 0, 2, 1, 2};
   EXPECT_EQ(tetrahedron_index_of_polygons, kExpectedTetrahedronIndexOfPolygons);
   // Verify only the first centroid as the representative of all centroids.
-  EXPECT_EQ(barycentric_centroids[0],
-            VolumeMesh<double>::Barycentric<double>::Zero());
+  const double kEps = 1e-14;
+  EXPECT_TRUE(CompareMatrices(
+      barycentric_centroids[0],
+      VolumeMesh<double>::Barycentric<double>(0.25, 0.5, 1.0 / 12, 1.0 / 6),
+          kEps));
 
   ASSERT_NE(contact_surface_W, nullptr);
   EXPECT_EQ(contact_surface_W->num_faces(), kExpectedNumPolygons);
@@ -101,7 +105,6 @@ GTEST_TEST(DeformableContactSurface, SmokeTest) {
             Vector3<double>(0.25, 1.0 / 12, 0.5));
 
   const double kExpectedSignedDistanceValue = -1.0 / 6;
-  const double kEps = 1e-14;
   const double signed_distance_at_centroid_of_polygon0 =
       contact_surface_W->poly_e_MN().EvaluateCartesian(
           0, contact_surface_W->centroid(0));

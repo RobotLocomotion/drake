@@ -47,6 +47,40 @@ class DeformableSurfaceVolumeIntersector : public
     return barycentric_centroids_;
   }
 
+ protected:
+  void CalcContactPolygon(
+      const VolumeMeshFieldLinear<double, double>& volume_field_M,
+      const TriangleSurfaceMesh<double>& surface_N,
+      const math::RigidTransform<T>& X_MN,
+      const math::RigidTransform<double>& X_MN_d,
+      PolyMeshBuilder<double>* builder_M,
+      const bool filter_face_normal_along_field_gradient,
+      const int tet_index, const int tri_index) override {
+    const int num_vertices_before = builder_M->num_vertices();
+    const int num_polygons_before = builder_M->num_faces();
+    SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb>::CalcContactPolygon(
+        volume_field_M, surface_N, X_MN, X_MN_d, builder_M,
+        filter_face_normal_along_field_gradient, tet_index, tri_index);
+    const int num_vertices_after = builder_M->num_vertices();
+    const int num_polygons_after = builder_M->num_faces();
+
+    if (num_polygons_after == num_polygons_before) {
+      return;
+    }
+    DRAKE_DEMAND(num_polygons_after == num_polygons_before + 1);
+
+    tetrahedron_index_of_polygons_.push_back(tet_index);
+
+    std::vector<int> polygon(num_vertices_after - num_vertices_before);
+    std::iota(polygon.begin(), polygon.end(), num_vertices_before);
+
+    barycentric_centroids_.push_back(volume_field_M.mesh().CalcBarycentric(
+        CalcPolygonCentroid(
+            polygon, X_MN_d.rotation() * surface_N.face_normal(tri_index),
+            builder_M->vertices()),
+        tet_index));
+  }
+
  private:
   std::vector<int> tetrahedron_index_of_polygons_{};
   std::vector<VolumeMesh<double>::Barycentric<double>> barycentric_centroids_{};

@@ -886,6 +886,7 @@ drake_cc_googletest(
         ":deformable_mesh_intersection",
         ":make_box_mesh",
         ":make_sphere_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

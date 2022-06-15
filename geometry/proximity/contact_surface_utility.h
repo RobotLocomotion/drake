@@ -182,6 +182,11 @@ class PolyMeshBuilder {
     return grad_e_MN_B_per_face_;
   }
 
+  /* Expose the accumulated vertices measured and expressed in frame B. */
+  const std::vector<Vector3<T>>& vertices() {
+    return vertices_B_;
+  }
+
  private:
   /* The number of polygons that have been added. It can't simply be inferred
    from face_data_.size() because of the face encoding. */

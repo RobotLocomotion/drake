@@ -123,6 +123,8 @@ class SurfaceVolumeIntersector {
     polygon_[1].reserve(7);
   }
 
+  virtual ~SurfaceVolumeIntersector() {}
+
   // TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
   //  remove the note in the function documentation.
 
@@ -193,7 +195,7 @@ class SurfaceVolumeIntersector {
    DeformableSurfaceVolumeIntersector::CalcContactPolygon() can call
    SurfaceVolumeIntersector::CalcContactPolygon() and then add more data
    on its contact polygon.  */
-  void CalcContactPolygon(
+  virtual void CalcContactPolygon(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
       const TriangleSurfaceMesh<double>& surface_N,
       const math::RigidTransform<T>& X_MN,
