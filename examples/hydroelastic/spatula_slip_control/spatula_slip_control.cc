@@ -42,6 +42,8 @@ DEFINE_string(contact_model, "hydroelastic",
 DEFINE_string(contact_surface_representation, "polygon",
               "Contact-surface representation for hydroelastics. "
               "Options are: 'triangle' or 'polygon'.");
+DEFINE_string(discrete_solver, "tamsi",
+              "Discrete contact solver. Options are: 'tamsi', 'sap'.");
 
 // Simulator settings.
 DEFINE_double(realtime_rate, 1,
@@ -137,6 +139,7 @@ int DoMain() {
   plant_config.time_step = FLAGS_mbp_discrete_update_period;
   plant_config.stiction_tolerance = FLAGS_stiction_tolerance;
   plant_config.contact_model = FLAGS_contact_model;
+  plant_config.discrete_contact_solver_type = FLAGS_discrete_solver;
   plant_config.contact_surface_representation =
       FLAGS_contact_surface_representation;
 

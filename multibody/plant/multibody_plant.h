@@ -100,6 +100,24 @@ enum class ContactModel {
   kPointContactOnly = kPoint,
 };
 
+/// The type of the contact solver used for a discrete MultibodyPlant model.
+///
+/// <h2>References</h2>
+///
+/// - [Castro et al., 2019] Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A.,
+///   Sherman, M.A., 2019. A Transition-Aware Method for the Simulation of
+///   Compliant Contact with Regularized Friction. Available online at
+///   https://arxiv.org/abs/1909.05700.
+/// - [Castro et al., 2022] Castro A., Permenter F. and Han X., 2022. An
+///   Unconstrained Convex Formulation of Compliant Contact. Available online at
+///   https://arxiv.org/abs/2110.10107.
+enum class DiscreteContactSolverType {
+  /// TAMSI solver, see [Castro et al., 2019].
+  kTamsi,
+  /// SAP solver, see [Castro et al., 2022].
+  kSap,
+};
+
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -1586,6 +1604,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception iff called post-finalize.
   void set_contact_model(ContactModel model);
 
+  /// Sets the contact solver type used for discrete %MultibodyPlant models.
+  /// @throws std::exception iff called post-finalize.
+  void set_discrete_contact_solver_type(DiscreteContactSolverType solver_type);
+
+  /// Returns the contact solver type used for discrete %MultibodyPlant models.
+  DiscreteContactSolverType get_discrete_contact_solver_type() const;
 
   /// Return the default value for contact representation, given the desired
   /// time step. Discrete systems default to use polygons; continuous systems
@@ -1649,6 +1673,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @param manager
   ///   After this call the new manager is used to advance discrete states.
+  /// @pre this %MultibodyPlant is discrete.
   /// @pre manager != nullptr.
   /// @throws std::exception if called pre-finalize. See Finalize().
   /// @note `this` MultibodyPlant will no longer support scalar conversion to or
@@ -4869,6 +4894,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // with the default value in multibody_plant_config.h; there are already
   // assertions in the cc file that enforce this.
   ContactModel contact_model_{ContactModel::kHydroelasticWithFallback};
+
+  // The solver type used by a discrete plant. Keep this in sync
+  // with the default value in multibody_plant_config.h; there are already
+  // assertions in the cc file that enforce this.
+  DiscreteContactSolverType solver_type_{DiscreteContactSolverType::kTamsi};
 
   // User's choice of the representation of contact surfaces in discrete
   // systems. The default value is dependent on whether the system is
