@@ -34,26 +34,6 @@ namespace internal {
 class GeometryVisualizationImpl;
 using FrameNameSet = std::unordered_set<std::string>;
 
-}  // namespace internal
-#endif
-
-class GeometryFrame;
-
-class GeometryInstance;
-
-template <typename T>
-class SceneGraph;
-
-/** @name Structures for maintaining the entity relationships  */
-//@{
-
-/** Collection of unique frame ids.  */
-using FrameIdSet = std::unordered_set<FrameId>;
-/** Collection of unique geometry ids.  */
-using GeometryIdSet = std::unordered_set<GeometryId>;
-
-//@}
-
 // TODO(xuchenhan-tri): These data should live in cache entries. Furthermore,
 // they should be broken up by source so that inputs can be pulled
 // independently. For now, they are big blobs of memory.
@@ -94,6 +74,26 @@ struct KinematicsData {
   // frame i to the world frame.
   std::vector<math::RigidTransform<T>> X_WFs;
 };
+
+}  // namespace internal
+#endif
+
+class GeometryFrame;
+
+class GeometryInstance;
+
+template <typename T>
+class SceneGraph;
+
+/** @name Structures for maintaining the entity relationships  */
+//@{
+
+/** Collection of unique frame ids.  */
+using FrameIdSet = std::unordered_set<FrameId>;
+/** Collection of unique geometry ids.  */
+using GeometryIdSet = std::unordered_set<GeometryId>;
+
+//@}
 
 // TODO(SeanCurtis-TRI): Move GeometryState into `internal` namespace (and then
 //  I can kill the `@note` in the class documentation).
@@ -647,6 +647,8 @@ class GeometryState {
         dest[i] = s[i].template cast<T>();
       }
     };
+    // TODO(xuchenhan-tri): The scalar conversion of KinematicsData should be
+    // handled by the KinematicsData class.
     convert_pose_vector(source.kinematics_data_.X_PFs, &kinematics_data_.X_PFs);
     convert_pose_vector(source.kinematics_data_.X_WFs, &kinematics_data_.X_WFs);
 
@@ -702,7 +704,7 @@ class GeometryState {
   // @throws std::exception  If the ids are invalid as defined by
   // ValidateFrameIds().
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses,
-                     KinematicsData<T>* kinematics_data) const;
+                     internal::KinematicsData<T>* kinematics_data) const;
 
   // Sets the kinematic configurations for the deformable geometries associated
   // with the given source.
@@ -712,7 +714,7 @@ class GeometryState {
   // @pre source_id is a registered source.
   void SetGeometryConfiguration(
       SourceId source_id, const GeometryConfigurationVector<T>& configurations,
-      KinematicsData<T>* kinematics_data) const;
+      internal::KinematicsData<T>* kinematics_data) const;
 
   // Confirms that the set of ids provided include _all_ of the frames
   // registered to the set's source id and that no extra frames are included.
@@ -734,7 +736,7 @@ class GeometryState {
   // Method that updates the proximity engine and the render engines with the
   // up-to-date _pose_ data in `kinematics_data`.
   void FinalizePoseUpdate(
-      const KinematicsData<T>& kinematics_data,
+      const internal::KinematicsData<T>& kinematics_data,
       internal::ProximityEngine<T>* proximity_engine,
       std::vector<render::RenderEngine*> render_engines) const;
 
@@ -772,10 +774,10 @@ class GeometryState {
   // Recursively updates the frame and geometry _pose_ information for the tree
   // rooted at the given frame, whose parent's pose in the world frame is given
   // as `X_WP`.
-  void UpdatePosesRecursively(const internal::InternalFrame& frame,
-                              const math::RigidTransform<T>& X_WP,
-                              const FramePoseVector<T>& poses,
-                              KinematicsData<T>* kinematics_data) const;
+  void UpdatePosesRecursively(
+      const internal::InternalFrame& frame, const math::RigidTransform<T>& X_WP,
+      const FramePoseVector<T>& poses,
+      internal::KinematicsData<T>* kinematics_data) const;
 
   // Reports true if the given id refers to a _dynamic_ geometry. Assumes the
   // precondition that id refers to a valid geometry in the state.
@@ -849,8 +851,21 @@ class GeometryState {
   // regardless of T's actual type.
   math::RigidTransformd GetDoubleWorldPose(FrameId frame_id) const;
 
+  /* TODO(xuchenhan-tri) Dangerous mutable getters using const_cast.
+   These data live in GeometryState (which is a Parameter in the system
+   framework sense), but they are (or depend on) time-dependent position data
+   which in turn depends on Scene Graph's input ports. These data should be
+   separate cache entries in SceneGraph that get updated when an Eval notes that
+   the input ports have changed. Instead, SceneGraph uses proxy `int` cache
+   entries whose evaluation trigger the filling-in of these position data
+   and subsequently update the proximity engine and the render engines that
+   depend on these position data. As long as every reference to position data
+   (and the proximity engine/render engines that depend on the position
+   data) is preceded to an Eval of the proxy cache entry, these time-dependent
+   members are just acting as awkwardly-placed cache memory. */
+  //@{
   // Returns a mutable reference to the kinematics data in this GeometryState.
-  KinematicsData<T>& mutable_kinematics_data() const {
+  internal::KinematicsData<T>& mutable_kinematics_data() const {
     GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
     return mutable_state->kinematics_data_;
   }
@@ -872,6 +887,7 @@ class GeometryState {
     }
     return results;
   }
+  //@}
 
   // NOTE: If adding a member it is important that it be _explicitly_ copied
   // in the converting copy constructor and likewise tested in the unit test
@@ -936,7 +952,7 @@ class GeometryState {
   // frames_.size() == kinematics_data_.num_frames() and
   // NumDeformableGeometries() == kinematics_data_.num_deformable_geometries()
   // are two invariants.
-  KinematicsData<T> kinematics_data_;
+  internal::KinematicsData<T> kinematics_data_;
 
   // The underlying geometry engine. The topology of the engine does _not_
   // change with respect to time. But its values do. This straddles the two

@@ -115,18 +115,18 @@ class GeometryStateTester {
     return state_->kinematics_data_.X_PFs;
   }
 
-  KinematicsData<T>& mutable_kinematics_data() const {
+  internal::KinematicsData<T>& mutable_kinematics_data() const {
     return state_->mutable_kinematics_data();
   }
 
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses,
-     KinematicsData<T>* kinematics_data) {
+     internal::KinematicsData<T>* kinematics_data) {
     state_->SetFramePoses(source_id, poses, kinematics_data);
   }
 
   void SetGeometryConfiguration(
       SourceId source_id, const GeometryConfigurationVector<T>& configuration,
-      KinematicsData<T>* kinematics_data) {
+      internal::KinematicsData<T>* kinematics_data) {
     state_->SetGeometryConfiguration(source_id, configuration, kinematics_data);
   }
 
