@@ -8,10 +8,10 @@
 #include <vtkMatrix4x4.h>
 
 #include "drake/common/filesystem.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/geometry/render/dev/render_gltf_client/factory.h"
-#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_png.h"
-#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_tiff.h"
+#include "drake/geometry/render/dev/render_gltf_client/test/internal_sample_image_data.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
 
 namespace drake {
@@ -89,6 +89,10 @@ namespace {
 using Tester = RenderEngineGltfClientTester;
 using Engine = RenderEngineGltfClient;
 using Params = RenderEngineGltfClientParams;
+
+// Constexpr dimensions for the actual testing images.
+constexpr int kTestImageWidth = 3;
+constexpr int kTestImageHeight = 2;
 
 GTEST_TEST(RenderEngineGltfClient, Constructor) {
   std::string temp_dir;
@@ -242,21 +246,26 @@ class FakeServer : public HttpService {
     static std::atomic<int64_t> post_id{0};
 
     const auto image_type = data_fields.at("image_type");
-    const auto width = std::stoi(data_fields.at("width"));
-    const auto height = std::stoi(data_fields.at("height"));
     HttpResponse ret;
     ret.http_code = 200;
 
     const std::string path =
         fs::path(temp_directory) /
         fmt::format("{:0>19}-{}.response", ++post_id, image_type);
+    std::string test_image_path;
     if (image_type == "color") {
-      const TestPngRgb8 png{path, width, height};
+      test_image_path = FindResourceOrThrow(
+          "drake/geometry/render/dev/render_gltf_client/test/test_rgba_8U.png");
     } else if (image_type == "depth") {
-      const TestTiffGray32 tiff{path, width, height};
+      test_image_path = FindResourceOrThrow(
+          "drake/geometry/render/dev/render_gltf_client/test/"
+          "test_depth_32F.tiff");
     } else {  // image_type := "label"
-      const TestPngGray16 label{path, width, height};
+      test_image_path = FindResourceOrThrow(
+          "drake/geometry/render/dev/render_gltf_client/test/"
+          "test_label_16I.png");
     }
+    fs::copy_file(test_image_path, path);
     ret.data_path = path;
 
     return ret;
@@ -302,11 +311,13 @@ void CheckTempDirectoryForExpectedFiles(const std::string& temp_directory,
 }
 
 GTEST_TEST(RenderEngineGltfClient, DoRenderColorImage) {
-  const int width = 320;
-  const int height = 240;
-  ImageRgba8U color_image{width, height};
+  ImageRgba8U color_image{kTestImageWidth, kTestImageHeight};
   const ColorRenderCamera color_camera{
-      {"proxy_render", {width, height, M_PI_4}, {0.11, 111.111}, {}}, false};
+      {"proxy_render",
+       {kTestImageWidth, kTestImageHeight, M_PI_4},
+       {0.11, 111.111},
+       {}},
+      false};
 
   for (const bool no_cleanup : {true, false}) {
     Params params;
@@ -323,17 +334,17 @@ GTEST_TEST(RenderEngineGltfClient, DoRenderColorImage) {
                                        ".png");
 
     // Make sure the image got loaded as expected.
-    TestPngRgb8::CornerCheckColor(color_image);
-    TestPngRgb8::FullImageCheckColor(color_image);
+    EXPECT_EQ(color_image, CreateTestColorImage(false));
   }
 }
 
 GTEST_TEST(RenderEngineGltfClient, DoRenderDepthImage) {
-  const int width = 320;
-  const int height = 240;
-  ImageDepth32F depth_image{width, height};
+  ImageDepth32F depth_image{kTestImageWidth, kTestImageHeight};
   const DepthRenderCamera depth_camera{
-      {"proxy_render", {width, height, M_PI_4}, {0.11, 111.111}, {}},
+      {"proxy_render",
+       {kTestImageWidth, kTestImageHeight, M_PI_4},
+       {0.11, 111.111},
+       {}},
       {0.12, 10.0}};
 
   for (const bool no_cleanup : {true, false}) {
@@ -351,17 +362,18 @@ GTEST_TEST(RenderEngineGltfClient, DoRenderDepthImage) {
                                        ".tiff");
 
     // Make sure the image got loaded as expected.
-    TestTiffGray32::CornerCheck(depth_image);
-    TestTiffGray32::FullImageCheck(depth_image);
+    EXPECT_EQ(depth_image, CreateTestDepthImage());
   }
 }
 
 GTEST_TEST(RenderEngineGltfClient, DoRenderLabelImage) {
-  const int width = 320;
-  const int height = 240;
-  ImageLabel16I label_image{width, height};
+  ImageLabel16I label_image{kTestImageWidth, kTestImageHeight};
   const ColorRenderCamera color_camera{
-      {"proxy_render", {width, height, M_PI_4}, {0.11, 111.111}, {}}, false};
+      {"proxy_render",
+       {kTestImageWidth, kTestImageHeight, M_PI_4},
+       {0.11, 111.111},
+       {}},
+      false};
 
   for (const bool no_cleanup : {true, false}) {
     Params params;
@@ -378,8 +390,7 @@ GTEST_TEST(RenderEngineGltfClient, DoRenderLabelImage) {
                                        ".png");
 
     // Make sure the image got loaded as expected.
-    TestPngGray16::CornerCheckGray(label_image);
-    TestPngGray16::FullImageCheckGray(label_image);
+    EXPECT_EQ(label_image, CreateTestLabelImage());
   }
 }
 
