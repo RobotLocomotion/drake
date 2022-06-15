@@ -545,6 +545,14 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "detail_collision_filter_group_resolver_test",
+    deps = [
+        ":detail_misc",
+        ":diagnostic_policy_test_base",
+    ],
+)
+
 drake_py_unittest(
     name = "model_directives_to_sdf_test",
     data = [
@@ -554,14 +562,6 @@ drake_py_unittest(
     deps = [
         "//bindings/pydrake",
         "//bindings/pydrake/common/test_utilities:meta_py",
-    ],
-)
-
-drake_cc_googletest(
-    name = "..",
-    deps = [
-        ":detail_misc",
-        ":diagnostic_policy_test_base",
     ],
 )
 
