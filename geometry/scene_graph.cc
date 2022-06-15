@@ -455,9 +455,9 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
     }
   }
 
-  GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
-  mutable_state.FinalizePoseUpdate();
-  // TODO(SeanCurtis-TRI): Add velocity as appropriate.
+  state.FinalizePoseUpdate(kinematics_data,
+                           &state.mutable_proximity_engine(),
+                           state.GetMutableRenderEngines());
 }
 
 template <typename T>

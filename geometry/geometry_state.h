@@ -731,9 +731,12 @@ class GeometryState {
   void ValidateRegistrationAndSetTopology(SourceId source_id, FrameId frame_id,
                                           GeometryId geometry_id);
 
-  // Method that performs any final book-keeping/updating on the state after
-  // _all_ of the state's frames have had their poses updated.
-  void FinalizePoseUpdate();
+  // Method that updates the proximity engine and the render engines with the
+  // up-to-date _pose_ data in `kinematics_data`.
+  void FinalizePoseUpdate(
+      const KinematicsData<T>& kinematics_data,
+      internal::ProximityEngine<T>* proximity_engine,
+      std::vector<render::RenderEngine*> render_engines) const;
 
   // Gets the source id for the given frame id. Throws std::exception if the
   // frame belongs to no registered source.
@@ -848,8 +851,26 @@ class GeometryState {
 
   // Returns a mutable reference to the kinematics data in this GeometryState.
   KinematicsData<T>& mutable_kinematics_data() const {
-     GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
-     return mutable_state->kinematics_data_;
+    GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
+    return mutable_state->kinematics_data_;
+  }
+
+  // Returns a mutable reference to the proximity engine in this GeometryState.
+  internal::ProximityEngine<T>& mutable_proximity_engine() const {
+    GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
+    return *mutable_state->geometry_engine_;
+  }
+
+  // Returns a vector of mutable pointers to all render engines in this
+  // GeometryState.
+  std::vector<render::RenderEngine*> GetMutableRenderEngines() const {
+    std::vector<render::RenderEngine*> results;
+    for (auto& [name, render_engine] : render_engines_) {
+      unused(name);
+      results.emplace_back(
+          const_cast<render::RenderEngine*>(render_engine.get()));
+    }
+    return results;
   }
 
   // NOTE: If adding a member it is important that it be _explicitly_ copied

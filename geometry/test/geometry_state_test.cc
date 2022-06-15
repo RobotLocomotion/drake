@@ -131,7 +131,9 @@ class GeometryStateTester {
   }
 
   void FinalizePoseUpdate() {
-    state_->FinalizePoseUpdate();
+    state_->FinalizePoseUpdate(state_->kinematics_data_,
+                               &state_->mutable_proximity_engine(),
+                               state_->GetMutableRenderEngines());
   }
 
   template <typename ValueType>

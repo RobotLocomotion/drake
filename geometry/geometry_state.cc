@@ -1236,10 +1236,13 @@ void GeometryState<T>::ValidateRegistrationAndSetTopology(
 }
 
 template <typename T>
-void GeometryState<T>::FinalizePoseUpdate() {
-  geometry_engine_->UpdateWorldPoses(kinematics_data_.X_WGs);
-  for (auto& pair : render_engines_) {
-    pair.second->UpdatePoses(kinematics_data_.X_WGs);
+void GeometryState<T>::FinalizePoseUpdate(
+      const KinematicsData<T>& kinematics_data,
+      internal::ProximityEngine<T>* proximity_engine,
+      std::vector<render::RenderEngine*> render_engines) const {
+  proximity_engine->UpdateWorldPoses(kinematics_data.X_WGs);
+  for (auto* render_engine : render_engines) {
+    render_engine->UpdatePoses(kinematics_data.X_WGs);
   }
 }
 
