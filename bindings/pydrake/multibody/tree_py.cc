@@ -145,7 +145,7 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& enum_doc = doc.InertiaValue;
     py::enum_<Enum>(m, "InertiaValue", enum_doc.doc)
         .value("kNaN", Enum::kNaN, enum_doc.kNaN.doc)
-        .value("kSdf", Enum::kSdf, enum_doc.kSdf.doc);
+        .value("kSdformat", Enum::kSdformat, enum_doc.kSdformat.doc);
   }
 }
 
