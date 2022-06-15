@@ -30,7 +30,7 @@ namespace multibody {
 /// filled with NaNs or construct inertias that are consistent with the default
 /// values specified in the SDFormat <inertial> tag, found at:
 /// http://sdformat.org/spec?elem=link
-enum class InertiaValue {kNaN, kSdf};
+enum class InertiaValue {kNaN, kSdformat};
 
 /// This class describes the mass distribution (inertia properties) of a
 /// body or composite body about a particular point.  Herein, "composite body"
@@ -178,8 +178,8 @@ class RotationalInertia {
   /// If inertiaValue is omitted or inertiaValue is InertiaValue::kNaN, the
   /// constructed rotational inertia has moments and products of inertia set to
   /// NaN, which can be helpful in quickly detecting an uninitialized rotational
-  /// inertia. If inertiaValue is InertiaValue::kSdf, the spatial inertia has
-  /// moments of inertia Ixx = Iyy = Izz = 1 and products of inertia
+  /// inertia. If inertiaValue is InertiaValue::kSdformat, the spatial inertia
+  /// has moments of inertia Ixx = Iyy = Izz = 1 and products of inertia
   /// Ixy = Ixz = Iyx = 0.
   explicit RotationalInertia(InertiaValue inertiaValue = InertiaValue::kNaN) {
     const bool is_nan = inertiaValue == InertiaValue::kNaN;

@@ -121,10 +121,10 @@ class SpatialInertia {
 
   /// Creates a spatial inertia that depends on the argument inertiaValue.
   /// @param[in] inertiaValue The type of spatial inertia to be constructed.
-  /// If inertiaValue is omitted or inertiaValue is InertiaValue::kNaN, the
-  /// constructed spatial inertia has its mass, center of mass, and rotational
-  /// inertia set to NaN -- which can be helpful in quickly detecting an
-  /// uninitialized spatial inertia. If inertia value is InertiaValue::kSdf, the
+  /// If inertiaValue is omitted or is InertiaValue::kNaN, the constructor
+  /// spatial inertia has its mass, center of mass, and rotational inertia set
+  /// to NaN -- which can be helpful in quickly detecting an uninitialized
+  /// spatial inertia. If inertia value is InertiaValue::kSdformat, the
   /// constructed spatial inertia has a mass of 1, a zero center of mass offset,
   /// and a rotational inertia with moments of inertia Ixx = Iyy = Izz = 1 and
   /// products of inertia Ixy = Ixz = Iyx = 0.

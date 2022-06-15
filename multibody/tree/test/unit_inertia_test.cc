@@ -42,7 +42,7 @@ GTEST_TEST(UnitInertia, DefaultConstructorOrConstructorWithOneArgument) {
   // Test the one argument RotationalInertia constructor with its other value.
   // Note: By default in SDformat, all the moments of inertia are 1.0 and
   // all the products of inertia are 0.0.
-  const RotationalInertia<double> I1(InertiaValue::kSdf);
+  const RotationalInertia<double> I1(InertiaValue::kSdformat);
   EXPECT_TRUE(I1.CouldBePhysicallyValid());
   EXPECT_EQ(I1.get_moments(), Vector3<double>(1, 1, 1));
   EXPECT_EQ(I1.get_products(), Vector3<double>::Zero());

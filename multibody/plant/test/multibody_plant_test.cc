@@ -1040,7 +1040,7 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
   MultibodyPlant<double> plant(0.0);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const auto& body = plant.AddRigidBody("body",
-      SpatialInertia<double>(InertiaValue::kSdf));
+      SpatialInertia<double>(InertiaValue::kSdformat));
   EXPECT_TRUE(CompareMatrices(
       plant.GetDefaultFreeBodyPose(body).GetAsMatrix4(),
       RigidTransformd::Identity().GetAsMatrix4()));
@@ -1197,7 +1197,8 @@ class SphereChainScenario {
       const double radius = 0.5;
       // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
       const RigidBody<double>& sphere = plant_->AddRigidBody(
-          "Sphere" + to_string(i), SpatialInertia<double>(InertiaValue::kSdf));
+          "Sphere" + to_string(i),
+          SpatialInertia<double>(InertiaValue::kSdformat));
       GeometryId sphere_id = plant_->RegisterCollisionGeometry(
           sphere, RigidTransformd::Identity(), geometry::Sphere(radius),
           "collision", CoulombFriction<double>());
@@ -1230,7 +1231,7 @@ class SphereChainScenario {
     // Body with no registered frame.
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
     no_geometry_body_ = &plant_->AddRigidBody("NothingRegistered",
-        SpatialInertia<double>(InertiaValue::kSdf));
+        SpatialInertia<double>(InertiaValue::kSdformat));
   }
 
   void Finalize() {
@@ -1415,7 +1416,7 @@ GTEST_TEST(MultibodyPlantTest, FilterWeldedSubgraphs) {
 GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
   MultibodyPlant<double> plant(0.0);
   const RigidBody<double>& body = plant.AddRigidBody("body",
-      SpatialInertia<double>(InertiaValue::kSdf));
+      SpatialInertia<double>(InertiaValue::kSdformat));
 
   // It's an error to call this without a SceneGraph.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1630,8 +1631,8 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
 
   // Add two spherical bodies.
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", SpatialInertia<double>(InertiaValue::kSdf));
+  const RigidBody<double>& sphere1 = plant.AddRigidBody("Sphere1",
+          SpatialInertia<double>(InertiaValue::kSdformat));
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
   // estimated parameters for mass=1kg, penetration_tolerance=0.01m
   // and gravity g=9.8 m/s^2.
@@ -1667,8 +1668,8 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
                                  geometry::internal::kHcDissipation,
                                  sphere2_dissipation);
-  const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", SpatialInertia<double>(InertiaValue::kSdf));
+  const RigidBody<double>& sphere2 = plant.AddRigidBody("Sphere2",
+      SpatialInertia<double>(InertiaValue::kSdformat));
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
       sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
       "collision", std::move(sphere2_properties));
@@ -1797,15 +1798,15 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
 
   // Add two spherical bodies.
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", SpatialInertia<double>(InertiaValue::kSdf));
+  const RigidBody<double>& sphere1 = plant.AddRigidBody("Sphere1",
+      SpatialInertia<double>(InertiaValue::kSdformat));
   Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
   GeometryId sphere1_id = plant.RegisterVisualGeometry(
       sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
       "visual", sphere1_diffuse);
   EXPECT_EQ(render_engine.num_registered(), 2);
-  const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", SpatialInertia<double>(InertiaValue::kSdf));
+  const RigidBody<double>& sphere2 = plant.AddRigidBody("Sphere2",
+      SpatialInertia<double>(InertiaValue::kSdformat));
   IllustrationProperties sphere2_props;
   const Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   sphere2_props.AddProperty("phong", "diffuse", sphere2_diffuse);
@@ -2038,7 +2039,7 @@ void InitializePlantAndContextForVelocityToQDotMapping(
   // This is used in purely kinematic tests.
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& body = plant->AddRigidBody("FreeBody",
-      SpatialInertia<double>(InertiaValue::kSdf));
+      SpatialInertia<double>(InertiaValue::kSdformat));
   plant->Finalize();
 
   *context = plant->CreateDefaultContext();
@@ -2284,14 +2285,14 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     // The model simply contains a small and a large box.
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
     const RigidBody<double>& large_box = plant_.AddRigidBody("LargeBox",
-        SpatialInertia<double>(InertiaValue::kSdf));
+        SpatialInertia<double>(InertiaValue::kSdformat));
     large_box_id_ = plant_.RegisterCollisionGeometry(
         large_box, RigidTransformd::Identity(),
         geometry::Box(large_box_size_, large_box_size_, large_box_size_),
         "collision", CoulombFriction<double>());
 
     const RigidBody<double>& small_box = plant_.AddRigidBody("SmallBox",
-        SpatialInertia<double>(InertiaValue::kSdf));
+        SpatialInertia<double>(InertiaValue::kSdformat));
     small_box_id_ = plant_.RegisterCollisionGeometry(
         small_box, RigidTransformd::Identity(),
         geometry::Box(small_box_size_, small_box_size_, small_box_size_),
@@ -3343,7 +3344,7 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
 
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const Body<double>& body = plant.AddRigidBody("LoneBody",
-      SpatialInertia<double>(InertiaValue::kSdf));
+      SpatialInertia<double>(InertiaValue::kSdformat));
   plant.Finalize();
 
   RandomGenerator generator;
