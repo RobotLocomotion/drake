@@ -10,6 +10,8 @@ load(
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
+    "drake_py_library",
+    "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
@@ -48,14 +50,6 @@ drake_cc_package_library(
         ":parser",
         ":process_model_directives",
         ":scoped_names",
-    ],
-)
-
-drake_py_binary(
-    name = "model_directives_to_sdf",
-    srcs = ["model_directives_to_sdf.py"],
-    main = "model_directives_to_sdf.py",
-    deps = [
     ],
 )
 
@@ -583,6 +577,34 @@ drake_cc_googletest(
     deps = [
         ":detail_misc",
         ":diagnostic_policy_test_base",
+    ],
+)
+
+filegroup(
+    name = "convert_model_directives_test_files",
+    testonly = True,
+    data = glob(["test/convert_model_directives_test/**"]),
+    visibility = [
+        "//bindings/pydrake/multibody:__pkg__",
+    ],
+)
+
+drake_py_binary(
+    name = "model_directives_to_sdf",
+    srcs = ["model_directives_to_sdf.py"],
+    deps = [
+    ],
+)
+
+drake_py_unittest(
+    name = "model_directives_to_sdf_test",
+    data = [
+        ":model_directives_to_sdf.py",
+        ":convert_model_directives_test_files",
+    ],
+    deps = [
+        "//bindings/pydrake",
+        "//bindings/pydrake/common/test_utilities:meta_py",
     ],
 )
 

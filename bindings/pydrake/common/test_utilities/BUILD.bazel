@@ -40,6 +40,9 @@ drake_py_library(
     testonly = 1,
     srcs = ["meta.py"],
     deps = [":module_py"],
+    visibility = [
+        "//multibody/parsing:__pkg__",
+    ],
 )
 
 drake_py_unittest(
