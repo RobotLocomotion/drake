@@ -1153,13 +1153,15 @@ unordered_set<GeometryId> GeometryState<T>::CollectIds(
 
 template <typename T>
 void GeometryState<T>::SetFramePoses(
-    const SourceId source_id, const FramePoseVector<T>& poses) {
+    const SourceId source_id, const FramePoseVector<T>& poses,
+    KinematicsData<T>* kinematics_data) const {
   // TODO(SeanCurtis-TRI): Down the road, make this validation depend on
   // ASSERT_ARMED.
   ValidateFrameIds(source_id, poses);
   const RigidTransform<T> world_pose = RigidTransform<T>::Identity();
-  for (auto frame_id : source_root_frame_map_[source_id]) {
-    UpdatePosesRecursively(frames_[frame_id], world_pose, poses);
+  for (auto frame_id : source_root_frame_map_.at(source_id)) {
+    UpdatePosesRecursively(frames_.at(frame_id), world_pose, poses,
+        kinematics_data);
   }
 }
 
@@ -1302,7 +1304,7 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
 template <typename T>
 void GeometryState<T>::UpdatePosesRecursively(
     const internal::InternalFrame& frame, const RigidTransform<T>& X_WP,
-    const FramePoseVector<T>& poses, KinematicsData<T>* kinematics_data) {
+    const FramePoseVector<T>& poses, KinematicsData<T>* kinematics_data) const {
   const auto frame_id = frame.id();
   const auto& X_PF = poses.value(frame_id);
   // Cache this transform for later use.
@@ -1311,7 +1313,7 @@ void GeometryState<T>::UpdatePosesRecursively(
   kinematics_data->X_WFs[frame.index()] = X_WF;
   // Update the geometry which belong to *this* frame.
   for (auto child_id : frame.child_geometries()) {
-    auto& child_geometry = geometries_[child_id];
+    const auto& child_geometry = geometries_.at(child_id);
     // X_FG() is always RigidTransform<double>, to account for
     // GeometryState<AutoDiff>, we need to cast it to the common type T.
     RigidTransform<double> X_FG(child_geometry.X_FG());
@@ -1320,7 +1322,7 @@ void GeometryState<T>::UpdatePosesRecursively(
 
   // Update each child frame.
   for (auto child_id : frame.child_frames()) {
-    auto& child_frame = frames_[child_id];
+    const auto& child_frame = frames_.at(child_id);
     UpdatePosesRecursively(child_frame, X_WF, poses, kinematics_data);
   }
 }

@@ -428,7 +428,7 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
   using std::to_string;
 
   const GeometryState<T>& state = geometry_state(context);
-  GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
+  KinematicsData<T>& kinematics_data = state.mutable_kinematics_data();
 
   // Process all sources *except*:
   //   - the internal source and
@@ -449,11 +449,13 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
         }
         const auto& poses =
             pose_port.template Eval<FramePoseVector<T>>(context);
-        mutable_state.SetFramePoses(source_id, poses);
+        state.SetFramePoses(
+            source_id, poses, &kinematics_data);
       }
     }
   }
 
+  GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
   mutable_state.FinalizePoseUpdate();
   // TODO(SeanCurtis-TRI): Add velocity as appropriate.
 }

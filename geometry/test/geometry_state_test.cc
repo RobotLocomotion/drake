@@ -115,8 +115,13 @@ class GeometryStateTester {
     return state_->kinematics_data_.X_PFs;
   }
 
-  void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses) {
-    state_->SetFramePoses(source_id, poses);
+  KinematicsData<T>& mutable_kinematics_data() const {
+    return state_->mutable_kinematics_data();
+  }
+
+  void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses,
+     KinematicsData<T>* kinematics_data) {
+    state_->SetFramePoses(source_id, poses, kinematics_data);
   }
 
   void SetGeometryConfiguration(
@@ -1036,7 +1041,8 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
     for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
       poses.set_value(frames_[f], X_PFs_[f]);
     }
-    gs_tester_.SetFramePoses(s_id, poses);
+    gs_tester_.SetFramePoses(
+        s_id, poses, &gs_tester_.mutable_kinematics_data());
     gs_tester_.FinalizePoseUpdate();
 
     test_frame(0, gs_tester_.get_world_frame(), 0);
@@ -1394,7 +1400,7 @@ TEST_F(GeometryStateTest, AddGeometryUpdatesX_WG) {
   for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
     poses.set_value(frames_[f], X_PFs_[f]);
   }
-  gs_tester_.SetFramePoses(s_id, poses);
+  gs_tester_.SetFramePoses(s_id, poses, &gs_tester_.mutable_kinematics_data());
   gs_tester_.FinalizePoseUpdate();
 
   // Registering a geometry to a frame F should report X_WG = X_WF * X_FG.
@@ -1707,7 +1713,7 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
     poses.set_value(frames_[f], X_PFs_[f]);
   }
-  gs_tester_.SetFramePoses(s_id, poses);
+  gs_tester_.SetFramePoses(s_id, poses, &gs_tester_.mutable_kinematics_data());
   gs_tester_.FinalizePoseUpdate();
 
   // The geometry to remove and  its parent frame.
@@ -1767,7 +1773,7 @@ TEST_F(GeometryStateTest, RemoveGeometryTree) {
   for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
     poses.set_value(frames_[f], X_PFs_[f]);
   }
-  gs_tester_.SetFramePoses(s_id, poses);
+  gs_tester_.SetFramePoses(s_id, poses, &gs_tester_.mutable_kinematics_data());
   gs_tester_.FinalizePoseUpdate();
 
   // The geometry to remove and its parent frame.
@@ -2077,7 +2083,7 @@ TEST_F(GeometryStateTest, SetFramePoses) {
   // Case 1: Set all frames to identity poses. The world pose of all the
   // geometry should be that of the geometry in its frame.
   FramePoseVector<double> poses1 = make_pose_vector();
-  gs_tester_.SetFramePoses(s_id, poses1);
+  gs_tester_.SetFramePoses(s_id, poses1, &gs_tester_.mutable_kinematics_data());
   const auto& world_poses = gs_tester_.get_geometry_world_poses();
   for (int i = 0; i < total_geom; ++i) {
     const GeometryId id = geometries_[i];
@@ -2092,7 +2098,7 @@ TEST_F(GeometryStateTest, SetFramePoses) {
   frame_poses[0] = offset;
   frame_poses[1] = offset;
   FramePoseVector<double> poses2 = make_pose_vector();
-  gs_tester_.SetFramePoses(s_id, poses2);
+  gs_tester_.SetFramePoses(s_id, poses2, &gs_tester_.mutable_kinematics_data());
   for (int i = 0; i < total_geom; ++i) {
     const GeometryId id = geometries_[i];
     EXPECT_TRUE(CompareMatrices(world_poses.at(id).GetAsMatrix34(),
@@ -2103,7 +2109,7 @@ TEST_F(GeometryStateTest, SetFramePoses) {
   // 0, 1, 2, & 3 moved up 1, and geometries 4 & 5 moved up two.
   frame_poses[2] = offset;
   FramePoseVector<double> poses3 = make_pose_vector();
-  gs_tester_.SetFramePoses(s_id, poses3);
+  gs_tester_.SetFramePoses(s_id, poses3, &gs_tester_.mutable_kinematics_data());
   for (int i = 0; i < total_geom; ++i) {
     const GeometryId id = geometries_[i];
     if (i < (kFrameCount - 1) * kGeometryCount) {
@@ -2140,7 +2146,7 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
   // Set the frame poses to query geometry and frame poses.
   FramePoseVector<double> poses;
   for (int i = 0; i < kFrameCount; ++i) poses.set_value(frames_[i], X_PFs_[i]);
-  gs_tester_.SetFramePoses(s_id, poses);
+  gs_tester_.SetFramePoses(s_id, poses, &gs_tester_.mutable_kinematics_data());
 
   EXPECT_TRUE(CompareMatrices(
       geometry_state_.get_pose_in_world(frames_[0]).GetAsMatrix34(),
@@ -2253,7 +2259,8 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
   for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
     poses.set_value(frames_[f], X_PFs_[f]);
   }
-  gs_tester_.SetFramePoses(source_id_, poses);
+  gs_tester_.SetFramePoses(
+      source_id_, poses, &gs_tester_.mutable_kinematics_data());
   gs_tester_.FinalizePoseUpdate();
 
   // This is *non* const; we'll decrement it as we filter more and more
@@ -3551,7 +3558,8 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
   for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
     poses.set_value(frames_[f], X_PFs_[f]);
   }
-  gs_tester_.SetFramePoses(source_id_, poses);
+  gs_tester_.SetFramePoses(
+      source_id_, poses, &gs_tester_.mutable_kinematics_data());
   gs_tester_.FinalizePoseUpdate();
 
   // Confirm poses between two GeometryId -> Pose maps.
@@ -3592,7 +3600,8 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
   }
   EXPECT_EQ(second_engine->updated_ids().size(), 0u);
   EXPECT_EQ(render_engine_->updated_ids().size(), 0u);
-  gs_tester_.SetFramePoses(source_id_, poses);
+  gs_tester_.SetFramePoses(
+      source_id_, poses, &gs_tester_.mutable_kinematics_data());
   gs_tester_.FinalizePoseUpdate();
 
   // Confirm poses.

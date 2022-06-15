@@ -695,11 +695,14 @@ class GeometryState {
                                             std::optional<Role> role) const;
 
   // Sets the kinematic poses for the frames indicated by the given ids.
-  // @param poses The frame id and pose values.
+  // @param[in]  poses           The frame id and pose values.
+  // @param[out] kinematics_data The updated kinematics data that contains the
+  //                             frame poses.
   // @pre source_id is a registered source.
   // @throws std::exception  If the ids are invalid as defined by
   // ValidateFrameIds().
-  void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses);
+  void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses,
+                     KinematicsData<T>* kinematics_data) const;
 
   // Sets the kinematic configurations for the deformable geometries associated
   // with the given source.
@@ -764,7 +767,8 @@ class GeometryState {
   // as `X_WP`.
   void UpdatePosesRecursively(const internal::InternalFrame& frame,
                               const math::RigidTransform<T>& X_WP,
-                              const FramePoseVector<T>& poses);
+                              const FramePoseVector<T>& poses,
+                              KinematicsData<T>* kinematics_data) const;
 
   // Reports true if the given id refers to a _dynamic_ geometry. Assumes the
   // precondition that id refers to a valid geometry in the state.
@@ -837,6 +841,12 @@ class GeometryState {
   // Utility function to facilitate getting a double-valued pose for a frame,
   // regardless of T's actual type.
   math::RigidTransformd GetDoubleWorldPose(FrameId frame_id) const;
+
+  // Returns a mutable reference to the kinematics data in this GeometryState.
+  KinematicsData<T>& mutable_kinematics_data() const {
+     GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
+     return mutable_state->kinematics_data_;
+  }
 
   // NOTE: If adding a member it is important that it be _explicitly_ copied
   // in the converting copy constructor and likewise tested in the unit test
