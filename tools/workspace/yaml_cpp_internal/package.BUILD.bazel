@@ -4,6 +4,10 @@ load(
     "@drake//tools/install:install.bzl",
     "install",
 )
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+)
 
 licenses(["notice"])  # MIT
 
@@ -20,39 +24,22 @@ _SRCS = glob([
     "src/*.h",
 ], allow_empty = False)
 
-# In the next few stanzas, we'll rewrite the upstream headers and sources to
-# use a different include paths and a private namespace. This gives Drake a
-# completely independent build of the upstream library, even when statically
-# linking other versions of the library into the same DSO.
-_VENDORED_HDRS = [
-    x.replace("include/yaml-cpp/", "include/drake-yaml-cpp/")
-    for x in _HDRS
-]
-
-_VENDORED_SRCS = [
-    x.replace("src/", "drake-src/")
-    for x in _SRCS
-]
-
-genrule(
-    name = "foo",
-    srcs = _HDRS + _SRCS,
-    outs = _VENDORED_HDRS + _VENDORED_SRCS,
-    cmd = " ".join([
-        "$(execpath @drake//tools/workspace/yaml_cpp_internal:vendor_cxx)",
-        "--edit-include=yaml-cpp/:drake-yaml-cpp/",
-    ] + [
-        "$(execpath {}):$(execpath {})".format(old, new)
-        for old, new in zip(_HDRS, _VENDORED_HDRS) + zip(_SRCS, _VENDORED_SRCS)
-    ]),
-    tools = ["@drake//tools/workspace/yaml_cpp_internal:vendor_cxx"],
-)
-
-cc_library(
+cc_library_vendored(
     name = "yaml_cpp",
-    hdrs = _VENDORED_HDRS,
-    srcs = _VENDORED_SRCS,
-    includes = ["include"],
+    srcs = _SRCS,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/")
+        for x in _SRCS
+    ],
+    hdrs = _HDRS,
+    hdrs_vendored = [
+        x.replace("include/yaml-cpp/", "drake_src/drake_vendor/yaml-cpp/")
+        for x in _HDRS
+    ],
+    edit_include = {
+        "yaml-cpp/": "drake_vendor/yaml-cpp/",
+    },
+    includes = ["drake_src"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )

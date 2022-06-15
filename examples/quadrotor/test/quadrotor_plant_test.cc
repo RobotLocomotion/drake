@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
@@ -22,6 +23,15 @@ GTEST_TEST(QuadrotorPlantTest, ToAutoDiff) {
 GTEST_TEST(QuadrotorPlantTest, ToSymbolic) {
   const QuadrotorPlant<double> plant;
   EXPECT_FALSE(is_symbolic_convertible(plant));
+}
+
+// Ensure that DoCalcTimeDerivatives succeeds even if the input port is
+// disconnected.
+GTEST_TEST(QuadrotorPlantTest, NoInput) {
+  const QuadrotorPlant<double> plant;
+  auto context = plant.CreateDefaultContext();
+
+  DRAKE_EXPECT_NO_THROW(plant.EvalTimeDerivatives(*context));
 }
 
 }  // namespace

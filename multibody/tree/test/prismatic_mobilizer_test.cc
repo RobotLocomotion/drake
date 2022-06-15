@@ -40,6 +40,11 @@ class PrismaticMobilizerTest : public MobilizerTester {
   const Vector3d axis_F_{1.0, 2.0, 3.0};
 };
 
+TEST_F(PrismaticMobilizerTest, CanRotateOrTranslate) {
+  EXPECT_FALSE(slider_->can_rotate());
+  EXPECT_TRUE(slider_->can_translate());
+}
+
 // Verify that PrismaticMobilizer normalizes its axis on construction.
 TEST_F(PrismaticMobilizerTest, AxisIsNormalizedAtConstruction) {
   EXPECT_TRUE(CompareMatrices(

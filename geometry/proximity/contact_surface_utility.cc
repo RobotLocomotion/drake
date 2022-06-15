@@ -6,6 +6,7 @@
 #include <fmt/ostream.h>
 
 #include "drake/common/default_scalars.h"
+#include "drake/math/autodiff.h"
 
 namespace drake {
 namespace geometry {
@@ -90,15 +91,18 @@ void ThrowIfInvalidForCentroid(const char* prefix,
   //     care about the normal.
   //   - the null space has a single, non-zero basis vector; this is the plane
   //     equation and we can extract the normal from it.
-  MatrixX<T> A;
+  MatrixX<double> A;
   const int v_count = static_cast<int>(polygon.size());
   A.resize(v_count, 4);
   for (int i = 0; i < v_count; ++i) {
     const Vector3<T>& v = vertices_F[polygon[i]];
-    A.block(i, 0, 1, 4) << v(0), v(1), v(2), 1;
+    A.block(i, 0, 1, 4) << ExtractDoubleOrThrow(v(0)),
+                           ExtractDoubleOrThrow(v(1)),
+                           ExtractDoubleOrThrow(v(2)),
+                           1.0;
   }
 
-  Eigen::FullPivLU<MatrixX<T>> lu(A);
+  Eigen::FullPivLU<MatrixX<double>> lu(A);
 
   if (lu.dimensionOfKernel() == 0) {
     // A kernel with dimension equal to zero implies the null space consists of
@@ -115,7 +119,7 @@ void ThrowIfInvalidForCentroid(const char* prefix,
 
   // The kernel is the null space of A. We know it has a single vector and we
   // take the first three entries as the normal.
-  const Vector3<T> plane_norm = lu.kernel().block(0, 0, 3, 1).normalized();
+  const Vector3<double> plane_norm = lu.kernel().block(0, 0, 3, 1).normalized();
 
   // We've stated "@pre n_F is perpendicular to polygon". This is sleight of
   // hand so the caller makes an effort. In practice,  as long as we're well

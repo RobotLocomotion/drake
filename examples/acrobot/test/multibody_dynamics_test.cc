@@ -15,11 +15,11 @@ namespace {
 // Tests that the hand-derived dynamics (from the textbook) match the dynamics
 // generated from the urdf and sdf files via the MultibodyPlant class.
 GTEST_TEST(MultibodyDynamicsTest, AllTests) {
-  for (const std::string& ext : {"urdf", "sdf"}) {
+  for (const char* const ext : {"urdf", "sdf"}) {
     const double kTimeStep = 0.0;
     multibody::MultibodyPlant<double> mbp(kTimeStep);
-    multibody::Parser(&mbp).AddModelFromFile(
-        FindResourceOrThrow("drake/examples/acrobot/Acrobot." + ext));
+    multibody::Parser(&mbp).AddModelFromFile(FindResourceOrThrow(
+        fmt::format("drake/examples/acrobot/Acrobot.{}", ext)));
     mbp.Finalize();
 
     AcrobotPlant<double> p;

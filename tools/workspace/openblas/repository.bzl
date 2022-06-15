@@ -21,7 +21,7 @@ def _impl(repo_ctx):
     os_result = determine_os(repo_ctx)
     if os_result.error != None:
         fail(os_result.error)
-    if os_result.is_macos:
+    if os_result.is_macos or os_result.is_macos_wheel:
         error = setup_pkg_config_repository(repo_ctx).error
         if error != None:
             fail(error)

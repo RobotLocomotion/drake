@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version='1.7'>
+  <model name='robot'>
+    <link name='link1'>
+      <collision name='link1_sphere'>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+    <joint name='revolute_joint_12' type='revolute'>
+      <parent>link1</parent>
+      <child>link2</child>
+      <axis/>
+    </joint>
+    <link name='link2'>
+      <collision name='link2_sphere'>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+    <joint name='revolute_joint_23' type='revolute'>
+      <parent>link2</parent>
+      <child>link3</child>
+      <axis/>
+    </joint>
+    <link name='link3'>
+      <collision name='link3_sphere'>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+    <joint name='revolute_joint_34' type='revolute'>
+      <parent>link3</parent>
+      <child>link4</child>
+      <axis/>
+    </joint>
+    <link name='link4'>
+      <collision name='link4_sphere'>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+    <joint name='revolute_joint_35' type='revolute'>
+      <parent>link3</parent>
+      <child>link5</child>
+      <axis/>
+    </joint>
+    <link name='link5'>
+      <collision name='link5_sphere'>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+    <joint name='revolute_joint_36' type='revolute'>
+      <parent>link3</parent>
+      <child>link6</child>
+      <axis/>
+    </joint>
+    <link name='link6'>
+      <collision name='link6_sphere'>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+    <drake:collision_filter_group name="group_link14">
+      <drake:member>link1</drake:member>
+      <drake:member>link4</drake:member>
+      <drake:ignored_collision_filter_group>group_link14</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+    <drake:collision_filter_group name="group_link2">
+      <drake:member>link2</drake:member>
+      <drake:ignored_collision_filter_group>group_link3</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+    <drake:collision_filter_group ignore="true" name="group_link24">
+      <drake:member>link2</drake:member>
+      <drake:member>link4</drake:member>
+      <drake:ignored_collision_filter_group>group_link24</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+    <drake:collision_filter_group name="group_link3">
+      <drake:member>link3</drake:member>
+      <drake:ignored_collision_filter_group>group_link14</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+    <drake:collision_filter_group name="group_link56">
+      <drake:member>link5</drake:member>
+      <drake:member>link6</drake:member>
+      <drake:ignored_collision_filter_group>group_link56</drake:ignored_collision_filter_group>
+      <drake:ignored_collision_filter_group>group_link3</drake:ignored_collision_filter_group>
+      <drake:ignored_collision_filter_group>group_link2</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+  </model>
+</sdf>

@@ -191,7 +191,6 @@ drake_pybind_library(
         "//bindings/pydrake/solvers:mathematicalprogram_py",
         "//bindings/pydrake:trajectories_py",
     ],
-    py_srcs = ["_trajectory_optimization_extra.py"],
 )
 
 # TODO(eric.cousineau): Put this under test once `pydot` is in
@@ -258,8 +257,7 @@ drake_py_library(
         "//bindings/pydrake:lcm_py",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common:eigen_geometry_py",
-        "@meshcat_python//:meshcat",
-        "@meshcat_python//:meshcat-server",
+        "@meshcat_python//:meshcat_sans_deprecation_warning",
     ],
 )
 
@@ -319,13 +317,6 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
 )
 
-drake_py_library(
-    name = "system_sliders_py",
-    srcs = ["system_sliders.py"],
-    imports = PACKAGE_INFO.py_imports,
-    deps = [":module_py"],
-)
-
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":controllers_py",
@@ -347,7 +338,6 @@ PY_LIBRARIES = [
     ":perception_py",
     ":planar_scenegraph_visualizer_py",
     ":pyplot_visualizer_py",
-    ":system_sliders_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -443,6 +433,7 @@ drake_py_unittest(
         ":framework_py",
         ":primitives_py",
         "//bindings/pydrake:trajectories_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
@@ -618,19 +609,9 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "system_sliders_test",
-    deps = [
-        ":primitives_py",
-        ":system_sliders_py",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
-    ],
-)
-
-drake_py_unittest(
     name = "trajectory_optimization_test",
     deps = [
         ":trajectory_optimization_py",
-        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/examples:pendulum_py",
     ],
 )

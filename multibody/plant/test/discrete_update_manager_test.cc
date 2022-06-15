@@ -40,7 +40,7 @@ constexpr double kDt = 0.1;
  dummy data.
  @tparam_nonsymbolic_scalar */
 template <typename T>
-class DummyDiscreteUpdateManager : public DiscreteUpdateManager<T> {
+class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyDiscreteUpdateManager);
 
@@ -162,7 +162,8 @@ namespace {
 class DiscreteUpdateManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    plant_.AddRigidBody("rigid body", SpatialInertia<double>());
+    // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+    plant_.AddRigidBody("rigid body", SpatialInertia<double>::MakeTestCube());
     auto dummy_model = std::make_unique<DummyModel<double>>();
     dummy_model_ = dummy_model.get();
     plant_.AddPhysicalModel(std::move(dummy_model));

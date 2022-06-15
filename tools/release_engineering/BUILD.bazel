@@ -17,7 +17,7 @@ drake_py_binary_ubuntu_only(
     name = "relnotes",
     srcs = ["relnotes.py"],
     deps = [
-        "@github3_py",
+        "@github3_py_internal//:github3_py",
     ],
 )
 
@@ -35,6 +35,21 @@ drake_py_unittest_ubuntu_only(
 drake_py_binary_ubuntu_only(
     name = "download_release_candidate",
     srcs = ["download_release_candidate.py"],
+)
+
+# Convert drake .tar.gz archives into .deb archives.
+drake_py_binary_ubuntu_only(
+    name = "repack_deb",
+    srcs = ["repack_deb.py"],
+    data = [
+        "debian/changelog.in",
+        "debian/compat",
+        "debian/control.in",
+        "debian/copyright",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
 )
 
 add_lint_tests()

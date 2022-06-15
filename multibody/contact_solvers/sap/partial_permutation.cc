@@ -1,5 +1,6 @@
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "fmt/format.h"
@@ -78,6 +79,11 @@ int PartialPermutation::permuted_index(int i) const {
         fmt::format("Index {} does not participate in this permutation.", i));
   }
   return permutation_[i];
+}
+
+int PartialPermutation::domain_index(int i_permuted) const {
+  DRAKE_THROW_UNLESS(0 <= i_permuted && i_permuted < permuted_domain_size());
+  return inverse_permutation_[i_permuted];
 }
 
 bool PartialPermutation::participates(int i) const {

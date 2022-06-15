@@ -14,9 +14,6 @@ using Eigen::VectorXd;
 constexpr int N = kJacoDefaultArmNumJoints;
 constexpr int N_F = kJacoDefaultArmNumFingers;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
 class JacoCommandReceiverTestBase : public testing::Test {
  public:
   JacoCommandReceiverTestBase(int num_joints, int num_fingers)
@@ -36,10 +33,6 @@ class JacoCommandReceiverTestBase : public testing::Test {
     // TODO(jwnimmer-tri) This systems framework API is not very ergonomic.
     fixed_input_.GetMutableData()->
         template get_mutable_value<lcmt_jaco_command>() = message;
-  }
-
-  VectorXd state() const {
-    return dut_.get_output_port().Eval(context_);
   }
 
   VectorXd position() const {
@@ -70,23 +63,6 @@ class JacoCommandReceiverNoFingersTest : public JacoCommandReceiverTestBase {
       : JacoCommandReceiverTestBase(
             kJacoDefaultArmNumJoints, 0) {}
 };
-
-TEST_F(JacoCommandReceiverTest, DeprecatedInitialPositionTest) {
-  constexpr int total_dof =
-      kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers;
-
-  // Check that the commanded pose starts out at zero.
-  EXPECT_TRUE(CompareMatrices(state(), VectorXd::Zero(total_dof * 2)));
-
-  // Check that we can set a different initial position.
-  const VectorXd q0 = VectorXd::LinSpaced(total_dof, 0.1, 0.2);
-  dut_.set_initial_position(&context_, q0);
-  EXPECT_TRUE(CompareMatrices(state().head(total_dof), q0));
-  EXPECT_TRUE(CompareMatrices(state().tail(total_dof),
-                              VectorXd::Zero(total_dof)));
-}
-
-#pragma GCC diagnostic pop
 
 TEST_F(JacoCommandReceiverTest, AcceptanceTestWithoutMeasuredPositionInput) {
   // When no message has been received and *no* position measurement is

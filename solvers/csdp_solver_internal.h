@@ -3,15 +3,12 @@
 // For external users, please do not include this header file. It only exists so
 // that we can expose the internals to csdp_solver_internal_test.cc
 
-#include <unordered_map>
 #include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/solvers/csdp_cpp_wrapper.h"
-#include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/sdpa_free_format.h"
 
 namespace drake {

@@ -6,6 +6,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/primitives/linear_system.h"
 
 using drake::math::RigidTransformd;
 using drake::systems::Context;
@@ -227,6 +228,46 @@ GTEST_TEST(WeldedBoxesTest, ForwardDynamicsViaArticulatedBodyAlgorithm) {
   const VectorXd vdot =
       MultibodyPlantTester::CalcGeneralizedAccelerations(plant, *context);
   EXPECT_EQ(vdot.size(), 0);
+}
+
+std::unique_ptr<systems::LinearSystem<double>> MakeLinearizedCartPole(
+    double time_step) {
+  const std::string sdf_file = FindResourceOrThrow(
+      "drake/examples/multibody/cart_pole/cart_pole.sdf");
+
+  MultibodyPlant<double> plant(time_step);
+  Parser(&plant).AddModelFromFile(sdf_file);
+  plant.Finalize();
+
+  auto context = plant.CreateDefaultContext();
+  plant.get_actuation_input_port().FixValue(context.get(), 0.);
+  plant.SetPositionsAndVelocities(context.get(),
+                                  Eigen::Vector4d{0, M_PI, 0, 0});
+
+  return systems::Linearize(plant, *context,
+                            plant.get_actuation_input_port().get_index(),
+                            systems::OutputPortSelection::kNoOutput);
+}
+
+// This test revealed a bug (#17037) in MultibodyPlant<AutoDiffXd>.
+GTEST_TEST(MultibodyPlantTest, CartPoleLinearization) {
+  const double kTimeStep = 0.1;
+  auto ct_linearization = MakeLinearizedCartPole(0.0);
+  auto dt_linearization = MakeLinearizedCartPole(kTimeStep);
+
+  // v_next = v0 + time_step * (A * x + B * u)
+  // q_next = q0 + time_step * v_next
+  Eigen::Matrix4d A_expected = Eigen::Matrix4d::Identity();
+  A_expected.bottomRows<2>() +=
+      kTimeStep * ct_linearization->A().bottomRows<2>();
+  A_expected.topRows<2>() += kTimeStep * A_expected.bottomRows<2>();
+  Eigen::Vector4d B_expected;
+  B_expected.bottomRows<2>() =
+      kTimeStep * ct_linearization->B().bottomRows<2>();
+  B_expected.topRows<2>() = kTimeStep * B_expected.bottomRows<2>();
+
+  EXPECT_TRUE(CompareMatrices(dt_linearization->A(), A_expected, 1e-16));
+  EXPECT_TRUE(CompareMatrices(dt_linearization->B(), B_expected, 1e-16));
 }
 
 // TODO(amcastro-tri): Include test with non-zero actuation and external forces.

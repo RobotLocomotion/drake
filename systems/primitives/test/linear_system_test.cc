@@ -447,8 +447,7 @@ GTEST_TEST(TestLinearize, LinearizingOnAbstractPortThrows) {
   EmptyStateSystemWithAbstractInput<double> system;
   auto context = system.CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context),
-      "Port requested for differentiation is abstract, and differentiation of "
-      "abstract ports is not supported.");
+      ".*only supports vector-valued.*");
 }
 
 // Test linearizing a system with mixed (vector and abstract) inputs.
@@ -492,12 +491,18 @@ GTEST_TEST(TestLinearize, Controllability) {
 
   EXPECT_TRUE(IsControllable(sys1));
 
+  // The discrete-time controllability matrix is the same as the continuous time
+  // one.
+  LinearSystem<double> sys2(A, B, C, D, 1);
+  EXPECT_TRUE(CompareMatrices(ControllabilityMatrix(sys1),
+                              ControllabilityMatrix(sys2)));
+
   // Uncontrollable system: x1dot = u, x2dot = u.
   A << 0, 0, 0, 0;
   B << 1, 1;
-  LinearSystem<double> sys2(A, B, C, D);
+  LinearSystem<double> sys3(A, B, C, D);
 
-  EXPECT_FALSE(IsControllable(sys2));
+  EXPECT_FALSE(IsControllable(sys3));
 }
 
 // Test a few simple systems that are known to be observable (or not).
@@ -524,6 +529,22 @@ GTEST_TEST(TestLinearize, Observability) {
   // Observable: y = x1;
   LinearSystem<double> sys3(A, B, C.topRows(1), D.topRows(1));
   EXPECT_TRUE(IsObservable(sys3));
+}
+
+GTEST_TEST(TestLinearize, Observability2) {
+  Eigen::Matrix2d A;
+  A << 1, 2, 3, 4;
+  const Eigen::Matrix<double, 2, 0> B;
+  Eigen::Matrix<double, 1, 2> C;
+  C << 1, 2;
+  const Eigen::Matrix<double, 1, 0> D;
+  const double kTimeStep = 1;
+
+  const LinearSystem<double> sys(A, B, C, D, kTimeStep);
+
+  Eigen::Matrix2d O;
+  O << 1, 2, 7, 10;
+  EXPECT_TRUE(CompareMatrices(ObservabilityMatrix(sys), O, 1e-14));
 }
 
 class LinearSystemSymbolicTest : public ::testing::Test {

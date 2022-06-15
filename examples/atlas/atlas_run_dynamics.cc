@@ -18,7 +18,7 @@ DEFINE_double(stiction_tolerance, 1.0E-3,
               "Allowable drift speed during stiction (m/s).");
 
 DEFINE_double(
-    mbp_discrete_update_period, 5.0E-4,
+    mbp_discrete_update_period, 1.0E-3,
     "The fixed-time step period (in seconds) of discrete updates for the "
     "multibody plant modeled as a discrete system. Strictly positive. "
     "Set to zero for a continuous plant model.");

@@ -62,7 +62,8 @@ struct Bound {
  * (lower, upper) bounds of that variable as the tightest bounds of @p
  * bounding_box_constraints.
  */
-std::unordered_map<symbolic::Variable, Bound> AggregateBoundingBoxConstraints(
+[[nodiscard]] std::unordered_map<symbolic::Variable, Bound>
+AggregateBoundingBoxConstraints(
     const std::vector<Binding<BoundingBoxConstraint>>&
         bounding_box_constraints);
 
@@ -85,7 +86,7 @@ void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
  * Returns the first non-convex quadratic cost among @p quadratic_costs. If all
  * quadratic costs are convex, then return a nullptr.
  */
-const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
+[[nodiscard]] const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
     const std::vector<Binding<QuadraticCost>>& quadratic_costs);
 
 namespace internal {

@@ -17,6 +17,12 @@ git clone --depth 1 \
     https://github.com/RobotLocomotion/drake.git /drake
 
 cd /drake
+# Drake requires the setup script to be installed in order to load
+# drake/gen/environment.bazelrc, this command generates this file.
+./setup/ubuntu/source_distribution/install_prereqs_user_environment.sh
+
+# Patch command is required to build lcm.
+apt-get install -y --no-install-recommends patch
 
 bazel run \
     --copt=-fstack-protector-strong \

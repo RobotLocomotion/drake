@@ -1,10 +1,22 @@
 <?xml version="1.0"?>
 <robot name="arm">
-  <link name="L1"/>
+  <link name="L1">
+    <collision name='L1'>
+      <geometry>
+        <sphere radius='0.4'/>
+      </geometry>
+    </collision>
+  </link>
   <joint name="J1" type="revolute">
     <origin xyz="1 2 3" rpy="0.1 0.2 0.3"/>
     <parent link="L1"/>
     <child link="L2"/>
   </joint>
-  <link name="L2"/>
+  <link name="L2">
+    <collision name='L2'>
+      <geometry>
+        <sphere radius='0.4'/>
+      </geometry>
+    </collision>
+  </link>
 </robot>

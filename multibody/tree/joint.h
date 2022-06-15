@@ -84,6 +84,9 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   ///   The frame F attached on the parent body connected by this joint.
   /// @param[in] frame_on_child
   ///   The frame M attached on the child body connected by this joint.
+  /// @param[in] damping
+  ///   A vector of viscous damping coefficients, of size num_velocities().
+  ///   See damping_vector() for details.
   /// @param[in] pos_lower_limits
   ///   A vector storing the lower limit for each generalized position.
   ///   It must have the same size as `pos_upper_limit`.
@@ -109,17 +112,18 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   ///   It must have the same size as `acc_lower_limit`.
   ///   A value equal to +∞ implies no upper limit.
   Joint(const std::string& name, const Frame<T>& frame_on_parent,
-        const Frame<T>& frame_on_child, const VectorX<double>& pos_lower_limits,
+        const Frame<T>& frame_on_child, VectorX<double> damping,
+        const VectorX<double>& pos_lower_limits,
         const VectorX<double>& pos_upper_limits,
         const VectorX<double>& vel_lower_limits,
         const VectorX<double>& vel_upper_limits,
         const VectorX<double>& acc_lower_limits,
         const VectorX<double>& acc_upper_limits)
-      : MultibodyElement<Joint, T, JointIndex>(
-        frame_on_child.model_instance()),
+      : MultibodyElement<Joint, T, JointIndex>(frame_on_child.model_instance()),
         name_(name),
         frame_on_parent_(frame_on_parent),
         frame_on_child_(frame_on_child),
+        damping_(std::move(damping)),
         pos_lower_limits_(pos_lower_limits),
         pos_upper_limits_(pos_upper_limits),
         vel_lower_limits_(vel_lower_limits),
@@ -131,13 +135,13 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     // Notice `this` joint references `frame_on_parent` and `frame_on_child` and
     // therefore they must outlive it.
     DRAKE_DEMAND(pos_lower_limits.size() == pos_upper_limits.size());
+    DRAKE_DEMAND(vel_lower_limits.size() == vel_upper_limits.size());
+    DRAKE_DEMAND(acc_lower_limits.size() == acc_upper_limits.size());
+    DRAKE_DEMAND(damping_.size() == vel_lower_limits.size());
+
     // Verify that lower_limit <= upper_limit, elementwise.
     DRAKE_DEMAND((pos_lower_limits.array() <= pos_upper_limits.array()).all());
-
-    DRAKE_DEMAND(vel_lower_limits.size() == vel_upper_limits.size());
     DRAKE_DEMAND((vel_lower_limits.array() <= vel_upper_limits.array()).all());
-
-    DRAKE_DEMAND(acc_lower_limits.size() == acc_upper_limits.size());
     DRAKE_DEMAND((acc_lower_limits.array() <= acc_upper_limits.array()).all());
 
     // N.B. We cannot use `num_positions()` here because it is virtual.
@@ -146,6 +150,21 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     // intialize the default positions.
     default_positions_ = VectorX<double>::Zero(num_positions);
   }
+
+  /// Additional constructor overload for joints with zero damping. Refer to
+  /// the more general constructor signature taking damping for further details
+  /// on the rest of the arguments for this constructor.
+  Joint(const std::string& name, const Frame<T>& frame_on_parent,
+        const Frame<T>& frame_on_child, const VectorX<double>& pos_lower_limits,
+        const VectorX<double>& pos_upper_limits,
+        const VectorX<double>& vel_lower_limits,
+        const VectorX<double>& vel_upper_limits,
+        const VectorX<double>& acc_lower_limits,
+        const VectorX<double>& acc_upper_limits)
+      : Joint(name, frame_on_parent, frame_on_child,
+              VectorX<double>::Zero(vel_lower_limits.size()), pos_lower_limits,
+              pos_upper_limits, vel_lower_limits, vel_upper_limits,
+              acc_lower_limits, acc_upper_limits) {}
 
   virtual ~Joint() {}
 
@@ -201,6 +220,18 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     DRAKE_ASSERT(0 <= do_get_num_positions() && do_get_num_positions() <= 7);
     return do_get_num_positions();
   }
+
+  /// Returns true if this joint's mobilizers allow relative rotation of the
+  /// two frames associated with this joint.
+  /// @pre the MultibodyPlant must be finalized.
+  /// @see can_translate()
+  bool can_rotate() const;
+
+  /// Returns true if this joint's mobilizers allow relative translation of the
+  /// two frames associated with this joint.
+  /// @pre the MultibodyPlant must be finalized.
+  /// @see can_rotate()
+  bool can_translate() const;
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
   /// the `k`th position in this joint.  @p position_index_in_joint must be
@@ -426,6 +457,32 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     do_set_default_positions(default_positions);
   }
   /// @}
+
+  /// Returns all damping coefficients for joints that model viscous damping, of
+  /// size num_velocities(). Joints that do not model damping return a zero
+  /// vector of size num_velocities(). If vj is the vector of generalized
+  /// velocities for this joint, of size num_velocities(), viscous damping
+  /// models a generalized force at the joint of the form tau = -diag(dj)⋅vj,
+  /// with dj the vector returned by this function. The units of the
+  /// coefficients will depend on the specific joint type. For instance, for a
+  /// revolute joint where vj is an angular velocity with units of rad/s and tau
+  /// having units of N⋅m, the coefficient of viscous damping has units of
+  /// N⋅m⋅s. Refer to each joint's documentation for further details.
+  const VectorX<double>& damping_vector() const {
+    return damping_;
+  }
+
+  /// Sets the default value of the viscous damping coefficients for this joint.
+  /// Refer to damping_vector() for details.
+  /// @throws std::exception if damping.size() != num_velocities().
+  /// @throws std::exception if any of the damping coefficients is negative.
+  /// @pre the MultibodyPlant must not be finalized.
+  void set_default_damping_vector(const VectorX<double>& damping) {
+    DRAKE_THROW_UNLESS(damping.size() == num_velocities());
+    DRAKE_THROW_UNLESS((damping.array() >= 0).all());
+    DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
+    damping_ = damping;
+  }
 
   // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
@@ -667,6 +724,8 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   std::string name_;
   const Frame<T>& frame_on_parent_;
   const Frame<T>& frame_on_child_;
+
+  VectorX<double> damping_;
 
   // Joint position limits. These vectors have zero size for joints with no
   // such limits.

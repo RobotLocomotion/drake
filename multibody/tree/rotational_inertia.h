@@ -488,6 +488,21 @@ class RotationalInertia {
         isnan(I_SP_E_(2, 0)) || isnan(I_SP_E_(2, 1)) || isnan(I_SP_E_(2, 2));
   }
 
+  /// Returns `true` if all moments and products of inertia are exactly zero.
+  boolean<T> IsZero() const {
+    // Only check the lower-triangular part of this symmetric matrix for zero.
+    // The three upper off-diagonal products of inertia should be/remain NaN.
+    static_assert(is_lower_triangular_order(0, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(1, 1), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 2), "Invalid indices");
+    return I_SP_E_(0, 0) == T(0) &&
+    I_SP_E_(1, 0) == T(0) && I_SP_E_(1, 1) == T(0) &&
+    I_SP_E_(2, 0) == T(0) && I_SP_E_(2, 1) == T(0) && I_SP_E_(2, 2) == T(0);
+  }
+
   /// Returns a new %RotationalInertia object templated on `Scalar` initialized
   /// from the values of `this` rotational inertia's entries.
   ///

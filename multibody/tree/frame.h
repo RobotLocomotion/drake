@@ -18,26 +18,30 @@ namespace multibody {
 template<typename T> class Body;
 
 /// %Frame is an abstract class representing a _material frame_ (also called a
-/// _physical frame_), meaning that it is associated with a material point of a
-/// Body. A material frame can be used to apply forces and torques to a
-/// multibody system, and can be used as an attachment point for force-producing
-/// elements like joints, actuators, and constraints. Despite its name, %Frame
-/// is not the most general frame representation in Drake; see FrameBase for a
-/// more-general discussion.
+/// _physical frame_), meaning that the %Frame's origin is a material point of
+/// a Body.
 ///
-/// The pose and motion of a %Frame object is always calculated relative to the
-/// BodyFrame of the body with which it is associated, and every %Frame object
-/// can report which Body object that is. Concrete classes derived from %Frame
-/// differ only in how those kinematic properties are calculated. For soft
-/// bodies that calculation may depend on the body's deformation state
-/// variables. A %Frame on a rigid body will usually have a fixed offset from
-/// its BodyFrame, but that is not required -- a frame that moves with respect
-/// to its BodyFrame can still be a material frame on that rigid body.
+/// An important characteristic of a %Frame is that forces or torques applied
+/// to a %Frame are applied to the %Frame's underlying Body. Force-producing
+/// elements like joints, actuators, and constraints usually employ two %Frames,
+/// with one %Frame connected to one body and the other connected to a different
+/// Body. Every %Frame object can report the Body to which it is attached.
+/// Despite its name, %Frame is not the most general frame in Drake
+/// (see FrameBase for more information).
 ///
-/// As always in Drake, runtime numerical quantities are stored in a Context.
-/// A %Frame object does not store runtime values, but provides methods for
-/// extracting frame-associated values (such as the %Frame object's kinematics)
-/// from a given Context.
+/// A %Frame's pose in World (or relative to other frames) is always calculated
+/// starting with its pose relative to its underlying %Body's BodyFrame.
+/// Subclasses derived from %Frame differ in how kinematic calculations are
+/// performed. For example, the angular velocity of a FixedOffsetFrame or
+/// BodyFrame is identical to the angular velocity of its underlying body,
+/// whereas the translational velocity of a FixedOffsetFrame differs from that
+/// of a BodyFrame. If a %Frame is associated with a soft body, kinematic
+/// calculations can depend on the soft body's deformation state variables.
+///
+/// A %Frame object does _not_ store a Context (where Context means state that
+/// contains the %Frame's current orientation, position, motion, etc.).
+/// Instead, %Frame provides methods for calculating these %Frame-properties
+/// from a Context passed to %Frame methods.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -192,6 +196,55 @@ class Frame : public FrameBase<T> {
         context, this->get_parent_tree().world_frame(), *this);
   }
 
+  /// Evaluates `this` frame F's angular velocity measured and expressed in the
+  /// world frame W.
+  /// @param[in] context contains the state of the multibody system.
+  /// @return ω_WF_W (frame F's angular velocity ω measured and expressed in
+  /// the world frame W).
+  /// @see CalcAngularVelocity() to calculate ω_MF_E (`this` frame F's angular
+  /// velocity ω measured in a frame M and expressed in a frame E).
+  const Vector3<T>& EvalAngularVelocityInWorld(
+      const systems::Context<T>& context) const {
+    // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
+    //  rigid body (not a soft body). Modify if soft bodies are possible.
+    const SpatialVelocity<T>& V_WB = body().EvalSpatialVelocityInWorld(context);
+    const Vector3<T>& w_WF_W = V_WB.rotational();
+    return w_WF_W;
+  }
+
+  /// Calculates `this` frame F's angular velocity measured in a frame M,
+  /// expressed in a frame E.
+  /// @param[in] context contains the state of the multibody system.
+  /// @param[in] measured_in_frame which is frame M (the frame in which `this`
+  /// angular velocity is to be measured).
+  /// @param[in] expressed_in_frame which is frame E (the frame in which the
+  /// returned angular velocity is to be expressed).
+  /// @return ω_MF_E, `this` frame F's angular velocity ω measured in frame M,
+  /// expressed in frame E.
+  /// @see EvalAngularVelocityInWorld() to evaluate ω_WF_W (`this` frame F's
+  /// angular velocity ω measured and expressed in the world frame W).
+  Vector3<T> CalcAngularVelocity(
+    // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
+    //  rigid body (not a soft body). Modify if soft bodies are possible.
+      const systems::Context<T>& context,
+      const Frame<T>& measured_in_frame,
+      const Frame<T>& expressed_in_frame) const {
+    const Frame<T>& frame_M = measured_in_frame;
+    const Frame<T>& frame_E = expressed_in_frame;
+    const Vector3<T>& w_WF_W = EvalAngularVelocityInWorld(context);
+    const Vector3<T>& w_WM_W = frame_M.EvalAngularVelocityInWorld(context);
+    const Vector3<T> w_MF_W = w_WF_W - w_WM_W;
+
+    // If the expressed-in frame E is the world, no need to re-express results.
+    if (frame_E.is_world_frame()) return w_MF_W;
+
+    const math::RotationMatrix<T> R_WE =
+        frame_E.CalcRotationMatrixInWorld(context);
+    const math::RotationMatrix<T> R_EW = R_WE.inverse();
+    const Vector3<T> w_MF_E = R_EW * w_MF_W;
+    return w_MF_E;
+  }
+
   /// Calculates `this` frame F's spatial velocity measured and expressed in
   /// the world frame W.
   /// @param[in] context contains the state of the multibody system.
@@ -206,9 +259,11 @@ class Frame : public FrameBase<T> {
   /// CalcSpatialAccelerationInWorld().
   SpatialVelocity<T> CalcSpatialVelocityInWorld(
       const systems::Context<T>& context) const {
+    // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
+    //  rigid body (not a soft body). Modify if soft bodies are possible.
     const math::RotationMatrix<T>& R_WB =
         body().EvalPoseInWorld(context).rotation();
-    const Vector3<T> p_BF_B = CalcPoseInBodyFrame(context).translation();
+    const Vector3<T> p_BF_B = GetFixedPoseInBodyFrame().translation();
     const Vector3<T> p_BF_W = R_WB * p_BF_B;
     const SpatialVelocity<T>& V_WB = body().EvalSpatialVelocityInWorld(context);
     const SpatialVelocity<T> V_WF = V_WB.Shift(p_BF_W);
@@ -340,6 +395,9 @@ class Frame : public FrameBase<T> {
   /// @see CalcSpatialAcceleration() and CalcSpatialVelocityInWorld().
   SpatialAcceleration<T> CalcSpatialAccelerationInWorld(
       const systems::Context<T>& context) const {
+    // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
+    //  rigid body (not a soft body). Modify if soft bodies are possible.
+
     // `this` frame_F is fixed to a body B.  Calculate A_WB_W, body B's spatial
     // acceleration in the world frame W, expressed in W.
     const SpatialAcceleration<T>& A_WB_W =
@@ -351,10 +409,9 @@ class Frame : public FrameBase<T> {
     // Shift spatial acceleration A_WB_W from Bo to Fp.
     const math::RotationMatrix<T>& R_WB =
         body().EvalPoseInWorld(context).rotation();
-    const Vector3<T> p_BoFo_B = CalcPoseInBodyFrame(context).translation();
+    const Vector3<T> p_BoFo_B = GetFixedPoseInBodyFrame().translation();
     const Vector3<T> p_BoFo_W = R_WB * p_BoFo_B;
-    const Vector3<T>& w_WB_W =
-        body().EvalSpatialVelocityInWorld(context).rotational();
+    const Vector3<T>& w_WB_W = EvalAngularVelocityInWorld(context);
     const SpatialAcceleration<T> A_WF_W = A_WB_W.Shift(p_BoFo_W, w_WB_W);
     return A_WF_W;
   }
@@ -402,8 +459,7 @@ class Frame : public FrameBase<T> {
       const SpatialAcceleration<T> A_WM_W =
           frame_M.CalcSpatialAccelerationInWorld(context);
       const Vector3<T>& alpha_WM_W = A_WM_W.rotational();
-      const Vector3<T> w_WM_W =
-          frame_M.CalcSpatialVelocityInWorld(context).rotational();;
+      const Vector3<T>& w_WM_W = frame_M.EvalAngularVelocityInWorld(context);
       const Frame<T>& frame_W = this->get_parent_tree().world_frame();
       const SpatialVelocity<T> V_MF_W =
           CalcSpatialVelocity(context, frame_M, frame_W);
@@ -438,6 +494,79 @@ class Frame : public FrameBase<T> {
     const math::RotationMatrix<T> R_WE =
         frame_E.CalcRotationMatrixInWorld(context);
     return R_WE.inverse() * A_MF_W;  // returns A_MF_E.
+  }
+
+  /// Calculates `this` frame C's spatial acceleration relative to another
+  /// frame B, measured and expressed in the world frame W.
+  /// @param[in] context contains the state of the multibody system.
+  /// @param[in] other_frame which is frame B.
+  /// @return A_W_BC_W = A_WC_W - A_WB_W, frame C's spatial acceleration
+  /// relative to frame B, measured and expressed in the world frame W.
+  ///
+  /// In general, A_W_BC = DtW(V_W_BC), the time-derivative in the world frame W
+  /// of frame C's spatial velocity relative to frame B. The rotational part of
+  /// the returned quantity is α_WC_W - α_WB_W = DtW(ω_BC)_W. For 3D analysis,
+  /// DtW(ω_BC) ≠ α_BC. The translational part of the returned quantity is
+  /// a_W_BoCo_W (Co's translational acceleration relative to Bo, measured and
+  /// expressed in world frame W). <pre>
+  ///  α_WC_W - α_WB_W = DtW(ω_WC)_W - DtW(ω_WB)_W = DtW(ω_BC)_W
+  ///  a_W_BoCo_W = a_WCo_W - a_WBo_W = DtW(v_WCo) - DtW(v_WBo) = Dt²W(p_BoCo)_W
+  /// </pre>
+  /// where Dt²W(p_BoCo)_W is the 2ⁿᵈ time-derivative in frame W of p_BoCo (the
+  /// position vector from Bo to Co), and this result is expressed in frame W.
+  /// @note The method CalcSpatialAccelerationInWorld() is more efficient and
+  /// coherent if any of `this`, other_frame, or the world frame W are the same.
+  /// @see CalcSpatialAccelerationInWorld(), CalcRelativeSpatialAcceleration().
+  SpatialAcceleration<T> CalcRelativeSpatialAccelerationInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& other_frame) const {
+    const Frame<T>& frame_B = other_frame;
+    const SpatialAcceleration<T> A_WB_W =
+        frame_B.CalcSpatialAccelerationInWorld(context);
+    const SpatialAcceleration<T> A_WC_W =
+        CalcSpatialAccelerationInWorld(context);
+    return A_WC_W - A_WB_W;
+  }
+
+  /// Calculates `this` frame C's spatial acceleration relative to another
+  /// frame B, measured in a frame M, expressed in a frame E.
+  /// @param[in] context contains the state of the multibody system.
+  /// @param[in] other_frame which is frame B.
+  /// @param[in] measured_in_frame which is frame M.
+  /// @param[in] expressed_in_frame which is frame E.
+  /// @return A_M_BC_E = A_MC_E - A_MB_E, frame C's spatial acceleration
+  /// relative to frame B, measured in frame M, expressed in frame E.
+  ///
+  /// In general, A_M_BC = DtW(V_M_BC), the time-derivative in frame M of
+  /// frame C's spatial velocity relative to frame B. The rotational part of the
+  /// returned quantity is α_MC_E - α_MB_E = DtM(ω_BC)_E. Note: For 3D analysis,
+  /// DtM(ω_BC) ≠ α_BC. The translational part of the returned quantity is
+  /// a_M_BoCo_E (Co's translational acceleration relative to Bo, measured in
+  /// frame M, expressed in frame E). <pre>
+  ///  α_MC_E - α_MB_E = DtM(ω_MC)_E - DtM(ω_MB)_E = DtM(ω_BC)_E
+  ///  a_M_BoCo_E = a_MCo_E - a_MBo_E = DtM(v_MCo) - DtM(v_MBo) = Dt²M(p_BoCo)_E
+  /// </pre>
+  /// where Dt²M(p_BoCo)_E is the 2ⁿᵈ time-derivative in frame M of p_BoCo (the
+  /// position vector from Bo to Co), and this result is expressed in frame E.
+  /// @note The calculation of the 2ⁿᵈ time-derivative of the distance between
+  /// Bo and Co can be done with relative translational acceleration, but this
+  /// calculation does not depend on the measured-in-frame, hence in this case,
+  /// consider CalcRelativeSpatialAccelerationInWorld() since it is faster.
+  /// @see CalcSpatialAccelerationInWorld(), CalcSpatialAcceleration(), and
+  /// CalcRelativeSpatialAccelerationInWorld().
+  SpatialAcceleration<T> CalcRelativeSpatialAcceleration(
+      const systems::Context<T>& context,
+      const Frame<T>& other_frame,
+      const Frame<T>& measured_in_frame,
+      const Frame<T>& expressed_in_frame) const {
+    const Frame<T>& frame_B = other_frame;
+    const Frame<T>& frame_M = measured_in_frame;
+    const Frame<T>& frame_E = expressed_in_frame;
+    const SpatialAcceleration<T> A_MB_E =
+        frame_B.CalcSpatialAcceleration(context, frame_M, frame_E);
+    const SpatialAcceleration<T> A_MC_E =
+        CalcSpatialAcceleration(context, frame_M, frame_E);
+    return A_MC_E - A_MB_E;
   }
 
   /// (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the

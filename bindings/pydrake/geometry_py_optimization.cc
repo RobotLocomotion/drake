@@ -129,6 +129,8 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.CartesianPower.doc)
         .def("Intersection", &HPolyhedron::Intersection, py::arg("other"),
             cls_doc.Intersection.doc)
+        .def("PontryaginDifference", &HPolyhedron::PontryaginDifference,
+            py::arg("other"), cls_doc.PontryaginDifference.doc)
         .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
@@ -367,7 +369,7 @@ void DefineGeometryOptimization(py::module m) {
                 },
                 cls_doc.Edges.doc)
             .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
-                py::arg("result"), py::arg("show_slacks") = true,
+                py::arg("result") = std::nullopt, py::arg("show_slacks") = true,
                 py::arg("precision") = 3, py::arg("scientific") = false,
                 cls_doc.GetGraphvizString.doc)
             .def("SolveShortestPath",

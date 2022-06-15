@@ -9,8 +9,6 @@ if [ ! -f "${WORKSPACE}/WORKSPACE" ]; then
   exit 1
 fi
 
-export PATH="/opt/kcov/35/bin:${PATH}"
-
 # ELF binaries with 'sh' in their first 80 bytes are mishandled by kcov,
 # leading to segfault. See https://github.com/SimonKagstrom/kcov/issues/339
 is_kcov_339_vulnerable () {

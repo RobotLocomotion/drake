@@ -7,19 +7,20 @@
 #include <string>
 #include <utility>
 
-#include <sdf/Box.hh>
-#include <sdf/Capsule.hh>
-#include <sdf/Cylinder.hh>
-#include <sdf/Element.hh>
-#include <sdf/Ellipsoid.hh>
-#include <sdf/Plane.hh>
-#include <sdf/Sphere.hh>
+#include <drake_vendor/sdf/Box.hh>
+#include <drake_vendor/sdf/Capsule.hh>
+#include <drake_vendor/sdf/Cylinder.hh>
+#include <drake_vendor/sdf/Element.hh>
+#include <drake_vendor/sdf/Ellipsoid.hh>
+#include <drake_vendor/sdf/Plane.hh>
+#include <drake_vendor/sdf/Sphere.hh>
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
+#include "drake/multibody/parsing/detail_sdf_diagnostic.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
@@ -92,6 +93,24 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
 
+  const std::set<std::string> supported_geometry_elements{
+    "box",
+    "capsule",
+    "cylinder",
+    "drake:capsule",
+    "drake:ellipsoid",
+    "ellipsoid",
+    "empty",
+    "heightmap",
+    "mesh",
+    "plane",
+    "polyline",
+    "sphere"};
+  CheckSupportedElements(
+      diagnostic, sdf_geometry.Element(), supported_geometry_elements);
+  // For the geometry elements parsed by sdformat, assume that all elements
+  // are supported and that sdformat is checking the schema.
+
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY: {
       // TODO(azeey): We should deprecate use of <drake:capsule> and
@@ -102,6 +121,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       if (sdf_geometry.Element()->HasElement("drake:capsule")) {
         const sdf::ElementPtr capsule_element =
             sdf_geometry.Element()->GetElement("drake:capsule");
+        CheckSupportedElements(
+            diagnostic, capsule_element, {"radius", "length"});
         const double radius =
             GetChildElementValue<double>(*capsule_element, "radius");
         const double length =
@@ -110,6 +131,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       } else if (sdf_geometry.Element()->HasElement("drake:ellipsoid")) {
         const sdf::ElementPtr ellipsoid_element =
             sdf_geometry.Element()->GetElement("drake:ellipsoid");
+        CheckSupportedElements(
+            diagnostic, ellipsoid_element, {"a", "b", "c"});
         const double a =
             GetChildElementValue<double>(*ellipsoid_element, "a");
         const double b =
@@ -190,15 +213,29 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     case sdf::GeometryType::HEIGHTMAP: {
       return std::unique_ptr<geometry::Shape>(nullptr);
     }
+    case sdf::GeometryType::POLYLINE: {
+      return std::unique_ptr<geometry::Shape>(nullptr);
+    }
   }
 
   DRAKE_UNREACHABLE();
 }
 
+static constexpr char kAcceptingTag[] = "drake:accepting_renderer";
+
 std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const DiagnosticPolicy& diagnostic,
     const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
     const math::RigidTransformd& X_LG) {
+
+  const std::set<std::string> supported_visual_elements{
+    "geometry",
+    "material",
+    "pose",
+    kAcceptingTag};
+  CheckSupportedElements(
+      diagnostic, sdf_visual.Element(), supported_visual_elements);
+
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
   if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
     // The file either specifies an EMPTY geometry or one that isn't recognized
@@ -231,6 +268,7 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     case sdf::GeometryType::CYLINDER:
     case sdf::GeometryType::ELLIPSOID:
     case sdf::GeometryType::MESH:
+    case sdf::GeometryType::POLYLINE:
     case sdf::GeometryType::SPHERE: {
       // X_LC = X_LG for these geometries.
       break;
@@ -295,7 +333,16 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
       MaybeGetChildElement(*visual_element, "material");
 
   if (material_element != nullptr) {
-    if (material_element->HasElement("drake:diffuse_map")) {
+    const std::set<std::string> supported_material_elements{
+      "ambient",
+      "diffuse",
+      "drake:diffuse_map",
+      "emissive",
+      "specular"};
+    CheckSupportedElements(
+        diagnostic, material_element, supported_material_elements);
+
+  if (material_element->HasElement("drake:diffuse_map")) {
       auto [texture_name, has_value] =
           material_element->Get<std::string>("drake:diffuse_map", {});
       if (has_value) {
@@ -334,7 +381,6 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
   //  parsing illustration and perception properties separately. So, we stash
   //  them in the illustration properties relying on it to be ignored by
   //  illustration consumers but copied over to the perception properties.
-  const string kAcceptingTag = "drake:accepting_renderer";
   if (visual_element->HasElement(kAcceptingTag)) {
     set<string> accepting_names;
     sdf::ElementPtr accepting = visual_element->GetElement(kAcceptingTag);
@@ -385,6 +431,7 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
     case sdf::GeometryType::CYLINDER:
     case sdf::GeometryType::ELLIPSOID:
     case sdf::GeometryType::MESH:
+    case sdf::GeometryType::POLYLINE:
     case sdf::GeometryType::SPHERE: {
       // X_LC = X_LG for these geometries.
       break;
@@ -415,11 +462,33 @@ ProximityProperties MakeProximityPropertiesForCollision(
   const sdf::ElementPtr collision_element = sdf_collision.Element();
   DRAKE_DEMAND(collision_element != nullptr);
 
+  const std::set<std::string> supported_collision_elements{
+    "drake:proximity_properties",
+    "geometry",
+    "laser_retro",
+    "pose",
+    "surface"};
+  CheckSupportedElements(
+      diagnostic, collision_element, supported_collision_elements);
+  CheckSupportedElementValue(
+      diagnostic, collision_element, "laser_retro", "0");
+
   const sdf::Element* const drake_element =
       MaybeGetChildElement(*collision_element, "drake:proximity_properties");
 
   geometry::ProximityProperties properties;
   if (drake_element != nullptr) {
+    const std::set<std::string> supported_proximity_elements{
+      "drake:rigid_hydroelastic",
+      "drake:compliant_hydroelastic",
+      "drake:soft_hydroelastic",
+      "drake:mesh_resolution_hint",
+      "drake:hydroelastic_modulus",
+      "drake:hunt_crossley_dissipation",
+      "drake:point_contact_stiffness",
+      "drake::mu_dynamic",
+      "drake::mu_static"};
+
     auto read_double =
         [drake_element](const char* element_name) -> std::optional<double> {
       std::optional<double> result;
@@ -468,11 +537,14 @@ ProximityProperties MakeProximityPropertiesForCollision(
     const sdf::Element* const surface_element =
         MaybeGetChildElement(*collision_element, "surface");
     if (surface_element) {
+      CheckSupportedElements(diagnostic, surface_element, {"friction"});
       const sdf::Element* friction_element =
           MaybeGetChildElement(*surface_element, "friction");
       if (friction_element) {
+      CheckSupportedElements(diagnostic, friction_element, {"ode"});
         const sdf::Element* ode_element =
             MaybeGetChildElement(*friction_element, "ode");
+        CheckSupportedElements(diagnostic, ode_element, {"mu", "mu2"});
         if (MaybeGetChildElement(*ode_element, "mu") ||
             MaybeGetChildElement(*ode_element, "mu2")) {
           diagnostic.Warning(fmt::format(

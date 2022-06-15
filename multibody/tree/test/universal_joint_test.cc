@@ -112,7 +112,11 @@ TEST_F(UniversalJointTest, GetJointLimits) {
             Vector2d::Constant(kAccelerationLowerLimit));
   EXPECT_EQ(joint_->acceleration_upper_limits(),
             Vector2d::Constant(kAccelerationUpperLimit));
+}
+
+TEST_F(UniversalJointTest, Damping) {
   EXPECT_EQ(joint_->damping(), kDamping);
+  EXPECT_EQ(joint_->damping_vector(), Vector2d::Constant(kDamping));
 }
 
 // Context-dependent value access.
@@ -222,6 +226,11 @@ TEST_F(UniversalJointTest, SetVelocityAndAccelerationLimits) {
                                   Vector2d::Constant(2), Vector2d::Constant(0)),
                               ".* '\\(lower_limits.array\\(\\) <= "
                               "upper_limits.array\\(\\)\\).all\\(\\)' failed.");
+}
+
+TEST_F(UniversalJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint_->can_rotate());
+  EXPECT_FALSE(joint_->can_translate());
 }
 
 TEST_F(UniversalJointTest, NameSuffix) {

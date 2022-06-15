@@ -222,6 +222,9 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
 // below, node (1) is created before node (2) because mobilizer m2 was added
 // before m4. Similarly, node (7) is created before (8) because mobilizer m1 was
 // added before m6.
+// Notice that bodies 8 and 9 are anchored to the world. Therefore they do not
+// belong to any tree and the full model has three trees, with bases at body 7,
+// 5 and 4.
 //
 //                 ┌───┐
 //                 │ 0 │(0)                              Level 0 (root, world)
@@ -438,36 +441,34 @@ class TreeTopologyTests : public ::testing::Test {
     EXPECT_EQ(topology.get_body_node(BodyNodeIndex(9)).body, 6);
 
     // Verify the expected "forest" of trees.
-    EXPECT_EQ(topology.num_trees(), 4);
+    EXPECT_EQ(topology.num_trees(), 3);
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(0)), 1);
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(1)), 2);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(2)), 0);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(3)), 4);
+    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(2)), 4);
     EXPECT_EQ(topology.tree_velocities_start(TreeIndex(0)), 0);
     EXPECT_EQ(topology.tree_velocities_start(TreeIndex(1)), 1);
     EXPECT_EQ(topology.tree_velocities_start(TreeIndex(2)), 3);
-    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(3)), 3);
     // The world body does not belong to a tree. Therefore the returned index is
     // invalid.
     EXPECT_FALSE(topology.body_to_tree_index(world_index()).is_valid());
     EXPECT_EQ(topology.body_to_tree_index(BodyIndex(7)), TreeIndex(0));
     EXPECT_EQ(topology.body_to_tree_index(BodyIndex(5)), TreeIndex(1));
     EXPECT_EQ(topology.body_to_tree_index(BodyIndex(3)), TreeIndex(1));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(9)), TreeIndex(2));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(8)), TreeIndex(2));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(4)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(2)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(1)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(6)), TreeIndex(3));
+    EXPECT_FALSE(topology.body_to_tree_index(BodyIndex(9)).is_valid());
+    EXPECT_FALSE(topology.body_to_tree_index(BodyIndex(8)).is_valid());
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(4)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(2)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(1)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(6)), TreeIndex(2));
 
     EXPECT_EQ(topology.num_velocities(), 7);
     EXPECT_EQ(topology.velocity_to_tree_index(0), TreeIndex(0));
     EXPECT_EQ(topology.velocity_to_tree_index(1), TreeIndex(1));
     EXPECT_EQ(topology.velocity_to_tree_index(2), TreeIndex(1));
-    EXPECT_EQ(topology.velocity_to_tree_index(3), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(4), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(5), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(6), TreeIndex(3));
+    EXPECT_EQ(topology.velocity_to_tree_index(3), TreeIndex(2));
+    EXPECT_EQ(topology.velocity_to_tree_index(4), TreeIndex(2));
+    EXPECT_EQ(topology.velocity_to_tree_index(5), TreeIndex(2));
+    EXPECT_EQ(topology.velocity_to_tree_index(6), TreeIndex(2));
   }
 
  protected:
@@ -829,6 +830,71 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
             welded_body_index == 0 /* 'true' for anchored bodies. */);
     }
   }
+}
+
+// Helper function to add a rigid body to a model.
+const RigidBody<double>& AddRigidBody(MultibodyTree<double>* model,
+                                      const std::string& name,
+                                      const double mass,
+                                      const double link_length = 1.0) {
+    DRAKE_DEMAND(model != nullptr);
+    return model->AddRigidBody(name,
+        SpatialInertia<double>::MakeTestCube(mass, link_length));
+}
+
+// Verify Body::default_rotational_inertia() and related MultibodyTree methods.
+GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
+  // Create a model and add three rigid bodies.
+  MultibodyTree<double> model;
+  const double mA = 0, mB = 1, mC = 3;  // Mass of link A, B, and C.
+  const double length = 3;         // Length of each thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", mA, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", mB, length);
+  const RigidBody<double>& body_C = AddRigidBody(&model, "bodyC", mC, length);
+
+  // Verify the default mass for each of the bodies.
+  EXPECT_EQ(body_A.get_default_mass(), mA);
+  EXPECT_EQ(body_B.get_default_mass(), mB);
+  EXPECT_EQ(body_C.get_default_mass(), mC);
+
+  // Verify the default rotational inertia for each of the bodies.
+  // To help with testing, create a RotationalInertia for a unit mass cube.
+  const UnitInertia<double> G_SSo_S =
+      SpatialInertia<double>::MakeTestCube(1.0, length).get_unit_inertia();
+  const RotationalInertia<double> I_A = body_A.default_rotational_inertia();
+  const RotationalInertia<double> I_B = body_B.default_rotational_inertia();
+  const RotationalInertia<double> I_C = body_C.default_rotational_inertia();
+  EXPECT_EQ(I_A.CopyToFullMatrix3(), (mA * G_SSo_S).CopyToFullMatrix3());
+  EXPECT_EQ(I_B.CopyToFullMatrix3(), (mB * G_SSo_S).CopyToFullMatrix3());
+  EXPECT_EQ(I_C.CopyToFullMatrix3(), (mC * G_SSo_S).CopyToFullMatrix3());
+
+  // Check if the default rotational inertia for each of rigid body is zero.
+  EXPECT_TRUE(I_A.IsZero());
+  EXPECT_FALSE(I_B.IsZero());
+  EXPECT_FALSE(I_C.IsZero());
+
+  // Create various sets of body indexes.
+  std::set<BodyIndex> bodies_AA, bodies_AB, bodies_BC, bodies_ABC;
+  bodies_AA.insert({body_A.index(), body_A.index()});
+  bodies_AB.insert({body_A.index(), body_B.index()});
+  bodies_BC.insert({body_B.index(), body_C.index()});
+  bodies_ABC.insert({body_A.index(), body_B.index(), body_C.index()});
+
+  // Verify the sum of the default masses in these sets of body indexes.
+  const double mass_AA = model.CalcTotalDefaultMass(bodies_AA);
+  const double mass_AB = model.CalcTotalDefaultMass(bodies_AB);
+  const double mass_BC = model.CalcTotalDefaultMass(bodies_BC);
+  const double mass_ABC = model.CalcTotalDefaultMass(bodies_ABC);
+  EXPECT_EQ(mass_AA, mA);
+  EXPECT_EQ(mass_AB, mA + mB);
+  EXPECT_EQ(mass_BC, mB + mC);
+  EXPECT_EQ(mass_ABC, mA + mB + mC);
+
+  // Verify whether all default rotational inertia in these sets are zero.
+  EXPECT_TRUE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_AA));
+  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_AB));
+  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_BC));
+  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_ABC));
 }
 
 }  // namespace

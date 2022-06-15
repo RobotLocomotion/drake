@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -86,10 +87,15 @@ class MonomialTest : public ::testing::Test {
   // and evaluate it to a double value (result1). In another direction
   // (top-to-bottom), we directly evaluate a Monomial to double (result2). The
   // two result1 and result2 should be the same.
-  bool CheckEvaluate(const Monomial& m, const Environment& env) {
-    const double result1{m.ToExpression().Evaluate(env)};
+  //
+  // Also confirms that expression always is declared to be pre-expanded.
+  void CheckEvaluate(const Monomial& m, const Environment& env) {
+    SCOPED_TRACE(fmt::format("m = {}; env = {}", m, env));
+    const Expression e{m.ToExpression()};
+    EXPECT_TRUE(e.is_expanded());
+    const double result1{e.Evaluate(env)};
     const double result2{m.Evaluate(env)};
-    return result1 == result2;
+    EXPECT_EQ(result1, result2);
   }
 
   // Checks if Monomial::EvaluatePartial corresponds to Expression's
@@ -109,13 +115,12 @@ class MonomialTest : public ::testing::Test {
   // direction (top-to-bottom), we call Monomial::EvaluatePartial which returns
   // a pair of double (coefficient part) and Monomial. We obtain e2 by
   // multiplying the two. Then, we check if e1 and e2 are structurally equal.
-  bool CheckEvaluatePartial(const Monomial& m, const Environment& env) {
+  void CheckEvaluatePartial(const Monomial& m, const Environment& env) {
+    SCOPED_TRACE(fmt::format("m = {}; env = {}", m, env));
     const Expression e1{m.ToExpression().EvaluatePartial(env)};
-    const pair<double, Monomial> subst_result{m.EvaluatePartial(env)};
-    const Expression e2{subst_result.first *
-                        subst_result.second.ToExpression()};
-
-    return e1.EqualTo(e2);
+    const auto [coeff, m2] = m.EvaluatePartial(env);
+    const Expression e2{coeff * m2.ToExpression()};
+    EXPECT_PRED2(ExprEqual, e1, e2);
   }
 };
 
@@ -777,7 +782,7 @@ TEST_F(MonomialTest, Evaluate) {
   };
   for (const Monomial& m : monomials_) {
     for (const Environment& env : environments) {
-      EXPECT_TRUE(CheckEvaluate(m, env));
+      CheckEvaluate(m, env);
     }
   }
 }
@@ -786,6 +791,57 @@ TEST_F(MonomialTest, EvaluateException) {
   const Monomial m{{{var_x_, 1}, {var_y_, 2}}};  // xy^2
   const Environment env{{{var_x_, 1.0}}};
   EXPECT_THROW(m.Evaluate(env), runtime_error);
+}
+
+void CheckEvaluateBatch(
+    const Monomial& dut,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+    const Eigen::Ref<const Eigen::MatrixXd>& vars_val) {
+  const Eigen::VectorXd monomial_vals = dut.Evaluate(vars, vars_val);
+  EXPECT_EQ(monomial_vals.rows(), vars_val.cols());
+  for (int i = 0; i < vars_val.cols(); ++i) {
+    symbolic::Environment env;
+    env.insert(vars, vars_val.col(i));
+    EXPECT_EQ(monomial_vals(i), dut.Evaluate(env));
+  }
+}
+
+TEST_F(MonomialTest, EvaluateBatch) {
+  // Test Evaluate for a batch of data.
+  const symbolic::Monomial monomial({{var_x_, 2}, {var_y_, 3}});
+  // vars1 contains exactly the same variables as in monomial.
+  Vector2<symbolic::Variable> vars1(var_y_, var_x_);
+  Eigen::Matrix<double, 2, 3> vars1_val;
+  // clang-format off
+  vars1_val << 2, 3, 4,
+               5, 6, 7;
+  // clang-format on
+  CheckEvaluateBatch(monomial, vars1, vars1_val);
+  CheckEvaluateBatch(monomial, vars1, Eigen::Vector2d(2, 3));
+
+  // vars2 contains more variables than monomial.
+  Vector3<symbolic::Variable> vars2(var_y_, var_x_, var_z_);
+  Eigen::Matrix<double, 3, 4> vars2_val;
+  // clang-format off
+  vars2_val << 2, 3, 4, 5,
+               -6, -7, 8, 9,
+               -1, -3, 2, 4;
+  // clang-format on
+  CheckEvaluateBatch(monomial, vars2, vars2_val);
+}
+
+TEST_F(MonomialTest, EvaluateBatchException) {
+  // Test Evaluate for a batch of data with exception.
+  const symbolic::Monomial monomial({{var_x_, 2}, {var_y_, 3}});
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      monomial.Evaluate(Vector3<symbolic::Variable>(var_x_, var_x_, var_y_),
+                        Eigen::Vector3d(1, 2, 3)),
+      ".* vars contains repeated variables.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      monomial.Evaluate(Vector2<symbolic::Variable>(var_x_, var_z_),
+                        Eigen::Vector2d(2, 3)),
+      ".* y is not present in vars");
 }
 
 TEST_F(MonomialTest, EvaluatePartial) {
@@ -800,7 +856,7 @@ TEST_F(MonomialTest, EvaluatePartial) {
   };
   for (const Monomial& m : monomials_) {
     for (const Environment& env : environments) {
-      EXPECT_TRUE(CheckEvaluatePartial(m, env));
+      CheckEvaluatePartial(m, env);
     }
   }
 }

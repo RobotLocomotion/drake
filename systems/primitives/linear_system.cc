@@ -117,9 +117,11 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
   // Verify that the input port is not abstract valued.
   if (input_port &&
       input_port->get_data_type() == PortDataType::kAbstractValued) {
-    throw std::logic_error(
-        "Port requested for differentiation is abstract, and differentiation "
-        "of abstract ports is not supported.");
+      throw std::logic_error(
+          "The specified input port is abstract-valued, but "
+          "FirstOrderTaylorApproximation only supports vector-valued "
+          "input ports.  Did you perhaps forget to pass a non-default "
+          "`input_port_index` argument?");
   }
 
   const int num_inputs = input_port ? input_port->size() : 0;
@@ -255,9 +257,6 @@ std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
 Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys) {
-  DRAKE_DEMAND(sys.time_period() == 0.0);
-  // TODO(russt): handle the discrete time case
-
   const int num_states = sys.B().rows(), num_inputs = sys.B().cols();
   Eigen::MatrixXd R(num_states, num_states * num_inputs);
   R.leftCols(num_inputs) = sys.B();
@@ -281,9 +280,6 @@ bool IsControllable(const LinearSystem<double>& sys,
 
 /// Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].
 Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys) {
-  DRAKE_DEMAND(sys.time_period() == 0.0);
-  // TODO(russt): handle the discrete time case
-
   const int num_states = sys.C().cols(), num_outputs = sys.C().rows();
   Eigen::MatrixXd O(num_states * num_outputs, num_states);
   O.topRows(num_outputs) = sys.C();

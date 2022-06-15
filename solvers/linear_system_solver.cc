@@ -38,7 +38,7 @@ void LinearSystemSolver::DoSolve(
   unused(initial_guess, merged_options);
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    num_constraints += binding.evaluator()->A().rows();
+    num_constraints += binding.evaluator()->get_sparse_A().rows();
   }
 
   DRAKE_ASSERT(prog.generic_constraints().empty());
@@ -55,11 +55,14 @@ void LinearSystemSolver::DoSolve(
   size_t constraint_index = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     auto const& c = binding.evaluator();
-    size_t n = c->A().rows();
+    size_t n = c->get_sparse_A().rows();
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
-      size_t variable_index =
+      const int variable_index =
           prog.FindDecisionVariableIndex(binding.variables()(i));
-      Aeq.block(constraint_index, variable_index, n, 1) = c->A().col(i);
+      for (Eigen::SparseMatrix<double>::InnerIterator it(c->get_sparse_A(), i);
+           it; ++it) {
+        Aeq(constraint_index + it.row(), variable_index) = it.value();
+      }
     }
     beq.segment(constraint_index, n) =
         c->lower_bound();  // = c->upper_bound() since it's an equality

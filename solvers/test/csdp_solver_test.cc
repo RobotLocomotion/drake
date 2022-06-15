@@ -55,6 +55,12 @@ TEST_F(CsdpDocExample, Solve) {
     Z_expected(6, 6) = 1.0;
     EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(solver_details.Z_val),
                                 Z_expected, tol));
+    // Now add an empty constraint to the program and solve it again, there
+    // should be no error.
+    prog_->AddLinearEqualityConstraint(Eigen::RowVector2d(0, 0), 0, y_);
+    solver.Solve(*prog_, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(), -2.75, tol);
   }
 }
 
@@ -79,13 +85,16 @@ std::vector<RemoveFreeVariableMethod> GetRemoveFreeVariableMethods() {
 
 TEST_F(LinearProgramBoundingBox1, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
       MathematicalProgramResult result;
-      solver.Solve(*prog_, {}, {}, &result);
+      solver.Solve(*prog_, {}, solver_options, &result);
       EXPECT_TRUE(result.is_success());
       const double tol = 2E-7;
-      EXPECT_NEAR(result.get_optimal_cost(), -43, tol);
+      EXPECT_NEAR(result.get_optimal_cost(), -43, 2*tol);
       Eigen::Matrix<double, 7, 1> x_expected;
       x_expected << 0, 5, -1, 10, 5, 0, 1;
       EXPECT_TRUE(
@@ -96,10 +105,13 @@ TEST_F(LinearProgramBoundingBox1, Solve) {
 
 TEST_F(CsdpLinearProgram2, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
       MathematicalProgramResult result;
-      solver.Solve(*prog_, {}, {}, &result);
+      solver.Solve(*prog_, {}, solver_options, &result);
       EXPECT_TRUE(result.is_success());
       const double tol = 1E-7;
       EXPECT_NEAR(result.get_optimal_cost(), 28.0 / 13, tol);
@@ -112,10 +124,13 @@ TEST_F(CsdpLinearProgram2, Solve) {
 
 TEST_F(CsdpLinearProgram3, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
       MathematicalProgramResult result;
-      solver.Solve(*prog_, {}, {}, &result);
+      solver.Solve(*prog_, {}, solver_options, &result);
       EXPECT_TRUE(result.is_success());
       const double tol = 1E-7;
       EXPECT_NEAR(result.get_optimal_cost(), -121.0 / 9, tol);
@@ -128,10 +143,13 @@ TEST_F(CsdpLinearProgram3, Solve) {
 
 TEST_F(TrivialSDP2, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
       MathematicalProgramResult result;
-      solver.Solve(*prog_, {}, {}, &result);
+      solver.Solve(*prog_, {}, solver_options, &result);
       EXPECT_TRUE(result.is_success());
       const double tol = 1E-7;
       EXPECT_NEAR(result.get_optimal_cost(), -1.0 / 3, tol);
@@ -144,10 +162,13 @@ TEST_F(TrivialSDP2, Solve) {
 
 TEST_F(TrivialSOCP1, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
       MathematicalProgramResult result;
-      solver.Solve(*prog_, {}, {}, &result);
+      solver.Solve(*prog_, {}, solver_options, &result);
       EXPECT_TRUE(result.is_success());
       const double tol = 1E-7;
       EXPECT_NEAR(result.get_optimal_cost(), -10, tol);
@@ -159,10 +180,13 @@ TEST_F(TrivialSOCP1, Solve) {
 
 TEST_F(TrivialSOCP2, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
       MathematicalProgramResult result;
-      solver.Solve(*prog_, {}, {}, &result);
+      solver.Solve(*prog_, {}, solver_options, &result);
       EXPECT_TRUE(result.is_success());
       // CSDP does not have high accuracy for solving an SOCP.
       const double tol = 3.8E-5;
@@ -175,10 +199,13 @@ TEST_F(TrivialSOCP2, Solve) {
 
 TEST_F(TrivialSOCP3, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
       MathematicalProgramResult result;
-      solver.Solve(*prog_, {}, {}, &result);
+      solver.Solve(*prog_, {}, solver_options, &result);
       EXPECT_TRUE(result.is_success());
       // The accuracy for this test on the Mac machine is 5E-6.
       const double tol = 5.E-6;
@@ -194,9 +221,12 @@ TEST_F(TrivialSOCP3, Solve) {
 namespace test {
 TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      auto result = solver.Solve(*prog_, {}, {});
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      auto result = solver.Solve(*prog_, {}, solver_options);
       EXPECT_EQ(result.get_solution_result(),
                 SolutionResult::kInfeasibleConstraints);
       EXPECT_EQ(result.get_optimal_cost(),
@@ -207,9 +237,12 @@ TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
 
 TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      auto result = solver.Solve(*prog_, {}, {});
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      auto result = solver.Solve(*prog_, {}, solver_options);
       EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
     }
   }
@@ -217,36 +250,48 @@ TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
 
 GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      FindCommonLyapunov(solver, 1E-6);
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      FindCommonLyapunov(solver, solver_options, 1E-6);
     }
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      FindOuterEllipsoid(solver, 1E-6);
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      FindOuterEllipsoid(solver, solver_options, 1E-6);
     }
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      SolveEigenvalueProblem(solver, 1E-6);
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      SolveEigenvalueProblem(solver, solver_options, 1E-6);
     }
   }
 }
 
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      SolveAndCheckSolution(solver, 1E-6);
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      SolveAndCheckSolution(solver, solver_options, 1E-6);
     }
   }
 }
@@ -256,9 +301,12 @@ INSTANTIATE_TEST_SUITE_P(CsdpTest, TestEllipsoidsSeparation,
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      SolveAndCheckSolution(solver, 7E-5);
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      SolveAndCheckSolution(solver, solver_options, 7E-5);
     }
   }
 }
@@ -270,9 +318,12 @@ INSTANTIATE_TEST_SUITE_P(
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
   MaximizeGeometricMeanTrivialProblem1 prob;
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      const auto result = solver.Solve(prob.prog(), {}, {});
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      const auto result = solver.Solve(prob.prog(), {}, solver_options);
       prob.CheckSolution(result, 1E-6);
     }
   }
@@ -281,9 +332,12 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   MaximizeGeometricMeanTrivialProblem2 prob;
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      const auto result = solver.Solve(prob.prog(), {}, {});
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      const auto result = solver.Solve(prob.prog(), {}, solver_options);
       prob.CheckSolution(result, 1E-6);
     }
   }
@@ -291,17 +345,24 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
-    SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1E-6);
+    CsdpSolver solver;
+    SolverOptions solver_options;
+    solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                             static_cast<int>(method));
+    SolveAndCheckSmallestEllipsoidCoveringProblems(solver, solver_options,
+                                                   1E-6);
   }
 }
 
 GTEST_TEST(TestSOS, UnivariateQuarticSos) {
   UnivariateQuarticSos dut;
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      const auto result = solver.Solve(dut.prog());
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      const auto result = solver.Solve(dut.prog(), {}, solver_options);
       dut.CheckResult(result, 1E-10);
     }
   }
@@ -310,9 +371,12 @@ GTEST_TEST(TestSOS, UnivariateQuarticSos) {
 GTEST_TEST(TestSOS, BivariateQuarticSos) {
   BivariateQuarticSos dut;
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      const auto result = solver.Solve(dut.prog());
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      const auto result = solver.Solve(dut.prog(), {}, solver_options);
       dut.CheckResult(result, 1E-10);
     }
   }
@@ -321,9 +385,12 @@ GTEST_TEST(TestSOS, BivariateQuarticSos) {
 GTEST_TEST(TestSOS, SimpleSos1) {
   SimpleSos1 dut;
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      const auto result = solver.Solve(dut.prog());
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      const auto result = solver.Solve(dut.prog(), {}, solver_options);
       dut.CheckResult(result, 1E-10);
     }
   }
@@ -332,9 +399,12 @@ GTEST_TEST(TestSOS, SimpleSos1) {
 GTEST_TEST(TestSOS, MotzkinPolynomial) {
   MotzkinPolynomial dut;
   for (auto method : GetRemoveFreeVariableMethods()) {
-    CsdpSolver solver(method);
+    CsdpSolver solver;
     if (solver.available()) {
-      const auto result = solver.Solve(dut.prog());
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      const auto result = solver.Solve(dut.prog(), {}, solver_options);
       dut.CheckResult(result, 1.5E-8);
     }
   }
@@ -342,10 +412,27 @@ GTEST_TEST(TestSOS, MotzkinPolynomial) {
 
 GTEST_TEST(TestSOS, UnivariateNonnegative1) {
   UnivariateNonnegative1 dut;
+  // TODO(hongkai.dai): remove this for loop after we deprecate the constructor
+  // CsdpSolver(method)
   for (auto method : GetRemoveFreeVariableMethods()) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     CsdpSolver solver(method);
+#pragma GCC diagnostic pop
     if (solver.available()) {
       const auto result = solver.Solve(dut.prog());
+      dut.CheckResult(result, 6E-9);
+    }
+  }
+
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver;
+    if (solver.available()) {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      const auto result =
+          solver.Solve(dut.prog(), std::nullopt, solver_options);
       dut.CheckResult(result, 6E-9);
     }
   }

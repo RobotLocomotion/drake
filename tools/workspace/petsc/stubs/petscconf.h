@@ -1,9 +1,9 @@
 #pragma once
 
 // TODO(jwnimmer-tri): This file is a lightly-edited version of what comes out
-// of upstream's configure script. Between some combination of hard-coded
-// settings and platform-specific word size sensing, we need to reconstruct
-// and/or generate this file on the fly.
+// of upstream's configure script that has been tweaked to work on all of our
+// supported platforms, and to remove some unwanted bits. We need to document
+// a more careful procedure for how to update and/or re-create this file.
 
 #define MPI_Comm_create_errhandler(p_err_fun, p_errhandler) \
   MPI_Errhandler_create((p_err_fun), (p_errhandler))
@@ -38,7 +38,6 @@
 #define PETSC_HAVE_CXX 1
 #define PETSC_HAVE_CXX_COMPLEX 1
 #define PETSC_HAVE_CXX_COMPLEX_FIX 1
-#define PETSC_HAVE_CXX_DIALECT_CXX03 1
 #define PETSC_HAVE_CXX_DIALECT_CXX11 1
 #define PETSC_HAVE_CXX_DIALECT_CXX14 1
 #define PETSC_HAVE_CXX_DIALECT_CXX17 1
@@ -73,9 +72,6 @@
 #define PETSC_HAVE_MEMMOVE 1
 #define PETSC_HAVE_MMAP 1
 #define PETSC_HAVE_MPIUNI 1
-#define PETSC_HAVE_MPI_IN_PLACE 1
-#define PETSC_HAVE_MPI_TYPE_DUP 1
-#define PETSC_HAVE_MPI_TYPE_GET_ENVELOPE 1
 #define PETSC_HAVE_NANOSLEEP 1
 #define PETSC_HAVE_NETDB_H 1
 #define PETSC_HAVE_NETINET_IN_H 1
@@ -117,7 +113,9 @@
 #define PETSC_HAVE_USLEEP 1
 #define PETSC_HAVE_VA_COPY 1
 #define PETSC_HAVE_VSNPRINTF 1
-#define PETSC_HAVE_XMMINTRIN_H 1
+#ifdef __SSE__
+# define PETSC_HAVE_XMMINTRIN_H 1
+#endif
 #define PETSC_IS_COLORING_MAX USHRT_MAX
 #define PETSC_IS_COLORING_VALUE_TYPE short  // NOLINT
 #define PETSC_IS_COLORING_VALUE_TYPE_F integer2
@@ -127,12 +125,14 @@
 #define PETSC_MEMALIGN 8
 #define PETSC_MPICC_SHOW "Unavailable"
 #define PETSC_MPIU_IS_COLORING_VALUE_TYPE MPI_UNSIGNED_SHORT
-#define PETSC_PREFETCH_HINT_NTA _MM_HINT_NTA
-#define PETSC_PREFETCH_HINT_T0 _MM_HINT_T0
-#define PETSC_PREFETCH_HINT_T1 _MM_HINT_T1
-#define PETSC_PREFETCH_HINT_T2 _MM_HINT_T2
+// For prefetching, we always use the GCC-ism (not XMM) for portability.
+// https://github.com/petsc/petsc/blob/70719257/config/PETSc/Configure.py#L565-L585
+#define PETSC_PREFETCH_HINT_NTA 0
+#define PETSC_PREFETCH_HINT_T0 3
+#define PETSC_PREFETCH_HINT_T1 2
+#define PETSC_PREFETCH_HINT_T2 1
 #define PETSC_PYTHON_EXE "NO_PETSC_PYTHON_EXE"
-#define PETSC_Prefetch(a, b, c) _mm_prefetch((const char*)(a), (c))
+#define PETSC_Prefetch(a, b, c) __builtin_prefetch((a), (b), (c))
 #define PETSC_REPLACE_DIR_SEPARATOR '\\'
 #define PETSC_SIGNAL_CAST
 #define PETSC_SIZEOF_ENUM 4

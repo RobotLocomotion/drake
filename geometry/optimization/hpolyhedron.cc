@@ -269,6 +269,53 @@ void HPolyhedron::ImplementGeometry(const Box& box, void* data) {
   Ab->second = b;
 }
 
+HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
+  /**
+   * The Pontryagin set difference of Polytope P = {x | Ax <= b} and
+   * Q = {x | Cx <= d} can be computed P - Q = {x | Ax <= b - h}
+   * where hᵢ = max aᵢᵀx subject to x ∈ Q
+   */
+
+  DRAKE_DEMAND(this->ambient_dimension() == other.ambient_dimension());
+  DRAKE_DEMAND(this->IsBounded());
+  DRAKE_DEMAND(other.IsBounded());
+  const double kInf = std::numeric_limits<double>::infinity();
+
+  Eigen::VectorXd b_diff(b_.rows());
+  MathematicalProgram prog;
+  solvers::VectorXDecisionVariable x =
+      prog.NewContinuousVariables(ambient_dimension_, "x");
+  // -inf <= Ax <= b
+  prog.AddLinearConstraint(other.A(),
+                           Eigen::VectorXd::Constant(other.b().rows(), -kInf),
+                           other.b(), x);
+
+  auto result = solvers::Solve(prog);
+  // other is an empty polyhedron and so Pontryagin difference does nothing
+  if (result.get_solution_result() ==
+      solvers::SolutionResult::kInfeasibleConstraints) {
+    return {A_, b_};
+  }
+
+  Binding<solvers::LinearCost> program_cost_binding =
+      prog.AddLinearCost(A_.row(0), 0, x);
+  for (int i = 0; i < b_.rows(); ++i) {
+    program_cost_binding.evaluator()->UpdateCoefficients(-A_.row(i), 0);
+    result = solvers::Solve(prog);
+    // since constraint set is bounded and non-empty then the program should
+    // always have an optimal solution
+    if (!result.is_success()) {
+      throw std::runtime_error(fmt::format(
+          "Solver {} failed to compute the set difference; it "
+          "terminated with SolutionResult {}). This should only happen"
+          "if the problem is ill-conditioned",
+          result.get_solver_id().name(), result.get_solution_result()));
+    }
+    b_diff(i) = b_(i) + result.get_optimal_cost();
+  }
+  return {A_, b_diff};
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

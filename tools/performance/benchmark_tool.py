@@ -117,6 +117,13 @@ class CpuSpeedSettings:
 
 
 def do_benchmark(args):
+    if not CpuSpeedSettings().is_supported_cpu():
+        raise RuntimeError("""
+The intel_pstate Linux kernel driver is not running. Without it, there is no
+way to prevent Turbo Boost cpu frequency scaling, and experiment results will
+be invalid.
+""")
+
     command_prologue = []
     if is_default_ubuntu():
         kernel_name = subprocess.check_output(

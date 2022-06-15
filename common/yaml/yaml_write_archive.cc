@@ -4,14 +4,15 @@
 #include <utility>
 #include <vector>
 
-#include <drake-yaml-cpp/emitfromevents.h>
-#include <drake-yaml-cpp/yaml.h>
+#include <drake_vendor/yaml-cpp/emitfromevents.h>
+#include <drake_vendor/yaml-cpp/yaml.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/unused.h"
 
 namespace drake {
 namespace yaml {
+namespace internal {
 namespace {
 
 // Boilerplate for std::visit.
@@ -180,5 +181,6 @@ void YamlWriteArchive::EraseMatchingMaps(const YamlWriteArchive& other) {
   DoEraseMatchingMaps(&(this->root_), &(other.root_));
 }
 
+}  // namespace internal
 }  // namespace yaml
 }  // namespace drake

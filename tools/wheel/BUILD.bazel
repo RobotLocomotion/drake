@@ -1,3 +1,35 @@
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-add_lint_tests(python_lint_extra_srcs = ["build-wheels"])
+py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    visibility = [":__subpackages__"],
+    deps = ["//tools:module_py"],
+)
+
+drake_py_binary(
+    name = "builder",
+    srcs = [
+        "wheel_builder/common.py",
+        "wheel_builder/linux.py",
+        "wheel_builder/macos.py",
+        "wheel_builder/main.py",
+    ],
+    main = "wheel_builder/main.py",
+    deps = [":module_py"],
+)
+
+drake_py_binary(
+    name = "strip_rpath",
+    srcs = ["macos/strip_rpath.py"],
+    deps = ["//tools/install:otool"],
+)
+
+drake_py_binary(
+    name = "change_lpath",
+    srcs = ["macos/change_lpath.py"],
+    deps = ["//tools/install:otool"],
+)
+
+add_lint_tests()

@@ -28,6 +28,8 @@ GTEST_TEST(FileParserTest, BasicTest) {
       "drake/multibody/benchmarks/acrobot/acrobot.sdf");
   const std::string urdf_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/acrobot.urdf");
+  const std::string xml_name = FindResourceOrThrow(
+      "drake/multibody/parsing/dm_control/suite/acrobot.xml");
 
   // Load from SDF using plural method.
   // Add a second one with an overridden model_name.
@@ -55,6 +57,19 @@ GTEST_TEST(FileParserTest, BasicTest) {
     dut.AddModelFromFile(sdf_name, "foo");
     dut.AddModelFromFile(urdf_name, "bar");
   }
+
+  // Load from XML using plural method.
+  // Add a second one with an overridden model_name.
+  {
+    MultibodyPlant<double> plant(0.0);
+    Parser dut(&plant);
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddAllModelsFromFile(xml_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
+    const ModelInstanceIndex id = dut.AddModelFromFile(xml_name, "foo");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
+  }
 }
 
 GTEST_TEST(FileParserTest, BasicStringTest) {
@@ -62,6 +77,8 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
       "drake/multibody/benchmarks/acrobot/acrobot.sdf");
   const std::string urdf_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/acrobot.urdf");
+  const std::string xml_name = FindResourceOrThrow(
+      "drake/multibody/parsing/dm_control/suite/acrobot.xml");
 
   // Load an SDF via string.
   {
@@ -78,6 +95,15 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     const ModelInstanceIndex id = dut.AddModelFromString(urdf_contents, "urdf");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+  }
+
+  // Load an MJCF via string.
+  {
+    const std::string xml_contents = ReadEntireFile(xml_name);
+    MultibodyPlant<double> plant(0.0);
+    Parser dut(&plant);
+    const ModelInstanceIndex id = dut.AddModelFromString(xml_contents, "xml");
     EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
   }
 }
@@ -232,6 +258,29 @@ GTEST_TEST(FileParserTest, PackageMapTest) {
   // Try again.
   parser.package_map().PopulateFromFolder(temp_dir);
   parser.AddModelFromFile(new_sdf_filename, "dummy" /* model name */);
+}
+
+GTEST_TEST(FileParserTest, StrictParsing) {
+  // If the choice of what causes warnings changes, this test data will need to
+  // be updated. In this incarnation, the /robot/@version attribute provokes a
+  // warning because it is ignored.
+  std::string model_provokes_warning = R"""(
+    <robot name='robot' version='0.99'>
+      <link name='a'/>
+    </robot>)""";
+  std::string warning_pattern = ".*version.*ignored.*";
+
+  MultibodyPlant<double> plant(0.0);
+  geometry::SceneGraph<double> scene_graph;
+  Parser parser(&plant, &scene_graph);
+
+  EXPECT_NO_THROW(
+      parser.AddModelFromString(model_provokes_warning, "urdf", "lax"));
+
+  parser.SetStrictParsing();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      parser.AddModelFromString(model_provokes_warning, "urdf", "strict"),
+      warning_pattern);
 }
 
 }  // namespace

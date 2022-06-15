@@ -49,6 +49,28 @@ void PerformDoubleTensorContraction(
   }
 }
 
+/* The data struct that stores per element data for VolumetricElement. See
+ FemElement for the requirement. We define it here instead of nesting it in the
+ traits class below due to #17109. */
+template <typename ConstitutiveModelType, int num_dofs,
+          int num_quadrature_points>
+struct VolumetricElementData {
+  using T = typename ConstitutiveModelType::T;
+  /* The states evaluated at nodes of the element. */
+  Vector<T, num_dofs> element_q;
+  Vector<T, num_dofs> element_v;
+  Vector<T, num_dofs> element_a;
+  typename ConstitutiveModelType::Data deformation_gradient_data;
+  /* The elastic energy density evaluated at quadrature points. Note that this
+   is energy per unit of "reference" volume. */
+  std::array<T, num_quadrature_points> Psi;
+  /* The first Piola stress evaluated at quadrature points. */
+  std::array<Matrix3<T>, num_quadrature_points> P;
+  /* The derivative of first Piola stress with respect to the deformation
+   gradient evaluated at quadrature points. */
+  std::array<Eigen::Matrix<T, 9, 9>, num_quadrature_points> dPdF;
+};
+
 /* Forward declaration needed for defining the traits below. */
 template <class IsoparametricElementType, class QuadratureType,
           class ConstitutiveModelType>
@@ -116,21 +138,8 @@ struct FemElementTraits<VolumetricElement<
    nodes. */
   static constexpr int num_dofs = 3 * num_nodes;
 
-  struct Data {
-    /* The states evaluated at nodes of the element. */
-    Vector<T, num_dofs> element_q;
-    Vector<T, num_dofs> element_v;
-    Vector<T, num_dofs> element_a;
-    typename ConstitutiveModelType::Data deformation_gradient_data;
-    /* The elastic energy density evaluated at quadrature points. Note that this
-     is energy per unit of "reference" volume. */
-    std::array<T, num_quadrature_points> Psi;
-    /* The first Piola stress evaluated at quadrature points. */
-    std::array<Matrix3<T>, num_quadrature_points> P;
-    /* The derivative of first Piola stress with respect to the deformation
-     gradient evaluated at quadrature points. */
-    std::array<Eigen::Matrix<T, 9, 9>, num_quadrature_points> dPdF;
-  };
+  using Data = VolumetricElementData<ConstitutiveModelType, num_dofs,
+                                     num_quadrature_points>;
 };
 
 /* This class models a single 3D elasticity FEM element in which the
@@ -371,7 +380,7 @@ class VolumetricElement
 
   /* Implements FemElement::CalcInverseDynamics(). */
   void DoCalcInverseDynamics(const Data& data,
-                              EigenPtr<Vector<T, num_dofs>> residual) const {
+                             EigenPtr<Vector<T, num_dofs>> residual) const {
     /* residual = Ma-fₑ(x)-fᵥ(x, v), where M is the mass matrix, fₑ(x) is
      the elastic force, and fᵥ(x, v) is the damping force. */
     *residual += mass_matrix_ * data.element_a;

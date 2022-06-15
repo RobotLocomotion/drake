@@ -8,12 +8,14 @@ The following table shows the configurations and platforms that Drake
 officially supports. Supported configurations are tested in continuous
 integration. Any other configurations are provided on a best-effort basis.
 
+<!-- The minimum compiler versions should match those listed in both the root
+     CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
+
 | Operating System ⁽⁴⁾             | Architecture | Python  | Bazel | CMake | C/C++ Compiler ⁽⁵⁾                 | Java                          |
 |----------------------------------|--------------|---------|-------|-------|------------------------------------|-------------------------------|
-| Ubuntu 18.04 LTS (Bionic Beaver) | x86_64 ⁽¹⁾   | 3.6 ⁽³⁾ | 5.1   | 3.10  | GCC 7.5 (default) or Clang 9   | OpenJDK 11                    |
-| Ubuntu 20.04 LTS (Focal Fossa)   | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾ | 5.1   | 3.16  | GCC 9.3 (default) or Clang 9   | OpenJDK 11                    |
-| macOS Big Sur (11)               | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 5.0   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
-| macOS Monterey (12)              | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 5.0   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
+| Ubuntu 20.04 LTS (Focal Fossa)   | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾ | 5.1   | 3.16  | GCC 9.3 (default) or Clang 12  | OpenJDK 11                    |
+| macOS Big Sur (11)               | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
+| macOS Monterey (12)              | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
 
 ⁽¹⁾ Drake Ubuntu builds assume support for Intel's AVX2 and FMA instructions,
 introduced with the Haswell architecture in 2013 with substantial performance
@@ -117,13 +119,6 @@ cmake -DWITH_GUROBI=ON -DWITH_MOSEK=ON ../drake
 ```
 
 You will also need to have your ``PYTHONPATH`` configured correctly.
-
-*Ubuntu 18.04 (Bionic):*
-
-```bash
-cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.6/site-packages:${PYTHONPATH}
-```
 
 *Ubuntu 20.04 (Focal):*
 

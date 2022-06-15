@@ -66,11 +66,20 @@ GTEST_TEST(PartialPermutation, Construction) {
       "Index .* does not participate in this permutation.");
   EXPECT_EQ(p.permuted_index(5), 3);
 
+  // Unit test inverse mapping from the domain of permuted indexes to the domain
+  // of original indexes.
+  EXPECT_EQ(p.domain_index(0), 1);
+  EXPECT_EQ(p.domain_index(1), 3);
+  EXPECT_EQ(p.domain_index(2), 2);
+  EXPECT_EQ(p.domain_index(3), 5);
+
   // Argument index out of bounds.
   EXPECT_THROW(p.participates(6), std::exception);
   EXPECT_THROW(p.participates(-1), std::exception);
   EXPECT_THROW(p.permuted_index(6), std::exception);
   EXPECT_THROW(p.permuted_index(-1), std::exception);
+  EXPECT_THROW(p.domain_index(-1), std::exception);
+  EXPECT_THROW(p.domain_index(4), std::exception);
 }
 
 // Perform the permutation of a VectorXd.
@@ -109,7 +118,7 @@ GTEST_TEST(PartialPermutation, PermutedDomainIsLargerThanOriginalDomain) {
   // The input permutation is invalid since index = 4 is out-of-bounds for a
   // domain of size 4.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PartialPermutation p({0, -1, 4, 1}),
+      PartialPermutation({0, -1, 4, 1}),
       "The size of the permuted domain must be smaller or equal than that of "
       "the original domian. Index 4, larger or equal than the domain size, "
       "appears in the input permutation.");
@@ -117,13 +126,13 @@ GTEST_TEST(PartialPermutation, PermutedDomainIsLargerThanOriginalDomain) {
 
 // Verifies the constructor throws if there are repeated indexes.
 GTEST_TEST(PartialPermutation, RepeatedIndex) {
-  DRAKE_EXPECT_THROWS_MESSAGE(PartialPermutation dut({0, -1, 2, 2}),
+  DRAKE_EXPECT_THROWS_MESSAGE(PartialPermutation({0, -1, 2, 2}),
                               "Index 2 appears at least twice in the input "
                               "permutation. At 2 and at 3.");
 }
 
 GTEST_TEST(PartialPermutation, MissingIndex) {
-  DRAKE_EXPECT_THROWS_MESSAGE(PartialPermutation dut({0, -1, -1, 4, 1}),
+  DRAKE_EXPECT_THROWS_MESSAGE(PartialPermutation({0, -1, -1, 4, 1}),
                               "Index 2 not present in the permutation. However "
                               "the maximum specified permuted index is 4.");
 }

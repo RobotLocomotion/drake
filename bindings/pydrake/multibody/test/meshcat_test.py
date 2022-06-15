@@ -2,6 +2,7 @@ from pydrake.multibody.meshcat import (
     ContactVisualizer_,
     ContactVisualizerParams,
     JointSliders,
+    _HydroelasticContactVisualizer,
     _PointContactVisualizer,
 )
 
@@ -125,6 +126,9 @@ class TestMeshcat(unittest.TestCase):
         diagram = builder.Build()
         dut.Run(diagram=diagram, timeout=1.0)
 
+        # The SetPositions function doesn't crash (Acrobot has two positions).
+        dut.SetPositions(q=[1, 2])
+
     def test_internal_point_contact_visualizer(self):
         """A very basic existance test, since this class is internal use only.
         The pydrake-internal user (meldis) has additional acceptance tests.
@@ -132,3 +136,11 @@ class TestMeshcat(unittest.TestCase):
         meshcat = Meshcat()
         params = ContactVisualizerParams()
         dut = _PointContactVisualizer(meshcat=meshcat, params=params)
+
+    def test_internal_hydroelastic_contact_visualizer(self):
+        """A very basic existance test, since this class is internal use only.
+        The pydrake-internal user (meldis) has additional acceptance tests.
+        """
+        meshcat = Meshcat()
+        params = ContactVisualizerParams()
+        dut = _HydroelasticContactVisualizer(meshcat=meshcat, params=params)

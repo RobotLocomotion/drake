@@ -5,8 +5,11 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace symbolic {
@@ -698,8 +701,8 @@ TEST_F(SymbolicPolynomialTest, Integrate) {
   EXPECT_TRUE(p.Integrate(var_z_).indeterminates().include(var_z_));
   EXPECT_PRED2(PolyEqual, p.Integrate(var_z_, -1, 1), def_int_p_dz);
 
-  EXPECT_THROW(p.Integrate(var_a_), std::exception);
-  EXPECT_THROW(p.Integrate(var_a_, -1, 1), std::exception);
+  EXPECT_THROW(unused(p.Integrate(var_a_)), std::exception);
+  EXPECT_THROW(unused(p.Integrate(var_a_, -1, 1)), std::exception);
 }
 
 TEST_F(SymbolicPolynomialTest, ConstructNonPolynomialCoefficients) {
@@ -907,7 +910,7 @@ TEST_F(SymbolicPolynomialTest, Evaluate) {
       {var_x_, -7.0},
       {var_z_, -2.0},
   }};
-  EXPECT_THROW(p.Evaluate(partial_env), runtime_error);
+  EXPECT_THROW(unused(p.Evaluate(partial_env)), runtime_error);
 }
 
 TEST_F(SymbolicPolynomialTest, PartialEvaluate1) {
@@ -948,7 +951,95 @@ TEST_F(SymbolicPolynomialTest, PartialEvaluate4) {
   const Polynomial p{((a_ + c_) / (b_ + c_)) * x_ * x_ + b_ * x_ + c_,
                      var_xyz_};
   const Environment env{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
-  EXPECT_THROW(p.EvaluatePartial(env), runtime_error);
+  EXPECT_THROW(unused(p.EvaluatePartial(env)), runtime_error);
+}
+
+TEST_F(SymbolicPolynomialTest, EvaluateIndeterminates) {
+  // Test EvaluateIndeterminates where polynomial.decision_variables() is empty.
+  const Polynomial p(var_x_ * var_x_ + 5 * var_x_ * var_y_);
+  // We intentionally test the case that `indeterminates`  being a strict
+  // superset of p.indeterminates().
+  Vector3<symbolic::Variable> indeterminates(var_x_, var_z_, var_y_);
+  Eigen::Matrix<double, 3, 4> indeterminates_values;
+  // clang-format off
+  indeterminates_values << 1, 2, 3, 4,
+                           -1, -2, -3, -4,
+                           2, 3, 4, 5;
+  // clang-format on
+  Eigen::VectorXd polynomial_values =
+      p.EvaluateIndeterminates(indeterminates, indeterminates_values);
+  ASSERT_EQ(polynomial_values.rows(), indeterminates_values.cols());
+  for (int i = 0; i < indeterminates_values.cols(); ++i) {
+    symbolic::Environment env;
+    env.insert(indeterminates, indeterminates_values.col(i));
+    EXPECT_EQ(polynomial_values(i), p.Evaluate(env));
+  }
+
+  // The exception case, when the polynomial coefficients are not all constant;
+  const Polynomial p_exception(var_x_ * var_x_ * var_a_, var_xyz_);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      p_exception.EvaluateIndeterminates(indeterminates, indeterminates_values),
+      ".* the coefficient .* is not a constant");
+}
+
+TEST_F(SymbolicPolynomialTest, EvaluateWithAffineCoefficients) {
+  const Vector2<symbolic::Variable> indeterminates(var_x_, var_y_);
+  Eigen::Matrix<double, 2, 3> indeterminates_values;
+  // clang-format off
+  indeterminates_values << 1, 2, 3,
+                           4, 5, 6;
+  // clang-format on
+  Eigen::MatrixXd A;
+  VectorX<symbolic::Variable> decision_variables;
+  Eigen::VectorXd b;
+  {
+    const Polynomial p((a_ + 1) * var_x_ * var_x_ + b_ * var_x_ * var_y_ + c_,
+                       var_xy_);
+    p.EvaluateWithAffineCoefficients(indeterminates, indeterminates_values, &A,
+                                     &decision_variables, &b);
+    EXPECT_EQ(A.rows(), indeterminates_values.cols());
+    EXPECT_EQ(b.rows(), indeterminates_values.cols());
+    EXPECT_EQ(decision_variables.rows(), 3);
+    for (int i = 0; i < indeterminates.cols(); ++i) {
+      symbolic::Environment env;
+      env.insert(indeterminates, indeterminates_values.col(i));
+      EXPECT_PRED2(ExprEqual, (p.ToExpression().EvaluatePartial(env)).Expand(),
+                   (A.row(i).dot(decision_variables) + b(i)).Expand());
+    }
+  }
+
+  // Test special case. When the coefficients of p(x) are all constants.
+  {
+    const symbolic::Polynomial p(var_x_ * var_x_ + 2 * var_y_);
+    p.EvaluateWithAffineCoefficients(indeterminates, indeterminates_values, &A,
+                                     &decision_variables, &b);
+    EXPECT_EQ(A.cols(), 0);
+    EXPECT_EQ(decision_variables.rows(), 0);
+    for (int i = 0; i < indeterminates_values.cols(); ++i) {
+      symbolic::Environment env;
+      env.insert(indeterminates, indeterminates_values.col(i));
+      EXPECT_EQ(b(i), p.Evaluate(env));
+    }
+  }
+
+  // Test exception, when p(x)'s coefficient is not a polynomial expression of
+  // decision variables.
+  {
+    const symbolic::Polynomial p(1 + sin(var_a_) * var_x_ + var_y_, var_xy_);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        p.EvaluateWithAffineCoefficients(indeterminates, indeterminates_values,
+                                         &A, &decision_variables, &b),
+        ".*is not a polynomial.\n");
+  }
+  // Test exception, when p(x)'s coefficient is not an affine expression of
+  // decision variables.
+  {
+    const symbolic::Polynomial p(1 + (a_ * a_) * var_x_ + var_y_, var_xy_);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        p.EvaluateWithAffineCoefficients(indeterminates, indeterminates_values,
+                                         &A, &decision_variables, &b),
+        ".* is non-linear.*");
+  }
 }
 
 TEST_F(SymbolicPolynomialTest, Hash) {
@@ -1035,6 +1126,10 @@ TEST_F(SymbolicPolynomialTest, EqualToAfterExpansion) {
 
   // p1 * p2 is not equal to p2 * p3 after expansion.
   EXPECT_PRED2(test::PolyNotEqualAfterExpansion, p1 * p2, p2 * p3);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_TRUE((p2 * p3 * p1).EqualToAfterExpansion(p1 * p2 * p3));
+#pragma GCC diagnostic pop
 }
 
 // Checks if internal::CompareMonomial implements the lexicographical order.
@@ -1147,6 +1242,75 @@ TEST_F(SymbolicPolynomialTest, SetIndeterminates) {
     p.SetIndeterminates(new_indeterminates);
     EXPECT_PRED2(PolyEqual, p, Polynomial(e, new_indeterminates));
   }
+}
+
+TEST_F(SymbolicPolynomialTest, IsEvenOdd) {
+  symbolic::Polynomial p{0};
+  EXPECT_TRUE(p.IsEven());
+  EXPECT_TRUE(p.IsOdd());
+
+  p = symbolic::Polynomial{1};
+  EXPECT_TRUE(p.IsEven());
+  EXPECT_FALSE(p.IsOdd());
+
+  // p = (a+1)x⁰
+  p = symbolic::Polynomial{{{Monomial(), a_ + 1}}};
+  EXPECT_TRUE(p.IsEven());
+  EXPECT_FALSE(p.IsOdd());
+
+  // p = x
+  p = symbolic::Polynomial{{{Monomial(var_x_), 1}}};
+  EXPECT_FALSE(p.IsEven());
+  EXPECT_TRUE(p.IsOdd());
+
+  // p = x + 1
+  p = symbolic::Polynomial{{{Monomial(), 1}, {Monomial(var_x_), 1}}};
+  EXPECT_FALSE(p.IsEven());
+  EXPECT_FALSE(p.IsOdd());
+
+  // p = (a+2)*x
+  p = symbolic::Polynomial{{{Monomial(), 0}, {Monomial(var_x_), a_ + 2}}};
+  EXPECT_FALSE(p.IsEven());
+  EXPECT_TRUE(p.IsOdd());
+
+  // p = 1 + (a+1)*x*y
+  p = symbolic::Polynomial{
+      {{Monomial(), 1},
+       {Monomial(var_x_), pow(a_, 2) - 1 - (a_ + 1) * (a_ - 1)},
+       {Monomial({{var_x_, 1}, {var_y_, 1}}), a_ + 1}}};
+  EXPECT_TRUE(p.IsEven());
+  EXPECT_FALSE(p.IsOdd());
+
+  // p = a * x  + 2 * x²y
+  p = symbolic::Polynomial{
+      {{Monomial(), pow(a_, 2) - 1 - (a_ + 1) * (a_ - 1)},
+       {Monomial(var_x_), a_},
+       {Monomial{{{var_x_, 2}, {var_y_, 1}}}, 2},
+       {Monomial{{{var_x_, 2}}}, pow(a_ + 1, 2) - a_ * a_ - 2 * a_ - 1}}};
+  EXPECT_FALSE(p.IsEven());
+  EXPECT_TRUE(p.IsOdd());
+}
+
+TEST_F(SymbolicPolynomialTest, Expand) {
+  // p1 is already expanded.
+  const symbolic::Polynomial p1{
+      {{symbolic::Monomial(), a_}, {symbolic::Monomial(var_x_, 2), a_ + 1}}};
+  const auto p1_expanded = p1.Expand();
+  EXPECT_EQ(p1, p1_expanded);
+
+  // p2 needs expansion.
+  using std::pow;
+  const symbolic::Polynomial p2{
+      {{symbolic::Monomial(), (a_ + 2) * (b_ + 3)},
+       {symbolic::Monomial(var_x_, 2), pow(a_ + 1, 2)}}};
+  const symbolic::Polynomial p2_expanded = p2.Expand();
+  EXPECT_EQ(p2_expanded, symbolic::Polynomial(p2.ToExpression().Expand(),
+                                              symbolic::Variables({var_x_})));
+
+  // p3 is 0 after expansion.
+  const symbolic::Polynomial p3{
+      {{symbolic::Monomial(), (a_ + 1) * (a_ - 1) - pow(a_, 2) + 1}}};
+  EXPECT_TRUE(p3.Expand().monomial_to_coefficient_map().empty());
 }
 
 }  // namespace

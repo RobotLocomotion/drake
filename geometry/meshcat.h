@@ -272,7 +272,10 @@ class Meshcat {
 
   /** Sets the Meshcat object on `path` to a perspective camera. We provide a
    default value of `path` corresponding to the default camera object in
-   Meshcat. */
+   Meshcat.
+
+   @pydrake_mkdoc_identifier{perspective}
+   */
   void SetCamera(PerspectiveCamera camera,
                  std::string path = "/Cameras/default/rotated");
 
@@ -290,7 +293,10 @@ class Meshcat {
 
   /** Sets the Meshcat object on `path` to an orthographic camera. We provide a
    default value of `path` corresponding to the default camera object in
-   Meshcat. */
+   Meshcat.
+
+   @pydrake_mkdoc_identifier{orthographic}
+   */
   void SetCamera(OrthographicCamera camera,
                  std::string path = "/Cameras/default/rotated");
 

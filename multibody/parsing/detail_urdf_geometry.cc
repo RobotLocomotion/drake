@@ -206,7 +206,8 @@ std::unique_ptr<geometry::Shape> ParseSphere(
     const TinyXml2Diagnostic& diagnostic,
     const XMLElement* shape_node) {
   double r = 0;
-  if (!ParseScalarAttribute(shape_node, "radius", &r)) {
+  if (!ParseScalarAttribute(shape_node, "radius", &r,
+                            diagnostic.MakePolicyForNode(shape_node))) {
     diagnostic.Error(*shape_node, "Missing sphere attribute: radius");
     return {};
   }
@@ -219,13 +220,15 @@ std::unique_ptr<geometry::Shape> ParseCylinder(
     const TinyXml2Diagnostic& diagnostic,
     const XMLElement* shape_node) {
   double r = 0;
-  if (!ParseScalarAttribute(shape_node, "radius", &r)) {
+  if (!ParseScalarAttribute(shape_node, "radius", &r,
+                            diagnostic.MakePolicyForNode(shape_node))) {
     diagnostic.Error(*shape_node, "Missing cylinder attribute: radius");
     return {};
   }
 
   double l = 0;
-  if (!ParseScalarAttribute(shape_node, "length", &l)) {
+  if (!ParseScalarAttribute(shape_node, "length", &l,
+                            diagnostic.MakePolicyForNode(shape_node))) {
     diagnostic.Error(*shape_node, "Missing cylinder attribute: length");
     return {};
   }
@@ -237,13 +240,15 @@ std::unique_ptr<geometry::Shape> ParseCapsule(
     const TinyXml2Diagnostic& diagnostic,
     const XMLElement* shape_node) {
   double r = 0;
-  if (!ParseScalarAttribute(shape_node, "radius", &r)) {
+  if (!ParseScalarAttribute(shape_node, "radius", &r,
+                            diagnostic.MakePolicyForNode(shape_node))) {
     diagnostic.Error(*shape_node, "Missing capsule attribute: radius");
     return {};
   }
 
   double l = 0;
-  if (!ParseScalarAttribute(shape_node, "length", &l)) {
+  if (!ParseScalarAttribute(shape_node, "length", &l,
+                            diagnostic.MakePolicyForNode(shape_node))) {
     diagnostic.Error(*shape_node, "Missing capsule attribute: length");
     return {};
   }
@@ -257,7 +262,8 @@ std::unique_ptr<geometry::Shape> ParseEllipsoid(
   double axes[3];
   const char* names[] = {"a", "b", "c"};
   for (int i = 0; i < 3; ++i) {
-    if (!ParseScalarAttribute(shape_node, names[i], &axes[i])) {
+    if (!ParseScalarAttribute(shape_node, names[i], &axes[i],
+                              diagnostic.MakePolicyForNode(shape_node))) {
       diagnostic.Error(*shape_node, fmt::format(
                            "Missing ellipsoid attribute: '{}'", names[i]));
       return {};
@@ -577,6 +583,9 @@ std::optional<geometry::GeometryInstance> ParseCollision(
                          parent_element_name, node->Name()));
     return {};
   }
+  // Seen in the ROS urdfdom XSD Schema.
+  // See https://github.com/ros/urdfdom/blob/dbecca0/xsd/urdf.xsd
+  diagnostic.WarnUnsupportedElement(*node, "verbose");
 
   // Ensures there is a geometry child element. Since this is a required
   // element, emits an error if a geometry element does not exist.
@@ -625,7 +634,8 @@ std::optional<geometry::GeometryInstance> ParseCollision(
           drake_element->FirstChildElement(element_name);
       if (value_node != nullptr) {
         double value{};
-        if (ParseScalarAttribute(value_node, "value", &value)) {
+        if (ParseScalarAttribute(value_node, "value", &value,
+                                 diagnostic.MakePolicyForNode(value_node))) {
           return value;
         } else {
           diagnostic.Error(*value_node, fmt::format(

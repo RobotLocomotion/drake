@@ -19,10 +19,13 @@ namespace quadrotor {
 /// @system
 /// name: QuadrotorPlant
 /// input_ports:
-/// - propellor_force
+/// - propeller_force (optional)
 /// output_ports:
 /// - state
 /// @endsystem
+///
+/// Note: If the propeller_force input port is not connected, then the force is
+/// taken to be zero.
 ///
 /// @tparam_nonsymbolic_scalar
 template <typename T>

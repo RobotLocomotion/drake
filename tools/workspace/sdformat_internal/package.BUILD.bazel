@@ -1,0 +1,323 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:py.bzl",
+    "py_binary",
+)
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/workspace:generate_include_header.bzl",
+    "drake_generate_include_header",
+)
+load(
+    "@drake//tools/workspace:check_lists_consistency.bzl",
+    "check_lists_consistency",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+)
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
+
+licenses(["notice"])  # Apache-2.0 AND BSD-3-Clause AND BSL-1.0
+
+package(default_visibility = ["//visibility:private"])
+
+# Generates config.h based on the version numbers in CMake code.
+cmake_configure_file(
+    name = "config",
+    src = "include/sdf/config.hh.in",
+    out = "include/sdf/config.hh",
+    cmakelists = ["CMakeLists.txt"],
+    defines = [
+        "PROJECT_NAME=SDFormat",
+        "SDF_VERSION_NAME=",
+        "PROJECT_VERSION_MAJOR=0",
+        "PROJECT_VERSION_MINOR=0",
+        "PROJECT_VERSION_PATCH=0",
+        "PROJECT_VERSION=0.0",
+        "PROJECT_VERSION_FULL=0.0.0",
+        "PROJECT_VERSION_NAME=",
+        "SDF_PKG_VERSION=0.0",
+        "SDF_MAJOR_VERSION=0",
+        "CMAKE_INSTALL_FULL_DATAROOTDIR=does/not/exist",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+generate_file(
+    name = "include/sdf/Export.hh",
+    content = """
+#pragma once
+// Simplified version of visibility and deprecation macros.
+#define IGNITION_SDFORMAT_VISIBLE __attribute__ ((visibility("default")))
+#define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
+    """,
+)
+
+# Public headers are indicated in sdformat's `include/sdf/CMakeLists.txt`.
+_MOST_HDRS = [
+    "include/sdf/Actor.hh",
+    "include/sdf/AirPressure.hh",
+    "include/sdf/Altimeter.hh",
+    "include/sdf/Assert.hh",
+    "include/sdf/Atmosphere.hh",
+    "include/sdf/Box.hh",
+    "include/sdf/Camera.hh",
+    "include/sdf/Capsule.hh",
+    "include/sdf/Collision.hh",
+    "include/sdf/Console.hh",
+    "include/sdf/Cylinder.hh",
+    "include/sdf/Element.hh",
+    "include/sdf/Ellipsoid.hh",
+    "include/sdf/Error.hh",
+    "include/sdf/Exception.hh",
+    "include/sdf/Filesystem.hh",
+    "include/sdf/ForceTorque.hh",
+    "include/sdf/Frame.hh",
+    "include/sdf/Geometry.hh",
+    "include/sdf/Gui.hh",
+    "include/sdf/Heightmap.hh",
+    "include/sdf/Imu.hh",
+    "include/sdf/InterfaceElements.hh",
+    "include/sdf/InterfaceFrame.hh",
+    "include/sdf/InterfaceJoint.hh",
+    "include/sdf/InterfaceLink.hh",
+    "include/sdf/InterfaceModel.hh",
+    "include/sdf/InterfaceModelPoseGraph.hh",
+    "include/sdf/Joint.hh",
+    "include/sdf/JointAxis.hh",
+    "include/sdf/Lidar.hh",
+    "include/sdf/Light.hh",
+    "include/sdf/Link.hh",
+    "include/sdf/Magnetometer.hh",
+    "include/sdf/Material.hh",
+    "include/sdf/Mesh.hh",
+    "include/sdf/Model.hh",
+    "include/sdf/NavSat.hh",
+    "include/sdf/Noise.hh",
+    "include/sdf/OutputConfig.hh",
+    "include/sdf/Param.hh",
+    "include/sdf/ParserConfig.hh",
+    "include/sdf/ParticleEmitter.hh",
+    "include/sdf/Pbr.hh",
+    "include/sdf/Physics.hh",
+    "include/sdf/Plane.hh",
+    "include/sdf/Plugin.hh",
+    "include/sdf/Polyline.hh",
+    "include/sdf/PrintConfig.hh",
+    "include/sdf/Root.hh",
+    "include/sdf/SDFImpl.hh",
+    "include/sdf/Scene.hh",
+    "include/sdf/SemanticPose.hh",
+    "include/sdf/Sensor.hh",
+    "include/sdf/Sky.hh",
+    "include/sdf/Sphere.hh",
+    "include/sdf/Surface.hh",
+    "include/sdf/Types.hh",
+    "include/sdf/Visual.hh",
+    "include/sdf/World.hh",
+    "include/sdf/parser.hh",
+    "include/sdf/system_util.hh",
+]
+
+# Generates EmbeddedSdf.cc.
+genrule(
+    name = "embed_sdf_genrule",
+    srcs = glob([
+        "sdf/**/*.sdf",
+        "sdf/**/*.convert",
+    ]),
+    outs = ["src/EmbeddedSdf.cc"],
+    cmd = "$(execpath :embed_sdf) $(SRCS) > $@",  # noqa
+    tools = [":embed_sdf"],
+)
+
+py_binary(
+    name = "embed_sdf",
+    srcs = ["@drake//tools/workspace/sdformat_internal:embed_sdf.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+)
+
+_HDRS = _MOST_HDRS + [
+    "include/sdf/config.hh",  # from cmake_configure_file above
+    "include/sdf/sdf_config.h",  # alias to config.hh
+    "include/sdf/Export.hh",  # from generate_file above
+]
+
+# This list of sources matches upstream's explicitly listed sources
+# (sdformat/src/CMakeLists.txt), with two exceptions: ign.hh and ign.cc are not
+# incorporated in this library, but are incorporated into the `ign_sdf_cmdline`
+# library defined below; and the parser_urdf.hh and parser_urdf.cc are excluded
+# because we don't use them.
+_SRCS = [
+    "src/Actor.cc",
+    "src/AirPressure.cc",
+    "src/Altimeter.cc",
+    "src/Atmosphere.cc",
+    "src/Box.cc",
+    "src/Camera.cc",
+    "src/Capsule.cc",
+    "src/Collision.cc",
+    "src/Console.cc",
+    "src/Converter.cc",
+    "src/Converter.hh",
+    "src/Cylinder.cc",
+    "src/Element.cc",
+    "src/Ellipsoid.cc",
+    "src/EmbeddedSdf.cc",  # N.B. Generated file.
+    "src/EmbeddedSdf.hh",
+    "src/Error.cc",
+    "src/Exception.cc",
+    "src/Filesystem.cc",
+    "src/ForceTorque.cc",
+    "src/Frame.cc",
+    "src/FrameSemantics.cc",
+    "src/FrameSemantics.hh",
+    "src/Geometry.cc",
+    "src/Gui.cc",
+    "src/Heightmap.cc",
+    "src/Imu.cc",
+    "src/InterfaceElements.cc",
+    "src/InterfaceFrame.cc",
+    "src/InterfaceJoint.cc",
+    "src/InterfaceLink.cc",
+    "src/InterfaceModel.cc",
+    "src/InterfaceModelPoseGraph.cc",
+    "src/Joint.cc",
+    "src/JointAxis.cc",
+    "src/Lidar.cc",
+    "src/Light.cc",
+    "src/Link.cc",
+    "src/Magnetometer.cc",
+    "src/Material.cc",
+    "src/Mesh.cc",
+    "src/Model.cc",
+    "src/NavSat.cc",
+    "src/Noise.cc",
+    "src/OutputConfig.cc",
+    "src/Param.cc",
+    "src/ParamPassing.cc",
+    "src/ParamPassing.hh",
+    "src/ParserConfig.cc",
+    "src/ParticleEmitter.cc",
+    "src/Pbr.cc",
+    "src/Physics.cc",
+    "src/Plane.cc",
+    "src/Plugin.cc",
+    "src/Polyline.cc",
+    "src/PrintConfig.cc",
+    "src/Root.cc",
+    "src/SDF.cc",
+    "src/SDFExtension.cc",
+    "src/SDFExtension.hh",
+    "src/SDFImplPrivate.hh",
+    "src/Scene.cc",
+    "src/ScopedGraph.hh",
+    "src/SemanticPose.cc",
+    "src/Sensor.cc",
+    "src/Sky.cc",
+    "src/Sphere.cc",
+    "src/Surface.cc",
+    "src/Types.cc",
+    "src/Utils.cc",
+    "src/Utils.hh",
+    "src/Visual.cc",
+    "src/World.cc",
+    "src/XmlUtils.cc",
+    "src/XmlUtils.hh",
+    "src/parser.cc",
+    "src/parser_private.hh",
+]
+
+# Generates the library exported to users.
+cc_library_vendored(
+    name = "sdformat",
+    srcs = _SRCS,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/src/")
+        for x in _SRCS
+    ],
+    hdrs = _HDRS,
+    hdrs_vendored = [
+        x.replace("include/sdf/", "drake_src/drake_vendor/sdf/")
+        for x in _HDRS
+    ],
+    edit_include = {
+        "sdf/": "drake_vendor/sdf/",
+        "ignition/math/": "drake_vendor/ignition/math/",
+        "ignition/utils/": "drake_vendor/ignition/utils/",
+    },
+    includes = ["drake_src"],
+    copts = ["-w"],
+    defines = ["SDFORMAT_STATIC_DEFINE", "SDFORMAT_DISABLE_CONSOLE_LOGFILE"],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "@gz_math_internal//:gz_math",
+        "@gz_utils_internal//:gz_utils",
+        "@tinyxml2",
+        # N.B. It's very unusual to add a dependency from a third-party library
+        # onto Drake, but in this case it's the simplest way to be able to send
+        # error messages from sdformat parsing into Drake's logging API.
+        "@drake//common:essential",
+    ],
+)
+
+_IGN_CMDLINE_SRCS = [
+    "src/ign.cc",
+    "src/ign.hh",
+]
+
+cc_library_vendored(
+    name = "ign_cmdline",
+    srcs = _IGN_CMDLINE_SRCS,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/src/")
+        for x in _IGN_CMDLINE_SRCS
+    ],
+    edit_include = {
+        "sdf/": "drake_vendor/sdf/",
+        "ignition/math/": "drake_vendor/ignition/math/",
+    },
+    copts = ["-w"],
+    linkstatic = 1,
+    visibility = ["@drake//tools/workspace/sdformat_internal:__pkg__"],
+    deps = [
+        ":sdformat",
+    ],
+)
+
+check_lists_consistency(
+    files = _MOST_HDRS + _SRCS + _IGN_CMDLINE_SRCS,
+    glob_include = [
+        "include/**/*.hh",
+        "src/**/*.hh",
+        "src/**/*.cc",
+    ],
+    glob_exclude = [
+        # We ignore this backwards-compatibility stub file.
+        "include/sdf/sdf.hh",
+        # Drake doesn't use sdformat's URDF parser; we have our own.
+        "src/parser_urdf.*",
+        # These are test code, not library code.
+        "**/*TEST*",
+    ],
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+    docs = [
+        "COPYING",
+        "LICENSE",
+    ],
+)

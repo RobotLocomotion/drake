@@ -168,9 +168,6 @@ class TestMath(unittest.TestCase):
             self.assertTrue(X.IsExactlyIdentity())
             self.assertTrue(X.IsNearlyIdentity(translation_tolerance=0))
             self.assertTrue(X.IsNearlyEqualTo(other=X, tolerance=0))
-            # TODO(2022-06-01) Remove with completion of deprecation.
-            with catch_drake_warnings(expected_count=1):
-                self.assertTrue(X.IsIdentityToEpsilon(translation_tolerance=0))
         # - Test shaping (#13885).
         v = np.array([0., 0., 0.])
         vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
@@ -306,9 +303,6 @@ class TestMath(unittest.TestCase):
         numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
         numpy_compare.assert_equal(R.IsNearlyIdentity(0.0), True)
         numpy_compare.assert_equal(R.IsNearlyIdentity(tolerance=1E-15), True)
-        # TODO(2022-06-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1):
-            numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
         # - Repr.
         z = repr(T(0.0))
         i = repr(T(1.0))
@@ -441,6 +435,12 @@ class TestMath(unittest.TestCase):
 
         self.assertFalse(mut.IsPositiveDefinite(matrix=A, tolerance=0))
         self.assertTrue(mut.IsPositiveDefinite(A.dot(A.T)))
+
+        lower_triangular = np.array([1, 2, 3, 4, 5, 6.])
+        symmetric_mat = mut.ToSymmetricMatrixFromLowerTriangularColumns(
+            lower_triangular_columns=lower_triangular)
+        np.testing.assert_array_equal(
+            symmetric_mat, np.array([[1, 2, 3], [2, 4, 5], [3, 5, 6]]))
 
     def test_quadratic_form(self):
         Q = np.diag([1., 2., 3.])

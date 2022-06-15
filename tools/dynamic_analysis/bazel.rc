@@ -200,8 +200,7 @@ build:ubsan_everything --copt -g
 build:ubsan_everything --copt -fsanitize=undefined
 # Since Bazel uses clang instead of clang++, enabling -fsanitize=function,vptr
 # would require extra linkopts that cause segmentation faults on pure C code.
-# TODO(jamiesnape): Enable -fsanitize=pointer-overflow when SNOPT is fixed.
-build:ubsan_everything --copt -fno-sanitize=float-divide-by-zero,function,pointer-overflow,vptr
+build:ubsan_everything --copt -fno-sanitize=float-divide-by-zero,function,vptr
 build:ubsan_everything --copt -O1
 build:ubsan_everything --copt -fno-omit-frame-pointer
 # TODO(jamiesnape): Find a solution to using sanitizer blacklists with the
@@ -215,6 +214,10 @@ build:ubsan_everything --test_lang_filters=-sh,-py
 # Typical slowdown introduced by UBSan is 1.2x, increasing timeouts to 2x.
 # See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
 build:ubsan_everything --test_timeout=120,600,1800,7200
+
+# TODO(#17139) Fix picosat to be UBSan-correct.
+build:ubsan --per_file_copt=external/picosat/picosat.c@-fno-sanitize=pointer-overflow
+build:ubsan_everything --per_file_copt=external/picosat/picosat.c@-fno-sanitize=pointer-overflow
 
 ### Memcheck build. ###
 build:memcheck --build_tests_only

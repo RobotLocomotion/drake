@@ -38,12 +38,8 @@ def do_merge(output_dir):
     if not dirs:
         sys.exit("Error: no kcov data to merge")
 
-    # Smooth over kcov location change from Bionic to Focal.
-    newenv = os.environ.copy()
-    newenv['PATH'] = "/opt/kcov/35/bin:" + newenv['PATH']
-
     cmd = ['kcov', '--merge', output_dir] + dirs
-    subprocess.run(cmd, env=newenv)
+    subprocess.run(cmd)
 
 
 def ci_merge(args):

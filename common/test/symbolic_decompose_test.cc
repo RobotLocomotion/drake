@@ -190,15 +190,16 @@ void ExpectValidMapVarToIndex(const VectorX<Variable>& vars,
   }
 }
 
-GTEST_TEST(SymbolicExtraction, ExtractVariables) {
+GTEST_TEST(SymbolicExtraction, ExtractVariables1) {
+  // Test ExtractVariablesFromExpression with a single expression.
   const Variable x("x");
   const Variable y("y");
   Expression e = x + y;
   VectorX<Variable> vars_expected(2);
   vars_expected << x, y;
 
-  MapVarToIndex map_var_to_index;
   VectorX<Variable> vars;
+  MapVarToIndex map_var_to_index;
   std::tie(vars, map_var_to_index) = ExtractVariablesFromExpression(e);
   EXPECT_EQ(vars_expected, vars);
   ExpectValidMapVarToIndex(vars, map_var_to_index);
@@ -211,6 +212,30 @@ GTEST_TEST(SymbolicExtraction, ExtractVariables) {
 
   ExtractAndAppendVariablesFromExpression(e, &vars, &map_var_to_index);
   EXPECT_EQ(vars_expected, vars);
+  ExpectValidMapVarToIndex(vars, map_var_to_index);
+}
+
+GTEST_TEST(SymbolicExtraction, ExtractVariables2) {
+  // TestExtractVariablesFromExpression with a vector of expressions.
+  const Variable x("x");
+  const Variable y("y");
+  const Variable z("z");
+  Vector3<symbolic::Expression> expressions(x + y, y + 1, x + z);
+  VectorX<Variable> vars;
+  MapVarToIndex map_var_to_index;
+  std::tie(vars, map_var_to_index) =
+      ExtractVariablesFromExpression(expressions);
+  EXPECT_EQ(symbolic::Variables(vars), symbolic::Variables({x, y, z}));
+  ExpectValidMapVarToIndex(vars, map_var_to_index);
+
+  std::tie(vars, map_var_to_index) =
+      ExtractVariablesFromExpression(expressions.tail<2>());
+  EXPECT_EQ(symbolic::Variables(vars), symbolic::Variables({x, y, z}));
+  ExpectValidMapVarToIndex(vars, map_var_to_index);
+
+  std::tie(vars, map_var_to_index) =
+      ExtractVariablesFromExpression(expressions.head<2>());
+  EXPECT_EQ(symbolic::Variables(vars), symbolic::Variables({x, y}));
   ExpectValidMapVarToIndex(vars, map_var_to_index);
 }
 
@@ -288,16 +313,44 @@ GTEST_TEST(SymbolicExtraction, DecomposeAffineExpression) {
     Eigen::MatrixXd coeffs_expected(1, num_variables);
     coeffs_expected << 1, 2, 3;
     double c_expected = 4;
-    const Expression e = AsScalar(coeffs_expected * vars_expected) + c_expected;
+    Expression e = AsScalar(coeffs_expected * vars_expected) + c_expected;
 
     const auto pair = ExtractVariablesFromExpression(e);
     const VectorX<Variable>& vars = pair.first;
     const MapVarToIndex& map_var_to_index = pair.second;
     EXPECT_EQ(vars_expected, vars);
 
-    Eigen::MatrixXd coeffs(1, num_variables);
+    Eigen::RowVectorXd coeffs(num_variables);
     double c;
-    DecomposeAffineExpression(e, map_var_to_index, coeffs, &c);
+    DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c);
+    EXPECT_TRUE(CompareMatrices(coeffs_expected, coeffs, kEps));
+    EXPECT_EQ(c_expected, c);
+
+    c_expected = 0;
+    e = AsScalar(coeffs_expected * vars_expected) + c_expected;
+    DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c);
+    EXPECT_TRUE(CompareMatrices(coeffs_expected, coeffs, kEps));
+    EXPECT_EQ(c_expected, c);
+
+    // TODO(hongkai.dai): 2022-11-01 remove the following test after deprecating
+    // DecomposeAffineExpression with coeffs as a const reference argument.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    Eigen::RowVectorXd coeffs_deprecated(num_variables);
+    double c_deprecated;
+    DecomposeAffineExpression(e, map_var_to_index, coeffs_deprecated,
+                              &c_deprecated);
+    EXPECT_TRUE(CompareMatrices(coeffs_expected, coeffs_deprecated, kEps));
+    EXPECT_EQ(c_expected, c_deprecated);
+#pragma GCC diagnostic pop
+
+    // Now test a new expression with different coefficients and we pass in the
+    // same variable `coeffs`. This tests whether DecomposeAffineExpression
+    // reset coeffs (when the input coeffs stores some value).
+    coeffs_expected << 0, 0, 5;
+    c_expected = 2;
+    e = AsScalar(coeffs_expected * vars_expected) + c_expected;
+    DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c);
 
     EXPECT_TRUE(CompareMatrices(coeffs_expected, coeffs, kEps));
     EXPECT_EQ(c_expected, c);

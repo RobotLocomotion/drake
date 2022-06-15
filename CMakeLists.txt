@@ -79,12 +79,12 @@ else()
     )
   endif()
 
-  # The supported releases should match those listed in both doc/developers.rst
-  # and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(bionic|focal)$")
+  # The supported releases should match those listed in both
+  # doc/_pages/from_source.md and tools/workspace/os.bzl.
+  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(focal)$")
     message(FATAL_ERROR
       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-      "Ubuntu 18.04 (Bionic) or 20.04 (Focal)."
+      "Ubuntu 20.04 (Focal)."
     )
   endif()
 endif()
@@ -107,10 +107,11 @@ if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
 endif()
 
 # The minimum compiler versions should match those listed in both
-# doc/developers.rst and tools/workspace/cc/repository.bzl.
+# doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
+# TODO(jwnimmer-tri) Set MINIMUM_CLANG_VERSION=12 on 2022-09-01.
 set(MINIMUM_APPLE_CLANG_VERSION 12)
 set(MINIMUM_CLANG_VERSION 9)
-set(MINIMUM_GNU_VERSION 7.5)
+set(MINIMUM_GNU_VERSION 9.3)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
@@ -206,11 +207,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
 # The supported Python major/minor versions should match those listed in both
-# doc/developers.rst and tools/workspace/python/repository.bzl.
+# doc/_pages/from_source.md and tools/workspace/python/repository.bzl.
 if(APPLE)
   set(SUPPORTED_PYTHON_VERSION 3.9)
-elseif(UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
-  set(SUPPORTED_PYTHON_VERSION 3.6)
 else()
   set(SUPPORTED_PYTHON_VERSION 3.8)
 endif()

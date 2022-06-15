@@ -15,12 +15,14 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
 #include "drake/solvers/function.h"
+#include "drake/solvers/sparse_and_dense_matrix.h"
 
 namespace drake {
 namespace solvers {
@@ -555,26 +557,51 @@ class LinearConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearConstraint)
 
-  template <typename DerivedA, typename DerivedLB, typename DerivedUB>
-  LinearConstraint(const Eigen::MatrixBase<DerivedA>& a,
-                   const Eigen::MatrixBase<DerivedLB>& lb,
-                   const Eigen::MatrixBase<DerivedUB>& ub)
-      : Constraint(a.rows(), a.cols(), lb, ub), A_(a) {
-    DRAKE_DEMAND(a.rows() == lb.rows());
-    DRAKE_DEMAND(A_.array().isFinite().all());
-  }
+  /**
+   * Construct the linear constraint lb <= A*x <= ub
+   * @pydrake_mkdoc_identifier{dense_A}
+   */
+  LinearConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                   const Eigen::Ref<const Eigen::VectorXd>& lb,
+                   const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+  /**
+   * Overloads constructor with a sparse A matrix.
+   * @pydrake_mkdoc_identifier{sparse_A}
+   */
+  LinearConstraint(const Eigen::SparseMatrix<double>& A,
+                   const Eigen::Ref<const Eigen::VectorXd>& lb,
+                   const Eigen::Ref<const Eigen::VectorXd>& ub);
 
   ~LinearConstraint() override {}
 
+  DRAKE_DEPRECATED("2022-08-01",
+                   "Use get_sparse_A() instead of GetSparseMatrix()")
   virtual Eigen::SparseMatrix<double> GetSparseMatrix() const {
     // TODO(eric.cousineau): Consider storing or caching sparse matrix, such
     // that we can return a const lvalue reference.
-    return A_.sparseView();
+    return A_.get_as_sparse();
   }
-  virtual const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& A()
-      const {
-    return A_;
+
+  const Eigen::SparseMatrix<double>& get_sparse_A() const {
+    return A_.get_as_sparse();
   }
+
+  /**
+   * Get the matrix A as a dense matrix.
+   * @note this might involve memory allocation to convert a sparse matrix to a
+   * dense one, for better performance you should call get_sparse_A() which
+   * returns a sparse matrix.
+   */
+  const Eigen::MatrixXd& GetDenseA() const;
+
+  /**
+   * Gets the coefficient matrix A as a dense matrix.
+   * @note This function will allocate new memory on the heap. For better
+   * performance you should call get_sparse_A() which returns a sparse matrix.
+   */
+  DRAKE_DEPRECATED("2022-08-01", "Use GetDenseA() instead of A()")
+  virtual const Eigen::MatrixXd& A() const { return A_.GetAsDense(); }
 
   /**
    * Updates the linear term, upper and lower bounds in the linear constraint.
@@ -585,24 +612,30 @@ class LinearConstraint : public Constraint {
    * @param new_A new linear term
    * @param new_lb new lower bound
    * @param new_up new upper bound
+   * @pydrake_mkdoc_identifier{dense_A}
    */
-  template <typename DerivedA, typename DerivedL, typename DerivedU>
-  void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& new_A,
-                          const Eigen::MatrixBase<DerivedL>& new_lb,
-                          const Eigen::MatrixBase<DerivedU>& new_ub) {
-    if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows() ||
-        new_lb.cols() != 1 || new_ub.cols() != 1) {
-      throw std::runtime_error("New constraints have invalid dimensions");
-    }
+  void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+                          const Eigen::Ref<const Eigen::VectorXd>& new_lb,
+                          const Eigen::Ref<const Eigen::VectorXd>& new_ub);
 
-    if (new_A.cols() != A_.cols()) {
-      throw std::runtime_error("Can't change the number of decision variables");
-    }
+  /**
+   * Overloads UpdateCoefficients but with a sparse A matrix.
+   * @pydrake_mkdoc_identifier{sparse_A}
+   */
+  void UpdateCoefficients(const Eigen::SparseMatrix<double>& new_A,
+                          const Eigen::Ref<const Eigen::VectorXd>& new_lb,
+                          const Eigen::Ref<const Eigen::VectorXd>& new_ub);
 
-    A_ = new_A;
-    set_num_outputs(A_.rows());
-    set_bounds(new_lb, new_ub);
-  }
+  /**
+   * Sets A(i, j) to zero if abs(A(i, j)) <= tol.
+   * Oftentimes the coefficient A is computed numerically with round-off errors.
+   * Such small round-off errors can cause numerical issues for certain
+   * optimization solvers. Hence it is recommended to remove the tiny
+   * coefficients to achieve numerical robustness.
+   * @param tol The entries in A with absolute value <= tol will be set to 0.
+   * @note tol>= 0.
+   */
+  void RemoveTinyCoefficient(double tol);
 
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
@@ -621,7 +654,7 @@ class LinearConstraint : public Constraint {
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
 
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
+  internal::SparseAndDenseMatrix A_;
 
  private:
   template <typename DerivedX, typename ScalarY>
@@ -640,20 +673,28 @@ class LinearEqualityConstraint : public LinearConstraint {
 
   /**
    * Constructs the linear equality constraint Aeq * x = beq
+   * @pydrake_mkdoc_identifier{dense_Aeq}
    */
-  template <typename DerivedA, typename DerivedB>
-  LinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
-                           const Eigen::MatrixBase<DerivedB>& beq)
+  LinearEqualityConstraint(const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
+                           const Eigen::Ref<const Eigen::VectorXd>& beq)
+      : LinearConstraint(Aeq, beq, beq) {}
+
+  /**
+   * Overloads the constructor with a sparse matrix Aeq.
+   * @pydrake_mkdoc_identifier{sparse_Aeq}
+   */
+  LinearEqualityConstraint(
+      const Eigen::SparseMatrix<double>& Aeq,
+      const Eigen::Ref<const Eigen::VectorXd>& beq)
       : LinearConstraint(Aeq, beq, beq) {}
 
   /**
    * Constructs the linear equality constraint a.dot(x) = beq
+   * @pydrake_mkdoc_identifier{row_a}
    */
   LinearEqualityConstraint(const Eigen::Ref<const Eigen::RowVectorXd>& a,
                            double beq)
       : LinearEqualityConstraint(a, Vector1d(beq)) {}
-
-  ~LinearEqualityConstraint() override {}
 
   /*
    * @brief change the parameters of the constraint (A and b), but not the
@@ -662,9 +703,17 @@ class LinearEqualityConstraint : public LinearConstraint {
    * note that A and b can change size in the rows only (representing a
    *different number of linear constraints, but on the same decision variables)
    */
-  template <typename DerivedA, typename DerivedB>
-  void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& Aeq,
-                          const Eigen::MatrixBase<DerivedB>& beq) {
+  void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
+                          const Eigen::Ref<const Eigen::VectorXd>& beq) {
+    LinearConstraint::UpdateCoefficients(Aeq, beq, beq);
+  }
+
+  /**
+   * Overloads UpdateCoefficients but with a sparse A matrix.
+   */
+  void UpdateCoefficients(
+      const Eigen::SparseMatrix<double>& Aeq,
+      const Eigen::Ref<const Eigen::VectorXd>& beq) {
     LinearConstraint::UpdateCoefficients(Aeq, beq, beq);
   }
 
@@ -701,11 +750,8 @@ class BoundingBoxConstraint : public LinearConstraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BoundingBoxConstraint)
 
-  template <typename DerivedLB, typename DerivedUB>
-  BoundingBoxConstraint(const Eigen::MatrixBase<DerivedLB>& lb,
-                        const Eigen::MatrixBase<DerivedUB>& ub)
-      : LinearConstraint(Eigen::MatrixXd::Identity(lb.rows(), lb.rows()), lb,
-                         ub) {}
+  BoundingBoxConstraint(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                        const Eigen::Ref<const Eigen::VectorXd>& ub);
 
   ~BoundingBoxConstraint() override {}
 
@@ -725,6 +771,12 @@ class BoundingBoxConstraint : public LinearConstraint {
 
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  // This function (inheried from the base LinearConstraint class) should not be
+  // called by BoundingBoxConstraint, so we hide it as a private function.
+  // TODO(hongkai.dai): BoundingBoxConstraint should derive from Constraint, not
+  // from LinearConstraint.
+  void RemoveTinyCoefficient(double tol);
 };
 
 /**

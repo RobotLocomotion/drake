@@ -11,6 +11,20 @@ load(
 )
 
 py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    visibility = [":__subpackages__"],
+    deps = ["//tools:module_py"],
+)
+
+py_library(
+    name = "otool",
+    srcs = ["otool.py"],
+    visibility = ["//tools:__subpackages__"],
+    deps = [":module_py"],
+)
+
+py_library(
     name = "install_test_helper",
     testonly = 1,
     srcs = ["install_test_helper.py"],
@@ -27,6 +41,7 @@ exports_files(
 drake_py_binary(
     name = "installer",
     srcs = ["installer.py"],
+    deps = [":otool"],
 )
 
 # Runs `install_test_helper` unit tests.

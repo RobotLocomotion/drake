@@ -21,7 +21,8 @@ class ContactVisualizerTest : public ::testing::Test {
   ContactVisualizerTest() : meshcat_(std::make_shared<Meshcat>()) {}
 
   // Sets up a simple plant, scene graph, and visualizer.
-  // The plant has two spheres on prismatic joints.
+  // The plant has two spheres with point contact geometry on prismatic joints
+  // and two spheres with hydroelastic geometry on prismatic joints.
   //
   // @param add_to_builder_overload must be 0, 1, or 2 to select which
   // "AddToBuilder" overload will be used.
@@ -34,7 +35,7 @@ class ContactVisualizerTest : public ::testing::Test {
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
 
-    // Add the spheres and joints.
+    // Add the point contact spheres and joints.
     multibody::Parser parser(&plant);
     const std::string sdf = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/sphere.sdf");
@@ -54,6 +55,20 @@ class ContactVisualizerTest : public ::testing::Test {
       plant.RegisterCollisionGeometry(sphere2, X, *shape, "bonus",
           multibody::CoulombFriction<double>());
     }
+
+    // Add the hydroelastic spheres and joints between them.
+    const std::string hydro_sdf = FindResourceOrThrow(
+        "drake/multibody/meshcat/test/hydroelastic.sdf");
+    parser.AddModelFromFile(hydro_sdf);
+    const auto& body1 = plant.GetBodyByName("body1");
+    plant.AddJoint<multibody::PrismaticJoint>(
+        "body1", plant.world_body(), std::nullopt, body1, std::nullopt,
+        Eigen::Vector3d::UnitZ());
+    const auto& body2 = plant.GetBodyByName("body2");
+    plant.AddJoint<multibody::PrismaticJoint>(
+        "body2", plant.world_body(), std::nullopt, body2, std::nullopt,
+        Eigen::Vector3d::UnitZ());
+
     plant.Finalize();
 
     // Add the visualizer.
@@ -77,11 +92,12 @@ class ContactVisualizerTest : public ::testing::Test {
       DRAKE_UNREACHABLE();
     }
 
-    // Start the two spheres in contact, but not completely overlapping.
+    // Start the two point contact spheres in contact, but not completely
+    // overlapping. Start the two hydroelastic contact spheres overlapping.
     diagram_ = builder.Build();
     context_ = diagram_->CreateDefaultContext();
     plant.SetPositions(&plant.GetMyMutableContextFromRoot(context_.get()),
-                       Eigen::Vector2d{-0.03, 0.03});
+                       Eigen::Vector4d{-0.03, 0.03, -0.05, 0.1});
   }
 
   void PublishAndCheck(
@@ -94,6 +110,8 @@ class ContactVisualizerTest : public ::testing::Test {
       EXPECT_TRUE(meshcat_->HasPath(
           "contact_forces/point/sphere1.base_link+sphere2.base_link"));
     }
+
+    EXPECT_TRUE(meshcat_->HasPath("contact_forces/hydroelastic/body1+body2"));
   }
 
   std::shared_ptr<Meshcat> meshcat_;

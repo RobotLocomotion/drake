@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/solvers/constraint.h"
 
 using drake::symbolic::Expression;
 
@@ -185,31 +186,32 @@ TEST_F(ParseLorentzConeConstraintTest, Test5) {
 
 TEST_F(ParseLorentzConeConstraintTest, Test6) {
   // The linear expression is not actually linear.
-  EXPECT_THROW(internal::ParseLorentzConeConstraint(
-                   2 * x_(0) * x_(1), x_(0) * x_(0) + x_(1) * x_(1)),
+  EXPECT_THROW(unused(internal::ParseLorentzConeConstraint(
+                   2 * x_(0) * x_(1), x_(0) * x_(0) + x_(1) * x_(1))),
                std::runtime_error);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test7) {
   // The quadratic expression is actually linear.
-  EXPECT_THROW(internal::ParseLorentzConeConstraint(2 * x_(0), x_(0) + x_(1)),
-               std::runtime_error);
+  EXPECT_THROW(
+      unused(internal::ParseLorentzConeConstraint(2 * x_(0), x_(0) + x_(1))),
+      std::runtime_error);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test8) {
   // The quadratic expression is actually cubic.
-  EXPECT_THROW(
-      internal::ParseLorentzConeConstraint(2 * x_(0), pow(x_(1), 3) + x_(2)),
-      std::runtime_error);
+  EXPECT_THROW(unused(internal::ParseLorentzConeConstraint(
+                   2 * x_(0), pow(x_(1), 3) + x_(2))),
+               std::runtime_error);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test9) {
   // The quadratic expression is not positive semidefinite.
-  EXPECT_THROW(internal::ParseLorentzConeConstraint(
-                   x_(0), pow(x_(1) + 2 * x_(2) + 1, 2) - x_(3)),
+  EXPECT_THROW(unused(internal::ParseLorentzConeConstraint(
+                   x_(0), pow(x_(1) + 2 * x_(2) + 1, 2) - x_(3))),
                std::runtime_error);
-  EXPECT_THROW(internal::ParseLorentzConeConstraint(
-                   x_(0), pow(x_(1) + x_(2) + 2, 2) - 1),
+  EXPECT_THROW(unused(internal::ParseLorentzConeConstraint(
+                   x_(0), pow(x_(1) + x_(2) + 2, 2) - 1)),
                std::runtime_error);
 }
 
@@ -262,16 +264,16 @@ TEST_F(ParseRotatedLorentzConeConstraintTest, Test3) {
   // Throw a runtime error when the precondition is not satisfied.
   Eigen::Matrix<Expression, 4, 1> expression;
   expression << 2 * x_(0) * x_(1), x_(2), x_(3), 1;
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(expression),
+  EXPECT_THROW(unused(internal::ParseRotatedLorentzConeConstraint(expression)),
                std::runtime_error);
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(0) * x_(1), x_(1),
-                                                           x_(2) * x_(2) + 1),
+  EXPECT_THROW(unused(internal::ParseRotatedLorentzConeConstraint(
+                   x_(0) * x_(1), x_(1), x_(2) * x_(2) + 1)),
                std::runtime_error);
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(1), x_(0) * x_(1),
-                                                           x_(2) * x_(2) + 1),
+  EXPECT_THROW(unused(internal::ParseRotatedLorentzConeConstraint(
+                   x_(1), x_(0) * x_(1), x_(2) * x_(2) + 1)),
                std::runtime_error);
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(0), x_(1),
-                                                           x_(2) * x_(2) - 1),
+  EXPECT_THROW(unused(internal::ParseRotatedLorentzConeConstraint(
+                   x_(0), x_(1), x_(2) * x_(2) - 1)),
                std::runtime_error);
 }
 
@@ -337,7 +339,8 @@ TEST_F(MaybeParseLinearConstraintTest, TestLinearEqualityConstraint) {
       EXPECT_EQ(linear_eq_constraint.variables().size(), 0);
     }
     EXPECT_EQ(linear_eq_constraint.evaluator()->num_constraints(), 1);
-    EXPECT_TRUE(CompareMatrices(linear_eq_constraint.evaluator()->A(), a, tol));
+    EXPECT_TRUE(
+        CompareMatrices(linear_eq_constraint.evaluator()->GetDenseA(), a, tol));
     EXPECT_NEAR(linear_eq_constraint.evaluator()->lower_bound()(0), bound, tol);
   };
 
@@ -372,7 +375,8 @@ TEST_F(MaybeParseLinearConstraintTest, TestLinearConstraint) {
       EXPECT_EQ(linear_constraint.variables().size(), 0);
     }
     EXPECT_EQ(linear_constraint.evaluator()->num_constraints(), 1);
-    EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->A(), a, tol));
+    EXPECT_TRUE(
+        CompareMatrices(linear_constraint.evaluator()->GetDenseA(), a, tol));
     EXPECT_NEAR(linear_constraint.evaluator()->lower_bound()(0), lb, tol);
     EXPECT_NEAR(linear_constraint.evaluator()->upper_bound()(0), ub, tol);
   };
@@ -485,6 +489,79 @@ GTEST_TEST(ParseConstraintTest, TrueFormula) {
       internal::ParseLinearEqualityConstraint(symbolic::Expression(1) == 1);
   EXPECT_EQ(binding6.evaluator()->num_constraints(), 0);
   EXPECT_EQ(binding6.variables().rows(), 0);
+}
+
+std::shared_ptr<RotatedLorentzConeConstraint>
+CheckParseQuadraticAsRotatedLorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c,
+    double zero_tol = 0.) {
+  const auto dut =
+      internal::ParseQuadraticAsRotatedLorentzConeConstraint(Q, b, c, zero_tol);
+  // Make sure that dut.A() * x + dub.t() in rotated Lorentz cone is the same
+  // expression as 0.5xᵀQx + bᵀx + c<=0.
+  const Eigen::MatrixXd A_dense = dut->A_dense();
+  EXPECT_TRUE(
+      CompareMatrices(A_dense.row(1), Eigen::RowVectorXd::Zero(Q.rows())));
+  EXPECT_EQ(dut->b()(1), 1);
+  const double tol = 1E-12;
+  // Check the Hessian.
+  EXPECT_TRUE(
+      CompareMatrices(A_dense.bottomRows(A_dense.rows() - 2).transpose() *
+                      A_dense.bottomRows(A_dense.rows() - 2),
+                      0.25 * (Q + Q.transpose()), tol));
+  // Check the linear coefficient.
+  EXPECT_TRUE(
+      CompareMatrices(2 * A_dense.bottomRows(A_dense.rows() - 2).transpose() *
+                      dut->b().tail(dut->b().rows() - 2) -
+                      A_dense.row(0).transpose(),
+                      b, tol));
+  EXPECT_NEAR(dut->b().tail(dut->b().rows() - 2).squaredNorm() - dut->b()(0), c,
+              tol);
+  return dut;
+}
+
+GTEST_TEST(ParseQuadraticAsRotatedLorentzConeConstraint, Test) {
+  CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      (Vector1d() << 1).finished(), Vector1d::Zero(), 1);
+  CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      (Vector1d() << 1).finished(), (Vector1d() << 2).finished(), 1);
+  // Strictly positive Hessian.
+  CheckParseQuadraticAsRotatedLorentzConeConstraint(Eigen::Matrix2d::Identity(),
+                                                    Eigen::Vector2d(1, 3), 2);
+  // Hessian is positive semidefinite but not positive definite. b is in the
+  // range space of F.
+  auto dut = CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      2 * Eigen::Matrix2d::Ones(), Eigen::Vector2d(2, 2), 0.5);
+  EXPECT_EQ(dut->A().rows(), 3);
+
+  // Hessian is positive semidefinite but not positive definite, b is not in the
+  // range space of F.
+  dut = CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      2 * Eigen::Matrix2d::Ones(), Eigen::Vector2d(2, 3), -0.5);
+  EXPECT_EQ(dut->A().rows(), 3);
+
+  // Hessian is almost positive semidefinite with one eigenvalue slightly
+  // negative.
+  Eigen::Matrix2d Q_almost_psd;
+  // clang-format off
+  Q_almost_psd << 1, 1,
+                  1, 1 - 1E-12;
+  // clang-format on
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseQuadraticAsRotatedLorentzConeConstraint(
+          Q_almost_psd, Eigen::Vector2d(2, 3), -0.5),
+      ".* is not positive semidefinite.*");
+  CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      Q_almost_psd, Eigen::Vector2d(2, 3), -0.5, 1E-10);
+}
+
+GTEST_TEST(ParseQuadraticAsRotatedLorentzConeConstraint, TestException) {
+  const Eigen::MatrixXd Q = Eigen::Vector2d(1, -2).asDiagonal();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseQuadraticAsRotatedLorentzConeConstraint(
+          Q, Eigen::Vector2d(1, 3), -2),
+      ".* is not positive semidefinite.*");
 }
 }  // namespace
 }  // namespace solvers

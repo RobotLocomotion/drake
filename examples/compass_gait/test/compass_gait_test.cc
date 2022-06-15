@@ -205,7 +205,7 @@ GTEST_TEST(CompassGaitTest, TestCollisionDynamics) {
 
   const double angular_momentum_after =
       CalcAngularMomentum(cg, *next_context, true);
-  EXPECT_NEAR(angular_momentum_before, angular_momentum_after, 5e-15);
+  EXPECT_NEAR(angular_momentum_before, angular_momentum_after, 3e-14);
 
   // Ensure that the toe moved forward.
   EXPECT_GT(cg.get_toe_position(*next_context), cg.get_toe_position(*context));
@@ -284,6 +284,15 @@ GTEST_TEST(CompassGaitTest, TestFloatBaseOutput) {
       CompareMatrices(floating_base_state.CopyToVector(), expected, 1e-14));
   EXPECT_FALSE(cg.HasDirectFeedthrough(
       cg.get_floating_base_state_output_port().get_index()));
+}
+
+// Ensure that DoCalcTimeDerivatives succeeds even if the input port is
+// disconnected.
+GTEST_TEST(CompassGaitTest, NoInput) {
+  const CompassGait<double> plant;
+  auto context = plant.CreateDefaultContext();
+
+  DRAKE_EXPECT_NO_THROW(plant.EvalTimeDerivatives(*context));
 }
 
 }  // namespace

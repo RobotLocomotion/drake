@@ -14,10 +14,11 @@ namespace systems {
  A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta integrator
  with a fourth order error estimate.
 
- For a discussion of this Runge-Kutta method, see [Hairer, 1993]. The
- embedded error estimate was derived using the method mentioned in
- [Hairer, 1993].
-  The Butcher tableau for this integrator follows:
+ For a discussion of this Runge-Kutta method, see [Dormand, 1980] and
+ [Hairer, 1993]. The embedded error estimate was derived as described
+ in [Hairer, 1993], where all the coefficients are tabulated.
+
+ The Butcher tableau for this integrator follows:
  <pre>
     0 |
   1/5 |        1/5
@@ -31,13 +32,13 @@ namespace systems {
         5179/57600            0   7571/16695    393/640   −92097/339200   187/2100   1/40  <!-- NOLINT(*) -->
  </pre>
  where the second to last row is the 5th-order (propagated) solution and
- the last row gives a 2nd-order accurate solution used for error control.
+ the last row gives a 4th-order accurate solution used for error control.
 
  - [Dormand, 1980] J. Dormand and P. Prince. "A family of embedded
    Runge-Kutta formulae", Journal of Computational and Applied Mathematics,
    1980, 6(1): 19–26.
- - [Hairer, 1993] E. Hairer, S. Noersett, and G. Wanner. Solving ODEs I. 2nd
-   rev. ed. Springer, 1993. p. 166.
+ - [Hairer, 1993] E. Hairer, S. Nørsett, and G. Wanner. Solving ODEs I. 2nd
+   rev. ed. Springer, 1993. pp. 178-9.
 
  @tparam_nonsymbolic_scalar
  @ingroup integrators

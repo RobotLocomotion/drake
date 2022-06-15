@@ -9,6 +9,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/csdp_solver_internal.h"
 #include "drake/solvers/test/csdp_test_examples.h"
 
@@ -1032,6 +1033,44 @@ TEST_F(TrivialSDP2, RemoveFreeVariableByLorentzConeSlackApproach) {
 
 TEST_F(TrivialSOCP1, RemoveFreeVariableByLorentzConeSlackApproach) {
   TestRemoveFreeVariableByLorentzConeSlackApproach(*prog_);
+}
+
+GTEST_TEST(SdpaFreeFormatTest, EmptyConstraint) {
+  // Tests a program that contains an empty constraint 0 == 0.
+  // Construct SdpaFreeFormat with and without the empty constraint, they should
+  // be the same.
+  MathematicalProgram prog{};
+  const auto X = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  const auto x = prog.NewContinuousVariables<1>();
+  prog.AddBoundingBoxConstraint(-1, 1, x);
+  SdpaFreeFormat dut_no_empty_constraint(prog);
+  prog.AddLinearEqualityConstraint(Vector1d(0), 0, x);
+  SdpaFreeFormat dut_empty_constraint(prog);
+  EXPECT_EQ(dut_empty_constraint.num_X_rows(),
+            dut_no_empty_constraint.num_X_rows());
+  EXPECT_EQ(dut_empty_constraint.num_free_variables(),
+            dut_no_empty_constraint.num_free_variables());
+  EXPECT_EQ(dut_empty_constraint.constant_min_cost_term(),
+            dut_no_empty_constraint.constant_min_cost_term());
+  EXPECT_EQ(dut_empty_constraint.A().size(),
+            dut_no_empty_constraint.A().size());
+  for (int i = 0; i < static_cast<int>(dut_empty_constraint.A().size()); ++i) {
+    EXPECT_TRUE(CompareMatrices(dut_empty_constraint.A()[i].toDense(),
+                                dut_no_empty_constraint.A()[i].toDense()));
+  }
+  EXPECT_TRUE(CompareMatrices(dut_empty_constraint.C().toDense(),
+                              dut_no_empty_constraint.C().toDense()));
+  EXPECT_TRUE(CompareMatrices(dut_empty_constraint.B().toDense(),
+                              dut_no_empty_constraint.B().toDense()));
+  EXPECT_TRUE(CompareMatrices(dut_empty_constraint.d().toDense(),
+                              dut_no_empty_constraint.d().toDense()));
+
+  // Now add an infeasible empty constraint, expect an exception.
+  prog.AddLinearConstraint(Eigen::RowVector2d(0, 0), 1, kInf,
+                           Vector2<symbolic::Variable>(X(0, 0), X(1, 1)));
+  DRAKE_EXPECT_THROWS_MESSAGE(SdpaFreeFormat(prog),
+                              ".* the problem is infeasible as it contains.*");
 }
 
 }  // namespace internal

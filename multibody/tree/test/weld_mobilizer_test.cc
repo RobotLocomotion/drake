@@ -39,6 +39,11 @@ class WeldMobilizerTest :  public MobilizerTester {
   math::RigidTransformd X_WB_;
 };
 
+TEST_F(WeldMobilizerTest, CanRotateOrTranslate) {
+  EXPECT_FALSE(weld_body_to_world_->can_rotate());
+  EXPECT_FALSE(weld_body_to_world_->can_translate());
+}
+
 TEST_F(WeldMobilizerTest, ZeroSizedState) {
   EXPECT_EQ(tree().num_positions(), 0);
   EXPECT_EQ(tree().num_velocities(), 0);
@@ -70,8 +75,9 @@ TEST_F(WeldMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
 
 TEST_F(WeldMobilizerTest, ProjectSpatialForce) {
   VectorXd zero_sized_vector(0);
-  const SpatialForce<double> F_Mo_F;  // value not important for this test.
-  // no-op, just tests we can call it with a zero sized vector.
+  // Value not important for this test.
+  const SpatialForce<double> F_Mo_F(Vector6d::Zero());
+  // No-op, just tests we can call it with a zero sized vector.
   weld_body_to_world_->ProjectSpatialForce(
       *context_, F_Mo_F, zero_sized_vector);
 }

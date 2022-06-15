@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include <fmt/ostream.h>
 
@@ -129,6 +130,24 @@ ExtractVariablesFromExpression(const Expression& e) {
   return make_pair(vars, map_var_to_index);
 }
 
+std::pair<VectorX<Variable>, std::unordered_map<Variable::Id, int>>
+ExtractVariablesFromExpression(
+    const Eigen::Ref<const VectorX<Expression>>& expressions) {
+  std::vector<Variable> var_vec;
+  std::unordered_map<Variable::Id, int> map_var_to_index{};
+  for (int i = 0; i < expressions.rows(); ++i) {
+    for (const Variable& var : expressions(i).GetVariables()) {
+      if (map_var_to_index.count(var.get_id()) == 0) {
+        map_var_to_index.emplace(var.get_id(), var_vec.size());
+        var_vec.push_back(var);
+      }
+    }
+  }
+  VectorX<Variable> vars =
+      Eigen::Map<VectorX<Variable>>(var_vec.data(), var_vec.size());
+  return make_pair(std::move(vars), std::move(map_var_to_index));
+}
+
 void DecomposeQuadraticPolynomial(
     const symbolic::Polynomial& poly,
     const std::unordered_map<Variable::Id, int>& map_var_to_index,
@@ -190,18 +209,58 @@ void DecomposeAffineExpressions(const Eigen::Ref<const VectorX<Expression>>& v,
                                 VectorX<Variable>* vars) {
   // 0. Setup map_var_to_index and var_vec.
   std::unordered_map<Variable::Id, int> map_var_to_index;
-  for (int i = 0; i < v.size(); ++i) {
-    ExtractAndAppendVariablesFromExpression(v(i), vars, &map_var_to_index);
-  }
+  std::tie(*vars, map_var_to_index) = ExtractVariablesFromExpression(v);
 
   // 1. Construct decompose v as
   // v = A * vars + b
   *A = Eigen::MatrixXd::Zero(v.rows(), vars->rows());
   *b = Eigen::VectorXd::Zero(v.rows());
+  Eigen::RowVectorXd Ai(A->cols());
   for (int i{0}; i < v.size(); ++i) {
     const Expression& e_i{v(i)};
-    DecomposeAffineExpression(e_i, map_var_to_index, A->row(i), b->data() + i);
+    DecomposeAffineExpression(e_i, map_var_to_index, &Ai, b->data() + i);
+    A->row(i) = Ai;
   }
+}
+
+int DecomposeAffineExpression(
+    const symbolic::Expression& e,
+    const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
+    EigenPtr<Eigen::RowVectorXd> coeffs, double* constant_term) {
+  DRAKE_DEMAND(coeffs->cols() == static_cast<int>(map_var_to_index.size()));
+  coeffs->setZero();
+  *constant_term = 0;
+  if (!e.is_polynomial()) {
+    std::ostringstream oss;
+    oss << "Expression " << e << "is not a polynomial.\n";
+    throw std::runtime_error(oss.str());
+  }
+  const symbolic::Polynomial poly{e};
+  int num_variable = 0;
+  for (const auto& p : poly.monomial_to_coefficient_map()) {
+    const auto& p_monomial = p.first;
+    DRAKE_ASSERT(is_constant(p.second));
+    const double p_coeff = symbolic::get_constant_value(p.second);
+    if (p_monomial.total_degree() > 1) {
+      std::stringstream oss;
+      oss << "Expression " << e << " is non-linear.";
+      throw std::runtime_error(oss.str());
+    } else if (p_monomial.total_degree() == 1) {
+      // Linear coefficient.
+      const auto& p_monomial_powers = p_monomial.get_powers();
+      DRAKE_DEMAND(p_monomial_powers.size() == 1);
+      const symbolic::Variable::Id var_id =
+          p_monomial_powers.begin()->first.get_id();
+      (*coeffs)(map_var_to_index.at(var_id)) = p_coeff;
+      if (p_coeff != 0) {
+        ++num_variable;
+      }
+    } else {
+      // Constant term.
+      *constant_term = p_coeff;
+    }
+  }
+  return num_variable;
 }
 
 namespace {

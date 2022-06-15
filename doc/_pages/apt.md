@@ -5,7 +5,7 @@ title: Installation via APT (Ubuntu)
 # APT Packages
 
 Drake publishes pre-compiled binaries as APT packages (``*.deb``) for the
-Ubuntu 18.04 (Bionic) and Ubuntu 20.04 (Focal) operating systems. Refer to
+Ubuntu 20.04 (Focal) operating system. Refer to
 [Supported Configurations](/installation.html#supported-configurations)
 for additional compatibility details.
 
@@ -20,8 +20,8 @@ Drake binary releases incorporate a pre-compiled version of
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
-Drake's apt packages do not support the MOSEK™ nor Gurobi solvers. To use
-MOSEK™ or Gurobi, you will need to [build Drake from source](/from_source.html).
+Drake's apt packages do not support the Gurobi solver. To use
+Gurobi, you will need to [build Drake from source](/from_source.html).
 
 ## Stable Releases
 

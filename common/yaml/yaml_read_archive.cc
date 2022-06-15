@@ -3,13 +3,14 @@
 #include <algorithm>
 #include <cstring>
 
-#include <drake-yaml-cpp/yaml.h>
+#include <drake_vendor/yaml-cpp/yaml.h>
 #include <fmt/ostream.h>
 
 #include "drake/common/nice_type_name.h"
 
 namespace drake {
 namespace yaml {
+namespace internal {
 namespace {
 
 // The source and destination are both of type Map.  Copy the key-value pairs
@@ -383,5 +384,6 @@ void YamlReadArchive::PrintVisitNameType(std::ostream& s) const {
              debug_visit_name_);
 }
 
+}  // namespace internal
 }  // namespace yaml
 }  // namespace drake

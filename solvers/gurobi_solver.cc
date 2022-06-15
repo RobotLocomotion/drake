@@ -206,7 +206,7 @@ GurobiSolver::SolveStatusInfo GetGurobiSolveStatus(void* cbdata, int where) {
   GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBND, &(solve_status.best_bound));
   GRBcbget(cbdata, where, GRB_CB_MIPNODE_SOLCNT,
            &(solve_status.feasible_solutions_count));
-  double explored_node_count_double;
+  double explored_node_count_double{};
   GRBcbget(cbdata, where, GRB_CB_MIPNODE_NODCNT, &explored_node_count_double);
   solve_status.explored_node_count = explored_node_count_double;
   return solve_status;
@@ -669,7 +669,7 @@ int ProcessLinearConstraints(
     constraint_dual_start_row->emplace(binding, *num_gurobi_linear_constraints);
 
     const int error = AddLinearConstraint(
-        prog, model, constraint->A(), constraint->lower_bound(),
+        prog, model, constraint->GetDenseA(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), true,
         sparseness_threshold, num_gurobi_linear_constraints);
     if (error) {
@@ -683,7 +683,7 @@ int ProcessLinearConstraints(
     constraint_dual_start_row->emplace(binding, *num_gurobi_linear_constraints);
 
     const int error = AddLinearConstraint(
-        prog, model, constraint->A(), constraint->lower_bound(),
+        prog, model, constraint->GetDenseA(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), false,
         sparseness_threshold, num_gurobi_linear_constraints);
     if (error) {

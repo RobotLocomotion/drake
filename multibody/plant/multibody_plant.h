@@ -16,6 +16,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
+#include "drake/common/scope_exit.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
@@ -120,6 +121,7 @@ concepts/notation.
 @system
 name: MultibodyPlant
 input_ports:
+- actuation
 - applied_generalized_force
 - applied_spatial_force
 - <em style="color:gray">model_instance_name[i]</em>_actuation
@@ -366,7 +368,6 @@ the following properties for point contact modeling:
 |  material  | point_contact_stiffness |  no²  | T | Penalty method stiffness. |
 |  material  | hunt_crossley_dissipation |  no²  | T | Penalty method dissipation. |
 
-
 ¹ Collision geometry is required to be registered with a
   geometry::ProximityProperties object that contains the
   ("material", "coulomb_friction") property. If the property
@@ -513,7 +514,7 @@ call to Finalize() must be performed. This call will:
 - declare the plant's input and output ports,
 - declare collision filters to ignore collisions:
   - between bodies connected by a joint,
-  - between bodies welded (directly or transitively) to the world.
+  - within subgraphs of welded bodies.
 
 <!-- TODO(#16422): ignore collisions within all groups of welded-together
      bodies -->
@@ -551,11 +552,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @ref systems::System "System" input and output ports
   /// as depicted in the MultibodyPlant class documentation.
   ///
-  /// Actuation values can be provided through a single
-  /// input port which describes the entire plant (in the case where only a
-  /// single model instance has actuated dofs), or through multiple input ports
-  /// which each provide the actuation values for a specific model instance.
-  /// See AddJointActuator() and num_actuators().
+  /// Actuation values can be provided through a single input port which
+  /// describes the entire plant, or through multiple input ports which each
+  /// provide the actuation values for a specific model instance. See
+  /// AddJointActuator() and num_actuators().
   ///
   /// Output ports provide information about the entire %MultibodyPlant
   /// or its individual model instances.
@@ -619,13 +619,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::InputPort<T>& get_actuation_input_port(
       ModelInstanceIndex model_instance) const;
 
-  /// Returns a constant reference to the input port for external actuation for
-  /// the case where only one model instance has actuated dofs.  This input
-  /// port is a vector valued port, which can be set with
-  /// JointActuator::set_actuation_vector().
+  /// Returns a constant reference to the input port for external actuations for
+  /// all actuated dofs regardless the number of model instances that have
+  /// actuated dofs. The input actuation is assumed to be ordered according to
+  /// model instances. This input port is a vector valued port, which can be set
+  /// with JointActuator::set_actuation_vector().
   /// @pre Finalize() was already called on `this` plant.
-  /// @throws std::exception if called before Finalize(), if the model does not
-  /// contain any actuators, or if multiple model instances have actuated dofs.
+  /// @throws std::exception if called before Finalize().
+  /// @throws std::exception if individual actuation ports are connected.
   const systems::InputPort<T>& get_actuation_input_port() const;
 
   /// Returns a constant reference to the vector-valued input port for applied
@@ -778,67 +779,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
-  explicit MultibodyPlant(const MultibodyPlant<U>& other)
-      : internal::MultibodyTreeSystem<T>(
-            systems::SystemTypeTag<MultibodyPlant>{},
-            other.internal_tree().template CloneToScalar<T>(),
-            other.is_discrete()) {
-    DRAKE_THROW_UNLESS(other.is_finalized());
-    time_step_ = other.time_step_;
-    // Copy of all members related with geometry registration.
-    source_id_ = other.source_id_;
-    body_index_to_frame_id_ = other.body_index_to_frame_id_;
-    frame_id_to_body_index_ = other.frame_id_to_body_index_;
-    geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
-    visual_geometries_ = other.visual_geometries_;
-    num_visual_geometries_ = other.num_visual_geometries_;
-    collision_geometries_ = other.collision_geometries_;
-    num_collision_geometries_ = other.num_collision_geometries_;
-    X_WB_default_list_ = other.X_WB_default_list_;
-    contact_model_ = other.contact_model_;
-    contact_surface_representation_ =
-        other.contact_surface_representation_;
-    penetration_allowance_ = other.penetration_allowance_;
-    // Note: The physical models must be cloned before `FinalizePlantOnly()` is
-    // called because `FinalizePlantOnly()` has to allocate system resources
-    // requested by physical models.
-    for (auto& model : other.physical_models_) {
-      auto cloned_model = model->template CloneToScalar<T>();
-      // TODO(xuchenhan-tri): Rework physical model and discrete update manager
-      //  to eliminate the requirement on the order that they are called with
-      //  respect to Finalize().
-
-      // AddPhysicalModel can't be called here because it's post-finalize. We
-      // have to manually disable scalars that the cloned physical model do not
-      // support.
-      RemoveUnsupportedScalars(*cloned_model);
-      physical_models_.emplace_back(std::move(cloned_model));
-    }
-
-    DeclareSceneGraphPorts();
-
-    // Do accounting for MultibodyGraph
-    for (BodyIndex index(0); index < num_bodies(); ++index) {
-      const Body<T>& body = get_body(index);
-      multibody_graph_.AddBody(body.name(), body.model_instance());
-    }
-
-    for (JointIndex index(0); index < num_joints(); ++index) {
-      RegisterJointInGraph(get_joint(index));
-    }
-
-    // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
-    // on the new MultibodyTree on U. Therefore we only Finalize the plant's
-    // internals (and not the MultibodyTree).
-    FinalizePlantOnly();
-
-    // Note: The discrete update manager needs to be copied *after* the plant is
-    // finalized.
-    if (other.discrete_update_manager_ != nullptr) {
-      SetDiscreteUpdateManager(
-          other.discrete_update_manager_->template CloneToScalar<T>());
-    }
-  }
+  explicit MultibodyPlant(const MultibodyPlant<U>& other);
 
   /// Creates a rigid body with the provided name and spatial inertia.  This
   /// method returns a constant reference to the body just added, which will
@@ -1375,14 +1316,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @note There is a *very* specific order of operations:
   ///
   /// 1. Bodies and geometries must be added to the %MultibodyPlant.
-  /// 2. The %MultibodyPlant must be finalized (via Finalize()).
-  /// 3. Create GeometrySet instances from bodies (via this method).
-  /// 4. Invoke SceneGraph::ExcludeCollisions*() to filter collisions.
-  /// 5. Allocate context.
+  /// 2. Create GeometrySet instances from bodies (via this method).
+  /// 3. Invoke SceneGraph::ExcludeCollisions*() to filter collisions.
+  /// 4. Allocate context.
   ///
   /// Changing the order will cause exceptions to be thrown.
   ///
-  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `this` %MultibodyPlant was not
+  /// registered with a SceneGraph.
   geometry::GeometrySet CollectRegisteredGeometries(
       const std::vector<const Body<T>*>& bodies) const;
 
@@ -4183,6 +4124,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_solver_scratch;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
+    systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -4227,10 +4169,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const;
 
-  // Helper method to apply collision filters based on body-adjacency. By
-  // default, we don't consider collisions between geometries affixed to
-  // bodies connected by a joint.
-  void FilterAdjacentBodies();
+  // Helper method to apply default collision filters. By default, we don't
+  // consider collisions:
+  // * between geometries affixed to bodies connected by a joint
+  // * within subgraphs of welded-together bodies
+  void ApplyDefaultCollisionFilters();
 
   // For discrete models, MultibodyPlant uses a penalty method to impose joint
   // limits. In this penalty method a force law of the form:
@@ -4290,6 +4233,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcNonContactForces(const drake::systems::Context<T>& context,
                             bool discrete,
                             MultibodyForces<T>* forces) const;
+
+  // Due to issue #12786, we cannot mark the calculation of non-contact forces
+  // (and the acceleration it induces) dependent on the MultibodyPlant's inputs,
+  // as it should. However, by removing this dependency, we run the risk of an
+  // undetected algebraic loop. We use this function to guard against such
+  // algebraic loop. In particular, calling this function immediately upon
+  // entering the calculation of non-contact forces sets a flag indicating the
+  // calculation of non-contact forces is in progress. Then, this function
+  // returns a ScopeExit which turns off the flag when going out of scope at the
+  // end of the non-contact forces calculation. If this function is called again
+  // while the flag is on, it means that an algebraic loop exists and an
+  // exception is thrown.
+  [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
+      const systems::Context<T>& context) const;
 
   // Collects up forces from input ports (actuator, generalized, and spatial
   // forces) and contact forces (from compliant contact models). Does not
@@ -4352,7 +4309,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
             context);
   }
-
 
   // Computes the array of indices of velocities that are not locked in the
   // current configuration. The resulting index values in @p
@@ -4922,9 +4878,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // if that instance has no actuators.
   std::vector<systems::InputPortIndex> instance_actuation_ports_;
 
-  // If only one model instance has actuated dofs, remember it here.  If
-  // multiple instances have actuated dofs, this index will not be valid.
-  ModelInstanceIndex actuated_instance_;
+  // The actuation port for all actuated dofs.
+  systems::InputPortIndex actuation_port_;
 
   // A port for externally applied generalized forces u.
   systems::InputPortIndex applied_generalized_force_input_port_;

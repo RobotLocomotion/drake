@@ -12,13 +12,15 @@ def _impl(ctx):
         "manipulation/models/iiwa_description/iiwa_stack.LICENSE.txt",
         "setup/Brewfile",
         "setup/install_prereqs",
-        "setup/packages-bionic.txt",
         "setup/packages-focal.txt",
+        "setup/packages-jammy.txt",
         "setup/requirements.txt",
         # These are installed in share/drake and are runfiles for certain
         # targets, but none of those targets are relevant for this use case.
         "setup/deepnote/install_nginx",
+        "setup/deepnote/install_xvfb",
         "setup/deepnote/nginx-meshcat-proxy.conf",
+        "setup/deepnote/xvfb",
     ]
     known_non_runfiles_basenames = [
         "LICENSE",

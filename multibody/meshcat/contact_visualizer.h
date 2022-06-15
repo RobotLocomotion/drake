@@ -5,6 +5,7 @@
 
 #include "drake/geometry/meshcat.h"
 #include "drake/multibody/meshcat/contact_visualizer_params.h"
+#include "drake/multibody/plant/internal_geometry_names.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -17,13 +18,21 @@ namespace internal {
 // Defined in point_contact_visualizer.h.
 class PointContactVisualizer;
 struct PointContactVisualizerItem;
+// Defined in hydroelastic_contact_visualizer.h
+class HydroelasticContactVisualizer;
+struct HydroelasticContactVisualizerItem;
 }  // namespace internal
 
 /** ContactVisualizer is a system that publishes a ContactResults to
-geometry::Meshcat; it draws double-sided arrows at the location of the contact
-force with length scaled by the magnitude of the contact force. The most common
-use of this system is to connect its input port to the contact results output
-port of a MultibodyPlant.
+geometry::Meshcat; For point contact results, it draws double-sided arrows at
+the location of the contact force with length scaled by the magnitude of the
+contact force. For hydroelastic contact, it draws single-sided arrows at
+the centroid of the contact patch, one for force and one for the moment of the
+contact results. The length of these vectors are scaled by the magnitude of the
+contact force/moment. The direction of the arrow is essentially arbitrary (based
+on the GeometryIds) but is stable during a simulation. The most common use of
+this system is to connect its input port to the contact results output port of a
+MultibodyPlant.
 
  @system
  name: ContactVisualizer
@@ -31,8 +40,6 @@ port of a MultibodyPlant.
  - contact_results
  - query_object (optional)
  @endsystem
-
-Note: This system current only visualizes "point pair" contacts.
 
 @warning In the current implementation, ContactVisualizer methods must be called
 from the same thread where the class instance was constructed. For example,
@@ -118,10 +125,20 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
   is valid (if not, sends the objects) and then sends the transforms. */
   systems::EventStatus UpdateMeshcat(const systems::Context<T>&) const;
 
+  /* Obtains the geometry_names scratch entry. On the first call, queries
+  @p plant and the attached QueryObject and fills the returned GeometryNames. */
+  const multibody::internal::GeometryNames& GetGeometryNames(
+      const systems::Context<T>&, const MultibodyPlant<T>*) const;
+
   /* Calc function for the cache entry of visualized point contacts. */
   void CalcPointContacts(
       const systems::Context<T>&,
       std::vector<internal::PointContactVisualizerItem>*) const;
+
+  /* Calc function for the cache entry of visualized hydroelastic contacts. */
+  void CalcHydroelasticContacts(
+      const systems::Context<T>&,
+      std::vector<internal::HydroelasticContactVisualizerItem>*) const;
 
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
@@ -140,10 +157,16 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
   operation) from a const System (e.g., during simulation). */
   std::unique_ptr<internal::PointContactVisualizer> point_visualizer_;
 
+  /* This helper class is mutable because we must update it (a non-const
+  operation) from a const System (e.g., during simulation). */
+  std::unique_ptr<internal::HydroelasticContactVisualizer>
+      hydroelastic_visualizer_;
+
   systems::InputPortIndex contact_results_input_port_;
   systems::InputPortIndex query_object_input_port_;
   systems::CacheIndex geometry_names_scratch_;
   systems::CacheIndex point_contacts_cache_;
+  systems::CacheIndex hydroelastic_contacts_cache_;
 };
 
 /** A convenient alias for the ContactVisualizer class when using

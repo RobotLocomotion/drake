@@ -317,6 +317,7 @@ class ExpressionAddFactory {
    * methods. */
   void AddMap(const std::map<Expression, double>& expr_to_coeff_map);
 
+  bool is_expanded_{true};
   double constant_{0.0};
   std::map<Expression, double> expr_to_coeff_map_;
 };
@@ -373,10 +374,16 @@ class ExpressionMulFactory {
   /** Default constructor. */
   ExpressionMulFactory() = default;
 
-  /** Constructs ExpressionMulFactory with @p constant and @p
-   * base_to_exponent_map. */
+  /** Constructs ExpressionMulFactory with @p constant and Expression-valued
+   * @p base_to_exponent_map. Note that this constructor runs in constant-time
+   * because it moves the map into storage; it does not loop over the map. */
   ExpressionMulFactory(double constant,
                        std::map<Expression, Expression> base_to_exponent_map);
+
+  /** Constructs ExpressionMulFactory with a Monomial-like (Variable to integer
+   * power) @p base_to_exponent_map. */
+  explicit ExpressionMulFactory(
+      const std::map<Variable, int>& base_to_exponent_map);
 
   /** Constructs ExpressionMulFactory from @p mul. */
   explicit ExpressionMulFactory(const ExpressionMul& mul);
@@ -420,6 +427,7 @@ class ExpressionMulFactory {
   /* Sets to represent a zero expression. */
   void SetZero();
 
+  bool is_expanded_{true};
   double constant_{1.0};
   std::map<Expression, Expression> base_to_exponent_map_;
 };

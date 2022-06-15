@@ -1,7 +1,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsing/package_map.h"
@@ -41,8 +40,14 @@ PYBIND11_MODULE(parsing, m) {
         .def("size", &Class::size, cls_doc.size.doc)
         .def("GetPackageNames", &Class::GetPackageNames,
             cls_doc.GetPackageNames.doc)
-        .def("GetPath", &Class::GetPath, py::arg("package_name"),
-            cls_doc.GetPath.doc)
+        .def(
+            "GetPath",
+            [](const PackageMap& self, const std::string& package_name) {
+              // Python does not support output arguments, so we cannot bind the
+              // deprecated_message here.
+              return self.GetPath(package_name);
+            },
+            py::arg("package_name"), cls_doc.GetPath.doc)
         .def("AddPackageXml", &Class::AddPackageXml, py::arg("filename"),
             cls_doc.AddPackageXml.doc)
         .def("PopulateFromFolder", &Class::PopulateFromFolder, py::arg("path"),
@@ -51,13 +56,6 @@ PYBIND11_MODULE(parsing, m) {
             py::arg("environment_variable"),
             cls_doc.PopulateFromEnvironment.doc)
         .def_static("MakeEmpty", &Class::MakeEmpty, cls_doc.MakeEmpty.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("PopulateUpstreamToDrake",
-        WrapDeprecated(cls_doc.PopulateUpstreamToDrake.doc_deprecated,
-            &Class::PopulateUpstreamToDrake),
-        py::arg("model_file"), cls_doc.PopulateUpstreamToDrake.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   // Parser
@@ -78,7 +76,9 @@ PYBIND11_MODULE(parsing, m) {
             py::arg("model_name") = "", cls_doc.AddModelFromFile.doc)
         .def("AddModelFromString", &Class::AddModelFromString,
             py::arg("file_contents"), py::arg("file_type"),
-            py::arg("model_name") = "", cls_doc.AddModelFromString.doc);
+            py::arg("model_name") = "", cls_doc.AddModelFromString.doc)
+        .def("SetStrictParsing", &Class::SetStrictParsing,
+            cls_doc.SetStrictParsing.doc);
   }
 
   // Model Directives

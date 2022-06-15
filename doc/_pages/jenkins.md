@@ -104,7 +104,6 @@ When updating prerequisites with these scripts, the normal experimental CI will
 most likely fail. To test new prerequisites, you should first request
 unprovisioned experimental builds, e.g.:
 
-* ``@drake-jenkins-bot linux-bionic-unprovisioned-gcc-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-release please``
 * ``@drake-jenkins-bot mac-big-sur-unprovisioned-clang-bazel-experimental-release please``
 
@@ -117,7 +116,6 @@ updated. She will then respond on when it is appropriate to merge the PR.
 To schedule an "experimental" build of the [binary packages](/from_binary.html),
 comment on an open pull request as follows:
 
-* ``@drake-jenkins-bot linux-bionic-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
 * ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
 * ``@drake-jenkins-bot mac-big-sur-unprovisioned-clang-bazel-experimental-snopt-packaging please``
 
@@ -125,7 +123,6 @@ or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-inter
 to schedule a build of one of the following jobs from the Jenkins user
 interface:
 
-* linux-bionic-unprovisioned-gcc-bazel-experimental-snopt-packaging
 * linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging
 * mac-big-sur-unprovisioned-clang-bazel-experimental-snopt-packaging
 
@@ -142,4 +139,4 @@ upload: drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz to s3://drake-packages/
 upload: drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz.sha512 to s3://drake-packages/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz.sha512
 ```
 
-where ``<platform>`` is ``bionic``, ``focal``, or ``mac``.
+where ``<platform>`` is ``focal``, or ``mac``.

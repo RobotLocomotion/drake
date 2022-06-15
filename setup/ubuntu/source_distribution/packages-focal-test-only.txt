@@ -1,7 +1,7 @@
 curl
 kcov
 libstdc++6-10-dbg
-llvm-9
+llvm-12
 python3-dateutil
 python3-dbg
 python3-flask
@@ -16,7 +16,6 @@ python3-psutil
 python3-requests
 python3-scipy-dbg
 python3-six
-python3-tk-dbg
 python3-uritemplate
 python3-websockets
 python3-yaml-dbg

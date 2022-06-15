@@ -45,7 +45,7 @@ class SymbolicExpansionTest : public ::testing::Test {
     envs_.push_back({{var_x_, 2.2}, {var_y_, 4}, {var_z_, -2.3}});    // + + -
     envs_.push_back({{var_x_, -4.7}, {var_y_, -3}, {var_z_, 3.4}});   // - - +
     envs_.push_back({{var_x_, 3.1}, {var_y_, -3}, {var_z_, -2.5}});   // + - -
-    envs_.push_back({{var_x_, -2.8}, {var_y_, 2}, {var_z_, -2.6}});   // _ + -
+    envs_.push_back({{var_x_, -2.8}, {var_y_, 2}, {var_z_, -2.6}});   // - + -
     envs_.push_back({{var_x_, -2.2}, {var_y_, -4}, {var_z_, -2.3}});  // - - -
   }
 
@@ -57,9 +57,18 @@ class SymbolicExpansionTest : public ::testing::Test {
     });
   }
 
-  // Checks if e == e.Expand().
+  // Checks that e.is_expanded() is already true, and that the e == e.Expand()
+  // invariant holds.
   bool CheckAlreadyExpanded(const Expression& e) {
-    return e.EqualTo(e.Expand());
+    return e.is_expanded() && e.EqualTo(e.Expand());
+  }
+
+  // Checks that e.is_expanded() is conservatively detected as being false, but
+  // that the e == e.Expand() invariant still holds. This means that we could
+  // imagine having `e.is_expanded()` be improved to report `true` in this case,
+  // in the future if we found it helpful.
+  bool CheckUnchangedExpand(const Expression& e) {
+    return !e.is_expanded() && e.EqualTo(e.Expand());
   }
 
   // Checks if e.Expand() == e.Expand().Expand().
@@ -79,22 +88,30 @@ TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPolynomial) {
   EXPECT_TRUE(CheckAlreadyExpanded(-x_));
   EXPECT_TRUE(CheckAlreadyExpanded(3 * x_));
   EXPECT_TRUE(CheckAlreadyExpanded(-2 * x_));
+  EXPECT_TRUE(CheckAlreadyExpanded(-(2 * x_)));
+  EXPECT_TRUE(CheckAlreadyExpanded(x_ + y_));
+  EXPECT_TRUE(CheckAlreadyExpanded(-(x_ + y_)));
   EXPECT_TRUE(CheckAlreadyExpanded(3 * x_ * y_));               // 3xy
   EXPECT_TRUE(CheckAlreadyExpanded(3 * pow(x_, 2) * y_));       // 3x^2y
   EXPECT_TRUE(CheckAlreadyExpanded(3 / 10 * pow(x_, 2) * y_));  // 3/10*x^2y
   EXPECT_TRUE(CheckAlreadyExpanded(-7 + x_ + y_));              // -7 + x + y
   EXPECT_TRUE(CheckAlreadyExpanded(1 + 3 * x_ - 4 * y_));       // 1 + 3x -4y
+  EXPECT_TRUE(CheckAlreadyExpanded(2 * pow(x_, y_)));           // 2x^y
 }
 
 TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPow) {
-  // The following are all already expanded.
+  EXPECT_TRUE(CheckAlreadyExpanded(3 * pow(2, y_)));         // 3*2^y
   EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, y_)));            // x^y
   EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, -1)));            // x^(-1)
   EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, -1)));            // x^(-1)
-  EXPECT_TRUE(CheckAlreadyExpanded(pow(x_ + y_, -1)));       // (x + y)^(-1)
-  EXPECT_TRUE(CheckAlreadyExpanded(pow(x_ + y_, 0.5)));      // (x + y)^(0.5)
-  EXPECT_TRUE(CheckAlreadyExpanded(pow(x_ + y_, 2.5)));      // (x + y)^(2.5)
-  EXPECT_TRUE(CheckAlreadyExpanded(pow(x_ + y_, x_ - y_)));  // (x + y)^(x - y)
+
+  // The following are all already expanded. They do not yet detect and report
+  // `is_expanded() == true` upon construction, but in any case they must not
+  // change form when `Expand()` is called.
+  EXPECT_TRUE(CheckUnchangedExpand(pow(x_ + y_, -1)));       // (x + y)^(-1)
+  EXPECT_TRUE(CheckUnchangedExpand(pow(x_ + y_, 0.5)));      // (x + y)^(0.5)
+  EXPECT_TRUE(CheckUnchangedExpand(pow(x_ + y_, 2.5)));      // (x + y)^(2.5)
+  EXPECT_TRUE(CheckUnchangedExpand(pow(x_ + y_, x_ - y_)));  // (x + y)^(x - y)
 }
 
 TEST_F(SymbolicExpansionTest, ExpressionExpansion) {
@@ -225,9 +242,8 @@ TEST_F(SymbolicExpansionTest, MathFunctions) {
       const Expression e2{f(e.Expand())};
 
       EXPECT_PRED2(ExprEqual, e1, e2);
-      EXPECT_TRUE(e1.is_expanded());
-      EXPECT_TRUE(e2.is_expanded());
       EXPECT_TRUE(CheckAlreadyExpanded(e1));
+      EXPECT_TRUE(CheckAlreadyExpanded(e2));
     }
   }
 }

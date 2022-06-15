@@ -16,7 +16,6 @@ officially supports:
 
 | Operating System ⁽⁴⁾             | Architecture | Python  |
 |----------------------------------|--------------|---------|
-| Ubuntu 18.04 LTS (Bionic Beaver) | x86_64 ⁽¹⁾   | 3.6 ⁽³⁾ |
 | Ubuntu 20.04 LTS (Focal Fossa)   | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾ |
 | macOS Big Sur (11)               | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ |
 | macOS Monterey (12)              | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ |
@@ -26,7 +25,9 @@ introduced with the Haswell architecture in 2013 with substantial performance
 improvements in the Broadwell architecture in 2014. Drake is compiled with
 `-march=broadwell` to exploit these instructions (that also works for Haswell
 machines). Drake can be used on older machines if necessary by building from
-source with that flag removed.
+source with that
+[flag](https://github.com/RobotLocomotion/drake/blob/77642cc9/math/BUILD.bazel#L288)
+removed.
 
 ⁽²⁾ For users running on Apple's newer arm64 hardware, refer to
 [Running under Rosetta 2](/rosetta2.html)
@@ -51,7 +52,6 @@ compiler as our releases:
 
 | Operating System                 | C/C++ Compiler                 |
 |----------------------------------|--------------------------------|
-| Ubuntu 18.04 LTS (Bionic Beaver) | GCC 7.5                        |
 | Ubuntu 20.04 LTS (Focal Fossa)   | GCC 9.3                        |
 | macOS Big Sur (11)               | Apple LLVM 12.0.0 (Xcode 12.4) |
 | macOS Monterey (12)              | Apple LLVM 12.0.0 (Xcode 12.4) |
@@ -89,8 +89,8 @@ All other packages support both C++ and/or Python.
 Alternatively, you can skip the pre-compiled binaries and
 [build Drake from source](/from_source.html).
 
-Drake's binary releases do not support the MOSEK™ nor Gurobi solvers.
-To use MOSEK™ or Gurobi, you must build Drake from source.
+Drake's binary releases do not support the Gurobi solver.
+To use Gurobi, you must build Drake from source.
 
 We're considering adding macOS support for Homebrew, i.e., ``brew install
 drake``.  Please upvote or comment on

@@ -1,6 +1,7 @@
 import unittest
 
-from pydrake.lcm import DrakeLcm, DrakeLcmInterface, Subscriber
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeLcmParams, Subscriber
 
 from drake import lcmt_quaternion
 
@@ -19,10 +20,21 @@ class TestLcm(unittest.TestCase):
         self.assertIsInstance(dut, DrakeLcmInterface)
         dut.get_lcm_url()
         DrakeLcm(lcm_url="")
-        DrakeLcm(lcm_url="", defer_initialization=True)
         # Test virtual function names.
         dut.Publish
         dut.HandleSubscriptions
+
+    def test_params(self):
+        dut = DrakeLcmParams()
+        dut.lcm_url = "memq://123"
+        dut.channel_suffix = "_foo"
+        dut.defer_initialization = True
+        instance = DrakeLcm(params=dut)
+        self.assertTrue(instance.get_lcm_url(), "memq://123")
+
+    def test_deprecated(self):
+        with catch_drake_warnings(expected_count=1):
+            DrakeLcm(lcm_url="", defer_initialization=True)
 
     def _handler(self, raw):
         quat = lcmt_quaternion.decode(raw)

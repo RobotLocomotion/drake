@@ -1,0 +1,35 @@
+Don't try to compile functions that require sources files
+that we've omitted from the build.
+
+--- src/libqhullcpp/Qhull.cpp.orig	2020-09-03 19:33:16.000000000 -0700
++++ src/libqhullcpp/Qhull.cpp	2022-05-18 20:26:48.858174235 -0700
+@@ -114,6 +114,7 @@
+     }
+ }//checkIfQhullInitialized
+ 
++#if 0
+ //! Return feasiblePoint for halfspace intersection
+ //! If called before runQhull(), then it returns the value from setFeasiblePoint.  qh.feasible_string overrides this value if it is defined.
+ Coordinates Qhull::
+@@ -127,6 +128,7 @@
+     }
+     return result;
+ }//feasiblePoint
++#endif
+ 
+ //! Return origin point for qh.input_dim
+ QhullPoint Qhull::
+@@ -188,11 +190,13 @@
+     return QhullFacetList(beginFacet(), endFacet());
+ }//facetList
+ 
++#if 0
+ QhullPoints Qhull::
+ points() const
+ {
+     return QhullPoints(qh_qh, qh_qh->hull_dim, qh_qh->num_points*qh_qh->hull_dim, qh_qh->first_point);
+ }//points
++#endif
+ 
+ QhullPointSet Qhull::
+ otherPoints() const

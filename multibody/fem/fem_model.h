@@ -9,6 +9,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_state.h"
 #include "drake/multibody/fem/petsc_symmetric_block_sparse_matrix.h"
 
@@ -16,6 +17,7 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
+// TODO(xuchenhan-tri): Provide some details on spatial integration orders.
 /** %FemModel calculates the components of the spatially discretized FEM
  equations for dynamic elasticity problems. Typically, in dynamic elasticity
  problems, we are interested in the mapping that describes the motion of a
@@ -132,7 +134,9 @@ class FemModel {
   std::unique_ptr<FemState<T>> MakeFemState() const;
 
   /** Calculates the residual G(x, v, a) (see class doc) evaluated at the
-   given FEM state.
+   given FEM state. The residual for degrees of freedom with Dirichlet boundary
+   conditions is set to zero. Therefore their residual should not be used as a
+   metric for the error on the boundary condition.
    @pre residual != nullptr.
    @throws std::exception if the FEM state is incompatible with this model. */
   void CalcResidual(const FemState<T>& fem_state,
@@ -141,6 +145,9 @@ class FemModel {
   /** Calculates an approximated tangent matrix evaluated at the given FEM state
    (or an approximation thereof). The tangent matrix is given by a weighted sum
    of stiffness matrix (∂G/∂x), damping matrix (∂G/∂v), and mass matrix (∂G/∂a).
+   The corresponding row and column for a degree of freedom with Dirichlet
+   boundary condition in the tangent matrix is set to zero with the exception of
+   the diagonal entry which is set to 1.
    @param[in] fem_state        The FemState used to evaluate the tangent
                                matrix.
    @param[in] weights          The weights used to combine stiffness, damping,
@@ -174,14 +181,34 @@ class FemModel {
   /** Returns the gravity vector for all elements in this model. */
   const Vector3<T>& gravity_vector() const { return gravity_; }
 
- protected:
-  /** Constructs an empty FEM model. */
-  FemModel();
+  /** Applies boundary condition set for this %FemModel to the input `state`.
+   No-op if no boundary condition is set.
+   @pre fem_state != nullptr.
+   @throws std::exception if the FEM state is incompatible with this model. */
+  void ApplyBoundaryCondition(FemState<T>* fem_state) const;
+
+  // TODO(xuchenhan-tri): Internal object in public signature in non-internal
+  //  class.
+  /** Sets the Dirichlet boundary condition that this model is subject to. */
+  void SetDirichletBoundaryCondition(
+      internal::DirichletBoundaryCondition<T> dirichlet_bc) {
+    dirichlet_bc_ = std::move(dirichlet_bc);
+  }
+
+  /** Returns the Dirichlet boundary condition that this model is subject to. */
+  const internal::DirichletBoundaryCondition<T>& dirichlet_boundary_condition()
+      const {
+    return dirichlet_bc_;
+  }
 
   /** (Internal use only) Throws std::exception to report a mismatch between
   the FEM model and state that were passed to API method `func`. */
   void ThrowIfModelStateIncompatible(const char* func,
                                      const FemState<T>& fem_state) const;
+
+ protected:
+  /** Constructs an empty FEM model. */
+  FemModel();
 
   /** Returns the reference positions of this model. */
   virtual VectorX<T> MakeReferencePositions() const = 0;
@@ -227,6 +254,8 @@ class FemModel {
    */
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   Vector3<T> gravity_{0, 0, -9.81};
+  /* The Dirichlet boundary condition that the model is subject to. */
+  internal::DirichletBoundaryCondition<T> dirichlet_bc_;
 };
 
 }  // namespace fem

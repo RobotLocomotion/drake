@@ -23,6 +23,7 @@
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/plant/point_pair_contact_info.h"
 #include "drake/multibody/plant/propeller.h"
+#include "drake/multibody/plant/wing.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
@@ -681,6 +682,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("body_index"), cls_doc.GetBodyFrameIdOrThrow.doc)
         .def("GetBodyIndices", &Class::GetBodyIndices,
             py::arg("model_instance"), cls_doc.GetBodyIndices.doc)
+        .def("GetRigidBodyByName",
+            overload_cast_explicit<const RigidBody<T>&, string_view>(
+                &Class::GetRigidBodyByName),
+            py::arg("name"), py_rvp::reference_internal,
+            cls_doc.GetRigidBodyByName.doc_1args)
+        .def("GetRigidBodyByName",
+            overload_cast_explicit<const RigidBody<T>&, string_view,
+                ModelInstanceIndex>(&Class::GetRigidBodyByName),
+            py::arg("name"), py::arg("model_instance"),
+            py_rvp::reference_internal, cls_doc.GetRigidBodyByName.doc_2args)
         .def(
             "GetJointByName",
             [](const Class* self, string_view name,
@@ -1090,7 +1101,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init<>())
         .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
-        .def_readwrite("p_BoBq_B", &Class::p_BoBq_B, cls_doc.p_BoBq_B.doc)
+        .def_readwrite("p_BoBq_B", &Class::p_BoBq_B,
+            return_value_policy_for_scalar_type<T>(), cls_doc.p_BoBq_B.doc)
         .def_readwrite("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
@@ -1110,20 +1122,59 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("body_index"),
             py::arg("X_BP") = math::RigidTransform<double>::Identity(),
             py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0,
-            doc.Propeller.ctor.doc_4args)
+            cls_doc.ctor.doc_4args)
         .def(py::init<const std::vector<PropellerInfo>&>(),
-            py::arg("propeller_info"), doc.Propeller.ctor.doc_1args)
+            py::arg("propeller_info"), cls_doc.ctor.doc_1args)
         .def("num_propellers", &Class::num_propellers,
-            doc.Propeller.num_propellers.doc)
+            cls_doc.num_propellers.doc)
         .def("get_command_input_port", &Class::get_command_input_port,
-            py_rvp::reference_internal,
-            doc.Propeller.get_command_input_port.doc)
+            py_rvp::reference_internal, cls_doc.get_command_input_port.doc)
         .def("get_body_poses_input_port", &Class::get_body_poses_input_port,
-            py_rvp::reference_internal,
-            doc.Propeller.get_body_poses_input_port.doc)
+            py_rvp::reference_internal, cls_doc.get_body_poses_input_port.doc)
         .def("get_spatial_forces_output_port",
             &Class::get_spatial_forces_output_port, py_rvp::reference_internal,
-            doc.Propeller.get_spatial_forces_output_port.doc);
+            cls_doc.get_spatial_forces_output_port.doc);
+  }
+
+  // Wing
+  {
+    using Class = Wing<T>;
+    constexpr auto& cls_doc = doc.Wing;
+    auto cls = DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(
+        m, "Wing", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const BodyIndex&, double,
+                 const math::RigidTransform<double>&, double>(),
+            py::arg("body_index"), py::arg("surface_area"),
+            py::arg("X_BodyWing") = math::RigidTransform<double>::Identity(),
+            py::arg("fluid_density") = Wing<T>::kDefaultFluidDensity,
+            cls_doc.ctor.doc)
+        .def("get_body_poses_input_port", &Class::get_body_poses_input_port,
+            py_rvp::reference_internal, cls_doc.get_body_poses_input_port.doc)
+        .def("get_body_spatial_velocities_input_port",
+            &Class::get_body_spatial_velocities_input_port,
+            py_rvp::reference_internal,
+            cls_doc.get_body_spatial_velocities_input_port.doc)
+        .def("get_wind_velocity_input_port",
+            &Class::get_wind_velocity_input_port, py_rvp::reference_internal,
+            cls_doc.get_wind_velocity_input_port.doc)
+        .def("get_fluid_density_input_port",
+            &Class::get_fluid_density_input_port, py_rvp::reference_internal,
+            cls_doc.get_fluid_density_input_port.doc)
+        .def("get_spatial_force_output_port",
+            &Class::get_spatial_force_output_port, py_rvp::reference_internal,
+            cls_doc.get_spatial_force_output_port.doc)
+        .def("get_aerodynamic_center_output_port",
+            &Class::get_aerodynamic_center_output_port,
+            py_rvp::reference_internal,
+            cls_doc.get_aerodynamic_center_output_port.doc)
+        .def_static("AddToBuilder", &Class::AddToBuilder, py::arg("builder"),
+            py::arg("plant"), py::arg("body_index"), py::arg("surface_area"),
+            py::arg("X_BodyWing") = math::RigidTransform<double>::Identity(),
+            py::arg("fluid_density") = Wing<T>::kDefaultFluidDensity,
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(), py_rvp::reference,
+            cls_doc.AddToBuilder.doc);
   }
 
   // NOLINTNEXTLINE(readability/fn_size)
@@ -1233,8 +1284,6 @@ PYBIND11_MODULE(plant, m) {
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
-
-  ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

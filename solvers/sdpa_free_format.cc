@@ -390,9 +390,25 @@ void SdpaFreeFormat::AddLinearConstraintsHelper(
     X_entries.reserve(1);
     std::vector<int> s_indices;
     for (int j = 0; j < linear_constraint.variables().rows(); ++j) {
-      if (linear_constraint.evaluator()->A()(i, j) != 0) {
-        a.push_back(linear_constraint.evaluator()->A()(i, j));
+      if (linear_constraint.evaluator()->GetDenseA()(i, j) != 0) {
+        a.push_back(linear_constraint.evaluator()->GetDenseA()(i, j));
         decision_var_indices_in_X.push_back(var_indices[j]);
+      }
+    }
+    // CSDP solver would abort if we pass in an empty constraint (e.g, 0 == 0 or
+    // 1 <= 2). So if this row of constraint is empty (all coefficients are
+    // 0), then we should either ignore the constraint if it is trivially true
+    // (like 0 == 0) or throw an error if it is trivially false (like 1 >= 2).
+    if (a.size() == 0) {
+      if (linear_constraint.evaluator()->lower_bound()(i) <= 0 &&
+          linear_constraint.evaluator()->upper_bound()(i) >= 0) {
+        continue;
+      } else {
+        throw std::runtime_error(fmt::format(
+            "SdpaFreeFormat: the problem is infeasible as it contains "
+            "trivially infeasible constraint {} <= 0 <= {}",
+            linear_constraint.evaluator()->lower_bound()(i),
+            linear_constraint.evaluator()->upper_bound()(i)));
       }
     }
     if (does_lower_equal_upper_in_this_row) {

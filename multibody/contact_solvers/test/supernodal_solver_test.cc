@@ -213,7 +213,7 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
   // clang-format on
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+      SuperNodalSolver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
       "Invalid Jacobian triplets: no triplet provided for column 1.");
 }
 
@@ -244,7 +244,7 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
   // clang-format on
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+      SuperNodalSolver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
       "Jacobian can only be nonzero on at most two column blocks.");
 }
 
@@ -593,9 +593,9 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
 
   MatrixXd G(13, 13);
   // clang-format off
-  G << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  G << 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+       2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+       0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        0, 0, 0, 9, 2, 2, 0, 0, 0, 0, 0, 0, 0,
        0, 0, 0, 2, 5, 3, 0, 0, 0, 0, 0, 0, 0,
        0, 0, 0, 2, 3, 8, 0, 0, 0, 0, 0, 0, 0,
@@ -608,12 +608,13 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7;
   // clang-format on
 
-  std::vector<MatrixXd> blocks_of_G(5);
-  blocks_of_G.at(0) = G.block(0, 0, 3, 3);
-  blocks_of_G.at(1) = G.block(3, 3, 3, 3);
-  blocks_of_G.at(2) = G.block(6, 6, 3, 3);
-  blocks_of_G.at(3) = G.block(9, 9, 3, 3);
-  blocks_of_G.at(4) = G.block(12, 12, 1, 1);
+  std::vector<MatrixXd> blocks_of_G(6);
+  blocks_of_G.at(0) = G.block(0, 0, 2, 2);
+  blocks_of_G.at(1) = G.block(2, 2, 1, 1);
+  blocks_of_G.at(2) = G.block(3, 3, 3, 3);
+  blocks_of_G.at(3) = G.block(6, 6, 3, 3);
+  blocks_of_G.at(4) = G.block(9, 9, 3, 3);
+  blocks_of_G.at(5) = G.block(12, 12, 1, 1);
 
   MatrixXd M(6, 6);
   // clang-format off

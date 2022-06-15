@@ -195,6 +195,31 @@ double Monomial::Evaluate(const Environment& env) const {
       });
 }
 
+Eigen::VectorXd Monomial::Evaluate(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+    const Eigen::Ref<const Eigen::MatrixXd>& vars_values) const {
+  DRAKE_DEMAND(vars.rows() == vars_values.rows());
+  Eigen::ArrayXd monomial_vals = Eigen::ArrayXd::Ones(vars_values.cols());
+  for (int i = 0; i < vars.rows(); ++i) {
+    auto it = powers_.find(vars(i));
+    if (it != powers_.end()) {
+      monomial_vals *= vars_values.row(i).array().pow(it->second);
+    }
+  }
+  const symbolic::Variables vars_set(vars);
+  if (static_cast<int>(vars_set.size()) != vars.rows()) {
+    throw std::invalid_argument(
+        "Monomial::Evaluate(): vars contains repeated variables.");
+  }
+  for (const auto& [var, degree] : powers_) {
+    if (vars_set.find(var) == vars_set.end()) {
+      throw std::invalid_argument(fmt::format(
+          "Monomial::Evaluate(): {} is not present in vars", var.get_name()));
+    }
+  }
+  return monomial_vals.matrix();
+}
+
 pair<double, Monomial> Monomial::EvaluatePartial(const Environment& env) const {
   double coeff{1.0};
   map<Variable, int> new_powers;
@@ -213,15 +238,7 @@ pair<double, Monomial> Monomial::EvaluatePartial(const Environment& env) const {
 }
 
 Expression Monomial::ToExpression() const {
-  // It builds this base_to_exponent_map and uses ExpressionMulFactory to build
-  // a multiplication expression.
-  map<Expression, Expression> base_to_exponent_map;
-  for (const auto& p : powers_) {
-    const Variable& var{p.first};
-    const int exponent{p.second};
-    base_to_exponent_map.emplace(Expression{var}, exponent);
-  }
-  return ExpressionMulFactory{1.0, base_to_exponent_map}.GetExpression();
+  return ExpressionMulFactory(powers_).GetExpression();
 }
 
 Monomial& Monomial::operator*=(const Monomial& m) {

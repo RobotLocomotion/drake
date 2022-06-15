@@ -10,12 +10,20 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "models",
+    srcs = glob([
+        "**/*.sdf",
+    ]),
+)
+
 drake_cc_package_library(
     name = "meshcat",
     visibility = ["//visibility:public"],
     deps = [
         ":contact_visualizer",
         ":contact_visualizer_params",
+        ":hydroelastic_contact_visualizer",
         ":joint_sliders",
         ":point_contact_visualizer",
     ],
@@ -27,6 +35,7 @@ drake_cc_library(
     hdrs = ["contact_visualizer.h"],
     deps = [
         ":contact_visualizer_params",
+        ":hydroelastic_contact_visualizer",
         ":point_contact_visualizer",
         "//common:essential",
         "//geometry:meshcat",
@@ -41,6 +50,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "contact_visualizer_test",
     data = [
+        ":models",
         "//examples/manipulation_station:models",
     ],
     deps = [
@@ -74,11 +84,13 @@ drake_cc_googletest(
     name = "joint_sliders_test",
     data = [
         ":test/universal_joint.sdf",
+        "//manipulation/models/iiwa_description:models",
         "//multibody:models",
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
         ":joint_sliders",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//geometry:meshcat_visualizer",
         "//geometry/test_utilities:meshcat_environment",
@@ -90,6 +102,18 @@ drake_cc_library(
     name = "point_contact_visualizer",
     srcs = ["point_contact_visualizer.cc"],
     hdrs = ["point_contact_visualizer.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":contact_visualizer_params",
+        "//geometry:meshcat",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "hydroelastic_contact_visualizer",
+    srcs = ["hydroelastic_contact_visualizer.cc"],
+    hdrs = ["hydroelastic_contact_visualizer.h"],
     visibility = ["//visibility:private"],
     deps = [
         ":contact_visualizer_params",

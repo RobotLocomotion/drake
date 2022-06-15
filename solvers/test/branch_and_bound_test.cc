@@ -532,7 +532,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
   // The root node is not a leaf node. Expect a runtime error.
-  EXPECT_THROW(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())),
+  EXPECT_THROW(unused(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()))),
                std::runtime_error);
 }
 

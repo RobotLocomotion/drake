@@ -28,6 +28,7 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+namespace kcov339_avoidance_magic {
 namespace {
 
 using ::testing::MatchesRegex;
@@ -48,21 +49,29 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
   std::optional<ModelInstanceIndex> AddModelFromUrdfFile(
       const std::string& file_name,
       const std::string& model_name) {
-    return AddModelFromUrdf(
-        {DataSource::kFilename, &file_name}, model_name, {}, w_);
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    auto result = AddModelFromUrdf(
+        {DataSource::kFilename, &file_name}, model_name, {}, w);
+    resolver.Resolve(diagnostic_policy_);
+    return result;
   }
 
   std::optional<ModelInstanceIndex> AddModelFromUrdfString(
       const std::string& file_contents,
       const std::string& model_name) {
-    return AddModelFromUrdf(
-        {DataSource::kContents, &file_contents}, model_name, {}, w_);
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    auto result = AddModelFromUrdf(
+        {DataSource::kContents, &file_contents}, model_name, {}, w);
+    resolver.Resolve(diagnostic_policy_);
+    return result;
   }
+
  protected:
   PackageMap package_map_;
   MultibodyPlant<double> plant_{0.0};
   SceneGraph<double> scene_graph_;
-  ParsingWorkspace w_{package_map_, diagnostic_policy_, &plant_};
 };
 
 // Some tests contain deliberate typos to provoke parser errors or warnings. In
@@ -197,6 +206,29 @@ TEST_F(UrdfParserTest, JointChildLinkBroken) {
     </robot>)""", ""), std::nullopt);
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*joint a's child does not have a link attribute!"));
+}
+
+TEST_F(UrdfParserTest, JointBadDynamicsAttributes) {
+  std::string base = R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <dynamics {}/>
+      </joint>
+    </robot>)""";
+  const auto attrs = std::array<std::string, 3>{"damping", "friction",
+                                                "coulomb_window"};
+  for (const auto& attr : attrs) {
+    EXPECT_NE(AddModelFromUrdfString(fmt::format(base, attr + "='1 2'"), attr),
+              std::nullopt);
+    EXPECT_THAT(TakeError(), MatchesRegex(
+                    ".*Expected single value.*" + attr + ".*"));
+  }
+  // Dynamics warnings are tested elsewhere in this file.
+  warning_records_.clear();
 }
 
 TEST_F(UrdfParserTest, DrakeFrictionWarning) {
@@ -411,44 +443,41 @@ TEST_F(UrdfParserTest, TransmissionJointNotExist) {
                                            " 'nowhere' which does not exist."));
 }
 
-TEST_F(UrdfParserTest, TransmissionJointZeroEffortLimit) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+TEST_F(UrdfParserTest, TransmissionJointBadLimits) {
+  std::string base = R"""(
     <robot name='a'>
       <link name='parent'/>
       <link name='child'/>
       <joint name='a' type='revolute'>
         <parent link='parent'/>
         <child link='child'/>
-        <limit effort='0'/>
+        <limit {}/>
       </joint>
       <transmission type='SimpleTransmission'>
         <actuator name='a'/>
         <joint name='a'/>
       </transmission>
-    </robot>)""", ""), std::nullopt);
+    </robot>)""";
+  EXPECT_NE(AddModelFromUrdfString(fmt::format(base, "effort='0'"), ""),
+            std::nullopt);
   EXPECT_THAT(TakeWarning(), MatchesRegex(
                   ".*Skipping transmission since it's attached to joint \"a\""
                   " which has a zero effort limit 0.*"));
-}
 
-TEST_F(UrdfParserTest, TransmissionJointNegativeEffortLimit) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name='a'>
-      <link name='parent'/>
-      <link name='child'/>
-      <joint name='a' type='revolute'>
-        <parent link='parent'/>
-        <child link='child'/>
-        <limit effort='-3'/>
-      </joint>
-      <transmission type='SimpleTransmission'>
-        <actuator name='a'/>
-        <joint name='a'/>
-      </transmission>
-    </robot>)""", ""), std::nullopt);
+  EXPECT_NE(AddModelFromUrdfString(fmt::format(base, "effort='-3'"), "b"),
+            std::nullopt);
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*Transmission specifies joint 'a' which has a negative"
                   " effort limit."));
+
+  const auto attrs = std::array<std::string, 5>{"lower", "upper", "velocity",
+                                                "drake:acceleration", "effort"};
+  for (const auto& attr : attrs) {
+    EXPECT_NE(AddModelFromUrdfString(fmt::format(base, attr + "='1 2'"), attr),
+              std::nullopt);
+    EXPECT_THAT(TakeError(), MatchesRegex(
+                    ".*Expected single value.*" + attr + ".*"));
+  }
 }
 
 // Verifies that the URDF loader can leverage a specified package map.
@@ -513,6 +542,9 @@ TEST_F(UrdfParserTest, TestAtlasMinimalContact) {
   std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   AddModelFromUrdfFile(full_name, "");
+  for (int k = 0; k < 30; k++) {
+    EXPECT_THAT(TakeWarning(), MatchesRegex(".*safety_controller.*ignored.*"));
+  }
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*attached to a fixed joint.*"));
   plant_.Finalize();
 
@@ -543,7 +575,9 @@ TEST_F(UrdfParserTest, TestRegisteredSceneGraph) {
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   // Test that registration with scene graph results in visual geometries.
   AddModelFromUrdfFile(full_name, "");
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*attached to a fixed joint.*"));
+  // Mostly ignore warnings here; they are tested in detail elsewhere.
+  EXPECT_GT(warning_records_.size(), 30);
+  warning_records_.clear();
   plant_.Finalize();
   EXPECT_NE(plant_.num_visual_geometries(), 0);
 }
@@ -739,9 +773,7 @@ TEST_F(UrdfParserTest, AddingGeometriesToWorldLink) {
   </link>
 </robot>
 )""";
-  DataSource source{DataSource::kContents, &test_urdf};
-
-  AddModelFromUrdf(source, "urdf", {}, w_);
+  AddModelFromUrdfString(test_urdf, "urdf");
   EXPECT_THAT(TakeWarning(), MatchesRegex(
                   ".*<inertial> tag is being ignored.*"));
 
@@ -927,6 +959,47 @@ TEST_F(UrdfParserTest, PointMass) {
   EXPECT_EQ(body.get_default_mass(), 1.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
+}
+
+TEST_F(UrdfParserTest, BadInertia) {
+  // Test various mis-formatted inputs.
+  std::string base = R"""(
+    <robot name='point_mass'>
+      <link name='point_mass'>
+        <inertial>
+          <mass {}/>
+          <inertia {}/>
+        </inertial>
+      </link>
+    </robot>)""";
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1 2 3'",
+                  "ixx='0' ixy='0' ixz='0' iyy='0' iyz='0' izz='0'"), "");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*value.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0 2 3' ixy='0' ixz='0' iyy='0' iyz='0' izz='0'"), "a");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*ixx.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0' ixy='0 2 3' ixz='0' iyy='0' iyz='0' izz='0'"), "b");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*ixy.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0' ixy='0' ixz='0 2 3' iyy='0' iyz='0' izz='0'"), "c");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*ixz.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0' ixy='0' ixz='0' iyy='0 2 3' iyz='0' izz='0'"), "d");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*iyy.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0' ixy='0' ixz='0' iyy='0' iyz='0 2 3' izz='0'"), "e");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*iyz.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0' ixy='0' ixz='0' iyy='0' iyz='0' izz='0 2 3'"), "f");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*izz.*"));
 }
 
 // TODO(rpoyner-tri): these tests don't test the parser but rather error
@@ -1183,6 +1256,11 @@ TEST_F(ReflectedInertiaTest, RotorInertiaNoValue) {
                " have a \"value\" attribute!");
 }
 
+TEST_F(ReflectedInertiaTest, RotorInertiaManyValues) {
+  ProvokeError("<drake:rotor_inertia value='1 2 3'/>", "",
+               ".*Expected single value.*value.*");
+}
+
 TEST_F(ReflectedInertiaTest, DefaultRotorInertia) {
   // Test successful parsing of gear_ratio and default value for rotor_inertia.
   VerifyParameters("", "<drake:gear_ratio value='300.0' />", 0.0, 300.0);
@@ -1192,6 +1270,11 @@ TEST_F(ReflectedInertiaTest, GearRatioNoValue) {
   ProvokeError("", "<drake:gear_ratio />",
                ".*joint actuator revolute_AB's drake:gear_ratio does not have"
                " a \"value\" attribute!");
+}
+
+TEST_F(ReflectedInertiaTest, GearRatioManyValues) {
+  ProvokeError("<drake:gear_ratio value='1 2 3'/>", "",
+               ".*Expected single value.*value.*");
 }
 
 // TODO(SeanCurtis-TRI) The logic testing for collision filter group parsing
@@ -1260,10 +1343,6 @@ TEST_F(UrdfParserTest, CollisionFilterGroupParsingTest) {
   AddModelFromUrdfFile(full_name, "model2");
 }
 
-// TODO(marcoag) We might want to add some form of feedback for:
-// - ignore_collision_filter_groups with non-existing group names.
-// - Empty collision_filter_groups.
-
 TEST_F(UrdfParserTest, CollisionFilterGroupMissingName) {
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='robot'>
@@ -1286,6 +1365,7 @@ TEST_F(UrdfParserTest, CollisionFilterGroupMissingLink) {
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*The tag <drake:member> does not specify the required "
                   "attribute \"link\"."));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'robot::group_a'.*no members"));
 }
 
 TEST_F(UrdfParserTest, IgnoredCollisionFilterGroupMissingName) {
@@ -1296,12 +1376,182 @@ TEST_F(UrdfParserTest, IgnoredCollisionFilterGroupMissingName) {
         <drake:ignored_collision_filter_group/>
       </drake:collision_filter_group>
     </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'robot::group_a'.*no members"));
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*The tag <drake:ignored_collision_filter_group> does not"
                   " specify the required attribute \"name\"."));
 }
 
+// Here follow tests to verify that Drake issues a warning when it ignores
+// something thought to be a documented URDF element or attribute.
+
+TEST_F(UrdfParserTest, UnsupportedVersionIgnored) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='robot' version='0.99'>
+      <link name='a'/>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*version.*ignored.*"));
+}
+
+TEST_F(UrdfParserTest, UnsupportedLinkTypeIgnored) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='robot'>
+      <link name='a' type='unknown'/>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*type.*link.*ignored.*"));
+}
+
+TEST_F(UrdfParserTest, UnsupportedJointStuffIgnored) {
+  const std::array<std::string, 3> tags{
+    "calibration", "mimic", "safety_controller"};
+  for (const auto& tag : tags) {
+    EXPECT_NE(AddModelFromUrdfString(fmt::format(R"""(
+    <robot>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <{}/>
+      </joint>
+    </robot>)""", tag), tag), std::nullopt);
+    EXPECT_THAT(TakeWarning(),
+                MatchesRegex(fmt::format(".*{}.*ignored.*", tag)));
+  }
+}
+
+TEST_F(UrdfParserTest, UnsupportedTransmissionStuffIgnored) {
+  const std::array<std::string, 7> tags{
+    "leftActuator", "rightActuator", "flexJoint", "rollJoint", "gap_joint",
+    "passive_joint", "use_simulated_gripper_joint"};
+  for (const auto& tag : tags) {
+    EXPECT_NE(AddModelFromUrdfString(fmt::format(R"""(
+    <robot>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+      </joint>
+      <transmission type='SimpleTransmission'>
+        <actuator name='a'/>
+        <joint name='a'/>
+        <{}/>
+      </transmission>
+    </robot>)""", tag), tag), std::nullopt);
+    EXPECT_THAT(TakeWarning(),
+                MatchesRegex(fmt::format(".*{}.*ignored.*", tag)));
+  }
+}
+
+// Here follow tests to verify that Drake is silent (as documented elsewhere)
+// when it ignores something thought to be a documented URDF element or
+// attribute.
+
+TEST_F(UrdfParserTest, UnsupportedGazeboIgnoredSilent) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='robot'>
+      <link name='a'/>
+      <gazebo/>
+    </robot>)""", ""), std::nullopt);
+}
+
+TEST_F(UrdfParserTest, UnsupportedTransmissionActuatorStuffIgnoredSilent) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+      </joint>
+      <transmission type='SimpleTransmission'>
+        <actuator name='a'>
+          <hardwareInterface/>
+        </actuator>
+        <joint name='a'/>
+      </transmission>
+    </robot>)""", ""), std::nullopt);
+}
+
+TEST_F(UrdfParserTest, UnsupportedTransmissionJointStuffIgnoredSilent) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name ='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+      </joint>
+      <transmission type='SimpleTransmission'>
+        <actuator name='a'/>
+        <joint name='a'>
+          <hardwareInterface/>
+        </joint>
+      </transmission>
+    </robot>)""", ""), std::nullopt);
+}
+
+// Here follow tests to verify that Drake applies special treatment (as
+// documented elsewhere) when it ignores something thought to be a documented
+// URDF element or attribute.
+
+TEST_F(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe) {
+  // Two substitution slots: actuator, then transmission.
+  constexpr char robot_template[] = R"""(
+    <robot>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+      </joint>
+      <transmission type='SimpleTransmission'>
+        <actuator name='a'>
+          {}
+        </actuator>
+        <joint name='a'/>
+        {}
+      </transmission>
+    </robot>)""";
+  // Match the expected warning.
+  constexpr char pattern[] = ".*mechanicalReduction.*default.*not.*support.*";
+
+  struct Case {
+    std::string input;
+    bool provokes_warning{};
+  };
+  const std::array<Case, 8> cases{{
+    {"<mechanicalReduction>3500.25</mechanicalReduction>", true},
+    {"<mechanicalReduction>22 79 15</mechanicalReduction>", true},
+    {"<mechanicalReduction>QQQ</mechanicalReduction>", true},
+    {"<mechanicalReduction/>", false},
+    {"<mechanicalReduction></mechanicalReduction>", false},
+    {"<mechanicalReduction> </mechanicalReduction>", false},
+    {"<mechanicalReduction>1</mechanicalReduction>", false},
+    {"<mechanicalReduction>1.0</mechanicalReduction>", false},
+  }};
+
+  for (const Case& acase : cases) {
+    // Within actuator.
+    EXPECT_NE(AddModelFromUrdfString(
+                  fmt::format(robot_template, acase.input, ""),
+                  acase.input + "_actuator"), std::nullopt);
+    if (acase.provokes_warning) {
+      EXPECT_THAT(TakeWarning(), MatchesRegex(pattern));
+    }
+    // Within transmission.
+    EXPECT_NE(AddModelFromUrdfString(
+                  fmt::format(robot_template, "", acase.input),
+                  acase.input + "_transmission"), std::nullopt);
+    if (acase.provokes_warning) {
+      EXPECT_THAT(TakeWarning(), MatchesRegex(pattern));
+    }
+  }
+}
+
 }  // namespace
+}  // namespace kcov339_avoidance_magic
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

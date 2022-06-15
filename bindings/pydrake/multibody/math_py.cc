@@ -9,19 +9,7 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/math/spatial_algebra.h"
-
-#pragma GCC diagnostic push
-// Similar to `symbolic_py.cc`, we must suppress `-Wself-assign-overloaded` to
-/// use operators for Apple's clang>=10. However, different than
-// `symbolic_py.cc`, we must also enable this for clang 9 on Bionic, as is
-// triggered on `py::self -= py::self` for some reason.
-// It is fine to use this at a file-wide scope since in practice we only
-// encounter these warnings in bindings due to pybind11's operators.
-#if (__clang__) && (__clang_major__ >= 9)
-#pragma GCC diagnostic ignored "-Wself-assign-overloaded"
-#endif
 
 namespace drake {
 namespace pydrake {
@@ -117,54 +105,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("w"), py::arg("v"), cls_doc.ctor.doc_2args)
         .def(
             py::init<const Vector6<T>&>(), py::arg("V"), cls_doc.ctor.doc_1args)
-        .def("Shift", &Class::Shift, py::arg("offset"), cls_doc.Shift.doc);
-    constexpr char doc_Shift_deprecatedArgName[] =
-        "The keyword argument (kwarg) has been renamed from"
-        " Shift(p_BqBq_E) to"
-        " Shift(offset)."
-        " Deprecated kwarg will be unavailable after 2022-06-01.";
-    cls.def("Shift", WrapDeprecated(doc_Shift_deprecatedArgName, &Class::Shift),
-           py::arg("p_BpBq_E"), doc_Shift_deprecatedArgName)
         .def("ComposeWithMovingFrameVelocity",
             &Class::ComposeWithMovingFrameVelocity,
             py::arg("position_of_moving_frame"),
             py::arg("velocity_of_moving_frame"),
-            cls_doc.ComposeWithMovingFrameVelocity.doc);
-    constexpr char doc_ComposeWithMovingFrameVelocity_deprecatedArgName[] =
-        "The keyword arguments (kwargs) have been renamed from"
-        " ComposeWithMovingFrameVelocity(p_PoBo_E, V_PB_E) to"
-        " ComposeWithMovingFrameVelocity(position_of_moving_frame,"
-        " velocity_of_moving_frame)."
-        " Deprecated kwargs will be unavailable after 2022-06-01.";
-    cls.def("ComposeWithMovingFrameVelocity",
-        WrapDeprecated(doc_ComposeWithMovingFrameVelocity_deprecatedArgName,
-            &Class::ComposeWithMovingFrameVelocity),
-        py::arg("p_PoBo_E"), py::arg("V_PB_E"),
-        doc_ComposeWithMovingFrameVelocity_deprecatedArgName);
-    cls.def("dot",
-        overload_cast_explicit<T, const SpatialForce<T>&>(&Class::dot),
-        py::arg("force"), cls_doc.dot.doc_1args_force);
-    constexpr char doc_dot_deprecatedArgNameF_Bp_E[] =
-        "The keyword argument (kwarg) has been renamed from"
-        " dot(F_Bp_E) to"
-        " dot(force)."
-        " Deprecated kwarg will be unavailable after 2022-06-01.";
-    cls.def("dot",
-        WrapDeprecated(doc_dot_deprecatedArgNameF_Bp_E,
-            overload_cast_explicit<T, const SpatialForce<T>&>(&Class::dot)),
-        py::arg("F_Bp_E"), doc_dot_deprecatedArgNameF_Bp_E);
-    cls.def("dot",
-        overload_cast_explicit<T, const SpatialMomentum<T>&>(&Class::dot),
-        py::arg("momentum"), cls_doc.dot.doc_1args_momentum);
-    constexpr char doc_dot_deprecatedArgNameL_WBp_E[] =
-        "The keyword argument (kwarg) has been renamed from"
-        " dot(L_WBp_E) to"
-        " dot(momentum)."
-        " Deprecated kwarg will be unavailable after 2022-06-01.";
-    cls.def("dot",
-        WrapDeprecated(doc_dot_deprecatedArgNameL_WBp_E,
-            overload_cast_explicit<T, const SpatialMomentum<T>&>(&Class::dot)),
-        py::arg("L_WBp_E"), doc_dot_deprecatedArgNameL_WBp_E);
+            cls_doc.ComposeWithMovingFrameVelocity.doc)
+        .def("Shift", &Class::Shift, py::arg("offset"), cls_doc.Shift.doc)
+        .def("dot",
+            overload_cast_explicit<T, const SpatialForce<T>&>(&Class::dot),
+            py::arg("force"), cls_doc.dot.doc_1args_force)
+        .def("dot",
+            overload_cast_explicit<T, const SpatialMomentum<T>&>(&Class::dot),
+            py::arg("momentum"), cls_doc.dot.doc_1args_momentum);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
@@ -191,14 +143,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls.def("Shift", WrapDeprecated(doc_Shift_deprecatedArgName, &Class::Shift),
            py::arg("p_BpBq_E"), doc_Shift_deprecatedArgName)
         .def("dot", &Class::dot, py::arg("velocity"), cls_doc.dot.doc);
-    constexpr char doc_dotWithArgumentNameV_IBp_E_deprecated[] =
-        "The keyword argument (kwarg) has been renamed from"
-        " dot(V_IBp_E) to"
-        " dot(velocity)."
-        " Deprecated kwarg will be unavailable after 2022-06-01.";
-    cls.def("dot",
-        WrapDeprecated(doc_dotWithArgumentNameV_IBp_E_deprecated, &Class::dot),
-        py::arg("V_IBp_E"), doc_dotWithArgumentNameV_IBp_E_deprecated);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
@@ -297,13 +241,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls.def("dot",
         overload_cast_explicit<T, const SpatialVelocity<T>&>(&Class::dot),
         py::arg("velocity"), cls_doc.dot.doc);
-    constexpr char doc_dot_deprecatedArgName[] =
-        "The keyword argument (kwarg) has been renamed from"
-        " dot(V_IBp_E) to"
-        " dot(velocity)."
-        " Deprecated kwarg will be unavailable after 2022-06-01.";
-    cls.def("dot", WrapDeprecated(doc_dot_deprecatedArgName, &Class::dot),
-        py::arg("V_IBp_E"), doc_dot_deprecatedArgName);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
@@ -327,5 +264,3 @@ PYBIND11_MODULE(math, m) {
 
 }  // namespace pydrake
 }  // namespace drake
-
-#pragma GCC diagnostic pop

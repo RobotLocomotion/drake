@@ -8,7 +8,7 @@ load(
 )
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
 load(
-    "@drake//tools/workspace/intel_realsense_ros:files.bzl",
+    "@drake//tools/workspace/intel_realsense_ros_internal:files.bzl",
     "realsense2_description_files",
 )
 
@@ -19,10 +19,10 @@ package(
 )
 
 _REALSENSE2_DESCRIPTION_FILES = forward_files(
-    srcs = ["@intel_realsense_ros//:" +
+    srcs = ["@intel_realsense_ros_internal//:" +
             x for x in realsense2_description_files()],
     dest_prefix = "",
-    strip_prefix = "@intel_realsense_ros//:realsense2_description/",
+    strip_prefix = "@intel_realsense_ros_internal//:realsense2_description/",
     visibility = ["//visibility:private"],
 )
 

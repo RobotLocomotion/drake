@@ -45,14 +45,12 @@ Binding<Constraint> ParseConstraint(
     return ParseLinearEqualityConstraint(v, lb);
   }
 
-  // Setup map_var_to_index and var_vec.
-  // such that map_var_to_index[var(i)] = i
+  // Setup map_var_to_index and vars.
+  // such that map_var_to_index[vars(i)] = i
+  VectorXDecisionVariable vars;
   unordered_map<Variable::Id, int> map_var_to_index;
-  VectorXDecisionVariable vars(0);
-  for (int i = 0; i < v.size(); ++i) {
-    symbolic::ExtractAndAppendVariablesFromExpression(v(i), &vars,
-                                                      &map_var_to_index);
-  }
+  std::tie(vars, map_var_to_index) =
+      symbolic::ExtractVariablesFromExpression(v);
 
   // Construct A, new_lb, new_ub. map_var_to_index is used here.
   Eigen::MatrixXd A{Eigen::MatrixXd::Zero(v.size(), vars.size())};
@@ -61,10 +59,12 @@ Binding<Constraint> ParseConstraint(
   // We will determine if lb <= v <= ub is a bounding box constraint, namely
   // x_lb <= x <= x_ub.
   bool is_v_bounding_box = true;
+  Eigen::RowVectorXd Ai(A.cols());
   for (int i = 0; i < v.size(); ++i) {
     double constant_term = 0;
     int num_vi_variables = symbolic::DecomposeAffineExpression(
-        v(i), map_var_to_index, A.row(i), &constant_term);
+        v(i), map_var_to_index, &Ai, &constant_term);
+    A.row(i) = Ai;
     if (num_vi_variables == 0 &&
         !(lb(i) <= constant_term && constant_term <= ub(i))) {
       // Unsatisfiable constraint with no variables, such as 1 <= 0 <= 2
@@ -473,19 +473,19 @@ Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& b) {
   DRAKE_DEMAND(v.rows() == b.rows());
-  VectorXDecisionVariable vars(0);
+  VectorX<symbolic::Variable> vars;
   unordered_map<Variable::Id, int> map_var_to_index;
-  for (int i = 0; i < v.rows(); ++i) {
-    symbolic::ExtractAndAppendVariablesFromExpression(v(i), &vars,
-                                                      &map_var_to_index);
-  }
+  std::tie(vars, map_var_to_index) =
+      symbolic::ExtractVariablesFromExpression(v);
   // TODO(hongkai.dai): use sparse matrix.
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(v.rows(), vars.rows());
   Eigen::VectorXd beq = Eigen::VectorXd::Zero(v.rows());
+  Eigen::RowVectorXd Ai(A.cols());
   for (int i = 0; i < v.rows(); ++i) {
     double constant_term(0);
-    symbolic::DecomposeAffineExpression(v(i), map_var_to_index, A.row(i),
+    symbolic::DecomposeAffineExpression(v(i), map_var_to_index, &Ai,
                                         &constant_term);
+    A.row(i) = Ai;
     beq(i) = b(i) - constant_term;
   }
   return CreateBinding(make_shared<LinearEqualityConstraint>(A, beq), vars);
@@ -642,6 +642,23 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
   expr(1) = linear_expr2;
   expr.tail(C.rows()) = C * quadratic_vars + d;
   return ParseRotatedLorentzConeConstraint(expr);
+}
+
+std::shared_ptr<RotatedLorentzConeConstraint>
+ParseQuadraticAsRotatedLorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c, double zero_tol) {
+  // [-bᵀx-c, 1, Fx] is in the rotated Lorentz cone, where FᵀF = 0.5 * Q
+  const Eigen::MatrixXd F = math::DecomposePSDmatrixIntoXtransposeTimesX(
+      (Q + Q.transpose()) / 4, zero_tol);
+  // A_lorentz * x + b_lorentz = [-bᵀx-c, 1, Fx]
+  Eigen::MatrixXd A_lorentz = Eigen::MatrixXd::Zero(2 + F.rows(), F.cols());
+  Eigen::VectorXd b_lorentz = Eigen::VectorXd::Zero(2 + F.rows());
+  A_lorentz.row(0) = -b.transpose();
+  b_lorentz(0) = -c;
+  b_lorentz(1) = 1;
+  A_lorentz.bottomRows(F.rows()) = F;
+  return std::make_shared<RotatedLorentzConeConstraint>(A_lorentz, b_lorentz);
 }
 }  // namespace internal
 }  // namespace solvers

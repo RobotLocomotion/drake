@@ -138,8 +138,16 @@ class TestAll(unittest.TestCase):
             # perception
             "PointCloud",
             # solvers
+            # - agumented_lagrangian
+            "AugmentedLagrangianSmooth",
             # - mixed_integer_optimization_util
             "AddLogarithmicSos2Constraint",
+            # - clp
+            "ClpSolver",
+            # - csdp
+            "CsdpSolver",
+            # - dreal
+            "DrealSolver",
             # - gurobi
             "GurobiSolver",
             # - sdpa_free_format
@@ -148,10 +156,20 @@ class TestAll(unittest.TestCase):
             "IpoptSolver",
             # - branch_and_bound
             "MixedIntegerBranchAndBound",
+            # - mixed_integer_rotation_constraint
+            "MixedIntegerRotationConstraintGenerator",
             # - mathematicalprogram
             "MathematicalProgram",
             # - mosek
             "MosekSolver",
+            # - nlopt
+            "NloptSolver",
+            # - osqp
+            "OsqpSolver",
+            # - scs
+            "ScsSolver",
+            # - snopt
+            "SnoptSolver",
             # systems
             # - framework
             "BasicVector",

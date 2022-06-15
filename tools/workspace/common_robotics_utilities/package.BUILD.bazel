@@ -55,6 +55,16 @@ cc_library(
 )
 
 cc_test(
+    name = "maybe_test",
+    srcs = ["test/maybe_test.cpp"],
+    deps = [
+        ":common_robotics_utilities",
+        "@eigen",
+        "@gtest//:without_main",
+    ],
+)
+
+cc_test(
     name = "planning_test",
     srcs = ["test/planning_test.cpp"],
     deps = [
