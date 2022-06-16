@@ -72,7 +72,7 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
 
   // Pose the rigid surface so that it intersects the deformable octahedron at
   // Wz = 0.5.
-  math::RigidTransform<double> X_WR(Vector3<double>{0, 0, 0.5});
+  const math::RigidTransform<double> X_WR(Vector3<double>{0, 0, 0.5});
 
   std::vector<int> tetrahedron_index_of_polygons;
   std::vector<VolumeMesh<double>::Barycentric<double>> barycentric_centroids;

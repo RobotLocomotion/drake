@@ -14,30 +14,9 @@ namespace internal {
 // TODO(DamrongGuoy) Declare DeformableSurfaceVolumeIntersector in the header
 //  file to test it directly and for future code re-use.
 
-class DeformableSurfaceVolumeIntersector : public
-    SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb> {
+class DeformableSurfaceVolumeIntersector
+    : public SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb> {
  public:
-  /* See SurfaceVolumeIntersector::SampleVolumeFieldOnSurface() for the
-   purpose of this function. Notice that they have slightly different lists of
-   parameters. The other difference is that this function has the convention
-   that the volume mesh is expressed in World frame, while the base class
-   allows the volume mesh in its own frame. The rigid surface is expressed in
-   its frame R. */
-  void SampleVolumeFieldOnSurface(
-      const VolumeMeshFieldLinear<double, double>& volume_field_W,
-      const Bvh<Aabb, VolumeMesh<double>>& bvh_W,
-      const TriangleSurfaceMesh<double>& surface_R,
-      const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
-      const math::RigidTransform<T>& X_WR) {
-    PolyMeshBuilder<double> builder;
-    const bool filter_face_normal_along_field_gradient = false;
-    SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb>::
-        SampleVolumeFieldOnSurface(volume_field_W, bvh_W,
-                                   surface_R, bvh_R, X_WR,
-                                   &builder,
-                                   filter_face_normal_along_field_gradient);
-  }
-
   /* Returns the indices of tetrahedra containing the contact polygons.
    @pre Call it after SampleVolumeFieldOnSurface() finishes.  */
   const std::vector<int>& tetrahedron_index_of_polygons() const {
@@ -53,23 +32,22 @@ class DeformableSurfaceVolumeIntersector : public
 
  protected:
   /* Override the parent class's virtual function to store additional
-   data for deformables. Assume the deformable mesh is expressed in
-   World frame, and the rigid surface is expressed in frame R */
+   data for deformables. */
   void CalcContactPolygon(
-      const VolumeMeshFieldLinear<double, double>& volume_field_W,
+      const VolumeMeshFieldLinear<double, double>& volume_field_D,
       const TriangleSurfaceMesh<double>& surface_R,
-      const math::RigidTransform<T>& X_WR,
-      const math::RigidTransform<double>& X_WR_d,
-      PolyMeshBuilder<double>* builder_W,
-      const bool filter_face_normal_along_field_gradient,
-      const int tet_index, const int tri_index) override {
-    const int num_vertices_before = builder_W->num_vertices();
-    const int num_polygons_before = builder_W->num_faces();
+      const math::RigidTransform<T>& X_DR,
+      const math::RigidTransform<double>& X_DR_d,
+      PolyMeshBuilder<double>* builder_D,
+      bool filter_face_normal_along_field_gradient, int tet_index,
+      int tri_index) override {
+    const int num_vertices_before = builder_D->num_vertices();
+    const int num_polygons_before = builder_D->num_faces();
     SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb>::CalcContactPolygon(
-        volume_field_W, surface_R, X_WR, X_WR_d, builder_W,
+        volume_field_D, surface_R, X_DR, X_DR_d, builder_D,
         filter_face_normal_along_field_gradient, tet_index, tri_index);
-    const int num_vertices_after = builder_W->num_vertices();
-    const int num_polygons_after = builder_W->num_faces();
+    const int num_vertices_after = builder_D->num_vertices();
+    const int num_polygons_after = builder_D->num_faces();
 
     if (num_polygons_after == num_polygons_before) {
       return;
@@ -78,18 +56,17 @@ class DeformableSurfaceVolumeIntersector : public
 
     tetrahedron_index_of_polygons_.push_back(tet_index);
 
-    // TODO(DamrongGuoy): Consider a way to access the polygon(s) added by
-    //  SurfaceVolumeIntersector::CalcContactPolygon() into the builder_W.
-    //  Here we assume internal knowledge how the function
+    // TODO(xuchenhan-tri): Consider accessing the newly added polygon from
+    //  the builder. Here we assume internal knowledge how the function
     //  SurfaceVolumeIntersector::CalcContactPolygon works, i.e., the list of
     //  new vertices form the new polygon in that order.
     std::vector<int> polygon(num_vertices_after - num_vertices_before);
     std::iota(polygon.begin(), polygon.end(), num_vertices_before);
 
-    barycentric_centroids_.push_back(volume_field_W.mesh().CalcBarycentric(
+    barycentric_centroids_.push_back(volume_field_D.mesh().CalcBarycentric(
         CalcPolygonCentroid(
-            polygon, X_WR_d.rotation() * surface_R.face_normal(tri_index),
-            builder_W->vertices()),
+            polygon, X_DR_d.rotation() * surface_R.face_normal(tri_index),
+            builder_D->vertices()),
         tet_index));
   }
 
@@ -101,10 +78,10 @@ class DeformableSurfaceVolumeIntersector : public
 std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromDeformableVolumeRigidSurface(
     const GeometryId deformable_id,
-    const deformable::DeformableGeometry& deformable_W,
+    const deformable::DeformableGeometry& deformable_D,
     const GeometryId rigid_id, const TriangleSurfaceMesh<double>& rigid_mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& rigid_bvh_R,
-    const math::RigidTransform<double>& X_WR,
+    const math::RigidTransform<double>& X_DR,
     std::vector<int>* tetrahedron_index_of_polygons,
     std::vector<VolumeMesh<double>::Barycentric<double>>*
         barycentric_centroids) {
@@ -126,14 +103,14 @@ ComputeContactSurfaceFromDeformableVolumeRigidSurface(
   //  Or 3. Pass an additional parameter for the tetrahedral mesh to
   //        SampleVolumeFieldOnSurface(). Right now it uses the mesh of the
   //        given VolumeMeshFieldLinear.
-  VolumeMeshFieldLinear<double, double> field_W(
-      std::vector<double>(deformable_W.signed_distance_field().values()),
-      &deformable_W.deformable_mesh().mesh(), true /*calculate gradient*/);
+  VolumeMeshFieldLinear<double, double> field_D(
+      std::vector<double>(deformable_D.signed_distance_field().values()),
+      &deformable_D.deformable_mesh().mesh(), true /*calculate gradient*/);
 
   DeformableSurfaceVolumeIntersector intersect;
   intersect.SampleVolumeFieldOnSurface(
-      field_W, deformable_W.deformable_mesh().bvh(),
-      rigid_mesh_R, rigid_bvh_R, X_WR);
+      field_D, deformable_D.deformable_mesh().bvh(), rigid_mesh_R, rigid_bvh_R,
+      X_DR, false /* don't filter face normal along field gradient */);
 
   if (!intersect.has_intersection()) {
     return {};

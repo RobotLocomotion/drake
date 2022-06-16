@@ -24,8 +24,8 @@ namespace internal {
  geometry.
  @param[in] deformable_id
      Id of the deformable geometry
- @param[in] deformable_W
-     A deformable geometry expressed in World frame. It provides the
+ @param[in] deformable_D
+     A deformable geometry expressed in frame D. It provides the
      deformed tetrahedral mesh and the approximated signed distance field.
  @param[in] rigid_id
      Id of the rigid geometry
@@ -36,8 +36,8 @@ namespace internal {
  @param[in] rigid_bvh_R
      A bounding volume hierarchy built on the geometry contained in
      rigid_mesh_R.
- @param[in] X_WR
-     The pose of the rigid geometry's frame R in World frame.
+ @param[in] X_DR
+     The pose of the rigid geometry's frame R in deformable geometry's frame D.
  @param[out] tetrahedron_index_of_polygons
      Tetrahedron index of each contact polygon. The sequence of tetrahedron
      indices is parallel to the sequence of contact polygons. If there is no
@@ -56,11 +56,11 @@ namespace internal {
 std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromDeformableVolumeRigidSurface(
     const GeometryId deformable_id,
-    const deformable::DeformableGeometry& deformable_W,
+    const deformable::DeformableGeometry& deformable_D,
     const GeometryId rigid_id,
     const TriangleSurfaceMesh<double>& rigid_mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& rigid_bvh_R,
-    const math::RigidTransform<double>& X_WR,
+    const math::RigidTransform<double>& X_DR,
     std::vector<int>* tetrahedron_index_of_polygons,
     std::vector<VolumeMesh<double>::Barycentric<double>>*
         barycentric_centroids);
