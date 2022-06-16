@@ -78,7 +78,7 @@ class DeformableSurfaceVolumeIntersector : public
 
     tetrahedron_index_of_polygons_.push_back(tet_index);
 
-    // TODO(DamrongGuoy): Consider a way to access the polygon(s) added by
+    // TODO(xuchenhan-tri): Consider a way to access the polygon(s) added by
     //  SurfaceVolumeIntersector::CalcContactPolygon() into the builder_W.
     //  Here we assume internal knowledge how the function
     //  SurfaceVolumeIntersector::CalcContactPolygon works, i.e., the list of
