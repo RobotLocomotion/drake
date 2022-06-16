@@ -149,9 +149,6 @@ class SurfaceVolumeIntersector {
        A bounding volume hierarchy built on the geometry `surface_N`.
    @param[in] X_MN
        The pose of frame N in frame M.
-   @param[in,out] builder
-       As input, it specifies the type of output mesh that users want.
-       As output, it has information collected during the intersection process.
    @param[in] filter_face_normal_along_field_gradient
        If true, allow only contact polygons whose face normals are "along"
        the direction of field gradient vectors. If false, do not perform this
@@ -166,7 +163,6 @@ class SurfaceVolumeIntersector {
       const TriangleSurfaceMesh<double>& surface_N,
       const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
-      MeshBuilder* builder,
       bool filter_face_normal_along_field_gradient = true);
 
   bool has_intersection() const { return mesh_M_ != nullptr; }
@@ -198,7 +194,7 @@ class SurfaceVolumeIntersector {
    @param[in, out] builder_M
        If the tetrahedron and the triangle has non-empty intersection, the
        intersecting polygon (contact polygon) and its field values are added
-       into builder_M.
+       into builder_M. The added polygon is in the M frame.
    @param[in] filter_face_normal_along_field_gradient
        If true, allow only contact polygons whose face normals are "along"
        the direction of field gradient vectors. If false, do not perform this
@@ -218,8 +214,8 @@ class SurfaceVolumeIntersector {
       const math::RigidTransform<T>& X_MN,
       const math::RigidTransform<double>& X_MN_d,
       MeshBuilder* builder_M,
-      const bool filter_face_normal_along_field_gradient,
-      const int tet_index, const int tri_index);
+      bool filter_face_normal_along_field_gradient,
+      int tet_index, int tri_index);
 
  private:
   /* Intersects a triangle with a tetrahedron, returning the portion of the

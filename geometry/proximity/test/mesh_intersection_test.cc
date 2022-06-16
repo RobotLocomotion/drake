@@ -988,11 +988,10 @@ TYPED_TEST_SUITE(MeshIntersectionFixture, MeshBuilders);
 TYPED_TEST(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
   using MeshBuilder = TypeParam;
 
-  MeshBuilder builder_S;
   SurfaceVolumeIntersector<MeshBuilder, Obb> intersector;
   intersector.SampleVolumeFieldOnSurface(
       *this->field_S_, *this->bvh_mesh_S_, *this->surface_R_,
-      *this->bvh_surface_R_, this->X_SR_, &builder_S);
+      *this->bvh_surface_R_, this->X_SR_);
 
   const auto& surface_S = intersector.mutable_mesh();
   // The two meshes intersected forming two triangles. Each mesh type responds

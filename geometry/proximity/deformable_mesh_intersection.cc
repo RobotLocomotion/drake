@@ -14,30 +14,9 @@ namespace internal {
 // TODO(DamrongGuoy) Declare DeformableSurfaceVolumeIntersector in the header
 //  file to test it directly and for future code re-use.
 
-class DeformableSurfaceVolumeIntersector : public
-    SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb> {
+class DeformableSurfaceVolumeIntersector
+    : public SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb> {
  public:
-  /* See SurfaceVolumeIntersector::SampleVolumeFieldOnSurface() for the
-   purpose of this function. Notice that they have slightly different lists of
-   parameters. The other difference is that this function has the convention
-   that the volume mesh is expressed in World frame, while the base class
-   allows the volume mesh in its own frame. The rigid surface is expressed in
-   its frame R. */
-  void SampleVolumeFieldOnSurface(
-      const VolumeMeshFieldLinear<double, double>& volume_field_W,
-      const Bvh<Aabb, VolumeMesh<double>>& bvh_W,
-      const TriangleSurfaceMesh<double>& surface_R,
-      const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
-      const math::RigidTransform<T>& X_WR) {
-    PolyMeshBuilder<double> builder;
-    const bool filter_face_normal_along_field_gradient = false;
-    SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb>::
-        SampleVolumeFieldOnSurface(volume_field_W, bvh_W,
-                                   surface_R, bvh_R, X_WR,
-                                   &builder,
-                                   filter_face_normal_along_field_gradient);
-  }
-
   /* Returns the indices of tetrahedra containing the contact polygons.
    @pre Call it after SampleVolumeFieldOnSurface() finishes.  */
   const std::vector<int>& tetrahedron_index_of_polygons() const {
@@ -61,8 +40,8 @@ class DeformableSurfaceVolumeIntersector : public
       const math::RigidTransform<T>& X_WR,
       const math::RigidTransform<double>& X_WR_d,
       PolyMeshBuilder<double>* builder_W,
-      const bool filter_face_normal_along_field_gradient,
-      const int tet_index, const int tri_index) override {
+      bool filter_face_normal_along_field_gradient,
+      int tet_index, int tri_index) override {
     const int num_vertices_before = builder_W->num_vertices();
     const int num_polygons_before = builder_W->num_faces();
     SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb>::CalcContactPolygon(
@@ -78,9 +57,8 @@ class DeformableSurfaceVolumeIntersector : public
 
     tetrahedron_index_of_polygons_.push_back(tet_index);
 
-    // TODO(DamrongGuoy): Consider a way to access the polygon(s) added by
-    //  SurfaceVolumeIntersector::CalcContactPolygon() into the builder_W.
-    //  Here we assume internal knowledge how the function
+    // TODO(xuchenhan-tri): Consider accessing the newly added polygon from
+    //  the builder. Here we assume internal knowledge how the function
     //  SurfaceVolumeIntersector::CalcContactPolygon works, i.e., the list of
     //  new vertices form the new polygon in that order.
     std::vector<int> polygon(num_vertices_after - num_vertices_before);
@@ -131,9 +109,9 @@ ComputeContactSurfaceFromDeformableVolumeRigidSurface(
       &deformable_W.deformable_mesh().mesh(), true /*calculate gradient*/);
 
   DeformableSurfaceVolumeIntersector intersect;
-  intersect.SampleVolumeFieldOnSurface(
-      field_W, deformable_W.deformable_mesh().bvh(),
-      rigid_mesh_R, rigid_bvh_R, X_WR);
+  intersect.SampleVolumeFieldOnSurface(field_W,
+                                       deformable_W.deformable_mesh().bvh(),
+                                       rigid_mesh_R, rigid_bvh_R, X_WR);
 
   if (!intersect.has_intersection()) {
     return {};
