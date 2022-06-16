@@ -34,7 +34,14 @@ PYBIND11_MODULE(quadrotor, m) {
           py::arg("m_arg"), py::arg("L_arg"), py::arg("I_arg"),
           py::arg("kF_arg"), py::arg("kM_arg"), doc.QuadrotorPlant.ctor.doc)
       .def("m", &QuadrotorPlant<T>::m, doc.QuadrotorPlant.m.doc)
-      .def("g", &QuadrotorPlant<T>::g, doc.QuadrotorPlant.g.doc);
+      .def("g", &QuadrotorPlant<T>::g, doc.QuadrotorPlant.g.doc)
+      .def("length", &QuadrotorPlant<T>::length, doc.QuadrotorPlant.length.doc)
+      .def("force_constant", &QuadrotorPlant<T>::force_constant,
+          doc.QuadrotorPlant.force_constant.doc)
+      .def("moment_constant", &QuadrotorPlant<T>::moment_constant,
+          doc.QuadrotorPlant.moment_constant.doc)
+      .def("inertia", &QuadrotorPlant<T>::inertia, py_rvp::reference_internal,
+          doc.QuadrotorPlant.inertia.doc);
 
   py::class_<QuadrotorGeometry, LeafSystem<double>>(
       m, "QuadrotorGeometry", doc.QuadrotorGeometry.doc)
