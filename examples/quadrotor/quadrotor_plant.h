@@ -41,8 +41,13 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
 
   ~QuadrotorPlant() override;
 
-  double m() const { return m_; }
-  double g() const { return g_; }
+  [[nodiscard]] double m() const { return m_; }
+  [[nodiscard]] double g() const { return g_; }
+
+  [[nodiscard]] double length() const { return L_; }
+  [[nodiscard]] double force_constant() const { return kF_; }
+  [[nodiscard]] double moment_constant() const { return kM_; }
+  [[nodiscard]] const Eigen::Matrix3d& inertia() const { return I_; }
 
  private:
   void DoCalcTimeDerivatives(

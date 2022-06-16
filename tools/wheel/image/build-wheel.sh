@@ -40,6 +40,7 @@ chrpath()
 ###############################################################################
 
 readonly WHEEL_DIR=/opt/drake-wheel-build/wheel
+readonly WHEEL_DATA_DIR=${WHEEL_DIR}/pydrake/share/drake
 
 # TODO(mwoehlke-kitware) Most of this should move to Bazel.
 mkdir -p ${WHEEL_DIR}/drake
@@ -78,7 +79,7 @@ fi
 
 # TODO(mwoehlke-kitware) We need a different way of shipping non-arch files
 # (examples, models).
-cp -r -t ${WHEEL_DIR}/pydrake/share/drake \
+cp -r -t ${WHEEL_DATA_DIR} \
     /opt/drake/share/drake/.drake-find_resource-sentinel \
     /opt/drake/share/drake/package.xml \
     /opt/drake/share/drake/examples \
@@ -87,8 +88,8 @@ cp -r -t ${WHEEL_DIR}/pydrake/share/drake \
     /opt/drake/share/drake/tutorials
 
 if [ "$(uname)" == "Linux" ]; then
-    mkdir -p ${WHEEL_DIR}/pydrake/share/drake/setup
-    cp -r -t ${WHEEL_DIR}/pydrake/share/drake/setup \
+    mkdir -p ${WHEEL_DATA_DIR}/setup
+    cp -r -t ${WHEEL_DATA_DIR}/setup \
         /opt/drake/share/drake/setup/deepnote
 fi
 
@@ -96,8 +97,10 @@ fi
 # too large, but (per above), the whole of share/drake shouldn't be in the
 # wheel.
 rm -rf \
-    ${WHEEL_DIR}/pydrake/share/drake/manipulation/models/ycb/meshes/*.png \
-    ${WHEEL_DIR}/pydrake/share/drake/examples/atlas
+    ${WHEEL_DATA_DIR}/manipulation/models/franka_description/meshes \
+    ${WHEEL_DATA_DIR}/manipulation/models/ycb/meshes \
+    ${WHEEL_DATA_DIR}/examples/atlas \
+    ${WHEEL_DATA_DIR}/examples/hydroelastic/spatula_slip_control
 
 if [ "$(uname)" == "Linux" ]; then
     export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib:/opt/drake-dependencies/lib

@@ -163,6 +163,8 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(default_object.GetPoseInWorld(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.GetPoseInParent(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.GetPoseInWorld(GeometryId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(
+      default_object.GetConfigurationsInWorld(GeometryId::get_new_id()));
 
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());

@@ -402,13 +402,10 @@ void RenderClient::LoadColorImage(const std::string& path,
   }
 
   // Make sure we have a standard PNG image with uint8_t data per channel.
-  if (image_data->GetScalarType() != VTK_UNSIGNED_CHAR) {
-    throw std::runtime_error(fmt::format(
-        "RenderClient: loaded PNG image from '{}' has a channel size in bytes "
-        "of {}, but only RGB and RGBA uchar (channel size=1) images are "
-        "supported.",
-        path, image_data->GetScalarSize()));
-  }
+  /* no cover: this case is improbable and therefore not worth explicitly
+   testing. If this assumption proves to be wrong in the future, we can revisit
+   the decision. */
+  DRAKE_THROW_UNLESS(image_data->GetScalarType() == VTK_UNSIGNED_CHAR);
 
   /* Copy the image to the drake buffer.  VTK's image coordinate corners (how
    the data is stored in memory are transposed.  The separate loops is a slight
@@ -484,12 +481,10 @@ void RenderClient::LoadDepthImage(const std::string& path,
 
   /* Make sure we can copy directly using VTK before doing so.  Even if a 16 bit
    TIFF image was sent, VTK will load it as 32 bit float data. */
-  if (image_data->GetScalarType() != VTK_TYPE_FLOAT32) {
-    throw std::runtime_error(fmt::format(
-        "RenderClient: loaded TIFF image from '{}' did not have floating point "
-        "data, but float TIFF is required for depth images.",
-        path));
-  }
+  /* no cover: this case is improbable and therefore not worth explicitly
+   testing. If this assumption proves to be wrong in the future, we can revisit
+   the decision. */
+  DRAKE_THROW_UNLESS(image_data->GetScalarType() == VTK_TYPE_FLOAT32);
 
   image_exporter->Export(depth_image_out->at(0, 0));
 }
@@ -525,12 +520,10 @@ void RenderClient::LoadLabelImage(const std::string& path,
         path, channels));
   }
 
-  if (image_data->GetScalarType() != VTK_TYPE_UINT16) {
-    throw std::runtime_error(fmt::format(
-        "RenderClient: loaded PNG image from '{}' did not have ushort data, "
-        "but single channel ushort PNG is required for label images.",
-        path));
-  }
+  /* no cover: this case is improbable and therefore not worth explicitly
+   testing. If this assumption proves to be wrong in the future, we can revisit
+   the decision. */
+  DRAKE_THROW_UNLESS(image_data->GetScalarType() == VTK_TYPE_UINT16);
 
   /* NOTE: Officially label image is signed integers, the vtkImageExport::Export
    will reinterpret this as unsigned internally, since the loaded PNG image is
