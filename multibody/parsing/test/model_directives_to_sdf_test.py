@@ -39,6 +39,8 @@ from pydrake.common.test_utilities.meta import (
 import drake.multibody.parsing.model_directives_to_sdf \
     as model_directives_to_sdf
 
+import lxml.etree as ET
+
 import os
 import subprocess
 import unittest
@@ -103,7 +105,8 @@ class TestGeometryInspector(unittest.TestCase,
     def test_convert_model_directive_plant(self, *, file_path):
         # Convert
         converter = model_directives_to_sdf.ModelDirectivesToSdf()
-        sdf_result = converter.convert_directive(file_path)
+        sdf_tree = converter.convert_directive(file_path)
+        sdf_result = ET.tostring(sdf_tree, pretty_print=True, encoding="unicode")
 
         # Load model directives
         directives_plant = MultibodyPlant(time_step=0.01)

@@ -32,65 +32,68 @@ class ModelDirectivesToSdf:
     # other mandatory model elements.
 
     def __init__(self):
-        # MODEL_ELEM_MAP has the scoped model name as the key and its
+        # model_elem_map has the scoped model name as the key and its
         # corresponding XML element root as the value. This is used in
         # add_directives where model namespaces is defined, in add_model,
         # as well as when model elements are constructed due to implicit
         # or explicit frame names.
-        self.MODEL_ELEM_MAP = {}
+        self.model_elem_map = {}
 
-        # INCOMPLETE_MODELS is a list that contains all model names of model
+        #  is a list that contains all model names of model
         # elements that have been constructed but not yet valid (completed).
         # This is for keeping track that all model elements are properly
         # populated and not left empty. They are constructed using
         # add_model_instance or add_frame with scoped names.
-        self.INCOMPLETE_MODELS = []
+        self.incomplete_models = []
 
-        # CHILD_FRAME_MODEL_NAME_TO_WELD_MAP maps the top model instance name
+        # child_frame_model_name_to_weld_map maps the top model instance name
         # of the child frame (in each weld) to the weld directive itself.
         # This map is used for posturing frames as the placement_frame and
         # pose combination is needed.
-        self.CHILD_FRAME_MODEL_NAME_TO_WELD_MAP = {}
+        self.child_frame_model_name_to_weld_map = {}
 
         self.directives = []
 
-    # def add_directives(root: ET, directive: Dict[str, Any]) -> bool:
-    #     include_elem = None
-    #     if 'model_namespace' in directive:
-    #         model_ns = directive['model_namespace']
-    #         if model_ns not in added_model_instances:
-    #             print(f'Requested model namespace {model_ns} has not been '
-    #                   'constructed.')
-    #             return False
-    #
-    #         if model_ns not in add_model_instance_elem_map:
-    #             print('The XML element of the requested model namespace '
-    #                   f'{model_ns} has not been constructed.')
-    #             return False
-    #
-    #         added_model_instances.remove(model_ns)
-    #         model_elem = add_model_instance_elem_map[model_ns]
-    #         include_elem = ET.SubElement(model_elem, 'include', merge='true')
-    #
-    #         if model_ns in child_model_instance_to_weld_map:
-    #             weld = child_model_instance_to_weld_map.pop(model_ns)
-    #             placement_frame_name = \
-    #                 weld['child'][len(model_ns)+len(SCOPE_DELIMITER):]
-    #             include_elem.set('placement_frame', placement_frame_name)
-    #             pose_elem = ET.SubElement(include_elem, 'pose',
-    #                                       relative_to=weld['parent'])
-    #
-    #     else:
-    #         include_elem = ET.SubElement(root, 'include', merge='true')
-    #
-    #     file_path = directive['file']
-    #     # Assumption: the included directive file has been converted to
-    #     # the same name in the same location but with a .sdf extension.
-    #     sdf_file_path = file_path.replace('.yaml', '.sdf')
-    #
-    #     uri_elem = ET.SubElement(include_elem, 'uri')
-    #     uri_elem.text = sdf_file_path
-    #     return True
+    def add_directives(self, root: ET, directive: Dict[str, Any]) -> bool:
+        include_elem = None
+        if 'model_namespace' in directive:
+            model_ns = directive['model_namespace']
+            if model_ns not in self.incomplete_models:
+                print(f'Requested model namespace {model_ns} has not been '
+                      'constructed.')
+                return False
+
+            if model_ns not in self.model_elem_map:
+                print('The XML element of the requested model namespace '
+                      f'{model_ns} has not been constructed.')
+                return False
+
+            self.incomplete_models.remove(model_ns)
+            model_elem = self.model_elem_map[model_ns]
+            include_elem = ET.SubElement(model_elem, 'include', merge='true')
+
+            if model_ns in self.child_frame_model_name_to_weld_map:
+                weld = self.child_frame_model_name_to_weld_map.pop(model_ns)
+                placement_frame_name = \
+                    weld['child'][len(model_ns)+len(SCOPE_DELIMITER):]
+                include_elem.set('placement_frame', placement_frame_name)
+                pose_elem = ET.SubElement(include_elem, 'pose',
+                                          relative_to=weld['parent'])
+
+        else:
+            include_elem = ET.SubElement(root, 'include', merge='true')
+        file_path = directive['file']
+        sdf_result = self.convert_directive(file_path)
+        sdf_file_path = file_path.replace('.yaml', '.sdf')
+
+        if sdf_result is not None:
+            if sdf_file_path:
+                with open(sdf_file_path, 'w') as f:
+                    f.write(sdf_result)
+
+        uri_elem = ET.SubElement(include_elem, 'uri')
+        uri_elem.text = sdf_file_path
+        return True
 
     def add_model(self, root: ET, directive: Dict[str, Any]) -> bool:
         model_root = root
@@ -101,12 +104,12 @@ class ModelDirectivesToSdf:
 
         # If the model element has already been constructed due to add_frame,
         # the file is merge included.
-        if model_name in self.MODEL_ELEM_MAP:
-            model_root = self.MODEL_ELEM_MAP[model_name]
+        if model_name in self.model_elem_map:
+            model_root = self.model_elem_map[model_name]
             include_elem = ET.SubElement(model_root, 'include', merge='true')
             merge_include = True
-            if model_name in self.INCOMPLETE_MODELS:
-                self.INCOMPLETE_MODELS.remove(model_name)
+            if model_name in self.incomplete_models:
+                self.incomplete_models.remove(model_name)
         else:
             include_elem = ET.SubElement(model_root, 'include')
 
@@ -116,12 +119,12 @@ class ModelDirectivesToSdf:
         uri_elem = ET.SubElement(include_elem, 'uri')
         uri_elem.text = file_name
 
-        if model_name not in self.CHILD_FRAME_MODEL_NAME_TO_WELD_MAP:
+        if model_name not in self.child_frame_model_name_to_weld_map:
             return True
 
         # If this model contains a frame used in an add_weld instance, we
         # use the placement_frame and pose combination to posture it.
-        weld = self.CHILD_FRAME_MODEL_NAME_TO_WELD_MAP.pop(model_name)
+        weld = self.child_frame_model_name_to_weld_map.pop(model_name)
         if merge_include:
             model_root.set('placement_frame', weld['child'][len(
                 model_name)+len(SCOPE_DELIMITER):])
@@ -227,21 +230,21 @@ class ModelDirectivesToSdf:
 
             # Check if the scope already exists, if it is change model_root
             # and move on.
-            if current_model_scope in self.MODEL_ELEM_MAP:
-                model_root = self.MODEL_ELEM_MAP[current_model_scope]
+            if current_model_scope in self.model_elem_map:
+                model_root = self.model_elem_map[current_model_scope]
                 continue
 
             # If not, we create it, save it to map and incomplete.
             new_model_root = ET.SubElement(model_root, 'model', name=scope)
-            self.MODEL_ELEM_MAP[current_model_scope] = new_model_root
+            self.model_elem_map[current_model_scope] = new_model_root
             model_root = new_model_root
 
         # We only consider the most nested model scope as incomplete, since
         # all the parent model instances will be considered valid when the
         # nested model is valid.
         if current_model_scope is not None and \
-                current_model_scope not in self.INCOMPLETE_MODELS:
-            self.INCOMPLETE_MODELS.append(current_model_scope)
+                current_model_scope not in self.incomplete_models:
+            self.incomplete_models.append(current_model_scope)
 
         # Start constructing the frame in the model instance.
         translation_str = '0 0 0'
@@ -336,15 +339,15 @@ class ModelDirectivesToSdf:
         for directive in self.directives:
             if 'add_model_instance' in directive:
                 new_model_name = directive['add_model_instance']['name']
-                if new_model_name in self.MODEL_ELEM_MAP or \
-                        new_model_name in self.INCOMPLETE_MODELS:
+                if new_model_name in self.model_elem_map or \
+                        new_model_name in self.incomplete_models:
                     print(f'Model instance [{new_model_name}] already added')
                     return
 
                 new_model_elem = ET.SubElement(root_model_elem, 'model',
                                                name=new_model_name)
-                self.MODEL_ELEM_MAP[new_model_name] = new_model_elem
-                self.INCOMPLETE_MODELS.append(new_model_name)
+                self.model_elem_map[new_model_name] = new_model_elem
+                self.incomplete_models.append(new_model_name)
 
             elif 'add_weld' in directive:
                 weld = directive['add_weld']
@@ -368,7 +371,7 @@ class ModelDirectivesToSdf:
                     return
 
                 # Bookkeeping for posturing models that are added later.
-                self.CHILD_FRAME_MODEL_NAME_TO_WELD_MAP[
+                self.child_frame_model_name_to_weld_map[
                     weld_child_scopes[0]] = weld
 
             else:
@@ -393,9 +396,10 @@ class ModelDirectivesToSdf:
             if 'add_model' in directive:
                 success = self.add_model(
                     root_model_elem, directive['add_model'])
-            # elif 'add_directives' in directive:
-            #     success = add_directives(root_model_elem,
-            #                              directive['add_directives'])
+
+            elif 'add_directives' in directive:
+                success = self.add_directives(
+                    root_model_elem, directive['add_directives'])
 
             if not success:
                 print(f'Failed to convert model directive {input_path}')
@@ -403,20 +407,20 @@ class ModelDirectivesToSdf:
 
         # Check if all the welds and incomplete model instances are taken
         # care of.
-        if self.CHILD_FRAME_MODEL_NAME_TO_WELD_MAP:
+        if self.child_frame_model_name_to_weld_map:
             print('There are welds that are still not postured properly:')
-            for key in self.CHILD_FRAME_MODEL_NAME_TO_WELD_MAP:
-                print(f'    {child_model_instance_to_weld_map[key]}')
+            for key in self.child_frame_model_name_to_weld_map:
+                print(f'    {self.child_frame_model_name_to_weld_map[key]}')
             return
 
-        if len(self.INCOMPLETE_MODELS) != 0:
+        if len(self.incomplete_models) != 0:
             print('There are models that are generated but not used:')
-            for m in self.INCOMPLETE_MODELS:
+            for m in self.incomplete_models:
                 print(f'    {m}')
             return
 
-        tree = ET.ElementTree(root)
-        return ET.tostring(tree, pretty_print=True, encoding="unicode")
+
+        return ET.ElementTree(root)
 
 
 def main() -> None:
@@ -430,17 +434,17 @@ def main() -> None:
     args = parser.parse_args()
 
     model_directives_to_sdf = ModelDirectivesToSdf()
-    sdf_result = model_directives_to_sdf.convert_directive(
+    result_tree = model_directives_to_sdf.convert_directive(
         args.model_directives)
 
-    if sdf_result is not None:
+    if result_tree is not None:
         if args.output:
-            with open(args.output, 'w') as f:
-                f.write(sdf_result)
+            result_tree.write(args.output, pretty_print=True, encoding="unicode")
         else:
-            print(sdf_result)
+            print(ET.tostring(tree, pretty_print=True, encoding="unicode"))
     else:
         print('Failed to convert model directives.')
+        return -1
 
 
 if __name__ == '__main__':
