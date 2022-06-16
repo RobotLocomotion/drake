@@ -106,7 +106,8 @@ class TestGeometryInspector(unittest.TestCase,
         # Convert
         converter = model_directives_to_sdf.ModelDirectivesToSdf()
         sdf_tree = converter.convert_directive(file_path)
-        sdf_result = ET.tostring(sdf_tree, pretty_print=True, encoding="unicode")
+        sdf_result = ET.tostring(
+            sdf_tree, pretty_print=True, encoding="unicode")
 
         # Load model directives
         directives_plant = MultibodyPlant(time_step=0.01)

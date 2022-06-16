@@ -83,13 +83,21 @@ class ModelDirectivesToSdf:
         else:
             include_elem = ET.SubElement(root, 'include', merge='true')
         file_path = directive['file']
-        sdf_result = self.convert_directive(file_path)
+        result_tree = self.convert_directive(file_path)
         sdf_file_path = file_path.replace('.yaml', '.sdf')
 
-        if sdf_result is not None:
+        if result_tree is not None:
             if sdf_file_path:
-                with open(sdf_file_path, 'w') as f:
-                    f.write(sdf_result)
+                result_tree.write(
+                    sdf_file_path,
+                    pretty_print=True,
+                    encoding="unicode")
+            else:
+                print(f'Error trying to guess sdf file name for'
+                      'add_directives: {directive}')
+                return False
+        else:
+            return False
 
         uri_elem = ET.SubElement(include_elem, 'uri')
         uri_elem.text = sdf_file_path
@@ -419,7 +427,6 @@ class ModelDirectivesToSdf:
                 print(f'    {m}')
             return
 
-
         return ET.ElementTree(root)
 
 
@@ -439,9 +446,13 @@ def main() -> None:
 
     if result_tree is not None:
         if args.output:
-            result_tree.write(args.output, pretty_print=True, encoding="unicode")
+            result_tree.write(args.output,
+                              pretty_print=True,
+                              encoding="unicode")
         else:
-            print(ET.tostring(tree, pretty_print=True, encoding="unicode"))
+            print(ET.tostring(result_tree,
+                              pretty_print=True,
+                              encoding="unicode"))
     else:
         print('Failed to convert model directives.')
         return -1
