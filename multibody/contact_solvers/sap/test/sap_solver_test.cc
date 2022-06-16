@@ -460,8 +460,8 @@ GTEST_TEST(PizzaSaver, Stiction) {
 GTEST_TEST(PizzaSaver, StictionAtTightOptimalityTolerance) {
   SapSolverParameters params;
   // Extremely tight tolerances to trigger the cost stopping criterion.
-  params.abs_tolerance = 1.0e-20;
-  params.rel_tolerance = 1.0e-20;
+  params.abs_tolerance = 0;
+  params.rel_tolerance = 0;
   params.ls_max_iterations = 40;
   // Once SAP's state is in the stiction region, SAP's cost is quadratic and the
   // Newton's method will converge in the next iteration with line search
