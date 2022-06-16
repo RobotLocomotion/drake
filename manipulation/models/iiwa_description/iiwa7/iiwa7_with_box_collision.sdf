@@ -77,7 +77,8 @@
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
           <effort>300</effort>
-          <velocity>10</velocity>
+           <!-- Empirical measurement by Siyuan Feng -->
+          <velocity>1.48</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -130,7 +131,8 @@
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
           <effort>300</effort>
-          <velocity>10</velocity>
+           <!-- Empirical measurement by Siyuan Feng -->
+          <velocity>1.48</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -183,7 +185,8 @@
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
           <effort>300</effort>
-          <velocity>10</velocity>
+          <!-- Empirical measurement by Siyuan Feng -->
+          <velocity>1.74</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -236,7 +239,8 @@
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
           <effort>300</effort>
-          <velocity>10</velocity>
+          <!-- Empirical measurement by Siyuan Feng -->
+          <velocity>1.31</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -289,7 +293,8 @@
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
           <effort>300</effort>
-          <velocity>10</velocity>
+          <!-- Empirical measurement by Siyuan Feng -->
+          <velocity>2.27</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -342,7 +347,8 @@
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
           <effort>300</effort>
-          <velocity>10</velocity>
+          <!-- Empirical measurement by Siyuan Feng -->
+          <velocity>2.36</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -395,7 +401,8 @@
           <lower>-3.05433</lower>
           <upper>3.05433</upper>
           <effort>300</effort>
-          <velocity>10</velocity>
+          <!-- Empirical measurement by Siyuan Feng -->
+          <velocity>2.36</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
