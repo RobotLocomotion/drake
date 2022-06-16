@@ -117,15 +117,20 @@ void HydroelasticContactVisualizer::Update(
 
       Eigen::Matrix3Xd colors(3, item.pressure.size());
       for (int i = 0; i < item.pressure.size(); ++i) {
-        colors(0, i) = std::sqrt((item.pressure[i] - min_pressure) / max_pressure);
+        colors(0, i) =
+            std::sqrt((item.pressure[i] - min_pressure) / max_pressure);
         colors(1, i) = 0.0;
         colors(2, i) = 0.0;
       }
 
       meshcat_->SetTriangleColorMesh(path + "/contact_surface", item.p_WV,
-                                item.faces, colors,
-                                true, 2.0);
+                                     item.faces, colors, false);
       meshcat_->SetTransform(path + "/contact_surface",
+                             RigidTransformd(-item.centroid_W));
+      meshcat_->SetTriangleMesh(path + "/contact_surface_wireframe", item.p_WV,
+                                item.faces, geometry::Rgba(1.0, 1.0, 1.0, 1.0),
+                                true);
+      meshcat_->SetTransform(path + "/contact_surface_wireframe",
                              RigidTransformd(-item.centroid_W));
     }
   }
