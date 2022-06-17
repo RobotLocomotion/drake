@@ -76,3 +76,36 @@ source env/bin/activate
 ````
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
+
+## Nightly Releases
+
+Binary wheels of Drake for Ubuntu 20.04 (Focal) and
+Mac are generated nightly and are available to download at:
+
+* TODO(svenevs): what are the names of these going to be?
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz)
+
+The nightly `latest` wheels are retained for approximately 18 hours before they
+are overwritten.
+
+Older packages for specific dates are available by replacing ``latest`` with an
+8-digit date, e.g., ``20200102`` for January 2nd, 2020.
+
+* TODO(svenevs): what are the names of these going to be?
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-focal.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-mac.tar.gz)
+
+Individual wheels are retained for 45 days from their date of creation.
+
+To install an individual wheel, download it and install the file directly:
+
+  ```bash
+  # TODO(svenevs): insert a valid url here
+  wget https://drake-packages.csail.mit.edu/drake/nightly/WHEEL.whl
+  python3 -m venv env
+  env/bin/pip install --upgrade pip
+  env/bin/pip install drake
+  ```
+
+Make sure you have the required runtime libraries described above.

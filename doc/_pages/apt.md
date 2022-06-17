@@ -68,3 +68,28 @@ variables may be useful:
   ```
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
+
+## Nightly Releases
+
+Unsigned nightly apt packages of Drake for Ubuntu 20.04 (Focal) are available to
+download at:
+
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.deb)
+
+The nightly `latest` packages are retained for approximately 18 hours before
+they are overwritten.
+
+Older packages for specific dates are available by replacing ``latest`` with an
+8-digit date, e.g., ``20200102`` for January 2nd, 2020.
+
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.YYYYMMDD-1_amd64.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.YYYYMMDD-1_amd64.deb)
+
+Individual packages are retained for 45 days from their date of creation.
+
+For installing a nightly apt package, download the archive and install it
+directly:
+
+  ```bash
+  wget https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.deb
+  sudo apt-get install --no-install-recommends ./drake-latest-focal.deb
+  ```
