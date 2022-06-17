@@ -3,6 +3,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/benchmarks/free_body/free_body.h"
 #include "drake/multibody/test_utilities/floating_body_plant.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -363,6 +364,54 @@ GTEST_TEST(QuaternionFloatingMobilizer, InboardJointLocking) {
 
   free_body.Unlock(&context);
   EXPECT_FALSE(free_body.is_locked(context));
+}
+
+// This test verifies that a reasonable assertion is thrown when the initial
+// state contains an invalid quaternion, a reasonable exception is thrown.
+GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
+  // Instantiate the model for a free body in space.  For this test, it is OK
+  // to use somewhat arbitrary values for mass, inertia, gravity, etc.
+  const double kMass = 1.0;
+  const double kInertia = 0.04;
+  const double acceleration_of_gravity = 9.8;
+  AxiallySymmetricFreeBodyPlant<double> free_body_plant(
+    kMass, kInertia, kInertia, acceleration_of_gravity);
+
+  // Simulator will create a Context by calling this system's
+  // CreateDefaultContext(). This in turn will initialize its state by making a
+  // call to this system's SetDefaultState().
+  systems::Simulator<double> simulator(free_body_plant);
+  systems::Context<double>& context = simulator.get_mutable_context();
+
+  // Allocate space to hold the time-derivative of the Drake state.
+  std::unique_ptr<systems::ContinuousState<double>> stateDt =
+      free_body_plant.AllocateTimeDerivatives();
+  drake::systems::ContinuousState<double>* stateDt_drake = stateDt.get();
+
+   // Initial position, translational velocity, and angular velocity are zero.
+  const Vector3d p0_WBcm_W = Vector3d::Zero();
+  const Vector3d v0_WBcm_W = Vector3d::Zero();
+  const Vector3d w0_WB_W = Vector3d::Zero();
+  const Quaterniond bad_quat(0, 0, 0, 0);  // Invalid quaternion.
+  Eigen::Matrix<double, 13, 1> state_initial;
+  state_initial << bad_quat.w(), bad_quat.x(), bad_quat.y(), bad_quat.z(),
+                   p0_WBcm_W, w0_WB_W, v0_WBcm_W;
+  systems::VectorBase<double>& state_drake =
+      context.get_mutable_continuous_state_vector();
+  state_drake.SetFromVector(state_initial);
+
+  // A zero quaternion should throw an exception.
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        free_body_plant.CalcTimeDerivatives(context, stateDt_drake),
+        "Error: Rotation matrix contains an element that is infinity or NaN.");
+  } else {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        free_body_plant.CalcTimeDerivatives(context, stateDt_drake),
+        "Encountered singular articulated body hinge inertia for body node"
+        " index 1. Please ensure that this body has non-zero inertia along"
+        " all axes of motion.");
+  }
 }
 
 }  // namespace
