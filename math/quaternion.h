@@ -284,6 +284,12 @@ bool IsQuaternionValid(const Eigen::Quaternion<T>& quat,
   return (quat_norm_error <= tolerance);
 }
 
+/// Throws an exception if a quaternion is not a valid %Quaternion.
+/// @param[in] quaternion an allegedly valid quaternion.
+/// @note If the underlying scalar type T is non-numeric (symbolic), no
+/// validity check is made and no exception is thrown.
+template <typename T>
+void ThrowIfQuaternionIsNotValid(const Eigen::Quaternion<T>& quaternion);
 
 /** This function tests if a quaternion satisfies the time-derivative constraint
  * specified in [Kane, 1983] Section 1.13, equation 13, page 59.  A quaternion

@@ -388,7 +388,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
       free_body_plant.AllocateTimeDerivatives();
   drake::systems::ContinuousState<double>* stateDt_drake = stateDt.get();
 
-   // Initial position, translational velocity, and angular velocity are zero.
+  // Initial position, translational velocity, and angular velocity are zero.
   const Vector3d p0_WBcm_W = Vector3d::Zero();
   const Vector3d v0_WBcm_W = Vector3d::Zero();
   const Vector3d w0_WB_W = Vector3d::Zero();
