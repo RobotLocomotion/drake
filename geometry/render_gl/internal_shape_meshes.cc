@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
-#include <iostream>
+#include <istream>
 #include <limits>
 #include <map>
 #include <string>

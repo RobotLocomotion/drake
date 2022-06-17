@@ -2,12 +2,12 @@
 
 #include <array>
 #include <cstddef>
-#include <iostream>
 #include <limits>
 #include <list>
 #include <map>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <set>
 #include <stdexcept>
 #include <string>

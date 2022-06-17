@@ -3,8 +3,8 @@
 #undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
 #include <algorithm>
-#include <iostream>
 #include <memory>
+#include <ostream>
 #include <set>
 #include <sstream>
 #include <stdexcept>

@@ -1,7 +1,6 @@
 #include "drake/lcm/drake_lcm_log.h"
 
 #include <chrono>
-#include <iostream>
 #include <limits>
 #include <map>
 #include <stdexcept>

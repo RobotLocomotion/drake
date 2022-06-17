@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/eigen_types.h"
