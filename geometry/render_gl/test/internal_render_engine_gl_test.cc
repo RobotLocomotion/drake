@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/render_engine_gl.h"
+#include "drake/geometry/render_gl/internal_render_engine_gl.h"
 
 #include <array>
 #include <cstring>
@@ -20,6 +20,7 @@
 namespace drake {
 namespace geometry {
 namespace render {
+namespace internal {
 
 // Friend class that gives the tests access to a RenderEngineGl's OpenGlContext.
 class RenderEngineGlTester {
@@ -1840,6 +1841,7 @@ TEST_F(RenderEngineGlTest, IntrinsicsAndRenderProperties) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

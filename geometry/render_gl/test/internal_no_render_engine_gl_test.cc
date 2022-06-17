@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
+#include "drake/geometry/render_gl/factory.h"
 
 namespace drake {
 namespace geometry {

@@ -43,6 +43,7 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/query_results",
     "//geometry/render/gl_renderer",
     "//geometry/render/shaders",
+    "//geometry/render_gl",
     "//geometry/render_gltf_client",
     "//geometry/render_vtk",
     "//lcm",

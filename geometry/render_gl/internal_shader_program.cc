@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/shader_program.h"
+#include "drake/geometry/render_gl/internal_shader_program.h"
 
 #include <fstream>
 #include <sstream>

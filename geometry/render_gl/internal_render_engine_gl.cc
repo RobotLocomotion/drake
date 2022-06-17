@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/render_engine_gl.h"
+#include "drake/geometry/render_gl/internal_render_engine_gl.h"
 
 #include <algorithm>
 #include <optional>
@@ -13,20 +13,10 @@
 namespace drake {
 namespace geometry {
 namespace render {
+namespace internal {
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
-using internal::BufferDim;
-using internal::MeshData;
-using internal::OpenGlContext;
-using internal::OpenGlGeometry;
-using internal::OpenGlInstance;
-using internal::RenderTarget;
-using internal::RenderType;
-using internal::ShaderId;
-using internal::ShaderProgram;
-using internal::ShaderProgramData;
-using internal::TextureLibrary;
 using math::RigidTransformd;
 using std::make_shared;
 using std::make_unique;
@@ -165,7 +155,7 @@ void main() {
 
 /* The built-in shader for texture diffuse colored objects. This shader supports
  all geometries with a ("phong", "diffuse_map") property. */
-class DefaultTextureColorShader final : public internal::ShaderProgram {
+class DefaultTextureColorShader final : public ShaderProgram {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultTextureColorShader)
 
@@ -540,7 +530,7 @@ void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
                                        void* user_data) {
   const int resolution = 50;
   MeshData mesh_data =
-      internal::MakeCapsule(resolution, capsule.radius(), capsule.length());
+      MakeCapsule(resolution, capsule.radius(), capsule.length());
 
   OpenGlGeometry geometry = CreateGlGeometry(mesh_data);
   capsules_.push_back(geometry);
@@ -567,7 +557,7 @@ void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
                 convex.filename());
 }
 
-void RenderEngineGl::ImplementMesh(const internal::OpenGlGeometry& geometry,
+void RenderEngineGl::ImplementMesh(const OpenGlGeometry& geometry,
                                    void* user_data,
                                    const Vector3<double>& scale,
                                    const std::string& file_name) {
@@ -653,7 +643,7 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
 
   for (const GeometryId& g_id :
        shader_families_.at(render_type).at(shader_program.shader_id())) {
-    const internal::OpenGlInstance& instance = visuals_.at(g_id);
+    const OpenGlInstance& instance = visuals_.at(g_id);
     glBindVertexArray(instance.geometry.vertex_array);
 
     shader_program.SetInstanceParameters(instance.shader_data[render_type]);
@@ -834,7 +824,7 @@ OpenGlGeometry RenderEngineGl::GetSphere() {
     const int kLongitudeBands = 50;
 
     MeshData mesh_data =
-        internal::MakeLongLatUnitSphere(kLongitudeBands, kLatitudeBands);
+        MakeLongLatUnitSphere(kLongitudeBands, kLatitudeBands);
 
     sphere_ = CreateGlGeometry(mesh_data);
   }
@@ -850,7 +840,7 @@ OpenGlGeometry RenderEngineGl::GetCylinder() {
 
     // For long skinny cylinders, it would be better to offer some subdivisions
     // along the length. For now, we'll simply save the triangles.
-    MeshData mesh_data = internal::MakeUnitCylinder(kLongitudeBands, 1);
+    MeshData mesh_data = MakeUnitCylinder(kLongitudeBands, 1);
     cylinder_ = CreateGlGeometry(mesh_data);
   }
 
@@ -867,7 +857,7 @@ OpenGlGeometry RenderEngineGl::GetHalfSpace() {
     // TODO(SeanCurtis-TRI): For vertex-lighting (as opposed to fragment
     //  lighting), this will render better with tighter resolution. Consider
     //  making this configurable.
-    MeshData mesh_data = internal::MakeSquarePatch(kMeasure, 1);
+    MeshData mesh_data = MakeSquarePatch(kMeasure, 1);
     half_space_ = CreateGlGeometry(mesh_data);
   }
 
@@ -879,7 +869,7 @@ OpenGlGeometry RenderEngineGl::GetHalfSpace() {
 
 OpenGlGeometry RenderEngineGl::GetBox() {
   if (!box_.is_defined()) {
-    MeshData mesh_data = internal::MakeUnitBox();
+    MeshData mesh_data = MakeUnitBox();
     box_ = CreateGlGeometry(mesh_data);
   }
 
@@ -891,7 +881,7 @@ OpenGlGeometry RenderEngineGl::GetBox() {
 OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
   OpenGlGeometry mesh;
   if (meshes_.count(filename) == 0) {
-    MeshData mesh_data = internal::LoadMeshFromObj(filename);
+    MeshData mesh_data = LoadMeshFromObj(filename);
     mesh = CreateGlGeometry(mesh_data);
     meshes_.insert({filename, mesh});
   } else {
@@ -1114,7 +1104,7 @@ void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,
 }
 
 ShaderId RenderEngineGl::AddShader(std::unique_ptr<ShaderProgram> program,
-                                   internal::RenderType render_type) {
+                                   RenderType render_type) {
   const ShaderId shader_id = program->shader_id();
   shader_families_[render_type].insert({shader_id, vector<GeometryId>()});
   shader_programs_[render_type][shader_id] = move(program);
@@ -1141,6 +1131,7 @@ ShaderProgramData RenderEngineGl::GetShaderProgram(
   return *data;
 }
 
+}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake
