@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/shader_program.h"
+#include "drake/geometry/render_gl/internal_shader_program.h"
 
 #include <fstream>
 #include <memory>
@@ -10,8 +10,8 @@
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/render/gl_renderer/opengl_context.h"
-#include "drake/geometry/render/gl_renderer/shader_program_data.h"
+#include "drake/geometry/render_gl/internal_opengl_context.h"
+#include "drake/geometry/render_gl/internal_shader_program_data.h"
 
 namespace drake {
 namespace geometry {

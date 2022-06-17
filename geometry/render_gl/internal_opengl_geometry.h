@@ -4,16 +4,23 @@
 #include <limits>
 #include <utility>
 
-#include "drake/geometry/render/gl_renderer/gl_common.h"
-#include "drake/geometry/render/gl_renderer/opengl_includes.h"
-#include "drake/geometry/render/gl_renderer/shader_program_data.h"
 #include "drake/geometry/render/render_label.h"
+#include "drake/geometry/render_gl/internal_opengl_includes.h"
+#include "drake/geometry/render_gl/internal_shader_program_data.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
 namespace internal {
+
+// TODO(SeanCurtis-TRI): Consider moving this up to RenderEngine; it's useful
+//  for multiple RenderEngine types.
+/* Rendering types available. Used to index into render-type-dependent data
+ structures. Because it serves as an index, we use kTypeCount to declare the
+ *number* of index values available (relying on C++'s default behavior of
+ assigning sequential values in enumerations).  */
+enum RenderType { kColor = 0, kLabel, kDepth, kTypeCount };
 
 /* For a fixed OpenGL context, defines the definition of a mesh geometry. The
  geometry is defined by the handles to various objects in the OpenGL context.

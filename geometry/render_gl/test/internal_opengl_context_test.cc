@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/opengl_context.h"
+#include "drake/geometry/render_gl/internal_opengl_context.h"
 
 #include <gtest/gtest.h>
 
