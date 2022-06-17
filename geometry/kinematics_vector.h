@@ -93,11 +93,11 @@ namespace geometry {
 template <class Id, class KinematicsValue>
 class KinematicsVector {
  public:
-  /** Initializes the vector using an invalid SourceId with no data .*/
+  /** Initializes the vector with no data .*/
   KinematicsVector();
 
-  /** Initializes the vector using an invalid SourceId and the given the keys
-  and the corresponding kinematics values. */
+  /** Initializes the vector using the given the keys and their corresponding
+   kinematics values. */
   KinematicsVector(
       std::initializer_list<std::pair<const Id, KinematicsValue>> init);
 
