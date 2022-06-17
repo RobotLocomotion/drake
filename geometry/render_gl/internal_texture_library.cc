@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/texture_library.h"
+#include "drake/geometry/render_gl/internal_texture_library.h"
 
 #include <algorithm>
 #include <cctype>

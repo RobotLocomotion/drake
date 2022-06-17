@@ -5,7 +5,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/filesystem.h"
-#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
+#include "drake/geometry/render_gl/factory.h"
 #include "drake/geometry/render_vtk/factory.h"
 #include "drake/systems/sensors/image_writer.h"
 

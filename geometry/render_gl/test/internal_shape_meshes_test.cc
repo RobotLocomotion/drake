@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/shape_meshes.h"
+#include "drake/geometry/render_gl/internal_shape_meshes.h"
 
 #include <limits>
 #include <sstream>

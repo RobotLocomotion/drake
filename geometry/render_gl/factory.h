@@ -1,10 +1,9 @@
 #pragma once
 
 #include <memory>
-#include <optional>
 
-#include "drake/geometry/render/gl_renderer/render_engine_gl_params.h"
 #include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render_gl/render_engine_gl_params.h"
 
 namespace drake {
 namespace geometry {

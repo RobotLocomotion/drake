@@ -29,27 +29,20 @@ load(
 package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library(
-    name = "gl_renderer",
+    name = "render_gl",
     visibility = ["//visibility:public"],
     deps = [
-        ":render_engine_gl_factory",
+        ":factory",
         ":render_engine_gl_params",
     ],
 )
 
 drake_cc_library_ubuntu_only(
-    name = "gl_common",
+    name = "internal_opengl_context",
+    srcs = ["internal_opengl_context.cc"],
     hdrs = [
-        "gl_common.h",
-    ],
-)
-
-drake_cc_library_ubuntu_only(
-    name = "opengl_context",
-    srcs = ["opengl_context.cc"],
-    hdrs = [
-        "opengl_context.h",
-        "opengl_includes.h",
+        "internal_opengl_context.h",
+        "internal_opengl_includes.h",
     ],
     deps = [
         "//common:essential",
@@ -61,33 +54,32 @@ drake_cc_library_ubuntu_only(
 )
 
 drake_cc_library_ubuntu_only(
-    name = "opengl_geometry",
-    hdrs = ["opengl_geometry.h"],
+    name = "internal_opengl_geometry",
+    hdrs = ["internal_opengl_geometry.h"],
     deps = [
-        ":gl_common",
-        ":opengl_context",
-        ":shader_program_data",
+        ":internal_opengl_context",
+        ":internal_shader_program_data",
         "//geometry/render:render_label",
         "//math:geometric_transform",
     ],
 )
 
 drake_cc_library_ubuntu_only(
-    name = "render_engine_gl",
+    name = "internal_render_engine_gl",
     srcs = [
-        "render_engine_gl.cc",
+        "internal_render_engine_gl.cc",
     ],
     hdrs = [
-        "buffer_dim.h",
-        "render_engine_gl.h",
+        "internal_buffer_dim.h",
+        "internal_render_engine_gl.h",
     ],
     interface_deps = [
-        ":opengl_context",
-        ":opengl_geometry",
+        ":internal_opengl_context",
+        ":internal_opengl_geometry",
         ":render_engine_gl_params",
-        ":shader_program",
-        ":shape_meshes",
-        ":texture_library",
+        ":internal_shader_program",
+        ":internal_shape_meshes",
+        ":internal_texture_library",
         "//geometry/render:render_engine",
         "//systems/sensors:image",
     ],
@@ -97,15 +89,15 @@ drake_cc_library_ubuntu_only(
 )
 
 drake_cc_library(
-    name = "render_engine_gl_factory",
+    name = "factory",
     srcs = select({
         "//tools/cc_toolchain:apple": [],
         "//conditions:default": [
-            "render_engine_gl_factory.cc",
+            "factory.cc",
         ],
     }),
     hdrs = [
-        "render_engine_gl_factory.h",
+        "factory.h",
     ],
     interface_deps = [
         ":render_engine_gl_params",
@@ -113,22 +105,22 @@ drake_cc_library(
     ],
     deps = select({
         "//tools/cc_toolchain:apple": [
-            ":apple_only_no_render_engine_gl_factory",
+            ":apple_only_no_factory",
         ],
         "//conditions:default": [
-            ":render_engine_gl",
+            ":internal_render_engine_gl",
         ],
     }),
 )
 
 drake_cc_library(
-    name = "apple_only_no_render_engine_gl_factory",
+    name = "apple_only_no_factory",
     srcs = [
         # Always compile this on every platform, to ensure it is well-formed.
-        "no_render_engine_gl_factory.cc",
+        "no_factory.cc",
     ],
     hdrs = [
-        "render_engine_gl_factory.h",
+        "factory.h",
     ],
     internal = True,
     visibility = ["//visibility:private"],
@@ -148,21 +140,21 @@ drake_cc_library(
 )
 
 drake_cc_library_ubuntu_only(
-    name = "shader_program",
-    srcs = ["shader_program.cc"],
-    hdrs = ["shader_program.h"],
+    name = "internal_shader_program",
+    srcs = ["internal_shader_program.cc"],
+    hdrs = ["internal_shader_program.h"],
     deps = [
-        ":shader_program_data",
+        ":internal_opengl_context",
+        ":internal_shader_program_data",
         "//common:essential",
         "//geometry:geometry_roles",
         "//geometry/render:render_engine",
-        "//geometry/render/gl_renderer:opengl_context",
     ],
 )
 
 drake_cc_library_ubuntu_only(
-    name = "shader_program_data",
-    hdrs = ["shader_program_data.h"],
+    name = "internal_shader_program_data",
+    hdrs = ["internal_shader_program_data.h"],
     deps = [
         "//common:copyable_unique_ptr",
         "//common:identifier",
@@ -171,11 +163,11 @@ drake_cc_library_ubuntu_only(
 )
 
 drake_cc_library_ubuntu_only(
-    name = "shape_meshes",
-    srcs = ["shape_meshes.cc"],
-    hdrs = ["shape_meshes.h"],
+    name = "internal_shape_meshes",
+    srcs = ["internal_shape_meshes.cc"],
+    hdrs = ["internal_shape_meshes.h"],
     interface_deps = [
-        "//geometry/render/gl_renderer:opengl_context",
+        ":internal_opengl_context",
     ],
     deps = [
         "//common:essential",
@@ -184,12 +176,12 @@ drake_cc_library_ubuntu_only(
 )
 
 drake_cc_library_ubuntu_only(
-    name = "texture_library",
-    srcs = ["texture_library.cc"],
-    hdrs = ["texture_library.h"],
+    name = "internal_texture_library",
+    srcs = ["internal_texture_library.cc"],
+    hdrs = ["internal_texture_library.h"],
     interface_deps = [
         "//common:essential",
-        "//geometry/render/gl_renderer:opengl_context",
+        ":internal_opengl_context",
     ],
     deps = [
         "//common:filesystem",
@@ -198,14 +190,14 @@ drake_cc_library_ubuntu_only(
 )
 
 drake_cc_googletest_ubuntu_only(
-    name = "buffer_dim_test",
+    name = "internal_buffer_dim_test",
     deps = [
-        ":render_engine_gl",
+        ":internal_render_engine_gl",
     ],
 )
 
 drake_cc_googletest_ubuntu_only(
-    name = "opengl_context_test",
+    name = "internal_opengl_context_test",
     tags = [
         # GLX functions show up with bad reads, bad writes, possibly lost, and
         # definitely lost.  We will investiate soon but for now we'll omit the
@@ -214,27 +206,27 @@ drake_cc_googletest_ubuntu_only(
         "no_memcheck",
     ],
     deps = [
-        ":opengl_context",
+        ":internal_opengl_context",
     ],
 )
 
 drake_cc_googletest_ubuntu_only(
-    name = "opengl_geometry_test",
+    name = "internal_opengl_geometry_test",
     deps = [
-        ":opengl_geometry",
+        ":internal_opengl_geometry",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )
 
 drake_cc_googletest_ubuntu_only(
-    name = "render_engine_gl_test",
+    name = "internal_render_engine_gl_test",
     data = [
         "//geometry/render:test_models",
     ],
     tags = vtk_test_tags(),
     deps = [
-        ":render_engine_gl",
+        ":internal_render_engine_gl",
         "//common:find_resource",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
@@ -244,24 +236,24 @@ drake_cc_googletest_ubuntu_only(
 )
 
 drake_cc_googletest(
-    name = "no_render_engine_gl_test",
+    name = "internal_no_render_engine_gl_test",
     args = select({
         "//tools/cc_toolchain:linux": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
     deps = [
-        ":render_engine_gl_factory",
+        ":factory",
         "//common/test_utilities:expect_throws_message",
     ],
 )
 
 drake_cc_googletest_ubuntu_only(
-    name = "shape_meshes_test",
+    name = "internal_shape_meshes_test",
     data = [
         "//geometry/render:test_models",
     ],
     deps = [
-        ":shape_meshes",
+        ":internal_shape_meshes",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -270,11 +262,11 @@ drake_cc_googletest_ubuntu_only(
 )
 
 drake_cc_googletest_ubuntu_only(
-    name = "shader_program_test",
+    name = "internal_shader_program_test",
     tags = vtk_test_tags(),
     deps = [
-        ":opengl_context",
-        ":shader_program",
+        ":internal_opengl_context",
+        ":internal_shader_program",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -283,7 +275,7 @@ drake_cc_googletest_ubuntu_only(
 
 add_lint_tests(
     cpplint_extra_srcs = [
-        "no_render_engine_gl_factory.cc",
-        "render_engine_gl_factory.cc",
+        "no_factory.cc",
+        "factory.cc",
     ],
 )

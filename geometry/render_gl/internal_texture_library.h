@@ -5,7 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/render/gl_renderer/opengl_context.h"
+#include "drake/geometry/render_gl/internal_opengl_context.h"
 
 namespace drake {
 namespace geometry {

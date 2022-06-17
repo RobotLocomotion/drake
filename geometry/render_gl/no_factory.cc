@@ -1,5 +1,5 @@
-#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
-#include "drake/geometry/render/gl_renderer/render_engine_gl_params.h"
+#include "drake/geometry/render_gl/factory.h"
+#include "drake/geometry/render_gl/render_engine_gl_params.h"
 
 namespace drake {
 namespace geometry {

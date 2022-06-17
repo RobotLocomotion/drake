@@ -5,7 +5,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/geometry/render/gl_renderer/opengl_includes.h"
+#include "drake/geometry/render_gl/internal_opengl_includes.h"
 
 namespace drake {
 namespace geometry {
