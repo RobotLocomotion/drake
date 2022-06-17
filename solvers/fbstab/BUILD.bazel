@@ -27,6 +27,7 @@ drake_cc_library(
         "fbstab_dense.cc",
     ],
     hdrs = ["fbstab_dense.h"],
+    copts = ["-Wno-cpp"],
     deps = [
         ":fbstab_algorithm",
         "//common:essential",
@@ -45,6 +46,7 @@ drake_cc_library(
         "fbstab_mpc.cc",
     ],
     hdrs = ["fbstab_mpc.h"],
+    copts = ["-Wno-cpp"],
     deps = [
         ":fbstab_algorithm",
         "//common:essential",
@@ -60,6 +62,7 @@ drake_cc_library(
 drake_cc_library(
     name = "fbstab_algorithm",
     hdrs = ["fbstab_algorithm.h"],
+    copts = ["-Wno-cpp"],
     deps = [
         "//common:essential",
     ],
@@ -72,6 +75,7 @@ drake_cc_library(
         "test/ocp_generator.cc",
     ],
     hdrs = ["test/ocp_generator.h"],
+    copts = ["-Wno-cpp"],
     deps = [
         ":fbstab_mpc",
         "//common:essential",
@@ -83,6 +87,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "dense_unit_tests",
     srcs = ["test/fbstab_dense_unit_tests.cc"],
+    copts = ["-Wno-cpp"],
     deps = [
         ":fbstab_dense",
         "@eigen",
@@ -92,6 +97,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mpc_unit_tests",
     srcs = ["test/fbstab_mpc_unit_tests.cc"],
+    copts = ["-Wno-cpp"],
     deps = [
         ":fbstab_mpc",
         ":ocp_generator",
