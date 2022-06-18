@@ -51,3 +51,10 @@
 #include "drake/common/symbolic_codegen.h"
 // clang-format on
 #undef DRAKE_COMMON_SYMBOLIC_HEADER
+
+// TODO(#13833) We should split out this header into its own library,
+// once we have the new subdirectory established.  In the meantime,
+// we want to provide it "for free" here, but it is NOT part of the
+// monolithic symbolic implementation components, so it should not
+// appear within the preprocessor ifdef.
+#include "drake/common/symbolic_decompose.h"
