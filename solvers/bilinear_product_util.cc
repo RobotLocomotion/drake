@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <unordered_map>
 
+#include "drake/common/symbolic.h"
+
 namespace drake {
 namespace solvers {
 using std::ostringstream;

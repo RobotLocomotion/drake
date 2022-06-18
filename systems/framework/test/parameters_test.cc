@@ -2,8 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/default_scalars.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 
 namespace drake {

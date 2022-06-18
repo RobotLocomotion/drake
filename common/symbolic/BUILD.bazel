@@ -1,0 +1,34 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "symbolic",
+    visibility = [
+        # TODO(jwnimmer-tri) Once we have moved all of the symbolic code from
+        # drake/common/* into drake/common/symbolic/*, then we should make this
+        # package library public. In the meantime, exposing it makes is too
+        # easy to typo "//common:symbolic" vs "//common/symbolic".
+        "//visibility:private",
+    ],
+    deps = [
+        ":algebra",
+    ],
+)
+
+drake_cc_library(
+    name = "algebra",
+    hdrs = ["algebra.h"],
+    deps = [
+        "//common/symbolic/algebra",
+    ],
+)
+
+add_lint_tests()

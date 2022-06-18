@@ -4,8 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"

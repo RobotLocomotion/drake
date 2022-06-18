@@ -11,7 +11,7 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/algebra.h"
 #include "drake/common/value.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/common/autodiff.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/algebra.h"
 
 // N.B. `CommonScalarPack` and `NonSymbolicScalarPack` in `systems_pybind.h`
 // should be kept in sync with this file.

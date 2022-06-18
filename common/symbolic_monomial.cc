@@ -6,9 +6,9 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/symbolic.h"
-#define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
-#include "drake/common/symbolic_expression_cell.h"
-#undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
+#define DRAKE_COMMON_SYMBOLIC_ALGEBRA_DETAIL_HEADER
+#include "drake/common/symbolic/algebra/expression_cell.h"
+#undef DRAKE_COMMON_SYMBOLIC_ALGEBRA_DETAIL_HEADER
 
 namespace drake {
 namespace symbolic {

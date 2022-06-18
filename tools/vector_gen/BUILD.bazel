@@ -63,7 +63,7 @@ drake_cc_googletest(
     deps = [
         ":sample",
         "//common:autodiff",
-        "//common:symbolic",
+        "//common/symbolic:algebra",
         "//common/test_utilities",
         "//common/yaml",
     ],

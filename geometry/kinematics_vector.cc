@@ -6,7 +6,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/algebra.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
