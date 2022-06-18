@@ -159,13 +159,12 @@ drake_cc_library(
     ],
     interface_deps = [
         ":geometry_ids",
-        "//common:autodiff",
         "//common:essential",
-        "//common:nice_type_name",
-        "//common:symbolic",
         "//math:geometric_transform",
     ],
     deps = [
+        "//common:default_scalars",
+        "//common:nice_type_name",
         "@abseil_cpp_internal//absl/container:flat_hash_map",
     ],
 )

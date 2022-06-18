@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include <fmt/format.h>
+
 namespace drake {
 namespace solvers {
 namespace internal {

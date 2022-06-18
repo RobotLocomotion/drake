@@ -2,8 +2,6 @@
 
 #include <utility>
 
-#include "drake/common/autodiff.h"
-
 namespace drake {
 namespace systems {
 

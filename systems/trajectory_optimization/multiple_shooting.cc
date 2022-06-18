@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include <string>
 
-#include "drake/common/symbolic.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/solve.h"
 

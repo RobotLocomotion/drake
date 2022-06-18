@@ -4,9 +4,8 @@
 
 #include "absl/container/flat_hash_map.h"
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/common/symbolic.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

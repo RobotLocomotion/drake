@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/algebra.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
