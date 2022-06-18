@@ -26,6 +26,7 @@ def _minified_xml(*, filename):
 filenames = sorted(sys.argv[1:])
 print("""
 #include "EmbeddedSdf.hh"
+#include <array>
 #include "drake_vendor/ignition/utils/NeverDestroyed.hh"
 namespace sdf { inline namespace SDF_VERSION_NAMESPACE {
 const std::map<std::string, std::string>& GetEmbeddedSdf() {
