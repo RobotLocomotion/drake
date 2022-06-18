@@ -1,5 +1,6 @@
 #include "drake/examples/manipulation_station/manipulation_station_hardware_interface.h"
 
+#include <iostream>
 #include <utility>
 
 #include "drake/common/find_resource.h"

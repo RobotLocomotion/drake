@@ -11,8 +11,8 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
 #include <cstddef>
-#include <iostream>
 #include <memory>
+#include <ostream>
 #include <utility>
 
 #include "drake/common/drake_assert.h"

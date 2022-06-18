@@ -1,8 +1,8 @@
 // NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <cstddef>
-#include <iostream>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <set>
 #include <sstream>
 
