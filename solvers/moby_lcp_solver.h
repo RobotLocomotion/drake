@@ -3,12 +3,8 @@
 
 #pragma once
 
-#include <fstream>
 #include <limits>
-#include <string>
 #include <vector>
-
-#include <Eigen/SparseCore>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
@@ -74,7 +70,8 @@ class MobyLCPSolver final : public SolverBase {
   MobyLCPSolver();
   ~MobyLCPSolver() final;
 
-  void SetLoggingEnabled(bool enabled);
+  DRAKE_DEPRECATED("2022-10-01", "This function no longer has any effect.")
+  void SetLoggingEnabled(bool) {}
 
   /// Calculates the zero tolerance that the solver would compute if the user
   /// does not specify a tolerance.
@@ -293,12 +290,6 @@ class MobyLCPSolver final : public SolverBase {
   template <typename MatrixType, typename Scalar>
   void FinishLemkeSolution(const MatrixType& M, const VectorX<Scalar>& q,
                            const VectorX<Scalar>& x, VectorX<Scalar>* z) const;
-
-  // TODO(sammy-tri) replace this with a proper logging hookup
-  std::ostream& Log() const;
-
-  bool log_enabled_{false};
-  mutable std::ofstream null_stream_;
 
   // Records the number of pivoting operations used during the last solve.
   mutable unsigned pivots_{0};
