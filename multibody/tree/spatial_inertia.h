@@ -2,8 +2,8 @@
 
 #include <algorithm>
 #include <exception>
-#include <iostream>
 #include <limits>
+#include <ostream>
 #include <string>
 
 #include "drake/common/default_scalars.h"

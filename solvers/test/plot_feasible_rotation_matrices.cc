@@ -1,3 +1,4 @@
+#include <iostream>
 #include <limits>
 
 #include "drake/common/proto/call_python.h"

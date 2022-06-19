@@ -6,7 +6,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <iostream>
 #include <stdexcept>
 
 #include "drake/common/drake_assert.h"

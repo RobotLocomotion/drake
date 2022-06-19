@@ -1,5 +1,7 @@
 #include <unistd.h>
 
+#include <iostream>
+
 #include "fmt/format.h"
 #include <benchmark/benchmark.h>
 #include <gflags/gflags.h>

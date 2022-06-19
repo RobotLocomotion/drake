@@ -40,6 +40,11 @@ class HeaderDependencyTest(unittest.TestCase):
             return True
         (target,) = match.groups()
 
+        # We specifically disallow this header. It pollutes downstream
+        # translation units with global initializers.
+        if target == 'iostream':
+            return False
+
         # Check for allowed patterns.
         for matcher in self._valid_filenames:
             if matcher.match(target):
