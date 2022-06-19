@@ -15,6 +15,7 @@ apt-get -y install --no-install-recommends \
 ${PYTHON} -m venv /usr/local
 
 pip install \
+    lxml \
     pyyaml \
     semantic-version \
     setuptools \
