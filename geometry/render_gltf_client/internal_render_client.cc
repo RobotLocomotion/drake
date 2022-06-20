@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_gltf_client/internal_render_client.h"
+#include "drake/geometry/render_gltf_client/internal_render_client.h"
 
 #include <atomic>
 #include <map>

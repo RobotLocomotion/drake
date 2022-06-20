@@ -15,13 +15,6 @@ _VISIBILITY = [
 
 package(default_visibility = _VISIBILITY)
 
-drake_cc_package_library(
-    name = "render_gltf_client",
-    visibility = ["//visibility:public"],
-    deps = [
-    ],
-)
-
 drake_cc_library(
     name = "internal_http_service",
     srcs = ["internal_http_service.cc"],
@@ -52,6 +45,31 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "internal_render_client",
+    srcs = [
+        "internal_render_client.cc",
+    ],
+    hdrs = [
+        "internal_render_client.h",
+    ],
+    internal = True,
+    visibility = _VISIBILITY,
+    deps = [
+        ":internal_http_service",
+        ":internal_http_service_curl",
+        "//common:filesystem",
+        "//common:nice_type_name",
+        "//common:temp_directory",
+        "//geometry/render:render_camera",
+        "//geometry/render:render_engine",
+        "//geometry/render/dev/render_gltf_client:render_gltf_client_params",
+        "//systems/sensors:image",
+        "@picosha2",
+        "@vtk//:vtkIOImage",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -70,6 +88,44 @@ drake_cc_googletest(
     deps = [
         ":internal_http_service_curl",
         "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+filegroup(
+    name = "test_resources",
+    srcs = [
+        "test/test_depth_32F.tiff",
+        "test/test_label_16I.png",
+        "test/test_rgb_8U.png",
+        "test/test_rgba_8U.png",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_sample_image_data",
+    srcs = ["test/internal_sample_image_data.cc"],
+    hdrs = ["test/internal_sample_image_data.h"],
+    internal = True,
+    visibility = _VISIBILITY,
+    deps = [
+        "//common:filesystem",
+        "//common:find_resource",
+        "//systems/sensors:image",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_render_client_test",
+    data = [
+        ":test_resources",
+        "//geometry/render:test_models",
+    ],
+    deps = [
+        ":internal_render_client",
+        ":internal_sample_image_data",
+        "//common:find_resource",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
 )

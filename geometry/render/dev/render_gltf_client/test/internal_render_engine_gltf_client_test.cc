@@ -11,8 +11,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/geometry/render/dev/render_gltf_client/factory.h"
-#include "drake/geometry/render/dev/render_gltf_client/test/internal_sample_image_data.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
+#include "drake/geometry/render_gltf_client/test/internal_sample_image_data.h"
 
 namespace drake {
 namespace geometry {
@@ -255,15 +255,13 @@ class FakeServer : public HttpService {
     std::string test_image_path;
     if (image_type == "color") {
       test_image_path = FindResourceOrThrow(
-          "drake/geometry/render/dev/render_gltf_client/test/test_rgba_8U.png");
+          "drake/geometry/render_gltf_client/test/test_rgba_8U.png");
     } else if (image_type == "depth") {
       test_image_path = FindResourceOrThrow(
-          "drake/geometry/render/dev/render_gltf_client/test/"
-          "test_depth_32F.tiff");
+          "drake/geometry/render_gltf_client/test/test_depth_32F.tiff");
     } else {  // image_type := "label"
       test_image_path = FindResourceOrThrow(
-          "drake/geometry/render/dev/render_gltf_client/test/"
-          "test_label_16I.png");
+          "drake/geometry/render_gltf_client/test/test_label_16I.png");
     }
     fs::copy_file(test_image_path, path);
     ret.data_path = path;

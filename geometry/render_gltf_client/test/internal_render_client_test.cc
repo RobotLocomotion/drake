@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_gltf_client/internal_render_client.h"
+#include "drake/geometry/render_gltf_client/internal_render_client.h"
 
 #include <cstdio>
 #include <fstream>
@@ -16,8 +16,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/render/dev/render_gltf_client/test/internal_sample_image_data.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
+#include "drake/geometry/render_gltf_client/test/internal_sample_image_data.h"
 
 namespace drake {
 namespace geometry {
@@ -66,13 +66,13 @@ constexpr int kTestImageHeight = 2;
 
 // The paths for the testing images used across different unit tests.
 const auto kTestRgbImagePath = FindResourceOrThrow(
-    "drake/geometry/render/dev/render_gltf_client/test/test_rgb_8U.png");
+    "drake/geometry/render_gltf_client/test/test_rgb_8U.png");
 const auto kTestRgbaImagePath = FindResourceOrThrow(
-    "drake/geometry/render/dev/render_gltf_client/test/test_rgba_8U.png");
+    "drake/geometry/render_gltf_client/test/test_rgba_8U.png");
 const auto kTestDepthImagePath = FindResourceOrThrow(
-    "drake/geometry/render/dev/render_gltf_client/test/test_depth_32F.tiff");
+    "drake/geometry/render_gltf_client/test/test_depth_32F.tiff");
 const auto kTestLabelImagePath = FindResourceOrThrow(
-    "drake/geometry/render/dev/render_gltf_client/test/test_label_16I.png");
+    "drake/geometry/render_gltf_client/test/test_label_16I.png");
 
 // Constructor / destructor ----------------------------------------------------
 GTEST_TEST(RenderClient, Constructor) {
