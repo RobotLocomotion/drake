@@ -7,6 +7,7 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 # TODO(jwnimmer-tri) Replace with "//visibility:private" once dev code is gone.
 _VISIBILITY = [
@@ -86,6 +87,26 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "internal_render_engine_gltf_client",
+    srcs = [
+        "internal_render_engine_gltf_client.cc",
+    ],
+    hdrs = [
+        "internal_render_engine_gltf_client.h",
+    ],
+    internal = True,
+    visibility = _VISIBILITY,
+    deps = [
+        ":internal_render_client",
+        "//common:filesystem",
+        "//geometry/render:render_camera",
+        "//geometry/render_vtk:internal_render_engine_vtk",
+        "//systems/sensors:image",
+        "@vtk//:vtkIOExport",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -145,6 +166,21 @@ drake_cc_googletest(
         ":internal_render_client",
         ":internal_sample_image_data",
         "//common:find_resource",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_render_engine_gltf_client_test",
+    data = [
+        ":test_resources",
+    ],
+    tags = vtk_test_tags(),
+    deps = [
+        ":internal_render_engine_gltf_client",
+        ":internal_sample_image_data",
+        "//common:filesystem",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
