@@ -10,8 +10,6 @@ def abseil_cpp_internal_repository(
         commit = "ef799d337201e02688c6e07b0cac8912b86f505d",
         sha256 = "9f841741770fd773c8109f23fed60ec1e758ce12a52fbb298eeaf891b1dbb1cd",  # noqa
         patches = [
-            "@drake//tools/workspace/abseil_cpp_internal:patches/disable_int128_on_clang.patch",  # noqa
-            "@drake//tools/workspace/abseil_cpp_internal:patches/fix_constexpr_storage_deprecation.patch",  # noqa
             "@drake//tools/workspace/abseil_cpp_internal:patches/hidden_visibility.patch",  # noqa
             "@drake//tools/workspace/abseil_cpp_internal:patches/inline_namespace.patch",  # noqa
         ],
