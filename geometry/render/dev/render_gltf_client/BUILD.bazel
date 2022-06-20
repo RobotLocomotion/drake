@@ -14,59 +14,22 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:private"])
 
+# TODO(zachfang): The factory should not be marked as "internal" after moving
+# out of the dev folder.
 drake_cc_library(
-    name = "internal_render_engine_gltf_client",
-    srcs = [
-        "factory.cc",
-        "internal_render_engine_gltf_client.cc",
-    ],
-    hdrs = [
-        # TODO(jwnimmer-tri) The factory should be its own separate cc_library,
-        # not to be marked with "internal".
-        "factory.h",
-        "internal_render_engine_gltf_client.h",
-    ],
+    name = "factory",
+    srcs = ["factory.cc"],
+    hdrs = ["factory.h"],
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
-        "//common:filesystem",
         "//geometry/render:render_camera",
-        "//geometry/render_gltf_client:internal_render_client",
-        "//geometry/render_vtk:internal_render_engine_vtk",
-        "//systems/sensors:image",
-        "@vtk//:vtkIOExport",
+        "//geometry/render_gltf_client:internal_render_engine_gltf_client",
+        "//geometry/render_gltf_client:render_engine_gltf_client_params",
     ],
 )
 
 # === test/ ===
-
-drake_cc_googletest(
-    name = "internal_render_engine_gltf_client_test",
-    data = [
-        "//geometry/render_gltf_client:test_resources",
-    ],
-    # TODO(svenevs): Found leakage isolated to
-    # RenderEngineGltfClient::DoRender*Image calls indirectly calling
-    # RenderEngineVtk::PerformUpdate().  Mark it as skipped now, and will
-    # revisit during the platform review.  Example log from LeakSanitizer:
-    #
-    # ==20==ERROR: LeakSanitizer: detected memory leaks
-    #
-    # Direct leak of 6280 byte(s) in 3 object(s) allocated from:
-    # 0 0x55af7105e440 in calloc
-    #         (/path/to/render_engine_gltf_client_test+0x51a440)
-    # 1 0x151167cd814f
-    #         (/lib/x86_64-linux-gnu/libnvidia-glcore.so.510.47.03+0xe6614f)
-    # ...
-    tags = vtk_test_tags(),
-    deps = [
-        ":internal_render_engine_gltf_client",
-        "//common:filesystem",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:expect_throws_message",
-        "//geometry/render_gltf_client:internal_sample_image_data",
-    ],
-)
 
 # - Server integration test targets. ------------------------------------------
 
@@ -125,7 +88,7 @@ drake_cc_binary(
     ],
     test_rule_tags = vtk_test_tags(),
     deps = [
-        ":internal_render_engine_gltf_client",
+        ":factory",
         "//common:filesystem",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
