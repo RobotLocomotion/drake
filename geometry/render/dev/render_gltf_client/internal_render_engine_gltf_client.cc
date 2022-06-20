@@ -130,7 +130,7 @@ void LogFrameServerResponsePath(ImageType image_type, const std::string& path) {
 }
 
 // Deletes the file and log if verbose. This function is called only when
-// no_cleanup() == false.
+// render_client_->get_params().no_cleanup == false.
 void DeleteFileAndLogIfVerbose(const std::string& path, bool verbose) {
   try {
     fs::remove(path);
@@ -229,7 +229,7 @@ void RenderEngineGltfClient::UpdateViewpoint(
 void RenderEngineGltfClient::DoRenderColorImage(
     const ColorRenderCamera& camera, ImageRgba8U* color_image_out) const {
   const auto color_scene_id = GetNextSceneId();
-  if (render_client_->verbose()) {
+  if (render_client_->get_params().verbose) {
     LogFrameStart(ImageType::kColor, color_scene_id);
   }
 
@@ -244,26 +244,28 @@ void RenderEngineGltfClient::DoRenderColorImage(
   SetGltfCameraPerspective(camera.core(),
                            color_pipeline.renderer->GetActiveCamera());
   const std::string scene_path = ExportScene(ImageType::kColor, color_scene_id);
-  if (render_client_->verbose()) {
+  if (render_client_->get_params().verbose) {
     LogFrameGltfExportPath(ImageType::kColor, scene_path);
   }
 
   const std::string image_path = render_client_->RenderOnServer(
       camera.core(), VtkToClientRenderImageType(ImageType::kColor), scene_path,
       MimeType());
-  if (render_client_->verbose()) {
+  if (render_client_->get_params().verbose) {
     LogFrameServerResponsePath(ImageType::kColor, image_path);
   }
 
   // Load the returned image back to the drake buffer.
   render_client_->LoadColorImage(image_path, color_image_out);
-  if (!render_client_->no_cleanup()) CleanupFrame(scene_path, image_path);
+  if (!render_client_->get_params().no_cleanup) {
+    CleanupFrame(scene_path, image_path);
+  }
 }
 
 void RenderEngineGltfClient::DoRenderDepthImage(
     const DepthRenderCamera& camera, ImageDepth32F* depth_image_out) const {
   const auto depth_scene_id = GetNextSceneId();
-  if (render_client_->verbose()) {
+  if (render_client_->get_params().verbose) {
     LogFrameStart(ImageType::kDepth, depth_scene_id);
   }
 
@@ -277,26 +279,28 @@ void RenderEngineGltfClient::DoRenderDepthImage(
   SetGltfCameraPerspective(camera.core(),
                            depth_pipeline.renderer->GetActiveCamera());
   const std::string scene_path = ExportScene(ImageType::kDepth, depth_scene_id);
-  if (render_client_->verbose()) {
+  if (render_client_->get_params().verbose) {
     LogFrameGltfExportPath(ImageType::kDepth, scene_path);
   }
 
   const std::string image_path = render_client_->RenderOnServer(
       camera.core(), VtkToClientRenderImageType(ImageType::kDepth), scene_path,
       MimeType(), camera.depth_range());
-  if (render_client_->verbose()) {
+  if (render_client_->get_params().verbose) {
     LogFrameServerResponsePath(ImageType::kDepth, image_path);
   }
 
   // Load the returned image back to the drake buffer.
   render_client_->LoadDepthImage(image_path, depth_image_out);
-  if (!render_client_->no_cleanup()) CleanupFrame(scene_path, image_path);
+  if (!render_client_->get_params().no_cleanup) {
+    CleanupFrame(scene_path, image_path);
+  }
 }
 
 void RenderEngineGltfClient::DoRenderLabelImage(
     const ColorRenderCamera& camera, ImageLabel16I* label_image_out) const {
   const auto label_scene_id = GetNextSceneId();
-  if (render_client_->verbose()) {
+  if (render_client_->get_params().verbose) {
     LogFrameStart(ImageType::kLabel, label_scene_id);
   }
 
@@ -311,20 +315,22 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   SetGltfCameraPerspective(camera.core(),
                            label_pipeline.renderer->GetActiveCamera());
   const std::string scene_path = ExportScene(ImageType::kLabel, label_scene_id);
-  if (render_client_->verbose()) {
+  if (render_client_->get_params().verbose) {
     LogFrameGltfExportPath(ImageType::kLabel, scene_path);
   }
 
   const std::string image_path = render_client_->RenderOnServer(
       camera.core(), VtkToClientRenderImageType(ImageType::kLabel), scene_path,
       MimeType());
-  if (render_client_->verbose()) {
+  if (render_client_->get_params().verbose) {
     LogFrameServerResponsePath(ImageType::kLabel, image_path);
   }
 
   // Load the returned image back to the drake buffer.
   render_client_->LoadLabelImage(image_path, label_image_out);
-  if (!render_client_->no_cleanup()) CleanupFrame(scene_path, image_path);
+  if (!render_client_->get_params().no_cleanup) {
+    CleanupFrame(scene_path, image_path);
+  }
 }
 
 std::string RenderEngineGltfClient::ExportPathFor(ImageType image_type,
@@ -350,8 +356,8 @@ std::string RenderEngineGltfClient::ExportScene(ImageType image_type,
 
 void RenderEngineGltfClient::CleanupFrame(const std::string& scene_path,
                                           const std::string& image_path) const {
-  DeleteFileAndLogIfVerbose(scene_path, render_client_->verbose());
-  DeleteFileAndLogIfVerbose(image_path, render_client_->verbose());
+  DeleteFileAndLogIfVerbose(scene_path, render_client_->get_params().verbose);
+  DeleteFileAndLogIfVerbose(image_path, render_client_->get_params().verbose);
 }
 
 Eigen::Matrix4d RenderEngineGltfClient::CameraModelViewTransformMatrix(
