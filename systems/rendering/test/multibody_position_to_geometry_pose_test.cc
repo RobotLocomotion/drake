@@ -151,7 +151,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, FullStateInput) {
           *state_context);
 
   EXPECT_EQ(position_output.size(), state_output.size());
-  for (const geometry::FrameId& id : position_output.GetAllIds()) {
+  for (const auto& id : position_output.ids()) {
     EXPECT_TRUE(
         position_output.value(id).IsExactlyEqualTo(state_output.value(id)));
   }
