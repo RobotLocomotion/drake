@@ -32,19 +32,19 @@ template <typename U>
 AcrobotPlant<T>::AcrobotPlant(const AcrobotPlant<U>&) : AcrobotPlant<T>() {}
 
 template <typename T>
-void AcrobotPlant<T>::SetMITAcrobotParameters(systems::Parameters<T>*
-parameters) const {
-  auto* p = dynamic_cast<AcrobotParams<T>*>(parameters);
-  DRAKE_ASSERT(p != nullptr);
-  p->set_m1(2.4367);
-  p->set_m2(0.6178);
-  p->set_l1(0.2563);
-  p->set_lc1(1.6738);
-  p->set_lc2(1.5651);
-  p->set_Ic1(-4.7443);  // Notes: Yikes!  Negative inertias (from sysid).
-  p->set_Ic2(-1.0068);
-  p->set_b1(0.0320);
-  p->set_b2(0.0413);
+void AcrobotPlant<T>::SetMitAcrobotParameters(
+    AcrobotParams<T>* parameters) const {
+  DRAKE_DEMAND(parameters != nullptr);
+  parameters->set_m1(2.4367);
+  parameters->set_m2(0.6178);
+  parameters->set_l1(0.2563);
+  parameters->set_lc1(1.6738);
+  parameters->set_lc2(1.5651);
+  parameters->set_Ic1(
+      -4.7443);  // Notes: Yikes!  Negative inertias (from sysid).
+  parameters->set_Ic2(-1.0068);
+  parameters->set_b1(0.0320);
+  parameters->set_b2(0.0413);
   // Note: parameters are identified in a way that torque has the unit of
   // current (Amps), in order to simplify the implementation of torque
   // constraint on motors. Therefore, some of the numbers here have incorrect
