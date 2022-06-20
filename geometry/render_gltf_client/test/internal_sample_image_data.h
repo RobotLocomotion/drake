@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 #include "drake/systems/sensors/image.h"
 
 namespace drake {

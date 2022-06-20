@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_gltf_client/test/internal_sample_image_data.h"
+#include "drake/geometry/render_gltf_client/test/internal_sample_image_data.h"
 
 #include <array>
 #include <vector>
