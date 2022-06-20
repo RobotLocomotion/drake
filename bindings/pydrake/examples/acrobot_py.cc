@@ -39,8 +39,8 @@ PYBIND11_MODULE(acrobot, m) {
       .def(py::init<>(), doc.AcrobotPlant.ctor.doc)
       .def("DynamicsBiasTerm", &AcrobotPlant<T>::DynamicsBiasTerm,
           doc.AcrobotPlant.DynamicsBiasTerm.doc)
-      .def("SetMITAcrobotParameters", &AcrobotPlant<T>::SetMITAcrobotParameters,
-          doc.AcrobotPlant.SetMITAcrobotParameters.doc)
+      .def("SetMitAcrobotParameters", &AcrobotPlant<T>::SetMitAcrobotParameters,
+          doc.AcrobotPlant.SetMitAcrobotParameters.doc)
       .def("MassMatrix", &AcrobotPlant<T>::MassMatrix,
           doc.AcrobotPlant.MassMatrix.doc)
       .def_static("get_state",
