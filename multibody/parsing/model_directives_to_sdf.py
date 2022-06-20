@@ -78,7 +78,6 @@ class ModelDirectivesToSdf:
 
     # If name is not scoped it finds one from scoped_base_name
     def scope_name(self, name: str, scoped_base_name: str) -> List[str]:
-        print(scoped_base_name)
         split_name = name.split(SCOPE_DELIMITER)
         split_scoped_base_name = scoped_base_name.split(SCOPE_DELIMITER)
 
@@ -86,11 +85,16 @@ class ModelDirectivesToSdf:
             scopes = split_scoped_base_name[:-1]
             scopes.append(split_name[0])
             return scopes
+        # Both are implicit: can't figure out scope
+        elif len(split_name) == 1 and len(split_scoped_base_name) == 1:
+            print(f'Name [{name}] and base_name [{scoped_base_name}]'
+                  ' are both implicit. Scope cannot be figured out.')
+            return None
         # Explicit case: frame is nested more than its base_frame.
         elif len(split_name) > len(split_scoped_base_name):
             print(f'Name [{name}] is being added explicitly at'
                   f' a more nested level than its base_name '
-                  '[{scoped_base_name}]. This violates scoping rules in '
+                  f'[{scoped_base_name}]. This violates scoping rules in '
                   ' sdformat, and the workflow should be modified.')
             return None
         # Explicit case: base_frame is nested more than the frame, we check
@@ -189,19 +193,18 @@ class ModelDirectivesToSdf:
         if base_scope is None:
             print(f'Failed finding base scope for model: {model_name}')
             return False
-        scoped_parent_name = SCOPE_DELIMITER.join(
-            self.scope_name(weld['parent'], base_scope))
+        scoped_parent_name = self.scope_name(weld['parent'], base_scope)
         if scoped_parent_name is None:
             print(f'Failed scoping model: {model_name}')
             return False
-
+        scoped_parent_name_str = SCOPE_DELIMITER.join(scoped_parent_name)
         if merge_include:
             model_root.set('placement_frame', weld['child'][len(
                 model_name)+len(SCOPE_DELIMITER):])
             pose_elem = ET.SubElement(
                 model_root,
                 'pose',
-                relative_to=scoped_parent_name)
+                relative_to=scoped_parent_name_str)
         else:
             placement_frame_elem = ET.SubElement(
                 include_elem, 'placement_frame')
@@ -210,7 +213,7 @@ class ModelDirectivesToSdf:
             pose_elem = ET.SubElement(
                 include_elem,
                 'pose',
-                relative_to=scoped_parent_name)
+                relative_to=scoped_parent_name_str)
         return True
 
     # NOTE(aaronchongth):
@@ -241,7 +244,8 @@ class ModelDirectivesToSdf:
                                             scoped_base_frame)
         if split_scoped_name is None:
             print(f"Could not find a common scope for frame "
-                  "{directive['name']} with base frame {scoped_base_frame}")
+                  f"[{directive['name']}] with base frame "
+                  f"[{scoped_base_frame}]")
             return False
 
         # scoped_base_frame must now be relative to where the frame is
@@ -481,8 +485,7 @@ def main() -> None:
     if result_tree is not None:
         if args.output:
             result_tree.write(args.output,
-                              pretty_print=True,
-                              encoding="unicode")
+                              pretty_print=True)
         else:
             print(ET.tostring(result_tree,
                               pretty_print=True,
