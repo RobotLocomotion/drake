@@ -30,10 +30,10 @@ Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.3.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.3.0):
+[v1.4.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.4.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220517-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220517-focal.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220517-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220517-mac.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.4.0/drake-20220621-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.4.0/drake-20220621-focal.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.4.0/drake-20220621-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.4.0/drake-20220621-mac.tar.gz)
 
 ### Use as a C++ library
 
@@ -86,8 +86,8 @@ Mac are generated nightly and are available to download at:
 Older packages for specific dates are available by replacing ``latest`` with an
 8-digit date, e.g., ``20200102`` for January 2nd, 2020.
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-focal.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-mac.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20220621-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20220621-focal.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20220621-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20220621-mac.tar.gz)
 
 Individual packages are archived two years from their date of creation.
 
