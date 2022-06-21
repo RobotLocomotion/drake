@@ -20,7 +20,6 @@ from pydrake.geometry.render import (
 from pydrake.math import (
     RigidTransform,
     RollPitchYaw,
-    atan,
     )
 from pydrake.systems.framework import (
     InputPort,
