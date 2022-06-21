@@ -958,21 +958,54 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
   return B;
 }
 
+namespace {
+
+void ThrowForDisconnectedGeometryPort(std::string_view explanation) {
+  throw std::logic_error(
+      std::string(explanation) +
+      "\n\nThe provided context doesn't show a connection for the plant's "
+      "query input port (see MultibodyPlant::get_geometry_query_input_port())"
+      ". See https://drake.mit.edu/troubleshooting.html"
+      "#mbp-unconnected-query-object-port for help.");
+}
+
+}  // namespace
+
 template <typename T>
 const geometry::QueryObject<T>& MultibodyPlant<T>::EvalGeometryQueryInput(
-    const systems::Context<T>& context) const {
+    const systems::Context<T>& context, std::string_view explanation) const {
   this->ValidateContext(context);
   if (!get_geometry_query_input_port().HasValue(context)) {
-    throw std::logic_error(
-        "The geometry query input port (see "
-        "MultibodyPlant::get_geometry_query_input_port()) "
-        "of this MultibodyPlant is not connected. Please connect the"
-        "geometry query output port of a SceneGraph object "
-        "(see SceneGraph::get_query_output_port()) to this plants input "
-        "port in a Diagram.");
+    ThrowForDisconnectedGeometryPort(explanation);
   }
   return get_geometry_query_input_port()
       .template Eval<geometry::QueryObject<T>>(context);
+}
+
+template <typename T>
+void MultibodyPlant<T>::ValidateGeometryInput(
+    const systems::Context<T>& context, std::string_view explanation) const {
+  if (!IsValidGeometryInput(context)) {
+    ThrowForDisconnectedGeometryPort(explanation);
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::ValidateGeometryInput(
+    const systems::Context<T>& context,
+    const systems::OutputPort<T>& output_port) const {
+  if (!IsValidGeometryInput(context)) {
+    ThrowForDisconnectedGeometryPort(fmt::format(
+        "You've tried evaluating MultibodyPlant's '{}' output port.",
+        output_port.get_name()));
+  }
+}
+
+template <typename T>
+bool MultibodyPlant<T>::IsValidGeometryInput(
+    const systems::Context<T>& context) const {
+  return num_collision_geometries() == 0 ||
+         get_geometry_query_input_port().HasValue(context);
 }
 
 template <typename T>
@@ -1350,7 +1383,7 @@ void MultibodyPlant<T>::CalcPointPairPenetrations(
     std::vector<PenetrationAsPointPair<T>>* output) const {
   this->ValidateContext(context);
   if (num_collision_geometries() > 0) {
-    const auto& query_object = EvalGeometryQueryInput(context);
+    const auto& query_object = EvalGeometryQueryInput(context, __func__);
     *output = query_object.ComputePointPairPenetration();
   } else {
     output->clear();
@@ -1370,7 +1403,7 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
     return combined_frictions;
   }
 
-  const auto& query_object = EvalGeometryQueryInput(context);
+  const auto& query_object = EvalGeometryQueryInput(context, __func__);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   for (const auto& pair : contact_pairs) {
@@ -1393,6 +1426,10 @@ void MultibodyPlant<T>::CopyContactResultsOutput(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   this->ValidateContext(context);
+
+  // Guard against failure to acquire the geometry input deep in the call graph.
+  ValidateGeometryInput(context, get_contact_results_output_port());
+
   DRAKE_DEMAND(contact_results != nullptr);
   *contact_results = EvalContactResults(context);
 }
@@ -1468,7 +1505,7 @@ void MultibodyPlant<T>::AppendContactResultsContinuousPointPair(
       EvalVelocityKinematics(context);
 
   const geometry::QueryObject<T>& query_object =
-      EvalGeometryQueryInput(context);
+      EvalGeometryQueryInput(context, __func__);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
@@ -1775,7 +1812,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       friction_model_.stiction_tolerance());
 
-  const auto& query_object = EvalGeometryQueryInput(context);
+  const auto& query_object = EvalGeometryQueryInput(context, __func__);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   for (const ContactSurface<T>& surface : all_surfaces) {
@@ -2122,7 +2159,7 @@ void MultibodyPlant<T>::CalcContactSurfaces(
   this->ValidateContext(context);
   DRAKE_DEMAND(contact_surfaces != nullptr);
 
-  const auto& query_object = EvalGeometryQueryInput(context);
+  const auto& query_object = EvalGeometryQueryInput(context, __func__);
 
   *contact_surfaces = query_object.ComputeContactSurfaces(
       get_contact_surface_representation());
@@ -2144,7 +2181,7 @@ void MultibodyPlant<T>::CalcHydroelasticWithFallback(
   DRAKE_DEMAND(data != nullptr);
 
   if (num_collision_geometries() > 0) {
-    const auto &query_object = EvalGeometryQueryInput(context);
+    const auto &query_object = EvalGeometryQueryInput(context, __func__);
     data->contact_surfaces.clear();
     data->point_pairs.clear();
 
@@ -2216,7 +2253,7 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
     const int num_contact_pairs = num_point_pairs + num_quadrature_pairs;
     contact_pairs.reserve(num_contact_pairs);
 
-    const auto& query_object = EvalGeometryQueryInput(context);
+    const auto& query_object = EvalGeometryQueryInput(context, __func__);
     const geometry::SceneGraphInspector<T>& inspector =
         query_object.inspector();
 
@@ -2874,6 +2911,10 @@ void MultibodyPlant<T>::AddInForcesContinuous(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   this->ValidateContext(context);
 
+  // Guard against failure to acquire the geometry input deep in the call graph.
+  ValidateGeometryInput(
+      context, "You've tried evaluating time derivatives or their residuals.");
+
   // Forces from MultibodyTree elements are handled in MultibodyTreeSystem;
   // we need only handle MultibodyPlant-specific forces here.
   AddInForcesFromInputPorts(context, forces);
@@ -2894,6 +2935,10 @@ void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
   this->ValidateContext(context0);
   DRAKE_DEMAND(ac != nullptr);
   DRAKE_DEMAND(is_discrete());
+
+  // Guard against failure to acquire the geometry input deep in the call graph.
+  ValidateGeometryInput(
+      context0, "You've tried evaluating discrete forward dynamics.");
 
   // TODO(amcastro-tri): remove the entirety of the code we are bypassing here.
   // This requires one of our custom managers to become the default
@@ -3110,6 +3155,12 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       auto calc = [this, model_instance_index](
                       const systems::Context<T>& context,
                       systems::BasicVector<T>* result) {
+        // Guard against failure to acquire the geometry input deep in the call
+        // graph.
+        ValidateGeometryInput(
+            context,
+            get_generalized_contact_forces_output_port(model_instance_index));
+
         const contact_solvers::internal::ContactSolverResults<T>&
             solver_results = EvalContactSolverResults(context);
         this->CopyGeneralizedContactForcesOut(solver_results,
@@ -3129,6 +3180,12 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       auto calc = [this, model_instance_index](
                       const systems::Context<T>& context,
                       systems::BasicVector<T>* result) {
+        // Guard against failure to acquire the geometry input deep in the call
+        // graph.
+        ValidateGeometryInput(
+            context,
+            get_generalized_contact_forces_output_port(model_instance_index));
+
         result->SetFromVector(GetVelocitiesFromArray(
             model_instance_index,
             EvalGeneralizedContactForcesContinuous(context)));
@@ -3571,6 +3628,9 @@ void MultibodyPlant<T>::CalcReactionForces(
   this->ValidateContext(context);
   DRAKE_DEMAND(F_CJc_Jc_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_CJc_Jc_array->size()) == num_joints());
+
+  // Guard against failure to acquire the geometry input deep in the call graph.
+  ValidateGeometryInput(context, get_reaction_forces_output_port());
 
   const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
 
