@@ -280,55 +280,9 @@ void MultibodyPlantElementsMap::CopyJoint(const Joint<double>* src) {
   const Frame<double>* frame_on_parent_dest = frames_[&src->frame_on_parent()];
   const Frame<double>* frame_on_child_dest = frames_[&src->frame_on_child()];
 
-  std::unique_ptr<Joint<double>> joint;
-  // It is safe to use `dynamic_cast` here because all the joint classes used
-  // here are final, i.e., we don't run the risk of creating a joint of type
-  // A when the `src` joint is of type B derived from A.
-  // TODO(azeey) It would be nice if could use double dispatch for handling
-  // the following conditionals instead of using dynamic_casts.
-  if (auto ball_joint_src = dynamic_cast<const BallRpyJoint<double>*>(src);
-      ball_joint_src != nullptr) {
-    joint = std::make_unique<BallRpyJoint<double>>(
-        ball_joint_src->name(), *frame_on_parent_dest, *frame_on_child_dest,
-        ball_joint_src->damping());
-  } else if (auto prismatic_joint_src =
-                 dynamic_cast<const PrismaticJoint<double>*>(src);
-             prismatic_joint_src != nullptr) {
-    joint = std::make_unique<PrismaticJoint<double>>(
-        prismatic_joint_src->name(), *frame_on_parent_dest,
-        *frame_on_child_dest, prismatic_joint_src->translation_axis(),
-        prismatic_joint_src->damping());
-  } else if (auto revolute_joint_src =
-                 dynamic_cast<const RevoluteJoint<double>*>(src);
-             revolute_joint_src != nullptr) {
-    joint = std::make_unique<RevoluteJoint<double>>(
-        revolute_joint_src->name(), *frame_on_parent_dest, *frame_on_child_dest,
-        revolute_joint_src->revolute_axis(), revolute_joint_src->damping());
-  } else if (auto universal_joint_src =
-                 dynamic_cast<const UniversalJoint<double>*>(src);
-             universal_joint_src != nullptr) {
-    joint = std::make_unique<UniversalJoint<double>>(
-        universal_joint_src->name(), *frame_on_parent_dest,
-        *frame_on_child_dest, universal_joint_src->damping());
-  } else if (auto weld_joint_src = dynamic_cast<const WeldJoint<double>*>(src);
-             weld_joint_src != nullptr) {
-    joint = std::make_unique<WeldJoint<double>>(
-        weld_joint_src->name(), *frame_on_parent_dest, *frame_on_child_dest,
-        weld_joint_src->X_PC());
-  } else {
-    throw std::runtime_error(
-        fmt::format("Cannot clone joint type: {}", joint->type_name()));
-  }
-
-  joint->set_position_limits(src->position_lower_limits(),
-                             src->position_upper_limits());
-  joint->set_velocity_limits(src->velocity_lower_limits(),
-                             src->velocity_upper_limits());
-  joint->set_acceleration_limits(src->acceleration_lower_limits(),
-                                 src->acceleration_upper_limits());
-  joint->set_default_positions(src->default_positions());
-  const Joint<double>* joint_dest = &plant_dest_->AddJoint(std::move(joint));
-  joints_.insert({src, joint_dest});
+  const Joint<double>& joint_dest = plant_src_->CloneTo(
+      plant_dest_, *src, *frame_on_parent_dest, *frame_on_child_dest);
+  joints_.insert({src, &joint_dest});
 }
 
 void MultibodyPlantElementsMap::CopyJointActuator(

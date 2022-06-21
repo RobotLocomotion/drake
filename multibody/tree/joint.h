@@ -504,6 +504,12 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 #endif
   // End of hidden Doxygen section.
 
+  const Joint<T>& CloneTo(internal::MultibodyTree<T>* tree,
+                          const Frame<T>& dest_frame_on_parent,
+                          const Frame<T>& dest_frame_on_child) const {
+    return DoCloneTo(tree, dest_frame_on_parent, dest_frame_on_child);
+  }
+
  protected:
   /// (Advanced) Structure containing all the information needed to build the
   /// MultibodyTree implementation for a %Joint. At MultibodyTree::Finalize() a
@@ -674,6 +680,10 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   virtual std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const = 0;
   /// @}
+
+  virtual const Joint<T>& DoCloneTo(
+      internal::MultibodyTree<T>* tree, const Frame<T>& dest_frame_on_parent,
+      const Frame<T>& dest_frame_on_child) const = 0;
 
   /// This method must be implemented by derived classes in order to provide
   /// JointImplementationBuilder a BluePrint of their internal implementation

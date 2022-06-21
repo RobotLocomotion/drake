@@ -4121,6 +4121,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const geometry::SceneGraph<T>* get_scene_graph() const {
     return scene_graph_;
   }
+
+  template <typename U, typename... Args>
+  const U& CloneTo(MultibodyPlant<T>* dest, const U& element, Args&&... args) const {
+    return element.CloneTo(&dest->mutable_tree(), args...);
+  }
+
   /// @} <!-- Introspection -->
 
   using internal::MultibodyTreeSystem<T>::is_discrete;

@@ -252,6 +252,9 @@ class BallRpyJoint final : public Joint<T> {
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
+  const Joint<T>& DoCloneTo(internal::MultibodyTree<T>* tree,
+                            const Frame<T>& dest_frame_on_parent,
+                            const Frame<T>& dest_frame_on_child) const override;
   // Make BallRpyJoint templated on every other scalar type a friend of
   // BallRpyJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of BallRpyJoint<T>.
@@ -284,6 +287,12 @@ class BallRpyJoint final : public Joint<T> {
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
+
+  // Helper method to make a clone templated on ToScalar.
+  template <typename ToScalar>
+  std::unique_ptr<BallRpyJoint<ToScalar>> TemplatedDoCloneToScalar(
+      const Frame<ToScalar>& frame_on_parent_body_clone,
+      const Frame<ToScalar>& frame_on_child_body_clone) const;
 
   // This joint's damping constant in N⋅m⋅s.
   double damping_{0};
