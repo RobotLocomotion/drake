@@ -32,14 +32,16 @@ build:kcov_everything --nocache_test_results
 build:kcov_everything --test_timeout=600,3000,9000,36000
 
 ### ASan build. Clang only. ###
-build:asan --features=asan
 build:asan --build_tests_only
+build:asan --copt=-g
 # https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
 build:asan --copt=-fno-common
+build:asan --copt=-fsanitize=address
 build:asan --copt=-fsanitize-address-use-after-scope
 build:asan --copt=-fstandalone-debug
 build:asan --copt=-O0
 build:asan --copt=-fno-omit-frame-pointer
+build:asan --linkopt=-fsanitize=address
 build:asan --linkopt=-fsanitize-address-use-after-scope
 # ld.gold: warning: Cannot export local symbol __asan_extra_spill_area
 build:asan --linkopt=-fuse-ld=ld
@@ -59,17 +61,19 @@ build:asan --test_lang_filters=-sh,-py
 build:asan --test_timeout=150,750,2250,9000  # 2.5x
 
 ### ASan everything build. Clang only. ###
-build:asan_everything --features=asan
 build:asan_everything --build_tests_only
 build:asan_everything --define=WITH_GUROBI=ON
 build:asan_everything --define=WITH_MOSEK=ON
 build:asan_everything --define=WITH_SNOPT=ON
+build:asan_everything --copt=-g
 # https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
 build:asan_everything --copt=-fno-common
+build:asan_everything --copt=-fsanitize=address
 build:asan_everything --copt=-fsanitize-address-use-after-scope
 build:asan_everything --copt=-fstandalone-debug
 build:asan_everything --copt=-O0
 build:asan_everything --copt=-fno-omit-frame-pointer
+build:asan_everything --linkopt=-fsanitize=address
 build:asan_everything --linkopt=-fsanitize-address-use-after-scope
 # ld.gold: warning: Cannot export local symbol __asan_extra_spill_area
 build:asan_everything --linkopt=-fuse-ld=ld
@@ -89,12 +93,14 @@ build:asan_everything --test_lang_filters=-sh,-py
 build:asan_everything --test_timeout=150,750,2250,9000  # 2.5x
 
 ### LSan build. Clang only. ###
-build:lsan --features=lsan
 build:lsan --build_tests_only
+build:lsan --copt=-g
 build:lsan --copt=-fno-common
+build:lsan --copt=-fsanitize=leak
 build:lsan --copt=-fstandalone-debug
 build:lsan --copt=-O0
 build:lsan --copt=-fno-omit-frame-pointer
+build:lsan --linkopt=-fsanitize=leak
 build:lsan --run_under=//tools/dynamic_analysis:lsan
 build:lsan --test_env=LSAN_OPTIONS
 build:lsan --test_env=LSAN_SYMBOLIZER_PATH
@@ -102,15 +108,17 @@ build:lsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_lsan
 build:lsan --test_lang_filters=-sh,-py
 
 ### LSan everything build. Clang only. ###
-build:lsan_everything --features=lsan
 build:lsan_everything --build_tests_only
 build:lsan_everything --define=WITH_GUROBI=ON
 build:lsan_everything --define=WITH_MOSEK=ON
 build:lsan_everything --define=WITH_SNOPT=ON
+build:lsan_everything --copt=-g
 build:lsan_everything --copt=-fno-common
+build:lsan_everything --copt=-fsanitize=leak
 build:lsan_everything --copt=-fstandalone-debug
 build:lsan_everything --copt=-O0
 build:lsan_everything --copt=-fno-omit-frame-pointer
+build:lsan_everything --linkopt=-fsanitize=leak
 build:lsan_everything --test_tag_filters=-no_lsan
 build:lsan_everything --run_under=//tools/dynamic_analysis:lsan
 build:lsan_everything --test_env=LSAN_OPTIONS
@@ -118,8 +126,9 @@ build:lsan_everything --test_env=LSAN_SYMBOLIZER_PATH
 build:lsan_everything --test_lang_filters=-sh,-py
 
 ### TSan build. ###
-build:tsan --features=tsan
 build:tsan --build_tests_only
+build:tsan --copt -g
+build:tsan --copt -fsanitize=thread
 build:tsan --copt -O1
 build:tsan --copt -fno-omit-frame-pointer
 # From Tsan documentation for Clang-3.9:
@@ -128,6 +137,7 @@ build:tsan --copt -fno-omit-frame-pointer
 # -pie flag had been supplied if linking an executable
 # Bug in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67308
 build:tsan --noforce_pic
+build:tsan --linkopt -fsanitize=thread
 build:tsan --run_under=//tools/dynamic_analysis:tsan
 build:tsan --test_env=TSAN_OPTIONS
 build:tsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_tsan
@@ -137,11 +147,12 @@ build:tsan --test_lang_filters=-sh,-py
 build:tsan --test_timeout=300,1500,5400,18000
 
 ### TSan everything build. ###
-build:tsan_everything --features=tsan
 build:tsan_everything --build_tests_only
 build:tsan_everything --define=WITH_GUROBI=ON
 build:tsan_everything --define=WITH_MOSEK=ON
 build:tsan_everything --define=WITH_SNOPT=ON
+build:tsan_everything --copt -g
+build:tsan_everything --copt -fsanitize=thread
 build:tsan_everything --copt -O1
 build:tsan_everything --copt -fno-omit-frame-pointer
 # From Tsan documentation for Clang-3.9:
@@ -150,6 +161,7 @@ build:tsan_everything --copt -fno-omit-frame-pointer
 # -pie flag had been supplied if linking an executable
 # Bug in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67308
 build:tsan_everything --noforce_pic
+build:tsan_everything --linkopt -fsanitize=thread
 build:tsan_everything --test_tag_filters=-no_tsan
 build:tsan_everything --run_under=//tools/dynamic_analysis:tsan
 build:tsan_everything --test_env=TSAN_OPTIONS
@@ -159,8 +171,9 @@ build:tsan_everything --test_lang_filters=-sh,-py
 build:tsan_everything --test_timeout=300,1500,5400,18000
 
 ### UBSan build. ###
-build:ubsan --features=ubsan
 build:ubsan --build_tests_only
+build:ubsan --copt -g
+build:ubsan --copt -fsanitize=undefined
 # Since Bazel uses clang instead of clang++, enabling -fsanitize=function,vptr
 # would require extra linkopts that cause segmentation faults on pure C code.
 build:ubsan --copt -fno-sanitize=float-divide-by-zero,function,vptr
@@ -169,6 +182,7 @@ build:ubsan --copt -fno-omit-frame-pointer
 # TODO(jamiesnape): Find a solution to using sanitizer blacklists with the
 # autogenerated toolchain.
 # build:ubsan --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
+build:ubsan --linkopt -fsanitize=undefined
 build:ubsan --run_under=//tools/dynamic_analysis:ubsan
 build:ubsan --test_env=UBSAN_OPTIONS
 build:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
@@ -178,11 +192,12 @@ build:ubsan --test_lang_filters=-sh,-py
 build:ubsan --test_timeout=120,600,1800,7200
 
 ### UBSan everything build. ###
-build:ubsan_everything --features=ubsan
 build:ubsan_everything --build_tests_only
 build:ubsan_everything --define=WITH_GUROBI=ON
 build:ubsan_everything --define=WITH_MOSEK=ON
 build:ubsan_everything --define=WITH_SNOPT=ON
+build:ubsan_everything --copt -g
+build:ubsan_everything --copt -fsanitize=undefined
 # Since Bazel uses clang instead of clang++, enabling -fsanitize=function,vptr
 # would require extra linkopts that cause segmentation faults on pure C code.
 build:ubsan_everything --copt -fno-sanitize=float-divide-by-zero,function,vptr
@@ -191,6 +206,7 @@ build:ubsan_everything --copt -fno-omit-frame-pointer
 # TODO(jamiesnape): Find a solution to using sanitizer blacklists with the
 # autogenerated toolchain.
 # build:ubsan_everything --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
+build:ubsan_everything --linkopt -fsanitize=undefined
 build:ubsan_everything --test_tag_filters=-no_ubsan
 build:ubsan_everything --run_under=//tools/dynamic_analysis:ubsan
 build:ubsan_everything --test_env=UBSAN_OPTIONS
