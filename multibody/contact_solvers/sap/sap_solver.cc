@@ -329,8 +329,8 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
   // verify monotonic convergence.
   const double ell_slop =
       parameters_.relative_slop / 10.0 * std::max(1.0, ell_scale);
-  if (abs(dell_dalpha0) < ell_slop) return std::make_pair(1.0, 0);
-  if (abs(dell) < ell_slop) return std::make_pair(alpha, 0);
+  // N.B. We already checked that dell ≥ 0.
+  if (dell < ell_slop) return std::make_pair(alpha, 0);
 
   // Verifies if ell(alpha) satisfies Armijo's criterion.
   auto satisfies_armijo = [c, ell0, dell_dalpha0](const T& alpha_in,
@@ -347,7 +347,7 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
     alpha *= rho;
     ell = CalcCostAlongLine(context, search_direction_data, alpha, scratch);
 
-    // If variations in the cost are withing round-off errors (to within some
+    // If variations in the cost are close to round-off errors (within some
     // threshold), it is because the gradient is close to zero and we return
     // with the latest value of alpha.
     const T dell_dalpha_approx = (ell - ell_prev) / (alpha - alpha_prev);

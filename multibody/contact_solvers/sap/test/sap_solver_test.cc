@@ -372,7 +372,7 @@ PizzaSaverProblem MakeStictionProblem() {
   const double dt = 0.01;
   const double mu = 2. / 3.;
   const double k = 1.0e4;
-  const double taud = dt;
+  const double taud = 2.0 * dt;
   return PizzaSaverProblem(dt, mu, k, taud);
 }
 
