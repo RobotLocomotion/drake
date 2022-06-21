@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <ostream>
 #include <string>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
@@ -195,6 +196,15 @@ class Identifier {
   friend void hash_append(HashAlgorithm& hasher, const Identifier& i) noexcept {
     using drake::hash_append;
     hash_append(hasher, i.value_);
+  }
+
+  // TODO(jwnimmer-tri) Implementing both hash_append and AbslHashValue yields
+  // undesirable redundancy. Is there a way to avoid repeating ourselves?
+  /** Implements Abseil's hashing concept.
+   See https://abseil.io/docs/cpp/guides/hash. */
+  template <typename H>
+  friend H AbslHashValue(H state, const Identifier& id) {
+    return H::combine(std::move(state), id.value_);
   }
 
   /** (Internal use only) Compares this possibly-invalid Identifier with one
