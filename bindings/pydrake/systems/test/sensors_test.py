@@ -20,6 +20,7 @@ from pydrake.geometry.render import (
 from pydrake.math import (
     RigidTransform,
     RollPitchYaw,
+    atan,
     )
 from pydrake.systems.framework import (
     InputPort,
@@ -179,6 +180,7 @@ class TestSensors(unittest.TestCase):
         fov_y = np.pi / 4
         focal_y = height / 2 / np.tan(fov_y / 2)
         focal_x = focal_y
+        fov_x = 2 * atan(width / (2 * focal_x))
         center_x = width / 2 - 0.5
         center_y = height / 2 - 0.5
         intrinsic_matrix = np.array([
@@ -202,6 +204,8 @@ class TestSensors(unittest.TestCase):
             self.assertEqual(info.focal_y(), focal_y)
             self.assertEqual(info.center_x(), center_x)
             self.assertEqual(info.center_y(), center_y)
+            self.assertEqual(info.fov_x(), fov_x)
+            self.assertEqual(info.fov_y(), fov_y)
             self.assertTrue(
                 (info.intrinsic_matrix() == intrinsic_matrix).all())
             assert_pickle(self, info, mut.CameraInfo.intrinsic_matrix)
