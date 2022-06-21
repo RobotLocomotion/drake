@@ -133,7 +133,7 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
   double ell_previous = ell;
   bool converged = false;
   double alpha = 1.0;
-  int ls_iters = 0;
+  int num_line_search_iters = 0;
   for (;; ++k) {
     // We first verify the stopping criteria. If satisfied, we skip expensive
     // factorizations.
@@ -159,12 +159,13 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
           parameters_.relative_slop * std::max(1.0, ell_scale);
       if (ell > ell_previous + ell_slop) {
         DRAKE_LOGGER_DEBUG(
-            "At iter {} cost increased by: {}. alpha= {}. Relative momentum "
+            "At iter {} cost increased by: {}. alpha = {}. Relative momentum "
             "residual = {}\n",
             k, std::abs(ell - ell_previous), alpha,
             momentum_residual / momentum_scale);
         if (parameters_.nonmonotonic_convergence_is_error) {
-          throw std::runtime_error("Non-monotonic convergence detected.");
+          throw std::runtime_error(
+              "SapSolver: Non-monotonic convergence detected.");
         }
       }
       if (!parameters_.use_dense_algebra && supernodal_solver == nullptr) {
@@ -186,9 +187,9 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
                             &search_direction_data);
     const VectorX<double>& dv = search_direction_data.dv;
 
-    std::tie(alpha, ls_iters) = PerformBackTrackingLineSearch(
+    std::tie(alpha, num_line_search_iters) = PerformBackTrackingLineSearch(
         *context, search_direction_data, scratch.get());
-    stats_.num_line_search_iters += ls_iters;
+    stats_.num_line_search_iters += num_line_search_iters;
 
     // Update state.
     model_->GetMutableVelocities(context.get()) += alpha * dv;
