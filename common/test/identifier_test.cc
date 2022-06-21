@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "absl/container/flat_hash_set.h"
 #include <gtest/gtest.h>
 
 #include "drake/common/sorted_pair.h"
@@ -104,6 +105,29 @@ TEST_F(IdentifierTests, ServeAsMapKey) {
   EXPECT_EQ(ids.size(), 2);
 
   EXPECT_EQ(ids.find(a3_), ids.end());
+}
+
+// Checks the abseil-specific hash function. When a class does not provide an
+// abseil-specific hash function, abseil will fall back to invoking std::hash
+// on the class to obtain a size_t hash value and then feeding that size_t into
+// the abseil hasher. This leads to slow and bloated object code. We want to
+// prove that our abseil-specific hash function is being used; we can do that
+// by checking which hash value comes out of an absl container hasher.
+TEST_F(IdentifierTests, AbslHash) {
+  // Compute the hash value used by an absl unordered container.
+  // We'll want to demonstrate that this is the specialized hash value.
+  absl::flat_hash_set<AId>::hasher absl_id_hasher;
+  const size_t absl_hash = absl_id_hasher(a1_);
+
+  // Compute the unspecialized hash value that would be seen in case absl
+  // delegated to the std hasher.
+  const size_t std_hash = std::hash<AId>{}(a1_);
+  absl::flat_hash_set<size_t>::hasher absl_uint_hasher;
+  const size_t absl_hash_via_std_hash = absl_uint_hasher(std_hash);
+
+  // To demonstrate that the specialization worked, the specialized hash must
+  // differ from the fallback hash.
+  EXPECT_NE(absl_hash, absl_hash_via_std_hash);
 }
 
 // Confirms that SortedPair<FooId> can serve as a key in STL containers.

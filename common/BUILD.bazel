@@ -907,6 +907,7 @@ drake_cc_googletest(
         ":sorted_pair",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "@abseil_cpp_internal//absl/container:flat_hash_set",
     ],
 )
 
