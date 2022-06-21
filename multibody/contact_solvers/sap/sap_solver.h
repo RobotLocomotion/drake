@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -119,6 +120,24 @@ struct SapSolverParameters {
   // SAP uses sparse supernodal algebra by default. Set this to true to use
   // dense algebra instead. Typically used for testing.
   bool use_dense_algebra{false};
+
+  // Dimensionless number used to allow some slop on the check near zero for
+  // certain quantities such as the gradient of the cost.
+  // It is also used to check for monotonic convergence. In particular, we allow
+  // a small increase in the cost due to round-off errors
+  //   ℓᵏ ≤ ℓᵏ⁻¹ + ε
+  // where ε = relative_slop*max(1, (ℓᵏ+ℓᵏ⁻¹)/2).
+  // If this condition is not satisfied and nonmonotonic_convergence_is_error =
+  // true, SapSolver throws an exception.
+  double relative_slop{1000 * std::numeric_limits<double>::epsilon()};
+
+  // (For debugging) Even though SAP's convergence in monotonic, round-off
+  // errors could cause small cost increases on the order of machine epsilon.
+  // SAP's implementation uses a `realtive_slop` so that round-off errors do not
+  // cause false negatives. For debugging purposes however, this options allows
+  // to trigger an exception if the cost increases. For details, see
+  // documentation on `relative_slop`.
+  bool nonmonotonic_convergence_is_error{false};
 };
 
 // This class implements the Semi-Analytic Primal (SAP) solver described in
@@ -247,10 +266,13 @@ class SapSolver {
   // the last Newton iteration values of generalized velocities and search
   // direction, respectively. This methods uses the O(n) strategy described in
   // [Castro et al., 2021].
+  // If dell_dalpha != nullptr, on return dell_dalpha contains the value of the
+  // derivative dℓ/dα = ∇ℓ(vᵐ)⋅Δvᵐ.
   // @pre context was created by the underlying SapModel.
   T CalcCostAlongLine(const systems::Context<T>& context,
                       const SearchDirectionData& search_direction_data,
-                      const T& alpha, systems::Context<T>* scratch) const;
+                      const T& alpha, systems::Context<T>* scratch,
+                      T* dell_dalpha = nullptr) const;
 
   // Approximation to the 1D minimization problem α = argmin ℓ(α) = ℓ(v + αΔv)
   // over α. We define ϕ(α) = ℓ₀ + α c ℓ₀', where ℓ₀ = ℓ(0), ℓ₀' = dℓ/dα(0) and
