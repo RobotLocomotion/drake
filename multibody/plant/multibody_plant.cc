@@ -927,12 +927,10 @@ const geometry::QueryObject<T>& MultibodyPlant<T>::EvalGeometryQueryInput(
   this->ValidateContext(context);
   if (!get_geometry_query_input_port().HasValue(context)) {
     throw std::logic_error(
-        "The geometry query input port (see "
-        "MultibodyPlant::get_geometry_query_input_port()) "
-        "of this MultibodyPlant is not connected. Please connect the"
-        "geometry query output port of a SceneGraph object "
-        "(see SceneGraph::get_query_output_port()) to this plants input "
-        "port in a Diagram.");
+        "The provided context doesn't show a connection for the plant's "
+        "query input port (see MultibodyPlant::get_geometry_query_input_port())"
+        ". See https://drake.mit.edu/trouble_shooting.html"
+        "#mbp-unconnected-query-object-port for help.");
   }
   return get_geometry_query_input_port()
       .template Eval<geometry::QueryObject<T>>(context);
