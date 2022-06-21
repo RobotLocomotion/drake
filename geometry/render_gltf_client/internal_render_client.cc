@@ -1,12 +1,10 @@
 #include "drake/geometry/render_gltf_client/internal_render_client.h"
 
-#include <atomic>
 #include <map>
 #include <memory>
-#include <regex>
 #include <string>
 #include <type_traits>
-#include <utility>  // std::pair
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
@@ -55,7 +53,8 @@ void AddField(DataFieldsMap* data_map, const std::string& field_name,
   AddField(data_map, field_name, std::to_string(field_data));
 }
 
-// Overload required to prevent bad conversions between const char* and long.
+/* Overload required to prevent bad conversions between const char* and
+ std::string. */
 template <>
 void AddField<const char*>(DataFieldsMap* data_map,
                            const std::string& field_name,
@@ -96,7 +95,7 @@ void AddField<RenderImageType>(DataFieldsMap* data_map,
  @param path
    The filename of the path that image_exporter has data from.  Used to populate
    the exception message.
- @throws std::runtime_error
+ @throws std::exception
    If the expected_width or expected_height are not the same as image_exporter,
    or if a 3D image was provided (depth > 1).
  */
@@ -116,17 +115,7 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
    images; VTK supports 3D images so we additionally check that the depth
    dimension is 1.  A TIFF image, for example, can have multiple layers. */
   const int image_depth = extent[5] - extent[4] + 1;
-  if (image_depth != 1) {
-    /* no cover: no tests ever use a 3D image, but the check is important to
-     keep in order to guarantee the loops in LoadColorImage, as well as calls
-     to image_exporter->Export are safe. */
-    // LCOV_EXCL_START
-    throw std::runtime_error(fmt::format(
-        "RenderClient: expected two dimensional image, but loaded image from "
-        "'{}' has a z dimension of {}.",
-        path, image_depth));
-    // LCOV_EXCL_STOP
-  }
+  DRAKE_THROW_UNLESS(image_depth == 1);
 }
 
 /* Returns '{url}' if port is <= 0, '{url}:{port}' otherwise.  Used for
@@ -227,9 +216,9 @@ std::string RenderClient::RenderOnServer(
     if (response.data_path.has_value()) {
       try {
         /* See if the file is "small enough" to be json rather than an image.
-         Anything larger than 8192 bytes is considered too large. */
+         Anything larger than or equal to 8192 bytes is considered too large. */
         const auto& data_path = response.data_path.value();
-        auto bin_size = fs::file_size(data_path);
+        const auto bin_size = fs::file_size(data_path);
         if (bin_size > 0 && bin_size < 8192) {
           std::ifstream bin_in(data_path, std::ios::binary);
           if (bin_in.is_open()) {
@@ -284,32 +273,26 @@ std::string RenderClient::RenderOnServer(
    from e.g., "XYZ.curl" to the correct image file extension for better
    housekeeping in the temp_directory.
 
-   If the server did not return one of the kinds of files that are supported,
-   error out now.
+   If the server did not return one of the supported formats, error out now.
 
    NOTE: do not rely on or trust the server to (correctly) report a valid mime
-   type for the sent image.  VTK's image readers 'CanReadFile' methods check
+   type for the sent image.  VTK image readers' `CanReadFile` methods check
    if the file *content* can actually be loaded (regardless of extension). */
-  std::string image_types_tried = "";  // Build up for error message at end.
-
   vtkNew<vtkPNGReader> png_reader;
   if (png_reader->CanReadFile(bin_out_path.c_str())) {
     return RenameHttpServiceResponse(bin_out_path, scene_path, ".png");
   }
-  image_types_tried += "PNG";
 
   vtkNew<vtkTIFFReader> tiff_reader;
   if (tiff_reader->CanReadFile(bin_out_path.c_str())) {
     return RenameHttpServiceResponse(bin_out_path, scene_path, ".tiff");
   }
-  image_types_tried += ", TIFF";
 
   throw std::runtime_error(fmt::format(
       "RenderClient: while trying to render the scene '{}' with a sha256 hash "
       "of '{}', the file returned by the server saved in '{}' is not "
-      "understood as an image type that is supported.  Image types attempted "
-      "loading as: {}.",
-      scene_path, scene_sha256, bin_out_path, image_types_tried));
+      "understood as an image type that is supported, i.e., PNG or TIFF.",
+      scene_path, scene_sha256, bin_out_path));
 }
 
 std::string RenderClient::ComputeSha256(const std::string& path) const {
@@ -317,19 +300,16 @@ std::string RenderClient::ComputeSha256(const std::string& path) const {
     throw std::runtime_error(
         fmt::format("ComputeSha256: input file '{}' does not exist.", path));
   }
-  try {
-    std::ifstream f_in(path, std::ios::binary);
-    if (!f_in.good()) {
-      throw std::runtime_error(fmt::format("cannot open file '{}'.", path));
-    }
-    std::vector<unsigned char> hash(picosha2::k_digest_size);
-    picosha2::hash256(f_in, hash.begin(), hash.end());
-    f_in.close();
-    return picosha2::bytes_to_hex_string(hash.begin(), hash.end());
-  } catch (const std::exception& e) {
-    throw std::runtime_error("ComputeSha256: unable to compute hash: " +
-                             std::string(e.what()));
+
+  std::ifstream f_in(path, std::ios::binary);
+  if (!f_in.good()) {
+    throw std::runtime_error(
+        fmt::format("ComputeSha256: cannot open file '{}'.", path));
   }
+  std::vector<unsigned char> hash(picosha2::k_digest_size);
+  picosha2::hash256(f_in, hash.begin(), hash.end());
+  f_in.close();
+  return picosha2::bytes_to_hex_string(hash.begin(), hash.end());
 }
 
 std::string RenderClient::RenameHttpServiceResponse(
@@ -346,8 +326,7 @@ std::string RenderClient::RenameHttpServiceResponse(
   if (!fs::exists(reference_path)) {
     throw std::runtime_error(
         fmt::format("RenderClient: cannot rename '{0}' to '{1}' with extension "
-                    "'{2}': '{1}' "
-                    "does not exist.",
+                    "'{2}' as '{1}' does not exist.",
                     response_data_path, reference_path, extension));
   }
 

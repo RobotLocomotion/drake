@@ -603,8 +603,8 @@ GTEST_TEST(RenderClient, RenderOnServer) {
         fmt::format(
             "RenderClient: while trying to render the scene '{}' with a sha256 "
             "hash of '{}', the file returned by the server saved in '{}' is "
-            "not understood as an image type that is supported.  Image types "
-            "attempted loading as: PNG, TIFF.",
+            "not understood as an image type that is supported, i.e., PNG or "
+            "TIFF.",
             fake_scene_path, fake_scene_sha256, response_path));
   }
 
@@ -674,9 +674,7 @@ GTEST_TEST(RenderClient, ComputeSha256) {
     fs::permissions(bad_path, fs::perms::all, fs::perm_options::remove);
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.ComputeSha256(bad_path),
-        fmt::format(
-            "ComputeSha256: unable to compute hash: cannot open file '{}'.",
-            bad_path));
+        fmt::format("ComputeSha256: cannot open file '{}'.", bad_path));
     fs::remove(bad_path);
   }
 
@@ -732,8 +730,8 @@ GTEST_TEST(RenderClient, RenameHttpServiceResponse) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenameHttpServiceResponse(scene, unlikely, ".tiff"),
         fmt::format(
-            "RenderClient: cannot rename '{0}' to '{1}' with extension '{2}': "
-            "'{1}' does not exist.",
+            "RenderClient: cannot rename '{0}' to '{1}' with extension '{2}' "
+            "as '{1}' does not exist.",
             scene, unlikely, ".tiff"));
 
     // Failure case 3: destination file already exists.

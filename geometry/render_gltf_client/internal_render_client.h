@@ -60,7 +60,7 @@ class RenderClient {
      The path to the input scene that is being rendered.  The client will use
      the basename of the file path to construct the final output file, stored
      in its temp_directory().  For example, `/some/path/scene.gltf` would be
-     saved in `{temp_directory()}/scene.gltf.png` (if the server returned a PNG
+     saved in `{temp_directory()}/scene.png` (if the server returned a PNG
      file), regardless of whether `/some/path` is in temp_directory().  Users
      are strongly encouraged to store their scene files in temp_directory().
    @param mime_type
@@ -77,11 +77,10 @@ class RenderClient {
      `{temp_directory()}/{$(basename scene_path)} + extension`, where
      `extension` will depend on what the server returns, e.g., `.png` or
      `.tiff`.
-   @throws std::runtime_error
-     If a rendering cannot be obtained from the server for any reason.
-   @throws std::logic_error
-     If `image_type` is a depth image but `depth_range` was not provided, or
-     `depth_range` was provided but `image_type` is color or label. */
+   @throws std::exception
+     If a rendering cannot be obtained from the server for any reason, or
+     `depth_range` was not provided for a depth render, or `depth_range` was
+     provided but `image_type` is color or label. */
   std::string RenderOnServer(
       const drake::geometry::render::RenderCameraCore& camera_core,
       RenderImageType image_type, const std::string& scene_path,
@@ -94,7 +93,7 @@ class RenderClient {
   //@{
 
   /* Computes and returns the `sha256sum` of the specified `path`.
-   @throws std::runtime_error
+   @throws std::exception
      If the `path` cannot be opened or the hash fails to compute.
    */
   std::string ComputeSha256(const std::string& path) const;
@@ -147,12 +146,12 @@ class RenderClient {
    (RGB) or four (RGBA) channels.
 
    @param path
-     The path to the file to try and load as a depth image.  The path returned
+     The path to the file to try and load as a color image.  The path returned
      by RetrieveRender() can be used directly for this parameter.
    @param color_image_out
      The already allocated drake image buffer to load `path` into.
 
-   @throws std::runtime_error
+   @throws std::exception
      If the specified `path` cannot be loaded as an unsigned char RGB or RGBA
      PNG file, or the image denoted by `path` does not have the same width and
      height of the specified `color_image_out`.*/
@@ -175,7 +174,7 @@ class RenderClient {
      by RetrieveRender() can be used directly for this parameter.
    @param depth_image_out
      The already allocated drake image buffer to load `path` into.
-   @throws std::runtime_error
+   @throws std::exception
      If the specified `path` cannot be loaded as a single channel 16-bit or
      32-bit TIFF image, or the image denoted by `path` does not have the same
      width and height of the specified `depth_image_out`. */
@@ -192,7 +191,7 @@ class RenderClient {
      by RetrieveRender() can be used directly for this parameter.
    @param label_image_out
      The already allocated drake image buffer to load `path` into.
-   @throws std::runtime_error
+   @throws std::exception
      If the specified `path` cannot be loaded as a single channel unsigned short
      PNG image, or the image denoted by `path` does not have the same width and
      height of the specified `label_image_out`. */
@@ -234,8 +233,8 @@ class RenderClient {
    instead, specify `port` to override that. */
   int port() const { return port_; }
 
-  /* The render endpoint of the server, used in RetrieveRender().
-   Should **not** include a preceding slash. */
+  /* The render endpoint of the server, used in RetrieveRender().  Should
+   **not** include a preceding slash. */
   const std::string& render_endpoint() const { return render_endpoint_; }
 
   /* Whether or not the client should be verbose including logging all curl
