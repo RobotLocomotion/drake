@@ -184,6 +184,7 @@ def default_globals():
     import numpy as np
     from mpl_toolkits.mplot3d import Axes3D
     import matplotlib
+    # If the pyplot import fails, try `sudo apt install python3-tk`.
     import matplotlib.pyplot as plt
     import pylab  # See `%pylab?` in IPython.
 
