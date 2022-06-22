@@ -27,8 +27,6 @@ from pydrake.systems.framework import (DiagramBuilder, LeafSystem,
 from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.primitives import FirstOrderLowPassFilter, VectorLogSink
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
-from pydrake.systems.planar_scenegraph_visualizer import \
-    ConnectPlanarSceneGraphVisualizer
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
 from drake.examples.manipulation_station.schunk_wsg_buttons import \
@@ -241,8 +239,6 @@ def main():
         # Configure the planar visualization.
         if args.setup == 'planar':
             meshcat.Set2dRenderMode()
-            ConnectPlanarSceneGraphVisualizer(
-                builder, station.get_scene_graph(), geometry_query_port)
 
         # Connect and publish to drake visualizer.
         DrakeVisualizer.AddToBuilder(builder, geometry_query_port)

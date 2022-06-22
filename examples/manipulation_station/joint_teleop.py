@@ -23,8 +23,6 @@ from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
 from pydrake.geometry import Meshcat, MeshcatVisualizerCpp
 from pydrake.systems.primitives import FirstOrderLowPassFilter, VectorLogSink
-from pydrake.systems.planar_scenegraph_visualizer import \
-    ConnectPlanarSceneGraphVisualizer
 
 
 def main():
@@ -102,8 +100,6 @@ def main():
 
         if args.setup == 'planar':
             meshcat.Set2dRenderMode()
-            pyplot_visualizer = ConnectPlanarSceneGraphVisualizer(
-                builder, station.get_scene_graph(), geometry_query_port)
 
     if args.browser_new is not None:
         url = meshcat.web_url()
