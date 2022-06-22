@@ -5,7 +5,6 @@ llvm-12
 python3-dateutil
 python3-dbg
 python3-flask
-python3-jwcrypto
 python3-nbconvert
 python3-nbformat
 python3-pandas
