@@ -122,7 +122,7 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
 template <typename T>
 Matrix3<T> RotationMatrix<T>::QuaternionToRotationMatrix(
     const Eigen::Quaternion<T> &quaternion, const T &two_over_norm_squared) {
-  // DRAKE_ASSERT_VOID(ThrowIfQuaternionIsNotValid(quaternion));
+  DRAKE_ASSERT_VOID(ThrowIfQuaternionIsNotValid(quaternion, __func__));
   Matrix3<T> m;
 
   const T w = quaternion.w();

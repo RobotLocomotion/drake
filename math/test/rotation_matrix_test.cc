@@ -1050,17 +1050,16 @@ TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
   if (kDrakeAssertIsArmed) {
     // A zero quaternion should throw an exception.
     const Eigen::Quaterniond q_zero(0, 0, 0, 0);
-    // const RotationMatrix<double> R_badA(q_zero);
-    // ASSERT_TRUE(R_badA.IsNearlyEqualTo(R_badA, 40 * kEpsilon));
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>(q_zero),
-      "Error: Rotation matrix contains an element that is infinity or NaN.");
-    // EXPECT_THROW(const RotationMatrix<double> R_bad(q_zero), std::exception);
+      "Error in QuaternionToRotationMatrix\\(\\):"
+      " All the elements in a quaternion are zero\\.");
 
     // A quaternion containing a NaN throw an exception.
     double nan = std::numeric_limits<double>::quiet_NaN();
     const Eigen::Quaterniond q_nan(nan, 0, 0, 0);
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>(q_nan),
-      "Error: Rotation matrix contains an element that is infinity or NaN.");
+      "Error in QuaternionToRotationMatrix\\(\\):"
+      " Quaternion contains an element that is infinity or NaN\\.");
   }
 }
 

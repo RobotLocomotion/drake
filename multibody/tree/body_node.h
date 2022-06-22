@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -1070,13 +1071,17 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Singularity means that a non-physical hinge mapping matrix was used or
       // that this articulated body inertia has some non-physical quantities
       // (such as zero moment of inertia along an axis which the hinge mapping
-      // matrix permits motion).
+      // matrix permits motion). It was also triggered by a zero quaternion.
       if (ldlt_D_B.eigen_linear_solver().info() != Eigen::Success) {
+        const BodyNodeIndex body_node_index = topology_.index;
+        const std::string& body_name = body_->name();
         std::stringstream message;
-        message << "Encountered singular articulated body hinge inertia "
-                << "for body node index " << topology_.index << ". "
-                << "Please ensure that this body has non-zero inertia "
-                << "along all axes of motion.";
+        message << "Error: Encountered singular articulated body hinge inertia "
+                   "matrix for body named " << body_name << " with body node "
+                   "index " << body_node_index << ". Please ensure this body "
+                   "has non-zero mass if it has translational motion relative "
+                   "to its parent and non-zero moments of inertia if it has "
+                   "rotational motion relative to its parent.";
         throw std::runtime_error(message.str());
       }
 
