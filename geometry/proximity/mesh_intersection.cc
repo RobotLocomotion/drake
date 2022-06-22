@@ -167,7 +167,8 @@ void RemoveNearlyDuplicateVertices(std::vector<Vector3<T>>* polygon) {
 }
 
 template <typename MeshBuilder, typename BvType>
-SurfaceVolumeIntersector<MeshBuilder, BvType>::~SurfaceVolumeIntersector() {}
+SurfaceVolumeIntersector<MeshBuilder, BvType>::~SurfaceVolumeIntersector() =
+    default;
 
 template <typename MeshBuilder, typename BvType>
 const std::vector<
@@ -328,6 +329,17 @@ void SurfaceVolumeIntersector<MeshBuilder, BvType>::CalcContactPolygon(
       return;
     }
   }
+
+  // TODO(SeanCurtis-TRI): This redundantly transforms surface mesh vertex
+  //  positions. Specifically, each vertex will be transformed M times (once
+  //  per tetrahedron). Even with broadphase culling, this vertex will get
+  //  transformed once for each tet-tri pair where the tri is incidental
+  //  to the vertex and the tet-tri pair can't be conservatively culled.
+  //  This is O(mn), where m is the number of faces incident to the vertex
+  //  and n is the number of tet BVs that overlap this triangle BV. However,
+  //  if the broadphase culling determines the surface and volume are
+  //  disjoint regions, *no* vertices will be transformed. Unclear what the
+  //  best balance for best average performance.
   const std::vector<Vector3<T>>& polygon_vertices_M =
       this->ClipTriangleByTetrahedron(tet_index, vol_mesh_M, tri_index,
                                       surface_N, X_MN);

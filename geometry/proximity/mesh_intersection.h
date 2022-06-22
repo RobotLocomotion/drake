@@ -98,14 +98,14 @@ template <typename MeshBuilder> class SurfaceVolumeIntersectorTester;
 
 /* %SurfaceVolumeIntersector performs a mesh-intersection algorithm between a
  triangulated surface mesh and a tetrahedral volume mesh with a field
- variable. It also interpolates the field variable onto the resulted
+ variable. It also interpolates the field variable onto the resulting
  surface.
 
  @tparam MeshBuilder  The type of mesh-output builder of the contact
    surface. It can be TriMeshBuilder<T> or PolyMeshBuilder<T> for T = double
    or AutoDiffXd.
 
- @tparam BvType  The type of bounding volumes of tetrahedra in the
+ @tparam BvType  The type of bounding volumes for the tetrahedra in the
    volume mesh. It can be Obb for hydroelastics or Aabb for deformables.
  */
 template <typename MeshBuilder, typename BvType>
@@ -151,8 +151,8 @@ class SurfaceVolumeIntersector {
        The pose of frame N in frame M.
    @param[in] filter_face_normal_along_field_gradient
        If true, allow only contact polygons whose face normals are "along"
-       the direction of field gradient vectors. If false, do not perform this
-       filtering. See IsFaceNormalAlongPressureGradient().
+       the direction of field gradient vectors. See
+       IsFaceNormalAlongPressureGradient().
    @note
        The output surface mesh (see mutable_mesh() and release_mesh()) may
        have duplicate vertices.

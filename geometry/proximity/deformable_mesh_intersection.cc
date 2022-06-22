@@ -19,14 +19,14 @@ class DeformableSurfaceVolumeIntersector
  public:
   /* Returns the indices of tetrahedra containing the contact polygons.
    @pre Call it after SampleVolumeFieldOnSurface() finishes.  */
-  const std::vector<int>& tetrahedron_index_of_polygons() const {
+  std::vector<int>& mutable_tetrahedron_index_of_polygons() {
     return tetrahedron_index_of_polygons_;
   }
 
   /* Returns barycentric coordinates of the centroids of the contact polygons.
    @pre Call it after SampleVolumeFieldOnSurface() finishes.  */
-  const std::vector<VolumeMesh<double>::Barycentric<double>>&
-  barycentric_centroids() const {
+  std::vector<VolumeMesh<double>::Barycentric<double>>&
+  mutable_barycentric_centroids() {
     return barycentric_centroids_;
   }
 
@@ -42,18 +42,14 @@ class DeformableSurfaceVolumeIntersector
       bool filter_face_normal_along_field_gradient, int tet_index,
       int tri_index) override {
     const int num_vertices_before = builder_D->num_vertices();
-    const int num_polygons_before = builder_D->num_faces();
     SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb>::CalcContactPolygon(
         volume_field_D, surface_R, X_DR, X_DR_d, builder_D,
         filter_face_normal_along_field_gradient, tet_index, tri_index);
     const int num_vertices_after = builder_D->num_vertices();
-    const int num_polygons_after = builder_D->num_faces();
-
-    if (num_polygons_after == num_polygons_before) {
+    const int num_new_vertices = num_vertices_after - num_vertices_before;
+    if (num_new_vertices == 0) {
       return;
     }
-    DRAKE_DEMAND(num_polygons_after == num_polygons_before + 1);
-
     tetrahedron_index_of_polygons_.push_back(tet_index);
 
     // TODO(xuchenhan-tri): Consider accessing the newly added polygon from
@@ -116,8 +112,9 @@ ComputeContactSurfaceFromDeformableVolumeRigidSurface(
     return {};
   }
 
-  *tetrahedron_index_of_polygons = intersect.tetrahedron_index_of_polygons();
-  *barycentric_centroids = intersect.barycentric_centroids();
+  tetrahedron_index_of_polygons->swap(
+      intersect.mutable_tetrahedron_index_of_polygons());
+  barycentric_centroids->swap(intersect.mutable_barycentric_centroids());
   // The contact surface is documented as having the normals pointing *out*
   // of the second surface and into the first. This mesh intersection
   // creates a surface mesh with normals pointing out of the rigid surface,

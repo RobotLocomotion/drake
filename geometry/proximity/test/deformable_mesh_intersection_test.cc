@@ -29,11 +29,28 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
       Box::MakeCube(2.0), 10.0 /* very coarse resolution */);
   const Bvh<Obb, TriangleSurfaceMesh<double>> rigid_bvh_R(rigid_mesh_R);
 
-  // Pose the rigid surface so that it does not intersect the deformable
-  // geometry.
-  math::RigidTransform<double> X_WR(Vector3<double>{0, 0, 10.0});
+  /* We use the knowledge that the coarsest sphere volume mesh is a octahedron
+   to pose the rigid surface so that
+     1. it does not intersect the deformable geometry, and
+     2. it does intersect the bounding volume (AABB) of at least one
+     tetrahedron.
+   Projected to the xy-plane, the setup of the two geometries looks like
+  
+                                 ______
+                                |      |
+                          /|\   |      |  box surface (OBB)
+                        /  |  \ |______|
+      sphere volume   /____|____\
+      as octeherdron  \    |    /
+      (AABB)            \  |  /
+                          \|/
+   This setup helps us verify that when `CalcContactPolygon()` is called, but
+   there is no new intersection polygon, the code does the right thing. */
+  const double kEps = 1e-10;
+  math::RigidTransform<double> X_WR(
+      Vector3<double>{4.0 / 3 + kEps, 4.0 / 3 + kEps, 4.0 / 3 + kEps});
 
-  // Initialize these two variables as non-empty sequences of non-sense
+  // Initialize these two variables as non-empty sequences of nonsense
   // values expected to be become empty later.
   std::vector<int> tetrahedron_index_of_polygons {2022, 6, 9};
   std::vector<VolumeMesh<double>::Barycentric<double>> barycentric_centroids{
@@ -51,6 +68,10 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
   EXPECT_EQ(barycentric_centroids.size(), 0);
 }
 
+// Note that the deformable rigid contact surface computation largely utilizes
+// previously tested code in mesh_intersection.cc. The only thing it adds is the
+// detection and addition of tet indices and centroid coordinates. We only test
+// the newly operations here in this test.
 GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   const GeometryId deformable_id = GeometryId::get_new_id();
   const Sphere unit_sphere(1.0);

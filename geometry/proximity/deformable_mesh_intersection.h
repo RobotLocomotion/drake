@@ -39,18 +39,22 @@ namespace internal {
  @param[in] X_DR
      The pose of the rigid geometry's frame R in deformable geometry's frame D.
  @param[out] tetrahedron_index_of_polygons
-     Tetrahedron index of each contact polygon. The sequence of tetrahedron
-     indices is parallel to the sequence of contact polygons. If there is no
-     contact, it becomes an empty sequence.
+     Each contact polygon is completely contained within one tetrahedron of the
+     deformable mesh. For the i-th contact polygon in the contact surface,
+     tetrahedron_index_of_polygons[i] contains the index of the containing
+     tetrahedron.
  @param[out] barycentric_centroids
      Barycentric coordinates of centroids of contact polygons with respect to
-     their containing tetrahedra.
+     their containing tetrahedra with the same index semantics as
+     `tetrahedron_index_of_poloygons`.
 
- @return
-     The contact surface expressed in World frame with surface normal pointing
-     in the direction described in ContactSurface according to deformable_id
-     and rigid_id.
+ @retval contact_surface_W
+     The contact surface expressed in World frame with surface normals pointing
+     in the direction as described in the documentation for ContactSurface's
+     constructors.
 
+ @note contact_surface_W.num_faces() == tetrahedron_index_of_polygons.size()
+       contact_surface_W.num_faces() == barycentric_centroids.size()
  @pre  tetrahedron_index_of_polygons is not nullptr.
  @pre  barycentric_centroids is not nullptr.  */
 std::unique_ptr<ContactSurface<double>>
