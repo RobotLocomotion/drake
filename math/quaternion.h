@@ -287,6 +287,8 @@ bool IsQuaternionValid(const Eigen::Quaternion<T>& quat,
 #ifndef DRAKE_DOXYGEN_CXX
 // Throws an exception if a quaternion is not a valid %Quaternion.
 // @param[in] quaternion an allegedly valid quaternion.
+// @param[in] function_name The name of the calling function, which is included
+// in the exception message (if an exception is thrown).
 // @note If the underlying scalar type T is non-numeric (symbolic), no
 // validity check is made and no exception is thrown.
 template <typename T>
