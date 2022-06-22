@@ -4,29 +4,36 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/unused.h"
+
 namespace drake {
 namespace math {
 
-#if 0
 template <typename T>
-void ThrowIfQuaternionIsNotValid(const Eigen::Quaternion<T>& quaternion) {
+void ThrowIfQuaternionIsNotValid(const Eigen::Quaternion<T>& quaternion,
+    const char* function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
-    if (!quaternion.coeffs().is_zero()) {
-      throw std::logic_error(
-          "Error: All the elements in a quaternion are zero.");
+    if (quaternion.coeffs().isZero()) {
+      std::string message = fmt::format("Error in {}():"
+        " All the elements in a quaternion are zero.",
+        function_name);
+      throw std::logic_error(message);
     }
     if (!quaternion.coeffs().allFinite()) {
-      throw std::logic_error(
-          "Error: Quaternion contains an element that is infinity or NaN.");
+      std::string message = fmt::format("Error in {}():"
+        " Quaternion contains an element that is infinity or NaN.",
+        function_name);
+      throw std::logic_error(message);
     }
   } else {
-    unused(quaternion);
+    unused(quaternion, function_name);
   }
 }
-#endif
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &ThrowIfQuaternionIsNotValid<T>
+))
 
 }  // namespace math
 }  // namespace drake
 
-// DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-//    class ::drake::math::Quaternion)
