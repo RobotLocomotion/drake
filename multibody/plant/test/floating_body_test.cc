@@ -392,7 +392,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
   const Vector3d p0_WBcm_W = Vector3d::Zero();
   const Vector3d v0_WBcm_W = Vector3d::Zero();
   const Vector3d w0_WB_W = Vector3d::Zero();
-  const Quaterniond bad_quat(1, 0, 0, 0);  // Invalid quaternion.
+  const Quaterniond bad_quat(0, 0, 0, 0);  // Invalid quaternion.
   Eigen::Matrix<double, 13, 1> state_initial;
   state_initial << bad_quat.w(), bad_quat.x(), bad_quat.y(), bad_quat.z(),
                    p0_WBcm_W, w0_WB_W, v0_WBcm_W;
@@ -409,11 +409,17 @@ GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
   } else {
     DRAKE_EXPECT_THROWS_MESSAGE(
         free_body_plant.CalcTimeDerivatives(context, stateDt_drake),
+        "Error in CalcAcrossMobilizerTransform\\(\\): "
+        "All the elements in a quaternion are zero\\.");
+#if 0
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        free_body_plant.CalcTimeDerivatives(context, stateDt_drake),
         "Error: Encountered singular articulated body hinge inertia "
         "matrix for body named FreeBody with body node index 1\\. "
         "Please ensure this body has non-zero mass if it has translational "
         "motion relative to its parent and non-zero moments of inertia if it "
         "has rotational motion relative to its parent\\.");
+#endif
   }
 }
 
