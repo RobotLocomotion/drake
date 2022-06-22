@@ -310,7 +310,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     auto geometry = std::make_unique<internal::CapsuleGeometryData>();
     geometry->uuid = uuids::to_string((*uuid_generator_)());
     geometry->radius = capsule.radius();
-    geometry->height = capsule.length();
+    geometry->length = capsule.length();
     lumped.geometry = std::move(geometry);
 
     // Meshcat cylinders have their long axis in y.
