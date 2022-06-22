@@ -678,11 +678,11 @@ class MultibodyTreeTopology {
       throw std::runtime_error(
           "When creating a model, an attempt was made to add two inboard "
           "joints to the same body; this is not allowed. One possible cause "
-          "might be attempting to weld a robot to the world somewhere other "
+          "might be attempting to weld a robot to World somewhere other "
           "than its base link; see Drake issue #17429 for discussion and "
-          "work-arounds, e.g., reversing some joint directions. Another "
-          "possible cause might be attempting to form a kinematic loop using "
-          "joints; to create a loop, consider using a "
+          "work-arounds, e.g., reversing some joint parent/child directions. "
+          "Another possible cause might be attempting to form a kinematic "
+          "loop using joints; to create a loop, consider using a "
           "LinearBushingRollPitchYaw instead of a joint.");
     }
 
