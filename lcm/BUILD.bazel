@@ -62,10 +62,12 @@ drake_cc_library(
     name = "drake_lcm",
     srcs = ["drake_lcm.cc"],
     hdrs = ["drake_lcm.h"],
-    deps = [
+    interface_deps = [
         ":drake_lcm_params",
         ":interface",
         "//common:essential",
+    ],
+    deps = [
         "//common:scope_exit",
         "@glib",
         "@lcm",
@@ -76,9 +78,11 @@ drake_cc_library(
     name = "lcm_log",
     srcs = ["drake_lcm_log.cc"],
     hdrs = ["drake_lcm_log.h"],
-    deps = [
+    interface_deps = [
         ":interface",
         "//common:essential",
+    ],
+    deps = [
         "@lcm",
     ],
 )
@@ -122,6 +126,7 @@ drake_cc_googletest(
         ":drake_lcm",
         ":lcmt_drake_signal_utils",
         "//common/test_utilities:expect_throws_message",
+        "@lcm",
     ],
 )
 
@@ -131,6 +136,7 @@ drake_cc_googletest(
     deps = [
         ":drake_lcm",
         ":lcmt_drake_signal_utils",
+        "@lcm",
     ],
 )
 

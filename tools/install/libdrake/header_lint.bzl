@@ -16,7 +16,6 @@ _ALLOWED_EXTERNALS = [
     "spdlog",
 
     # The entries that follow are defects; we should work to remove them.
-    "glib",
     "zlib",
 ]
 
