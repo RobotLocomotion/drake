@@ -268,7 +268,7 @@ class _ContactApplet:
             for i in range(1, ci-1):
                 v1 = poly_data[p0 + i]
                 v2 = poly_data[p0 + i+1]
-            faces.append([v0, v1, v2])
+                faces.append([v0, v1, v2])
             poly_index += ci + 1
         return np.array(faces).transpose()
 

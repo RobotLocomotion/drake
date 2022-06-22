@@ -161,7 +161,6 @@ int DoMain() {
   const math::RigidTransform<double> X_WF0 = math::RigidTransform<double>(
       math::RollPitchYaw(0.0, -1.57, 0.0), Eigen::Vector3d(0, 0, 0.25));
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("gripper"), X_WF0);
-  plant.set_contact_surface_representation(geometry::HydroelasticContactRepresentation::kTriangle);
   plant.Finalize();
 
   // Construct the open loop square wave controller. To oscillate around a

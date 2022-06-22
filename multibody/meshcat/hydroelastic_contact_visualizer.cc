@@ -1,6 +1,7 @@
 #include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
 
 #include <utility>
+#include <algorithm>
 
 #include <fmt/format.h>
 
@@ -112,15 +113,25 @@ void HydroelasticContactVisualizer::Update(
 
     // Contact surface
     {
+      // Flame map
       double min_pressure = item.pressure.minCoeff();
       double max_pressure = item.pressure.maxCoeff();
 
       Eigen::Matrix3Xd colors(3, item.pressure.size());
       for (int i = 0; i < item.pressure.size(); ++i) {
-        colors(0, i) =
-            std::sqrt((item.pressure[i] - min_pressure) / max_pressure);
-        colors(1, i) = 0.0;
-        colors(2, i) = 0.0;
+        const double norm_pressure =
+            (item.pressure[i] - min_pressure) / (max_pressure - min_pressure);
+
+        colors(0, i) = std::clamp(((norm_pressure - 0.25) * 4.0), 0.0, 1.0);
+        colors(1, i) = std::clamp(((norm_pressure - 0.5) * 4.0), 0.0, 1.0);
+        if (norm_pressure < 0.25) {
+          colors(2, i) = std::clamp(norm_pressure * 4.0, 0.0, 1.0);
+        } else if (norm_pressure > 0.75) {
+          colors(2, i) = std::clamp((norm_pressure - 0.75) * 4.0, 0.0, 1.0);
+        } else {
+          colors(2, i) =
+              std::clamp(1.0 - (norm_pressure - 0.25) * 4.0, 0.0, 1.0);
+        }
       }
 
       meshcat_->SetTriangleColorMesh(path + "/contact_surface", item.p_WV,
