@@ -184,7 +184,22 @@ def default_globals():
     import numpy as np
     from mpl_toolkits.mplot3d import Axes3D
     import matplotlib
-    import matplotlib.pyplot as plt
+    # On Ubuntu the Debian package python3-tk is a recommended (but not
+    # required) dependency of python3-matplotlib; help users understand that
+    # by providing a nicer message upon a failure to import.
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        if e.name == 'tkinter':
+            plt = None
+        else:
+            raise
+    if plt is None:
+        raise NotImplementedError(
+            "On Ubuntu when using the default pyplot configuration (i.e., the"
+            " TkAgg backend) you must 'sudo apt install python3-tk' to obtain"
+            " Tk support. Alternatively, you may set MPLBACKEND to something"
+            " else (e.g., Qt5Agg).")
     import pylab  # See `%pylab?` in IPython.
 
     # TODO(eric.cousineau): Where better to put this?
