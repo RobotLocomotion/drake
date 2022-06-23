@@ -11,18 +11,24 @@ void RenderEngineGltfClientParams::Validate() const {
         "RenderEngineGltfClientParams: base_url may not be empty.");
   }
 
-  if (base_url.back() == '/') {
-    throw std::logic_error(
-        "RenderEngineGltfClientParams: base_url may not end with '/'.");
-  }
+  auto all_slashes = [](const std::string& str) {
+    return std::all_of(str.begin(), str.end(), [](char c){ return c == '/'; });
+  };
 
-  if (render_endpoint.size() >= 1) {
-    if (render_endpoint.front() == '/' || render_endpoint.back() == '/') {
-      throw std::logic_error(
-          "RenderEngineGltfClientParams: render_endpoint may not start or end"
-          " with a '/'.");
-    }
+  if (all_slashes(base_url) || all_slashes(render_endpoint)) {
+    throw std::logic_error(
+        "RenderEngineGltfClientParams: invalid base_url or render_endpoint is "
+        "provided that contains only `/`.");
   }
+}
+
+std::string RenderEngineGltfClientParams::GetUrl() const {
+  std::string url = base_url;
+  std::string endpoint = render_endpoint;
+  while(url.size() > 0 && url.back() == '/') url.pop_back();
+  while(endpoint.size() > 0 && endpoint.front() == '/') endpoint.erase(0, 1);
+
+  return url + "/" + endpoint;
 }
 
 }  // namespace geometry

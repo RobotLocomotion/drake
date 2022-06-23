@@ -115,25 +115,18 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
    images; VTK supports 3D images so we additionally check that the depth
    dimension is 1.  A TIFF image, for example, can have multiple layers. */
   const int image_depth = extent[5] - extent[4] + 1;
-  DRAKE_THROW_UNLESS(image_depth == 1);
-}
 
-/* Returns '{url}' if port is <= 0, '{url}:{port}' otherwise.  Used for
- populating error messages. */
-std::string UrlWithPort(const std::string& url, int port) {
-  if (port > 0) return fmt::format("{}:{}", url, port);
-  return url;
+  /* no cover: no tests ever use a 3D image, but the check is important to keep
+   in order to guarantee the loops in LoadColorImage, as well as calls to
+   image_exporter->Export are safe. */
+  DRAKE_THROW_UNLESS(image_depth == 1);
 }
 
 }  // namespace
 
 RenderClient::RenderClient(const RenderEngineGltfClientParams& params)
     : temp_directory_{drake::temp_directory()},
-      base_url_{params.base_url},
-      port_{params.port},
-      render_endpoint_{params.render_endpoint},
-      verbose_{params.verbose},
-      no_cleanup_{params.no_cleanup},
+      params_{params},
       http_service_{std::make_unique<HttpServiceCurl>()} {
   // Verify url and endpoint immediately.
   params.Validate();
@@ -141,7 +134,7 @@ RenderClient::RenderClient(const RenderEngineGltfClientParams& params)
 
 RenderClient::~RenderClient() {
   const fs::path temp_dir{temp_directory_};
-  if (!no_cleanup_) {
+  if (!params_.no_cleanup) {
     try {
       fs::remove_all(temp_dir);
       // no cover: OS dependent exceptions for fs::remove_all not known.
@@ -151,7 +144,7 @@ RenderClient::~RenderClient() {
                           temp_directory_, e.what());
     }
     // LCOV_EXCL_STOP
-  } else if (verbose_) {
+  } else if (params_.verbose) {
     // NOTE: this gets printed twice because of cloning, cannot be avoided.
     drake::log()->debug(
         "RenderClient: temporary directory '{}' was *NOT* deleted.",
@@ -204,11 +197,11 @@ std::string RenderClient::RenderOnServer(
   }
   AddField(&field_map, "submit", "Render");
 
+  const std::string url = params_.GetUrl();
   // Post the form and validate the results.
-  const std::string url = base_url_ + "/" + render_endpoint_;
-  auto response =
-      http_service_->PostForm(temp_directory_, url, port_, field_map,
-                              {{"scene", {scene_path, mime_type}}}, verbose_);
+  auto response = http_service_->PostForm(
+      temp_directory_, url, params_.port, field_map,
+      {{"scene", {scene_path, mime_type}}}, params_.verbose);
   if (!response.Good()) {
     /* Server may have responded with meaningful text, try and load the file
      as a string. */
@@ -234,36 +227,34 @@ std::string RenderClient::RenderOnServer(
       }
       // LCOV_EXCL_STOP
     }
+    const auto service_error_message =
+        (response.service_error_message.has_value()
+             ? response.service_error_message.value()
+             : "None.");
     throw std::runtime_error(fmt::format(
         R"(
-        ERROR doing POST:  /{}
-          Server Base URL: {}
+        ERROR doing POST:
+          URL:             {}
           Service Message: {}
           HTTP Code:       {}
           Server Message:  {}
         )",
-        render_endpoint_, UrlWithPort(base_url_, port_),
-        (response.service_error_message.has_value()
-             ? response.service_error_message.value()
-             : "None."),
-        response.http_code, server_message));
+        url, service_error_message, response.http_code, server_message));
   }
 
   // If the server did not respond with a file, there is nothing to load.
   if (!response.data_path.has_value()) {
     throw std::runtime_error(fmt::format(
-        "ERROR with POST /{} response from server, base_url={}, HTTP code={}: "
-        "the server was supposed to respond with a file but did not.",
-        render_endpoint_, UrlWithPort(base_url_, port_), response.http_code));
+        "ERROR with POST to {}. Response from server, HTTP code={}: the server "
+        "was supposed to respond with a file but did not.",
+        url, response.http_code));
   }
   const std::string bin_out_path = response.data_path.value();
   if (!fs::is_regular_file(bin_out_path)) {
     throw std::runtime_error(fmt::format(
-        "ERROR with POST /{} response from service, base_url={}, HTTP code={}: "
-        "the service responded with a file path '{}' but the file does not "
-        "exist.",
-        render_endpoint_, UrlWithPort(base_url_, port_), response.http_code,
-        bin_out_path));
+        "ERROR with POST to {}. Response from service, HTTP code={}: the "
+        "service responded with a file path '{}' but the file does not exist.",
+        url, response.http_code, bin_out_path));
   }
 
   /* At this point we have a seemingly valid return file from the server, see
@@ -341,7 +332,7 @@ std::string RenderClient::RenameHttpServiceResponse(
 
   // Rename and log what changed.
   fs::rename(origin, destination);
-  if (verbose_) {
+  if (params_.verbose) {
     drake::log()->debug("RenderClient: renamed '{}' to '{}'.", origin.string(),
                         destination.string());
   }

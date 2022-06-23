@@ -22,8 +22,6 @@ enum RenderImageType {
   kDepthDepth32F = 2,  ///< The depth frame.
 };
 
-/* TODO(svenevs): link to the render-client specification document once we
- decide where in the documentation it will live. */
 /* The client which communicates with a render server. */
 class RenderClient {
  public:
@@ -209,12 +207,8 @@ class RenderClient {
 
   /* Returns a RenderEngineGltfClientParams struct for RenderClient
    construction.  Note that `default_label` is not relevant for RenderClient
-   class, so it's always set to std::nullopt. */
-  RenderEngineGltfClientParams get_params() const {
-    return RenderEngineGltfClientParams{std::nullopt, base_url_,
-                                        port_,        render_endpoint_,
-                                        verbose_,     no_cleanup_};
-  }
+   class. */
+  const RenderEngineGltfClientParams& get_params() const { return params_; }
 
   /* The temporary directory used for scratch space, including but not limited
    to where downloaded images are saved.  Child classes are permitted (and
@@ -224,25 +218,8 @@ class RenderClient {
    no_cleanup() is true. */
   const std::string& temp_directory() const { return temp_directory_; }
 
-  /* The base url of the server. The full url to communicate with is constructed
-   as `base_url()/render_endpoint()`. */
-  const std::string& base_url() const { return base_url_; }
-
-  /** The port to communicate on.  A value less than or equal to `0` will let
-   `base_url_` to decide which port to use.  If a different port is needed
-   instead, specify `port` to override that. */
-  int port() const { return port_; }
-
-  /* The render endpoint of the server, used in RetrieveRender().  Should
-   **not** include a preceding slash. */
-  const std::string& render_endpoint() const { return render_endpoint_; }
-
-  /* Whether or not the client should be verbose including logging all curl
-   communications. */
-  bool verbose() const { return verbose_; }
-
-  /* Whether or not the client should cleanup its temp_directory(). */
-  bool no_cleanup() const { return no_cleanup_; }
+  /* Returns the full URL RenderClient uses to communicate with a server. */
+  std::string url() { return params_.GetUrl(); }
 
   //@}
 
@@ -252,11 +229,7 @@ class RenderClient {
  private:
   friend class RenderClientTester;
   const std::string temp_directory_;
-  const std::string base_url_;
-  const int port_;
-  const std::string render_endpoint_;
-  const bool verbose_;
-  const bool no_cleanup_;
+  const RenderEngineGltfClientParams params_;
   std::unique_ptr<HttpService> http_service_;
 };
 
