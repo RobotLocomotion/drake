@@ -175,8 +175,8 @@ TEST_F(QuaternionFloatingMobilizerTest, CheckExceptionMessage) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       mobilizer_->CalcAcrossMobilizerTransform(*context_),
-      "Error in CalcAcrossMobilizerTransform\\(\\): "
-      "All the elements in a quaternion are zero\\.");
+      "Error in QuaternionToRotationMatrix\\(\\):"
+      " All the elements in a quaternion are zero\\.");
 }
 
 }  // namespace

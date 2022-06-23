@@ -233,7 +233,6 @@ QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
   const Vector4<T> wxyz(q.template head<4>());
   const Vector3<T> p_FM = q.template tail<3>();  // position from Fo to Mo.
   Eigen::Quaternion<T> quaternion_FM(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
-  drake::math::ThrowIfQuaternionIsNotValid(quaternion_FM, __func__);
   const math::RigidTransform<T> X_FM(quaternion_FM, p_FM);
   return X_FM;
 }

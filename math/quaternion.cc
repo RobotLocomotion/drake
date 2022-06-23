@@ -10,8 +10,8 @@ namespace drake {
 namespace math {
 
 template <typename T>
-void ThrowIfQuaternionIsNotValid(const Eigen::Quaternion<T>& quaternion,
-    const char* function_name) {
+void ThrowIfAllElementsInQuaternionAreZero(
+    const Eigen::Quaternion<T>& quaternion, const char* function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
     if (quaternion.coeffs().isZero()) {
       std::string message = fmt::format("Error in {}():"
@@ -19,6 +19,15 @@ void ThrowIfQuaternionIsNotValid(const Eigen::Quaternion<T>& quaternion,
         function_name);
       throw std::logic_error(message);
     }
+  } else {
+    unused(quaternion, function_name);
+  }
+}
+
+template <typename T>
+void ThrowIfAnyElementInQuaternionIsNaN(const Eigen::Quaternion<T>& quaternion,
+    const char* function_name) {
+  if constexpr (scalar_predicate<T>::is_bool) {
     if (!quaternion.coeffs().allFinite()) {
       std::string message = fmt::format("Error in {}():"
         " Quaternion contains an element that is infinity or NaN.",
@@ -31,7 +40,8 @@ void ThrowIfQuaternionIsNotValid(const Eigen::Quaternion<T>& quaternion,
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &ThrowIfQuaternionIsNotValid<T>
+    &ThrowIfAllElementsInQuaternionAreZero<T>,
+    &ThrowIfAnyElementInQuaternionIsNaN<T>
 ))
 
 }  // namespace math
