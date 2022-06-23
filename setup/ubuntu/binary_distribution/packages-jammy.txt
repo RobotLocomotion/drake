@@ -58,7 +58,6 @@ python3-pil
 python3-pydot
 python3-pygame
 python3-scipy
-python3-tk
 python3-tornado
 python3-u-msgpack
 python3-yaml

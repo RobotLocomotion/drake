@@ -1,6 +1,5 @@
 import matplotlib
 import matplotlib.animation as animation
-import matplotlib.pyplot as plt
 import numpy as np
 from warnings import warn
 
@@ -30,6 +29,24 @@ class PyPlotVisualizer(LeafSystem):
                  figsize=None, ax=None, show=None):
         LeafSystem.__init__(self)
 
+        # On Ubuntu the Debian package python3-tk is a recommended (but not
+        # required) dependency of python3-matplotlib; help users understand
+        # that by providing a nicer message upon a failure to import.
+        try:
+            import matplotlib.pyplot as plt
+            self._plt = plt
+        except ImportError as e:
+            if e.name == 'tkinter':
+                self._plt = None
+            else:
+                raise
+        if self._plt is None:
+            raise NotImplementedError(
+                "On Ubuntu when using the default pyplot configuration (i.e.,"
+                " the TkAgg backend) you must 'sudo apt install python3-tk' to"
+                " obtain Tk support. Alternatively, you may set MPLBACKEND to"
+                " something else (e.g., Qt5Agg).")
+
         # To help avoid small simulation timesteps, we use a default period
         # that has an exact representation in binary floating point; see
         # drake#15021 for details.
@@ -40,8 +57,8 @@ class PyPlotVisualizer(LeafSystem):
         self.DeclarePeriodicPublish(self.timestep, 0.0)
 
         if ax is None:
-            self.fig = plt.figure(facecolor=facecolor, figsize=figsize)
-            self.ax = plt.axes()
+            self.fig = self._plt.figure(facecolor=facecolor, figsize=figsize)
+            self.ax = self._plt.axes()
             self.fig.add_axes(self.ax)
         else:
             self.ax = ax
@@ -58,7 +75,7 @@ class PyPlotVisualizer(LeafSystem):
             # This is the preferred way to support the jupyter notebook
             # animation workflow and the `inline` backend grabbing an
             # extraneous render of the figure.
-            plt.close(self.fig)
+            self._plt.close(self.fig)
 
         self._is_recording = False
         self._recorded_contexts = []
@@ -85,7 +102,7 @@ class PyPlotVisualizer(LeafSystem):
         if self._show:
             self.draw(context)
             self.fig.canvas.draw()
-            plt.pause(1e-10)
+            self._plt.pause(1e-10)
         if self._is_recording:
             snapshot = self.AllocateContext()
             snapshot.SetTimeStateAndParametersFrom(context)
