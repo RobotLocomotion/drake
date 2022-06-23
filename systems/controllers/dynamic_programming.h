@@ -6,7 +6,7 @@
 #include <utility>
 #include <variant>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/math/barycentric.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/vector_system.h"

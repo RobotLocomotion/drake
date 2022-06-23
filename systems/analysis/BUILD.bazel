@@ -138,7 +138,6 @@ drake_cc_library(
     hdrs = ["hermitian_dense_output.h"],
     deps = [
         ":stepwise_dense_output",
-        "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
         "//common:extract_double",

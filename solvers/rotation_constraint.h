@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program.h"
 
