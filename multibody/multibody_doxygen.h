@@ -414,14 +414,9 @@ point_cloud_B             || A point cloud whose underlying points' positions ar
 
  Drake uses
  <a href="https://en.wikipedia.org/wiki/International_System_of_Units">
- SI units</a> by default (also known as MKS -- meters, kilograms, and
- seconds). Attempts to scale to different units may be fraught with
- difficulties (for example, the
- @ref drake::multibody::UniformGravityFieldElement::kDefaultStrength
- "default gravity" is given as 9.81 m/s²). You will be best served if you stick
- with SI.
-
- Rotations may be radians or degrees, as documented for the relevant API.
+ SI units</a> exclusively (also known as MKS -- meters, kilograms, and
+ seconds). Rotations may be radians or degrees, as documented for the relevant
+ API.
 
  The @ref drake::multibody::Parser "Parser class" documents how quantity units
  are handled for external configuration files.

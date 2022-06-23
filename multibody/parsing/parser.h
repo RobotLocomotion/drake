@@ -21,8 +21,8 @@ class CompositeParse;
 ///
 /// When parsing literal quantities, %Parser assumes SI units and radians in the
 /// absence of units specified by the format itself. This includes the literals
-/// in the specified files (URDF or SDFormat) as well as referenced files such
-/// as OBJ or other data files.
+/// in the explicitly specified files as well as referenced files such as OBJ
+/// or other data file formats.
 class Parser final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Parser)
