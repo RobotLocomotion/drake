@@ -424,10 +424,7 @@ point_cloud_B             || A point cloud whose underlying points' positions ar
  Rotations may be radians or degrees, as documented for the relevant API.
 
  The @ref drake::multibody::Parser "Parser class" documents how quantity units
- are handled for external configuration files. The <a
- href="https://github.com/RobotLocomotion/drake/blob/master/multibody/parsing/README_model_directives.md">
- model directives</a> specification language likewise makes use of SI plus
- radians in interpreting quantities.
+ are handled for external configuration files.
 
  Next topic: @ref Dt_multibody_quantities
 */
