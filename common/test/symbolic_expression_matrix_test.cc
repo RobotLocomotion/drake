@@ -554,20 +554,6 @@ TEST_F(SymbolicExpressionMatrixTest, Inverse) {
                               Substitute(M, subst).inverse(), 1e-10));
 }
 
-TEST_F(SymbolicExpressionMatrixTest, IsAffine) {
-  Eigen::Matrix<Expression, 2, 2> M;
-  // clang-format off
-  M << a_ * a_ * x_, x_,
-       2 * x_,       3*x_ + 1;
-  // clang-format on
-
-  // M is affine in {x}.
-  EXPECT_TRUE(IsAffine(M, {var_x_}));
-
-  // However, M is *not* affine in {a, x}.
-  EXPECT_FALSE(IsAffine(M));
-}
-
 // We found that the following example could leak memory. This test makes sure
 // that we provide a correct work-around. FYI, `--config asan` option is
 // required to see failures from this test case.
