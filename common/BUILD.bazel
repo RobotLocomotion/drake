@@ -206,6 +206,7 @@ drake_cc_library(
         "symbolic_chebyshev_polynomial.h",
         "symbolic_codegen.cc",
         "symbolic_codegen.h",
+        "symbolic_decompose.cc",
         "symbolic_environment.cc",
         "symbolic_environment.h",
         "symbolic_expression.cc",
@@ -244,6 +245,9 @@ drake_cc_library(
     ],
     hdrs = [
         "symbolic.h",
+        # TODO(#13833) We should split out this header into its own library,
+        # once we have the new subdirectory established.
+        "symbolic_decompose.h",
     ],
     deps = [
         ":bit_cast",
@@ -258,14 +262,11 @@ drake_cc_library(
     ],
 )
 
+# TODO(#13833) This library name is vestigial.  Once we are finished with the
+# new file layout in drake/common/symbolic/..., then we should deprecate this
+# library name.
 drake_cc_library(
     name = "symbolic_decompose",
-    srcs = [
-        "symbolic_decompose.cc",
-    ],
-    hdrs = [
-        "symbolic_decompose.h",
-    ],
     deps = [
         ":symbolic",
     ],
@@ -372,18 +373,13 @@ drake_cc_library(
 
 # The drake::filesystem support is intended ONLY for use within Drake's *.cc
 # files -- it is not a public dependency of Drake.  As such, we compile it with
-# hidden visibility, exclude its header file from the install, and exclude it
-# from the //common:common package_library shortcut.
+# hidden visibility and mark it internal.
 drake_cc_library(
     name = "filesystem",
     srcs = ["filesystem.cc"],
     hdrs = ["filesystem.h"],
     copts = ["-fvisibility=hidden"],
-    install_hdrs_exclude = ["filesystem.h"],
-    tags = [
-        "exclude_from_libdrake",
-        "exclude_from_package",
-    ],
+    internal = True,
     visibility = ["//:__subpackages__"],
     deps = [
         "@ghc_filesystem",
@@ -909,9 +905,9 @@ drake_cc_googletest(
     deps = [
         ":identifier",
         ":sorted_pair",
-        ":unused",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "@abseil_cpp_internal//absl/container:flat_hash_set",
     ],
 )
 
@@ -1100,6 +1096,7 @@ drake_cc_googletest(
     deps = [
         ":autodiff",
         ":essential",
+        ":identifier",
         ":nice_type_name",
         ":nice_type_name_override_header",
     ],
@@ -1309,6 +1306,7 @@ drake_cc_googletest(
     name = "symbolic_polynomial_test",
     deps = [
         ":symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
@@ -1455,7 +1453,6 @@ drake_cc_googletest(
     name = "type_safe_index_test",
     deps = [
         ":type_safe_index",
-        ":unused",
         "//common:sorted_pair",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",

@@ -1,7 +1,7 @@
 --- src/sys/objects/destroy.c
 +++ src/sys/objects/destroy.c
-@@ -110,7 +111,8 @@ PetscErrorCode PetscObjectViewFromOptions(PetscObject obj,PetscObject bobj,const
-   PetscErrorCode    ierr;
+@@ -94,7 +94,8 @@ PetscErrorCode PetscObjectViewFromOptions(PetscObject obj,PetscObject bobj,const
+ {
    PetscViewer       viewer;
    PetscBool         flg;
 -  static PetscBool  incall = PETSC_FALSE;

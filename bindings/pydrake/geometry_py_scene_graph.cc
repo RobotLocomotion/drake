@@ -4,6 +4,7 @@
  pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/monostate_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -201,11 +202,36 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 std::unique_ptr<GeometryInstance>>(&Class::RegisterGeometry),
             py::arg("source_id"), py::arg("geometry_id"), py::arg("geometry"),
             cls_doc.RegisterGeometry.doc_3args_source_id_geometry_id_geometry)
+        .def("RegisterGeometry",
+            overload_cast_explicit<GeometryId, systems::Context<T>*, SourceId,
+                FrameId, std::unique_ptr<GeometryInstance>>(
+                &Class::RegisterGeometry),
+            py::arg("context"), py::arg("source_id"), py::arg("frame_id"),
+            py::arg("geometry"),
+            cls_doc.RegisterGeometry
+                .doc_4args_context_source_id_frame_id_geometry)
+        .def("RegisterGeometry",
+            overload_cast_explicit<GeometryId, systems::Context<T>*, SourceId,
+                GeometryId, std::unique_ptr<GeometryInstance>>(
+                &Class::RegisterGeometry),
+            py::arg("context"), py::arg("source_id"), py::arg("geometry_id"),
+            py::arg("geometry"),
+            cls_doc.RegisterGeometry
+                .doc_4args_context_source_id_geometry_id_geometry)
         .def("RegisterAnchoredGeometry",
             py::overload_cast<SourceId, std::unique_ptr<GeometryInstance>>(
                 &Class::RegisterAnchoredGeometry),
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+        .def("RemoveGeometry",
+            py::overload_cast<SourceId, GeometryId>(&Class::RemoveGeometry),
+            py::arg("source_id"), py::arg("geometry_id"),
+            cls_doc.RemoveGeometry.doc_2args)
+        .def("RemoveGeometry",
+            overload_cast_explicit<void, systems::Context<T>*, SourceId,
+                GeometryId>(&Class::RemoveGeometry),
+            py::arg("context"), py::arg("source_id"), py::arg("geometry_id"),
+            cls_doc.RemoveGeometry.doc_3args)
         .def("collision_filter_manager",
             overload_cast_explicit<CollisionFilterManager, Context<T>*>(
                 &Class::collision_filter_manager),
@@ -302,28 +328,32 @@ void DoScalarDependentDefinitions(py::module m, T) {
   {
     using Class = FramePoseVector<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "FramePoseVector", param, doc.FrameKinematicsVector.doc);
+        m, "FramePoseVector", param, doc.KinematicsVector.doc);
     cls  // BR
-        .def(py::init<>(), doc.FrameKinematicsVector.ctor.doc_0args)
-        .def("clear", &FramePoseVector<T>::clear,
-            doc.FrameKinematicsVector.clear.doc)
+        .def(py::init<>(), doc.KinematicsVector.ctor.doc_0args)
+        .def(
+            "clear", &FramePoseVector<T>::clear, doc.KinematicsVector.clear.doc)
         .def(
             "set_value",
             [](Class* self, FrameId id, const math::RigidTransform<T>& value) {
               self->set_value(id, value);
             },
-            py::arg("id"), py::arg("value"),
-            doc.FrameKinematicsVector.set_value.doc)
-        .def("size", &FramePoseVector<T>::size,
-            doc.FrameKinematicsVector.size.doc)
+            py::arg("id"), py::arg("value"), doc.KinematicsVector.set_value.doc)
+        .def("size", &FramePoseVector<T>::size, doc.KinematicsVector.size.doc)
         // This intentionally copies the value to avoid segfaults from accessing
         // the result after clear() is called. (see #11583)
         .def("value", &FramePoseVector<T>::value, py::arg("id"),
-            doc.FrameKinematicsVector.value.doc)
+            doc.KinematicsVector.value.doc)
         .def("has_id", &FramePoseVector<T>::has_id, py::arg("id"),
-            doc.FrameKinematicsVector.has_id.doc)
-        .def("frame_ids", &FramePoseVector<T>::frame_ids,
-            doc.FrameKinematicsVector.frame_ids.doc);
+            doc.KinematicsVector.has_id.doc)
+        .def("ids", &FramePoseVector<T>::ids, doc.KinematicsVector.ids.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("frame_ids",
+        WrapDeprecated(doc.KinematicsVector.frame_ids.doc_deprecated,
+            &FramePoseVector<T>::frame_ids),
+        doc.KinematicsVector.frame_ids.doc_deprecated);
+#pragma GCC diagnostic pop
     AddValueInstantiation<FramePoseVector<T>>(m);
   }
 

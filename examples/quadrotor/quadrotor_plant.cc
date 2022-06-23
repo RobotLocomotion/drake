@@ -104,11 +104,11 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   const Vector3<T> xyzDDt = Fnet_N / m_;  // Equal to a_NBcm_N.
 
   // Use rpy and rpyDt to calculate B's angular velocity in N, expressed in B.
-  const Vector3<T> w_BN_B = rpy.CalcAngularVelocityInChildFromRpyDt(rpyDt);
+  const Vector3<T> w_NB_B = rpy.CalcAngularVelocityInChildFromRpyDt(rpyDt);
 
   // To compute α (B's angular acceleration in N) due to the net moment 𝛕 on B,
   // rearrange Euler rigid body equation  𝛕 = I α + ω × (I ω)  and solve for α.
-  const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);            // Expressed in B
+  const Vector3<T> wIw = w_NB_B.cross(I_ * w_NB_B);            // Expressed in B
   const Vector3<T> alpha_NB_B = I_.ldlt().solve(Tau_B - wIw);  // Expressed in B
   const Vector3<T> alpha_NB_N = R_NB * alpha_NB_B;             // Expressed in N
 

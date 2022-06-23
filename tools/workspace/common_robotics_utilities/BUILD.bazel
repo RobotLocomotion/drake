@@ -4,6 +4,11 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 sh_test(
+    name = "maybe_test",
+    srcs = ["@common_robotics_utilities//:maybe_test"],
+)
+
+sh_test(
     name = "planning_test",
     srcs = ["@common_robotics_utilities//:planning_test"],
 )

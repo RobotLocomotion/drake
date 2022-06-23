@@ -1,7 +1,6 @@
 #include "drake/solvers/fbstab/components/dense_residual.h"
 
 #include <cmath>
-#include <iostream>
 
 #include <Eigen/Dense>
 

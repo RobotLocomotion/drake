@@ -115,6 +115,14 @@ cc_library(
     includes = LCM_PUBLIC_HEADER_INCLUDES,
 )
 
+# This is the header-only library used by generated messages.
+cc_library(
+    name = "lcm_coretypes",
+    hdrs = ["lcm/lcm_coretypes.h"],
+    includes = ["."],
+    linkstatic = True,
+)
+
 cc_binary(
     name = "lcm-logger",
     srcs = [

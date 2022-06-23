@@ -1,7 +1,7 @@
 // NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <atomic>
-#include <iostream>
 #include <memory>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <utility>

@@ -41,7 +41,7 @@ TEST_F(UnboundedLinearProgramTest0, Test) {
         result.get_solver_details<MosekSolver>();
     EXPECT_EQ(mosek_solver_details.rescode, 0);
     // This problem status is defined in
-    // https://docs.mosek.com/9.2/capi/constants.html#mosek.prosta
+    // https://docs.mosek.com/9.3/capi/constants.html#mosek.prosta
     const int MSK_SOL_STA_DUAL_INFEAS_CER = 6;
     EXPECT_EQ(mosek_solver_details.solution_status,
               MSK_SOL_STA_DUAL_INFEAS_CER);
@@ -133,7 +133,7 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   MosekSolver solver;
   // Mosek 9 returns a solution that is accurate up to 1.2E-5 for this specific
   // problem. Might need to change the tolerance when we upgrade Mosek.
-  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1.2E-5);
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1.2E-5);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
@@ -146,21 +146,21 @@ GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
 GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    FindCommonLyapunov(mosek_solver, 1E-8);
+    FindCommonLyapunov(mosek_solver, {}, 1E-8);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    FindOuterEllipsoid(mosek_solver, 1E-6);
+    FindOuterEllipsoid(mosek_solver, {}, 1E-6);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    SolveEigenvalueProblem(mosek_solver, 1E-7);
+    SolveEigenvalueProblem(mosek_solver, {}, 1E-7);
   }
 }
 
@@ -253,7 +253,7 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   mosek_solver.Solve(prog, {}, solver_options, &result);
   EXPECT_FALSE(result.is_success());
   // This response code is defined in
-  // https://docs.mosek.com/9.2/capi/response-codes.html#mosek.rescode
+  // https://docs.mosek.com/9.3/capi/response-codes.html#mosek.rescode
   const int MSK_RES_ERR_HUGE_C{1375};
   EXPECT_EQ(result.get_solver_details<MosekSolver>().rescode,
             MSK_RES_ERR_HUGE_C);

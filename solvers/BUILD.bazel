@@ -152,6 +152,7 @@ drake_cc_library(
         ":osqp_solver",
         ":scs_solver",
         ":snopt_solver",
+        "@abseil_cpp_internal//absl/container:inlined_vector",
     ],
 )
 
@@ -974,7 +975,7 @@ drake_cc_variant_library(
     ],
     deps_enabled = [
         "//math:autodiff",
-        "@nlopt",
+        "@nlopt_internal//:nlopt",
     ],
 )
 
@@ -1219,6 +1220,7 @@ drake_cc_googletest(
         "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1843,6 +1845,7 @@ drake_cc_googletest(
         ":clp_solver",
         ":csdp_solver",
         ":equality_constrained_qp_solver",
+        ":get_program_type",
         ":gurobi_solver",
         ":ipopt_solver",
         ":linear_system_solver",

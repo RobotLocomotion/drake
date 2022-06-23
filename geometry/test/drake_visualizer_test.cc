@@ -11,9 +11,9 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
@@ -82,6 +82,9 @@ struct MessageResults {
   int num_draw{};
   // Zeroed out unless num_draw > 0.
   lcmt_viewer_draw draw_message{};
+  int num_deformable{};
+  // Zeroed out unless num_deformable > 0.
+  lcmt_viewer_link_data deformable_message{};
 };
 
 /* Serves as a source of pose values for SceneGraph input ports. */
@@ -103,6 +106,32 @@ class PoseSource : public systems::LeafSystem<T> {
   }
 
   FramePoseVector<T> poses_;
+};
+
+/* Serves as a source of configuration values for SceneGraph input ports. */
+template <typename T>
+class ConfigurationSource : public systems::LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConfigurationSource)
+  ConfigurationSource() {
+    this->DeclareAbstractOutputPort(
+        systems::kUseDefaultName, GeometryConfigurationVector<T>(),
+        &ConfigurationSource<T>::ReadConfigurations);
+  }
+
+  void SetConfigurations(
+    GeometryConfigurationVector<T> configurations) {
+    configurations_ = move(configurations);
+  }
+
+ private:
+  void ReadConfigurations(
+      const Context<T>&,
+      GeometryConfigurationVector<T>* configurations) const {
+    *configurations = configurations_;
+  }
+
+  GeometryConfigurationVector<T> configurations_;
 };
 
 // TODO(SeanCurtis-TRI): These unit tests aren't complete. Much of the DUT has
@@ -134,10 +163,17 @@ class DrakeVisualizerTest : public ::testing::Test {
         builder.template AddSystem<DrakeVisualizer<T>>(&lcm_, move(params));
     builder.Connect(scene_graph_->get_query_output_port(),
                     visualizer_->query_object_input_port());
-    source_id_ = scene_graph_->RegisterSource(kSourceName);
+    pose_source_id_ = scene_graph_->RegisterSource(kPoseSourceName);
+    configuration_source_id_ =
+        scene_graph_->RegisterSource(kConfigurationSourceName);
     pose_source_ = builder.template AddSystem<PoseSource<T>>();
     builder.Connect(pose_source_->get_output_port(0),
-                    scene_graph_->get_source_pose_port(source_id_));
+                    scene_graph_->get_source_pose_port(pose_source_id_));
+    configuration_source_ =
+        builder.template AddSystem<ConfigurationSource<T>>();
+    builder.Connect(
+        configuration_source_->get_output_port(0),
+        scene_graph_->get_source_configuration_port(configuration_source_id_));
     diagram_ = builder.Build();
   }
 
@@ -147,35 +183,35 @@ class DrakeVisualizerTest : public ::testing::Test {
    regardless of role.  */
   void PopulateScene() {
     // A box has perception properties with a green color.
-    const FrameId f0_id =
-        scene_graph_->RegisterFrame(source_id_, GeometryFrame("perception", 0));
+    const FrameId f0_id = scene_graph_->RegisterFrame(
+        pose_source_id_, GeometryFrame("perception", 0));
     const GeometryId g0_id = scene_graph_->RegisterGeometry(
-        source_id_, f0_id,
+        pose_source_id_, f0_id,
         make_unique<GeometryInstance>(RigidTransformd{},
                                       make_unique<Box>(1, 1, 1), "perception"));
     PerceptionProperties percep_prop;
     percep_prop.AddProperty("phong", "diffuse", Rgba(0, 1, 0, 1));
-    scene_graph_->AssignRole(source_id_, g0_id, percep_prop);
+    scene_graph_->AssignRole(pose_source_id_, g0_id, percep_prop);
 
     // A cylinder has illustration properties with a blue color.
     const FrameId f1_id = scene_graph_->RegisterFrame(
-        source_id_, GeometryFrame("illustration", 1));
+        pose_source_id_, GeometryFrame("illustration", 1));
     const GeometryId g1_id = scene_graph_->RegisterGeometry(
-        source_id_, f1_id,
+        pose_source_id_, f1_id,
         make_unique<GeometryInstance>(
             RigidTransformd{}, make_unique<Cylinder>(1, 1), "illustration"));
     IllustrationProperties illus_prop;
     illus_prop.AddProperty("phong", "diffuse", Rgba(0, 1, 0, 1));
-    scene_graph_->AssignRole(source_id_, g1_id, illus_prop);
+    scene_graph_->AssignRole(pose_source_id_, g1_id, illus_prop);
 
     // A sphere has proximity properties with no color.
-    proximity_frame_id_ =
-        scene_graph_->RegisterFrame(source_id_, GeometryFrame("proximity", 2));
+    proximity_frame_id_ = scene_graph_->RegisterFrame(
+        pose_source_id_, GeometryFrame("proximity", 2));
     const GeometryId g2_id = scene_graph_->RegisterGeometry(
-        source_id_, proximity_frame_id_,
+        pose_source_id_, proximity_frame_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
                                       "proximity"));
-    scene_graph_->AssignRole(source_id_, g2_id, ProximityProperties());
+    scene_graph_->AssignRole(pose_source_id_, g2_id, ProximityProperties());
 
     pose_source_->SetPoses({{f0_id, RigidTransform<T>{}},
                             {f1_id, RigidTransform<T>{}},
@@ -190,21 +226,33 @@ class DrakeVisualizerTest : public ::testing::Test {
     lcmt_viewer_draw draw_message = draw_subscriber_.message();
     const int num_load = load_subscriber_.count();
     lcmt_viewer_load_robot load_message = load_subscriber_.message();
+    const int num_deformable = deformable_subscriber_.count();
+    lcmt_viewer_link_data deformable_message = deformable_subscriber_.message();
     draw_subscriber_.clear();
     load_subscriber_.clear();
-    return {num_load, load_message, num_draw, draw_message};
+    deformable_subscriber_.clear();
+    // clang-format off
+    return {num_load,       load_message,
+            num_draw,       draw_message,
+            num_deformable, deformable_message};
+    // clang-format on
   }
 
   /* Handles all subscribers and confirms the number of load and draw messages
-   are as expected. Clears the subscribers after looking. */
+   are as expected. Clears the subscribers after looking. We assume in related
+   tests that the messages for drawing non-rigid geometries and for deformable
+   geometries are dispatched in lock step (even if the message is functionally
+   empty), and thus the numbers of the respective messages are the same. */
   ::testing::AssertionResult ExpectedMessageCount(int num_load, int num_draw) {
     MessageResults results = ProcessMessages();
-    if (results.num_draw != num_draw || results.num_load != num_load) {
-      ::testing::AssertionFailure()
-          << "Expected " << num_load << " load messages and " << num_draw
-          << " draw messages"
-          << "\nFound   " << results.num_load << " load messages and "
-          << results.num_draw << " draw messages";
+    if (results.num_draw != num_draw || results.num_load != num_load ||
+        results.num_deformable != num_draw) {
+      return ::testing::AssertionFailure()
+             << "Expected " << num_load << " load messages, " << num_draw
+             << " draw messages, and " << num_draw << " deformable messages"
+             << "\nFound   " << results.num_load << " load messages, "
+             << results.num_draw << " draw messages, and "
+             << results.num_deformable << " deformable messages.";
     }
     return ::testing::AssertionSuccess();
   }
@@ -310,15 +358,20 @@ class DrakeVisualizerTest : public ::testing::Test {
    expected messages on those subscribers is proof.  */
   static constexpr char kLoadChannel[] = "DRAKE_VIEWER_LOAD_ROBOT";
   static constexpr char kDrawChannel[] = "DRAKE_VIEWER_DRAW";
+  static constexpr char kDeformableDrawChannel[] = "DRAKE_VIEWER_DEFORMABLE";
 
-  /* The name of the source registered with the SceneGraph.  */
-  static constexpr char kSourceName[] = "DrakeVisualizerTest";
+  /* The names of the sources registered with the SceneGraph.  */
+  static constexpr char kPoseSourceName[] = "DrakeVisualizerTestPoseSource";
+  static constexpr char kConfigurationSourceName[] =
+      "DrakeVisualizerTestConfigurationSource";
 
   /* The LCM visualizer broadcasts messages on.  */
   lcm::DrakeLcm lcm_;
   /* The subscribers for draw and load messages.  */
   lcm::Subscriber<lcmt_viewer_draw> draw_subscriber_{&lcm_, kDrawChannel};
   lcm::Subscriber<lcmt_viewer_load_robot> load_subscriber_{&lcm_, kLoadChannel};
+  lcm::Subscriber<lcmt_viewer_link_data> deformable_subscriber_{
+      &lcm_, kDeformableDrawChannel};
 
   /* Raw pointer into the diagram's scene graph.  */
   SceneGraph<T>* scene_graph_{};
@@ -326,7 +379,9 @@ class DrakeVisualizerTest : public ::testing::Test {
   DrakeVisualizer<T>* visualizer_{};
   /* Raw pointer to the pose data.  */
   PoseSource<T>* pose_source_{};
-  SourceId source_id_;
+  ConfigurationSource<T>* configuration_source_{};
+  SourceId pose_source_id_;
+  SourceId configuration_source_id_;
   /* A diagram containing scene graph and connected visualizer.  */
   unique_ptr<Diagram<T>> diagram_;
   /* The id of the frame registered by PopulateScene() with the proximity
@@ -372,6 +427,9 @@ TYPED_TEST(DrakeVisualizerTest, EmptyScene) {
   ASSERT_EQ(results.num_draw, 1);
   EXPECT_EQ(results.draw_message.num_links, 0);
   EXPECT_EQ(results.draw_message.timestamp, 0);
+
+  ASSERT_EQ(results.num_deformable, 1);
+  EXPECT_EQ(results.deformable_message.num_geom, 0);
 }
 
 /* DrakeVisualizer can accept an lcm interface from the user or instantiate its
@@ -442,13 +500,13 @@ TYPED_TEST(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
                             .role = Role::kProximity,
                             .default_color = expected_rgba});
     const FrameId f_id = this->scene_graph_->RegisterFrame(
-        this->source_id_, GeometryFrame("frame", 0));
+        this->pose_source_id_, GeometryFrame("frame", 0));
     const GeometryId g_id = this->scene_graph_->RegisterGeometry(
-        this->source_id_, f_id,
+        this->pose_source_id_, f_id,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
                                       "proximity_sphere"));
     // ProximityProperties will make use of the default diffuse value.
-    this->scene_graph_->AssignRole(this->source_id_, g_id,
+    this->scene_graph_->AssignRole(this->pose_source_id_, g_id,
                                    ProximityProperties());
     this->pose_source_->SetPoses({{f_id, RigidTransform<T>{}}});
     Simulator<T> simulator(*(this->diagram_));
@@ -472,25 +530,25 @@ TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
   this->ConfigureDiagram(
       {.publish_period = this->kPublishPeriod, .role = Role::kProximity});
   const FrameId f_id = this->scene_graph_->RegisterFrame(
-      this->source_id_, GeometryFrame("frame", 0));
+      this->pose_source_id_, GeometryFrame("frame", 0));
   const GeometryId g0_id = this->scene_graph_->RegisterGeometry(
-      this->source_id_, f_id,
+      this->pose_source_id_, f_id,
       make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
                                     "sphere0"));
-  this->scene_graph_->AssignRole(this->source_id_, g0_id,
+  this->scene_graph_->AssignRole(this->pose_source_id_, g0_id,
                                  ProximityProperties());
   const GeometryId g1_id = this->scene_graph_->RegisterGeometry(
-      this->source_id_, f_id,
+      this->pose_source_id_, f_id,
       make_unique<GeometryInstance>(RigidTransformd{Vector3d{10, 0, 0}},
                                     make_unique<Sphere>(1), "sphere1"));
-  this->scene_graph_->AssignRole(this->source_id_, g1_id,
+  this->scene_graph_->AssignRole(this->pose_source_id_, g1_id,
                                  ProximityProperties());
 
   const GeometryId g2_id = this->scene_graph_->RegisterAnchoredGeometry(
-      this->source_id_,
+      this->pose_source_id_,
       make_unique<GeometryInstance>(RigidTransformd{Vector3d{5, 0, 0}},
                                     make_unique<Sphere>(1), "sphere3"));
-  this->scene_graph_->AssignRole(this->source_id_, g2_id,
+  this->scene_graph_->AssignRole(this->pose_source_id_, g2_id,
                                  ProximityProperties());
 
   this->pose_source_->SetPoses({{f_id, RigidTransform<T>{}}});
@@ -508,21 +566,25 @@ TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
 
   // Now test for the dynamic frame (with its two geometries).
   ASSERT_EQ(results.load_message.link[1].name,
-            string(this->kSourceName) + "::frame");
+            string(this->kPoseSourceName) + "::frame");
   ASSERT_EQ(results.load_message.link[1].num_geom, 2);
 
   // Confirm draw message; a single link.
   ASSERT_EQ(results.num_draw, 1);
   ASSERT_EQ(results.draw_message.num_links, 1);
   ASSERT_EQ(results.draw_message.link_name[0],
-            string(this->kSourceName) + "::frame");
+            string(this->kPoseSourceName) + "::frame");
+
+  // Confirm deformable messages; no deformable geometry registered.
+  ASSERT_EQ(results.num_draw, 1);
+  ASSERT_EQ(results.deformable_message.num_geom, 0);
 }
 
 /* Confirms that the role parameter leads to the correct geometry being
  selected.  */
 TYPED_TEST(DrakeVisualizerTest, TargetRole) {
   using T = TypeParam;
-  const string source_name(this->kSourceName);
+  const string source_name(this->kPoseSourceName);
   /* For a given role, the name of the *unique* frame we expect to load. The
    frame should have a single geometry affixed to it.  */
   const map<Role, string> expected{
@@ -546,6 +608,9 @@ TYPED_TEST(DrakeVisualizerTest, TargetRole) {
     ASSERT_EQ(results.num_draw, 1);
     ASSERT_EQ(results.draw_message.num_links, 1);
     EXPECT_EQ(results.draw_message.link_name[0], name);
+
+    ASSERT_EQ(results.num_deformable, 1);
+    ASSERT_EQ(results.deformable_message.num_geom, 0);
   }
 }
 
@@ -562,6 +627,7 @@ TYPED_TEST(DrakeVisualizerTest, ForcePublish) {
   MessageResults results = this->ProcessMessages();
   ASSERT_EQ(results.num_load, 1);
   ASSERT_EQ(results.num_draw, 1);
+  ASSERT_EQ(results.num_deformable, 1);
 }
 
 /* When targeting a non-illustration role, if that same geometry *has* an
@@ -571,15 +637,16 @@ TYPED_TEST(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
   this->ConfigureDiagram(
       {.publish_period = this->kPublishPeriod, .role = Role::kProximity});
   const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
-      this->source_id_,
+      this->pose_source_id_,
       make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
                                     "sphere0"));
   const Rgba expected_rgba{0.25, 0.125, 0.75, 0.5};
   ASSERT_NE(expected_rgba, DrakeVisualizerParams().default_color);
   IllustrationProperties illus_props;
   illus_props.AddProperty("phong", "diffuse", expected_rgba);
-  this->scene_graph_->AssignRole(this->source_id_, g_id, ProximityProperties());
-  this->scene_graph_->AssignRole(this->source_id_, g_id, illus_props);
+  this->scene_graph_->AssignRole(this->pose_source_id_, g_id,
+                                 ProximityProperties());
+  this->scene_graph_->AssignRole(this->pose_source_id_, g_id, illus_props);
 
   Simulator<T> simulator(*(this->diagram_));
   simulator.AdvanceTo(0.0);
@@ -602,7 +669,7 @@ TYPED_TEST(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
     this->ConfigureDiagram(
         {.publish_period = this->kPublishPeriod, .role = role});
     const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
-        this->source_id_,
+        this->pose_source_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
                                       "sphere0"));
     const Rgba expected_rgba{0.25, 0.125, 0.75, 0.5};
@@ -610,11 +677,11 @@ TYPED_TEST(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
     if (role == Role::kProximity) {
       ProximityProperties props;
       props.AddProperty("phong", "diffuse", expected_rgba);
-      this->scene_graph_->AssignRole(this->source_id_, g_id, props);
+      this->scene_graph_->AssignRole(this->pose_source_id_, g_id, props);
     } else if (role == Role::kPerception) {
       PerceptionProperties props;
       props.AddProperty("phong", "diffuse", expected_rgba);
-      this->scene_graph_->AssignRole(this->source_id_, g_id, props);
+      this->scene_graph_->AssignRole(this->pose_source_id_, g_id, props);
     }
 
     Simulator<T> simulator(*(this->diagram_));
@@ -665,7 +732,7 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
     this->ConfigureDiagram(
         {.publish_period = this->kPublishPeriod, .role = role});
     const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
-        this->source_id_,
+        this->pose_source_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
                                       "sphere0"));
 
@@ -679,6 +746,7 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
     MessageResults results = this->ProcessMessages();
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.num_draw, 1);
+    ASSERT_EQ(results.num_deformable, 1);
 
     t += this->kPublishPeriod;
     simulator.AdvanceTo(t);
@@ -686,6 +754,7 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
     results = this->ProcessMessages();
     ASSERT_EQ(results.num_load, 0);
     ASSERT_EQ(results.num_draw, 1);
+    ASSERT_EQ(results.num_deformable, 1);
 
     // Confirm that modifying a role has the expected outcome. If the modified
     // role matches the visualized `role`, we expect a load message. Otherwise
@@ -697,10 +766,10 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
     // for a modified perception role.
     for (const Role modified_role : {Role::kProximity, Role::kIllustration}) {
       if (modified_role == Role::kProximity) {
-        this->scene_graph_->AssignRole(&sg_context, this->source_id_, g_id,
+        this->scene_graph_->AssignRole(&sg_context, this->pose_source_id_, g_id,
                                        ProximityProperties());
       } else if (modified_role == Role::kIllustration) {
-        this->scene_graph_->AssignRole(&sg_context, this->source_id_, g_id,
+        this->scene_graph_->AssignRole(&sg_context, this->pose_source_id_, g_id,
                                        IllustrationProperties());
       }
       t += this->kPublishPeriod;
@@ -710,8 +779,74 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
           << "For visualized role '" << role << "' and modified role '" << role
           << "'\n";
       EXPECT_EQ(results.num_draw, 1);
+      EXPECT_EQ(results.num_deformable, 1);
     }
   }
+}
+
+/* This tests DrakeVisualizer's ability to broadcast messages about deformable
+ geometries. We'll test this by evaluating a single load message with a
+ SceneGraph populated with a deformable sphere.
+
+ In the case where deformable mesh geometry is sent, we also explicitly test
+ the mesh name and color information (as DrakeVisualizer uses bespoke code in
+ this regard).
+
+ We are testing for the presence of the expected *type* of message, but we are
+ not evaluating the mesh data produced. We assume that incorrectness in the
+ mesh data will be immediately visible in visualization. */
+TYPED_TEST(DrakeVisualizerTest, VisualizeDeformableGeometry) {
+  DrakeVisualizerParams params;
+  /* We'll expect the visualizer default color gets applied to the deformable
+   meshes -- we haven't defined any other color to the geometry. So, we'll pick
+   an arbitrary value that *isn't* the default value. */
+  params.default_color = Rgba{0.25, 0.5, 0.75, 0.5};
+  this->ConfigureDiagram(params);
+
+  constexpr double kRezHint = 0.5;
+  constexpr double kRadius = 1.0;
+  auto geometry_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(kRadius), "sphere");
+  GeometryId g_id = this->scene_graph_->RegisterDeformableGeometry(
+      this->configuration_source_id_, this->scene_graph_->world_frame_id(),
+      move(geometry_instance), kRezHint);
+  const auto& inspector = this->scene_graph_->model_inspector();
+  const VolumeMesh<double>* mesh = inspector.GetReferenceMesh(g_id);
+  ASSERT_NE(mesh, nullptr);
+  this->configuration_source_->SetConfigurations(
+      {{g_id, VectorX<double>::Zero(3 * mesh->num_vertices())}});
+
+  /* Dispatch a load message. */
+  auto context = this->diagram_->CreateDefaultContext();
+  const auto& vis_context = this->visualizer_->GetMyContextFromRoot(*context);
+  this->visualizer_->Publish(vis_context);
+
+  /* Confirm that messages were sent.  */
+  MessageResults results = this->ProcessMessages();
+  ASSERT_EQ(results.num_load, 1);
+  // No rigid geometries are added.
+  ASSERT_EQ(results.load_message.num_links, 0);
+  ASSERT_EQ(results.num_deformable, 1);
+  ASSERT_EQ(results.deformable_message.num_geom, 1);
+  EXPECT_EQ(results.deformable_message.name, "deformable_geometries");
+  EXPECT_EQ(results.deformable_message.robot_num, 0);
+
+  auto is_visualizer_color = [expected = params.default_color](
+                                 const lcmt_viewer_geometry_data& message) {
+    const auto& color = message.color;
+    const Rgba test_rgba(color[0], color[1], color[2], color[3]);
+    // The color values used in this test can all be perfectly represented by
+    // 32-bit floats (e.g., 0.5, 0.75,  etc.). So, we can use exact equality.
+    return expected == test_rgba;
+  };
+
+  const auto& geo_message = results.deformable_message.geom[0];
+  EXPECT_EQ(geo_message.type, geo_message.MESH);
+  EXPECT_EQ(geo_message.string_data, "sphere");
+  EXPECT_EQ(geo_message.num_float_data, geo_message.float_data.size());
+  EXPECT_EQ(geo_message.float_data.size(),
+            2 + geo_message.float_data[0] * 3 + geo_message.float_data[1] * 3);
+  EXPECT_TRUE(is_visualizer_color(geo_message));
 }
 
 /* This tests DrakeVisualizer's ability to replace primitive shape declarations
@@ -755,11 +890,11 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
                                      const ProximityProperties& properties,
                                      const RigidTransformd& X_PG = {}) {
     const FrameId f_id = this->scene_graph_->RegisterFrame(
-        this->source_id_, GeometryFrame(name, 0));
+        this->pose_source_id_, GeometryFrame(name, 0));
     const GeometryId g_id = this->scene_graph_->RegisterGeometry(
-        this->source_id_, f_id,
+        this->pose_source_id_, f_id,
         make_unique<GeometryInstance>(X_PG, move(shape_u_p), name));
-    this->scene_graph_->AssignRole(this->source_id_, g_id, properties);
+    this->scene_graph_->AssignRole(this->pose_source_id_, g_id, properties);
     poses.set_value(f_id, RigidTransform<T>{});
   };
 
@@ -804,7 +939,9 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
                                  const lcmt_viewer_geometry_data& message) {
     const auto& color = message.color;
     const Rgba test_rgba(color[0], color[1], color[2], color[3]);
-    return expected.AlmostEqual(test_rgba, 1e-15);
+    // The color values used in this test can all be perfectly represented by
+    // 32-bit floats (e.g., 0.5, 0.75,  etc.). So, we can use exact equality.
+    return expected == test_rgba;
   };
 
   auto pose_matches = [](const RigidTransformd& X_PG_expected,
@@ -829,7 +966,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
     const auto& link_message = results.load_message.link[i];
     EXPECT_EQ(link_message.num_geom, 1);
     const auto& geo_message = link_message.geom[0];
-    if (link_message.name == fmt::format("{}::box", this->kSourceName)) {
+    if (link_message.name == fmt::format("{}::box", this->kPoseSourceName)) {
       EXPECT_EQ(geo_message.type, geo_message.MESH);
       EXPECT_TRUE(geo_message.string_data.empty());
       EXPECT_GT(geo_message.num_float_data, 2);
@@ -839,7 +976,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
       EXPECT_TRUE(is_visualizer_color(geo_message));
       EXPECT_TRUE(pose_matches(X_PBox, geo_message));
     } else if (link_message.name ==
-               fmt::format("{}::sphere", this->kSourceName)) {
+               fmt::format("{}::sphere", this->kPoseSourceName)) {
       EXPECT_EQ(geo_message.type, geo_message.MESH);
       EXPECT_TRUE(geo_message.string_data.empty());
       EXPECT_GT(geo_message.num_float_data, 2);
@@ -849,14 +986,14 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
       EXPECT_TRUE(is_visualizer_color(geo_message));
       EXPECT_TRUE(pose_matches(X_PSphere, geo_message));
     } else if (link_message.name ==
-               fmt::format("{}::soft_half_space", this->kSourceName)) {
+               fmt::format("{}::soft_half_space", this->kPoseSourceName)) {
       /* In drake_visualizer, half spaces are big, flat boxes. */
       EXPECT_EQ(geo_message.type, geo_message.BOX);
     } else if (link_message.name ==
-               fmt::format("{}::rigid_half_space", this->kSourceName)) {
+               fmt::format("{}::rigid_half_space", this->kPoseSourceName)) {
       EXPECT_EQ(geo_message.type, geo_message.BOX);
     } else if (link_message.name ==
-               fmt::format("{}::ellipsoid", this->kSourceName)) {
+               fmt::format("{}::ellipsoid", this->kPoseSourceName)) {
       EXPECT_EQ(geo_message.type, geo_message.ELLIPSOID);
     } else {
       GTEST_FAIL() << "Link encountered which wasn't consumed as part of the "
@@ -951,9 +1088,10 @@ TYPED_TEST(DrakeVisualizerTest, DispatchLoadMessageFromModel) {
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.load_message.num_links, 1);
     ASSERT_EQ(results.load_message.link[0].name,
-              string(this->kSourceName) + "::illustration");
+              string(this->kPoseSourceName) + "::illustration");
     ASSERT_EQ(results.load_message.link[0].num_geom, 1);
     ASSERT_EQ(results.num_draw, 0);
+    ASSERT_EQ(results.num_deformable, 0);
   }
   {
     // Case: role = proximity --> one frame labeled with "proximity".
@@ -965,9 +1103,10 @@ TYPED_TEST(DrakeVisualizerTest, DispatchLoadMessageFromModel) {
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.load_message.num_links, 1);
     ASSERT_EQ(results.load_message.link[0].name,
-              string(this->kSourceName) + "::proximity");
+              string(this->kPoseSourceName) + "::proximity");
     ASSERT_EQ(results.load_message.link[0].num_geom, 1);
     ASSERT_EQ(results.num_draw, 0);
+    ASSERT_EQ(results.num_deformable, 0);
   }
 }
 

@@ -353,6 +353,11 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   /// the mass parameter in the context.
   double get_default_mass() const { return default_mass_; }
 
+  /// Returns the default rotational inertia (not Context dependent) for `this`
+  /// body B's about Bo (B's origin), expressed in B (this body's frame).
+  /// @retval I_BBo_B body B's rotational inertia about Bo, expressed in B.
+  virtual RotationalInertia<double> default_rotational_inertia() const = 0;
+
   /// (Advanced) Returns the mass of this body stored in `context`.
   virtual const T& get_mass(
       const systems::Context<T> &context) const = 0;

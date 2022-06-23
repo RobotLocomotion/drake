@@ -1,0 +1,349 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
+    "@drake//tools/workspace:check_lists_consistency.bzl",
+    "check_lists_consistency",
+)
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+)
+
+package(default_visibility = ["//visibility:private"])
+
+# Configure the NLopt preprocessor substitutions.
+cmake_configure_file(
+    name = "config_genrule",
+    src = "nlopt_config.h.in",
+    out = "src/nlopt_config.h",
+    cmakelists = ["CMakeLists.txt"],
+    defines = [
+        # Yes, we are going to build the C++ bindings.
+        "NLOPT_CXX=1",
+        # C11 standard spelling.
+        "THREADLOCAL=_Thread_local",
+        # Say "yes" to some useful things.
+        "HAVE_COPYSIGN=1",
+        "HAVE_FPCLASSIFY=1",
+        "HAVE_ISINF=1",
+        "HAVE_ISNAN=1",
+        "HAVE_LIBM=1",
+        "HAVE_QSORT_R=1",
+        "HAVE_STDINT_H=1",
+        "HAVE_UINT32_T=1",
+        # These end up being unused; empty-string is a fail-fast value.
+        "SIZEOF_UNSIGNED_INT=",
+        "SIZEOF_UNSIGNED_LONG=",
+    ],
+)
+
+# Make the config header available as a private library.
+cc_library(
+    name = "config",
+    hdrs = [":src/nlopt_config.h"],
+    includes = ["src"],
+    linkstatic = True,
+)
+
+# The _SRCS_UTIL and _HDRS_UTIL cover the subset of NLOPT_SOURCES (from the
+# upstream CMakeLists.txt) that live in the "util" folder. These files are
+# compiled as C code (not C++).
+_SRCS_UTIL = [
+    "src/util/mt19937ar.c",
+    "src/util/qsort_r.c",
+    "src/util/redblack.c",
+    "src/util/rescale.c",
+    "src/util/soboldata.h",
+    "src/util/sobolseq.c",
+    "src/util/stop.c",
+    "src/util/timer.c",
+]
+
+_HDRS_UTIL = [
+    "src/util/redblack.h",
+    "src/util/nlopt-util.h",
+    # Sadly, there is a dependency cycle from "nlopt.h" <=> "nlopt-util.h",
+    # so we need to leak this api header into the util library.
+    "src/api/nlopt.h",
+]
+
+cc_library(
+    name = "util",
+    srcs = _SRCS_UTIL,
+    hdrs = _HDRS_UTIL,
+    copts = ["-w", "-fvisibility=hidden"],
+    includes = ["src/api", "src/util"],
+    linkstatic = True,
+    deps = [
+        ":config",
+    ],
+)
+
+# The _SRCS_ALGS_C and _HDRS_ALGS_C cover the subset of NLOPT_SOURCES (from the
+# upstream CMakeLists.txt) that live in the "algs" folder, with the exception
+# of "src/algs/luksan/**" because it is licensed under LGPL-2.1+.
+_SRCS_ALGS_C = [
+    "src/algs/auglag/auglag.c",
+    "src/algs/bobyqa/bobyqa.c",
+    "src/algs/cdirect/cdirect.c",
+    "src/algs/cdirect/hybrid.c",
+    "src/algs/cobyla/cobyla.c",
+    "src/algs/crs/crs.c",
+    "src/algs/direct/DIRect.c",
+    "src/algs/direct/DIRserial.c",
+    "src/algs/direct/DIRsubrout.c",
+    "src/algs/direct/direct-internal.h",
+    "src/algs/direct/direct_wrap.c",
+    "src/algs/esch/esch.c",
+    "src/algs/isres/isres.c",
+    "src/algs/mlsl/mlsl.c",
+    "src/algs/mma/ccsa_quadratic.c",
+    "src/algs/mma/mma.c",
+    "src/algs/neldermead/nldrmd.c",
+    "src/algs/neldermead/sbplx.c",
+    "src/algs/newuoa/newuoa.c",
+    "src/algs/praxis/praxis.c",
+    "src/algs/slsqp/slsqp.c",
+]
+
+_HDRS_ALGS_C = [
+    "src/algs/auglag/auglag.h",
+    "src/algs/bobyqa/bobyqa.h",
+    "src/algs/cdirect/cdirect.h",
+    "src/algs/cobyla/cobyla.h",
+    "src/algs/crs/crs.h",
+    "src/algs/direct/direct.h",
+    "src/algs/esch/esch.h",
+    "src/algs/isres/isres.h",
+    "src/algs/mlsl/mlsl.h",
+    "src/algs/mma/mma.h",
+    "src/algs/neldermead/neldermead.h",
+    "src/algs/newuoa/newuoa.h",
+    "src/algs/praxis/praxis.h",
+    "src/algs/slsqp/slsqp.h",
+]
+
+cc_library(
+    name = "algs_c",
+    srcs = _SRCS_ALGS_C,
+    hdrs = _HDRS_ALGS_C,
+    copts = ["-w", "-fvisibility=hidden"],
+    includes = [
+        "src/algs/auglag",
+        "src/algs/bobyqa",
+        "src/algs/cdirect",
+        "src/algs/cobyla",
+        "src/algs/crs",
+        "src/algs/direct",
+        "src/algs/esch",
+        "src/algs/isres",
+        "src/algs/mlsl",
+        "src/algs/mma",
+        "src/algs/neldermead",
+        "src/algs/newuoa",
+        "src/algs/praxis",
+        "src/algs/slsqp",
+    ],
+    linkstatic = True,
+    deps = [
+        ":util",
+    ],
+)
+
+# The _SRCS_STOGO and _HDRS_STOGO cover the NLOPT_CXX sources from the upstream
+# CMakeLists.txt.
+_SRCS_STOGO = [
+    "src/algs/stogo/global.cc",
+    "src/algs/stogo/global.h",
+    "src/algs/stogo/linalg.cc",
+    "src/algs/stogo/linalg.h",
+    "src/algs/stogo/local.cc",
+    "src/algs/stogo/local.h",
+    "src/algs/stogo/stogo.cc",
+    "src/algs/stogo/stogo_config.h",
+    "src/algs/stogo/tools.cc",
+    "src/algs/stogo/tools.h",
+]
+
+_HDRS_STOGO = [
+    "src/algs/stogo/stogo.h",
+]
+
+cc_library_vendored(
+    name = "stogo",
+    srcs = _SRCS_STOGO,
+    srcs_vendored = ["drake_" + x for x in _SRCS_STOGO],
+    hdrs = _HDRS_STOGO,
+    hdrs_vendored = ["drake_" + x for x in _HDRS_STOGO],
+    copts = ["-w"],
+    includes = ["drake_src/algs/stogo"],
+    linkstatic = True,
+    deps = [
+        ":util",
+    ],
+)
+
+# The _SRCS_AGS and _HDRS_AGS cover the NLOPT_CXX11 sources from the upstream
+# CMakeLists.txt.
+_SRCS_AGS = [
+    "src/algs/ags/ags.cc",
+    "src/algs/ags/data_types.hpp",
+    "src/algs/ags/evolvent.cc",
+    "src/algs/ags/evolvent.hpp",
+    "src/algs/ags/local_optimizer.cc",
+    "src/algs/ags/local_optimizer.hpp",
+    "src/algs/ags/solver.cc",
+    "src/algs/ags/solver.hpp",
+]
+
+_HDRS_AGS = [
+    "src/algs/ags/ags.h",
+]
+
+cc_library_vendored(
+    name = "ags",
+    srcs = _SRCS_AGS,
+    srcs_vendored = ["drake_" + x for x in _SRCS_AGS],
+    hdrs = _HDRS_AGS,
+    hdrs_vendored = ["drake_" + x for x in _HDRS_AGS],
+    copts = ["-w"],
+    includes = ["drake_src/algs/ags"],
+    linkstatic = True,
+    deps = [
+        ":util",
+    ],
+)
+
+# The _SRCS_API and _HDRS_API cover the subset of NLOPT_SOURCES (from the
+# upstream CMakeLists.txt) that live in the "api" folder. These files are
+# compiled as C code (not C++).
+_SRCS_API = [
+    "src/api/deprecated.c",
+    "src/api/general.c",
+    "src/api/nlopt-internal.h",
+    "src/api/optimize.c",
+    "src/api/options.c",
+]
+
+_HDRS_API = [
+    "src/api/nlopt.h",
+]
+
+cc_library(
+    name = "api",
+    srcs = _SRCS_API,
+    hdrs = _HDRS_API,
+    copts = ["-w", "-fvisibility=hidden"],
+    includes = ["src/api"],
+    linkstatic = True,
+    deps = [
+        ":ags",
+        ":algs_c",
+        ":config",
+        ":stogo",
+        ":util",
+    ],
+)
+
+_ALL_SRCS = _SRCS_UTIL + _SRCS_ALGS_C + _SRCS_STOGO + _SRCS_AGS + _SRCS_API
+_ALL_HDRS = _HDRS_UTIL + _HDRS_ALGS_C + _HDRS_STOGO + _HDRS_AGS + _HDRS_API
+
+# Fail-fast in case upstream adds/removes files as part of an upgrade.
+check_lists_consistency(
+    files = _ALL_SRCS + _ALL_HDRS,
+    glob_include = [
+        "src/**/*.h",
+        "src/**/*.c",
+        "src/**/*.hpp",
+        "src/**/*.cc",
+    ],
+    # Keep this list of excludes in sync with the install() copyright excludes
+    # at the bottom of this file.
+    glob_exclude = [
+        # These are disabled upstream by default.
+        "src/algs/cquad/**",
+        "src/algs/direct/DIRparallel.c",
+        "src/algs/subplex/**",
+        # This is disabled in Drake specifically due to LGPL.
+        "src/algs/luksan/**",
+        # This is a main() function, not a library source.
+        "src/algs/stogo/prog.cc",
+        # This is used as a genrule input only, not a library source.
+        "src/api/nlopt-in.hpp",
+        # Drake doesn't use the fortran bindings.
+        "src/api/f77*",
+        # Drake doesn't use the octave bindings.
+        "src/octave/**",
+        # These are unit testing files, not library sources.
+        "**/*test*",
+        "**/*tst*",
+        "src/algs/stogo/rosen.h",
+        "src/util/nlopt-getopt.*",
+    ],
+)
+
+# Create api/nlopt.hpp based on api/nlopt-in.hpp.
+genrule(
+    name = "nlopt_hpp_genrule",
+    srcs = [
+        "src/api/nlopt-in.hpp",
+        "@drake//tools/workspace/nlopt_internal:patches/gen_enums.patch",
+    ],
+    outs = ["genrule/nlopt.hpp"],
+    cmd = " ".join([
+        "cp $(execpath src/api/nlopt-in.hpp) $@",
+        "&&",
+        "patch --quiet $@ $(execpath @drake//tools/workspace/nlopt_internal:patches/gen_enums.patch)",  # noqa
+    ]),
+    visibility = ["@drake//tools/workspace/nlopt_internal:__pkg__"],
+)
+
+# Provides upstream's inputs for nlopt.hpp for use by Drake's unit tests.
+exports_files(
+    [
+        "cmake/generate-cpp.cmake",
+        "src/api/nlopt-in.hpp",
+        "src/api/nlopt.h",
+    ],
+    visibility = ["@//tools/workspace/nlopt_internal:__pkg__"],
+)
+
+cc_library_vendored(
+    name = "nlopt",
+    hdrs = ["genrule/nlopt.hpp"],
+    hdrs_vendored = ["vendored/nlopt.hpp"],
+    includes = ["vendored"],
+    linkstatic = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":api",
+    ],
+)
+
+install(
+    name = "install",
+    targets = [":nlopt"],
+    docs = [
+        "AUTHORS",
+    ] + glob([
+        "src/**/COPYING",
+        "src/**/COPYRIGHT",
+        "src/**/README",
+        "src/**/README.orig",
+    ], exclude = [
+        # These are disabled upstream by default.
+        "src/algs/cquad/**",
+        "src/algs/subplex/**",
+        # This is disabled in Drake specifically due to LGPL.
+        "src/algs/luksan/**",
+    ]),
+    visibility = ["//visibility:public"],
+)

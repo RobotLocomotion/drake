@@ -221,6 +221,18 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return do_get_num_positions();
   }
 
+  /// Returns true if this joint's mobilizers allow relative rotation of the
+  /// two frames associated with this joint.
+  /// @pre the MultibodyPlant must be finalized.
+  /// @see can_translate()
+  bool can_rotate() const;
+
+  /// Returns true if this joint's mobilizers allow relative translation of the
+  /// two frames associated with this joint.
+  /// @pre the MultibodyPlant must be finalized.
+  /// @see can_rotate()
+  bool can_translate() const;
+
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
   /// the `k`th position in this joint.  @p position_index_in_joint must be
   /// in [0, num_positions()).

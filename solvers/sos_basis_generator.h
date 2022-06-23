@@ -19,7 +19,7 @@ namespace solvers {
   * @param p A polynomial
   * @return A vector whose entries are the elements of M
 */
-drake::VectorX<symbolic::Monomial> ConstructMonomialBasis(
+[[nodiscard]] drake::VectorX<symbolic::Monomial> ConstructMonomialBasis(
     const drake::symbolic::Polynomial& p);
 }  // namespace solvers
 }  // namespace drake

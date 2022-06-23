@@ -202,6 +202,8 @@ class TestSensors(unittest.TestCase):
             self.assertEqual(info.focal_y(), focal_y)
             self.assertEqual(info.center_x(), center_x)
             self.assertEqual(info.center_y(), center_y)
+            self.assertIsInstance(info.fov_x(), float)
+            self.assertIsInstance(info.fov_y(), float)
             self.assertTrue(
                 (info.intrinsic_matrix() == intrinsic_matrix).all())
             assert_pickle(self, info, mut.CameraInfo.intrinsic_matrix)

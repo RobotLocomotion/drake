@@ -1,9 +1,9 @@
 #pragma once
 
 // TODO(jwnimmer-tri): This file is a lightly-edited version of what comes out
-// of upstream's configure script. Between some combination of hard-coded
-// settings and platform-specific word size sensing, we need to reconstruct
-// and/or generate this file on the fly.
+// of upstream's configure script that has been tweaked to work on all of our
+// supported platforms, and to remove some unwanted bits. We need to document
+// a more careful procedure for how to update and/or re-create this file.
 
 #define MPI_Comm_create_errhandler(p_err_fun, p_errhandler) \
   MPI_Errhandler_create((p_err_fun), (p_errhandler))
@@ -38,7 +38,6 @@
 #define PETSC_HAVE_CXX 1
 #define PETSC_HAVE_CXX_COMPLEX 1
 #define PETSC_HAVE_CXX_COMPLEX_FIX 1
-#define PETSC_HAVE_CXX_DIALECT_CXX03 1
 #define PETSC_HAVE_CXX_DIALECT_CXX11 1
 #define PETSC_HAVE_CXX_DIALECT_CXX14 1
 #define PETSC_HAVE_CXX_DIALECT_CXX17 1
@@ -73,9 +72,6 @@
 #define PETSC_HAVE_MEMMOVE 1
 #define PETSC_HAVE_MMAP 1
 #define PETSC_HAVE_MPIUNI 1
-#define PETSC_HAVE_MPI_IN_PLACE 1
-#define PETSC_HAVE_MPI_TYPE_DUP 1
-#define PETSC_HAVE_MPI_TYPE_GET_ENVELOPE 1
 #define PETSC_HAVE_NANOSLEEP 1
 #define PETSC_HAVE_NETDB_H 1
 #define PETSC_HAVE_NETINET_IN_H 1

@@ -57,6 +57,11 @@ class WeldJointTest : public ::testing::Test {
   const Translation3d X_FM_{0, 0.5, 0};
 };
 
+TEST_F(WeldJointTest, CanRotateOrTranslate) {
+  EXPECT_FALSE(joint_->can_rotate());
+  EXPECT_FALSE(joint_->can_translate());
+}
+
 TEST_F(WeldJointTest, Type) {
   const Joint<double>& base = *joint_;
   EXPECT_EQ(base.type_name(), WeldJoint<double>::kTypeName);

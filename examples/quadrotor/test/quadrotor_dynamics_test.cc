@@ -35,6 +35,8 @@ using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::Simulator;
 
+constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+
 // This test program compares the behaviour of two plants:
 //
 // (#1) a GenericQuadrotor created from a QuadrotorPlant, and
@@ -43,8 +45,8 @@ using systems::Simulator;
 // file into a MultibodyPlant.
 //
 // Both types of plant provide a method SetState whose argument is organized as
-// [x, y, z, r, p, y, xdot, ydot, zdot, rdot, pdot, ydot], but the underlying
-// State representation in the Context is NOT necessarily organized that way.
+// [x, y, z, r, p, y, ẋ, ẏ, ż, ṙ, ṗ, ẏ], but the underlying state representation
+// in the Context is NOT necessarily organized that way.
 //
 // Both types also provide GetPose.
 
@@ -64,7 +66,8 @@ class GenericQuadrotor: public Diagram<double> {
     builder.BuildInto(this);
   }
 
-  // The `x` is a 12-element state vector per the file overview.
+  // @param[in,out] context a mutable Context to be set from the state vector x.
+  // @param[in] x 12-element state vector [x, y, z, r, p, y, ẋ, ẏ, ż, ṙ, ṗ, ẏ].
   void SetState(Context<double>* context, const VectorXd& x) const {
     DRAKE_DEMAND(x.size() == 12);
     Context<double>& plant_context =
@@ -72,12 +75,29 @@ class GenericQuadrotor: public Diagram<double> {
     plant_context.SetContinuousState(x);
   }
 
+  // Returns X_WB, the pose relating world W to the base-link body B.
+  // @param[in] context contains the state of the multibody system.
   RigidTransformd GetPose(const Context<double>& context) const {
+    // Reminder: The state vector is [x, y, z, r, p, y, ẋ, ẏ, ż, ṙ, ṗ, ẏ].
     const VectorXd state =
         context.get_continuous_state().get_vector().CopyToVector();
     const Vector3d xyz = state.segment(0, 3);
-    const Vector3d rpy = state.segment(6, 3);
+    const Vector3d rpy = state.segment(3, 3);
     return RigidTransformd(RollPitchYawd(rpy), xyz);
+  }
+
+  // Returns V_WB_W, base-link B's spatial velocity measured and expressed in
+  // the world frame W.
+  // @param[in] context contains the state of the multibody system.
+  SpatialVelocity<double> GetVelocity(const Context<double>& context) const {
+    // Reminder: The state vector is [x, y, z, r, p, y, ẋ, ẏ, ż, ṙ, ṗ, ẏ].
+    const VectorXd state =
+        context.get_continuous_state().get_vector().CopyToVector();
+    const Vector3d xyz_dot = state.segment(6, 3);  // v_WBo_W = [ẋ, ẏ, ż].
+    const Vector3d rpy_dot = state.segment(9, 3);
+    const math::RollPitchYaw<double> rpy(state.segment(3, 3));
+    const Vector3d w_WB_W = rpy.CalcAngularVelocityInParentFromRpyDt(rpy_dot);
+    return SpatialVelocity<double>(w_WB_W, xyz_dot);
   }
 
  private:
@@ -99,9 +119,9 @@ class MultibodyQuadrotor: public Diagram<double> {
     builder.BuildInto(this);
   }
 
-  // The `x` is a 12-element state vector per the file overview.
+  // @param[in,out] context a mutable Context to be set from the state vector x.
+  // @param[in] x 12-element state vector [x, y, z, r, p, y, ẋ, ẏ, ż, ṙ, ṗ, ẏ].
   void SetState(Context<double>* context, const VectorXd& x) const {
-    // Unpack x into its elements as given by the file overview.
     const Vector3d xyz = x.segment(0, 3);
     const Vector3d rpy = x.segment(3, 3);
     const Vector3d xyz_dot = x.segment(6, 3);
@@ -122,10 +142,23 @@ class MultibodyQuadrotor: public Diagram<double> {
     plant_->SetFreeBodySpatialVelocity(&plant_context, *body_, V_WB);
   }
 
+  // Returns X_WB, the pose relating world W to the base-link body B.
+  // @param[in] context contains the state of the multibody system.
   RigidTransformd GetPose(const Context<double>& context) const {
     const Context<double>& plant_context =
         this->GetSubsystemContext(*plant_, context);
     return plant_->EvalBodyPoseInWorld(plant_context, *body_);
+  }
+
+  // Returns V_WB_W, base-link B's spatial velocity measured and expressed in
+  // the world frame W.
+  // @param[in] context contains the state of the multibody system.
+  SpatialVelocity<double> GetVelocity(const Context<double>& context) const {
+    const Context<double>& plant_context =
+        this->GetSubsystemContext(*plant_, context);
+    const SpatialVelocity<double>& V_WB_W =
+        plant_->EvalBodySpatialVelocityInWorld(plant_context, *body_);
+    return V_WB_W;
   }
 
  private:
@@ -143,15 +176,54 @@ void TestPassiveBehavior(const VectorXd& x0) {
 
   ge_model.SetState(&ge_context, x0);
   mb_model.SetState(&mb_context, x0);
+
+  // Verify initial configuration (rotation matrix and position).
+  const RigidTransformd ge_initial_pose = ge_model.GetPose(ge_context);
+  const RigidTransformd mb_initial_pose = mb_model.GetPose(mb_context);
+  EXPECT_TRUE(CompareMatrices(
+      ge_initial_pose.translation(), mb_initial_pose.translation(),
+        4 * kEpsilon, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      ge_initial_pose.rotation().matrix(), mb_initial_pose.rotation().matrix(),
+        4 * kEpsilon, MatrixCompareType::absolute));
+
+  // Verify initial motion (translational and rotational velocities).
+  const SpatialVelocity<double> ge_initial_velocity =
+      ge_model.GetVelocity(ge_context);
+  const SpatialVelocity<double> mb_initial_velocity =
+      mb_model.GetVelocity(mb_context);
+  EXPECT_TRUE(CompareMatrices(
+      ge_initial_velocity.translational(), mb_initial_velocity.translational(),
+      4 * kEpsilon, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      ge_initial_velocity.rotational(), mb_initial_velocity.rotational(),
+      4 * kEpsilon, MatrixCompareType::absolute));
+
+  // Simulate and advance time.
   ge_simulator.AdvanceTo(kSimulationDuration);
   mb_simulator.AdvanceTo(kSimulationDuration);
 
+  // Verify configuration after advancing time. Herein, the allowable error in
+  // rotation is much higher than the allowable error in translation.
   const RigidTransformd ge_pose = ge_model.GetPose(ge_context);
   const RigidTransformd mb_pose = mb_model.GetPose(mb_context);
   EXPECT_TRUE(CompareMatrices(
         ge_pose.translation(), mb_pose.translation(),
         1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(ge_pose.rotation().IsNearlyEqualTo(ge_pose.rotation(), 1e-10));
+  EXPECT_TRUE(CompareMatrices(
+        ge_pose.rotation().matrix(), mb_pose.rotation().matrix(),
+        1e-5, MatrixCompareType::absolute));
+
+  // Verify motion after advancing time. Herein, the allowable error in
+  // rotation is much higher than the allowable error in translation.
+  const SpatialVelocity<double> ge_velocity = ge_model.GetVelocity(ge_context);
+  const SpatialVelocity<double> mb_velocity = mb_model.GetVelocity(mb_context);
+  EXPECT_TRUE(CompareMatrices(
+      ge_velocity.translational(), mb_velocity.translational(),
+      1E-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      ge_velocity.rotational(), mb_velocity.rotational(),
+      1E-4, MatrixCompareType::absolute));
 }
 
 // Test comparing the state for of each kind of plant under passive behaviour.

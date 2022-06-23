@@ -71,13 +71,6 @@ drake_pybind_library(
     ],
 )
 
-drake_py_library(
-    name = "simple_ui_py",
-    srcs = ["simple_ui.py"],
-    imports = PACKAGE_INFO.py_imports,
-    deps = [":module_py"],
-)
-
 PY_LIBRARIES_WITH_INSTALL = [
     ":kuka_iiwa_py",
     ":planner_py",
@@ -86,7 +79,6 @@ PY_LIBRARIES_WITH_INSTALL = [
 
 PY_LIBRARIES = [
     ":module_py",
-    ":simple_ui_py",
 ]
 
 drake_py_unittest(
@@ -113,18 +105,6 @@ drake_py_unittest(
     deps = [
         ":schunk_wsg_py",
         "//bindings/pydrake/systems",
-    ],
-)
-
-drake_py_unittest(
-    name = "simple_ui_test",
-    data = [
-        "//multibody/benchmarks/acrobot:models",
-    ],
-    deps = [
-        ":simple_ui_py",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
-        "//bindings/pydrake/multibody",
     ],
 )
 

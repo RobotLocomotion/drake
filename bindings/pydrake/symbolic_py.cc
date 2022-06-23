@@ -8,6 +8,8 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_py_unapply.h"
@@ -512,11 +514,25 @@ PYBIND11_MODULE(symbolic, m) {
           const Expression& e) { return Substitute(M, var, e); },
       py::arg("m"), py::arg("var"), py::arg("e"), doc.Substitute.doc_3args);
 
+  {
+    using Enum = SinCosSubstitutionType;
+    constexpr auto& enum_doc = doc.SinCosSubstitutionType;
+    py::enum_<Enum> enum_py(m, "SinCosSubstitutionType", enum_doc.doc);
+    enum_py  // BR
+        .value("kAngle", Enum::kAngle, enum_doc.kAngle.doc)
+        .value("kHalfAnglePreferSin", Enum::kHalfAnglePreferSin,
+            enum_doc.kHalfAnglePreferSin.doc)
+        .value("kHalfAnglePreferCos", Enum::kHalfAnglePreferCos,
+            enum_doc.kHalfAnglePreferCos.doc);
+  }
+
   py::class_<SinCos>(m, "SinCos", doc.SinCos.doc)
-      .def(py::init<const Variable&, const Variable&>(), py::arg("s"),
-          py::arg("c"), doc.SinCos.ctor.doc)
+      .def(py::init<Variable, Variable, SinCosSubstitutionType>(), py::arg("s"),
+          py::arg("c"), py::arg("type") = SinCosSubstitutionType::kAngle,
+          doc.SinCos.ctor.doc)
       .def_readwrite("s", &SinCos::s, doc.SinCos.s.doc)
-      .def_readwrite("c", &SinCos::c, doc.SinCos.c.doc);
+      .def_readwrite("c", &SinCos::c, doc.SinCos.c.doc)
+      .def_readwrite("type", &SinCos::type, doc.SinCos.type.doc);
 
   m.def(
       "Substitute",
@@ -733,8 +749,8 @@ PYBIND11_MODULE(symbolic, m) {
   using symbolic::Polynomial;
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Polynomial>(m, "Polynomial", doc.Polynomial.doc)
-      .def(py::init<>(), doc.Polynomial.ctor.doc_0args)
+  py::class_<Polynomial> polynomial_cls(m, "Polynomial", doc.Polynomial.doc);
+  polynomial_cls.def(py::init<>(), doc.Polynomial.ctor.doc_0args)
       .def(py::init<Polynomial::MapType>(), py::arg("map"),
           doc.Polynomial.ctor.doc_1args_map)
       .def(py::init<const Monomial&>(), py::arg("m"),
@@ -816,8 +832,6 @@ PYBIND11_MODULE(symbolic, m) {
       .def(-py::self)
       .def(py::self / double())
       .def("EqualTo", &Polynomial::EqualTo, doc.Polynomial.EqualTo.doc)
-      .def("EqualToAfterExpansion", &Polynomial::EqualToAfterExpansion,
-          doc.Polynomial.EqualToAfterExpansion.doc)
       .def(py::self == py::self)
       .def(py::self != py::self)
       .def("__hash__",
@@ -862,12 +876,35 @@ PYBIND11_MODULE(symbolic, m) {
           py::arg("indeterminates"), py::arg("indeterminates_values"),
           doc.Polynomial.EvaluateIndeterminates.doc)
       .def(
+          "EvaluateWithAffineCoefficients",
+          [](const symbolic::Polynomial& self,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>&
+                  indeterminates,
+              const Eigen::Ref<const Eigen::MatrixXd>& indeterminates_values) {
+            Eigen::MatrixXd A;
+            VectorX<symbolic::Variable> decision_variables;
+            Eigen::VectorXd b;
+            self.EvaluateWithAffineCoefficients(indeterminates,
+                indeterminates_values, &A, &decision_variables, &b);
+            return std::make_tuple(A, decision_variables, b);
+          },
+          py::arg("indeterminates"), py::arg("indeterminates_values"),
+          doc.Polynomial.EvaluateWithAffineCoefficients.doc)
+      .def(
           "Jacobian",
           [](const Polynomial& p,
               const Eigen::Ref<const VectorX<Variable>>& vars) {
             return p.Jacobian(vars);
           },
           py::arg("vars"), doc.Polynomial.Jacobian.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  polynomial_cls.def("EqualToAfterExpansion",
+      WrapDeprecated(doc.Polynomial.EqualToAfterExpansion.doc_deprecated,
+          &Polynomial::EqualToAfterExpansion),
+      doc.Polynomial.EqualToAfterExpansion.doc_deprecated);
+#pragma GCC diagnostic pop
 
   m.def(
       "Evaluate",
@@ -986,7 +1023,7 @@ PYBIND11_MODULE(symbolic, m) {
             Eigen::RowVectorXd coeffs(map_var_to_index.size());
             double constant_term;
             symbolic::DecomposeAffineExpression(
-                e, map_var_to_index, coeffs, &constant_term);
+                e, map_var_to_index, &coeffs, &constant_term);
             return std::make_pair(coeffs, constant_term);
           },
           py::arg("e"), py::arg("map_var_to_index"),

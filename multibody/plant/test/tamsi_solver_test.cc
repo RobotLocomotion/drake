@@ -1001,7 +1001,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
         v_stiction, epsilon_v, v);
 
     // Verify the result.
-    const double J_tolerance = 30 * std::numeric_limits<double>::epsilon();
+    const double J_tolerance = 40 * std::numeric_limits<double>::epsilon();
     EXPECT_TRUE(CompareMatrices(J, J_expected, J_tolerance,
                                 MatrixCompareType::relative));
   }

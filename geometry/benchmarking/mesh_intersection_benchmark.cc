@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "fmt/format.h"
 #include <benchmark/benchmark.h>
 
@@ -236,9 +238,9 @@ BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, RigidSoftMesh)
   std::unique_ptr<TriangleSurfaceMesh<double>> surface_SR;
   std::unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>> e_SR;
   for (auto _ : state) {
-    SurfaceVolumeIntersector<TriangleSurfaceMesh<double>> intersector;
+    SurfaceVolumeIntersector<TriMeshBuilder<double>, Obb> intersector;
     intersector.SampleVolumeFieldOnSurface(field_S_, bvh_S, mesh_R_, bvh_R,
-                                           X_SR_, TriMeshBuilder<double>());
+                                           X_SR_);
     surface_SR = intersector.release_mesh();
     e_SR = intersector.release_field();
   }

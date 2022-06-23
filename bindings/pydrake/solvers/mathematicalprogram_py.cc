@@ -21,7 +21,6 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/solver_type_converter.h"
-#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 using Eigen::Dynamic;
 using std::string;
@@ -1503,13 +1502,20 @@ for every column of ``prog_var_vals``. )""")
       .def("indeterminates_index", &MathematicalProgram::indeterminates_index,
           doc.MathematicalProgram.indeterminates_index.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
-          // dtype = object arrays must be copied, and cannot be  referenced.
+          // dtype = object arrays must be copied, and cannot be referenced.
           py_rvp::copy, doc.MathematicalProgram.decision_variables.doc)
       .def("decision_variable", &MathematicalProgram::decision_variable,
           py::arg("i"), doc.MathematicalProgram.decision_variable.doc)
       .def("decision_variable_index",
           &MathematicalProgram::decision_variable_index,
           doc.MathematicalProgram.decision_variable_index.doc)
+      .def("GetVariableScaling", &MathematicalProgram::GetVariableScaling,
+          doc.MathematicalProgram.GetVariableScaling.doc)
+      .def("SetVariableScaling", &MathematicalProgram::SetVariableScaling,
+          py::arg("var"), py::arg("s"),
+          doc.MathematicalProgram.SetVariableScaling.doc)
+      .def("ClearVariableScaling", &MathematicalProgram::ClearVariableScaling,
+          doc.MathematicalProgram.ClearVariableScaling.doc)
       .def("RemoveCost", &MathematicalProgram::RemoveCost, py::arg("cost"),
           doc.MathematicalProgram.RemoveCost.doc)
       .def("RemoveConstraint", &MathematicalProgram::RemoveConstraint,
@@ -1677,6 +1683,8 @@ void BindEvaluatorsAndBindings(py::module m) {
           },
           py::arg("new_A"), py::arg("new_lb"), py::arg("new_ub"),
           doc.LinearConstraint.UpdateCoefficients.doc_sparse_A)
+      .def("RemoveTinyCoefficient", &LinearConstraint::RemoveTinyCoefficient,
+          py::arg("tol"), doc.LinearConstraint.RemoveTinyCoefficient.doc)
       .def(
           "UpdateLowerBound",
           [](LinearConstraint& self, const Eigen::VectorXd& new_lb) {
@@ -2001,6 +2009,8 @@ void BindFreeFunctions(py::module m) {
           "MakeSolver", &solvers::MakeSolver, py::arg("id"), doc.MakeSolver.doc)
       .def("MakeFirstAvailableSolver", &solvers::MakeFirstAvailableSolver,
           py::arg("solver_ids"), doc.MakeFirstAvailableSolver.doc)
+      .def("GetAvailableSolvers", &solvers::GetAvailableSolvers,
+          py::arg("prog_type"), doc.GetAvailableSolvers.doc)
       .def("Solve",
           py::overload_cast<const MathematicalProgram&,
               const std::optional<Eigen::VectorXd>&,

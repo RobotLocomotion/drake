@@ -252,6 +252,8 @@ PYBIND11_MODULE(sensors, m) {
         .def("height", &Class::height, cls_doc.height.doc)
         .def("focal_x", &Class::focal_x, cls_doc.focal_x.doc)
         .def("focal_y", &Class::focal_y, cls_doc.focal_y.doc)
+        .def("fov_x", &Class::fov_x, cls_doc.fov_x.doc)
+        .def("fov_y", &Class::fov_y, cls_doc.fov_y.doc)
         .def("center_x", &Class::center_x, cls_doc.center_x.doc)
         .def("center_y", &Class::center_y, cls_doc.center_y.doc)
         .def("intrinsic_matrix", &Class::intrinsic_matrix,

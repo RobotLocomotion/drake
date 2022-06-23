@@ -8,12 +8,12 @@ load(
 )
 
 package(
-    default_visibility = ["//multibody/fem:__subpackages__"],
+    default_visibility = ["//visibility:public"],
 )
 
 drake_cc_package_library(
     name = "fem",
-    visibility = ["//multibody/fem:__subpackages__"],
+    visibility = ["//visibility:public"],
     deps = [
         ":acceleration_newmark_scheme",
         ":calc_lame_parameters",
@@ -360,9 +360,11 @@ drake_cc_library(
     hdrs = [
         "petsc_symmetric_block_sparse_matrix.h",
     ],
-    deps = [
+    interface_deps = [
         ":schur_complement",
         "//common:essential",
+    ],
+    deps = [
         "//common:unused",
         "@petsc",
     ],

@@ -234,7 +234,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         params.prefix = "py_visualizer"
         params.delete_on_initialization_event = False
         self.assertNotIn("object at 0x", repr(params))
-        vis = mut.MeshcatVisualizerCpp_[T](meshcat=meshcat, params=params)
+        vis = mut.MeshcatVisualizer_[T](meshcat=meshcat, params=params)
         vis.Delete()
         self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])
         animation = vis.StartRecording(set_transforms_while_recording=True)
@@ -246,17 +246,25 @@ class TestGeometryVisualizers(unittest.TestCase):
 
         builder = DiagramBuilder_[T]()
         scene_graph = builder.AddSystem(mut.SceneGraph_[T]())
-        mut.MeshcatVisualizerCpp_[T].AddToBuilder(builder=builder,
-                                                  scene_graph=scene_graph,
-                                                  meshcat=meshcat,
-                                                  params=params)
-        mut.MeshcatVisualizerCpp_[T].AddToBuilder(
+        mut.MeshcatVisualizer_[T].AddToBuilder(builder=builder,
+                                               scene_graph=scene_graph,
+                                               meshcat=meshcat,
+                                               params=params)
+        mut.MeshcatVisualizer_[T].AddToBuilder(
             builder=builder,
             query_object_port=scene_graph.get_query_output_port(),
             meshcat=meshcat,
             params=params)
 
     def test_meshcat_visualizer_scalar_conversion(self):
+        meshcat = mut.Meshcat()
+        vis = mut.MeshcatVisualizer(meshcat)
+        vis_autodiff = vis.ToAutoDiffXd()
+        self.assertIsInstance(vis_autodiff,
+                              mut.MeshcatVisualizer_[AutoDiffXd])
+
+    def test_meshcat_visualizer_scalar_conversion_to_be_deprecated(self):
+        # This checks a legacy API spelling that will be deprecated eventually.
         meshcat = mut.Meshcat()
         vis = mut.MeshcatVisualizerCpp(meshcat)
         vis_autodiff = vis.ToAutoDiffXd()
@@ -266,7 +274,7 @@ class TestGeometryVisualizers(unittest.TestCase):
     @numpy_compare.check_nonsymbolic_types
     def test_meshcat_point_cloud_visualizer(self, T):
         meshcat = mut.Meshcat()
-        visualizer = mut.MeshcatPointCloudVisualizerCpp_[T](
+        visualizer = mut.MeshcatPointCloudVisualizer_[T](
             meshcat=meshcat, path="cloud", publish_period=1/12.0)
         visualizer.set_point_size(0.1)
         visualizer.set_default_rgba(mut.Rgba(0, 0, 1, 1))
@@ -281,7 +289,17 @@ class TestGeometryVisualizers(unittest.TestCase):
         if T == float:
             ad_visualizer = visualizer.ToAutoDiffXd()
             self.assertIsInstance(
-                ad_visualizer, mut.MeshcatPointCloudVisualizerCpp_[AutoDiffXd])
+                ad_visualizer, mut.MeshcatPointCloudVisualizer_[AutoDiffXd])
+
+    def test_meshcat_point_cloud_visualizer_to_be_deprecated(self):
+        # This checks a legacy API spelling that will be deprecated eventually.
+        meshcat = mut.Meshcat()
+        visualizer = mut.MeshcatPointCloudVisualizerCpp(
+            meshcat=meshcat, path="cloud", publish_period=1/12.0)
+        visualizer.set_point_size(0.1)
+        ad_visualizer = visualizer.ToAutoDiffXd()
+        self.assertIsInstance(
+            ad_visualizer, mut.MeshcatPointCloudVisualizerCpp_[AutoDiffXd])
 
     def test_start_meshcat(self):
         # StartMeshcat only performs interesting work on cloud notebook hosts.

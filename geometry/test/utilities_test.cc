@@ -30,8 +30,8 @@ GTEST_TEST(GeometryUtilities, CanonicalizeGeometryName) {
   };
 
   // Test various names -- including names with internal whitespace.
-  for (const std::string& canonical :
-       {"name", "with space", "with\ttab", "with\nnewline",
+  for (const std::string& canonical : std::initializer_list<std::string>{
+        "name", "with space", "with\ttab", "with\nnewline",
         "with\vvertical tab", "with\fformfeed"}) {
     // Confirms that the given name canonicalizes to the given canonical name.
     auto expect_canonical = [&canonical](const std::string& name) {
@@ -45,7 +45,7 @@ GTEST_TEST(GeometryUtilities, CanonicalizeGeometryName) {
     expect_unchanged(canonical);
 
     // Characters that *do* get trimmed off.
-    for (const std::string& whitespace : {" ", "\t"}) {
+    for (const char whitespace : {' ', '\t'}) {
       expect_canonical(whitespace + canonical);
       expect_canonical(whitespace + canonical + whitespace);
       expect_canonical(canonical + whitespace);
@@ -55,7 +55,7 @@ GTEST_TEST(GeometryUtilities, CanonicalizeGeometryName) {
     // These should be considered a defect in the SDF trimming logic. An issue
     // has been submitted and these tests should be updated when the sdformat
     // trimming logic has been updated.
-    for (const std::string& whitespace : {"\n", "\v", "\f"}) {
+    for (const char whitespace : {'\n', '\v', '\f'}) {
       expect_unchanged(whitespace + canonical + whitespace);
       expect_unchanged(whitespace + canonical);
       expect_unchanged(canonical + whitespace);

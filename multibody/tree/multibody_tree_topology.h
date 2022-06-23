@@ -676,10 +676,14 @@ class MultibodyTreeTopology {
     // Checks for graph loops. Each body can have only one inboard mobilizer.
     if (bodies_[outboard_body].inboard_mobilizer.is_valid()) {
       throw std::runtime_error(
-          "This mobilizer is creating a closed loop since the outboard body "
-          "already has an inboard mobilizer connected to it. "
-          "If a physical loop is really needed, consider using a constraint "
-          "instead.");
+          "When creating a model, an attempt was made to add two inboard "
+          "joints to the same body; this is not allowed. One possible cause "
+          "might be attempting to weld a robot to World somewhere other "
+          "than its base link; see Drake issue #17429 for discussion and "
+          "work-arounds, e.g., reversing some joint parent/child directions. "
+          "Another possible cause might be attempting to form a kinematic "
+          "loop using joints; to create a loop, consider using a "
+          "LinearBushingRollPitchYaw instead of a joint.");
     }
 
     // The checks above guarantee that it is the first time we add an inboard

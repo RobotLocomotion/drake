@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
@@ -16,6 +17,7 @@ namespace meshcat {
 namespace {
 
 using Eigen::Vector2d;
+using Eigen::VectorXd;
 using geometry::Meshcat;
 using geometry::MeshcatVisualizer;
 using geometry::SceneGraph;
@@ -294,6 +296,116 @@ TEST_F(JointSlidersTest, Run) {
   const std::string updated = meshcat_->GetPackedTransform(geometry_path);
   ASSERT_FALSE(updated.empty());
   EXPECT_NE(updated, original);
+}
+
+// Tests that SetPositions diagnoses num_positions mismatches.
+TEST_F(JointSlidersTest, SetPositionsWrongNumPositions) {
+  AddAcrobot();
+  JointSliders<double> dut(meshcat_, &plant_);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.SetPositions(Vector1d::Zero()),
+      "Expected q of size 2, but got size 1 instead");
+}
+
+/* Tests the "SetPositions" function with the Acrobot model (number of positions
+ on the MultibodyPlant equal to the number of joints). */
+TEST_F(JointSlidersTest, SetPositionsAcrobot) {
+  // Acrobot has two positions, both of them joints.
+  AddAcrobot();
+  JointSliders<double> dut(meshcat_, &plant_);
+  auto context = dut.CreateDefaultContext();
+  ASSERT_EQ(dut.get_output_port().size(), 2);
+
+  // The initial configuration should set both joints to 0.
+  auto positions = dut.get_output_port().Eval(*context);
+  EXPECT_EQ(positions[0], 0);
+  EXPECT_EQ(positions[1], 0);
+  EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), 0);
+  EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint2), 0);
+
+  /* Setting the positions should update both the initial value and sliders.
+   Do not initialize q to something outside of (lower_limit, upper_limit), which
+   defaults to (-10, 10). */
+  const Vector2d q{-4, 7};
+  dut.SetPositions(q);
+  positions = dut.get_output_port().Eval(*context);
+  EXPECT_EQ(positions[0], q[0]);
+  EXPECT_EQ(positions[1], q[1]);
+  EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), q[0]);
+  EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint2), q[1]);
+
+  // Deleting should remove the sliders, but the positions should remain.
+  dut.Delete();
+  positions = dut.get_output_port().Eval(*context);
+  EXPECT_EQ(positions[0], q[0]);
+  EXPECT_EQ(positions[1], q[1]);
+  EXPECT_THROW(meshcat_->GetSliderValue(kAcrobotJoint1), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kAcrobotJoint2), std::exception);
+}
+
+/* Tests the "SetPositions" function with the Kuka IIWA Robot model (number of
+ positions on the MultibodyPlant not equal to the number of joints). */
+TEST_F(JointSlidersTest, SetPositionsKukaIiwaRobot) {
+  // Kuka IIWA has 14 positions, 7 of them are joints.
+  static constexpr char kKukaIiwaJoint1[] = "iiwa_joint_1";  // Index: 7
+  static constexpr char kKukaIiwaJoint2[] = "iiwa_joint_2";  // Index: 8
+  static constexpr char kKukaIiwaJoint3[] = "iiwa_joint_3";  // Index: 9
+  static constexpr char kKukaIiwaJoint4[] = "iiwa_joint_4";  // Index: 10
+  static constexpr char kKukaIiwaJoint5[] = "iiwa_joint_5";  // Index: 11
+  static constexpr char kKukaIiwaJoint6[] = "iiwa_joint_6";  // Index: 12
+  static constexpr char kKukaIiwaJoint7[] = "iiwa_joint_7";  // Index: 13
+  Add("drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_primitive_collision.urdf");
+  plant_.Finalize();
+  JointSliders<double> dut(meshcat_, &plant_);
+  auto context = dut.CreateDefaultContext();
+  EXPECT_EQ(dut.get_output_port().size(), 14);
+
+  /* The initial configuration should should be [1, 0, ..., 0] -- the first
+   index should be 1, everything else 0.  Therefore, every joint slider should
+   have a value of 0 as well. */
+  VectorXd initial = VectorXd::Zero(14);
+  initial[0] = 1;
+  auto positions = dut.get_output_port().Eval(*context);
+  EXPECT_TRUE(CompareMatrices(positions, initial));
+  VectorXd slider_values = VectorXd(7);
+  slider_values << meshcat_->GetSliderValue(kKukaIiwaJoint1),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint2),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint3),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint4),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint5),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint6),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint7);
+  EXPECT_TRUE(CompareMatrices(slider_values, VectorXd::Zero(7)));
+
+  // Setting the positions should update both the initial value and sliders.
+  VectorXd q(14);
+  q << 0, 0, 0, 1,  // floating base quaternion
+       -3, -2, -1,  // floating base position
+       0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07;  // iiwa joints
+  dut.SetPositions(q);
+  positions = dut.get_output_port().Eval(*context);
+  EXPECT_TRUE(CompareMatrices(positions, q));
+  slider_values << meshcat_->GetSliderValue(kKukaIiwaJoint1),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint2),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint3),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint4),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint5),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint6),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint7);
+  EXPECT_TRUE(CompareMatrices(slider_values, q.tail<7>()));
+
+  // Deleting should remove the sliders, but the positions should remain.
+  dut.Delete();
+  positions = dut.get_output_port().Eval(*context);
+  EXPECT_TRUE(CompareMatrices(positions, q));
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint1), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint2), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint3), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint4), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint5), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint6), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint7), std::exception);
 }
 
 }  // namespace

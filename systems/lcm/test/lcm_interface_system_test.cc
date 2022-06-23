@@ -19,6 +19,7 @@ namespace lcm {
 namespace {
 
 using drake::lcm::DrakeLcm;
+using drake::lcm::DrakeLcmParams;
 using drake::lcm::DrakeLcmInterface;
 using systems::DiagramBuilder;
 
@@ -30,11 +31,11 @@ TEST_P(LcmInterfaceSystemTest, AcceptanceTest) {
   DiagramBuilder<double> builder;
   std::unique_ptr<DrakeLcm> drake_lcm;
 
-  // The device under test is the LcmInterfaceSystem.  We test all three
+  // The device under test is the LcmInterfaceSystem.  We test all four
   // constructor varieties.
   LcmInterfaceSystem* dut{};
   const int param = GetParam();
-  DRAKE_DEMAND((param >= 0) && (param <= 2));
+  DRAKE_DEMAND((param >= 0) && (param <= 3));
   switch (param) {
     case 0: {
       dut = builder.AddSystem<LcmInterfaceSystem>();
@@ -45,6 +46,12 @@ TEST_P(LcmInterfaceSystemTest, AcceptanceTest) {
       break;
     }
     case 2: {
+      DrakeLcmParams params;
+      params.lcm_url = "memq://";
+      dut = builder.AddSystem<LcmInterfaceSystem>(params);
+      break;
+    }
+    case 3: {
       drake_lcm = std::make_unique<DrakeLcm>();
       dut = builder.AddSystem<LcmInterfaceSystem>(drake_lcm.get());
       break;
@@ -131,7 +138,7 @@ TEST_F(LcmInterfaceSystemTest, NameCollisionTest) {
 }
 
 INSTANTIATE_TEST_SUITE_P(test, LcmInterfaceSystemTest,
-                        ::testing::Values(0, 1, 2));
+                        ::testing::Values(0, 1, 2, 3));
 
 }  // namespace
 }  // namespace lcm

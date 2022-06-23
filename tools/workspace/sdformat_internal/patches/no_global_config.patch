@@ -1,0 +1,100 @@
+Change the global singleton into a bomb.
+
+Use the default config when parsing the built-in root.sdf, and
+in the ign_sdf command-line tool.
+
+--- src/ParserConfig.cc
++++ src/ParserConfig.cc
+@@ -65,8 +65,7 @@
+ /////////////////////////////////////////////////
+ ParserConfig &ParserConfig::GlobalConfig()
+ {
+-  static auto *defaultConfig = new ParserConfig;
+-  return *defaultConfig;
++  throw std::runtime_error("Drake must never use ParserConfig::GlobalConfig()");
+ }
+ 
+ /////////////////////////////////////////////////
+--- src/Root.cc
++++ src/Root.cc
+@@ -179,7 +179,7 @@
+ {
+   Errors errors;
+   SDFPtr sdfParsed(new SDF());
+-  init(sdfParsed);
++  init(sdfParsed, sdf::ParserConfig{});
+ 
+   // Read an SDF string, and store the result in sdfParsed.
+   if (!readString(_sdf, _config, sdfParsed, errors))
+--- src/ign.cc
++++ src/ign.cc
+@@ -43,7 +43,7 @@
+   int result = 0;
+ 
+   sdf::Root root;
+-  sdf::Errors errors = root.Load(_path);
++  sdf::Errors errors = root.Load(_path, sdf::ParserConfig{});
+   if (!errors.empty())
+   {
+     for (auto &error : errors)
+@@ -86,14 +86,18 @@
+ 
+   sdf::SDFPtr sdf(new sdf::SDF());
+ 
+-  if (!sdf::init(sdf))
++  if (!sdf::init(sdf, sdf::ParserConfig{}))
+   {
+     std::cerr << "Error: SDF schema initialization failed.\n";
+     return -1;
+   }
+ 
+-  if (!sdf::readFile(_path, sdf))
++  if (!sdf::readFile(_path, sdf::ParserConfig{}, sdf, errors))
+   {
++    for (auto &error : errors)
++    {
++      std::cerr << error << std::endl;
++    }
+     std::cerr << "Error: SDF parsing the xml failed.\n";
+     return -1;
+   }
+@@ -126,7 +130,7 @@
+   {
+     sdf->Version(_version);
+   }
+-  if (!sdf::init(sdf))
++  if (!sdf::init(sdf, sdf::ParserConfig{}))
+   {
+     std::cerr << "Error: SDF schema initialization failed.\n";
+     return -1;
+@@ -149,14 +153,19 @@
+ 
+   sdf::SDFPtr sdf(new sdf::SDF());
+ 
+-  if (!sdf::init(sdf))
++  if (!sdf::init(sdf, sdf::ParserConfig{}))
+   {
+     std::cerr << "Error: SDF schema initialization failed.\n";
+     return -1;
+   }
+ 
+-  if (!sdf::readFile(_path, sdf))
++  sdf::Errors errors;
++  if (!sdf::readFile(_path, sdf::ParserConfig{}, sdf, errors))
+   {
++    for (auto &error : errors)
++    {
++      std::cerr << error << std::endl;
++    }
+     std::cerr << "Error: SDF parsing the xml failed.\n";
+     return -1;
+   }
+@@ -218,7 +227,7 @@
+   }
+ 
+   sdf::Root root;
+-  sdf::Errors errors = root.Load(_path);
++  sdf::Errors errors = root.Load(_path, sdf::ParserConfig{});
+   if (!errors.empty())
+   {
+     std::cerr << errors << std::endl;

@@ -193,6 +193,10 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.is_success())
         self.assertEqual(result.get_solver_id().name(), solver_id.name())
 
+        linear_solvers = mp.GetAvailableSolvers(
+            prog_type=mp.ProgramType.kLP)
+        self.assertGreater(len(linear_solvers), 0)
+
     def test_module_level_solve_function_and_result_accessors(self):
         qp = TestQP()
         x_expected = np.array([1, 1])
@@ -570,6 +574,13 @@ class TestMathematicalProgram(unittest.TestCase):
             new_ub=np.array([3., 4.]))
         np.testing.assert_array_equal(
             dut.get_sparse_A().todense(), A_sparse.todense())
+
+        dut.UpdateCoefficients(
+            new_A=np.array([[1E-10, 0, 0], [0, 1, 1]]),
+            new_lb=np.array([2, 3]), new_ub=np.array([3, 4]))
+        dut.RemoveTinyCoefficient(tol=1E-5)
+        np.testing.assert_array_equal(
+            dut.GetDenseA(), np.array([[0, 0, 0], [0, 1, 1]]))
 
     def test_linear_equality_constraint(self):
         Aeq = np.array([[2, 3.], [1., 2.], [3, 4]])
@@ -1377,6 +1388,21 @@ class TestMathematicalProgram(unittest.TestCase):
         if scs_solver.available() and scs_solver.enabled():
             solver = mp.MakeFirstAvailableSolver(
                 [gurobi_solver.solver_id(), scs_solver.solver_id()])
+
+    def test_variable_scaling(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 'x')
+        scaling = prog.GetVariableScaling()
+        self.assertIsInstance(scaling, dict)
+        self.assertEqual(len(scaling), 0)
+        prog.SetVariableScaling(var=x[0], s=2.0)
+        scaling = prog.GetVariableScaling()
+        self.assertEqual(len(scaling), 1)
+        x0_index = prog.decision_variable_index()[x[0].get_id()]
+        self.assertEqual(scaling[x0_index], 2.0)
+        prog.ClearVariableScaling()
+        scaling = prog.GetVariableScaling()
+        self.assertEqual(len(scaling), 0)
 
     def test_remove_cost(self):
         prog = mp.MathematicalProgram()

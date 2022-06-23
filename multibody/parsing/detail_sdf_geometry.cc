@@ -7,13 +7,13 @@
 #include <string>
 #include <utility>
 
-#include <sdf/Box.hh>
-#include <sdf/Capsule.hh>
-#include <sdf/Cylinder.hh>
-#include <sdf/Element.hh>
-#include <sdf/Ellipsoid.hh>
-#include <sdf/Plane.hh>
-#include <sdf/Sphere.hh>
+#include <drake_vendor/sdf/Box.hh>
+#include <drake_vendor/sdf/Capsule.hh>
+#include <drake_vendor/sdf/Cylinder.hh>
+#include <drake_vendor/sdf/Element.hh>
+#include <drake_vendor/sdf/Ellipsoid.hh>
+#include <drake_vendor/sdf/Plane.hh>
+#include <drake_vendor/sdf/Sphere.hh>
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_properties.h"
@@ -104,6 +104,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     "heightmap",
     "mesh",
     "plane",
+    "polyline",
     "sphere"};
   CheckSupportedElements(
       diagnostic, sdf_geometry.Element(), supported_geometry_elements);
@@ -212,6 +213,9 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     case sdf::GeometryType::HEIGHTMAP: {
       return std::unique_ptr<geometry::Shape>(nullptr);
     }
+    case sdf::GeometryType::POLYLINE: {
+      return std::unique_ptr<geometry::Shape>(nullptr);
+    }
   }
 
   DRAKE_UNREACHABLE();
@@ -264,6 +268,7 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     case sdf::GeometryType::CYLINDER:
     case sdf::GeometryType::ELLIPSOID:
     case sdf::GeometryType::MESH:
+    case sdf::GeometryType::POLYLINE:
     case sdf::GeometryType::SPHERE: {
       // X_LC = X_LG for these geometries.
       break;
@@ -426,6 +431,7 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
     case sdf::GeometryType::CYLINDER:
     case sdf::GeometryType::ELLIPSOID:
     case sdf::GeometryType::MESH:
+    case sdf::GeometryType::POLYLINE:
     case sdf::GeometryType::SPHERE: {
       // X_LC = X_LG for these geometries.
       break;

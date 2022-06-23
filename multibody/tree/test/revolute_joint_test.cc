@@ -228,6 +228,11 @@ TEST_F(RevoluteJointTest, SetVelocityAndAccelerationLimits) {
                std::runtime_error);
 }
 
+TEST_F(RevoluteJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint1_->can_rotate());
+  EXPECT_FALSE(joint1_->can_translate());
+}
+
 TEST_F(RevoluteJointTest, NameSuffix) {
   EXPECT_EQ(joint1_->position_suffix(0), "q");
   EXPECT_EQ(joint1_->velocity_suffix(0), "w");

@@ -209,6 +209,11 @@ TEST_F(BallRpyJointTest, SetVelocityAndAccelerationLimits) {
                std::runtime_error);
 }
 
+TEST_F(BallRpyJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint_->can_rotate());
+  EXPECT_FALSE(joint_->can_translate());
+}
+
 TEST_F(BallRpyJointTest, NameSuffix) {
   EXPECT_EQ(joint_->position_suffix(0), "qx");
   EXPECT_EQ(joint_->position_suffix(1), "qy");

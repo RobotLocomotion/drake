@@ -355,6 +355,20 @@ GTEST_TEST(DirectCollocation, InputPortSelection) {
   EXPECT_TRUE(result.is_success());
 }
 
+// Provide a helpful error if the user does *not* provide the
+// InputPortSelection.
+GTEST_TEST(DirectCollocation, InputPortSelectionError) {
+  const auto plant = multibody::benchmarks::pendulum::MakePendulumPlant();
+  auto context = plant->CreateDefaultContext();
+
+  const int kNumSamples = 5;
+  const double kMinStep = 0.05;
+  const double kMaxStep = 0.5;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DirectCollocation(plant.get(), *context, kNumSamples, kMinStep, kMaxStep),
+      ".*non-default `input_port_index`.*");
+}
+
 // The Rimless Wheel example has discrete state for book-keeping only.  The
 // following is a simple example of effectively simulating one "step" of the
 // wheel using direct collocation; this system was a motivating example for

@@ -42,6 +42,16 @@ GTEST_TEST(AcrobotPlantTest, NoInput) {
   DRAKE_EXPECT_NO_THROW(plant.EvalTimeDerivatives(*context));
 }
 
+GTEST_TEST(AcrobotPlantTest, SetMitAcrobotParameters) {
+  const AcrobotPlant<double> plant;
+  auto context = plant.CreateDefaultContext();
+  auto& parameters = plant.get_mutable_parameters(context.get());
+  const double m1_old = parameters.m1();
+  plant.SetMitAcrobotParameters(&parameters);
+  const double m1_mit = parameters.m1();
+  EXPECT_NE(m1_old, m1_mit);
+}
+
 }  // namespace
 }  // namespace acrobot
 }  // namespace examples

@@ -1,4 +1,12 @@
+# To be a meaningful unit test, we must render the figure somehow.
+# The Agg backend (creating a PNG image) is suitably cross-platform.
+# Users should feel free to use a different back-end in their own code.
+import os
+os.environ['MPLBACKEND'] = 'Agg'  # noqa
+
+# Now that the environment is set up, it's safe to import matplotlib, etc.
 import matplotlib.pyplot as plt
+import webbrowser
 
 from pydrake.examples.van_der_pol import VanDerPolOscillator
 
@@ -11,4 +19,9 @@ ax.set_ylim([-3, 3])
 ax.set_xlabel('q')
 ax.set_ylabel('qdot')
 
-plt.show()
+plt.savefig('plot_limit_cycle.png')
+assert os.path.exists('plot_limit_cycle.png')
+
+# Show the figure (but not when testing).
+if 'TEST_TMPDIR' not in os.environ:
+    webbrowser.open_new_tab(url='plot_limit_cycle.png')

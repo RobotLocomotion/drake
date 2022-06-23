@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
+#include "drake/lcm/drake_lcm_params.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -46,6 +47,9 @@ class LcmInterfaceSystem final
    * environment variable iff it is set or else the default hard-coded URL.
    */
   explicit LcmInterfaceSystem(std::string lcm_url = {});
+
+  /** Constructs using the given params. */
+  explicit LcmInterfaceSystem(const drake::lcm::DrakeLcmParams& params);
 
   /**
    * Constructs using the given LCM service.  The pointer is aliased by this

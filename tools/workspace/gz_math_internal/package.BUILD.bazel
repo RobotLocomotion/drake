@@ -1,0 +1,194 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/workspace:generate_include_header.bzl",
+    "drake_generate_include_header",
+)
+load(
+    "@drake//tools/workspace:check_lists_consistency.bzl",
+    "check_lists_consistency",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+)
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
+
+licenses(["notice"])  # Apache-2.0
+
+package(default_visibility = ["//visibility:private"])
+
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+)
+
+# Generates config.hh based on the version numbers in CMake code.
+cmake_configure_file(
+    name = "config",
+    src = "include/ignition/math/config.hh.in",
+    out = "include/ignition/math/config.hh",
+    cmakelists = ["CMakeLists.txt"],
+    defines = [
+        "IGN_DESIGNATION=math",
+        "PROJECT_VERSION_MAJOR=0",
+        "PROJECT_VERSION_MINOR=0",
+        "PROJECT_VERSION_PATCH=0",
+        "PROJECT_VERSION=0.0",
+        "PROJECT_VERSION_FULL=0.0.0",
+        "PROJECT_NAME_NO_VERSION=ignition-math",
+    ],
+)
+
+generate_file(
+    name = "include/ignition/math/Export.hh",
+    content = """
+#pragma once
+// Simplified version of visibility and deprecation macros.
+#define IGNITION_MATH_VISIBLE
+#define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
+    """,
+)
+
+_MOST_HDRS = [
+    "include/ignition/math/Angle.hh",
+    "include/ignition/math/AxisAlignedBox.hh",
+    "include/ignition/math/Box.hh",
+    "include/ignition/math/Capsule.hh",
+    "include/ignition/math/Color.hh",
+    "include/ignition/math/Cylinder.hh",
+    "include/ignition/math/DiffDriveOdometry.hh",
+    "include/ignition/math/Ellipsoid.hh",
+    "include/ignition/math/Filter.hh",
+    "include/ignition/math/Frustum.hh",
+    "include/ignition/math/GaussMarkovProcess.hh",
+    "include/ignition/math/Helpers.hh",
+    "include/ignition/math/Inertial.hh",
+    "include/ignition/math/Kmeans.hh",
+    "include/ignition/math/Line2.hh",
+    "include/ignition/math/Line3.hh",
+    "include/ignition/math/MassMatrix3.hh",
+    "include/ignition/math/Material.hh",
+    "include/ignition/math/MaterialType.hh",
+    "include/ignition/math/Matrix3.hh",
+    "include/ignition/math/Matrix4.hh",
+    "include/ignition/math/MovingWindowFilter.hh",
+    "include/ignition/math/OrientedBox.hh",
+    "include/ignition/math/PID.hh",
+    "include/ignition/math/Plane.hh",
+    "include/ignition/math/Pose3.hh",
+    "include/ignition/math/Quaternion.hh",
+    "include/ignition/math/Rand.hh",
+    "include/ignition/math/RollingMean.hh",
+    "include/ignition/math/RotationSpline.hh",
+    "include/ignition/math/SemanticVersion.hh",
+    "include/ignition/math/SignalStats.hh",
+    "include/ignition/math/SpeedLimiter.hh",
+    "include/ignition/math/Sphere.hh",
+    "include/ignition/math/SphericalCoordinates.hh",
+    "include/ignition/math/Spline.hh",
+    "include/ignition/math/Stopwatch.hh",
+    "include/ignition/math/Temperature.hh",
+    "include/ignition/math/Triangle.hh",
+    "include/ignition/math/Triangle3.hh",
+    "include/ignition/math/Vector2.hh",
+    "include/ignition/math/Vector3.hh",
+    "include/ignition/math/Vector3Stats.hh",
+    "include/ignition/math/Vector4.hh",
+    "include/ignition/math/detail/Box.hh",
+    "include/ignition/math/detail/Capsule.hh",
+    "include/ignition/math/detail/Cylinder.hh",
+    "include/ignition/math/detail/Ellipsoid.hh",
+    "include/ignition/math/detail/Sphere.hh",
+    "include/ignition/math/detail/WellOrderedVector.hh",
+    "include/ignition/math/graph/Edge.hh",
+    "include/ignition/math/graph/Graph.hh",
+    "include/ignition/math/graph/GraphAlgorithms.hh",
+    "include/ignition/math/graph/Vertex.hh",
+]
+
+_HDRS_PRIVATE = [
+    "src/FrustumPrivate.hh",
+    "src/KmeansPrivate.hh",
+    "src/MaterialType.hh",
+    "src/RotationSplinePrivate.hh",
+    "src/SignalStatsPrivate.hh",
+    "src/SplinePrivate.hh",
+    "src/Vector3StatsPrivate.hh",
+]
+
+check_lists_consistency(
+    files = _MOST_HDRS + _HDRS_PRIVATE,
+    glob_include = ["include/**/*.hh"],
+)
+
+_HDRS = _MOST_HDRS + [
+    "include/ignition/math/config.hh",
+    "include/ignition/math/Export.hh",
+]
+
+# The explicitly listed srcs= matches upstream's explicitly listed sources plus
+# private headers.
+_SRCS = [
+    "src/Angle.cc",
+    "src/AxisAlignedBox.cc",
+    "src/Color.cc",
+    "src/DiffDriveOdometry.cc",
+    "src/Frustum.cc",
+    "src/GaussMarkovProcess.cc",
+    "src/Helpers.cc",
+    "src/Kmeans.cc",
+    "src/Material.cc",
+    "src/PID.cc",
+    "src/Rand.cc",
+    "src/RollingMean.cc",
+    "src/RotationSpline.cc",
+    "src/RotationSplinePrivate.cc",
+    "src/SemanticVersion.cc",
+    "src/SignalStats.cc",
+    "src/SpeedLimiter.cc",
+    "src/SphericalCoordinates.cc",
+    "src/Spline.cc",
+    "src/SplinePrivate.cc",
+    "src/Stopwatch.cc",
+    "src/Temperature.cc",
+    "src/Vector3Stats.cc",
+] + _HDRS_PRIVATE
+
+cc_library_vendored(
+    name = "gz_math",
+    srcs = _SRCS,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/src/")
+        for x in _SRCS
+    ],
+    hdrs = _HDRS,
+    hdrs_vendored = [
+        x.replace("include/ignition/", "drake_src/drake_vendor/ignition/")
+        for x in _HDRS
+    ],
+    edit_include = {
+        "ignition/": "drake_vendor/ignition/",
+    },
+    copts = ["-w"],
+    linkstatic = True,
+    includes = ["drake_src"],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = [
+        "COPYING",
+        "LICENSE",
+    ],
+    visibility = ["//visibility:public"],
+)

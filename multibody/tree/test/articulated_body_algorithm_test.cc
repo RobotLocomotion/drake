@@ -42,6 +42,9 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
              0, 0;
   }
 
+  bool can_rotate() const final    { return true; }
+  bool can_translate() const final { return true; }
+
   const FeatherstoneMobilizer<T>& SetAngles(
       systems::Context<T>* context,
       const Vector2<T>& angles) const {

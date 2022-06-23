@@ -61,7 +61,7 @@ class VolumetricModel : public FemModelImpl<Element> {
      @param damping_model  The DampingModel to be used for all new elements.
      @throw std::exception if Element::Traits::num_nodes != 4. */
     void AddLinearTetrahedralElements(
-        const geometry::VolumeMesh<T>& mesh,
+        const geometry::VolumeMesh<double>& mesh,
         const ConstitutiveModel& constitutive_model, const T& density,
         const DampingModel<T>& damping_model) {
       if constexpr (Traits::num_nodes != 4 || Traits::natural_dimension != 3) {
@@ -79,6 +79,9 @@ class VolumetricModel : public FemModelImpl<Element> {
           for (int a = 0; a < Traits::num_nodes; ++a) {
             element_node_indices[a] = FemNodeIndex(mesh.element(e).vertex(a));
           }
+          // TODO(xuchenhan-tri): The use of T over double is not well-reasoned.
+          //  Consider whether T is really necessary when we support autodiff in
+          //  FEM.
           const Vector<T, Traits::num_dofs> element_reference_positions =
               Element::ExtractElementDofs(element_node_indices,
                                           new_reference_positions);
@@ -101,9 +104,10 @@ class VolumetricModel : public FemModelImpl<Element> {
      positions of the mesh. The i-th, i+1-th, i+2-th entry in the returned
      vector contains the vertex position of the i-th vertex in the mesh's frame.
     */
-    VectorX<T> ExtractMeshPositions(const geometry::VolumeMesh<T>& mesh) {
+    VectorX<double> ExtractMeshPositions(
+        const geometry::VolumeMesh<double>& mesh) {
       const int num_new_vertices = mesh.num_vertices();
-      VectorX<T> q(num_new_vertices * kSpatialDimension);
+      VectorX<double> q(num_new_vertices * kSpatialDimension);
       for (int v = 0; v < num_new_vertices; ++v) {
         q.template segment<kSpatialDimension>(kSpatialDimension * v) =
             mesh.vertex(v);

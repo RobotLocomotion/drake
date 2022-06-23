@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <limits>
+#include <stdexcept>
 #include <string>
 
 #include "drake/common/drake_assert.h"

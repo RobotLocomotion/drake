@@ -1,0 +1,27 @@
+# -*- python -*-
+
+load("//tools/skylark:drake_cc.bzl", "drake_cc_binary")
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+exports_files(
+    ["embed_sdf.py"],
+    visibility = ["@sdformat_internal//:__pkg__"],
+)
+
+drake_cc_binary(
+    name = "ign_sdf",
+    srcs = ["ign_sdf_main.cc"],
+    deps = [
+        "//common:essential",
+        "@gflags",
+        "@sdformat_internal//:ign_cmdline",
+    ],
+)
+
+drake_py_unittest(
+    name = "ign_sdf_test",
+    data = [":ign_sdf"],
+)
+
+add_lint_tests(python_lint_extra_srcs = ["embed_sdf.py"])

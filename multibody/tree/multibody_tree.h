@@ -5,6 +5,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -2472,6 +2473,17 @@ class MultibodyTree {
     DRAKE_DEMAND(topology_is_valid());
     return discrete_state_index_;
   }
+
+  // Calculates the total default mass of all bodies in a set of BodyIndex.
+  // @param[in] body_indexes A set of BodyIndex.
+  // @retval Total mass of all bodies in body_indexes or 0 if there is no mass.
+  double CalcTotalDefaultMass(const std::set<BodyIndex>& body_indexes) const;
+
+  // (Internal use only) Returns true if all the default rotational inertia of
+  // bodies in a set of BodyIndex are zero or NaN.
+  // @param[in] body_indexes A set of BodyIndex.
+  bool IsAllDefaultRotationalInertiaZeroOrNaN(
+      const std::set<BodyIndex>& body_indexes) const;
 
  private:
   // Make MultibodyTree templated on every other scalar type a friend of

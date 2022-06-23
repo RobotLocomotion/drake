@@ -7,9 +7,9 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
-#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
+#include "drake/geometry/render_gl/factory.h"
 #include "drake/geometry/render_vtk/factory.h"
 
 namespace drake {

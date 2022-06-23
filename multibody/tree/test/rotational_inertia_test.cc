@@ -41,11 +41,22 @@ using symbolic::Variable;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
-// Test default constructor - all elements should be NaN.
+// Test default constructor - all elements should be NaN. Also test IsNaN().
 GTEST_TEST(RotationalInertia, DefaultRotationalInertiaConstructorIsNaN) {
-  RotationalInertia<double> default_rotational_inertia;
+  const RotationalInertia<double> default_rotational_inertia;
   Matrix3d inertia_matrix = default_rotational_inertia.CopyToFullMatrix3();
   EXPECT_TRUE(inertia_matrix.array().isNaN().all());
+  EXPECT_TRUE(default_rotational_inertia.IsNaN());
+  EXPECT_FALSE(default_rotational_inertia.IsZero());
+}
+
+GTEST_TEST(RotationalInertia, TestIsZeroAndIsNanFunctions) {
+  const RotationalInertia<double> zero_rotational_inertia(0, 0, 0);
+  const RotationalInertia<double> non_zero_rotational_inertia(3, 4, 5);
+  EXPECT_TRUE(zero_rotational_inertia.IsZero());
+  EXPECT_FALSE(non_zero_rotational_inertia.IsZero());
+  EXPECT_FALSE(non_zero_rotational_inertia.IsNaN());
+  EXPECT_FALSE(zero_rotational_inertia.IsNaN());
 }
 
 // Test constructor for a diagonal rotational inertia with all elements equal.

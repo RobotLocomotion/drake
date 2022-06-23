@@ -1,7 +1,6 @@
 #include "drake/solvers/fbstab/components/riccati_linear_solver.h"
 
 #include <cmath>
-#include <iostream>
 #include <stdexcept>
 
 #include <Eigen/Dense>

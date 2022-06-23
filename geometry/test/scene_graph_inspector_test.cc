@@ -95,6 +95,9 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.GetProximityProperties(geometry_id);
   inspector.GetIllustrationProperties(geometry_id);
   inspector.GetPerceptionProperties(geometry_id);
+  inspector.GetReferenceMesh(geometry_id);
+  inspector.GetAllDeformableGeometryIds();
+  inspector.GetReferenceMesh(geometry_id);
   // Register an *additional* geometry and assign proximity properties to both
   // to prevent an exception being thrown.
   const GeometryId geometry_id2 =
@@ -108,6 +111,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
                                     ProximityProperties());
   inspector.CollisionFiltered(geometry_id, geometry_id2);
 
+  // Tests cloning a geometry.
   std::unique_ptr<GeometryInstance> geometry_instance_clone =
       inspector.CloneGeometryInstance(geometry_id);
   EXPECT_NE(geometry_instance_clone->id(), geometry_id);
@@ -119,6 +123,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   EXPECT_NE(geometry_instance_clone->proximity_properties(), nullptr);
   EXPECT_EQ(geometry_instance_clone->perception_properties(), nullptr);
   EXPECT_EQ(geometry_instance_clone->illustration_properties(), nullptr);
+
   inspector.geometry_version();
 }
 

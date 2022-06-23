@@ -198,7 +198,7 @@ def _impl(repo_ctx):
             Label("@drake//tools/workspace/snopt:fortran-ubuntu.bzl"),
             "fortran.bzl",
         )
-    elif os_result.is_macos:
+    elif os_result.is_macos or os_result.is_macos_wheel:
         repo_ctx.symlink(
             Label("@drake//tools/workspace/snopt:fortran-macos.bzl"),
             "fortran.bzl",
