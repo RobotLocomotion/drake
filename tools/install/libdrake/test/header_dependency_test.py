@@ -24,7 +24,6 @@ class HeaderDependencyTest(unittest.TestCase):
         re_thirds = [
             re.compile(r'^(Eigen|unsupported/Eigen)/.*$'),
             re.compile(r'^(fmt|spdlog)/.*$'),
-            re.compile(r'^lcm/.*$'),
             re.compile(r'^optitrack/.*$'),
         ]
 
