@@ -24,6 +24,7 @@ py_library(
     ]),
     imports = ["src"],
     visibility = ["@drake//:__subpackages__"],
+    deps = ["@u_msgpack_python_internal//:u_msgpack_python"],
 )
 
 py_binary(

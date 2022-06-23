@@ -63,7 +63,10 @@ drake_py_unittest(
     name = "meshcat_server_test",
     args = ["$(location {})".format(_SERVER)],
     legacy_create_init = 0,
-    deps = [_SERVER],
+    deps = [
+        _SERVER,
+        "@u_msgpack_python_internal//:u_msgpack_python",
+    ],
 )
 
 add_lint_tests(

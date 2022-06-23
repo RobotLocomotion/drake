@@ -60,7 +60,6 @@ python3-pygame
 python3-scipy
 python3-tk
 python3-tornado
-python3-u-msgpack
 python3-yaml
 python3-zmq
 zlib1g

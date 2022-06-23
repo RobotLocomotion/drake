@@ -497,6 +497,7 @@ drake_py_binary(
     testonly = True,
     srcs = ["test/meshcat_websocket_client.py"],
     visibility = ["//visibility:private"],
+    deps = ["@u_msgpack_python_internal//:u_msgpack_python"],
 )
 
 drake_cc_googletest(

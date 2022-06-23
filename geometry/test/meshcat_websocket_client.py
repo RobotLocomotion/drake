@@ -9,6 +9,39 @@ import umsgpack
 import websockets
 
 
+# BEGIN ugly hack
+#
+# https://bugs.launchpad.net/ubuntu/+source/python-websockets/+bug/1969902
+#
+# Python 3.10 (Jammy) removed the `loop` parameter from various asyncio APIs.
+# Unfortunately, Jammy shipped with python3-websokets 9.1, which is still
+# passing a `loop` parameter, resulting in asyncio expressing its displeasure
+# by means of exceptions. Trying to patch websokets directly is not reasonable.
+# Instead, patch the asyncio functions to remove the `loop` parameter.
+#
+# TODO(mwoehlke-kitware): Remove this when Jammy's python3-websockets has been
+# updated to 10.0 or later.
+_asyncio_lock_ctor = asyncio.Lock.__init__
+_asyncio_wait_for = asyncio.wait_for
+_asyncio_sleep = asyncio.sleep
+
+
+def _patch_asyncio(orig):
+    def _patched(*args, **kwargs):
+        if 'loop' in kwargs and kwargs['loop'] is None:
+            kwargs.pop('loop')
+        return orig(*args, **kwargs)
+
+    return _patched
+
+
+asyncio.Lock.__init__ = _patch_asyncio(_asyncio_lock_ctor)
+asyncio.wait_for = _patch_asyncio(_asyncio_wait_for)
+asyncio.sleep = _patch_asyncio(_asyncio_sleep)
+
+# END ugly hack
+
+
 def print_recursive_comparison(d1, d2, level='root'):
     if type(d1) != type(d2):
         print(f"{level:<20} Type mismatch")

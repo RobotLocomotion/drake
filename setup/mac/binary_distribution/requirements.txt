@@ -7,4 +7,3 @@ pydot
 PyYAML
 pyzmq
 tornado
-u-msgpack-python

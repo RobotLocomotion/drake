@@ -89,6 +89,7 @@ load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository
 load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
 load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
+load("@drake//tools/workspace/u_msgpack_python_internal:repository.bzl", "u_msgpack_python_internal_repository")  # noqa
 load("@drake//tools/workspace/uritemplate_py_internal:repository.bzl", "uritemplate_py_internal_repository")  # noqa
 load("@drake//tools/workspace/usockets:repository.bzl", "usockets_repository")  # noqa
 load("@drake//tools/workspace/uwebsockets:repository.bzl", "uwebsockets_repository")  # noqa
@@ -343,6 +344,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         tinyobjloader_repository(name = "tinyobjloader", mirrors = mirrors)
     if "tinyxml2" not in excludes:
         tinyxml2_repository(name = "tinyxml2")
+    if "u_msgpack_python_internal" not in excludes:
+        u_msgpack_python_internal_repository(name = "u_msgpack_python_internal", mirrors = mirrors)  # noqa
     if "uritemplate_py" not in excludes:
         add_deprecation(
             name = "uritemplate_py",
