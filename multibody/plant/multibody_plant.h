@@ -3805,6 +3805,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the total number of actuated degrees of freedom for a specific
   /// model instance.  That is, the vector of actuation values u has this size.
   /// See AddJointActuator().
+  /// @throws std::exception if called pre-finalize.
   int num_actuated_dofs(ModelInstanceIndex model_instance) const {
     return internal_tree().num_actuated_dofs(model_instance);
   }
@@ -3944,19 +3945,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::string GetTopologyGraphvizString() const;
 
   /// Returns the size of the generalized position vector q for this model.
+  /// @warning The intent of this function is only to be used after Finalize().
+  /// Calling it prior to Finalize() will return inaccurate results. On or after
+  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// exception.
   int num_positions() const { return internal_tree().num_positions(); }
 
   /// Returns the size of the generalized position vector qᵢ for model
   /// instance i.
+  /// @throws std::exception if called pre-finalize.
   int num_positions(ModelInstanceIndex model_instance) const {
     return internal_tree().num_positions(model_instance);
   }
 
   /// Returns the size of the generalized velocity vector v for this model.
+  /// @warning The intent of this function is only to be used after Finalize().
+  /// Calling it prior to Finalize() will return inaccurate results. On or after
+  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// exception.
   int num_velocities() const { return internal_tree().num_velocities(); }
 
   /// Returns the size of the generalized velocity vector vᵢ for model
   /// instance i.
+  /// @throws std::exception if called pre-finalize.
   int num_velocities(ModelInstanceIndex model_instance) const {
     return internal_tree().num_velocities(model_instance);
   }
@@ -3965,12 +3976,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // integrated power and other discrete states, hence the specific name.
   /// Returns the size of the multibody system state vector x = [q v]. This
   /// will be `num_positions()` plus `num_velocities()`.
+  /// @warning The intent of this function is only to be used after Finalize().
+  /// Calling it prior to Finalize() will return inaccurate results. On or after
+  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// exception.
   int num_multibody_states() const { return internal_tree().num_states(); }
 
   /// Returns the size of the multibody system state vector xᵢ = [qᵢ vᵢ] for
   /// model instance i. (Here qᵢ ⊆ q and vᵢ ⊆ v.)
   /// will be `num_positions(model_instance)` plus
   /// `num_velocities(model_instance)`.
+  /// @throws std::exception if called pre-finalize.
   int num_multibody_states(ModelInstanceIndex model_instance) const {
     return internal_tree().num_states(model_instance);
   }
