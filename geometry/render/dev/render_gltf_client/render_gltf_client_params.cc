@@ -12,6 +12,7 @@ void RenderEngineGltfClientParams::Validate() const {
   }
 
   auto all_slashes = [](const std::string& str) {
+    if (str.empty()) return false;
     return std::all_of(str.begin(), str.end(), [](char c){ return c == '/'; });
   };
 
@@ -25,8 +26,8 @@ void RenderEngineGltfClientParams::Validate() const {
 std::string RenderEngineGltfClientParams::GetUrl() const {
   std::string url = base_url;
   std::string endpoint = render_endpoint;
-  while(url.size() > 0 && url.back() == '/') url.pop_back();
-  while(endpoint.size() > 0 && endpoint.front() == '/') endpoint.erase(0, 1);
+  while (url.size() > 0 && url.back() == '/') url.pop_back();
+  while (endpoint.size() > 0 && endpoint.front() == '/') endpoint.erase(0, 1);
 
   return url + "/" + endpoint;
 }
