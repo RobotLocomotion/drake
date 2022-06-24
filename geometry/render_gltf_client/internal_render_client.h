@@ -227,7 +227,6 @@ class RenderClient {
   void SetHttpService(std::unique_ptr<HttpService> service);
 
  private:
-  friend class RenderClientTester;
   const std::string temp_directory_;
   const RenderEngineGltfClientParams params_;
   std::unique_ptr<HttpService> http_service_;

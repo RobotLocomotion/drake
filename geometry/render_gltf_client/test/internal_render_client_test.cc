@@ -272,7 +272,9 @@ class FieldCheckService : public HttpService {
 using PostFormCallback = typename std::function<HttpResponse()>;
 
 /* A proxy HttpService that can be constructed with an std::function to directly
- modify the behavior of DoPostForm(). */
+ modify the behavior of DoPostForm(). The following tests fake different server
+ responses, such as http_code and data_path, and examine the corresponding
+ behavior of RenderClient::RenderOnServer(). */
 class ProxyService : public HttpService {
  public:
   explicit ProxyService(const PostFormCallback& callback)
@@ -483,8 +485,8 @@ GTEST_TEST(RenderClient, RenderOnServer) {
         client.RenderOnServer(color_camera.core(),
                               RenderImageType::kColorRgba8U, fake_scene_path),
         fmt::format(
-            "ERROR with POST to {}. Response from server, HTTP code=200: the "
-            "server was supposed to respond with a file but did not.",
+            "ERROR doing POST to {}, HTTP code=200: the server was supposed to"
+            " respond with a file but did not.",
             client.url()));
   }
 
@@ -500,9 +502,8 @@ GTEST_TEST(RenderClient, RenderOnServer) {
         client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
                               fake_scene_path),
         fmt::format(
-            "ERROR with POST to {}. Response from service, HTTP code=200: the "
-            "service responded with a file path '{}' but the file does not "
-            "exist.",
+            "ERROR doing POST to {}, HTTP code=200: the service responded with "
+            "a file path '{}' but the file does not exist.",
             client.url(), response_path));
   }
 
@@ -534,10 +535,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
       const auto response_path =
           (temp_dir_path / "valid_png.response").string();
       fs::copy_file(kTestRgbaImagePath, response_path);
-      HttpResponse ret;
-      ret.http_code = 200;
-      ret.data_path = response_path;
-      return ret;
+      return HttpResponse{200, response_path};
     };
     client.SetHttpService(std::make_unique<ProxyService>(callback));
     const auto expected_path =
@@ -554,10 +552,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
       const auto response_path =
           (temp_dir_path / "valid_but_wrong_dims.response").string();
       fs::copy_file(kTestDepthImagePath, response_path);
-      HttpResponse ret;
-      ret.http_code = 200;
-      ret.data_path = response_path;
-      return ret;
+      return HttpResponse{200, response_path};
     };
     client.SetHttpService(std::make_unique<ProxyService>(callback));
     const auto expected_path =
