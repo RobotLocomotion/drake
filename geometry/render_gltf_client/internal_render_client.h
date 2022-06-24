@@ -221,6 +221,18 @@ class RenderClient {
   /* Returns the full URL RenderClient uses to communicate with a server. */
   std::string url() { return params_.GetUrl(); }
 
+  /* The port to communicate on.  A value less than or equal to `0` will let
+   `base_url_` to decide which port to use.  If a different port is needed
+   instead, specify `port` to override that. */
+  int port() const { return params_.port; }
+
+  /* Whether or not the client should be verbose including logging all curl
+   communications. */
+  bool verbose() const { return params_.verbose; }
+
+  /* Whether or not the client should cleanup its temp_directory(). */
+  bool no_cleanup() const { return params_.no_cleanup; }
+
   //@}
 
   /* (Internal use only) for testing. */

@@ -44,13 +44,10 @@ class RenderEngineGltfClientTester {
   }
 
   // RenderClient access methods.
-  const std::string& base_url() const {
-    return engine_->render_client_->base_url();
+  std::string url() const {
+    return engine_->render_client_->url();
   }
   int port() const { return engine_->render_client_->port(); }
-  const std::string& render_endpoint() const {
-    return engine_->render_client_->render_endpoint();
-  }
   bool verbose() const { return engine_->render_client_->verbose(); }
   bool no_cleanup() const { return engine_->render_client_->no_cleanup(); }
   const std::string& temp_directory() const {
@@ -102,9 +99,8 @@ GTEST_TEST(RenderEngineGltfClient, Constructor) {
     auto* actual_engine = dynamic_cast<RenderEngineGltfClient*>(engine.get());
     EXPECT_NE(actual_engine, nullptr);
     Tester tester{actual_engine};
-    EXPECT_EQ(tester.base_url(), "http://127.0.0.1");
+    EXPECT_EQ(tester.url(), "http://127.0.0.1/render");
     EXPECT_EQ(tester.port(), 8000);
-    EXPECT_EQ(tester.render_endpoint(), "render");
     EXPECT_EQ(tester.verbose(), false);
     EXPECT_EQ(tester.no_cleanup(), false);
 
@@ -118,9 +114,8 @@ GTEST_TEST(RenderEngineGltfClient, Constructor) {
     const Params params{std::nullopt, "0.0.0.0", 0, "super_render", true, true};
     Engine engine{params};
     Tester tester{&engine};
-    EXPECT_EQ(tester.base_url(), "0.0.0.0");
+    EXPECT_EQ(tester.url(), "0.0.0.0/super_render");
     EXPECT_EQ(tester.port(), 0);
-    EXPECT_EQ(tester.render_endpoint(), "super_render");
     EXPECT_EQ(tester.verbose(), true);
     EXPECT_EQ(tester.no_cleanup(), true);
 
@@ -142,9 +137,8 @@ GTEST_TEST(RenderEngineGltfClient, Clone) {
   ASSERT_NE(actual_engine, nullptr);
   Tester clone_tester{actual_engine};
 
-  EXPECT_EQ(tester.base_url(), clone_tester.base_url());
+  EXPECT_EQ(tester.url(), clone_tester.url());
   EXPECT_EQ(tester.port(), clone_tester.port());
-  EXPECT_EQ(tester.render_endpoint(), clone_tester.render_endpoint());
   EXPECT_EQ(tester.verbose(), clone_tester.verbose());
   EXPECT_EQ(tester.no_cleanup(), clone_tester.no_cleanup());
   /* Cloning creates a new temporary directory, the underlying RenderClient is
