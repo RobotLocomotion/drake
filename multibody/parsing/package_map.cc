@@ -125,6 +125,13 @@ void PackageMap::PopulateFromFolder(const string& path) {
 
 void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
   DRAKE_DEMAND(!environment_variable.empty());
+  if (environment_variable == "ROS_PACKAGE_PATH") {
+    drake::log()->warn(
+      "PackageMap: PopulateFromEnvironment(\"ROS_PACKAGE_PATH\") is "
+      "deprecated, and will be disabled on or around 2022-10-01. To populate "
+      "manifests from ROS_PACKAGE_PATH, use PopulateFromRosPackagePath() "
+      "instead.");
+  }
   const char* const value = std::getenv(environment_variable.c_str());
   if (value == nullptr) {
     return;
