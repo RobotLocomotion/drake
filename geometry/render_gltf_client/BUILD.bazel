@@ -15,6 +15,13 @@ _VISIBILITY = [
 
 package(default_visibility = _VISIBILITY)
 
+drake_cc_package_library(
+    name = "render_gltf_client",
+    visibility = ["//visibility:public"],
+    deps = [
+    ],
+)
+
 drake_cc_library(
     name = "internal_http_service",
     srcs = ["internal_http_service.cc"],
