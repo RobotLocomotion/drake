@@ -25,9 +25,12 @@ class _ExecutePreprocessorNoWidgets(ExecutePreprocessor):
 
     def preprocess_cell(self, *args, **kwargs):
         # Turn off some broken ipywidgets hooks.
-        self.comm_open_handlers.clear()
+        try:
+            self.comm_open_handlers.clear()
+        except AttributeError:
+            pass
         # Then, continue as usual.
-        super().preprocess_cell(*args, **kwargs)
+        return super().preprocess_cell(*args, **kwargs)
 
 
 def _jupyter_bazel_notebook_main(notebook_path, argv):
