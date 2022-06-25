@@ -3,19 +3,18 @@
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
 
 namespace drake {
 namespace pydrake {
-PYBIND11_MODULE(mixed_integer_optimization_util, m) {
+namespace internal {
+
+void DefineSolversMixedIntegerOptimizationUtil(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
-
-  m.doc() = "mixed integer optimization utils bindings";
-
-  py::module::import("pydrake.solvers.mathematicalprogram");
 
   m.def(
       "AddLogarithmicSos2Constraint",
@@ -60,5 +59,7 @@ PYBIND11_MODULE(mixed_integer_optimization_util, m) {
       py::arg("phi_x"), py::arg("phi_y"), py::arg("Bx"), py::arg("By"),
       py::arg("binning"), doc.AddBilinearProductMcCormickEnvelopeSos2.doc);
 }
+
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

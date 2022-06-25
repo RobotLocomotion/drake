@@ -36,7 +36,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
 
   py::module::import("pydrake.math");
   py::module::import("pydrake.multibody.plant");
-  py::module::import("pydrake.solvers.mathematicalprogram");
+  py::module::import("pydrake.solvers");
 
   {
     using Class = InverseKinematics;

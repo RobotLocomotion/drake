@@ -165,7 +165,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         ":plant_py",
-        "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake/solvers",
     ],
 )
 
@@ -181,7 +181,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         ":plant_py",
-        "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake/solvers",
     ],
 )
 
@@ -333,8 +333,7 @@ drake_py_unittest(
         ":parsing_py",
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/solvers:ipopt_py",
-        "//bindings/pydrake/solvers:snopt_py",
+        "//bindings/pydrake/solvers",
     ],
 )
 

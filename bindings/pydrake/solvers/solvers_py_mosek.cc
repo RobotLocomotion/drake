@@ -4,21 +4,18 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/solvers/solvers_pybind.h"
 #include "drake/solvers/mosek_solver.h"
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(mosek, m) {
+void DefineSolversMosek(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
-
-  m.doc() = "Mosek solver bindings for MathematicalProgram";
-
-  py::module::import("pydrake.common.value");
-  py::module::import("pydrake.solvers.mathematicalprogram");
 
   py::class_<MosekSolver, SolverInterface> cls(
       m, "MosekSolver", doc.MosekSolver.doc);
@@ -37,5 +34,6 @@ PYBIND11_MODULE(mosek, m) {
   AddValueInstantiation<MosekSolverDetails>(m);
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
