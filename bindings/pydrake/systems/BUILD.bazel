@@ -367,8 +367,7 @@ drake_py_unittest(
         ":framework_py",
         ":primitives_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/examples:pendulum_py",
-        "//bindings/pydrake/examples:rimless_wheel_py",
+        "//bindings/pydrake/examples",
     ],
 )
 
@@ -483,7 +482,7 @@ drake_py_unittest(
     ],
     deps = [
         ":controllers_py",
-        "//bindings/pydrake/examples:pendulum_py",
+        "//bindings/pydrake/examples",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/multibody:tree_py",
@@ -612,7 +611,7 @@ drake_py_unittest(
     name = "trajectory_optimization_test",
     deps = [
         ":trajectory_optimization_py",
-        "//bindings/pydrake/examples:pendulum_py",
+        "//bindings/pydrake/examples",
     ],
 )
 

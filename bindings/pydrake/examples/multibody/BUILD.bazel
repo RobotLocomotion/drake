@@ -25,7 +25,7 @@ drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     deps = [
-        "//bindings/pydrake/examples:module_py",
+        "//bindings/pydrake/examples",
     ],
 )
 
@@ -89,7 +89,7 @@ drake_py_library(
     data = ["//examples/pendulum:models"],
     deps = [
         ":module_py",
-        "//bindings/pydrake/examples:manipulation_station_py",
+        "//bindings/pydrake/examples",
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/systems",
     ],

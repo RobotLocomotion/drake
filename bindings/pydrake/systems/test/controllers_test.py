@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.examples.pendulum import PendulumPlant
+from pydrake.examples import PendulumPlant
 from pydrake.multibody.tree import MultibodyForces
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser

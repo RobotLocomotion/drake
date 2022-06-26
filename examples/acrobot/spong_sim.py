@@ -5,7 +5,7 @@ spong-controlled acrobot.
 import argparse
 import sys
 
-from pydrake.examples.acrobot import (
+from pydrake.examples import (
     AcrobotPlant,
     AcrobotSpongController,
     AcrobotState,

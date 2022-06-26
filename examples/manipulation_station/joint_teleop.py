@@ -13,7 +13,7 @@ import numpy as np
 
 from drake.examples.manipulation_station.schunk_wsg_buttons import \
     SchunkWsgButtons
-from pydrake.examples.manipulation_station import (
+from pydrake.examples import (
     CreateClutterClearingYcbObjectList, ManipulationStation,
     ManipulationStationHardwareInterface)
 from pydrake.geometry import DrakeVisualizer

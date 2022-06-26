@@ -44,7 +44,7 @@ def getDrakePath():
     return os.path.abspath(_common.GetDrakePath())
 
 
-def _execute_extra_python_code(m):
+def _execute_extra_python_code(m, use_subdir: bool = False):
     # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
     # rationale.
     if m.__name__ not in sys.modules:
@@ -60,7 +60,10 @@ def _execute_extra_python_code(m):
             ).format(m.__name__))
     top_module_name = module_path[0]
     top_module_dir = os.path.dirname(sys.modules[top_module_name].__file__)
-    mid_module_names = module_path[1:-1]
+    if use_subdir:
+        mid_module_names = module_path[1:]
+    else:
+        mid_module_names = module_path[1:-1]
     base_module_name = module_path[-1]
     if base_module_name.startswith("_"):
         # Do not repeat leading `_`.
