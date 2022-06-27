@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 

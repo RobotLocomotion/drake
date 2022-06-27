@@ -65,7 +65,7 @@ drake_cc_library(
     hdrs = ["graph_of_convex_sets.h"],
     deps = [
         ":convex_set",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//solvers:create_cost",
         "//solvers:mathematical_program_result",
         "//solvers:solve",
