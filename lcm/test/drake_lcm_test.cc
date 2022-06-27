@@ -382,6 +382,26 @@ TEST_F(DrakeLcmTest, Suffix) {
   });
 }
 
+// Tests the channel name suffix feature.
+TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
+  DrakeLcmParams params;
+  params.channel_suffix = "_SUFFIX";
+  dut_ = std::make_unique<DrakeLcm>(params);
+
+  // SubscribeAll using Drake LCM, expecting to see the fully qualified
+  // channel name.
+  lcmt_drake_signal received_drake{};
+  auto subscription = dut_->SubscribeAllChannels([&received_drake](
+      std::string_view channel_name, const void* data, int size) {
+    EXPECT_EQ(channel_name, "SuffixDrakeLcmTest_SUFFIX");
+    received_drake.decode(data, 0, size);
+  });
+  LoopUntilDone(&received_drake, 20 /* retries */, [&]() {
+    Publish(dut_.get(), "SuffixDrakeLcmTest", message_);
+    dut_->HandleSubscriptions(50 /* millis */);
+  });
+}
+
 }  // namespace
 }  // namespace lcm
 }  // namespace drake
