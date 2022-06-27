@@ -141,9 +141,11 @@ enum class PlantMode {
 };
 
 /* For a given public API, this evaluates a function that exercises a particular
- MbP API. The mode determines if the function is evaluated in discrete mode,
+ MbP API. It also carries a key phrase that must be matched in the thrown
+ exception. The mode determines if the function is evaluated in discrete mode,
  continuous mode, or both. */
 struct TestConfiguration {
+  std::string key_phrase;
   std::function<void(const MultibodyPlant<double>& plant,
                      const Context<double>& context)>
       eval;
@@ -151,12 +153,15 @@ struct TestConfiguration {
 };
 
 /* For a number of public APIs that *may* ultimately depend on the query object
- input port, this confirms that an exception is only thrown in specific
- circumstances.
+ input port, this confirms two things:
+
+   1. it only throws when we expect, and
+   2. The error message always has an expected key phrase alluding to the API
+      exercised.
 
  It is *not* the case that simply having an unconnected QueryObject input port
  causes the APIs to throw. There must also be collision geometries registered.
- The throwing behavior may or may not depend on whether the plant is discrete or
+ The throwing behavior should be independent of whether the plant is discrete or
  continuous.
 
  So, this test iterates through the three variables (connected/disconnected, has
@@ -165,17 +170,26 @@ struct TestConfiguration {
 GTEST_TEST(MultibodySceneGraphConnection, ConnectionError) {
   const std::vector<TestConfiguration> configurations{
       // Ports don't depend on MbP mode.
-      {.eval = &EvalContactResults},
-      {.eval = &EvalGeneralizedContactForces},
-      {.eval = &EvalReactionForces},
+      {.key_phrase = "'contact_results'", .eval = &EvalContactResults},
+      {.key_phrase = "'generalized_contact_forces' .+ instance 1",
+       .eval = &EvalGeneralizedContactForces},
+      {.key_phrase = "'reaction_forces'", .eval = &EvalReactionForces},
       // Time derivatives are only meaningful in continuous mode.
-      {.eval = &EvalTimeDerivatives, .modes = PlantMode::kContinuous},
-      {.eval = &EvalTimeDerivativesResidual, .modes = PlantMode::kContinuous},
+      {.key_phrase = "time derivatives",
+       .eval = &EvalTimeDerivatives,
+       .modes = PlantMode::kContinuous},
+      {.key_phrase = "time derivatives .*residual",
+       .eval = &EvalTimeDerivativesResidual,
+       .modes = PlantMode::kContinuous},
       // For forward dynamics, discrete and continuous are sufficiently
       // different that evaluation of forward dynamics in continuous mode can
       // only be detected by computation of derivatives.
-      {.eval = &EvalForwardDynamics, .modes = PlantMode::kContinuous},
-      {.eval = &EvalForwardDynamics, .modes = PlantMode::kDiscrete},
+      {.key_phrase = "time derivatives",
+       .eval = &EvalForwardDynamics,
+       .modes = PlantMode::kContinuous},
+      {.key_phrase = "discrete forward dynamics",
+       .eval = &EvalForwardDynamics,
+       .modes = PlantMode::kDiscrete},
   };
 
   // Handle discrete/continuous variations.
@@ -198,16 +212,18 @@ GTEST_TEST(MultibodySceneGraphConnection, ConnectionError) {
           // registered collision geometry.
           const bool expect_throw = !connected && has_collision_geometry;
           SCOPED_TRACE(
-              fmt::format("\nConfiguration:\n  collision geometry: {}\n  "
-                          "discrete: {}\n  connected: {}",
-                          has_collision_geometry, time_step > 0, connected));
+              fmt::format("\nConfiguration:\n  key phrase: {}\n  collision "
+                          "geometry: {}\n  discrete: {}\n  connected: {}",
+                          config.key_phrase, has_collision_geometry,
+                          time_step > 0, connected));
           if (expect_throw) {
             DRAKE_EXPECT_THROWS_MESSAGE(
                 config.eval(plant, plant_context),
-                "The provided context doesn't show a connection for the "
-                "plant's query input port.+ See "
-                "https://drake.mit.edu/trouble_shooting.html"
-                "#mbp-unconnected-query-object-port for help.");
+                fmt::format(".*{}[^]+The provided context doesn't show a "
+                            "connection for the plant's query input port.+ See "
+                            "https://drake.mit.edu/trouble_shooting.html"
+                            "#mbp-unconnected-query-object-port for help.",
+                            config.key_phrase));
           } else {
             EXPECT_NO_THROW(config.eval(plant, plant_context));
           }

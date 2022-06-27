@@ -124,7 +124,7 @@ class MultibodyPlantTester {
   static const geometry::QueryObject<double>& EvalGeometryQueryInput(
       const MultibodyPlant<double>& plant,
       const systems::Context<double>& context) {
-    return plant.EvalGeometryQueryInput(context);
+    return plant.EvalGeometryQueryInput(context, "MultibodyPlantTester");
   }
 };
 
@@ -1904,7 +1904,7 @@ GTEST_TEST(MultibodyPlantTest, CalcPointPairPenetrationsDisconnectedPorts) {
   // should be invalid.
   DRAKE_EXPECT_THROWS_MESSAGE(
       MultibodyPlantTester::EvalGeometryQueryInput(plant, *context),
-      "The provided context doesn't show a connection for the plant's "
+      "[^]+The provided context doesn't show a connection for the plant's "
       "query input port .see MultibodyPlant::get_geometry_query_input_port..."
       ". See https://drake.mit.edu/trouble_shooting.html"
       "#mbp-unconnected-query-object-port for help.");
