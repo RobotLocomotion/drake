@@ -23,8 +23,8 @@ struct DrakeLcmParams {
   When provided, calls to DrakeLcm::Publish() or DrakeLcm::Subscribe() will
   append this string to the `channel` name requested for publish or subscribe.
 
-  This has no effect on DrakeLcm::SubscribeAllChannels(); the channel names
-  reported there will remain unmodified.
+  The callback of DrakeLcm::SubscribeAllChannels() will receive the "fully
+  qualified" channel name including this suffix.
   */
   std::string channel_suffix;
 
