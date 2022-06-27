@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/test_utilities/check_constraint_eval_nonsymbolic.h"
 

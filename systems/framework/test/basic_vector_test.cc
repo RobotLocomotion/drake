@@ -6,9 +6,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"

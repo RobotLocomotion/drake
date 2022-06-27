@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 
 namespace drake {
 namespace systems {

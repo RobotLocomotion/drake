@@ -3,9 +3,9 @@
 #include <vector>
 
 #include "drake/common/symbolic.h"
-#define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
-#include "drake/common/symbolic_expression_cell.h"
-#undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
+#define DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
+#include "drake/common/symbolic/expression/expression_cell.h"
+#undef DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
 
 namespace drake {
 namespace symbolic {

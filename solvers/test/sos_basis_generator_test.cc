@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
 #include "drake/common/symbolic_monomial_util.h"
 #include "drake/solvers/mathematical_program.h"
 

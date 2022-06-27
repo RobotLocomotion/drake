@@ -6,7 +6,7 @@
 #include <variant>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/systems/primitives/affine_system.h"
 
 namespace drake {

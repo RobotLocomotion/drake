@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
 #include "drake/common/random.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 
 namespace drake {
 namespace schema {

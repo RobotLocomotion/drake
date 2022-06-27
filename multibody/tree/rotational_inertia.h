@@ -19,7 +19,6 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
-#include "drake/common/symbolic.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {

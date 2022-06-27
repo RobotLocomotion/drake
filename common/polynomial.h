@@ -15,7 +15,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 
 namespace drake {
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.

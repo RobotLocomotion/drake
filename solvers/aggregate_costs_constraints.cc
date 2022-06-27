@@ -4,6 +4,8 @@
 #include <limits>
 #include <map>
 
+#include <fmt/format.h>
+
 namespace drake {
 namespace solvers {
 namespace {

@@ -3,7 +3,6 @@
 #include <sstream>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {

@@ -18,7 +18,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
 #include "drake/solvers/function.h"

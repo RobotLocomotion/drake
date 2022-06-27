@@ -4,9 +4,8 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace geometry {

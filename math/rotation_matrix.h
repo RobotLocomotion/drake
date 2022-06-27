@@ -15,7 +15,6 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
-#include "drake/common/symbolic.h"
 #include "drake/math/fast_pose_composition_functions.h"
 #include "drake/math/roll_pitch_yaw.h"
 
