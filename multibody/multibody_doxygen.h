@@ -414,9 +414,9 @@ point_cloud_B             || A point cloud whose underlying points' positions ar
 
  Drake uses
  <a href="https://en.wikipedia.org/wiki/International_System_of_Units">
- SI units</a> exclusively (also known as MKS -- meters, kilograms, and
- seconds). Rotations may be radians or degrees, as documented for the relevant
- API.
+ SI units</a> (also known as MKS -- meters, kilograms, and seconds). Exceptions
+ are explicitly documented. Rotations may be radians or degrees, as documented
+ for the relevant API.
 
  The @ref drake::multibody::Parser "Parser class" documents how quantity units
  are handled for external configuration files.
