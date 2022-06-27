@@ -367,7 +367,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, InboardJointLocking) {
 }
 
 // This test verifies that a reasonable assertion is thrown when the initial
-// state contains an invalid quaternion, a reasonable exception is thrown.
+// state contains an invalid quaternion.
 GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
   // Instantiate the model for a free body in space.  For this test, it is OK
   // to use somewhat arbitrary values for mass, inertia, gravity, etc.
