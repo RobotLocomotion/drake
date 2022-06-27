@@ -1067,12 +1067,14 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       ldlt_D_B = math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>(
           MatrixUpTo6<T>(D_B.template selfadjointView<Eigen::Lower>()));
 
-      // Ensure that D_B is not singular.
+      // Ensure that D_B (the articulated body hinge inertia) is not singular.
       // Singularity means that a non-physical hinge mapping matrix was used or
       // that this articulated body inertia has some non-physical quantities
       // (such as zero moment of inertia along an axis which the hinge mapping
-      // matrix permits motion). It was also triggered by a zero quaternion.
+      // matrix permits motion).
       if (ldlt_D_B.eigen_linear_solver().info() != Eigen::Success) {
+        // TODO(Mitiguy) Create a test case to ensure this message gets thrown.
+        //  As of now, there is no test that this message makes sense.
         const BodyNodeIndex body_node_index = topology_.index;
         const std::string& body_name = body_->name();
         std::stringstream message;

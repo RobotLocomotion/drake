@@ -13,10 +13,9 @@ template <typename T>
 void ThrowIfAllElementsInQuaternionAreZero(
     const Eigen::Quaternion<T>& quaternion, const char* function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
-    if (quaternion.coeffs().isZero()) {
+    if (IsQuaternionZero(quaternion)) {
       std::string message = fmt::format("Error in {}():"
-        " All the elements in a quaternion are zero.",
-        function_name);
+        " All the elements in a quaternion are zero.", function_name);
       throw std::logic_error(message);
     }
   } else {

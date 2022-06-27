@@ -121,10 +121,9 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
 
 template <typename T>
 Matrix3<T> RotationMatrix<T>::QuaternionToRotationMatrix(
-    const Eigen::Quaternion<T> &quaternion, const T &two_over_norm_squared) {
+    const Eigen::Quaternion<T>& quaternion, const T &two_over_norm_squared) {
   ThrowIfAllElementsInQuaternionAreZero(quaternion, __func__);
   DRAKE_ASSERT_VOID(ThrowIfAnyElementInQuaternionIsNaN(quaternion, __func__));
-  Matrix3<T> m;
 
   const T w = quaternion.w();
   const T x = quaternion.x();
@@ -143,6 +142,7 @@ Matrix3<T> RotationMatrix<T>::QuaternionToRotationMatrix(
   const T syz = sz * y;
   const T szz = sz * z;
 
+  Matrix3<T> m;
   m.coeffRef(0, 0) = T(1) - syy - szz;
   m.coeffRef(0, 1) = sxy - swz;
   m.coeffRef(0, 2) = sxz + swy;

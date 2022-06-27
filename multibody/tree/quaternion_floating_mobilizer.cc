@@ -69,7 +69,7 @@ Quaternion<T> QuaternionFloatingMobilizer<T>::get_quaternion(
   // component.
   // Eigen::Quaternion's constructor takes the scalar component first followed
   // by the vector components.
-  return Quaternion<T>(q[0], q[1], q[2], q[3]);;
+  return Quaternion<T>(q[0], q[1], q[2], q[3]);
 }
 
 template <typename T>
