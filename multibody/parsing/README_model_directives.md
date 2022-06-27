@@ -81,6 +81,9 @@ Thus:
 - `top_level::my_model::my_frame`: The model instance is
   `top_level::my_model`, the frame is `my_frame`.
 
+## Units
+
+We use SI units plus radians for all physical quantities.
 
 ## Conditions for deprecation
 

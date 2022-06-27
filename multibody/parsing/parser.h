@@ -18,6 +18,11 @@ class CompositeParse;
 /// Parses SDF and URDF input files into a MultibodyPlant and (optionally) a
 /// SceneGraph. For documentation of Drake-specific extensions and limitations,
 /// see @ref multibody_parsing.
+///
+/// When parsing literal quantities, %Parser assumes SI units and radians in the
+/// absence of units specified by the format itself. This includes the literals
+/// in the explicitly specified files as well as referenced files such as OBJ
+/// or other data file formats.
 class Parser final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Parser)
