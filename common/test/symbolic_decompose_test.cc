@@ -57,6 +57,23 @@ class SymbolicDecomposeTest : public ::testing::Test {
   Eigen::Matrix<Expression, 3, 1> extra_terms_;
 };
 
+TEST_F(SymbolicDecomposeTest, IsAffine) {
+  Expression a{a_};
+  Expression x0{x0_};
+
+  Eigen::Matrix<Expression, 2, 2> M;
+  // clang-format off
+  M << a*a * x0,     x0,
+         2 * x0, 3 * x0 + 1;
+  // clang-format on
+
+  // M is affine in {x0}.
+  EXPECT_TRUE(IsAffine(M, {x0_}));
+
+  // However, M is *not* affine in {a, x0}.
+  EXPECT_FALSE(IsAffine(M));
+}
+
 TEST_F(SymbolicDecomposeTest, DecomposeLinearExpressionsDynamic) {
   DecomposeLinearExpressions(M_ * x_, x_, &M_expected_dynamic_);
   EXPECT_EQ(M_expected_dynamic_, M_);
