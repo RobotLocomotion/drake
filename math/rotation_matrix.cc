@@ -123,7 +123,8 @@ template <typename T>
 Matrix3<T> RotationMatrix<T>::QuaternionToRotationMatrix(
     const Eigen::Quaternion<T>& quaternion, const T &two_over_norm_squared) {
   ThrowIfAllElementsInQuaternionAreZero(quaternion, __func__);
-  DRAKE_ASSERT_VOID(ThrowIfAnyElementInQuaternionIsNaN(quaternion, __func__));
+  DRAKE_ASSERT_VOID(
+      ThrowIfAnyElementInQuaternionIsInfinityOrNaN(quaternion, __func__));
 
   const T w = quaternion.w();
   const T x = quaternion.x();

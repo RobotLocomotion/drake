@@ -286,8 +286,9 @@ bool IsQuaternionValid(const Eigen::Quaternion<T>& quat,
 
 #ifndef DRAKE_DOXYGEN_CXX
 // Return true if all the elements of a quaternion are zero, otherwise false.
-// Note: This special-purpose function avoids heap allocation and is an
-// efficient preferred alternative to quaternion.coeffs().isZero().
+// Note: This special-purpose function avoids memory allocation on the heap.
+// As of now, (Mitiguy's best guess) it seems that quaternion.coeffs().isZero()
+// sometimes does memory allocation on the heap.
 template <typename T>
 bool IsQuaternionZero(const Eigen::Quaternion<T>& quaternion) {
   return quaternion.w() == T(0) && quaternion.x() == T(0) &&

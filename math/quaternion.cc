@@ -40,7 +40,7 @@ void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &ThrowIfAllElementsInQuaternionAreZero<T>,
-    &ThrowIfAnyElementInQuaternionIsNaN<T>
+    &ThrowIfAnyElementInQuaternionIsInfinityOrNaN<T>
 ))
 
 }  // namespace math
