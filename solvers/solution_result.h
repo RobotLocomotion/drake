@@ -3,8 +3,6 @@
 #include <ostream>
 #include <string>
 
-#include "drake/common/drake_deprecated.h"
-
 namespace drake {
 namespace solvers {
 enum SolutionResult {
@@ -18,8 +16,6 @@ enum SolutionResult {
   kIterationLimit = -6,  ///< Reaches the iteration limits.
   kDualInfeasible = -7,  ///< Dual problem is infeasible. In this case we cannot
                          /// infer the status of the primal problem.
-  kInfeasible_Or_Unbounded
-  DRAKE_DEPRECATED("2022-07-01", "Use kInfeasibleOrUnbounded instead.") = -5,
 };
 
 std::string to_string(SolutionResult solution_result);

@@ -77,7 +77,6 @@ drake_cc_package_library(
         ":solver_type_converter",
         ":sos_basis_generator",
         ":sparse_and_dense_matrix",
-        ":system_identification",
         ":unrevised_lemke_solver",
     ],
 )
@@ -470,19 +469,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "system_identification",
-    srcs = ["system_identification.cc"],
-    hdrs = ["system_identification.h"],
-    deps = [
-        ":mathematical_program",
-        ":solve",
-        "//common:autodiff",
-        "//common:essential",
-        "//common:polynomial",
-    ],
-)
-
-drake_cc_library(
     name = "rotation_constraint",
     srcs = ["rotation_constraint.cc"],
     hdrs = ["rotation_constraint.h"],
@@ -699,9 +685,6 @@ drake_cc_library(
     name = "solution_result",
     srcs = ["solution_result.cc"],
     hdrs = ["solution_result.h"],
-    deps = [
-        "//common:essential",  # For DRAKE_DEPRECATED; remove 2022-07-01
-    ],
 )
 
 drake_cc_library(
@@ -1758,17 +1741,6 @@ drake_cc_googletest(
     name = "integer_inequality_solver_test",
     deps = [
         ":integer_inequality_solver",
-    ],
-)
-
-drake_cc_googletest(
-    name = "system_identification_test",
-    # Test timeout increased to not timeout in debug and when run with
-    # Valgrind.
-    timeout = "moderate",
-    deps = [
-        ":system_identification",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
