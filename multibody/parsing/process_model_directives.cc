@@ -239,6 +239,15 @@ void ProcessModelDirectives(
                              composite.get(), model_namespace);
 }
 
+std::vector<ModelInstanceInfo> ProcessModelDirectives(
+    const ModelDirectives& directives,
+    drake::multibody::Parser* parser) {
+  DRAKE_THROW_UNLESS(parser != nullptr);
+  std::vector<ModelInstanceInfo> added_models;
+  ProcessModelDirectives(directives, &parser->plant(), &added_models, parser);
+  return added_models;
+}
+
 ModelDirectives LoadModelDirectives(const std::string& filename) {
   drake::log()->debug("LoadModelDirectives: {}", filename);
 
