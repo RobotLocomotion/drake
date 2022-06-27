@@ -24,8 +24,8 @@ void ThrowIfAllElementsInQuaternionAreZero(
 }
 
 template <typename T>
-void ThrowIfAnyElementInQuaternionIsNaN(const Eigen::Quaternion<T>& quaternion,
-    const char* function_name) {
+void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
+    const Eigen::Quaternion<T>& quaternion, const char* function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
     if (!quaternion.coeffs().allFinite()) {
       std::string message = fmt::format("Error in {}():"

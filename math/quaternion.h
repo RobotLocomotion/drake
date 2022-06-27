@@ -304,14 +304,14 @@ template <typename T>
 void ThrowIfAllElementsInQuaternionAreZero(
     const Eigen::Quaternion<T>& quaternion, const char* function_name);
 
-// Throws an exception if any element in a %Quaternion is NaN.
+// Throws an exception if any element in a %Quaternion is infinity or NaN.
 // @param[in] quaternion a %Quaternion.
 // @param[in] function_name The name of the calling function, which is included
 // in the exception message (if an exception is thrown).
 // @note If the underlying scalar type T is non-numeric (symbolic), no
 // check is made and no exception is thrown.
 template <typename T>
-void ThrowIfAnyElementInQuaternionIsNaN(
+void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
     const Eigen::Quaternion<T>& quaternion, const char* function_name);
 #endif
 
