@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/planar_joint.h"

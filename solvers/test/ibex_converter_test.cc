@@ -8,7 +8,7 @@
 #include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 
 namespace drake {
 namespace solvers {

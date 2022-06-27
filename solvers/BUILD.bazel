@@ -163,7 +163,7 @@ drake_cc_library(
     interface_deps = [
         "//common:essential",
         "//common:polynomial",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//math:autodiff",
         ":function",
     ],
@@ -177,12 +177,12 @@ drake_cc_library(
     srcs = ["constraint.cc"],
     hdrs = ["constraint.h"],
     interface_deps = [
-        "//common:essential",
-        "//common:polynomial",
-        "//common:symbolic",
         ":decision_variable",
         ":evaluator_base",
         ":sparse_and_dense_matrix",
+        "//common:essential",
+        "//common:polynomial",
+        "//common/symbolic:expression",
     ],
     deps = [
         "//common:symbolic_decompose",
@@ -220,7 +220,7 @@ drake_cc_library(
     srcs = ["create_constraint.cc"],
     hdrs = ["create_constraint.h"],
     interface_deps = [
-        "//common:symbolic",
+        "//common/symbolic:expression",
         ":binding",
         ":constraint",
     ],
@@ -238,7 +238,7 @@ drake_cc_library(
     interface_deps = [
         ":binding",
         ":cost",
-        "//common:symbolic",
+        "//common/symbolic:expression",
     ],
     deps = [
         "//common:polynomial",
@@ -252,7 +252,7 @@ drake_cc_library(
     srcs = ["decision_variable.cc"],
     hdrs = ["decision_variable.h"],
     interface_deps = [
-        "//common:symbolic",
+        "//common/symbolic:expression",
     ],
     deps = [],
 )
@@ -314,7 +314,7 @@ drake_cc_library(
     srcs = ["indeterminate.cc"],
     hdrs = ["indeterminate.h"],
     interface_deps = [
-        "//common:symbolic",
+        "//common/symbolic:expression",
     ],
     deps = [
         "//solvers:decision_variable",
@@ -369,7 +369,6 @@ drake_cc_library(
     ],
     deps = [
         ":sos_basis_generator",
-        "//common:symbolic_decompose",
         "//math:matrix_util",
     ],
 )
@@ -451,9 +450,11 @@ drake_cc_library(
     interface_deps = [
         ":decision_variable",
         "//common:essential",
+        "//common/symbolic:expression",
+    ],
+    deps = [
         "//common:symbolic",
     ],
-    deps = [],
 )
 
 drake_cc_library(
@@ -812,7 +813,7 @@ drake_cc_optional_library(
     srcs = ["ibex_converter.cc"],
     hdrs = ["ibex_converter.h"],
     interface_deps = [
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "@ibex//:ibex",
     ],
     deps = [],
@@ -1149,7 +1150,7 @@ drake_cc_googletest(
     name = "constraint_test",
     deps = [
         ":constraint",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
@@ -1172,7 +1173,7 @@ drake_cc_googletest(
         ":cost",
         ":create_cost",
         ":generic_trivial_cost",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:is_dynamic_castable",
         "//common/test_utilities:symbolic_test_util",
@@ -1440,7 +1441,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":snopt_solver",
         ":solve",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities",
         "//math:matrix_util",
     ],
@@ -1751,6 +1752,7 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":sos_basis_generator",
+        "//common:symbolic",
     ],
 )
 

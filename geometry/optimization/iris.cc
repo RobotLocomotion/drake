@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/minkowski_sum.h"

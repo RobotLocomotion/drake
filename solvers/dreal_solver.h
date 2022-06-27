@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/solvers/solver_base.h"
 
 namespace drake {

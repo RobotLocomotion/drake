@@ -11,7 +11,7 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
         cmake_source_dir = install_test_helper.create_temporary_dir("src")
 
         cc_content_drake = """
-            #include <drake/common/symbolic.h>
+            #include <drake/common/symbolic/expression.h>
             int main() {
               drake::symbolic::Environment environment;
               return 0;

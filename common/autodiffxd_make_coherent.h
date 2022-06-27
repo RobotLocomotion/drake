@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/common/autodiff.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 
 namespace drake {
 

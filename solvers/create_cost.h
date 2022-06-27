@@ -5,7 +5,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/cost.h"
 #include "drake/solvers/function.h"
