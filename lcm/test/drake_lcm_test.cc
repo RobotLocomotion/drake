@@ -380,6 +380,19 @@ TEST_F(DrakeLcmTest, Suffix) {
     Publish(dut_.get(), "SuffixDrakeLcmTest", message_);
     native_lcm->handleTimeout(50 /* millis */);
   });
+
+  // SubscribeAll using Drake LCM, expecting to see the fully qualified
+  // channel name.
+  received_drake = lcmt_drake_signal{};
+  subscription = dut_->SubscribeAllChannels([&received_drake](
+      std::string_view channel_name, const void* data, int size) {
+    EXPECT_EQ(channel_name, "SuffixDrakeLcmTest_SUFFIX");
+    received_drake.decode(data, 0, size);
+  });
+  LoopUntilDone(&received_drake, 20 /* retries */, [&]() {
+    Publish(dut_.get(), "SuffixDrakeLcmTest", message_);
+    native_lcm->handleTimeout(50 /* millis */);
+  });
 }
 
 }  // namespace
