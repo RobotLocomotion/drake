@@ -632,9 +632,9 @@ TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
   // should be invalid.
   DRAKE_EXPECT_THROWS_MESSAGE(
       GetContactResults(),
-      "The provided context doesn't show a connection for the plant's "
-      "query input port .see MultibodyPlant::get_geometry_query_input_port..."
-      ". See https://drake.mit.edu/trouble_shooting.html"
+      ".+ 'contact_results' output port[^]+The provided context doesn't show a "
+      "connection for the plant's query input port .+ See "
+      "https://drake.mit.edu/trouble_shooting.html"
       "#mbp-unconnected-query-object-port for help.");
 }
 

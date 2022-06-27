@@ -4168,8 +4168,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Consolidates calls to Eval on the geometry query input port to have a
   // consistent and helpful error message in the situation where the
   // geometry_query_input_port is not connected, but is expected to be.
+  // Explanation provides some text to add to the error message explaining why
+  // the input port was being evaluated.
+  //
+  // Any public API that can ultimately depend on the QueryObject input port
+  // should invoke this method immediately, with an appropriate "explanation"
+  // of the invocation. This act of "priming" QueryObject will allow us to
+  // inform users of error conditions as close to their act as possible. For
+  // example, see the implementations of CopyContactResultsOutput() and ...
   const geometry::QueryObject<T>& EvalGeometryQueryInput(
-      const systems::Context<T>& context) const;
+      const systems::Context<T>& context,
+      std::string_view explanation) const;
 
   // Helper to acquire per-geometry contact parameters from SG.
   // Returns the pair (stiffness, dissipation)
