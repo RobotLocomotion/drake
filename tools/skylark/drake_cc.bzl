@@ -21,6 +21,7 @@ CXX_FLAGS = [
 # below).
 CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=absolute-value",
+    "-Werror=c99-designator",
     "-Werror=inconsistent-missing-override",
     "-Werror=final-dtor-non-final-class",
     "-Werror=literal-conversion",
@@ -28,6 +29,9 @@ CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=range-loop-analysis",
     "-Werror=return-stack-address",
     "-Werror=sign-compare",
+    # This was turned on via "-Wc99-designator", but is not an an error.
+    # Our conventions permit using this language extension even in C++17 mode.
+    "-Wno-c++20-designator",
 ]
 
 # The CLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the
