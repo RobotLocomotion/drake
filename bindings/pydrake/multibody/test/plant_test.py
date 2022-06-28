@@ -78,6 +78,7 @@ from pydrake.multibody.benchmarks.acrobot import (
 from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
@@ -174,8 +175,8 @@ class TestPlant(unittest.TestCase):
                                   M_BBo_B=spatial_inertia)
         body_mass = body.get_default_mass()
         # TODO(2022-10-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1):
-            body_mass = body.default_mass()
+        # with catch_drake_warnings(expected_count=1):
+        #   body_mass = body.default_mass()
         body_com = body.default_com()
         body_default_unit_inertia = body.default_unit_inertia()
         body_default_rotational_inertial = body.default_rotational_inertia()
