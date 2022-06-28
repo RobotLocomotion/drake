@@ -7,7 +7,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/body.h"
@@ -94,18 +93,13 @@ class RigidBody : public Body<T> {
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
 
-DRAKE_DEPRECATED("2022-10-07", "Use RigidBody::get_default_mass()")
-  double default_mass() const {
-    return get_default_mass();
-  }
-
-  /// Returns the default value of this body's mass.  This value is initially
-  /// supplied at construction when specifying this body's SpatialInertia.
-  double get_default_mass() const final {
-    // In general, the mass of a body can be a constant property stored in the
-    // body or a parameter of the model that is stored in a Context. The default
-    // constant mass value is reported by get_default_mass() and is used to
-    // initialize the mass parameter in the Context.
+  /// Returns this rigid body's default mass, which is is initially supplied at
+  /// construction when specifying this body's SpatialInertia.
+  /// @note In general, a rigid body's mass can be a constant property stored in
+  /// this rigid body's %SpatialInertia or a parameter that is stored in a
+  /// Context. The default constant mass value is reported by get_default_mass()
+  /// and is used to initialize the mass parameter in the Context.
+  double default_mass() const final {
     return default_spatial_inertia_.get_mass();
   }
 
@@ -377,6 +371,15 @@ DRAKE_DEPRECATED("2022-10-07", "Use RigidBody::get_default_mass()")
   }
 
  private:
+  // Ideally, the pure virtual function get_default_mass() in body.h would
+  // instead be called default_mass() (consistent with related function names
+  // in rigid_body.h). This function currently exists for Kaizen and to
+  // eliminate the redundant data that existed when default mass was stored in
+  // both the Body and RigidBody classes.
+  double get_default_mass() const final {
+    return default_mass();  // Returns the mass stored in `this` RigidBody.
+  }
+
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(
