@@ -99,7 +99,7 @@ class RigidBody : public Body<T> {
   /// this rigid body's %SpatialInertia or a parameter that is stored in a
   /// Context. The default constant mass value is reported by get_default_mass()
   /// and is used to initialize the mass parameter in the Context.
-  double default_mass() const final {
+  double default_mass() const {
     return default_spatial_inertia_.get_mass();
   }
 
