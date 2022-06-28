@@ -337,13 +337,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("body_name"), py::arg("model_instance"), py::arg("M_BBo_B"),
             cls_doc.ctor.doc_3args)
         .def("get_default_mass", &Class::get_default_mass,
-            cls_doc.get_default_mass.doc)
+            cls_doc.get_default_mass.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc)
+    cls.def("default_mass", &Class::default_mass, cls_doc.default_mass.doc);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-        .def("default_com", &Class::default_com, py_rvp::reference_internal,
-            cls_doc.default_com.doc)
+    cls.def("default_com", &Class::default_com, py_rvp::reference_internal,
+           cls_doc.default_com.doc)
         .def("default_unit_inertia", &Class::default_unit_inertia,
             py_rvp::reference_internal, cls_doc.default_unit_inertia.doc)
         .def("default_rotational_inertia", &Class::default_rotational_inertia,

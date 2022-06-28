@@ -94,7 +94,6 @@ class RigidBody : public Body<T> {
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
 
-  /// The original documentation for the deprecated function is usually removed.
 DRAKE_DEPRECATED("2022-10-07", "Use RigidBody::get_default_mass()")
   double default_mass() const {
     return get_default_mass();
