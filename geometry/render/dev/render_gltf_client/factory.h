@@ -2,9 +2,9 @@
 
 #include <memory>
 
-#include "drake/geometry/render/dev/render_gltf_client/render_gltf_client_params.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
+#include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
 
 namespace drake {
 namespace geometry {

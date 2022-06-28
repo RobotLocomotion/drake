@@ -5,9 +5,9 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/render/dev/render_gltf_client/render_gltf_client_params.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
+#include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
@@ -258,6 +258,7 @@ class RenderClient {
   const std::string render_endpoint_;
   const bool verbose_;
   const bool no_cleanup_;
+  const std::string url_;
   std::unique_ptr<HttpService> http_service_;
 };
 

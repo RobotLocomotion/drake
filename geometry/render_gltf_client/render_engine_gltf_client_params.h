@@ -14,10 +14,8 @@ struct RenderEngineGltfClientParams {
   /** The (optional) label to apply when none is otherwise specified.  */
   std::optional<render::RenderLabel> default_label{};
 
-  /** The base url of the server communicate with.  Should **not** be the empty
-   string.  Should **not** include a trailing `/` character.  For example,
-   `https://drake.mit.edu` is acceptable while `https://drake.mit.edu/` is not.
-   The full url is constructed as `base_url + "/" + render_endpoint`. */
+  /** The base url of the server communicate with.  Any trailing slashes will be
+   pruned when querying the full url from GetUrl() method. */
   std::string base_url{"http://127.0.0.1"};
 
   /** The port to communicate on.  A value less than or equal to `0` will let
@@ -25,9 +23,9 @@ struct RenderEngineGltfClientParams {
    instead, specify `port` to override that. */
   int port{8000};
 
-  /** The server endpoint to retrieve renderings from.  Should **not** have a
-   leading or trailing `/` character.  Communications will be formed as
-   `{base_url}/{render_endpoint}`.  If the server expects forms posted to `/`
+  /** The server endpoint to retrieve renderings from.  Any leading slashes will
+   be pruned when querying the full url from GetUrl() method.  Trailing slashes
+   , however, will be kept as-is.  If the server expects forms posted to `/`
    then this value should be the empty string. */
   std::string render_endpoint{"render"};
 
@@ -51,13 +49,13 @@ struct RenderEngineGltfClientParams {
    directory described by drake::temp_directory(). */
   bool no_cleanup = false;
 
-  // TODO(zachfang): rework the slash-handling and validation of `base_url` and
-  // `render_endpoint`.  The code can either strip away invalid or duplicated
-  // slashes internally, or enforce a specific URL format with clear
-  // documentation that users can follow.
-  /** Validates the struct variables, e.g., base_url and render_endpoint, and
-   throws an exception if any incorrect value is provided. */
-  void Validate() const;
+  /** Returns the post-processed full URL used for client-server communication.
+   The full url is constructed as `{url}/{endpoint}` where any trailing slashes
+   in `base_url` and any leading slashes in `render_endpoint` are removed.
+   
+   Throws an exception if either `base_url` or `render_endpoint` becomes the
+   empty string after slash pruning. */
+  std::string GetUrl() const;
 };
 
 }  // namespace geometry

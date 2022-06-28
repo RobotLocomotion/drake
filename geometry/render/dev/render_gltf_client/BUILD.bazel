@@ -18,11 +18,9 @@ drake_cc_library(
     name = "internal_render_client",
     srcs = [
         "internal_render_client.cc",
-        "render_gltf_client_params.cc",
     ],
     hdrs = [
         "internal_render_client.h",
-        "render_gltf_client_params.h",
     ],
     internal = True,
     visibility = ["//visibility:private"],
@@ -34,6 +32,7 @@ drake_cc_library(
         "//geometry/render:render_engine",
         "//geometry/render_gltf_client:internal_http_service",
         "//geometry/render_gltf_client:internal_http_service_curl",
+        "//geometry/render_gltf_client:render_engine_gltf_client_params",
         "//systems/sensors:image",
         "@picosha2",
         "@vtk//:vtkIOImage",
