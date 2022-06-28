@@ -80,32 +80,6 @@ GTEST_TEST(RenderClient, Constructor) {
   const int port{8000};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
-  const bool no_cleanup = false;
-
-  {
-    // Provided base_url may not end with slash.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient(Params{std::nullopt, base_url + "/", port, render_endpoint,
-                            verbose, no_cleanup}),
-        "RenderEngineGltfClientParams: base_url may not end with '/'.");
-    // Provided base_url may not be empty.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient(Params{std::nullopt, "", port, render_endpoint, verbose,
-                            no_cleanup}),
-        "RenderEngineGltfClientParams: base_url may not be empty.");
-    // Provided endpoint may not start with a slash.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient(Params{std::nullopt, base_url, port, "/" + render_endpoint,
-                            verbose, no_cleanup}),
-        "RenderEngineGltfClientParams: render_endpoint may not start or end "
-        "with a '/'.");
-    // Provided endpoint may not end with a slash.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient(Params{std::nullopt, base_url, port, render_endpoint + "/",
-                            verbose, no_cleanup}),
-        "RenderEngineGltfClientParams: render_endpoint may not start or end "
-        "with a '/'.");
-  }
 
   {
     // Verify attributes after valid construction.

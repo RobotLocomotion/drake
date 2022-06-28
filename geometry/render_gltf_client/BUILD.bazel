@@ -23,6 +23,17 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "render_engine_gltf_client_params",
+    srcs = ["render_engine_gltf_client_params.cc"],
+    hdrs = ["render_engine_gltf_client_params.h"],
+    internal = True,
+    visibility = _VISIBILITY,
+    deps = [
+        "//geometry/render:render_label",
+    ],
+)
+
+drake_cc_library(
     name = "internal_http_service",
     srcs = ["internal_http_service.cc"],
     hdrs = ["internal_http_service.h"],
@@ -53,6 +64,14 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "render_engine_gltf_client_params_test",
+    deps = [
+        ":render_engine_gltf_client_params",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
 
 drake_cc_googletest(
     name = "internal_http_service_test",
