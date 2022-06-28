@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/examples/multibody/rolling_sphere/make_rolling_sphere_plant.h"
+#include "drake/examples/multibody/rolling_sphere/populate_ball_plant.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/autodiff.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -38,28 +38,16 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
 
     // Create the plant.
     systems::DiagramBuilder<double> builder;
-    geometry::SceneGraph<double>& scene_graph =
-        *builder.AddSystem<geometry::SceneGraph<double>>();
-    scene_graph.set_name("scene_graph");
+    plant_ = &AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */).plant;
+
     // TODO(SeanCurtis-TRI): This should _not_ be using code from the examples/
     //  directory. Examples code shouldn't feed back into other code.
-    plant_ = builder.AddSystem(
-        examples::multibody::bouncing_ball::MakeBouncingBallPlant(
-            0.0 /* mbp_dt */, radius, mass, hydroelastic_modulus, dissipation,
+    examples::multibody::bouncing_ball::PopulateBallPlant(
+            radius, mass, hydroelastic_modulus, dissipation,
             friction, gravity_W, false /* rigid_sphere */,
-            false /* compliant_ground */, &scene_graph));
+            false /* compliant_ground */, plant_);
     plant_->set_contact_model(ContactModel::kHydroelastic);
     plant_->Finalize();
-
-    // Sanity check on the availability of the optional source id before using
-    // it.
-    DRAKE_DEMAND(plant_->get_source_id().has_value());
-
-    builder.Connect(scene_graph.get_query_output_port(),
-                    plant_->get_geometry_query_input_port());
-    builder.Connect(
-        plant_->get_geometry_poses_output_port(),
-        scene_graph.get_source_pose_port(plant_->get_source_id().value()));
 
     diagram_ = builder.Build();
 
@@ -273,7 +261,7 @@ TEST_F(HydroelasticContactResultsOutputTester, AutoDiffXdSupport) {
   // Contact surface documents the surface normal as pointing "out of N and into
   // M". So, if the ball maps to id_N, the normal points out of the ball and
   // into the half space. We exploit the knowledge that the ball body is named
-  // "Ball" by MakeBouncingBallPlant(). So,
+  // "Ball" by PopulateBallPlant(). So,
   //   id_N = the Ball body
   //     -> body A in the force results is half space
   //     -> f_Ac_W points *into* the half space.

@@ -10,7 +10,8 @@ namespace examples {
 namespace multibody {
 namespace bouncing_ball {
 
-/// This method makes a MultibodyPlant model of a ball falling into a plane.
+/// This function populates the given MultibodyPlant with a model of a ball
+/// falling onto a plane.
 /// MultibodyPlant models the contact of the ball with the ground as a perfectly
 /// inelastic collision (zero coefficient of restitution), i.e. energy is lost
 /// due to the collision.
@@ -22,9 +23,6 @@ namespace bouncing_ball {
 /// use the resulting plant with a contact model consistent with the
 /// configuration of the ball and ground.
 ///
-/// @param[in] mbp_dt
-///   The discrete update period when MultibodyPlant is modeled as a discrete
-///   system. If zero, the plant is modeled as a continuous system.
 /// @param[in] radius
 ///   The radius of the ball.
 /// @param[in] mass
@@ -47,21 +45,18 @@ namespace bouncing_ball {
 /// @param[in] compliant_ground
 ///   If 'true', the ground will have a _soft_ hydroelastic representation
 ///   (rigid otherwise).
-/// @param scene_graph
-///   If a SceneGraph is provided with this argument, this factory method
-///   will register the new multibody plant to be a source for that geometry
-///   system and it will also register geometry for collision.
-///   If this argument is omitted, no geometry will be registered.
-/// @note The MultibodyPlant model is not finalized. You must call Finalize() on
-/// the new model once you are done creating it.
-std::unique_ptr<drake::multibody::MultibodyPlant<double>>
-MakeBouncingBallPlant(
-    double mbp_dt,
+/// @param[in,out] plant
+///   A valid pointer to a MultibodyPlant. This function will register
+///   geometry for contact modeling.
+/// @pre `plant` is not null, unfinalized, and is registered with a SceneGraph.
+/// @note The given plant is not finalized. You must call Finalize() on the new
+///   model once you are done populating it.
+void PopulateBallPlant(
     double radius, double mass,
     double hydroelastic_modulus, double dissipation,
     const drake::multibody::CoulombFriction<double>& surface_friction,
     const Vector3<double>& gravity_W, bool rigid_sphere, bool compliant_ground,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
+    drake::multibody::MultibodyPlant<double>* plant);
 
 }  // namespace bouncing_ball
 }  // namespace multibody

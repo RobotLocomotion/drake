@@ -1,4 +1,4 @@
-#include "drake/examples/multibody/cylinder_with_multicontact/make_cylinder_plant.h"
+#include "drake/examples/multibody/cylinder_with_multicontact/populate_cylinder_plant.h"
 
 #include <limits>
 #include <memory>
@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace examples {
@@ -14,14 +15,14 @@ namespace multibody {
 namespace cylinder_with_multicontact {
 namespace {
 
-using drake::geometry::SceneGraph;
+using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::CoulombFriction;
-using drake::multibody::MultibodyPlant;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
+using drake::systems::DiagramBuilder;
 using Eigen::Vector3d;
 
-GTEST_TEST(MakeCylinderPlant, VerifyPlant) {
+GTEST_TEST(PopulateCylinderPlant, VerifyPlant) {
   // Plant's parameters.
   const double radius = 0.05;          // The cylinder's radius, m
   const double mass = 0.1;             // The cylinder's mass, kg
@@ -34,20 +35,23 @@ GTEST_TEST(MakeCylinderPlant, VerifyPlant) {
   // Time stepping step size.
   const double time_step = 1.0e-3;
 
-  SceneGraph<double> scene_graph;
+  // The builder is garbage; we won't be building the diagram, we just need
+  // this to use AddMultibodyPlantSceneGraph.
+  DiagramBuilder<double> builder;
 
-  auto plant = MakeCylinderPlant(
-      radius, length, mass, coulomb_friction, -g * Vector3d::UnitZ(),
-      time_step, &scene_graph);
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, time_step);
+  PopulateCylinderPlant(radius, length, mass, coulomb_friction,
+                        -g * Vector3d::UnitZ(), &plant);
+  plant.Finalize();
 
-  EXPECT_EQ(plant->num_velocities(), 6);
-  EXPECT_EQ(plant->num_positions(), 7);
-  EXPECT_EQ(plant->time_step(), time_step);
-  EXPECT_TRUE(plant->geometry_source_is_registered());
+  EXPECT_EQ(plant.num_velocities(), 6);
+  EXPECT_EQ(plant.num_positions(), 7);
+  EXPECT_EQ(plant.time_step(), time_step);
+  EXPECT_TRUE(plant.geometry_source_is_registered());
 
-  ASSERT_TRUE(plant->HasBodyNamed("Cylinder"));
+  ASSERT_TRUE(plant.HasBodyNamed("Cylinder"));
   const RigidBody<double>& cylinder =
-      plant->GetRigidBodyByName("Cylinder");
+      plant.GetRigidBodyByName("Cylinder");
   EXPECT_EQ(cylinder.default_mass(), mass);
 
   // Verify the value of the inertial properties for the cylinder.
