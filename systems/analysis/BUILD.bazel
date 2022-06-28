@@ -305,7 +305,7 @@ drake_cc_library(
         "instantaneous_realtime_rate_calculator.h",
     ],
     deps = [
-        "//common:time",
+        "//common:timer",
     ],
 )
 
