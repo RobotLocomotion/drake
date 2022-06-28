@@ -32,6 +32,7 @@ drake_cc_googletest(
         ":make_cylinder_plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/plant",
+        "//systems/framework:diagram_builder",
     ],
 )
 

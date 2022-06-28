@@ -53,13 +53,9 @@ void DoMain() {
 
   systems::DiagramBuilder<double> builder;
 
-  geometry::SceneGraph<double>& scene_graph =
-      *builder.AddSystem<geometry::SceneGraph>();
-  scene_graph.set_name("scene_graph");
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlantSceneGraph(&builder, FLAGS_max_time_step);
 
-  MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>
-                                  (FLAGS_max_time_step);
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
   std::string full_name;
   if (FLAGS_use_right_hand)
     full_name = FindResourceOrThrow("drake/manipulation/models/"
@@ -96,13 +92,6 @@ void DoMain() {
   constant_source->set_name("constant_source");
   builder.Connect(constant_source->get_output_port(),
                   plant.get_actuation_input_port());
-
-  DRAKE_DEMAND(plant.get_source_id().has_value());
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
 
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();

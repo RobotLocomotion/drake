@@ -357,17 +357,20 @@ pre-finalize.
 %Multibodyplant declares an input port for geometric queries, see
 get_geometry_query_input_port(). If %MultibodyPlant registers geometry with
 a SceneGraph via calls to RegisterCollisionGeometry(), users may use this
-port for geometric queries. Users must connect this input port to the output
-port for geometric queries of the SceneGraph used for registration, which
-can be obtained with SceneGraph::get_query_output_port(). In summary, if
-%MultibodyPlant registers collision geometry, the setup process will
-include:
+port for geometric queries. The port must be connected to the same SceneGraph
+used for registration. The preferred mechanism is to use
+AddMultibodyPlantSceneGraph() as documented above.
+
+In extraordinary circumstances, this can be done by hand and the setup process
+will include:
 
 1. Call to RegisterAsSourceForSceneGraph().
 2. Calls to RegisterCollisionGeometry(), as many as needed.
 3. Call to Finalize(), user is done specifying the model.
-4. Connect SceneGraph::get_query_output_port() to
+4. Connect geometry::SceneGraph::get_query_output_port() to
    get_geometry_query_input_port().
+5. Connect get_geometry_poses_output_port() to
+   geometry::SceneGraph::get_source_pose_port()
 
 Refer to the documentation provided in each of the methods above for further
 details.

@@ -15,7 +15,6 @@ using drake::multibody::UnitInertia;
 using Eigen::Vector3d;
 using geometry::Cylinder;
 using geometry::HalfSpace;
-using geometry::SceneGraph;
 using geometry::Sphere;
 using math::RigidTransformd;
 
@@ -56,15 +55,13 @@ void AddCylinderWithMultiContact(
   }
 }
 
-std::unique_ptr<drake::multibody::MultibodyPlant<double>>
-MakeCylinderPlant(double radius, double length, double mass,
-                  const CoulombFriction<double>& surface_friction,
-                  const Vector3<double>& gravity_W, double dt,
-                  geometry::SceneGraph<double>* scene_graph) {
-  DRAKE_DEMAND(scene_graph != nullptr);
-
-  auto plant = std::make_unique<MultibodyPlant<double>>(dt);
-  plant->RegisterAsSourceForSceneGraph(scene_graph);
+void PopulateCylinderPlant(double radius, double length, double mass,
+                           const CoulombFriction<double>& surface_friction,
+                           const Vector3<double>& gravity_W,
+                           MultibodyPlant<double>* plant) {
+  DRAKE_DEMAND(plant != nullptr);
+  DRAKE_ASSERT(!plant->is_finalized());
+  DRAKE_ASSERT(plant->get_source_id().has_value());
 
   UnitInertia<double> G_Bcm =
       UnitInertia<double>::SolidCylinder(radius, length);
@@ -81,7 +78,7 @@ MakeCylinderPlant(double radius, double length, double mass,
 
   // Add geometry to the cylinder for both contact and visualization.
   AddCylinderWithMultiContact(
-      plant.get(),
+      plant,
       cylinder, radius, length, surface_friction,
       contact_radius, num_contact_spheres);
 
@@ -99,11 +96,6 @@ MakeCylinderPlant(double radius, double length, double mass,
       plant->world_body(), X_WG, HalfSpace(), "visual");
 
   plant->mutable_gravity_field().set_gravity_vector(gravity_W);
-
-  // We are done creating the plant.
-  plant->Finalize();
-
-  return plant;
 }
 
 }  // namespace cylinder_with_multicontact

@@ -151,15 +151,12 @@ void AddGripperPads(MultibodyPlant<double>* plant, const double pad_offset,
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
-  scene_graph.set_name("scene_graph");
-
   DRAKE_DEMAND(FLAGS_simulator_max_time_step > 0);
   DRAKE_DEMAND(FLAGS_mbp_discrete_update_period >= 0);
 
-  MultibodyPlant<double>& plant =
-      *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_discrete_update_period);
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  auto [plant, scene_graph] = multibody::AddMultibodyPlantSceneGraph(
+      &builder, FLAGS_mbp_discrete_update_period);
+
   Parser parser(&plant);
   std::string full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
@@ -238,18 +235,8 @@ int do_main() {
   DRAKE_DEMAND(plant.num_actuators() == 2);
   DRAKE_DEMAND(plant.num_actuated_dofs() == 2);
 
-  // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(plant.get_source_id().has_value());
-
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
-
   DrakeLcm lcm;
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
-
   // Publish contact results for visualization.
   ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
 
