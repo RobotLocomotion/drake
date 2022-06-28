@@ -34,7 +34,7 @@ class SteadyTimer : public Timer {
   duration Tick() override;
 
  protected:
-  clock::time_point start_time;
+  clock::time_point start_time_;
 };
 
 }  // namespace drake

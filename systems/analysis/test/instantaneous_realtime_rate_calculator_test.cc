@@ -13,16 +13,15 @@ class MockTimer : public Timer {
  public:
   MOCK_METHOD(Timer::duration, Tick, (), (override));
   MOCK_METHOD(void, Start, (), (override));
-  MOCK_METHOD(Timer::duration, Stop, (), (override));
 };
 
 // Tests that the InstantaneousRealtimeRateCalculator calculates the correct
 // results including startup and rewinding time
 GTEST_TEST(InstantaneousRealtimeRateCalculatorTest, BasicTest) {
   auto timer = std::make_unique<MockTimer>();
-  const double SLEEP_S = 0.1;
+  const double kSleepSec = 0.1;
   EXPECT_CALL(*timer, Tick)
-      .WillRepeatedly(Return(MockTimer::duration(SLEEP_S)));
+      .WillRepeatedly(Return(MockTimer::duration(kSleepSec)));
 
   InstantaneousRealtimeRateCalculator calculator{};
   calculator.InjectMockTimer(std::move(timer));

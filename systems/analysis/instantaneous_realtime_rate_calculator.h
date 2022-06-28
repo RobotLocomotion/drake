@@ -10,6 +10,9 @@ namespace systems {
 /// Utility class that computes the realtime rate achieved between time steps.
 class InstantaneousRealtimeRateCalculator {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InstantaneousRealtimeRateCalculator);
+  InstantaneousRealtimeRateCalculator() = default;
+
   /** Computes the realtime rate between time steps. The very first call to this
    function seeds the rate calculation and returns an empty optional because a
    valid rate cannot be computed yet. It will also return an empty optional if
@@ -19,7 +22,7 @@ class InstantaneousRealtimeRateCalculator {
    */
   std::optional<double> CalculateRealtimeRate(double current_sim_time);
 
-  /* (Internal use for unit testing only) Used to mock the monatomic wall time
+  /* (Internal use for unit testing only) Used to mock the monotonic wall time
      source to control time during unit testing.  */
 #ifndef DRAKE_DOXYGEN_CXX
   void InjectMockTimer(std::unique_ptr<Timer>);

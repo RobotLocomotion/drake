@@ -221,7 +221,8 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   bool recording_{false};
   bool set_transforms_while_recording_{true};
 
-  mutable systems::InstantaneousRealtimeRateCalculator rtr_calculator_{};
+  mutable systems::InstantaneousRealtimeRateCalculator
+      realtime_rate_calculator_{};
 };
 
 /** A convenient alias for the MeshcatVisualizer class when using the `double`

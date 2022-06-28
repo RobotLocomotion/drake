@@ -97,10 +97,10 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
     version_ = current_version;
   }
   SetTransforms(context, query_object);
-  std::optional<double> rtr = rtr_calculator_.CalculateRealtimeRate(
+  std::optional<double> rate = realtime_rate_calculator_.CalculateRealtimeRate(
       ExtractDoubleOrThrow(context.get_time()));
-  if (rtr) {
-    meshcat_->SetRealtimeRate(rtr.value());
+  if (rate) {
+    meshcat_->SetRealtimeRate(rate.value());
   }
 
   return systems::EventStatus::Succeeded();
@@ -190,7 +190,6 @@ systems::EventStatus MeshcatVisualizer<T>::OnInitialization(
   Delete();
   return systems::EventStatus::Succeeded();
 }
-
 
 }  // namespace geometry
 }  // namespace drake
