@@ -4,7 +4,7 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 
-using internal::kScopedNameDelim;
+constexpr char kScopedNameDelim[] = "::";
 
 const drake::multibody::Frame<double>*
 GetScopedFrameByNameMaybe(

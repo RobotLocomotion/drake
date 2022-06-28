@@ -14,7 +14,6 @@
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 #include "drake/multibody/parsing/detail_composite_parse.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/parsing/scoped_names.h"
 
 namespace drake {
 namespace multibody {

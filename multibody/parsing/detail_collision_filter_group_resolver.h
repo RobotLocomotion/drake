@@ -10,6 +10,7 @@
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/scoped_name.h"
 
 namespace drake {
 namespace multibody {
@@ -114,13 +115,9 @@ class CollisionFilterGroupResolver {
   void Resolve(const drake::internal::DiagnosticPolicy& diagnostic);
 
  private:
-  bool CheckLegalName(const drake::internal::DiagnosticPolicy& diagnostic,
-                      std::string_view name,
-                      const std::string& description) const;
-
-  std::string FullyQualify(
-      const std::string& name,
-      std::optional<ModelInstanceIndex> model_instance) const;
+  std::optional<ScopedName> FullyQualify(
+      std::optional<ModelInstanceIndex> model_instance,
+      const std::string& name) const;
 
   const geometry::GeometrySet* FindGroup(
       const drake::internal::DiagnosticPolicy& diagnostic,

@@ -88,13 +88,13 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":package_map",
-        ":scoped_names",
         "//common:diagnostic_policy",
         "//common:essential",
         "//common:filesystem",
         "//geometry:proximity_properties",
         "//math:geometric_transform",
         "//multibody/plant",
+        "//multibody/tree:scoped_name",
         "@sdformat_internal//:sdformat",
         "@tinyxml2",
     ],
@@ -143,7 +143,6 @@ drake_cc_library(
         ":detail_sdf_diagnostic",
         ":detail_sdf_geometry",
         ":detail_urdf_parser",
-        ":scoped_names",
         "//multibody/plant",
         "@sdformat_internal//:sdformat",
     ],
@@ -164,8 +163,8 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":detail_parsing_workspace",
-        ":scoped_names",
         "//common:filesystem",
+        "//multibody/tree:scoped_name",
         "@fmt",
         "@tinyxml2",
     ],
@@ -179,7 +178,6 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":detail_misc",
-        ":scoped_names",
         "//multibody/plant",
         "@fmt",
         "@tinyxml2",
@@ -252,7 +250,6 @@ drake_cc_library(
     ],
     deps = [
         ":detail_misc",
-        ":scoped_names",
         "//common:filesystem",
         "//common:find_resource",
         "//common/yaml",
@@ -263,6 +260,7 @@ drake_cc_library(
     name = "scoped_names",
     srcs = ["scoped_names.cc"],
     hdrs = ["scoped_names.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//multibody/plant",
     ],
@@ -361,7 +359,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":process_model_directives",
-        ":scoped_names",
         "//common:filesystem",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -369,6 +366,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scoped_names_test",
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         ":test_models",
     ],
