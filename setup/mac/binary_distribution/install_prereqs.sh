@@ -68,7 +68,18 @@ robotlocomotion/director/vtk@8.2.0
 EOF
 )
 
+# Undo temporary forced downgrades, to avoid them getting stuck forever.
+brew uninstall --force --ignore-dependencies numpy
+
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
+
+# Temporary forced downgrades.
+
+# Begin downgrade for #17457
+brew uninstall --force --ignore-dependencies numpy
+brew install --formula "${BASH_SOURCE%/*}/numpy.rb"
+brew pin numpy
+# End downgrade for #17457
 
 if ! command -v pip3.9 &>/dev/null; then
   echo 'ERROR: pip3.9 is NOT installed. The post-install step for the python@3.9 formula may have failed.' >&2
