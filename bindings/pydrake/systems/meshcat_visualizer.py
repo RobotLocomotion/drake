@@ -1,7 +1,7 @@
 """
 Warning:
     This module (the pure-Python implementation of MeshCat) is deprecated.
-    Please use pydrake.geometry.MeshcatVisualizerCpp and related instead.
+    Please use pydrake.geometry.MeshcatVisualizer and related instead.
     The deprecated code will be removed from Drake on or after 2022-09-01.
 """
 import argparse
@@ -53,7 +53,7 @@ _DEFAULT_PUBLISH_PERIOD = 1 / 32.
 
 _DEPRECATION = """
 The module pydrake.systems.meshcat_visualizer (the pure-Python implementation
-of MeshCat) is deprecated. Please use pydrake.geometry.MeshcatVisualizerCpp
+of MeshCat) is deprecated. Please use pydrake.geometry.MeshcatVisualizer
 instead.
 """.replace("\n", " ").strip()
 
@@ -184,7 +184,7 @@ class MeshcatVisualizer(LeafSystem):
     """
     Warning:
         This module (the pure-Python implementation of MeshCat) is deprecated.
-        Please use pydrake.geometry.MeshcatVisualizerCpp and related instead.
+        Please use pydrake.geometry.MeshcatVisualizer and related instead.
         The deprecated code will be removed from Drake on or after 2022-09-01.
 
     MeshcatVisualizer is a System block that connects to the query output port
@@ -663,7 +663,7 @@ class MeshcatContactVisualizer(LeafSystem):
     """
     Warning:
         This module (the pure-Python implementation of MeshCat) is deprecated.
-        Please use pydrake.geometry.MeshcatVisualizerCpp and related instead.
+        Please use pydrake.geometry.MeshcatVisualizer and related instead.
         The deprecated code will be removed from Drake on or after 2022-09-01.
 
     MeshcatContactVisualizer is a System block that visualizes contact
@@ -813,7 +813,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
     """
     Warning:
         This module (the pure-Python implementation of MeshCat) is deprecated.
-        Please use pydrake.geometry.MeshcatVisualizerCpp and related instead.
+        Please use pydrake.geometry.MeshcatVisualizer and related instead.
         The deprecated code will be removed from Drake on or after 2022-09-01.
 
     MeshcatPointCloudVisualizer is a System block that visualizes a

@@ -8,6 +8,7 @@ from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.value import AbstractValue
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform
 from pydrake.perception import PointCloud
@@ -263,10 +264,11 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertIsInstance(vis_autodiff,
                               mut.MeshcatVisualizer_[AutoDiffXd])
 
-    def test_meshcat_visualizer_scalar_conversion_to_be_deprecated(self):
-        # This checks a legacy API spelling that will be deprecated eventually.
+    def test_deprecated_meshcat_visualizer_cpp_scalar_conversion(self):
+        """This checks a deprecated API spelling; remove this on 2022-11-01."""
         meshcat = mut.Meshcat()
-        vis = mut.MeshcatVisualizerCpp(meshcat)
+        with catch_drake_warnings(expected_count=1):
+            vis = mut.MeshcatVisualizerCpp(meshcat)
         vis_autodiff = vis.ToAutoDiffXd()
         self.assertIsInstance(vis_autodiff,
                               mut.MeshcatVisualizerCpp_[AutoDiffXd])
@@ -291,11 +293,12 @@ class TestGeometryVisualizers(unittest.TestCase):
             self.assertIsInstance(
                 ad_visualizer, mut.MeshcatPointCloudVisualizer_[AutoDiffXd])
 
-    def test_meshcat_point_cloud_visualizer_to_be_deprecated(self):
-        # This checks a legacy API spelling that will be deprecated eventually.
+    def test_deprecated_meshcat_point_cloud_visualizer_cpp(self):
+        """This checks a deprecated API spelling; remove this on 2022-11-01."""
         meshcat = mut.Meshcat()
-        visualizer = mut.MeshcatPointCloudVisualizerCpp(
-            meshcat=meshcat, path="cloud", publish_period=1/12.0)
+        with catch_drake_warnings(expected_count=1):
+            visualizer = mut.MeshcatPointCloudVisualizerCpp(
+                meshcat=meshcat, path="cloud", publish_period=1/12.0)
         visualizer.set_point_size(0.1)
         ad_visualizer = visualizer.ToAutoDiffXd()
         self.assertIsInstance(
