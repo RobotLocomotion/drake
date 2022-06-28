@@ -115,7 +115,7 @@ GTEST_TEST(RenderEngineGltfClient, Constructor) {
 
   {
     // Make sure that alternative values are passed to the underlying client.
-    const Params params{std::nullopt, "0.0.0.0", 0, "super_render", true, true};
+    const Params params{"0.0.0.0", 0, "super_render", std::nullopt, true, true};
     Engine engine{params};
     Tester tester{&engine};
     EXPECT_EQ(tester.base_url(), "0.0.0.0");
@@ -132,8 +132,8 @@ GTEST_TEST(RenderEngineGltfClient, Constructor) {
 }
 
 GTEST_TEST(RenderEngineGltfClient, Clone) {
-  const Params params{std::nullopt, "192.168.1.1", 2222,
-                      "endpoint",   true,          false};
+  const Params params{"192.168.1.1", 2222, "endpoint",
+                      std::nullopt,  true, false};
   Engine engine{params};
   Tester tester{&engine};
 
