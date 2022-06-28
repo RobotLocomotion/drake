@@ -209,10 +209,12 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<LinearSystem<T>, AffineSystem<T>>(
         m, "LinearSystem", GetPyParam<T>(), doc.LinearSystem.doc)
-        .def(py::init<const Eigen::Ref<const MatrixXd>&,
-                 const Eigen::Ref<const MatrixXd>&,
-                 const Eigen::Ref<const MatrixXd>&,
-                 const Eigen::Ref<const MatrixXd>&, double>(),
+        // The init binding uses a lambda to work around #17457.
+        .def(
+            py::init([](const MatrixXd& A, const MatrixXd& B, const MatrixXd& C,
+                         const MatrixXd& D, double time_period) {
+              return std::make_unique<LinearSystem<T>>(A, B, C, D, time_period);
+            }),
             py::arg("A"), py::arg("B"), py::arg("C"), py::arg("D"),
             py::arg("time_period") = 0.0, doc.LinearSystem.ctor.doc_5args);
 
