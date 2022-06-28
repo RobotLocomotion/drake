@@ -339,7 +339,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   }
 
   /// Returns the default mass (not Context dependent) for `this` body.
-  /// In general, a body's mass can be Context-dependent parameter that is
+  /// In general, a body's mass can be a  Context-dependent parameter that is
   /// returned by the method get_mass(). When a body's mass is a parameter, the
   /// value returned by get_default_mass() is used to initialize the mass
   /// parameter in the Context.
