@@ -44,6 +44,8 @@ import lxml.etree as ET
 import os
 import subprocess
 import unittest
+import sys
+import io
 
 
 def _get_plant_aggregate(num_func, get_func, index_cls, model_instances=None):
@@ -92,8 +94,8 @@ def get_joints(plant, model_instances=None):
     )
 
 
-class TestGeometryInspector(unittest.TestCase,
-                            metaclass=ValueParameterizedTest):
+class TestConvertModelDirectiveToSDF(unittest.TestCase,
+                                     metaclass=ValueParameterizedTest):
 
     files_to_test = [
         'multibody/parsing/test/convert_model_directives_test/'
@@ -102,7 +104,7 @@ class TestGeometryInspector(unittest.TestCase,
 
     @run_with_multiple_values([dict(file_path=file_path)
                                for file_path in files_to_test])
-    def test_convert_model_directive_plant(self, *, file_path):
+    def test_through_plant_comparation(self, *, file_path):
         # Convert
         converter = model_directives_to_sdf.ModelDirectivesToSdf()
         sdf_tree = converter.convert_directive(file_path)
@@ -228,3 +230,29 @@ class TestGeometryInspector(unittest.TestCase,
             # All joints should have been removed
             self.assertEqual(len(sdf_joints), 0)
             self.assertEqual(len(directives_joints), 0)
+
+    def test_error_no_directives(self):
+        s = io.StringIO()
+        sys.stdout = s
+        converter = model_directives_to_sdf.ModelDirectivesToSdf()
+        result = converter.convert_directive(
+            'multibody/parsing/test/convert_model_directives_test/'
+            'something_not_directives.yaml')
+        s.seek(0)
+        self.assertEqual(
+            s.read(),
+            '[directives] must be the first keyword in the yaml file,'
+            ' exiting.\n')
+
+    def test_error_directives_not_frist(self):
+        s = io.StringIO()
+        sys.stdout = s
+        converter = model_directives_to_sdf.ModelDirectivesToSdf()
+        result = converter.convert_directive(
+            'multibody/parsing/test/convert_model_directives_test/'
+            'not_directives_first.yaml')
+        s.seek(0)
+        self.assertEqual(
+            s.read(),
+            '[directives] must be the first keyword in the yaml file,'
+            ' exiting.\n')

@@ -69,7 +69,7 @@ class ModelDirectivesToSdf:
                         print(
                             f"Failed to convert add_weld directive: unable to"
                             "identify the parent frame for weld. Two frames "
-                            "contain the same name: {weld['parent']}")
+                            f"contain the same name: [{weld['parent']}]")
                         return None
         if len(scope) > 0:
             return scope
@@ -343,15 +343,16 @@ class ModelDirectivesToSdf:
         joint between them"""
         base_scope = self.resolve_implicit_frame_scope(directive['parent'])
         if base_scope is None:
-            print(f"Failed trying to find base scope for weld between parent "
-                  "{directive['parent']} and child: {directive['child']}")
+            print(f"Failed trying to find base scope for weld between parent: "
+                  f"[{directive['parent']}] and child: [{directive['child']}]")
             return False
-        scoped_parent_name = SCOPE_DELIMITER.join(
-            self.scope_name(directive['parent'], base_scope))
-        if scoped_parent_name is None:
-            print(f"Failed trying to scope weld between parent "
-                  "{directive['parent']} and child: {directive['child']}")
+        scoped_parent_name_str = self.scope_name(
+            directive['parent'], base_scope)
+        if scoped_parent_name_str is None:
+            print(f"Failed trying to scope weld between parent: "
+                  f"[{directive['parent']}] and child: [{directive['child']}]")
             return False
+        scoped_parent_name = SCOPE_DELIMITER.join(scoped_parent_name_str)
 
         child_name = directive['child']
 
@@ -378,8 +379,9 @@ class ModelDirectivesToSdf:
         # Read the directives file
         directives = yaml_load_file(input_path)
 
-        if 'directives' not in directives:
-            print('No directives found, exiting.')
+        if list(directives.keys())[0] != 'directives':
+            print('[directives] must be the first keyword in the yaml file,'
+                  ' exiting.')
             return
 
         # Obtain the list of directives
@@ -408,8 +410,8 @@ class ModelDirectivesToSdf:
 
                 if len(weld_child_scopes) != 2:
                     print(
-                        'Child frame in weld must be nested in a model in '
-                        'order for it to be postured correctly in a weld.')
+                        'Child frame in weld can only be nested in one model '
+                        'for it to be postured correctly in a weld.')
                     return
 
                 if not self.add_weld_fixed_joint(root_model_elem, weld):
