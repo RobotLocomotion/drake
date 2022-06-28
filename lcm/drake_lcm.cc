@@ -13,6 +13,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/scope_exit.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace lcm {
@@ -284,6 +285,22 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeAllChannels(
     MultichannelHandlerFunction handler) {
   DRAKE_THROW_UNLESS(handler != nullptr);
   impl_->CleanUpOldSubscriptions();
+  const std::string& suffix = impl_->channel_suffix_;
+  if (!suffix.empty()) {
+    handler =
+        [&suffix, handler](std::string_view channel,
+                           const void* data, int length) {
+          // TODO(ggould-tri) Use string_view::suffix() once we have C++20.
+          if (channel.substr(channel.length() - suffix.length()) == suffix) {
+            channel.remove_suffix(suffix.length());
+          } else {
+            drake::log()->warn("DrakeLcm with suffix {} received message on"
+                               " channel {}, which lacks the suffix.",
+                               suffix, channel);
+          }
+          handler(channel, data, length);
+        };
+  }
 
   // Add the new subscriber.
   auto result = DrakeSubscription::CreateMultichannel(

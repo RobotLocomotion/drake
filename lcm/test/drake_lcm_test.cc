@@ -393,7 +393,7 @@ TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
   lcmt_drake_signal received_drake{};
   auto subscription = dut_->SubscribeAllChannels([&received_drake](
       std::string_view channel_name, const void* data, int size) {
-    EXPECT_EQ(channel_name, "SuffixDrakeLcmTest_SUFFIX");
+    EXPECT_EQ(channel_name, "SuffixDrakeLcmTest");
     received_drake.decode(data, 0, size);
   });
   LoopUntilDone(&received_drake, 20 /* retries */, [&]() {
