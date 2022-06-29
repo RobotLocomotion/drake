@@ -1,6 +1,7 @@
 #pragma once
 
-#include <chrono>  // TODO(#16981) Remove chrono include by encapsulating into timer.cc
+// TODO(#16486): Remove chrono include by encapsulating into timer.cc
+#include <chrono>
 
 #include "drake/common/drake_copyable.h"
 
