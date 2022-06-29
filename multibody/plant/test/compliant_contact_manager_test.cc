@@ -1361,6 +1361,31 @@ TEST_F(KukaIiwaArmTests, CalcFreeMotionVelocities) {
                               MatrixCompareType::relative));
 }
 
+// This unit test simply verifies that the manager is loading acceleration
+// kinematics with the proper results. The correctness of the computations we
+// rely on in this test (computation of accelerations) are tested elsewhere.
+TEST_F(KukaIiwaArmTests, CalcAccelerationKinematicsCache) {
+  const VectorXd& v0 = plant_.GetVelocities(*context_);
+  ContactSolverResults<double> contact_results;
+  manager_->CalcContactSolverResults(*context_, &contact_results);
+  const VectorXd a_expected =
+      (contact_results.v_next - v0) / plant_.time_step();
+  std::vector<SpatialAcceleration<double>> A_WB_expected(plant_.num_bodies());
+  plant_.CalcSpatialAccelerationsFromVdot(*context_, a_expected,
+                                          &A_WB_expected);
+
+  // Verify CompliantContactManager loads the acceleration kinematics with the
+  // proper results.
+  AccelerationKinematicsCache<double> ac(
+      CompliantContactManagerTest::topology(*manager_));
+  manager_->CalcAccelerationKinematicsCache(*context_, &ac);
+  EXPECT_TRUE(CompareMatrices(ac.get_vdot(), a_expected));
+  for (BodyIndex b(0); b < plant_.num_bodies(); ++b) {
+    const auto& body = plant_.get_body(b);
+    EXPECT_TRUE(ac.get_A_WB(body.node_index()).IsApprox(A_WB_expected[b]));
+  }
+}
+
 TEST_F(KukaIiwaArmTests, LimitConstraints) {
   // Arbitrary selection of how positions and velocities are initialized.
   std::vector<InitializePositionAt> limits_specification(

@@ -923,6 +923,28 @@ void CompliantContactManager<T>::ExtractModelInfo() {
   }
 }
 
+template <typename T>
+void CompliantContactManager<T>::DoCalcAccelerationKinematicsCache(
+    const systems::Context<T>& context0,
+    multibody::internal::AccelerationKinematicsCache<T>* ac) const {
+  // Current state.
+  const VectorX<T>& x0 =
+      context0.get_discrete_state(this->multibody_state_index()).value();
+  const auto v0 = x0.bottomRows(plant().num_velocities());
+
+  // Next state.
+  const ContactSolverResults<T>& results =
+      this->EvalContactSolverResults(context0);
+  const VectorX<T>& v_next = results.v_next;
+
+  ac->get_mutable_vdot() = (v_next - v0) / plant().time_step();
+
+  this->internal_tree().CalcSpatialAccelerationsFromVdot(
+      context0, plant().EvalPositionKinematics(context0),
+      plant().EvalVelocityKinematics(context0), ac->get_vdot(),
+      &ac->get_mutable_A_WB_pool());
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
