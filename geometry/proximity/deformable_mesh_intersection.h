@@ -7,7 +7,6 @@
 #include "drake/geometry/proximity/deformable_contact_geometries.h"
 #include "drake/geometry/proximity/deformable_rigid_contact_surface.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
-#include "drake/geometry/query_results/contact_surface.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -15,7 +14,7 @@ namespace geometry {
 namespace internal {
 
 /* Computes the contact surface between a deformable geometry and a rigid
- geometry.
+ geometry. If the intersection is empty, returns a nullptr.
  @param[in] deformable_id
      Id of the deformable geometry.
  @param[in] deformable_D
@@ -32,7 +31,7 @@ namespace internal {
      rigid_mesh_R.
  @param[in] X_DR
      The pose of the rigid geometry's frame R in deformable geometry's frame D.
- */
+*/
 std::unique_ptr<DeformableRigidContactSurface<double>>
 ComputeContactSurfaceFromDeformableVolumeRigidSurface(
     const GeometryId deformable_id,

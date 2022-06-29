@@ -19,6 +19,8 @@ DeformableContactData<T>::DeformableContactData(
       permuted_to_original_indexes_(
           deformable_geometry_connectivity.num_vertices()) {
   num_contact_points_ = 0;
+  // TODO(xuchenhan-tri): Consider using a factory function to handle early
+  // exit.
   if (contact_surfaces_.empty()) {
     std::iota(std::begin(permuted_vertex_indexes_),
               std::end(permuted_vertex_indexes_), 0);

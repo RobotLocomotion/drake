@@ -6,6 +6,7 @@
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/deformable_volume_mesh.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
+#include "drake/geometry/query_results/contact_surface.h"
 
 namespace drake {
 namespace geometry {
@@ -104,7 +105,7 @@ ComputeContactSurfaceFromDeformableVolumeRigidSurface(
       X_DR, false /* don't filter face normal along field gradient */);
 
   if (!intersect.has_intersection()) {
-    return {};
+    return nullptr;
   }
 
   // The contact surface is documented as having the normals pointing *out*
