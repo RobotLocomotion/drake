@@ -64,6 +64,15 @@ def get_model_instances(plant):
     )
 
 
+def get_model_instances_names(plant):
+    # TODO(eric.cousineau): Hoist this somewhere?
+    return _get_plant_aggregate(
+        plant.num_model_instances,
+        plant.GetModelInstanceName,
+        ModelInstanceIndex
+    )
+
+
 def get_bodies(plant, model_instances=None):
     # TODO(eric.cousineau): Hoist this somewhere?
     return _get_plant_aggregate(
@@ -99,7 +108,11 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
 
     files_to_test = [
         'multibody/parsing/test/convert_model_directives_test/'
-        'inject_frames.yaml'
+        'inject_frames.yaml',
+        'multibody/parsing/test/convert_model_directives_test/'
+        'hidden_frame.yaml',
+        'multibody/parsing/test/convert_model_directives_test/'
+        'frame_attached_to_frame.yaml'
     ]
 
     @run_with_multiple_values([dict(file_path=file_path)
@@ -184,15 +197,25 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
             len(get_bodies(sdf_plant, [ModelInstanceIndex(2)])), 0)
 
         for i in range(3, directives_plant.num_model_instances()):
-            self.assertEqual(
-                file_name + model_directives_to_sdf.SCOPE_DELIMITER
-                + directives_plant.GetModelInstanceName(
-                    ModelInstanceIndex(i)), sdf_plant.GetModelInstanceName(
-                        ModelInstanceIndex(i + 1)))
-            # Check Model Bodies and corresponidng Frames
+            model_scoped_name = file_name \
+                                + model_directives_to_sdf.SCOPE_DELIMITER \
+                                + directives_plant.GetModelInstanceName(
+                                    ModelInstanceIndex(i))
+
+            sdf_model_instances = get_model_instances_names(sdf_plant)
+            model_found = False
+
+            if model_scoped_name in sdf_model_instances:
+                model_found = True
+                sdf_model_index = sdf_model_instances.index(model_scoped_name)
+
+            self.assertTrue(model_found)
+
+            # Check Model Bodies and corresponding Frames
             directives_bodies = get_bodies(
                 directives_plant, [ModelInstanceIndex(i)])
-            sdf_bodies = get_bodies(sdf_plant, [ModelInstanceIndex(i+1)])
+            sdf_bodies = get_bodies(sdf_plant,
+                                    [ModelInstanceIndex(sdf_model_index)])
             for sdf_body, directives_body in zip(
                     sdf_bodies, directives_bodies):
                 self.assertEqual(sdf_body.name(), directives_body.name())
@@ -212,7 +235,8 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
             # Check Model Joints
             directives_joints = get_joints(
                 directives_plant, [ModelInstanceIndex(i)])
-            sdf_joints = get_joints(sdf_plant, [ModelInstanceIndex(i+1)])
+            sdf_joints = get_joints(sdf_plant,
+                                    [ModelInstanceIndex(sdf_model_index)])
             for i in range(len(directives_joints)):
                 for j in range(len(sdf_joints)):
                     # TODO (marcoag): If they have the same child and parent
@@ -256,3 +280,18 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
             s.read(),
             '[directives] must be the first keyword in the yaml file,'
             ' exiting.\n')
+
+    def test_error_implicit_hidden_base_frame(self):
+        s = io.StringIO()
+        sys.stdout = s
+        converter = model_directives_to_sdf.ModelDirectivesToSdf()
+        result = converter.convert_directive(
+            'multibody/parsing/test/convert_model_directives_test/'
+            'implicit_hidden_base_frame.yaml')
+        s.seek(0)
+        self.assertEqual(
+            s.read(),
+            'Name [frame_name] and base_name [frame] are both implicit. '
+            'Scope cannot be figured out.\nCould not find a common scope '
+            'for frame [frame_name] with base frame [frame]\nFailed to '
+            'perform add_frame directive.\n')

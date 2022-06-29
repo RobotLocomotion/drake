@@ -56,31 +56,34 @@ class ModelDirectivesToSdf:
         # incomplete_models contains all directives found in the main yaml file
         self.all_directives = []
 
+    def find_frame(self, name: str) -> str:
+        frame = None
+        for directive in self.all_directives:
+            if 'add_frame' in directive:
+                if name == directive['add_frame']['name']:
+                    if frame is None:
+                        frame = directive['add_frame']
+                    else:
+                        print('Found more than two frames with name:'
+                              f' [{name}].')
+                        return None
+        return frame
+
     # Finds the frame scope for a certain implicit frame name
     def resolve_implicit_frame_scope(self, frame_name: str) -> str:
         scope = []
-        for directive in self.all_directives:
-            if 'add_frame' in directive:
-                if frame_name == directive['add_frame']['name']:
-                    if len(scope) == 0:
-                        scope = directive['add_frame']['X_PF'][
-                            'base_frame']
-                    else:
-                        print(
-                            f"Failed to convert add_weld directive: unable to"
-                            "identify the parent frame for weld. Two frames "
-                            f"contain the same name: [{weld['parent']}]")
-                        return None
-        if len(scope) > 0:
-            return scope
-        else:
+        frame = self.find_frame(frame_name)
+        if frame is None:
+            print(
+                f'Failed to convert add_weld directive: unable to'
+                f'find the parent frame [{frame_name}] for weld.')
             return None
+        return frame['X_PF']['base_frame']
 
     # If name is not scoped it finds one from scoped_base_name
     def scope_name(self, name: str, scoped_base_name: str) -> List[str]:
         split_name = name.split(SCOPE_DELIMITER)
         split_scoped_base_name = scoped_base_name.split(SCOPE_DELIMITER)
-
         if len(split_name) == 1 and len(split_scoped_base_name) > 1:
             scopes = split_scoped_base_name[:-1]
             scopes.append(split_name[0])
@@ -240,6 +243,20 @@ class ModelDirectivesToSdf:
                   'supported to be converted using this script.')
             return False
 
+        # If the frame is attached to an existing frame
+        split_scoped_name = scoped_base_frame.split(SCOPE_DELIMITER)
+        if len(split_scoped_name) == 1:
+            frame = self.find_frame(scoped_base_frame)
+            # Check if it's atached to other frame
+            final_frame = frame
+            while frame is not None:
+                final_frame = frame
+                frame = self.find_frame(frame['X_PF']['base_frame'])
+
+            if final_frame is not None:
+                scoped_base_frame = self.resolve_implicit_frame_scope(
+                    final_frame['name'])
+
         split_scoped_name = self.scope_name(directive['name'],
                                             scoped_base_frame)
         if split_scoped_name is None:
@@ -275,12 +292,12 @@ class ModelDirectivesToSdf:
             self.model_elem_map[current_model_scope] = new_model_root
             model_root = new_model_root
 
-        # We only consider the most nested model scope as incomplete, since
-        # all the parent model instances will be considered valid when the
-        # nested model is valid.
-        if current_model_scope is not None and \
-                current_model_scope not in self.incomplete_models:
-            self.incomplete_models.append(current_model_scope)
+            # We only consider the most nested model scope as incomplete, since
+            # all the parent model instances will be considered valid when the
+            # nested model is valid.
+            if current_model_scope is not None and \
+                    current_model_scope not in self.incomplete_models:
+                self.incomplete_models.append(current_model_scope)
 
         # Start constructing the frame in the model instance.
         translation_str = '0 0 0'
