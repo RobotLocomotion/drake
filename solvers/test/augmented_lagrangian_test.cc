@@ -104,7 +104,21 @@ void TestObjective(const AL& dut) {
   EXPECT_EQ(constraint_residue_ad.rows(), 0);
 }
 
-GTEST_TEST(AugmentedLagrangianNonsmooth, TestObjective2) {
+GTEST_TEST(AugmentedLagrangian, TestObjective1) {
+  // Test with an empty program.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  for (bool include_x_bounds : {false, true}) {
+    const AugmentedLagrangianNonsmooth dut_nonsmooth(&prog, include_x_bounds);
+    TestObjective(dut_nonsmooth);
+    const AugmentedLagrangianSmooth dut_smooth(&prog, include_x_bounds);
+    TestObjective(dut_smooth);
+  }
+}
+
+GTEST_TEST(AugmentedLagrangian, TestObjective2) {
+  // Test a program with costs but no constraints.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 

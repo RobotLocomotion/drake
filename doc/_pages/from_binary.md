@@ -61,7 +61,7 @@ Create and activate the envionment:
 ```bash
 mkdir -p env
 tar -xvzf drake.tar.gz -C env --strip-components=1
-python3 -m virtualenv -p python3 env --system-site-packages
+python3 -m venv env --system-site-packages
 source env/bin/activate
 ```
 

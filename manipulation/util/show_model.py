@@ -63,7 +63,7 @@ from pydrake.geometry import (
     GeometryInstance,
     MakePhongIllustrationProperties,
     Meshcat,
-    MeshcatVisualizerCpp,
+    MeshcatVisualizer,
     MeshcatVisualizerParams,
     Role,
 )
@@ -321,7 +321,7 @@ def parse_visualizers(args_parser, args):
             meshcat = Meshcat()
             meshcat_vis_params = MeshcatVisualizerParams()
             meshcat_vis_params.role = args.meshcat_role
-            MeshcatVisualizerCpp.AddToBuilder(
+            MeshcatVisualizer.AddToBuilder(
                 builder=builder, scene_graph=scene_graph, meshcat=meshcat,
                 params=meshcat_vis_params)
             if args.browser_new is not None:

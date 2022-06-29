@@ -15,6 +15,15 @@
 namespace drake {
 namespace symbolic {
 
+/** Checks if every element in `m` is affine in `vars`.
+@note If `m` is an empty matrix, it returns true. */
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m,
+              const Variables& vars);
+
+/** Checks if every element in `m` is affine.
+@note If `m` is an empty matrix, it returns true. */
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m);
+
 /** Decomposes @p expressions into @p M * @p vars.
 
 @throws std::exception if @p expressions is not linear in @p vars.

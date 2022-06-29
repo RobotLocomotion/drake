@@ -21,7 +21,7 @@ from pydrake.multibody.meshcat import JointSliders
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
-from pydrake.geometry import Meshcat, MeshcatVisualizerCpp
+from pydrake.geometry import Meshcat, MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter, VectorLogSink
 
 
@@ -93,7 +93,7 @@ def main():
 
         geometry_query_port = station.GetOutputPort("geometry_query")
         DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
-        meshcat_visualizer = MeshcatVisualizerCpp.AddToBuilder(
+        meshcat_visualizer = MeshcatVisualizer.AddToBuilder(
             builder=builder,
             query_object_port=geometry_query_port,
             meshcat=meshcat)

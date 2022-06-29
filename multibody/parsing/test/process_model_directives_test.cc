@@ -92,6 +92,25 @@ GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
   EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame_explicit"));
 }
 
+// Simple smoke test of the simpler function signature.
+GTEST_TEST(ProcessModelDirectivesTest, SugarSmokeTest) {
+  const ModelDirectives station_directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.yaml"));
+
+  MultibodyPlant<double> plant(0.0);
+  std::vector<ModelInstanceInfo> added_models =
+      ProcessModelDirectives(station_directives, make_parser(&plant).get());
+  plant.Finalize();
+
+  // Check that the directives were loaded.
+  EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame"));
+
+  // Check that the added models were returned.
+  ASSERT_EQ(added_models.size(), 2);
+  EXPECT_EQ(added_models[0].model_name, "simple_model");
+  EXPECT_EQ(added_models[1].model_name, "extra_model");
+}
+
 // Acceptance tests for the ModelDirectives name scoping, including acceptance
 // testing its interaction with SceneGraph.
 GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {

@@ -80,40 +80,14 @@ GTEST_TEST(RenderClient, Constructor) {
   const int port{8000};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
-  const bool no_cleanup = false;
-
-  {
-    // Provided base_url may not end with slash.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient(Params{std::nullopt, base_url + "/", port, render_endpoint,
-                            verbose, no_cleanup}),
-        "RenderEngineGltfClientParams: base_url may not end with '/'.");
-    // Provided base_url may not be empty.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient(Params{std::nullopt, "", port, render_endpoint, verbose,
-                            no_cleanup}),
-        "RenderEngineGltfClientParams: base_url may not be empty.");
-    // Provided endpoint may not start with a slash.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient(Params{std::nullopt, base_url, port, "/" + render_endpoint,
-                            verbose, no_cleanup}),
-        "RenderEngineGltfClientParams: render_endpoint may not start or end "
-        "with a '/'.");
-    // Provided endpoint may not end with a slash.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient(Params{std::nullopt, base_url, port, render_endpoint + "/",
-                            verbose, no_cleanup}),
-        "RenderEngineGltfClientParams: render_endpoint may not start or end "
-        "with a '/'.");
-  }
 
   {
     // Verify attributes after valid construction.
     auto make_client_and_verify = [&](bool p_no_cleanup) {
       std::string temp_directory;
       {
-        RenderClient client{Params{std::nullopt, base_url, port,
-                                   render_endpoint, verbose, p_no_cleanup}};
+        RenderClient client{Params{base_url, port, render_endpoint,
+                                   std::nullopt, verbose, p_no_cleanup}};
         temp_directory = client.temp_directory();
         RenderClientTester tester{&client};
         EXPECT_TRUE(fs::is_directory(client.temp_directory()));
@@ -141,7 +115,7 @@ GTEST_TEST(RenderClient, Destructor) {
   // Construction with no_cleanup=false: temp_directory should be gone.
   {
     const RenderClient client{
-        Params{std::nullopt, base_url, port, render_endpoint, verbose, false}};
+        Params{base_url, port, render_endpoint, std::nullopt, verbose, false}};
     temp_dir_path = client.temp_directory();
     EXPECT_TRUE(fs::is_directory(temp_dir_path));
   }  // Client is deleted.
@@ -150,7 +124,7 @@ GTEST_TEST(RenderClient, Destructor) {
   // Construction with no_cleanup=true: temp_directory should remain.
   {
     const RenderClient client{
-        Params{std::nullopt, base_url, port, render_endpoint, verbose, true}};
+        Params{base_url, port, render_endpoint, std::nullopt, verbose, true}};
     temp_dir_path = client.temp_directory();
     EXPECT_TRUE(fs::is_directory(temp_dir_path));
   }  // Client is deleted.
@@ -334,7 +308,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
   const bool no_cleanup{false};
 
   // Create a client and proxy HttpService creation helper.
-  RenderClient client(Params{std::nullopt, base_url, port, render_endpoint,
+  RenderClient client(Params{base_url, port, render_endpoint, std::nullopt,
                              verbose, no_cleanup});
   const auto temp_dir_path = fs::path(client.temp_directory());
 
@@ -439,7 +413,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
           "Server Message:\\s*None\\.\\s*",
           render_endpoint, p > 0 ? fmt::format("{}:{}", u, p) : u);
       RenderClient c{
-          Params{std::nullopt, u, p, render_endpoint, verbose, no_cleanup}};
+          Params{u, p, render_endpoint, std::nullopt, verbose, no_cleanup}};
       const auto temp = fs::path(c.temp_directory());
       c.SetHttpService(std::make_unique<FailService>());
       DRAKE_EXPECT_THROWS_MESSAGE(
@@ -556,8 +530,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
         });
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(),
-                              RenderImageType::kColorRgba8U, fake_scene_path)
-        ,
+                              RenderImageType::kColorRgba8U, fake_scene_path),
         fmt::format(
             "ERROR with POST /{} response from server, base_url={}:{}, HTTP "
             "code=200: the server was supposed to respond with a file but did "
@@ -653,7 +626,7 @@ GTEST_TEST(RenderClient, ComputeSha256) {
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
-  RenderClient client{Params{std::nullopt, base_url, port, render_endpoint,
+  RenderClient client{Params{base_url, port, render_endpoint, std::nullopt,
                              verbose, no_cleanup}};
 
   {
@@ -712,8 +685,8 @@ GTEST_TEST(RenderClient, RenameHttpServiceResponse) {
   // Keep verbose and no_cleanup `true` to get coverage on log() calls.
   const bool verbose = true;
   const bool no_cleanup = true;
-  const RenderClient client{Params{std::nullopt, base_url, port,
-                                   render_endpoint, verbose, no_cleanup}};
+  const RenderClient client{Params{base_url, port, render_endpoint,
+                                   std::nullopt, verbose, no_cleanup}};
   const fs::path temp_dir = fs::path(client.temp_directory());
   const std::string scene = temp_dir / "scene.gltf";
   std::ofstream scene_file{scene};
@@ -825,8 +798,8 @@ GTEST_TEST(RenderClient, LoadColorImage) {
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
-  const RenderClient client{Params{std::nullopt, base_url, port,
-                                   render_endpoint, verbose, no_cleanup}};
+  const RenderClient client{Params{base_url, port, render_endpoint,
+                                   std::nullopt, verbose, no_cleanup}};
 
   /* Create a Drake Image buffer with the same dimension as the testing images,
    i.e., test_{rgb, rgba}_8U.png, to exercise the image loading code.
@@ -903,8 +876,8 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
-  const RenderClient client{Params{std::nullopt, base_url, port,
-                                   render_endpoint, verbose, no_cleanup}};
+  const RenderClient client{Params{base_url, port, render_endpoint,
+                                   std::nullopt, verbose, no_cleanup}};
 
   /* Create a Drake Image buffer with the same dimension as the testing image,
    i.e., test_depth_32F.tiff, to exercise the image loading code.
@@ -962,8 +935,8 @@ GTEST_TEST(RenderClient, LoadLabelImage) {
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = true;
-  const RenderClient client{Params{std::nullopt, base_url, port,
-                                   render_endpoint, verbose, no_cleanup}};
+  const RenderClient client{Params{base_url, port, render_endpoint,
+                                   std::nullopt, verbose, no_cleanup}};
 
   /* Create a Drake Image buffer with the same dimension as the testing image,
    i.e., test_label_16U.png, to exercise the image loading code.

@@ -17,7 +17,7 @@ import numpy as np
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
-from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizerCpp
+from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizer
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
@@ -231,7 +231,7 @@ def main():
         geometry_query_port = station.GetOutputPort("geometry_query")
 
         # Connect the meshcat visualizer.
-        meshcat_visualizer = MeshcatVisualizerCpp.AddToBuilder(
+        meshcat_visualizer = MeshcatVisualizer.AddToBuilder(
             builder=builder,
             query_object_port=geometry_query_port,
             meshcat=meshcat)
