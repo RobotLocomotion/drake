@@ -104,7 +104,7 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   constexpr int kExpectedNumContactPoints = 1;
   EXPECT_EQ(contact_surface_W->num_contact_points(), kExpectedNumContactPoints);
   const std::vector<math::RotationMatrixd>& R_CWs = contact_surface_W->R_CWs();
-  ASSERT_EQ(R_CWs.size(), 1);
+  ASSERT_EQ(R_CWs.size(), kExpectedNumContactPoints);
   constexpr double kEps = 1e-14;
   // Since the contact normal is the unit z vector in the world frame, we expect
   // the rotation matrix mapping world frame quantities into contact frame

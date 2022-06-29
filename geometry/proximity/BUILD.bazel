@@ -20,7 +20,6 @@ drake_cc_package_library(
         ":collision_filter",
         ":contact_surface_utility",
         ":deformable_contact_geometries",
-        ":deformable_contact_surface",
         ":deformable_mesh_intersection",
         ":deformable_rigid_contact_surface",
         ":deformable_volume_mesh",
@@ -160,17 +159,6 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry:proximity_properties",
         "//geometry:shape_specification",
-    ],
-)
-
-drake_cc_library(
-    name = "deformable_contact_surface",
-    srcs = [],
-    hdrs = [
-        "deformable_contact_surface.h",
-    ],
-    deps = [
-        "//common:essential",
     ],
 )
 

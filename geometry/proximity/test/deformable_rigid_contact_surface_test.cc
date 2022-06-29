@@ -19,7 +19,7 @@ class DeformableRigidContactSurfaceTester {
   static const ContactSurface<T>& get_contact_surface(
       const DeformableRigidContactSurface<T>&
           deformable_rigid_contact_surface) {
-    return deformable_rigid_contact_surface.contact_surface_;
+    return deformable_rigid_contact_surface.contact_surface_W_;
   }
 };
 
@@ -30,7 +30,7 @@ const GeometryId kDeformableId = GeometryId::get_new_id();
 const double kSignedDistance = -0.1;
 const int kTetIndex = 42;
 
-/* Builds a DeformableContactSurface for testing purpose.
+/* Builds a DeformableRigidContactSurface for testing purpose.
  The contact surface that involves a single contact polygon and a single contact
  point with a signed distance of -0.1. The single contact polygon is contained
  in the tetrahedron with index kTetIndex. See constructor of
@@ -48,7 +48,7 @@ DeformableRigidContactSurface<T> MakeDeformableRigidContactSurface() {
       });
   // Save the memory address of the mesh data structure here before the
   // unique_ptr mesh_W is reset by std::move.
-  PolygonSurfaceMesh<T>* mesh_pointer = mesh_W.get();
+  const PolygonSurfaceMesh<T>* mesh_pointer = mesh_W.get();
 
   ContactSurface<T> contact_surface(
       kDeformableId, kRigidId, std::move(mesh_W),
@@ -104,15 +104,15 @@ TYPED_TEST(DeformableRigidContactSurfaceTest, RotationMatrices) {
   DeformableRigidContactSurface<T> dut = MakeDeformableRigidContactSurface<T>();
   const ContactSurface<T>& contact_surface =
       DeformableRigidContactSurfaceTester<T>::get_contact_surface(dut);
-  const Vector3<T> nhat_W = contact_surface.face_normal(0);
+  const Vector3<T>& Cz_W = contact_surface.face_normal(0);
 
   // Let R_CW = R_CWs[0] be the rotation matrix from World frame to the contact
   // frame C of the first contact polygon. It should map the contact normal
-  // nhat_W to the basis vector Cz of the contact frame C.
+  // Cz_W to the basis vector Cz of the contact frame C.
   const Vector3<T> Cz_C = Vector3<T>::UnitZ();
   const T kEps = 4 * std::numeric_limits<T>::epsilon();
   ASSERT_EQ(dut.R_CWs().size(), 1);
-  EXPECT_TRUE(CompareMatrices(dut.R_CWs()[0] * nhat_W, Cz_C, kEps));
+  EXPECT_TRUE(CompareMatrices(dut.R_CWs()[0] * Cz_W, Cz_C, kEps));
 }
 
 }  // namespace
