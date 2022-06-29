@@ -2,7 +2,7 @@
 
 #include <chrono>  // TODO(#16981) Remove chrono include by encapsulating into timer.cc
 
-#include "common/drake_copyable.h"
+#include "drake/common/drake_copyable.h"
 
 /// @file
 /// Provides drake::Timer interface and drake::SteadyTimer for timing events.
