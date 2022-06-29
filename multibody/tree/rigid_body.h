@@ -103,6 +103,18 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_.get_mass();
   }
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // Ideally, the pure virtual function get_default_mass() in body.h would
+  // instead be called default_mass() (consistent with related function names
+  // in rigid_body.h). This function currently exists for Kaizen and to
+  // eliminate the redundant data that existed when default mass was stored in
+  // both the Body and RigidBody classes.
+  // TODO(Mitiguy) Get rid of this function in favor of default_mass().
+  double get_default_mass() const final {
+    return default_mass();  // Returns the mass stored in `this` RigidBody.
+  }
+#endif
+
   /// Returns the default value of this rigid body's center of mass as measured
   /// and expressed in this body's frame. This value is initially supplied at
   /// construction when specifying this body's SpatialInertia.
@@ -371,15 +383,6 @@ class RigidBody : public Body<T> {
   }
 
  private:
-  // Ideally, the pure virtual function get_default_mass() in body.h would
-  // instead be called default_mass() (consistent with related function names
-  // in rigid_body.h). This function currently exists for Kaizen and to
-  // eliminate the redundant data that existed when default mass was stored in
-  // both the Body and RigidBody classes.
-  double get_default_mass() const final {
-    return default_mass();  // Returns the mass stored in `this` RigidBody.
-  }
-
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(
