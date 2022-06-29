@@ -14,9 +14,27 @@ using math::RigidTransform;
 Shape::~Shape() {}
 
 void Shape::Reify(ShapeReifier* reifier, void* user_data) const {
-  reifier_(*this, reifier, user_data); }
+  reifier_(*this, reifier, user_data);
+}
 
 std::unique_ptr<Shape> Shape::Clone() const { return cloner_(*this); }
+
+template <typename S>
+Shape::Shape(ShapeTag<S>) {
+  static_assert(std::is_base_of_v<Shape, S>,
+                "Concrete shapes *must* be derived from the Shape class");
+  cloner_ = [](const Shape& shape_arg) {
+    DRAKE_DEMAND(typeid(shape_arg) == typeid(S));
+    const S& derived_shape = static_cast<const S&>(shape_arg);
+    return std::unique_ptr<Shape>(new S(derived_shape));
+  };
+  reifier_ = [](const Shape& shape_arg, ShapeReifier* reifier,
+                void* user_data) {
+    DRAKE_DEMAND(typeid(shape_arg) == typeid(S));
+    const S& derived_shape = static_cast<const S&>(shape_arg);
+    reifier->ImplementGeometry(derived_shape, user_data);
+  };
+}
 
 Sphere::Sphere(double radius)
     : Shape(ShapeTag<Sphere>()), radius_(radius) {
@@ -130,6 +148,8 @@ MeshcatCone::MeshcatCone(double height, double a, double b)
   }
 }
 
+ShapeReifier::~ShapeReifier() = default;
+
 void ShapeReifier::ImplementGeometry(const Sphere&, void*) {
   ThrowUnsupportedGeometry("Sphere");
 }
@@ -168,6 +188,48 @@ void ShapeReifier::ImplementGeometry(const MeshcatCone&, void*) {
 void ShapeReifier::ThrowUnsupportedGeometry(const std::string& shape_name) {
   throw std::runtime_error(fmt::format("This class ({}) does not support {}.",
                                        NiceTypeName::Get(*this), shape_name));
+}
+
+ShapeName::ShapeName(const Shape& shape) {
+  shape.Reify(this);
+}
+
+ShapeName::~ShapeName() = default;
+
+void ShapeName::ImplementGeometry(const Sphere&, void*) {
+  string_ = "Sphere";
+}
+
+void ShapeName::ImplementGeometry(const Cylinder&, void*) {
+  string_ = "Cylinder";
+}
+
+void ShapeName::ImplementGeometry(const HalfSpace&, void*) {
+  string_ = "HalfSpace";
+}
+
+void ShapeName::ImplementGeometry(const Box&, void*) {
+  string_ = "Box";
+}
+
+void ShapeName::ImplementGeometry(const Capsule&, void*) {
+  string_ = "Capsule";
+}
+
+void ShapeName::ImplementGeometry(const Ellipsoid&, void*) {
+  string_ = "Ellipsoid";
+}
+
+void ShapeName::ImplementGeometry(const Mesh&, void*) {
+  string_ = "Mesh";
+}
+
+void ShapeName::ImplementGeometry(const Convex&, void*) {
+  string_ = "Convex";
+}
+
+void ShapeName::ImplementGeometry(const MeshcatCone&, void*) {
+  string_ = "MeshcatCone";
 }
 
 std::ostream& operator<<(std::ostream& out, const ShapeName& name) {
