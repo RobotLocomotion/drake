@@ -218,10 +218,13 @@ class Meldis:
     Offers a MeshCat vizualization server that listens for and draws Drake's
     legacy LCM vizualization messages.
 
+    If the meshcat_host parameter is not supplied, 'localhost' will be used by
+    default.
+
     Refer to the pydrake.visualization.meldis module docs for details.
     """
 
-    def __init__(self, *, meshcat_port=None):
+    def __init__(self, *, meshcat_host=None, meshcat_port=None):
         # Bookkeeping for update throtting.
         self._last_update_time = time.time()
 
@@ -234,7 +237,8 @@ class Meldis:
         lcm_url = self._lcm.get_lcm_url()
         _logger.info(f"Meldis is listening for LCM messages at {lcm_url}")
 
-        params = MeshcatParams(host="localhost", port=meshcat_port)
+        params = MeshcatParams(host=meshcat_host or 'localhost',
+                               port=meshcat_port)
         self.meshcat = Meshcat(params=params)
 
         viewer = _ViewerApplet(meshcat=self.meshcat)
@@ -347,6 +351,11 @@ def _main():
     configure_logging()
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--host", action="store",
+        help="The http listen host for MeshCat. If none is given, 'localhost'"
+        " will be used by default. In any case, the result will be printed to"
+        " the console.")
+    parser.add_argument(
         "-p", "--port", action="store", metavar="NUM", type=int,
         help="The http listen port for MeshCat. If none is given, a default"
         " will be chosen and printed to the console.")
@@ -363,7 +372,7 @@ def _main():
         help="When no web browser has been connected for this many seconds,"
         " this program will automatically exit. Set to 0 to run indefinitely.")
     args = parser.parse_args()
-    meldis = Meldis(meshcat_port=args.port)
+    meldis = Meldis(meshcat_host=args.host, meshcat_port=args.port)
     if args.browser_new is not None:
         url = meldis.meshcat.web_url()
         webbrowser.open(url=url, new=args.browser_new)
