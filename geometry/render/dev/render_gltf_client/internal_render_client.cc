@@ -145,10 +145,8 @@ RenderClient::RenderClient(const RenderEngineGltfClientParams& params)
       render_endpoint_{params.render_endpoint},
       verbose_{params.verbose},
       no_cleanup_{params.no_cleanup},
-      http_service_{std::make_unique<HttpServiceCurl>()} {
-  // Verify url and endpoint immediately.
-  params.Validate();
-}
+      url_{params.GetUrl()},
+      http_service_{std::make_unique<HttpServiceCurl>()} { }
 
 RenderClient::~RenderClient() {
   const fs::path temp_dir{temp_directory_};
@@ -216,9 +214,8 @@ std::string RenderClient::RenderOnServer(
   AddField(&field_map, "submit", "Render");
 
   // Post the form and validate the results.
-  const std::string url = base_url_ + "/" + render_endpoint_;
   auto response =
-      http_service_->PostForm(temp_directory_, url, port_, field_map,
+      http_service_->PostForm(temp_directory_, url_, port_, field_map,
                               {{"scene", {scene_path, mime_type}}}, verbose_);
   if (!response.Good()) {
     /* Server may have responded with meaningful text, try and load the file

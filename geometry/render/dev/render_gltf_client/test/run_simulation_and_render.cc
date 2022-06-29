@@ -23,6 +23,8 @@
 #include "drake/systems/sensors/pixel_types.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
 
+using drake::geometry::RenderEngineGltfClientParams;
+
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 DEFINE_bool(render_on, true, "Sets rendering generally enabled (or not)");
@@ -45,6 +47,12 @@ DEFINE_string(camera_xyz_rpy, "0.8, 0.0, 0.5, -2.2, 0.0, 1.57",
 DEFINE_string(
     save_dir, "",
     "If specified, the rendered images will be saved to this directory.");
+DEFINE_string(
+    server_base_url, RenderEngineGltfClientParams{}.base_url,
+    "The base_url for the render server.");
+DEFINE_string(
+    server_render_endpoint, RenderEngineGltfClientParams{}.render_endpoint,
+    "The render_endpoint for the render server.");
 
 static bool valid_render_engine(const char* flagname, const std::string& val) {
   if (val == "vtk")
@@ -284,9 +292,11 @@ int do_main() {
     scene_graph->AddRenderer(render_name,
                              geometry::MakeRenderEngineVtk({}));
   } else {  // FLAGS_render_engine == "client"
+    RenderEngineGltfClientParams params;
+    params.base_url = FLAGS_server_base_url;
+    params.render_endpoint = FLAGS_server_render_endpoint;
     scene_graph->AddRenderer(render_name,
-                             geometry::MakeRenderEngineGltfClient(
-                                 geometry::RenderEngineGltfClientParams()));
+                             geometry::MakeRenderEngineGltfClient(params));
   }
 
   AddShapes(scene_graph);

@@ -11,25 +11,22 @@ namespace geometry {
 /** Construction parameters for the MakeRenderEngineGltfClient() to create a
  client as part of the @ref render_engine_gltf_client_server_api. */
 struct RenderEngineGltfClientParams {
-  /** The (optional) label to apply when none is otherwise specified.  */
-  std::optional<render::RenderLabel> default_label{};
+  /** The base url of the server communicate with.
+  See GetUrl() for details.*/
+  std::string base_url{"http://127.0.0.1:8000"};
 
-  /** The base url of the server communicate with.  Should **not** be the empty
-   string.  Should **not** include a trailing `/` character.  For example,
-   `https://drake.mit.edu` is acceptable while `https://drake.mit.edu/` is not.
-   The full url is constructed as `base_url + "/" + render_endpoint`. */
-  std::string base_url{"http://127.0.0.1"};
-
+  // TODO(zachfang): consider removing `port`.
   /** The port to communicate on.  A value less than or equal to `0` will let
    `base_url` to decide which port to use.  If a different port is needed
    instead, specify `port` to override that. */
-  int port{8000};
+  int port{0};
 
-  /** The server endpoint to retrieve renderings from.  Should **not** have a
-   leading or trailing `/` character.  Communications will be formed as
-   `{base_url}/{render_endpoint}`.  If the server expects forms posted to `/`
-   then this value should be the empty string. */
+  /** (Advanced) The server endpoint to retrieve renderings from.
+  See GetUrl() for details.*/
   std::string render_endpoint{"render"};
+
+  /** The (optional) label to apply when none is otherwise specified.  */
+  std::optional<render::RenderLabel> default_label{};
 
   /** Whether or not the client should log information about which files are
    being generated, as well as any information about HTTP communications between
@@ -51,13 +48,11 @@ struct RenderEngineGltfClientParams {
    directory described by drake::temp_directory(). */
   bool no_cleanup = false;
 
-  // TODO(zachfang): rework the slash-handling and validation of `base_url` and
-  // `render_endpoint`.  The code can either strip away invalid or duplicated
-  // slashes internally, or enforce a specific URL format with clear
-  // documentation that users can follow.
-  /** Validates the struct variables, e.g., base_url and render_endpoint, and
-   throws an exception if any incorrect value is provided. */
-  void Validate() const;
+  /** Returns the post-processed full url used for client-server communication.
+   The full url is constructed as `{base_url}/{render_endpoint}` where all
+   trailing slashes in `base_url` and all leading slashes in `render_endpoint`
+   have been removed. */
+  std::string GetUrl() const;
 };
 
 }  // namespace geometry
