@@ -68,7 +68,6 @@ drake_cc_googletest(
     name = "render_engine_gltf_client_params_test",
     deps = [
         ":render_engine_gltf_client_params",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 

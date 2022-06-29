@@ -2,55 +2,47 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/test_utilities/expect_throws_message.h"
-
 namespace drake {
 namespace geometry {
 namespace {
 
 GTEST_TEST(RenderEngineGltfClientParams, GetUrl) {
-  const std::string base_url{"127.0.0.1"};
-  const int port{8000};
-  const std::string render_endpoint{"render"};
+  struct TestData {
+    std::string base_url;
+    std::string render_endpoint;
+    std::string expected_full_url;
+  };
+  std::vector<TestData> all_test_cases{{
+      // Check that sandwiched slashes are added or removed correctly.
+      {"127.0.0.1",    "render",    "127.0.0.1/render"},
+      {"127.0.0.1/",   "render",    "127.0.0.1/render"},
+      {"127.0.0.1//",  "render",    "127.0.0.1/render"},
+      {"127.0.0.1",    "/render",   "127.0.0.1/render"},
+      {"127.0.0.1",    "//render",  "127.0.0.1/render"},
+      {"127.0.0.1/",   "/render",   "127.0.0.1/render"},
+      {"127.0.0.1//",  "//render",  "127.0.0.1/render"},
 
-  // Test if the trailing slashes and the leading slashes are pruned correctly.
-  std::vector<std::pair<std::string, std::string>> valid_configs{
-      {{base_url, render_endpoint},
-       {base_url + "/", render_endpoint},
-       {base_url, "/" + render_endpoint},
-       {base_url + "/", "/" + render_endpoint},
-       {base_url + "///", "///" + render_endpoint}}};
-  for (const auto& [valid_url, valid_endpoint] : valid_configs) {
-    RenderEngineGltfClientParams params{valid_url, port, valid_endpoint};
-    EXPECT_EQ(params.GetUrl(), base_url + "/" + render_endpoint);
-  }
+      // Check that an empty (or vacuous) endpoint is allowed.
+      {"127.0.0.1",    "",          "127.0.0.1/"},
+      {"127.0.0.1",    "/",         "127.0.0.1/"},
+      {"127.0.0.1",    "//",        "127.0.0.1/"},
+      {"127.0.0.1//",  "//",        "127.0.0.1/"},
 
-  /* Test if the leading slashes in `base_url` and the trailing slashes in
-   `render_endpoint` are kept as-is. Also, empty endpoint is allowed. */
-  std::vector<std::pair<std::string, std::string>> still_valid_configs{
-      {{base_url, ""},
-       {"/" + base_url, render_endpoint},
-       {base_url, render_endpoint + "/"}}};
-  for (const auto& [valid_url, valid_endpoint] : still_valid_configs) {
-    RenderEngineGltfClientParams params{valid_url, port, valid_endpoint};
-    EXPECT_EQ(params.GetUrl(), valid_url + "/" + valid_endpoint);
-  }
+      // Check that non-sandwiched slashes in are kept as-is.
+      {"127.0.0.1",    "render/",   "127.0.0.1/render/"},
+      {"/127.0.0.1",   "render",    "/127.0.0.1/render"},
+      {"http://host",  "render",    "http://host/render"},
 
-  // Test a special case when render_endpoint is `/`.
-  RenderEngineGltfClientParams single_slash_endpoint{base_url, port, "/"};
-  EXPECT_EQ(single_slash_endpoint.GetUrl(), base_url + "/");
-
-  std::vector<std::pair<std::string, std::string>> invalid_configs{
-      {{"/", render_endpoint},
-       {base_url, "///"},
-       {"///", render_endpoint},
-       {"///", "///"}}};
-  for (const auto& [invalide_url, invalid_endpoint] : invalid_configs) {
-    RenderEngineGltfClientParams params{invalide_url, port, invalid_endpoint};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        params.GetUrl(),
-        "RenderEngineGltfClientParams: invalid base_url or render_endpoint is "
-        "provided that contains only `/`.");
+      // A questionable base_url still produces the specified results.
+      {"",             "",          "/"},
+      {"///",          "///",       "/"},
+      {"///",          "render",    "/render"},
+  }};
+  for (const auto& one_case : all_test_cases) {
+    RenderEngineGltfClientParams dut;
+    dut.base_url = one_case.base_url;
+    dut.render_endpoint = one_case.render_endpoint;
+    EXPECT_EQ(dut.GetUrl(), one_case.expected_full_url);
   }
 }
 

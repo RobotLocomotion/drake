@@ -11,8 +11,8 @@ namespace geometry {
 /** Construction parameters for the MakeRenderEngineGltfClient() to create a
  client as part of the @ref render_engine_gltf_client_server_api. */
 struct RenderEngineGltfClientParams {
-  /** The base url of the server communicate with.  Any trailing slashes will be
-   pruned when querying the full url from GetUrl() method. */
+  /** The base url of the server communicate with.
+  See GetUrl() for details.*/
   std::string base_url{"http://127.0.0.1"};
 
   /** The port to communicate on.  A value less than or equal to `0` will let
@@ -20,10 +20,8 @@ struct RenderEngineGltfClientParams {
    instead, specify `port` to override that. */
   int port{8000};
 
-  /** (Advanced) The server endpoint to retrieve renderings from.  Any leading
-   slashes will be pruned when querying the full url from GetUrl() method.
-   Trailing slashes, however, will be kept as-is.  If the server expects forms
-   posted to `/` then this value should be the empty string. */
+  /** (Advanced) The server endpoint to retrieve renderings from.
+  See GetUrl() for details.*/
   std::string render_endpoint{"render"};
 
   /** The (optional) label to apply when none is otherwise specified.  */
@@ -50,11 +48,9 @@ struct RenderEngineGltfClientParams {
   bool no_cleanup = false;
 
   /** Returns the post-processed full URL used for client-server communication.
-   The full url is constructed as `{url}/{endpoint}` where any trailing slashes
-   in `base_url` and any leading slashes in `render_endpoint` are removed.
-
-   Throws an exception if either `base_url` or `render_endpoint` becomes the
-   empty string after slash pruning. */
+   The full url is constructed as `{base_url}/{render_endpoint}` where all
+   trailing slashes in `base_url` and all leading slashes in `render_endpoint`
+   have been removed. */
   std::string GetUrl() const;
 };
 
