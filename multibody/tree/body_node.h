@@ -1073,17 +1073,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // (such as zero moment of inertia along an axis which the hinge mapping
       // matrix permits motion).
       if (ldlt_D_B.eigen_linear_solver().info() != Eigen::Success) {
-        // TODO(Mitiguy) Create a test case to ensure this message gets thrown.
-        //  As of now, there is no test that this message makes sense.
-        const BodyNodeIndex body_node_index = topology_.index;
-        const std::string& body_name = body_->name();
         std::stringstream message;
-        message << "Error: Encountered singular articulated body hinge inertia "
-                   "matrix for body named " << body_name << " with body node "
-                   "index " << body_node_index << ". Please ensure this body "
-                   "has non-zero mass if it has translational motion relative "
-                   "to its parent and non-zero moments of inertia if it has "
-                   "rotational motion relative to its parent.";
+        message << "Encountered singular articulated body hinge inertia "
+                << "for body node index " << topology_.index << ". "
+                << "Please ensure that this body has non-zero inertia "
+                << "along all axes of motion.";
         throw std::runtime_error(message.str());
       }
 

@@ -52,8 +52,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const Vector3d v0_WBcm = Vector3d::Zero();
 
   // There are no external forces in this test, not even gravity.
-  const double acceleration_of_gravity = 9.81;
-  const Vector3d gravity_W = -acceleration_of_gravity * Vector3d::UnitZ();
+  const double kGravity = 9.81;
+  const Vector3d gravity_W = -kGravity * Vector3d::UnitZ();
 
   // Body mass. Not important really since there is no friction.
   const double kMass = 1.0;
@@ -66,7 +66,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
-      kMass, benchmark_.get_I(), benchmark_.get_J(), acceleration_of_gravity);
+      kMass, benchmark_.get_I(), benchmark_.get_J(), kGravity);
 
   // Simulator will create a Context by calling this system's
   // CreateDefaultContext(). This in turn will initialize its state by making a
@@ -262,11 +262,11 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   // rotational inertias, mass and, gravity in order to instantiate the model.
   const double kInertia = 0.05;
   const double kMass = 1.0;
-  const double acceleration_of_gravity = 9.81;
+  const double kGravity = 9.81;
 
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
-      kMass, kInertia, kInertia, acceleration_of_gravity);
+      kMass, kInertia, kInertia, kGravity);
   const internal::MultibodyTree<double>& model =
       internal::GetInternalTree(free_body_plant);
 
@@ -329,11 +329,11 @@ GTEST_TEST(QuaternionFloatingMobilizer, InboardJointLocking) {
   // rotational inertias, mass and, gravity in order to instantiate the model.
   const double kInertia = 0.05;
   const double kMass = 1.0;
-  const double acceleration_of_gravity = 9.81;
+  const double kGravity = 9.81;
 
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
-      kMass, kInertia, kInertia, acceleration_of_gravity,
+      kMass, kInertia, kInertia, kGravity,
       0.001/* time_step */);
   const internal::MultibodyTree<double>& model =
       internal::GetInternalTree(free_body_plant);
@@ -366,16 +366,16 @@ GTEST_TEST(QuaternionFloatingMobilizer, InboardJointLocking) {
   EXPECT_FALSE(free_body.is_locked(context));
 }
 
-// This test verifies that a reasonable assertion is thrown when the initial
-// state contains an invalid quaternion.
+// This test verifies that a reasonable error message is thrown when the
+// initial state contains an invalid quaternion.
 GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
   // Instantiate the model for a free body in space.  For this test, it is OK
   // to use somewhat arbitrary values for mass, inertia, gravity, etc.
   const double kMass = 1.0;
   const double kInertia = 0.04;
-  const double acceleration_of_gravity = 9.8;
+  const double kGravity = 9.8;
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
-    kMass, kInertia, kInertia, acceleration_of_gravity);
+    kMass, kInertia, kInertia, kGravity);
 
   // Simulator will create a Context by calling this system's
   // CreateDefaultContext(). This in turn will initialize its state by making a
