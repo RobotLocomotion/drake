@@ -1476,6 +1476,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "timer_test",
+    deps = [
+        ":timer",
+    ],
+)
+
+drake_cc_googletest(
     name = "drake_cc_googletest_main_test_device",
     args = ["--magic_number=1.0"],
 )

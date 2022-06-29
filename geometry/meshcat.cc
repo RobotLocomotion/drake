@@ -1685,11 +1685,11 @@ class Meshcat::Impl {
     }
 
     // Tell client if the realtime rate plot should be hidden
-    internal::HideRealtimeRate rtr_hidden_msg{};
-    rtr_hidden_msg.hide = params_.hide_stats_plot;
-    std::stringstream rtr_msg_stream;
-    msgpack::pack(rtr_msg_stream, rtr_hidden_msg);
-    ws->send(rtr_msg_stream.str());
+    internal::ShowRealtimeRate realtime_rate_message{};
+    realtime_rate_message.show = params_.show_stats_plot;
+    std::stringstream realtime_message_stream;
+    msgpack::pack(realtime_message_stream, realtime_rate_message);
+    ws->send(realtime_message_stream.str());
 
     if (inject_open_fault_.load()) {
       throw std::runtime_error(

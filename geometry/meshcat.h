@@ -49,8 +49,8 @@ struct MeshcatParams {
   std::string web_url_pattern{"http://{host}:{port}"};
 
   /** Determines whether or not to display the stats plot including realtime
-   * rate display. */
-  bool hide_stats_plot{false};
+  rate display. */
+  bool show_stats_plot{true};
 };
 
 /** Provides an interface to %Meshcat (https://github.com/rdeits/meshcat).

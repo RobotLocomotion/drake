@@ -1,26 +1,29 @@
 #pragma once
 
-#include <chrono>
+#include <chrono>  // TODO(#16981) Remove chrono include by encapsulating into timer.cc
 
 #include "common/drake_copyable.h"
 
 /// @file
-/// Provides drake::Timer interface and drake::SteadyTimer for timing events
+/// Provides drake::Timer interface and drake::SteadyTimer for timing events.
 
 namespace drake {
 
 /// Abstract base class for timing utility.
 struct Timer {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Timer)
-  using duration = std::chrono::duration<double>;
+
+  /// Timers start upon construction for convenience.
   Timer() = default;
   virtual ~Timer() = default;
+
   /// Begins timing. Call Start everytime you want to reset the timer to zero.
   virtual void Start() = 0;
-  /// Obtains a timer measurement. It's okay to call this repeatedly to get
-  /// multiple measurements.
+
+  /// Obtains a timer measurement in seconds.
+  /// Call this repeatedly to get multiple measurements.
   /// @return the amount of time since the timer started.
-  virtual duration Tick() = 0;
+  virtual double Tick() = 0;
 };
 
 /// Implementation of timing utility that uses monotonic
@@ -31,7 +34,7 @@ class SteadyTimer : public Timer {
   SteadyTimer();
   using clock = std::chrono::steady_clock;
   void Start() override;
-  duration Tick() override;
+  double Tick() override;
 
  protected:
   clock::time_point start_time_;

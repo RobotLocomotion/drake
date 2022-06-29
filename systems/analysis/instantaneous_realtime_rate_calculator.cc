@@ -10,7 +10,7 @@ InstantaneousRealtimeRateCalculator::CalculateRealtimeRate(
     double current_sim_time) {
   std::optional<double> realtime_rate{};
   if (prev_sim_time_.has_value()) {
-    const double wall_delta{timer_->Tick().count()};
+    const double wall_delta{timer_->Tick()};
     const double sim_time_delta{current_sim_time - prev_sim_time_.value()};
     // Avoid divide by zero and negative rate.
     if (wall_delta > 0 && sim_time_delta > 0) {

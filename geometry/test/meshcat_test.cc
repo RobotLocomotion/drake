@@ -912,12 +912,12 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
 // Check MeshcatParams.hide_stats_plot sends a hide_realtime_rate message
 GTEST_TEST(MeshcatTest, RealtimeRatePlot) {
   MeshcatParams params{};
-  params.hide_stats_plot = true;
+  params.show_stats_plot = true;
   Meshcat meshcat(params);
   meshcat.SetRealtimeRate(0.123);
   CheckWebsocketCommand(meshcat, {}, 1, R"""({
-      "type": "hide_realtime_rate",
-      "hide": true
+      "type": "show_realtime_rate",
+      "show": true
     })""");
 }
 

@@ -1,5 +1,6 @@
 #include "drake/geometry/meshcat_visualizer.h"
 
+#include <chrono>
 #include <memory>
 #include <optional>
 #include <string>
@@ -100,6 +101,7 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
   std::optional<double> rate = realtime_rate_calculator_.CalculateRealtimeRate(
       ExtractDoubleOrThrow(context.get_time()));
   if (rate) {
+    // TODO(pathammer) add low-pass filter to this to smooth the Realtime plot
     meshcat_->SetRealtimeRate(rate.value());
   }
 
