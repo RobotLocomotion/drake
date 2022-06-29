@@ -3,11 +3,9 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <typeindex>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 
@@ -35,7 +33,7 @@ struct ShapeTag{};
    - it is cloneable, and
    - it can be "reified" (see ShapeReifier).
 
-  When you add a new subclass of Shape, you must:
+  When you add a new subclass of Shape to Drake, you must:
 
   1. add a virtual function ImplementGeometry() for the new shape in
      ShapeReifier that invokes the ThrowUnsupportedGeometry method, and add to
@@ -48,6 +46,10 @@ struct ShapeTag{};
 
   Otherwise, you might get a runtime error. We do not have an automatic way to
   enforce them at compile time.
+
+ Note that the Shape class hierarchy is closed to third-party extensions. All
+ Shape classes must be defined within Drake directly (and in this h/cc file
+ pair in particular).
  */
 class Shape {
  public:
@@ -277,7 +279,7 @@ class Mesh final : public Shape {
  private:
   // NOTE: Cannot be const to support default copy/move semantics.
   std::string filename_;
-  double scale_;
+  double scale_{};
 };
 
 /** Definition of a *convex* surface mesh.
@@ -315,7 +317,7 @@ class Convex final : public Shape {
 
  private:
   std::string filename_;
-  double scale_;
+  double scale_{};
 };
 
 // TODO(russt): Rename this to `Cone` if/when it is supported by more of the
@@ -346,9 +348,9 @@ class MeshcatCone final : public Shape {
   double b() const { return b_; }
 
  private:
-  double height_;
-  double a_;
-  double b_;
+  double height_{};
+  double a_{};
+  double b_{};
 };
 
 /** The interface for converting shape descriptions to real shapes. Any entity
@@ -402,7 +404,7 @@ class MeshcatCone final : public Shape {
  implementations require.  */
 class ShapeReifier {
  public:
-  virtual ~ShapeReifier() = default;
+  virtual ~ShapeReifier();
 
   virtual void ImplementGeometry(const Sphere& sphere, void* user_data);
   virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data);
@@ -424,23 +426,6 @@ class ShapeReifier {
   virtual void ThrowUnsupportedGeometry(const std::string& shape_name);
 };
 
-template <typename S>
-Shape::Shape(ShapeTag<S>) {
-  static_assert(std::is_base_of_v<Shape, S>,
-                "Concrete shapes *must* be derived from the Shape class");
-  cloner_ = [](const Shape& shape_arg) {
-    DRAKE_DEMAND(typeid(shape_arg) == typeid(S));
-    const S& derived_shape = static_cast<const S&>(shape_arg);
-    return std::unique_ptr<Shape>(new S(derived_shape));
-  };
-  reifier_ = [](const Shape& shape_arg, ShapeReifier* reifier,
-                void* user_data) {
-    DRAKE_DEMAND(typeid(shape_arg) == typeid(S));
-    const S& derived_shape = static_cast<const S&>(shape_arg);
-    reifier->ImplementGeometry(derived_shape, user_data);
-  };
-}
-
 // TODO(SeanCurtis-TRI): Merge this into shape_to_string.h so that there's a
 //  single utility for getting a string from a shape.
 /** Class that reports the name of the type of shape being reified (e.g.,
@@ -451,42 +436,24 @@ class ShapeName final : public ShapeReifier {
 
   /** Constructs a %ShapeName from the given `shape` such that `string()`
    already contains the string representation of `shape`.  */
-  explicit ShapeName(const Shape& shape) {
-    shape.Reify(this);
-  }
+  explicit ShapeName(const Shape& shape);
+
+  ~ShapeName() final;
 
   /** @name  Implementation of ShapeReifier interface  */
   //@{
 
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Sphere&, void*) final {
-    string_ = "Sphere";
-  }
-  void ImplementGeometry(const Cylinder&, void*) final {
-    string_ = "Cylinder";
-  }
-  void ImplementGeometry(const HalfSpace&, void*) final {
-    string_ = "HalfSpace";
-  }
-  void ImplementGeometry(const Box&, void*) final {
-    string_ = "Box";
-  }
-  void ImplementGeometry(const Capsule&, void*) final {
-    string_ = "Capsule";
-  }
-  void ImplementGeometry(const Ellipsoid&, void*) final {
-    string_ = "Ellipsoid";
-  }
-  void ImplementGeometry(const Mesh&, void*) final {
-    string_ = "Mesh";
-  }
-  void ImplementGeometry(const Convex&, void*) final {
-    string_ = "Convex";
-  }
-  void ImplementGeometry(const MeshcatCone&, void*) final {
-    string_ = "MeshcatCone";
-  }
+  void ImplementGeometry(const Sphere&, void*) final;
+  void ImplementGeometry(const Cylinder&, void*) final;
+  void ImplementGeometry(const HalfSpace&, void*) final;
+  void ImplementGeometry(const Box&, void*) final;
+  void ImplementGeometry(const Capsule&, void*) final;
+  void ImplementGeometry(const Ellipsoid&, void*) final;
+  void ImplementGeometry(const Mesh&, void*) final;
+  void ImplementGeometry(const Convex&, void*) final;
+  void ImplementGeometry(const MeshcatCone&, void*) final;
 
   //@}
 
