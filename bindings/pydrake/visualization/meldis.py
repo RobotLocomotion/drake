@@ -221,7 +221,7 @@ class Meldis:
     Refer to the pydrake.visualization.meldis module docs for details.
     """
 
-    def __init__(self, *, meshcat_port=None):
+    def __init__(self, *, meshcat_port=None, meshcat_host=None):
         # Bookkeeping for update throtting.
         self._last_update_time = time.time()
 
@@ -234,7 +234,8 @@ class Meldis:
         lcm_url = self._lcm.get_lcm_url()
         _logger.info(f"Meldis is listening for LCM messages at {lcm_url}")
 
-        params = MeshcatParams(host="localhost", port=meshcat_port)
+        params = MeshcatParams(host=meshcat_host or 'localhost',
+                               port=meshcat_port)
         self.meshcat = Meshcat(params=params)
 
         viewer = _ViewerApplet(meshcat=self.meshcat)
@@ -351,6 +352,10 @@ def _main():
         help="The http listen port for MeshCat. If none is given, a default"
         " will be chosen and printed to the console.")
     parser.add_argument(
+        "--host", action="store",
+        help="The http listen host for MeshCat. If none is given, a default"
+        " will be chosen and printed to the console.")
+    parser.add_argument(
         "-t", "--open-tab", dest="browser_new",
         action="store_const", const=2, default=None,
         help="Open the MeshCat display in a browser tab.")
@@ -363,7 +368,7 @@ def _main():
         help="When no web browser has been connected for this many seconds,"
         " this program will automatically exit. Set to 0 to run indefinitely.")
     args = parser.parse_args()
-    meldis = Meldis(meshcat_port=args.port)
+    meldis = Meldis(meshcat_port=args.port, meshcat_host=args.host)
     if args.browser_new is not None:
         url = meldis.meshcat.web_url()
         webbrowser.open(url=url, new=args.browser_new)
