@@ -11,7 +11,7 @@ using ::testing::Return;
 
 class MockTimer : public Timer {
  public:
-  MOCK_METHOD(Timer::duration, Tick, (), (override));
+  MOCK_METHOD(double, Tick, (), (override));
   MOCK_METHOD(void, Start, (), (override));
 };
 
@@ -21,7 +21,7 @@ GTEST_TEST(InstantaneousRealtimeRateCalculatorTest, BasicTest) {
   auto timer = std::make_unique<MockTimer>();
   const double kSleepSec = 0.1;
   EXPECT_CALL(*timer, Tick)
-      .WillRepeatedly(Return(MockTimer::duration(kSleepSec)));
+      .WillRepeatedly(Return(kSleepSec));
 
   InstantaneousRealtimeRateCalculator calculator{};
   calculator.InjectMockTimer(std::move(timer));
