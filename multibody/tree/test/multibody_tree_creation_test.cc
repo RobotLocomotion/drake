@@ -853,9 +853,9 @@ GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
   const RigidBody<double>& body_C = AddRigidBody(&model, "bodyC", mC, length);
 
   // Verify the default mass for each of the bodies.
-  EXPECT_EQ(body_A.get_default_mass(), mA);
-  EXPECT_EQ(body_B.get_default_mass(), mB);
-  EXPECT_EQ(body_C.get_default_mass(), mC);
+  EXPECT_EQ(body_A.default_mass(), mA);
+  EXPECT_EQ(body_B.default_mass(), mB);
+  EXPECT_EQ(body_C.default_mass(), mC);
 
   // Verify the default rotational inertia for each of the bodies.
   // To help with testing, create a RotationalInertia for a unit mass cube.

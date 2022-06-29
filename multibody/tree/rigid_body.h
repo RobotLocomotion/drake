@@ -93,7 +93,7 @@ class RigidBody : public Body<T> {
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
 
-  /// Returns this rigid body's default mass, which is is initially supplied at
+  /// Returns this rigid body's default mass, which is initially supplied at
   /// construction when specifying this rigid body's SpatialInertia.
   /// @note In general, a rigid body's mass can be a constant property stored in
   /// this rigid body's %SpatialInertia or a parameter that is stored in a
@@ -102,18 +102,6 @@ class RigidBody : public Body<T> {
   double default_mass() const {
     return default_spatial_inertia_.get_mass();
   }
-
-#ifndef DRAKE_DOXYGEN_CXX
-  // Ideally, the pure virtual function get_default_mass() in body.h would
-  // instead be called default_mass() (consistent with related function names
-  // in rigid_body.h). This function currently exists for Kaizen and to
-  // eliminate the redundant data that existed when default mass was stored in
-  // both the Body and RigidBody classes.
-  // TODO(Mitiguy) Get rid of this function in favor of default_mass().
-  double get_default_mass() const final {
-    return default_mass();  // Returns the mass stored in `this` RigidBody.
-  }
-#endif
 
   /// Returns the default value of this rigid body's center of mass as measured
   /// and expressed in this body's frame. This value is initially supplied at
@@ -383,6 +371,17 @@ class RigidBody : public Body<T> {
   }
 
  private:
+  // Ideally, the pure virtual function get_default_mass() in body.h would
+  // instead be called default_mass() (consistent with related function names
+  // in rigid_body.h). This override get_default_mass() function currently
+  // exists to facilitate elimination of redundant data that existed when
+  // default mass was stored in both the Body and RigidBody classes.
+  // TODO(Mitiguy) Get rid of get_default_mass() in both body.h and
+  //  rigid_body.h in favor of default_mass().
+  double get_default_mass() const final {
+    return default_mass();  // Returns the mass stored in `this` RigidBody.
+  }
+
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(
