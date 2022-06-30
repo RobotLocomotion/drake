@@ -47,7 +47,6 @@ class RenderEngineGltfClientTester {
   const std::string& base_url() const {
     return engine_->render_client_->base_url();
   }
-  int port() const { return engine_->render_client_->port(); }
   const std::string& render_endpoint() const {
     return engine_->render_client_->render_endpoint();
   }
@@ -103,7 +102,6 @@ GTEST_TEST(RenderEngineGltfClient, Constructor) {
     EXPECT_NE(actual_engine, nullptr);
     Tester tester{actual_engine};
     EXPECT_EQ(tester.base_url(), "http://127.0.0.1:8000");
-    EXPECT_EQ(tester.port(), 0);
     EXPECT_EQ(tester.render_endpoint(), "render");
     EXPECT_EQ(tester.verbose(), false);
     EXPECT_EQ(tester.no_cleanup(), false);
@@ -115,11 +113,11 @@ GTEST_TEST(RenderEngineGltfClient, Constructor) {
 
   {
     // Make sure that alternative values are passed to the underlying client.
-    const Params params{"0.0.0.0", 0, "super_render", std::nullopt, true, true};
+    const Params params{"0.0.0.0:8000", "super_render", std::nullopt, true,
+                        true};
     Engine engine{params};
     Tester tester{&engine};
-    EXPECT_EQ(tester.base_url(), "0.0.0.0");
-    EXPECT_EQ(tester.port(), 0);
+    EXPECT_EQ(tester.base_url(), "0.0.0.0:8000");
     EXPECT_EQ(tester.render_endpoint(), "super_render");
     EXPECT_EQ(tester.verbose(), true);
     EXPECT_EQ(tester.no_cleanup(), true);
@@ -132,7 +130,7 @@ GTEST_TEST(RenderEngineGltfClient, Constructor) {
 }
 
 GTEST_TEST(RenderEngineGltfClient, Clone) {
-  const Params params{"192.168.1.1", 2222, "endpoint",
+  const Params params{"192.168.1.1:2222", "endpoint",
                       std::nullopt,  true, false};
   Engine engine{params};
   Tester tester{&engine};
@@ -143,7 +141,6 @@ GTEST_TEST(RenderEngineGltfClient, Clone) {
   Tester clone_tester{actual_engine};
 
   EXPECT_EQ(tester.base_url(), clone_tester.base_url());
-  EXPECT_EQ(tester.port(), clone_tester.port());
   EXPECT_EQ(tester.render_endpoint(), clone_tester.render_endpoint());
   EXPECT_EQ(tester.verbose(), clone_tester.verbose());
   EXPECT_EQ(tester.no_cleanup(), clone_tester.no_cleanup());
@@ -239,7 +236,7 @@ class FakeServer : public HttpService {
    depth.response, or label.response.  It will overwrite the file if it already
    exists. */
   HttpResponse DoPostForm(const std::string& temp_directory,
-                          const std::string& url, int /* port */,
+                          const std::string& url,
                           const DataFieldsMap& data_fields,
                           const FileFieldsMap& file_fields,
                           bool /* verbose */ = false) override {
