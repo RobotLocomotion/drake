@@ -201,6 +201,8 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def_readwrite("port", &MeshcatParams::port, cls_doc.port.doc)
         .def_readwrite("web_url_pattern", &MeshcatParams::web_url_pattern,
             cls_doc.web_url_pattern.doc)
+        .def_readwrite("show_stats_plot", &MeshcatParams::show_stats_plot,
+            cls_doc.show_stats_plot.doc)
         .def("__repr__", [](const Class& self) {
           return py::str(
               "MeshcatParams("
