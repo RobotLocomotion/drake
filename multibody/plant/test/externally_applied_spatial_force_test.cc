@@ -75,16 +75,16 @@ class AcrobotGravityCompensator : public systems::LeafSystem<double> {
     const Vector3<double> up_W(0, 0, 1);
     const SpatialForce<double> F_L1q_W(
         Vector3<double>::Zero() /* no torque */,
-        link1.get_default_mass() * g / 2 * up_W);
+        link1.default_mass() * g / 2 * up_W);
     const SpatialForce<double> F_L1r_W(
         Vector3<double>::Zero() /* no torque */,
-        link1.get_default_mass() * g / 2 * up_W);
+        link1.default_mass() * g / 2 * up_W);
     const SpatialForce<double> F_L2q_W(
         Vector3<double>::Zero() /* no torque */,
-        link2.get_default_mass() * g / 2 * up_W);
+        link2.default_mass() * g / 2 * up_W);
     const SpatialForce<double> F_L2r_W(
         Vector3<double>::Zero() /* no torque */,
-        link2.get_default_mass() * g / 2 * up_W);
+        link2.default_mass() * g / 2 * up_W);
 
     output->resize(4 /* number of forces */);
     (*output)[0].body_index = BodyIndex(1);

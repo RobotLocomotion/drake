@@ -9,20 +9,20 @@ namespace multibody {
 
 template <typename T>
 RigidBody<T>::RigidBody(const SpatialInertia<double>& M)
-    : Body<T>("", default_model_instance(), M.get_mass()),
+    : Body<T>("", default_model_instance()),
       default_spatial_inertia_(M) {}
 
 template <typename T>
 RigidBody<T>::RigidBody(const std::string& body_name,
                         const SpatialInertia<double>& M)
-    : Body<T>(body_name, default_model_instance(), M.get_mass()),
+    : Body<T>(body_name, default_model_instance()),
       default_spatial_inertia_(M) {}
 
 template <typename T>
 RigidBody<T>::RigidBody(const std::string& body_name,
                         ModelInstanceIndex model_instance,
                         const SpatialInertia<double>& M)
-    : Body<T>(body_name, model_instance, M.get_mass()),
+    : Body<T>(body_name, model_instance),
       default_spatial_inertia_(M) {}
 
 }  // namespace multibody

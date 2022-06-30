@@ -882,7 +882,7 @@ TEST_F(UrdfParserTest, EntireInertialTagOmitted) {
 
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("entire_inertial_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -900,7 +900,7 @@ TEST_F(UrdfParserTest, InertiaTagOmitted) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("inertia_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 2.);
+  EXPECT_EQ(body.default_mass(), 2.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -920,7 +920,7 @@ TEST_F(UrdfParserTest, MassTagOmitted) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("mass_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -938,7 +938,7 @@ TEST_F(UrdfParserTest, MasslessBody) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("massless_link"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -956,7 +956,7 @@ TEST_F(UrdfParserTest, PointMass) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("point_mass"));
-  EXPECT_EQ(body.get_default_mass(), 1.);
+  EXPECT_EQ(body.default_mass(), 1.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }

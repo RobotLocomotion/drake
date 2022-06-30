@@ -200,7 +200,7 @@ struct JointLimitsPenaltyParametersEstimator {
           // spatial inertias unspecified (i.e. initialized to NaN). A user
           // might do this when only interested in performing kinematics
           // computations.
-          if (std::isnan(body->get_default_mass())) {
+          if (std::isnan(body->default_mass())) {
             return std::numeric_limits<double>::infinity();
           }
 
