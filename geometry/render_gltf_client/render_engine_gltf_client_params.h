@@ -12,20 +12,14 @@ namespace geometry {
  client as part of the @ref render_engine_gltf_client_server_api. */
 struct RenderEngineGltfClientParams {
   /** The base url of the server communicate with.
-  See GetUrl() for details.*/
+   See GetUrl() for details. */
   std::string base_url{"http://127.0.0.1:8000"};
 
-  // TODO(zachfang): consider removing `port`.
-  /** The port to communicate on.  A value less than or equal to `0` will let
-   `base_url` to decide which port to use.  If a different port is needed
-   instead, specify `port` to override that. */
-  int port{0};
-
   /** (Advanced) The server endpoint to retrieve renderings from.
-  See GetUrl() for details.*/
+   See GetUrl() for details. */
   std::string render_endpoint{"render"};
 
-  /** The (optional) label to apply when none is otherwise specified.  */
+  /** The (optional) label to apply when none is otherwise specified. */
   std::optional<render::RenderLabel> default_label{};
 
   /** Whether or not the client should log information about which files are
