@@ -11,9 +11,8 @@
 namespace drake {
 
 /// Abstract base class for timing utility.
-struct Timer {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Timer)
-
+class Timer {
+ public:
   /// Timers start upon construction for convenience.
   Timer() = default;
   virtual ~Timer() = default;
@@ -25,11 +24,14 @@ struct Timer {
   /// Call this repeatedly to get multiple measurements.
   /// @return the amount of time since the timer started.
   virtual double Tick() = 0;
+
+ protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Timer)  // protected from slicing
 };
 
 /// Implementation of timing utility that uses monotonic
 /// std::chrono::steady_clock.
-class SteadyTimer : public Timer {
+class SteadyTimer final : public Timer {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SteadyTimer)
   SteadyTimer();
