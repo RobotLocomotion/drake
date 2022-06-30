@@ -139,13 +139,6 @@ class DeformableContactData {
    all rigid (non-deformable) geometries. */
   int num_contact_surfaces() const { return contact_surfaces_.size(); }
 
-  /* Returns all deformable-rigid contact surfaces that involve this deformable
-   body with no particular order. */
-  const std::vector<DeformableRigidContactSurface<T>>& contact_surfaces()
-      const {
-    return contact_surfaces_;
-  }
-
   /* Returns the GeometryId of the deformable body in contact. For an empty
    contact data, returns an invalid id. */
   GeometryId deformable_id() const { return deformable_id_; }

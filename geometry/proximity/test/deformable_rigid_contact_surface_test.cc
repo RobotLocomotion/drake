@@ -11,18 +11,6 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-template <typename T>
-class DeformableRigidContactSurfaceTester {
- public:
-  // Returns the underlying ContactSurface from DeformableRigidContactSurface
-  // for testing.
-  static const ContactSurface<T>& get_contact_surface(
-      const DeformableRigidContactSurface<T>&
-          deformable_rigid_contact_surface) {
-    return deformable_rigid_contact_surface.contact_surface_W_;
-  }
-};
-
 namespace {
 
 const GeometryId kRigidId = GeometryId::get_new_id();
@@ -30,13 +18,9 @@ const GeometryId kDeformableId = GeometryId::get_new_id();
 const double kSignedDistance = -0.1;
 const int kTetIndex = 42;
 
-/* Builds a DeformableRigidContactSurface for testing purpose.
- The contact surface that involves a single contact polygon and a single contact
- point with a signed distance of -0.1. The single contact polygon is contained
- in the tetrahedron with index kTetIndex. See constructor of
- DeformableRigidContactSurface. */
+/* Helper function to facilitate MakeDeformableRigidContactSurface(). */
 template <typename T>
-DeformableRigidContactSurface<T> MakeDeformableRigidContactSurface() {
+ContactSurface<T> MakeContactSurface() {
   // Make a polygon mesh with a single triangle with vertices at (1, 0, 0),
   // (0, 1, 0), and (0, 0, 1).
   auto mesh_W = std::make_unique<PolygonSurfaceMesh<T>>(
@@ -50,16 +34,24 @@ DeformableRigidContactSurface<T> MakeDeformableRigidContactSurface() {
   // unique_ptr mesh_W is reset by std::move.
   const PolygonSurfaceMesh<T>* mesh_pointer = mesh_W.get();
 
-  ContactSurface<T> contact_surface(
+  return ContactSurface<T>(
       kDeformableId, kRigidId, std::move(mesh_W),
       std::make_unique<PolygonSurfaceMeshFieldLinear<T, T>>(
           // Constant field with dummy value -0.1.
           std::vector<T>{-0.1, -0.1, -0.1}, mesh_pointer,
           // Constant field values means the gradient is zero.
           std::vector<Vector3<T>>{Vector3<T>::Zero()}));
+}
 
+/* Builds a DeformableRigidContactSurface for testing purpose.
+ The contact surface that involves a single contact polygon and a single contact
+ point with a signed distance of -0.1. The single contact polygon is contained
+ in the tetrahedron with index kTetIndex. See constructor of
+ DeformableRigidContactSurface. */
+template <typename T>
+DeformableRigidContactSurface<T> MakeDeformableRigidContactSurface() {
   return DeformableRigidContactSurface<T>(
-      std::move(contact_surface), std::vector<int>{kTetIndex},
+      MakeContactSurface<T>(), std::vector<int>{kTetIndex},
       std::vector<Vector4<T>>{Vector4<T>{0.1, 0.2, 0.3, 0.4}}, kRigidId,
       kDeformableId);
 }
@@ -83,6 +75,13 @@ TYPED_TEST(DeformableRigidContactSurfaceTest, TetrahedronIndices) {
   EXPECT_EQ(dut.tetrahedron_indices()[0], kTetIndex);
 }
 
+TYPED_TEST(DeformableRigidContactSurfaceTest, BarycentricCentroids) {
+  using T = TypeParam;
+  DeformableRigidContactSurface<T> dut = MakeDeformableRigidContactSurface<T>();
+  ASSERT_EQ(dut.barycentric_centroids().size(), 1);
+  EXPECT_EQ(dut.barycentric_centroids()[0], Vector4<T>(0.1, 0.2, 0.3, 0.4));
+}
+
 TYPED_TEST(DeformableRigidContactSurfaceTest, NumberOfContactPoints) {
   using T = TypeParam;
   DeformableRigidContactSurface<T> dut = MakeDeformableRigidContactSurface<T>();
@@ -97,13 +96,19 @@ TYPED_TEST(DeformableRigidContactSurfaceTest, EvaluatePenetrationDistance) {
   EXPECT_THROW(dut.EvaluatePenetrationDistance(-1), std::exception);
 }
 
+TYPED_TEST(DeformableRigidContactSurfaceTest, ContactSurfaceMesh) {
+  using T = TypeParam;
+  DeformableRigidContactSurface<T> dut = MakeDeformableRigidContactSurface<T>();
+  const ContactSurface<T>& contact_surface = MakeContactSurface<T>();
+  EXPECT_TRUE(dut.contact_surface_mesh().Equal(contact_surface.poly_mesh_W()));
+}
+
 // Verifies that the constructor of DeformableRigidContactSurface
 // creates the correct rotation matrices.
 TYPED_TEST(DeformableRigidContactSurfaceTest, RotationMatrices) {
   using T = TypeParam;
   DeformableRigidContactSurface<T> dut = MakeDeformableRigidContactSurface<T>();
-  const ContactSurface<T>& contact_surface =
-      DeformableRigidContactSurfaceTester<T>::get_contact_surface(dut);
+  const ContactSurface<T>& contact_surface = MakeContactSurface<T>();
   const Vector3<T>& Cz_W = contact_surface.face_normal(0);
 
   // Let R_CW = R_CWs[0] be the rotation matrix from World frame to the contact
