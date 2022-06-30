@@ -1,0 +1,138 @@
+Silence UBSan errors, and avoid test failures seen in upstream
+PR#1. This patch is a local copy of upstream PR#2.
+
+--- picosat.c.orig
++++ picosat.c
+@@ -2382,11 +2382,11 @@ REENTER:
+ 	  for (p = ps->added; p < ps->ahead; p++) 
+ 	    {
+ 	      lit = *p;
+-	      if (lit->val && ps->levels)
++	      if (lit->val)
+ 		{
+ 		  litlevel = LIT2VAR (lit)->level;
+ 		  assert (litlevel <= ps->LEVEL);
+-		  while (ps->levels + litlevel >= ps->levelshead)
++		  while (!ps->levels || (ps->levels + litlevel >= ps->levelshead))
+ 		    {
+ 		      if (ps->levelshead >= ps->eolevels)
+ 			ENLARGE (ps->levels, ps->levelshead, ps->eolevels);
+@@ -2403,7 +2403,7 @@ REENTER:
+ 		      glue++;
+ 		    }
+ 		}
+-	      else if (!lit->val)
++	      else
+ 		glue++;
+ 	    }
+ 
+@@ -2816,10 +2816,12 @@ fix_impl_lits (PS * ps, long delta)
+   Ltk * s;
+   Lit ** p;
+ 
+-  for (s = ps->impls + 2; s <= ps->impls + 2 * ps->max_var + 1; s++)
+-    if (s->start)
+-      for (p = s->start; p < s->start + s->count; p++)
+-        *p += delta;
++  for (s = ps->impls + 2; s <= ps->impls + 2 * ps->max_var + 1; s++) {
++    if (!s->start) { continue; }
++    for (p = s->start; p < s->start + s->count; p++) {
++      *p += delta;
++    }
++  }
+ }
+ #endif
+ 
+@@ -3430,9 +3432,7 @@ satisfied (PS * ps)
+     return 0;
+   assert (!ps->conflict);
+   assert (bcp_queue_is_empty (ps));
+-  if (ps->trail == NULL)
+-    return ps->thead == NULL;
+-  return ps->thead == ps->trail + ps->max_var;	/* all assigned */
++  return ps->trail ? (ps->thead == ps->trail + ps->max_var) : TRUE ;	/* all assigned */
+ }
+ 
+ static void
+@@ -3903,43 +3903,40 @@ prop2 (PS * ps, Lit * this)
+ 
+ #ifdef NO_BINARY_CLAUSES
+   lstk = LIT2IMPLS (this);
+-  if (lstk->count)
++  start = lstk->start;
++  l = start ? start + lstk->count : start;
++  while (l != start)
+     {
+-      start = lstk->start;
+-      l = start + lstk->count;
+-      while (l != start)
+-        {
+-          /* The counter 'visits' is the number of clauses that are
+-          * visited during propagations of assignments.
+-          */
+-          ps->visits++;
++      /* The counter 'visits' is the number of clauses that are
++       * visited during propagations of assignments.
++       */
++      ps->visits++;
+ #ifdef STATS
+-          ps->bvisits++;
++      ps->bvisits++;
+ #endif
+-          other = *--l;
+-          tmp = other->val;
++      other = *--l;
++      tmp = other->val;
+ 
+-          if (tmp == TRUE)
+-            {
++      if (tmp == TRUE)
++	{
+ #ifdef STATS
+-              ps->othertrue++;
+-              ps->othertrue2++;
+-              if (LIT2VAR (other)->level < ps->LEVEL)
+-                ps->othertrue2u++;
++	  ps->othertrue++;
++	  ps->othertrue2++;
++	  if (LIT2VAR (other)->level < ps->LEVEL)
++	    ps->othertrue2u++;
+ #endif
+-              continue;
+-            }
++	  continue;
++	}
+ 
+-          if (tmp != FALSE)
+-            {
+-              assign_forced (ps, other, LIT2REASON (NOTLIT(this)));
+-              continue;
+-            }
++      if (tmp != FALSE)
++	{
++	  assign_forced (ps, other, LIT2REASON (NOTLIT(this)));
++	  continue;
++	}
+ 
+-          if (ps->conflict == &ps->cimpl)
+-            resetcimpl (ps);
+-          ps->conflict = setcimpl (ps, this, other);
+-        }
++      if (ps->conflict == &ps->cimpl)
++	resetcimpl (ps);
++      ps->conflict = setcimpl (ps, this, other);
+     }
+ #else
+   /* Traverse all binary clauses with 'this'.  Head/Tail pointers for binary
+@@ -4714,7 +4711,7 @@ collect_clauses (PS * ps)
+ 	      Ltk * lstk = LIT2IMPLS (lit);
+ 	      Lit ** r, ** s;
+ 	      r = lstk->start;
+-	      if (lstk->count && (lit->val != TRUE || LIT2VAR (lit)->level))
++	      if (r && (lit->val != TRUE || LIT2VAR (lit)->level))
+ 		for (s = r; s < lstk->start + lstk->count; s++)
+ 		  {
+ 		    Lit * other = *s;
+-- 
+2.25.1
+
