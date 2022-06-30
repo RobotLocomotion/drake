@@ -92,7 +92,8 @@ class TestGeometryVisualizers(unittest.TestCase):
         params = mut.MeshcatParams(
             host="*",
             port=port,
-            web_url_pattern="http://host:{port}")
+            web_url_pattern="http://host:{port}",
+            show_stats_plot=False)
         meshcat = mut.Meshcat(params=params)
         self.assertEqual(meshcat.port(), port)
         with self.assertRaises(RuntimeError):
