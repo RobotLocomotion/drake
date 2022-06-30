@@ -6,7 +6,7 @@
 
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/make_mesh_for_deformable.h"
+#include "drake/geometry/proximity/make_sphere_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -142,14 +142,15 @@ GTEST_TEST(InternalGeometryTest, DeformableMeshedGeometry) {
   FrameId frame_id = FrameId::get_new_id();
   GeometryId deformable_geometry_id = GeometryId::get_new_id();
   std::string name = "sphere";
-  VolumeMesh<double> mesh = MakeMeshForDeformable(sphere, kRezHint);
+  const VolumeMesh<double> expected_mesh = MakeSphereVolumeMesh<double>(
+      sphere, kRezHint, TessellationStrategy::kDenseInteriorVertices);
 
   // Confirms that a meshed geometry can be constructed.
   InternalGeometry geometry(source_id, make_unique<Sphere>(sphere), frame_id,
                             deformable_geometry_id, name, kRezHint);
   const VolumeMesh<double>* reference_mesh = geometry.reference_mesh();
   ASSERT_NE(reference_mesh, nullptr);
-  EXPECT_TRUE(mesh.Equal(*reference_mesh));
+  EXPECT_TRUE(expected_mesh.Equal(*reference_mesh));
 
   // Deformable geometry doesn't have the notion of "fixed-in" frame. Those
   // values are set to identity.
