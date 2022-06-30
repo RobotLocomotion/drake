@@ -85,7 +85,7 @@ class RotationMatrix {
     // Drake  QuaternionToRotationMatrix() = 12 multiplies, 12 adds.
     // Extra cost for two_over_norm_squared =  4 multiplies,  3 adds, 1 divide.
     // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
-    const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
+    const T two_over_norm_squared = 2.0 / quaternion.squaredNorm();
     set(QuaternionToRotationMatrix(quaternion, two_over_norm_squared));
   }
 

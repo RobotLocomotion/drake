@@ -10,15 +10,17 @@
 namespace drake {
 namespace math {
 
+// Unamed namespace for functions whose scope is file-local.
+namespace {
 // Returns true if all the elements of a quaternion are zero, otherwise false.
 template <typename T>
 bool IsQuaternionZero(const Eigen::Quaternion<T>& quaternion) {
   // Note: This special-purpose function avoids memory allocation on the heap.
   // Mitiguy found quaternion.coeffs().isZero() sometimes does memory allocation
   // on the heap. Nimmer found this creative way to use DiscardGradient to avoid
-  // that memory allocation. Another simple alternative is:
-  //  return quaternion.w() == T(0) && quaternion.x() == T(0) &&
-  //         quaternion.y() == T(0) && quaternion.z() == T(0);
+  // memory allocation. The pseudo-code below shows a simple alternative:
+  //  return quaternion.w() == 0.0 && quaternion.x() == 0.0 &&
+  //         quaternion.y() == 0.0 && quaternion.z() == 0.0;
   return math::DiscardGradient(quaternion.coeffs()).isZero(0);
 }
 
@@ -50,6 +52,7 @@ void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
     unused(quaternion, function_name);
   }
 }
+}  // namespace
 
 template <typename T>
 RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
@@ -162,7 +165,7 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
 
 template <typename T>
 Matrix3<T> RotationMatrix<T>::QuaternionToRotationMatrix(
-    const Eigen::Quaternion<T>& quaternion, const T &two_over_norm_squared) {
+    const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared) {
   ThrowIfAllElementsInQuaternionAreZero(quaternion, __func__);
   DRAKE_ASSERT_VOID(
       ThrowIfAnyElementInQuaternionIsInfinityOrNaN(quaternion, __func__));
