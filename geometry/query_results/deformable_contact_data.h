@@ -21,14 +21,15 @@ template <typename T>
 class DeformableContactData {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableContactData)
-  /* Constructs the DeformableContactData for a deformable body given all
+
+  /* Constructs the DeformableContactData for a deformable body from all given
    deformable-rigid contact surfaces involving the deformable body and the
-   connectivity of the deformable geometry.
+   topology of the given deformable geometry.
 
    @pre All contact surfaces involve the same deformable body. */
   DeformableContactData(
       std::vector<DeformableRigidContactSurface<T>> contact_surfaces,
-      const VolumeMesh<double>& deformable_geometry_connectivity);
+      const VolumeMesh<double>& deformable_geometry);
 
   /* A 2D analogue of a deformable mesh D in contact with a rigid body R. The
    deformable mesh has 6 vertices with indexes v0-v5. Vertices v1, v2, and v5
@@ -149,8 +150,8 @@ class DeformableContactData {
   void CalcParticipatingVertices(
       const geometry::VolumeMesh<double>& deformable_mesh);
 
-  /* All contact surfaces involving the deformable body of interest. */
-  std::vector<DeformableRigidContactSurface<T>> contact_surfaces_{};
+  /* All contact surface meshes involving the deformable body of interest. */
+  std::vector<PolygonSurfaceMesh<T>> contact_surface_mesh_W_{};
   /* signed_distances_[i][j] gives an *approximate* signed distance for the j-th
    contact point in the i-th contact surface. */
   std::vector<std::vector<T>> signed_distances_{};

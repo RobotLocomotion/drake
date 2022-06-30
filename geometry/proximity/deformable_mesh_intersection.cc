@@ -119,7 +119,8 @@ ComputeContactSurfaceFromDeformableVolumeRigidSurface(
           std::move(intersect.mutable_grad_eM_M())));
 
   return std::make_unique<DeformableRigidContactSurface<double>>(
-      contact_surface,
+      intersect.release_mesh(),
+      intersect.release_field(),
       std::move(intersect.mutable_tetrahedron_index_of_polygons()),
       std::move(intersect.mutable_barycentric_centroids()), rigid_id,
       deformable_id);
