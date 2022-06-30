@@ -11,8 +11,11 @@ def picosat_repository(
     github_archive(
         name = name,
         repository = "dreal-deps/picosat",  # License: MIT
-        commit = "4ee7aa1d1c645df8fa9daa07f2be17c6d03b35fc",  # v965
-        sha256 = "1be461d3659d4e3dc957a718ed295941c38dc822fd22a67f4cb5d180f0b6a7a3",  # noqa
+        commit = "a37ff03c5f78678f06801f501b54b1b04f662374",  # v965
+        sha256 = "e1d417c22c61b9d8344d4d5ad4132cf7bc25bb45e6434b97d6d134d1cb80fbb1",  # noqa
         build_file = "@dreal//tools:picosat.BUILD.bazel",
+        patches = [
+            "@drake//tools/workspace/picosat:patches/ubsan.patch",
+        ],
         mirrors = mirrors,
     )

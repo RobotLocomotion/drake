@@ -215,10 +215,6 @@ build:ubsan_everything --test_lang_filters=-sh,-py
 # See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
 build:ubsan_everything --test_timeout=120,600,1800,7200
 
-# TODO(#17139) Fix picosat to be UBSan-correct.
-build:ubsan --per_file_copt=external/picosat/picosat.c@-fno-sanitize=pointer-overflow
-build:ubsan_everything --per_file_copt=external/picosat/picosat.c@-fno-sanitize=pointer-overflow
-
 ### Memcheck build. ###
 build:memcheck --build_tests_only
 build:memcheck --copt -g
