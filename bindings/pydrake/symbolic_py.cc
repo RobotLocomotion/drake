@@ -14,9 +14,10 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_py_unapply.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
-#include "drake/common/symbolic_decompose.h"
-#include "drake/common/symbolic_latex.h"
-#include "drake/common/symbolic_trigonometric_polynomial.h"
+#include "drake/common/symbolic/decompose.h"
+#include "drake/common/symbolic/latex.h"
+#include "drake/common/symbolic/monomial_util.h"
+#include "drake/common/symbolic/trigonometric_polynomial.h"
 
 namespace drake {
 namespace pydrake {
@@ -953,7 +954,7 @@ PYBIND11_MODULE(symbolic, m) {
 
   ExecuteExtraPythonCode(m);
 
-  // Bind the free functions in symbolic_decompose.h
+  // Bind the free functions in symbolic/decompose.h
   m  // BR
       .def(
           "DecomposeLinearExpressions",

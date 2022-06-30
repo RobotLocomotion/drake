@@ -18,8 +18,8 @@
 #include <fmt/ostream.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic_decompose.h"
-#include "drake/common/symbolic_monomial_util.h"
+#include "drake/common/symbolic/decompose.h"
+#include "drake/common/symbolic/monomial_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/decision_variable.h"

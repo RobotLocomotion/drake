@@ -24,7 +24,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/monomial_util.h"
+#include "drake/common/symbolic/polynomial.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
@@ -3443,6 +3445,8 @@ class MathematicalProgram {
   symbolic::Polynomial NewFreePolynomialImpl(
       const symbolic::Variables& indeterminates, int degree,
       const std::string& coeff_name,
+      // TODO(jwnimmer-tri) Fix this to not depend on all of "monomial_util.h"
+      // for just this tiny enum (e.g., use a bare int == 0,1,2 instead).
       symbolic::internal::DegreeType degree_type);
 
   std::unordered_map<int, double> var_scaling_map_{};

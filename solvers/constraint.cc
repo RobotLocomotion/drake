@@ -8,7 +8,7 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/symbolic_decompose.h"
+#include "drake/common/symbolic/decompose.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/matrix_util.h"
 

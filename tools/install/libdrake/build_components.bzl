@@ -13,6 +13,7 @@ LIBDRAKE_COMPONENTS = [
     "//common",
     "//common/proto",
     "//common/schema",
+    "//common/symbolic",
     "//common/trajectories",
     "//common/yaml",
     "//common:drake_marker_shared_library",  # unpackaged

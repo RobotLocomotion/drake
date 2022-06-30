@@ -3,7 +3,7 @@
 #include <sstream>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/decompose.h"
 
 namespace drake {
 namespace systems {

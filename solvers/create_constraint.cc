@@ -4,8 +4,9 @@
 #include <cmath>
 #include <sstream>
 
-#include "drake/common/symbolic.h"
-#include "drake/common/symbolic_decompose.h"
+#include <fmt/format.h>
+
+#include "drake/common/symbolic/decompose.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/solvers/decision_variable.h"
 

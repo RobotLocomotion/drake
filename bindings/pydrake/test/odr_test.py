@@ -12,7 +12,7 @@ definitions of `drake::symbolic::Variable::get_next_id()`.
 import unittest
 
 import pydrake.symbolic as sym
-# This module also uses `//common:symbolic`, but in a separate *.so.
+# This module also uses `//common/symbolic`, but in a separate *.so.
 # If we violate ODR, then this might link in a new definition.
 from pydrake.test import odr_test_module
 

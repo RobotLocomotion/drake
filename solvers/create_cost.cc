@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic_decompose.h"
+#include "drake/common/symbolic/decompose.h"
 #include "drake/common/unused.h"
 
 namespace drake {
