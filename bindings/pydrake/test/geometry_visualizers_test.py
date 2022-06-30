@@ -150,6 +150,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.DeleteAddedControls()
         self.assertIn("data:application/octet-binary;base64",
                       meshcat.StaticHtml())
+        meshcat.SetRealtimeRate(1.0)
         meshcat.Flush()
 
     def test_meshcat_animation(self):
