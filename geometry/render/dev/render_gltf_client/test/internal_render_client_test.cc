@@ -39,18 +39,17 @@ class RenderClientTester {
  public:
   explicit RenderClientTester(const RenderClient* client) : client_(*client) {}
 
-  void ValidateAttributes(const std::string& base_url, int port,
+  void ValidateAttributes(const std::string& base_url,
                           const std::string& render_endpoint, bool verbose,
                           bool no_cleanup) const {
     EXPECT_EQ(client_.base_url(), base_url);
-    EXPECT_EQ(client_.port(), port);
     EXPECT_EQ(client_.render_endpoint(), render_endpoint);
     EXPECT_EQ(client_.verbose(), verbose);
     EXPECT_EQ(client_.no_cleanup(), no_cleanup);
   }
 
   void CompareAttributes(const RenderClient& other) {
-    ValidateAttributes(other.base_url(), other.port(), other.render_endpoint(),
+    ValidateAttributes(other.base_url(), other.render_endpoint(),
                        other.verbose(), other.no_cleanup());
   }
 
@@ -76,8 +75,7 @@ const auto kTestLabelImagePath = FindResourceOrThrow(
 
 // Constructor / destructor ----------------------------------------------------
 GTEST_TEST(RenderClient, Constructor) {
-  const std::string base_url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
 
@@ -86,12 +84,12 @@ GTEST_TEST(RenderClient, Constructor) {
     auto make_client_and_verify = [&](bool p_no_cleanup) {
       std::string temp_directory;
       {
-        RenderClient client{Params{base_url, port, render_endpoint,
-                                   std::nullopt, verbose, p_no_cleanup}};
+        RenderClient client{Params{base_url, render_endpoint, std::nullopt,
+                                   verbose, p_no_cleanup}};
         temp_directory = client.temp_directory();
         RenderClientTester tester{&client};
         EXPECT_TRUE(fs::is_directory(client.temp_directory()));
-        tester.ValidateAttributes(base_url, port, render_endpoint, verbose,
+        tester.ValidateAttributes(base_url, render_endpoint, verbose,
                                   p_no_cleanup);
       }  // Client is deleted.
       if (p_no_cleanup) {
@@ -106,8 +104,7 @@ GTEST_TEST(RenderClient, Constructor) {
 }
 
 GTEST_TEST(RenderClient, Destructor) {
-  const std::string base_url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint = "render";
   const bool verbose = false;
 
@@ -115,7 +112,7 @@ GTEST_TEST(RenderClient, Destructor) {
   // Construction with no_cleanup=false: temp_directory should be gone.
   {
     const RenderClient client{
-        Params{base_url, port, render_endpoint, std::nullopt, verbose, false}};
+        Params{base_url, render_endpoint, std::nullopt, verbose, false}};
     temp_dir_path = client.temp_directory();
     EXPECT_TRUE(fs::is_directory(temp_dir_path));
   }  // Client is deleted.
@@ -124,7 +121,7 @@ GTEST_TEST(RenderClient, Destructor) {
   // Construction with no_cleanup=true: temp_directory should remain.
   {
     const RenderClient client{
-        Params{base_url, port, render_endpoint, std::nullopt, verbose, true}};
+        Params{base_url, render_endpoint, std::nullopt, verbose, true}};
     temp_dir_path = client.temp_directory();
     EXPECT_TRUE(fs::is_directory(temp_dir_path));
   }  // Client is deleted.
@@ -139,7 +136,7 @@ class FailService : public HttpService {
   FailService() = default;
 
   HttpResponse DoPostForm(const std::string& /* temp_directory */,
-                          const std::string& /* base_url */, int /* port */,
+                          const std::string& /* base_url */,
                           const DataFieldsMap& /* data_fields */,
                           const FileFieldsMap& /* file_fields */,
                           bool /* verbose */ = false) override {
@@ -180,7 +177,7 @@ class FieldCheckService : public HttpService {
   // Checks all of the <form> fields and always responds with a failure HTTP
   // response code (500).
   HttpResponse DoPostForm(const std::string& /* temp_directory */,
-                          const std::string& base_url, int /* port */,
+                          const std::string& base_url,
                           const DataFieldsMap& data_fields,
                           const FileFieldsMap& file_fields,
                           bool /* verbose */ = false) override {
@@ -280,7 +277,7 @@ class ProxyService : public HttpService {
       : HttpService(), post_form_callback_{callback} {}
 
   HttpResponse DoPostForm(const std::string& /* temp_directory */,
-                          const std::string& base_url, int /* port */,
+                          const std::string& base_url,
                           const DataFieldsMap& data_fields,
                           const FileFieldsMap& file_fields,
                           bool /* verbose */ = false) override {
@@ -301,15 +298,14 @@ GTEST_TEST(RenderClient, RenderOnServer) {
   /* NOTE: these values help ensure nothing actually gets sent over curl.  No
    test should proceed with the default HttpServiceCurl, the HttpService backend
    should be changed using client.SetHttpService before doing anything. */
-  const std::string base_url{"notarealserver"};
-  const int port{8192};
+  const std::string base_url{"notarealserver:8192"};
   const std::string render_endpoint{"no_render"};
   const bool verbose{false};
   const bool no_cleanup{false};
 
   // Create a client and proxy HttpService creation helper.
-  RenderClient client(Params{base_url, port, render_endpoint, std::nullopt,
-                             verbose, no_cleanup});
+  RenderClient client(
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup});
   const auto temp_dir_path = fs::path(client.temp_directory());
 
   // Create a fake scene to "upload" to the "server" and fake response file.
@@ -361,11 +357,11 @@ GTEST_TEST(RenderClient, RenderOnServer) {
      takes place in the assertions in FieldCheckService::PostForm. */
     const auto expected_message = fmt::format(
         "\\s*ERROR doing POST:\\s*/{0}\\s*"  // ERROR doing POST: /{endpoint}
-        "Server Base URL:\\s*{1}:{2}\\s*"  // Server Base URL: {base_url}:{port}
-        "Service Message:\\s*None\\.\\s*"  // Service Message:  None.
-        "HTTP Code:\\s*500\\s*"            // Http Code:        {code}
-        "Server Message:\\s*None\\.\\s*",  // Server Message:   None.
-        render_endpoint, base_url, port);
+        "Server Base URL:\\s*{1}\\s*"        // Server Base URL:  {base_url}
+        "Service Message:\\s*None\\.\\s*"    // Service Message:  None.
+        "HTTP Code:\\s*500\\s*"              // Http Code:        {code}
+        "Server Message:\\s*None\\.\\s*",    // Server Message:   None.
+        render_endpoint, base_url);
 
     // Check fields for a color render.
     client.SetHttpService(std::make_unique<FieldCheckService>(
@@ -399,30 +395,6 @@ GTEST_TEST(RenderClient, RenderOnServer) {
         expected_message);
   }
 
-  {
-    /* These tests confirm the error reporting format from UrlWithPort without a
-     port and alternative urls. */
-    const std::vector<std::pair<std::string, int>> url_port{
-        {"some_url", 0}, {"another_url", -1}, {"url_with_port", 200}};
-    for (const auto& [u, p] : url_port) {
-      const auto expected_message = fmt::format(
-          "\\s*ERROR doing POST:\\s*/{0}\\s*"
-          "Server Base URL:\\s*{1}\\s*"
-          "Service Message:\\s*FailService always fails\\.\\s*"
-          "HTTP Code:\\s*500\\s*"
-          "Server Message:\\s*None\\.\\s*",
-          render_endpoint, p > 0 ? fmt::format("{}:{}", u, p) : u);
-      RenderClient c{
-          Params{u, p, render_endpoint, std::nullopt, verbose, no_cleanup}};
-      const auto temp = fs::path(c.temp_directory());
-      c.SetHttpService(std::make_unique<FailService>());
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          c.RenderOnServer(color_camera.core(), RenderImageType::kColorRgba8U,
-                           fake_scene_path),
-          expected_message);
-    }
-  }
-
   // Trampoline helper to set the client HttpService.
   const auto response_path = (temp_dir_path / "response.file").string();
   auto set_proxy = [&](const PostFormCallback& callback) {
@@ -447,11 +419,11 @@ GTEST_TEST(RenderClient, RenderOnServer) {
     // NOTE: all tests using this must use http code 400.
     const auto message_template = fmt::format(
         "\\s*ERROR doing POST:\\s*/{0}\\s*"  // ERROR doing POST: /{endpoint}
-        "Server Base URL:\\s*{1}:{2}\\s*"  // Server Base URL: {base_url}:{port}
-        "Service Message:\\s*None\\.\\s*"  // Service Message:  None.
-        "HTTP Code:\\s*400\\s*"            // Http Code:        {code}
-        "Server Message:\\s*{{}}\\s*",     // Server Message:   {message}
-        render_endpoint, base_url, port);
+        "Server Base URL:\\s*{1}\\s*"        // Server Base URL:  {base_url}
+        "Service Message:\\s*None\\.\\s*"    // Service Message:  None.
+        "HTTP Code:\\s*400\\s*"              // Http Code:        {code}
+        "Server Message:\\s*{{}}\\s*",       // Server Message:   {message}
+        render_endpoint, base_url);
 
     // Case 1: edge case, service populated data_path but file is length 0.
     set_proxy(
@@ -532,10 +504,10 @@ GTEST_TEST(RenderClient, RenderOnServer) {
         client.RenderOnServer(color_camera.core(),
                               RenderImageType::kColorRgba8U, fake_scene_path),
         fmt::format(
-            "ERROR with POST /{} response from server, base_url={}:{}, HTTP "
+            "ERROR with POST /{} response from server, base_url={}, HTTP "
             "code=200: the server was supposed to respond with a file but did "
             "not.",
-            render_endpoint, base_url, port));
+            render_endpoint, base_url));
   }
 
   {
@@ -552,10 +524,10 @@ GTEST_TEST(RenderClient, RenderOnServer) {
         client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
                               fake_scene_path),
         fmt::format(
-            "ERROR with POST /{} response from service, base_url={}:{}, HTTP "
+            "ERROR with POST /{} response from service, base_url={}, HTTP "
             "code=200: the service responded with a file path '{}' but the "
             "file does not exist.",
-            render_endpoint, base_url, port, response_path));
+            render_endpoint, base_url, response_path));
   }
 
   {
@@ -621,13 +593,12 @@ GTEST_TEST(RenderClient, RenderOnServer) {
 }
 
 GTEST_TEST(RenderClient, ComputeSha256) {
-  const std::string base_url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
-  RenderClient client{Params{base_url, port, render_endpoint, std::nullopt,
-                             verbose, no_cleanup}};
+  RenderClient client{
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
 
   {
     // Failure case 1: provided input file does not exist.
@@ -679,14 +650,13 @@ GTEST_TEST(RenderClient, ComputeSha256) {
 }
 
 GTEST_TEST(RenderClient, RenameHttpServiceResponse) {
-  const std::string base_url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   // Keep verbose and no_cleanup `true` to get coverage on log() calls.
   const bool verbose = true;
   const bool no_cleanup = true;
-  const RenderClient client{Params{base_url, port, render_endpoint,
-                                   std::nullopt, verbose, no_cleanup}};
+  const RenderClient client{
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
   const fs::path temp_dir = fs::path(client.temp_directory());
   const std::string scene = temp_dir / "scene.gltf";
   std::ofstream scene_file{scene};
@@ -793,13 +763,12 @@ GTEST_TEST(RenderClient, RenameHttpServiceResponse) {
 }
 
 GTEST_TEST(RenderClient, LoadColorImage) {
-  const std::string base_url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
-  const RenderClient client{Params{base_url, port, render_endpoint,
-                                   std::nullopt, verbose, no_cleanup}};
+  const RenderClient client{
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
 
   /* Create a Drake Image buffer with the same dimension as the testing images,
    i.e., test_{rgb, rgba}_8U.png, to exercise the image loading code.
@@ -871,13 +840,12 @@ GTEST_TEST(RenderClient, LoadColorImage) {
 }
 
 GTEST_TEST(RenderClient, LoadDepthImage) {
-  const std::string base_url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
-  const RenderClient client{Params{base_url, port, render_endpoint,
-                                   std::nullopt, verbose, no_cleanup}};
+  const RenderClient client{
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
 
   /* Create a Drake Image buffer with the same dimension as the testing image,
    i.e., test_depth_32F.tiff, to exercise the image loading code.
@@ -930,13 +898,12 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
 }
 
 GTEST_TEST(RenderClient, LoadLabelImage) {
-  const std::string base_url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = true;
-  const RenderClient client{Params{base_url, port, render_endpoint,
-                                   std::nullopt, verbose, no_cleanup}};
+  const RenderClient client{
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
 
   /* Create a Drake Image buffer with the same dimension as the testing image,
    i.e., test_label_16U.png, to exercise the image loading code.

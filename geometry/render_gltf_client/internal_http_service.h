@@ -128,13 +128,13 @@ class HttpService {
    // <form>
    // Submit form to /hello:
    auto response_1 = http_service_->PostForm(
-       temp_dir, "/hello", port,
+       temp_dir, "/hello:port",
        {{"name", "Sue"}, {"age", "34"}, {"submit", "Submit"}},
        {});  // No file fields.
    // Suppose `<input type="file" name="photo">` and
    // `<input type="file" name="id">` were added.
    auto response_2 = http_service->PostForm(
-       temp_dir, "/hello", port,
+       temp_dir, "/hello:port",
        {{"name", "Bo"}, {"age", "49"}, {"submit", "Submit"}},
        {{"photo", {"/path/to/bo-profile.jpg", "image/jpeg"}},
         // No mime-type for this file, std::nullopt indicates this.
@@ -150,10 +150,6 @@ class HttpService {
      for deleting it.  No validity checks on this directory are performed.
    @param url
      The url this HTTP service will communicate with.
-   @param port
-     The port to communicate on.  A value less than or equal to `0` will let
-     `url` to decide which port to use.  If a different port is needed instead,
-     specify `port` to override that.
    @param data_fields
      The entries for the `<input>` elements of the form.  Keys are the field
      name, and values are the field values.  For example:
@@ -193,7 +189,7 @@ class HttpService {
      encode this information in the returned HttpResponse for the caller to
      determine how to proceed. */
   HttpResponse PostForm(
-      const std::string& temp_directory, const std::string& url, int port,
+      const std::string& temp_directory, const std::string& url,
       const DataFieldsMap& data_fields,
       const FileFieldsMap& file_fields,
       bool verbose = false);
@@ -203,7 +199,7 @@ class HttpService {
    PostForm calls this, it has already validated the url, and the existence of
    the files in `file_fields`. */
   virtual HttpResponse DoPostForm(
-      const std::string& temp_directory, const std::string& url, int port,
+      const std::string& temp_directory, const std::string& url,
       const DataFieldsMap& data_fields,
       const FileFieldsMap& file_fields,
       bool verbose) = 0;

@@ -129,24 +129,16 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
   }
 }
 
-/* Returns '{url}' if port is <= 0, '{url}:{port}' otherwise.  Used for
- populating error messages. */
-std::string UrlWithPort(const std::string& url, int port) {
-  if (port > 0) return fmt::format("{}:{}", url, port);
-  return url;
-}
-
 }  // namespace
 
 RenderClient::RenderClient(const RenderEngineGltfClientParams& params)
     : temp_directory_{drake::temp_directory()},
       base_url_{params.base_url},
-      port_{params.port},
       render_endpoint_{params.render_endpoint},
       verbose_{params.verbose},
       no_cleanup_{params.no_cleanup},
       url_{params.GetUrl()},
-      http_service_{std::make_unique<HttpServiceCurl>()} { }
+      http_service_{std::make_unique<HttpServiceCurl>()} {}
 
 RenderClient::~RenderClient() {
   const fs::path temp_dir{temp_directory_};
@@ -215,7 +207,7 @@ std::string RenderClient::RenderOnServer(
 
   // Post the form and validate the results.
   auto response =
-      http_service_->PostForm(temp_directory_, url_, port_, field_map,
+      http_service_->PostForm(temp_directory_, url_, field_map,
                               {{"scene", {scene_path, mime_type}}}, verbose_);
   if (!response.Good()) {
     /* Server may have responded with meaningful text, try and load the file
@@ -250,7 +242,7 @@ std::string RenderClient::RenderOnServer(
           HTTP Code:       {}
           Server Message:  {}
         )",
-        render_endpoint_, UrlWithPort(base_url_, port_),
+        render_endpoint_, base_url_,
         (response.service_error_message.has_value()
              ? response.service_error_message.value()
              : "None."),
@@ -262,7 +254,7 @@ std::string RenderClient::RenderOnServer(
     throw std::runtime_error(fmt::format(
         "ERROR with POST /{} response from server, base_url={}, HTTP code={}: "
         "the server was supposed to respond with a file but did not.",
-        render_endpoint_, UrlWithPort(base_url_, port_), response.http_code));
+        render_endpoint_, base_url_, response.http_code));
   }
   const std::string bin_out_path = response.data_path.value();
   if (!fs::is_regular_file(bin_out_path)) {
@@ -270,8 +262,7 @@ std::string RenderClient::RenderOnServer(
         "ERROR with POST /{} response from service, base_url={}, HTTP code={}: "
         "the service responded with a file path '{}' but the file does not "
         "exist.",
-        render_endpoint_, UrlWithPort(base_url_, port_), response.http_code,
-        bin_out_path));
+        render_endpoint_, base_url_, response.http_code, bin_out_path));
   }
 
   /* At this point we have a seemingly valid return file from the server, see

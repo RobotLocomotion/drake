@@ -212,9 +212,8 @@ class RenderClient {
    construction.  Note that `default_label` is not relevant for RenderClient
    class, so it's always set to std::nullopt. */
   RenderEngineGltfClientParams get_params() const {
-    return RenderEngineGltfClientParams{base_url_,          port_,
-                                        render_endpoint_,   std::nullopt,
-                                        verbose_,           no_cleanup_};
+    return RenderEngineGltfClientParams{base_url_, render_endpoint_,
+                                        std::nullopt, verbose_, no_cleanup_};
   }
 
   /* The temporary directory used for scratch space, including but not limited
@@ -228,11 +227,6 @@ class RenderClient {
   /* The base url of the server. The full url to communicate with is constructed
    as `base_url()/render_endpoint()`. */
   const std::string& base_url() const { return base_url_; }
-
-  /** The port to communicate on.  A value less than or equal to `0` will let
-   `base_url_` to decide which port to use.  If a different port is needed
-   instead, specify `port` to override that. */
-  int port() const { return port_; }
 
   /* The render endpoint of the server, used in RetrieveRender().
    Should **not** include a preceding slash. */
@@ -254,7 +248,6 @@ class RenderClient {
   friend class RenderClientTester;
   const std::string temp_directory_;
   const std::string base_url_;
-  const int port_;
   const std::string render_endpoint_;
   const bool verbose_;
   const bool no_cleanup_;
