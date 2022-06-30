@@ -699,8 +699,8 @@ drake_cc_googletest(
     name = "geometry_state_test",
     deps = [
         ":geometry_state",
-        ":make_mesh_for_deformable",
         "//common/test_utilities",
+        "//geometry/proximity:make_sphere_mesh",
         "//geometry/test_utilities:dummy_render_engine",
     ],
 )
@@ -726,9 +726,9 @@ drake_cc_googletest(
     name = "internal_geometry_test",
     deps = [
         ":internal_geometry",
-        ":make_mesh_for_deformable",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:make_sphere_mesh",
     ],
 )
 
