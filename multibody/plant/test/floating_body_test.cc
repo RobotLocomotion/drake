@@ -386,7 +386,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
   // Allocate space to hold the time-derivative of the Drake state.
   std::unique_ptr<systems::ContinuousState<double>> stateDt =
       free_body_plant.AllocateTimeDerivatives();
-  drake::systems::ContinuousState<double>* stateDt_drake = stateDt.get();
+  drake::systems::ContinuousState<double>* stateDt_ptr = stateDt.get();
 
   // Initial position, translational velocity, and angular velocity are zero.
   const Vector3d p0_WBcm_W = Vector3d::Zero();
@@ -396,14 +396,12 @@ GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
   Eigen::Matrix<double, 13, 1> state_initial;
   state_initial << bad_quat.w(), bad_quat.x(), bad_quat.y(), bad_quat.z(),
                    p0_WBcm_W, w0_WB_W, v0_WBcm_W;
-  systems::VectorBase<double>& state_drake =
-      context.get_mutable_continuous_state_vector();
-  state_drake.SetFromVector(state_initial);
+  context.SetContinuousState(state_initial);
 
   // A zero quaternion should throw an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      free_body_plant.CalcTimeDerivatives(context, stateDt_drake),
-      "Error in QuaternionToRotationMatrix\\(\\):"
+      free_body_plant.CalcTimeDerivatives(context, stateDt_ptr),
+      "QuaternionToRotationMatrix\\(\\):"
       " All the elements in a quaternion are zero\\.");
 }
 

@@ -284,37 +284,6 @@ bool IsQuaternionValid(const Eigen::Quaternion<T>& quat,
   return (quat_norm_error <= tolerance);
 }
 
-#ifndef DRAKE_DOXYGEN_CXX
-// Return true if all the elements of a quaternion are zero, otherwise false.
-template <typename T>
-bool IsQuaternionZero(const Eigen::Quaternion<T>& quaternion) {
-  // Note: This special-purpose function avoids memory allocation on the heap.
-  // Mitiguy found quaternion.coeffs().isZero() sometimes does memory allocation
-  // on the heap. Nimmer found this creative way to use DiscardGradient to avoid
-  // that memory allocation.
-  return math::DiscardGradient(quaternion.coeffs()).isZero(0);
-}
-
-// Throws an exception if all elements in a %Quaternion are zero.
-// @param[in] quaternion a %Quaternion.
-// @param[in] function_name The name of the calling function, which is included
-// in the exception message (if an exception is thrown).
-// @note If the underlying scalar type T is non-numeric (symbolic), no
-// check is made and no exception is thrown.
-template <typename T>
-void ThrowIfAllElementsInQuaternionAreZero(
-    const Eigen::Quaternion<T>& quaternion, const char* function_name);
-
-// Throws an exception if any element in a %Quaternion is infinity or NaN.
-// @param[in] quaternion a %Quaternion.
-// @param[in] function_name The name of the calling function, which is included
-// in the exception message (if an exception is thrown).
-// @note If the underlying scalar type T is non-numeric (symbolic), no
-// check is made and no exception is thrown.
-template <typename T>
-void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
-    const Eigen::Quaternion<T>& quaternion, const char* function_name);
-#endif
 
 /** This function tests if a quaternion satisfies the time-derivative constraint
  * specified in [Kane, 1983] Section 1.13, equation 13, page 59.  A quaternion

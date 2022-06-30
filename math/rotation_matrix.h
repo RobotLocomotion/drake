@@ -944,6 +944,9 @@ class RotationMatrix {
   // 12 multiplies.  This method also costs 12 adds and 12 multiplies, but
   // has a provision for an efficient algorithm for always calculating an
   // orthogonal rotation matrix (whereas Eigen's algorithm does not).
+  // @throws std::exception if all the elements of quaternion are zero.
+  // Throws std::exception in debug builds if any of the elements in quaternion
+  // are infinity or NaN.
   static Matrix3<T> QuaternionToRotationMatrix(
       const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared);
 

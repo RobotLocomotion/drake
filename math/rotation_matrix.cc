@@ -5,10 +5,51 @@
 #include <fmt/format.h>
 
 #include "drake/common/unused.h"
-#include "drake/math/quaternion.h"
+#include "drake/math/autodiff.h"
 
 namespace drake {
 namespace math {
+
+// Returns true if all the elements of a quaternion are zero, otherwise false.
+template <typename T>
+bool IsQuaternionZero(const Eigen::Quaternion<T>& quaternion) {
+  // Note: This special-purpose function avoids memory allocation on the heap.
+  // Mitiguy found quaternion.coeffs().isZero() sometimes does memory allocation
+  // on the heap. Nimmer found this creative way to use DiscardGradient to avoid
+  // that memory allocation. Another simple alternative is:
+  //  return quaternion.w() == T(0) && quaternion.x() == T(0) &&
+  //         quaternion.y() == T(0) && quaternion.z() == T(0);
+  return math::DiscardGradient(quaternion.coeffs()).isZero(0);
+}
+
+template <typename T>
+void ThrowIfAllElementsInQuaternionAreZero(
+    const Eigen::Quaternion<T>& quaternion, const char* function_name) {
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (IsQuaternionZero(quaternion)) {
+      std::string message = fmt::format("{}():"
+        " All the elements in a quaternion are zero.", function_name);
+      throw std::logic_error(message);
+    }
+  } else {
+    unused(quaternion, function_name);
+  }
+}
+
+template <typename T>
+void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
+    const Eigen::Quaternion<T>& quaternion, const char* function_name) {
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (!quaternion.coeffs().allFinite()) {
+      std::string message = fmt::format("{}():"
+        " Quaternion contains an element that is infinity or NaN.",
+        function_name);
+      throw std::logic_error(message);
+    }
+  } else {
+    unused(quaternion, function_name);
+  }
+}
 
 template <typename T>
 RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
@@ -126,10 +167,10 @@ Matrix3<T> RotationMatrix<T>::QuaternionToRotationMatrix(
   DRAKE_ASSERT_VOID(
       ThrowIfAnyElementInQuaternionIsInfinityOrNaN(quaternion, __func__));
 
-  const T w = quaternion.w();
-  const T x = quaternion.x();
-  const T y = quaternion.y();
-  const T z = quaternion.z();
+  const T& w = quaternion.w();
+  const T& x = quaternion.x();
+  const T& y = quaternion.y();
+  const T& z = quaternion.z();
   const T sx = two_over_norm_squared * x;  // scaled x-value.
   const T sy = two_over_norm_squared * y;  // scaled y-value.
   const T sz = two_over_norm_squared * z;  // scaled z-value.
