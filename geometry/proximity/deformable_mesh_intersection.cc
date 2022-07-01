@@ -107,20 +107,9 @@ ComputeContactSurfaceFromDeformableVolumeRigidSurface(
   if (!intersect.has_intersection()) {
     return nullptr;
   }
-
-  // The contact surface is documented as having the normals pointing *out*
-  // of the second surface and into the first. This mesh intersection
-  // creates a surface mesh with normals pointing out of the rigid surface,
-  // so we make sure the ids are ordered so that the rigid is the second id.
-  ContactSurface<double> contact_surface(
-      deformable_id, rigid_id, intersect.release_mesh(),
-      intersect.release_field(),
-      std::make_unique<std::vector<Vector3<double>>>(
-          std::move(intersect.mutable_grad_eM_M())));
-
   return std::make_unique<DeformableRigidContactSurface<double>>(
       intersect.release_mesh(),
-      intersect.release_field(),
+      *intersect.release_field(),
       std::move(intersect.mutable_tetrahedron_index_of_polygons()),
       std::move(intersect.mutable_barycentric_centroids()), rigid_id,
       deformable_id);

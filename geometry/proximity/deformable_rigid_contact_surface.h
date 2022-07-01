@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/geometry/geometry_ids.h"
@@ -85,17 +86,18 @@ class DeformableRigidContactSurface {
    geometry. We have one contact point at the centroid of each contact polygon
    in the contact surface. */
   int num_contact_points() const {
-    return contact_surface_mesh_W_->num_faces();
+    return num_contact_points_;
   }
 
   /* Returns the approximated penetration distance at the e-th contact point.
    @pre 0 <= e < num_contact_points(). */
   const T& penetration_distance(int e) const;
 
-  /* Returns the contact surface as a polygon mesh in the World frame. */
-  const PolygonSurfaceMesh<T>& contact_surface_mesh() const {
-    return *contact_surface_mesh_W_;
+  /* Releases the contact surface as a polygon mesh in the World frame. */
+  std::unique_ptr<PolygonSurfaceMesh<T>> release_contact_surface_mesh() {
+    return std::move(contact_surface_mesh_W_);
   }
+
   /* Returns the *inverses* of the bases for the per-point contact frames
    expressed in the world frame. The contact frame C has its origin at the
    contact point (polygon centroid) and is oriented with Cz in the polygon's
@@ -108,6 +110,7 @@ class DeformableRigidContactSurface {
   friend class DeformableRigidContactSurfaceTester<T>;
 
   std::unique_ptr<PolygonSurfaceMesh<T>> contact_surface_mesh_W_;
+  int num_contact_points_{0};
   std::vector<int> tetrahedron_indices_;
   std::vector<Vector4<T>> barycentric_centroids_;
   std::vector<T> penetration_distances_;

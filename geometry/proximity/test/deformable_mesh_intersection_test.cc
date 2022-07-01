@@ -99,7 +99,6 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
       ComputeContactSurfaceFromDeformableVolumeRigidSurface(
           deformable_id, deformable_W, rigid_id, rigid_mesh_R, rigid_bvh_R,
           X_WR);
-
   ASSERT_NE(contact_surface_W, nullptr);
   constexpr int kExpectedNumContactPoints = 1;
   EXPECT_EQ(contact_surface_W->num_contact_points(), kExpectedNumContactPoints);
@@ -113,7 +112,7 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
                               Vector3<double>::UnitZ(), kEps));
 
   const double signed_distance_at_contact_point =
-      contact_surface_W->EvaluatePenetrationDistance(0);
+      contact_surface_W->penetration_distance(0);
   // The approximated signed distance function on the tetrahedron is
   // s(x,y,z) = x + y + z - 1.  Therefore, the centroid (1/6, 1/6, 1/2) has
   // the signed distance = 1/6 + 1/6 + 1/2 - 1 = -1/6

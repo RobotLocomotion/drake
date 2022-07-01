@@ -1,6 +1,6 @@
 #include "drake/geometry/proximity/deformable_rigid_contact_surface.h"
 
-#include <utility>
+#include <iostream>
 
 namespace drake {
 namespace geometry {
@@ -14,6 +14,9 @@ DeformableRigidContactSurface<T>::DeformableRigidContactSurface(
     std::vector<Vector4<T>> barycentric_centroids,
     geometry::GeometryId rigid_id, geometry::GeometryId deformable_id)
     : contact_surface_mesh_W_(std::move(contact_surface_mesh_W)),
+      // Make a copy of the number of contact points since we might release the
+      // mesh.
+      num_contact_points_(contact_surface_mesh_W_->num_faces()),
       tetrahedron_indices_(std::move(tetrahedron_indices)),
       barycentric_centroids_(std::move(barycentric_centroids)),
       rigid_id_(rigid_id),

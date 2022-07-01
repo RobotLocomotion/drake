@@ -96,7 +96,8 @@ TYPED_TEST(DeformableRigidContactSurfaceTest, ContactSurfaceMesh) {
   DeformableRigidContactSurface<T> dut = MakeDeformableRigidContactSurface<T>();
   std::unique_ptr<PolygonSurfaceMesh<T>> contact_surface_mesh_W =
       MakePolygonSurfaceMesh<T>();
-  EXPECT_TRUE(dut.contact_surface_mesh().Equal(*contact_surface_mesh_W));
+  EXPECT_TRUE(
+      dut.release_contact_surface_mesh()->Equal(*contact_surface_mesh_W));
 }
 
 // Verifies that the constructor of DeformableRigidContactSurface

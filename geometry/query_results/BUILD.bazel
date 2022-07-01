@@ -75,6 +75,7 @@ drake_cc_library(
     deps = [
         "//geometry/proximity:deformable_contact_geometries",
         "//geometry/proximity:deformable_rigid_contact_surface",
+        "//multibody/contact_solvers/sap:partial_permutation",
     ],
 )
 

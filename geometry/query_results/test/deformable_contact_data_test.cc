@@ -26,9 +26,11 @@ GTEST_TEST(DeformableContactDataTest, TestConstructorPermutedVertex) {
           Vector3<double>::UnitY(),
           Vector3<double>::UnitZ(),
       });
-  // Save the memory address of the contact mesh before the unique_ptr
-  // contact_mesh_W is reset by std::move below.
-  PolygonSurfaceMesh<double>* contact_mesh_pointer = contact_mesh_W.get();
+
+  PolygonSurfaceMeshFieldLinear<double, double> sdf(
+      std::vector<double>{-0.1, -0.1, -0.1}, contact_mesh_W.get(),
+      // Constant field values means the gradient is zero.
+      std::vector<Vector3<double>>{Vector3<double>::Zero()});
 
   // For simplicity, we set up one DeformableRigidContactSurface that contains
   // one contact polygon in tetrahedron 1 (index starts at 0) of `test_mesh_S`
@@ -36,29 +38,23 @@ GTEST_TEST(DeformableContactDataTest, TestConstructorPermutedVertex) {
   // The unit normal is  not relevant to this test, but it must have unit length
   // in order to set up DeformableRigidContactSurface, which is used by
   // DeformableContactData.
-  DeformableRigidContactSurface<double> contact_surface0(
-      ContactSurface<double>(
-          GeometryId::get_new_id(), GeometryId::get_new_id(),
-          std::move(contact_mesh_W),
-          std::make_unique<PolygonSurfaceMeshFieldLinear<double, double>>(
-              std::vector<double>{-0.1, -0.1, -0.1}, contact_mesh_pointer,
-              // Constant field values means the gradient is zero.
-              std::vector<Vector3<double>>{Vector3<double>::Zero()})),
-      std::vector<int>{1},
-      std::vector<Vector4<double>>{Vector4<double>{0.1, 0.2, 0.3, 0.4}},
-      // Use arbitrary values for simplicity.
-      GeometryId::get_new_id(), kDeformableId);
+  auto contact_surface0 =
+      std::make_unique<DeformableRigidContactSurface<double>>(
+          std::move(contact_mesh_W), sdf, std::vector<int>{1},
+          std::vector<Vector4<double>>{Vector4<double>{0.1, 0.2, 0.3, 0.4}},
+          // Use arbitrary values for simplicity.
+          GeometryId::get_new_id(), kDeformableId);
 
   // We use a unit sphere as the shape specification for the reference
-  // deformable geometry that we will create. Frame S is the intrinsic frame
-  // of the sphere.
+  // deformable geometry that we will create. Frame S is the intrinsic
+  // frame of the sphere.
   const Sphere sphere_S(1.0);
 
   // For simplicity, we use the following peculiar mesh with only three
-  // tetrahedra and six vertices. We can imagine that the three tetrahedra
-  // are part of a mesh of the unit sphere. For this test, we do not need the
-  // whole mesh of the sphere.  Positions of the vertices are shown
-  // schematically in the picture below.
+  // tetrahedra and six vertices. We can imagine that the three
+  // tetrahedra are part of a mesh of the unit sphere. For this test, we
+  // do not need the whole mesh of the sphere.  Positions of the
+  // vertices are shown schematically in the picture below.
   //
   //          +Z
   //          |    -X
@@ -88,7 +84,8 @@ GTEST_TEST(DeformableContactDataTest, TestConstructorPermutedVertex) {
   // contact (referred by `polygon_data`).
   //
   //  original vertex index   participate         permuted vertex index
-  //                                         (participate)  (non-participate)
+  //                                         (participate)
+  //                                         (non-participate)
   //           0                yes                0
   //           1                no                                 4
   //           2                yes                1
@@ -105,19 +102,18 @@ GTEST_TEST(DeformableContactDataTest, TestConstructorPermutedVertex) {
   //  ----------------------------------------------- ---------------
   //           4                          1                   no
   //           5                          4                   no
-  //
-  // The entries among participating vertices are sorted, and the entries
-  // among non-participating vertices are also sorted separately.
-  const std::vector<int> kExpectedPermutedVertexIndexes{0, 4, 1, 2, 5, 3};
-  const std::vector<int> kExpectedPermutedToOriginalIndexes {0, 2, 3, 5, 1, 4};
 
-  DeformableContactData<double> dut({contact_surface0}, test_mesh_S);
+  const std::vector<int> kExpectedPermutedVertexIndexes{0, 4, 1, 2, 5, 3};
+
+  std::vector<std::unique_ptr<DeformableRigidContactSurface<double>>>
+      contact_surfaces;
+  contact_surfaces.emplace_back(std::move(contact_surface0));
+  DeformableContactData<double> dut(std::move(contact_surfaces), test_mesh_S);
 
   EXPECT_EQ(dut.deformable_id(), kDeformableId);
   EXPECT_EQ(dut.num_vertices_in_contact(), 4);
-  EXPECT_EQ(dut.permuted_vertex_indexes(), kExpectedPermutedVertexIndexes);
-  EXPECT_EQ(dut.permuted_to_original_indexes(),
-            kExpectedPermutedToOriginalIndexes);
+  EXPECT_EQ(dut.vertex_permutation().permutation(),
+            kExpectedPermutedVertexIndexes);
 }
 
 // Test the constructor of DeformableContactData that it creates the correct
@@ -139,6 +135,7 @@ GTEST_TEST(DeformableContactDataTest, TestConstructorSignedDistance) {
   // Within this tetrahedron, the approximated signed distance is
   //   approximated_sdf(x,y,z) = x + y + z - 1
   // and its gradient is (1,1,1).
+  const std::vector<int> kExpectedPermutedToOriginalIndexes{0, 2, 3, 5, 1, 4};
   Vector3<double> kGradientApproximatedSdf(1, 1, 1);
 
   // Each of these two contact meshes has one polygon inside the only
@@ -158,70 +155,67 @@ GTEST_TEST(DeformableContactDataTest, TestConstructorSignedDistance) {
           Vector3<double>(0, 0.30, 0),
           Vector3<double>(0, 0, 0.75)
       });
-  // Save the memory address of the first contact mesh before the unique_ptr
-  // contact_mesh0_W is reset by std::move.
-  PolygonSurfaceMesh<double>* contact_mesh0_pointer = contact_mesh0_W.get();
-  ContactSurface<double> contact_surface0(
-      GeometryId::get_new_id(), GeometryId::get_new_id(),
-      std::move(contact_mesh0_W),
-      std::make_unique<PolygonSurfaceMeshFieldLinear<double, double>>(
-          // approximated_sdf(x,y,z) = x + y + z - 1
-          std::vector<double>{-0.25, -0.25, -0.25}, contact_mesh0_pointer,
-          std::vector<Vector3<double>>{kGradientApproximatedSdf}));
-  // Save the memory address of the second contact mesh before the unique_ptr
-  // contact_mesh1_W is reset by std::move.
-  PolygonSurfaceMesh<double>* contact_mesh1_pointer = contact_mesh1_W.get();
-  ContactSurface<double> contact_surface1(
-      GeometryId::get_new_id(), GeometryId::get_new_id(),
-      std::move(contact_mesh1_W),
-      std::make_unique<PolygonSurfaceMeshFieldLinear<double, double>>(
-          // approximated_sdf(x,y,z) = x + y + z - 1
-          std::vector<double>{-0.85, -0.7, -0.25}, contact_mesh1_pointer,
-          std::vector<Vector3<double>>{kGradientApproximatedSdf}));
 
-  DeformableRigidContactSurface<double> deformable_rigid_contact_surface0(
-      contact_surface0, std::vector<int>{kTetrahedronIndex},
-      std::vector<Vector4<double>>{Vector4<double>{0.1, 0.2, 0.3, 0.4}},
-      // Use arbitrary values for simplicity.
-      GeometryId::get_new_id(), kDeformableId);
+  PolygonSurfaceMeshFieldLinear<double, double> sdf0(
+      // approximated_sdf(x,y,z) = x + y + z - 1
+      std::vector<double>{-0.25, -0.25, -0.25}, contact_mesh0_W.get(),
+      std::vector<Vector3<double>>{kGradientApproximatedSdf});
 
-  DeformableRigidContactSurface<double> deformable_rigid_contact_surface1(
-      contact_surface1, std::vector<int>{kTetrahedronIndex},
-      std::vector<Vector4<double>>{Vector4<double>{0.1, 0.2, 0.3, 0.4}},
-      // Use arbitrary values for simplicity.
-      GeometryId::get_new_id(), kDeformableId);
+  PolygonSurfaceMeshFieldLinear<double, double> sdf1(
+      // approximated_sdf(x,y,z) = x + y + z - 1
+      std::vector<double>{-0.85, -0.7, -0.25}, contact_mesh1_W.get(),
+      std::vector<Vector3<double>>{kGradientApproximatedSdf});
 
-  DeformableContactData<double> dut(
-      std::vector<DeformableRigidContactSurface<double>>{
-          deformable_rigid_contact_surface0, deformable_rigid_contact_surface1},
-      mesh_S);
+  auto deformable_rigid_contact_surface0 =
+      std::make_unique<DeformableRigidContactSurface<double>>(
+          std::move(contact_mesh0_W), sdf0, std::vector<int>{kTetrahedronIndex},
+          // Use arbitrary barycentric coordinate as it doesn't affect signed
+          // distance calculation.
+          std::vector<Vector4<double>>{Vector4<double>{0.1, 0.2, 0.3, 0.4}},
+          // Use arbitrary values for simplicity.
+          GeometryId::get_new_id(), kDeformableId);
+
+  auto deformable_rigid_contact_surface1 =
+      std::make_unique<DeformableRigidContactSurface<double>>(
+          std::move(contact_mesh1_W), sdf1, std::vector<int>{kTetrahedronIndex},
+          // Use arbitrary barycentric coordinate as it doesn't affect signed
+          // distance calculation.
+          std::vector<Vector4<double>>{Vector4<double>{0.1, 0.2, 0.3, 0.4}},
+          // Use arbitrary values for simplicity.
+          GeometryId::get_new_id(), kDeformableId);
+
+  std::vector<std::unique_ptr<DeformableRigidContactSurface<double>>>
+      contact_surfaces;
+  contact_surfaces.emplace_back(std::move(deformable_rigid_contact_surface0));
+  contact_surfaces.emplace_back(std::move(deformable_rigid_contact_surface1));
+  DeformableContactData<double> dut(std::move(contact_surfaces), mesh_S);
 
   ASSERT_EQ(dut.num_contact_surfaces(), 2);
-  ASSERT_EQ(dut.signed_distances(0).size(), 1);
-  ASSERT_EQ(dut.signed_distances(1).size(), 1);
+  ASSERT_EQ(dut.signed_distances().size(), 2);
   const double kEps = 4 * std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(dut.signed_distances(0)[0], -0.25, kEps);
-  EXPECT_NEAR(dut.signed_distances(1)[0], -0.6, kEps);
+  // We leverage the knowledge about the order of the contact point from the
+  // implementation here.
+  EXPECT_NEAR(dut.signed_distances()[0], -0.25, kEps);
+  EXPECT_NEAR(dut.signed_distances()[1], -0.6, kEps);
 }
 
 // Test the constructor of DeformableContactData in the special case of empty
 // DeformableRigidContactSurface that the permutation of vertex indexes will be
 // identity.
 GTEST_TEST(DeformableContactDataTest, TestConstructorNoContactPair) {
-  std::vector<DeformableRigidContactSurface<double>> empty_contact_surfaces{};
+  std::vector<std::unique_ptr<DeformableRigidContactSurface<double>>>
+      empty_contact_surfaces{};
   // The kind of Shape is not relevant. We just pick Box for simplicity.
   const Box box(1, 2, 3);
   const VolumeMesh<double> box_mesh = MakeBoxVolumeMeshWithMa<double>(box);
 
-  DeformableContactData<double> dut(empty_contact_surfaces, box_mesh);
+  DeformableContactData<double> dut(std::move(empty_contact_surfaces),
+                                    box_mesh);
 
   EXPECT_EQ(dut.num_contact_points(), 0);
 
-  std::vector<int> expect_identity_permutation(box_mesh.num_vertices());
-  std::iota(expect_identity_permutation.begin(),
-            expect_identity_permutation.end(), 0);
-  EXPECT_EQ(dut.permuted_vertex_indexes(), expect_identity_permutation);
-  EXPECT_EQ(dut.permuted_to_original_indexes(), expect_identity_permutation);
+  std::vector<int> empty_permutation;
+  EXPECT_EQ(dut.vertex_permutation().permutation(), empty_permutation);
 }
 
 }  // namespace
