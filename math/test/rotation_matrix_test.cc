@@ -1305,11 +1305,13 @@ GTEST_TEST(RotationMatrix, LimitMalloc) {
 
   // Based on testing (and subject to change) there seems to be a total of
   // 39 mallocs in the AutoDiffXd RotationMatrix constructor from a quaternion.
+  // Although it most builds, min_num_allocations = max_num_allocations, they
+  // by one when tested on linux-focal-gcc-bazel-experimental-debug.
   // TODO(Mitiguy) Improve algorithms to decrease these numbers.
   {
     test::LimitMallocParams params;
-    params.min_num_allocations = 38;
-    params.max_num_allocations = 38;
+    params.min_num_allocations = 38;  // Change this number as necessary.
+    params.max_num_allocations = 39;  // Change this number as necessary.
     drake::test::LimitMalloc guard{params};
     RotationMatrix<AutoDiffXd> R(quat);
     unused(R);
