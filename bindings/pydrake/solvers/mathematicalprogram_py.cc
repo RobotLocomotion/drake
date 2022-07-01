@@ -1540,20 +1540,6 @@ for every column of ``prog_var_vals``. )""")
           doc.SolutionResult.kIterationLimit.doc)
       .value("kDualInfeasible", SolutionResult::kDualInfeasible,
           doc.SolutionResult.kDualInfeasible.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  constexpr char deprecation[] =
-      "Deprecated:\n kInfeasible_Or_Unbounded is deprecated. Please use "
-      "kInfeasibleOrUnbounded instead. This will be removed on or "
-      "after 2022-07-01.";
-  solution_result_enum.def_property_static(
-      "kInfeasible_Or_Unbounded",
-      [deprecation](py::handle /* cls */) {
-        WarnDeprecated(deprecation);
-        return SolutionResult::kInfeasible_Or_Unbounded;
-      },
-      nullptr, deprecation);
-#pragma GCC diagnostic pop
 }  // NOLINT(readability/fn_size)
 
 void BindEvaluatorsAndBindings(py::module m) {
