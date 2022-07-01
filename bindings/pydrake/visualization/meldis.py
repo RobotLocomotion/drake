@@ -213,7 +213,8 @@ class Meldis:
         lcm_url = self._lcm.get_lcm_url()
         _logger.info(f"Meldis is listening for LCM messages at {lcm_url}")
 
-        params = MeshcatParams(host="localhost", port=meshcat_port, show_stats_plot=False)
+        params = MeshcatParams(host="localhost", port=meshcat_port,
+                               show_stats_plot=False)
         self.meshcat = Meshcat(params=params)
 
         viewer = _ViewerApplet(meshcat=self.meshcat)

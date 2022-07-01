@@ -207,8 +207,9 @@ void DoScalarIndependentDefinitions(py::module m) {
           return py::str(
               "MeshcatParams("
               "port={}, "
-              "web_url_pattern={})")
-              .format(self.port, self.web_url_pattern);
+              "web_url_pattern={}, "
+              "show_stats_plot={})")
+              .format(self.port, self.web_url_pattern, self.show_stats_plot);
         });
   }
 

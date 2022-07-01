@@ -96,6 +96,7 @@ class TestGeometryVisualizers(unittest.TestCase):
             show_stats_plot=False)
         meshcat = mut.Meshcat(params=params)
         self.assertEqual(meshcat.port(), port)
+        self.assertIn("show_stats_plot", repr(params))
         with self.assertRaises(RuntimeError):
             meshcat2 = mut.Meshcat(port=port)
         self.assertIn("http", meshcat.web_url())
