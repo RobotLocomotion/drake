@@ -689,18 +689,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "initial_value_problem_deprecated_test",
-    timeout = "moderate",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":initial_value_problem",
-        ":runge_kutta2_integrator",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "scalar_initial_value_problem_test",
     deps = [
         ":runge_kutta2_integrator",
@@ -710,27 +698,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "scalar_initial_value_problem_deprecated_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":runge_kutta2_integrator",
-        ":scalar_initial_value_problem",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "antiderivative_function_test",
-    deps = [
-        ":antiderivative_function",
-        ":runge_kutta2_integrator",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "antiderivative_function_deprecated_test",
-    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":antiderivative_function",
         ":runge_kutta2_integrator",
