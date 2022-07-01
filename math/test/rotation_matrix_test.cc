@@ -6,7 +6,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/quaternion.h"
 
@@ -1293,29 +1292,6 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   const Vector3<double> huge_vector(1.2E21, 3.4E42, -5.6E63);
   R_AB = RotationMatrix<double>::MakeFromOneVector(huge_vector, axis_index);
   VerifyMakeFromOneUnitVector(R_AB, huge_vector.normalized(), axis_index);
-}
-
-// Test how much memory is allocated for constructing an AutoDiffXd
-// RotationMatrix from a quaternion.
-GTEST_TEST(RotationMatrix, LimitMalloc) {
-  const Matrix3<double> I_double = Matrix3<double>::Identity();
-  const Matrix3<AutoDiffXd> I_autodiff = InitializeAutoDiff(I_double);
-  const RotationMatrix<AutoDiffXd> R_autodiff(I_autodiff);
-  const Eigen::Quaternion<AutoDiffXd> quat = R_autodiff.ToQuaternion();
-
-  // Based on testing (and subject to change) there seems to be a total of
-  // 39 mallocs in the AutoDiffXd RotationMatrix constructor from a quaternion.
-  // Although it most builds, min_num_allocations = max_num_allocations, they
-  // by one when tested on linux-focal-gcc-bazel-experimental-debug.
-  // TODO(Mitiguy) Improve algorithms to decrease these numbers.
-  {
-    test::LimitMallocParams params;
-    params.min_num_allocations = 38;  // Change this number as necessary.
-    params.max_num_allocations = 39;  // Change this number as necessary.
-    drake::test::LimitMalloc guard{params};
-    RotationMatrix<AutoDiffXd> R(quat);
-    unused(R);
-  }
 }
 
 }  // namespace
