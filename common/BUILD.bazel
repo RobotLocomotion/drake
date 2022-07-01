@@ -182,10 +182,7 @@ drake_cc_library(
 drake_cc_library(
     name = "polynomial",
     srcs = ["polynomial.cc"],
-    hdrs = [
-        "polynomial.h",
-        "trig_poly.h",
-    ],
+    hdrs = ["polynomial.h"],
     deps = [
         ":autodiff",
         ":default_scalars",
@@ -1259,14 +1256,6 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         "@fmt",
-    ],
-)
-
-drake_cc_googletest(
-    name = "trig_poly_test",
-    deps = [
-        ":essential",
-        ":polynomial",
     ],
 )
 

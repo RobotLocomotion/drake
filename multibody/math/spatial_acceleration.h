@@ -9,7 +9,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/convert_time_derivative.h"
 #include "drake/multibody/math/spatial_vector.h"
@@ -184,12 +183,6 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     const Vector3<T>& a_MBo_E = this->translational();
     return SpatialAcceleration<T>(alpha_MB_E,
                                   a_MBo_E + alpha_MB_E.cross(p_BoCo_E));
-  }
-
-  DRAKE_DEPRECATED("2022-07-01",
-      "Use SpatialAcceleration::ShiftWithZeroAngularVelocity()")
-  SpatialAcceleration<T> Shift(const Vector3<T>& p_PoQ_E) const {
-    return ShiftWithZeroAngularVelocity(p_PoQ_E);
   }
 
   /// Given a frame B's acceleration measured in a frame M and a frame C's
