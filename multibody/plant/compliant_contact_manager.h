@@ -163,21 +163,17 @@ class CompliantContactManager final
   // DiscreteUpdateManager for details.
   void ExtractModelInfo() final;
 
-  // TODO(amcastro-tri): Either implement in future PR or resolve with 16955.
-  void DoCalcAccelerationKinematicsCache(
-      const systems::Context<T>&,
-      multibody::internal::AccelerationKinematicsCache<T>*) const final {
-    throw std::runtime_error(
-        "CompliantContactManager::DoCalcAccelerationKinematicsCache() must be "
-        "implemented.");
-  }
-
   void DeclareCacheEntries() final;
+
+  // TODO(amcastro-tri): implement these APIs according to #16955.
   void DoCalcContactSolverResults(
       const systems::Context<T>&,
       contact_solvers::internal::ContactSolverResults<T>*) const final;
   void DoCalcDiscreteValues(const systems::Context<T>&,
                             systems::DiscreteValues<T>*) const final;
+  void DoCalcAccelerationKinematicsCache(
+      const systems::Context<T>&,
+      multibody::internal::AccelerationKinematicsCache<T>*) const final;
 
   // Returns the point contact stiffness stored in group
   // geometry::internal::kMaterialGroup with property
