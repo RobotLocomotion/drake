@@ -552,13 +552,17 @@ GTEST_TEST(PizzaSaver, Sliding) {
                 std::numeric_limits<double>::epsilon() * normal_impulse);
   }
 
-  // To verify the line search throws when it doesn't converge, we set a low
-  // maximum number of iterations and verify the solver fails for the right
-  // reasons.
-  params.ls_max_iterations = 1;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AdvanceNumSteps(problem, tau, 1, params),
-      "Line search reached the maximum number of iterations.*");
+  // ls_max_iterations only pertains to backtracking line search.
+  if (params.line_search_type !=
+      SapSolverParameters::LineSearchType::kExact) {
+    // To verify the line search throws when it doesn't converge, we set a low
+    // maximum number of iterations and verify the solver fails for the right
+    // reasons.
+    params.ls_max_iterations = 1;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        AdvanceNumSteps(problem, tau, 1, params),
+        "Line search reached the maximum number of iterations.*");
+  }
 }
 
 // Verify we can also get a solution in the near-rigid regime. To trigger this
@@ -842,19 +846,25 @@ class SapNewtonIterationTest : public ::testing::Test {
 
   // Compare solutions obtained with dense and supernodal algebra.
   void CompareDenseAgainstSupernodal(const VectorXd& v_guess) const {
+    const double relative_tolerance = kEps;
+
     // Perform computation with supernodal algebra.
     SapSolverParameters params_supernodal;
     params_supernodal.use_dense_algebra = false;
+    params_supernodal.abs_tolerance = 0;
+    params_supernodal.rel_tolerance = relative_tolerance;
     const VectorXd v_supernodal = SolveWithGuess(params_supernodal, v_guess);
 
     // Perform computation with dense algebra.
     SapSolverParameters params_dense;
     params_dense.use_dense_algebra = true;
+    params_dense.abs_tolerance = 0;
+    params_dense.rel_tolerance = relative_tolerance;
     const VectorXd v_dense = SolveWithGuess(params_dense, v_guess);
 
     // We expected results computed with dense and supernodal algebra to match
     // close to machine epsilon for this small problem.
-    EXPECT_TRUE(CompareMatrices(v_supernodal, v_dense, 5.0 * kEps,
+    EXPECT_TRUE(CompareMatrices(v_supernodal, v_dense, 5.0 * relative_tolerance,
                                 MatrixCompareType::relative));
   }
 
@@ -921,7 +931,11 @@ TEST_F(SapNewtonIterationTest, GuessWithinLimits) {
   const SapSolver<double>::SolverStats& stats = sap.get_statistics();
   EXPECT_EQ(stats.num_iters, 1);
   // We expect two backtracking line search iterations given ls_alpha_max != 1.
-  EXPECT_EQ(stats.num_line_search_iters, 2);
+  // Since the problem is quadratic, we expect the exact line search to
+  // take only one iteration.
+  const int expected_line_search_iterations =
+      params.line_search_type == SapSolverParameters::kBackTracking ? 2 : 1;
+  EXPECT_EQ(stats.num_line_search_iters, expected_line_search_iterations);
   // This problem is very well conditioned, we expect convergence on the
   // optimality condition.
   EXPECT_TRUE(stats.optimality_criterion_reached);

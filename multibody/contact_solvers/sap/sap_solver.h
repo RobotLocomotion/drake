@@ -102,11 +102,17 @@ struct SapSolverParameters {
   double cost_rel_tolerance{1.e-15};  // Relative tolerance εᵣ.
   int max_iterations{100};            // Maximum number of Newton iterations.
 
-  enum LineSearchType { kBackTracking, kExact };
-  LineSearchType line_search_type{LineSearchType::kBackTracking};
+  // Line search method.
+  enum LineSearchType {
+    // Approximate bactracking method with Armijo criterion.
+    kBackTracking,
+    // Newton method to find the root of dℓ(α)/dα to high accuracy.
+    kExact,
+  };
+  LineSearchType line_search_type{LineSearchType::kExact};
 
-  // Line-search parameters.
-  int ls_max_iterations{40};  // Maximum number of line search iterations.
+  // Backtracking (approximate) line search parameters.
+  int ls_max_iterations{40};  // Maximum number of backtracking iterations.
   double ls_c{1.0e-4};        // Armijo's criterion parameter.
   double ls_rho{0.8};         // Backtracking search parameter.
 
