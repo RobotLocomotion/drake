@@ -200,11 +200,10 @@ class SapSolver {
     // Indicates if the cost condition was reached.
     bool cost_criterion_reached{false};
 
-    // Cost history.
+    // Cost at each iteration. cost[0] stores cost at the initial guess.
     std::vector<double> cost;
-    
-    std::vector<double> cost_decrease;
 
+    // Line search parameter at each iteration. alpha[0] stores alpha = 1.
     std::vector<double> alpha;
 
     // Dimensionless momentum residual at each iteration. Of size num_iters + 1.

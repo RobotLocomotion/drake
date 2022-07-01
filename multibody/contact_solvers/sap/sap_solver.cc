@@ -144,10 +144,9 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
         momentum_residual <=
         parameters_.abs_tolerance + parameters_.rel_tolerance * momentum_scale;
     stats_.cost.push_back(ell);
-    stats_.cost_decrease.push_back(ell_previous - ell);
     stats_.alpha.push_back(alpha);
     stats_.momentum_residual.push_back(momentum_residual);
-    stats_.momentum_scale.push_back(momentum_scale);    
+    stats_.momentum_scale.push_back(momentum_scale);
     // TODO(amcastro-tri): consider monitoring the duality gap.
     if (stats_.optimality_criterion_reached || stats_.cost_criterion_reached) {
       converged = true;
@@ -228,24 +227,6 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
 
   if (!converged) return SapSolverStatus::kFailure;
 
-#if 0    
-  if (!converged) {
-    std::cout << fmt::format("SAP did not converge in {} iterations.\n",
-                             k);
-    std::cout << fmt::format("  Line search iters: {}.\n",
-                             stats_.num_line_search_iters);
-    std::cout << fmt::format("cost    -    Δℓ    -  residual   -   scale    -    alpha.\n");                              
-    for (size_t i = 0; i < stats_.cost.size(); ++i) {
-      const double ell_decrement =
-          i == 0 ? -1 : stats_.cost[i - 1] - stats_.cost[i];
-      std::cout << fmt::format("{:20.16g} {:20.16g} {:20.16g} {:20.16g} {:20.16g}\n", stats_.cost[i], ell_decrement,
-                               stats_.momentum_residual[i],
-                               stats_.momentum_scale[i], stats_.alpha[i]);
-    }
-    return SapSolverStatus::kFailure;
-  }
-#endif    
-
   PackSapSolverResults(*context, results);
 
   // N.B. If the stopping criteria is satisfied for k = 0, the solver is not
@@ -260,8 +241,8 @@ template <typename T>
 T SapSolver<T>::CalcCostAlongLine(
     const systems::Context<T>& context,
     const SearchDirectionData& search_direction_data, const T& alpha,
-    systems::Context<T>* scratch, T* dell_dalpha,
-    T* d2ell_dalpha2, VectorX<T>* vec_scratch) const {
+    systems::Context<T>* scratch, T* dell_dalpha, T* d2ell_dalpha2,
+    VectorX<T>* vec_scratch) const {
   if (d2ell_dalpha2 != nullptr) DRAKE_DEMAND(vec_scratch != nullptr);
 
   // Data.
@@ -314,14 +295,14 @@ T SapSolver<T>::CalcCostAlongLine(
   }
 
   // Compute second derivative.
-  if (d2ell_dalpha2 != nullptr) {    
+  if (d2ell_dalpha2 != nullptr) {
     const std::vector<MatrixX<T>>& G =
         model_->EvalConstraintsHessian(context_alpha);
 
     // First compute vec_scratch = G⋅Δvc.
     vec_scratch->resize(model_->num_constraint_equations());
     const int nc = model_->num_constraints();
-    int constraint_start = 0;    
+    int constraint_start = 0;
     for (int i = 0; i < nc; ++i) {
       const MatrixX<T>& G_i = G[i];
       // Number of equations for the i-th constraint.
@@ -664,8 +645,7 @@ void SapSolver<T>::CallSuperNodalSolver(const Context<T>& context,
 
 template <typename T>
 void SapSolver<T>::CalcSearchDirectionData(
-    const systems::Context<T>& context,
-    SuperNodalSolver* supernodal_solver,
+    const systems::Context<T>& context, SuperNodalSolver* supernodal_solver,
     SapSolver<T>::SearchDirectionData* data) const {
   DRAKE_DEMAND(parameters_.use_dense_algebra || (supernodal_solver != nullptr));
   // Update search direction dv.
