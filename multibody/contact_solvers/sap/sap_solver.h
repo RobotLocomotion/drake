@@ -102,6 +102,9 @@ struct SapSolverParameters {
   double cost_rel_tolerance{1.e-15};  // Relative tolerance εᵣ.
   int max_iterations{100};            // Maximum number of Newton iterations.
 
+  enum LineSearchType { kBackTracking, kExact };
+  LineSearchType line_search_type{LineSearchType::kBackTracking};
+
   // Line-search parameters.
   int ls_max_iterations{40};  // Maximum number of line search iterations.
   double ls_c{1.0e-4};        // Armijo's criterion parameter.
@@ -125,19 +128,19 @@ struct SapSolverParameters {
   // certain quantities such as the gradient of the cost.
   // It is also used to check for monotonic convergence. In particular, we allow
   // a small increase in the cost due to round-off errors
-  //   ℓᵏ ≤ ℓᵏ⁻¹ + ε
+  //   ℓᵏ < ℓᵏ⁻¹ + ε
   // where ε = relative_slop*max(1, (ℓᵏ+ℓᵏ⁻¹)/2).
-  // If this condition is not satisfied and nonmonotonic_convergence_is_error =
-  // true, SapSolver throws an exception.
+  // If this condition is not satified and nonmonotonic_convergence_is_error =
+  // true, SAPSolver throws an exception.
   double relative_slop{1000 * std::numeric_limits<double>::epsilon()};
 
   // (For debugging) Even though SAP's convergence in monotonic, round-off
-  // errors could cause small cost increases on the order of machine epsilon.
+  // errors could cause small cost increases in the order of machine epsilon.
   // SAP's implementation uses a `realtive_slop` so that round-off errors do not
   // cause false negatives. For debugging purposes however, this options allows
   // to trigger an exception if the cost increases. For details, see
   // documentation on `relative_slop`.
-  bool nonmonotonic_convergence_is_error{false};
+  bool nonmonotonic_convergence_is_error{true};
 };
 
 // This class implements the Semi-Analytic Primal (SAP) solver described in
@@ -190,6 +193,13 @@ class SapSolver {
 
     // Indicates if the cost condition was reached.
     bool cost_criterion_reached{false};
+
+    // Cost history.
+    std::vector<double> cost;
+    
+    std::vector<double> cost_decrease;
+
+    std::vector<double> alpha;
 
     // Dimensionless momentum residual at each iteration. Of size num_iters + 1.
     std::vector<double> momentum_residual;
@@ -268,11 +278,15 @@ class SapSolver {
   // [Castro et al., 2021].
   // If dell_dalpha != nullptr, on return dell_dalpha contains the value of the
   // derivative dℓ/dα = ∇ℓ(vᵐ)⋅Δvᵐ.
+  // If d2ell_dalpha2 != nullptr then on return d2ell_dalpha2 contains the value
+  // of the second derivative d²ℓ/dα².
   // @pre context was created by the underlying SapModel.
+  // @pre vec_scratch != nullptr if d2ell_dalpha2 != nullptr.
   T CalcCostAlongLine(const systems::Context<T>& context,
                       const SearchDirectionData& search_direction_data,
                       const T& alpha, systems::Context<T>* scratch,
-                      T* dell_dalpha = nullptr) const;
+                      T* dell_dalpha = nullptr, T* d2ell_dalpha2 = nullptr,
+                      VectorX<T>* vec_scratch = nullptr) const;
 
   // Approximation to the 1D minimization problem α = argmin ℓ(α) = ℓ(v + αΔv)
   // over α. We define ϕ(α) = ℓ₀ + α c ℓ₀', where ℓ₀ = ℓ(0), ℓ₀' = dℓ/dα(0) and
@@ -291,6 +305,11 @@ class SapSolver {
   // @pre both context and scratch_workspace were created by the underlying
   // SapModel.
   std::pair<T, int> PerformBackTrackingLineSearch(
+      const systems::Context<T>& context,
+      const SearchDirectionData& search_direction_data,
+      systems::Context<T>* scratch_workspace) const;
+
+  std::pair<T, int> PerformExactLineSearch(
       const systems::Context<T>& context,
       const SearchDirectionData& search_direction_data,
       systems::Context<T>* scratch_workspace) const;
@@ -351,6 +370,10 @@ template <>
 SapSolverStatus SapSolver<double>::SolveWithGuess(
     const SapContactProblem<double>&, const VectorX<double>&,
     SapSolverResults<double>*);
+template <>
+std::pair<double, int> SapSolver<double>::PerformExactLineSearch(
+    const systems::Context<double>&, const SearchDirectionData&,
+    systems::Context<double>*) const;
 
 }  // namespace internal
 }  // namespace contact_solvers
