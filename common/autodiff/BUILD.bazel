@@ -1,0 +1,47 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "auto_diff",
+    srcs = [
+        "internal/partials.cc",
+        "internal/standard_operations.cc",
+    ],
+    hdrs = [
+        "auto_diff.h",
+        "internal/eigen_specializations.h",
+        "internal/partials.h",
+        "internal/standard_operations.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:reset_after_move",
+    ],
+)
+
+drake_cc_googletest(
+    name = "heap_test",
+    deps = [
+        "//common:autodiff",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "matrix_test",
+    deps = [
+        "//common:autodiff",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+add_lint_tests()
