@@ -197,10 +197,11 @@ class Partials {
   //   - if storage.data is non-null then:
   //     - storage.data must contain storage for exactly size_ elements
   // Abstraction function:
-  // - When size == 0, the vector's value is zero (aka empty).
-  // - When size > 0, the vector's value is coeff * storage.data,
-  //   where null data also denotes a zero vector.
-  // XXX ^^ this is wrong now
+  // - When size == 0, the partials value value is zero eveywhere.
+  // - When size > 0 and unit > 0, the partials value is zero everywhere except
+  //   for the (unit-1)'th partial where it has the value of coeff.
+  // - When size > 0 and unit == 0 the partials value is coeff * storage where
+  //   the storage is a full-sized dense vector on the heap.
   reset_after_move<int32_t> size_{0};
   reset_after_move<int32_t> unit_{0};
   reset_after_move<double> coeff_{0.0};
