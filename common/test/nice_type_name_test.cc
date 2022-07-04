@@ -133,7 +133,7 @@ GTEST_TEST(NiceTypeNameTest, Eigen) {
   EXPECT_EQ(NiceTypeName::Get<Eigen::Vector3d>(), "Eigen::Vector3d");
   EXPECT_EQ(NiceTypeName::Get<Eigen::VectorXd>(), "Eigen::VectorXd");
 
-  EXPECT_EQ(NiceTypeName::Get<AutoDiffXd>(), "drake::AutoDiffXd");
+  EXPECT_EQ(NiceTypeName::Get<AutoDiffXd>(), "drake::autodiff::Scalar");
 
   using PairType = std::pair<Eigen::Vector2i, Eigen::Vector3d>;
   EXPECT_EQ(NiceTypeName::Get<PairType>(),
