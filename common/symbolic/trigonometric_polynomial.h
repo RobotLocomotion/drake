@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/rational_function.h"
 
 namespace drake {
 namespace symbolic {
@@ -85,6 +86,48 @@ Substitute(const Eigen::MatrixBase<Derived>& m,
     return Substitute(e, subs);
   });
 }
+
+/** If e is a multilinear polynomial of cosθ and sinθ, and no
+ * cosθᵢ and sinθᵢ appear in the same monomial, then we replace
+ * cosθᵢ with (1-tᵢ²)/(1+tᵢ²), and sinθᵢ with 2tᵢ/(1+tᵢ²), and get a rational
+ * polynomial of t.
+ * @param e The symbolic polynomial in which cosθ and sinθ will be replaced.
+ * @param sin_cos sin_cos(i) is the pair (sinθᵢ, cosθᵢ) as documented above.
+ * @param t New variables to express cos and sin as rationals of t. tᵢ =
+ * tan(θᵢ/2). @pre t.rows() == sin_cos.size()
+ * @return e_rational The rational polynomial of e after replacement. The
+ * indeterminates of the polynomials are `t`.
+ */
+[[nodiscard]] symbolic::RationalFunction SubstituteStereographicProjection(
+    const symbolic::Polynomial& e,
+    const std::vector<std::pair<symbolic::Variable, symbolic::Variable>>&
+        sin_cos,
+    const VectorX<symbolic::Variable>& t);
+
+/**
+ * If e is a multilinear polynomial of cosθ and sinθ, and no
+ * cosθᵢ and sinθᵢ appear in the same monomial, then we replace
+ * cosθᵢ with (1-tᵢ²)/(1+tᵢ²), and sinθᵢ with 2tᵢ/(1+tᵢ²), and get a rational
+ * polynomial of t.
+ * @param e The symbolic expression to be substituted. Note that e has to be a
+ * multilinear polynomial of cosθ and sinθ, and no cosθᵢ and sinθᵢ appear in the
+ * same monomial. Namely e can be t₁cosθ₁sinθ₂ + sinθ₂, but cannot be sinθ₁cosθ₁
+ * (where sinθ₁ and cosθ₁ appear in the same monomial) or sin²θ₁ (where the
+ * degree or sinθ₁ is larger than 1).
+ * @param subs Map each θᵢ to tᵢ.
+ * @return e_rational The rational polynomial after replacing cosθᵢ with
+ * (1-tᵢ²)/(1+tᵢ²), and sinθᵢ with 2tᵢ/(1+tᵢ²). The indeterminates of the
+ * rational polynomials are t.
+ *
+ * Example
+ * @verbatim
+ * const auto e_rational = SubstituteStereographicProjection(t *
+ *     sin(theta)*cos(theta) + 1, {{theta, t}});
+ * @endverbatim
+ */
+[[nodiscard]] symbolic::RationalFunction SubstituteStereographicProjection(
+    const symbolic::Expression& e,
+    const std::unordered_map<symbolic::Variable, symbolic::Variable>& subs);
 
 }  // namespace symbolic
 }  // namespace drake
