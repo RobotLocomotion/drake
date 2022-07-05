@@ -281,10 +281,12 @@ void PackageMap::CrawlForPackages(const string& path, bool stop_at_package,
     const auto [package_name, deprecated_message] =
         ParsePackageManifest(manifest.string());
     const string package_path = dir.string();
-    if (AddPackageIfNew(package_name, package_path + "/"))
+    if (AddPackageIfNew(package_name, package_path + "/")) {
       SetDeprecated(package_name, deprecated_message);
-    if (stop_at_package)
+    }
+    if (stop_at_package) {
       return;
+    }
   }
   std::error_code ec;
   filesystem::directory_iterator iter(dir, ec);

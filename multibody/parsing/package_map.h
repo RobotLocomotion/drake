@@ -110,7 +110,7 @@ class PackageMap final {
   void PopulateFromEnvironment(const std::string& environment_variable);
 
   /// Obtains one or more paths from the ROS_PACKAGE_PATH environment variable.
-  /// Semantics are similar to PopulateFromEnvironment, except that ROS-style
+  /// Semantics are similar to PopulateFromEnvironment(), except that ROS-style
   /// crawl termination semantics are enabled, which means that subdirectories
   /// of already-identified packages are not searched, and neither are
   /// directories which contain any of the following marker files:
@@ -137,6 +137,12 @@ class PackageMap final {
 
   // Recursively crawls through @p path looking for package.xml files. Adds
   // the packages defined by these package.xml files to this PackageMap.
+  //
+  // @param[in] stop_at_package When passed true, do not crawl into
+  // subdirectories of packages which have already been found.
+  // @param[in] stop_markers When a directory contains one or more files or
+  // directories with one of the given names, do not crawl into that directory
+  // or any subdirectories when searching for packages.
   void CrawlForPackages(const std::string& path,
       bool stop_at_package = false,
       const std::vector<std::string_view>& stop_markers = {});

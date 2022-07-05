@@ -24,7 +24,7 @@ filegroup(
         "test/**/*.urdf",
         "test/**/*.xml",
         "test/**/*.png",
-        "test/**/CATKIN_IGNORE",
+        "test/**/COLCON_IGNORE",
     ]),
     visibility = ["//visibility:public"],
 )
