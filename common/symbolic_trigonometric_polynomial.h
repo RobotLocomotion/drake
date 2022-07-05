@@ -72,9 +72,7 @@ Expression Substitute(const Expression& e, const SinCosSubstitution& subs);
 /** Matrix version of sin/cos substitution.
  @pydrake_mkdoc_identifier{sincos_matrix} */
 template <typename Derived>
-Eigen::Matrix<Expression, Derived::RowsAtCompileTime,
-              Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
-              Derived::MaxColsAtCompileTime>
+MatrixLikewise<Expression, Derived>
 Substitute(const Eigen::MatrixBase<Derived>& m,
            const SinCosSubstitution& subs) {
   static_assert(std::is_same_v<typename Derived::Scalar, Expression>,

@@ -217,5 +217,12 @@ GTEST_TEST(EigenTypesTest, FixedSizeVector) {
   EXPECT_EQ(row.cols(), 2);
 }
 
+GTEST_TEST(EigenTypesTest, LikewiseStorageOrder) {
+  using LikewiseCol = MatrixLikewise<float, Vector3<double>>;
+  using LikewiseRow = MatrixLikewise<float, RowVector3<double>>;
+  EXPECT_EQ(LikewiseCol::Options & Eigen::ColMajor, Eigen::ColMajor);
+  EXPECT_EQ(LikewiseRow::Options & Eigen::RowMajor, Eigen::RowMajor);
+}
+
 }  // namespace
 }  // namespace drake
