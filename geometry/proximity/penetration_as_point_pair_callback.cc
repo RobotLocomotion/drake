@@ -343,8 +343,8 @@ struct ScalarSupport<double> {
 };
 
 /* Primitive support for AutoDiff-valued query.  */
-template <typename DerType>
-struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
+template <>
+struct ScalarSupport<AutoDiffXd> {
   static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
     // Explicitly permit the following pair types (with ordering permutations):
     //  (sphere, sphere)
