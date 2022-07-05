@@ -723,7 +723,8 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
 
     // Derivatives computed with AutoDiffXd are within dfdx_expected_precision
     // estimated in issue #15029.
-    EXPECT_NEAR(fx.derivatives()[0], df_ref[i], dfdx_expected_precision[i]);
+    const double fx_der = fx.derivatives().size() ? fx.derivatives()[0] : 0;
+    EXPECT_NEAR(fx_der, df_ref[i], dfdx_expected_precision[i]);
   }
 }
 
@@ -811,7 +812,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   // This not only confirms that we get well-defined (non-NaN) derivatives but
   // also that values propagate correctly.
   const Matrix3<double> zeros = Matrix3<double>::Zero();
-  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(nhat_W), zeros, 1e-15));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(nhat_W, 3), zeros, 1e-15));
   EXPECT_EQ(point_data.traction_Aq_W.x().derivatives().size(), 3);
   EXPECT_EQ(point_data.traction_Aq_W.y().derivatives().size(), 3);
   EXPECT_EQ(point_data.traction_Aq_W.z().derivatives().size(), 3);

@@ -80,7 +80,7 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaAutomaticDifferentiation(
 
   // Form spatial acceleration via AutoDiffXd results.
   const SpatialAcceleration<double> A_ABq_A(
-      math::ExtractGradient(V_ABq_A_autodiff.get_coeffs()));
+      math::ExtractGradient(V_ABq_A_autodiff.get_coeffs(), 1));
 
   // Shortcut return if frame_A == frame_E.
   if (frame_E.index() == frame_A.index()) return A_ABq_A;
