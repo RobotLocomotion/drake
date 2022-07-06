@@ -937,6 +937,32 @@ const geometry::QueryObject<T>& MultibodyPlant<T>::EvalGeometryQueryInput(
 }
 
 template <typename T>
+void MultibodyPlant<T>::ValidateGeometryInput(
+    const systems::Context<T>& context, std::string_view explanation) const {
+  if (num_collision_geometries() == 0) {
+    return;
+  }
+  if (!get_geometry_query_input_port().HasValue(context)) {
+    throw std::logic_error(
+        std::string(explanation) +
+        "\n\nThe provided context doesn't show a connection for the plant's "
+        "query input port (see MultibodyPlant::get_geometry_query_input_port())"
+        ". See https://drake.mit.edu/trouble_shooting.html"
+        "#mbp-unconnected-query-object-port for help.");
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::ValidateGeometryInput(
+    const systems::Context<T>& context,
+    const systems::OutputPort<T>& output_port) const {
+  ValidateGeometryInput(
+      context,
+      fmt::format("You've tried evaluating MultibodyPlant's '{}' output port.",
+                  output_port.get_name()));
+}
+
+template <typename T>
 std::pair<T, T> MultibodyPlant<T>::GetPointContactParameters(
     geometry::GeometryId id,
     const geometry::SceneGraphInspector<T>& inspector) const {
@@ -1354,17 +1380,8 @@ void MultibodyPlant<T>::CopyContactResultsOutput(
     ContactResults<T>* contact_results) const {
   this->ValidateContext(context);
 
-  if (num_collision_geometries() > 0) {
-    // Priming the input port here enables us to provide a meaningful message
-    // about which public API was exercised in the event that the input port is
-    // *not* connected.
-    // EvalContactResults() will avoid evaluating the query object input port
-    // if there are no registered collision geometries. So, we only need to
-    // prime the port under the same conditions.
-    EvalGeometryQueryInput(context,
-                           "You've tried evaluating MultibodyPlant's "
-                           "'contact_results' output port.");
-  }
+  // Guard against failure to acquire the geometry input deep in the call graph.
+  ValidateGeometryInput(context, get_contact_results_output_port());
 
   DRAKE_DEMAND(contact_results != nullptr);
   *contact_results = EvalContactResults(context);
@@ -2845,20 +2862,9 @@ void MultibodyPlant<T>::AddInForcesContinuous(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   this->ValidateContext(context);
 
-  if (num_collision_geometries() > 0) {
-    // Priming the input port here enables us to provide a meaningful
-    // message about which public API was exercised in the event that the
-    // input port is *not* connected. EvalSpatialContactForcesContinuous() will
-    // avoid evaluating the query object input port if there are no registered
-    // collision geometries. So, we only need to prime the port under the
-    // same conditions.
-    // TODO(SeanCurtis-TRI): It would be good to be able to distinguish these
-    // two use cases. But the time derivatives API belongs, ultimately, to
-    // System.
-    EvalGeometryQueryInput(
-        context,
-        "You've tried evaluating time derivatives or their residuals.");
-  }
+  // Guard against failure to acquire the geometry input deep in the call graph.
+  ValidateGeometryInput(
+      context, "You've tried evaluating time derivatives or their residuals.");
 
   // Forces from MultibodyTree elements are handled in MultibodyTreeSystem;
   // we need only handle MultibodyPlant-specific forces here.
@@ -2881,16 +2887,9 @@ void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
   DRAKE_DEMAND(ac != nullptr);
   DRAKE_DEMAND(is_discrete());
 
-  if (num_collision_geometries() > 0) {
-    // Priming the input port here enables us to provide a meaningful
-    // message about which public API was exercised in the event that the
-    // input port is *not* connected. EvalContactSolverResults() will
-    // avoid evaluating the query object input port if there are no registered
-    // collision geometries. So, we only need to prime the port under the
-    // same conditions.
-    EvalGeometryQueryInput(
-        context0, "You've tried evaluating discrete forward dynamics.");
-  }
+  // Guard against failure to acquire the geometry input deep in the call graph.
+  ValidateGeometryInput(
+      context0, "You've tried evaluating discrete forward dynamics.");
 
   // TODO(amcastro-tri): remove the entirety of the code we are bypassing here.
   // This requires one of our custom managers to become the default
@@ -3107,20 +3106,12 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       auto calc = [this, model_instance_index](
                       const systems::Context<T>& context,
                       systems::BasicVector<T>* result) {
-        if (num_collision_geometries() > 0) {
-          // Priming the input port here enables us to provide a meaningful
-          // message about which public API was exercised in the event that the
-          // input port is *not* connected.
-          // EvalContactSolverResults() will avoid evaluating the query object
-          // input port if there are no registered collision geometries. So, we
-          // only need to prime the port under the same conditions.
-          EvalGeometryQueryInput(
-              context,
-              fmt::format("You've tried evaluating MultibodyPlant's "
-                          "'generalized_contact_forces' output port for "
-                          "model instance {}.",
-                          model_instance_index));
-        }
+        // Guard against failure to acquire the geometry input deep in the call
+        // graph.
+        ValidateGeometryInput(
+            context,
+            get_generalized_contact_forces_output_port(model_instance_index));
+
         const contact_solvers::internal::ContactSolverResults<T>&
             solver_results = EvalContactSolverResults(context);
         this->CopyGeneralizedContactForcesOut(solver_results,
@@ -3140,21 +3131,12 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       auto calc = [this, model_instance_index](
                       const systems::Context<T>& context,
                       systems::BasicVector<T>* result) {
-        if (num_collision_geometries() > 0) {
-          // Priming the input port here enables us to provide a meaningful
-          // message about which public API was exercised in the event that the
-          // input port is *not* connected.
-          // EvalGeneralizedContactForcesContinuous() will avoid
-          // evaluating the query object input port if there are no registered
-          // collision geometries. So, we only need to prime the port under the
-          // same conditions.
-          EvalGeometryQueryInput(
-              context,
-              fmt::format("You've tried evaluating MultibodyPlant's "
-                          "'generalized_contact_forces' output port for "
-                          "model instance {}.",
-                          model_instance_index));
-        }
+        // Guard against failure to acquire the geometry input deep in the call
+        // graph.
+        ValidateGeometryInput(
+            context,
+            get_generalized_contact_forces_output_port(model_instance_index));
+
         result->SetFromVector(GetVelocitiesFromArray(
             model_instance_index,
             EvalGeneralizedContactForcesContinuous(context)));
@@ -3598,17 +3580,9 @@ void MultibodyPlant<T>::CalcReactionForces(
   DRAKE_DEMAND(F_CJc_Jc_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_CJc_Jc_array->size()) == num_joints());
 
-  if (num_collision_geometries() > 0) {
-    // Priming the input port here enables us to provide a meaningful
-    // message about which public API was exercised in the event that the
-    // input port is *not* connected. CalcAndAddContactForcesByPenaltyMethod()
-    // will avoid evaluating the query object input port if there are no
-    // registered collision geometries. So, we only need to prime the port under
-    // the same conditions.
-    EvalGeometryQueryInput(context,
-                           "You've tried evaluating MultibodyPlant's "
-                           "'reaction_forces' output port.");
-  }
+  // Guard against failure to acquire the geometry input deep in the call graph.
+  ValidateGeometryInput(context, get_reaction_forces_output_port());
+
   const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
 
   // TODO(sherm1) EvalForwardDynamics() should record the forces it used

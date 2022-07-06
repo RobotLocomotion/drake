@@ -4180,6 +4180,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       std::string_view explanation) const;
 
+  // These methods provide a mechanism to provide early warning when a
+  // calculation depends on the QueryObject input port. The goal is to provide
+  // as much feedback to the caller as to *why* the input port is required.
+  // Therefore, it should be called as "high" in the callstack as possible with
+  // an explanation of the need (e.g., computing forward dynamics).
+  //
+  // Note: the connection is only tested if MbP knows about collision
+  // geometries. This is correlated with the fact that the operations that
+  // depend on the geometry input port only do so based on that same condition.
+  void ValidateGeometryInput(const systems::Context<T>& context,
+                             std::string_view explanation) const;
+
+  // A validation overload that automatically constructs an explanation when
+  // the reason is due to evaluating an output port.
+  void ValidateGeometryInput(const systems::Context<T>& context,
+                             const systems::OutputPort<T>& output_port) const;
+
   // Helper to acquire per-geometry contact parameters from SG.
   // Returns the pair (stiffness, dissipation)
   // Defaults to heuristically computed parameter if the given geometry

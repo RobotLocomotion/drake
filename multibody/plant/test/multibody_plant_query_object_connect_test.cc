@@ -135,43 +135,97 @@ void EvalReactionForces(const MultibodyPlant<double>& plant,
 
 // The modes of the MbP for which a test configuration applies.
 enum class PlantMode {
-    kAll,
-    kDiscrete,
-    kContinuous,
+  kAll,
+  kDiscrete,
+  kContinuous,
 };
 
 /* For a given public API, this evaluates a function that exercises a particular
  MbP API. It also carries a key phrase that must be matched in the thrown
  exception. The mode determines if the function is evaluated in discrete mode,
- continuous mode, or both. */
+ continuous mode, or both. For a given API, we create a set of instances,
+ spanning the combinations of continuous/discrete, with or without collision
+ geometries, and connected/unconnected. */
 struct TestConfiguration {
   std::string key_phrase;
   std::function<void(const MultibodyPlant<double>& plant,
                      const Context<double>& context)>
       eval;
+  double time_step{};
+  bool has_collision_geometry{};
+  bool connected{};
   PlantMode modes{PlantMode::kAll};
 };
 
-/* For a number of public APIs that *may* ultimately depend on the query object
+/* In the event of failure, prints the test configuration nicely. */
+std::ostream& operator<<(std::ostream& out, const TestConfiguration& c) {
+  out << "\nConfiguration:";
+  out << "\n  key phrase: " << c.key_phrase;
+  out << "\n  collision geometry: " << c.has_collision_geometry;
+  out << "\n  discrete: " << (c.time_step > 0);
+  out << "\n  connected: " << c.connected;
+  return out;
+}
+
+class MultibodySceneGraphConnectionTest
+    : public testing::TestWithParam<TestConfiguration> {};
+
+/* For a given public API that *may* ultimately depend on the query object
  input port, this confirms two things:
 
-   1. it only throws when we expect, and
-   2. The error message always has an expected key phrase alluding to the API
+   1. evaluating the API only throws when we expect, and
+   2. the error message always has an expected key phrase alluding to the API
       exercised.
 
  It is *not* the case that simply having an unconnected QueryObject input port
  causes the APIs to throw. There must also be collision geometries registered.
- The throwing behavior should be independent of whether the plant is discrete or
- continuous.
+ The throwing behavior should be largely independent of whether the plant is
+ discrete or continuous. */
+TEST_P(MultibodySceneGraphConnectionTest, ConnectionError) {
+  const TestConfiguration& config = GetParam();
 
- So, this test iterates through the three variables (connected/disconnected, has
- collision geometries/no collision geometries, and discrete/continuous) for each
- API under test and confirms throwing/non-throwing bheaviors. */
-GTEST_TEST(MultibodySceneGraphConnection, ConnectionError) {
-  const std::vector<TestConfiguration> configurations{
+  const double time_step = config.time_step;
+  const bool has_collision_geometry = config.has_collision_geometry;
+  const bool connected = config.connected;
+
+  // If the test has been declared in compatible with this continuous/discrete
+  // mode, skip it.
+  if ((time_step != 0 && config.modes == PlantMode::kContinuous) ||
+      (time_step == 0 && config.modes == PlantMode::kDiscrete)) {
+    return;
+  }
+
+  DiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant = PopulateTestDiagram(
+      &builder, time_step, has_collision_geometry, connected);
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  const auto& plant_context = plant.GetMyContextFromRoot(*context);
+
+  // Structurally, we should only throw if we are unconnected with
+  // registered collision geometry.
+  const bool expect_throw = !connected && has_collision_geometry;
+  if (expect_throw) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        config.eval(plant, plant_context),
+        fmt::format(".*{}[^]+The provided context doesn't show a "
+                    "connection for the plant's query input port.+ See "
+                    "https://drake.mit.edu/trouble_shooting.html"
+                    "#mbp-unconnected-query-object-port for help.",
+                    config.key_phrase));
+  } else {
+    EXPECT_NO_THROW(config.eval(plant, plant_context));
+  }
+}
+
+// We need to populate evaluations of APIs with almost *all* combinations of
+// continuous mode, connection, collision geometry, etc. Exceptions are noted
+// below.
+std::vector<TestConfiguration> MakeTestConfigurations() {
+  std::vector<TestConfiguration> configurations{
       // Ports don't depend on MbP mode.
       {.key_phrase = "'contact_results'", .eval = &EvalContactResults},
-      {.key_phrase = "'generalized_contact_forces' .+ instance 1",
+      {.key_phrase = "'DefaultModelInstance_generalized_contact_forces'",
        .eval = &EvalGeneralizedContactForces},
       {.key_phrase = "'reaction_forces'", .eval = &EvalReactionForces},
       // Time derivatives are only meaningful in continuous mode.
@@ -192,46 +246,22 @@ GTEST_TEST(MultibodySceneGraphConnection, ConnectionError) {
        .modes = PlantMode::kDiscrete},
   };
 
-  // Handle discrete/continuous variations.
   for (double time_step : {1e-3, 0.0}) {
     for (bool has_collision_geometry : {true, false}) {
       for (bool connected : {true, false}) {
-        for (const auto& config : configurations) {
-          if ((time_step != 0 && config.modes == PlantMode::kContinuous) ||
-              (time_step == 0 && config.modes == PlantMode::kDiscrete)) {
-            continue;
-          }
-          DiagramBuilder<double> builder;
-          MultibodyPlant<double>& plant = PopulateTestDiagram(
-              &builder, time_step, has_collision_geometry, connected);
-          auto diagram = builder.Build();
-          auto context = diagram->CreateDefaultContext();
-          const auto& plant_context = plant.GetMyContextFromRoot(*context);
-
-          // Structurally, we should only throw if we are unconnected with
-          // registered collision geometry.
-          const bool expect_throw = !connected && has_collision_geometry;
-          SCOPED_TRACE(
-              fmt::format("\nConfiguration:\n  key phrase: {}\n  collision "
-                          "geometry: {}\n  discrete: {}\n  connected: {}",
-                          config.key_phrase, has_collision_geometry,
-                          time_step > 0, connected));
-          if (expect_throw) {
-            DRAKE_EXPECT_THROWS_MESSAGE(
-                config.eval(plant, plant_context),
-                fmt::format(".*{}[^]+The provided context doesn't show a "
-                            "connection for the plant's query input port.+ See "
-                            "https://drake.mit.edu/trouble_shooting.html"
-                            "#mbp-unconnected-query-object-port for help.",
-                            config.key_phrase));
-          } else {
-            EXPECT_NO_THROW(config.eval(plant, plant_context));
-          }
+        for (auto& config : configurations) {
+          config.time_step = time_step;
+          config.connected = connected;
+          config.has_collision_geometry = has_collision_geometry;
         }
       }
     }
   }
+  return configurations;
 }
+
+INSTANTIATE_TEST_SUITE_P(Suite, MultibodySceneGraphConnectionTest,
+                         testing::ValuesIn(MakeTestConfigurations()));
 
 }  // namespace
 }  // namespace multibody
