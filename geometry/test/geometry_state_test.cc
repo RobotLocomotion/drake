@@ -22,7 +22,7 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
-#include "drake/geometry/make_mesh_for_deformable.h"
+#include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
@@ -1621,7 +1621,10 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   const FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
   const Sphere sphere(1.0);
   constexpr double kRezHint = 0.5;
-  VolumeMesh<double> mesh = internal::MakeMeshForDeformable(sphere, kRezHint);
+  const VolumeMesh<double> expected_mesh =
+      internal::MakeSphereVolumeMesh<double>(
+          sphere, kRezHint,
+          internal::TessellationStrategy::kDenseInteriorVertices);
 
   /* Adding a deformable geometry to non-world frame throws. */
   auto instance1 = make_unique<GeometryInstance>(
@@ -1651,7 +1654,7 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   const VolumeMesh<double>* reference_mesh =
       geometry_state_.GetReferenceMesh(g_id);
   ASSERT_NE(reference_mesh, nullptr);
-  EXPECT_TRUE(reference_mesh->Equal(mesh));
+  EXPECT_TRUE(reference_mesh->Equal(expected_mesh));
 
   // Verify querying pose on deformable geometry throws. (Deformable geometries
   // are characterized by vertex positions.)
@@ -1663,7 +1666,7 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   // TODO(xuchenhan-tri): Strengthen this test when we can set vertex positions.
   const VectorX<double>& q_WG =
       geometry_state_.get_configurations_in_world(g_id);
-  EXPECT_EQ(q_WG.size(), mesh.num_vertices() * 3);
+  EXPECT_EQ(q_WG.size(), expected_mesh.num_vertices() * 3);
 
   // Verify that deformable geometries are dynamic (One deformable and one
   // dynamic non-deformable).
