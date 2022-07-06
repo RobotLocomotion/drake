@@ -65,7 +65,7 @@ drake_cc_library(
         "//systems/framework",
     ],
     deps = [
-        "//common:symbolic",
+        "//common/symbolic:polynomial",
     ],
 )
 
@@ -173,7 +173,7 @@ drake_cc_library(
         "//common/symbolic:expression",
     ],
     deps = [
-        "//common:symbolic",
+        "//common/symbolic:polynomial",
         "//math:autodiff",
         "//math:gradient",
         "//systems/framework",

@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/symbolic/decompose.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/constraint.h"

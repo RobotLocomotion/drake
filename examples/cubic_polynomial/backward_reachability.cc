@@ -11,7 +11,7 @@
 #include <iostream>
 
 #include "drake/common/proto/call_python.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/polynomial.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solve.h"

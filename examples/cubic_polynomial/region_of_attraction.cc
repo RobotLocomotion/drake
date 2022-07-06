@@ -10,7 +10,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/polynomial.h"
 #include "drake/common/unused.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
