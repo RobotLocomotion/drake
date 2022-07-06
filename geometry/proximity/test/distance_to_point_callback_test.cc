@@ -468,7 +468,7 @@ GTEST_TEST(DistanceToPoint, Halfspace) {
 //   Confirm that the derivative of distance (extracted from AutoDiff) matches
 //     the derivative computed by hand (grad_W).
 GTEST_TEST(DistanceToPoint, Sphere) {
-  const double kEps = 4 * std::numeric_limits<double>::epsilon();
+  const double kEps = 5 * std::numeric_limits<double>::epsilon();
 
   // Provide some arbitrary pose of the sphere in the world.
   const RotationMatrix<double> R_WG(
