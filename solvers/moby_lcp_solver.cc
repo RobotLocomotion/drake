@@ -13,8 +13,8 @@
 #include <Eigen/LU>
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
+#include <unsupported/Eigen/AutoDiff>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
