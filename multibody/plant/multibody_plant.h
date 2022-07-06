@@ -367,6 +367,8 @@ the following properties for point contact modeling:
 |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
 |  material  | point_contact_stiffness |  no²  | T | Penalty method stiffness. |
 |  material  | hunt_crossley_dissipation |  no²  | T | Penalty method dissipation. |
+|  material  | dissipation_timescale |  yes³  | T | Linear dissipation paramter. |
+
 
 ¹ Collision geometry is required to be registered with a
   geometry::ProximityProperties object that contains the
@@ -377,6 +379,12 @@ the following properties for point contact modeling:
   a heuristic value as the default. Refer to the
   section @ref mbp_penalty_method "Penalty method point contact" for further
   details.
+
+³ When using a linear model of dissipation (for instance when selecting the SAP
+  solver), Collision geometry is required to be registered with a
+  geometry::ProximityProperties object that contains the ("material",
+  "dissipation_timescale") property. If the property is missing, an exception
+  will be thrown.
 
 Accessing and modifying contact properties requires interfacing with
 geometry::SceneGraph's model inspector. Interfacing with a model inspector
