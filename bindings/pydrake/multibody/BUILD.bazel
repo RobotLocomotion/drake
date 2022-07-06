@@ -166,6 +166,9 @@ drake_pybind_library(
         ":module_py",
         ":plant_py",
         "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake/solvers:gurobi_py",
+        "//bindings/pydrake/solvers:mixed_integer_optimization_util_py",
+        "//bindings/pydrake/solvers:mixed_integer_rotation_constraint_py",
     ],
 )
 

@@ -5,6 +5,7 @@
 using Eigen::Vector3d;
 
 using drake::solvers::SolutionResult;
+using drake::math::RigidTransformd;
 
 namespace drake {
 namespace multibody {
@@ -74,20 +75,31 @@ TEST_F(KukaTest, ReachableWithCost) {
   auto context = plant_->CreateDefaultContext();
   plant_->SetPositions(context.get(), q);
 
-  math::RigidTransformd ee_desired_pose = plant_->CalcRelativeTransform(
+  math::RigidTransformd X_WEe = plant_->CalcRelativeTransform(
       *context, plant_->world_frame(),
       plant_->get_body(BodyIndex{ee_idx_}).body_frame());
+  math::RigidTransformd X_W0 = plant_->CalcRelativeTransform(
+      *context, plant_->world_frame(), plant_->GetFrameByName("iiwa_link_0"));
   // Constrain the global IK to reach the exact end effector pose as the
   // posture q.
   global_ik_.AddWorldPositionConstraint(
       ee_idx_,                         // body index
       Vector3d::Zero(),                // p_BQ
-      ee_desired_pose.translation(),   // lower bound
-      ee_desired_pose.translation());  // upper bound
+      X_WEe.translation(),   // lower bound
+      X_WEe.translation(),   // upper bound
+      RigidTransformd());
+  global_ik_.AddWorldRelativePositionConstraint(
+      ee_idx_,
+      Vector3d::Zero(),
+      plant_->GetBodyByName("iiwa_link_0").index(),
+      Vector3d::Zero(),
+      X_WEe.translation() - X_W0.translation(),   // lower bound
+      X_WEe.translation() - X_W0.translation(),   // upper bound
+      RigidTransformd());
   global_ik_.AddWorldOrientationConstraint(
       ee_idx_,  // body index
       Eigen::Quaterniond(
-          ee_desired_pose.rotation().matrix()),  // desired orientation
+          X_WEe.rotation().matrix()),  // desired orientation
       0);                                        // tolerance.
 
   solvers::GurobiSolver gurobi_solver;
@@ -132,6 +144,7 @@ TEST_F(KukaTest, ReachableWithCost) {
     EXPECT_LE((q_w_cost - q).norm(), (q_no_cost - q).norm());
   }
 }
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

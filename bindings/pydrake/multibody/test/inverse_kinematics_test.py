@@ -14,7 +14,11 @@ from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import (
     MultibodyPlant, AddMultibodyPlantSceneGraph)
+from pydrake.multibody.tree import BodyIndex
+from pydrake.solvers.gurobi import GurobiSolver
 import pydrake.solvers.mathematicalprogram as mp
+import pydrake.solvers.mixed_integer_optimization_util as mip_util
+import pydrake.solvers.mixed_integer_rotation_constraint as mip_rot
 from pydrake.systems.framework import DiagramBuilder
 
 # TODO(eric.cousineau): Replace manual coordinate indexing with more semantic
@@ -571,3 +575,67 @@ class TestConstraints(unittest.TestCase):
     def test_unit_quaternion_constraint(self, variables):
         constraint = ik.UnitQuaternionConstraint()
         self.assertIsInstance(constraint, mp.Constraint)
+
+
+class TestGlobalInverseKinematics(unittest.TestCase):
+    def test_options(self):
+        options = ik.GlobalInverseKinematics.Options()
+        self.assertEqual(repr(options), "".join([
+            "GlobalInverseKinematics.Options(",
+            "num_intervals_per_half_axis=2, ",
+            "approach=Approach.kBilinearMcCormick, "
+            "interval_binning=IntervalBinning.kLogarithmic, "
+            "linear_constraint_only=False)"]))
+        self.assertEqual(options.num_intervals_per_half_axis, 2)
+        self.assertEqual(
+            options.approach, mip_rot.MixedIntegerRotationConstraintGenerator.
+            Approach.kBilinearMcCormick)
+        self.assertEqual(options.interval_binning,
+                         mip_util.IntervalBinning.kLogarithmic)
+        self.assertFalse(options.linear_constraint_only)
+
+    def test_api(self):
+        plant = MultibodyPlant(time_step=0.01)
+        model_instance = Parser(plant).AddModelFromFile(FindResourceOrThrow(
+                "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        options = ik.GlobalInverseKinematics.Options()
+        global_ik = ik.GlobalInverseKinematics(plant=plant, options=options)
+        self.assertIsInstance(global_ik.prog(), mp.MathematicalProgram)
+        self.assertIsInstance(global_ik.get_mutable_prog(),
+                              mp.MathematicalProgram)
+        body_index_A = plant.GetBodyIndices(model_instance)[0]
+        body_index_B = plant.GetBodyIndices(model_instance)[1]
+        self.assertEqual(
+            global_ik.body_rotation_matrix(body_index=body_index_A).shape,
+            (3, 3))
+        self.assertEqual(
+            global_ik.body_position(body_index=body_index_A).shape, (3, ))
+        global_ik.AddWorldPositionConstraint(
+            body_index=body_index_A,
+            p_BQ=[0, 0, 0],
+            box_lb_F=[-np.inf, -np.inf, -np.inf],
+            box_ub_F=[np.inf, np.inf, np.inf],
+            X_WF=RigidTransform())
+        global_ik.AddWorldRelativePositionConstraint(
+            body_index_B=body_index_B,
+            p_BQ=[0, 0, 0],
+            body_index_A=body_index_A,
+            p_AP=[0, 0, 0],
+            box_lb_F=[-np.inf, -np.inf, -np.inf],
+            box_ub_F=[np.inf, np.inf, np.inf],
+            X_WF=RigidTransform())
+        global_ik.AddWorldOrientationConstraint(
+            body_index=body_index_A,
+            desired_orientation=Quaternion(),
+            angle_tol=np.inf)
+        global_ik.AddPostureCost(
+            q_desired=plant.GetPositions(context),
+            body_position_cost=[1] * plant.num_bodies(),
+            body_orientation_cost=[1] * plant.num_bodies())
+        gurobi_solver = GurobiSolver()
+        if gurobi_solver.available():
+            result = gurobi_solver.Solve(global_ik.prog())
+            self.assertTrue(result.is_success())
+            global_ik.ReconstructGeneralizedPositionSolution(result=result)
