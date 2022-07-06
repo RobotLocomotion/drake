@@ -30,7 +30,6 @@ GTEST_TEST(RigidBody, RigidBodyConstructor) {
             M_Bo_B.get_unit_inertia().get_moments());
   EXPECT_EQ(B.default_spatial_inertia().get_unit_inertia().get_products(),
             M_Bo_B.get_unit_inertia().get_products());
-  EXPECT_EQ(B.get_default_mass(), mass);
   EXPECT_EQ(B.default_mass(), mass);
   EXPECT_EQ(B.default_com(), p_BoBcm_B);
   const UnitInertia<double>& U_BBo_B_default = B.default_unit_inertia();
