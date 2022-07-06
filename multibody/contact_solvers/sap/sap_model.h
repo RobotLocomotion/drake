@@ -172,7 +172,7 @@ class SapModel {
   // Inverse of the diagonal matrix formed with the square root of the diagonal
   // entries of the momentum matrix, i.e. diag(A)^{-1/2}, of size
   // num_velocities(). This matrix is used to compute a scaled momentum
-  // residual, see [Castro et al. 2021].
+  // residual, see [Castro et al. 2022].
   const VectorX<T>& inv_sqrt_dynamics_matrix() const;
 
   /* Const access to the bundle for this model. */
@@ -215,7 +215,7 @@ class SapModel {
   }
 
   /* Evaluates the contact impulses γ(v) according to the analytical inverse
-   dynamics, see [Castro et al. 2021].
+   dynamics, see [Castro et al. 2022].
    @pre `context` is created with a call to MakeContext(). */
   const VectorX<T>& EvalImpulses(const systems::Context<T>& context) const {
     return EvalImpulsesCache(context).gamma;
@@ -274,7 +274,7 @@ class SapModel {
    For the i-th constraint, its Hessian is defined as Gᵢ(v) = d²ℓᵢ/dvcᵢ², where
    ℓᵢ is the regularizer's cost ℓᵢ = 1/2⋅γᵢᵀ⋅Rᵢ⋅γᵢ and vcᵢ is the constraint's
    velocity. Gᵢ is an SPD matrix. It turns out that the Hessian of SAP's cost is
-   H = A + Jᵀ⋅G⋅J, see [Castro et al. 2021].
+   H = A + Jᵀ⋅G⋅J, see [Castro et al. 2022].
    @pre `context` is created with a call to MakeContext(). */
   const std::vector<MatrixX<T>>& EvalConstraintsHessian(
       const systems::Context<T>& context) const {
@@ -379,7 +379,7 @@ class SapModel {
   // approximation Wᵢᵢ of the block diagonal element corresponding to the i-th
   // constraint, the scaling is computed as delassus_diagonal[i] = ‖Wᵢᵢ‖ᵣₘₛ =
   // ‖Wᵢᵢ‖/nᵢ, where nᵢ is the number of equations for the i-th constraint (and
-  // the size of Wᵢᵢ). See [Castro et al. 2021] for details.
+  // the size of Wᵢᵢ). See [Castro et al. 2022] for details.
   //
   // @param[in]  A linear dynamics matrix for each participating clique in the
   // model.
