@@ -101,9 +101,8 @@ inline const math::RigidTransformd& convert_to_double(
   return X_AB;
 }
 
-template <class VectorType>
-math::RigidTransformd convert_to_double(
-    const math::RigidTransform<Eigen::AutoDiffScalar<VectorType>>& X_AB) {
+inline math::RigidTransformd convert_to_double(
+    const math::RigidTransform<AutoDiffXd>& X_AB) {
   Matrix3<double> R_converted;
   Vector3<double> p_converted;
   for (int r = 0; r < 3; ++r) {
