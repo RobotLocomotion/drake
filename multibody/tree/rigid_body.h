@@ -110,12 +110,11 @@ class RigidBody : public Body<T> {
 
   /// Returns the default value of this body's mass.  This value is initially
   /// supplied at construction when specifying this body's SpatialInertia.
-  /// @note get_default_mass() and default() mass return identical values.
+  /// @note In general, the mass of a body can be a constant property stored in
+  /// the body or a parameter of the model that is stored in a Context.
+  /// The default constant mass value is reported by get_default_mass() and is
+  /// used to initialize the mass parameter in the Context.
   double default_mass() const {
-    // In general, the mass of a body can be a constant property stored in the
-    // body or a parameter of the model that is stored in a Context. The default
-    // constant mass value is reported by get_default_mass() and is used to
-    // initialize the mass parameter in the Context.
     return default_spatial_inertia_.get_mass();
   }
 
