@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/autodiff.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic/expression.h"
 
 namespace drake {
@@ -10,6 +11,9 @@ namespace drake {
 /// derivatives are already populated with a vector of the same size as that of
 /// the donor, variables pass through unchanged.  An exception is thrown when
 /// there are nonempty vectors of different sizes.
+DRAKE_DEPRECATED("2022-11-01",
+    "This function is being removed; "
+    "if you still need it you may copy the code into your own project.")
 inline void autodiffxd_make_coherent(const AutoDiffXd& donor,
                                      AutoDiffXd* recipient) {
   DRAKE_ASSERT(recipient != nullptr);
@@ -22,8 +26,14 @@ inline void autodiffxd_make_coherent(const AutoDiffXd& donor,
   }
 }
 
+DRAKE_DEPRECATED("2022-11-01",
+    "This function is being removed; "
+    "if you still need it you may copy the code into your own project.")
 inline void autodiffxd_make_coherent(const double&, double*) {}
 
+DRAKE_DEPRECATED("2022-11-01",
+    "This function is being removed; "
+    "if you still need it you may copy the code into your own project.")
 inline void autodiffxd_make_coherent(const symbolic::Expression&,
                                      symbolic::Expression*) {}
 

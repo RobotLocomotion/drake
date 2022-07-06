@@ -8,6 +8,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/compute_numerical_gradient.h"
 #include "drake/systems/analysis/implicit_integrator.h"
@@ -164,11 +165,7 @@ void VelocityImplicitEulerIntegrator<T>::ComputeAutoDiffVelocityJacobian(
   }
 
   // Initialize an AutoDiff version of the variable y.
-  const int ny = y.size();
-  VectorX<AutoDiffXd> y_ad = y;
-  for (int i = 0; i < ny; ++i) {
-    y_ad(i).derivatives() = VectorX<T>::Unit(ny, i);
-  }
+  VectorX<AutoDiffXd> y_ad = math::InitializeAutoDiff(y);
 
   // Evaluate the AutoDiff system with y_ad.
   const VectorX<AutoDiffXd> result = this->ComputeLOfY(
@@ -181,6 +178,7 @@ void VelocityImplicitEulerIntegrator<T>::ComputeAutoDiffVelocityJacobian(
   // when ℓ(y) depends only on t. In this case, make sure that the Jacobian
   // isn't a n ✕ 0 matrix (this will cause a segfault when forming Newton
   // iteration matrices); if it is, we set it equal to an n x n zero matrix.
+  const int ny = y.size();
   if (Jy->cols() == 0) {
     *Jy = MatrixX<T>::Zero(ny, ny);
   }

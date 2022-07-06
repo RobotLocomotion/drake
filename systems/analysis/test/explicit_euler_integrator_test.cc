@@ -12,9 +12,8 @@ namespace systems {
 namespace {
 
 GTEST_TEST(IntegratorTest, MiscAPI) {
-  typedef Eigen::AutoDiffScalar<Eigen::VectorXd> AScalar;
   SpringMassSystem<double> spring_mass_dbl(1., 1., 0.);
-  SpringMassSystem<AScalar> spring_mass_ad(1., 1., 0.);
+  SpringMassSystem<AutoDiffXd> spring_mass_ad(1., 1., 0.);
 
   // Setup the integration step size.
   const double h = 1e-3;
@@ -26,7 +25,8 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   // Create the integrator as a double and as an autodiff type
   ExplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, h,
                                           context_dbl.get());
-  ExplicitEulerIntegrator<AScalar> int_ad(spring_mass_ad, h, context_ad.get());
+  ExplicitEulerIntegrator<AutoDiffXd> int_ad(spring_mass_ad, h,
+                                             context_ad.get());
 
   // Test that setting the target accuracy or initial step size target fails.
   EXPECT_THROW(int_dbl.set_target_accuracy(1.0), std::logic_error);

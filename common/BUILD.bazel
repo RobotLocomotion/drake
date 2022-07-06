@@ -182,10 +182,7 @@ drake_cc_library(
 drake_cc_library(
     name = "polynomial",
     srcs = ["polynomial.cc"],
-    hdrs = [
-        "polynomial.h",
-        "trig_poly.h",
-    ],
+    hdrs = ["polynomial.h"],
     deps = [
         ":autodiff",
         ":default_scalars",
@@ -1013,6 +1010,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "autodiffxd_make_coherent_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":autodiffxd_make_coherent",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1259,14 +1257,6 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         "@fmt",
-    ],
-)
-
-drake_cc_googletest(
-    name = "trig_poly_test",
-    deps = [
-        ":essential",
-        ":polynomial",
     ],
 )
 

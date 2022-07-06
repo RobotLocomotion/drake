@@ -19,15 +19,20 @@ a particular model of flat-plate aerodynamics with
   lift coefficient = 2 sinα cosα,
   drag coefficient = 2 sin²α,
   moment coefficient = 0,
-as documented in
+as documented for a number of NACA airfoils with Reynolds number ≤ 10^5 in:
 
-[Cory08] Rick Cory and Russ Tedrake, "Experiments in Fixed-Wing {UAV} Perching",
+S. F. Hoerner and H. V. Borst, “Fluid-dynamic lift: practical information on
+aerodynamic and hydrodynamic lift,” 1985 (Ch. 4, Section 6).
+
+This model was also empirically validated for a bird-scale UAV  with flat-plate
+wings (Reynolds number below 53000) in:
+
+Rick Cory and Russ Tedrake, "Experiments in Fixed-Wing UAV Perching",
 Proceedings of the AIAA Guidance, Navigation, and Control Conference , pp. 1-12,
 2008.
 
-This model was empirically validated for a bird-scale UAV with flat-plate wings,
 and may generalize well as a model for other wings in the post-stall regime, but
-it should only be viewed as a very simple / coarse approximation.  We aim
+it should only be viewed as a simple / coarse approximation.  We aim to
 generalize this class to general lift/drag/moment coefficients soon.
 
 @system

@@ -9,7 +9,6 @@
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
-using Eigen::AutoDiffScalar;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using std::make_unique;
