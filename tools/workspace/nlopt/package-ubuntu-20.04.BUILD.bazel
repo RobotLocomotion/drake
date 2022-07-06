@@ -15,4 +15,5 @@ cc_library(
         "-lnlopt_cxx",
     ],
     visibility = ["//visibility:public"],
+    deprecation = "DRAKE DEPRECATED: The @nlopt external is being removed from Drake on or after 2020-09-01.  Downstream projects should add it to their own WORKSPACE if needed.",  # noqa
 )

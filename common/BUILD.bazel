@@ -183,10 +183,7 @@ drake_cc_library(
 drake_cc_library(
     name = "polynomial",
     srcs = ["polynomial.cc"],
-    hdrs = [
-        "polynomial.h",
-        "trig_poly.h",
-    ],
+    hdrs = ["polynomial.h"],
     deps = [
         ":autodiff",
         ":default_scalars",
@@ -207,22 +204,9 @@ drake_cc_library(
         "symbolic_chebyshev_polynomial.h",
         "symbolic_codegen.cc",
         "symbolic_codegen.h",
-        "symbolic_environment.cc",
-        "symbolic_environment.h",
-        "symbolic_expression.cc",
-        "symbolic_expression.h",
-        "symbolic_expression_cell.cc",
-        "symbolic_expression_cell.h",
-        "symbolic_expression_visitor.h",
-        "symbolic_formula.cc",
-        "symbolic_formula.h",
-        "symbolic_formula_cell.cc",
-        "symbolic_formula_cell.h",
-        "symbolic_formula_visitor.h",
+        "symbolic_decompose.cc",
         "symbolic_generic_polynomial.cc",
         "symbolic_generic_polynomial.h",
-        "symbolic_ldlt.cc",
-        "symbolic_ldlt.h",
         "symbolic_monomial.cc",
         "symbolic_monomial.h",
         "symbolic_monomial_basis_element.cc",
@@ -238,13 +222,12 @@ drake_cc_library(
         "symbolic_rational_function.h",
         "symbolic_simplification.cc",
         "symbolic_simplification.h",
-        "symbolic_variable.cc",
-        "symbolic_variable.h",
-        "symbolic_variables.cc",
-        "symbolic_variables.h",
     ],
     hdrs = [
         "symbolic.h",
+        # TODO(#13833) We should split out this header into its own library,
+        # once we have the new subdirectory established.
+        "symbolic_decompose.h",
     ],
     deps = [
         ":bit_cast",
@@ -255,18 +238,16 @@ drake_cc_library(
         ":extract_double",
         ":hash",
         ":random",
+        "//common/symbolic:expression",
         "@fmt",
     ],
 )
 
+# TODO(#13833) This library name is vestigial.  Once we are finished with the
+# new file layout in drake/common/symbolic/..., then we should deprecate this
+# library name.
 drake_cc_library(
     name = "symbolic_decompose",
-    srcs = [
-        "symbolic_decompose.cc",
-    ],
-    hdrs = [
-        "symbolic_decompose.h",
-    ],
     deps = [
         ":symbolic",
     ],
@@ -373,18 +354,13 @@ drake_cc_library(
 
 # The drake::filesystem support is intended ONLY for use within Drake's *.cc
 # files -- it is not a public dependency of Drake.  As such, we compile it with
-# hidden visibility, exclude its header file from the install, and exclude it
-# from the //common:common package_library shortcut.
+# hidden visibility and mark it internal.
 drake_cc_library(
     name = "filesystem",
     srcs = ["filesystem.cc"],
     hdrs = ["filesystem.h"],
     copts = ["-fvisibility=hidden"],
-    install_hdrs_exclude = ["filesystem.h"],
-    tags = [
-        "exclude_from_libdrake",
-        "exclude_from_package",
-    ],
+    internal = True,
     visibility = ["//:__subpackages__"],
     deps = [
         "@ghc_filesystem",
@@ -919,9 +895,9 @@ drake_cc_googletest(
     deps = [
         ":identifier",
         ":sorted_pair",
-        ":unused",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "@abseil_cpp_internal//absl/container:flat_hash_set",
     ],
 )
 
@@ -1044,6 +1020,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "autodiffxd_make_coherent_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":autodiffxd_make_coherent",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1110,8 +1087,24 @@ drake_cc_googletest(
     deps = [
         ":autodiff",
         ":essential",
+        ":identifier",
         ":nice_type_name",
         ":nice_type_name_override_header",
+    ],
+)
+
+drake_cc_googletest(
+    name = "openmp_test",
+    # TODO(jwnimmer-tri) Encapsulate unit test concurrency configuration into
+    # Drake's starlark macros, so that we don't have to repeat ourselves here.
+    env = {
+        "OMP_NUM_THREADS": "2",
+    },
+    tags = [
+        "cpu:2",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -1145,93 +1138,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "symbolic_environment_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expansion_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:limit_malloc",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_test",
-    deps = [
-        ":essential",
-        ":polynomial",
-        ":symbolic",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:is_memcpy_movable",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_cell_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_differentiation_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_jacobian_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_array_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_matrix_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_transform_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_googletest(
     name = "symbolic_latex_test",
     deps = [
         ":essential",
@@ -1249,24 +1155,6 @@ drake_cc_googletest(
         ":symbolic_trigonometric_polynomial",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_ldlt_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_no_throw",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_mixing_scalar_types_test",
-    deps = [
-        ":essential",
-        ":symbolic",
     ],
 )
 
@@ -1304,7 +1192,9 @@ drake_cc_googletest(
     name = "symbolic_polynomial_test",
     deps = [
         ":symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -1333,63 +1223,6 @@ drake_cc_googletest(
         ":essential",
         ":symbolic",
         "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_substitution_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_variable_overloading_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_formula_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:is_memcpy_movable",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_formula_visitor_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_variable_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:is_memcpy_movable",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_variables_test",
-    deps = [
-        ":essential",
-        ":symbolic",
     ],
 )
 
@@ -1438,18 +1271,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "trig_poly_test",
-    deps = [
-        ":essential",
-        ":polynomial",
-    ],
-)
-
-drake_cc_googletest(
     name = "type_safe_index_test",
     deps = [
         ":type_safe_index",
-        ":unused",
         "//common:sorted_pair",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",

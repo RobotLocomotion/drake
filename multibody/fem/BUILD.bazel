@@ -8,12 +8,12 @@ load(
 )
 
 package(
-    default_visibility = ["//multibody/fem:__subpackages__"],
+    default_visibility = ["//visibility:public"],
 )
 
 drake_cc_package_library(
     name = "fem",
-    visibility = ["//multibody/fem:__subpackages__"],
+    visibility = ["//visibility:public"],
     deps = [
         ":acceleration_newmark_scheme",
         ":calc_lame_parameters",
@@ -21,12 +21,14 @@ drake_cc_package_library(
         ":corotated_model",
         ":corotated_model_data",
         ":damping_model",
+        ":deformable_body_config",
         ":deformation_gradient_data",
         ":dirichlet_boundary_condition",
         ":discrete_time_integrator",
         ":fem_element",
         ":fem_indexes",
         ":fem_model",
+        ":fem_solver",
         ":fem_state",
         ":fem_state_system",
         ":isoparametric_element",
@@ -131,6 +133,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "deformable_body_config",
+    hdrs = [
+        "deformable_body_config.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "deformation_gradient_data",
     srcs = [
         "deformation_gradient_data.cc",
@@ -218,6 +230,21 @@ drake_cc_library(
         ":fem_element",
         ":fem_state",
         ":petsc_symmetric_block_sparse_matrix",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_solver",
+    srcs = [
+        "fem_solver.cc",
+    ],
+    hdrs = [
+        "fem_solver.h",
+    ],
+    deps = [
+        ":discrete_time_integrator",
+        ":fem_model",
         "//common:essential",
     ],
 )
@@ -333,9 +360,11 @@ drake_cc_library(
     hdrs = [
         "petsc_symmetric_block_sparse_matrix.h",
     ],
-    deps = [
+    interface_deps = [
         ":schur_complement",
         "//common:essential",
+    ],
+    deps = [
         "//common:unused",
         "@petsc",
     ],
@@ -494,6 +523,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "deformable_body_config_test",
+    deps = [
+        ":deformable_body_config",
+    ],
+)
+
+drake_cc_googletest(
     name = "deformation_gradient_data_test",
     deps = [
         ":deformation_gradient_data",
@@ -554,6 +590,17 @@ drake_cc_googletest(
     name = "fem_model_test",
     deps = [
         ":dummy_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_solver_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":dummy_model",
+        ":fem_solver",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],

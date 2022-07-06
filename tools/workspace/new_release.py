@@ -54,21 +54,25 @@ from drake.tools.workspace.metadata import read_repository_metadata
 # We'll skip these repositories when making suggestions.
 _IGNORED_REPOSITORIES = [
     # We don't know how to check non-default branches yet.
-    "clang_cindex_python3",
+    "clang_cindex_python3_internal",
     "pybind11",
 ]
 
 # For these repositories, we only look at tags, not releases.  For the dict
 # value, use a blank value to match the latest tag or a regex to only select
-# tags that share the match with the tag currently in use.  (This can be used
-# to pin to a given major or major.minor release series.)
+# tags that share the match with the tag currently in use; the parentheses
+# group in the regex denotes the portion of the tag to lock as invariant.
+# (This can be used to pin to a given major or major.minor release series.)
 _OVERLOOK_RELEASE_REPOSITORIES = {
-    "github3_py": r"^(\d+.)",
-    "intel_realsense_ros": r"^(\d+\.\d+\.)",
+    "github3_py_internal": r"^(\d+.)",
+    "gz_math_internal": "",
+    "gz_utils_internal": "",
+    "intel_realsense_ros_internal": r"^(\d+\.\d+\.)",
     "petsc": r"^(v)",
     "pycodestyle": "",
-    "ros_xacro": r"^(\d+\.\d+\.)",
-    "qhull": r"^(2)",
+    "qhull_internal": r"^(2)",
+    "ros_xacro_internal": r"^(\d+\.\d+\.)",
+    "sdformat_internal": "",
 }
 
 

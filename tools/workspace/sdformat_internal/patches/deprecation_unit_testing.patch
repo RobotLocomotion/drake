@@ -1,0 +1,23 @@
+Add deprecated element definition for Drake's unit testing.
+
+When writing unit tests to exercise SDFormat deprecation notices, we can't
+rely on any _actually_ deprecated elements, because they will disappear in
+a future upstream release. Therefore, we inject a Drake-specific element
+definition that will always be available.
+
+--- src/parser.cc.orig
++++ src/parser.cc
+@@ -379,7 +379,12 @@
+   std::string xmldata = SDF::EmbeddedSpec("root.sdf", false);
+   auto xmlDoc = makeSdfDoc();
+   xmlDoc.Parse(xmldata.c_str());
+-  return initDoc(&xmlDoc, _config, _sdf);
++  bool result = initDoc(&xmlDoc, _config, _sdf);
++  ElementPtr drake_testing_element(new Element);
++  drake_testing_element->SetName("_drake_deprecation_unit_test_element");
++  drake_testing_element->SetRequired("-1" /* deprecated */);
++  _sdf->Root()->AddElementDescription(drake_testing_element);
++  return result;
+ }
+ 
+ //////////////////////////////////////////////////

@@ -107,7 +107,6 @@ PYBIND11_MODULE(augmented_lagrangian, m) {
         .def(
             "x_up", &Class::x_up, py_rvp::reference_internal, cls_doc.x_up.doc);
   }
-  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

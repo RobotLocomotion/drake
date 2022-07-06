@@ -101,19 +101,23 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     MatZeroEntries(owned_matrix_);
   }
 
-  VectorX<double> Solve(SolverType solver_type,
-                        PreconditionerType preconditioner_type,
-                        const VectorX<double>& b) const {
+  PetscSolverStatus Solve(SolverType solver_type,
+                          PreconditionerType preconditioner_type,
+                          const VectorX<double>& b,
+                          EigenPtr<VectorX<double>> x) const {
     ThrowIfNotAssembled(__func__);
-    VectorX<double> x = b;
-    SolveInPlace(solver_type, preconditioner_type, &x);
-    return x;
+    DRAKE_DEMAND(x != nullptr);
+    DRAKE_DEMAND(x->size() == b.size());
+    DRAKE_DEMAND(b.size() == size_);
+    *x = b;
+    return SolveInPlace(solver_type, preconditioner_type, x);
   }
 
-  void SolveInPlace(SolverType solver_type,
-                    PreconditionerType preconditioner_type,
-                    EigenPtr<VectorX<double>> b) const {
+  PetscSolverStatus SolveInPlace(SolverType solver_type,
+                                 PreconditionerType preconditioner_type,
+                                 EigenPtr<VectorX<double>> b_in_x_out) const {
     ThrowIfNotAssembled(__func__);
+    DRAKE_DEMAND(b_in_x_out->size() == size_);
     switch (solver_type) {
       case SolverType::kDirect:
         KSPSetType(owned_solver_, KSPPREONLY);
@@ -157,7 +161,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     /* Copy right hand side data into b_petsc. */
     vector<int> vector_indexes(size_);
     std::iota(vector_indexes.begin(), vector_indexes.end(), 0);
-    VecSetValues(b_petsc, size_, vector_indexes.data(), b->data(),
+    VecSetValues(b_petsc, size_, vector_indexes.data(), b_in_x_out->data(),
                  INSERT_VALUES);
     VecAssemblyBegin(b_petsc);
     VecAssemblyEnd(b_petsc);
@@ -170,14 +174,25 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     KSPSetOperators(owned_solver_, owned_matrix_, owned_matrix_);
     /* Solve! */
     KSPSolve(owned_solver_, b_petsc, x_petsc);
-
-    /* Copy solution data to eigen vector. */
-    b->setZero();
-    VecGetValues(x_petsc, size_, vector_indexes.data(), b->data());
+    /* Get solver status. */
+    KSPConvergedReason reason;
+    KSPGetConvergedReason(owned_solver_, &reason);
+    /* See
+     https://petsc.org/main/docs/manualpages/KSP/KSPGetConvergedReason.html#KSPGetConvergedReason
+     for the list of convergence criteria.  */
+    const bool converged = reason > 0;
+    if (converged) {
+      /* Copy solution data to eigen vector. */
+      b_in_x_out->setZero();
+      VecGetValues(x_petsc, size_, vector_indexes.data(), b_in_x_out->data());
+    }
 
     /* Clean up PETSc temporary variables. */
     VecDestroy(&b_petsc);
     VecDestroy(&x_petsc);
+
+    return converged ? PetscSolverStatus::kSuccess
+                     : PetscSolverStatus::kFailure;
   }
 
   void AddToBlock(const VectorX<int>& block_indices,
@@ -355,16 +370,16 @@ void PetscSymmetricBlockSparseMatrix::AddToBlock(
   pimpl_->AddToBlock(block_indices, block);
 }
 
-VectorX<double> PetscSymmetricBlockSparseMatrix::Solve(
+PetscSolverStatus PetscSymmetricBlockSparseMatrix::Solve(
     SolverType solver_type, PreconditionerType preconditioner_type,
-    const VectorX<double>& b) const {
-  return pimpl_->Solve(solver_type, preconditioner_type, b);
+    const VectorX<double>& b, EigenPtr<VectorX<double>> x) const {
+  return pimpl_->Solve(solver_type, preconditioner_type, b, x);
 }
 
-void PetscSymmetricBlockSparseMatrix::SolveInPlace(
+PetscSolverStatus PetscSymmetricBlockSparseMatrix::SolveInPlace(
     SolverType solver_type, PreconditionerType preconditioner_type,
-    EigenPtr<VectorX<double>> b) const {
-  pimpl_->SolveInPlace(solver_type, preconditioner_type, b);
+    EigenPtr<VectorX<double>> b_in_x_out) const {
+  return pimpl_->SolveInPlace(solver_type, preconditioner_type, b_in_x_out);
 }
 
 void PetscSymmetricBlockSparseMatrix::SetZero() { pimpl_->SetZero(); }

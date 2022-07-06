@@ -57,6 +57,11 @@ class WeldJointTest : public ::testing::Test {
   const Translation3d X_FM_{0, 0.5, 0};
 };
 
+TEST_F(WeldJointTest, CanRotateOrTranslate) {
+  EXPECT_FALSE(joint_->can_rotate());
+  EXPECT_FALSE(joint_->can_translate());
+}
+
 TEST_F(WeldJointTest, Type) {
   const Joint<double>& base = *joint_;
   EXPECT_EQ(base.type_name(), WeldJoint<double>::kTypeName);
@@ -86,6 +91,10 @@ TEST_F(WeldJointTest, GetJointLimits) {
   EXPECT_EQ(joint_->velocity_upper_limits().size(), 0);
   EXPECT_EQ(joint_->acceleration_lower_limits().size(), 0);
   EXPECT_EQ(joint_->acceleration_upper_limits().size(), 0);
+}
+
+TEST_F(WeldJointTest, Damping) {
+  EXPECT_EQ(joint_->damping_vector().size(), 0);
 }
 
 TEST_F(WeldJointTest, JointLocking) {

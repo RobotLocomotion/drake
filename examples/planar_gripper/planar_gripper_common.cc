@@ -8,9 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/systems/lcm/lcm_interface_system.h"
 
 namespace drake {
 namespace examples {

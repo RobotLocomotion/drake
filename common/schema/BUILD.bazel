@@ -41,8 +41,8 @@ drake_cc_library(
         "//common:name_value",
         "//common:nice_type_name",
         "//common:random",
-        "//common:symbolic",
         "//common:unused",
+        "//common/symbolic:expression",
     ],
 )
 

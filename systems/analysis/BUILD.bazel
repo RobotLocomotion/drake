@@ -139,7 +139,6 @@ drake_cc_library(
     hdrs = ["hermitian_dense_output.h"],
     deps = [
         ":stepwise_dense_output",
-        "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
         "//common:extract_double",
@@ -224,6 +223,7 @@ drake_cc_library(
     deps = [
         "//math:continuous_lyapunov_equation",
         "//math:matrix_util",
+        "//math:quadratic_form",
         "//solvers:mathematical_program",
         "//solvers:solve",
         "//systems/framework",
@@ -708,18 +708,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "initial_value_problem_deprecated_test",
-    timeout = "moderate",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":initial_value_problem",
-        ":runge_kutta2_integrator",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "scalar_initial_value_problem_test",
     deps = [
         ":runge_kutta2_integrator",
@@ -729,27 +717,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "scalar_initial_value_problem_deprecated_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":runge_kutta2_integrator",
-        ":scalar_initial_value_problem",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "antiderivative_function_test",
-    deps = [
-        ":antiderivative_function",
-        ":runge_kutta2_integrator",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "antiderivative_function_deprecated_test",
-    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":antiderivative_function",
         ":runge_kutta2_integrator",

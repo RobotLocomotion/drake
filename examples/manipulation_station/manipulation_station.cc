@@ -6,7 +6,7 @@
 #include <utility>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/render/render_engine_vtk_factory.h"
+#include "drake/geometry/render_vtk/factory.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 #include "drake/math/rigid_transform.h"
@@ -33,9 +33,9 @@ namespace manipulation_station {
 
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::MakeRenderEngineVtk;
+using geometry::RenderEngineVtkParams;
 using geometry::SceneGraph;
-using geometry::render::MakeRenderEngineVtk;
-using geometry::render::RenderEngineVtkParams;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYaw;

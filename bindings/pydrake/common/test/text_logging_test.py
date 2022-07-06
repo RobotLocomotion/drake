@@ -31,39 +31,11 @@ class TestTextLoggingExample(unittest.TestCase,
     https://docs.python.org/3/library/logging.html#levels
     """
 
-    @staticmethod
-    def _python_level_name(level):
-        """Given a Python logging integer level code, returns the corresponding
-        Python string name.
-        """
-        return dict((
-            (NOTSET, "NOTSET"),
-            (DRAKE_TRACE, "Level 5"),
-            (DEBUG, "DEBUG"),
-            (INFO, "INFO"),
-            (WARNING, "WARNING"),
-            (ERROR, "ERROR"),
-            (CRITICAL, "CRITICAL"),
-        ))[level]
-
-    @staticmethod
-    def _spdlog_level_name(level):
-        """Given a Python logging integer level code, returns the corresponding
-        spdlog::level enum name (that can be passed to pydrake' set_log_level).
-        """
-        return dict((
-            (NOTSET, "unchanged"),
-            (DRAKE_TRACE, "trace"),
-            (DEBUG, "debug"),
-            (INFO, "info"),
-            (WARNING, "warn"),
-            (ERROR, "err"),
-            (CRITICAL, "critical"),
-        ))[level]
-
     def _all_permutations():
         """Enumerates all permutations of logging configurations to test."""
         all_levels = [
+            -1,  # The test program uses "-1" to denote leaving the level at
+                 # its default value, i.e., not calling setLevel().
             NOTSET,
             DRAKE_TRACE,
             DEBUG,
@@ -73,28 +45,23 @@ class TestTextLoggingExample(unittest.TestCase,
             CRITICAL,
         ]
         for use_nice_format in [False, True]:
-            for python_level in all_levels:
-                if use_nice_format and python_level == NOTSET:
-                    # There is no such thing as "nice format" when we're not
-                    # configuring the Python logging in the first place.
-                    continue
-                for spdlog_level in all_levels:
+            for root_level in all_levels:
+                for drake_level in all_levels:
                     yield dict(
                         use_nice_format=use_nice_format,
-                        python_level=python_level,
-                        spdlog_level=spdlog_level)
+                        root_level=root_level,
+                        drake_level=drake_level)
 
     @run_with_multiple_values(_all_permutations())
-    def test_example(self, *, use_nice_format, python_level, spdlog_level):
+    def test_example(self, *, use_nice_format, root_level, drake_level):
         """Runs the text_logging_example and checks its output."""
         # Invoke the test program.
-        spdlog_level_name = self._spdlog_level_name(spdlog_level)
         try:
             output = subprocess.check_output(
                 ["bindings/pydrake/common/text_logging_example",
-                 f"--python_level={python_level}",
-                 f"--spdlog_level_name={spdlog_level_name}",
-                 f"--use_nice_format={int(use_nice_format)}"],
+                 f"--use_nice_format={int(use_nice_format)}",
+                 f"--root_level={root_level}",
+                 f"--drake_level={drake_level}"],
                 stderr=subprocess.STDOUT, encoding="utf8")
         except subprocess.CalledProcessError as e:
             print(e.output, file=sys.stderr, flush=True)
@@ -116,8 +83,9 @@ class TestTextLoggingExample(unittest.TestCase,
             found.append(match.groups())
 
         # Confirm the message bodies vs the reported level.
+        trace_name = "TRACE" if use_nice_format else f"Level {DRAKE_TRACE}"
         expected_messages = {
-            "Level 5": "Test Trace message",
+            trace_name: "Test Trace message",
             "DEBUG": "Test Debug message",
             "INFO": "Test Info message",
             "WARNING": "Test Warn message",
@@ -127,20 +95,52 @@ class TestTextLoggingExample(unittest.TestCase,
         for spdlog_level_token, message in found:
             self.assertEqual(message, expected_messages[spdlog_level_token])
 
+        # Compute what effective level was emitted.
+        observed_spdlog_tokens = set()
+        observed_levels = set()
+        token_to_level = {
+            trace_name: DRAKE_TRACE,
+            "DEBUG": DEBUG,
+            "INFO": INFO,
+            "WARNING": WARNING,
+            "ERROR": ERROR,
+            "CRITICAL": CRITICAL,
+        }
+        for spdlog_level_token, _ in found:
+            observed_spdlog_tokens.add(spdlog_level_token)
+            level = token_to_level[spdlog_level_token]
+            observed_levels.add(level)
+        effective_level = min(observed_levels)
+
+        # Confirm that all messages above that level were output, as well as
+        # the converse (that messages below that level were not).
+        for one_level_token in expected_messages:
+            level = token_to_level[one_level_token]
+            if level >= effective_level:
+                self.assertIn(one_level_token, observed_spdlog_tokens)
+            else:
+                self.assertNotIn(one_level_token, observed_spdlog_tokens)
+
+        # Compute what message level we should expect to have seen.
+        if root_level < 0:
+            # We did not directly set the root level; what was its default?
+            if use_nice_format:
+                # The nice format defaults to "INFO".
+                root_level = INFO
+            else:
+                # Otherwise, Python defaults to "WARNING"
+                root_level = WARNING
+        if drake_level < 0:
+            # We did not directly set the Drake level; what was its default?
+            if use_nice_format:
+                # The nice format defaults to "NOTSET".
+                drake_level = NOTSET
+            else:
+                # The native format default to "INFO"
+                drake_level = INFO
+        assert drake_level >= 0
+        assert root_level >= 0
+        expected_level = drake_level or root_level or DRAKE_TRACE
+
         # Confirm that the correct levels came out.
-        found_levels = set([k for k, _ in found])
-        expected_level = max(python_level or INFO, spdlog_level or INFO)
-        expected_levels = set()
-        if expected_level <= DRAKE_TRACE:
-            expected_levels.add("Level 5")
-        if expected_level <= DEBUG:
-            expected_levels.add("DEBUG")
-        if expected_level <= INFO:
-            expected_levels.add("INFO")
-        if expected_level <= WARNING:
-            expected_levels.add("WARNING")
-        if expected_level <= ERROR:
-            expected_levels.add("ERROR")
-        if expected_level <= CRITICAL:
-            expected_levels.add("CRITICAL")
-        self.assertSetEqual(found_levels, expected_levels)
+        self.assertEqual(effective_level, expected_level)

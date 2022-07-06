@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
@@ -213,8 +214,8 @@ class SamePointConstraint : public solvers::Constraint {
 
   SamePointConstraint(const MultibodyPlant<double>* plant,
                       const Context<double>& context)
-      : solvers::Constraint(3, plant ? plant->num_positions() + 6 : 0,
-                            Vector3d::Zero(), Vector3d::Zero()),
+      : solvers::Constraint(3, plant->num_positions() + 6, Vector3d::Zero(),
+                            Vector3d::Zero()),
         plant_(plant),
         context_(plant->CreateDefaultContext()) {
     DRAKE_DEMAND(plant_ != nullptr);
@@ -277,13 +278,13 @@ class SamePointConstraint : public solvers::Constraint {
         *context_, JacobianWrtVariable::kQDot, *frameB_,
         ExtractDoubleOrThrow(p_BB), plant_->world_frame(),
         plant_->world_frame(), &Jq_v_WB);
-    *y = X_WA.cast<AutoDiffXd>() * p_AA - X_WB.cast<AutoDiffXd>() * p_BB;
-    // Now add it the dydq terms.  We don't use the standard autodiff tools
-    // because these only impact a subset of the autodiff derivatives.
-    for (int i = 0; i < 3; i++) {
-      (*y)[i].derivatives().head(plant_->num_positions()) +=
-          (Jq_v_WA.row(i) - Jq_v_WB.row(i)).transpose();
-    }
+
+    const Eigen::Vector3d y_val =
+        X_WA * math::ExtractValue(p_AA) - X_WB * math::ExtractValue(p_BB);
+    Eigen::Matrix3Xd dy(3, plant_->num_positions() + 6);
+    dy << Jq_v_WA - Jq_v_WB, X_WA.rotation().matrix(),
+        -X_WB.rotation().matrix();
+    *y = math::InitializeAutoDiff(y_val, dy * math::ExtractGradient(x));
   }
 
   void DoEval(const Ref<const VectorX<symbolic::Variable>>& x,

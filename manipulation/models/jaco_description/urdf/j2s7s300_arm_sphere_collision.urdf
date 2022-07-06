@@ -141,10 +141,11 @@
     <parent link="j2s7s300_link_base"/>
     <child link="j2s7s300_link_1"/>
     <axis xyz="0 0 1"/>
-    <!-- The upper and lower limits below are set based on the range
-         of +/- 10000 degrees listed in the "JACO2 Spherical 7 DOF
-         Advanced specification guide" from Kinova. -->
-    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="1"/>
+    <!-- The upper and lower limits below are set based on the range of +/-
+         10000 degrees listed in the "JACO2 Spherical 7 DOF Advanced
+         specification guide" from Kinova.  The velocity limit is set from
+         "Recommended maximum actuators utilization" in the same document. -->
+    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="0.63"/>
     <origin rpy="0 3.14159265359 0" xyz="0 0 0.15675"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
@@ -155,7 +156,6 @@
     </joint>
     <actuator name="j2s7s300_joint_1_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_2">
@@ -242,7 +242,7 @@
     <parent link="j2s7s300_link_1"/>
     <child link="j2s7s300_link_2"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="1"/>
+    <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="0.63"/>
     <origin rpy="-1.57079632679 0 3.14159265359" xyz="0 0.0016 -0.11875"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
@@ -253,7 +253,6 @@
     </joint>
     <actuator name="j2s7s300_joint_2_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_3">
@@ -346,7 +345,7 @@
     <parent link="j2s7s300_link_2"/>
     <child link="j2s7s300_link_3"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="1"/>
+    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="0.63"/>
     <origin rpy="-1.57079632679 0 0" xyz="0 -0.205 0"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
@@ -357,7 +356,6 @@
     </joint>
     <actuator name="j2s7s300_joint_3_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_4">
@@ -456,7 +454,7 @@
     <parent link="j2s7s300_link_3"/>
     <child link="j2s7s300_link_4"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="1"/>
+    <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="0.63"/>
     <origin rpy="1.57079632679 0 3.14159265359" xyz="0 0 -0.205"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
@@ -467,7 +465,6 @@
     </joint>
     <actuator name="j2s7s300_joint_4_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_5">
@@ -512,7 +509,7 @@
     <parent link="j2s7s300_link_4"/>
     <child link="j2s7s300_link_5"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="1"/>
+    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="0.85"/>
     <origin rpy="-1.57079632679 0 3.14159265359" xyz="0 0.2073 -0.0114"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
@@ -523,7 +520,6 @@
     </joint>
     <actuator name="j2s7s300_joint_5_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_6">
@@ -568,7 +564,7 @@
     <parent link="j2s7s300_link_5"/>
     <child link="j2s7s300_link_6"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="1"/>
+    <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="0.85"/>
     <origin rpy="1.57079632679 0 3.14159265359" xyz="0 0 -0.10375"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
@@ -579,7 +575,6 @@
     </joint>
     <actuator name="j2s7s300_joint_6_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_7">
@@ -594,7 +589,7 @@
     <parent link="j2s7s300_link_6"/>
     <child link="j2s7s300_link_7"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="1"/>
+    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="0.85"/>
     <origin rpy="-1.57079632679 0 3.14159265359" xyz="0 0.10375 0"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
@@ -605,7 +600,6 @@
     </joint>
     <actuator name="j2s7s300_joint_7_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
 </robot>

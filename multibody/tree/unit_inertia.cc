@@ -4,6 +4,20 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+UnitInertia<T> UnitInertia<T>::SolidBox(const T& Lx, const T& Ly, const T& Lz) {
+  if (Lx < T(0) || Ly < T(0) || Lz < T(0)) {
+    const std::string msg =
+        "A length argument to UnitInertia::SolidBox() "
+        "is negative.";
+    throw std::logic_error(msg);
+  }
+  const T one_twelfth = T(1) / T(12);
+  const T Lx2 = Lx * Lx, Ly2 = Ly * Ly, Lz2 = Lz * Lz;
+  return UnitInertia(one_twelfth * (Ly2 + Lz2), one_twelfth * (Lx2 + Lz2),
+                     one_twelfth * (Lx2 + Ly2));
+}
+
+template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   DRAKE_THROW_UNLESS(r >= 0);
   DRAKE_THROW_UNLESS(L >= 0);

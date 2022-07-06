@@ -71,6 +71,7 @@ class UniversalJoint final : public Joint<T> {
   UniversalJoint(const std::string& name, const Frame<T>& frame_on_parent,
                  const Frame<T>& frame_on_child, double damping = 0)
       : Joint<T>(name, frame_on_parent, frame_on_child,
+                 VectorX<double>::Constant(2, damping),
                  VectorX<double>::Constant(
                      2, -std::numeric_limits<double>::infinity()),
                  VectorX<double>::Constant(
@@ -84,7 +85,6 @@ class UniversalJoint final : public Joint<T> {
                  VectorX<double>::Constant(
                      2, std::numeric_limits<double>::infinity())) {
     DRAKE_THROW_UNLESS(damping >= 0);
-    damping_ = damping;
   }
 
   const std::string& type_name() const override {
@@ -97,7 +97,10 @@ class UniversalJoint final : public Joint<T> {
   /// with ωᵢ the angular rates about the i-th axis for `this` joint (see
   /// get_angular_rates())and τᵢ the torque on child body B about the same i-th
   /// axis.
-  double damping() const { return damping_; }
+  double damping() const {
+    // N.B. Both damping coefficients are set to the same value for this joint.
+    return this->damping_vector()[0];
+  }
 
   /// @name Context-dependent value access
   /// @{
@@ -281,9 +284,6 @@ class UniversalJoint final : public Joint<T> {
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
-
-  // This joint's damping constant in N⋅m⋅s.
-  double damping_{0};
 };
 
 template <typename T>

@@ -22,6 +22,7 @@ drake_cc_package_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
+        ":deformable_model",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_contact_info",
@@ -34,6 +35,7 @@ drake_cc_package_library(
         ":point_pair_contact_info",
         ":propeller",
         ":tamsi_solver",
+        ":wing",
     ],
 )
 
@@ -43,10 +45,35 @@ drake_cc_library(
     hdrs = ["compliant_contact_manager.h"],
     deps = [
         ":multibody_plant_core",
-        "//multibody/contact_solvers:contact_solver",
+        "//multibody/contact_solvers:contact_solver_utils",
         "//multibody/contact_solvers/sap:sap_contact_problem",
         "//multibody/contact_solvers/sap:sap_friction_cone_constraint",
+        "//multibody/contact_solvers/sap:sap_limit_constraint",
+        "//multibody/contact_solvers/sap:sap_solver",
         "//multibody/triangle_quadrature",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_model",
+    srcs = [
+        "deformable_model.cc",
+    ],
+    hdrs = [
+        "deformable_model.h",
+    ],
+    deps = [
+        ":multibody_plant_core",
+        "//common:default_scalars",
+        "//common:essential",
+        "//multibody/fem:corotated_model",
+        "//multibody/fem:deformable_body_config",
+        "//multibody/fem:fem_model",
+        "//multibody/fem:fem_state",
+        "//multibody/fem:linear_constitutive_model",
+        "//multibody/fem:linear_simplex_element",
+        "//multibody/fem:simplex_gaussian_quadrature",
+        "//multibody/fem:volumetric_model",
     ],
 )
 
@@ -67,6 +94,8 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:extract_double",
+        "//math:gradient",
+        "//math:linear_solve",
     ],
 )
 
@@ -218,33 +247,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "contact_results_to_meshcat_params",
-    hdrs = ["contact_results_to_meshcat_params.h"],
-    tags = [
-        # Don't add this deprecated library into the ":plant" package library.
-        # Doing so would cause a dependency cycle.
-        "exclude_from_package",
-    ],
-    deps = [
-        "//multibody/meshcat:contact_visualizer_params",
-    ],
-)
-
-drake_cc_library(
-    name = "contact_results_to_meshcat",
-    hdrs = ["contact_results_to_meshcat.h"],
-    tags = [
-        # Don't add this deprecated library into the ":plant" package library.
-        # Doing so would cause a dependency cycle.
-        "exclude_from_package",
-    ],
-    deps = [
-        ":contact_results_to_meshcat_params",
-        "//multibody/meshcat:contact_visualizer",
-    ],
-)
-
-drake_cc_library(
     name = "internal_geometry_names",
     srcs = ["internal_geometry_names.cc"],
     hdrs = ["internal_geometry_names.h"],
@@ -329,6 +331,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "wing",
+    srcs = ["wing.cc"],
+    hdrs = ["wing.h"],
+    deps = [
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_plant_config",
     srcs = ["multibody_plant_config.cc"],
     hdrs = ["multibody_plant_config.h"],
@@ -350,11 +361,17 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "compliant_contact_manager_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
     deps = [
         ":compliant_contact_manager",
+        ":plant",
+        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "//multibody/contact_solvers:pgs_solver",
+        "//multibody/parsing",
         "//systems/primitives:pass_through",
         "//systems/primitives:zero_order_hold",
     ],
@@ -439,6 +456,7 @@ drake_cc_googletest(
         "//multibody/test_utilities:add_fixed_objects_to_plant",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:linear_system",
+        "//systems/primitives:pass_through",
     ],
 )
 
@@ -512,11 +530,15 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "multibody_plant_forward_dynamics_test",
-    data = ["//examples/atlas:models"],
+    data = [
+        "//examples/atlas:models",
+        "//examples/multibody/cart_pole:models",
+    ],
     deps = [
         ":kuka_iiwa_model_tests",
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
+        "//systems/primitives:linear_system",
     ],
 )
 
@@ -658,18 +680,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "contact_results_to_meshcat_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":contact_results_to_meshcat",
-    ],
-)
-
-drake_cc_googletest(
     name = "coulomb_friction_test",
     deps = [
         ":coulomb_friction",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_model_test",
+    deps = [
+        ":deformable_model",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/framework:diagram_builder",
     ],
 )
 
@@ -796,6 +819,18 @@ drake_cc_googletest(
         ":propeller",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "wing_test",
+    data = ["//multibody:models"],
+    deps = [
+        ":wing",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
         "//systems/framework",
     ],
 )

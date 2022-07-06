@@ -50,6 +50,11 @@ class SpaceXYZFloatingMobilizerTest : public MobilizerTester {
   const SpaceXYZFloatingMobilizer<double>* mobilizer_{nullptr};
 };
 
+TEST_F(SpaceXYZFloatingMobilizerTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(mobilizer_->can_rotate());
+  EXPECT_TRUE(mobilizer_->can_translate());
+}
+
 // Verifies methods to mutate and access the context.
 TEST_F(SpaceXYZFloatingMobilizerTest, BasicIntrospection) {
   EXPECT_TRUE(mobilizer_->is_floating());

@@ -16,9 +16,9 @@ def main():
 
     # The commit (version) here should be identical to the commit listed in
     # drake/tools/workspace/rules_python/repository.bzl.
-    rules_python_commit = "0.8.0"
+    rules_python_commit = "0.8.1"
     rules_python_url = f"https://github.com/bazelbuild/rules_python/archive/{rules_python_commit}.tar.gz"  # noqa
-    rules_python_sha256 = "9fcf91dbcc31fde6d1edb15f117246d912c33c36f44cf681976bd886538deba6"  # noqa
+    rules_python_sha256 = "cdf6b84084aad8f10bf20b46b77cb48d83c319ebe6458a18e9d2cebf57807cdd"  # noqa
 
     with open(join(scratch_dir, "WORKSPACE"), "w") as f:
         f.write(f"""

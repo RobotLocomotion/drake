@@ -8,7 +8,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/text_logging.h"
 
 using drake::symbolic::Expression;

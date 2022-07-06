@@ -15,10 +15,13 @@ namespace pendulum {
 /// @system
 /// name: PendulumPlant
 /// input_ports:
-/// - tau
+/// - tau (optional)
 /// output_ports:
 /// - state
 /// @endsystem
+///
+/// Note: If the tau input port is not connected, then the torque is
+/// taken to be zero.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -41,10 +44,12 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   /// Calculates the kinetic + potential energy.
   T CalcTotalEnergy(const systems::Context<T>& context) const;
 
-  /// Evaluates the input port and returns the scalar value
-  /// of the commanded torque.
+  /// Evaluates the input port and returns the scalar value of the commanded
+  /// torque. If the input port is not connected, then the torque is taken to
+  /// be zero.
   T get_tau(const systems::Context<T>& context) const {
-    return this->get_input_port().Eval(context)(0);
+    const systems::BasicVector<T>* u_vec = this->EvalVectorInput(context, 0);
+    return u_vec ? u_vec->GetAtIndex(0) : 0.0;
   }
 
   static const PendulumState<T>& get_state(

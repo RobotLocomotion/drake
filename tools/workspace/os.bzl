@@ -4,15 +4,15 @@
 """A collection of OS-related utilities intended for use in repository rules,
 i.e., rules used by WORKSPACE files, not BUILD files.
 
-To opt-in to the "manylinux" build variant, set the environment variable
-`DRAKE_OS=manylinux` before running the build.  The most precise way to do
-this is to add a `user.bazelrc` file to the root of the Drake source tree
-with the following content:
+To opt-in to the "manylinux" or "macos_wheel" build variants, set the
+environment variable (e.g.) `DRAKE_OS=manylinux` before running the build.  The
+most precise way to do this is to add a `user.bazelrc` file to the root of the
+Drake source tree with the following content:
 
   common --repo_env=DRAKE_OS=manylinux
 
 Alternatively, you may pass `--repo_env=DRAKE_OS=manylinux` on the bazel
-command line.
+command line. (Replace "manylinux" with "macos_wheel" as appropriate.)
 """
 
 load("@drake//tools/workspace:execute.bzl", "which")
@@ -52,24 +52,31 @@ def exec_using_which(repository_ctx, command):
 
 def _make_result(
         error = None,
-        ubuntu_release = None,
         macos_release = None,
-        is_manylinux = False,
+        ubuntu_release = None,
+        is_wheel = False,
         homebrew_prefix = None):
     """Return a fully-populated struct result for determine_os, below."""
-    if ubuntu_release != None:
-        distribution = "ubuntu"
-    elif macos_release != None:
-        distribution = "macos"
+    is_macos = (macos_release != None) and not is_wheel
+    is_macos_wheel = (macos_release != None) and is_wheel
+    is_ubuntu = (ubuntu_release != None) and not is_wheel
+    is_manylinux = (ubuntu_release != None) and is_wheel
+    if is_macos:
+        target = "macos"
+    elif is_macos_wheel:
+        target = "macos_wheel"
+    elif is_ubuntu:
+        target = "ubuntu"
     elif is_manylinux:
-        distribution = "manylinux"
+        target = "manylinux"
     else:
-        distribution = None
+        target = None
     return struct(
         error = error,
-        distribution = distribution,
-        is_macos = (macos_release != None),
-        is_ubuntu = (ubuntu_release != None and not is_manylinux),
+        target = target,
+        is_macos = is_macos,
+        is_macos_wheel = is_macos_wheel,
+        is_ubuntu = is_ubuntu,
         is_manylinux = is_manylinux,
         ubuntu_release = ubuntu_release,
         macos_release = macos_release,
@@ -109,10 +116,10 @@ def _determine_linux(repository_ctx):
 
         # Match supported Ubuntu release(s). These should match those listed in
         # both doc/_pages/from_source.md and the root CMakeLists.txt.
-        if ubuntu_release in ["20.04"]:
+        if ubuntu_release in ["20.04", "22.04"]:
             return _make_result(
                 ubuntu_release = ubuntu_release,
-                is_manylinux = is_manylinux,
+                is_wheel = is_manylinux,
             )
 
         # Nothing matched.
@@ -132,6 +139,19 @@ def _determine_macos(repository_ctx):
 
     # Shared error message text across different failure cases.
     error_prologue = "could not determine macOS version: "
+
+    # Allow the user to override the OS selection.
+    drake_os = repository_ctx.os.environ.get("DRAKE_OS", "")
+    is_macos_wheel = False
+    if len(drake_os) > 0:
+        if drake_os == "macos_wheel":
+            is_macos_wheel = True
+        else:
+            return _make_result(error = "{}{} DRAKE_OS={}".format(
+                error_prologue,
+                "unknown value for environment variable",
+                drake_os,
+            ))
 
     # Run sw_vers to determine macOS version.
     sw_vers = exec_using_which(repository_ctx, [
@@ -159,6 +179,7 @@ def _determine_macos(repository_ctx):
         return _make_result(
             macos_release = macos_release,
             homebrew_prefix = homebrew_prefix,
+            is_wheel = is_macos_wheel,
         )
 
     # Nothing matched.
@@ -168,13 +189,24 @@ def _determine_macos(repository_ctx):
 
 def determine_os(repository_ctx):
     """
-    A repository_rule helper function that determines which of the supported OS
-    versions we are targeting.
+    A repository_rule helper function that determines which of the supported
+    build environments (OS versions or wheel environments) we should target.
 
-    Note that even if the operating system hosting the build is Ubuntu, the
-    target OS might be "manylinux", which means that we only use the most basic
-    host packages from Ubuntu (libc, libstdc++, etc.).  In that case, the
-    value of is_ubuntu will be False.
+    We support four options, which are mutually exclusive and collectively
+    exhaustive: "macos" or "macos_wheel" or "ubuntu" or "manylinux".
+
+    The "manylinux" target indicates this build will be packaged into a Python
+    wheel that conforms to a "manylinux" standard such as manylinux_2_31; see
+    https://github.com/pypa/manylinux. Currently we compile this in an Ubuntu
+    container using only the most basic host packages from Ubuntu (libc,
+    libstdc++, etc.). In this case, the value of is_ubuntu will be False, but
+    ubuntu_release will still be provided.
+
+    The "macos_wheel" target indicates this build will be packaged into a
+    Python wheel.
+
+    In case of an error, the "error" attribute of the struct will be set, and
+    all of the other fields will be None or False.
 
     Argument:
         repository_ctx: The context passed to the repository_rule calling this.
@@ -182,18 +214,20 @@ def determine_os(repository_ctx):
     Result:
         a struct, with attributes:
         - error: str iff any error occurred, else None
-        - distribution: str either "ubuntu" or "macos" or "manylinux" iff no
-                        error occurred, else None
-        - is_macos: True iff on a supported macOS release, else False
-        - macos_release: str like "11" or "12" iff on a supported macOS,
-                         else None
-        - homebrew_prefix: str "/usr/local" or "/opt/homebrew" iff is_macos,
-                           else None.
-        - is_ubuntu: True iff on a supported Ubuntu version, else False
-        - ubuntu_release: str like "20.04" iff on a supported ubuntu, else None
-        - is_manylinux: True iff this build will be packaged into a Python
-                        wheel that confirms to a "manylinux" standard such as
-                        manylinux_2_27; see https://github.com/pypa/manylinux.
+
+        - target: str "macos" or "macos_wheel" or "ubuntu" or "manylinux"
+        - is_macos: True iff targeting a macOS non-wheel build
+        - is_macos_wheel: True iff targeting a macOS wheel build
+        - is_ubuntu: True iff targeting an Ubuntu non-wheel build
+        - is_manylinux: True iff targeting a Linux wheel build
+
+        - ubuntu_release: str like "20.04" or "22.04" (set any time the build
+            platform is Ubuntu, even for builds targeting "manylinux")
+        - macos_release: str like "11" or "12" (set any time the build platform
+            is macOS, even for builds targeting "macos_wheel")
+        - homebrew_prefix: str "/usr/local" or "/opt/homebrew" (set any time
+            the build platform is macOS, even for builds targeting
+            "macos_wheel")
     """
 
     os_name = repository_ctx.os.name
@@ -288,12 +322,12 @@ def _os_impl(repo_ctx):
         fail(os_result.error)
 
     constants = """
-DISTRIBUTION = {distribution}
+TARGET = {target}
 UBUNTU_RELEASE = {ubuntu_release}
 MACOS_RELEASE = {macos_release}
 HOMEBREW_PREFIX = {homebrew_prefix}
     """.format(
-        distribution = repr(os_result.distribution),
+        target = repr(os_result.target),
         ubuntu_release = repr(os_result.ubuntu_release),
         macos_release = repr(os_result.macos_release),
         homebrew_prefix = repr(os_result.homebrew_prefix),
@@ -305,6 +339,6 @@ os_repository = repository_rule(
 )
 
 """
-Provides the fields `DISTRIBUTION`, `UBUNTU_RELEASE` and `MACOS_RELEASE` from
+Provides the fields `TARGET`, `UBUNTU_RELEASE` and `MACOS_RELEASE` from
 `determine_os`.
 """

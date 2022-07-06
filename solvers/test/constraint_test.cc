@@ -3,7 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -67,7 +67,11 @@ GTEST_TEST(TestConstraint, LinearConstraintSparse) {
   EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
   EXPECT_TRUE(
       CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
+  EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(CompareMatrices(dut.A(), A_sparse.toDense()));
+#pragma GCC diagnostic pop
   EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
   EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
 
@@ -81,7 +85,7 @@ GTEST_TEST(TestConstraint, LinearConstraintSparse) {
   EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse_new.nonZeros());
   EXPECT_TRUE(
       CompareMatrices(dut.get_sparse_A().toDense(), A_sparse_new.toDense()));
-  EXPECT_TRUE(CompareMatrices(dut.A(), A_sparse_new.toDense()));
+  EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse_new.toDense()));
   EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
   EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
 }
@@ -97,7 +101,7 @@ GTEST_TEST(TestConstraint, LinearEqualityConstraintSparse) {
   EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
   EXPECT_TRUE(
       CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
-  EXPECT_TRUE(CompareMatrices(dut.A(), A_sparse.toDense()));
+  EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
   EXPECT_TRUE(CompareMatrices(dut.lower_bound(), bound));
   EXPECT_TRUE(CompareMatrices(dut.upper_bound(), bound));
 }
@@ -110,7 +114,7 @@ GTEST_TEST(TestConstraint, testLinearConstraintUpdate) {
   LinearEqualityConstraint constraint(A, b);
   EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), b));
   EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), b));
-  EXPECT_TRUE(CompareMatrices(constraint.A(), A));
+  EXPECT_TRUE(CompareMatrices(constraint.GetDenseA(), A));
   EXPECT_EQ(constraint.num_constraints(), 2);
 
   // Test Eval/CheckSatisfied using Expression.
@@ -135,9 +139,34 @@ GTEST_TEST(TestConstraint, testLinearConstraintUpdate) {
   constraint.UpdateCoefficients(A3, b3);
   EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), b3));
   EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), b3));
-  EXPECT_TRUE(CompareMatrices(constraint.A(), A3));
+  EXPECT_TRUE(CompareMatrices(constraint.GetDenseA(), A3));
   EXPECT_TRUE(CompareMatrices(constraint.get_sparse_A().toDense(), A3));
   EXPECT_EQ(constraint.num_constraints(), 3);
+}
+
+GTEST_TEST(testConstraint, testRemoveTinyCoefficient) {
+  Eigen::Matrix<double, 2, 3> A;
+  const double tol = 1E-8;
+  // clang-format off
+  A << 0.5 * tol, -0.5 * tol, 0,
+       1.5, -0.1 * tol, 0;
+  // clang-format on
+  Eigen::Vector2d lb(-0.1 * tol, 0);
+  Eigen::Vector2d ub(2, 0.1 * tol);
+  LinearConstraint dut(A, lb, ub);
+  dut.RemoveTinyCoefficient(tol);
+  Eigen::Matrix<double, 2, 3> A_expected;
+  // clang-format off
+  A_expected << 0, 0, 0,
+                1.5, 0, 0;
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(dut.get_sparse_A().toDense(), A_expected));
+  EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_expected));
+  EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
+  EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.RemoveTinyCoefficient(-1),
+                              ".*tol should be non-negative");
 }
 
 GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {

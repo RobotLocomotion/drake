@@ -126,18 +126,6 @@ class TestMultibodyTreeMath(unittest.TestCase):
         L = SpatialMomentum_[T].Zero()
         self.assertIsInstance(V.dot(momentum=L), T)
         self.assertIsInstance(V @ L, T)
-        # TODO(2022-06-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=4):
-            self.assertIsInstance(V.Shift(p_BpBq_E=p), SpatialVelocity_[T])
-            self.assertIsInstance(
-                V.ComposeWithMovingFrameVelocity(p_PoBo_E=p, V_PB_E=V),
-                SpatialVelocity_[T])
-            F = SpatialForce_[T].Zero()
-            self.assertIsInstance(V.dot(F_Bp_E=F), T)
-            self.assertIsInstance(V @ F, T)
-            L = SpatialMomentum_[T].Zero()
-            self.assertIsInstance(V.dot(L_WBp_E=L), T)
-            self.assertIsInstance(V @ L, T)
 
     @numpy_compare.check_all_types
     def test_spatial_acceleration(self, T):
@@ -155,16 +143,6 @@ class TestMultibodyTreeMath(unittest.TestCase):
         self.assertIsInstance(
             dut.Shift(offset=z, angular_velocity_of_this_frame=z),
             SpatialAcceleration_[T])
-        # TODO(2022-07-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(
-                dut.Shift(p_PoQ_E=z, w_WP_E=z),
-                SpatialAcceleration_[T])
-        # TODO(2022-07-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(
-                dut.Shift(p_PoQ_E=z),
-                SpatialAcceleration_[T])
         self.assertIsInstance(
             dut.ComposeWithMovingFrameAcceleration(
                 position_of_moving_frame=z,
@@ -172,12 +150,6 @@ class TestMultibodyTreeMath(unittest.TestCase):
                 velocity_of_moving_frame=V,
                 acceleration_of_moving_frame=dut),
             SpatialAcceleration_[T])
-        # TODO(2022-07-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(
-                dut.ComposeWithMovingFrameAcceleration(
-                    p_PB_E=z, w_WP_E=z, V_PB_E=V, A_PB_E=dut),
-                SpatialAcceleration_[T])
 
     @numpy_compare.check_all_types
     def test_spatial_force(self, T):
@@ -195,9 +167,6 @@ class TestMultibodyTreeMath(unittest.TestCase):
         V = SpatialVelocity_[T].Zero()
         self.assertIsInstance(F.dot(velocity=V), T)
         self.assertIsInstance(F @ V, T)
-        # TODO(2022-06-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(F.dot(V_IBp_E=V), T)
 
     @numpy_compare.check_all_types
     def test_spatial_momentum(self, T):
@@ -215,6 +184,3 @@ class TestMultibodyTreeMath(unittest.TestCase):
             self.assertIsInstance(dut.Shift(p_BpBq_E=p), SpatialMomentum_[T])
         self.assertIsInstance(dut.dot(velocity=V), T)
         self.assertIsInstance(dut @ V, T)
-        # TODO(2022-06-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(dut.dot(V_IBp_E=V), T)

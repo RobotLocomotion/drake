@@ -19,7 +19,10 @@ import re
 import shutil
 import stat
 import sys
+
 from subprocess import check_output, check_call
+
+from drake.tools.install import otool
 
 # Stored from command-line.
 color = False
@@ -213,39 +216,31 @@ def macos_fix_rpaths(basename, dst_full):
         [install_name_tool, "-id", "@rpath/" + basename, dst_full]
         )
     # Check if file dependencies are specified with relative paths.
-    file_output = check_output(["otool", "-L", dst_full]).decode("utf-8")
-    for line in file_output.splitlines():
-        # keep only file path, remove version information.
-        relative_path = line.split(' (')[0].strip()
-        # If path is relative, it needs to be replaced by absolute path.
-        if "@loader_path" not in relative_path:
-            continue
-        dep_basename = os.path.basename(relative_path)
+    for dep in otool.linked_libraries(dst_full):
         # Look for the absolute path in the dictionary of fixup files to
         # find library paths.
-        if dep_basename not in libraries_to_fix_rpath:
+        if dep.basename not in libraries_to_fix_rpath:
             continue
         lib_dirname = os.path.dirname(dst_full)
-        diff_path = os.path.relpath(libraries_to_fix_rpath[dep_basename],
+        diff_path = os.path.relpath(libraries_to_fix_rpath[dep.basename],
                                     lib_dirname)
         check_call(
             [install_name_tool,
-             "-change", relative_path,
+             "-change", dep.path,
              os.path.join('@loader_path', diff_path),
              dst_full]
             )
     # Remove RPATH values that contain @loader_path. These are from the build
     # tree and are irrelevant in the install tree. RPATH is not necessary as
     # relative or absolute path to each library is already known.
-    file_output = check_output(["otool", "-l", dst_full]).decode("utf-8")
-    for line in file_output.splitlines():
-        split_line = line.strip().split(' ')
-        if len(split_line) >= 2 \
-                and split_line[0] == 'path' \
-                and split_line[1].startswith('@loader_path'):
+    for command in otool.load_commands(dst_full):
+        if command['cmd'] != 'LC_RPATH' or 'path' not in command:
+            continue
+
+        path = command['path']
+        if path.startswith('@loader_path'):
             check_call(
-                [install_name_tool, "-delete_rpath", split_line[1], dst_full]
-            )
+                [install_name_tool, "-delete_rpath", path, dst_full])
 
 
 def linux_fix_rpaths(dst_full):
@@ -280,9 +275,14 @@ def linux_fix_rpaths(dst_full):
             re_result = re.match(dylib_match, ldd_result[0])
             # Look for the absolute path in the dictionary of libraries using
             # the library name without its possible version number.
-            soname, _, _ = re_result.groups()
+            soname, version, _ = re_result.groups()
             if soname not in libraries_to_fix_rpath:
-                continue
+                # Some third party libraries that are copied rather than
+                # compiled such as mosek are stored as keys in
+                # libraries_to_fix_rpath with the version (e.g., libname.so.1).
+                soname = f'{soname}{version}'
+                if soname not in libraries_to_fix_rpath:
+                    continue
             lib_dirname = os.path.dirname(dst_full)
             diff_path = os.path.dirname(
                 os.path.relpath(libraries_to_fix_rpath[soname], lib_dirname)

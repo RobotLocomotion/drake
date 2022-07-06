@@ -27,14 +27,6 @@ namespace {
 // without a good reason, maintainers should revisit their changes to see why
 // heap usage has increased.
 
-// TODO(sherm1) Remove this if AutoDiffXd heap usage can be made the same
-//   in Release and Debug builds (higher in Debug currently).
-// Use this to suppress heap limiting in Debug builds.
-drake::test::LimitMallocParams LimitReleaseOnly(int max_num_allocations) {
-  if (kDrakeAssertIsArmed) { return {}; }
-  return { .max_num_allocations = max_num_allocations };
-}
-
 // Track and report simple streaming statistics on allocations. Variance
 // tracking is adapted from:
 // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
@@ -200,25 +192,9 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
       x_autodiff);
 
-  auto compute = [&]() {
+  for (auto _ : state) {
     InvalidateState();
     plant_autodiff_->CalcMassMatrix(*context_autodiff_, &M_autodiff);
-  };
-
-  // The first iteration allocates more memory than subsequent runs.
-  compute();
-
-  for (int k = 0; k < 3; k++) {
-    // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(31426));
-
-    compute();
-
-    tracker_.Update(guard.num_allocations());
-  }
-
-  for (auto _ : state) {
-    compute();
   }
   tracker_.Report(&state);
 }
@@ -236,27 +212,11 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
       x_autodiff);
 
-  auto compute = [&]() {
+  for (auto _ : state) {
     InvalidateState();
     plant_autodiff_->CalcInverseDynamics(*context_autodiff_,
                                          vdot_autodiff,
                                          external_forces_autodiff);
-  };
-
-  // The first iteration allocates more memory than subsequent runs.
-  compute();
-
-  for (int k = 0; k < 3; k++) {
-    // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(38049));
-
-    compute();
-
-    tracker_.Update(guard.num_allocations());
-  }
-
-  for (auto _ : state) {
-    compute();
   }
   tracker_.Report(&state);
 }
@@ -272,30 +232,11 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
       x_autodiff);
 
-  auto compute = [&]() {
+  for (auto _ : state) {
     InvalidateState();
     port_value.GetMutableData();  // Invalidates caching of inputs.
     plant_autodiff_->CalcTimeDerivatives(*context_autodiff_,
                                          derivatives_autodiff.get());
-  };
-
-  // The first iteration allocates more memory than subsequent runs.
-  compute();
-
-  for (int k = 0; k < 3; k++) {
-    // @see LimitMalloc note above. For this particular limit, the high water
-    // mark comes when building against Eigen 3.4, so only tighten the limit
-    // here if you've tested vs Eigen 3.4 specifically -- our default build
-    // of Drake currently uses the Eigen 3.3 series.
-    LimitMalloc guard(LimitReleaseOnly(57916));
-
-    compute();
-
-    tracker_.Update(guard.num_allocations());
-  }
-
-  for (auto _ : state) {
-    compute();
   }
   tracker_.Report(&state);
 }

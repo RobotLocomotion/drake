@@ -12,8 +12,8 @@ gfortran
 libgfortran-7-dev
 yasm
 # Clang (for clang-format).
-libclang-9-dev
-clang-format-9
+libclang-12-dev
+clang-format-12
 # Other code tools.
 cmake
 git
@@ -31,9 +31,7 @@ zip
 # Build dependencies (general).
 libgl1-mesa-dev
 libglib2.0-dev
-libjchart2d-java
-libnlopt-dev
-libnlopt-cxx-dev
+libmumps-seq-dev
 libxt-dev
 # Build dependencies (OpenCL).
 opencl-headers

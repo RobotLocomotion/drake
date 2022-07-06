@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <ostream>
 #include <set>
@@ -17,7 +18,6 @@
 #include <fmt/ostream.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/symbolic_decompose.h"
 #include "drake/common/symbolic_monomial_util.h"
 #include "drake/math/matrix_util.h"
@@ -50,6 +50,8 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 using internal::CreateBinding;
+
+const double kInf = std::numeric_limits<double>::infinity();
 
 MathematicalProgram::MathematicalProgram() = default;
 
@@ -177,11 +179,13 @@ symbolic::Polynomial MathematicalProgram::NewFreePolynomialImpl(
           indeterminates, degree, degree_type);
   const VectorXDecisionVariable coeffs{
       this->NewContinuousVariables(m.size(), coeff_name)};
-  symbolic::Polynomial p;
-  for (int i = 0; i < m.size(); ++i) {
-    p.AddProduct(coeffs(i), m(i));  // p += coeffs(i) * m(i);
+  symbolic::Polynomial::MapType p_map;
+  // Since each entry in m is unique, we construct the polynomial using a map
+  // with m(i) being the map key.
+  for (int i = 0; i < coeffs.rows(); ++i) {
+    p_map.emplace(m(i), coeffs(i));
   }
-  return p;
+  return symbolic::Polynomial(std::move(p_map));
 }
 
 symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
@@ -212,9 +216,9 @@ symbolic::Polynomial MathematicalProgram::NewOddDegreeFreePolynomial(
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
 MathematicalProgram::NewSosPolynomial(
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-    NonnegativePolynomial type) {
+    NonnegativePolynomial type, const std::string& gram_name) {
   const MatrixXDecisionVariable Q =
-      NewSymmetricContinuousVariables(monomial_basis.size());
+      NewSymmetricContinuousVariables(monomial_basis.size(), gram_name);
   const symbolic::Polynomial p = NewSosPolynomial(Q, monomial_basis, type);
   return std::make_pair(p, Q);
 }
@@ -267,32 +271,23 @@ symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
 
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
 MathematicalProgram::NewSosPolynomial(const symbolic::Variables& indeterminates,
-                                      int degree, NonnegativePolynomial type) {
-  DRAKE_DEMAND(degree > 0 && degree % 2 == 0);
-  const drake::VectorX<symbolic::Monomial> x{
-      MonomialBasis(indeterminates, degree / 2)};
-  return NewSosPolynomial(x, type);
-}
-
-std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
-MathematicalProgram::NewNonnegativePolynomial(
-    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-    NonnegativePolynomial type) {
-  return NewSosPolynomial(monomial_basis, type);
-}
-
-symbolic::Polynomial MathematicalProgram::NewNonnegativePolynomial(
-    const Eigen::Ref<const MatrixX<symbolic::Variable>>& gramian,
-    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-    NonnegativePolynomial type) {
-  return NewSosPolynomial(gramian, monomial_basis, type);
-}
-
-pair<symbolic::Polynomial, MatrixXDecisionVariable>
-MathematicalProgram::NewNonnegativePolynomial(const Variables& indeterminates,
-                                              const int degree,
-                                              NonnegativePolynomial type) {
-  return NewSosPolynomial(indeterminates, degree, type);
+                                      int degree, NonnegativePolynomial type,
+                                      const std::string& gram_name) {
+  DRAKE_DEMAND(degree >= 0 && degree % 2 == 0);
+  if (degree == 0) {
+    // The polynomial only has a non-negative constant term.
+    const symbolic::Variable poly_constant =
+        NewContinuousVariables<1>(gram_name)(0);
+    AddBoundingBoxConstraint(0, kInf, poly_constant);
+    MatrixXDecisionVariable gram(1, 1);
+    gram(0, 0) = poly_constant;
+    return std::make_pair(
+        symbolic::Polynomial({{symbolic::Monomial(), poly_constant}}), gram);
+  } else {
+    const drake::VectorX<symbolic::Monomial> x{
+        MonomialBasis(indeterminates, degree / 2)};
+    return NewSosPolynomial(x, type, gram_name);
+  }
 }
 
 std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
@@ -582,13 +577,6 @@ MathematicalProgram::AddMaximizeLogDeterminantCost(
   return std::make_tuple(cost, std::move(t), std::move(Z));
 }
 
-std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
-           MatrixX<symbolic::Expression>>
-MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
-    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
-  return AddMaximizeLogDeterminantCost(X);
-}
-
 Binding<LinearCost> MathematicalProgram::AddMaximizeGeometricMeanCost(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b,
@@ -838,7 +826,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   } else {
     // TODO(eric.cousineau): This is a good assertion... But seems out of place,
     // possibly redundant w.r.t. the binding infrastructure.
-    DRAKE_ASSERT(binding.evaluator()->A().cols() ==
+    DRAKE_ASSERT(binding.evaluator()->GetDenseA().cols() ==
                  static_cast<int>(binding.GetNumElements()));
     if (!CheckBinding(binding)) {
       return binding;
@@ -859,7 +847,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
-  DRAKE_ASSERT(binding.evaluator()->A().cols() ==
+  DRAKE_ASSERT(binding.evaluator()->GetDenseA().cols() ==
                static_cast<int>(binding.GetNumElements()));
   if (!CheckBinding(binding)) {
     return binding;
@@ -973,9 +961,9 @@ Binding<RotatedLorentzConeConstraint>
 MathematicalProgram::AddQuadraticAsRotatedLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& b, double c,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+    const Eigen::Ref<const VectorXDecisionVariable>& vars, double psd_tol) {
   auto constraint =
-      internal::ParseQuadraticAsRotatedLorentzConeConstraint(Q, b, c);
+      internal::ParseQuadraticAsRotatedLorentzConeConstraint(Q, b, c, psd_tol);
   return AddConstraint(constraint, vars);
 }
 
@@ -1368,8 +1356,9 @@ namespace {
 MatrixXDecisionVariable DoAddSosConstraint(
     MathematicalProgram* const prog, const symbolic::Polynomial& p,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-    MathematicalProgram::NonnegativePolynomial type) {
-  const auto pair = prog->NewSosPolynomial(monomial_basis, type);
+    MathematicalProgram::NonnegativePolynomial type,
+    const std::string& gram_name) {
+  const auto pair = prog->NewSosPolynomial(monomial_basis, type, gram_name);
   const symbolic::Polynomial& sos_poly{pair.first};
   const MatrixXDecisionVariable& Q{pair.second};
 
@@ -1383,9 +1372,12 @@ MatrixXDecisionVariable DoAddSosConstraint(
 // Body of MathematicalProgram::AddSosConstraint(const symbolic::Polynomial&).
 pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> DoAddSosConstraint(
     MathematicalProgram* const prog, const symbolic::Polynomial& p,
-    MathematicalProgram::NonnegativePolynomial type) {
-  const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p);
-  const MatrixXDecisionVariable Q = prog->AddSosConstraint(p, m, type);
+    MathematicalProgram::NonnegativePolynomial type,
+    const std::string& gram_name) {
+  const symbolic::Polynomial p_expanded = p.Expand();
+  const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p_expanded);
+  const MatrixXDecisionVariable Q =
+      prog->AddSosConstraint(p_expanded, m, type, gram_name);
   return std::make_pair(Q, m);
 }
 
@@ -1394,62 +1386,70 @@ pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> DoAddSosConstraint(
 MatrixXDecisionVariable MathematicalProgram::AddSosConstraint(
     const symbolic::Polynomial& p,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-    MathematicalProgram::NonnegativePolynomial type) {
+    MathematicalProgram::NonnegativePolynomial type,
+    const std::string& gram_name) {
   const Variables indeterminates_vars{indeterminates()};
   if (Variables(p.indeterminates()).IsSubsetOf(indeterminates_vars) &&
       intersect(indeterminates_vars, Variables(p.decision_variables()))
           .empty()) {
-    return DoAddSosConstraint(this, p, monomial_basis, type);
+    return DoAddSosConstraint(this, p, monomial_basis, type, gram_name);
   } else {
     // Need to reparse p, we first make a copy of p and reparse that.
     symbolic::Polynomial p_reparsed{p};
     Reparse(&p_reparsed);
-    return DoAddSosConstraint(this, p_reparsed, monomial_basis, type);
+    return DoAddSosConstraint(this, p_reparsed, monomial_basis, type,
+                              gram_name);
   }
 }
 
 pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
 MathematicalProgram::AddSosConstraint(
     const symbolic::Polynomial& p,
-    MathematicalProgram::NonnegativePolynomial type) {
+    MathematicalProgram::NonnegativePolynomial type,
+    const std::string& gram_name) {
   const Variables indeterminates_vars{indeterminates()};
   if (Variables(p.indeterminates()).IsSubsetOf(indeterminates_vars) &&
       intersect(indeterminates_vars, Variables(p.decision_variables()))
           .empty()) {
-    return DoAddSosConstraint(this, p, type);
+    return DoAddSosConstraint(this, p, type, gram_name);
   } else {
     // Need to reparse p, we first make a copy of p and reparse that.
     symbolic::Polynomial p_reparsed{p};
     Reparse(&p_reparsed);
-    return DoAddSosConstraint(this, p_reparsed, type);
+    return DoAddSosConstraint(this, p_reparsed, type, gram_name);
   }
 }
 
 MatrixXDecisionVariable MathematicalProgram::AddSosConstraint(
     const symbolic::Expression& e,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-    MathematicalProgram::NonnegativePolynomial type) {
+    MathematicalProgram::NonnegativePolynomial type,
+    const std::string& gram_name) {
   return AddSosConstraint(
       symbolic::Polynomial{e, symbolic::Variables{this->indeterminates()}},
-      monomial_basis, type);
+      monomial_basis, type, gram_name);
 }
 
 pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
 MathematicalProgram::AddSosConstraint(
     const symbolic::Expression& e,
-    MathematicalProgram::NonnegativePolynomial type) {
+    MathematicalProgram::NonnegativePolynomial type,
+    const std::string& gram_name) {
   return AddSosConstraint(
       symbolic::Polynomial{e, symbolic::Variables{this->indeterminates()}},
-      type);
+      type, gram_name);
 }
 
-void MathematicalProgram::AddEqualityConstraintBetweenPolynomials(
+std::vector<Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddEqualityConstraintBetweenPolynomials(
     const symbolic::Polynomial& p1, const symbolic::Polynomial& p2) {
   symbolic::Polynomial poly_diff = p1 - p2;
   Reparse(&poly_diff);
+  std::vector<Binding<LinearEqualityConstraint>> ret;
   for (const auto& item : poly_diff.monomial_to_coefficient_map()) {
-    AddLinearEqualityConstraint(item.second, 0);
+    ret.push_back(AddLinearEqualityConstraint(item.second, 0));
   }
+  return ret;
 }
 
 double MathematicalProgram::GetInitialGuess(

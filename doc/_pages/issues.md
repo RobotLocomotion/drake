@@ -7,7 +7,6 @@ to coordinate bug resolution and feature development. We organize issues using
 labels.  Each label uses the format ``group: value``, where ``group`` is one
 of the following:
 
-* ``team``: Indicates the engineering team that owns the issue.
 * ``component``: Indicates the primary affected feature area.
 * ``type``: Indicates the nature of the issue.
 * ``priority``: Indicates the urgency of resolution.
@@ -21,109 +20,225 @@ The Drake development team will apply appropriate labels later as needed.
 
 Every issue must have at least one owner assigned.
 
-# Team
-
-Every issue must have at least one ``team`` label. The teams, their leads, and
-their responsibilities are:
-
-* ``dynamics``
-  * lead: sherm1
-  * responsibilities: physical accuracy, numerical methods, collision,
-  systems framework
-
-* ``kitware``
-  * lead: BetsyMcPhail
-  * responsibilities: build, continuous integration
-
-* ``manipulation``
-  * lead: hongkai-dai
-  * responsibilities: optimizers, solvers, symbolic analysis,
-  ``drake/manipulation/`` subdirectory
-
-* ``robot locomotion group``
-  * lead: RussTedrake
-  * responsibilities: examples/requests from MIT projects / MIT courses
-
 # Component
 
-Every issue must have at most one ``component`` label. The components are:
+Every issue must at least one ``component`` label assigned. Our preference is
+to have exactly one ``component`` per issue, but we allow multiple in case
+several components are equally relevant.
 
-* ``build system``
-  * Bazel, CMake, dependencies, memory checkers, linters, etc.
-  * typical team: kitware
+The components are:
+<table>
 
-* ``continuous integration``
-  * Jenkins, CDash, mirroring of externals, Drake website, etc.
-  * typical team: kitware
+<tr>
+<th>Component</th>
+<th>Description</th>
+<th>Lead</th>
+<th>Typical Directories</th>
+</tr>
 
-* ``distribution``
-  * Nightly binaries, monthly releases, docker, installation
-  via apt or brew, etc.
-  * typical team: kitware
+<tr>
+<td><code>build system</code></td>
+<td>Bazel, CMake, dependencies, memory checkers, linters.</td>
+<td>jwnimmer-tri</td>
+<td><small>
+tools
+</small></td>
+</tr>
 
-* ``geometry externals``
-  * VTK, FCL, drake_visualizer (core behavior), etc.
-  * typical team: kitware
+<tr>
+<td><code>continuous&nbsp;integration</code></td>
+<td>Jenkins, CDash, mirroring of externals, website infrastructure.</td>
+<td>BetsyMcPhail</td>
+<td><small>
+RobotLocomotion/drake-ci
+</small></td>
+</tr>
 
-* ``geometry general``
-  * Geometry infrastructure or topics that defy categorization into other geometry
-  components.
-  * typical team: dynamics
+<tr>
+<td><code>distribution</code></td>
+<td>Nightly binaries, monthly releases, docker, installation.</td>
+<td>jwnimmer-tri</td>
+<td><small>
+tools/install<br>
+tools/wheel
+</small></td>
+</tr>
 
-* ``geometry illustration``
-  * What and how geometry gets communicated to external visualizers.
-  * typical team: dynamics
+<tr>
+<td><code>geometry general</code></td>
+<td>Geometry infrastructure or topics that defy categorization into other
+  geometry components.</td>
+<td>rpoyner-tri</td>
+<td><small>
+n/a
+</small></td>
+</tr>
 
-* ``geometry perception``
-  * How geometry appears in color, depth, and label images (via the RenderEngine API).
-  * typical team: dynamics
+<tr>
+<td><code>geometry illustration</code></td>
+<td>What and how geometry gets communicated to external visualizers.</td>
+<td>joemasterjohn</td>
+<td><small>
+(portions of) geometry<br>
+multibody/meshcat
+</small></td>
+</tr>
 
-* ``geometry proximity``
-  * Contact, distance, signed distance queries and related properties.
-  * typical team: dynamics
+<tr>
+<td><code>geometry perception</code></td>
+<td>How geometry appears in color, depth, and label images (via the
+  RenderEngine API).</td>
+<td>zachfang</td>
+<td><small>
+geometry/render<br>
+systems/rendering
+</small></td>
+</tr>
 
-* ``jupyter``
-  * Jupyter notebook infrastructure, Binder integration, etc.
-  * *Note*: This label does not imply content authoring for tutorials.
-  * typical team: kitware
+<tr>
+<td><code>geometry proximity</code></td>
+<td>Contact, distance, signed distance queries and related properties.</td>
+<td>DamrongGuoy</td>
+<td><small>
+(portions of) geometry<br>
+geometry/proximity
+</small></td>
+</tr>
 
-* ``mathematical program``
-  * Formulating and solving mathematical programs through numerical optimization,
-  usually in ``drake/solvers``.
-  * typical team: manipulation
+<tr>
+<td><code>jupyter</code></td>
+<td>Topics relevant only when running inside a Python notebook. This label does
+  not imply authoring tutorials (use component: tutorials for that).</td>
+<td>RussTedrake</td>
+<td><small>
+n/a
+</small></td>
+</tr>
 
-* ``multibody plant``
-  * MultibodyPlant and related code and documentation
-  usually in ``drake/multibody``.
-  * typical team: dynamics
+<tr>
+<td><code>mathematical program</code></td>
+<td>Formulating and solving mathematical programs; our autodiff and symbolic
+  libraries.</td>
+<td>hongkai-dai</td>
+<td><small>
+common/symbolic_**<br>
+solvers
+</small></td>
+</tr>
 
-* ``softsim fem``
-  * Deformable body simulation using Finite Element Method (FEM) usually in
-  ``drake/multibody/fem``.
-  * typical team: dynamics
+<tr>
+<td><code>messaging</code></td>
+<td>Message-passing infrastructure, i.e., LCM.</td>
+<td>sammy-tri</td>
+<td><small>
+lcm
+systems/lcm
+</small></td>
+</tr>
 
-* ``pydrake``
-  * Python API and documentation under ``//bindings/pydrake`` (and
-  its supporting Starlark macros), the ``RobotLocomotion/pybind11`` fork, etc.
-  * typical team: kitware
+<tr>
+<td><code>multibody parsing</code></td>
+<td>Loading models into MultibodyPlant.</td>
+<td>rpoyner-tri</td>
+<td><small>
+multibody/parsing
+</small></td>
+</tr>
 
-* ``simulator``
-  * Simulator, integrators, and related code and documentation,
-  usually in ``drake/systems/analysis``.
-  * typical team: dynamics
+<tr>
+<td><code>multibody plant</code></td>
+<td>MultibodyPlant and supporting code.</td>
+<td>amcastro-tri</td>
+<td><small>
+multibody/contact_solvers<br>
+multibody/math<br>
+multibody/plant<br>
+multibody/tree<br>
+</small></td>
+</tr>
 
-* ``system framework``
-  * System, Context, and related code and documentation,
-  usually in ``drake/systems/framework``.
-  * typical team: dynamics
+<tr>
+<td><code>planning and control</code></td>
+<td>Optimization-based planning and control, and search- and sampling-based
+  planning.</td>
+<td>hongkai-dai</td>
+<td><small>
+geometry/optimization<br>
+multibody/inverse_kinematics<br>
+multibody/optimization<br>
+systems/controllers<br>
+systems/trajectory_optimization
+</small></td>
+</tr>
+
+<tr>
+<td><code>pydrake</code></td>
+<td>Python API and its supporting Starlark macros.</td>
+<td>EricCousineau-TRI</td>
+<td><small>
+bindings/pydrake<br>
+RobotLocomotion/pybind11
+</small></td>
+</tr>
+
+<tr>
+<td><code>simulator</code></td>
+<td>Simulator, integrators, and supporting code.</td>
+<td>sherm1</td>
+<td><small>
+systems/analysis
+</small></td>
+</tr>
+
+<tr>
+<td><code>softsim fem</code></td>
+<td>Deformable body simulation using Finite Element Method (FEM).</td>
+<td>xuchenhan-tri</td>
+<td><small>
+multibody/fem
+</small></td>
+</tr>
+
+<tr>
+<td><code>system framework</code></td>
+<td>System, Context, and supporting code.</td>
+<td>sherm1</td>
+<td><small>
+systems/framework<br>
+systems/primitives
+</small></td>
+</tr>
+
+<tr>
+<td><code>tutorials</code></td>
+<td>Drake's tutorials, examples, and website content.</td>
+<td>jwnimmer-tri</td>
+<td><small>
+examples<br>
+tutorials
+</small></td>
+</tr>
+
+</table>
+
+The responsibilities of the "lead" are to:
+
+* Triage newly-filed issues to make sure that the issue:
+  * is not a duplicate of an existing issue;
+  * contains sufficient information to understand the problem; and
+  * has a clear victory condition.
+* Periodically revisit old issues to see what can be closed.
+
+The lead is the primary point of contact for these tasks, but is free to
+delegate the work to others.
 
 # Priority
 
-The ``emergency`` priority indicates that the owning team should not work
+The ``emergency`` priority indicates that the involved parties should not work
 on anything else until the issue is resolved.
 
-The other priorities are determined by the owning team. The following rules of
-thumb may be useful for issues:
+The other priorities are determined by the lead of the assigned component. The
+following rules of thumb may be useful for issues:
 
 * ``priority: high`` - planned to receive attention within the month.
 * ``priority: medium`` - planned to receive attention within the quarter.

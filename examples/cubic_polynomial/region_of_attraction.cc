@@ -8,7 +8,7 @@
 // example.
 
 #include <cmath>
-#include <ostream>
+#include <iostream>
 
 #include "drake/common/symbolic.h"
 #include "drake/common/unused.h"

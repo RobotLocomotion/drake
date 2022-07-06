@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/solver_interface.h"
@@ -85,7 +85,12 @@ class GraphOfConvexSets {
     /** Returns a const reference to the underlying ConvexSet. */
     const ConvexSet& set() const { return *set_; }
 
-    /** Returns the solution of x() in a MathematicalProgramResult. */
+    /** Returns the solution of x() in a MathematicalProgramResult.  This
+    solution is NaN if the vertex is not in the shortest path (or if we are
+    solving the the convex relaxation and the total flow through this vertex at
+    the solution is numerically close to zero).  We prefer to return NaN than a
+    value not contained in set().
+    */
     Eigen::VectorXd GetSolution(
         const solvers::MathematicalProgramResult& result) const;
 
@@ -361,6 +366,7 @@ class GraphOfConvexSets {
   @throws std::exception if any of the costs or constraints in the graph are
   incompatible with the shortest path formulation or otherwise unsupported.
   All costs must be non-negative (for all values of the continuous variables).
+
   @pydrake_mkdoc_identifier{by_id}
   */
   solvers::MathematicalProgramResult SolveShortestPath(

@@ -16,6 +16,70 @@ using std::runtime_error;
 using std::string;
 
 namespace {
+
+// Helper class for IsAffine functions below where an instance of this class
+// is passed to Eigen::MatrixBase::visit() function.
+class IsAffineVisitor {
+ public:
+  IsAffineVisitor() = default;
+  explicit IsAffineVisitor(const Variables& variables)
+      : variables_{&variables} {}
+
+  // Called for the first coefficient. Needed for Eigen::MatrixBase::visit()
+  // function.
+  void init(const Expression& e, const Eigen::Index i, const Eigen::Index j) {
+    (*this)(e, i, j);
+  }
+
+  // Called for all other coefficients. Needed for Eigen::MatrixBase::visit()
+  // function.
+  void operator()(const Expression& e, const Eigen::Index, const Eigen::Index) {
+    // Note that `IsNotAffine` is only called when we have not found a
+    // non-affine element yet.
+    found_non_affine_element_ = found_non_affine_element_ || IsNotAffine(e);
+  }
+
+  [[nodiscard]] bool result() const { return !found_non_affine_element_; }
+
+ private:
+  // Returns true if `e` is *not* affine in variables_ (if exists) or all
+  // variables in `e`.
+  [[nodiscard]] bool IsNotAffine(const Expression& e) const {
+    // TODO(#16393) This check is incorrect when variables_ is non-null.
+    if (!e.is_polynomial()) {
+      return true;
+    }
+    const Polynomial p{(variables_ != nullptr) ? Polynomial{e, *variables_}
+                                               : Polynomial{e}};
+    return p.TotalDegree() > 1;
+  }
+
+  bool found_non_affine_element_{false};
+  const Variables* const variables_{nullptr};
+};
+
+}  // namespace
+
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m,
+              const Variables& vars) {
+  if (m.size() == 0) {
+    return true;
+  }
+  IsAffineVisitor visitor{vars};
+  m.visit(visitor);
+  return visitor.result();
+}
+
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m) {
+  if (m.size() == 0) {
+    return true;
+  }
+  IsAffineVisitor visitor;
+  m.visit(visitor);
+  return visitor.result();
+}
+
+namespace {
 void ThrowError(const string& type, const string& expression) {
   throw runtime_error("While decomposing an expression, we detects that a " +
                       type + " expression: " + expression + ".");
@@ -215,10 +279,52 @@ void DecomposeAffineExpressions(const Eigen::Ref<const VectorX<Expression>>& v,
   // v = A * vars + b
   *A = Eigen::MatrixXd::Zero(v.rows(), vars->rows());
   *b = Eigen::VectorXd::Zero(v.rows());
+  Eigen::RowVectorXd Ai(A->cols());
   for (int i{0}; i < v.size(); ++i) {
     const Expression& e_i{v(i)};
-    DecomposeAffineExpression(e_i, map_var_to_index, A->row(i), b->data() + i);
+    DecomposeAffineExpression(e_i, map_var_to_index, &Ai, b->data() + i);
+    A->row(i) = Ai;
   }
+}
+
+int DecomposeAffineExpression(
+    const symbolic::Expression& e,
+    const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
+    EigenPtr<Eigen::RowVectorXd> coeffs, double* constant_term) {
+  DRAKE_DEMAND(coeffs->cols() == static_cast<int>(map_var_to_index.size()));
+  coeffs->setZero();
+  *constant_term = 0;
+  if (!e.is_polynomial()) {
+    std::ostringstream oss;
+    oss << "Expression " << e << "is not a polynomial.\n";
+    throw std::runtime_error(oss.str());
+  }
+  const symbolic::Polynomial poly{e};
+  int num_variable = 0;
+  for (const auto& p : poly.monomial_to_coefficient_map()) {
+    const auto& p_monomial = p.first;
+    DRAKE_ASSERT(is_constant(p.second));
+    const double p_coeff = symbolic::get_constant_value(p.second);
+    if (p_monomial.total_degree() > 1) {
+      std::stringstream oss;
+      oss << "Expression " << e << " is non-linear.";
+      throw std::runtime_error(oss.str());
+    } else if (p_monomial.total_degree() == 1) {
+      // Linear coefficient.
+      const auto& p_monomial_powers = p_monomial.get_powers();
+      DRAKE_DEMAND(p_monomial_powers.size() == 1);
+      const symbolic::Variable::Id var_id =
+          p_monomial_powers.begin()->first.get_id();
+      (*coeffs)(map_var_to_index.at(var_id)) = p_coeff;
+      if (p_coeff != 0) {
+        ++num_variable;
+      }
+    } else {
+      // Constant term.
+      *constant_term = p_coeff;
+    }
+  }
+  return num_variable;
 }
 
 namespace {

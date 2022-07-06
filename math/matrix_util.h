@@ -86,6 +86,7 @@ void to_symmetric_matrix_from_lower_triangular_columns_impl(
 /// Given a column vector containing the stacked columns of the lower triangular
 /// part of a square matrix, returning a symmetric matrix whose lower
 /// triangular part is the same as the original matrix.
+/// @pydrake_mkdoc_identifier{dynamic_size}
 template <typename Derived>
 drake::MatrixX<typename Derived::Scalar>
 ToSymmetricMatrixFromLowerTriangularColumns(

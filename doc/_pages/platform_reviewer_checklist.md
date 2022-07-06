@@ -6,12 +6,34 @@ There are several policies documented in [GitHub Issue Management](/issues.html)
 that the on-call platform reviewer should enforce.  The on-call
 reviewer should run through this checklist at least once per day.
 
-Search for [issues without an assigned team](https://github.com/RobotLocomotion/drake/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+-label%3A%22team%3A+dynamics%22+-label%3A%22team%3A+kitware%22+-label%3A%22team%3A+manipulation%22+-label%3A%22team%3A+robot+locomotion+group%22)
-and assign a team.  When in doubt, seek advice on slack.
+Search for
+[issues without an assigned component](
+https://github.com/RobotLocomotion/drake/issues?q=is%3Aopen+is%3Aissue
++-label%3A%22component%3A+build+system%22
++-label%3A%22component%3A+continuous+integration%22
++-label%3A%22component%3A+distribution%22
++-label%3A%22component%3A+geometry+general%22
++-label%3A%22component%3A+geometry+illustration%22
++-label%3A%22component%3A+geometry+perception%22
++-label%3A%22component%3A+geometry+proximity%22
++-label%3A%22component%3A+jupyter%22
++-label%3A%22component%3A+mathematical+program%22
++-label%3A%22component%3A+messaging%22
++-label%3A%22component%3A+multibody+parsing%22
++-label%3A%22component%3A+multibody+plant%22
++-label%3A%22component%3A+planning+and+control%22
++-label%3A%22component%3A+pydrake%22
++-label%3A%22component%3A+simulator%22
++-label%3A%22component%3A+softsim+fem%22
++-label%3A%22component%3A+system+framework%22
++-label%3A%22component%3A+tutorials%22
+)
+and assign a component.  When in doubt, seek advice on slack.
 
-Search for [issues without an assigned individual](https://github.com/RobotLocomotion/drake/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee)
-and assign an owner.  When in doubt, assign [the lead](/issues.html#team)
-associated with the issue's ``team`` label.
+Search for
+[issues without an assigned individual](https://github.com/RobotLocomotion/drake/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee)
+and assign an owner.  When in doubt, assign [the lead](/issues.html#component)
+associated with the issue's ``component`` label.
 
 Search for [pull requests with no assignee](https://github.com/RobotLocomotion/drake/pulls?q=is%3Aopen+is%3Apr+no%3Aassignee+-label%3A%22status%3A+do+not+review%22)
 and assign a Drake Developer.  This is intended to make sure that

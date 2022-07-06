@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/meshcat/contact_visualizer_params.h"
+#include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
 #include "drake/multibody/meshcat/joint_sliders.h"
 #include "drake/multibody/meshcat/point_contact_visualizer.h"
 
@@ -36,6 +37,12 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.publish_period.doc)
         .def_readwrite(
             "color", &ContactVisualizerParams::color, cls_doc.color.doc)
+        .def_readwrite("hydro_force_color",
+            &ContactVisualizerParams::hydro_force_color,
+            cls_doc.hydro_force_color.doc)
+        .def_readwrite("hydro_moment_color",
+            &ContactVisualizerParams::hydro_moment_color,
+            cls_doc.hydro_moment_color.doc)
         .def_readwrite(
             "prefix", &ContactVisualizerParams::prefix, cls_doc.prefix.doc)
         .def_readwrite("delete_on_initialization_event",
@@ -44,9 +51,15 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def_readwrite("force_threshold",
             &ContactVisualizerParams::force_threshold,
             cls_doc.force_threshold.doc)
+        .def_readwrite("moment_threshold",
+            &ContactVisualizerParams::moment_threshold,
+            cls_doc.moment_threshold.doc)
         .def_readwrite("newtons_per_meter",
             &ContactVisualizerParams::newtons_per_meter,
             cls_doc.newtons_per_meter.doc)
+        .def_readwrite("newton_meters_per_meter",
+            &ContactVisualizerParams::newton_meters_per_meter,
+            cls_doc.newton_meters_per_meter.doc)
         .def_readwrite(
             "radius", &ContactVisualizerParams::radius, cls_doc.radius.doc)
         .def("__repr__", [](const Class& self) {
@@ -54,14 +67,20 @@ void DoScalarIndependentDefinitions(py::module m) {
               "ContactVisualizerParams("
               "publish_period={}, "
               "color={}, "
+              "hydro_force_color={}, "
+              "hydro_moment_color={} "
               "prefix={}, "
               "delete_on_initialization_event={}, "
               "force_threshold={}, "
+              "moment_threshold={} "
               "newtons_per_meter={}, "
+              "newton_meters_per_meter={} "
               "radius={})")
-              .format(self.publish_period, self.color, self.prefix,
+              .format(self.publish_period, self.color, self.hydro_force_color,
+                  self.hydro_moment_color, self.prefix,
                   self.delete_on_initialization_event, self.force_threshold,
-                  self.newtons_per_meter, self.radius);
+                  self.moment_threshold, self.newtons_per_meter,
+                  self.newton_meters_per_meter, self.radius);
         });
   }
 
@@ -71,7 +90,10 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr char doc_internal[] = "(internal use only)";
     py::class_<Class>(
         m, "_PointContactVisualizerItem", py::dynamic_attr(), doc_internal)
-        .def(ParamInit<Class>())
+        .def(py::init<std::string, std::string, Eigen::Vector3d,
+                 Eigen::Vector3d>(),
+            py::arg("body_A"), py::arg("body_B"), py::arg("contact_force"),
+            py::arg("contact_point"), doc_internal)
         .def_readwrite("body_A", &Class::body_A, doc_internal)
         .def_readwrite("body_B", &Class::body_B, doc_internal)
         .def_readwrite("contact_force", &Class::contact_force, doc_internal)
@@ -87,6 +109,36 @@ void DoScalarIndependentDefinitions(py::module m) {
                  ContactVisualizerParams>(),
             py::arg("meshcat"), py::arg("params"), doc_internal)
         .def("Update", &Class::Update, py::arg("items"));
+  }
+
+  // HydroelasticContactVisualizerItem (internal)
+  {
+    using Class =
+        multibody::meshcat::internal::HydroelasticContactVisualizerItem;
+    constexpr char doc_internal[] = "(internal use only)";
+    py::class_<Class>(m, "_HydroelasticContactVisualizerItem",
+        py::dynamic_attr(), doc_internal)
+        .def(py::init<std::string, std::string, Eigen::Vector3d,
+                 Eigen::Vector3d, Eigen::Vector3d>(),
+            py::arg("body_A"), py::arg("body_B"), py::arg("centroid_W"),
+            py::arg("force_C_W"), py::arg("moment_C_W"), doc_internal)
+        .def_readwrite("body_A", &Class::body_A, doc_internal)
+        .def_readwrite("body_B", &Class::body_B, doc_internal)
+        .def_readwrite("centroid_W", &Class::centroid_W, doc_internal)
+        .def_readwrite("force_C_W", &Class::force_C_W, doc_internal)
+        .def_readwrite("moment_C_W", &Class::moment_C_W, doc_internal);
+  }
+
+  // HydroelasticContactVisualizer (internal)
+  {
+    using Class = multibody::meshcat::internal::HydroelasticContactVisualizer;
+    constexpr char doc_internal[] = "(internal use only)";
+    py::class_<Class>(m, "_HydroelasticContactVisualizer", doc_internal)
+        .def(py::init<std::shared_ptr<geometry::Meshcat>,
+                 ContactVisualizerParams>(),
+            py::arg("meshcat"), py::arg("params"), doc_internal)
+        .def("Update", &Class::Update, py::arg("items"))
+        .def("Delete", &Class::Delete);
   }
 }
 
@@ -175,7 +227,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc)
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
         .def("Run", &Class::Run, py::arg("diagram"),
-            py::arg("timeout") = py::none(), cls_doc.Run.doc);
+            py::arg("timeout") = py::none(), cls_doc.Run.doc)
+        .def("SetPositions", &Class::SetPositions, py::arg("q"),
+            cls_doc.SetPositions.doc);
   }
 }
 }  // namespace

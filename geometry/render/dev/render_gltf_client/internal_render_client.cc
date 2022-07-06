@@ -21,7 +21,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/render/dev/render_gltf_client/internal_http_service_curl.h"
+#include "drake/geometry/render_gltf_client/internal_http_service_curl.h"
 
 namespace drake {
 namespace geometry {
@@ -37,12 +37,9 @@ using drake::systems::sensors::ImageLabel16I;
 using drake::systems::sensors::ImageRgba8U;
 namespace fs = drake::filesystem;
 
-// Convenience definitions for interacting with HttpService.
-using data_map_t = std::map<std::string, std::string>;
-
 /* Adds field_name = field_data to the map, assumes data_map does **not**
  already have the key `field_name`. */
-void AddField(data_map_t* data_map, const std::string& field_name,
+void AddField(DataFieldsMap* data_map, const std::string& field_name,
               const std::string& field_data) {
   (*data_map)[field_name] = field_data;
 }
@@ -50,7 +47,7 @@ void AddField(data_map_t* data_map, const std::string& field_name,
 /* Template overload so that we do not have to std::to_string every member of
  the intrinsics() below. */
 template <typename T>
-void AddField(data_map_t* data_map, const std::string& field_name,
+void AddField(DataFieldsMap* data_map, const std::string& field_name,
               T field_data) {
   static_assert(
       std::is_arithmetic_v<T> && !std::is_enum_v<T>,
@@ -60,14 +57,15 @@ void AddField(data_map_t* data_map, const std::string& field_name,
 
 // Overload required to prevent bad conversions between const char* and long.
 template <>
-void AddField<const char*>(data_map_t* data_map, const std::string& field_name,
+void AddField<const char*>(DataFieldsMap* data_map,
+                           const std::string& field_name,
                            const char* field_data) {
   AddField(data_map, field_name, std::string(field_data));
 }
 
 // Overload for RenderImageType, to avoid bad conversion via std::to_string.
 template <>
-void AddField<RenderImageType>(data_map_t* data_map,
+void AddField<RenderImageType>(DataFieldsMap* data_map,
                                const std::string& field_name,
                                RenderImageType field_data) {
   if (field_data == RenderImageType::kColorRgba8U) {
@@ -131,29 +129,16 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
   }
 }
 
-/* Returns '{url}' if port is <= 0, '{url}:{port}' otherwise.  Used for
- populating error messages. */
-std::string UrlWithPort(const std::string& url, int port) {
-  if (port > 0) return fmt::format("{}:{}", url, port);
-  return url;
-}
-
 }  // namespace
 
-RenderClient::RenderClient(const std::string& url, int port,
-                           const std::string& render_endpoint, bool verbose,
-                           bool no_cleanup)
+RenderClient::RenderClient(const RenderEngineGltfClientParams& params)
     : temp_directory_{drake::temp_directory()},
-      url_{url},
-      port_{port},
-      render_endpoint_{render_endpoint},
-      verbose_{verbose},
-      no_cleanup_{no_cleanup},
-      http_service_{std::make_unique<HttpServiceCurl>()} {
-  // Verify url and endpoint now rather than waiting until PostForm.
-  http_service_->ThrowIfUrlInvalid(url_);
-  http_service_->ThrowIfEndpointInvalid(render_endpoint_);
-}
+      base_url_{params.base_url},
+      render_endpoint_{params.render_endpoint},
+      verbose_{params.verbose},
+      no_cleanup_{params.no_cleanup},
+      url_{params.GetUrl()},
+      http_service_{std::make_unique<HttpServiceCurl>()} {}
 
 RenderClient::~RenderClient() {
   const fs::path temp_dir{temp_directory_};
@@ -194,7 +179,7 @@ std::string RenderClient::RenderOnServer(
   }
 
   // Add the fields to the form.
-  data_map_t field_map;
+  DataFieldsMap field_map;
   const std::string scene_sha256 = ComputeSha256(scene_path);
   AddField(&field_map, "scene_sha256", scene_sha256);
   AddField(&field_map, "image_type", image_type);
@@ -221,9 +206,9 @@ std::string RenderClient::RenderOnServer(
   AddField(&field_map, "submit", "Render");
 
   // Post the form and validate the results.
-  auto response = http_service_->PostForm(
-      temp_directory_, url_, port_, render_endpoint_, field_map,
-      {{"scene", {scene_path, mime_type}}}, verbose_);
+  auto response =
+      http_service_->PostForm(temp_directory_, url_, field_map,
+                              {{"scene", {scene_path, mime_type}}}, verbose_);
   if (!response.Good()) {
     /* Server may have responded with meaningful text, try and load the file
      as a string. */
@@ -252,12 +237,12 @@ std::string RenderClient::RenderOnServer(
     throw std::runtime_error(fmt::format(
         R"(
         ERROR doing POST:  /{}
-          Server URL:      {}
+          Server Base URL: {}
           Service Message: {}
           HTTP Code:       {}
           Server Message:  {}
         )",
-        render_endpoint_, UrlWithPort(url_, port_),
+        render_endpoint_, base_url_,
         (response.service_error_message.has_value()
              ? response.service_error_message.value()
              : "None."),
@@ -267,17 +252,17 @@ std::string RenderClient::RenderOnServer(
   // If the server did not respond with a file, there is nothing to load.
   if (!response.data_path.has_value()) {
     throw std::runtime_error(fmt::format(
-        "ERROR with POST /{} response from server, url={}, HTTP code={}: the "
-        "server was supposed to respond with a file but did not.",
-        render_endpoint_, UrlWithPort(url_, port_), response.http_code));
+        "ERROR with POST /{} response from server, base_url={}, HTTP code={}: "
+        "the server was supposed to respond with a file but did not.",
+        render_endpoint_, base_url_, response.http_code));
   }
   const std::string bin_out_path = response.data_path.value();
   if (!fs::is_regular_file(bin_out_path)) {
     throw std::runtime_error(fmt::format(
-        "ERROR with POST /{} response from service, url={}, HTTP code={}: the "
-        "service responded with a file path '{}' but the file does not exist.",
-        render_endpoint_, UrlWithPort(url_, port_), response.http_code,
-        bin_out_path));
+        "ERROR with POST /{} response from service, base_url={}, HTTP code={}: "
+        "the service responded with a file path '{}' but the file does not "
+        "exist.",
+        render_endpoint_, base_url_, response.http_code, bin_out_path));
   }
 
   /* At this point we have a seemingly valid return file from the server, see
@@ -405,13 +390,10 @@ void RenderClient::LoadColorImage(const std::string& path,
   }
 
   // Make sure we have a standard PNG image with uint8_t data per channel.
-  if (image_data->GetScalarType() != VTK_UNSIGNED_CHAR) {
-    throw std::runtime_error(fmt::format(
-        "RenderClient: loaded PNG image from '{}' has a channel size in bytes "
-        "of {}, but only RGB and RGBA uchar (channel size=1) images are "
-        "supported.",
-        path, image_data->GetScalarSize()));
-  }
+  /* no cover: this case is improbable and therefore not worth explicitly
+   testing. If this assumption proves to be wrong in the future, we can revisit
+   the decision. */
+  DRAKE_THROW_UNLESS(image_data->GetScalarType() == VTK_UNSIGNED_CHAR);
 
   /* Copy the image to the drake buffer.  VTK's image coordinate corners (how
    the data is stored in memory are transposed.  The separate loops is a slight
@@ -487,12 +469,10 @@ void RenderClient::LoadDepthImage(const std::string& path,
 
   /* Make sure we can copy directly using VTK before doing so.  Even if a 16 bit
    TIFF image was sent, VTK will load it as 32 bit float data. */
-  if (image_data->GetScalarType() != VTK_TYPE_FLOAT32) {
-    throw std::runtime_error(fmt::format(
-        "RenderClient: loaded TIFF image from '{}' did not have floating point "
-        "data, but float TIFF is required for depth images.",
-        path));
-  }
+  /* no cover: this case is improbable and therefore not worth explicitly
+   testing. If this assumption proves to be wrong in the future, we can revisit
+   the decision. */
+  DRAKE_THROW_UNLESS(image_data->GetScalarType() == VTK_TYPE_FLOAT32);
 
   image_exporter->Export(depth_image_out->at(0, 0));
 }
@@ -528,12 +508,10 @@ void RenderClient::LoadLabelImage(const std::string& path,
         path, channels));
   }
 
-  if (image_data->GetScalarType() != VTK_TYPE_UINT16) {
-    throw std::runtime_error(fmt::format(
-        "RenderClient: loaded PNG image from '{}' did not have ushort data, "
-        "but single channel ushort PNG is required for label images.",
-        path));
-  }
+  /* no cover: this case is improbable and therefore not worth explicitly
+   testing. If this assumption proves to be wrong in the future, we can revisit
+   the decision. */
+  DRAKE_THROW_UNLESS(image_data->GetScalarType() == VTK_TYPE_UINT16);
 
   /* NOTE: Officially label image is signed integers, the vtkImageExport::Export
    will reinterpret this as unsigned internally, since the loaded PNG image is

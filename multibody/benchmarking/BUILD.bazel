@@ -1,0 +1,32 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/performance:defs.bzl",
+    "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_googlebench_binary(
+    name = "iiwa_relaxed_pos_ik",
+    srcs = ["iiwa_relaxed_pos_ik.cc"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//multibody/inverse_kinematics",
+        "//multibody/parsing",
+        "//solvers:solve",
+        "//tools/performance:fixture_common",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "iiwa_relaxed_pos_ik_experiment",
+    googlebench_binary = ":iiwa_relaxed_pos_ik",
+)
+
+add_lint_tests()

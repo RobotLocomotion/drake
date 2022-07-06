@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
@@ -15,9 +16,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/render/dev/render_gltf_client/internal_http_service.h"
-#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_png.h"
-#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_tiff.h"
+#include "drake/geometry/render/dev/render_gltf_client/test/internal_sample_image_data.h"
+#include "drake/geometry/render_gltf_client/internal_http_service.h"
 
 namespace drake {
 namespace geometry {
@@ -26,6 +26,7 @@ namespace internal {
 
 namespace fs = drake::filesystem;
 
+using Params = RenderEngineGltfClientParams;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRange;
 using geometry::render::DepthRenderCamera;
@@ -38,18 +39,17 @@ class RenderClientTester {
  public:
   explicit RenderClientTester(const RenderClient* client) : client_(*client) {}
 
-  void ValidateAttributes(const std::string& url, int port,
+  void ValidateAttributes(const std::string& base_url,
                           const std::string& render_endpoint, bool verbose,
                           bool no_cleanup) const {
-    EXPECT_EQ(client_.url(), url);
-    EXPECT_EQ(client_.port(), port);
+    EXPECT_EQ(client_.base_url(), base_url);
     EXPECT_EQ(client_.render_endpoint(), render_endpoint);
     EXPECT_EQ(client_.verbose(), verbose);
     EXPECT_EQ(client_.no_cleanup(), no_cleanup);
   }
 
   void CompareAttributes(const RenderClient& other) {
-    ValidateAttributes(other.url(), other.port(), other.render_endpoint(),
+    ValidateAttributes(other.base_url(), other.render_endpoint(),
                        other.verbose(), other.no_cleanup());
   }
 
@@ -59,45 +59,37 @@ class RenderClientTester {
 
 namespace {
 
+// Constexpr dimensions for the actual testing images.
+constexpr int kTestImageWidth = 3;
+constexpr int kTestImageHeight = 2;
+
+// The paths for the testing images used across different unit tests.
+const auto kTestRgbImagePath = FindResourceOrThrow(
+    "drake/geometry/render/dev/render_gltf_client/test/test_rgb_8U.png");
+const auto kTestRgbaImagePath = FindResourceOrThrow(
+    "drake/geometry/render/dev/render_gltf_client/test/test_rgba_8U.png");
+const auto kTestDepthImagePath = FindResourceOrThrow(
+    "drake/geometry/render/dev/render_gltf_client/test/test_depth_32F.tiff");
+const auto kTestLabelImagePath = FindResourceOrThrow(
+    "drake/geometry/render/dev/render_gltf_client/test/test_label_16I.png");
+
 // Constructor / destructor ----------------------------------------------------
 GTEST_TEST(RenderClient, Constructor) {
-  const std::string url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
-  const bool no_cleanup = false;
-
-  {
-    // Provided url may not end with slash.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient(url + "/", port, render_endpoint, verbose, no_cleanup),
-        "HttpService: url may not end with '/'\\.");
-    // Provided url may not be empty.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient("", port, render_endpoint, verbose, no_cleanup),
-        "HttpService: url parameter may not be empty\\.");
-    // Provided endpoint may not start with a slash.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient(url, port, "/" + render_endpoint, verbose, no_cleanup),
-        "Provided endpoint='/render' is not valid, it may not start or end "
-        "with a '/'\\.");
-    // Provided endpoint may not end with a slash.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient(url, port, render_endpoint + "/", verbose, no_cleanup),
-        "Provided endpoint='render/' is not valid, it may not start or end "
-        "with a '/'\\.");
-  }
 
   {
     // Verify attributes after valid construction.
     auto make_client_and_verify = [&](bool p_no_cleanup) {
       std::string temp_directory;
       {
-        RenderClient client{url, port, render_endpoint, verbose, p_no_cleanup};
+        RenderClient client{Params{base_url, render_endpoint, std::nullopt,
+                                   verbose, p_no_cleanup}};
         temp_directory = client.temp_directory();
         RenderClientTester tester{&client};
         EXPECT_TRUE(fs::is_directory(client.temp_directory()));
-        tester.ValidateAttributes(url, port, render_endpoint, verbose,
+        tester.ValidateAttributes(base_url, render_endpoint, verbose,
                                   p_no_cleanup);
       }  // Client is deleted.
       if (p_no_cleanup) {
@@ -112,15 +104,15 @@ GTEST_TEST(RenderClient, Constructor) {
 }
 
 GTEST_TEST(RenderClient, Destructor) {
-  const std::string url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint = "render";
   const bool verbose = false;
 
   std::string temp_dir_path;
   // Construction with no_cleanup=false: temp_directory should be gone.
   {
-    const RenderClient client{url, port, render_endpoint, verbose, false};
+    const RenderClient client{
+        Params{base_url, render_endpoint, std::nullopt, verbose, false}};
     temp_dir_path = client.temp_directory();
     EXPECT_TRUE(fs::is_directory(temp_dir_path));
   }  // Client is deleted.
@@ -128,7 +120,8 @@ GTEST_TEST(RenderClient, Destructor) {
 
   // Construction with no_cleanup=true: temp_directory should remain.
   {
-    const RenderClient client{url, port, render_endpoint, verbose, true};
+    const RenderClient client{
+        Params{base_url, render_endpoint, std::nullopt, verbose, true}};
     temp_dir_path = client.temp_directory();
     EXPECT_TRUE(fs::is_directory(temp_dir_path));
   }  // Client is deleted.
@@ -137,25 +130,18 @@ GTEST_TEST(RenderClient, Destructor) {
 }
 
 // RenderOnServer --------------------------------------------------------------
-// Convenience definitions for interacting with HttpService.
-using data_map_t = std::map<std::string, std::string>;
-using file_map_t =
-    std::map<std::string, std::pair<std::string, std::optional<std::string>>>;
-
 // A simple HttpService that always fails.
 class FailService : public HttpService {
  public:
-  FailService() : HttpService() {}
+  FailService() = default;
 
-  HttpResponse PostForm(const std::string& /* temp_directory */,
-                        const std::string& /* url */, int /* port */,
-                        const std::string& /* endpoint */,
-                        const data_map_t& /* data_fields */,
-                        const file_map_t& /* file_fields */,
-                        bool /* verbose */ = false) override {
+  HttpResponse DoPostForm(const std::string& /* temp_directory */,
+                          const std::string& /* base_url */,
+                          const DataFieldsMap& /* data_fields */,
+                          const FileFieldsMap& /* file_fields */,
+                          bool /* verbose */ = false) override {
     HttpResponse ret;
     ret.http_code = 500;
-    ret.service_error = true;
     ret.service_error_message = "FailService always fails.";
     return ret;
   }
@@ -164,7 +150,7 @@ class FailService : public HttpService {
 /* Verifies the contract fullfilled by RenderClient::RenderOnServer, checking
  that all fields are exactly as expected (and where min_depth / max_depth are
  concerned, they are included / excluded as expected).  The code checks in
- PostForm are more or less a duplication of RenderClient::RenderOnServer,
+ DoPostForm are more or less a duplication of RenderClient::RenderOnServer,
  meaning any changes to the code populating the <form> will break this test case
  (intentionally).
 
@@ -188,17 +174,13 @@ class FieldCheckService : public HttpService {
         mime_type_{mime_type},
         depth_range_{depth_range} {}
 
-  // Checks all of the <form> fields.  Always respond with failure (http 500).
-  HttpResponse PostForm(const std::string& /* temp_directory */,
-                        const std::string& url, int /* port */,
-                        const std::string& endpoint,
-                        const data_map_t& data_fields,
-                        const file_map_t& file_fields,
-                        bool /* verbose */ = false) override {
-    ThrowIfUrlInvalid(url);
-    ThrowIfEndpointInvalid(endpoint);
-    ThrowIfFilesMissing(file_fields);
-
+  // Checks all of the <form> fields and always responds with a failure HTTP
+  // response code (500).
+  HttpResponse DoPostForm(const std::string& /* temp_directory */,
+                          const std::string& base_url,
+                          const DataFieldsMap& data_fields,
+                          const FileFieldsMap& file_fields,
+                          bool /* verbose */ = false) override {
     /* Validate all of the expected fields.  This also implicitly validates that
      every expected key has actually been provided since the test will fail on
      directly accessing a key that does not exist. */
@@ -284,29 +266,25 @@ class FieldCheckService : public HttpService {
   const std::optional<DepthRange> depth_range_;
 };
 
-using PostFormCallback_t = typename std::function<HttpResponse(
-    const std::string&, const data_map_t&, const file_map_t&)>;
+using PostFormCallback = typename std::function<HttpResponse(
+    const std::string&, const DataFieldsMap&, const FileFieldsMap&)>;
 
-/* A proxy HttpService that can be cunstructed with an std::function to modify
+/* A proxy HttpService that can be constructed with an std::function to modify
  the behavior of PostForm. */
 class ProxyService : public HttpService {
  public:
-  explicit ProxyService(const PostFormCallback_t& callback)
+  explicit ProxyService(const PostFormCallback& callback)
       : HttpService(), post_form_callback_{callback} {}
 
-  HttpResponse PostForm(const std::string& /* temp_directory */,
-                        const std::string& url, int /* port */,
-                        const std::string& endpoint,
-                        const data_map_t& data_fields,
-                        const file_map_t& file_fields,
-                        bool /* verbose */ = false) override {
-    ThrowIfUrlInvalid(url);
-    ThrowIfEndpointInvalid(endpoint);
-    ThrowIfFilesMissing(file_fields);
-    return post_form_callback_(endpoint, data_fields, file_fields);
+  HttpResponse DoPostForm(const std::string& /* temp_directory */,
+                          const std::string& base_url,
+                          const DataFieldsMap& data_fields,
+                          const FileFieldsMap& file_fields,
+                          bool /* verbose */ = false) override {
+    return post_form_callback_(base_url, data_fields, file_fields);
   }
 
-  PostFormCallback_t post_form_callback_;
+  PostFormCallback post_form_callback_;
 };
 
 /* These tests are only for the various error conditions that can come up in
@@ -320,14 +298,14 @@ GTEST_TEST(RenderClient, RenderOnServer) {
   /* NOTE: these values help ensure nothing actually gets sent over curl.  No
    test should proceed with the default HttpServiceCurl, the HttpService backend
    should be changed using client.SetHttpService before doing anything. */
-  const std::string url{"notarealserver"};
-  const int port{8192};
+  const std::string base_url{"notarealserver:8192"};
   const std::string render_endpoint{"no_render"};
   const bool verbose{false};
   const bool no_cleanup{false};
 
   // Create a client and proxy HttpService creation helper.
-  RenderClient client{url, port, render_endpoint, verbose, no_cleanup};
+  RenderClient client(
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup});
   const auto temp_dir_path = fs::path(client.temp_directory());
 
   // Create a fake scene to "upload" to the "server" and fake response file.
@@ -379,11 +357,11 @@ GTEST_TEST(RenderClient, RenderOnServer) {
      takes place in the assertions in FieldCheckService::PostForm. */
     const auto expected_message = fmt::format(
         "\\s*ERROR doing POST:\\s*/{0}\\s*"  // ERROR doing POST: /{endpoint}
-        "Server URL:\\s*{1}:{2}\\s*"         // Server URL:       {url}:{port}
+        "Server Base URL:\\s*{1}\\s*"        // Server Base URL:  {base_url}
         "Service Message:\\s*None\\.\\s*"    // Service Message:  None.
         "HTTP Code:\\s*500\\s*"              // Http Code:        {code}
         "Server Message:\\s*None\\.\\s*",    // Server Message:   None.
-        render_endpoint, url, port);
+        render_endpoint, base_url);
 
     // Check fields for a color render.
     client.SetHttpService(std::make_unique<FieldCheckService>(
@@ -417,32 +395,9 @@ GTEST_TEST(RenderClient, RenderOnServer) {
         expected_message);
   }
 
-  {
-    /* These tests confirm the error reporting format from UrlWithPort without a
-     port and alternative urls. */
-    const std::vector<std::pair<std::string, int>> url_port{
-        {"some_url", 0}, {"another_url", -1}, {"url_with_port", 200}};
-    for (const auto& [u, p] : url_port) {
-      const auto expected_message = fmt::format(
-          "\\s*ERROR doing POST:\\s*/{0}\\s*"
-          "Server URL:\\s*{1}\\s*"
-          "Service Message:\\s*FailService always fails\\.\\s*"
-          "HTTP Code:\\s*500\\s*"
-          "Server Message:\\s*None\\.\\s*",
-          render_endpoint, p > 0 ? fmt::format("{}:{}", u, p) : u);
-      RenderClient c{u, p, render_endpoint, verbose, no_cleanup};
-      const auto temp = fs::path(c.temp_directory());
-      c.SetHttpService(std::make_unique<FailService>());
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          c.RenderOnServer(color_camera.core(), RenderImageType::kColorRgba8U,
-                           fake_scene_path),
-          expected_message);
-    }
-  }
-
   // Trampoline helper to set the client HttpService.
   const auto response_path = (temp_dir_path / "response.file").string();
-  auto set_proxy = [&](const PostFormCallback_t& callback) {
+  auto set_proxy = [&](const PostFormCallback& callback) {
     // Delete the response file if it exists to start clean on each test.
     try {
       fs::remove(response_path);
@@ -464,44 +419,47 @@ GTEST_TEST(RenderClient, RenderOnServer) {
     // NOTE: all tests using this must use http code 400.
     const auto message_template = fmt::format(
         "\\s*ERROR doing POST:\\s*/{0}\\s*"  // ERROR doing POST: /{endpoint}
-        "Server URL:\\s*{1}:{2}\\s*"         // Server URL:       {url}:{port}
+        "Server Base URL:\\s*{1}\\s*"        // Server Base URL:  {base_url}
         "Service Message:\\s*None\\.\\s*"    // Service Message:  None.
         "HTTP Code:\\s*400\\s*"              // Http Code:        {code}
         "Server Message:\\s*{{}}\\s*",       // Server Message:   {message}
-        render_endpoint, url, port);
+        render_endpoint, base_url);
 
     // Case 1: edge case, service populated data_path but file is length 0.
-    set_proxy([&](const std::string&, const data_map_t&, const file_map_t&) {
-      std::ofstream response{response_path};
-      response.close();
-      HttpResponse ret;
-      ret.http_code = 400;
-      ret.data_path = response_path;
-      return ret;
-    });
+    set_proxy(
+        [&](const std::string&, const DataFieldsMap&, const FileFieldsMap&) {
+          std::ofstream response{response_path};
+          response.close();
+          HttpResponse ret;
+          ret.http_code = 400;
+          ret.data_path = response_path;
+          return ret;
+        });
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(),
                               RenderImageType::kColorRgba8U, fake_scene_path),
         fmt::format(message_template, "None\\."));
 
     // Case 2: edge case, bad response but provided message "too long".
-    set_proxy([&](const std::string&, const data_map_t&, const file_map_t&) {
-      std::ofstream response{response_path};
-      // NOTE: this value is hard-coded in RenderClient::RenderOnServer.
-      for (int i = 0; i < 8192; ++i) response << '0';
-      response.close();
-      HttpResponse ret;
-      ret.http_code = 400;
-      ret.data_path = response_path;
-      return ret;
-    });
+    set_proxy(
+        [&](const std::string&, const DataFieldsMap&, const FileFieldsMap&) {
+          std::ofstream response{response_path};
+          // NOTE: this value is hard-coded in RenderClient::RenderOnServer.
+          for (int i = 0; i < 8192; ++i) response << '0';
+          response.close();
+          HttpResponse ret;
+          ret.http_code = 400;
+          ret.data_path = response_path;
+          return ret;
+        });
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
                               fake_scene_path),
         fmt::format(message_template, "None\\."));
 
     // Case 3: edge case, message provided of valid length but cannot be opened.
-    set_proxy([&](const std::string&, const data_map_t&, const file_map_t&) {
+    set_proxy([&](const std::string&, const DataFieldsMap&,
+                  const FileFieldsMap&) {
       std::ofstream response{response_path};
       response << "If only you could read me!\n";
       response.close();
@@ -518,15 +476,16 @@ GTEST_TEST(RenderClient, RenderOnServer) {
 
     // Case 4: server response that can be read.
     const auto response_text = "You are not a valid request :p";
-    set_proxy([&](const std::string&, const data_map_t&, const file_map_t&) {
-      std::ofstream response{response_path};
-      response << response_text;
-      response.close();
-      HttpResponse ret;
-      ret.http_code = 400;
-      ret.data_path = response_path;
-      return ret;
-    });
+    set_proxy(
+        [&](const std::string&, const DataFieldsMap&, const FileFieldsMap&) {
+          std::ofstream response{response_path};
+          response << response_text;
+          response.close();
+          HttpResponse ret;
+          ret.http_code = 400;
+          ret.data_path = response_path;
+          return ret;
+        });
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
                               fake_scene_path),
@@ -535,52 +494,54 @@ GTEST_TEST(RenderClient, RenderOnServer) {
 
   {
     // No file response from server should be reported correctly.
-    set_proxy([&](const std::string&, const data_map_t&, const file_map_t&) {
-      HttpResponse ret;
-      ret.http_code = 200;
-      return ret;
-    });
+    set_proxy(
+        [&](const std::string&, const DataFieldsMap&, const FileFieldsMap&) {
+          HttpResponse ret;
+          ret.http_code = 200;
+          return ret;
+        });
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(),
-                              RenderImageType::kColorRgba8U, fake_scene_path);
-        ,
+                              RenderImageType::kColorRgba8U, fake_scene_path),
         fmt::format(
-            "ERROR with POST /{} response from server, url={}:{}, HTTP "
+            "ERROR with POST /{} response from server, base_url={}, HTTP "
             "code=200: the server was supposed to respond with a file but did "
             "not.",
-            render_endpoint, url, port));
+            render_endpoint, base_url));
   }
 
   {
     // File response provided that does not exist should be reported correctly.
-    set_proxy([&](const std::string&, const data_map_t&, const file_map_t&) {
-      // NOTE: set_proxy deletes the file.
-      HttpResponse ret;
-      ret.http_code = 200;
-      ret.data_path = response_path;
-      return ret;
-    });
+    set_proxy(
+        [&](const std::string&, const DataFieldsMap&, const FileFieldsMap&) {
+          // NOTE: set_proxy deletes the file.
+          HttpResponse ret;
+          ret.http_code = 200;
+          ret.data_path = response_path;
+          return ret;
+        });
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
                               fake_scene_path),
         fmt::format(
-            "ERROR with POST /{} response from service, url={}:{}, HTTP "
+            "ERROR with POST /{} response from service, base_url={}, HTTP "
             "code=200: the service responded with a file path '{}' but the "
             "file does not exist.",
-            render_endpoint, url, port, response_path));
+            render_endpoint, base_url, response_path));
   }
 
   {
     // File response cannot be loaded as image should be reported correctly.
-    set_proxy([&](const std::string&, const data_map_t&, const file_map_t&) {
-      std::ofstream response{response_path};
-      response << "I am not an image file!\n";
-      response.close();
-      HttpResponse ret;
-      ret.http_code = 200;
-      ret.data_path = response_path;
-      return ret;
-    });
+    set_proxy(
+        [&](const std::string&, const DataFieldsMap&, const FileFieldsMap&) {
+          std::ofstream response{response_path};
+          response << "I am not an image file!\n";
+          response.close();
+          HttpResponse ret;
+          ret.http_code = 200;
+          ret.data_path = response_path;
+          return ret;
+        });
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(),
                               RenderImageType::kColorRgba8U, fake_scene_path),
@@ -594,15 +555,14 @@ GTEST_TEST(RenderClient, RenderOnServer) {
 
   {
     // Copy a "valid" PNG file and check that it is renamed.
-    set_proxy([&](const std::string&, const data_map_t&, const file_map_t&) {
-      auto box_png =
-          FindResourceOrThrow("drake/geometry/render/test/meshes/box.png");
-      fs::copy_file(box_png, response_path);
-      HttpResponse ret;
-      ret.http_code = 200;
-      ret.data_path = response_path;
-      return ret;
-    });
+    set_proxy(
+        [&](const std::string&, const DataFieldsMap&, const FileFieldsMap&) {
+          fs::copy_file(kTestRgbaImagePath, response_path);
+          HttpResponse ret;
+          ret.http_code = 200;
+          ret.data_path = response_path;
+          return ret;
+        });
     const auto expected_path =
         fs::path(fake_scene_path).replace_extension(".png").string();
     const auto response_png = client.RenderOnServer(
@@ -613,17 +573,19 @@ GTEST_TEST(RenderClient, RenderOnServer) {
   {
     /* Manufacture a "valid" (not the same width and height) TIFF file and check
      that it is renamed. */
-    set_proxy([&](const std::string&, const data_map_t&, const file_map_t&) {
-      TestTiffGray32 gray_32{response_path, 16, 4};
-      HttpResponse ret;
-      ret.http_code = 200;
-      ret.data_path = response_path;
-      return ret;
-    });
+    set_proxy(
+        [&](const std::string&, const DataFieldsMap&, const FileFieldsMap&) {
+          fs::copy_file(kTestDepthImagePath, response_path);
+          HttpResponse ret;
+          ret.http_code = 200;
+          ret.data_path = response_path;
+          return ret;
+        });
     const auto expected_path =
         fs::path(fake_scene_path).replace_extension(".tiff").string();
     const auto response_tiff = client.RenderOnServer(
-        color_camera.core(), RenderImageType::kColorRgba8U, fake_scene_path);
+        depth_camera.core(), RenderImageType::kDepthDepth32F, fake_scene_path,
+        "test/mime_type", depth_camera.depth_range());
     EXPECT_EQ(response_tiff, expected_path);
   }
 
@@ -631,12 +593,12 @@ GTEST_TEST(RenderClient, RenderOnServer) {
 }
 
 GTEST_TEST(RenderClient, ComputeSha256) {
-  const std::string url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
-  RenderClient client{url, port, render_endpoint, verbose, no_cleanup};
+  RenderClient client{
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
 
   {
     // Failure case 1: provided input file does not exist.
@@ -688,13 +650,13 @@ GTEST_TEST(RenderClient, ComputeSha256) {
 }
 
 GTEST_TEST(RenderClient, RenameHttpServiceResponse) {
-  const std::string url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   // Keep verbose and no_cleanup `true` to get coverage on log() calls.
   const bool verbose = true;
   const bool no_cleanup = true;
-  const RenderClient client{url, port, render_endpoint, verbose, no_cleanup};
+  const RenderClient client{
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
   const fs::path temp_dir = fs::path(client.temp_directory());
   const std::string scene = temp_dir / "scene.gltf";
   std::ofstream scene_file{scene};
@@ -801,29 +763,18 @@ GTEST_TEST(RenderClient, RenameHttpServiceResponse) {
 }
 
 GTEST_TEST(RenderClient, LoadColorImage) {
-  const std::string url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
-  const RenderClient client{url, port, render_endpoint, verbose, no_cleanup};
-  const fs::path temp_dir = fs::path(client.temp_directory());
+  const RenderClient client{
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
 
-  // NOTE: keep the images small to reduce test overhead.
-  constexpr int width = 222;
-  constexpr int height = 111;
-  ImageRgba8U drake_image{width, height};
-  auto zero_drake_image = [&drake_image]() {
-    for (int j = 0; j < height; ++j) {
-      for (int i = 0; i < width; ++i) {
-        drake_image.at(i, j)[0] = 0;  // r
-        drake_image.at(i, j)[1] = 0;  // g
-        drake_image.at(i, j)[2] = 0;  // b
-        drake_image.at(i, j)[3] = 0;  // a
-      }
-    }
-  };
-
+  /* Create a Drake Image buffer with the same dimension as the testing images,
+   i.e., test_{rgb, rgba}_8U.png, to exercise the image loading code.
+   LoadColorImage() will attempt to load the PNG file to the buffer and throw
+   exceptions if the dimension, channel number, or data type is incorrect. */
+  ImageRgba8U drake_image(kTestImageWidth, kTestImageHeight, 0);
   {
     // Failure case 1: not a valid PNG file.
     const auto expected_message = "RenderClient: cannot load '{}' as PNG.";
@@ -831,6 +782,7 @@ GTEST_TEST(RenderClient, LoadColorImage) {
     DRAKE_EXPECT_THROWS_MESSAGE(client.LoadColorImage(unlikely, &drake_image),
                                 fmt::format(expected_message, unlikely));
 
+    const fs::path temp_dir = fs::path(client.temp_directory());
     const std::string fake_png_path = temp_dir / "fake.png";
     std::ofstream fake_png{fake_png_path};
     fake_png << "not a valid png file.\n";
@@ -842,95 +794,64 @@ GTEST_TEST(RenderClient, LoadColorImage) {
   }
 
   {
-    /* Failure case 2: wrong image dimensions on file.  drake_image should not
-     be accessed especially when the file dimensions are bigger. */
+    /* Failure case 2: different image dimensions between the loaded image and
+     the Drake Image buffer.  `test_drake_image` should not be accessed. */
     const std::vector<std::pair<int, int>> width_height{
-        {width, height / 2}, {width + 12, height}, {width * 2, height * 2}};
+        {1, 1},
+        {kTestImageWidth + 12, kTestImageHeight},
+        {kTestImageWidth * 2, kTestImageHeight * 2}};
     for (const auto& [w, h] : width_height) {
-      const std::string path = temp_dir / fmt::format("rgb_{}_{}.png", w, h);
-      TestPngRgb8 rgb{path, w, h};
+      ImageRgba8U test_drake_image(w, h, 0);
       DRAKE_EXPECT_THROWS_MESSAGE(
-          client.LoadColorImage(path, &drake_image),
+          client.LoadColorImage(kTestRgbaImagePath, &test_drake_image),
           fmt::format("RenderClient: expected to import "
                       "\\(width={},height={}\\) from the "
                       "file '{}', but got \\(width={},height={}\\).",
-                      width, height, path, w, h));
-      fs::remove(path);
+                      w, h, kTestRgbaImagePath, kTestImageWidth,
+                      kTestImageHeight));
     }
   }
 
   {
-    // Failure case 3: number of channels not equal to 3 or 4.
-    const std::string path = temp_dir / "gray.png";
-    TestPngGray16 gray{path, width, height};
+    /* Failure case 3: number of channels not equal to 3 or 4. Test this by
+     loading a single-channel label png instead. */
     DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadColorImage(path, &drake_image),
+        client.LoadColorImage(kTestLabelImagePath, &drake_image),
         fmt::format(
             "RenderClient: loaded PNG image from '{}' has 1 channel\\(s\\), "
             "but either 3 \\(RGB\\) or 4 \\(RGBA\\) are required for color "
             "images.",
-            path));
-    fs::remove(path);
-  }
-
-  {
-    // Failure case 4: right number of channels, but 16 bit color.
-    const std::string path = temp_dir / "rgb_16_bit.png";
-    TestPngRgb16 rgb_16{path, width, height};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadColorImage(path, &drake_image),
-        fmt::format(
-            "RenderClient: loaded PNG image from '{}' has a channel size in "
-            "bytes of 2, but only RGB and RGBA uchar \\(channel size=1\\) "
-            "images are supported.",
-            path));
-    fs::remove(path);
+            kTestLabelImagePath));
   }
 
   {
     // Loading a three channel (RGB) png file should work as expected.
-    zero_drake_image();
-    const auto rgb_png_path = temp_dir / "rgb.png";
-    TestPngRgb8 rgb{rgb_png_path, width, height};
-    DRAKE_EXPECT_NO_THROW(client.LoadColorImage(rgb_png_path, &drake_image));
-    TestPngRgb8::CornerCheckColor(drake_image);
-    TestPngRgb8::FullImageCheckColor(drake_image);
-    fs::remove(rgb_png_path);
+    DRAKE_EXPECT_NO_THROW(
+        client.LoadColorImage(kTestRgbImagePath, &drake_image));
+    EXPECT_EQ(drake_image, CreateTestColorImage(true));
   }
 
   {
     // Loading a four channel (RGBA) png file should work as expected.
-    zero_drake_image();
-    const auto rgba_png_path = temp_dir / "rgba.png";
-    TestPngRgba8 rgba{rgba_png_path, width, height};
-    DRAKE_EXPECT_NO_THROW(client.LoadColorImage(rgba_png_path, &drake_image));
-    TestPngRgba8::CornerCheckColor(drake_image);
-    TestPngRgba8::FullImageCheckColor(drake_image);
-    fs::remove(rgba_png_path);
+    DRAKE_EXPECT_NO_THROW(
+        client.LoadColorImage(kTestRgbaImagePath, &drake_image));
+    EXPECT_EQ(drake_image, CreateTestColorImage(false));
   }
 }
 
 GTEST_TEST(RenderClient, LoadDepthImage) {
-  const std::string url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
-  const RenderClient client{url, port, render_endpoint, verbose, no_cleanup};
-  const fs::path temp_dir = fs::path(client.temp_directory());
+  const RenderClient client{
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
 
-  // NOTE: keep the images small to reduce test overhead.
-  constexpr int width = 222;
-  constexpr int height = 111;
-  ImageDepth32F drake_image{width, height};
-  auto zero_drake_image = [&drake_image]() {
-    for (int j = 0; j < height; ++j) {
-      for (int i = 0; i < width; ++i) {
-        drake_image.at(i, j)[0] = 0;
-      }
-    }
-  };
-
+  /* Create a Drake Image buffer with the same dimension as the testing image,
+   i.e., test_depth_32F.tiff, to exercise the image loading code.
+   LoadDepthImage() will attempt to load the TIFF file to the buffer and throw
+   exceptions if the dimension, channel number, or data type is incorrect. */
+  ImageDepth32F drake_image(kTestImageWidth, kTestImageHeight, 0);
   {
     // Failure case 1: not a valid TIFF file.
     const auto expected_message = "RenderClient: cannot load '{}' as TIFF.";
@@ -938,6 +859,7 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
     DRAKE_EXPECT_THROWS_MESSAGE(client.LoadDepthImage(unlikely, &drake_image),
                                 fmt::format(expected_message, unlikely));
 
+    const fs::path temp_dir = fs::path(client.temp_directory());
     const std::string fake_tiff_path = temp_dir / "fake.tiff";
     std::ofstream fake_tiff{fake_tiff_path};
     fake_tiff << "not a valid tiff file.\n";
@@ -949,84 +871,45 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
   }
 
   {
-    /* Failure case 2: wrong image dimensions on file.  drake_image should not
-     be accessed especially when the file dimensions are bigger. */
+    /* Failure case 2: different image dimensions between the loaded image and
+     the drake image buffer.  `test_drake_image` should not be accessed. */
     const std::vector<std::pair<int, int>> width_height{
-        {width, height / 2}, {width + 12, height}, {width * 2, height * 2}};
+        {1, 1},
+        {kTestImageWidth + 12, kTestImageHeight},
+        {kTestImageWidth * 2, kTestImageHeight * 2}};
     for (const auto& [w, h] : width_height) {
-      const std::string path =
-          temp_dir / fmt::format("gray_16_{}_{}.tiff", w, h);
-      TestTiffGray16 gray{path, w, h};
+      ImageDepth32F test_drake_image(w, h, 0);
       DRAKE_EXPECT_THROWS_MESSAGE(
-          client.LoadDepthImage(path, &drake_image),
+          client.LoadDepthImage(kTestDepthImagePath, &test_drake_image),
           fmt::format("RenderClient: expected to import "
                       "\\(width={},height={}\\) from the "
                       "file '{}', but got \\(width={},height={}\\).",
-                      width, height, path, w, h));
-      fs::remove(path);
+                      w, h, kTestDepthImagePath, kTestImageWidth,
+                      kTestImageHeight));
     }
-  }
-
-  {
-    // Failure case 3: number of channels not equal to 1.
-    const std::string path = temp_dir / "rgb.tiff";
-    TestTiffRgb32 rgb{path, width, height};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadDepthImage(path, &drake_image),
-        fmt::format(
-            "RenderClient: loaded TIFF image from '{}' has 3 channels, but "
-            "only 1 is allowed for depth images.",
-            path));
-    fs::remove(path);
-  }
-
-  {
-    // Failure case 4: right number of channels, but wrong bit depth.
-    const std::string path = temp_dir / "gray_8.tiff";
-    TestTiffGray8 gray_8{path, width, height};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadDepthImage(path, &drake_image),
-        fmt::format(
-            "RenderClient: loaded TIFF image from '{}' did not have floating "
-            "point data, but float TIFF is required for depth images.",
-            path));
-    fs::remove(path);
   }
 
   {
     // Loading a single channel 32 bit tiff file should work as expected.
-    zero_drake_image();
-    const auto gray_32_tiff_path = temp_dir / "gray_32.tiff";
-    TestTiffGray32 gray_32{gray_32_tiff_path, width, height};
     DRAKE_EXPECT_NO_THROW(
-        client.LoadDepthImage(gray_32_tiff_path, &drake_image));
-    TestTiffGray32::CornerCheck(drake_image);
-    TestTiffGray32::FullImageCheck(drake_image);
-    fs::remove(gray_32_tiff_path);
+        client.LoadDepthImage(kTestDepthImagePath, &drake_image));
+    EXPECT_EQ(drake_image, CreateTestDepthImage());
   }
 }
 
 GTEST_TEST(RenderClient, LoadLabelImage) {
-  const std::string url{"127.0.0.1"};
-  const int port{8000};
+  const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = true;
-  const RenderClient client{url, port, render_endpoint, verbose, no_cleanup};
-  const fs::path temp_dir = fs::path(client.temp_directory());
+  const RenderClient client{
+      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
 
-  // NOTE: keep the images small to reduce test overhead.
-  constexpr int width = 222;
-  constexpr int height = 111;
-  ImageLabel16I drake_image{width, height};
-  auto zero_drake_image = [&drake_image]() {
-    for (int j = 0; j < height; ++j) {
-      for (int i = 0; i < width; ++i) {
-        drake_image.at(i, j)[0] = 0;
-      }
-    }
-  };
-
+  /* Create a Drake Image buffer with the same dimension as the testing image,
+   i.e., test_label_16U.png, to exercise the image loading code.
+   LoadLabelImage() will attempt to load the PNG file to the buffer and throw
+   exceptions if the dimension, channel number, or data type is incorrect. */
+  ImageLabel16I drake_image(kTestImageWidth, kTestImageHeight, 0);
   {
     // Failure case 1: not a valid PNG file.
     const auto expected_message = "RenderClient: cannot load '{}' as PNG.";
@@ -1034,6 +917,7 @@ GTEST_TEST(RenderClient, LoadLabelImage) {
     DRAKE_EXPECT_THROWS_MESSAGE(client.LoadLabelImage(unlikely, &drake_image),
                                 fmt::format(expected_message, unlikely));
 
+    const fs::path temp_dir = fs::path(client.temp_directory());
     const std::string fake_png_path = temp_dir / "fake.png";
     std::ofstream fake_png{fake_png_path};
     fake_png << "not a valid png file.\n";
@@ -1045,57 +929,40 @@ GTEST_TEST(RenderClient, LoadLabelImage) {
   }
 
   {
-    /* Failure case 2: wrong image dimensions on file.  drake_image should not
-     be accessed especially when the file dimensions are bigger. */
+    /* Failure case 2: different image dimensions between the loaded image and
+     the drake image buffer.  `test_drake_image` should not be accessed. */
     const std::vector<std::pair<int, int>> width_height{
-        {width, height / 2}, {width + 12, height}, {width * 2, height * 2}};
+        {1, 1},
+        {kTestImageWidth + 12, kTestImageHeight},
+        {kTestImageWidth * 2, kTestImageHeight * 2}};
     for (const auto& [w, h] : width_height) {
-      const std::string path = temp_dir / fmt::format("label_{}_{}.png", w, h);
-      TestPngGray16 rgb{path, w, h};
+      ImageLabel16I test_drake_image(w, h, 0);
       DRAKE_EXPECT_THROWS_MESSAGE(
-          client.LoadLabelImage(path, &drake_image),
+          client.LoadLabelImage(kTestLabelImagePath, &test_drake_image),
           fmt::format("RenderClient: expected to import "
                       "\\(width={},height={}\\) from the "
                       "file '{}', but got \\(width={},height={}\\).",
-                      width, height, path, w, h));
-      fs::remove(path);
+                      w, h, kTestLabelImagePath, kTestImageWidth,
+                      kTestImageHeight));
     }
   }
 
   {
-    // Failure case 3: number of channels not equal to 1.
-    const std::string path = temp_dir / "rgb.png";
-    TestPngRgb8 rgb{path, width, height};
+    /* Failure case 3: number of channels not equal to 1. Test this by loading
+     an RGB image instead. */
     DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadLabelImage(path, &drake_image),
+        client.LoadLabelImage(kTestRgbImagePath, &drake_image),
         fmt::format(
             "RenderClient: loaded PNG image from '{}' has 3 channels, but only "
             "1 is allowed for label images.",
-            path));
-    fs::remove(path);
-  }
-
-  {
-    // Failure case 4: right number of channels, but 16 bit color.
-    const std::string path = temp_dir / "gray_8_bit.png";
-    TestPngGray8 gray_8{path, width, height};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadLabelImage(path, &drake_image),
-        fmt::format(
-            "RenderClient: loaded PNG image from '{}' did not have ushort "
-            "data, but single channel ushort PNG is required for label images.",
-            path));
-    fs::remove(path);
+            kTestRgbImagePath));
   }
 
   {
     // Loading a 16 bit label image file should work as expected.
-    zero_drake_image();
-    const auto label_path = temp_dir / "label.png";
-    TestPngGray16 label_image{label_path, width, height};
-    DRAKE_EXPECT_NO_THROW(client.LoadLabelImage(label_path, &drake_image));
-    TestPngGray16::CornerCheckGray(drake_image);
-    TestPngGray16::FullImageCheckGray(drake_image);
+    DRAKE_EXPECT_NO_THROW(
+        client.LoadLabelImage(kTestLabelImagePath, &drake_image));
+    EXPECT_EQ(drake_image, CreateTestLabelImage());
   }
 }
 

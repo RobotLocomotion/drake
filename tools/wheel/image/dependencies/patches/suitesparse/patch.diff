@@ -1,5 +1,5 @@
 diff --git a/SuiteSparse_config/SuiteSparse_config.mk.in b/SuiteSparse_config/SuiteSparse_config.mk.in
-index 3ab813cc..9cb77955 100644
+index 3ab813c..e5cba3e 100644
 --- a/SuiteSparse_config/SuiteSparse_config.mk.in
 +++ b/SuiteSparse_config/SuiteSparse_config.mk.in
 @@ -61,7 +61,7 @@
@@ -11,7 +11,13 @@ index 3ab813cc..9cb77955 100644
  # CFLAGS = -g
  # for the icc compiler and OpenMP:
  # CFLAGS = -openmp
-@@ -95,8 +95,8 @@ F77LIB =
+@@ -90,13 +90,13 @@ F77FLAGS = $(FFLAGS) -O
+ F77LIB =
+ 
+ # C and Fortran libraries.  Remove -lrt if you don't have it.
+-  LIB = -lm -lrt
++  LIB = -lm @LIBRT@
+ # Using the following requires CF = ... -DNTIMER on POSIX C systems.
  # LIB = -lm
  
  # For "make install"
@@ -28,7 +34,7 @@ index 3ab813cc..9cb77955 100644
  # This is probably slow ... it might connect to the Standard Reference BLAS:
 -# BLAS = -lblas -lgfortran
 -  LAPACK = -llapack
-+BLAS = -L@INSTALL_PREFIX@/lib -lblas -lgfortran
++BLAS = -L@INSTALL_PREFIX@/lib -lblas @LDFLAGS_GFORTRAN@
 +LAPACK = -L@INSTALL_PREFIX@/lib -llapack
  
  # MKL 

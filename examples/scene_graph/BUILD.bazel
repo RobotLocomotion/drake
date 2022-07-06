@@ -42,7 +42,7 @@ drake_cc_binary(
         ":bouncing_ball_plant",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
-        "//geometry/render:render_engine_vtk",
+        "//geometry/render_vtk",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/lcm:lcm_pubsub_system",

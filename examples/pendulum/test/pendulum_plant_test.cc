@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 
 namespace drake {
 namespace examples {
@@ -69,6 +70,15 @@ GTEST_TEST(PendulumPlantTest, CalcTotalEnergy) {
   state->set_thetadot(1.0);
   EXPECT_NEAR(plant.CalcTotalEnergy(*context),
               0.5 * params->mass() * std::pow(params->length(), 2), kTol);
+}
+
+// Ensure that DoCalcTimeDerivatives succeeds even if the input port is
+// disconnected.
+GTEST_TEST(PendulumPlantTest, NoInput) {
+  const PendulumPlant<double> plant;
+  auto context = plant.CreateDefaultContext();
+
+  DRAKE_EXPECT_NO_THROW(plant.EvalTimeDerivatives(*context));
 }
 
 }  // namespace

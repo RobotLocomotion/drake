@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":contact_solver_results",
         ":contact_solver_utils",
         ":linear_operator",
+        ":newton_with_bisection",
         ":pgs_solver",
         ":point_contact_data",
         ":sparse_linear_operator",
@@ -112,6 +113,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "newton_with_bisection",
+    srcs = ["newton_with_bisection.cc"],
+    hdrs = ["newton_with_bisection.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "pgs_solver",
     srcs = [
         "pgs_solver.cc",
@@ -151,8 +161,10 @@ drake_cc_library(
     name = "supernodal_solver",
     srcs = ["supernodal_solver.cc"],
     hdrs = ["supernodal_solver.h"],
-    deps = [
+    interface_deps = [
         "//common:essential",
+    ],
+    deps = [
         "@conex//conex:supernodal_solver",
     ],
 )
@@ -202,6 +214,13 @@ drake_cc_googletest(
         ":block_sparse_matrix",
         ":linear_operator",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "newton_with_bisection_test",
+    deps = [
+        ":newton_with_bisection",
     ],
 )
 

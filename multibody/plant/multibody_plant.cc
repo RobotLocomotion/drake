@@ -11,10 +11,10 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
-#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/render/render_label.h"
@@ -200,7 +200,7 @@ struct JointLimitsPenaltyParametersEstimator {
           // spatial inertias unspecified (i.e. initialized to NaN). A user
           // might do this when only interested in performing kinematics
           // computations.
-          if (std::isnan(body->get_default_mass())) {
+          if (std::isnan(body->default_mass())) {
             return std::numeric_limits<double>::infinity();
           }
 
@@ -384,6 +384,70 @@ MultibodyPlant<T>::MultibodyPlant(
   // Add the world body to the graph.
   multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
   DeclareSceneGraphPorts();
+}
+
+template <typename T>
+template <typename U>
+MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
+    : internal::MultibodyTreeSystem<T>(
+          systems::SystemTypeTag<MultibodyPlant>{},
+          other.internal_tree().template CloneToScalar<T>(),
+          other.is_discrete()) {
+  DRAKE_THROW_UNLESS(other.is_finalized());
+  time_step_ = other.time_step_;
+  // Copy of all members related with geometry registration.
+  source_id_ = other.source_id_;
+  body_index_to_frame_id_ = other.body_index_to_frame_id_;
+  frame_id_to_body_index_ = other.frame_id_to_body_index_;
+  geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
+  visual_geometries_ = other.visual_geometries_;
+  num_visual_geometries_ = other.num_visual_geometries_;
+  collision_geometries_ = other.collision_geometries_;
+  num_collision_geometries_ = other.num_collision_geometries_;
+  X_WB_default_list_ = other.X_WB_default_list_;
+  contact_model_ = other.contact_model_;
+  contact_surface_representation_ =
+      other.contact_surface_representation_;
+  penetration_allowance_ = other.penetration_allowance_;
+  // Note: The physical models must be cloned before `FinalizePlantOnly()` is
+  // called because `FinalizePlantOnly()` has to allocate system resources
+  // requested by physical models.
+  for (auto& model : other.physical_models_) {
+    auto cloned_model = model->template CloneToScalar<T>();
+    // TODO(xuchenhan-tri): Rework physical model and discrete update manager
+    //  to eliminate the requirement on the order that they are called with
+    //  respect to Finalize().
+
+    // AddPhysicalModel can't be called here because it's post-finalize. We
+    // have to manually disable scalars that the cloned physical model do not
+    // support.
+    RemoveUnsupportedScalars(*cloned_model);
+    physical_models_.emplace_back(std::move(cloned_model));
+  }
+
+  DeclareSceneGraphPorts();
+
+  // Do accounting for MultibodyGraph
+  for (BodyIndex index(0); index < num_bodies(); ++index) {
+    const Body<T>& body = get_body(index);
+    multibody_graph_.AddBody(body.name(), body.model_instance());
+  }
+
+  for (JointIndex index(0); index < num_joints(); ++index) {
+    RegisterJointInGraph(get_joint(index));
+  }
+
+  // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
+  // on the new MultibodyTree on U. Therefore we only Finalize the plant's
+  // internals (and not the MultibodyTree).
+  FinalizePlantOnly();
+
+  // Note: The discrete update manager needs to be copied *after* the plant is
+  // finalized.
+  if (other.discrete_update_manager_ != nullptr) {
+    SetDiscreteUpdateManager(
+        other.discrete_update_manager_->template CloneToScalar<T>());
+  }
 }
 
 template <typename T>
@@ -1768,8 +1832,13 @@ void MultibodyPlant<T>::AddAppliedExternalGeneralizedForces(
   const InputPort<T>& applied_generalized_force_input =
       this->get_input_port(applied_generalized_force_input_port_);
   if (applied_generalized_force_input.HasValue(context)) {
-    forces->mutable_generalized_forces() +=
+    const VectorX<T>& applied_generalized_force =
         applied_generalized_force_input.Eval(context);
+    if (applied_generalized_force.hasNaN()) {
+      throw std::runtime_error(
+          "Detected NaN in applied generalized force input port.");
+    }
+    forces->mutable_generalized_forces() += applied_generalized_force;
   }
 }
 
@@ -1788,8 +1857,21 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
   if (!applied_input)
     return;
 
+  // Helper to throw a useful message if the input contains NaN.
+  auto throw_if_contains_nan = [this](const ExternallyAppliedSpatialForce<T>&
+                                          external_spatial_force) {
+    const SpatialForce<T>& spatial_force = external_spatial_force.F_Bq_W;
+    if (external_spatial_force.p_BoBq_B.hasNaN() ||
+        spatial_force.rotational().hasNaN() ||
+        spatial_force.translational().hasNaN()) {
+      throw std::runtime_error(fmt::format(
+          "Spatial force applied on body {} contains NaN.",
+          internal_tree().get_body(external_spatial_force.body_index).name()));
+    }
+  };
   // Loop over all forces.
   for (const auto& force_structure : *applied_input) {
+    throw_if_contains_nan(force_structure);
     const BodyIndex body_index = force_structure.body_index;
     const Body<T>& body = get_body(body_index);
     const auto body_node_index = body.node_index();
@@ -1881,26 +1963,59 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
   this->ValidateContext(context);
   // Assemble the vector from the model instance input ports.
   VectorX<T> actuation_input(num_actuated_dofs());
-  int u_offset = 0;
-  for (ModelInstanceIndex model_instance_index(0);
-       model_instance_index < num_model_instances(); ++model_instance_index) {
-    // Ignore the port if the model instance has no actuated DoFs.
-    const int instance_num_dofs = num_actuated_dofs(model_instance_index);
-    if (instance_num_dofs == 0) continue;
 
-    const auto& input_port = this->get_input_port(
-        instance_actuation_ports_[model_instance_index]);
-    if (!input_port.HasValue(context)) {
+  const auto& actuation_port = this->get_input_port(actuation_port_);
+  const ModelInstanceIndex first_non_world_index(1);
+  if (actuation_port.HasValue(context)) {
+    // The port for all instances and the actuation ports for individual
+    // instances should not be connected at the same time.
+    for (ModelInstanceIndex model_instance_index(first_non_world_index);
+         model_instance_index < num_model_instances(); ++model_instance_index) {
+      const auto& per_instance_actuation_port =
+          this->get_input_port(instance_actuation_ports_[model_instance_index]);
+      if (per_instance_actuation_port.HasValue(context)) {
+        throw std::logic_error(fmt::format(
+            "Actuation input port for model instance {} and the "
+            "actuation port for all instances are both connected. At most "
+            "one of these ports should be connected.",
+            GetModelInstanceName(model_instance_index)));
+      }
+    }
+    // TODO(xuchenhan-tri): It'd be nice to avoid the copy here.
+    actuation_input = actuation_port.Eval(context);
+    if (actuation_input.hasNaN()) {
+      throw std::runtime_error(
+          "Detected NaN in the actuation input port for all instances.");
+    }
+    DRAKE_ASSERT(actuation_input.size() == num_actuated_dofs());
+  } else {
+    int u_offset = 0;
+    for (ModelInstanceIndex model_instance_index(first_non_world_index);
+         model_instance_index < num_model_instances(); ++model_instance_index) {
+      // Ignore the port if the model instance has no actuated DoFs.
+      const int instance_num_dofs = num_actuated_dofs(model_instance_index);
+      if (instance_num_dofs == 0) continue;
+
+      const auto& input_port =
+          this->get_input_port(instance_actuation_ports_[model_instance_index]);
+      if (!input_port.HasValue(context)) {
         throw std::logic_error(fmt::format("Actuation input port for model "
             "instance {} must be connected.",
             GetModelInstanceName(model_instance_index)));
-    }
+      }
+      const auto& u_instance = input_port.Eval(context);
 
-    const auto& u_instance = input_port.Eval(context);
-    actuation_input.segment(u_offset, instance_num_dofs) = u_instance;
-    u_offset += instance_num_dofs;
+      if (u_instance.hasNaN()) {
+        throw std::runtime_error(
+            fmt::format("Actuation input port for model "
+                        "instance {} contains NaN.",
+                        GetModelInstanceName(model_instance_index)));
+      }
+      actuation_input.segment(u_offset, instance_num_dofs) = u_instance;
+      u_offset += instance_num_dofs;
+    }
+    DRAKE_ASSERT(u_offset == num_actuated_dofs());
   }
-  DRAKE_ASSERT(u_offset == num_actuated_dofs());
   return actuation_input;
 }
 
@@ -2659,6 +2774,8 @@ void MultibodyPlant<T>::CalcNonContactForces(
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
 
+  const ScopeExit guard = ThrowIfNonContactForceInProgress(context);
+
   // Compute forces applied through force elements. Note that this resets
   // forces to empty so must come first.
   CalcForceElementsContribution(context, forces);
@@ -2675,6 +2792,41 @@ void MultibodyPlant<T>::CalcNonContactForces(
       warning.clear();
     }
   }
+}
+template <typename T>
+ScopeExit MultibodyPlant<T>::ThrowIfNonContactForceInProgress(
+    const systems::Context<T>& context) const {
+  // To overcame issue #12786, we use this additional cache entry
+  // to detect algebraic loops.
+  systems::CacheEntryValue& value =
+      this->get_cache_entry(
+              cache_indexes_.non_contact_forces_evaluation_in_progress)
+          .get_mutable_cache_entry_value(context);
+  bool& evaluation_in_progress = value.GetMutableValueOrThrow<bool>();
+  if (evaluation_in_progress) {
+    const char* error_message =
+        "Algebraic loop detected. This situation is caused when connecting "
+        "the input of your MultibodyPlant to the output of a feedback system "
+        "which is an algebraic function of a feedthrough output of the "
+        "plant. Ways to remedy this: 1. Revisit the model for your feedback "
+        "system. Consider if its output can be written in terms of other "
+        "inputs. 2. Break the algebraic loop by adding state to the "
+        "controller, typically to 'remember' a previous input. 3. Break the "
+        "algebraic loop by adding a zero-order hold system between the "
+        "output of the plant and your feedback system. This effectively "
+        "delays the input signal to the controller.";
+    throw std::runtime_error(error_message);
+  }
+  // Mark the start of the computation. If within an algebraic
+  // loop, pulling from the plant's input ports during the
+  // computation will trigger the recursive evaluation of this
+  // method and the exception above will be thrown.
+  evaluation_in_progress = true;
+  // If the exception above is triggered, we will leave this method and the
+  // computation will no longer be "in progress". We use a scoped guard so
+  // that we have a chance to mark it as such when we leave this scope.
+  return ScopeExit(
+      [&evaluation_in_progress]() { evaluation_in_progress = false; });
 }
 
 template <typename T>
@@ -2797,8 +2949,9 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                 instance_num_dofs)
             .get_index();
   }
-
-  if (num_actuated_instances == 1) actuated_instance_ = last_actuated_instance;
+  actuation_port_ =
+      this->DeclareVectorInputPort("actuation", num_actuated_dofs())
+          .get_index();
 
   // Declare the generalized force input port.
   applied_generalized_force_input_port_ =
@@ -2967,6 +3120,17 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                   &MultibodyPlant<T>::CopyContactResultsOutput,
                                   {contact_results_cache_entry.ticket()})
                               .get_index();
+
+  // See ThrowIfNonContactForceInProgress().
+  const auto& non_contact_forces_evaluation_in_progress =
+      this->DeclareCacheEntry(
+          "Evaluation of non-contact forces and accelerations is in progress.",
+          // N.B. This flag is set to true only when the computation is in
+          // progress. Therefore its default value is `false`.
+          systems::ValueProducer(false, &systems::ValueProducer::NoopCalc),
+          {systems::System<T>::nothing_ticket()});
+  cache_indexes_.non_contact_forces_evaluation_in_progress =
+      non_contact_forces_evaluation_in_progress.cache_index();
 
   // Let external model managers declare their state, cache and ports in
   // `this` MultibodyPlant.
@@ -3183,15 +3347,6 @@ void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
 
 template <typename T>
 const systems::InputPort<T>&
-MultibodyPlant<T>::get_actuation_input_port() const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_THROW_UNLESS(num_actuators() > 0);
-  DRAKE_THROW_UNLESS(actuated_instance_.is_valid());
-  return get_actuation_input_port(actuated_instance_);
-}
-
-template <typename T>
-const systems::InputPort<T>&
 MultibodyPlant<T>::get_applied_generalized_force_input_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return this->get_input_port(applied_generalized_force_input_port_);
@@ -3206,6 +3361,13 @@ MultibodyPlant<T>::get_actuation_input_port(
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
   return systems::System<T>::get_input_port(
       instance_actuation_ports_.at(model_instance));
+}
+
+template <typename T>
+const systems::InputPort<T>& MultibodyPlant<T>::get_actuation_input_port()
+    const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return systems::System<T>::get_input_port(actuation_port_);
 }
 
 template <typename T>

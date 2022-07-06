@@ -9,6 +9,12 @@ load(
     "drake_cc_test",
 )
 load(
+    ":defs.bzl",
+    "drake_cc_optional_googletest",
+    "drake_cc_optional_library",
+    "drake_cc_variant_library",
+)
+load(
     "@drake//tools/skylark:test_tags.bzl",
     "gurobi_test_tags",
     "mosek_test_tags",
@@ -33,7 +39,6 @@ drake_cc_package_library(
         ":create_constraint",
         ":create_cost",
         ":csdp_solver",
-        ":csdp_solver_error_handling",
         ":decision_variable",
         ":dreal_solver",
         ":equality_constrained_qp_solver",
@@ -72,7 +77,6 @@ drake_cc_package_library(
         ":solver_type_converter",
         ":sos_basis_generator",
         ":sparse_and_dense_matrix",
-        ":system_identification",
         ":unrevised_lemke_solver",
     ],
 )
@@ -81,9 +85,11 @@ drake_cc_library(
     name = "augmented_lagrangian",
     srcs = ["augmented_lagrangian.cc"],
     hdrs = ["augmented_lagrangian.h"],
+    interface_deps = [
+        ":mathematical_program",
+    ],
     deps = [
         ":aggregate_costs_constraints",
-        ":mathematical_program",
     ],
 )
 
@@ -91,18 +97,23 @@ drake_cc_library(
     name = "integer_inequality_solver",
     srcs = ["integer_inequality_solver.cc"],
     hdrs = ["integer_inequality_solver.h"],
-    deps = ["//common:essential"],
+    interface_deps = [
+        "@eigen",
+    ],
+    deps = [
+        "//common:essential",
+    ],
 )
 
 drake_cc_library(
     name = "sos_basis_generator",
     srcs = ["sos_basis_generator.cc"],
     hdrs = ["sos_basis_generator.h"],
+    interface_deps = [
+        "//common:symbolic",
+    ],
     deps = [
         ":integer_inequality_solver",
-        "//common:essential",
-        "//common:polynomial",
-        "//common:symbolic",
     ],
 )
 
@@ -110,16 +121,22 @@ drake_cc_library(
     name = "binding",
     srcs = [],
     hdrs = ["binding.h"],
-    deps = [
+    interface_deps = [
         ":decision_variable",
         ":evaluator_base",
     ],
+    deps = [],
 )
 
 drake_cc_library(
     name = "choose_best_solver",
     srcs = ["choose_best_solver.cc"],
     hdrs = ["choose_best_solver.h"],
+    interface_deps = [
+        ":mathematical_program",
+        ":solver_id",
+        ":solver_interface",
+    ],
     deps = [
         ":clp_solver",
         ":csdp_solver",
@@ -128,14 +145,13 @@ drake_cc_library(
         ":gurobi_solver",
         ":ipopt_solver",
         ":linear_system_solver",
-        ":mathematical_program",
         ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
         ":osqp_solver",
         ":scs_solver",
         ":snopt_solver",
-        ":solver_id",
+        "@abseil_cpp_internal//absl/container:inlined_vector",
     ],
 )
 
@@ -143,15 +159,15 @@ drake_cc_library(
     name = "evaluator_base",
     srcs = ["evaluator_base.cc"],
     hdrs = ["evaluator_base.h"],
-    deps = [
-        ":function",
-        "//common:autodiff",
+    interface_deps = [
         "//common:essential",
-        "//common:nice_type_name",
         "//common:polynomial",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//math:autodiff",
-        "//math:matrix_util",
+        ":function",
+    ],
+    deps = [
+        "//common:nice_type_name",
     ],
 )
 
@@ -159,14 +175,15 @@ drake_cc_library(
     name = "constraint",
     srcs = ["constraint.cc"],
     hdrs = ["constraint.h"],
-    deps = [
+    interface_deps = [
         ":decision_variable",
         ":evaluator_base",
         ":sparse_and_dense_matrix",
-        "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
-        "//common:symbolic",
+        "//common/symbolic:expression",
+    ],
+    deps = [
         "//common:symbolic_decompose",
         "//math:gradient",
         "//math:matrix_util",
@@ -177,8 +194,10 @@ drake_cc_library(
     name = "minimum_value_constraint",
     srcs = ["minimum_value_constraint.cc"],
     hdrs = ["minimum_value_constraint.h"],
-    deps = [
+    interface_deps = [
         ":constraint",
+    ],
+    deps = [
         "//math:gradient",
     ],
 )
@@ -187,13 +206,11 @@ drake_cc_library(
     name = "cost",
     srcs = ["cost.cc"],
     hdrs = ["cost.h"],
-    deps = [
+    interface_deps = [
         ":evaluator_base",
-        "//common:autodiff",
-        "//common:essential",
-        "//common:polynomial",
+    ],
+    deps = [
         "//math:gradient",
-        "//math:matrix_util",
     ],
 )
 
@@ -201,12 +218,13 @@ drake_cc_library(
     name = "create_constraint",
     srcs = ["create_constraint.cc"],
     hdrs = ["create_constraint.h"],
-    deps = [
+    interface_deps = [
+        "//common/symbolic:expression",
         ":binding",
         ":constraint",
-        "//common:essential",
+    ],
+    deps = [
         "//common:polynomial",
-        "//common:symbolic",
         "//common:symbolic_decompose",
         "//math:quadratic_form",
     ],
@@ -216,12 +234,13 @@ drake_cc_library(
     name = "create_cost",
     srcs = ["create_cost.cc"],
     hdrs = ["create_cost.h"],
-    deps = [
+    interface_deps = [
         ":binding",
         ":cost",
-        "//common:essential",
+        "//common/symbolic:expression",
+    ],
+    deps = [
         "//common:polynomial",
-        "//common:symbolic",
         "//common:symbolic_decompose",
         "//common:unused",
     ],
@@ -231,27 +250,30 @@ drake_cc_library(
     name = "decision_variable",
     srcs = ["decision_variable.cc"],
     hdrs = ["decision_variable.h"],
-    deps = [
-        "//common:symbolic",
+    interface_deps = [
+        "//common/symbolic:expression",
     ],
+    deps = [],
 )
 
 drake_cc_library(
     name = "function",
     srcs = [],
     hdrs = ["function.h"],
-    deps = [
+    interface_deps = [
         "//common:essential",
     ],
+    deps = [],
 )
 
 drake_cc_library(
     name = "get_program_type",
     srcs = ["get_program_type.cc"],
     hdrs = ["get_program_type.h"],
-    deps = [
+    interface_deps = [
         ":mathematical_program",
     ],
+    deps = [],
 )
 
 drake_cc_library(
@@ -280,17 +302,20 @@ drake_cc_library(
         "common_solver_option.h",
         "solver_options.h",
     ],
-    deps = [
+    interface_deps = [
         ":solver_id",
     ],
+    deps = [],
 )
 
 drake_cc_library(
     name = "indeterminate",
     srcs = ["indeterminate.cc"],
     hdrs = ["indeterminate.h"],
+    interface_deps = [
+        "//common/symbolic:expression",
+    ],
     deps = [
-        "//common:symbolic",
         "//solvers:decision_variable",
     ],
 )
@@ -299,6 +324,11 @@ drake_cc_library(
     name = "solver_type_converter",
     srcs = ["solver_type_converter.cc"],
     hdrs = ["solver_type_converter.h"],
+    interface_deps = [
+        ":solver_id",
+        ":solver_type",
+        "//common:essential",
+    ],
     deps = [
         ":clp_solver",
         ":csdp_solver",
@@ -314,22 +344,15 @@ drake_cc_library(
         ":osqp_solver",
         ":scs_solver",
         ":snopt_solver",
-        ":solver_id",
-        ":solver_type",
         ":unrevised_lemke_solver",
-        "//common:essential",
     ],
 )
 
 drake_cc_library(
     name = "mathematical_program",
-    srcs = [
-        "mathematical_program.cc",
-    ],
-    hdrs = [
-        "mathematical_program.h",
-    ],
-    deps = [
+    srcs = ["mathematical_program.cc"],
+    hdrs = ["mathematical_program.h"],
+    interface_deps = [
         ":binding",
         ":create_constraint",
         ":create_cost",
@@ -337,14 +360,15 @@ drake_cc_library(
         ":function",
         ":indeterminate",
         ":program_attribute",
-        ":solver_id",
         ":solver_options",
-        ":sos_basis_generator",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
-        "//common:symbolic_decompose",
+    ],
+    deps = [
+        ":sos_basis_generator",
+        "//math:matrix_util",
     ],
 )
 
@@ -352,7 +376,7 @@ drake_cc_library(
     name = "mathematical_program_result",
     srcs = ["mathematical_program_result.cc"],
     hdrs = ["mathematical_program_result.h"],
-    deps = [
+    interface_deps = [
         ":binding",
         ":constraint",
         ":mathematical_program",
@@ -361,17 +385,14 @@ drake_cc_library(
         "//common:symbolic",
         "//common:value",
     ],
+    deps = [],
 )
 
 drake_cc_library(
     name = "solver_interface",
-    srcs = [
-        "solver_interface.cc",
-    ],
-    hdrs = [
-        "solver_interface.h",
-    ],
-    deps = [
+    srcs = ["solver_interface.cc"],
+    hdrs = ["solver_interface.h"],
+    interface_deps = [
         ":mathematical_program",
         ":mathematical_program_result",
         ":solution_result",
@@ -379,26 +400,31 @@ drake_cc_library(
         ":solver_options",
         "//common:essential",
     ],
+    deps = [],
 )
 
 drake_cc_library(
     name = "aggregate_costs_constraints",
     srcs = ["aggregate_costs_constraints.cc"],
     hdrs = ["aggregate_costs_constraints.h"],
-    deps = [
+    interface_deps = [
         ":binding",
         ":mathematical_program",
     ],
+    deps = [],
 )
 
 drake_cc_library(
     name = "branch_and_bound",
     srcs = ["branch_and_bound.cc"],
     hdrs = ["branch_and_bound.h"],
+    interface_deps = [
+        ":mathematical_program",
+        ":mathematical_program_result",
+    ],
     deps = [
         ":choose_best_solver",
         ":gurobi_solver",
-        ":mathematical_program",
         ":scs_solver",
     ],
 )
@@ -407,8 +433,10 @@ drake_cc_library(
     name = "non_convex_optimization_util",
     srcs = ["non_convex_optimization_util.cc"],
     hdrs = ["non_convex_optimization_util.h"],
-    deps = [
+    interface_deps = [
         ":mathematical_program",
+    ],
+    deps = [
         ":solve",
         "//math:quadratic_form",
     ],
@@ -418,9 +446,12 @@ drake_cc_library(
     name = "bilinear_product_util",
     srcs = ["bilinear_product_util.cc"],
     hdrs = ["bilinear_product_util.h"],
-    deps = [
+    interface_deps = [
         ":decision_variable",
         "//common:essential",
+        "//common/symbolic:expression",
+    ],
+    deps = [
         "//common:symbolic",
     ],
 )
@@ -429,36 +460,23 @@ drake_cc_library(
     name = "integer_optimization_util",
     srcs = ["integer_optimization_util.cc"],
     hdrs = ["integer_optimization_util.h"],
+    interface_deps = [
+        ":binding",
+        ":constraint",
+    ],
     deps = [
         ":create_constraint",
     ],
 )
 
 drake_cc_library(
-    name = "system_identification",
-    srcs = ["system_identification.cc"],
-    hdrs = ["system_identification.h"],
-    deps = [
-        ":mathematical_program",
-        ":solve",
-        "//common:autodiff",
-        "//common:essential",
-        "//common:polynomial",
-    ],
-)
-
-drake_cc_library(
     name = "rotation_constraint",
-    srcs = [
-        "rotation_constraint.cc",
-    ],
-    hdrs = [
-        "rotation_constraint.h",
-    ],
-    deps = [
+    srcs = ["rotation_constraint.cc"],
+    hdrs = ["rotation_constraint.h"],
+    interface_deps = [
         ":mathematical_program",
-        "//math:gradient",
     ],
+    deps = [],
 )
 
 drake_cc_library(
@@ -471,12 +489,15 @@ drake_cc_library(
         "mixed_integer_rotation_constraint.h",
         "mixed_integer_rotation_constraint_internal.h",
     ],
+    interface_deps = [
+        ":mathematical_program",
+        ":mixed_integer_optimization_util",
+    ],
     deps = [
         ":bilinear_product_util",
         ":integer_optimization_util",
-        ":mathematical_program",
-        ":mixed_integer_optimization_util",
         ":solve",
+        "//math:gray_code",
     ],
 )
 
@@ -484,29 +505,27 @@ drake_cc_library(
     name = "program_attribute",
     srcs = ["program_attribute.cc"],
     hdrs = ["program_attribute.h"],
-    deps = [
+    interface_deps = [
         "//common:hash",
     ],
+    deps = [],
 )
 
 drake_cc_library(
     name = "sparse_and_dense_matrix",
     srcs = ["sparse_and_dense_matrix.cc"],
     hdrs = ["sparse_and_dense_matrix.h"],
-    deps = [
+    interface_deps = [
         "//common:essential",
     ],
+    deps = [],
 )
 
 drake_cc_library(
     name = "rotation_constraint_visualization",
     testonly = 1,
-    srcs = [
-        "test/rotation_constraint_visualization.cc",
-    ],
-    hdrs = [
-        "test/rotation_constraint_visualization.h",
-    ],
+    srcs = ["test/rotation_constraint_visualization.cc"],
+    hdrs = ["test/rotation_constraint_visualization.h"],
     deps = [
         ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
@@ -572,8 +591,16 @@ drake_cc_library(
     srcs = ["test/optimization_examples.cc"],
     hdrs = ["test/optimization_examples.h"],
     deps = [
+        ":clp_solver",
+        ":gurobi_solver",
+        ":ipopt_solver",
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":mosek_solver",
+        ":nlopt_solver",
+        ":osqp_solver",
+        ":scs_solver",
+        ":snopt_solver",
         ":solver_type_converter",
         "//common/test_utilities:eigen_matrix_compare",
         "@gtest//:without_main",
@@ -586,6 +613,8 @@ drake_cc_library(
     srcs = ["test/linear_program_examples.cc"],
     hdrs = ["test/linear_program_examples.h"],
     deps = [
+        ":ipopt_solver",
+        ":mosek_solver",
         ":optimization_examples",
         ":solver_interface",
     ],
@@ -597,7 +626,11 @@ drake_cc_library(
     srcs = ["test/quadratic_program_examples.cc"],
     hdrs = ["test/quadratic_program_examples.h"],
     deps = [
+        ":gurobi_solver",
+        ":mosek_solver",
         ":optimization_examples",
+        ":scs_solver",
+        ":snopt_solver",
     ],
 )
 
@@ -620,6 +653,7 @@ drake_cc_library(
     deps = [
         ":mathematical_program_test_util",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:matrix_util",
     ],
 )
 
@@ -650,36 +684,32 @@ drake_cc_library(
 
 drake_cc_library(
     name = "solution_result",
-    srcs = [
-        "solution_result.cc",
-    ],
+    srcs = ["solution_result.cc"],
     hdrs = ["solution_result.h"],
-    deps = [
-        "//common:essential",  # For DRAKE_DEPRECATED; remove 2022-07-01
-    ],
 )
 
 drake_cc_library(
     name = "solver_base",
-    srcs = [
-        "solver_base.cc",
-    ],
-    hdrs = [
-        "solver_base.h",
-    ],
-    deps = [
+    srcs = ["solver_base.cc"],
+    hdrs = ["solver_base.h"],
+    interface_deps = [
         ":mathematical_program",
         ":solver_interface",
     ],
+    deps = [],
 )
 
 drake_cc_library(
     name = "solve",
     srcs = ["solve.cc"],
     hdrs = ["solve.h"],
+    interface_deps = [
+        ":mathematical_program",
+        ":mathematical_program_result",
+        ":solver_base",
+    ],
     deps = [
         ":choose_best_solver",
-        ":mathematical_program",
         "//common:nice_type_name",
     ],
 )
@@ -690,10 +720,12 @@ drake_cc_library(
     name = "equality_constrained_qp_solver",
     srcs = ["equality_constrained_qp_solver.cc"],
     hdrs = ["equality_constrained_qp_solver.h"],
-    deps = [
-        ":mathematical_program",
+    interface_deps = [
         ":solver_base",
         "//common:essential",
+    ],
+    deps = [
+        ":mathematical_program",
     ],
 )
 
@@ -701,10 +733,12 @@ drake_cc_library(
     name = "linear_system_solver",
     srcs = ["linear_system_solver.cc"],
     hdrs = ["linear_system_solver.h"],
-    deps = [
-        ":mathematical_program",
+    interface_deps = [
         ":solver_base",
         "//common:essential",
+    ],
+    deps = [
+        ":mathematical_program",
     ],
 )
 
@@ -712,11 +746,13 @@ drake_cc_library(
     name = "unrevised_lemke_solver",
     srcs = ["unrevised_lemke_solver.cc"],
     hdrs = ["unrevised_lemke_solver.h"],
-    deps = [
+    interface_deps = [
         ":mathematical_program",
         ":solver_base",
-        "//common:default_scalars",
         "//common:essential",
+    ],
+    deps = [
+        "//common:default_scalars",
     ],
 )
 
@@ -724,81 +760,70 @@ drake_cc_library(
     name = "moby_lcp_solver",
     srcs = ["moby_lcp_solver.cc"],
     hdrs = ["moby_lcp_solver.h"],
-    deps = [
+    interface_deps = [
         ":mathematical_program",
         ":solver_base",
         "//common:essential",
     ],
+    deps = [],
 )
 
-drake_cc_library(
+drake_cc_variant_library(
     name = "dreal_solver",
-    srcs = [
-        "dreal_solver_common.cc",
-    ] + select({
-        "//tools:no_dreal": [
-            "no_dreal.cc",
-        ],
-        "//conditions:default": [
-            "dreal_solver.cc",
-        ],
-    }),
+    opt_out_condition = "//tools:no_dreal",
+    srcs_always = ["dreal_solver_common.cc"],
+    srcs_enabled = ["dreal_solver.cc"],
+    srcs_disabled = ["no_dreal.cc"],
     hdrs = ["dreal_solver.h"],
-    deps = [
-        ":mathematical_program",
+    interface_deps = [
         ":solver_base",
         "//common:essential",
-    ] + select({
-        "//conditions:default": [
-            "@dreal//dreal/api",
-        ],
-        "//tools:no_dreal": [
-        ],
-    }),
+    ],
+    deps_always = [
+        ":mathematical_program",
+    ],
+    deps_enabled = [
+        "@dreal//dreal/api",
+    ],
 )
 
 # Ibex is a dependency of dReal; disabling dReal disables Ibex.  We could
 # consider supporting Ibex w/o dReal, but have no use cases that need that
 # support yet.
-drake_cc_library(
+drake_cc_optional_library(
+    name = "ibex_converter",
+    opt_out_condition = "//tools:no_dreal",
+    srcs = ["ibex_converter.cc"],
+    hdrs = ["ibex_converter.h"],
+    interface_deps = [
+        "//common/symbolic:expression",
+        "@ibex//:ibex",
+    ],
+    deps = [],
+)
+
+# Ibex is a dependency of dReal; disabling dReal disables Ibex.  We could
+# consider supporting Ibex w/o dReal, but have no use cases that need that
+# support yet.
+drake_cc_variant_library(
     name = "ibex_solver",
-    srcs = [
-        "ibex_solver_common.cc",
-    ] + select({
-        "//tools:no_dreal": [
-            "no_ibex.cc",
-        ],
-        "//conditions:default": [
-            "ibex_converter.cc",
-            "ibex_solver.cc",
-        ],
-    }),
-    hdrs = [
-        "ibex_solver.h",
-    ] + select({
-        "//conditions:default": [
-            "ibex_converter.h",
-        ],
-        "//tools:no_dreal": [
-        ],
-    }),
-    install_hdrs_exclude = select({
-        "//conditions:default": ["ibex_converter.h"],
-        "//tools:no_dreal": [],
-    }),
-    deps = [
+    opt_out_condition = "//tools:no_dreal",
+    srcs_always = ["ibex_solver_common.cc"],
+    srcs_enabled = ["ibex_solver.cc"],
+    srcs_disabled = ["no_ibex.cc"],
+    hdrs = ["ibex_solver.h"],
+    interface_deps = [
         ":mathematical_program",
         ":mathematical_program_result",
         ":solver_base",
         ":solver_options",
         "//common:essential",
-    ] + select({
-        "//conditions:default": [
-            "@ibex//:ibex",
-        ],
-        "//tools:no_dreal": [
-        ],
-    }),
+    ],
+    deps_always = [],
+    deps_enabled = [
+        ":ibex_converter",
+        "@ibex//:ibex",
+    ],
 )
 
 # External Solvers.
@@ -806,312 +831,256 @@ drake_cc_library(
 # If --config gurobi is used, this target builds object code that satisfies
 # SolverInterface by calling Gurobi. Otherwise, this target builds dummy object
 # code that fails at runtime.
-drake_cc_library(
+drake_cc_variant_library(
     name = "gurobi_solver",
-    srcs = [
-        "gurobi_solver_common.cc",
-    ] + select({
-        "//tools:with_gurobi": [
-            "gurobi_solver.cc",
-        ],
-        "//conditions:default": [
-            "no_gurobi.cc",
-        ],
-    }),
+    opt_in_condition = "//tools:with_gurobi",
+    srcs_always = ["gurobi_solver_common.cc"],
+    srcs_enabled = ["gurobi_solver.cc"],
+    srcs_disabled = ["no_gurobi.cc"],
     hdrs = ["gurobi_solver.h"],
-    deps = [
+    interface_deps = [
+        ":solver_base",
+    ],
+    deps_always = [
         ":aggregate_costs_constraints",
         ":mathematical_program",
-        ":solver_base",
-    ] + select({
-        "//tools:with_gurobi": [
-            "//math:eigen_sparse_triplet",
-            "//common:scope_exit",
-            "//common:scoped_singleton",
-            "@gurobi//:gurobi_c",
-            "@fmt",
-        ],
-        "//conditions:default": [
-        ],
-    }),
+    ],
+    deps_enabled = [
+        "//math:eigen_sparse_triplet",
+        "//common:scope_exit",
+        "//common:scoped_singleton",
+        "@gurobi//:gurobi_c",
+        "@fmt",
+    ],
 )
 
 # If --config mosek is used, this target builds object code that satisfies
 # SolverInterface by calling MOSEK. Otherwise, this target builds dummy object
 # code that fails at runtime.
-drake_cc_library(
+drake_cc_variant_library(
     name = "mosek_solver",
-    srcs = [
-        "mosek_solver_common.cc",
-    ] + select({
-        "//tools:with_mosek": [
-            "mosek_solver.cc",
-        ],
-        "//conditions:default": [
-            "no_mosek.cc",
-        ],
-    }),
+    opt_in_condition = "//tools:with_mosek",
+    srcs_always = ["mosek_solver_common.cc"],
+    srcs_enabled = ["mosek_solver.cc"],
+    srcs_disabled = ["no_mosek.cc"],
     hdrs = ["mosek_solver.h"],
-    deps = [
-        ":aggregate_costs_constraints",
-        ":mathematical_program",
+    interface_deps = [
         ":mathematical_program_result",
         ":solver_base",
-    ] + select({
-        "//tools:with_mosek": [
-            "//common:scoped_singleton",
-            "//common:scope_exit",
-            "//math:quadratic_form",
-            "@mosek",
-        ],
-        "//conditions:default": [
-        ],
-    }),
+    ],
+    deps_always = [
+        ":aggregate_costs_constraints",
+        ":mathematical_program",
+    ],
+    deps_enabled = [
+        "//common:scoped_singleton",
+        "//common:scope_exit",
+        "//math:quadratic_form",
+        "@mosek",
+    ],
 )
 
 # If --config snopt is used, this target builds object code that satisfies
 # SolverInterface by calling SNOPT. Otherwise, this target builds dummy object
 # code that fails at runtime.
-drake_cc_library(
+drake_cc_variant_library(
     name = "snopt_solver",
-    srcs = [
-        "snopt_solver_common.cc",
-    ] + select({
-        "//tools:with_snopt": [
-            "snopt_solver.cc",
-        ],
-        "//conditions:default": [
-            "no_snopt.cc",
-        ],
-    }),
+    opt_in_condition = "//tools:with_snopt",
+    srcs_always = ["snopt_solver_common.cc"],
+    srcs_enabled = ["snopt_solver.cc"],
+    srcs_disabled = ["no_snopt.cc"],
     hdrs = ["snopt_solver.h"],
-    deps = [
-        ":mathematical_program",
+    interface_deps = [
         ":solver_base",
-    ] + select({
-        "//tools:with_snopt": [
-            "//common:scope_exit",
-            "//math:autodiff",
-            "@snopt//:snopt_cwrap",
-        ],
-        "//conditions:default": [
-        ],
-    }),
+    ],
+    deps_always = [
+        ":mathematical_program",
+    ],
+    deps_enabled = [
+        "//common:scope_exit",
+        "//math:autodiff",
+        "@snopt//:snopt_cwrap",
+    ],
 )
 
-drake_cc_library(
+drake_cc_variant_library(
     name = "clp_solver",
-    srcs = ["clp_solver_common.cc"] + select({
-        "//tools:no_clp": [
-            "no_clp.cc",
-        ],
-        "//conditions:default": [
-            "clp_solver.cc",
-        ],
-    }),
+    opt_out_condition = "//tools:no_clp",
+    srcs_always = ["clp_solver_common.cc"],
+    srcs_enabled = ["clp_solver.cc"],
+    srcs_disabled = ["no_clp.cc"],
     hdrs = ["clp_solver.h"],
-    deps = [
-        "aggregate_costs_constraints",
-        "mathematical_program",
-        "solver_base",
-    ] + select({
-        "//conditions:default": [
-            "@clp",
-            "//common:unused",
-            "//math:autodiff",
-        ],
-        "//tools:no_clp": [],
-    }),
+    interface_deps = [
+        ":solver_base",
+    ],
+    deps_always = [
+        ":aggregate_costs_constraints",
+        ":mathematical_program",
+    ],
+    deps_enabled = [
+        "@clp",
+        "//common:unused",
+        "//math:autodiff",
+    ],
 )
 
-drake_cc_library(
+drake_cc_variant_library(
     name = "ipopt_solver",
-    srcs = [
-        "ipopt_solver_common.cc",
-    ] + select({
-        "//tools:no_ipopt": [
-            "no_ipopt.cc",
-        ],
-        "//conditions:default": [
-            "ipopt_solver.cc",
-        ],
-    }),
+    opt_out_condition = "//tools:no_ipopt",
+    srcs_always = ["ipopt_solver_common.cc"],
+    srcs_enabled = ["ipopt_solver.cc"],
+    srcs_disabled = ["no_ipopt.cc"],
     hdrs = ["ipopt_solver.h"],
-    deps = [
-        ":mathematical_program",
+    interface_deps = [
         ":solver_base",
-    ] + select({
-        "//conditions:default": [
-            "@ipopt",
-            "//common:unused",
-            "//math:autodiff",
-        ],
-        "//tools:no_ipopt": [
-        ],
-    }),
+    ],
+    deps_always = [
+        ":mathematical_program",
+    ],
+    deps_enabled = [
+        "@ipopt",
+        "//common:unused",
+        "//math:autodiff",
+    ],
 )
 
-drake_cc_library(
+drake_cc_variant_library(
     name = "nlopt_solver",
-    srcs = [
-        "nlopt_solver_common.cc",
-    ] + select({
-        "//tools:no_nlopt": [
-            "no_nlopt.cc",
-        ],
-        "//conditions:default": [
-            "nlopt_solver.cc",
-        ],
-    }),
+    opt_out_condition = "//tools:no_nlopt",
+    srcs_always = ["nlopt_solver_common.cc"],
+    srcs_enabled = ["nlopt_solver.cc"],
+    srcs_disabled = ["no_nlopt.cc"],
     hdrs = ["nlopt_solver.h"],
-    deps = [
-        ":mathematical_program",
+    interface_deps = [
         ":solver_base",
-    ] + select({
-        "//conditions:default": [
-            "//math:autodiff",
-            "@nlopt",
-        ],
-        "//tools:no_nlopt": [
-        ],
-    }),
+    ],
+    deps_always = [
+        ":mathematical_program",
+    ],
+    deps_enabled = [
+        "//math:autodiff",
+        "@nlopt_internal//:nlopt",
+    ],
 )
 
-drake_cc_library(
+drake_cc_variant_library(
     name = "osqp_solver",
-    srcs = [
-        "osqp_solver_common.cc",
-    ] + select({
-        "//tools:no_osqp": [
-            "no_osqp.cc",
-        ],
-        "//conditions:default": [
-            "osqp_solver.cc",
-        ],
-    }),
+    opt_out_condition = "//tools:no_osqp",
+    srcs_always = ["osqp_solver_common.cc"],
+    srcs_enabled = ["osqp_solver.cc"],
+    srcs_disabled = ["no_osqp.cc"],
     hdrs = ["osqp_solver.h"],
-    deps = [
+    interface_deps = [
+        ":solver_base",
+    ],
+    deps_always = [
         ":aggregate_costs_constraints",
         ":mathematical_program",
-        ":solver_base",
-    ] + select({
-        "//conditions:default": [
-            "//math:eigen_sparse_triplet",
-            "@osqp",
-        ],
-        "//tools:no_osqp": [
-        ],
-    }),
+    ],
+    deps_enabled = [
+        "//math:eigen_sparse_triplet",
+        "@osqp",
+    ],
 )
 
-drake_cc_library(
+drake_cc_variant_library(
     name = "scs_solver",
-    srcs = [
-        "scs_solver_common.cc",
-    ] + select({
-        "//conditions:default": [
-            "scs_solver.cc",
-        ],
-        "//tools:no_scs": [
-            "no_scs.cc",
-        ],
-    }),
+    opt_out_condition = "//tools:no_scs",
+    srcs_always = ["scs_solver_common.cc"],
+    srcs_enabled = ["scs_solver.cc"],
+    srcs_disabled = ["no_scs.cc"],
     hdrs = ["scs_solver.h"],
-    deps = [
-        ":aggregate_costs_constraints",
-        ":mathematical_program",
+    interface_deps = [
         ":solver_base",
         "//common:essential",
-    ] + select({
-        "//conditions:default": [
-            "//common:scope_exit",
-            "//math:eigen_sparse_triplet",
-            "@scs//:scsdir",
-        ],
-        "//tools:no_scs": [
-        ],
-    }),
+    ],
+    deps_always = [
+        ":aggregate_costs_constraints",
+        ":mathematical_program",
+        "//math:quadratic_form",
+    ],
+    deps_enabled = [
+        "//common:scope_exit",
+        "//math:eigen_sparse_triplet",
+        "@scs//:scsdir",
+    ],
 )
 
 drake_cc_library(
     name = "sdpa_free_format",
     srcs = ["sdpa_free_format.cc"],
     hdrs = ["sdpa_free_format.h"],
-    deps = [
+    interface_deps = [
         ":mathematical_program",
         "//common:type_safe_index",
     ],
+    deps = [],
 )
 
-drake_cc_library(
+drake_cc_optional_library(
     name = "csdp_solver_error_handling",
-    srcs = select({
-        "//conditions:default": ["csdp_solver_error_handling.cc"],
-        "//tools:no_csdp": [],
-    }),
-    hdrs = select({
-        "//conditions:default": ["csdp_solver_error_handling.h"],
-        "//tools:no_csdp": [],
-    }),
+    opt_out_condition = "//tools:no_csdp",
+    srcs = ["csdp_solver_error_handling.cc"],
+    hdrs = ["csdp_solver_error_handling.h"],
     copts = ["-fvisibility=hidden"],
-    visibility = [
-        "@csdp//:__pkg__",
+    visibility = ["@csdp//:__pkg__"],
+)
+
+drake_cc_optional_library(
+    name = "csdp_cpp_wrapper",
+    opt_out_condition = "//tools:no_csdp",
+    srcs = ["csdp_cpp_wrapper.cc"],
+    hdrs = ["csdp_cpp_wrapper.h"],
+    interface_deps = [
+        "@csdp",
+    ],
+    deps = [
+        ":csdp_solver_error_handling",
     ],
 )
 
-drake_cc_library(
+drake_cc_optional_library(
+    name = "csdp_solver_internal",
+    opt_out_condition = "//tools:no_csdp",
+    srcs = ["csdp_solver_internal.cc"],
+    hdrs = ["csdp_solver_internal.h"],
+    interface_deps = [
+        ":csdp_cpp_wrapper",
+        ":sdpa_free_format",
+    ],
+    deps = [],
+)
+
+drake_cc_variant_library(
     name = "csdp_solver",
-    srcs = [
-        "csdp_solver_common.cc",
-    ] + select({
-        "//conditions:default": [
-            "csdp_cpp_wrapper.cc",
-            "csdp_solver.cc",
-            "csdp_solver_internal.cc",
-        ],
-        "//tools:no_csdp": [
-            "no_csdp.cc",
-        ],
-    }),
-    hdrs = [
-        "csdp_solver.h",
-    ] + select({
-        "//conditions:default": [
-            "csdp_cpp_wrapper.h",
-            "csdp_solver_internal.h",
-        ],
-        "//tools:no_csdp": [
-        ],
-    }),
-    install_hdrs_exclude = select({
-        "//conditions:default": [
-            "csdp_cpp_wrapper.h",
-            "csdp_solver_internal.h",
-        ],
-        "//tools:no_csdp": [],
-    }),
-    deps = [
-        ":mathematical_program",
+    opt_out_condition = "//tools:no_csdp",
+    srcs_always = ["csdp_solver_common.cc"],
+    srcs_enabled = ["csdp_solver.cc"],
+    srcs_disabled = ["no_csdp.cc"],
+    hdrs = ["csdp_solver.h"],
+    interface_deps = [
         ":solver_base",
         ":sdpa_free_format",
+    ],
+    deps_always = [
+        ":mathematical_program",
         "//common:filesystem",
         "//common:scope_exit",
-    ] + select({
-        "//conditions:default": [
-            "@csdp",
-        ],
-        "//tools:no_csdp": [
-        ],
-    }),
+    ],
+    deps_enabled = [
+        ":csdp_solver_internal",
+    ],
 )
 
 drake_cc_library(
     name = "mixed_integer_optimization_util",
     srcs = ["mixed_integer_optimization_util.cc"],
     hdrs = ["mixed_integer_optimization_util.h"],
+    interface_deps = [
+        ":mathematical_program",
+    ],
     deps = [
         ":integer_optimization_util",
-        ":mathematical_program",
         "//math:gray_code",
     ],
 )
@@ -1142,8 +1111,10 @@ drake_cc_googletest(
     tags = gurobi_test_tags(),
     deps = [
         ":branch_and_bound",
+        ":gurobi_solver",
         ":mathematical_program_test_util",
         ":mixed_integer_optimization_util",
+        ":scs_solver",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -1162,7 +1133,7 @@ drake_cc_googletest(
     name = "constraint_test",
     deps = [
         ":constraint",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
@@ -1185,7 +1156,7 @@ drake_cc_googletest(
         ":cost",
         ":create_cost",
         ":generic_trivial_cost",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:is_dynamic_castable",
         "//common/test_utilities:symbolic_test_util",
@@ -1198,6 +1169,7 @@ drake_cc_googletest(
     tags = ["snopt"],
     deps = [
         ":mathematical_program",
+        ":snopt_solver",
         ":solve",
     ],
 )
@@ -1226,12 +1198,13 @@ drake_cc_library(
 drake_cc_googletest(
     name = "sdpa_free_format_test",
     deps = [
-        ":csdp_solver",
+        ":csdp_solver_internal",
         ":csdp_test_examples",
         ":sdpa_free_format",
         "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1244,17 +1217,19 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_optional_googletest(
     name = "csdp_solver_internal_test",
+    opt_out_condition = "//tools:no_csdp",
     deps = [
-        ":csdp_solver",
+        ":csdp_solver_internal",
         ":csdp_test_examples",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
-drake_cc_googletest(
+drake_cc_optional_googletest(
     name = "csdp_cpp_wrapper_test",
+    opt_out_condition = "//tools:no_csdp",
     tags = [
         # The longjmp handling definitely leaks memory, and we've decided to
         # just live with that. If we see the longjmp handler triggering when
@@ -1265,7 +1240,7 @@ drake_cc_googletest(
         "no_memcheck",
     ],
     deps = [
-        ":csdp_solver",
+        ":csdp_cpp_wrapper",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -1294,6 +1269,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "equality_constrained_qp_solver_test",
     deps = [
+        ":equality_constrained_qp_solver",
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
@@ -1370,10 +1346,11 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_optional_googletest(
     name = "ibex_converter_test",
+    opt_out_condition = "//tools:no_dreal",
     deps = [
-        ":ibex_solver",
+        ":ibex_converter",
     ],
 )
 
@@ -1382,6 +1359,7 @@ drake_cc_googletest(
     deps = [
         ":integer_optimization_util",
         ":mathematical_program",
+        ":osqp_solver",
         ":solve",
     ],
 )
@@ -1402,6 +1380,8 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
+        "//common:filesystem",
+        "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
     ] + select({
         "//conditions:default": [
@@ -1425,6 +1405,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "linear_system_solver_test",
     deps = [
+        ":linear_system_solver",
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":optimization_examples",
@@ -1441,9 +1422,11 @@ drake_cc_googletest(
         ":generic_trivial_cost",
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":snopt_solver",
         ":solve",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities",
+        "//math:matrix_util",
     ],
 )
 
@@ -1490,6 +1473,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":mixed_integer_optimization_util",
+        ":mosek_solver",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
@@ -1517,6 +1501,7 @@ drake_cc_googletest(
         ":linear_program_examples",
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":nlopt_solver",
         ":optimization_examples",
         ":quadratic_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1563,6 +1548,7 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         ":gurobi_solver",
+        ":integer_optimization_util",
         ":mathematical_program",
         ":mixed_integer_rotation_constraint",
         ":mosek_solver",
@@ -1570,6 +1556,7 @@ drake_cc_googletest(
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
+        "//math:gray_code",
     ],
 )
 
@@ -1586,12 +1573,14 @@ drake_cc_googletest(
     ],
     use_default_main = False,
     deps = [
+        ":integer_optimization_util",
         ":mathematical_program",
         ":mixed_integer_rotation_constraint",
         ":mosek_solver",
         ":rotation_constraint",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:gray_code",
     ],
 )
 
@@ -1610,6 +1599,7 @@ drake_cc_googletest(
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
+        ":mosek_solver",
         ":rotation_constraint",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1674,6 +1664,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
+        ":scs_solver",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
         ":sos_examples",
@@ -1695,6 +1686,7 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
+        ":snopt_solver",
         "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1743,6 +1735,7 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":sos_basis_generator",
+        "//common:symbolic",
     ],
 )
 
@@ -1750,17 +1743,6 @@ drake_cc_googletest(
     name = "integer_inequality_solver_test",
     deps = [
         ":integer_inequality_solver",
-    ],
-)
-
-drake_cc_googletest(
-    name = "system_identification_test",
-    # Test timeout increased to not timeout in debug and when run with
-    # Valgrind.
-    timeout = "moderate",
-    deps = [
-        ":system_identification",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -1780,6 +1762,7 @@ drake_cc_googletest(
         ":gurobi_solver",
         ":mixed_integer_optimization_util",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:gray_code",
     ],
 )
 
@@ -1799,6 +1782,7 @@ drake_cc_googletest(
     name = "diagonally_dominant_matrix_test",
     deps = [
         ":mathematical_program",
+        ":snopt_solver",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
     ],
@@ -1832,6 +1816,19 @@ drake_cc_googletest(
     name = "choose_best_solver_test",
     deps = [
         ":choose_best_solver",
+        ":clp_solver",
+        ":csdp_solver",
+        ":equality_constrained_qp_solver",
+        ":get_program_type",
+        ":gurobi_solver",
+        ":ipopt_solver",
+        ":linear_system_solver",
+        ":moby_lcp_solver",
+        ":mosek_solver",
+        ":nlopt_solver",
+        ":osqp_solver",
+        ":scs_solver",
+        ":snopt_solver",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -1839,6 +1836,11 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "solve_test",
     deps = [
+        ":choose_best_solver",
+        ":gurobi_solver",
+        ":linear_system_solver",
+        ":scs_solver",
+        ":snopt_solver",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -1866,8 +1868,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "augmented_lagrangian_test",
     deps = [
+        ":aggregate_costs_constraints",
         ":augmented_lagrangian",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
     ],
 )
 
@@ -1880,55 +1884,4 @@ drake_cc_googletest(
     ],
 )
 
-# The extra_srcs are required here because add_lint_tests() doesn't understand
-# how to extract labels from select() functions yet.
-add_lint_tests(cpplint_extra_srcs = [
-    "clp_solver.h",
-    "clp_solver.cc",
-    "clp_solver_common.cc",
-    "csdp_solver.h",
-    "csdp_solver.cc",
-    "csdp_solver_common.cc",
-    "csdp_solver_internal.h",
-    "csdp_solver_internal.cc",
-    "dreal_solver.cc",
-    "dreal_solver.h",
-    "dreal_solver_common.cc",
-    "get_program_type.h",
-    "get_program_type.cc",
-    "gurobi_solver.cc",
-    "gurobi_solver.h",
-    "gurobi_solver_common.cc",
-    "ibex_converter.cc",
-    "ibex_converter.h",
-    "ibex_solver.cc",
-    "ibex_solver.h",
-    "ibex_solver_common.cc",
-    "ipopt_solver.cc",
-    "ipopt_solver.h",
-    "ipopt_solver_common.cc",
-    "mosek_solver.cc",
-    "mosek_solver.h",
-    "mosek_solver_common.cc",
-    "nlopt_solver.cc",
-    "nlopt_solver.h",
-    "nlopt_solver_common.cc",
-    "no_clp.cc",
-    "no_csdp.cc",
-    "no_dreal.cc",
-    "no_gurobi.cc",
-    "no_ibex.cc",
-    "no_ipopt.cc",
-    "no_mosek.cc",
-    "no_nlopt.cc",
-    "no_osqp.cc",
-    "no_scs.cc",
-    "no_snopt.cc",
-    "osqp_solver.cc",
-    "osqp_solver_common.cc",
-    "scs_solver.cc",
-    "scs_solver_common.cc",
-    "snopt_solver.cc",
-    "snopt_solver.h",
-    "snopt_solver_common.cc",
-])
+add_lint_tests()

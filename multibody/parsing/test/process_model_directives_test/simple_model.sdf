@@ -5,6 +5,13 @@
       <inertial>
         <mass>1</mass>
       </inertial>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.2 0.2 2.2</size>
+          </box>
+        </geometry>
+      </collision>
       <visual name="visual">
         <geometry>
           <box>

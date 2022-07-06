@@ -1,0 +1,20 @@
+directives:
+
+- add_model:
+    name: sub_model1
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_model:
+    name: sub_model2
+    file: package://process_model_directives_test/simple_model.sdf
+
+# This model does not participate in any collision filters.
+- add_model:
+    name: sub_model3
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_collision_filter_group:
+    name: across_sub_models
+    members: [sub_model1::base, sub_model2::base]
+    ignored_collision_filter_groups: [across_sub_models]
+

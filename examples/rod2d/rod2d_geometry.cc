@@ -2,11 +2,11 @@
 
 #include <memory>
 
-#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/rgba.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"

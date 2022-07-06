@@ -104,17 +104,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
             cls_doc.IsExactlyIdentity.doc)
         .def("IsNearlyIdentity", &Class::IsNearlyIdentity,
-            py::arg("translation_tolerance"), cls_doc.IsNearlyIdentity.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("IsIdentityToEpsilon",
-            WrapDeprecated(cls_doc.IsIdentityToEpsilon.doc_deprecated,
-                &Class::IsIdentityToEpsilon),
-            py::arg("translation_tolerance"),
-            cls_doc.IsIdentityToEpsilon.doc_deprecated);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-    cls                     // BR
+            py::arg("translation_tolerance"), cls_doc.IsNearlyIdentity.doc)
         .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
             py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
@@ -208,17 +198,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("IsNearlyIdentity", &Class::IsNearlyIdentity,
             py::arg("tolerance") =
                 Class::get_internal_tolerance_for_orthonormality(),
-            cls_doc.IsNearlyIdentity.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("IsIdentityToInternalTolerance",
-            WrapDeprecated(cls_doc.IsIdentityToInternalTolerance.doc_deprecated,
-                &Class::IsIdentityToInternalTolerance),
-            cls_doc.IsIdentityToInternalTolerance.doc_deprecated);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-    cls                     // BR
-                            // Does not return the quality_factor
+            cls_doc.IsNearlyIdentity.doc)
+        // Does not return the quality_factor
         .def_static(
             "ProjectToRotationMatrix",
             [](const Matrix3<T>& M) {
@@ -448,7 +429,16 @@ void DoScalarIndependentDefinitions(py::module m) {
             return IsPositiveDefinite(matrix, tolerance);
           },
           py::arg("matrix"), py::arg("tolerance") = 0.0,
-          doc.IsPositiveDefinite.doc);
+          doc.IsPositiveDefinite.doc)
+      .def(
+          "ToSymmetricMatrixFromLowerTriangularColumns",
+          [](const Eigen::Ref<const Eigen::VectorXd>&
+                  lower_triangular_columns) {
+            return ToSymmetricMatrixFromLowerTriangularColumns(
+                lower_triangular_columns);
+          },
+          py::arg("lower_triangular_columns"),
+          doc.ToSymmetricMatrixFromLowerTriangularColumns.doc_dynamic_size);
 
   // Quadratic Form.
   m  // BR

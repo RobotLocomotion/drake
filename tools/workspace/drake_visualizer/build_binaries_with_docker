@@ -45,8 +45,5 @@ extract()
 
 rm -f dv-*.tar.gz{,.sha256}
 
-build bionic --build-arg PLATFORM=ubuntu:18.04
-extract bionic
-
 build focal --build-arg PLATFORM=ubuntu:20.04
 extract focal

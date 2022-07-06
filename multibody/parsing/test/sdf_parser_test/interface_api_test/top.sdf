@@ -1,39 +1,62 @@
 <?xml version="1.0"?>
-<sdf version="1.8">
+<sdf xmlns:drake="http://drake.mit.edu" version="1.8">
   <model name="top">
-    <link name="torso"/>
+    <link name="torso">
+      <collision name='torso'>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
 
     <model name="tactile_sensor">
-      <pose relative_to="arm::gripper::grasp_frame"/>
+      <pose relative_to="gripper::grasp_frame"/>
       <link name="sensor_link"/>
     </model>
 
     <joint name="arm_attach" type="fixed">
       <parent>torso</parent>
-      <child>arm::mount</child>
+      <child>arm::L1</child>
     </joint>
 
     <include>
-      <pose relative_to="torso">1 0 0 0 0 0</pose>
-      <uri>package://interface_api_test/arm.forced_nesting_sdf</uri>
-      <name>arm</name>
-    </include>
-
-    <include>
-      <pose relative_to="arm">0 2 0 0 0 0</pose>
       <uri>package://interface_api_test/arm.urdf</uri>
-      <name>extra_arm</name>
+      <name>arm</name>
+      <pose relative_to="torso">1 0 0 0 0 0</pose>
     </include>
-
-    <joint name="extra_arm_attach" type="fixed">
-      <parent>arm::L1</parent>
-      <child>extra_arm::L1</child>
-    </joint>
 
     <include>
-      <pose>3 0 0 0 0 0</pose>
-      <uri>package://interface_api_test/table_and_mug.forced_nesting_sdf</uri>
-      <name>table_and_mug</name>
+      <uri>package://interface_api_test/gripper.sdf</uri>
+      <name>gripper</name>
+      <pose relative_to="arm::L2"/>
     </include>
+
+    <include>
+      <uri>package://interface_api_test/table.sdf</uri>
+      <name>table</name>
+      <pose>3 0 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>package://interface_api_test/mug.sdf</uri>
+      <name>mug</name>
+      <placement_frame>top</placement_frame>
+      <pose relative_to="table::top">0 0 0 1.5707963267948966 0 0</pose>
+    </include>
+    <frame name="table_top_alias" attached_to="table::top"/>
+    <frame name="mug_top_alias" attached_to="mug::top"/>
+    <joint name="j1" type="fixed">
+      <parent>table_top_alias</parent>
+      <child>mug_top_alias</child>
+    </joint>
+    <frame name="test_joint_frame" attached_to="j1"/>
+
+    <drake:collision_filter_group name="g1">
+      <drake:member>torso</drake:member>
+      <drake:member>arm::L1</drake:member>
+      <drake:member>gripper::gripper_link</drake:member>
+      <drake:ignored_collision_filter_group>g1</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
   </model>
 </sdf>

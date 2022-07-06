@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <world name="simple_world_with_two_models">
+    <include>
+      <name>top_a</name>
+      <uri>package://drake/manipulation/util/test/simple_nested_model.sdf</uri>
+    </include>
+    <include>
+      <name>top_b</name>
+      <uri>package://drake/manipulation/util/test/simple_nested_model.sdf</uri>
+    </include>
+  </world>
+</sdf>

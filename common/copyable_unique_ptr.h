@@ -11,8 +11,8 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
 #include <cstddef>
-#include <iostream>
 #include <memory>
+#include <ostream>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -175,7 +175,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    heap-allocated copy of the source object, created using its copy
    constructor or `Clone()` method. The currently-held object (if any) is
    deleted. */
-  copyable_unique_ptr & operator=(const T& ref) {
+  copyable_unique_ptr& operator=(const T& ref) {
     std::unique_ptr<T>::reset(CopyOrNull(&ref));
     return *this;
   }
@@ -318,7 +318,10 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    shore up this gap in the const correctness protection.
 
    @pre `this != nullptr` reports `true`. */
-  const T& operator*() const { return *get(); }
+  const T& operator*() const {
+    DRAKE_ASSERT(!empty());
+    return *get();
+  }
 
   /** Return a writable reference to the contained object (if T is itself not
    const). Note that you need write access to this container in order to get
@@ -336,7 +339,10 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    reference.
 
    @pre `this != nullptr` reports `true`. */
-  T& operator*() { return *get_mutable(); }
+  T& operator*() {
+    DRAKE_ASSERT(!empty());
+    return *get_mutable();
+  }
 
   /**@}*/
  private:

@@ -10,8 +10,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
@@ -56,127 +55,6 @@ class MultipleShooting {
   /// trajectory optimization problem.
   /// @exclude_from_pydrake_mkdoc{This overload is not bound.}
   const solvers::MathematicalProgram& prog() const { return prog_; }
-
-// Hide the deprecation shims.
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED("2022-05-01",
-                   "The trajectory optimization classes no longer derive from "
-                   "MathematicalProgram.  Use trajopt.prog().")
-  operator const solvers::MathematicalProgram&() { return prog(); }
-#define DRAKE_PERFECT_FORWARD_MATH_PROG(method_name, maybe_const) \
-  template <typename... Args> \
-  DRAKE_DEPRECATED("2022-05-01", "Use trajopt.prog()." #method_name) \
-  decltype(auto) method_name(Args&&... args) maybe_const { \
-    return prog_.method_name(std::forward<Args>(args)...); \
-  }
-  DRAKE_PERFECT_FORWARD_MATH_PROG(to_string, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(NewContinuousVariables, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(NewBinaryVariables, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(NewSymmetricContinuousVariables,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddDecisionVariables, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(NewFreePolynomial, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(NewEvenDegreeFreePolynomial, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(NewOddDegreeFreePolynomial, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(NewNonnegativePolynomial, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(NewSosPolynomial, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(NewEvenDegreeNonnegativePolynomial,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(NewEvenDegreeSosPolynomial, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(MakePolynomial, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(Reparse, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(NewIndeterminates, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddIndeterminates, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddVisualizationCallback, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddCost, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(MakeCost, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddLinearCost, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddQuadraticCost, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddQuadraticErrorCost, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(Add2NormSquaredCost, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddL2NormCost, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddL2NormCostUsingConicConstraint,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddPolynomialCost, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddMaximizeLogDeterminantCost,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddMaximizeGeometricMeanCost, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddConstraint, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddLinearConstraint, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddLinearEqualityConstraint, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddBoundingBoxConstraint, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddLorentzConeConstraint, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddRotatedLorentzConeConstraint,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddLinearComplementarityConstraint,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddPolynomialConstraint, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddPositiveSemidefiniteConstraint,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddLinearMatrixInequalityConstraint,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddPositiveDiagonallyDominantMatrixConstraint,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddScaledDiagonallyDominantMatrixConstraint,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddSosConstraint, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddEqualityConstraintBetweenPolynomials,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(AddExponentialConeConstraint, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(GetInitialGuess, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(SetInitialGuess, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(SetInitialGuessForAllVariables,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(SetDecisionVariableValueInVector,
-                                  /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(SetSolverOption, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(solver_options, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(GetSolverOptionsDouble, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(GetSolverOptionsInt, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(GetSolverOptionsStr, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(visualization_callbacks, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(generic_costs, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(generic_constraints, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(linear_equality_constraints, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(linear_costs, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(quadratic_costs, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(l2norm_costs, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(linear_constraints, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(lorentz_cone_constraints, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(rotated_lorentz_cone_constraints, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(positive_semidefinite_constraints, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(linear_matrix_inequality_constraints, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(exponential_cone_constraints, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(bounding_box_constraints, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(GetAllCosts, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(GetAllLinearConstraints, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(GetAllConstraints, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(num_vars, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(num_indeterminates, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(initial_guess, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(FindDecisionVariableIndex, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(FindDecisionVariableIndices, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(FindIndeterminateIndex, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(EvalBinding, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(EvalBindings, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(GetBindingVariableValues, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(EvalVisualizationCallbacks, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(EvalBindingAtInitialGuess, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(CheckSatisfied, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(CheckSatisfiedAtInitialGuess, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(decision_variables, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(decision_variable, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(indeterminates, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(indeterminate, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(required_capabilities, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(decision_variable_index, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(indeterminates_index, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(GetVariableScaling, const)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(SetVariableScaling, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(RemoveCost, /* non-const */)
-  DRAKE_PERFECT_FORWARD_MATH_PROG(RemoveConstraint, /* non-const */)
-#undef DRAKE_PERFECT_FORWARD_MATH_PROG
-#endif  // DRAKE_DOXYGEN_CXX
 
   /// Returns the decision variable associated with the timestep, h, at time
   /// index @p index.

@@ -6,13 +6,14 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/deformable_contact_geometries.h"
+#include "drake/geometry/proximity/deformable_contact_surface.h"
+#include "drake/geometry/proximity/deformable_rigid_contact_pair.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/query_results/deformable_contact_data.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/fixed_fem/dev/deformable_contact_data.h"
-#include "drake/multibody/fixed_fem/dev/deformable_contact_surface.h"
-#include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_mesh_intersection.h"
 #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
 
@@ -27,7 +28,12 @@ using geometry::VolumeElement;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
 using geometry::internal::Bvh;
+using geometry::internal::ContactPolygonData;
+using geometry::internal::DeformableContactData;
+using geometry::internal::DeformableContactSurface;
+using geometry::internal::DeformableRigidContactPair;
 using geometry::internal::DeformableVolumeMesh;
+using geometry::internal::deformable::ReferenceDeformableGeometry;
 using geometry::internal::Obb;
 using std::vector;
 
@@ -245,20 +251,20 @@ GTEST_TEST(DeformableContactTest, NonTriangleContactPolygon) {
 }
 
 
-const DeformableBodyIndex kDeformableBodyIndex(2);
+const int kDeformableBodyIndex(2);
 /* Makes a DeformableContactData with a single contact pair using the given
  `contact_surface`. Unused parameters are set to arbitrary values. */
-internal::DeformableContactData<double> MakeDeformableContactData(
+DeformableContactData<double> MakeDeformableContactData(
     DeformableContactSurface<double> contact_surface,
-    internal::ReferenceDeformableGeometry<double> deformable_geometry) {
+    ReferenceDeformableGeometry deformable_geometry) {
   const geometry::GeometryId dummy_rigid_id;
   const double dummy_stiffness = 0;
   const double dummy_dissipation = 0;
   const double dummy_friction = 0;
-  const internal::DeformableRigidContactPair<double> contact_pair(
+  const DeformableRigidContactPair<double> contact_pair(
       std::move(contact_surface), dummy_rigid_id, kDeformableBodyIndex,
       dummy_stiffness, dummy_dissipation, dummy_friction);
-  return internal::DeformableContactData<double>({contact_pair},
+  return DeformableContactData<double>({contact_pair},
                                                  deformable_geometry);
 }
 
@@ -285,9 +291,9 @@ GTEST_TEST(DeformableContactTest, DeformableContactData) {
       Vector3<double>(0, 0.5, 0));
   DeformableContactSurface<double> contact_surface =
       MakeDeformableContactSurface<double>(X_DR);
-  const internal::DeformableContactData<double> contact_data =
+  const DeformableContactData<double> contact_data =
       MakeDeformableContactData(std::move(contact_surface),
-                                MakeOctahedronDeformableGeometry<double>());
+                                MakeOctahedronDeformableGeometry());
 
   EXPECT_EQ(contact_data.num_contact_pairs(), 1);
   /* v0, v1, v2, v3, v5, v6 are participating in contact so they get new indexes
@@ -311,9 +317,9 @@ GTEST_TEST(DeformableContactTest, EmptyDeformableContactData) {
   const auto X_DR = math::RigidTransformd(Vector3<double>(0, 0, -15));
   DeformableContactSurface<double> contact_surface =
       MakeDeformableContactSurface<double>(X_DR);
-  const internal::DeformableContactData<double> contact_data =
+  const DeformableContactData<double> contact_data =
       MakeDeformableContactData(std::move(contact_surface),
-                                MakeOctahedronDeformableGeometry<double>());
+                                MakeOctahedronDeformableGeometry());
 
   EXPECT_EQ(contact_data.num_contact_pairs(), 1);
   EXPECT_EQ(contact_data.num_vertices_in_contact(), 0);

@@ -135,7 +135,7 @@ drake_cc_binary(
     data = [":models"],
     deps = [
         ":pendulum_plant",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//multibody/parsing",
         "//multibody/plant",
     ],
@@ -180,6 +180,7 @@ drake_cc_googletest(
     deps = [
         ":pendulum_plant",
         "//common:autodiff",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 

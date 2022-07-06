@@ -81,10 +81,10 @@ else()
 
   # The supported releases should match those listed in both
   # doc/_pages/from_source.md and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(focal)$")
+  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(focal|jammy)$")
     message(FATAL_ERROR
       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-      "Ubuntu 20.04 (Focal)."
+      "Ubuntu 20.04 (Focal) or Ubuntu 22.04 (Jammy)."
     )
   endif()
 endif()
@@ -107,10 +107,11 @@ if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
 endif()
 
 # The minimum compiler versions should match those listed in both
-# doc/developers.rst and tools/workspace/cc/repository.bzl.
+# doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
+# TODO(jwnimmer-tri) Set MINIMUM_CLANG_VERSION=12 on 2022-09-01.
 set(MINIMUM_APPLE_CLANG_VERSION 12)
 set(MINIMUM_CLANG_VERSION 9)
-set(MINIMUM_GNU_VERSION 7.5)
+set(MINIMUM_GNU_VERSION 9.3)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})

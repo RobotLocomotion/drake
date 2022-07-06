@@ -3,6 +3,7 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/iris.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/solvers/ibex_solver.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -358,6 +359,12 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
 // In addition to testing the convex space, this is a test for which Ibex finds
 // counter-examples that Snopt misses.
 GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
+  if (!solvers::IbexSolver::is_available() ||
+      !solvers::IbexSolver::is_enabled()) {
+    // This test requires Ibex.
+    return;
+  }
+
   const double l = 1.5;
   const double r = 0.1;
   const std::string convex_urdf = fmt::format(

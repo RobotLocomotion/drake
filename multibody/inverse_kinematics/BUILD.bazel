@@ -96,6 +96,7 @@ drake_cc_library(
     deps = [
         "//multibody/plant",
         "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
         "//solvers:mixed_integer_rotation_constraint",
         "//solvers:rotation_constraint",
     ],
@@ -261,6 +262,7 @@ drake_cc_library(
         "//multibody/parsing",
         "//multibody/plant",
         "//multibody/tree",
+        "//solvers:solve",
         "@gtest//:without_main",
     ],
 )
@@ -326,6 +328,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":global_inverse_kinematics_test_util",
+        "//solvers:gurobi_solver",
     ],
 )
 

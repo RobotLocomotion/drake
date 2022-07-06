@@ -1,21 +1,21 @@
 Do not load unused packages to reduce build footprint
 --- src/sys/dll/reg.c
 +++ src/sys/dll/reg.c
-@@ -114,9 +114,6 @@ PETSC_INTERN PetscErrorCode PetscInitialize_DynamicLibraries(void)
+@@ -112,9 +112,6 @@ PETSC_INTERN PetscErrorCode PetscInitialize_DynamicLibraries(void)
  #if defined(PETSC_USE_SINGLE_LIBRARY)
-   ierr = AOInitializePackage();CHKERRQ(ierr);
-   ierr = PetscSFInitializePackage();CHKERRQ(ierr);
+   PetscCall(AOInitializePackage());
+   PetscCall(PetscSFInitializePackage());
 -#if !defined(PETSC_USE_COMPLEX)
--  ierr = CharacteristicInitializePackage();CHKERRQ(ierr);
+-  PetscCall(CharacteristicInitializePackage());
 -#endif
-   ierr = ISInitializePackage();CHKERRQ(ierr);
-   ierr = VecInitializePackage();CHKERRQ(ierr);
-   ierr = MatInitializePackage();CHKERRQ(ierr);
-@@ -125,7 +122,6 @@ PETSC_INTERN PetscErrorCode PetscInitialize_DynamicLibraries(void)
-   ierr = KSPInitializePackage();CHKERRQ(ierr);
-   ierr = SNESInitializePackage();CHKERRQ(ierr);
-   ierr = TSInitializePackage();CHKERRQ(ierr);
--  ierr = TaoInitializePackage();CHKERRQ(ierr);
+   PetscCall(ISInitializePackage());
+   PetscCall(VecInitializePackage());
+   PetscCall(MatInitializePackage());
+@@ -123,7 +120,5 @@ PETSC_INTERN PetscErrorCode PetscInitialize_DynamicLibraries(void)
+   PetscCall(KSPInitializePackage());
+   PetscCall(SNESInitializePackage());
+-  PetscCall(TSInitializePackage());
+-  PetscCall(TaoInitializePackage());
  #else
    SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_SUP,"Cannot use -library_preload with multiple static PETSc libraries");
  #endif

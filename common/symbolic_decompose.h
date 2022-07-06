@@ -15,6 +15,15 @@
 namespace drake {
 namespace symbolic {
 
+/** Checks if every element in `m` is affine in `vars`.
+@note If `m` is an empty matrix, it returns true. */
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m,
+              const Variables& vars);
+
+/** Checks if every element in `m` is affine.
+@note If `m` is an empty matrix, it returns true. */
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m);
+
 /** Decomposes @p expressions into @p M * @p vars.
 
 @throws std::exception if @p expressions is not linear in @p vars.
@@ -110,6 +119,37 @@ combination.
    @c map_var_to_index.
 2. e.is_polynomial() is true.
 3. e is an affine expression.
+4. all values in `map_var_to_index` should be in the range [0,
+map_var_to_index.size())
+
+@param[in] e The symbolic affine expression
+@param[in] map_var_to_index A mapping from variable ID to variable index, such
+that map_var_to_index[vi.get_ID()] = i.
+@param[out] coeffs A row vector. coeffs(i) = ci.
+@param[out] constant_term c0 in the equation above.
+@return num_variable. Number of variables in the expression. 2 * x(0) + 3 has 1
+variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable. */
+int DecomposeAffineExpression(
+    const symbolic::Expression& e,
+    const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
+    EigenPtr<Eigen::RowVectorXd> coeffs, double* constant_term);
+
+/** Decomposes an affine combination @p e = c0 + c1 * v1 + ... cn * vn into the
+following:
+
+     constant term      : c0
+     coefficient vector : [c1, ..., cn]
+     variable vector    : [v1, ..., vn]
+
+Then, it extracts the coefficient and the constant term. A map from variable ID
+to int, @p map_var_to_index, is used to decide a variable's index in a linear
+combination.
+
+\pre
+1. @c coeffs is a row vector of double, whose length matches with the size of
+   @c map_var_to_index.
+2. e.is_polynomial() is true.
+3. e is an affine expression.
 
 @tparam Derived An Eigen row vector type with Derived::Scalar == double.
 @param[in] e The symbolic affine expression
@@ -120,46 +160,24 @@ that map_var_to_index[vi.get_ID()] = i.
 @return num_variable. Number of variables in the expression. 2 * x(0) + 3 has 1
 variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable. */
 template <typename Derived>
-typename std::enable_if_t<std::is_same_v<typename Derived::Scalar, double>, int>
-DecomposeAffineExpression(
-    const symbolic::Expression& e,
-    const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
-    const Eigen::MatrixBase<Derived>& coeffs, double* constant_term) {
-  DRAKE_DEMAND(coeffs.rows() == 1);
-  DRAKE_DEMAND(coeffs.cols() == static_cast<int>(map_var_to_index.size()));
-  if (!e.is_polynomial()) {
-    std::ostringstream oss;
-    oss << "Expression " << e << "is not a polynomial.\n";
-    throw std::runtime_error(oss.str());
-  }
-  const symbolic::Polynomial poly{e};
-  int num_variable = 0;
-  for (const auto& p : poly.monomial_to_coefficient_map()) {
-    const auto& p_monomial = p.first;
-    DRAKE_ASSERT(is_constant(p.second));
-    const double p_coeff = symbolic::get_constant_value(p.second);
-    if (p_monomial.total_degree() > 1) {
-      std::stringstream oss;
-      oss << "Expression " << e << " is non-linear.";
-      throw std::runtime_error(oss.str());
-    } else if (p_monomial.total_degree() == 1) {
-      // Linear coefficient.
-      const auto& p_monomial_powers = p_monomial.get_powers();
-      DRAKE_DEMAND(p_monomial_powers.size() == 1);
-      const symbolic::Variable::Id var_id =
-          p_monomial_powers.begin()->first.get_id();
-      // TODO(eric.cousineau): Avoid using const_cast.
-      const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
-          map_var_to_index.at(var_id)) = p_coeff;
-      if (p_coeff != 0) {
-        ++num_variable;
-      }
-    } else {
-      // Constant term.
-      *constant_term = p_coeff;
-    }
-  }
-  return num_variable;
+DRAKE_DEPRECATED("2022-11-01",
+                 "Use the overloaded DecomposeAffineExpression which takes "
+                 "coeffs as a pointer.")
+typename std::enable_if_t<
+    std::is_same_v<typename Derived::Scalar, double>,
+    int> DecomposeAffineExpression(const symbolic::Expression& e,
+                                   const std::unordered_map<
+                                       symbolic::Variable::Id, int>&
+                                       map_var_to_index,
+                                   const Eigen::MatrixBase<Derived>& coeffs,
+                                   double* constant_term) {
+  Eigen::MatrixBase<Derived>& coeffs_ref =
+      const_cast<Eigen::MatrixBase<Derived>&>(coeffs);
+  Eigen::RowVectorXd coeffs_row(coeffs.cols());
+  const int num_vars = DecomposeAffineExpression(e, map_var_to_index,
+                                                 &coeffs_row, constant_term);
+  coeffs_ref = coeffs_row;
+  return num_vars;
 }
 
 /** Given a vector of Expressions @p f and a list of @p parameters we define

@@ -167,3 +167,16 @@ def cpplint(
             data = data,
             enable_clang_format_lint = enable_clang_format_lint,
         )
+
+def cpplint_extra(
+        name,
+        *,
+        srcs):
+    """Adds a test rule that runs cpplint over the given C++ code.
+    The srcs can be any kind of source code (i.e., header and/or cc files).
+    """
+    _add_linter_rules(
+        name = name,
+        source_labels = srcs,
+        source_filenames = ["$(location %s)" % x for x in srcs],
+    )

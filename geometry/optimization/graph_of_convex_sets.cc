@@ -232,9 +232,9 @@ std::string GraphOfConvexSets::GetGraphvizString(
   for (const auto& [v_id, v] : vertices_) {
     graphviz << "v" << v_id << " [label=\"" << v->name();
     if (result) {
-      graphviz << "\n x = [" << result->GetSolution(v->x()).transpose();
+      graphviz << "\n x = [" << result->GetSolution(v->x()).transpose() << "]";
     }
-    graphviz << "]\"]\n";
+    graphviz << "\"]\n";
   }
   for (const auto& [e_id, e] : edges_) {
     unused(e_id);
@@ -269,11 +269,24 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
   std::map<VertexId, std::vector<Edge*>> incoming_edges;
   std::map<VertexId, std::vector<Edge*>> outgoing_edges;
+  std::vector<Edge*> excluded_edges;
   const double inf = std::numeric_limits<double>::infinity();
 
   std::map<EdgeId, Variable> relaxed_phi;
+  std::vector<Variable> excluded_phi;
 
   for (const auto& [edge_id, e] : edges_) {
+    // If an edge is turned off (ϕ = 0), don't include it in the optimization.
+    if (!e->phi_value_.value_or(true)) {
+      // Track excluded edges (ϕ = 0) so that their variables can be set in the
+      // optimization result.
+      excluded_edges.emplace_back(e.get());
+      if (convex_relaxation) {
+        Variable phi("phi_excluded");
+        excluded_phi.push_back(phi);
+      }
+      continue;
+    }
     outgoing_edges[e->u().id()].emplace_back(e.get());
     incoming_edges[e->v().id()].emplace_back(e.get());
 
@@ -287,6 +300,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       prog.AddDecisionVariables(Vector1<Variable>(phi));
     }
     if (e->phi_value_.has_value()) {
+      DRAKE_DEMAND(*e->phi_value_);
       double phi_value = *e->phi_value_ ? 1.0 : 0.0;
       prog.AddBoundingBoxConstraint(phi_value, phi_value, phi);
     }
@@ -446,11 +460,12 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       if (LinearEqualityConstraint* lec =
               dynamic_cast<LinearEqualityConstraint*>(constraint)) {
         // A*x = b becomes A*x = phi*b.
-        MatrixXd Aeq(lec->A().rows(), lec->A().cols() + 1);
+        // TODO(hongkai.dai): use sparse version of Aeq.
+        const Eigen::MatrixXd& A = lec->GetDenseA();
+        MatrixXd Aeq(A.rows(), A.cols() + 1);
         Aeq.col(0) = -lec->lower_bound();
-        Aeq.rightCols(lec->A().cols()) = lec->A();
-        prog.AddLinearEqualityConstraint(Aeq, VectorXd::Zero(lec->A().rows()),
-                                         vars);
+        Aeq.rightCols(A.cols()) = A;
+        prog.AddLinearEqualityConstraint(Aeq, VectorXd::Zero(A.rows()), vars);
         // Note that LinearEqualityConstraint must come before LinearConstraint,
         // because LinearEqualityConstraint isa LinearConstraint.
       } else if (LinearConstraint* lc =
@@ -458,16 +473,18 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         // lb <= A*x <= ub becomes
         // A*x <= phi*ub and phi*lb <= A*x, which can be spelled
         // [-ub, A][phi; x] <= 0, and 0 <= [-lb, A][phi; x].
+        // TODO(hongkai.dai): use a sparse version of a matrix.
+        const Eigen::MatrixXd& A = lc->GetDenseA();
         RowVectorXd a(vars.size());
-        for (int i = 0; i < lc->A().rows(); ++i) {
+        for (int i = 0; i < A.rows(); ++i) {
           if (std::isfinite(lc->upper_bound()[i])) {
             a[0] = -lc->upper_bound()[i];
-            a.tail(lc->A().cols()) = lc->A().row(i);
+            a.tail(A.cols()) = A.row(i);
             prog.AddLinearConstraint(a, -inf, 0, vars);
           }
           if (std::isfinite(lc->lower_bound()[i])) {
             a[0] = -lc->lower_bound()[i];
-            a.tail(lc->A().cols()) = lc->A().row(i);
+            a.tail(A.cols()) = A.row(i);
             prog.AddLinearConstraint(a, 0, inf, vars);
           }
         }
@@ -587,31 +604,70 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     result = solvers::Solve(prog, {}, options);
   }
 
-  // Push the placeholder variables into the result, so that they can be
-  // accessed as if they were real variables.
+  // Push the placeholder variables and excluded edge variables into the result,
+  // so that they can be accessed as if they were variables included in the
+  // optimization.
   int num_placeholder_vars = relaxed_phi.size();
   for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
        vertices_) {
     num_placeholder_vars += vpair.second->ambient_dimension();
   }
+  for (const Edge* e : excluded_edges) {
+    num_placeholder_vars += e->y_.size() + e->z_.size() + e->ell_.size() + 1;
+  }
+  num_placeholder_vars += excluded_phi.size();
   std::unordered_map<symbolic::Variable::Id, int> decision_variable_index =
       prog.decision_variable_index();
   int count = result.get_x_val().size();
   Eigen::VectorXd x_val(count + num_placeholder_vars);
   x_val.head(count) = result.get_x_val();
+  for (const Edge* e : excluded_edges) {
+    for (int i = 0; i < e->y_.size(); ++i) {
+      decision_variable_index.emplace(e->y_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    for (int i = 0; i < e->z_.size(); ++i) {
+      decision_variable_index.emplace(e->z_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    for (int i = 0; i < e->ell_.size(); ++i) {
+      decision_variable_index.emplace(e->ell_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    decision_variable_index.emplace(e->phi_.get_id(), count);
+    x_val[count++] = 0;
+  }
+  for (const Variable& phi : excluded_phi) {
+    decision_variable_index.emplace(phi.get_id(), count);
+    x_val[count++] = 0;
+  }
   for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
        vertices_) {
     const Vertex* v = vpair.second.get();
     const bool is_target = (target_id == v->id());
     VectorXd x_v = VectorXd::Zero(v->ambient_dimension());
+    double sum_phi = 0;
     if (is_target) {
+      sum_phi = 1.0;
       for (const auto& e : incoming_edges[v->id()]) {
         x_v += result.GetSolution(e->z_);
       }
     } else {
       for (const auto& e : outgoing_edges[v->id()]) {
         x_v += result.GetSolution(e->y_);
+        sum_phi += result.GetSolution(
+            convex_relaxation ? relaxed_phi.at(e->id()) : e->phi_);
       }
+    }
+    // In the convex relaxation, sum_relaxed_phi may not be one even for
+    // vertices in the shortest path. We undo yₑ = ϕₑ xᵤ here to ensure that
+    // xᵤ is in v->set(). If ∑ ϕₑ is small enough that numerical errors
+    // prevent the projection back into the Xᵤ, then we prefer to return NaN.
+    if (sum_phi < 100.0 * std::numeric_limits<double>::epsilon()) {
+      x_v = VectorXd::Constant(v->ambient_dimension(),
+                                std::numeric_limits<double>::quiet_NaN());
+    } else if (convex_relaxation) {
+      x_v /= sum_phi;
     }
     for (int i = 0; i < v->ambient_dimension(); ++i) {
       decision_variable_index.emplace(v->x()[i].get_id(), count);

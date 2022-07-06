@@ -49,7 +49,6 @@ INSTALLED_MODEL_PACKAGES = [
     "//examples/pr2",
     "//examples/quadrotor",
     "//examples/rimless_wheel",
-    "//examples/simple_four_bar",
     "//examples/zmp",
 ]
 

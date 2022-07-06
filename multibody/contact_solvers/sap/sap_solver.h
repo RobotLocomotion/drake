@@ -1,11 +1,13 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "drake/multibody/contact_solvers/sap/sap_model.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
+#include "drake/multibody/contact_solvers/supernodal_solver.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -101,13 +103,41 @@ struct SapSolverParameters {
   int max_iterations{100};            // Maximum number of Newton iterations.
 
   // Line-search parameters.
-  double ls_alpha_max{1.5};   // Maximum line search parameter allowed.
   int ls_max_iterations{40};  // Maximum number of line search iterations.
   double ls_c{1.0e-4};        // Armijo's criterion parameter.
   double ls_rho{0.8};         // Backtracking search parameter.
 
+  // Maximum line search parameter allowed.
+  // Using this value of ls_alpha_max ensures that SAP's line search uses alpha
+  // = 1.0 on the second iteration. This is particularly important to avoid
+  // overrelaxation of Newton's method in regions where the cost is quadratic,
+  // or close to quadratic.
+  double ls_alpha_max{1.0 / ls_rho};
+
   // Tolerance used in impulse soft norms. In Ns.
   double soft_tolerance{1.0e-7};
+
+  // SAP uses sparse supernodal algebra by default. Set this to true to use
+  // dense algebra instead. Typically used for testing.
+  bool use_dense_algebra{false};
+
+  // Dimensionless number used to allow some slop on the check near zero for
+  // certain quantities such as the gradient of the cost.
+  // It is also used to check for monotonic convergence. In particular, we allow
+  // a small increase in the cost due to round-off errors
+  //   ℓᵏ ≤ ℓᵏ⁻¹ + ε
+  // where ε = relative_slop*max(1, (ℓᵏ+ℓᵏ⁻¹)/2).
+  // If this condition is not satisfied and nonmonotonic_convergence_is_error =
+  // true, SapSolver throws an exception.
+  double relative_slop{1000 * std::numeric_limits<double>::epsilon()};
+
+  // (For debugging) Even though SAP's convergence in monotonic, round-off
+  // errors could cause small cost increases on the order of machine epsilon.
+  // SAP's implementation uses a `realtive_slop` so that round-off errors do not
+  // cause false negatives. For debugging purposes however, this options allows
+  // to trigger an exception if the cost increases. For details, see
+  // documentation on `relative_slop`.
+  bool nonmonotonic_convergence_is_error{false};
 };
 
 // This class implements the Semi-Analytic Primal (SAP) solver described in
@@ -149,6 +179,8 @@ class SapSolver {
       num_line_search_iters = 0;
       optimality_criterion_reached = false;
       cost_criterion_reached = false;
+      momentum_residual.clear();
+      momentum_scale.clear();
     }
     int num_iters{0};              // Number of Newton iterations.
     int num_line_search_iters{0};  // Total number of line search iterations.
@@ -158,6 +190,12 @@ class SapSolver {
 
     // Indicates if the cost condition was reached.
     bool cost_criterion_reached{false};
+
+    // Dimensionless momentum residual at each iteration. Of size num_iters + 1.
+    std::vector<double> momentum_residual;
+
+    // Dimensionless momentum scale at each iteration. Of size num_iters + 1.
+    std::vector<double> momentum_scale;
   };
 
   SapSolver() = default;
@@ -228,10 +266,13 @@ class SapSolver {
   // the last Newton iteration values of generalized velocities and search
   // direction, respectively. This methods uses the O(n) strategy described in
   // [Castro et al., 2021].
+  // If dell_dalpha != nullptr, on return dell_dalpha contains the value of the
+  // derivative dℓ/dα = ∇ℓ(vᵐ)⋅Δvᵐ.
   // @pre context was created by the underlying SapModel.
   T CalcCostAlongLine(const systems::Context<T>& context,
                       const SearchDirectionData& search_direction_data,
-                      const T& alpha, systems::Context<T>* scratch) const;
+                      const T& alpha, systems::Context<T>* scratch,
+                      T* dell_dalpha = nullptr) const;
 
   // Approximation to the 1D minimization problem α = argmin ℓ(α) = ℓ(v + αΔv)
   // over α. We define ϕ(α) = ℓ₀ + α c ℓ₀', where ℓ₀ = ℓ(0), ℓ₀' = dℓ/dα(0) and
@@ -254,6 +295,27 @@ class SapSolver {
       const SearchDirectionData& search_direction_data,
       systems::Context<T>* scratch_workspace) const;
 
+  // Computes a dense Hessian H(v) = A + Jᵀ⋅G(v)⋅J for the generalized
+  // velocities state stored in `context`.
+  MatrixX<T> CalcDenseHessian(const systems::Context<T>& context) const;
+
+  // Makes a new SuperNodalSolver compatible with the underlying SapModel.
+  std::unique_ptr<SuperNodalSolver> MakeSuperNodalSolver() const;
+
+  // Evaluates the constraint's Hessian G(v) and updates `supernodal_solver`'s
+  // weight matrix so that we can later on solve the Newton system with Hessian
+  // H(v) = A + Jᵀ⋅G(v)⋅J.
+  void UpdateSuperNodalSolver(const systems::Context<T>& context,
+                              SuperNodalSolver* supernodal_solver) const;
+
+  // Updates the supernodal solver with the constraint's Hessian G(v),
+  // factorizes it, and solves for the search direction `dv`.
+  // @pre supernodal_solver and dv are not nullptr.
+  // @pre supernodal_solver was created with a call to MakeSuperNodalSolver().
+  void CallSuperNodalSolver(const systems::Context<T>& context,
+                            SuperNodalSolver* supernodal_solver,
+                            VectorX<T>* dv) const;
+
   // Solves for dv using dense algebra, for debugging.
   // @pre context was created by the underlying SapModel.
   // TODO(amcastro-tri): Add AutoDiffXd support.
@@ -264,8 +326,14 @@ class SapSolver {
   // of the primal cost ∇ℓₚ, the cost's Hessian H and solves for the velocity
   // search direction dv = −H⁻¹⋅∇ℓₚ. The result is stored in `data` along with
   // additional derived quantities from dv.
+  // @param supernodal_solver If nullptr, this method uses dense algebra to
+  // compute the Hessian and factorize it. Otherwise, this method uses the
+  // supernodal solver provided.
   // @pre context was created by the underlying SapModel.
+  // @pre supernodal_solver must be a valid supernodal solver created with
+  // MakeSuperNodalSolver() when parameters_.use_dense_algebra = false.
   void CalcSearchDirectionData(const systems::Context<T>& context,
+                               SuperNodalSolver* supernodal_solver,
                                SearchDirectionData* data) const;
 
   std::unique_ptr<SapModel<T>> model_;
@@ -291,4 +359,3 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::multibody::contact_solvers::internal::SapSolver);
-

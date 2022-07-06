@@ -27,10 +27,13 @@ namespace acrobot {
 /// @system
 /// name: AcrobotPlant
 /// input_ports:
-/// - elbow_torque
+/// - elbow_torque (optional)
 /// output_ports:
 /// - acrobot_state
 /// @endsystem
+///
+/// Note: If the elbow_torque input port is not connected, then the torque is
+/// taken to be zero.
 ///
 /// @tparam_default_scalar
 /// @ingroup acrobot_systems
@@ -49,7 +52,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 
   /// Sets the parameters to describe MIT Robot Locomotion Group's hardware
   /// acrobot.
-  void SetMITAcrobotParameters(systems::Parameters<T>* parameters) const;
+  void SetMitAcrobotParameters(AcrobotParams<T>* parameters) const;
 
   ///@{
   /// Manipulator equation of Acrobot: M(q)q̈ + bias(q,q̇) = B*u.
@@ -62,10 +65,12 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   Matrix2<T> MassMatrix(const systems::Context<T> &context) const;
   ///@}
 
-  /// Evaluates the input port and returns the scalar value
-  /// of the commanded torque.
-  const T& get_tau(const systems::Context<T>& context) const {
-    return this->EvalVectorInput(context, 0)->GetAtIndex(0);
+  /// Evaluates the input port and returns the scalar value of the commanded
+  /// torque.  If the input port is not connected, then the torque is taken to
+  /// be zero.
+  const T get_tau(const systems::Context<T>& context) const {
+    const systems::BasicVector<T>* u_vec = this->EvalVectorInput(context, 0);
+    return u_vec ? u_vec->GetAtIndex(0) : 0.0;
   }
 
   static const AcrobotState<T>& get_state(

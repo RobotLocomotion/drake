@@ -31,14 +31,94 @@ For Drake extensions to SDFormat files, see
 Drake's parser does not implement all of the features of SDFormat. In the
 future, we intend to update this documentation to itemize what isn't supported.
 
+@subsection model_composition SDFormat model composition
+
+Drake's SDFormat parsing supports composing multiple models into a single
+model, via lexical nesting and file inclusion. The file inclusion feature
+supports both SDFormat files and URDF files. Note that included URDF files pass
+through the Drake URDF parser, with all of it's extensions and limitations.
+
+For full details, see the
+<a href='http://sdformat.org/tutorials?tut=composition_proposal#model-composition-proposed-behavior'>SDFormat documentation of model composition.</a>
+
+An important feature of SDFormat model composition is the ability to
+cross-reference features of other models. Cross-references are denoted by using
+scoped names.
+
+@subsubsection scoped_names Scoped names
+
+Scoped names allow referring to an element of a model nested within the current
+model. They take the form of some number of nested model names, plus the
+element name, all joined by the delimiter `::`. Names not using the `::`
+delimeter are not considered scoped names; they are used to define or refer to
+elements of the current model. For example, suppose that model A contains model
+B, which in turn contains model C. Here are some valid scoped names:
+
+- within A:
+  - `some_frame_in_A`
+  - `B::some_frame_in_B`
+  - `B::C::some_frame_in_C`
+- within B:
+  - `some_frame_in_B`
+  - `C::some_frame_in_C`
+- within C:
+  - `some_frame_in_C`
+
+Note that (deliberately) there is no way to refer to elements outward or upward
+from the current model; all names are relative to the current model and can
+only refer to the current or a nested model. In particular, names must not
+start with `::`; there is no way to denote any "outer" or "outermost" scope.
+
+For a detailed design discussion with examples, see the
+<a href='http://sdformat.org/tutorials?tut=composition_proposal#1-3-name-scoping-and-cross-referencing'>SDFormat documentation of name scoping.</a>
+
 @section multibody_parsing_urdf URDF Support
 Drake supports URDF files as described here: http://wiki.ros.org/urdf/XML.
 
 For Drake extensions to URDF format files, see
 @ref multibody_parsing_drake_extensions.
 
-Drake's parser does not implement all of the features of URDF. In the future,
-we intend to update this documentation to itemize what isn't supported.
+@subsection multbody_parsing_urdf_unsupported URDF not supported by Drake
+
+Drake's parser does not implement all of the features of URDF. Here is a list
+of known URDF features that Drake does not use. For each, the parser applies
+one of several treaments:
+
+- Issue a warning that the tag is unsued.
+- Ignore silently, as documented below.
+- Apply special treatment, as documented below.
+
+@subsubsection urdf_ignored_warning Tags that provoke a warning
+
+- `/robot/@version`
+- `/robot/joint/calibration`
+- `/robot/joint/mimic`
+- `/robot/joint/safety_controller`
+- `/robot/link/@type`
+- `/robot/link/collision/verbose`
+- `/robot/transmission/@name`
+- `/robot/transmission/flexJoint`
+- `/robot/transmission/gap_joint`
+- `/robot/transmission/leftActuator`
+- `/robot/transmission/passive_joint`
+- `/robot/transmission/rightActuator`
+- `/robot/transmission/rollJoint`
+- `/robot/transmission/use_simulated_gripper_joint`
+
+@subsubsection urdf_ignored_silent Tags ignored silently
+
+- `/robot/gazebo`
+- `/robot/transmission/actuator/hardwareInterface`
+- `/robot/transmission/joint/hardwareInterface`
+
+@subsubsection urdf_ignored_special Tags given special treatment.
+
+- `/robot/transmission/actuator/mechanicalReduction`
+- `/robot/transmission/mechanicalReduction`
+
+Both versions of `mechanicalReduction` will be silently ignored if the supplied
+value is 1; otherwise the they will provoke a warning that the value is being
+ignored.
 
 @section multibody_parsing_drake_extensions Drake Extensions
 
@@ -254,8 +334,12 @@ with the child link of the joint being defined.
 
 This element names a group of bodies to participate in collision filtering
 rules. If the `ignore` attribute is present and true-valued, the entire element
-is ignored. The nested elements must included one or more `drake:member`
-elements, and zero or more `drake:ignored_collision_filter_group` elements.
+is skipped during parsing. The nested elements must included one or more
+`drake:member` elements, and zero or more
+`drake:ignored_collision_filter_group` elements.
+
+This element defines a new group name that is only available during parsing. It
+must not be a scoped name.
 
 Collision filtering rules are only constructed with **pairs** of groups, where
 both sides of the pair may name the same group. The
@@ -263,10 +347,10 @@ both sides of the pair may name the same group. The
 the group it names and the group within which it is nested. A pair containing
 different collision groups excludes collisions between members of those groups
 (see drake::geometry::CollisionFilterDeclaration::ExcludeBetween()). A pair
-naming the same group twice excludes collisions with the group (see
+naming the same group twice excludes collisions within the group (see
 drake::geometry::CollisionFilterDeclaration::ExcludeWithin()).
 
-@see @ref tag_drake_member, @ref tag_drake_ignored_collision_filter_group
+@see @ref tag_drake_member, @ref tag_drake_ignored_collision_filter_group, @ref scoped_names
 
 @subsection tag_drake_compliant_hydroelastic drake:compliant_hydroelastic
 
@@ -399,7 +483,10 @@ under `(hydroelastic, hydroelastic_modulus)`.
 The string names a collision filter group that will be paired with the parent
 group when constructing filtering rules. It may name the parent group.
 
-@see @ref tag_drake_collision_filter_group
+In SDFormat files only, the name may refer to a group within a nested model
+(either URDF or SDFormat) by using a scoped name.
+
+@see @ref tag_drake_collision_filter_group, @ref scoped_names
 
 @subsection tag_drake_joint drake:joint
 
@@ -443,8 +530,8 @@ This element adds a drake::multibody::LinearBushingRollPitchYaw to the model.
 
 @subsection tag_drake_member drake:member
 
-- SDFormat path: `//model/drake:collission_filter_group/drake:member`
-- URDF path: `/robot/drake:collission_filter_group/drake:member/@link`
+- SDFormat path: `//model/drake:collision_filter_group/drake:member`
+- URDF path: `/robot/drake:collision_filter_group/drake:member/@link`
 - Syntax: String.
 
 @subsubsection tag_drake_member_semantics Semantics
@@ -452,7 +539,10 @@ This element adds a drake::multibody::LinearBushingRollPitchYaw to the model.
 This element names a link (defined elsewhere in the model) to be a member of
 the parent collision filter group.
 
-@see @ref tag_drake_collision_filter_group
+In SDFormat files only, the name may refer to a link within a nested model
+(either URDF or SDFormat) by using a scoped name.
+
+@see @ref tag_drake_collision_filter_group, @ref scoped_names
 
 @subsection tag_drake_mesh_resolution_hint drake:mesh_resolution_hint
 

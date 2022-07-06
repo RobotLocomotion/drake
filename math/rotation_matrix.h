@@ -12,11 +12,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
-#include "drake/common/symbolic.h"
 #include "drake/math/fast_pose_composition_functions.h"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -571,11 +569,6 @@ class RotationMatrix {
     return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(), tolerance);
   }
 
-  DRAKE_DEPRECATED("2022-06-01", "Use RotationMatrix::IsNearlyIdentity()")
-  boolean<T> IsIdentityToInternalTolerance() const {
-    return IsNearlyIdentity();
-  }
-
   /// Compares each element of `this` to the corresponding element of `other`
   /// to check if they are the same to within a specified `tolerance`.
   /// @param[in] other %RotationMatrix to compare to `this`.
@@ -847,23 +840,8 @@ class RotationMatrix {
   // - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
   // Engineering and Computer Science, Massachusetts Institute of Technology"
   // https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
-  template <typename Derived>
-  static Matrix3<typename Derived::Scalar> ProjectMatrix3ToOrthonormalMatrix3(
-      const Eigen::MatrixBase<Derived>& M, T* quality_factor) {
-    DRAKE_DEMAND(M.rows() == 3 && M.cols() == 3);
-    const auto svd = M.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
-    if (quality_factor != nullptr) {
-      // Singular values are always non-negative and sorted in decreasing order.
-      const auto singular_values = svd.singularValues();
-      const T s_max = singular_values(0);  // maximum singular value.
-      const T s_min = singular_values(2);  // minimum singular value.
-      const T s_f = (s_max != 0.0 && s_min < 1.0/s_max) ? s_min : s_max;
-      const T det = M.determinant();
-      const double sign_det = (det > 0.0) ? 1 : ((det < 0.0) ? -1 : 0);
-      *quality_factor = s_f * sign_det;
-    }
-    return svd.matrixU() * svd.matrixV().transpose();
-  }
+  static Matrix3<T> ProjectMatrix3ToOrthonormalMatrix3(
+      const Matrix3<T>& M, T* quality_factor);
 
   // This is a helper method for RotationMatrix::ToQuaternion that returns a
   // Quaternion that is neither sign-canonicalized nor magnitude-normalized.

@@ -17,6 +17,10 @@ class TestQuadrotor(unittest.TestCase):
                                    kF_arg=1., kM_arg=1.)
         self.assertEqual(quadrotor.m(), 1)
         self.assertEqual(quadrotor.g(), 9.81)
+        self.assertEqual(quadrotor.length(), 2)
+        self.assertEqual(quadrotor.force_constant(), 1)
+        self.assertEqual(quadrotor.moment_constant(), 1.)
+        np.testing.assert_array_equal(quadrotor.inertia(), np.eye(3))
 
         StabilizingLQRController(quadrotor, np.zeros(3))
 

@@ -214,6 +214,7 @@ drake_cc_googletest(
         ":optimization_with_contact_utilities",
         ":static_equilibrium_problem",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:snopt_solver",
         "//solvers:solve",
     ],
 )

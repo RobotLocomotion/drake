@@ -18,7 +18,6 @@
           <izz>0.164814</izz>
         </inertia>
       </inertial>
-      <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name="visual">
         <geometry>
@@ -27,25 +26,14 @@
           </box>
         </geometry>
         <material>
-          <lighting>1</lighting>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <collision name="collision">
         <laser_retro>0</laser_retro>
-        <max_contacts>10</max_contacts>
         <geometry>
           <box>
             <size>0.146 0.0725 0.049521</size>
@@ -114,7 +102,6 @@
           <izz>0.16</izz>
         </inertia>
       </inertial>
-      <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name="visual">
         <geometry>
@@ -123,21 +110,11 @@
           </box>
         </geometry>
         <material>
-          <lighting>1</lighting>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <!-- A sequence of spaced spheres the *width* of the finger from the tip
       towards the base. -->
@@ -205,7 +182,6 @@
           <izz>0.16</izz>
         </inertia>
       </inertial>
-      <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name="visual">
         <geometry>
@@ -214,21 +190,11 @@
           </box>
         </geometry>
         <material>
-          <lighting>1</lighting>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <!-- A sequence of spaced spheres the *width* of the finger from the tip
       towards the base. -->
@@ -295,7 +261,6 @@
           <upper>0</upper>
           <effort>80</effort>
           <stiffness>15000</stiffness>
-          <dissipation>50</dissipation>
         </limit>
         <dynamics>
           <spring_reference>0</spring_reference>
@@ -304,18 +269,6 @@
           <friction>0</friction>
         </dynamics>
       </axis>
-      <physics>
-        <ode>
-          <limit>
-            <cfm>0</cfm>
-            <erp>0.2</erp>
-          </limit>
-          <suspension>
-            <cfm>0</cfm>
-            <erp>0.2</erp>
-          </suspension>
-        </ode>
-      </physics>
     </joint>
     <joint name="right_finger_sliding_joint" type="prismatic">
       <parent>body</parent>
@@ -329,7 +282,6 @@
           <upper>0.055</upper>
           <effort>80</effort>
           <stiffness>15000</stiffness>
-          <dissipation>50</dissipation>
         </limit>
         <dynamics>
           <spring_reference>0</spring_reference>
@@ -338,20 +290,7 @@
           <friction>0</friction>
         </dynamics>
       </axis>
-      <physics>
-        <ode>
-          <limit>
-            <cfm>0</cfm>
-            <erp>0.2</erp>
-          </limit>
-          <suspension>
-            <cfm>0</cfm>
-            <erp>0.2</erp>
-          </suspension>
-        </ode>
-      </physics>
     </joint>
     <static>0</static>
-    <allow_auto_disable>1</allow_auto_disable>
   </model>
 </sdf>

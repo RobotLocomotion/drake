@@ -3,10 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/unit_inertia.h"
@@ -202,7 +200,7 @@ GTEST_TEST(ArticulatedBodyInertia, Symbolic) {
   DRAKE_EXPECT_NO_THROW(ArticulatedBodyInertia<symbolic::Expression> Ds(
       -Matrix6<symbolic::Expression>::Identity()));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      ArticulatedBodyInertia<double> Ds(-Matrix6<double>::Identity()),
+      ArticulatedBodyInertia<double>(-Matrix6<double>::Identity()),
       "The resulting articulated body inertia is not physically "
       "valid.[\\s\\S]*");
 }

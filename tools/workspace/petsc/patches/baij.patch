@@ -1,0 +1,38 @@
+diff --git a/src/mat/impls/baij/seq/baij.c b/src/mat/impls/baij/seq/baij.c
+index 7cf0f8e22a..c83e639fd7 100644
+--- src/mat/impls/baij/seq/baij.c
++++ src/mat/impls/baij/seq/baij.c
+@@ -1797,7 +1797,8 @@ PetscErrorCode MatGetValues_SeqBAIJ(Mat A,PetscInt m,const PetscInt im[],PetscIn
+     row = im[k]; brow = row/bs;
+     if (row < 0) {v += n; continue;} /* negative row */
+     PetscCheck(row < A->rmap->N,PETSC_COMM_SELF,PETSC_ERR_ARG_OUTOFRANGE,"Row %" PetscInt_FMT " too large", row);
+-    rp   = aj + ai[brow]; ap = aa + bs2*ai[brow];
++    rp   = aj ? aj + ai[brow] : NULL;
++    ap   = aa ? aa + bs2*ai[brow] : NULL;
+     nrow = ailen[brow];
+     for (l=0; l<n; l++) { /* loop over columns */
+       if (in[l] < 0) {v++; continue;} /* SETERRQ(PETSC_COMM_SELF,PETSC_ERR_ARG_OUTOFRANGE,"Negative column"); */
+diff --git a/src/mat/impls/baij/seq/baij2.c b/src/mat/impls/baij/seq/baij2.c
+index e258605f8d..a15ab93b57 100644
+--- src/mat/impls/baij/seq/baij2.c
++++ src/mat/impls/baij/seq/baij2.c
+@@ -125,8 +125,8 @@ PetscErrorCode MatCreateSubMatrix_SeqBAIJ_Private(Mat A,IS isrow,IS iscol,MatReu
+     kstart   = ai[row];
+     kend     = kstart + a->ilen[row];
+     mat_i    = c->i[i];
+-    mat_j    = c->j + mat_i;
+-    mat_a    = c->a + mat_i*bs2;
++    mat_j    = c->j ? c->j + mat_i : NULL;
++    mat_a    = c->a ? c->a + mat_i*bs2 : NULL;
+     mat_ilen = c->ilen + i;
+     for (k=kstart; k<kend; k++) {
+       if ((tcol=ssmap[a->j[k]])) {
+@@ -138,7 +138,7 @@ PetscErrorCode MatCreateSubMatrix_SeqBAIJ_Private(Mat A,IS isrow,IS iscol,MatReu
+     }
+   }
+   /* sort */
+-  {
++  if (c->j && c->a) {
+     MatScalar *work;
+     ierr = PetscMalloc1(bs2,&work);CHKERRQ(ierr);
+     for (i=0; i<nrows; i++) {

@@ -583,6 +583,9 @@ std::optional<geometry::GeometryInstance> ParseCollision(
                          parent_element_name, node->Name()));
     return {};
   }
+  // Seen in the ROS urdfdom XSD Schema.
+  // See https://github.com/ros/urdfdom/blob/dbecca0/xsd/urdf.xsd
+  diagnostic.WarnUnsupportedElement(*node, "verbose");
 
   // Ensures there is a geometry child element. Since this is a required
   // element, emits an error if a geometry element does not exist.

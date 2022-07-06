@@ -101,18 +101,19 @@ PYBIND11_MODULE(_module_py, m) {
 
   m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
 
-  m.def("set_log_level", &logging::set_log_level, py::arg("level"),
-      (std::string(doc.logging.set_log_level.doc) + R"""(
-Warning:
-    When using pydrake, both the C++ level threshold and the Python logging
-    level threshold must be satisfied for a message to be displayed. This
-    function only adjusts the C++ level. Refer to the Python logging module
-    documentation for details on setting the Python level.
-
-See also:
-   :py:func:`pydrake.common.configure_logging`
-)""")
-          .c_str());
+  // Python users should not touch the C++ level; thus, we bind this privately.
+  m.def("_set_log_level", &logging::set_log_level, py::arg("level"),
+      doc.logging.set_log_level.doc);
+  {
+    const char* doc_deprecated =
+        "Deprecated:\n"
+        "    Do not use ``pydrake.common.set_log_level(...)``.\n"
+        "    Instead, use ``logging.getLogger('drake').setLevel(...)``.\n"
+        "    This function will be removed from Drake on or after 2022-09-01";
+    m.def("set_log_level",
+        WrapDeprecated(doc_deprecated, &logging::set_log_level),
+        py::arg("level"), doc_deprecated);
+  }
 
   internal::MaybeRedirectPythonLogging();
 

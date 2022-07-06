@@ -751,9 +751,19 @@ void SetIpoptOptions(const MathematicalProgram& prog,
   // useful for debugging. Otherwise, we default to printing nothing. The user
   // can always select an arbitrary print level, by setting the ipopt value
   // directly in the solver options.
-  int common_print_level = merged_solver_options.get_print_to_console() ? 4 : 0;
+  const int verbose_level = 4;
+  const int common_print_level =
+      merged_solver_options.get_print_to_console() ? verbose_level : 0;
   SetIpoptOptionsHelper<int>("print_level", common_print_level,
                              &merged_solver_options);
+
+  std::string print_file_name = merged_solver_options.get_print_file_name();
+  if (!print_file_name.empty()) {
+    SetIpoptOptionsHelper<std::string>("output_file", print_file_name,
+                                       &merged_solver_options);
+    SetIpoptOptionsHelper<int>("file_print_level", verbose_level,
+                               &merged_solver_options);
+  }
 
   const auto& ipopt_options_double =
       merged_solver_options.GetOptionsDouble(IpoptSolver::id());

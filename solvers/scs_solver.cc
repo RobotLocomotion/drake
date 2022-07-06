@@ -1,5 +1,8 @@
 #include "drake/solvers/scs_solver.h"
 
+#include <unordered_map>
+#include <vector>
+
 #include <Eigen/Sparse>
 #include <fmt/format.h>
 
@@ -156,8 +159,8 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
                            std::vector<double>* b, int* A_row_count,
                            ScsCone* cone) {
   // The linear constraint lb ≤ aᵀx ≤ ub is converted to
-  //  aᵀx + s1 = ub,
-  // -aᵀx + s2 = lb
+  // -aᵀx + s1 = lb,
+  //  aᵀx + s2 = ub
   // s1, s2 in the positive cone.
   // The special cases are when ub = ∞ or lb = -∞.
   // When ub = ∞, then we only add the constraint
@@ -169,40 +172,56 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
     const Eigen::VectorXd& ub = linear_constraint.evaluator()->upper_bound();
     const Eigen::VectorXd& lb = linear_constraint.evaluator()->lower_bound();
     const VectorXDecisionVariable& x = linear_constraint.variables();
-    const Eigen::MatrixXd& Ai = linear_constraint.evaluator()->A();
-    for (int i = 0; i < linear_constraint.evaluator()->num_constraints();
-         ++i) {
-      const bool is_ub_finite{!std::isinf(ub(i))};
-      const bool is_lb_finite{!std::isinf(lb(i))};
-      if (is_ub_finite || is_lb_finite) {
-        // If lb != -∞, then the constraint -aᵀx + s = lb will be added to the
-        // matrix A, in the row lower_bound_row_index.
-        const int lower_bound_row_index =
-            *A_row_count + num_linear_constraint_rows;
-        // If ub != ∞, then the constraint aᵀx + s = ub will be added to the
-        // matrix A, in the row upper_bound_row_index.
-        const int upper_bound_row_index =
-            *A_row_count + num_linear_constraint_rows + (is_lb_finite ? 1 : 0);
-        for (int j = 0; j < x.rows(); ++j) {
-          if (Ai(i, j) != 0) {
-            const int xj_index = prog.FindDecisionVariableIndex(x(j));
-            if (is_ub_finite) {
-              A_triplets->emplace_back(upper_bound_row_index, xj_index,
-                                       Ai(i, j));
-            }
-            if (is_lb_finite) {
-              A_triplets->emplace_back(lower_bound_row_index, xj_index,
-                                       -Ai(i, j));
-            }
-          }
-        }
-        if (is_lb_finite) {
+    const Eigen::SparseMatrix<double>& Ai =
+        linear_constraint.evaluator()->get_sparse_A();
+    // We store the starting row index in A_triplets for each row of
+    // linear_constraint. Namely the constraint lb(i) <= A.row(i)*x <= ub(i) is
+    // stored in A_triplets with starting_row_indices[i] (or
+    // starting_row_indices[i]+1 if both lb(i) and ub(i) are finite).
+    std::vector<int> starting_row_indices(
+        linear_constraint.evaluator()->num_constraints());
+    for (int i = 0; i < linear_constraint.evaluator()->num_constraints(); ++i) {
+      const bool needs_ub{!std::isinf(ub(i))};
+      const bool needs_lb{!std::isinf(lb(i))};
+      if (!needs_ub && !needs_lb) {
+        // We use -1 to indicate that we won't add linear constraint when both
+        // bounds are infinity.
+        starting_row_indices[i] = -1;
+      } else {
+        starting_row_indices[i] = *A_row_count + num_linear_constraint_rows;
+        // We first add the constraint for lower bound, and then add the
+        // constraint for upper bound. This is consistent with the loop below
+        // when we modify A_triplets.
+        if (needs_lb) {
           b->push_back(-lb(i));
-          ++num_linear_constraint_rows;
+          num_linear_constraint_rows++;
         }
-        if (is_ub_finite) {
+        if (needs_ub) {
           b->push_back(ub(i));
-          ++num_linear_constraint_rows;
+          num_linear_constraint_rows++;
+        }
+      }
+    }
+    for (int j = 0; j < Ai.cols(); ++j) {
+      const int xj_index = prog.FindDecisionVariableIndex(x(j));
+      for (Eigen::SparseMatrix<double>::InnerIterator it(Ai, j); it; ++it) {
+        const int Ai_row_count = it.row();
+        const bool needs_ub{!std::isinf(ub(Ai_row_count))};
+        const bool needs_lb{!std::isinf(lb(Ai_row_count))};
+        if (!needs_lb && !needs_ub) {
+          continue;
+        }
+        int row_index = starting_row_indices[Ai_row_count];
+        if (needs_lb) {
+          // If lb != -∞, then the constraint -aᵀx + s = lb will be added to
+          // the matrix A, in the row row_index.
+          A_triplets->emplace_back(row_index, xj_index, -it.value());
+          ++row_index;
+        }
+        if (needs_ub) {
+          // If ub != ∞, then the constraint aᵀx + s = ub will be added to the
+          // matrix A, in the row row_index.
+          A_triplets->emplace_back(row_index, xj_index, it.value());
         }
       }
     }

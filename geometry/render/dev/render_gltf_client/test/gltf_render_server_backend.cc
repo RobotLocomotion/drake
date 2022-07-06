@@ -22,7 +22,8 @@
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 // Depth shaders need to use the same callback.
-#include "drake/geometry/render/render_engine_vtk.h"
+#include "drake/geometry/render_vtk/factory.h"
+#include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
 
@@ -289,7 +290,7 @@ int do_main() {
   if (FLAGS_image_type == "color") {
     renderer->SetUseDepthPeeling(1);
     renderer->UseFXAAOn();
-    // Same default as defined in render_engine_vtk_factory.h.
+    // Same default as defined in render_vtk/factory.h.
     renderer->SetBackground(204.0 / 255.0, 229.0 / 255.0, 255.0 / 255.0);
     renderer->SetBackgroundAlpha(1.0);
 

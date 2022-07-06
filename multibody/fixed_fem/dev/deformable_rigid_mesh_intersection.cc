@@ -5,9 +5,9 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/geometry/proximity/deformable_contact_surface.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/utilities.h"
-#include "drake/multibody/fixed_fem/dev/deformable_contact_surface.h"
 
 namespace drake {
 namespace multibody {
@@ -19,6 +19,8 @@ using geometry::internal::Aabb;
 using geometry::internal::Bvh;
 using geometry::internal::BvttCallbackResult;
 using geometry::internal::convert_to_double;
+using geometry::internal::ContactPolygonData;
+using geometry::internal::DeformableContactSurface;
 using geometry::internal::DeformableVolumeMesh;
 using geometry::internal::Obb;
 using geometry::internal::PosedHalfSpace;
@@ -64,7 +66,7 @@ class Intersector {
     vector<ContactPolygonData<T>> out_poly_data;
 
     const math::RigidTransformd& X_DR_d = convert_to_double(X_DR);
-    for (const auto [tet_index, tri_index] :
+    for (const auto& [tet_index, tri_index] :
          tet_mesh_D.bvh().GetCollisionCandidates(bvh_R, X_DR_d)) {
       const vector<IntersectionVertex<T>>& poly_vertices_D =
           ClipTriangleByTetrahedron(tet_index, tet_mesh_D.mesh(), tri_index,

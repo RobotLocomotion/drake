@@ -18,7 +18,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
 #include "drake/solvers/function.h"
@@ -588,10 +588,19 @@ class LinearConstraint : public Constraint {
   }
 
   /**
+   * Get the matrix A as a dense matrix.
+   * @note this might involve memory allocation to convert a sparse matrix to a
+   * dense one, for better performance you should call get_sparse_A() which
+   * returns a sparse matrix.
+   */
+  const Eigen::MatrixXd& GetDenseA() const;
+
+  /**
    * Gets the coefficient matrix A as a dense matrix.
    * @note This function will allocate new memory on the heap. For better
    * performance you should call get_sparse_A() which returns a sparse matrix.
    */
+  DRAKE_DEPRECATED("2022-08-01", "Use GetDenseA() instead of A()")
   virtual const Eigen::MatrixXd& A() const { return A_.GetAsDense(); }
 
   /**
@@ -616,6 +625,17 @@ class LinearConstraint : public Constraint {
   void UpdateCoefficients(const Eigen::SparseMatrix<double>& new_A,
                           const Eigen::Ref<const Eigen::VectorXd>& new_lb,
                           const Eigen::Ref<const Eigen::VectorXd>& new_ub);
+
+  /**
+   * Sets A(i, j) to zero if abs(A(i, j)) <= tol.
+   * Oftentimes the coefficient A is computed numerically with round-off errors.
+   * Such small round-off errors can cause numerical issues for certain
+   * optimization solvers. Hence it is recommended to remove the tiny
+   * coefficients to achieve numerical robustness.
+   * @param tol The entries in A with absolute value <= tol will be set to 0.
+   * @note tol>= 0.
+   */
+  void RemoveTinyCoefficient(double tol);
 
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
@@ -751,6 +771,12 @@ class BoundingBoxConstraint : public LinearConstraint {
 
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  // This function (inheried from the base LinearConstraint class) should not be
+  // called by BoundingBoxConstraint, so we hide it as a private function.
+  // TODO(hongkai.dai): BoundingBoxConstraint should derive from Constraint, not
+  // from LinearConstraint.
+  void RemoveTinyCoefficient(double tol);
 };
 
 /**

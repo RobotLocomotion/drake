@@ -65,7 +65,7 @@ void PackageMap::Remove(const string& package_name) {
 void PackageMap::SetDeprecated(const std::string& package_name,
     std::optional<std::string> deprecated_message) {
   DRAKE_DEMAND(Contains(package_name));
-  map_.at(package_name).deprecated_message = deprecated_message;
+  map_.at(package_name).deprecated_message = std::move(deprecated_message);
 }
 
 int PackageMap::size() const {
@@ -88,20 +88,33 @@ std::vector<std::string> PackageMap::GetPackageNames() const {
   return package_names;
 }
 
-const string& PackageMap::GetPath(const string& package_name) const {
+const string& PackageMap::GetPath(
+    const string& package_name,
+    std::optional<std::string>* deprecated_message) const {
   DRAKE_DEMAND(Contains(package_name));
   const auto& package_data = map_.at(package_name);
+
+  // Check if we need to produce a deprecation warning.
+  std::optional<string> warning;
   if (package_data.deprecated_message.has_value()) {
     if (package_data.deprecated_message->empty()) {
-      drake::log()->warn(
-        "PackageMap: Package \"{}\" is deprecated.",
-        package_name);
+      warning = fmt::format(
+          "Package \"{}\" is deprecated.",
+          package_name);
     } else {
-      drake::log()->warn(
-        "PackageMap: Package \"{}\" is deprecated: {}",
-        package_name, *package_data.deprecated_message);
+      warning = fmt::format(
+          "Package \"{}\" is deprecated: {}",
+          package_name, *package_data.deprecated_message);
     }
   }
+
+  // Copy the warning to the output parameter, or else the logger.
+  if (deprecated_message != nullptr) {
+    *deprecated_message = warning;
+  } else if (warning.has_value()) {
+    drake::log()->warn("PackageMap: {}", *warning);
+  }
+
   return package_data.path;
 }
 
@@ -126,16 +139,6 @@ void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
 }
 
 namespace {
-
-// Returns the package.xml file in the given directory, if any.
-std::optional<filesystem::path> GetPackageXmlFile(const string& directory) {
-  DRAKE_DEMAND(!directory.empty());
-  filesystem::path filename = filesystem::path(directory) / "package.xml";
-  if (filesystem::is_regular_file(filename)) {
-    return filename;
-  }
-  return std::nullopt;
-}
 
 // Returns the parent directory of @p directory.
 string GetParentDirectory(const string& directory) {
@@ -230,65 +233,6 @@ bool PackageMap::AddPackageIfNew(const string& package_name,
     }
   }
   return true;
-}
-
-void PackageMap::PopulateUpstreamToDrakeHelper(
-    const string& directory,
-    const string& stop_at_directory) {
-  DRAKE_DEMAND(!directory.empty());
-
-  // If we've reached the top, then stop searching.
-  if (directory.length() <= stop_at_directory.length()) {
-    return;
-  }
-
-  // If there is a new package.xml file, then add it.
-  if (auto filename = GetPackageXmlFile(directory)) {
-    const auto [package_name, deprecated_message] = ParsePackageManifest(
-        filename->string());
-    if (AddPackageIfNew(package_name, directory))
-      SetDeprecated(package_name, deprecated_message);
-  }
-
-  // Continue searching in our parent directory.
-  PopulateUpstreamToDrakeHelper(
-      GetParentDirectory(directory), stop_at_directory);
-}
-
-// N.B. When removing this deprecated function, also be sure to remove
-// the PopulateUpstreamToDrakeHelper, immediately above.
-void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
-  DRAKE_DEMAND(!model_file.empty());
-  drake::log()->trace("PopulateUpstreamToDrake: {}", model_file);
-
-  // Verify that the model_file names an URDF or SDF file.
-  string extension = filesystem::path(model_file).extension().string();
-  std::transform(extension.begin(), extension.end(), extension.begin(),
-                 ::tolower);
-  if (extension != ".urdf" && extension != ".sdf") {
-    throw std::runtime_error(fmt::format(
-        "The file type '{}' is not supported for '{}'",
-        extension, model_file));
-  }
-  const string model_dir = filesystem::path(model_file).parent_path().string();
-
-  // Bail out if we can't determine the drake root.
-  const std::optional<string> maybe_drake_path = MaybeGetDrakePath();
-  if (!maybe_drake_path) {
-    drake::log()->trace("  Could not determine drake_path");
-    return;
-  }
-  // Bail out if the model file is not part of Drake.
-  const string& drake_path = *maybe_drake_path;
-  auto iter = std::mismatch(drake_path.begin(), drake_path.end(),
-                            model_dir.begin());
-  if (iter.first != drake_path.end()) {
-    drake::log()->trace("  drake_path was not a prefix of model_dir.");
-    return;
-  }
-
-  // Search the directory containing the model_file and "upstream".
-  PopulateUpstreamToDrakeHelper(model_dir, drake_path);
 }
 
 PackageMap::PackageMap(std::initializer_list<std::string> manifest_paths) {

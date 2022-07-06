@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
+#include "drake/math/linear_solve.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 
@@ -284,21 +285,49 @@ PartialPermutation SapModel<T>::MakeParticipatingVelocitiesPermutation(
     const SapContactProblem<T>& problem) {
   const PartialPermutation& cliques_permutation =
       problem.graph().participating_cliques();
-  int v_first = 0;  // first velocity for a given clique.
-  int num_participating_velocities = 0;
+
+  const int num_participating_cliques =
+      cliques_permutation.permuted_domain_size();
+  // Compute v_participating_start such that
+  // v_participating_start[participating_clique] stores the index to the first
+  // participating velocity for participating_clique in `this` SapModel.
+  std::vector<int> v_participating_start(num_participating_cliques);
+  v_participating_start[0] = 0;
+  for (int participating_clique = 1;
+       participating_clique < num_participating_cliques;
+       ++participating_clique) {
+    const int previous_participating_clique =
+        cliques_permutation.domain_index(participating_clique - 1);
+    const int previous_clique_nv =
+        problem.num_velocities(previous_participating_clique);
+    v_participating_start[participating_clique] =
+        v_participating_start[participating_clique - 1] + previous_clique_nv;
+  }
+
+  // Compute participating_velocities such that v_participating =
+  // participating_velocities[v] maps velocity index v in the original `problem`
+  // to participating velocity index v_participating in `this` SapModel.
   std::vector<int> participating_velocities(problem.num_velocities(), -1);
-  for (int c = 0; c < problem.num_cliques(); ++c) {
-    const int nv = problem.num_velocities(c);
-    if (cliques_permutation.participates(c)) {
+  int v_start = 0;  // First velocity for a given clique in the original model.
+  for (int clique = 0; clique < problem.num_cliques(); ++clique) {
+    const int nv = problem.num_velocities(clique);
+    if (cliques_permutation.participates(clique)) {
+      const int clique_participating =
+          cliques_permutation.permuted_index(clique);
       // Add participating dofs to the list.
       for (int i = 0; i < nv; ++i) {
-        const int v = v_first + i;
-        const int v_participating = num_participating_velocities++;
+        const int v = v_start + i;
+        const int v_participating =
+            v_participating_start[clique_participating] + i;
         participating_velocities[v] = v_participating;
       }
     }
-    v_first += nv;
+    v_start += nv;
   }
+
+  // Sanity check.
+  DRAKE_DEMAND(v_start == problem.num_velocities());
+
   return PartialPermutation(std::move(participating_velocities));
 }
 
@@ -356,11 +385,10 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
   // We compute a factorization of A once so we can re-use it multiple times
   // below.
   const int num_cliques = A.size();  // N.B. Participating cliques.
-  std::vector<Eigen::LDLT<MatrixX<T>>> A_ldlt;
-  A_ldlt.resize(num_cliques);
+  std::vector<math::LinearSolver<Eigen::LDLT, MatrixX<T>>> A_ldlt(num_cliques);
   for (int c = 0; c < num_cliques; ++c) {
-    A_ldlt[c] = A[c].ldlt();
-    DRAKE_DEMAND(A_ldlt[c].isPositive());
+    A_ldlt[c] = math::LinearSolver<Eigen::LDLT, MatrixX<T>>(A[c]);
+    DRAKE_DEMAND(A_ldlt[c].eigen_linear_solver().isPositive());
   }
 
   // Scan constraints in the order specified by the graph.
@@ -386,7 +414,7 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
         const int c =
             cliques_permutation.permuted_index(constraint.first_clique());
         const MatrixX<T>& Jic = constraint.first_clique_jacobian();
-        W[i] += Jic * A_ldlt[c].solve(Jic.transpose());
+        W[i] += Jic * A_ldlt[c].Solve(Jic.transpose());
       }
 
       // Adds clique 1 contribution, if present.
@@ -394,7 +422,7 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
         const int c =
             cliques_permutation.permuted_index(constraint.second_clique());
         const MatrixX<T>& Jic = constraint.second_clique_jacobian();
-        W[i] += Jic * A_ldlt[c].solve(Jic.transpose());
+        W[i] += Jic * A_ldlt[c].Solve(Jic.transpose());
       }
     }
   }

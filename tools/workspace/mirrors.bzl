@@ -33,7 +33,10 @@ DEFAULT_MIRRORS = {
         "https://s3.amazonaws.com/drake-packages/doxygen/{archive}",
     ],
     "github": [
-        "https://github.com/{repository}/archive/{commit}.tar.gz",
+        # For github.com, we choose a pattern based on the kind of commit.
+        "https://github.com/{repository}/archive/refs/tags/{tag_name}.tar.gz",  # noqa
+        "https://github.com/{repository}/archive/{commit_sha}.tar.gz",
+        # For Drake's mirrors, we use a single pattern no matter the commit.
         "https://drake-mirror.csail.mit.edu/github/{repository}/{commit}.tar.gz",  # noqa
         "https://s3.amazonaws.com/drake-mirror/github/{repository}/{commit}.tar.gz",  # noqa
     ],

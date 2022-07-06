@@ -20,7 +20,7 @@ using test::KukaIiwaModelTests;
 namespace {
 
 TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
-  SetArbitraryConfiguration();
+  SetArbitraryConfigurationAndMotion();
 
   // An arbitrary point on the end effector frame E.
   Vector3<double> p_EP(0.1, -0.05, 0.3);
@@ -80,7 +80,7 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
 }
 
 TEST_F(KukaIiwaModelTests, BodyForceApi) {
-  SetArbitraryConfiguration();
+  SetArbitraryConfigurationAndMotion();
   MultibodyForces<double> forces(*plant_);
   Vector6<double> F_expected;
   F_expected << 1, 2, 3, 4, 5, 6;

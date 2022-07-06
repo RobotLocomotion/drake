@@ -154,12 +154,22 @@ drake_cc_googletest(
     ],
 )
 
+filegroup(
+    name = "test_models",
+    srcs = [
+        ":test/simple_nested_model.sdf",
+        ":test/simple_world_with_two_models.sdf",
+    ],
+)
+
 drake_py_unittest(
     name = "show_model_test",
     data = [
         ":show_model",
+        ":test_models",
         "//multibody/benchmarks/acrobot:models",
     ],
+    deps = ["@bazel_tools//tools/python/runfiles"],
 )
 
 drake_py_unittest(

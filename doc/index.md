@@ -39,19 +39,19 @@ purpose of the front page (HTML for layout, Markdown for content).
       <div class="core-el">
         <h4>Modeling Dynamical<br> Systems</h4>
         <div class="core-el-buttons">
-          <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__systems.html" target="_blank">API</a><a class="button--text" href="https://deepnote.com/project/Tutorials-K0_FCa7yQX2kDWBx3-2RmQ/%2Fdynamical_systems.ipynb" target="_blank">TUTORIAL</a>
+          <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__systems.html" target="_blank">API</a><a class="button--text" href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Fdynamical_systems.ipynb" target="_blank">TUTORIAL</a>
         </div>
       </div>
       <div class="core-el">
         <h4>Solving Mathematical<br> Programs</h4>
         <div class="core-el-buttons">
-          <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html" target="_blank">API</a><a class="button--text" href="https://deepnote.com/project/Tutorials-K0_FCa7yQX2kDWBx3-2RmQ/%2Fmathematical_program.ipynb" target="_blank">TUTORIAL</a>
+          <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html" target="_blank">API</a><a class="button--text" href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Fmathematical_program.ipynb" target="_blank">TUTORIAL</a>
         </div>
       </div>
       <div class="core-el">
         <h4>Multibody Kinematics<br> and Dynamics</h4>
         <div class="core-el-buttons">
-          <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__multibody.html" target="_blank">API</a>
+          <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__multibody.html" target="_blank">API</a><a class="button--text" href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Fauthoring_multibody_simulation.ipynb" target="_blank">TUTORIAL</a>
         </div>
       </div>
     </div>
@@ -111,7 +111,7 @@ bug fixes, features, and examples!
 
 Drake offers Python-based tutorials using Jupyter notebooks.
 The tutorials can be
-[viewed online](https://deepnote.com/project/Tutorials-K0_FCa7yQX2kDWBx3-2RmQ/%2Findex.ipynb)
+[viewed online](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Findex.ipynb)
 without any local installation.
 
 To run the tutorial interactively (either online or via `pip`) refer to

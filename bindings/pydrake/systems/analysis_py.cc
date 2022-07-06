@@ -300,13 +300,19 @@ PYBIND11_MODULE(analysis, m) {
             doc.RegionOfAttractionOptions.lyapunov_candidate.doc)
         .def_readwrite("state_variables",
             &RegionOfAttractionOptions::state_variables,
-            doc.RegionOfAttractionOptions.state_variables.doc)
+            // dtype = object arrays must be copied, and cannot be referenced.
+            py_rvp::copy, doc.RegionOfAttractionOptions.state_variables.doc)
+        .def_readwrite("use_implicit_dynamics",
+            &RegionOfAttractionOptions::use_implicit_dynamics,
+            doc.RegionOfAttractionOptions.use_implicit_dynamics.doc)
         .def("__repr__", [](const RegionOfAttractionOptions& self) {
           return py::str(
               "RegionOfAttractionOptions("
               "lyapunov_candidate={}, "
-              "state_variables={})")
-              .format(self.lyapunov_candidate, self.state_variables);
+              "state_variables={}, "
+              "use_implicit_dynamics={})")
+              .format(self.lyapunov_candidate, self.state_variables,
+                  self.use_implicit_dynamics);
         });
 
     m.def("RegionOfAttraction", &RegionOfAttraction, py::arg("system"),

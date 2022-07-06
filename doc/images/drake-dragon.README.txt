@@ -3,7 +3,9 @@ This SVG does not render well in Firefox (nor in Inkscape), so we rasterize it.
 Steps used to generate the accompanying PNG:
 
 ```sh
-# For Ubuntu 18.04.
+# This conversion was originally done using Ubuntu 18.04. The instructions
+# here might need a few adjustments for newer versions of Ubuntu.
+#
 sudo apt install inkscape imagemagick-6.q16
 
 cd drake/doc/images

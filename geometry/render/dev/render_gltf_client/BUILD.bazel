@@ -15,40 +15,24 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 package(default_visibility = ["//visibility:private"])
 
 drake_cc_library(
-    name = "internal_http_service",
-    srcs = ["internal_http_service.cc"],
-    hdrs = ["internal_http_service.h"],
-    deps = [
-        "//common:filesystem",
-        "//common:nice_type_name",
-        "@fmt",
-    ],
-)
-
-drake_cc_library(
-    name = "internal_http_service_curl",
-    srcs = ["internal_http_service_curl.cc"],
-    hdrs = ["internal_http_service_curl.h"],
-    deps = [
-        ":internal_http_service",
-        "//common:filesystem",
-        "//common:unused",
-        "@fmt",
-        "@libcurl",
-    ],
-)
-
-drake_cc_library(
     name = "internal_render_client",
-    srcs = ["internal_render_client.cc"],
-    hdrs = ["internal_render_client.h"],
+    srcs = [
+        "internal_render_client.cc",
+    ],
+    hdrs = [
+        "internal_render_client.h",
+    ],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
-        ":internal_http_service",
-        ":internal_http_service_curl",
         "//common:filesystem",
         "//common:nice_type_name",
         "//common:temp_directory",
         "//geometry/render:render_camera",
+        "//geometry/render:render_engine",
+        "//geometry/render_gltf_client:internal_http_service",
+        "//geometry/render_gltf_client:internal_http_service_curl",
+        "//geometry/render_gltf_client:render_engine_gltf_client_params",
         "//systems/sensors:image",
         "@picosha2",
         "@vtk//:vtkIOImage",
@@ -62,17 +46,18 @@ drake_cc_library(
         "internal_render_engine_gltf_client.cc",
     ],
     hdrs = [
+        # TODO(jwnimmer-tri) The factory should be its own separate cc_library,
+        # not to be marked with "internal".
         "factory.h",
         "internal_render_engine_gltf_client.h",
     ],
-    # internal_render_engine_gltf_client.h directly pulls in VTK headers; leave
-    # it out of the install.
-    install_hdrs_exclude = ["internal_render_engine_gltf_client.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":internal_render_client",
         "//common:filesystem",
         "//geometry/render:render_camera",
-        "//geometry/render:render_engine_vtk",
+        "//geometry/render_vtk:internal_render_engine_vtk",
         "//systems/sensors:image",
         "@vtk//:vtkIOExport",
     ],
@@ -80,57 +65,28 @@ drake_cc_library(
 
 # === test/ ===
 
-drake_cc_googletest(
-    name = "internal_http_service_test",
-    deps = [
-        ":internal_http_service",
-        "//common:temp_directory",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "internal_http_service_curl_test",
-    deps = [
-        ":internal_http_service_curl",
-        "//common:temp_directory",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
 drake_cc_library(
-    name = "internal_test_png",
-    testonly = 1,
-    srcs = ["test/internal_test_png.cc"],
-    hdrs = ["test/internal_test_png.h"],
+    name = "internal_sample_image_data",
+    srcs = ["test/internal_sample_image_data.cc"],
+    hdrs = ["test/internal_sample_image_data.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
-        "//common:unused",
+        "//common:filesystem",
+        "//common:find_resource",
         "//systems/sensors:image",
-        "@gtest//:without_main",
-        "@libpng",
-    ],
-)
-
-drake_cc_library(
-    name = "internal_test_tiff",
-    testonly = 1,
-    srcs = ["test/internal_test_tiff.cc"],
-    hdrs = ["test/internal_test_tiff.h"],
-    deps = [
-        "//systems/sensors:image",
-        "@gtest//:without_main",
-        "@libtiff",
     ],
 )
 
 drake_cc_googletest(
     name = "internal_render_client_test",
-    data = ["//geometry/render:test_models"],
+    data = [
+        ":test_resources",
+        "//geometry/render:test_models",
+    ],
     deps = [
         ":internal_render_client",
-        ":internal_test_png",
-        ":internal_test_tiff",
+        ":internal_sample_image_data",
         "//common:find_resource",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
@@ -139,6 +95,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "internal_render_engine_gltf_client_test",
+    data = [
+        ":test_resources",
+    ],
     # TODO(svenevs): Found leakage isolated to
     # RenderEngineGltfClient::DoRender*Image calls indirectly calling
     # RenderEngineVtk::PerformUpdate().  Mark it as skipped now, and will
@@ -155,8 +114,7 @@ drake_cc_googletest(
     tags = vtk_test_tags(),
     deps = [
         ":internal_render_engine_gltf_client",
-        ":internal_test_png",
-        ":internal_test_tiff",
+        ":internal_sample_image_data",
         "//common:filesystem",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
@@ -185,9 +143,10 @@ drake_cc_binary(
     srcs = ["test/gltf_render_server_backend.cc"],
     deps = [
         "//common:filesystem",
-        "//geometry/render:render_engine_vtk",
         "//geometry/render:render_label",
         "//geometry/render/shaders:depth_shaders",
+        "//geometry/render_vtk:factory",
+        "//geometry/render_vtk:internal_render_engine_vtk",
         "//math:geometric_transform",
         "//systems/sensors:color_palette",
         "//systems/sensors:image",
@@ -203,6 +162,10 @@ filegroup(
     name = "test_resources",
     srcs = [
         "test/4_color_texture.png",
+        "test/test_depth_32F.tiff",
+        "test/test_label_16I.png",
+        "test/test_rgb_8U.png",
+        "test/test_rgba_8U.png",
     ],
 )
 
@@ -223,7 +186,7 @@ drake_cc_binary(
         "//common:filesystem",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
-        "//geometry/render:render_engine_vtk",
+        "//geometry/render_vtk",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",

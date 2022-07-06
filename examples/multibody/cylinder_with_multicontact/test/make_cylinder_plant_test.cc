@@ -48,7 +48,7 @@ GTEST_TEST(MakeCylinderPlant, VerifyPlant) {
   ASSERT_TRUE(plant->HasBodyNamed("Cylinder"));
   const RigidBody<double>& cylinder =
       plant->GetRigidBodyByName("Cylinder");
-  EXPECT_EQ(cylinder.get_default_mass(), mass);
+  EXPECT_EQ(cylinder.default_mass(), mass);
 
   // Verify the value of the inertial properties for the cylinder.
   const SpatialInertia<double>& M_Bcm_B = cylinder.default_spatial_inertia();

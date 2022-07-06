@@ -34,7 +34,8 @@ drake_cc_binary(
     deps = [
         "//common:filesystem",
         "//geometry/render",
-        "//geometry/render/gl_renderer",
+        "//geometry/render_gl",
+        "//geometry/render_vtk",
         "//systems/sensors:image_writer",
         "@fmt",
         "@gflags",

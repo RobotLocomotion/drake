@@ -156,7 +156,7 @@ drake_cc_library(
     hdrs = ["linear_solve.h"],
     deps = [
         ":gradient",
-        "//common:symbolic",
+        "//common/symbolic:expression",
     ],
 )
 
@@ -176,12 +176,14 @@ drake_cc_library(
     name = "gradient",
     srcs = [
         "autodiff_gradient.cc",
+        "differentiable_norm.cc",
         "gradient.cc",
         "normalize_vector.cc",
         "rotation_conversion_gradient.cc",
     ],
     hdrs = [
         "autodiff_gradient.h",
+        "differentiable_norm.h",
         "gradient.h",
         "gradient_util.h",
         "normalize_vector.h",
@@ -306,7 +308,7 @@ drake_cc_googletest(
     name = "barycentric_test",
     deps = [
         ":barycentric",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -359,6 +361,14 @@ drake_cc_googletest(
     name = "convert_time_derivative_test",
     deps = [
         ":vector3_util",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differentiable_norm_test",
+    deps = [
+        ":gradient",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -442,7 +452,7 @@ drake_cc_googletest(
     name = "matrix_util_test",
     deps = [
         ":matrix_util",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -478,7 +488,7 @@ drake_cc_googletest(
     name = "random_rotation_test",
     deps = [
         ":geometric_transform",
-        "//common:symbolic",
+        "//common/symbolic:expression",
     ],
 )
 
@@ -511,8 +521,7 @@ drake_cc_googletest(
     name = "saturate_test",
     deps = [
         ":saturate",
-        "//common:autodiff",
-        "//common:symbolic",
+        "//common:default_scalars",
     ],
 )
 

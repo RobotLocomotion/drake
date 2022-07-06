@@ -1,0 +1,94 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# TODO(jwnimmer-tri) Replace with "//visibility:private" once dev code is gone.
+_VISIBILITY = [
+    "//geometry/render/dev/render_gltf_client:__pkg__",
+]
+
+package(default_visibility = _VISIBILITY)
+
+drake_cc_package_library(
+    name = "render_gltf_client",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":render_engine_gltf_client_params",
+    ],
+)
+
+drake_cc_library(
+    name = "render_engine_gltf_client_params",
+    srcs = ["render_engine_gltf_client_params.cc"],
+    hdrs = ["render_engine_gltf_client_params.h"],
+    deps = [
+        "//geometry/render:render_label",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_http_service",
+    srcs = ["internal_http_service.cc"],
+    hdrs = ["internal_http_service.h"],
+    internal = True,
+    visibility = _VISIBILITY,
+    interface_deps = [
+        "//common:essential",
+    ],
+    deps = [
+        "//common:filesystem",
+        "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_http_service_curl",
+    srcs = ["internal_http_service_curl.cc"],
+    hdrs = ["internal_http_service_curl.h"],
+    internal = True,
+    visibility = _VISIBILITY,
+    deps = [
+        ":internal_http_service",
+        "//common:filesystem",
+        "//common:unused",
+        "@fmt",
+        "@libcurl",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "render_engine_gltf_client_params_test",
+    deps = [
+        ":render_engine_gltf_client_params",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_http_service_test",
+    deps = [
+        ":internal_http_service",
+        "//common:filesystem",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_http_service_curl_test",
+    deps = [
+        ":internal_http_service_curl",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+add_lint_tests()

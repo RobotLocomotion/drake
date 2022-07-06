@@ -131,17 +131,14 @@
   <transmission name="x_transmission" type="SimpleTransmission">
     <actuator name="x_motor"/>
     <joint name="x"/>
-    <mechanicalReduction>-70000.0</mechanicalReduction>
   </transmission>
   <transmission name="y_transmission" type="SimpleTransmission">
     <actuator name="y_motor"/>
     <joint name="y"/>
-    <mechanicalReduction>-70000.0</mechanicalReduction>
   </transmission>
   <transmission name="theta_transmission" type="SimpleTransmission">
     <actuator name="theta_motor"/>
     <joint name="theta"/>
-    <mechanicalReduction>-70000.0</mechanicalReduction>
   </transmission>
   <link name="base_link">
     <inertial>
@@ -196,7 +193,7 @@
     <parent link="base_link"/>
     <child link="base_laser_link"/>
   </joint>
-  <link name="base_laser_link" type="laser">
+  <link name="base_laser_link">
     <inertial>
       <mass value="0.001"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -243,8 +240,6 @@
     <axis xyz="0 0 1"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="10"/>
-    <calibration reference_position="-0.785398163397" rising="-0.785398163397"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="0.2246 0.2246 0.0282"/>
@@ -274,13 +269,11 @@
   <transmission name="fl_caster_rotation_trans" type="SimpleTransmission">
     <actuator name="fl_caster_rotation_motor"/>
     <joint name="fl_caster_rotation_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
   <joint name="fl_caster_l_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="0 0.049 0"/>
     <parent link="fl_caster_rotation_link"/>
@@ -317,13 +310,11 @@
   <transmission name="fl_caster_l_wheel_trans" type="SimpleTransmission">
     <actuator name="fl_caster_l_wheel_motor"/>
     <joint name="fl_caster_l_wheel_joint"/>
-    <mechanicalReduction>79.2380952381</mechanicalReduction>
   </transmission>
   <joint name="fl_caster_r_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="0 -0.049 0"/>
     <parent link="fl_caster_rotation_link"/>
@@ -360,7 +351,6 @@
   <transmission name="fl_caster_r_wheel_trans" type="SimpleTransmission">
     <actuator name="fl_caster_r_wheel_motor"/>
     <joint name="fl_caster_r_wheel_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
   <gazebo reference="fl_caster_rotation_link">
     <material value="PR2/caster_texture"/>
@@ -369,8 +359,6 @@
     <axis xyz="0 0 1"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="10"/>
-    <calibration reference_position="-0.785398163397" rising="-0.785398163397"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="0.2246 -0.2246 0.0282"/>
@@ -400,13 +388,11 @@
   <transmission name="fr_caster_rotation_trans" type="SimpleTransmission">
     <actuator name="fr_caster_rotation_motor"/>
     <joint name="fr_caster_rotation_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
   <joint name="fr_caster_l_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="0 0.049 0"/>
     <parent link="fr_caster_rotation_link"/>
@@ -443,13 +429,11 @@
   <transmission name="fr_caster_l_wheel_trans" type="SimpleTransmission">
     <actuator name="fr_caster_l_wheel_motor"/>
     <joint name="fr_caster_l_wheel_joint"/>
-    <mechanicalReduction>79.2380952381</mechanicalReduction>
   </transmission>
   <joint name="fr_caster_r_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="0 -0.049 0"/>
     <parent link="fr_caster_rotation_link"/>
@@ -486,7 +470,6 @@
   <transmission name="fr_caster_r_wheel_trans" type="SimpleTransmission">
     <actuator name="fr_caster_r_wheel_motor"/>
     <joint name="fr_caster_r_wheel_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
   <gazebo reference="fr_caster_rotation_link">
     <material value="PR2/caster_texture"/>
@@ -495,8 +478,6 @@
     <axis xyz="0 0 1"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="10"/>
-    <calibration reference_position="2.35619449019" rising="2.35619449019"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="-0.2246 0.2246 0.0282"/>
@@ -526,13 +507,11 @@
   <transmission name="bl_caster_rotation_trans" type="SimpleTransmission">
     <actuator name="bl_caster_rotation_motor"/>
     <joint name="bl_caster_rotation_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
   <joint name="bl_caster_l_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="0 0.049 0"/>
     <parent link="bl_caster_rotation_link"/>
@@ -569,13 +548,11 @@
   <transmission name="bl_caster_l_wheel_trans" type="SimpleTransmission">
     <actuator name="bl_caster_l_wheel_motor"/>
     <joint name="bl_caster_l_wheel_joint"/>
-    <mechanicalReduction>79.2380952381</mechanicalReduction>
   </transmission>
   <joint name="bl_caster_r_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="0 -0.049 0"/>
     <parent link="bl_caster_rotation_link"/>
@@ -612,7 +589,6 @@
   <transmission name="bl_caster_r_wheel_trans" type="SimpleTransmission">
     <actuator name="bl_caster_r_wheel_motor"/>
     <joint name="bl_caster_r_wheel_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
   <gazebo reference="bl_caster_rotation_link">
     <material value="PR2/caster_texture"/>
@@ -621,8 +597,6 @@
     <axis xyz="0 0 1"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="10"/>
-    <calibration reference_position="2.35619449019" rising="2.35619449019"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="-0.2246 -0.2246 0.0282"/>
@@ -652,13 +626,11 @@
   <transmission name="br_caster_rotation_trans" type="SimpleTransmission">
     <actuator name="br_caster_rotation_motor"/>
     <joint name="br_caster_rotation_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
   <joint name="br_caster_l_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="0 0.049 0"/>
     <parent link="br_caster_rotation_link"/>
@@ -695,13 +667,11 @@
   <transmission name="br_caster_l_wheel_trans" type="SimpleTransmission">
     <actuator name="br_caster_l_wheel_motor"/>
     <joint name="br_caster_l_wheel_joint"/>
-    <mechanicalReduction>79.2380952381</mechanicalReduction>
   </transmission>
   <joint name="br_caster_r_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
     <dynamics damping="0.0" friction="0.0"/>
     <origin rpy="0 0 0" xyz="0 -0.049 0"/>
     <parent link="br_caster_rotation_link"/>
@@ -738,7 +708,6 @@
   <transmission name="br_caster_r_wheel_trans" type="SimpleTransmission">
     <actuator name="br_caster_r_wheel_motor"/>
     <joint name="br_caster_r_wheel_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
   <gazebo reference="br_caster_rotation_link">
     <material value="PR2/caster_texture"/>
@@ -776,9 +745,7 @@
     <axis xyz="0 0 1"/>
     <limit effort="10000" lower="0.0" upper="0.31" velocity="0.013"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="100" k_velocity="2000000" soft_lower_limit="0.0115" soft_upper_limit="0.305"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration falling="0.00536" reference_position="0.00536"/>
     <dynamics damping="20000.0"/>
     <!-- strictly tuned for sim only right now -->
     <origin rpy="0 0 0" xyz="-0.05 0 0.739675"/>
@@ -821,7 +788,6 @@
   <transmission name="torso_lift_trans" type="SimpleTransmission">
     <actuator name="torso_lift_motor"/>
     <joint name="torso_lift_joint"/>
-    <mechanicalReduction> -52143.33 </mechanicalReduction>
   </transmission>
   <joint name="imu_joint" type="fixed">
     <axis xyz="0 1 0"/>
@@ -867,9 +833,7 @@
     <axis xyz="0 0 1"/>
     <limit effort="2.645" lower="-3.007" upper="3.007" velocity="6"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="100" k_velocity="1.5" soft_lower_limit="-2.857" soft_upper_limit="2.857"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration reference_position="0.0" rising="0.0"/>
     <dynamics damping="1.0"/>
     <origin rpy="0.0 0.0 0.0" xyz="-0.01707 0.0 0.38145"/>
     <parent link="torso_lift_link"/>
@@ -901,15 +865,12 @@
   <transmission name="head_pan_trans" type="SimpleTransmission">
     <actuator name="head_pan_motor"/>
     <joint name="head_pan_joint"/>
-    <mechanicalReduction>6.0</mechanicalReduction>
   </transmission>
   <joint name="head_tilt_joint" type="revolute">
     <axis xyz="0 1 0"/>
     <limit effort="15" lower="-0.471238" upper="1.39626" velocity="5"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="100" k_velocity="1.5" soft_lower_limit="-0.3712" soft_upper_limit="1.29626"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration falling="0.0" reference_position="0.0"/>
     <dynamics damping="1.0"/>
     <origin rpy="0 0 0" xyz="0.068 0 0"/>
     <parent link="head_pan_link"/>
@@ -941,7 +902,6 @@
   <transmission name="head_tilt_trans" type="SimpleTransmission">
     <actuator name="head_tilt_motor"/>
     <joint name="head_tilt_joint"/>
-    <mechanicalReduction>6.0</mechanicalReduction>
   </transmission>
   <joint name="head_plate_frame_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0.0232 0 0.0645"/>
@@ -1140,7 +1100,7 @@
     <parent link="wide_stereo_link"/>
     <child link="wide_stereo_optical_frame"/>
   </joint>
-  <link name="wide_stereo_optical_frame" type="camera"/>
+  <link name="wide_stereo_optical_frame"/>
   <joint name="wide_stereo_gazebo_l_stereo_camera_frame_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="wide_stereo_link"/>
@@ -1305,7 +1265,7 @@
     <parent link="narrow_stereo_link"/>
     <child link="narrow_stereo_optical_frame"/>
   </joint>
-  <link name="narrow_stereo_optical_frame" type="camera"/>
+  <link name="narrow_stereo_optical_frame"/>
   <joint name="narrow_stereo_gazebo_l_stereo_camera_frame_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="narrow_stereo_link"/>
@@ -1442,9 +1402,7 @@
     <axis xyz="0 1 0"/>
     <limit effort="0.65" lower="-0.7854" upper="1.48353" velocity="10.0"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="100" k_velocity="0.05" soft_lower_limit="-0.7354" soft_upper_limit="1.43353"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration falling="0.0" reference_position="0.0"/>
     <dynamics damping="0.008"/>
     <origin rpy="0 0 0" xyz="0.09893 0 0.227"/>
     <parent link="torso_lift_link"/>
@@ -1476,7 +1434,7 @@
     <parent link="laser_tilt_mount_link"/>
     <child link="laser_tilt_link"/>
   </joint>
-  <link name="laser_tilt_link" type="laser">
+  <link name="laser_tilt_link">
     <inertial>
       <mass value="0.001"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1525,7 +1483,6 @@
   <transmission name="laser_tilt_mount_trans" type="SimpleTransmission">
     <actuator name="laser_tilt_mount_motor"/>
     <joint name="laser_tilt_mount_joint"/>
-    <mechanicalReduction>-6.05</mechanicalReduction>
   </transmission>
   <!-- This is a common convention, to use a reflect parameter that equals +-1 to distinguish left from right -->
   <joint name="r_shoulder_pan_joint" type="revolute">
@@ -1537,10 +1494,8 @@
     <limit effort="30" lower="-2.2853981634" upper="0.714601836603" velocity="2.088"/>
     <!-- alpha tested velocity and effort limits -->
     <dynamics damping="10.0"/>
-    <safety_controller k_position="100" k_velocity="10" soft_lower_limit="-2.1353981634" soft_upper_limit="0.564601836603"/>
     <!-- joint angle when the rising or the falling flag is activated on PR2 -->
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration reference_position="-0.785398163397" rising="-0.785398163397"/>
   </joint>
   <link name="r_shoulder_pan_link">
     <inertial>
@@ -1567,9 +1522,7 @@
     <!-- Limits updated from Function's CAD values as of 2009_02_24 (link_data.xls) -->
     <limit effort="30" lower="-0.5236" upper="1.3963" velocity="2.082"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="100" k_velocity="10" soft_lower_limit="-0.3536" soft_upper_limit="1.2963"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration falling="0.0" reference_position="0.0"/>
     <dynamics damping="10.0"/>
     <origin rpy="0 0 0" xyz="0.1 0 0"/>
     <parent link="r_shoulder_pan_link"/>
@@ -1602,9 +1555,7 @@
     <child link="r_upper_arm_roll_link"/>
     <limit effort="30" lower="-3.9" upper="0.8" velocity="3.27"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-3.75" soft_upper_limit="0.65"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration reference_position="-1.57079632679" rising="-1.57079632679"/>
     <dynamics damping="0.1"/>
   </joint>
   <link name="r_upper_arm_roll_link">
@@ -1641,7 +1592,6 @@
   <transmission name="r_upper_arm_roll_trans" type="SimpleTransmission">
     <actuator name="r_upper_arm_roll_motor"/>
     <joint name="r_upper_arm_roll_joint"/>
-    <mechanicalReduction>32.6525111499</mechanicalReduction>
   </transmission>
   <gazebo reference="r_shoulder_pan_link">
     <sensor:contact name="r_shoulder_pan_contact_sensor">
@@ -1681,12 +1631,10 @@
   <transmission name="r_shoulder_pan_trans" type="SimpleTransmission">
     <actuator name="r_shoulder_pan_motor"/>
     <joint name="r_shoulder_pan_joint"/>
-    <mechanicalReduction>63.1552452977</mechanicalReduction>
   </transmission>
   <transmission name="r_shoulder_lift_trans" type="SimpleTransmission">
     <actuator name="r_shoulder_lift_motor"/>
     <joint name="r_shoulder_lift_joint"/>
-    <mechanicalReduction>61.8948225713</mechanicalReduction>
   </transmission>
   <joint name="r_upper_arm_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1733,9 +1681,7 @@
     <axis xyz="1 0 0"/>
     <limit effort="30" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="1"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration reference_position="0.0" rising="0.0"/>
     <dynamics damping="0.1"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="r_elbow_flex_link"/>
@@ -1773,16 +1719,13 @@
   <transmission name="r_forearm_roll_trans" type="SimpleTransmission">
     <actuator name="r_forearm_roll_motor"/>
     <joint name="r_forearm_roll_joint"/>
-    <mechanicalReduction>-90.5142857143</mechanicalReduction>
   </transmission>
   <joint name="r_elbow_flex_joint" type="revolute">
     <axis xyz="0 1 0"/>
     <!-- Note: Overtravel limits are 140, -7 degrees instead of 133, 0 -->
     <limit effort="30" lower="-2.3213" upper="0.00" velocity="3.3"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="100" k_velocity="3" soft_lower_limit="-2.1213" soft_upper_limit="-0.15"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration falling="-1.1606" reference_position="-1.1606"/>
     <dynamics damping="1.0"/>
     <origin rpy="0 0 0" xyz="0.4 0 0"/>
     <parent link="r_upper_arm_link"/>
@@ -1832,7 +1775,6 @@
   <transmission name="r_elbow_flex_trans" type="SimpleTransmission">
     <actuator name="r_elbow_flex_motor"/>
     <joint name="r_elbow_flex_joint"/>
-    <mechanicalReduction>-36.167452007</mechanicalReduction>
   </transmission>
   <joint name="r_forearm_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1864,10 +1806,8 @@
     <axis xyz="0 1 0"/>
     <limit effort="10" lower="-2.094" upper="0.0" velocity="3.078"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="20" k_velocity="4" soft_lower_limit="-1.994" soft_upper_limit="-0.1"/>
     <dynamics damping="0.1"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration falling="-0.5410521" reference_position="-0.5410521"/>
     <origin rpy="0 0 0" xyz="0.321 0 0"/>
     <parent link="r_forearm_link"/>
     <child link="r_wrist_flex_link"/>
@@ -1897,10 +1837,8 @@
     <axis xyz="1 0 0"/>
     <limit effort="10" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="2"/>
     <dynamics damping="0.1"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration reference_position="-1.57079632679" rising="-1.57079632679"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="r_wrist_flex_link"/>
     <child link="r_wrist_roll_link"/>
@@ -1924,7 +1862,6 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/wrist_roll_L.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <gazebo reference="r_forearm_link">
@@ -1986,12 +1923,10 @@
   <transmission name="r_wrist_flex_trans" type="SimpleTransmission">
     <actuator name="r_wrist_flex_motor"/>
     <joint name="r_wrist_flex_joint"/>
-    <mechanicalReduction>60.1714285714</mechanicalReduction>
   </transmission>
   <transmission name="r_wrist_roll_trans" type="SimpleTransmission">
     <actuator name="r_wrist_roll_motor"/>
     <joint name="r_wrist_roll_joint"/>
-    <mechanicalReduction>60.1714285714</mechanicalReduction>
   </transmission>
   <joint name="r_gripper_palm_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -2016,7 +1951,6 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/gripper_palm.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <joint name="r_gripper_led_joint" type="fixed">
@@ -2082,7 +2016,6 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <joint name="r_gripper_r_finger_joint" type="revolute">
@@ -2090,7 +2023,6 @@
     <origin rpy="0 0 0" xyz="0.07691 -0.01 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
     <dynamics damping="0.2"/>
-    <mimic joint="r_gripper_l_finger_joint" multiplier="1" offset="0"/>
     <parent link="r_gripper_palm_link"/>
     <child link="r_gripper_r_finger_link"/>
   </joint>
@@ -2112,14 +2044,12 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <joint name="r_gripper_l_parallel_root_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.05891 0.031 0"/>
     <dynamics damping="0.2"/>
-    <mimic joint="r_gripper_l_finger_joint" multiplier="1" offset="0"/>
     <parent link="r_gripper_palm_link"/>
     <child link="r_gripper_l_parallel_link"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -2128,7 +2058,6 @@
     <axis xyz="0 0 -1"/>
     <origin rpy="0 0 0" xyz="0.05891 -0.031 0"/>
     <dynamics damping="0.2"/>
-    <mimic joint="r_gripper_l_finger_joint" multiplier="-1" offset="0"/>
     <parent link="r_gripper_palm_link"/>
     <child link="r_gripper_r_parallel_link"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -2153,7 +2082,6 @@
       <geometry>
         <box size="0.0914942479 0.005 0.005"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <link name="r_gripper_r_parallel_link">
@@ -2176,7 +2104,6 @@
       <geometry>
         <box size="0.0914942479 0.005 0.005"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <joint name="r_gripper_l_finger_tip_joint" type="revolute">
@@ -2184,7 +2111,6 @@
     <origin rpy="0 0 0" xyz="0.09137 0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
     <dynamics damping="0.01"/>
-    <mimic joint="r_gripper_l_finger_joint" multiplier="1" offset="0"/>
     <parent link="r_gripper_l_finger_link"/>
     <child link="r_gripper_l_finger_tip_link"/>
   </joint>
@@ -2206,7 +2132,6 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <joint name="r_gripper_r_finger_tip_joint" type="revolute">
@@ -2214,7 +2139,6 @@
     <origin rpy="0 0 0" xyz="0.09137 -0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
     <dynamics damping="0.01"/>
-    <mimic joint="r_gripper_l_finger_joint" multiplier="1" offset="0"/>
     <parent link="r_gripper_r_finger_link"/>
     <child link="r_gripper_r_finger_tip_link"/>
   </joint>
@@ -2236,7 +2160,6 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <gazebo reference="r_gripper_l_finger_link">
@@ -2470,10 +2393,8 @@
     <limit effort="30" lower="-0.714601836603" upper="2.2853981634" velocity="2.088"/>
     <!-- alpha tested velocity and effort limits -->
     <dynamics damping="10.0"/>
-    <safety_controller k_position="100" k_velocity="10" soft_lower_limit="-0.564601836603" soft_upper_limit="2.1353981634"/>
     <!-- joint angle when the rising or the falling flag is activated on PR2 -->
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration reference_position="0.785398163397" rising="0.785398163397"/>
   </joint>
   <link name="l_shoulder_pan_link">
     <inertial>
@@ -2500,9 +2421,7 @@
     <!-- Limits updated from Function's CAD values as of 2009_02_24 (link_data.xls) -->
     <limit effort="30" lower="-0.5236" upper="1.3963" velocity="2.082"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="100" k_velocity="10" soft_lower_limit="-0.3536" soft_upper_limit="1.2963"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration falling="0.0" reference_position="0.0"/>
     <dynamics damping="10.0"/>
     <origin rpy="0 0 0" xyz="0.1 0 0"/>
     <parent link="l_shoulder_pan_link"/>
@@ -2535,9 +2454,7 @@
     <child link="l_upper_arm_roll_link"/>
     <limit effort="30" lower="-0.8" upper="3.9" velocity="3.27"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-0.65" soft_upper_limit="3.75"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration reference_position="1.57079632679" rising="1.57079632679"/>
     <dynamics damping="0.1"/>
   </joint>
   <link name="l_upper_arm_roll_link">
@@ -2574,7 +2491,6 @@
   <transmission name="l_upper_arm_roll_trans" type="SimpleTransmission">
     <actuator name="l_upper_arm_roll_motor"/>
     <joint name="l_upper_arm_roll_joint"/>
-    <mechanicalReduction>32.6525111499</mechanicalReduction>
   </transmission>
   <gazebo reference="l_shoulder_pan_link">
     <sensor:contact name="l_shoulder_pan_contact_sensor">
@@ -2614,12 +2530,10 @@
   <transmission name="l_shoulder_pan_trans" type="SimpleTransmission">
     <actuator name="l_shoulder_pan_motor"/>
     <joint name="l_shoulder_pan_joint"/>
-    <mechanicalReduction>63.1552452977</mechanicalReduction>
   </transmission>
   <transmission name="l_shoulder_lift_trans" type="SimpleTransmission">
     <actuator name="l_shoulder_lift_motor"/>
     <joint name="l_shoulder_lift_joint"/>
-    <mechanicalReduction>61.8948225713</mechanicalReduction>
   </transmission>
   <joint name="l_upper_arm_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -2666,9 +2580,7 @@
     <axis xyz="1 0 0"/>
     <limit effort="30" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="1"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration reference_position="0.0" rising="0.0"/>
     <dynamics damping="0.1"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="l_elbow_flex_link"/>
@@ -2706,16 +2618,13 @@
   <transmission name="l_forearm_roll_trans" type="SimpleTransmission">
     <actuator name="l_forearm_roll_motor"/>
     <joint name="l_forearm_roll_joint"/>
-    <mechanicalReduction>-90.5142857143</mechanicalReduction>
   </transmission>
   <joint name="l_elbow_flex_joint" type="revolute">
     <axis xyz="0 1 0"/>
     <!-- Note: Overtravel limits are 140, -7 degrees instead of 133, 0 -->
     <limit effort="30" lower="-2.3213" upper="0.00" velocity="3.3"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="100" k_velocity="3" soft_lower_limit="-2.1213" soft_upper_limit="-0.15"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration falling="-1.1606" reference_position="-1.1606"/>
     <dynamics damping="1.0"/>
     <origin rpy="0 0 0" xyz="0.4 0 0"/>
     <parent link="l_upper_arm_link"/>
@@ -2765,7 +2674,6 @@
   <transmission name="l_elbow_flex_trans" type="SimpleTransmission">
     <actuator name="l_elbow_flex_motor"/>
     <joint name="l_elbow_flex_joint"/>
-    <mechanicalReduction>-36.167452007</mechanicalReduction>
   </transmission>
   <joint name="l_forearm_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -2797,10 +2705,8 @@
     <axis xyz="0 1 0"/>
     <limit effort="10" lower="-2.094" upper="0.0" velocity="3.078"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_position="20" k_velocity="4" soft_lower_limit="-1.994" soft_upper_limit="-0.1"/>
     <dynamics damping="0.1"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration falling="-0.5410521" reference_position="-0.5410521"/>
     <origin rpy="0 0 0" xyz="0.321 0 0"/>
     <parent link="l_forearm_link"/>
     <child link="l_wrist_flex_link"/>
@@ -2830,10 +2736,8 @@
     <axis xyz="1 0 0"/>
     <limit effort="10" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="2"/>
     <dynamics damping="0.1"/>
     <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <calibration reference_position="-1.57079632679" rising="-1.57079632679"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="l_wrist_flex_link"/>
     <child link="l_wrist_roll_link"/>
@@ -2857,7 +2761,6 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/wrist_roll_L.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <gazebo reference="l_forearm_link">
@@ -2920,12 +2823,10 @@
   <transmission name="l_wrist_flex_trans" type="SimpleTransmission">
     <actuator name="l_wrist_flex_motor"/>
     <joint name="l_wrist_flex_joint"/>
-    <mechanicalReduction>60.1714285714</mechanicalReduction>
   </transmission>
   <transmission name="l_wrist_roll_trans" type="SimpleTransmission">
     <actuator name="l_wrist_roll_motor"/>
     <joint name="l_wrist_roll_joint"/>
-    <mechanicalReduction>60.1714285714</mechanicalReduction>
   </transmission>
   <joint name="l_gripper_palm_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -2950,7 +2851,6 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/gripper_palm.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <joint name="l_gripper_led_joint" type="fixed">
@@ -3016,7 +2916,6 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <joint name="l_gripper_r_finger_joint" type="revolute">
@@ -3024,7 +2923,6 @@
     <origin rpy="0 0 0" xyz="0.07691 -0.01 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
     <dynamics damping="0.2"/>
-    <mimic joint="l_gripper_l_finger_joint" multiplier="1" offset="0"/>
     <parent link="l_gripper_palm_link"/>
     <child link="l_gripper_r_finger_link"/>
   </joint>
@@ -3046,14 +2944,12 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <joint name="l_gripper_l_parallel_root_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.05891 0.031 0"/>
     <dynamics damping="0.2"/>
-    <mimic joint="l_gripper_l_finger_joint" multiplier="1" offset="0"/>
     <parent link="l_gripper_palm_link"/>
     <child link="l_gripper_l_parallel_link"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -3062,7 +2958,6 @@
     <axis xyz="0 0 -1"/>
     <origin rpy="0 0 0" xyz="0.05891 -0.031 0"/>
     <dynamics damping="0.2"/>
-    <mimic joint="l_gripper_l_finger_joint" multiplier="-1" offset="0"/>
     <parent link="l_gripper_palm_link"/>
     <child link="l_gripper_r_parallel_link"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -3087,7 +2982,6 @@
       <geometry>
         <box size="0.0914942479 0.005 0.005"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <link name="l_gripper_r_parallel_link">
@@ -3110,7 +3004,6 @@
       <geometry>
         <box size="0.0914942479 0.005 0.005"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <joint name="l_gripper_l_finger_tip_joint" type="revolute">
@@ -3118,7 +3011,6 @@
     <origin rpy="0 0 0" xyz="0.09137 0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
     <dynamics damping="0.01"/>
-    <mimic joint="l_gripper_l_finger_joint" multiplier="1" offset="0"/>
     <parent link="l_gripper_l_finger_link"/>
     <child link="l_gripper_l_finger_tip_link"/>
   </joint>
@@ -3140,7 +3032,6 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <joint name="l_gripper_r_finger_tip_joint" type="revolute">
@@ -3148,7 +3039,6 @@
     <origin rpy="0 0 0" xyz="0.09137 -0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
     <dynamics damping="0.01"/>
-    <mimic joint="l_gripper_l_finger_joint" multiplier="1" offset="0"/>
     <parent link="l_gripper_r_finger_link"/>
     <child link="l_gripper_r_finger_tip_link"/>
   </joint>
@@ -3170,7 +3060,6 @@
       <geometry>
         <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
-      <verbose value="Yes"/>
     </collision>
   </link>
   <gazebo reference="l_gripper_l_finger_link">

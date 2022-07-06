@@ -6,10 +6,12 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <iostream>
 #include <stdexcept>
 
 #include "drake/common/drake_assert.h"
+
+// NOLINTNEXTLINE
+#warning The Drake copy of fbstab is deprecated and will be removed on or after 2022-10-01. Users should migrate to the upstream repository at github.com/dliaomcp/fbstab instead.
 
 namespace drake {
 namespace solvers {

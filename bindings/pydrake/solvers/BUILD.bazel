@@ -78,7 +78,6 @@ drake_pybind_library(
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["augmented_lagrangian_py.cc"],
     package_info = PACKAGE_INFO,
@@ -86,7 +85,6 @@ drake_pybind_library(
         ":mathematicalprogram_py",
         "//bindings/pydrake:autodiffutils_py",
     ],
-    py_srcs = ["_augmented_lagrangian_extra.py"],
 )
 
 drake_pybind_library(
@@ -156,6 +154,7 @@ drake_pybind_library(
     name = "csdp_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["csdp_py.cc"],

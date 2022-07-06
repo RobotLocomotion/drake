@@ -5,6 +5,8 @@
 #include <functional>
 #include <limits>
 
+#include "drake/common/symbolic/expression.h"
+
 using std::numeric_limits;
 using drake::symbolic::Expression;
 using Eigen::VectorXd;

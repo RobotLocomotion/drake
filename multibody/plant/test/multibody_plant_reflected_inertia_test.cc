@@ -19,6 +19,16 @@ using systems::BasicVector;
 using systems::Context;
 
 namespace multibody {
+
+class MultibodyPlantTester {
+ public:
+  MultibodyPlantTester() = delete;
+  static const internal::MultibodyTree<double>& internal_tree(
+      const MultibodyPlant<double>& plant) {
+    return plant.internal_tree();
+  }
+};
+
 namespace {
 
 // Fixture to set up two Kuka iiwa arm instances, each with a Schunk wsg
@@ -53,6 +63,49 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
     // arbitrary state.
     SetArbitraryState(plant_, context_.get());
     SetArbitraryState(plant_ri_, context_ri_.get());
+  }
+
+  // Fixes all input ports to have zero actuation.
+  void SetZeroActuation(const MultibodyPlant<double>& plant,
+                        Context<double>* context) const {
+    const VectorX<double> tau_arm =
+        VectorX<double>::Zero(plant.num_actuated_dofs(arm_model));
+    const VectorX<double> tau_gripper =
+        VectorX<double>::Zero(plant.num_actuated_dofs(gripper_model));
+    plant.get_actuation_input_port(arm_model).FixValue(context, tau_arm);
+    plant.get_actuation_input_port(gripper_model)
+        .FixValue(context, tau_gripper);
+  }
+
+  // This method solves for the generalized accelerations from the Newton-Euler
+  // equations: (M+D)⋅v̇ + C⋅v = τ where D is an additional diagonal contribution
+  // to the mass matrix. To include this additional diagonal term, this method
+  // exercises internal::MultibodyTree APIs that allow to provide this
+  // additional diagonal terms.
+  // @param plant The model on which to perform forward dynamics.
+  // @param additional_diagonal_inertias Diagonal matrix D.
+  // @param context The state at which to perform forward dynamics.
+  VectorX<double> CalcVdotIncludingAdditionalDiagonalInertias(
+      const MultibodyPlant<double>& plant,
+      const VectorX<double>& additional_diagonal_inertias,
+      const Context<double>& context) const {
+    const internal::MultibodyTree<double>& tree =
+        MultibodyPlantTester::internal_tree(plant);
+
+    internal::ArticulatedBodyInertiaCache<double> abic(tree.get_topology());
+    tree.CalcArticulatedBodyInertiaCache(context, additional_diagonal_inertias,
+                                         &abic);
+    internal::ArticulatedBodyForceCache<double> aba_force_cache(
+        tree.get_topology());
+    MultibodyForces<double> forces(plant);
+    plant.CalcForceElementsContribution(context, &forces);
+    std::vector<SpatialForce<double>> Zb_Bo_W(plant.num_bodies());
+    tree.CalcArticulatedBodyForceBias(context, abic, &Zb_Bo_W);
+    tree.CalcArticulatedBodyForceCache(context, abic, Zb_Bo_W, forces,
+                                       &aba_force_cache);
+    internal::AccelerationKinematicsCache<double> ac(tree.get_topology());
+    tree.CalcArticulatedBodyAccelerations(context, abic, aba_force_cache, &ac);
+    return ac.get_vdot();
   }
 
  private:
@@ -378,6 +431,54 @@ TEST_F(MultibodyPlantReflectedInertiaTests, CalcForwardAndInverseDynamics) {
   // allow 6 bits of error (2^6 = 64) in the difference between these values.
   const double kTolerance = 64.0 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(tau_inverse_dynamics, tau_expected, kTolerance,
+                              MatrixCompareType::relative));
+}
+
+// This test verifies internal::MultibodyTree methods to perform forward
+// dynamics including additional diagonal terms. That is, we solve for the
+// generalized accelerations from the Newton-Euler equations: (M+D)⋅v̇ + C⋅v = τ
+// where D is an additional diagonal contribution to the mass matrix.
+TEST_F(MultibodyPlantReflectedInertiaTests,
+       CalcForwardDynamicsWithExtraDiagonalTerms) {
+  // Arbitrary reflected inertia values.
+  // clang-format off
+  const VectorX<double> rotor_inertias = (VectorX<double>(kNumJoints) <<
+      0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9).finished();
+  const VectorX<double> gear_ratios = (VectorX<double>(kNumJoints) <<
+      1, 2, 4, 8, 16, 32, 64, 128, 256).finished();
+  // clang-format on
+
+  // Load the models.
+  LoadBothModelsSetStateAndFinalize(rotor_inertias, gear_ratios);
+
+  // Set zero actuation forces for both models.
+  SetZeroActuation(plant_ri_, context_ri_.get());
+  SetZeroActuation(plant_, context_.get());
+
+  // Make reflected inertias indexed by generalized velocities.
+  const VectorX<double> reflected_inertia_with_actuator_indices =
+      gear_ratios.array() * gear_ratios.array() * rotor_inertias.array();
+  const VectorX<double> reflected_inertia =
+      MapVectorFromActuatorIndicesToGeneralizedVelocityIndices(
+          plant_ri_, reflected_inertia_with_actuator_indices);
+
+  // We computed a reference value of accelerations using the MultibodyPlant
+  // model that includes reflected inertias, plant_ri_.
+  const VectorX<double> vdot_expected =
+      plant_ri_.get_generalized_acceleration_output_port()
+          .Eval<systems::BasicVector<double>>(*context_ri_)
+          .CopyToVector();
+
+  // We now use the MultibodyPlant model without reflected inertias and
+  // therefore we need to include the reflected inertias explicitly, see
+  // documentation for CalcVdotIncludingAdditionalDiagonalInertias() in this
+  // file.
+  const VectorX<double> vdot = CalcVdotIncludingAdditionalDiagonalInertias(
+      plant_, reflected_inertia, *context_);
+
+  // We expect the results to match to machine precision.
+  const double tolerance = std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(vdot, vdot_expected, tolerance,
                               MatrixCompareType::relative));
 }
 

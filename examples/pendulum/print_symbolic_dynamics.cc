@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"

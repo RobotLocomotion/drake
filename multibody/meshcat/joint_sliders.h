@@ -111,13 +111,25 @@ class JointSliders final : public systems::LeafSystem<T> {
       const systems::Diagram<T>& diagram,
       std::optional<double> timeout = std::nullopt) const;
 
+  /** Sets all robot positions (corresponding to joint positions and potentially
+  positions not associated with any joint) to the values in `q`.  The meshcat
+  sliders associated with any joint positions described by `q` will have their
+  value updated.  Additionally, the "initial state" vector of positions tracked
+  by this instance will be updated to the values in `q`.  This "initial state"
+  vector update will persist even if sliders are removed (e.g., via Delete).
+
+  @param q A vector whose length is equal to the associated
+  MultibodyPlant::num_positions().
+  */
+  void SetPositions(const Eigen::VectorXd& q);
+
  private:
   void CalcOutput(const systems::Context<T>&, systems::BasicVector<T>*) const;
 
   std::shared_ptr<geometry::Meshcat> meshcat_;
   const MultibodyPlant<T>* const plant_;
   const std::map<int, std::string> position_names_;
-  const Eigen::VectorXd initial_value_;
+  Eigen::VectorXd initial_value_;
   std::atomic<bool> is_registered_;
 };
 

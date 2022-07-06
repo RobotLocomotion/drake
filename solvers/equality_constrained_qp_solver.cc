@@ -153,7 +153,7 @@ void EqualityConstrainedQPSolver::DoSolve(
 
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    num_constraints += binding.evaluator()->A().rows();
+    num_constraints += binding.evaluator()->get_sparse_A().rows();
   }
 
   // Setup the quadratic cost matrix and linear cost vector.
@@ -199,13 +199,17 @@ void EqualityConstrainedQPSolver::DoSolve(
     int constraint_index = 0;
     for (auto const& binding : prog.linear_equality_constraints()) {
       auto const& bc = binding.evaluator();
-      size_t n = bc->A().rows();
+      size_t n = bc->get_sparse_A().rows();
 
       int num_v_variables = binding.variables().rows();
       for (int i = 0; i < num_v_variables; ++i) {
-        A.block(constraint_index,
-                prog.FindDecisionVariableIndex(binding.variables()(i)), n, 1) =
-            bc->A().col(i);
+        const int variable_index =
+            prog.FindDecisionVariableIndex(binding.variables()(i));
+        for (Eigen::SparseMatrix<double>::InnerIterator it(bc->get_sparse_A(),
+                                                           i);
+             it; ++it) {
+          A(constraint_index + it.row(), variable_index) = it.value();
+        }
       }
 
       b.segment(constraint_index, n) =

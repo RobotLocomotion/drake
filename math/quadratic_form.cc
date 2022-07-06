@@ -31,10 +31,10 @@ Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
       int X_row_count = 0;
       for (int i = 0; i < es_Y.eigenvalues().rows(); ++i) {
         if (es_Y.eigenvalues()(i) < -zero_tol) {
-          throw std::runtime_error(
-              fmt::format("Y is not positive definite. It has an eigenvalue {} "
-                          "that is more negative than the tolerance {}.",
-                          es_Y.eigenvalues()(i), zero_tol));
+          throw std::runtime_error(fmt::format(
+              "Y is not positive semidefinite. It has an eigenvalue {} "
+              "that is less than the tolerance {}.",
+              es_Y.eigenvalues()(i), -zero_tol));
         } else if (es_Y.eigenvalues()(i) > zero_tol) {
           X.row(X_row_count++) = std::sqrt(es_Y.eigenvalues()(i)) *
                                  es_Y.eigenvectors().col(i).transpose();

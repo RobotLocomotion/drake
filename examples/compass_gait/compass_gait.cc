@@ -297,7 +297,8 @@ void CompassGait<T>::DoCalcTimeDerivatives(
   const Matrix2<T> M = MassMatrix(context);
   const Vector2<T> bias = DynamicsBiasTerm(context);
   const Vector2<T> B(-1, 1);
-  const Vector1<T> u = this->get_input_port(0).Eval(context);
+  const systems::BasicVector<T>* u_vec = this->EvalVectorInput(context, 0);
+  const Vector1<T> u = u_vec ? u_vec->value() : Vector1<T>::Zero();
 
   Vector4<T> xdot;
   // clang-format off

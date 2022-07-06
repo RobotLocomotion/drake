@@ -57,6 +57,20 @@ code sample compiles and runs successfully.
 For a more thorough example, refer to the implementation of
 drake::systems::Linearize.
 
+@warning The supported method to perform scalar conversion uses the member
+functions on System, e.g., `System::ToAutoDiffXd`. The scalar-converting
+copy constructor (described below) is intended for internal use only.
+For example:
+@code
+PendulumPlant<double> plant;
+
+// WRONG
+PendulumPlant<AutoDiffXd> plant_autodiff(plant);
+
+// CORRECT
+std::unique_ptr<PendulumPlant<AutoDiffXd>> autodiff_plant =
+    System<double>::ToAutoDiffXd(plant);
+@endcode
 
 @anchor system_scalar_conversion_how_to_write_a_system
 <h2>How to write a System that supports scalar conversion</h2>

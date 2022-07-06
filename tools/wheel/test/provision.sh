@@ -1,8 +1,6 @@
 #!/bin/bash
 
-# This shell script provisions a bare docker image for testing a Drake wheel.
-# It is not intended to be run directly; use test-wheel.sh or test-wheels.sh,
-# or the accompanying Dockerfile, instead.
+# Internal script to provision a bare docker image for testing a Drake wheel.
 
 set -eu -o pipefail
 
@@ -17,4 +15,8 @@ apt-get -y install --no-install-recommends \
     python3-venv \
     libx11-6 libsm6 libxt6 libglib2.0-0
 
-${PYTHON} -m venv /opt/python
+${PYTHON} -m venv /opt/drake-wheel-test/python
+
+. /opt/drake-wheel-test/python/bin/activate
+
+pip install --upgrade pip

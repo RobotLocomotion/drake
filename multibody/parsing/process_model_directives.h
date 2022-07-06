@@ -49,6 +49,14 @@ void FlattenModelDirectives(const ModelDirectives& directives,
                             const drake::multibody::PackageMap& package_map,
                             ModelDirectives* out);
 
+/// Parses the given model directives using the given parser.
+/// The MultibodyPlant (and optionally SceneGraph) being modified are
+/// implicitly associated with the Parser object.
+/// Returns the list of added models.
+std::vector<ModelInstanceInfo> ProcessModelDirectives(
+    const ModelDirectives& directives,
+    drake::multibody::Parser* parser);
+
 /// Processes model directives for a given MultibodyPlant.
 void ProcessModelDirectives(
     const ModelDirectives& directives,

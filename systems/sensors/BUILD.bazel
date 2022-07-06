@@ -110,7 +110,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:reset_after_move",
-        "//common:symbolic",
+        "//common/symbolic:expression",
     ],
 )
 
@@ -153,11 +153,14 @@ drake_cc_library(
     hdrs = [
         "lcm_image_array_to_images.h",
     ],
+    interface_deps = [
+        ":image",
+        "//common:essential",
+        "//systems/framework:leaf_system",
+    ],
     deps = [
         ":lcm_image_traits",
-        "//common:essential",
         "//lcmtypes:image_array",
-        "//systems/framework",
         "@libpng",
         "@vtk//:vtkIOImage",
         "@zlib",
@@ -227,7 +230,7 @@ drake_cc_library(
     srcs = ["optitrack_sender.cc"],
     hdrs = ["optitrack_sender.h"],
     deps = [
-        "//geometry:frame_kinematics",
+        "//geometry:kinematics_vector",
         "//systems/framework:leaf_system",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
@@ -348,6 +351,7 @@ drake_cc_googletest(
     deps = [
         ":lcm_image_array_to_images",
         "//common:find_resource",
+        "//lcmtypes:image_array",
     ],
 )
 

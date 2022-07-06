@@ -28,6 +28,7 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+namespace kcov339_avoidance_magic {
 namespace {
 
 using ::testing::MatchesRegex;
@@ -48,21 +49,29 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
   std::optional<ModelInstanceIndex> AddModelFromUrdfFile(
       const std::string& file_name,
       const std::string& model_name) {
-    return AddModelFromUrdf(
-        {DataSource::kFilename, &file_name}, model_name, {}, w_);
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    auto result = AddModelFromUrdf(
+        {DataSource::kFilename, &file_name}, model_name, {}, w);
+    resolver.Resolve(diagnostic_policy_);
+    return result;
   }
 
   std::optional<ModelInstanceIndex> AddModelFromUrdfString(
       const std::string& file_contents,
       const std::string& model_name) {
-    return AddModelFromUrdf(
-        {DataSource::kContents, &file_contents}, model_name, {}, w_);
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    auto result = AddModelFromUrdf(
+        {DataSource::kContents, &file_contents}, model_name, {}, w);
+    resolver.Resolve(diagnostic_policy_);
+    return result;
   }
+
  protected:
   PackageMap package_map_;
   MultibodyPlant<double> plant_{0.0};
   SceneGraph<double> scene_graph_;
-  ParsingWorkspace w_{package_map_, diagnostic_policy_, &plant_};
 };
 
 // Some tests contain deliberate typos to provoke parser errors or warnings. In
@@ -533,6 +542,9 @@ TEST_F(UrdfParserTest, TestAtlasMinimalContact) {
   std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   AddModelFromUrdfFile(full_name, "");
+  for (int k = 0; k < 30; k++) {
+    EXPECT_THAT(TakeWarning(), MatchesRegex(".*safety_controller.*ignored.*"));
+  }
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*attached to a fixed joint.*"));
   plant_.Finalize();
 
@@ -563,7 +575,9 @@ TEST_F(UrdfParserTest, TestRegisteredSceneGraph) {
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   // Test that registration with scene graph results in visual geometries.
   AddModelFromUrdfFile(full_name, "");
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*attached to a fixed joint.*"));
+  // Mostly ignore warnings here; they are tested in detail elsewhere.
+  EXPECT_GT(warning_records_.size(), 30);
+  warning_records_.clear();
   plant_.Finalize();
   EXPECT_NE(plant_.num_visual_geometries(), 0);
 }
@@ -759,9 +773,7 @@ TEST_F(UrdfParserTest, AddingGeometriesToWorldLink) {
   </link>
 </robot>
 )""";
-  DataSource source{DataSource::kContents, &test_urdf};
-
-  AddModelFromUrdf(source, "urdf", {}, w_);
+  AddModelFromUrdfString(test_urdf, "urdf");
   EXPECT_THAT(TakeWarning(), MatchesRegex(
                   ".*<inertial> tag is being ignored.*"));
 
@@ -870,7 +882,7 @@ TEST_F(UrdfParserTest, EntireInertialTagOmitted) {
 
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("entire_inertial_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -888,7 +900,7 @@ TEST_F(UrdfParserTest, InertiaTagOmitted) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("inertia_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 2.);
+  EXPECT_EQ(body.default_mass(), 2.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -908,7 +920,7 @@ TEST_F(UrdfParserTest, MassTagOmitted) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("mass_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -926,7 +938,7 @@ TEST_F(UrdfParserTest, MasslessBody) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("massless_link"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -944,7 +956,7 @@ TEST_F(UrdfParserTest, PointMass) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("point_mass"));
-  EXPECT_EQ(body.get_default_mass(), 1.);
+  EXPECT_EQ(body.default_mass(), 1.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -1331,10 +1343,6 @@ TEST_F(UrdfParserTest, CollisionFilterGroupParsingTest) {
   AddModelFromUrdfFile(full_name, "model2");
 }
 
-// TODO(marcoag) We might want to add some form of feedback for:
-// - ignore_collision_filter_groups with non-existing group names.
-// - Empty collision_filter_groups.
-
 TEST_F(UrdfParserTest, CollisionFilterGroupMissingName) {
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='robot'>
@@ -1357,6 +1365,7 @@ TEST_F(UrdfParserTest, CollisionFilterGroupMissingLink) {
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*The tag <drake:member> does not specify the required "
                   "attribute \"link\"."));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'robot::group_a'.*no members"));
 }
 
 TEST_F(UrdfParserTest, IgnoredCollisionFilterGroupMissingName) {
@@ -1367,12 +1376,182 @@ TEST_F(UrdfParserTest, IgnoredCollisionFilterGroupMissingName) {
         <drake:ignored_collision_filter_group/>
       </drake:collision_filter_group>
     </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'robot::group_a'.*no members"));
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*The tag <drake:ignored_collision_filter_group> does not"
                   " specify the required attribute \"name\"."));
 }
 
+// Here follow tests to verify that Drake issues a warning when it ignores
+// something thought to be a documented URDF element or attribute.
+
+TEST_F(UrdfParserTest, UnsupportedVersionIgnored) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='robot' version='0.99'>
+      <link name='a'/>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*version.*ignored.*"));
+}
+
+TEST_F(UrdfParserTest, UnsupportedLinkTypeIgnored) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='robot'>
+      <link name='a' type='unknown'/>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*type.*link.*ignored.*"));
+}
+
+TEST_F(UrdfParserTest, UnsupportedJointStuffIgnored) {
+  const std::array<std::string, 3> tags{
+    "calibration", "mimic", "safety_controller"};
+  for (const auto& tag : tags) {
+    EXPECT_NE(AddModelFromUrdfString(fmt::format(R"""(
+    <robot>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <{}/>
+      </joint>
+    </robot>)""", tag), tag), std::nullopt);
+    EXPECT_THAT(TakeWarning(),
+                MatchesRegex(fmt::format(".*{}.*ignored.*", tag)));
+  }
+}
+
+TEST_F(UrdfParserTest, UnsupportedTransmissionStuffIgnored) {
+  const std::array<std::string, 7> tags{
+    "leftActuator", "rightActuator", "flexJoint", "rollJoint", "gap_joint",
+    "passive_joint", "use_simulated_gripper_joint"};
+  for (const auto& tag : tags) {
+    EXPECT_NE(AddModelFromUrdfString(fmt::format(R"""(
+    <robot>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+      </joint>
+      <transmission type='SimpleTransmission'>
+        <actuator name='a'/>
+        <joint name='a'/>
+        <{}/>
+      </transmission>
+    </robot>)""", tag), tag), std::nullopt);
+    EXPECT_THAT(TakeWarning(),
+                MatchesRegex(fmt::format(".*{}.*ignored.*", tag)));
+  }
+}
+
+// Here follow tests to verify that Drake is silent (as documented elsewhere)
+// when it ignores something thought to be a documented URDF element or
+// attribute.
+
+TEST_F(UrdfParserTest, UnsupportedGazeboIgnoredSilent) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='robot'>
+      <link name='a'/>
+      <gazebo/>
+    </robot>)""", ""), std::nullopt);
+}
+
+TEST_F(UrdfParserTest, UnsupportedTransmissionActuatorStuffIgnoredSilent) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+      </joint>
+      <transmission type='SimpleTransmission'>
+        <actuator name='a'>
+          <hardwareInterface/>
+        </actuator>
+        <joint name='a'/>
+      </transmission>
+    </robot>)""", ""), std::nullopt);
+}
+
+TEST_F(UrdfParserTest, UnsupportedTransmissionJointStuffIgnoredSilent) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name ='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+      </joint>
+      <transmission type='SimpleTransmission'>
+        <actuator name='a'/>
+        <joint name='a'>
+          <hardwareInterface/>
+        </joint>
+      </transmission>
+    </robot>)""", ""), std::nullopt);
+}
+
+// Here follow tests to verify that Drake applies special treatment (as
+// documented elsewhere) when it ignores something thought to be a documented
+// URDF element or attribute.
+
+TEST_F(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe) {
+  // Two substitution slots: actuator, then transmission.
+  constexpr char robot_template[] = R"""(
+    <robot>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+      </joint>
+      <transmission type='SimpleTransmission'>
+        <actuator name='a'>
+          {}
+        </actuator>
+        <joint name='a'/>
+        {}
+      </transmission>
+    </robot>)""";
+  // Match the expected warning.
+  constexpr char pattern[] = ".*mechanicalReduction.*default.*not.*support.*";
+
+  struct Case {
+    std::string input;
+    bool provokes_warning{};
+  };
+  const std::array<Case, 8> cases{{
+    {"<mechanicalReduction>3500.25</mechanicalReduction>", true},
+    {"<mechanicalReduction>22 79 15</mechanicalReduction>", true},
+    {"<mechanicalReduction>QQQ</mechanicalReduction>", true},
+    {"<mechanicalReduction/>", false},
+    {"<mechanicalReduction></mechanicalReduction>", false},
+    {"<mechanicalReduction> </mechanicalReduction>", false},
+    {"<mechanicalReduction>1</mechanicalReduction>", false},
+    {"<mechanicalReduction>1.0</mechanicalReduction>", false},
+  }};
+
+  for (const Case& acase : cases) {
+    // Within actuator.
+    EXPECT_NE(AddModelFromUrdfString(
+                  fmt::format(robot_template, acase.input, ""),
+                  acase.input + "_actuator"), std::nullopt);
+    if (acase.provokes_warning) {
+      EXPECT_THAT(TakeWarning(), MatchesRegex(pattern));
+    }
+    // Within transmission.
+    EXPECT_NE(AddModelFromUrdfString(
+                  fmt::format(robot_template, "", acase.input),
+                  acase.input + "_transmission"), std::nullopt);
+    if (acase.provokes_warning) {
+      EXPECT_THAT(TakeWarning(), MatchesRegex(pattern));
+    }
+  }
+}
+
 }  // namespace
+}  // namespace kcov339_avoidance_magic
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

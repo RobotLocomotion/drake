@@ -17,6 +17,7 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
+// TODO(xuchenhan-tri): Provide some details on spatial integration orders.
 /** %FemModel calculates the components of the spatially discretized FEM
  equations for dynamic elasticity problems. Typically, in dynamic elasticity
  problems, we are interested in the mapping that describes the motion of a
@@ -200,14 +201,14 @@ class FemModel {
     return dirichlet_bc_;
   }
 
- protected:
-  /** Constructs an empty FEM model. */
-  FemModel();
-
   /** (Internal use only) Throws std::exception to report a mismatch between
   the FEM model and state that were passed to API method `func`. */
   void ThrowIfModelStateIncompatible(const char* func,
                                      const FemState<T>& fem_state) const;
+
+ protected:
+  /** Constructs an empty FEM model. */
+  FemModel();
 
   /** Returns the reference positions of this model. */
   virtual VectorX<T> MakeReferencePositions() const = 0;

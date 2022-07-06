@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_model.h"
 
+#include <numeric>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -291,6 +293,12 @@ class DummyConstraint final : public SapConstraint<T> {
 template <typename T>
 class DummyModel {
  public:
+  // Hardcoded fixed sizes for this model.
+  static constexpr int kNumCliques{3};
+  static constexpr int kNumConstraints{4};
+  static constexpr int kNumTotalConstraintEquations{16};
+  static constexpr int kNumTotalParticipatingDofs{9};
+
   DummyModel() {
     // Arbitrary non-identity SPD matrices to build the dynamics matrix A.
     // clang-format off
@@ -323,16 +331,20 @@ class DummyModel {
     auto problem = std::make_unique<SapContactProblem<T>>(
         time_step_, dynamics_matrix_, v_star_);
 
-    // This will lead to cluster 0, constraining clique 0 with itself.
-    {
-      MatrixX<T> J = MakeJacobian(3, 2);
-      VectorX<T> R = VectorX<T>::LinSpaced(3, 1., 3.);
-      VectorX<T> v_hat = Vector3d(1., 2., 0.2);
-      problem->AddConstraint(std::make_unique<DummyConstraint<T>>(
-          0, std::move(J), std::move(R), std::move(v_hat)));
-    }
+    // N.B. Constraints below are added in a somewhat arbitrary order. However,
+    // we make sure that these constraints reference cliques in an order
+    // that is not contiguous. That is, below we reference cliques 1 and 2
+    // first, followed by clique 0. This will lead to a SAP model with a
+    // non-trivial permutation of cliques (not identity).
+    // Similarly, while this arrangement of constraints leads to two clusters,
+    // we make sure we don't add the constraints for cluster 0 first followed by
+    // those for cluster 1. This also causes a non-trivial permutation of the
+    // impulses.
+    // In total, we have a test model with non-trivial permutations that stress
+    // tests SapModel's implementations better.
+    // We verify this invariant later on when the model is created.
 
-    // This will lead to cluster 1, constraining cliques 1 and 2.
+    // This will lead to cluster 0, constraining cliques 1 and 2.
     {
       MatrixX<T> J1 = MakeJacobian(5, 3);
       MatrixX<T> J2 = MakeJacobian(5, 4);
@@ -342,7 +354,26 @@ class DummyModel {
           1, std::move(J1), 2, std::move(J2), std::move(R), std::move(v_hat)));
     }
 
+    // This will lead to cluster 1, constraining clique 0 with itself.
+    {
+      MatrixX<T> J = MakeJacobian(3, 2);
+      VectorX<T> R = VectorX<T>::LinSpaced(3, 1., 3.);
+      VectorX<T> v_hat = Vector3d(1., 2., 0.2);
+      problem->AddConstraint(std::make_unique<DummyConstraint<T>>(
+          0, std::move(J), std::move(R), std::move(v_hat)));
+    }
+
     // This constraint will get added to the already created cluster 0 above.
+    {
+      MatrixX<T> J1 = MakeJacobian(5, 3);
+      MatrixX<T> J2 = MakeJacobian(5, 4);
+      VectorX<T> R = VectorX<T>::LinSpaced(5, 1., 5.);
+      VectorX<T> v_hat = 100.0 * R;
+      problem->AddConstraint(std::make_unique<DummyConstraint<T>>(
+          1, std::move(J1), 2, std::move(J2), std::move(R), std::move(v_hat)));
+    }
+
+    // This constraint will get added to the already created cluster 1 above.
     {
       MatrixX<T> J = MakeJacobian(3, 2);
       VectorX<T> R = VectorX<T>::LinSpaced(3, 1., 3.);
@@ -357,16 +388,22 @@ class DummyModel {
   // Makes the constraints Jacobian J. The order of the velocities and impulses
   // is given as in the original model (not as permuted in SapModel later on).
   MatrixXd MakeModelJacobian() const {
-    MatrixXd J = MatrixXd::Zero(11, 9);
-    // Constraint 0. Within clique 0, cluster 0.
-    J.block<3, 2>(0, 0) = MakeJacobian(3, 2);
+    MatrixXd J = MatrixXd::Zero(kNumTotalConstraintEquations,
+                                kNumTotalParticipatingDofs);
 
-    // Constraint 1. Between clique 1 and 2, cluster 1.
-    J.block<5, 3>(3, 2) = MakeJacobian(5, 3);
-    J.block<5, 4>(3, 5) = MakeJacobian(5, 4);
+    // Constraint 0. Between clique 1 and 2, cluster 0.
+    J.block<5, 3>(0, 2) = MakeJacobian(5, 3);
+    J.block<5, 4>(0, 5) = MakeJacobian(5, 4);
 
-    // Constraint 2. Within clique 0, cluster 0.
-    J.block<3, 2>(8, 0) = MakeJacobian(3, 2);
+    // Constraint 1. Within clique 0, cluster 1.
+    J.block<3, 2>(5, 0) = MakeJacobian(3, 2);
+
+    // Constraint 2. Between clique 1 and 2, cluster 0.
+    J.block<5, 3>(8, 2) = MakeJacobian(5, 3);
+    J.block<5, 4>(8, 5) = MakeJacobian(5, 4);
+
+    // Constraint 3. Within clique 0, cluster 1.
+    J.block<3, 2>(13, 0) = MakeJacobian(3, 2);
 
     return J;
   }
@@ -406,12 +443,37 @@ class DummyModelTest : public ::testing::Test {
   void SetUp() override {
     sap_problem_ = dummy_model_.MakeContactProblem();
     // Sanity check problem sizes.
-    EXPECT_EQ(sap_problem_->num_cliques(), 3);
-    EXPECT_EQ(sap_problem_->num_velocities(), 9);
-    EXPECT_EQ(sap_problem_->num_constraints(), 3);
-    EXPECT_EQ(sap_problem_->num_constraint_equations(), 11);
+    EXPECT_EQ(sap_problem_->num_cliques(), dummy_model_.kNumCliques);
+    EXPECT_EQ(sap_problem_->num_velocities(),
+              dummy_model_.kNumTotalParticipatingDofs);
+    EXPECT_EQ(sap_problem_->num_constraints(), dummy_model_.kNumConstraints);
+    EXPECT_EQ(sap_problem_->num_constraint_equations(),
+              dummy_model_.kNumTotalConstraintEquations);
     sap_model_ = std::make_unique<SapModel<double>>(sap_problem_.get());
     context_ = sap_model_->MakeContext();
+
+    // To make these tests more interesting and stress implementations better,
+    // MakeContactProblem() above adds constraints and cliques so that
+    // permutations are different from the identity permutation. Here we verify
+    // this invariant.
+    auto make_identity_permutation = [](int size) {
+      std::vector<int> identity_permutation(size);
+      std::iota(identity_permutation.begin(), identity_permutation.end(), 0);
+      return identity_permutation;
+    };
+    const std::vector<int> identity_cliques_permutation =
+        make_identity_permutation(sap_problem_->num_cliques());
+    ASSERT_NE(
+        sap_model_->problem().graph().participating_cliques().permutation(),
+        identity_cliques_permutation);
+    const std::vector<int> identity_velocities_permutation =
+        make_identity_permutation(sap_problem_->num_velocities());
+    ASSERT_NE(sap_model_->velocities_permutation().permutation(),
+              identity_velocities_permutation);
+    const std::vector<int> identity_impulses_permutation =
+        make_identity_permutation(sap_problem_->num_constraint_equations());
+    ASSERT_NE(sap_model_->impulses_permutation().permutation(),
+              identity_impulses_permutation);
 
     // Extract model data.
     const int nv = sap_model_->num_velocities();
@@ -440,8 +502,9 @@ class DummyModelTest : public ::testing::Test {
     J_not_permuted_ = dummy_model_.MakeModelJacobian();
   }
 
-  static VectorXd arbitrary_v() {
-    return (VectorXd(9) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+  VectorXd arbitrary_v() const {
+    return (VectorXd(dummy_model_.kNumTotalParticipatingDofs) << 0.1, 0.2, 0.3,
+            0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
         .finished();
   }
 
@@ -684,10 +747,12 @@ TEST_F(DummyModelTest, CostGradients) {
   DummyModel<AutoDiffXd> dummy_model_ad;
   auto sap_problem_ad = dummy_model_ad.MakeContactProblem();
   // Sanity check problem sizes.
-  EXPECT_EQ(sap_problem_ad->num_cliques(), 3);
-  EXPECT_EQ(sap_problem_ad->num_velocities(), 9);
-  EXPECT_EQ(sap_problem_ad->num_constraints(), 3);
-  EXPECT_EQ(sap_problem_ad->num_constraint_equations(), 11);
+  EXPECT_EQ(sap_problem_ad->num_cliques(), dummy_model_.kNumCliques);
+  EXPECT_EQ(sap_problem_ad->num_velocities(),
+            dummy_model_.kNumTotalParticipatingDofs);
+  EXPECT_EQ(sap_problem_ad->num_constraints(), dummy_model_.kNumConstraints);
+  EXPECT_EQ(sap_problem_ad->num_constraint_equations(),
+            dummy_model_.kNumTotalConstraintEquations);
   auto sap_model_ad =
       std::make_unique<SapModel<AutoDiffXd>>(sap_problem_ad.get());
   auto context_ad = sap_model_ad->MakeContext();
@@ -708,7 +773,7 @@ TEST_F(DummyModelTest, CostGradients) {
   // Validate cost and its gradient.
   const double cost = sap_model_->EvalCost(*context_);
   const VectorXd& cost_gradient = sap_model_->EvalCostGradient(*context_);
-  EXPECT_NEAR(cost, cost_ad.value(), kEpsilon * cost_ad.value());
+  EXPECT_NEAR(cost, cost_ad.value(), 2.0 * kEpsilon * cost_ad.value());
   EXPECT_TRUE(CompareMatrices(cost_gradient, cost_ad_gradient, kEpsilon,
                               MatrixCompareType::relative));
 

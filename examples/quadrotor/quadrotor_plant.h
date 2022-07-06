@@ -19,10 +19,13 @@ namespace quadrotor {
 /// @system
 /// name: QuadrotorPlant
 /// input_ports:
-/// - propellor_force
+/// - propeller_force (optional)
 /// output_ports:
 /// - state
 /// @endsystem
+///
+/// Note: If the propeller_force input port is not connected, then the force is
+/// taken to be zero.
 ///
 /// @tparam_nonsymbolic_scalar
 template <typename T>
@@ -38,8 +41,13 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
 
   ~QuadrotorPlant() override;
 
-  double m() const { return m_; }
-  double g() const { return g_; }
+  [[nodiscard]] double m() const { return m_; }
+  [[nodiscard]] double g() const { return g_; }
+
+  [[nodiscard]] double length() const { return L_; }
+  [[nodiscard]] double force_constant() const { return kF_; }
+  [[nodiscard]] double moment_constant() const { return kM_; }
+  [[nodiscard]] const Eigen::Matrix3d& inertia() const { return I_; }
 
  private:
   void DoCalcTimeDerivatives(

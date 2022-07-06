@@ -50,7 +50,9 @@ def library_lint(
             package_library_rule = one_rule
         elif one_rule["name"] == short_package_name:
             # Failure to use drake_cc_package_library is a lint error, except
-            # in examples folders because their libraryes are never installed.
+            # in examples folders because their libraries are never installed.
+            if "nolint" in one_rule["tags"]:
+                continue
             if not package_name.startswith("//examples"):
                 library_lint_reporter_args += ["--untagged-package-library"]
 

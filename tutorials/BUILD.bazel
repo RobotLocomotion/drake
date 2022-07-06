@@ -39,6 +39,14 @@ drake_jupyter_py_binary(
 )
 
 drake_jupyter_py_binary(
+    name = "licensed_solvers_deepnote",
+    add_test_rule = 0,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
     name = "linear_program",
     add_test_rule = 1,
     deps = [
@@ -65,6 +73,15 @@ drake_jupyter_py_binary(
 drake_jupyter_py_binary(
     name = "dynamical_systems",
     add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
+    name = "authoring_multibody_simulation",
+    add_test_rule = 1,
+    test_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
     ],

@@ -37,7 +37,7 @@ drake_cc_library(
     deps = [
         "//common:find_resource",
         "//geometry:scene_graph",
-        "//geometry/render:render_engine_vtk",
+        "//geometry/render_vtk",
         "//manipulation/schunk_wsg:schunk_wsg_constants",
         "//manipulation/schunk_wsg:schunk_wsg_position_controller",
         "//math:geometric_transform",
@@ -133,7 +133,7 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "manipulation_station_test",
     # Frequently exceeds short timeout in
-    # linux-bionic-clang-bazel-nightly-coverage
+    # linux-focal-clang-bazel-nightly-coverage
     timeout = "moderate",
     tags = vtk_test_tags(),
     deps = [
@@ -163,6 +163,15 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "schunk_wsg_buttons",
+    srcs = ["schunk_wsg_buttons.py"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 drake_py_binary(
     name = "joint_teleop",
     srcs = ["joint_teleop.py"],
@@ -175,6 +184,7 @@ drake_py_binary(
     test_rule_tags = vtk_test_tags(),
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
+        ":schunk_wsg_buttons",
         "//bindings/pydrake",
     ],
 )
@@ -228,6 +238,7 @@ drake_py_binary(
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         ":differential_ik",
+        ":schunk_wsg_buttons",
         "//bindings/pydrake",
     ],
 )

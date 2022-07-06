@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 
@@ -28,7 +28,7 @@ namespace internal {
  * BoundingBoxConstraint or LinearEqualityConstraint) will be
  * constructed as a LinearEqualityConstraint.
  */
-Binding<Constraint> ParseConstraint(
+[[nodiscard]] Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub);
@@ -36,7 +36,7 @@ Binding<Constraint> ParseConstraint(
 /*
  * Assist MathematicalProgram::AddLinearConstraint(...).
  */
-inline Binding<Constraint> ParseConstraint(
+[[nodiscard]] inline Binding<Constraint> ParseConstraint(
     const symbolic::Expression& e, const double lb, const double ub) {
   return ParseConstraint(Vector1<symbolic::Expression>(e), Vector1<double>(lb),
                          Vector1<double>(ub));
@@ -51,7 +51,7 @@ inline Binding<Constraint> ParseConstraint(
  * 1 <= 2 * x + 3 <= 4 is equivalent to the bounding box constraint -1 <= x <=
  * 0.5. Hence we will return the BoundingBoxConstraint in this case.
  */
-std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
+[[nodiscard]] std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
     const symbolic::Expression& e, double lb, double ub);
 
 /*
@@ -60,7 +60,7 @@ std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
  * @note if `f` is always true, then returns an empty BoundingBoxConstraint
  * binding.
  */
-Binding<Constraint> ParseConstraint(const symbolic::Formula& f);
+[[nodiscard]] Binding<Constraint> ParseConstraint(const symbolic::Formula& f);
 
 /*
  * Creates a constraint that enforces all `formulas` to be satisfied.
@@ -69,13 +69,13 @@ Binding<Constraint> ParseConstraint(const symbolic::Formula& f);
  * If all entries in `formulas` are true, then returns an empty
  * BoundingBoxConstraint binding.
  */
-Binding<Constraint> ParseConstraint(
+[[nodiscard]] Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Formula>>& formulas);
 
 /*
  * Assist functionality for ParseLinearEqualityConstraint(...).
  */
-Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
+[[nodiscard]] Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& b);
 
@@ -95,7 +95,7 @@ inline Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
  * if all entries in `formulas` are always true, then returns an empty linear
  * equality constraint binding.
  */
-Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
+[[nodiscard]] Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     const std::set<symbolic::Formula>& formulas);
 
 /*
@@ -105,14 +105,14 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
  * @note if `f` is always true, then returns an empty linear equality constraint
  * binding.
  */
-Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
+[[nodiscard]] Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     const symbolic::Formula& f);
 
 /*
  * Assist MathematicalProgram::AddLinearEqualityConstraint(...).
  */
 template <typename DerivedV, typename DerivedB>
-typename std::enable_if_t<
+[[nodiscard]] typename std::enable_if_t<
     is_eigen_vector_expression_double_pair<DerivedV, DerivedB>::value,
     Binding<LinearEqualityConstraint>>
 ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
@@ -124,7 +124,7 @@ ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
  * Assist MathematicalProgram::AddLinearEqualityConstraint(...).
  */
 template <typename DerivedV, typename DerivedB>
-typename std::enable_if_t<
+[[nodiscard]] typename std::enable_if_t<
     is_eigen_nonvector_expression_double_pair<DerivedV, DerivedB>::value,
     Binding<LinearEqualityConstraint>>
 ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
@@ -185,7 +185,7 @@ ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
  * Assists MathematicalProgram::AddConstraint(...) to create a quadratic
  * constraint binding.
  */
-Binding<QuadraticConstraint> ParseQuadraticConstraint(
+[[nodiscard]] Binding<QuadraticConstraint> ParseQuadraticConstraint(
     const symbolic::Expression& e, double lower_bound, double upper_bound);
 
 /*
@@ -193,7 +193,7 @@ Binding<QuadraticConstraint> ParseQuadraticConstraint(
  * @note Non-symbolic, but this seems to have a separate purpose than general
  * construction.
  */
-std::shared_ptr<Constraint> MakePolynomialConstraint(
+[[nodiscard]] std::shared_ptr<Constraint> MakePolynomialConstraint(
     const VectorXPoly& polynomials,
     const std::vector<Polynomiald::VarType>& poly_vars,
     const Eigen::VectorXd& lb, const Eigen::VectorXd& ub);
@@ -201,7 +201,7 @@ std::shared_ptr<Constraint> MakePolynomialConstraint(
 /*
  * Assist MathematicalProgram::AddLorentzConeConstraint(...).
  */
-Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
+[[nodiscard]] Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
     LorentzConeConstraint::EvalType eval_type =
         LorentzConeConstraint::EvalType::kConvexSmooth);
@@ -209,7 +209,7 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
 /*
  * Assist MathematicalProgram::AddLorentzConeConstraint(...).
  */
-Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
+[[nodiscard]] Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
     const symbolic::Expression& linear_expr,
     const symbolic::Expression& quadratic_expr, double tol = 0,
     LorentzConeConstraint::EvalType eval_type =
@@ -218,30 +218,35 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
 /*
  * Assist MathematicalProgram::AddRotatedLorentzConeConstraint(...)
  */
-Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
+[[nodiscard]] Binding<RotatedLorentzConeConstraint>
+ParseRotatedLorentzConeConstraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
 
 /*
  * Assist MathematicalProgram::AddRotatedLorentzConeConstraint(...)
  */
-Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
-    const symbolic::Expression& linear_expr1,
-    const symbolic::Expression& linear_expr2,
-    const symbolic::Expression& quadratic_expr, double tol = 0);
+[[nodiscard]] Binding<RotatedLorentzConeConstraint>
+ParseRotatedLorentzConeConstraint(const symbolic::Expression& linear_expr1,
+                                  const symbolic::Expression& linear_expr2,
+                                  const symbolic::Expression& quadratic_expr,
+                                  double tol = 0);
 
 /** For a convex quadratic constraint 0.5xᵀQx + bᵀx + c <= 0, we parse it as a
  * rotated Lorentz cone constraint [-bᵀx-c, 1, Fx] is in the rotated Lorentz
- * cone where FᵀF = Q
+ * cone where FᵀF = 0.5 * Q
+ * @param zero_tol The tolerance to determine if Q is a positive semidefinite
+ * matrix. Check math::DecomposePSDmatrixIntoXtransposeTimesX for a detailed
+ * explanation. zero_tol should be non-negative. @default is 0.
  * @throw exception if this quadratic constraint is not convex (Q is not
  * positive semidefinite)
  *
  * You could refer to
  * https://docs.mosek.com/latest/pythonapi/advanced-toconic.html for derivation.
  */
-std::shared_ptr<RotatedLorentzConeConstraint>
+[[nodiscard]] std::shared_ptr<RotatedLorentzConeConstraint>
 ParseQuadraticAsRotatedLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::VectorXd>& b, double c);
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c, double zero_tol = 0.);
 
 // TODO(eric.cousineau): Implement this if variable creation is separated.
 // Format would be (tuple(linear_binding, psd_binding), new_vars)

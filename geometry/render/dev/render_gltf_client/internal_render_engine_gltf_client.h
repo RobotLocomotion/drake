@@ -5,7 +5,7 @@
 
 #include "drake/geometry/render/dev/render_gltf_client/factory.h"
 #include "drake/geometry/render/dev/render_gltf_client/internal_render_client.h"
-#include "drake/geometry/render/render_engine_vtk.h"
+#include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 namespace drake {
 namespace geometry {

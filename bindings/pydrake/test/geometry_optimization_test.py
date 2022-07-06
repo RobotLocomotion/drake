@@ -93,6 +93,10 @@ class TestGeometryOptimization(unittest.TestCase):
         h4 = h_box.Intersection(other=h_unit_box)
         self.assertIsInstance(h4, mut.HPolyhedron)
         self.assertEqual(h4.ambient_dimension(), 3)
+        h5 = h_box.PontryaginDifference(other=h_unit_box)
+        self.assertIsInstance(h5, mut.HPolyhedron)
+        np.testing.assert_array_equal(h5.A(), h_box.A())
+        np.testing.assert_array_equal(h5.b(), np.zeros(6))
 
     def test_hyper_ellipsoid(self):
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)

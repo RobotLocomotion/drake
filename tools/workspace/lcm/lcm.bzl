@@ -206,8 +206,8 @@ def lcm_cc_library(
         )
 
     deps = kwargs.pop("deps", [])
-    if "@lcm" not in deps:
-        deps = deps + ["@lcm"]
+    if "@lcm//:lcm_coretypes" not in deps:
+        deps = deps + ["@lcm//:lcm_coretypes"]
 
     includes = kwargs.pop("includes", [])
     if "." not in includes:

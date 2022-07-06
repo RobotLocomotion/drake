@@ -78,13 +78,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
   {
     using Class = MeshcatPointCloudVisualizer<T>;
     constexpr auto& cls_doc = doc.MeshcatPointCloudVisualizer;
-    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(m,
-        "MeshcatPointCloudVisualizerCpp", param,
-        (std::string(cls_doc.doc) + R"""(
-Note that we are temporarily re-mapping MeshcatPointCloudVisualizer =>
-MeshcatPointCloudVisualizerCpp to avoid collisions with the python
-MeshcatPointCloudVisualizer.  See #13038.)""")
-            .c_str());
+    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
+        m, "MeshcatPointCloudVisualizer", param, cls_doc.doc);
     cls  // BR
         .def(py::init<std::shared_ptr<Meshcat>, std::string, double>(),
             py::arg("meshcat"), py::arg("path"),
@@ -106,13 +101,8 @@ MeshcatPointCloudVisualizer.  See #13038.)""")
   {
     using Class = MeshcatVisualizer<T>;
     constexpr auto& cls_doc = doc.MeshcatVisualizer;
-    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(m,
-        "MeshcatVisualizerCpp", param,
-        (std::string(cls_doc.doc) + R"""(
-Note that we are temporarily re-mapping MeshcatVisualizer =>
-MeshcatVisualizerCpp to avoid collisions with the python
-MeshcatVisualizer.  See #13038.)""")
-            .c_str());
+    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
+        m, "MeshcatVisualizer", param, cls_doc.doc);
     cls  // BR
         .def(py::init<std::shared_ptr<Meshcat>, MeshcatVisualizerParams>(),
             py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},
@@ -217,8 +207,9 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = Meshcat;
     constexpr auto& cls_doc = doc.Meshcat;
-    py::class_<Class, std::shared_ptr<Class>> cls(m, "Meshcat", cls_doc.doc);
-    cls  // BR
+    py::class_<Class, std::shared_ptr<Class>> meshcat(
+        m, "Meshcat", cls_doc.doc);
+    meshcat  // BR
         .def(py::init<std::optional<int>>(), py::arg("port") = std::nullopt,
             cls_doc.ctor.doc_1args_port)
         .def(py::init<const MeshcatParams&>(), py::arg("params"),
@@ -259,7 +250,16 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("rgba") = Rgba(0.1, 0.1, 0.1, 1.0),
             py::arg("wireframe") = false, py::arg("wireframe_line_width") = 1.0,
             cls_doc.SetTriangleMesh.doc)
-        // TODO(russt): Bind SetCamera.
+        .def("SetCamera",
+            py::overload_cast<Meshcat::PerspectiveCamera, std::string>(
+                &Class::SetCamera),
+            py::arg("camera"), py::arg("path") = "/Cameras/default/rotated",
+            cls_doc.SetCamera.doc_perspective)
+        .def("SetCamera",
+            py::overload_cast<Meshcat::OrthographicCamera, std::string>(
+                &Class::SetCamera),
+            py::arg("camera"), py::arg("path") = "/Cameras/default/rotated",
+            cls_doc.SetCamera.doc_orthographic)
         .def("Set2dRenderMode", &Class::Set2dRenderMode,
             py::arg("X_WC") = RigidTransformd{Eigen::Vector3d{0, -1, 0}},
             py::arg("xmin") = -1.0, py::arg("xmax") = 1.0,
@@ -317,6 +317,63 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("HasPath", &Class::HasPath, py::arg("path"), cls_doc.HasPath.doc);
     // Note: we intentionally do not bind the advanced methods (GetPacked...)
     // which were intended primarily for testing in C++.
+
+    const auto& perspective_camera_doc = doc.Meshcat.PerspectiveCamera;
+    py::class_<Meshcat::PerspectiveCamera>(
+        meshcat, "PerspectiveCamera", perspective_camera_doc.doc)
+        .def(ParamInit<Meshcat::PerspectiveCamera>())
+        .def_readwrite("fov", &Meshcat::PerspectiveCamera::fov,
+            perspective_camera_doc.fov.doc)
+        .def_readwrite("aspect", &Meshcat::PerspectiveCamera::aspect,
+            perspective_camera_doc.aspect.doc)
+        .def_readwrite("near", &Meshcat::PerspectiveCamera::near,
+            perspective_camera_doc.near.doc)
+        .def_readwrite("far", &Meshcat::PerspectiveCamera::far,
+            perspective_camera_doc.far.doc)
+        .def_readwrite("zoom", &Meshcat::PerspectiveCamera::zoom,
+            perspective_camera_doc.zoom.doc)
+        .def("__repr__", [](const Meshcat::PerspectiveCamera& self) {
+          return py::str(
+              "PerspectiveCamera("
+              "fov={}, "
+              "aspect={}, "
+              "near={}, "
+              "far={}, "
+              "zoom={})")
+              .format(self.fov, self.aspect, self.near, self.far, self.zoom);
+        });
+
+    const auto& orthographic_camera_doc = doc.Meshcat.OrthographicCamera;
+    py::class_<Meshcat::OrthographicCamera>(
+        meshcat, "OrthographicCamera", orthographic_camera_doc.doc)
+        .def(ParamInit<Meshcat::OrthographicCamera>())
+        .def_readwrite("left", &Meshcat::OrthographicCamera::left,
+            orthographic_camera_doc.left.doc)
+        .def_readwrite("right", &Meshcat::OrthographicCamera::right,
+            orthographic_camera_doc.right.doc)
+        .def_readwrite("top", &Meshcat::OrthographicCamera::top,
+            orthographic_camera_doc.top.doc)
+        .def_readwrite("bottom", &Meshcat::OrthographicCamera::bottom,
+            orthographic_camera_doc.bottom.doc)
+        .def_readwrite("near", &Meshcat::OrthographicCamera::near,
+            orthographic_camera_doc.near.doc)
+        .def_readwrite("far", &Meshcat::OrthographicCamera::far,
+            orthographic_camera_doc.far.doc)
+        .def_readwrite("zoom", &Meshcat::OrthographicCamera::zoom,
+            orthographic_camera_doc.zoom.doc)
+        .def("__repr__", [](const Meshcat::OrthographicCamera& self) {
+          return py::str(
+              "OrthographicCamera("
+              "left={}, "
+              "right={}, "
+              "top={}, "
+              "bottom={}, "
+              "near={}, "
+              "far={}, "
+              "zoom={})")
+              .format(self.left, self.right, self.top, self.bottom, self.near,
+                  self.far, self.zoom);
+        });
   }
 
   // MeshcatAnimation

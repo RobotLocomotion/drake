@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version='1.7'>
+  <model name='test'>
+    <include>
+      <name>robot1</name>
+      <uri>package://collision_filter_group_parsing_test/robot.sdf</uri>
+    </include>
+    <include>
+      <name>robot2</name>
+      <uri>package://collision_filter_group_parsing_test/robot.sdf</uri>
+    </include>
+    <drake:collision_filter_group name="group_6s">
+      <!-- Build a group from links of nested robots. -->
+      <drake:member>robot1::link6</drake:member>
+      <drake:member>robot2::link6</drake:member>
+      <drake:ignored_collision_filter_group>group_6s</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+    <drake:collision_filter_group name="group_3s">
+      <!-- Build a rule from links and collision filter groups of nested robots. -->
+      <drake:member>robot1::link3</drake:member>
+      <drake:ignored_collision_filter_group>robot2::group_link3</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+  </model>
+</sdf>

@@ -9,7 +9,7 @@ load(
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/workspace:forward_files.bzl", "forward_files")
-load("//tools/workspace/models:files.bzl", "skydio_2_mesh_files")
+load("//tools/workspace/models_internal:files.bzl", "skydio_2_mesh_files")
 
 package(
     default_visibility = [
@@ -18,9 +18,9 @@ package(
 )
 
 _SKYDIO_2_MESHES = forward_files(
-    srcs = ["@models//:" + x for x in skydio_2_mesh_files()],
+    srcs = ["@models_internal//:" + x for x in skydio_2_mesh_files()],
     dest_prefix = "",
-    strip_prefix = "@models//:skydio_2/",
+    strip_prefix = "@models_internal//:skydio_2/",
     visibility = ["//visibility:private"],
 )
 
@@ -106,6 +106,7 @@ drake_cc_googletest(
     name = "quadrotor_plant_test",
     deps = [
         ":quadrotor_plant",
+        "//common/test_utilities:expect_no_throw",
         "//systems/framework/test_utilities",
     ],
 )

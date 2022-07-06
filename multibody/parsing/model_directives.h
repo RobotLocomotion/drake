@@ -122,6 +122,45 @@ struct AddFrame {
   drake::schema::Transform X_PF;
 };
 
+/// Directive to add a collision filter group.  This directive is analogous to
+/// @ref tag_drake_collision_filter_group in XML model formats.
+struct AddCollisionFilterGroup {
+  bool IsValid() const {
+    if (name.empty()) {
+      drake::log()->error(
+          "add_collision_filter_group: `name` must be non-empty");
+      return false;
+    } else if (members.empty()) {
+      drake::log()->error(
+          "add_collision_filter_group: `members` must be non-empty");
+      return false;
+    }
+    return true;
+  }
+
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(name));
+    a->Visit(DRAKE_NVP(members));
+    a->Visit(DRAKE_NVP(ignored_collision_filter_groups));
+  }
+
+  /// Name of group to be added. Must not be a scoped name.
+  std::string name;
+  /// Names of members of the group. May be scoped and refer to bodies of
+  /// already added models. This data is analogous to a sequence of
+  /// @ref tag_drake_member in XML model formats.
+  std::vector<std::string> members;
+  /// Names of groups against which to ignore collisions. If another group is
+  /// named, collisions between this group and that group will be ignored. If
+  /// this group is named, collisions within this group will be ignored. Names
+  /// may be scoped and refer to other groups defined elsewhere in this file or
+  /// transitively included directives or model files. This data is analogous
+  /// to a sequence of @ref tag_drake_ignored_collision_filter_group in XML
+  /// model formats.
+  std::vector<std::string> ignored_collision_filter_groups;
+};
+
 /// Directive to incorporate another model directives file, optionally with
 /// its elements prefixed with a namespace.
 struct AddDirectives {
@@ -149,6 +188,9 @@ struct AddDirectives {
   /// - AddWeld::parent
   /// - AddWeld::child
   /// - AddFrame::X_PF::base_frame
+  /// - AddCollisionFilterGroup::name
+  /// - AddCollisionFilterGroup::members
+  /// - AddCollisionFilterGroup::ignored_colllision_filter_groups
   /// - AddDirectives::model_namespace
   /// See `README.md` for example references and namespacing.
   std::optional<std::string> model_namespace;
@@ -165,11 +207,12 @@ struct ModelDirective {
     const bool unique =
         (add_model.has_value() + add_model_instance.has_value() +
          add_frame.has_value() + add_weld.has_value() +
+         add_collision_filter_group.has_value() +
          add_directives.has_value()) == 1;
     if (!unique) {
       drake::log()->error(
           "directive: Specify one of `add_model`, `add_model_instance`, "
-          "`add_frame`, or `add_directives`");
+          "`add_frame`, `add_collision_filter_group`, or `add_directives`");
       return false;
     } else if (add_model) {
       return add_model->IsValid();
@@ -179,6 +222,8 @@ struct ModelDirective {
       return add_frame->IsValid();
     } else if (add_weld) {
       return add_weld->IsValid();
+    } else if (add_collision_filter_group) {
+      return add_collision_filter_group->IsValid();
     } else {
       return add_directives->IsValid();
     }
@@ -190,6 +235,7 @@ struct ModelDirective {
     a->Visit(DRAKE_NVP(add_model_instance));
     a->Visit(DRAKE_NVP(add_frame));
     a->Visit(DRAKE_NVP(add_weld));
+    a->Visit(DRAKE_NVP(add_collision_filter_group));
     a->Visit(DRAKE_NVP(add_directives));
   }
 
@@ -197,6 +243,7 @@ struct ModelDirective {
   std::optional<AddModelInstance> add_model_instance;
   std::optional<AddFrame> add_frame;
   std::optional<AddWeld> add_weld;
+  std::optional<AddCollisionFilterGroup> add_collision_filter_group;
   std::optional<AddDirectives> add_directives;
 };
 

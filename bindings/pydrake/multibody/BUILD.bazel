@@ -122,14 +122,12 @@ drake_pybind_library(
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common:cpp_template_py",
     ],
-    py_srcs = ["_plant_extra.py"],
 )
 
 drake_pybind_library(
     name = "parsing_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["parsing_py.cc"],
     package_info = PACKAGE_INFO,
@@ -267,7 +265,6 @@ drake_py_unittest(
     deps = [
         ":parsing_py",
         ":plant_py",
-        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
@@ -277,6 +274,7 @@ drake_py_unittest(
         ":models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
+        "//multibody:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/benchmarks/free_body:models",
     ],
@@ -285,13 +283,10 @@ drake_py_unittest(
         ":parsing_py",
         ":plant_py",
         ":tree_py",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:scalar_conversion_py",
-        # TODO(jwnimmer-tri) Remove this on 2022-05-01 per deprecations.
-        ":meshcat_py",
     ],
 )
 

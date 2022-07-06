@@ -34,11 +34,20 @@ filegroup(
     visibility = ["//common:__pkg__"],
 )
 
-# Utilities.
+# Capture some bazel cc_toolchain variables into a bash environment file. These
+# values reflect the compiler and flags that Bazel's compilation actions will
+# use. Note that this might refer to Bazel's compiler wrapper, `cc_wrapper.sh`,
+# and thus may only indirectly identify the actual compiler in use. Note also
+# that `$(CC)` may refer to the canonicalized location of the compiler; for
+# example, on Ubuntu, Clang may be `/usr/lib/llvm-<version>/bin/clang`,
+# canonicalized from `/usr/bin/clang-<version>`.
 genrule(
     name = "capture_cc",
     outs = ["capture_cc.env"],
-    cmd = "printf \"BAZEL_CC=$(CC)\nBAZEL_CC_FLAGS=$(CC_FLAGS)\n\" > '$@'",
+    cmd = "cat <<EOF > '$@'\n" +
+          "BAZEL_CC=\"$(CC)\"\n" +
+          "BAZEL_CC_FLAGS=\"$(CC_FLAGS)\"\n" +
+          "EOF",
     toolchains = [
         "@bazel_tools//tools/cpp:cc_flags",
         "@bazel_tools//tools/cpp:current_cc_toolchain",
@@ -66,6 +75,37 @@ sh_test(
     data = [":print_host_settings"],
     # Valgrind Memcheck reports numerous leaks in the python executable.
     tags = ["no_memcheck"],
+)
+
+# Capture bazel's action environment variables into a bash environment file.
+# These values reflect ONLY the command-line (or rcfile) `--action_env`
+# settings that Bazel uses when running its toolchain configuration, e.g.
+# `CC=clang`. This is not necessarily the same as what compiler (or compiler
+# wrapper) is actually invoked during a build. Beware that environment
+# variables passed like `CC=... bazel ...` are NOT captured by this!
+genrule(
+    name = "capture_compiler_config",
+    outs = ["capture_compiler_config.env"],
+    cmd = "cat <<EOF > '$@'\n" +
+          "PATH=\"$$PATH\"\n" +
+          "CC=\"$${CC:-}\"\n" +
+          "CXX=\"$${CXX:-}\"\n" +
+          "EOF",
+    visibility = ["//common:__pkg__"],
+)
+
+# Utility script to indicate which compiler is selected by use of
+# `--config={gcc,clang}`. This is intended to be used by the CI infrastructure,
+# which needs a way to get this specific information. Unless you are very sure
+# you understand the first sentence of this comment, as well as the caveats
+# noted in the comment on the above `genrule`, DON'T USE THIS.
+sh_binary(
+    name = "print_compiler_config",
+    srcs = ["print_compiler_config.sh"],
+    args = ["$(location :capture_compiler_config.env)"],
+    data = [
+        ":capture_compiler_config.env",
+    ],
 )
 
 add_lint_tests()

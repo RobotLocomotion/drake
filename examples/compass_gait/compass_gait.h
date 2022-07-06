@@ -35,7 +35,7 @@ namespace compass_gait {
 /// @system
 /// name: CompassGait
 /// input_ports:
-/// - hip_torque
+/// - hip_torque (optional)
 /// output_ports:
 /// - minimal_state
 /// - floating_base_state
@@ -44,6 +44,9 @@ namespace compass_gait {
 /// Continuous States: stance, swing, stancedot, swingdot.<br/>
 /// Discrete State: stance toe position.<br/>
 /// Abstract State: left support indicator.<br/>
+///
+/// Note: If the hip_torque input port is not connected, then the torque is
+/// taken to be zero.
 ///
 /// @tparam_default_scalar
 template <typename T>

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="top">
+    <model name="mid">
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.2 0.2 0.2</size>
+            </box>
+          </geometry>
+        </visual>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.2 0.2 0.2</size>
+            </box>
+          </geometry>
+        </collision>
+      </link>
+    </model>
+  </model>
+</sdf>

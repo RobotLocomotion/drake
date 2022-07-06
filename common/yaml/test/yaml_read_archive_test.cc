@@ -19,6 +19,8 @@ namespace yaml {
 namespace test {
 namespace {
 
+using internal::YamlReadArchive;
+
 // TODO(jwnimmer-tri) Add a test case for reading NonPodVectorStruct.
 // TODO(jwnimmer-tri) Add a test case for reading OuterWithBlankInner.
 // TODO(jwnimmer-tri) Add a test case for reading StringStruct.

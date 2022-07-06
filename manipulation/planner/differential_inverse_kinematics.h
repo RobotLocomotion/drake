@@ -1,9 +1,9 @@
 #pragma once
 
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <utility>

@@ -17,11 +17,14 @@ def _impl(repo_ctx):
     if os_result.is_macos:
         # On macOS, we use fmt from homebrew via pkg-config.
         error = setup_pkg_config_repository(repo_ctx).error
-    elif os_result.is_manylinux:
+    elif os_result.is_manylinux or os_result.is_macos_wheel:
         # Compile from downloaded github sources.
         error = setup_github_repository(repo_ctx).error
-    elif os_result.ubuntu_release == "20.04":
-        # On Ubuntu 20.04 we're using the host-provided spdlog which uses a
+    elif os_result.is_ubuntu and os_result.ubuntu_release == "22.04":
+        # On Ubuntu Jammy, we use the host-provided fmt via pkg-config.
+        error = setup_pkg_config_repository(repo_ctx).error
+    elif os_result.is_ubuntu and os_result.ubuntu_release == "20.04":
+        # On Ubuntu Focal, we're using the host-provided spdlog which uses a
         # bundled fmt, so we'll have to reuse that same bundle for ourselves.
         repo_ctx.symlink("/usr/include/spdlog/fmt/bundled", "include/fmt")
         repo_ctx.symlink("include/fmt/LICENSE.rst", "LICENSE.rst")

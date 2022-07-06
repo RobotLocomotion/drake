@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# Internal script to build a Drake from which a wheel will be created.
+# Docker (Linux) only.
+
 set -eu -o pipefail
 
-cd /drake
+cd /opt/drake-wheel-build/drake
 
 git apply < /image/pip-drake.patch
 

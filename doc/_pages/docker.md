@@ -20,8 +20,8 @@ Drake binary releases incorporate a pre-compiled version of
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
-Drake's docker images do not support the MOSEK™ nor Gurobi solvers. To use
-MOSEK™ or Gurobi, you will need to [build Drake from source](/from_source.html).
+Drake's docker images do not support the Gurobi solver. To use
+Gurobi, you will need to [build Drake from source](/from_source.html).
 
 ## Stable Releases
 
@@ -38,9 +38,9 @@ published X.Y.Z version numbers.
 
 The docker tags for Drake's stable releases are spelled like:
 
-* ``bionic-X.Y.Z`` for the Ubuntu 18.04 image of Drake vX.Y.Z.
 * ``focal-X.Y.Z`` for the Ubuntu 20.04 image of Drake vX.Y.Z.
-* ``X.Y.Z`` is a synonym for one of the above, currently bionic-X.Y.Z.
+* ``X.Y.Z`` is a synonym for some arbitrary Ubuntu base version
+  (currently 20.04 "Focal").
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 

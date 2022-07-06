@@ -4,7 +4,7 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 
 namespace drake {
 namespace solvers {
@@ -47,7 +47,7 @@ using IndeterminatesRefList = std::list<Eigen::Ref<const VectorXIndeterminate>>;
  * Concatenates each element in \p var_list into a single Eigen vector of
  * indeterminates, returns this concatenated vector.
  */
-VectorXIndeterminate ConcatenateIndeterminatesRefList(
+[[nodiscard]] VectorXIndeterminate ConcatenateIndeterminatesRefList(
     const IndeterminatesRefList& var_list);
 
 }  // end namespace solvers

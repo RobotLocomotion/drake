@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 
 namespace drake {
 namespace examples {
@@ -30,6 +31,25 @@ GTEST_TEST(AcrobotPlantTest, ImplicitTimeDerivatives) {
   // here to permit this to be done symbolically, which is not the most
   // accurate method. 100ε (~2e-14) should be achievable.
   EXPECT_LT(residual.lpNorm<Eigen::Infinity>(), 100*kEpsilon);
+}
+
+// Ensure that DoCalcTimeDerivatives succeeds even if the input port is
+// disconnected.
+GTEST_TEST(AcrobotPlantTest, NoInput) {
+  const AcrobotPlant<double> plant;
+  auto context = plant.CreateDefaultContext();
+
+  DRAKE_EXPECT_NO_THROW(plant.EvalTimeDerivatives(*context));
+}
+
+GTEST_TEST(AcrobotPlantTest, SetMitAcrobotParameters) {
+  const AcrobotPlant<double> plant;
+  auto context = plant.CreateDefaultContext();
+  auto& parameters = plant.get_mutable_parameters(context.get());
+  const double m1_old = parameters.m1();
+  plant.SetMitAcrobotParameters(&parameters);
+  const double m1_mit = parameters.m1();
+  EXPECT_NE(m1_old, m1_mit);
 }
 
 }  // namespace

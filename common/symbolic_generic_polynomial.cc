@@ -5,9 +5,9 @@
 #include <utility>
 
 #include "drake/common/symbolic.h"
-#define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
-#include "drake/common/symbolic_expression_cell.h"
-#undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
+#define DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
+#include "drake/common/symbolic/expression/expression_cell.h"
+#undef DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
 
 using std::accumulate;
 using std::make_pair;
@@ -20,6 +20,16 @@ namespace drake {
 namespace symbolic {
 namespace {
 using MonomialBasisMapType = GenericPolynomial<MonomialBasisElement>::MapType;
+
+// Note that `.Expand()` is needed in the following kinds of cases:
+//     e1 := (a + b)²
+//     e2 := - (a² + 2ab + b²)
+// Without expanding the terms, they would not report as EqualTo.
+bool AreEqualAfterExpanding(const Expression& e1, const Expression& e2) {
+  const Expression& e1_expanded = e1.is_expanded() ? e1 : e1.Expand();
+  const Expression& e2_expanded = e2.is_expanded() ? e2 : e2.Expand();
+  return e1_expanded.EqualTo(e2_expanded);
+}
 
 // Helper function to add coeff * m to a map (BasisElement→ Expression).
 // Used to implement DecomposePolynomialVisitor::VisitAddition and
@@ -35,14 +45,7 @@ void DoAddProduct(
   if (it != map->end()) {
     // basis_element ∈ dom(map)
     Expression& existing_coeff = it->second;
-    // Note that `.Expand()` is needed in the following line. For example,
-    // consider the following case:
-    //     c1 := (a + b)²
-    //     c2 := - (a² + 2ab + b²)
-    // Without expanding the terms, we have `is_zero(c1 + c2) = false` while
-    // it's clear that c1 + c2 is a zero polynomial. Using `Expand()` help us
-    // identify those cases.
-    if (is_zero(existing_coeff.Expand() + coeff.Expand())) {
+    if (AreEqualAfterExpanding(-coeff, existing_coeff)) {
       map->erase(it);
     } else {
       existing_coeff += coeff;

@@ -59,6 +59,8 @@ from pydrake.math import (
     RotationMatrix,
 )
 from pydrake.multibody.meshcat import (
+    _HydroelasticContactVisualizer,
+    _HydroelasticContactVisualizerItem,
     _PointContactVisualizer,
     _PointContactVisualizerItem,
     ContactVisualizerParams,
@@ -175,11 +177,19 @@ class _ContactApplet:
         # Add point visualization.
         params = ContactVisualizerParams()
         params.prefix = "/CONTACT_RESULTS/point"
-        self._helper = _PointContactVisualizer(meshcat, params)
+        self._point_helper = _PointContactVisualizer(meshcat, params)
+
+        # Add hydroelastic visualization.
+        params = ContactVisualizerParams()
+        params.prefix = "/CONTACT_RESULTS/hydroelastic"
+        self._hydro_helper = _HydroelasticContactVisualizer(meshcat, params)
 
     def on_contact_results(self, message):
         """Handler for lcmt_contact_results_for_viz. Note that only point
-        contacts are shown so far; hydroelastic contacts are not shown."""
+           hydroelastic contact force and moment vectors are shown; contact
+           surface and pressure are not shown."""
+
+        # Handle point contact pairs
         viz_items = []
         for lcm_item in message.point_pair_contact_info:
             viz_items.append(_PointContactVisualizerItem(
@@ -187,7 +197,18 @@ class _ContactApplet:
                 body_B=lcm_item.body2_name,
                 contact_force=lcm_item.contact_force,
                 contact_point=lcm_item.contact_point))
-        self._helper.Update(viz_items)
+        self._point_helper.Update(viz_items)
+
+        # Handle hydroelastic contact pairs
+        viz_items = []
+        for lcm_item in message.hydroelastic_contacts:
+            viz_items.append(_HydroelasticContactVisualizerItem(
+                body_A=lcm_item.body1_name,
+                body_B=lcm_item.body2_name,
+                centroid_W=lcm_item.centroid_W,
+                force_C_W=lcm_item.force_C_W,
+                moment_C_W=lcm_item.moment_C_W))
+        self._hydro_helper.Update(viz_items)
 
 
 class Meldis:
@@ -197,10 +218,13 @@ class Meldis:
     Offers a MeshCat vizualization server that listens for and draws Drake's
     legacy LCM vizualization messages.
 
+    If the meshcat_host parameter is not supplied, 'localhost' will be used by
+    default.
+
     Refer to the pydrake.visualization.meldis module docs for details.
     """
 
-    def __init__(self, *, meshcat_port=None):
+    def __init__(self, *, meshcat_host=None, meshcat_port=None):
         # Bookkeeping for update throtting.
         self._last_update_time = time.time()
 
@@ -327,6 +351,11 @@ def _main():
     configure_logging()
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--host", action="store",
+        help="The http listen host for MeshCat. If none is given, 'localhost'"
+        " will be used by default. In any case, the result will be printed to"
+        " the console.")
+    parser.add_argument(
         "-p", "--port", action="store", metavar="NUM", type=int,
         help="The http listen port for MeshCat. If none is given, a default"
         " will be chosen and printed to the console.")
@@ -343,7 +372,7 @@ def _main():
         help="When no web browser has been connected for this many seconds,"
         " this program will automatically exit. Set to 0 to run indefinitely.")
     args = parser.parse_args()
-    meldis = Meldis(meshcat_port=args.port)
+    meldis = Meldis(meshcat_host=args.host, meshcat_port=args.port)
     if args.browser_new is not None:
         url = meldis.meshcat.web_url()
         webbrowser.open(url=url, new=args.browser_new)

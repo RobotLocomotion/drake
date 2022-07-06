@@ -6,11 +6,15 @@
 
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/make_mesh_for_deformable.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace {
+
+using math::RigidTransformd;
+using std::make_unique;
 
 // Create two instances of the given Properties type with different properties:
 // ('group1', 'value') in the first, ('group2', 'value') in the second.
@@ -129,6 +133,40 @@ GTEST_TEST(InternalGeometryTest, RemoveRole) {
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_FALSE(geometry.has_role(Role::kPerception));
+}
+
+GTEST_TEST(InternalGeometryTest, DeformableMeshedGeometry) {
+  SourceId source_id = SourceId::get_new_id();
+  Sphere sphere(1.0);
+  constexpr double kRezHint = .5;
+  FrameId frame_id = FrameId::get_new_id();
+  GeometryId deformable_geometry_id = GeometryId::get_new_id();
+  std::string name = "sphere";
+  VolumeMesh<double> mesh = MakeMeshForDeformable(sphere, kRezHint);
+
+  // Confirms that a meshed geometry can be constructed.
+  InternalGeometry geometry(source_id, make_unique<Sphere>(sphere), frame_id,
+                            deformable_geometry_id, name, kRezHint);
+  const VolumeMesh<double>* reference_mesh = geometry.reference_mesh();
+  ASSERT_NE(reference_mesh, nullptr);
+  EXPECT_TRUE(mesh.Equal(*reference_mesh));
+
+  // Deformable geometry doesn't have the notion of "fixed-in" frame. Those
+  // values are set to identity.
+  EXPECT_TRUE(geometry.X_FG().IsExactlyIdentity());
+  EXPECT_TRUE(geometry.X_PG().IsExactlyIdentity());
+  // Meshed geometry is never anchored.
+  EXPECT_TRUE(geometry.is_dynamic());
+  // Meshed geometry is always deformable.
+  EXPECT_TRUE(geometry.is_deformable());
+
+  GeometryId rigid_geometry_id = GeometryId::get_new_id();
+  InternalGeometry rigid_geometry(source_id, make_unique<Sphere>(sphere),
+                                  frame_id, rigid_geometry_id, name,
+                                  RigidTransformd());
+  EXPECT_EQ(rigid_geometry.reference_mesh(), nullptr);
+  // Non-meshed geometry is not deformable.
+  EXPECT_FALSE(rigid_geometry.is_deformable());
 }
 
 }  // namespace

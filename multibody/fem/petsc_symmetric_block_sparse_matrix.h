@@ -12,6 +12,15 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
+// The result from PetscSymmetricBlockSparseMatrix::Solve() used to report the
+// success or failure of the solver.
+enum class PetscSolverStatus {
+  // Successful computation.
+  kSuccess = 0,
+  // The solver could not find a solution due to an internal failure.
+  kFailure = 1,
+};
+
 /* A symmetric block sparse matrix data structure that uses PETSc for storage
  and linear algebra operations. It provides supports for the inverse operator,
  i.e. one can solve for A*x = b where A is this matrix. It also supports
@@ -94,19 +103,24 @@ class PetscSymmetricBlockSparseMatrix {
    @warn The compatibility of the solver and preconditioner type with the
    problem at hand is not checked. Callers need to be careful to choose the
    reasonable combination of solver and preconditioner given the type of matrix.
-   @pre b.size() == A.rows()
+   If the solver fails, the value in x will be undefined.
+   @pre b.size() == A.rows().
+   @pre x != nullptr and x->size() == b.size().
    @note The matrix/preconditioner will be refactored upon successive call to
    this method even if the matrix hasn't changed.
    @pre Matrix must be assembled. See AssembleIfNecessary(). */
-  VectorX<double> Solve(SolverType solver_type,
-                        PreconditionerType preconditioner_type,
-                        const VectorX<double>& b) const;
+  [[nodiscard]] PetscSolverStatus Solve(SolverType solver_type,
+                                        PreconditionerType preconditioner_type,
+                                        const VectorX<double>& b,
+                                        EigenPtr<VectorX<double>> x) const;
 
-  /* Similar to Solve(), but writes the result in `b`.
+  /* Similar to Solve(), but writes the solution, x, in `b` if the solve is
+   successful. The value in `b` is undefined if the solve fails.
+   @pre b.size() == A.rows().
    @pre Matrix must be assembled. See AssembleIfNecessary(). */
-  void SolveInPlace(SolverType solver_type,
-                    PreconditionerType preconditioner_type,
-                    EigenPtr<VectorX<double>> b) const;
+  [[nodiscard]] PetscSolverStatus SolveInPlace(
+      SolverType solver_type, PreconditionerType preconditioner_type,
+      EigenPtr<VectorX<double>> b_in_x_out) const;
 
   /* Sets all blocks to zeros while maintaining the sparsity pattern. */
   void SetZero();

@@ -26,6 +26,10 @@ Drake is using:
   https://docs.bazel.build/versions/master/be/workspace.html
   https://docs.bazel.build/versions/master/skylark/repository_rules.html
 
+Per the [Stability Guidelines](https://drake.mit.edu/stable.html), externals
+named as "internal" or otherwise documented to be "internal use only" are
+not subject to any deprecation guarantees.
+
 # Semi-automated monthly upgrades
 
 Drake maintainers will use the ``bazel-bin/tools/workspace/new_release`` tool
@@ -99,10 +103,23 @@ https://drake.mit.edu/jenkins.html#scheduling-an-on-demand-build
 
 Once the macOS build passes, assign the pull request for review.
 
-If any of the changes were out of the ordinary (i.e., if they were anything
-more than just editing the version numbers and checksums), please be sure
-that those changes are explained in the pull request overview text, so that
-your reviewer(s) can understand the context and/or reasoning behind them.
+For any non-trivial changes (i.e., changes that go beyond changing version
+numbers, checksums, or trivial fixups to patch files or code spelling), do not
+attempt to fix the problems just because you are accountable for the routine
+upgrade procedure every month. As a rule of thumb, if you need to spend more
+than 5-10 minutes on an upgrade, you should defer the work to a separate issue:
+
+* open an issue about the need for an upgrade of that one specific external;
+
+* assign it to the feature owner associated with that external (to find out who
+  that is, ask for help in the drake developers ``#build`` slack channel); and
+
+* omit it from the monthly upgrade pull request.
+
+The main objective of the monthly upgrade is to ensure that we stay on top of
+problematic changes from upstream. If we discover such problems, we want to
+bring them to the attention of the feature owner; their steering should provide
+the most efficient path to resolve the problem.
 
 # Changing the version of third-party software manually
 
@@ -208,6 +225,13 @@ difficult to support on multiple platforms.
 
 TODO(jwnimmer-tri) Add documentation here about how to validate that the new
 software's license is acceptable to use within Drake.
+
+When adding a new external, decide whether it will be covered by our
+[Stability Guidelines](https://drake.mit.edu/stable.html). Broadly speaking,
+dependencies that come from the host operating system can be covered as
+stable, but dependencies that we compile from source code should be internal.
+If the new dependency should be in internal, name it like "foo_internal" (not
+just "foo") throughout all of the below.
 
 Referring to some new third-party software as "foo", the steps to incorporate
 it into Drake are roughly:

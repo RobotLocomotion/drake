@@ -43,7 +43,9 @@ drake_cc_googletest(
 )
 
 install_data(
-    extra_prod_models = _OBJS,
+    extra_prod_models = _OBJS + [
+        "README.md",
+    ],
 )
 
 add_lint_tests()

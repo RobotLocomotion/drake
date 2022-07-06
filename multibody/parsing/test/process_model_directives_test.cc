@@ -19,6 +19,7 @@ namespace {
 
 using std::optional;
 using Eigen::Vector3d;
+using drake::geometry::GeometryId;
 using drake::math::RigidTransformd;
 using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::Frame;
@@ -37,6 +38,35 @@ std::unique_ptr<Parser> make_parser(MultibodyPlant<double>* plant) {
       std::string(kTestDir) + "/package.xml");
   parser->package_map().AddPackageXml(abspath_xml.string());
   return parser;
+}
+
+using CollisionPair = SortedPair<std::string>;
+void VerifyCollisionFilters(
+    const geometry::SceneGraph<double>& scene_graph,
+    const std::set<CollisionPair>& expected_filters) {
+  const auto& inspector = scene_graph.model_inspector();
+  // Get the collision geometry ids.
+  const std::vector<GeometryId> all_ids = inspector.GetAllGeometryIds();
+  geometry::GeometrySet id_set(all_ids);
+  auto collision_id_set = inspector.GetGeometryIds(
+      id_set, geometry::Role::kProximity);
+  std::vector<GeometryId> ids(collision_id_set.begin(),
+                              collision_id_set.end());
+  const int num_links = ids.size();
+  for (int m = 0; m < num_links; ++m) {
+    const std::string& m_name = inspector.GetName(ids[m]);
+    for (int n = m + 1; n < num_links; ++n) {
+      const std::string& n_name = inspector.GetName(ids[n]);
+      CollisionPair names{m_name, n_name};
+      SCOPED_TRACE(fmt::format("{} vs {}", names.first(), names.second()));
+      auto contains =
+          [&expected_filters](const CollisionPair& key) {
+            return expected_filters.count(key) > 0;
+          };
+      EXPECT_EQ(inspector.CollisionFiltered(ids[m], ids[n]),
+                contains(names));
+    }
+  }
 }
 
 // Simple smoke test of the most basic model directives.
@@ -60,6 +90,25 @@ GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
   // should at least expect that our named ones are present.
   EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame"));
   EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame_explicit"));
+}
+
+// Simple smoke test of the simpler function signature.
+GTEST_TEST(ProcessModelDirectivesTest, SugarSmokeTest) {
+  const ModelDirectives station_directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.yaml"));
+
+  MultibodyPlant<double> plant(0.0);
+  std::vector<ModelInstanceInfo> added_models =
+      ProcessModelDirectives(station_directives, make_parser(&plant).get());
+  plant.Finalize();
+
+  // Check that the directives were loaded.
+  EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame"));
+
+  // Check that the added models were returned.
+  ASSERT_EQ(added_models.size(), 2);
+  EXPECT_EQ(added_models[0].model_name, "simple_model");
+  EXPECT_EQ(added_models[1].model_name, "extra_model");
 }
 
 // Acceptance tests for the ModelDirectives name scoping, including acceptance
@@ -194,6 +243,38 @@ GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
       .CalcPoseInWorld(*context)
       .translation()
       .isApprox(Vector3d(2, 4, 6)));
+}
+
+// Test collision filter groups in ModelDirectives.
+GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/collision_filter_group.yaml"));
+
+  // Ensure that we have a SceneGraph present so that we test relevant visual
+  // pieces.
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.);
+  ProcessModelDirectives(directives, &plant,
+                         nullptr, make_parser(&plant).get());
+
+  // Make sure the plant is not finalized such that the Finalize() default
+  // filtering has not taken into effect yet. This guarantees that the
+  // collision filtering is applied due to the collision filter group parsing.
+  ASSERT_FALSE(plant.is_finalized());
+
+  std::set<CollisionPair> expected_filters = {
+    // From group 'across_models'.
+    {"model1::collision",             "model2::collision"},
+    // From group 'nested_members'.
+    {"model1::collision",             "nested::sub_model2::collision"},
+    // From group 'nested_group'.
+    {"model3::collision",             "nested::sub_model1::collision"},
+    {"model3::collision",             "nested::sub_model2::collision"},
+    // From group 'across_sub_models'.
+    {"nested::sub_model1::collision", "nested::sub_model2::collision"},
+  };
+  VerifyCollisionFilters(scene_graph, expected_filters);
 }
 
 // Make sure we have good error messages.

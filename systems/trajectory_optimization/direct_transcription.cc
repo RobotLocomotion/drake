@@ -327,8 +327,10 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
     // Verify that the input port is not abstract valued.
     if (input_port_->get_data_type() == PortDataType::kAbstractValued) {
       throw std::logic_error(
-          "Port requested for differentiation is abstract, and differentiation "
-          "of abstract ports is not supported.");
+          "The specified input port is abstract-valued, but "
+          "DirectTranscription only supports vector-valued input ports.  Did "
+          "you perhaps forget to pass a non-default `input_port_index` "
+          "argument?");
     }
 
     // Provide a fixed value for the input port and keep an alias around.

@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <fmt/format.h>
@@ -105,6 +106,8 @@ class UrdfParser {
         node, attribute_name, val,
         diagnostic_.MakePolicyForNode(node));
   }
+  void ParseMechanicalReduction(const XMLElement& node);
+
 
   void Warning(const XMLNode& location, std::string message) const {
     diagnostic_.Warning(location, std::move(message));
@@ -112,6 +115,17 @@ class UrdfParser {
 
   void Error(const XMLNode& location, std::string message) const {
     diagnostic_.Error(location, std::move(message));
+  }
+
+  // Warn about documented URDF elements ignored by Drake.
+  void WarnUnsupportedElement(const XMLElement& node, const std::string& tag) {
+    diagnostic_.WarnUnsupportedElement(node, tag);
+  }
+
+  // Warn about documented URDF attributes ignored by Drake.
+  void WarnUnsupportedAttribute(const XMLElement& node,
+                                const std::string& attribute) {
+    diagnostic_.WarnUnsupportedAttribute(node, attribute);
   }
 
  private:
@@ -187,6 +201,9 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
       drake_ignore == std::string("true")) {
     return;
   }
+  // Seen in the ROS urdfdom XSD Schema.
+  // See https://github.com/ros/urdfdom/blob/dbecca0/xsd/urdf.xsd
+  WarnUnsupportedAttribute(*node, "type");
 
   std::string body_name;
   if (!ParseStringAttribute(node, "name", &body_name)) {
@@ -294,10 +311,11 @@ void UrdfParser::ParseCollisionFilterGroup(XMLElement* node) {
                          attribute_name, &attribute_value);
     return attribute_value == std::string("true") ? true : false;
   };
-  ParseCollisionFilterGroupCommon(model_instance_, node, w_.plant,
-                                  next_child_element, next_sibling_element,
-                                  has_attribute, get_string_attribute,
-                                  get_bool_attribute, get_string_attribute);
+  ParseCollisionFilterGroupCommon(
+      diagnostic_.MakePolicyForNode(node), model_instance_, node, w_.plant,
+      w_.collision_resolver, next_child_element, next_sibling_element,
+      has_attribute, get_string_attribute, get_bool_attribute,
+      get_string_attribute);
 }
 
 // Parses a joint URDF specification to obtain the names of the joint, parent
@@ -421,6 +439,9 @@ void UrdfParser::ParseJoint(
       drake_ignore == std::string("true")) {
     return;
   }
+  WarnUnsupportedElement(*node, "calibration");
+  WarnUnsupportedElement(*node, "mimic");
+  WarnUnsupportedElement(*node, "safety_controller");
 
   // Parses the parent and child link names.
   std::string name, type, parent_name, child_name;
@@ -549,9 +570,32 @@ void UrdfParser::ParseJoint(
   joint_effort_limits->emplace(name, effort);
 }
 
+void UrdfParser::ParseMechanicalReduction(const XMLElement& node) {
+  const XMLElement* child = node.FirstChildElement("mechanicalReduction");
+  if (!child) { return; }
+  const char* text = child->GetText();
+  if (!text) { return; }
+  std::vector<double> values = ConvertToDoubles(text);
+  if (values.size() == 1 && values[0] == 1) { return; }
+  Warning(*child, fmt::format(
+              "A '{}' element contains a mechanicalReduction element with a"
+              " value '{}' other than the default of 1. MultibodyPlant does"
+              " not currently support non-default mechanical reductions.",
+              node.Name(), text));
+}
+
 void UrdfParser::ParseTransmission(
     const JointEffortLimits& joint_effort_limits,
     XMLElement* node) {
+  WarnUnsupportedElement(*node, "leftActuator");
+  WarnUnsupportedElement(*node, "rightActuator");
+  WarnUnsupportedElement(*node, "flexJoint");
+  WarnUnsupportedElement(*node, "rollJoint");
+  WarnUnsupportedElement(*node, "gap_joint");
+  WarnUnsupportedElement(*node, "passive_joint");
+  WarnUnsupportedElement(*node, "use_simulated_gripper_joint");
+  ParseMechanicalReduction(*node);
+
   // Determines the transmission type.
   std::string type;
   XMLElement* type_node = node->FirstChildElement("type");
@@ -581,6 +625,8 @@ void UrdfParser::ParseTransmission(
     Error(*node, "Transmission is missing an actuator element.");
     return;
   }
+  ParseMechanicalReduction(*actuator_node);
+  // `actuator/hardwareInterface` child tags are silently ignored.
 
   std::string actuator_name;
   if (!ParseStringAttribute(actuator_node, "name", &actuator_name)) {
@@ -594,6 +640,8 @@ void UrdfParser::ParseTransmission(
     Error(*node, "Transmission is missing a joint element.");
     return;
   }
+  // `joint/hardwareInterface` child tags are silently ignored.
+
 
   std::string joint_name;
   if (!ParseStringAttribute(joint_node, "name", &joint_name)) {
@@ -751,6 +799,9 @@ std::optional<ModelInstanceIndex> UrdfParser::Parse() {
     Error(*xml_doc_, "URDF does not contain a robot tag.");
     return {};
   }
+  // See https://github.com/ros/urdfdom/blob/dbecca0/urdf_parser/src/model.cpp#L124-L131
+  WarnUnsupportedAttribute(*node, "version");
+  // <gazebo> child tags are silently ignored.
 
   std::string model_name = model_name_;
   if (model_name.empty() && !ParseStringAttribute(node, "name", &model_name)) {

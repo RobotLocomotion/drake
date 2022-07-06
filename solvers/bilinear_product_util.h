@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/solvers/decision_variable.h"
 
 namespace drake {

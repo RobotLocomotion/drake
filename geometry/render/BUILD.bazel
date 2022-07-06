@@ -11,16 +11,28 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_package_library(
+# TODO(jwnimmer-tri) Along with deprecation removals on 2022-09-01, switch
+# this back to drake_cc_package_library and just use `name = "render"`.
+drake_cc_library(
+    name = "render_unpolluted",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":render_camera",
+        ":render_engine",
+        ":render_label",
+    ],
+)
+
+# TODO(jwnimmer-tri) Remove this along with deprecation on 2022-09-01.
+drake_cc_library(
     name = "render",
+    tags = ["nolint"],
     visibility = ["//visibility:public"],
     deps = [
         ":render_camera",
         ":render_engine",
         ":render_engine_vtk",
-        ":render_engine_vtk_base",
         ":render_label",
-        ":vtk_util",
     ],
 )
 
@@ -56,56 +68,56 @@ drake_cc_library(
     ],
 )
 
-# The VTK-OpenGL-based render engine implementation.
+# TODO(jwnimmer-tri) Remove this along with deprecation on 2022-09-01.
+_STUB_HDRS = [
+    "render_engine_vtk.h",
+    "render_engine_vtk_base.h",
+    "render_engine_vtk_factory.h",
+    "vtk_util.h",
+]
+
+# TODO(jwnimmer-tri) Remove this along with deprecation on 2022-09-01.
+[
+    genrule(
+        name = "_cp_" + hdr,
+        srcs = ["stub/" + hdr],
+        outs = [hdr],
+        cmd = "cp $< $@",
+        tags = ["nolint"],
+        visibility = ["//visibility:private"],
+    )
+    for hdr in _STUB_HDRS
+]
+
+# TODO(jwnimmer-tri) Remove this along with deprecation on 2022-09-01.
 drake_cc_library(
     name = "render_engine_vtk",
-    srcs = [
-        "render_engine_vtk.cc",
-        "render_engine_vtk_factory.cc",
-    ],
-    hdrs = [
+    hdrs = _STUB_HDRS,
+    install_hdrs_exclude = [
+        # Since these directly use VTK headers, leave them out of the install.
         "render_engine_vtk.h",
-        "render_engine_vtk_factory.h",
+        "render_engine_vtk_base.h",
+        "vtk_util.h",
     ],
-    # render_engine_vtk.h directly pulls in VTK headers; leave it out of the
-    # install.
-    install_hdrs_exclude = ["render_engine_vtk.h"],
+    tags = ["nolint"],
     deps = [
-        ":render_engine",
-        ":render_engine_vtk_base",
-        ":vtk_util",
-        "//common",
-        "//geometry/render/shaders:depth_shaders",
-        "//systems/sensors:color_palette",
-        "@eigen",
-        "@vtk//:vtkIOGeometry",
-        "@vtk//:vtkIOImage",
-        "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOpenGL2",
+        "//geometry/render_vtk:factory",
+        "//geometry/render_vtk:internal_render_engine_vtk",
+        "//geometry/render_vtk:internal_render_engine_vtk_base",
+        "//geometry/render_vtk:internal_vtk_util",
+        "//geometry/render_vtk:render_engine_vtk_params",
     ],
 )
 
-# Common functionality for VTK-based render engine implementations.
+# TODO(jwnimmer-tri) Remove this along with deprecation on 2022-09-01.
 drake_cc_library(
-    name = "render_engine_vtk_base",
-    srcs = [
-        "render_engine_vtk_base.cc",
-    ],
-    hdrs = [
-        "render_engine_vtk_base.h",
-    ],
-    # render_engine_vtk_base.h directly pulls in VTK headers; leave it out of
-    # the install.
-    install_hdrs_exclude = [
-        "render_engine_vtk_base.h",
-    ],
-    visibility = ["//visibility:private"],
+    name = "render_engine_vtk_factory",
+    hdrs = ["render_engine_vtk_factory.h"],
+    tags = ["nolint"],
+    visibility = ["//:__subpackages__"],
     deps = [
-        "//common:scope_exit",
-        "//geometry:geometry_roles",
-        "//geometry:shape_specification",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkFiltersSources",
+        "//geometry/render_vtk:factory",
+        "//geometry/render_vtk:render_engine_vtk_params",
     ],
 )
 
@@ -117,24 +129,6 @@ drake_cc_library(
         "//common:essential",
         "//common:hash",
         "//systems/sensors:image",
-    ],
-)
-
-drake_cc_library(
-    name = "vtk_util",
-    srcs = ["vtk_util.cc"],
-    hdrs = ["vtk_util.h"],
-    # We must not expose `#include <vtk/...>` in any of our installed headers;
-    # vtk_util.h is only included internally within this package.
-    install_hdrs_exclude = ["vtk_util.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        "//common:essential",
-        "//math:geometric_transform",
-        "@eigen",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonTransforms",
-        "@vtk//:vtkFiltersSources",
     ],
 )
 
@@ -171,21 +165,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "render_engine_vtk_test",
-    data = [
-        ":test_models",
-    ],
-    tags = vtk_test_tags(),
-    deps = [
-        ":render_engine_vtk",
-        "//common:find_resource",
-        "//common/test_utilities",
-        "//geometry/test_utilities:dummy_render_engine",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_googletest(
     name = "render_label_test",
     deps = [
         ":render_label",
@@ -195,8 +174,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "vtk_util_test",
-    deps = [":vtk_util"],
+    name = "deprecation_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
+    deps = [
+        ":render",
+    ],
 )
 
 add_lint_tests()

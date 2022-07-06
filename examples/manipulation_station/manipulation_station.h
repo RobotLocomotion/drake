@@ -437,6 +437,15 @@ class ManipulationStation : public systems::Diagram<T> {
 
   /// Returns a map from camera name to X_WCameraBody for all the static
   /// (rigidly attached to the world body) cameras that have been registered.
+  ///
+  /// <!-- TODO(EricCousineau-TRI) To simplify (and possibly modularize) this
+  /// class, frame kinematics should be handled by MbP frames, since that's
+  /// where they have the most relevance. Change in workflow would be:
+  /// - Add camera frame first to the tree;
+  /// - Add camera directly to frame (perhaps without offset, per #10247);
+  /// - Change this function to return frames, so that we aren't restricted to
+  ///   fixed-scene cameras.
+  /// -->
   std::map<std::string, math::RigidTransform<double>>
   GetStaticCameraPosesInWorld() const;
 

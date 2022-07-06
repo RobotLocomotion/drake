@@ -1,6 +1,5 @@
 #include "drake/multibody/inverse_kinematics/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
-#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace multibody {

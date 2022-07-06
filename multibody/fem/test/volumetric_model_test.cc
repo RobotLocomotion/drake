@@ -67,11 +67,10 @@ class VolumetricModelTest : public ::testing::Test {
   static constexpr double kBoxLength = 0.1;
 
   /* Makes a box and subdivides it into 6 tetrahedra. */
-  template <typename T>
-  geometry::VolumeMesh<T> MakeBoxTetMesh() {
+  geometry::VolumeMesh<double> MakeBoxTetMesh() {
     geometry::Box box(kBoxLength, kBoxLength, kBoxLength);
-    geometry::VolumeMesh<T> mesh =
-        geometry::internal::MakeBoxVolumeMesh<T>(box, kBoxLength);
+    geometry::VolumeMesh<double> mesh =
+        geometry::internal::MakeBoxVolumeMesh<double>(box, kBoxLength);
     DRAKE_DEMAND(mesh.num_elements() == 6);
     return mesh;
   }
@@ -80,8 +79,8 @@ class VolumetricModelTest : public ::testing::Test {
    `fem_model`. */
   template <typename FemModelType>
   void AddBoxToModel(FemModelType* fem_model) {
+    geometry::VolumeMesh<double> mesh = MakeBoxTetMesh();
     using T = typename FemModelType::T;
-    geometry::VolumeMesh<T> mesh = MakeBoxTetMesh<T>();
     const typename FemModelType::ConstitutiveModel constitutive_model(
         kYoungsModulus, kPoissonRatio);
     const DampingModel<T> damping_model(kMassDamping, kStiffnessDamping);
@@ -188,7 +187,7 @@ TEST_F(VolumetricModelTest, MultipleMesh) {
   EXPECT_EQ(fem_state->num_dofs(), 2 * kNumDofs);
 
   /* Add two more meshes to the model using a the same builder. */
-  geometry::VolumeMesh<AutoDiffXd> mesh = MakeBoxTetMesh<AutoDiffXd>();
+  geometry::VolumeMesh<double> mesh = MakeBoxTetMesh();
   const AutoDiffConstitutiveModel constitutive_model(kYoungsModulus,
                                                      kPoissonRatio);
   const DampingModel<AutoDiffXd> damping_model(kMassDamping, kStiffnessDamping);

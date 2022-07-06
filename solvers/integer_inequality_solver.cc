@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <iostream>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -81,8 +80,13 @@ std::vector<ColumnType> ProcessInputs(const Eigen::MatrixXi& A,
  * the Cartesian product (v, z) for all v ∈ V */
 SolutionList CartesianProduct(const SolutionList& V, int z) {
   SolutionList cart_products(V.rows(), V.cols() + 1);
-  cart_products << V, SolutionList::Constant(V.rows(), 1, z);
-
+  if (V.rows() > 0) {
+    if (V.cols() == 0) {
+      cart_products.setConstant(z);
+    } else {
+      cart_products << V, SolutionList::Constant(V.rows(), 1, z);
+    }
+  }
   return cart_products;
 }
 

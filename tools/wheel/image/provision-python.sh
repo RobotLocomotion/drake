@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Internal script to install Python and required Python packages.
+# Docker (Linux) only.
+
 set -eu -o pipefail
 
 readonly PYTHON=python${1:-3}
@@ -12,6 +15,7 @@ apt-get -y install --no-install-recommends \
 ${PYTHON} -m venv /usr/local
 
 pip install \
+    lxml \
     pyyaml \
     semantic-version \
     setuptools \

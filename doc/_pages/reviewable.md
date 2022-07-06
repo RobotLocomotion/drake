@@ -94,7 +94,7 @@ tag ``release notes: breaking change`` to any PR that makes a breaking change
 to a [Stable API](/stable.html) without a deprecation period.
 
 **release notes: newly deprecated**<br/>
-&nbsp;and<br/>
+&nbsp;or<br/>
 **release notes: removal of deprecated**
 
 Commits that change deprecations receive special attention in the release notes.
@@ -104,10 +104,23 @@ To aid the human editor in making that determination, you must add the tag
 code whose date has passed.  Removing deprecated code is not considered to be a
 breaking change, so do not add ``release notes: breaking change``.
 
-**release notes: yes**
+**release notes: feature**<br/>
+&nbsp;or<br/>
+**release notes: fix**
 
-For commits that do not meet any of the above criteria, you must add the tag
-``release notes: yes`` to indicate that you've considered the question.
+Commits that implement a feature or a fix must be labeled with the
+corresponding tag, either ``release notes: feature`` or ``release notes: fix``
+but never both at once; choose whichever one is the best match.
+
+**When combining release notes labels:**
+
+- ``none`` must not be combined with any other label.
+- ``breaking change`` must be combined with either ``feature`` or ``fix``.
+  If there were changes to deprecations, those labels should also be added.
+- ``newly deprecated`` will usually be combined with ``feature`` or ``fix``,
+  because usually the deprecation is concurrent with the addition of its
+  replacement or due to some other new change. Only if the deprecation is the
+  _sole_ content of the commit will ``newly deprecated`` be the only label.
 
 # Joint Feature and Platform review
 

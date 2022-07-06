@@ -264,9 +264,19 @@ const auto& GetElementByName(
   // If the name is non-existent, then say so, whether or not a specific model
   // instance was requested.
   if (lower == upper) {
+    std::vector<std::string_view> all_keys;
+    all_keys.reserve(name_to_index.size());
+    for (auto it = name_to_index.begin(),
+             end = name_to_index.end();
+         it != end;
+         it = name_to_index.equal_range(it->first).second) {
+      all_keys.push_back(it->first.view());
+    }
+    std::sort(all_keys.begin(), all_keys.end());
     throw std::logic_error(fmt::format(
-        "Get{}ByName(): There is no {} named '{}' anywhere in the model.",
-        element_classname, element_classname, name));
+        "Get{}ByName(): There is no {} named '{}' anywhere in the model "
+        "(valid names are: {})",
+        element_classname, element_classname, name, fmt::join(all_keys, ", ")));
   }
 
   // Filter for the requested model_instance, if one was provided.
@@ -1086,12 +1096,11 @@ void MultibodyTree<T>::CalcSpatialAccelerationBias(
 
 template <typename T>
 void MultibodyTree<T>::CalcArticulatedBodyForceBias(
-  const systems::Context<T>& context,
+    const systems::Context<T>& context,
+    const ArticulatedBodyInertiaCache<T>& abic,
     std::vector<SpatialForce<T>>* Zb_Bo_W_all) const {
   DRAKE_THROW_UNLESS(Zb_Bo_W_all != nullptr);
   DRAKE_THROW_UNLESS(static_cast<int>(Zb_Bo_W_all->size()) == num_bodies());
-  const ArticulatedBodyInertiaCache<T>& abic =
-      EvalArticulatedBodyInertiaCache(context);
   const std::vector<SpatialAcceleration<T>>& Ab_WB_cache =
       EvalSpatialAccelerationBiasCache(context);
 
@@ -1108,6 +1117,17 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBias(
     SpatialForce<T>& Zb_Bo_W = (*Zb_Bo_W_all)[body_node_index];
     Zb_Bo_W = Pplus_PB_W * Ab_WB;
   }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcArticulatedBodyForceBias(
+    const systems::Context<T>& context,
+    std::vector<SpatialForce<T>>* Zb_Bo_W_all) const {
+  DRAKE_THROW_UNLESS(Zb_Bo_W_all != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(Zb_Bo_W_all->size()) == num_bodies());
+  const ArticulatedBodyInertiaCache<T>& abic =
+      EvalArticulatedBodyInertiaCache(context);
+  CalcArticulatedBodyForceBias(context, abic, Zb_Bo_W_all);
 }
 
 template <typename T>
@@ -2522,6 +2542,14 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
     const int mobilizer_num_positions =
         node_topology.num_mobilizer_positions;
 
+    const int start_index = is_wrt_qdot ? start_index_in_q : start_index_in_v;
+    const int mobilizer_jacobian_ncols =
+        is_wrt_qdot ? mobilizer_num_positions : mobilizer_num_velocities;
+
+    // No contribution to the Jacobian from this mobilizer. We skip it.
+    // N.B. This avoids working with zero sized Eigen blocks; see drake#17113.
+    if (mobilizer_jacobian_ncols == 0) continue;
+
     // "Hinge matrix" H for across-node Jacobian.
     // Herein P designates the inboard (parent) body frame P.
     // B designates the current outboard body in this outward sweep.
@@ -2531,10 +2559,6 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
     // Aliases to angular and translational components in H_PB_W.
     const auto Hw_PB_W = H_PB_W.template topRows<3>();
     const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
-
-    const int start_index = is_wrt_qdot ? start_index_in_q : start_index_in_v;
-    const int mobilizer_jacobian_ncols =
-        is_wrt_qdot ? mobilizer_num_positions : mobilizer_num_velocities;
 
     // Mapping defined by v = N⁺(q)⋅q̇.
     if (is_wrt_qdot) {
@@ -2846,8 +2870,41 @@ void MultibodyTree<T>::ThrowIfNotFinalized(const char* source_method) const {
 }
 
 template <typename T>
+double MultibodyTree<T>::CalcTotalDefaultMass(
+    const std::set<BodyIndex>& body_indexes) const {
+  double total_mass = 0;
+  for (BodyIndex body_index : body_indexes) {
+    const Body<T>& body_B = get_body(body_index);
+    const double mass_B = body_B.get_default_mass();
+    if (!std::isnan(mass_B)) total_mass += mass_B;
+  }
+  return total_mass;
+}
+
+template <typename T>
+bool MultibodyTree<T>::IsAllDefaultRotationalInertiaZeroOrNaN(
+    const std::set<BodyIndex>& body_indexes) const {
+  for (BodyIndex body_index : body_indexes) {
+    const Body<T>& body_B = get_body(body_index);
+    const RotationalInertia<double> I_BBo_B =
+        body_B.default_rotational_inertia();
+    if (!I_BBo_B.IsNaN() && !I_BBo_B.IsZero()) return false;
+  }
+  return true;
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
     const systems::Context<T>& context,
+    ArticulatedBodyInertiaCache<T>* abic) const {
+  const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
+  CalcArticulatedBodyInertiaCache(context, reflected_inertia, abic);
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
+    const systems::Context<T>& context,
+    const VectorX<T>& diagonal_inertias,
     ArticulatedBodyInertiaCache<T>* abic) const {
   DRAKE_DEMAND(abic != nullptr);
 
@@ -2858,7 +2915,6 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
   const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
       EvalSpatialInertiaInWorldCache(context);
-  const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
 
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
@@ -2872,14 +2928,17 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
           spatial_inertia_in_world_cache[body_node_index];
 
       node.CalcArticulatedBodyInertiaCache_TipToBase(
-          context, pc, H_PB_W, M_B_W, reflected_inertia, abic);
+          context, pc, H_PB_W, M_B_W, diagonal_inertias, abic);
     }
   }
 }
 
 template <typename T>
 void MultibodyTree<T>::CalcArticulatedBodyForceCache(
-    const systems::Context<T>& context, const MultibodyForces<T>& forces,
+    const systems::Context<T>& context,
+    const ArticulatedBodyInertiaCache<T>& abic,
+    const std::vector<SpatialForce<T>>& Zb_Bo_W_cache,
+    const MultibodyForces<T>& forces,
     ArticulatedBodyForceCache<T>* aba_force_cache) const {
   DRAKE_DEMAND(aba_force_cache != nullptr);
   DRAKE_DEMAND(forces.CheckHasRightSizeForModel(*this));
@@ -2887,10 +2946,6 @@ void MultibodyTree<T>::CalcArticulatedBodyForceCache(
   // Get position and velocity kinematics from cache.
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
-
-  // Get configuration dependent articulated body inertia cache.
-  const ArticulatedBodyInertiaCache<T>& abic =
-      EvalArticulatedBodyInertiaCache(context);
 
   // Extract generalized forces and body forces.
   const VectorX<T>& generalized_forces = forces.generalized_forces();
@@ -2903,13 +2958,6 @@ void MultibodyTree<T>::CalcArticulatedBodyForceCache(
   // the Newton-Euler equation: M_B_W * A_WB + Fb_B_W = Fapp_B_W.
   const std::vector<SpatialForce<T>>& dynamic_bias_cache =
       EvalDynamicBiasCache(context);
-
-  // We evaluate the kinematics dependent articulated body force bias Zb_Bo_W =
-  // Pplus_PB_W * Ab_WB. When cached, this corresponds to a significant
-  // computational gain when performing ABA with the same context (storing the
-  // same q and v) but different applied `forces`.
-  const std::vector<SpatialForce<T>>& Zb_Bo_W_cache =
-      EvalArticulatedBodyForceBiasCache(context);
 
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
@@ -2936,16 +2984,32 @@ void MultibodyTree<T>::CalcArticulatedBodyForceCache(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcArticulatedBodyForceCache(
+    const systems::Context<T>& context, const MultibodyForces<T>& forces,
+    ArticulatedBodyForceCache<T>* aba_force_cache) const {
+  // Get configuration dependent articulated body inertia cache.
+  const ArticulatedBodyInertiaCache<T>& abic =
+      EvalArticulatedBodyInertiaCache(context);
+  // We evaluate the kinematics dependent articulated body force bias Zb_Bo_W =
+  // Pplus_PB_W * Ab_WB. When cached, this corresponds to a significant
+  // computational gain when performing ABA with the same context (storing the
+  // same q and v) but different applied `forces`.
+  const std::vector<SpatialForce<T>>& Zb_Bo_W_cache =
+      EvalArticulatedBodyForceBiasCache(context);
+  CalcArticulatedBodyForceCache(context, abic, Zb_Bo_W_cache, forces,
+                                aba_force_cache);
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
     const systems::Context<T>& context,
+    const ArticulatedBodyInertiaCache<T>& abic,
     const ArticulatedBodyForceCache<T>& aba_force_cache,
     AccelerationKinematicsCache<T>* ac) const {
   DRAKE_DEMAND(ac != nullptr);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
-  const ArticulatedBodyInertiaCache<T>& abic =
-      EvalArticulatedBodyInertiaCache(context);
   const std::vector<SpatialAcceleration<T>>& Ab_WB_cache =
       EvalSpatialAccelerationBiasCache(context);
 
@@ -2964,6 +3028,16 @@ void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
           context, pc, abic, aba_force_cache, H_PB_W, Ab_WB, ac);
     }
   }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
+    const systems::Context<T>& context,
+    const ArticulatedBodyForceCache<T>& aba_force_cache,
+    AccelerationKinematicsCache<T>* ac) const {
+  const ArticulatedBodyInertiaCache<T>& abic =
+      EvalArticulatedBodyInertiaCache(context);
+  CalcArticulatedBodyAccelerations(context, abic, aba_force_cache, ac);
 }
 
 template <typename T>

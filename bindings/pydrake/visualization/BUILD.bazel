@@ -90,6 +90,7 @@ drake_py_unittest(
     name = "meldis_test",
     data = [
         "//multibody/benchmarks/acrobot:models",
+        "//multibody/meshcat:models",
     ],
     deps = [
         ":meldis_py",

@@ -7,10 +7,10 @@
 #include <vector>
 
 #include "fmt/ostream.h"
+#include <drake_vendor/sdf/Root.hh>
+#include <drake_vendor/sdf/parser.hh>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <sdf/Root.hh>
-#include <sdf/parser.hh>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
@@ -67,8 +67,9 @@ sdf::ParserConfig MakeStrictConfig() {
 
 sdf::SDFPtr ReadString(const std::string& input) {
   sdf::SDFPtr result(new sdf::SDF());
-  sdf::init(result);
-
+  // TODO(azeey): Use newer DOM API (eg sdf::Root::LoadString) instead of
+  // sdf::init and sdf::readString.
+  sdf::init(result, sdf::ParserConfig{});
   sdf::ParserConfig config = MakeStrictConfig();
   sdf::Errors errors;
   const bool success = sdf::readString(input, config, result, errors);
@@ -429,6 +430,22 @@ TEST_F(SceneGraphParserDetail, MakeHeightmapFromSdfGeometry) {
       "<heightmap>"
       "  <uri>/path/to/some/heightmap.png</uri>"
       "</heightmap>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_EQ(shape, nullptr);
+}
+
+// Verify that MakeShapeFromSdfGeometry does nothing with a polyline.
+TEST_F(SceneGraphParserDetail, MakePolylineFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<polyline>"
+      "  <polyline>"
+      "    <point>0 0</point>"
+      "    <point>0 1</point>"
+      "    <point>1 1</point>"
+      "    <point>1 0</point>"
+      "    <height>1</height>"
+      "  </polyline>"
+      "</polyline>");
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   EXPECT_EQ(shape, nullptr);
 }

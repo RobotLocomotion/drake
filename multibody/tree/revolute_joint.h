@@ -104,6 +104,7 @@ class RevoluteJoint final : public Joint<T> {
                 double pos_lower_limit, double pos_upper_limit,
                 double damping = 0)
       : Joint<T>(name, frame_on_parent, frame_on_child,
+                 VectorX<double>::Constant(1, damping),
                  VectorX<double>::Constant(1, pos_lower_limit),
                  VectorX<double>::Constant(1, pos_upper_limit),
                  VectorX<double>::Constant(
@@ -118,7 +119,6 @@ class RevoluteJoint final : public Joint<T> {
     DRAKE_DEMAND(!axis.isZero(kEpsilon));
     DRAKE_THROW_UNLESS(damping >= 0);
     axis_ = axis.normalized();
-    damping_ = damping;
   }
 
   const std::string& type_name() const override {
@@ -135,7 +135,16 @@ class RevoluteJoint final : public Joint<T> {
   }
 
   /// Returns `this` joint's damping constant in N⋅m⋅s.
-  double damping() const { return damping_; }
+  double damping() const { return this->damping_vector()[0]; }
+
+  /// Sets the default value of viscous damping for this joint, in N⋅m⋅s.
+  /// @throws std::exception if damping is negative.
+  /// @pre the MultibodyPlant must not be finalized.
+  void set_default_damping(double damping) {
+    DRAKE_THROW_UNLESS(damping >= 0);
+    DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
+    this->set_default_damping_vector(Vector1d(damping));
+  }
 
   /// Returns the position lower limit for `this` joint in radians.
   double position_lower_limit() const {
@@ -378,9 +387,6 @@ class RevoluteJoint final : public Joint<T> {
 
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
   Vector3<double> axis_;
-
-  // This joint's damping constant in N⋅m⋅s.
-  double damping_{0};
 };
 
 template <typename T> const char RevoluteJoint<T>::kTypeName[] = "revolute";

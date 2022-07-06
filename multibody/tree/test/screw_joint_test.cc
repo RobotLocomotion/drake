@@ -104,7 +104,11 @@ TEST_F(ScrewJointTest, GetJointLimits) {
             Vector1d::Constant(kAccelerationLowerLimit));
   EXPECT_EQ(joint_->acceleration_upper_limits(),
             Vector1d::Constant(kAccelerationUpperLimit));
+}
+
+TEST_F(ScrewJointTest, Damping) {
   EXPECT_EQ(joint_->damping(), kDamping);
+  EXPECT_EQ(joint_->damping_vector(), Vector1d(kDamping));
 }
 
 // Context-dependent value access.
@@ -180,6 +184,11 @@ TEST_F(ScrewJointTest, Clone) {
   EXPECT_EQ(joint_clone.get_default_rotation(), joint_->get_default_rotation());
   EXPECT_EQ(joint_clone.get_default_translation(),
             joint_->get_default_translation());
+}
+
+TEST_F(ScrewJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint_->can_rotate());
+  EXPECT_TRUE(joint_->can_translate());
 }
 
 TEST_F(ScrewJointTest, NameSuffix) {

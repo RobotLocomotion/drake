@@ -57,6 +57,23 @@ class SymbolicDecomposeTest : public ::testing::Test {
   Eigen::Matrix<Expression, 3, 1> extra_terms_;
 };
 
+TEST_F(SymbolicDecomposeTest, IsAffine) {
+  Expression a{a_};
+  Expression x0{x0_};
+
+  Eigen::Matrix<Expression, 2, 2> M;
+  // clang-format off
+  M << a*a * x0,     x0,
+         2 * x0, 3 * x0 + 1;
+  // clang-format on
+
+  // M is affine in {x0}.
+  EXPECT_TRUE(IsAffine(M, {x0_}));
+
+  // However, M is *not* affine in {a, x0}.
+  EXPECT_FALSE(IsAffine(M));
+}
+
 TEST_F(SymbolicDecomposeTest, DecomposeLinearExpressionsDynamic) {
   DecomposeLinearExpressions(M_ * x_, x_, &M_expected_dynamic_);
   EXPECT_EQ(M_expected_dynamic_, M_);
@@ -313,16 +330,44 @@ GTEST_TEST(SymbolicExtraction, DecomposeAffineExpression) {
     Eigen::MatrixXd coeffs_expected(1, num_variables);
     coeffs_expected << 1, 2, 3;
     double c_expected = 4;
-    const Expression e = AsScalar(coeffs_expected * vars_expected) + c_expected;
+    Expression e = AsScalar(coeffs_expected * vars_expected) + c_expected;
 
     const auto pair = ExtractVariablesFromExpression(e);
     const VectorX<Variable>& vars = pair.first;
     const MapVarToIndex& map_var_to_index = pair.second;
     EXPECT_EQ(vars_expected, vars);
 
-    Eigen::MatrixXd coeffs(1, num_variables);
+    Eigen::RowVectorXd coeffs(num_variables);
     double c;
-    DecomposeAffineExpression(e, map_var_to_index, coeffs, &c);
+    DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c);
+    EXPECT_TRUE(CompareMatrices(coeffs_expected, coeffs, kEps));
+    EXPECT_EQ(c_expected, c);
+
+    c_expected = 0;
+    e = AsScalar(coeffs_expected * vars_expected) + c_expected;
+    DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c);
+    EXPECT_TRUE(CompareMatrices(coeffs_expected, coeffs, kEps));
+    EXPECT_EQ(c_expected, c);
+
+    // TODO(hongkai.dai): 2022-11-01 remove the following test after deprecating
+    // DecomposeAffineExpression with coeffs as a const reference argument.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    Eigen::RowVectorXd coeffs_deprecated(num_variables);
+    double c_deprecated;
+    DecomposeAffineExpression(e, map_var_to_index, coeffs_deprecated,
+                              &c_deprecated);
+    EXPECT_TRUE(CompareMatrices(coeffs_expected, coeffs_deprecated, kEps));
+    EXPECT_EQ(c_expected, c_deprecated);
+#pragma GCC diagnostic pop
+
+    // Now test a new expression with different coefficients and we pass in the
+    // same variable `coeffs`. This tests whether DecomposeAffineExpression
+    // reset coeffs (when the input coeffs stores some value).
+    coeffs_expected << 0, 0, 5;
+    c_expected = 2;
+    e = AsScalar(coeffs_expected * vars_expected) + c_expected;
+    DecomposeAffineExpression(e, map_var_to_index, &coeffs, &c);
 
     EXPECT_TRUE(CompareMatrices(coeffs_expected, coeffs, kEps));
     EXPECT_EQ(c_expected, c);

@@ -135,10 +135,10 @@ const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
 
 // See ParseCollisionFilterGroupCommon at header for documentation
 void CollectCollisionFilterGroup(
+    const DiagnosticPolicy& diagnostic,
     ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant,
     const ElementNode& group_node,
-    std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
-    std::set<SortedPair<std::string>>* collision_filter_pairs,
+    CollisionFilterGroupResolver* resolver,
     const std::function<ElementNode(const ElementNode&, const char*)>&
         next_child_element,
     const std::function<ElementNode(const ElementNode&, const char*)>&
@@ -159,7 +159,7 @@ void CollectCollisionFilterGroup(
   const std::string group_name = read_string_attribute(group_node, "name");
   if (group_name.empty()) { return; }
 
-  geometry::GeometrySet collision_filter_geometry_set;
+  std::set<std::string> bodies;
   for (auto member_node = next_child_element(group_node, "drake:member");
        std::holds_alternative<sdf::ElementPtr>(member_node)
            ? std::get<sdf::ElementPtr>(member_node) != nullptr
@@ -168,11 +168,9 @@ void CollectCollisionFilterGroup(
     const std::string body_name = read_tag_string(member_node, "link");
     if (body_name.empty()) { continue; }
 
-    const auto& body = plant.GetBodyByName(body_name.c_str(), model_instance);
-    collision_filter_geometry_set.Add(
-        plant.GetBodyFrameIdOrThrow(body.index()));
+    bodies.insert(body_name);
   }
-  collision_filter_groups->insert({group_name, collision_filter_geometry_set});
+  resolver->AddGroup(diagnostic, group_name, bodies, model_instance);
 
   for (auto ignore_node = next_child_element(
            group_node, "drake:ignored_collision_filter_group");
@@ -187,14 +185,16 @@ void CollectCollisionFilterGroup(
     // These two group names are allowed to be identical, which means the
     // bodies inside this collision filter group should be collision excluded
     // among each other.
-    collision_filter_pairs->insert({group_name.c_str(), target_name.c_str()});
+    resolver->AddPair(diagnostic, group_name, target_name, model_instance);
   }
 }
 
 void ParseCollisionFilterGroupCommon(
+    const DiagnosticPolicy& diagnostic,
     ModelInstanceIndex model_instance,
     const ElementNode& model_node,
     MultibodyPlant<double>* plant,
+    CollisionFilterGroupResolver* resolver,
     const std::function<ElementNode(const ElementNode&, const char*)>&
         next_child_element,
     const std::function<ElementNode(const ElementNode&, const char*)>&
@@ -207,8 +207,6 @@ void ParseCollisionFilterGroupCommon(
     const std::function<std::string(const ElementNode&, const char*)>&
         read_tag_string) {
   DRAKE_DEMAND(plant->geometry_source_is_registered());
-  std::map<std::string, geometry::GeometrySet> collision_filter_groups;
-  std::set<SortedPair<std::string>> collision_filter_pairs;
 
   for (auto group_node =
            next_child_element(model_node, "drake:collision_filter_group");
@@ -218,20 +216,10 @@ void ParseCollisionFilterGroupCommon(
        group_node =
            next_sibling_element(group_node, "drake:collision_filter_group")) {
     CollectCollisionFilterGroup(
-        model_instance, *plant, group_node, &collision_filter_groups,
-        &collision_filter_pairs, next_child_element, next_sibling_element,
-        has_attribute, read_string_attribute, read_bool_attribute,
-        read_tag_string);
-  }
-
-  for (const auto& [name_a, name_b] : collision_filter_pairs) {
-    const auto group_a = collision_filter_groups.find(name_a);
-    DRAKE_DEMAND(group_a != collision_filter_groups.end());
-    const auto group_b = collision_filter_groups.find(name_b);
-    DRAKE_DEMAND(group_b != collision_filter_groups.end());
-
-    plant->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
-        {name_a, group_a->second}, {name_b, group_b->second});
+        diagnostic,
+        model_instance, *plant, group_node, resolver, next_child_element,
+        next_sibling_element, has_attribute, read_string_attribute,
+        read_bool_attribute, read_tag_string);
   }
 }
 

@@ -515,12 +515,12 @@ def _install_impl(ctx):
         )
 
     # Return actions.
-    runfiles = (
+    installer_runfiles = ctx.attr._installer[DefaultInfo].default_runfiles
+    action_runfiles = ctx.runfiles(files = (
         [a.src for a in actions if not hasattr(a, "main_class")] +
         [i.src for i in installed_tests] +
-        ctx.files._installer +
         [actions_file]
-    )
+    ))
     return [
         InstallInfo(
             install_actions = actions,
@@ -528,7 +528,7 @@ def _install_impl(ctx):
             installed_files = installed_files,
         ),
         InstalledTestInfo(tests = installed_tests),
-        DefaultInfo(runfiles = ctx.runfiles(files = runfiles)),
+        DefaultInfo(runfiles = installer_runfiles.merge(action_runfiles)),
     ]
 
 # TODO(mwoehlke-kitware) default guess_data to PACKAGE when we have better

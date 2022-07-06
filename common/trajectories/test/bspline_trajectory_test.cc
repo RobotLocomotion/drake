@@ -6,9 +6,8 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/proto/call_python.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/trajectories/trajectory.h"

@@ -110,7 +110,7 @@ GTEST_TEST(MeshcatTest, Ports) {
   EXPECT_EQ(meshcat.port(), 7050);
 
   // Can't open the same port twice.
-  DRAKE_EXPECT_THROWS_MESSAGE(Meshcat m2(7050),
+  DRAKE_EXPECT_THROWS_MESSAGE(Meshcat(7050),
                               "Meshcat failed to open a websocket port.");
 
   // The default constructor gets a default port.

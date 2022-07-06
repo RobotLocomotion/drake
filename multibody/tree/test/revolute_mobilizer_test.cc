@@ -39,6 +39,11 @@ class RevoluteMobilizerTest : public MobilizerTester {
   const Vector3d axis_F_{1.0, 2.0, 3.0};
 };
 
+TEST_F(RevoluteMobilizerTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(mobilizer_->can_rotate());
+  EXPECT_FALSE(mobilizer_->can_translate());
+}
+
 // Verify that RevoluteMobilizer normalizes its axis on construction.
 TEST_F(RevoluteMobilizerTest, AxisIsNormalizedAtConstruction) {
   EXPECT_TRUE(CompareMatrices(

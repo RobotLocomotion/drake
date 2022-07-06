@@ -16,7 +16,8 @@ load(
 )
 load(
     "@drake_detected_os//:os.bzl",
-    "DISTRIBUTION",
+    "MACOS_RELEASE",
+    "UBUNTU_RELEASE",
 )
 
 def drake_cc_googletest_ubuntu_only(
@@ -29,7 +30,7 @@ def drake_cc_googletest_ubuntu_only(
     Because this test is not cross-platform, the visibility defaults to
     private.
     """
-    if DISTRIBUTION in ["ubuntu", "manylinux"]:
+    if UBUNTU_RELEASE != None:
         drake_cc_googletest(
             name = name,
             visibility = visibility,
@@ -45,25 +46,14 @@ def drake_cc_library_ubuntu_only(
     Otherwise, does nothing.
 
     Because this library is not cross-platform, the visibility defaults to
-    private and the headers are excluded from the installation.
+    private and internal is forced to True (so that, e.g., the headers are
+    excluded from the installation).
     """
-    if DISTRIBUTION in ["ubuntu", "manylinux"]:
+    if UBUNTU_RELEASE != None:
         drake_cc_library(
             name = name,
             hdrs = hdrs,
             visibility = visibility,
-            install_hdrs_exclude = hdrs,
+            internal = True,
             **kwargs
         )
-
-def drake_cc_package_library_per_os(
-        macos_deps = [],
-        ubuntu_deps = [],
-        **kwargs):
-    """Declares a drake_cc_package_library, where the deps of the library are
-    conditioned on whether we are building on macOS or Ubuntu.
-    """
-    if DISTRIBUTION == "macos":
-        drake_cc_package_library(deps = macos_deps, **kwargs)
-    elif DISTRIBUTION in ["ubuntu", "manylinux"]:
-        drake_cc_package_library(deps = ubuntu_deps, **kwargs)

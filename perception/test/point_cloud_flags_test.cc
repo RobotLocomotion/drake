@@ -14,16 +14,6 @@ namespace pcf = pc_flags;
 
 namespace {
 
-GTEST_TEST(PointCloudFlagsTest, ConstExpr) {
-  // @note This is demonstrating that `DescriptorType` can be a literal type
-  // (suitable for being a `constexpr`). However, this is not necessary
-  // to ensure this contract, as the compiler will throw an error if a
-  // `constexpr` is attempted with a non-literal-type class (as of C++14).
-  // TODO(eric.cousineau): Replace with the successor of is_literal_type.
-  // @ref https://stackoverflow.com/a/40352351/7829525
-  EXPECT_TRUE(std::is_literal_type_v<pcf::DescriptorType>);
-}
-
 GTEST_TEST(PointCloudFlagsTest, Formatting) {
   // Check human-friendly formatting.
   {

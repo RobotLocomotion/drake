@@ -6,7 +6,7 @@ namespace drake {
 <h3>Overview</h3>
 
 <p>Drake's C++ library is composed primarily of an interface for solving
-  numerical optimization problems, interfaces for modeling dynamical system,
+  numerical optimization problems, interfaces for modeling dynamical systems,
   and a collection of state-of-the-art algorithms for optimization on dynamical
   systems:</p>
 

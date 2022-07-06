@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/identifier.h"
 #include "drake/common/nice_type_name_override.h"
 
 using std::string;
@@ -34,6 +35,9 @@ class Derived : public Base {};
 // Type to have its NiceTypeName be overridden via
 // `SetNiceTypeNamePtrOverride`.
 class OverrideName {};
+
+// Test the Identifier pattern.
+using AId = Identifier<class ATag>;
 
 }  // namespace
 
@@ -151,6 +155,10 @@ GTEST_TEST(NiceTypeNameTest, Enum) {
   EXPECT_EQ(NiceTypeName::Get<decltype(
                 ForTesting::MyEnumClass::Four)>(),
             "drake::(anonymous)::ForTesting::MyEnumClass");
+}
+
+GTEST_TEST(NiceTypeNameTest, IdentifierTemplate) {
+  EXPECT_EQ(NiceTypeName::Get<AId>(), "drake::(anonymous)::AId");
 }
 
 // Test the type_info form of NiceTypeName::Get().

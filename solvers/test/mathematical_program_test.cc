@@ -20,7 +20,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -496,7 +495,7 @@ GTEST_TEST(TestAddDecisionVariables, TestMatrixInput) {
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 3; ++j) {
       // Make sure that the variable has been registered in prog.
-      EXPECT_NO_THROW(prog.FindDecisionVariableIndex(vars(i, j)));
+      EXPECT_NO_THROW(unused(prog.FindDecisionVariableIndex(vars(i, j))));
     }
   }
 }
@@ -621,7 +620,7 @@ GTEST_TEST(TestAddIndeterminates, MatrixInput) {
   EXPECT_EQ(prog.num_vars(), 0);
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 3; ++j) {
-      EXPECT_NO_THROW(prog.FindIndeterminateIndex(vars(i, j)));
+      EXPECT_NO_THROW(unused(prog.FindIndeterminateIndex(vars(i, j))));
     }
   }
 }
@@ -1065,7 +1064,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic1) {
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), 1);
-  const Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
+  const Expression Ax{(constraint_ptr->GetDenseA() * var_vec)(0, 0)};
   const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
   const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
   EXPECT_TRUE((e - lb).EqualTo(Ax - lb_in_ctr));
@@ -1089,7 +1088,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic2) {
 
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
-  const Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
+  const Expression Ax{(constraint_ptr->GetDenseA() * var_vec)(0, 0)};
   const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
   const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
   EXPECT_TRUE((e - -10).EqualTo(Ax - lb_in_ctr));
@@ -1143,7 +1142,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic3) {
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), 5);
-  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto Ax = constraint_ptr->GetDenseA() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
 
@@ -1268,15 +1267,16 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic9) {
   prog.AddLinearConstraint(Expression(2), 1, 3);
   EXPECT_EQ(prog.linear_constraints().size(), 1);
   auto binding = prog.linear_constraints().back();
-  EXPECT_EQ(binding.evaluator()->A().rows(), 1);
-  EXPECT_EQ(binding.evaluator()->A().cols(), 0);
+  EXPECT_EQ(binding.evaluator()->GetDenseA().rows(), 1);
+  EXPECT_EQ(binding.evaluator()->GetDenseA().cols(), 0);
 
   Vector2<Expression> expr;
   expr << 2, x(0);
   prog.AddLinearConstraint(expr, Vector2d(1, 2), Vector2d(3, 4));
   EXPECT_EQ(prog.linear_constraints().size(), 2);
   binding = prog.linear_constraints().back();
-  EXPECT_TRUE(CompareMatrices(binding.evaluator()->A(), Eigen::Vector2d(0, 1)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.evaluator()->GetDenseA(), Eigen::Vector2d(0, 1)));
   EXPECT_TRUE(CompareMatrices(binding.evaluator()->lower_bound(),
                               Eigen::Vector2d(-1, 2)));
   EXPECT_TRUE(CompareMatrices(binding.evaluator()->upper_bound(),
@@ -1361,8 +1361,9 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula3) {
     EXPECT_TRUE(
         CompareMatrices(binding.evaluator()->lower_bound(), Vector1d(1)));
 
-    VectorX<Expression> expr = binding.evaluator()->A() * binding.variables() -
-                               binding.evaluator()->lower_bound();
+    VectorX<Expression> expr =
+        binding.evaluator()->GetDenseA() * binding.variables() -
+        binding.evaluator()->lower_bound();
     EXPECT_EQ(expr.size(), 1);
     EXPECT_PRED2(ExprEqual, expr(0), x(0) + x(2) - 1);
   }
@@ -1399,7 +1400,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
 
     const VectorX<Expression> expr =
         binding.evaluator()->upper_bound() -
-        binding.evaluator()->A() * binding.variables();
+        binding.evaluator()->GetDenseA() * binding.variables();
     EXPECT_EQ(expr.size(), 1);
     EXPECT_PRED2(ExprEqual, expr(0), 1 - x(0) - 2 * x(2));
   }
@@ -1424,7 +1425,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula5) {
   for (const auto& f_i : f) {
     const auto binding = prog.AddLinearConstraint(f_i);
     const VectorX<Expression> expr =
-        binding.evaluator()->A() * binding.variables();
+        binding.evaluator()->GetDenseA() * binding.variables();
     EXPECT_EQ(binding.evaluator()->lower_bound()(0), -inf);
     EXPECT_EQ(binding.evaluator()->upper_bound()(0), inf);
     EXPECT_PRED2(ExprEqual, expr(0), x(0));
@@ -1446,7 +1447,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula6) {
     const auto binding = prog.AddLinearConstraint(f_i);
     EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(binding.evaluator()));
     const VectorX<Expression> expr =
-        binding.evaluator()->A() * binding.variables();
+        binding.evaluator()->GetDenseA() * binding.variables();
     EXPECT_EQ(binding.evaluator()->lower_bound()(0), -inf);
     EXPECT_EQ(binding.evaluator()->upper_bound()(0), inf);
     EXPECT_PRED2(ExprEqual, expr(0), get_lhs_expression(f_i));
@@ -1468,7 +1469,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula7) {
     const auto binding = prog.AddLinearConstraint(f_i);
     EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(binding.evaluator()));
     const VectorX<Expression> expr =
-        binding.evaluator()->A() * binding.variables();
+        binding.evaluator()->GetDenseA() * binding.variables();
     EXPECT_EQ(binding.evaluator()->lower_bound()(0), -inf);
     EXPECT_EQ(binding.evaluator()->upper_bound()(0), inf);
     EXPECT_PRED2(ExprEqual, expr(0), -get_lhs_expression(f_i));
@@ -1544,7 +1545,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
   // Checks that we have LinearEqualityConstraint instead of LinearConstraint.
   EXPECT_TRUE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
   EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
-  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto Ax = constraint_ptr->GetDenseA() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
 
@@ -1580,7 +1581,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
   // Checks that we do not have LinearEqualityConstraint.
   EXPECT_FALSE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
   EXPECT_EQ(constraint_ptr->num_constraints(), 3);
-  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto Ax = constraint_ptr->GetDenseA() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
 
@@ -1662,7 +1663,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula1) {
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), 5);
-  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto Ax = constraint_ptr->GetDenseA() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
   for (int i{0}; i < M_f.size(); ++i) {
@@ -1711,7 +1712,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), M_e.rows() * M_e.cols());
-  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto Ax = constraint_ptr->GetDenseA() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
   int k{0};
@@ -1750,7 +1751,7 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula3) {
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
-  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto Ax = constraint_ptr->GetDenseA() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
   EXPECT_PRED2(ExprEqual, x(0) + 2 * x(1) - 5, Ax(0) - lb_in_ctr(0));
@@ -1805,8 +1806,9 @@ void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
   EXPECT_EQ(binding.evaluator()->num_constraints(), num_constraints_expected);
   // Check if the newly added linear equality constraint matches with the input
   // expression.
-  VectorX<Expression> flat_V = binding.evaluator()->A() * binding.variables() -
-                               binding.evaluator()->lower_bound();
+  VectorX<Expression> flat_V =
+      binding.evaluator()->GetDenseA() * binding.variables() -
+      binding.evaluator()->lower_bound();
 
   EXPECT_EQ(flat_V.size(), v.size());
   MatrixX<Expression> v_resize = flat_V;
@@ -1831,8 +1833,9 @@ void CheckAddedSymmetricSymbolicLinearEqualityConstraint(
   EXPECT_EQ(binding.evaluator()->num_constraints(), num_constraints_expected);
   // Check if the newly added linear equality constraint matches with the input
   // expression.
-  VectorX<Expression> flat_V = binding.evaluator()->A() * binding.variables() -
-                               binding.evaluator()->lower_bound();
+  VectorX<Expression> flat_V =
+      binding.evaluator()->GetDenseA() * binding.variables() -
+      binding.evaluator()->lower_bound();
   EXPECT_EQ(math::ToSymmetricMatrixFromLowerTriangularColumns(flat_V), v - b);
 }
 
@@ -1996,7 +1999,7 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint5) {
   EXPECT_EQ(prog.linear_equality_constraints().size(), 1u);
 
   const Expression expr_in_added_constraint{
-      (binding.evaluator()->A() * binding.variables() -
+      (binding.evaluator()->GetDenseA() * binding.variables() -
        binding.evaluator()->lower_bound())(0)};
   // expr_in_added_constraint should be:
   //    lhs(f) - rhs(f)
@@ -2034,7 +2037,7 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
 
   // Checks if AddLinearEqualityConstraint added the constraint correctly.
   const Eigen::Matrix<Expression, 3, 1> exprs_in_added_constraint{
-      binding.evaluator()->A() * binding.variables() -
+      binding.evaluator()->GetDenseA() * binding.variables() -
       binding.evaluator()->lower_bound()};
   const Eigen::Matrix<Expression, 3, 1> expected_exprs{A * x - b};
 
@@ -2451,7 +2454,7 @@ CheckAddedSymbolicPositiveSemidefiniteConstraint(
   // part of the psd matrix.
   const auto& new_lin_eq_cnstr = prog->linear_equality_constraints().back();
   auto V_minus_M = math::ToSymmetricMatrixFromLowerTriangularColumns(
-      new_lin_eq_cnstr.evaluator()->A() * new_lin_eq_cnstr.variables() -
+      new_lin_eq_cnstr.evaluator()->GetDenseA() * new_lin_eq_cnstr.variables() -
       new_lin_eq_cnstr.evaluator()->lower_bound());
   EXPECT_EQ(V_minus_M, V - M);
 }
@@ -3175,7 +3178,7 @@ GTEST_TEST(TestMathematicalProgram, TestSetAndGetInitialGuess) {
   // Now set initial guess for a variable not registered.
   symbolic::Variable y("y");
   EXPECT_THROW(prog.SetInitialGuess(y, 1), std::runtime_error);
-  EXPECT_THROW(prog.GetInitialGuess(y), std::runtime_error);
+  EXPECT_THROW(unused(prog.GetInitialGuess(y)), std::runtime_error);
 
   // Try the same things with an extrinsic guess.
   VectorXd guess = VectorXd::Constant(3, kNaN);
@@ -3296,9 +3299,10 @@ void CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial type) {
   MathematicalProgram prog;
   auto t = prog.NewIndeterminates<4>();
   const auto m = symbolic::MonomialBasis<4, 2>(symbolic::Variables(t));
-  const auto pair = prog.NewSosPolynomial(m, type);
+  const auto pair = prog.NewSosPolynomial(m, type, "TestGram");
   const symbolic::Polynomial& p = pair.first;
   const MatrixXDecisionVariable& Q = pair.second;
+  EXPECT_NE(Q(0, 0).get_name().find("TestGram"), std::string::npos);
   MatrixX<symbolic::Polynomial> Q_poly(m.rows(), m.rows());
   const symbolic::Monomial monomial_one{};
   for (int i = 0; i < Q_poly.rows(); ++i) {
@@ -3318,6 +3322,31 @@ GTEST_TEST(TestMathematicalProgram, NewSosPolynomial) {
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kSos);
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kSdsos);
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kDsos);
+
+  // Check NewSosPolynomial with degree = 0
+  for (const auto type : {MathematicalProgram::NonnegativePolynomial::kSos,
+                          MathematicalProgram::NonnegativePolynomial::kSdsos,
+                          MathematicalProgram::NonnegativePolynomial::kDsos}) {
+    solvers::MathematicalProgram prog;
+    const auto x = prog.NewIndeterminates<2>();
+    symbolic::Polynomial p;
+    MatrixXDecisionVariable gram;
+    std::tie(p, gram) = prog.NewSosPolynomial(symbolic::Variables(x), 0, type);
+    EXPECT_EQ(prog.bounding_box_constraints().size(), 1u);
+    EXPECT_TRUE(CompareMatrices(
+        prog.bounding_box_constraints()[0].evaluator()->lower_bound(),
+        Vector1d::Constant(0)));
+    EXPECT_TRUE(CompareMatrices(
+        prog.bounding_box_constraints()[0].evaluator()->upper_bound(),
+        Vector1d::Constant(kInf)));
+    EXPECT_EQ(prog.bounding_box_constraints()[0].variables(), gram);
+    EXPECT_EQ(p.TotalDegree(), 0);
+    EXPECT_EQ(p.monomial_to_coefficient_map().size(), 1u);
+    EXPECT_EQ(gram.rows(), 1);
+    EXPECT_EQ(gram.cols(), 1);
+    EXPECT_EQ(p.monomial_to_coefficient_map().at(symbolic::Monomial()),
+              gram(0, 0));
+  }
 }
 
 void CheckNewEvenDegreeNonnegativePolynomial(
@@ -3369,8 +3398,12 @@ GTEST_TEST(TestMathematicalProgram, AddEqualityConstraintBetweenPolynomials) {
   const symbolic::Polynomial p2((a(2) + 1) * x + 2 * a(3), {x});
 
   EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
-  prog.AddEqualityConstraintBetweenPolynomials(p1, p2);
+  const auto bindings = prog.AddEqualityConstraintBetweenPolynomials(p1, p2);
   EXPECT_EQ(prog.linear_equality_constraints().size(), 2);
+  EXPECT_EQ(bindings.size(), 2u);
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(bindings[i], prog.linear_equality_constraints()[i]);
+  }
 
   // Test with different value of a, some satisfies the polynomial equality
   // constraints.
@@ -3472,7 +3505,7 @@ GTEST_TEST(TestMathematicalProgram, AddConstraintMatrix1) {
   // clang-format on
 
   ASSERT_TRUE(binding.evaluator());
-  EXPECT_EQ(binding.evaluator()->A(), A_expected);
+  EXPECT_EQ(binding.evaluator()->GetDenseA(), A_expected);
   EXPECT_EQ(binding.evaluator()->lower_bound(), lower_bound_expected);
   EXPECT_EQ(binding.evaluator()->upper_bound(), upper_bound_expected);
 }
@@ -3517,8 +3550,8 @@ GTEST_TEST(TestMathematicalProgram, AddConstraintMatrix2) {
         for (int k = 0; k < 4; ++k) {
           if (binding.evaluator()->lower_bound()(k) == lb(i, j) &&
               binding.evaluator()->upper_bound()(k) == ub(i, j)) {
-            EXPECT_TRUE(
-                CompareMatrices(binding.evaluator()->A().row(k), coeff[i][j]));
+            EXPECT_TRUE(CompareMatrices(binding.evaluator()->GetDenseA().row(k),
+                                        coeff[i][j]));
             find_match = true;
           }
         }
@@ -3601,8 +3634,10 @@ GTEST_TEST(TestMathematicalProgram, AddSosConstraint) {
   const Vector2<symbolic::Monomial> monomial_basis(symbolic::Monomial{},
                                                    symbolic::Monomial(x, 1));
 
-  const Matrix2<symbolic::Variable> Q_psd =
-      prog.AddSosConstraint(p1, monomial_basis);
+  const Matrix2<symbolic::Variable> Q_psd = prog.AddSosConstraint(
+      p1, monomial_basis, MathematicalProgram::NonnegativePolynomial::kSos,
+      "Q");
+  EXPECT_NE(Q_psd(0, 0).get_name().find("Q"), std::string::npos);
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
   EXPECT_EQ(prog.lorentz_cone_constraints().size(), 0u);
   EXPECT_EQ(prog.rotated_lorentz_cone_constraints().size(), 0u);
@@ -3625,6 +3660,16 @@ GTEST_TEST(TestMathematicalProgram, AddSosConstraint) {
                 prog.rotated_lorentz_cone_constraints().size(),
             0u);
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
+
+  // p2 = (a+1)x² + 0 has some coefficient equal to 0. The constructed monomial
+  // should remove that 0-term. Hence the returned monomial basis should only
+  // contain [x].
+  const symbolic::Polynomial p2{
+      {{symbolic::Monomial(), 0}, {symbolic::Monomial(x, 2), a + 1}}};
+  const auto [gram2, monomial_basis2] = prog.AddSosConstraint(p2);
+  EXPECT_EQ(monomial_basis2.rows(), 1);
+  EXPECT_EQ(monomial_basis2(0), symbolic::Monomial(x));
+  EXPECT_EQ(gram2.rows(), 1);
 }
 
 template <typename C>

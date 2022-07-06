@@ -4,7 +4,7 @@
 # the build nor expected to be called by most developers or users of the
 # project.
 
-ARG PLATFORM=ubuntu:18.04
+ARG PLATFORM=ubuntu:20.04
 
 # -----------------------------------------------------------------------------
 # Create a base provisioned image.

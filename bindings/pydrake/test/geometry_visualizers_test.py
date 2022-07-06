@@ -8,6 +8,7 @@ from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.value import AbstractValue
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform
 from pydrake.perception import PointCloud
@@ -154,6 +155,52 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.SetRealtimeRate(1.0)
         meshcat.Flush()
 
+        # PerspectiveCamera
+        camera = mut.Meshcat.PerspectiveCamera(fov=80,
+                                               aspect=1.2,
+                                               near=0.2,
+                                               far=200,
+                                               zoom=1.3)
+        self.assertEqual(camera.fov, 80)
+        self.assertEqual(camera.aspect, 1.2)
+        self.assertEqual(camera.near, 0.2)
+        self.assertEqual(camera.far, 200)
+        self.assertEqual(camera.zoom, 1.3)
+        self.assertEqual(repr(camera), "".join([
+            r"PerspectiveCamera(",
+            r"fov=80.0, "
+            r"aspect=1.2, ",
+            r"near=0.2, ",
+            r"far=200.0, ",
+            r"zoom=1.3)"]))
+        meshcat.SetCamera(camera=camera, path="mypath")
+
+        # OrthographicCamera
+        camera = mut.Meshcat.OrthographicCamera(left=0.1,
+                                                right=1.3,
+                                                top=0.3,
+                                                bottom=1.4,
+                                                near=0.2,
+                                                far=200,
+                                                zoom=1.3)
+        self.assertEqual(camera.left, 0.1)
+        self.assertEqual(camera.right, 1.3)
+        self.assertEqual(camera.top, 0.3)
+        self.assertEqual(camera.bottom, 1.4)
+        self.assertEqual(camera.near, 0.2)
+        self.assertEqual(camera.far, 200)
+        self.assertEqual(camera.zoom, 1.3)
+        self.assertEqual(repr(camera), "".join([
+            r"OrthographicCamera(",
+            r"left=0.1, "
+            r"right=1.3, ",
+            r"top=0.3, "
+            r"bottom=1.4, ",
+            r"near=0.2, ",
+            r"far=200.0, ",
+            r"zoom=1.3)"]))
+        meshcat.SetCamera(camera=camera, path="mypath")
+
     def test_meshcat_animation(self):
         animation = mut.MeshcatAnimation(frames_per_second=64)
         self.assertEqual(animation.frames_per_second(), 64)
@@ -191,7 +238,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         params.prefix = "py_visualizer"
         params.delete_on_initialization_event = False
         self.assertNotIn("object at 0x", repr(params))
-        vis = mut.MeshcatVisualizerCpp_[T](meshcat=meshcat, params=params)
+        vis = mut.MeshcatVisualizer_[T](meshcat=meshcat, params=params)
         vis.Delete()
         self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])
         animation = vis.StartRecording(set_transforms_while_recording=True)
@@ -203,11 +250,11 @@ class TestGeometryVisualizers(unittest.TestCase):
 
         builder = DiagramBuilder_[T]()
         scene_graph = builder.AddSystem(mut.SceneGraph_[T]())
-        mut.MeshcatVisualizerCpp_[T].AddToBuilder(builder=builder,
-                                                  scene_graph=scene_graph,
-                                                  meshcat=meshcat,
-                                                  params=params)
-        mut.MeshcatVisualizerCpp_[T].AddToBuilder(
+        mut.MeshcatVisualizer_[T].AddToBuilder(builder=builder,
+                                               scene_graph=scene_graph,
+                                               meshcat=meshcat,
+                                               params=params)
+        mut.MeshcatVisualizer_[T].AddToBuilder(
             builder=builder,
             query_object_port=scene_graph.get_query_output_port(),
             meshcat=meshcat,
@@ -215,7 +262,16 @@ class TestGeometryVisualizers(unittest.TestCase):
 
     def test_meshcat_visualizer_scalar_conversion(self):
         meshcat = mut.Meshcat()
-        vis = mut.MeshcatVisualizerCpp(meshcat)
+        vis = mut.MeshcatVisualizer(meshcat)
+        vis_autodiff = vis.ToAutoDiffXd()
+        self.assertIsInstance(vis_autodiff,
+                              mut.MeshcatVisualizer_[AutoDiffXd])
+
+    def test_deprecated_meshcat_visualizer_cpp_scalar_conversion(self):
+        """This checks a deprecated API spelling; remove this on 2022-11-01."""
+        meshcat = mut.Meshcat()
+        with catch_drake_warnings(expected_count=1):
+            vis = mut.MeshcatVisualizerCpp(meshcat)
         vis_autodiff = vis.ToAutoDiffXd()
         self.assertIsInstance(vis_autodiff,
                               mut.MeshcatVisualizerCpp_[AutoDiffXd])
@@ -223,7 +279,7 @@ class TestGeometryVisualizers(unittest.TestCase):
     @numpy_compare.check_nonsymbolic_types
     def test_meshcat_point_cloud_visualizer(self, T):
         meshcat = mut.Meshcat()
-        visualizer = mut.MeshcatPointCloudVisualizerCpp_[T](
+        visualizer = mut.MeshcatPointCloudVisualizer_[T](
             meshcat=meshcat, path="cloud", publish_period=1/12.0)
         visualizer.set_point_size(0.1)
         visualizer.set_default_rgba(mut.Rgba(0, 0, 1, 1))
@@ -238,7 +294,18 @@ class TestGeometryVisualizers(unittest.TestCase):
         if T == float:
             ad_visualizer = visualizer.ToAutoDiffXd()
             self.assertIsInstance(
-                ad_visualizer, mut.MeshcatPointCloudVisualizerCpp_[AutoDiffXd])
+                ad_visualizer, mut.MeshcatPointCloudVisualizer_[AutoDiffXd])
+
+    def test_deprecated_meshcat_point_cloud_visualizer_cpp(self):
+        """This checks a deprecated API spelling; remove this on 2022-11-01."""
+        meshcat = mut.Meshcat()
+        with catch_drake_warnings(expected_count=1):
+            visualizer = mut.MeshcatPointCloudVisualizerCpp(
+                meshcat=meshcat, path="cloud", publish_period=1/12.0)
+        visualizer.set_point_size(0.1)
+        ad_visualizer = visualizer.ToAutoDiffXd()
+        self.assertIsInstance(
+            ad_visualizer, mut.MeshcatPointCloudVisualizerCpp_[AutoDiffXd])
 
     def test_start_meshcat(self):
         # StartMeshcat only performs interesting work on cloud notebook hosts.

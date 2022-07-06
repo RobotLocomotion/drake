@@ -22,7 +22,7 @@ void LeftMultiplyByBlockDiagonal(const std::vector<MatrixXd>& g, int s, int e,
                                  const MatrixXd& x, MatrixXd* y) {
   int start = 0;
   for (int index = s; index <= e; ++index) {
-    const int num_rows = g[s].rows();
+    const int num_rows = g[index].rows();
     y->middleRows(start, num_rows).noalias() =
         g[index] * x.middleRows(start, num_rows);
     start += num_rows;

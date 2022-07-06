@@ -1,5 +1,7 @@
 #include "drake/solvers/osqp_solver.h"
 
+#include <optional>
+#include <unordered_map>
 #include <vector>
 
 #include <osqp.h>
@@ -26,18 +28,18 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
     const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
 
     // Add quadratic_cost.Q to the Hessian P.
-    const std::vector<Eigen::Triplet<double>> Qi_triplets =
-        math::SparseMatrixToTriplets(quadratic_cost.evaluator()->Q());
-    P_triplets.reserve(P_triplets.size() + Qi_triplets.size());
-    for (int i = 0; i < static_cast<int>(Qi_triplets.size()); ++i) {
-      // Unpack the field of the triplet (for clarity below).
-      const int row = x_indices[Qi_triplets[i].row()];
-      const int col = x_indices[Qi_triplets[i].col()];
-      const double value = Qi_triplets[i].value();
-      // Since OSQP 0.6.0 the P matrix is required to be upper triangular, so
-      // we only add upper triangular entries to P_triplets.
-      if (row <= col) {
-        P_triplets.emplace_back(row, col, static_cast<c_float>(value));
+    // Since OSQP 0.6.0 the P matrix is required to be upper triangular, so
+    // we only add upper triangular entries to P_triplets.
+    const Eigen::MatrixXd& Q = quadratic_cost.evaluator()->Q();
+    for (int col = 0; col < Q.cols(); ++col) {
+      for (int row = 0; (row <= col) && (row < Q.rows()); ++row) {
+        const double value = Q(row, col);
+        if (value == 0.0) {
+          continue;
+        }
+        const int x_row = x_indices[row];
+        const int x_col = x_indices[col];
+        P_triplets.emplace_back(x_row, x_col, static_cast<c_float>(value));
       }
     }
 

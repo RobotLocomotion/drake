@@ -7,7 +7,6 @@
 #include "drake/math/compute_numerical_gradient.h"
 #include "drake/multibody/optimization/test/optimization_with_contact_utilities.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {

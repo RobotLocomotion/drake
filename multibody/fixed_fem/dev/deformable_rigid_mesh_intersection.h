@@ -7,10 +7,10 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/bvh.h"
+#include "drake/geometry/proximity/deformable_contact_surface.h"
 #include "drake/geometry/proximity/deformable_volume_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/fixed_fem/dev/deformable_contact_surface.h"
 
 namespace drake {
 namespace multibody {
@@ -34,7 +34,7 @@ namespace fem {
           If there is no intersection, the resulting surface will report as
           "empty".  */
 template <typename T>
-DeformableContactSurface<T> ComputeTetMeshTriMeshContact(
+geometry::internal::DeformableContactSurface<T> ComputeTetMeshTriMeshContact(
     const geometry::internal::DeformableVolumeMesh<T>& tet_mesh_D,
     const geometry::TriangleSurfaceMesh<double>& tri_mesh_R,
     const geometry::internal::Bvh<geometry::internal::Obb,

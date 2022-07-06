@@ -32,6 +32,10 @@
 #include "drake/common/unused.h"
 #include "drake/geometry/meshcat_types.h"
 
+#ifdef BOOST_VERSION
+# error Drake should be using the non-boost flavor of msgpack.
+#endif
+
 // Steal one function declaration from usockets/src/internal/internal.h.
 extern "C" {
 void us_internal_free_closed_sockets(struct us_loop_t*);

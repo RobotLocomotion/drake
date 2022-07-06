@@ -34,7 +34,6 @@
           <izz>4.843753753</izz>
         </inertia>
       </inertial>
-      <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name="back_right_leg">
         <pose>-0.33 -0.35 0.381 0 0 0</pose>
@@ -44,20 +43,11 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <visual name="front_left_leg">
         <pose>0.33 0.35 0.381 0 0 0</pose>
@@ -67,20 +57,11 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <visual name="left_crossbar">
         <pose>0.33 0 0.13335 0 0 0</pose>
@@ -90,20 +71,11 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <visual name="right_crossbar">
         <pose>-0.33 0 0.13335 0 0 0</pose>
@@ -113,20 +85,11 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <visual name="back_left_leg">
         <pose>-0.33 0.35 0.381 0 0 0</pose>
@@ -136,20 +99,11 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <visual name="front_right_leg">
         <pose>0.33 -0.35 0.381 0 0 0</pose>
@@ -159,20 +113,11 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <visual name="back_crossbar">
         <pose>0 0.35 0.13335 0 0 0</pose>
@@ -182,20 +127,11 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <visual name="front_crossbar">
         <pose>0 -0.35 0.13335 0 0 0</pose>
@@ -205,20 +141,11 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <visual name="visual1">
         <pose>0 0 0.736 0 0 0</pose>
@@ -228,24 +155,14 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
-          </script>
           <ambient>0.3 0.3 0.3 1</ambient>
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type="vertex">
-            <normal_map>__default__</normal_map>
-          </shader>
         </material>
-        <cast_shadows>1</cast_shadows>
-        <transparency>0</transparency>
       </visual>
       <collision name="surface">
         <laser_retro>0</laser_retro>
-        <max_contacts>10</max_contacts>
         <pose>0 0 0.736 0 0 0</pose>
         <geometry>
           <box>
@@ -312,6 +229,5 @@
     issues in reusability with the current implementation of MBP parsing
     (#12227).
     -->
-    <allow_auto_disable>1</allow_auto_disable>
   </model>
 </sdf>

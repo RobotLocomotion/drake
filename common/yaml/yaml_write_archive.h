@@ -15,24 +15,26 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/yaml/yaml_node.h"
 
 namespace drake {
 namespace yaml {
+namespace internal {
 
-/// (Advanced) A helper class for @ref yaml_serialization "YAML Serialization"
-/// that saves data from a C++ structure into a YAML file.
+// A helper class for @ref yaml_serialization "YAML Serialization" that saves
+// data from a C++ structure into a YAML file.
 class YamlWriteArchive final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlWriteArchive)
 
-  /// (Advanced) Creates an archive.
+  // Creates an archive.
   YamlWriteArchive() {}
 
-  /// (Advanced) Copies the contents of `serializable` into the YAML object
-  /// associated with this archive.
+  // Copies the contents of `serializable` into the YAML object associated with
+  // this archive.
   template <typename Serializable>
   void Accept(const Serializable& serializable) {
     auto* serializable_mutable = const_cast<Serializable*>(&serializable);
@@ -48,32 +50,32 @@ class YamlWriteArchive final {
     }
   }
 
-  /// (Advanced) Returns the YAML string for whatever Serializable was most
-  /// recently passed into Accept.
-  ///
-  /// If the `root_name` is empty, the returned document will be the
-  /// Serializable's visited content (which itself is already a Map node)
-  /// directly. If the visited serializable content is null (in cases
-  /// `Accpet()` has not been called or the entries are erased after calling
-  /// `EraseMatchingMaps()`), then an empty map `{}` will be emitted.
-  ///
-  /// If the `root_name` is not empty, the returned document will be a
-  /// single Map node named using `root_name` with the Serializable's visited
-  /// content as key-value entries within it. The visited content could be
-  /// null and the nullness is defined as above.
+  // Returns the YAML string for whatever Serializable was most recently passed
+  // into Accept.
+  //
+  // If the `root_name` is empty, the returned document will be the
+  // Serializable's visited content (which itself is already a Map node)
+  // directly. If the visited serializable content is null (in cases
+  // `Accpet()` has not been called or the entries are erased after calling
+  // `EraseMatchingMaps()`), then an empty map `{}` will be emitted.
+  //
+  // If the `root_name` is not empty, the returned document will be a single
+  // Map node named using `root_name` with the Serializable's visited content
+  // as key-value entries within it. The visited content could be null and the
+  // nullness is defined as above.
   std::string EmitString(const std::string& root_name = "root") const;
 
-  /// (Advanced) Removes from this archive any map entries that are identical
-  /// to an entry in `other`, iff they reside at the same location within the
-  /// node tree hierarchy, and iff their parent nodes (and grandparent, etc.,
-  /// all the way up to the root) are also all maps.  This enables emitting a
-  /// minimal YAML representation when the output will be later loaded using
-  /// YamlReadArchive's option to retain_map_defaults; the "all parents are
-  /// maps" condition is the complement to what retain_map_defaults admits.
+  // Removes from this archive any map entries that are identical to an entry
+  // in `other`, iff they reside at the same location within the node tree
+  // hierarchy, and iff their parent nodes (and grandparent, etc., all the way
+  // up to the root) are also all maps. This enables emitting a minimal YAML
+  // representation when the output will be later loaded using YamlReadArchive's
+  // option to retain_map_defaults; the "all parents are maps" condition is the
+  // complement to what retain_map_defaults admits.
   void EraseMatchingMaps(const YamlWriteArchive& other);
 
-  /// (Advanced) Copies the value pointed to by `nvp.value()` into the YAML
-  /// object.  Most users should call Accept, not Visit.
+  // Copies the value pointed to by `nvp.value()` into the YAML object. Most
+  // users should call Accept, not Visit.
   template <typename NameValuePair>
   void Visit(const NameValuePair& nvp) {
     // Use int32_t for the final argument to prefer the specialized overload.
@@ -354,6 +356,12 @@ class YamlWriteArchive final {
   internal::Node root_ = internal::Node::MakeMapping();
   std::vector<std::string> visit_order_;
 };
+
+}  // namespace internal
+
+using YamlWriteArchive
+    DRAKE_DEPRECATED("2022-09-01", "Use the yaml_io.h functions instead")
+    = internal::YamlWriteArchive;
 
 }  // namespace yaml
 }  // namespace drake

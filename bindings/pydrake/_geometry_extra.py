@@ -7,6 +7,7 @@ import subprocess
 import sys
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.deprecation import deprecated_callable as _deprecated
 
 
 def _is_listening(port):
@@ -56,44 +57,40 @@ def _start_meshcat_deepnote(*, params=None, restart_nginx=False):
     return meshcat
 
 
-def _start_meshcat_ngrok():
-    from IPython.display import display, HTML
-    from pyngrok import ngrok
-    from pydrake.common import set_log_level
-    prev_log_level = set_log_level("warn")
-    meshcat = Meshcat()
-    set_log_level(prev_log_level)
-    http_tunnel = ngrok.connect(meshcat.port(), bind_tls=False)
-    url = http_tunnel.public_url
-    display(HTML(f"Meshcat URL: <a href='{url}' target='_blank'>{url}</a>"))
-    return meshcat
-
-
 def StartMeshcat():
     """
-    Constructs a Meshcat instance, with support for Deepnote and Google Colab.
+    Constructs a Meshcat instance, with extra support for Deepnote.
 
     On most platforms, this function is equivalent to simply constructing a
-    ``pydrake.geometry.Meshcat`` object with default arguments. On Deepnote or
-    Google Colab, however, this does extra work to expose Meshcat to the public
-    internet.
+    ``pydrake.geometry.Meshcat`` object with default arguments.
 
-    On Deepnote, this sets up a reverse proxy for the single available network
+    On Deepnote, however, this does extra work to expose Meshcat to the public
+    internet by setting up a reverse proxy for the single available network
     port. To access it, you must enable "Allow incoming connections" in the
     Environment settings pane.
-
-    On Google Colab, this launches an ngrok tunnel. Using ngrok requires
-    creating an ngrok account and proving your authtoken out-of-band.
-
-    Warning:
-     Drake's support for Colab is deprecated.
-     New releases after 2022-04-01 will no longer be compatible with Colab.
-     See `drake#13391 <https://github.com/RobotLocomotion/drake/issues/13391>`_
-     or `colab#1880 <https://github.com/googlecolab/colabtools/issues/1880>`_
-     for details.
     """
     if "DEEPNOTE_PROJECT_ID" in os.environ:
         return _start_meshcat_deepnote()
-    if "google.colab" in sys.modules:
-        return _start_meshcat_ngrok()
     return Meshcat()
+
+
+@_deprecated(
+    "MeshcatVisualizerCpp has been renamed to MeshcatVisualizer.",
+    date="2022-11-01")
+def MeshcatVisualizerCpp(*args, **kwargs):
+    return MeshcatVisualizer(*args, **kwargs)
+
+
+@_deprecated(
+    "MeshcatPointCloudVisualizerCpp has been renamed to "
+    "MeshcatPointCloudVisualizer.",
+    date="2022-11-01")
+def MeshcatPointCloudVisualizerCpp(*args, **kwargs):
+    return MeshcatPointCloudVisualizer(*args, **kwargs)
+
+
+# For the template classes, it's not easy to add a deprecation message.
+# We'll rely on the default names above (no underscore) to provide one,
+# along with the release notes.
+MeshcatVisualizerCpp_ = MeshcatVisualizer_
+MeshcatPointCloudVisualizerCpp_ = MeshcatPointCloudVisualizer_

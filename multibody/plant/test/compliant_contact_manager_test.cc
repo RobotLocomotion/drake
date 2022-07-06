@@ -2,15 +2,24 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/proximity_properties.h"
-#include "drake/multibody/contact_solvers/pgs_solver.h"
+#include "drake/multibody/contact_solvers/contact_solver_results.h"
+#include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/joint_actuator.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/space_xyz_mobilizer.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
@@ -23,9 +32,15 @@ using drake::geometry::VolumeMesh;
 using drake::geometry::VolumeMeshFieldLinear;
 using drake::math::RigidTransformd;
 using drake::math::RotationMatrixd;
-using drake::multibody::contact_solvers::internal::PgsSolver;
+using drake::multibody::contact_solvers::internal::ContactSolverResults;
+using drake::multibody::contact_solvers::internal::MergeNormalAndTangent;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
+using drake::multibody::contact_solvers::internal::SapLimitConstraint;
+using drake::multibody::contact_solvers::internal::SapSolver;
+using drake::multibody::contact_solvers::internal::SapSolverParameters;
+using drake::multibody::contact_solvers::internal::SapSolverResults;
+using drake::multibody::contact_solvers::internal::SapSolverStatus;
 using drake::multibody::internal::DiscreteContactPair;
 using drake::systems::Context;
 using drake::systems::PassThrough;
@@ -40,10 +55,86 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+constexpr double kEps = std::numeric_limits<double>::epsilon();
+
 // Helper function for NaN initialization.
 static constexpr double nan() {
   return std::numeric_limits<double>::quiet_NaN();
 }
+
+// Friend class used to provide access to a selection of private functions in
+// CompliantContactManager for testing purposes.
+class CompliantContactManagerTest {
+ public:
+  static const internal::MultibodyTreeTopology& topology(
+      const CompliantContactManager<double>& manager) {
+    return manager.tree_topology();
+  }
+
+  static const std::vector<geometry::ContactSurface<double>>&
+  EvalContactSurfaces(const CompliantContactManager<double>& manager,
+                      const Context<double>& context) {
+    return manager.EvalContactSurfaces(context);
+  }
+
+  static const std::vector<DiscreteContactPair<double>>&
+  EvalDiscreteContactPairs(const CompliantContactManager<double>& manager,
+                           const Context<double>& context) {
+    return manager.EvalDiscreteContactPairs(context);
+  }
+
+  static std::vector<ContactPairKinematics<double>> CalcContactKinematics(
+      const CompliantContactManager<double>& manager,
+      const Context<double>& context) {
+    return manager.CalcContactKinematics(context);
+  }
+
+  static const ContactProblemCache<double>& EvalContactProblemCache(
+      const CompliantContactManager<double>& manager,
+      const Context<double>& context) {
+    return manager.EvalContactProblemCache(context);
+  }
+
+  static VectorXd CalcFreeMotionVelocities(
+      const CompliantContactManager<double>& manager,
+      const Context<double>& context) {
+    VectorXd v_star(manager.plant().num_velocities());
+    manager.CalcFreeMotionVelocities(context, &v_star);
+    return v_star;
+  }
+
+  static std::vector<MatrixXd> CalcLinearDynamicsMatrix(
+      const CompliantContactManager<double>& manager,
+      const Context<double>& context) {
+    std::vector<MatrixXd> A;
+    manager.CalcLinearDynamicsMatrix(context, &A);
+    return A;
+  }
+
+  static void PackContactSolverResults(
+      const CompliantContactManager<double>& manager,
+      const contact_solvers::internal::SapContactProblem<double>& problem,
+      int num_contacts,
+      const contact_solvers::internal::SapSolverResults<double>& sap_results,
+      contact_solvers::internal::ContactSolverResults<double>*
+          contact_results) {
+    manager.PackContactSolverResults(problem, num_contacts, sap_results,
+                                     contact_results);
+  }
+
+  static void CalcNonContactForces(
+      const CompliantContactManager<double>& manager,
+      const Context<double>& context, MultibodyForces<double>* forces) {
+    manager.CalcNonContactForces(context, forces);
+  }
+
+  static void AddLimitConstraints(
+      const CompliantContactManager<double>& manager,
+      const Context<double>& context, const VectorXd& v_star,
+      SapContactProblem<double>* problem) {
+    manager.AddLimitConstraints(context, v_star, problem);
+  }
+};
 
 // TODO(DamrongGuoy): Simplify the test fixture somehow (need discussion
 //  among the architects). Due to the existing architecture of our code,
@@ -56,7 +147,7 @@ static constexpr double nan() {
 // on top the first sphere. They are assigned to be rigid-hydroelastic,
 // compliant-hydroelastic, or non-hydroelastic to test various cases of
 // contact quantities computed by the CompliantContactManager.
-class CompliantContactManagerTest : public ::testing::Test {
+class SpheresStack : public ::testing::Test {
  public:
   // Contact model parameters.
   struct ContactParameters {
@@ -78,7 +169,8 @@ class CompliantContactManagerTest : public ::testing::Test {
     const std::string name;
     double mass;
     double radius;
-    ContactParameters contact_parameters;
+    // No contact geometry is registered if nullopt.
+    std::optional<ContactParameters> contact_parameters;
   };
 
   // Sets up this fixture to have:
@@ -104,7 +196,24 @@ class CompliantContactManagerTest : public ::testing::Test {
               sphere1_on_prismatic_joint);
   }
 
-  void MakeModel(const ContactParameters& ground_params,
+  void SetupFreeFloatingSpheresWithNoContact() {
+    const bool sphere1_on_prismatic_joint = false;
+    const SphereParameters sphere1_params{"Sphere1", 10.0 /* mass */,
+                                          0.2 /* size */,
+                                          std::nullopt /* no contact */};
+    const SphereParameters sphere2_params{"Sphere2", 10.0 /* mass */,
+                                          0.2 /* size */,
+                                          std::nullopt /* no contact */};
+    MakeModel(std::nullopt /* no ground */, sphere1_params, sphere2_params,
+              sphere1_on_prismatic_joint);
+  }
+
+  // Sets up a model with two spheres and the ground.
+  // Spheres are defined by their SphereParameters. Ground contact is defined by
+  // `ground_params`, no ground is added if std::nullopt.
+  // Sphere 1 is mounted on a prismatic joint about the z axis if
+  // sphere1_on_prismatic_joint = true.
+  void MakeModel(const std::optional<ContactParameters>& ground_params,
                  const SphereParameters& sphere1_params,
                  const SphereParameters& sphere2_params,
                  bool sphere1_on_prismatic_joint = false) {
@@ -113,15 +222,17 @@ class CompliantContactManagerTest : public ::testing::Test {
         AddMultibodyPlantSceneGraph(&builder, time_step_);
 
     // Add model of the ground.
-    const ProximityProperties ground_properties =
-        MakeProximityProperties(ground_params);
-    plant_->RegisterCollisionGeometry(plant_->world_body(), RigidTransformd(),
-                                      geometry::HalfSpace(), "ground_collision",
-                                      ground_properties);
-    const Vector4<double> green(0.5, 1.0, 0.5, 1.0);
-    plant_->RegisterVisualGeometry(plant_->world_body(), RigidTransformd(),
-                                   geometry::HalfSpace(), "ground_visual",
-                                   green);
+    if (ground_params) {
+      const ProximityProperties ground_properties =
+          MakeProximityProperties(*ground_params);
+      plant_->RegisterCollisionGeometry(plant_->world_body(), RigidTransformd(),
+                                        geometry::HalfSpace(),
+                                        "ground_collision", ground_properties);
+      const Vector4<double> green(0.5, 1.0, 0.5, 1.0);
+      plant_->RegisterVisualGeometry(plant_->world_body(), RigidTransformd(),
+                                     geometry::HalfSpace(), "ground_visual",
+                                     green);
+    }
 
     // Add models of the spheres.
     sphere1_ = &AddSphere(sphere1_params);
@@ -143,8 +254,7 @@ class CompliantContactManagerTest : public ::testing::Test {
 
     plant_->Finalize();
     auto owned_contact_manager =
-        std::make_unique<CompliantContactManager<double>>(
-            std::make_unique<PgsSolver<double>>());
+        std::make_unique<CompliantContactManager<double>>();
     contact_manager_ = owned_contact_manager.get();
     plant_->SetDiscreteUpdateManager(std::move(owned_contact_manager));
 
@@ -207,7 +317,7 @@ class CompliantContactManagerTest : public ::testing::Test {
     MakeModel(hard_hydro_contact, sphere1_params, sphere2_params);
 
     const std::vector<PenetrationAsPointPair<double>>& point_pair_penetrations =
-        EvalPointPairPenetrations(*plant_context_);
+        plant_->EvalPointPairPenetrations(*plant_context_);
     const int num_point_pairs = point_pair_penetrations.size();
     const std::vector<geometry::ContactSurface<double>>& surfaces =
         EvalContactSurfaces(*plant_context_);
@@ -216,8 +326,6 @@ class CompliantContactManagerTest : public ::testing::Test {
     const std::vector<DiscreteContactPair<double>>& pairs =
         EvalDiscreteContactPairs(*plant_context_);
     EXPECT_EQ(pairs.size(), num_point_pairs + num_hydro_pairs);
-
-    constexpr double kEps = std::numeric_limits<double>::epsilon();
 
     const GeometryId sphere2_geometry =
         plant_->GetCollisionGeometriesForBody(*sphere2_)[0];
@@ -274,62 +382,68 @@ class CompliantContactManagerTest : public ::testing::Test {
     }
   }
 
-  // In the functions below we use CompliantContactManagerTest's friendship with
-  // CompliantContactManager to provide access to private functions for unit
-  // testing.
+  // In the functions below we use CompliantContactManagerTest to provide access
+  // to private functions for unit testing.
 
   const internal::MultibodyTreeTopology& topology() const {
-    return contact_manager_->tree_topology();
-  }
-
-  const std::vector<PenetrationAsPointPair<double>>& EvalPointPairPenetrations(
-      const Context<double>& context) const {
-    return plant_->EvalPointPairPenetrations(context);
+    return CompliantContactManagerTest::topology(*contact_manager_);
   }
 
   const std::vector<geometry::ContactSurface<double>>& EvalContactSurfaces(
       const Context<double>& context) const {
-    return contact_manager_->EvalContactSurfaces(context);
+    return CompliantContactManagerTest::EvalContactSurfaces(*contact_manager_,
+                                                            context);
   }
 
   const std::vector<DiscreteContactPair<double>>& EvalDiscreteContactPairs(
       const Context<double>& context) const {
-    return contact_manager_->EvalDiscreteContactPairs(context);
+    return CompliantContactManagerTest::EvalDiscreteContactPairs(
+        *contact_manager_, context);
   }
 
   std::vector<ContactPairKinematics<double>> CalcContactKinematics(
       const Context<double>& context) const {
-    return contact_manager_->CalcContactKinematics(context);
+    return CompliantContactManagerTest::CalcContactKinematics(*contact_manager_,
+                                                              context);
   }
 
   const ContactProblemCache<double>& EvalContactProblemCache(
       const Context<double>& context) const {
-    return contact_manager_->EvalContactProblemCache(context);
+    return CompliantContactManagerTest::EvalContactProblemCache(
+        *contact_manager_, context);
   }
 
-  VectorXd CalcFreeMotionVelocities(
-      const systems::Context<double>& context) const {
+  VectorXd CalcFreeMotionVelocities(const Context<double>& context) const {
     VectorXd v_star(plant_->num_velocities());
-    contact_manager_->CalcFreeMotionVelocities(context, &v_star);
-    return v_star;
+    return CompliantContactManagerTest::CalcFreeMotionVelocities(
+        *contact_manager_, context);
   }
 
   std::vector<MatrixXd> CalcLinearDynamicsMatrix(
-      const systems::Context<double>& context) const {
-    std::vector<MatrixXd> A;
-    contact_manager_->CalcLinearDynamicsMatrix(context, &A);
-    return A;
+      const Context<double>& context) const {
+    return CompliantContactManagerTest::CalcLinearDynamicsMatrix(
+        *contact_manager_, context);
   }
 
-  // Helper method to unit test EvalContactJacobianCache().
-  // This method takes the Jacobian blocks evaluated with
-  // EvalContactJacobianCache() and assembles them into a dense Jacobian matrix.
-  MatrixXd CalcDenseJacobianMatrix(
+  void PackContactSolverResults(
+      const contact_solvers::internal::SapContactProblem<double>& problem,
+      int num_contacts,
+      const contact_solvers::internal::SapSolverResults<double>& sap_results,
+      contact_solvers::internal::ContactSolverResults<double>* contact_results)
+      const {
+    CompliantContactManagerTest::PackContactSolverResults(
+        *contact_manager_, problem, num_contacts, sap_results, contact_results);
+  }
+
+  // Returns the Jacobian J_AcBc_C. This method takes the Jacobian blocks
+  // evaluated with EvalContactJacobianCache() and assembles them into a dense
+  // Jacobian matrix.
+  MatrixXd CalcDenseJacobianMatrixInContactFrame(
       const std::vector<ContactPairKinematics<double>>& contact_kinematics)
       const {
     const int nc = contact_kinematics.size();
-    MatrixXd J_AcBc_W(3 * nc, contact_manager_->plant().num_velocities());
-    J_AcBc_W.setZero();
+    MatrixXd J_AcBc_C(3 * nc, contact_manager_->plant().num_velocities());
+    J_AcBc_C.setZero();
     for (int i = 0; i < nc; ++i) {
       const int row_offset = 3 * i;
       const ContactPairKinematics<double>& pair_kinematics =
@@ -341,9 +455,27 @@ class CompliantContactManagerTest : public ::testing::Test {
         const int col_offset =
             topology().tree_velocities_start(tree_jacobian.tree);
         const int tree_nv = topology().num_tree_velocities(tree_jacobian.tree);
-        J_AcBc_W.block(row_offset, col_offset, 3, tree_nv) =
-            pair_kinematics.R_WC.matrix() * tree_jacobian.J;
+        J_AcBc_C.block(row_offset, col_offset, 3, tree_nv) = tree_jacobian.J;
       }
+    }
+    return J_AcBc_C;
+  }
+
+  // Helper method to test EvalContactJacobianCache().
+  // Returns the Jacobian J_AcBc_W.
+  MatrixXd CalcDenseJacobianMatrixInWorldFrame(
+      const std::vector<ContactPairKinematics<double>>& contact_kinematics)
+      const {
+    const int nc = contact_kinematics.size();
+    const MatrixXd J_AcBc_C =
+        CalcDenseJacobianMatrixInContactFrame(contact_kinematics);
+    MatrixXd J_AcBc_W(3 * nc, contact_manager_->plant().num_velocities());
+    J_AcBc_W.setZero();
+    for (int i = 0; i < nc; ++i) {
+      const ContactPairKinematics<double>& pair_kinematics =
+          contact_kinematics[i];
+      J_AcBc_W.middleRows<3>(3 * i) =
+          pair_kinematics.R_WC.matrix() * J_AcBc_C.middleRows<3>(3 * i);
     }
     return J_AcBc_W;
   }
@@ -379,11 +511,13 @@ class CompliantContactManagerTest : public ::testing::Test {
     const RigidBody<double>& body = plant_->AddRigidBody(params.name, M_BBcm_B);
 
     // Add collision geometry.
-    const geometry::Sphere shape(params.radius);
-    const ProximityProperties properties =
-        MakeProximityProperties(params.contact_parameters);
-    plant_->RegisterCollisionGeometry(body, RigidTransformd(), shape,
-                                      params.name + "_collision", properties);
+    if (params.contact_parameters) {
+      const geometry::Sphere shape(params.radius);
+      const ProximityProperties properties =
+          MakeProximityProperties(*params.contact_parameters);
+      plant_->RegisterCollisionGeometry(body, RigidTransformd(), shape,
+                                        params.name + "_collision", properties);
+    }
 
     return body;
   }
@@ -420,7 +554,7 @@ class CompliantContactManagerTest : public ::testing::Test {
 
 // Unit test to verify discrete contact pairs computed by the manager for
 // different combinations of compliance.
-TEST_F(CompliantContactManagerTest, VerifyDiscreteContactPairs) {
+TEST_F(SpheresStack, VerifyDiscreteContactPairs) {
   ContactParameters soft_point_contact{1.0e3, std::nullopt, 0.01, 1.0};
   ContactParameters hard_point_contact{1.0e40, std::nullopt, 0.0, 1.0};
 
@@ -436,12 +570,12 @@ TEST_F(CompliantContactManagerTest, VerifyDiscreteContactPairs) {
 
 // Unit test to verify discrete contact pairs computed by the manager for
 // rigid-compliant hydroelastic contact with point-contact fall back.
-TEST_F(CompliantContactManagerTest,
+TEST_F(SpheresStack,
        VerifyDiscreteContactPairsFromRigidCompliantHydroelasticContact) {
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
 
   const std::vector<PenetrationAsPointPair<double>>& point_pairs =
-      EvalPointPairPenetrations(*plant_context_);
+      plant_->EvalPointPairPenetrations(*plant_context_);
   const int num_point_pairs = point_pairs.size();
   EXPECT_EQ(num_point_pairs, 1);
   const std::vector<DiscreteContactPair<double>>& pairs =
@@ -454,16 +588,16 @@ TEST_F(CompliantContactManagerTest,
 }
 
 // Unit test to verify the computation of the contact Jacobian.
-TEST_F(CompliantContactManagerTest, CalcContactKinematics) {
+TEST_F(SpheresStack, CalcContactKinematics) {
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
   const double radius = 0.2;  // Spheres's radii in the default setup.
-  const double kTolerance = std::numeric_limits<double>::epsilon();
 
   const std::vector<DiscreteContactPair<double>>& pairs =
       EvalDiscreteContactPairs(*plant_context_);
   const std::vector<ContactPairKinematics<double>> contact_kinematics =
       CalcContactKinematics(*plant_context_);
-  const MatrixXd& J_AcBc_W = CalcDenseJacobianMatrix(contact_kinematics);
+  const MatrixXd J_AcBc_W =
+      CalcDenseJacobianMatrixInWorldFrame(contact_kinematics);
 
   // Arbitrary velocity of sphere 1.
   const Vector3d v_WS1(1, 2, 3);
@@ -499,7 +633,7 @@ TEST_F(CompliantContactManagerTest, CalcContactKinematics) {
     const int sign = pairs[0].id_A == sphere1_geometry ? 1 : -1;
     const MatrixXd J_S1cS2c_W = sign * J_AcBc_W.topRows(3);
     const Vector3d v_S1cS2c_W = J_S1cS2c_W * v;
-    EXPECT_TRUE(CompareMatrices(v_S1cS2c_W, expected_v_S1cS2c_W, kTolerance,
+    EXPECT_TRUE(CompareMatrices(v_S1cS2c_W, expected_v_S1cS2c_W, kEps,
                                 MatrixCompareType::relative));
 
     // Verify we loaded phi correctly.
@@ -518,7 +652,7 @@ TEST_F(CompliantContactManagerTest, CalcContactKinematics) {
       const MatrixXd J_WS1c_W =
           sign * J_AcBc_W.block(3 * q, 0, 3, plant_->num_velocities());
       const Vector3d v_WS1c_W = J_WS1c_W * v;
-      EXPECT_TRUE(CompareMatrices(v_WS1c_W, expected_v_WS1c, kTolerance,
+      EXPECT_TRUE(CompareMatrices(v_WS1c_W, expected_v_WS1c, kEps,
                                   MatrixCompareType::relative));
 
       // Verify we loaded phi correctly.
@@ -529,7 +663,7 @@ TEST_F(CompliantContactManagerTest, CalcContactKinematics) {
 
 // This test verifies that the SapContactProblem built by the manager is
 // consistent with the contact kinematics computed with CalcContactKinematics().
-TEST_F(CompliantContactManagerTest, EvalContactProblemCache) {
+TEST_F(SpheresStack, EvalContactProblemCache) {
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
   const ContactProblemCache<double>& problem_cache =
       EvalContactProblemCache(*plant_context_);
@@ -595,10 +729,8 @@ TEST_F(CompliantContactManagerTest, EvalContactProblemCache) {
 
 // Verifies the correctness of the computation of free motion velocities when
 // external forces are applied.
-TEST_F(CompliantContactManagerTest,
-       CalcFreeMotionVelocitiesWithExternalForces) {
+TEST_F(SpheresStack, CalcFreeMotionVelocitiesWithExternalForces) {
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
-  const double kTolerance = std::numeric_limits<double>::epsilon();
 
   // We set an arbitrary non-zero external force to the plant to verify it gets
   // properly applied as part of the computation.
@@ -624,12 +756,12 @@ TEST_F(CompliantContactManagerTest,
   // of constraints.
   const VectorXd v_star = CalcFreeMotionVelocities(*plant_context_);
 
-  EXPECT_TRUE(CompareMatrices(v_star, v_expected, kTolerance,
-                              MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(v_star, v_expected, kEps, MatrixCompareType::relative));
 }
 
 // Verifies that joint limit forces are applied.
-TEST_F(CompliantContactManagerTest, CalcFreeMotionVelocitiesWithJointLimits) {
+TEST_F(SpheresStack, CalcFreeMotionVelocitiesWithJointLimits) {
   // In this model sphere 1 is attached to the world by a prismatic joint with
   // lower limit z = 0.
   const bool sphere1_on_prismatic_joint = true;
@@ -649,33 +781,27 @@ TEST_F(CompliantContactManagerTest, CalcFreeMotionVelocitiesWithJointLimits) {
   // Initial velocities.
   const VectorXd v0 = plant_->GetVelocities(*plant_context_);
 
-  // Since sphere 2's frame is located at its COM and since its inertia is
-  // triaxially symmetric, the Coriolis term for sphere 2 is zero. The Coriolis
-  // term is trivially zero for sphere 1, which only can move along the z-axis.
-  // Therefore the momentum equation reduces to: M * (v-v0)/dt = tau_g.
-  // We compute the expected velocities in the absence of joint limits.
-  const double dt = plant_->time_step();
-  const VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*plant_context_);
-  MatrixXd M(nv, nv);
-  plant_->CalcMassMatrix(*plant_context_, &M);
-  const VectorXd v_expected = v0 + dt * M.ldlt().solve(tau_g);
-  // Obtain the slider's velocity at v_expected.
+  // Compute slider1's velocity in the absence of joint limits. This is
+  // equivalent to computing the free motion velocities before constraints are
+  // applied.
+  const VectorXd v_expected = CalcFreeMotionVelocities(*plant_context_);
   const double v_slider_no_limits = v_expected(slider1_->velocity_start());
 
-  // Compute the velocities the system would have next time step in the absence
-  // of constraints.
-  const VectorXd v_star = CalcFreeMotionVelocities(*plant_context_);
-  // Obtain the slider's velocity at v*.
+  // Compute slider1's velocity with constraints applied. This corresponds to
+  // the full discrete update computation.
+  ContactSolverResults<double> contact_results;
+  contact_manager_->CalcContactSolverResults(*plant_context_, &contact_results);
+  const VectorXd v_star = contact_results.v_next;
   const double v_slider_star = v_star(slider1_->velocity_start());
 
-  // While other MultibodyPlant tests verify the correctness of joint limit
+  // While other solver specific tests verify the correctness of joint limit
   // forces, this test is simply limited to verifying the manager applied them.
   // Therefore we only check the force limits have the effect of making the
   // slider velocity larger than if not present.
   EXPECT_GT(v_slider_star, v_slider_no_limits);
 }
 
-TEST_F(CompliantContactManagerTest, CalcLinearDynamicsMatrix) {
+TEST_F(SpheresStack, CalcLinearDynamicsMatrix) {
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
   const std::vector<MatrixXd> A = CalcLinearDynamicsMatrix(*plant_context_);
   const int nv = plant_->num_velocities();
@@ -687,8 +813,168 @@ TEST_F(CompliantContactManagerTest, CalcLinearDynamicsMatrix) {
   }
   MatrixXd Aexpected(nv, nv);
   plant_->CalcMassMatrix(*plant_context_, &Aexpected);
-  EXPECT_TRUE(CompareMatrices(Adense, Aexpected,
-                              std::numeric_limits<double>::epsilon(),
+  EXPECT_TRUE(
+      CompareMatrices(Adense, Aexpected, kEps, MatrixCompareType::relative));
+}
+
+// Here we test the function CompliantContactManager::PackContactSolverResults()
+// which takes SapSolverResults and packs them into ContactSolverResults as
+// consumed by MultibodyPlant.
+TEST_F(SpheresStack, PackContactSolverResults) {
+  SetupRigidGroundCompliantSphereAndNonHydroSphere();
+
+  // We form an arbitrary set of SAP results consistent with the contact
+  // kinematics for the configuration of our model.
+  const std::vector<ContactPairKinematics<double>> contact_kinematics =
+      CalcContactKinematics(*plant_context_);
+  const int num_contacts = contact_kinematics.size();
+  const int nv = plant_->num_velocities();
+  SapSolverResults<double> sap_results;
+  sap_results.Resize(nv, 3 * num_contacts);
+  sap_results.v = VectorXd::LinSpaced(nv, -3.0, 14.0);
+  sap_results.gamma = VectorXd::LinSpaced(3 * num_contacts, -12.0, 8.0);
+  sap_results.vc = VectorXd::LinSpaced(3 * num_contacts, -1.0, 11.0);
+  // Not used to pack contact results.
+  sap_results.j = VectorXd::Constant(nv, NAN);
+
+  // Pack SAP results into contact results.
+  const SapContactProblem<double>& sap_problem =
+      *EvalContactProblemCache(*plant_context_).sap_problem;
+  ContactSolverResults<double> contact_results;
+  PackContactSolverResults(sap_problem, num_contacts, sap_results,
+                           &contact_results);
+
+  // Verify against expected values.
+  VectorXd gamma(3 * num_contacts);
+  MergeNormalAndTangent(contact_results.fn, contact_results.ft, &gamma);
+  gamma *= plant_->time_step();
+  EXPECT_TRUE(CompareMatrices(gamma, sap_results.gamma, kEps,
+                              MatrixCompareType::relative));
+  VectorXd vc(3 * num_contacts);
+  MergeNormalAndTangent(contact_results.vn, contact_results.vt, &vc);
+  EXPECT_TRUE(
+      CompareMatrices(vc, sap_results.vc, kEps, MatrixCompareType::relative));
+  const MatrixXd J_AcBc_C =
+      CalcDenseJacobianMatrixInContactFrame(contact_kinematics);
+  const VectorXd tau_expected =
+      J_AcBc_C.transpose() * sap_results.gamma / plant_->time_step();
+  EXPECT_TRUE(CompareMatrices(contact_results.tau_contact, tau_expected,
+                              2.0 * kEps, MatrixCompareType::relative));
+}
+
+// Unit test that the manager throws an exception whenever SAP fails to
+// converge.
+TEST_F(SpheresStack, SapFailureException) {
+  SetupRigidGroundCompliantSphereAndNonHydroSphere();
+  ContactSolverResults<double> contact_results;
+  // To trigger SAP's failure, we limit the maximum number of iterations to
+  // zero.
+  SapSolverParameters parameters;
+  parameters.max_iterations = 0;
+  contact_manager_->set_sap_solver_parameters(parameters);
+  DRAKE_EXPECT_THROWS_MESSAGE(contact_manager_->CalcContactSolverResults(
+                                  *plant_context_, &contact_results),
+                              "The SAP solver failed to converge(.|\n)*");
+}
+
+// The purpose of this test is not to verify the correctness of the computation,
+// but rather to verify that data flows correctly. That is, that
+// CalcContactSolverResults() loads the expected computation into the contact
+// results.
+TEST_F(SpheresStack, DoCalcContactSolverResults) {
+  SetupRigidGroundCompliantSphereAndNonHydroSphere();
+  // N.B. We make sure both the manager and the manual invocations of the SAP
+  // solver in this test both use the same set of parameters.
+  SapSolverParameters params;
+  params.ls_alpha_max = 1.0 / params.ls_rho;
+  contact_manager_->set_sap_solver_parameters(params);
+  ContactSolverResults<double> contact_results;
+  contact_manager_->CalcContactSolverResults(*plant_context_, &contact_results);
+
+  // Generate contact results here locally to verify that
+  // CalcContactSolverResults() loads them properly.
+  const SapContactProblem<double>& sap_problem =
+      *EvalContactProblemCache(*plant_context_).sap_problem;
+  const int num_contacts = sap_problem.num_constraints();  // Only contacts.
+  SapSolver<double> sap;
+  sap.set_parameters(params);
+  SapSolverResults<double> sap_results;
+  const SapSolverStatus status = sap.SolveWithGuess(
+      sap_problem, plant_->GetVelocities(*plant_context_), &sap_results);
+  ASSERT_EQ(status, SapSolverStatus::kSuccess);
+
+  ContactSolverResults<double> contact_results_expected;
+  PackContactSolverResults(sap_problem, num_contacts, sap_results,
+                           &contact_results_expected);
+
+  // Verify the expected result.
+  EXPECT_TRUE(CompareMatrices(contact_results.v_next,
+                              contact_results_expected.v_next, kEps,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(contact_results.fn, contact_results_expected.fn,
+                              kEps, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(contact_results.ft, contact_results_expected.ft,
+                              kEps, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(contact_results.vn, contact_results_expected.vn,
+                              kEps, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(contact_results.vt, contact_results_expected.vt,
+                              kEps, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(contact_results.tau_contact,
+                              contact_results_expected.tau_contact, kEps,
+                              MatrixCompareType::relative));
+}
+
+// The purpose of this test is to verify that CalcDiscreteValues() loads state
+// updates correctly. This can be verified even with a simple case without
+// contact, for which we can manually compute the solution. The correctness of
+// contact results in configurations with contact is tested elsewhere.
+// In this case we setup two free falling spheres for which we can compute the
+// state update by hand, under the assumption the manager is using a symplectic
+// Euler scheme. This assumping might need to be updated in the future when
+// other schemes are supported.
+TEST_F(SpheresStack, DoCalcDiscreteValues) {
+  SetupFreeFloatingSpheresWithNoContact();
+
+  // Both spheres accelerate from zero velocity in a single time step with
+  // gravity along the z-axis.
+  const Vector3d v_WS(0., 0., -gravity_ * plant_->time_step());
+  const SpatialVelocity<double> V_WS(Vector3d::Zero(), v_WS);
+
+  // Positions at the previous time step.
+  const Vector3d& p_WS10 =
+      plant_->EvalBodyPoseInWorld(*plant_context_, *sphere1_).translation();
+  const Vector3d& p_WS20 =
+      plant_->EvalBodyPoseInWorld(*plant_context_, *sphere2_).translation();
+
+  // The manager uses a symplectic update of the positions. For this case then
+  // we know the positions are:
+  const Vector3d p_WS1 = p_WS10 + plant_->time_step() * v_WS;
+  const Vector3d p_WS2 = p_WS20 + plant_->time_step() * v_WS;
+
+  // Create a new context for the next state.
+  auto next_context = plant_->CreateDefaultContext();
+
+  // In this simple setup only positions change since there is no angular
+  // velocities nor external torques.
+  plant_->SetFreeBodyPoseInWorldFrame(next_context.get(), *sphere1_,
+                                      RigidTransformd(p_WS1));
+  plant_->SetFreeBodyPoseInWorldFrame(next_context.get(), *sphere2_,
+                                      RigidTransformd(p_WS2));
+  plant_->SetFreeBodySpatialVelocity(next_context.get(), *sphere1_, V_WS);
+  plant_->SetFreeBodySpatialVelocity(next_context.get(), *sphere2_, V_WS);
+
+  // Obtain the expected value of the state.
+  const VectorXd& x_next_expected = next_context->get_discrete_state().value();
+
+  // Perform a discrete update, on the original context_.
+  std::unique_ptr<systems::DiscreteValues<double>> updates =
+      diagram_->AllocateDiscreteVariables();
+  contact_manager_->CalcDiscreteValues(*plant_context_, updates.get());
+  ASSERT_EQ(updates->num_groups(), 1);
+  const VectorXd x_next = updates->value();
+
+  // Verify the result.
+  EXPECT_TRUE(CompareMatrices(x_next, x_next_expected, kEps,
                               MatrixCompareType::relative));
 }
 
@@ -706,8 +992,7 @@ class AlgebraicLoopDetection : public ::testing::Test {
     plant_ = builder.AddSystem<MultibodyPlant>(1.0e-3);
     plant_->Finalize();
     auto owned_contact_manager =
-        std::make_unique<CompliantContactManager<double>>(
-            std::make_unique<PgsSolver<double>>());
+        std::make_unique<CompliantContactManager<double>>();
     plant_->SetDiscreteUpdateManager(std::move(owned_contact_manager));
 
     systems::System<double>* feedback{nullptr};
@@ -796,6 +1081,585 @@ TEST_F(AlgebraicLoopDetection, VerifyNoFalsePositivesWhenCachingIsDisabled) {
   // Even if the computation is not cached, the loop detection is not triggered,
   // as desired.
   VerifyNoLoopIsDetected();
+}
+
+// Fixture to set up a Kuka iiwa arm model with a Schunk wsg gripper and welded
+// to the world at the base link. This fixture is used to stress test the
+// implementation of CompliantContactManager with a model of practical relevance
+// to robotics. In particular, we unit test the implementation of damping and
+// joint limits.
+class KukaIiwaArmTests : public ::testing::Test {
+ public:
+  // Enum used to specify how we'd like to initialize the state for limit
+  // constraints unit tests.
+  enum class InitializePositionAt {
+    BelowLowerLimit,  // q₀ < qₗ
+    // Current position is above limit, though predicted position is below.
+    AboveLowerLimitThoughPredictionBelow,  // q₀+δt⋅v₀ < qₗ < q₀
+    AboveUpperLimit,                       // q₀ > qᵤ
+    // Current position is below limit, though predicted position is above.
+    BelowUpperLimitThoughPredictionAbove,  // q₀ < qᵤ < q₀+δt⋅v₀
+    WellWithinLimits,  // Both q0 and q₀ + δt⋅v₀ are in (qₗ, qᵤ)
+  };
+
+  // Setup model of the Kuka iiwa arm with Schunk gripper and allocate context
+  // resources. The model includes reflected inertias. Input ports are fixed to
+  // arbitrary non-zero values.
+  void SetUp() override {
+    LoadIiwaWithGripper(&plant_);
+    AddInReflectedInertia(&plant_, kRotorInertias, kGearRatios);
+
+    plant_.Finalize();
+
+    auto owned_contact_manager =
+        std::make_unique<CompliantContactManager<double>>();
+    manager_ = owned_contact_manager.get();
+    plant_.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+
+    context_ = plant_.CreateDefaultContext();
+    SetArbitraryNonZeroActuation(plant_, context_.get());
+    SetArbitraryState(plant_, context_.get());
+  }
+
+  // The manager solves free motion velocities using a discrete scheme with
+  // implicit joint dissipation. That is, it solves the momentum balance:
+  //   m(v) = (M + dt⋅D)⋅(v-v₀) - dt⋅k(x₀)
+  // where k(x₀) are all the non-constraint forces such as Coriolis terms and
+  // external actuation, evaluated at the previous state x₀.
+  // The dynamics matrix is defined as:
+  //   A = ∂m/∂v = (M + dt⋅D)
+  // This method computes A, including the contribution to implicit damping.
+  MatrixXd CalcLinearDynamicsMatrixIncludingImplicitDampingContribution()
+      const {
+    const int nv = plant_.num_velocities();
+    MatrixXd A(nv, nv);
+    plant_.CalcMassMatrix(*context_, &A);
+    // Include term due to the implicit treatment of dissipation.
+    VectorXd damping = VectorXd::Zero(plant_.num_velocities());
+    for (JointIndex joint_index(0); joint_index < plant_.num_joints();
+         ++joint_index) {
+      const Joint<double>& joint = plant_.get_joint(joint_index);
+      if (joint.num_velocities() > 0) {  // skip welds.
+        const VectorXd& joint_damping = joint.damping_vector();
+        // For this model we expect 1 DOF revolute and prismatic joints only.
+        EXPECT_EQ(joint_damping.size(), 1);
+        EXPECT_EQ(joint.num_velocities(), 1);
+        damping(joint.velocity_start()) = joint_damping(0);
+      }
+    }
+    A.diagonal() += plant_.time_step() * damping;
+    return A;
+  }
+
+  // Initializes `context` to store arbitrary values of state that abide by the
+  // given specification in `limits_specification`. This allows us to test how
+  // the manager adds constraints to the problem at different configurations.
+  // limits_specification are indexed by joint dofs.
+  // TODO(amcastro-tri): our testing strategy using these specifications can be
+  // further improved as discussed in the review of #17083, tracked in #17137.
+  void SetArbitraryStateWithLimitsSpecification(
+      const MultibodyPlant<double>& plant,
+      const std::vector<InitializePositionAt>& limits_specification,
+      Context<double>* context) {
+    DRAKE_DEMAND(static_cast<int>(limits_specification.size()) == kNumJoints);
+
+    // Arbitrary positive slop used for positions.
+    const double kPositiveDeltaQ = M_PI / 10.0;
+    const double dt = plant.time_step();
+    VectorXd v0(kNumJoints);
+    VectorXd q0(kNumJoints);
+
+    for (JointIndex joint_index(0); joint_index < plant.num_joints();
+         ++joint_index) {
+      const Joint<double>& joint = plant.get_joint(joint_index);
+
+      if (joint.num_velocities() == 1) {  // skip welds in the model.
+        const int v_index = joint.velocity_start();
+        const InitializePositionAt limit_spec = limits_specification[v_index];
+        const double ql = joint.position_lower_limits()[0];
+        const double qu = joint.position_upper_limits()[0];
+
+        double joint_q0 = 0.;
+        double joint_v0 = 0.;
+        switch (limit_spec) {
+          case InitializePositionAt::BelowLowerLimit: {
+            joint_q0 = ql > 0 ? 0.8 * ql : 1.2 * ql;
+            joint_v0 = joint_index * 2.3;  // Arbitrary.
+            break;
+          }
+          case InitializePositionAt::AboveLowerLimitThoughPredictionBelow: {
+            // We initialize a state s.t. q₀+δt⋅v₀ < qₗ < q₀.
+            joint_q0 = ql + kPositiveDeltaQ;
+            const double qp = ql - kPositiveDeltaQ;
+            joint_v0 = (qp - joint_q0) / dt;
+            break;
+          }
+          case InitializePositionAt::AboveUpperLimit: {
+            joint_q0 = qu > 0 ? 1.2 * qu : 0.8 * qu;
+            joint_v0 = joint_index * 2.3;  // Arbitrary.
+            break;
+          }
+          case InitializePositionAt::BelowUpperLimitThoughPredictionAbove: {
+            // We initialize a state s.t. q₀ < qᵤ < q₀+δt⋅v₀.
+            joint_q0 = qu - kPositiveDeltaQ;
+            const double qp = qu + kPositiveDeltaQ;
+            joint_v0 = (qp - joint_q0) / dt;
+            break;
+          }
+          case InitializePositionAt::WellWithinLimits: {
+            joint_q0 = 0.5 * (ql + qu);  // q in (ql, qu)
+            joint_v0 = 0.0;
+            break;
+          }
+          default:
+            DRAKE_UNREACHABLE();
+        }
+
+        q0(v_index) = joint_q0;
+        v0(v_index) = joint_v0;
+      }
+    }
+
+    plant.SetPositions(context, q0);
+    plant.SetVelocities(context, v0);
+  }
+
+ private:
+  void LoadIiwaWithGripper(MultibodyPlant<double>* plant) {
+    DRAKE_DEMAND(plant != nullptr);
+    const char kArmFilePath[] =
+        "drake/manipulation/models/iiwa_description/urdf/"
+        "iiwa14_no_collision.urdf";
+
+    const char kWsg50FilePath[] =
+        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+
+    Parser parser(plant);
+    arm_model_ = parser.AddModelFromFile(FindResourceOrThrow(kArmFilePath));
+
+    // Add the gripper.
+    gripper_model_ =
+        parser.AddModelFromFile(FindResourceOrThrow(kWsg50FilePath));
+
+    const auto& base_body = plant->GetBodyByName("base", arm_model_);
+    const auto& end_effector = plant->GetBodyByName("iiwa_link_7", arm_model_);
+    const auto& gripper_body = plant->GetBodyByName("body", gripper_model_);
+    plant->WeldFrames(plant->world_frame(), base_body.body_frame());
+    plant->WeldFrames(end_effector.body_frame(), gripper_body.body_frame());
+  }
+
+  void AddInReflectedInertia(MultibodyPlant<double>* plant,
+                             const VectorX<double>& rotor_inertias,
+                             const VectorX<double>& gear_ratios) {
+    DRAKE_DEMAND(plant != nullptr);
+    for (JointActuatorIndex index(0); index < plant->num_actuators(); ++index) {
+      JointActuator<double>& joint_actuator =
+          plant->get_mutable_joint_actuator(index);
+      joint_actuator.set_default_rotor_inertia(rotor_inertias(int{index}));
+      joint_actuator.set_default_gear_ratio(gear_ratios(int{index}));
+    }
+  }
+
+  // Set arbitrary state, though within joint limits.
+  void SetArbitraryState(const MultibodyPlant<double>& plant,
+                         Context<double>* context) {
+    for (JointIndex joint_index(0); joint_index < plant.num_joints();
+         ++joint_index) {
+      const Joint<double>& joint = plant.get_joint(joint_index);
+      // This model only has weld, prismatic, and revolute joints.
+      if (joint.type_name() == "revolute") {
+        const RevoluteJoint<double>& revolute_joint =
+            dynamic_cast<const RevoluteJoint<double>&>(joint);
+        // Arbitrary position within position limits.
+        const double ql = revolute_joint.position_lower_limit();
+        const double qu = revolute_joint.position_upper_limit();
+        const double w = joint_index / kNumJoints;  // Number in (0,1).
+        const double q = w * ql + (1.0 - w) * qu;   // q in (ql, qu)
+        revolute_joint.set_angle(context, q);
+        // Arbitrary velocity.
+        revolute_joint.set_angular_rate(context, 0.5 * joint_index);
+      } else if (joint.type_name() == "prismatic") {
+        const PrismaticJoint<double>& prismatic_joint =
+            dynamic_cast<const PrismaticJoint<double>&>(joint);
+        // Arbitrary position within position limits.
+        const double ql = prismatic_joint.position_lower_limit();
+        const double qu = prismatic_joint.position_upper_limit();
+        const double w = joint_index / kNumJoints;  // Number in (0,1).
+        const double q = w * ql + (1.0 - w) * qu;   // q in (ql, qu)
+        prismatic_joint.set_translation(context, q);
+        // Arbitrary velocity.
+        prismatic_joint.set_translation_rate(context, 0.5 * joint_index);
+      }
+    }
+  }
+
+  // Fixes all input ports to have non-zero actuation.
+  void SetArbitraryNonZeroActuation(const MultibodyPlant<double>& plant,
+                                    Context<double>* context) const {
+    const VectorX<double> tau_arm = VectorX<double>::LinSpaced(
+        plant.num_actuated_dofs(arm_model_), 10.0, 1000.0);
+    const VectorX<double> tau_gripper = VectorX<double>::LinSpaced(
+        plant.num_actuated_dofs(gripper_model_), 10.0, 1000.0);
+    plant.get_actuation_input_port(arm_model_).FixValue(context, tau_arm);
+    plant.get_actuation_input_port(gripper_model_)
+        .FixValue(context, tau_gripper);
+  }
+
+ protected:
+  const int kNumJoints = 9;
+  const double kTimeStep{0.015};
+  const VectorXd kRotorInertias{VectorXd::LinSpaced(kNumJoints, 0.1, 12.0)};
+  const VectorXd kGearRatios{VectorXd::LinSpaced(kNumJoints, 1.5, 100.0)};
+  MultibodyPlant<double> plant_{kTimeStep};
+  CompliantContactManager<double>* manager_{nullptr};
+  std::unique_ptr<Context<double>> context_;
+  ModelInstanceIndex arm_model_;
+  ModelInstanceIndex gripper_model_;
+};
+
+// This test verifies that the linear dynamics matrix is properly computed
+// according to A = ∂m/∂v = (M + dt⋅D).
+TEST_F(KukaIiwaArmTests, CalcLinearDynamicsMatrix) {
+  const std::vector<MatrixXd> A =
+      CompliantContactManagerTest::CalcLinearDynamicsMatrix(*manager_,
+                                                            *context_);
+  const int nv = plant_.num_velocities();
+  MatrixXd Adense = MatrixXd::Zero(nv, nv);
+  const MultibodyTreeTopology& topology =
+      CompliantContactManagerTest::topology(*manager_);
+  for (TreeIndex t(0); t < topology.num_trees(); ++t) {
+    const int tree_start = topology.tree_velocities_start(t);
+    const int tree_nv = topology.num_tree_velocities(t);
+    Adense.block(tree_start, tree_start, tree_nv, tree_nv) = A[t];
+  }
+  const MatrixXd Aexpected =
+      CalcLinearDynamicsMatrixIncludingImplicitDampingContribution();
+  EXPECT_TRUE(
+      CompareMatrices(Adense, Aexpected, kEps, MatrixCompareType::relative));
+}
+
+// This test verifies that the computation of free motion velocities v*
+// correctly include the effect of damping implicitly.
+TEST_F(KukaIiwaArmTests, CalcFreeMotionVelocities) {
+  const VectorXd v_star = CompliantContactManagerTest::CalcFreeMotionVelocities(
+      *manager_, *context_);
+
+  MultibodyForces<double> forces(plant_);
+  CompliantContactManagerTest::CalcNonContactForces(*manager_, *context_,
+                                                    &forces);
+  const VectorXd zero_vdot = VectorXd::Zero(plant_.num_velocities());
+  const VectorXd k0 = -plant_.CalcInverseDynamics(*context_, zero_vdot, forces);
+
+  // A = M + dt*D
+  const MatrixXd A =
+      CalcLinearDynamicsMatrixIncludingImplicitDampingContribution();
+  const VectorXd a = A.ldlt().solve(k0);
+  const VectorXd& v0 = plant_.GetVelocities(*context_);
+  const VectorXd v_star_expected = v0 + plant_.time_step() * a;
+
+  EXPECT_TRUE(CompareMatrices(v_star, v_star_expected, 5.0 * kEps,
+                              MatrixCompareType::relative));
+}
+
+// This unit test simply verifies that the manager is loading acceleration
+// kinematics with the proper results. The correctness of the computations we
+// rely on in this test (computation of accelerations) are tested elsewhere.
+TEST_F(KukaIiwaArmTests, CalcAccelerationKinematicsCache) {
+  const VectorXd& v0 = plant_.GetVelocities(*context_);
+  ContactSolverResults<double> contact_results;
+  manager_->CalcContactSolverResults(*context_, &contact_results);
+  const VectorXd a_expected =
+      (contact_results.v_next - v0) / plant_.time_step();
+  std::vector<SpatialAcceleration<double>> A_WB_expected(plant_.num_bodies());
+  plant_.CalcSpatialAccelerationsFromVdot(*context_, a_expected,
+                                          &A_WB_expected);
+
+  // Verify CompliantContactManager loads the acceleration kinematics with the
+  // proper results.
+  AccelerationKinematicsCache<double> ac(
+      CompliantContactManagerTest::topology(*manager_));
+  manager_->CalcAccelerationKinematicsCache(*context_, &ac);
+  EXPECT_TRUE(CompareMatrices(ac.get_vdot(), a_expected));
+  for (BodyIndex b(0); b < plant_.num_bodies(); ++b) {
+    const auto& body = plant_.get_body(b);
+    EXPECT_TRUE(ac.get_A_WB(body.node_index()).IsApprox(A_WB_expected[b]));
+  }
+}
+
+TEST_F(KukaIiwaArmTests, LimitConstraints) {
+  // Arbitrary selection of how positions and velocities are initialized.
+  std::vector<InitializePositionAt> limits_specification(
+      kNumJoints, InitializePositionAt::WellWithinLimits);
+  limits_specification[0] = InitializePositionAt::BelowLowerLimit;
+  limits_specification[1] = InitializePositionAt::AboveUpperLimit;
+  limits_specification[2] =
+      InitializePositionAt::AboveLowerLimitThoughPredictionBelow;
+  limits_specification[3] =
+      InitializePositionAt::BelowUpperLimitThoughPredictionAbove;
+  limits_specification[4] = InitializePositionAt::WellWithinLimits;
+  limits_specification[5] = InitializePositionAt::BelowLowerLimit;
+  limits_specification[6] = InitializePositionAt::AboveUpperLimit;
+  limits_specification[7] = InitializePositionAt::WellWithinLimits;
+  limits_specification[8] = InitializePositionAt::WellWithinLimits;
+
+  // Three joints are WellWithinLimits.
+  const int kNumJointsWithLimits = 6;
+  const int kNumConstraintEquations = 6;
+  SetArbitraryStateWithLimitsSpecification(plant_, limits_specification,
+                                           context_.get());
+
+  const std::vector<DiscreteContactPair<double>>& discrete_pairs =
+      CompliantContactManagerTest::EvalDiscreteContactPairs(*manager_,
+                                                            *context_);
+  const int num_contacts = discrete_pairs.size();
+  // We are assuming there is no contact. Assert this.
+  ASSERT_EQ(num_contacts, 0);
+
+  const ContactProblemCache<double>& problem_cache =
+      CompliantContactManagerTest::EvalContactProblemCache(*manager_,
+                                                           *context_);
+  const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+
+  // This model has no contact. We expect the number of constraints and
+  // equations be consistent with limits_specification defined above.
+  EXPECT_EQ(problem.num_constraints(), kNumJointsWithLimits);
+  EXPECT_EQ(problem.num_constraint_equations(), kNumConstraintEquations);
+
+  // In this model we clearly have single tree, the arm with its gripper.
+  const int tree_expected = 0;
+
+  int num_constraints = 0;  // count number of constraints visited.
+  // The manager adds limit constraints in the order joints are specified.
+  // Therefore we verify the limit constrant for each joint.
+  for (JointIndex joint_index(0); joint_index < plant_.num_joints();
+       ++joint_index) {
+    const Joint<double>& joint = plant_.get_joint(joint_index);
+    if (joint.num_velocities() == 1) {
+      const int v_index = joint.velocity_start();
+      const InitializePositionAt limit_spec = limits_specification[v_index];
+
+      if (limit_spec != InitializePositionAt::WellWithinLimits) {
+        // Get limit constraint for the specific joint.
+        const auto* constraint =
+            dynamic_cast<const SapLimitConstraint<double>*>(
+                &problem.get_constraint(num_constraints++));
+        // Since the spec is not WellWithinLimits, we expect a constraint added.
+        ASSERT_NE(constraint, nullptr);
+
+        // Limit constraints always apply to a single tree in the multibody
+        // forest.
+        EXPECT_EQ(constraint->num_cliques(), 1);
+
+        // There is a single tree in this model, the arm with gripper.
+        EXPECT_EQ(constraint->first_clique(), tree_expected);
+
+        EXPECT_EQ(constraint->clique_dof(), v_index);
+
+        // Each constraints acts on the same tree (the arm+gripper) with a total
+        // of kNumJoint DOFs in that tree.
+        EXPECT_EQ(constraint->first_clique_jacobian().cols(), kNumJoints);
+
+        // Verify the plant's state is consistent with the constraint's state.
+        const double q0 = joint.GetOnePosition(*context_);
+        EXPECT_EQ(constraint->position(), q0);
+
+        // N.B. Default values implemented in
+        // CompliantContactManager::AddLimitConstraints(), keep these values in
+        // sync.
+        const SapLimitConstraint<double>::Parameters& params =
+            constraint->parameters();
+        EXPECT_EQ(params.stiffness(), 1.0e12);
+        EXPECT_EQ(params.dissipation_time_scale(), plant_.time_step());
+        EXPECT_EQ(params.beta(), 0.1);
+
+        const bool lower_limit_expected =
+            limit_spec == InitializePositionAt::BelowLowerLimit ||
+            limit_spec ==
+                InitializePositionAt::AboveLowerLimitThoughPredictionBelow;
+        const bool upper_limit_expected =
+            limit_spec == InitializePositionAt::AboveUpperLimit ||
+            limit_spec ==
+                InitializePositionAt::BelowUpperLimitThoughPredictionAbove;
+
+        const int expected_num_equations =
+            lower_limit_expected && upper_limit_expected ? 2 : 1;
+        EXPECT_EQ(constraint->num_constraint_equations(),
+                  expected_num_equations);
+        EXPECT_EQ(constraint->first_clique_jacobian().rows(),
+                  expected_num_equations);
+
+        const double kInf = std::numeric_limits<double>::infinity();
+        const double ql_expected =
+            lower_limit_expected ? joint.position_lower_limits()[0] : -kInf;
+        const double qu_expected =
+            upper_limit_expected ? joint.position_upper_limits()[0] : kInf;
+
+        EXPECT_EQ(params.lower_limit(), ql_expected);
+        EXPECT_EQ(params.upper_limit(), qu_expected);
+      }
+    }
+  }
+  EXPECT_EQ(num_constraints, kNumJointsWithLimits);
+}
+
+// This joint is used to verify the support of multi-DOF joints with/without
+// joint limits. In particular, CompliantContactManager does not support limits
+// for constraints with more than 1 DOF and therefore we expect the manager to
+// throw an exception when building the problem.
+// The implementation for this joint is incomplete. Only the strictly necessary
+// overrides for the unit tests in this file are implemented.
+template <typename T>
+class MultiDofJointWithLimits final : public Joint<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultiDofJointWithLimits)
+
+  // Arbitrary number of DOFs, though larger than one for these tests.
+  static constexpr int kNumDofs = 3;
+
+  // The constructor allows to specify finite joint limits.
+  MultiDofJointWithLimits(const Frame<T>& frame_on_parent,
+                          const Frame<T>& frame_on_child,
+                          double pos_lower_limit, double pos_upper_limit)
+      : Joint<T>("MultiDofJointWithLimits", frame_on_parent, frame_on_child,
+                 VectorX<double>::Zero(kNumDofs),
+                 VectorX<double>::Constant(kNumDofs, pos_lower_limit),
+                 VectorX<double>::Constant(kNumDofs, pos_upper_limit),
+                 VectorX<double>::Constant(
+                     kNumDofs, -std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     kNumDofs, std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     kNumDofs, -std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     kNumDofs, std::numeric_limits<double>::infinity())) {
+    DRAKE_DEMAND(pos_lower_limit <= pos_upper_limit);
+  }
+
+  const std::string& type_name() const override {
+    static const never_destroyed<std::string> name{"MultiDofJointWithLimits"};
+    return name.access();
+  }
+
+ private:
+  // Make MultiDofJointWithLimits templated on every other scalar type a friend
+  // of MultiDofJointWithLimits<T> so that CloneToScalar<ToAnyOtherScalar>() can
+  // access private members of MultiDofJointWithLimits<T>.
+  template <typename>
+  friend class MultiDofJointWithLimits;
+
+  int do_get_num_velocities() const override { return kNumDofs; }
+  int do_get_num_positions() const override { return kNumDofs; }
+  // Dummy implementation, knowing our unit tests below have a single joint of
+  // this type.
+  int do_get_velocity_start() const override { return 0; }
+  int do_get_position_start() const override { return 0; }
+
+  std::unique_ptr<typename Joint<T>::BluePrint> MakeImplementationBlueprint()
+      const override {
+    auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
+    // The only restriction here relevant for these tests is that we provide a
+    // mobilizer with kNumDofs postions and velocities, so that indexes are
+    // consistent during MultibodyPlant::Finalize().
+    auto revolute_mobilizer = std::make_unique<internal::SpaceXYZMobilizer<T>>(
+        this->frame_on_parent(), this->frame_on_child());
+    blue_print->mobilizers_.push_back(std::move(revolute_mobilizer));
+    return blue_print;
+  }
+
+  // We do not need an implementation for the methods below since the unit tests
+  // do not exercise them. We mark them as "unreachable".
+
+  void DoAddInOneForce(const Context<T>&, int, const T&,
+                       MultibodyForces<T>*) const override {
+    DRAKE_UNREACHABLE();
+  }
+  void DoAddInDamping(const Context<T>&, MultibodyForces<T>*) const override {
+    DRAKE_UNREACHABLE();
+  }
+  std::string do_get_position_suffix(int) const override {
+    DRAKE_UNREACHABLE();
+  }
+  std::string do_get_velocity_suffix(int) const override {
+    DRAKE_UNREACHABLE();
+  }
+  void do_set_default_positions(const VectorX<double>&) override {
+    DRAKE_UNREACHABLE();
+  }
+  const T& DoGetOnePosition(const Context<T>&) const override {
+    DRAKE_UNREACHABLE();
+  }
+  const T& DoGetOneVelocity(const Context<T>&) const override {
+    DRAKE_UNREACHABLE();
+  }
+  std::unique_ptr<Joint<double>> DoCloneToScalar(
+      const internal::MultibodyTree<double>& tree_clone) const override {
+    DRAKE_UNREACHABLE();
+  }
+  std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override {
+    DRAKE_UNREACHABLE();
+  }
+  std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const override {
+    DRAKE_UNREACHABLE();
+  }
+};
+
+// Verify that CompliantContactManager throws when the model contains multi-DOF
+// joints with finite limits.
+GTEST_TEST(CompliantContactManager, ThrowForUnsupportedJoints) {
+  MultibodyPlant<double> plant(1.0e-3);
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  const RigidBody<double>& body =
+      plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeTestCube());
+  plant.AddJoint(std::make_unique<MultiDofJointWithLimits<double>>(
+      plant.world_frame(), body.body_frame(), -1.0, 2.0));
+  plant.Finalize();
+  auto owned_contact_manager =
+      std::make_unique<CompliantContactManager<double>>();
+  CompliantContactManager<double>* contact_manager =
+      owned_contact_manager.get();
+  plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+  auto context = plant.CreateDefaultContext();
+
+  // Dummy v* and problem.
+  const VectorXd v_star = Vector3d::Zero();
+  SapContactProblem<double> problem(plant.time_step());
+
+  // We verify the manager throws for the right reasons.
+  DRAKE_EXPECT_THROWS_MESSAGE(CompliantContactManagerTest::AddLimitConstraints(
+                                  *contact_manager, *context, v_star, &problem),
+                              "Limits for joints with more than one degree of "
+                              "freedom are not supported(.|\n)*");
+}
+
+// Verify that CompliantContactManager allows multi-DOF joints whenever these do
+// not specify finite limits.
+GTEST_TEST(CompliantContactManager,
+           VerifyMultiDofJointsWithoutLimitsAreSupported) {
+  MultibodyPlant<double> plant(1.0e-3);
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  const RigidBody<double>& body =
+      plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeTestCube());
+  const double kInf = std::numeric_limits<double>::infinity();
+  plant.AddJoint(std::make_unique<MultiDofJointWithLimits<double>>(
+      plant.world_frame(), body.body_frame(), -kInf, kInf));
+  plant.Finalize();
+  auto owned_contact_manager =
+      std::make_unique<CompliantContactManager<double>>();
+  CompliantContactManager<double>* contact_manager =
+      owned_contact_manager.get();
+  plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+  auto context = plant.CreateDefaultContext();
+
+  const VectorXd v_star = Vector3d::Zero();
+  SapContactProblem<double> problem(plant.time_step());
+  EXPECT_NO_THROW(CompliantContactManagerTest::AddLimitConstraints(
+      *contact_manager, *context, v_star, &problem));
+
+  // No limit constraints are added since the only one joint in the model has
+  // no limits.
+  EXPECT_EQ(problem.num_constraints(), 0);
 }
 
 }  // namespace internal

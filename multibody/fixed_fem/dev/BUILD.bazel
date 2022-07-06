@@ -12,38 +12,18 @@ package(
 )
 
 drake_cc_library(
-    name = "deformable_body_config",
-    hdrs = [
-        "deformable_body_config.h",
-    ],
-    deps = [
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "deformable_contact",
     srcs = ["deformable_rigid_mesh_intersection.cc"],
     hdrs = [
-        "deformable_contact_surface.h",
         "deformable_rigid_mesh_intersection.h",
     ],
     deps = [
         "//common:default_scalars",
         "//geometry/proximity:bvh",
+        "//geometry/proximity:deformable_contact_surface",
         "//geometry/proximity:deformable_volume_mesh",
         "//geometry/proximity:posed_half_space",
         "//geometry/proximity:triangle_surface_mesh",
-    ],
-)
-
-drake_cc_library(
-    name = "deformable_contact_data",
-    srcs = ["deformable_contact_data.cc"],
-    hdrs = ["deformable_contact_data.h"],
-    deps = [
-        ":deformable_rigid_contact_pair",
-        ":reference_deformable_geometry",
     ],
 )
 
@@ -60,17 +40,6 @@ drake_cc_library(
         "//common:essential",
         "//geometry/proximity:mesh_field",
         "//geometry/proximity:volume_mesh",
-    ],
-)
-
-drake_cc_library(
-    name = "deformable_rigid_contact_pair",
-    hdrs = ["deformable_rigid_contact_pair.h"],
-    deps = [
-        ":deformable_contact",
-        ":fem_indexes",
-        "//geometry:geometry_ids",
-        "//math:geometric_transform",
     ],
 )
 
@@ -124,6 +93,7 @@ drake_cc_googletest(
     name = "mesh_utilities_test",
     deps = [
         ":mesh_utilities",
+        "//geometry/proximity:deformable_contact_geometries",
         "//geometry/proximity:make_box_field",
         "//geometry/proximity:make_box_mesh",
         "//geometry/proximity:mesh_to_vtk",
@@ -135,9 +105,9 @@ drake_cc_googletest(
     name = "deformable_contact_test",
     deps = [
         ":deformable_contact",
-        ":deformable_contact_data",
         ":mesh_utilities",
         "//common/test_utilities",
+        "//geometry/query_results:deformable_contact_data",
     ],
 )
 

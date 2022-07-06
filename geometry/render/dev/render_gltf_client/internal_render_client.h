@@ -5,8 +5,9 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/render/dev/render_gltf_client/internal_http_service.h"
 #include "drake/geometry/render/render_camera.h"
+#include "drake/geometry/render_gltf_client/internal_http_service.h"
+#include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
@@ -26,33 +27,16 @@ enum RenderImageType {
 /* The client which communicates with a render server. */
 class RenderClient {
  public:
-  /* Constructs the render engine from the given parameters.
-   @param url
-     The url of the server to communicate with, e.g., `"http://127.0.0.1"`.  May
-     **not** have a trailing `/`.
-   @param port
-     The port to communicate with the server on, e.g., `8000`.  A value of less
-     than or equal to `0` implies no port-level communication is needed.
-   @param render_endpoint
-     The endpoint that the server expects to receive render requests to, e.g.,
-     `"render"`.  May **not** have a leading or trailing `/`, communications
-     with the server are constructed as `{url}/{render_endpoint}`.
-   @param verbose
-     Whether or not the client should be verbose in logging its communications
-     with the server.
-   @param no_cleanup
-     Whether or not the temp_directory() should be deleted upon destruction of
-     this instance.
-   @throws std::logic_error
-     If the provided `url` is empty or ends with a `/`, via
-     HttpService::HttpService.
-   @throws std::runtime_error
-     If the provided `render_endpoint` has any leading or trailing slashes. */
-  RenderClient(const std::string& url, int port,
-               const std::string& render_endpoint, bool verbose,
-               bool no_cleanup);
+  /* Constructs the render engine from the given RenderEngineGltfClientParams.
 
-  virtual ~RenderClient();
+   @note
+     RenderEngineGltfClientParams.default_label struct member is not relavant
+     for the RenderClient construction.
+   @throws std::exception
+     If a wrong base_url or render_endpoint is provided. */
+  explicit RenderClient(const RenderEngineGltfClientParams& params);
+
+  ~RenderClient();
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderClient);
 
@@ -98,7 +82,7 @@ class RenderClient {
    @throws std::logic_error
      If `image_type` is a depth image but `depth_range` was not provided, or
      `depth_range` was provided but `image_type` is color or label. */
-  virtual std::string RenderOnServer(
+  std::string RenderOnServer(
       const drake::geometry::render::RenderCameraCore& camera_core,
       RenderImageType image_type, const std::string& scene_path,
       const std::optional<std::string>& mime_type = std::nullopt,
@@ -169,10 +153,10 @@ class RenderClient {
      The already allocated drake image buffer to load `path` into.
 
    @throws std::runtime_error
-     If the specified `path` cannot be loaded as an RGB or RGBA PNG file, or the
-     image denoted by `path` does not have the same width and height of the
-     specified `color_image_out`.*/
-  virtual void LoadColorImage(
+     If the specified `path` cannot be loaded as an unsigned char RGB or RGBA
+     PNG file, or the image denoted by `path` does not have the same width and
+     height of the specified `color_image_out`.*/
+  void LoadColorImage(
       const std::string& path,
       drake::systems::sensors::ImageRgba8U* color_image_out) const;
 
@@ -192,10 +176,10 @@ class RenderClient {
    @param depth_image_out
      The already allocated drake image buffer to load `path` into.
    @throws std::runtime_error
-     If the specified `path` cannot be loaded as a single channel TIFF or PNG,
-     image, or the image denoted by `path` does not have the same width and
-     height of the specified `depth_image_out`. */
-  virtual void LoadDepthImage(
+     If the specified `path` cannot be loaded as a single channel 16-bit or
+     32-bit TIFF image, or the image denoted by `path` does not have the same
+     width and height of the specified `depth_image_out`. */
+  void LoadDepthImage(
       const std::string& path,
       drake::systems::sensors::ImageDepth32F* depth_image_out) const;
 
@@ -212,7 +196,7 @@ class RenderClient {
      If the specified `path` cannot be loaded as a single channel unsigned short
      PNG image, or the image denoted by `path` does not have the same width and
      height of the specified `label_image_out`. */
-  virtual void LoadLabelImage(
+  void LoadLabelImage(
       const std::string& path,
       drake::systems::sensors::ImageLabel16I* label_image_out) const;
 
@@ -224,6 +208,14 @@ class RenderClient {
    set at construction. */
   //@{
 
+  /* Returns a RenderEngineGltfClientParams struct for RenderClient
+   construction.  Note that `default_label` is not relevant for RenderClient
+   class, so it's always set to std::nullopt. */
+  RenderEngineGltfClientParams get_params() const {
+    return RenderEngineGltfClientParams{base_url_, render_endpoint_,
+                                        std::nullopt, verbose_, no_cleanup_};
+  }
+
   /* The temporary directory used for scratch space, including but not limited
    to where downloaded images are saved.  Child classes are permitted (and
    encouraged) to utilize this directory to create any additional files needed
@@ -232,12 +224,9 @@ class RenderClient {
    no_cleanup() is true. */
   const std::string& temp_directory() const { return temp_directory_; }
 
-  /* The url of the server to communicate with. */
-  const std::string& url() const { return url_; }
-
-  /* The port of the server to communicate on.  A value of less than or equal
-   `0` means no port level communication is required. */
-  int port() const { return port_; }
+  /* The base url of the server. The full url to communicate with is constructed
+   as `base_url()/render_endpoint()`. */
+  const std::string& base_url() const { return base_url_; }
 
   /* The render endpoint of the server, used in RetrieveRender().
    Should **not** include a preceding slash. */
@@ -257,12 +246,12 @@ class RenderClient {
 
  private:
   friend class RenderClientTester;
-  std::string temp_directory_;
-  std::string url_;
-  int port_;
-  std::string render_endpoint_;
-  bool verbose_;
-  bool no_cleanup_;
+  const std::string temp_directory_;
+  const std::string base_url_;
+  const std::string render_endpoint_;
+  const bool verbose_;
+  const bool no_cleanup_;
+  const std::string url_;
   std::unique_ptr<HttpService> http_service_;
 };
 

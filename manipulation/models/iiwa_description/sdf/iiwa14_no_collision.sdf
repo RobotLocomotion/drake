@@ -6,6 +6,7 @@ Later edited by hand to:
 * rename the base link
 * remove damping from the joints
 * use pose frame semantics to reflect URDF pose values.
+* remove generated elements not supported by drake
 -->
 <sdf xmlns:drake="http://drake.mit.edu" version="1.7">
   <model name="iiwa14">
@@ -33,9 +34,6 @@ Later edited by hand to:
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <link name="iiwa_link_1">
       <pose relative_to="iiwa_joint_1"/>
@@ -62,9 +60,6 @@ Later edited by hand to:
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_1" type="revolute">
       <pose relative_to="iiwa_link_0">0 0 0.1575 0 0 0</pose>
@@ -123,9 +118,6 @@ Later edited by hand to:
           <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_2" type="revolute">
       <pose relative_to="iiwa_link_1">
@@ -197,9 +189,6 @@ Later edited by hand to:
           <diffuse>0 0 0 1</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_3" type="revolute">
       <pose relative_to="iiwa_link_2">0 0.2045 0 1.570796326794897 0 3.141592653589793</pose>
@@ -258,9 +247,6 @@ Later edited by hand to:
           <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_4" type="revolute">
       <pose relative_to="iiwa_link_3">0 0 0.2155 1.570796326794897 0 0</pose>
@@ -330,9 +316,6 @@ Later edited by hand to:
           <diffuse>0 0 0 1</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_5" type="revolute">
       <pose relative_to="iiwa_link_4">0 0.1845 0 -1.570796326794897 3.141592653589793 0</pose>
@@ -391,9 +374,6 @@ Later edited by hand to:
           <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_6" type="revolute">
       <pose relative_to="iiwa_link_5">0 0 0.2155 1.570796326794897 0 0</pose>
@@ -441,9 +421,6 @@ Later edited by hand to:
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_7" type="revolute">
       <pose relative_to="iiwa_link_6">
@@ -469,8 +446,5 @@ Later edited by hand to:
       </axis>
     </joint>
     <static>0</static>
-    <plugin name="gazebo_ros_controller" filename="libgazebo_ros_control.so">
-      <robotNamespace>/iiwa</robotNamespace>
-    </plugin>
   </model>
 </sdf>

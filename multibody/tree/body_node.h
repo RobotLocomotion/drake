@@ -344,7 +344,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     //          = H_PB_W * vm
     // where H_PB_W = R_WF * phiT_MB_F * H_FM.
     SpatialVelocity<T>& V_PB_W = get_mutable_V_PB_W(vc);
-    V_PB_W.get_coeffs() = H_PB_W * vm;
+    if (get_num_mobilizer_velocities() > 0) {
+      V_PB_W.get_coeffs() = H_PB_W * vm;
+    } else {
+      V_PB_W.get_coeffs().setZero();
+    }
 
     // =========================================================================
     // Computation of V_WPb in Eq. (1). See summary at the top of this method.
@@ -906,9 +910,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   //   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
   //   velocity in its parent body P, expressed in world W) to this node's `nm`
   //   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
-  // @param[in] reflected_inertia
-  //   Vector of scalar reflected inertia values for each degree of freedon.
-  //   Used if this body node is the outboard body of a single-dof mobilizer.
+  // @param[in] diagonal_inertias
+  //   Vector of scalar diagonal inertia values for each degree of freedon.
   // @param[out] abic
   //   A pointer to a valid, non nullptr, articulated body cache.
   //
@@ -920,6 +923,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   //
   // @throws std::exception when called on the _root_ node or `abic` is
   // nullptr.
+  // @throws if diagonal_inertias.size() does not much the number of generalized
+  // velocities in the model.
   // TODO(amcastro-tri): Consider specialized BodyNodeImpl implementations that
   // exploit the sparsity pattern of H_PB_W even at compile time. Most common
   // cases are:
@@ -931,11 +936,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       const SpatialInertia<T>& M_B_W,
-      const VectorX<T>& reflected_inertia,
+      const VectorX<T>& diagonal_inertias,
       ArticulatedBodyInertiaCache<T>* abic) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
     DRAKE_THROW_UNLESS(abic != nullptr);
-    DRAKE_THROW_UNLESS(reflected_inertia.size() ==
+    DRAKE_THROW_UNLESS(diagonal_inertias.size() ==
                        this->get_parent_tree().num_velocities());
 
     // As a guideline for developers, a summary of the computations performed in
@@ -1050,13 +1055,9 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       MatrixUpTo6<T> D_B(nv, nv);
       D_B.template triangularView<Eigen::Lower>() = U_B_W * H_PB_W;
 
-      // Add the effect of reflected inertia.
-      // See JointActuator::reflected_inertia().
-      // Reminder: reflected_inertia is implemented only for revolute or
-      // prismatic joints (i.e., single degree-of-freedom joints, hence nv = 1).
-      if (nv == 1) {
-        D_B(0, 0) += reflected_inertia(this->velocity_start());
-      }
+      // Include the effect of additional diagonal inertias. See @ref
+      // additional_diagonal_inertias.
+      D_B.diagonal() += diagonal_inertias.segment(this->velocity_start(), nv);
 
       // Compute the LDLT factorization of D_B as ldlt_D_B.
       // TODO(bobbyluig): Test performance against inverse().

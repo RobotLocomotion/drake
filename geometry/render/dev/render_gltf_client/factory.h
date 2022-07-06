@@ -1,55 +1,13 @@
 #pragma once
 
 #include <memory>
-#include <optional>
-#include <string>
 
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
+#include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
 
 namespace drake {
 namespace geometry {
-
-/** Construction parameters for the MakeRenderEngineGltfClient() to create a
- client as part of the @ref render_engine_gltf_client_server_api. */
-struct RenderEngineGltfClientParams {
-  /** The (optional) label to apply when none is otherwise specified.  */
-  std::optional<render::RenderLabel> default_label{};
-
-  /** The url of the server communicate with.  Should **not** include a trailing
-   `/` character.  For example, `https://drake.mit.edu` is acceptable while
-   `https://drake.mit.edu/` is not. */
-  std::string url{"http://127.0.0.1"};
-
-  /** The port to communicate on.  A value less than or equal to `0` implies no
-   port level communication is needed. */
-  int port{8000};
-
-  /** The server endpoint to retrieve renderings from.  Communications will be
-   formed as `{url}/{render_endpoint}`, if the server expects forms posted to
-   `/` then this value should be the empty string. */
-  std::string render_endpoint{"render"};
-
-  /** Whether or not the client should log information about which files are
-   being generated, as well as any information about HTTP communications between
-   the client and server such as HTTP header information, url and port, etc.
-   Information is logged at the debug level, so your application will need to
-   drake::set_log_level() to `"debug"`.  @sa drake::log() */
-  bool verbose = false;
-
-  /** Whether or not the client should cleanup files generated / retrieved from
-   the server.  By default (`no_cleanup=false`), as soon as a glTF scene file
-   as well as server image response for a given frame are no longer needed they
-   will be deleted.  To inspect generated scene files or server response images
-   set `no_cleanup=true` to prevent the files and their governing temporary
-   directory from being deleted.  During the construction process a number of
-   copies and clones are created, when `no_cleanup=true` there will be more than
-   one empty temporary directory created that will not be deleted.  The path
-   to the temporary directory can be observed by setting
-   RenderEngineGltfClientParams::verbose to `true`, or inspecting the parent
-   directory described by drake::temp_directory(). */
-  bool no_cleanup = false;
-};
 
 /** Constructs a RenderEngine implementation which generates
  <a href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
@@ -77,7 +35,7 @@ struct RenderEngineGltfClientParams {
       // Setup your server information and create the RenderEngine.  This must
       // be done in a non-threaded context (e.g., at program start).
       RenderEngineGltfClientParams params;
-      params.url = "http://some-server.url";
+      params.base_url = "http://some-server.url";
       auto render_engine = MakeRenderEngineGltfClient(params);
 
       // After MakeRenderEngineGltfClient, libcurl has been initialized and you
@@ -96,7 +54,7 @@ struct RenderEngineGltfClientParams {
       // Setup your server information and create the RenderEngine.  This must
       // be done in a non-threaded context (e.g., at program start).
       RenderEngineGltfClientParams params;
-      params.url = "http://some-server.url";
+      params.base_url = "http://some-server.url";
       auto render_engine = MakeRenderEngineGltfClient(params);
 
       // After MakeRenderEngineGltfClient, libcurl has been initialized so your

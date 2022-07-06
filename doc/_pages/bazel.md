@@ -28,21 +28,20 @@ target label (and optional configuration options if desired).  We give some
 typical examples below; for more reading about target patterns, see:
 [https://docs.bazel.build/versions/main/user-manual.html#target-patterns](https://docs.bazel.build/versions/main/user-manual.html#target-patterns).
 
-On Ubuntu, the default compiler is the first ``gcc`` compiler in the
-``PATH``, usually GCC 9.3 on Focal. On macOS, the default
-compiler is the Apple LLVM compiler. To use Clang 9 on Ubuntu, set the ``CC``
-and ``CXX`` environment variables before running **bazel build**, **bazel test**
-or any other **bazel** commands.
+On Ubuntu, the default compiler is the first ``gcc`` compiler in the ``PATH``.
+On macOS, the default compiler is the Apple LLVM compiler. To use Clang on
+Ubuntu, add ``--config=clang`` after any **bazel build**, **bazel test** or any
+other **bazel** commands.
 
 Cheat sheet for operating on the entire project:
 
 ```
 cd /path/to/drake
-bazel build //...                               # Build the entire project.
-bazel test //...                                # Build and test the entire project.
+bazel build //...                 # Build the entire project.
+bazel test //...                  # Build and test the entire project.
 
-CC=clang-9 CXX=clang++-9 bazel build //...      # Build using Clang 9 on Ubuntu.
-CC=clang-9 CXX=clang++-9 bazel test //...       # Build and test using Clang 9 on Ubuntu.
+bazel build --config=clang //...  # Build using Clang on Ubuntu.
+bazel test --config=clang //...   # Build and test using Clang on Ubuntu.
 ```
 
 * The "``//``" means "starting from the root of the project".
@@ -89,7 +88,7 @@ bazel test --config=kcov common:polynomial_test      # Run one test under kcov (
 bazel build -c dbg common:polynomial_test && \
   gdb bazel-bin/common/polynomial_test               # Run one test under gdb.
 
-CC=clang-9 CXX=clang++-9 bazel test -c dbg --config=asan common:polynomial_test  # Run one test under AddressSanitizer.
+bazel test -c dbg --config=clang --config=asan common:polynomial_test  # Run one test under AddressSanitizer.
 
 bazel test --config lint //...                       # Only run style checks; don't build or test anything else.
 ```
@@ -132,7 +131,7 @@ For a Python unittest that uses ``drake_py_unittest``, for example:
 bazel test bindings/pydrake:py/symbolic_test --test_output=streamed --nocache_test_results --test_arg=--trace=user --test_arg=TestSymbolicVariable
 ```
 
-## Debugging and profiling on macOS
+## Debugging on macOS
 
 On macOS, DWARF debug symbols are emitted to a ``.dSYM`` file.  The Bazel
 ``cc_binary`` and ``cc_test`` rules do not natively generate or expose this
@@ -143,15 +142,6 @@ This config turns off sandboxing, which allows a ``genrule`` to access the
 ```
 bazel build --config=apple_debug path/to/my:binary_or_test_dsym
 lldb ./bazel-bin/path/to/my/binary_or_test
-```
-
-Profiling on macOS can be done by building with the debug symbols and then running
-```
-xcrun xctrace record -t "Time Profiler" --launch ./bazel-bin/path/to/my/binary_or_test
-```
-This will generate a `.trace` file that can be opened in the Instruments app:
-```
-open -a Instruments myfile.trace
 ```
 
 For more information, see [https://github.com/bazelbuild/bazel/issues/2537](https://github.com/bazelbuild/bazel/issues/2537).
@@ -180,7 +170,7 @@ bazel build //tools/lint:buildifier
 The Drake Bazel build currently supports the following proprietary solvers:
 
 * Gurobi 9.5.1
-* MOSEK™ 9.2
+* MOSEK™ 9.3
 * SNOPT 7.4
 
 ## Gurobi 9.5.1
@@ -212,7 +202,7 @@ See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://do
 
 ## MOSEK
 
-The Drake Bazel build system downloads MOSEK™ 9.2.33 automatically. No manual
+The Drake Bazel build system downloads MOSEK™ 9.3.20 automatically. No manual
 installation is required.  Set the location of your license file as follows:
 
   ```export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic```
@@ -257,6 +247,25 @@ See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://do
 
 SNOPT support has some known problems on certain programs (see drake issue
 [#10422](https://github.com/RobotLocomotion/drake/issues/10422) for a summary).
+
+# Other optional dependencies
+
+## OpenMP
+
+Drake is
+[in the process](https://github.com/RobotLocomotion/drake/issues/14858)
+of adding support for multiprocessing using
+[OpenMP](https://en.wikipedia.org/wiki/OpenMP).
+At the moment, that support is experimental and is not recommended for Drake's
+users.
+
+For Drake Developers who wish to enable OpenMP, use this config switch:
+
+```
+bazel test --config omp //...
+```
+
+This switch is enabled in CI under the "Ubuntu Everything" build flavor.
 
 # Optional Tools
 

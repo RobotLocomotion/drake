@@ -34,6 +34,7 @@ drake_cc_package_library(
         ":port_switch",
         ":random_source",
         ":saturation",
+        ":shared_pointer_system",
         ":sine",
         ":symbolic_vector_system",
         ":trajectory_affine_system",
@@ -59,10 +60,12 @@ drake_cc_library(
     name = "affine_system",
     srcs = ["affine_system.cc"],
     hdrs = ["affine_system.h"],
+    interface_deps = [
+        "//common/symbolic:expression",
+        "//systems/framework",
+    ],
     deps = [
         "//common:symbolic",
-        "//common:symbolic_decompose",
-        "//systems/framework",
     ],
 )
 
@@ -164,11 +167,13 @@ drake_cc_library(
     name = "linear_system",
     srcs = ["linear_system.cc"],
     hdrs = ["linear_system.h"],
-    deps = [
+    interface_deps = [
         ":affine_system",
         "//common:essential",
+        "//common/symbolic:expression",
+    ],
+    deps = [
         "//common:symbolic",
-        "//common:symbolic_decompose",
         "//math:autodiff",
         "//math:gradient",
         "//systems/framework",
@@ -254,12 +259,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "shared_pointer_system",
+    srcs = ["shared_pointer_system.cc"],
+    hdrs = ["shared_pointer_system.h"],
+    deps = [
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "symbolic_vector_system",
     srcs = ["symbolic_vector_system.cc"],
     hdrs = ["symbolic_vector_system.h"],
     deps = [
         "//common:default_scalars",
-        "//common:symbolic",
         "//math:gradient",
         "//systems/framework",
     ],
@@ -618,16 +632,19 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "sine_test",
-    srcs = [
-        "test/sine_test.cc",
-    ],
     deps = [
         ":sine",
-        "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework",
         "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "shared_pointer_system_test",
+    deps = [
+        ":shared_pointer_system",
     ],
 )
 

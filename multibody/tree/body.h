@@ -184,14 +184,6 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
 
-  /// Creates a %Body named `name` in model instance `model_instance`
-  /// with a given `default_mass` and a BodyFrame associated with it.
-  Body(const std::string& name, ModelInstanceIndex model_instance,
-       double default_mass)
-      : MultibodyElement<Body, T, BodyIndex>(model_instance),
-        name_(name),
-        body_frame_(*this), default_mass_(default_mass) {}
-
   /// Gets the `name` associated with `this` body.
   const std::string& name() const { return name_; }
 
@@ -347,11 +339,16 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   }
 
   /// Returns the default mass (not Context dependent) for `this` body.
-  /// In general, the mass for a body can be a parameter of the model that can
-  /// be retrieved with the method get_mass(). When the mass of a body is a
-  /// parameter, the value returned by get_default_mass() is used to initialize
-  /// the mass parameter in the context.
-  double get_default_mass() const { return default_mass_; }
+  /// In general, a body's mass can be a Context-dependent parameter that is
+  /// returned by the method get_mass(). When a body's mass is a parameter, the
+  /// value returned by get_default_mass() is used to initialize the mass
+  /// parameter in the Context.
+  virtual double get_default_mass() const = 0;
+
+  /// Returns the default rotational inertia (not Context dependent) for `this`
+  /// body B's about Bo (B's origin), expressed in B (this body's frame).
+  /// @retval I_BBo_B body B's rotational inertia about Bo, expressed in B.
+  virtual RotationalInertia<double> default_rotational_inertia() const = 0;
 
   /// (Advanced) Returns the mass of this body stored in `context`.
   virtual const T& get_mass(
@@ -473,6 +470,11 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   }
 
  protected:
+  /// Creates a %Body named `name` in model instance `model_instance`.
+  Body(const std::string& name, ModelInstanceIndex model_instance)
+      : MultibodyElement<Body, T, BodyIndex>(model_instance),
+        name_(name), body_frame_(*this) {}
+
   /// @name Methods to make a clone templated on different scalar types.
   ///
   /// These methods are meant to be called by MultibodyTree::CloneToScalar()
@@ -550,12 +552,6 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
 
   // Body frame associated with this body.
   BodyFrame<T> body_frame_;
-
-  // In general, the mass of a body can be a constant property of the body or a
-  // Parameter of the model. The default mass value is directly reported by
-  // get_default_mass() in the former case and used to initialize the mass
-  // Parameter in the Context in the latter case.
-  double default_mass_{0.0};
 
   // The internal bookkeeping topology struct used by MultibodyTree.
   internal::BodyTopology topology_;

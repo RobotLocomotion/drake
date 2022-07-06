@@ -1,0 +1,34 @@
+{% extends "!footer.html" %}
+{% block extrafooter %}
+</footer>
+<script>
+  /* Enables clicking for the mobile "hamburger" (three-line) menu item. */
+  const siteHeader = document.querySelector('.site-header')
+  const mobileButton = document.querySelector('.menu-mobile-toggle')
+  const body = document.querySelector('body')
+
+  mobileButton.addEventListener('click', function(event) {
+    siteHeader.classList.toggle('open');
+    body.classList.toggle('overflow-hidden');
+  })
+</script>
+<footer class="site-footer padding">
+  <div class="contain">
+    <a href="/" class="drake-logo">
+      <img src="/images/drake-logo.svg">
+    </a>
+    <div class="footer-menu">
+      <ul>
+        <li>
+          <a href="/doxygen_cxx/index.html" class="site-menu-item">C++</a>
+        </li>
+        <li>
+          <a href="/pydrake/index.html" class="site-menu-item">Python</a>
+        </li>
+        <li class="github-link">
+          <a href="https://github.com/RobotLocomotion/drake" class="site-menu-item">GitHub <img src="/third_party/images/GitHub-Mark-64px.png"></a>
+        </li>
+      </ul>
+    </div>
+  </div>
+{% endblock %}

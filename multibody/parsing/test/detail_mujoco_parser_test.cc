@@ -260,6 +260,23 @@ GTEST_TEST(MujocoParser, GeometryPose) {
       RigidTransformd(RollPitchYawd{M_PI / 6.0, M_PI / 4.0, M_PI / 3.0}, p));
 }
 
+GTEST_TEST(MujocoParser, GeometryPoseErrors) {
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  const std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <geom name="two_angles" type="sphere" size="0.1" pos="1 2 3"
+          quat="0 1 0 0" euler="30 45 60" />
+  </worldbody>
+</mujoco>
+)""";
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant),
+      ".*has more than one orientation attribute specified.*");
+}
+
 GTEST_TEST(MujocoParser, GeometryProperties) {
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;

@@ -6,6 +6,10 @@ y, and theta, respectively), instead of wheels. The description also contains
 fully actuated finger joints, instead of a single prismatic joint that closes
 and opens finger joints that mimic each other.
 
+In addition, some tags unsupported by Drake have been removed, to reduce the
+burden of warning output. For URDF support details, see:
+https://drake.mit.edu/doxygen_cxx/group__multibody__parsing.html
+
 [1] To view or use the C++ passive simulation of a PR2 based on RigidBodyTree
 (removed as of 2020), you may use this commit:
 

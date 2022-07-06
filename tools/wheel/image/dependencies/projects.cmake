@@ -1,14 +1,16 @@
-# patchelf
-set(patchelf_version 0.12)
-set(patchelf_url "https://github.com/NixOS/patchelf/archive/${patchelf_version}/patchelf-${patchelf_version}.tar.gz")
-set(patchelf_md5 "b9d1161e52e2f342598deabf7d85ed24")
-list(APPEND ALL_PROJECTS patchelf)
+if(NOT APPLE)
+    # patchelf
+    set(patchelf_version 0.12)
+    set(patchelf_url "https://github.com/NixOS/patchelf/archive/${patchelf_version}/patchelf-${patchelf_version}.tar.gz")
+    set(patchelf_md5 "b9d1161e52e2f342598deabf7d85ed24")
+    list(APPEND ALL_PROJECTS patchelf)
 
-# libxcrypt
-set(libxcrypt_version 4.4.25)
-set(libxcrypt_url "https://github.com/besser82/libxcrypt/archive/v${libxcrypt_version}/libxcrypt-${libxcrypt_version}.tar.gz")
-set(libxcrypt_md5 "4828b1530f5bf35af0b45b35acc4db1d")
-list(APPEND ALL_PROJECTS libxcrypt)
+    # libxcrypt
+    set(libxcrypt_version 4.4.25)
+    set(libxcrypt_url "https://github.com/besser82/libxcrypt/archive/v${libxcrypt_version}/libxcrypt-${libxcrypt_version}.tar.gz")
+    set(libxcrypt_md5 "4828b1530f5bf35af0b45b35acc4db1d")
+    list(APPEND ALL_PROJECTS libxcrypt)
+endif()
 
 # zlib
 set(zlib_version 1.2.11)
@@ -112,6 +114,14 @@ set(clp_url "https://github.com/coin-or/Clp/archive/refs/tags/releases/${clp_ver
 set(clp_md5 "f7c25af22d2f03398cbbdf38c8b4f6fd")
 set(clp_dlname "clp-${clp_version}.tar.gz")
 list(APPEND ALL_PROJECTS clp)
+
+if(APPLE)
+    set(mumps_version 5.4.0)  # Current version in Homebrew.
+    set(mumps_url "http://mumps.enseeiht.fr/MUMPS_${mumps_version}.tar.gz")
+    set(mumps_md5 "808178997dc571c748e9cf0cabf9a26e")
+    set(mumps_dlname "mumps-${mumps_version}.tar.gz")
+    list(APPEND ALL_PROJECTS mumps)
+endif()
 
 # ipopt
 set(ipopt_version 3.11.9)

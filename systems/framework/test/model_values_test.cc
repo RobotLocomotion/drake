@@ -2,9 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 

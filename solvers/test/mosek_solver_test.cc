@@ -41,10 +41,13 @@ TEST_F(UnboundedLinearProgramTest0, Test) {
         result.get_solver_details<MosekSolver>();
     EXPECT_EQ(mosek_solver_details.rescode, 0);
     // This problem status is defined in
-    // https://docs.mosek.com/9.2/capi/constants.html#mosek.prosta
+    // https://docs.mosek.com/9.3/capi/constants.html#mosek.prosta
     const int MSK_SOL_STA_DUAL_INFEAS_CER = 6;
     EXPECT_EQ(mosek_solver_details.solution_status,
               MSK_SOL_STA_DUAL_INFEAS_CER);
+    const auto x_sol = result.GetSolution(x_);
+    EXPECT_FALSE(std::isnan(x_sol(0)));
+    EXPECT_FALSE(std::isnan(x_sol(1)));
   }
 }
 
@@ -130,7 +133,7 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   MosekSolver solver;
   // Mosek 9 returns a solution that is accurate up to 1.2E-5 for this specific
   // problem. Might need to change the tolerance when we upgrade Mosek.
-  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1.2E-5);
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1.2E-5);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
@@ -143,21 +146,21 @@ GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
 GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    FindCommonLyapunov(mosek_solver, 1E-8);
+    FindCommonLyapunov(mosek_solver, {}, 1E-8);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    FindOuterEllipsoid(mosek_solver, 1E-6);
+    FindOuterEllipsoid(mosek_solver, {}, 1E-6);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    SolveEigenvalueProblem(mosek_solver, 1E-7);
+    SolveEigenvalueProblem(mosek_solver, {}, 1E-7);
   }
 }
 
@@ -250,7 +253,7 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   mosek_solver.Solve(prog, {}, solver_options, &result);
   EXPECT_FALSE(result.is_success());
   // This response code is defined in
-  // https://docs.mosek.com/9.2/capi/response-codes.html#mosek.rescode
+  // https://docs.mosek.com/9.3/capi/response-codes.html#mosek.rescode
   const int MSK_RES_ERR_HUGE_C{1375};
   EXPECT_EQ(result.get_solver_details<MosekSolver>().rescode,
             MSK_RES_ERR_HUGE_C);
@@ -511,6 +514,65 @@ GTEST_TEST(MosekTest, TestNonconvexQP) {
   MosekSolver solver;
   if (solver.available()) {
     TestNonconvexQP(solver, true);
+  }
+}
+
+template <typename C>
+void CheckDualSolutionNotNan(const MathematicalProgramResult& result,
+                             const Binding<C>& constraint) {
+  const auto dual_sol = result.GetDualSolution(constraint);
+  for (int i = 0; i < dual_sol.rows(); ++i) {
+    EXPECT_FALSE(std::isnan(dual_sol(i)));
+  }
+}
+GTEST_TEST(MosekTest, InfeasibleLinearProgramTest) {
+  // Solve an infeasible LP, make sure the infeasible solution is returned.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint1 = prog.AddLinearConstraint(x(0) + x(1) >= 3);
+  auto constraint2 = prog.AddBoundingBoxConstraint(0, 1, x);
+  prog.AddLinearCost(x(0) + 2 * x(1));
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prog);
+    ASSERT_FALSE(result.is_success());
+    // Check that the primal solutions are not NAN.
+    for (int i = 0; i < x.rows(); ++i) {
+      EXPECT_FALSE(std::isnan(result.GetSolution(x(i))));
+    }
+    // Check that the dual solutions are not NAN.
+    CheckDualSolutionNotNan(result, constraint1);
+    CheckDualSolutionNotNan(result, constraint2);
+    // Check that the optimal cost is not NAN.
+    EXPECT_FALSE(std::isnan(result.get_optimal_cost()));
+  }
+}
+
+GTEST_TEST(MosekTest, InfeasibleSemidefiniteProgramTest) {
+  // Solve an infeasible SDP, make sure the infeasible solution is returned.
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  auto constraint1 = prog.AddPositiveSemidefiniteConstraint(X);
+  auto constraint2 =
+      prog.AddLinearConstraint(X(0, 0) + X(1, 1) + X(2, 2) <= -1);
+  prog.AddLinearCost(X(1, 2));
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prog);
+    ASSERT_FALSE(result.is_success());
+    // Check that the primal solutions are not NAN.
+    const auto X_sol = result.GetSolution(X);
+    for (int i = 0; i < X.rows(); ++i) {
+      for (int j = 0; j < X.cols(); ++j) {
+        EXPECT_FALSE(std::isnan(X_sol(i, j)));
+      }
+    }
+    // Check that the dual solutions are not NAN.
+    CheckDualSolutionNotNan(result, constraint1);
+    CheckDualSolutionNotNan(result, constraint2);
+
+    // Check that the optimal cost is not NAN.
+    EXPECT_FALSE(std::isnan(result.get_optimal_cost()));
   }
 }
 }  // namespace test

@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <iostream>
+#include <ostream>
 #include <type_traits>
 #include <utility>
 

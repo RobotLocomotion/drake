@@ -25,7 +25,9 @@ introduced with the Haswell architecture in 2013 with substantial performance
 improvements in the Broadwell architecture in 2014. Drake is compiled with
 `-march=broadwell` to exploit these instructions (that also works for Haswell
 machines). Drake can be used on older machines if necessary by building from
-source with that flag removed.
+source with that
+[flag](https://github.com/RobotLocomotion/drake/blob/77642cc9/math/BUILD.bazel#L288)
+removed.
 
 ⁽²⁾ For users running on Apple's newer arm64 hardware, refer to
 [Running under Rosetta 2](/rosetta2.html)
@@ -87,8 +89,8 @@ All other packages support both C++ and/or Python.
 Alternatively, you can skip the pre-compiled binaries and
 [build Drake from source](/from_source.html).
 
-Drake's binary releases do not support the MOSEK™ nor Gurobi solvers.
-To use MOSEK™ or Gurobi, you must build Drake from source.
+Drake's binary releases do not support the Gurobi solver.
+To use Gurobi, you must build Drake from source.
 
 We're considering adding macOS support for Homebrew, i.e., ``brew install
 drake``.  Please upvote or comment on

@@ -16,6 +16,7 @@ namespace fem {
 using geometry::Box;
 using geometry::internal::CollectUniqueVertices;
 using geometry::internal::IdentifyBoundaryFaces;
+using geometry::internal::deformable::ReferenceDeformableGeometry;
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
@@ -275,21 +276,13 @@ VolumeMesh<T> MakeOctahedronVolumeMesh() {
   return VolumeMesh<T>(std::move(elements), std::move(vertices));
 }
 
-template <typename T>
-internal::ReferenceDeformableGeometry<T> MakeOctahedronDeformableGeometry() {
-  auto mesh = std::make_unique<VolumeMesh<T>>(MakeOctahedronVolumeMesh<T>());
-  /* The distance to surface of the octahedron is zero for all vertices except
-   for v0 that has signed distance to the surface of -1/√3. */
-  std::vector<T> signed_distances(7, 0.0);
-  signed_distances[0] = -1.0 / std::sqrt(3);
-  auto mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
-      std::move(signed_distances), mesh.get(), false);
-  return {std::move(mesh), std::move(mesh_field)};
+ReferenceDeformableGeometry MakeOctahedronDeformableGeometry() {
+  return {geometry::Sphere(1.0), MakeOctahedronVolumeMesh<double>()};
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&MakeDiamondCubicBoxDeformableGeometry<T>, &MakeOctahedronVolumeMesh<T>,
-     &MakeOctahedronDeformableGeometry<T>, &StarRefineBoundaryTetrahedra<T>))
+     &StarRefineBoundaryTetrahedra<T>))
 
 }  // namespace fem
 }  // namespace multibody

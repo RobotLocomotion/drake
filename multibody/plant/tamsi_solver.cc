@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/extract_double.h"
+#include "drake/math/linear_solve.h"
 
 namespace drake {
 namespace multibody {
@@ -616,12 +617,15 @@ TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
   if (nc_ == 0) {
     fixed_size_workspace_.mutable_tau_f().setZero();
     fixed_size_workspace_.mutable_tau().setZero();
-    const auto M = problem_data_aliases_.M();
-    const auto p_star = problem_data_aliases_.p_star();
+    const Eigen::Ref<const MatrixX<T>> M = problem_data_aliases_.M();
+    const Eigen::Ref<const VectorX<T>> p_star = problem_data_aliases_.p_star();
     auto& v = fixed_size_workspace_.mutable_v();
     // With no friction forces Eq. (3) in the documentation reduces to
     // M vˢ⁺¹ = p*.
-    v = M.ldlt().solve(p_star);
+    // Note: We need M.eval() here since LinearSolver needs MatrixBase and M is
+    // an Eigen::Ref.
+    math::LinearSolver<Eigen::LDLT, MatrixX<T>> M_ldlt(M.eval());
+    v = M_ldlt.Solve(p_star);
     // "One iteration" with exactly "zero" vt_error.
     statistics_.Update(0.0);
     return TamsiSolverResult::kSuccess;
@@ -709,16 +713,19 @@ TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
     // TODO(amcastro-tri): Consider using a matrix-free iterative method to
     // avoid computing M and J. CG and the Krylov family can be matrix-free.
     if (has_two_way_coupling()) {
-      auto& J_lu = fixed_size_workspace_.mutable_J_lu();
-      J_lu.compute(J);  // Update factorization.
-      Delta_v = J_lu.solve(-residual);
+      // LU Factorization of the Newton-Raphson Jacobian J. Only used for
+      // two-way coupled problems with non-symmetric Jacobian.
+      const math::LinearSolver<Eigen::PartialPivLU, MatrixX<T>> J_lu(J);
+      Delta_v = J_lu.Solve(-residual);
     } else {
-      auto& J_ldlt = fixed_size_workspace_.mutable_J_ldlt();
-      J_ldlt.compute(J);  // Update factorization.
-      if (J_ldlt.info() != Eigen::Success) {
+      // LDLT Factorization of the Newton-Raphson Jacobian J. Only used for
+      // one-way coupled problems with symmetric Jacobian.
+      const math::LinearSolver<Eigen::LDLT, MatrixX<T>> J_ldlt(J);
+      Delta_v = J_ldlt.Solve(-residual);
+      const auto& eigen_solver = J_ldlt.eigen_linear_solver();
+      if (eigen_solver.info() != Eigen::Success) {
         return TamsiSolverResult::kLinearSolverFailed;
       }
-      Delta_v = J_ldlt.solve(-residual);
     }
 
     // Since we keep Jt constant we have that:

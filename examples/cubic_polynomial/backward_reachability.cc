@@ -8,7 +8,7 @@
 //
 // TODO(jadecastro) Transcribe this example into Python.
 #include <cmath>
-#include <ostream>
+#include <iostream>
 
 #include "drake/common/proto/call_python.h"
 #include "drake/common/symbolic.h"
