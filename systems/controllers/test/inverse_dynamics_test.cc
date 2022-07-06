@@ -6,7 +6,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
@@ -18,7 +17,6 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 
-using Eigen::AutoDiffScalar;
 using Eigen::VectorXd;
 using std::make_unique;
 using drake::multibody::MultibodyPlant;
