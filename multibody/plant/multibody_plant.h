@@ -366,7 +366,9 @@ the following properties for point contact modeling:
 | :--------: | :--------------: | :------: | :----------------: | :------------------- |
 |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
 |  material  | point_contact_stiffness |  no²  | T | Penalty method stiffness. |
-|  material  | hunt_crossley_dissipation |  no²  | T | Penalty method dissipation. |
+|  material  | hunt_crossley_dissipation |  no²⁴  | T | Penalty method dissipation. |
+|  material  | dissipation_timescale |  yes³⁴  | T | Linear dissipation parameter. |
+
 
 ¹ Collision geometry is required to be registered with a
   geometry::ProximityProperties object that contains the
@@ -377,6 +379,23 @@ the following properties for point contact modeling:
   a heuristic value as the default. Refer to the
   section @ref mbp_penalty_method "Penalty method point contact" for further
   details.
+
+³ When using a linear model of dissipation (for instance when selecting the SAP
+  solver), collision geometry is required to be registered with a
+  geometry::ProximityProperties object that contains the ("material",
+  "dissipation_timescale") property. If the property is missing, an exception
+  will be thrown.
+
+⁴ We allow to specify both hunt_crossley_dissipation and dissipation_timescale
+  for a given geometry. However only one of these will get used, depending on
+  the configuration of the %MultibodyPlant. As an example, if the SAP solver is
+  specified (see set_discrete_contact_solver_type()) only the
+  dissipation_timescale is used while hunt_crossley_dissipation is ignored.
+  Conversely, if the TAMSI solver is used (see
+  set_discrete_contact_solver_type()) only hunt_crossley_dissipation is used
+  while dissipation_timescale is ignored. Currently, a continuous
+  %MultibodyPlant model will always use the Hunt & Crossley model and
+  dissipation_timescale will be ignored.
 
 Accessing and modifying contact properties requires interfacing with
 geometry::SceneGraph's model inspector. Interfacing with a model inspector

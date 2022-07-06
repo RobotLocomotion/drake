@@ -1136,6 +1136,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:mesh_resolution_hint>2.5</drake:mesh_resolution_hint>
     <drake:hydroelastic_modulus>3.5</drake:hydroelastic_modulus>
     <drake:hunt_crossley_dissipation>4.5</drake:hunt_crossley_dissipation>
+    <drake:dissipation_timescale>3.1</drake:dissipation_timescale>
     <drake:mu_dynamic>4.5</drake:mu_dynamic>
     <drake:mu_static>4.75</drake:mu_static>
   </drake:proximity_properties>)""");
@@ -1147,6 +1148,8 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
                            geometry::internal::kElastic, 3.5);
     assert_single_property(properties, geometry::internal::kMaterialGroup,
                            geometry::internal::kHcDissipation, 4.5);
+    assert_single_property(properties, geometry::internal::kMaterialGroup,
+                           geometry::internal::kDissipationTimescale, 3.1);
     assert_friction(properties, {4.75, 4.5});
   }
 

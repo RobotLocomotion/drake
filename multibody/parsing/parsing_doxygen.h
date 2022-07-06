@@ -151,6 +151,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_damping
 - @ref tag_drake_declare_convex
 - @ref tag_drake_diffuse_map
+- @ref tag_drake_dissipation_timescale
 - @ref tag_drake_ellipsoid
 - @ref tag_drake_gear_ratio
 - @ref tag_drake_hunt_crossley_dissipation
@@ -454,6 +455,21 @@ ProximityProperties object under `(material, hunt_crossley_dissipation)`.
 
 @see drake::geometry::ProximityProperties,
 @ref mbp_hydroelastic_materials_properties "Hydroelastic contact",
+@ref mbp_dissipation_model "Modeling Dissipation"
+
+@subsection tag_drake_dissipation_timescale drake:dissipation_timescale
+
+- SDFormat path: `//model/link/collision/drake:proximity_properies/drake:dissipation_timescale`
+- URDF path: `/robot/link/collision/drake:proximity_properties/drake:dissipation_timescale/@value`
+- Syntax: Non-negative floating point value.
+
+@subsubsection tag_drake_dissipation_timescale_semantics Semantics
+
+If present, this element provides a value (units of time,
+i.e. seconds) for a linear model of dissipation. It is stored in a
+ProximityProperties object under `(material, dissipation_timescale)`.
+
+@see drake::geometry::ProximityProperties,
 @ref mbp_dissipation_model "Modeling Dissipation"
 
 @subsection tag_drake_hydroelastic_modulus drake:hydroelastic_modulus
