@@ -346,13 +346,10 @@ class MixedIntegerBranchAndBound {
   template <typename Derived>
   [[nodiscard]] typename std::enable_if_t<
       std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>
+      MatrixLikewise<double, Derived>>
   GetSolution(const Eigen::MatrixBase<Derived>& mip_vars,
               int nth_best_solution = 0) const {
-    Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime>
-        value(mip_vars.rows(), mip_vars.cols());
+    MatrixLikewise<double, Derived> value(mip_vars.rows(), mip_vars.cols());
     for (int i = 0; i < mip_vars.rows(); ++i) {
       for (int j = 0; j < mip_vars.cols(); ++j) {
         value(i, j) = GetSolution(mip_vars(i, j), nth_best_solution);
@@ -385,10 +382,9 @@ class MixedIntegerBranchAndBound {
   template <typename Derived>
   typename std::enable_if_t<
       is_eigen_scalar_same<Derived, symbolic::Variable>::value,
-      MatrixDecisionVariable<Derived::RowsAtCompileTime,
-                             Derived::ColsAtCompileTime>>
+      MatrixLikewise<symbolic::Variable, Derived>>
   GetNewVariables(const Eigen::MatrixBase<Derived>& old_variables) const {
-    Eigen::MatrixBase<Derived> new_variables;
+    MatrixLikewise<symbolic::Variable, Derived> new_variables;
     new_variables.resize(old_variables.rows(), old_variables.cols());
     for (int i = 0; i < old_variables.rows(); ++i) {
       for (int j = 0; j < old_variables.cols(); ++j) {
