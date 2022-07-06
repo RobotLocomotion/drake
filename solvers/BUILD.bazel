@@ -110,7 +110,8 @@ drake_cc_library(
     srcs = ["sos_basis_generator.cc"],
     hdrs = ["sos_basis_generator.h"],
     interface_deps = [
-        "//common:symbolic",
+        "//common/symbolic:expression",
+        "//common/symbolic:polynomial",
     ],
     deps = [
         ":integer_inequality_solver",
@@ -184,7 +185,7 @@ drake_cc_library(
         "//common/symbolic:expression",
     ],
     deps = [
-        "//common:symbolic_decompose",
+        "//common/symbolic:polynomial",
         "//math:gradient",
         "//math:matrix_util",
     ],
@@ -224,8 +225,7 @@ drake_cc_library(
         ":constraint",
     ],
     deps = [
-        "//common:polynomial",
-        "//common:symbolic_decompose",
+        "//common/symbolic:polynomial",
         "//math:quadratic_form",
     ],
 )
@@ -241,8 +241,8 @@ drake_cc_library(
     ],
     deps = [
         "//common:polynomial",
-        "//common:symbolic_decompose",
         "//common:unused",
+        "//common/symbolic:polynomial",
     ],
 )
 
@@ -364,7 +364,9 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
-        "//common:symbolic",
+        "//common/symbolic:expression",
+        "//common/symbolic:monomial_util",
+        "//common/symbolic:polynomial",
     ],
     deps = [
         ":sos_basis_generator",
@@ -382,8 +384,8 @@ drake_cc_library(
         ":mathematical_program",
         ":solution_result",
         ":solver_id",
-        "//common:symbolic",
         "//common:value",
+        "//common/symbolic:expression",
     ],
     deps = [],
 )
@@ -452,7 +454,7 @@ drake_cc_library(
         "//common/symbolic:expression",
     ],
     deps = [
-        "//common:symbolic",
+        "//common/symbolic:polynomial",
     ],
 )
 
@@ -1735,7 +1737,7 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":sos_basis_generator",
-        "//common:symbolic",
+        "//common/symbolic:monomial_util",
     ],
 )
 
