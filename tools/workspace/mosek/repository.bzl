@@ -33,10 +33,10 @@ def _impl(repository_ctx):
 
     if repository_ctx.os.name == "mac os x":
         mosek_platform = "osx64x86"
-        sha256 = ""  # noqa
+        sha256 = "FIXME"  # noqa
     elif repository_ctx.os.name == "linux":
         mosek_platform = "linux64x86"
-        sha256 = ""  # noqa
+        sha256 = "05081e5fab3cbc6694e1d108e0e0340c9de55328aeca35c3fb8ae49fd74d15a1"  # noqa
     else:
         fail(
             "Operating system is NOT supported",
@@ -76,7 +76,8 @@ def _impl(repository_ctx):
         # "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,
         #                                     mosek_minor_version)
         files = [
-            "bin/libcilkrts.5.dylib",
+            # TODO(jwnimmer-tri) libcilk is no longer correct as of Mosek 10.
+            # "bin/libcilkrts.5.dylib",  FIXME
             "bin/libmosek64.dylib",
         ]
 
@@ -108,11 +109,9 @@ def _impl(repository_ctx):
         ]
     else:
         files = [
-            # We unconditionally use the the MOSEK™ copy of libcilkrts. Even
-            # though Ubuntu 20 offers a cilk shared library for legacy support,
-            # Ubuntu 22 has dropped it, and it's simplest for us to just use
-            # the MOSEK™ copy of the library everywhere.
-            "bin/libcilkrts.so.5",
+            # We use the the MOSEK™ copy of libtbb. The version of libtbb
+            # available in Ubuntu is too old.
+            "bin/libtbb.so.12",
             "bin/libmosek64.so.{}.{}".format(
                 mosek_major_version,
                 mosek_minor_version,
@@ -160,11 +159,10 @@ install(
    name = "install",
    docs = [
        "mosek-eula.pdf",
-       "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
        "@drake//tools/workspace/mosek:drake_mosek_redistribution.txt",
-   ],
-   allowed_externals = [
-       "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
+       # TODO(jwnimmer-tri) MOSEK uses TBB now, so upstream should probably
+       # be shipping the required Apache 2.0 notice in their Downloads (but
+       # isn't yet) and Drake should propgatate the TBB license here also.
    ],
    deps = [":install_libraries"],
 )
