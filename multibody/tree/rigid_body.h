@@ -94,14 +94,25 @@ class RigidBody : public Body<T> {
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
 
-DRAKE_DEPRECATED("2022-10-07", "Use RigidBody::get_default_mass()")
-  double default_mass() const {
-    return get_default_mass();
+  /// Returns the default value of this body's mass.  This value is initially
+  /// supplied at construction when specifying this body's SpatialInertia.
+  /// @note get_default_mass() and default() mass return identical values.
+  double get_default_mass() const final {
+    // TODO(Mitiguy) Maybe rename the pure virtual function get_default_mass()
+    //  in body.h to default_mass() and removing the function get_default_mass()
+    //  in rigid_body.h. This would improve naming consistency in rigid_body.h:
+    //  default_com(), default_unit_inertia(), default_rotational_inertia(), and
+    //  default_spatial_inertia(). The reason this override get_default_mass()
+    //  function currently exists is to facilitate elimination of redundant data
+    //  that existed when default mass was duplicately stored in both the Body
+    //  and RigidBody classes (redundant data is not a great idea).
+    return default_mass();  // Returns the mass stored in `this` RigidBody.
   }
 
   /// Returns the default value of this body's mass.  This value is initially
   /// supplied at construction when specifying this body's SpatialInertia.
-  double get_default_mass() const final {
+  /// @note get_default_mass() and default() mass return identical values.
+  double default_mass() const {
     // In general, the mass of a body can be a constant property stored in the
     // body or a parameter of the model that is stored in a Context. The default
     // constant mass value is reported by get_default_mass() and is used to
@@ -377,17 +388,6 @@ DRAKE_DEPRECATED("2022-10-07", "Use RigidBody::get_default_mass()")
   }
 
  private:
-  // Ideally, the pure virtual function get_default_mass() in body.h would
-  // instead be called default_mass() (consistent with related function names
-  // in rigid_body.h). This override get_default_mass() function currently
-  // exists to facilitate elimination of redundant data that existed when
-  // default mass was stored in both the Body and RigidBody classes.
-  // TODO(Mitiguy) Get rid of get_default_mass() in both body.h and
-  //  rigid_body.h in favor of default_mass().
-  double get_default_mass() const final {
-    return default_mass();  // Returns the mass stored in `this` RigidBody.
-  }
-
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(

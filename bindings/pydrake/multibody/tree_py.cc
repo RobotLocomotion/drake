@@ -6,7 +6,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
@@ -337,13 +336,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("body_name"), py::arg("model_instance"), py::arg("M_BBo_B"),
             cls_doc.ctor.doc_3args)
         .def("get_default_mass", &Class::get_default_mass,
-            cls_doc.get_default_mass.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("default_mass", &Class::default_mass, cls_doc.default_mass.doc);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-    cls.def("default_com", &Class::default_com, py_rvp::reference_internal,
-           cls_doc.default_com.doc)
+            cls_doc.get_default_mass.doc)
+        .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc)
+        .def("default_com", &Class::default_com, py_rvp::reference_internal,
+            cls_doc.default_com.doc)
         .def("default_unit_inertia", &Class::default_unit_inertia,
             py_rvp::reference_internal, cls_doc.default_unit_inertia.doc)
         .def("default_rotational_inertia", &Class::default_rotational_inertia,

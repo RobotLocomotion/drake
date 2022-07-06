@@ -31,10 +31,7 @@ GTEST_TEST(RigidBody, RigidBodyConstructor) {
   EXPECT_EQ(B.default_spatial_inertia().get_unit_inertia().get_products(),
             M_Bo_B.get_unit_inertia().get_products());
   EXPECT_EQ(B.get_default_mass(), mass);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(B.default_mass(), mass);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   EXPECT_EQ(B.default_com(), p_BoBcm_B);
   const UnitInertia<double>& U_BBo_B_default = B.default_unit_inertia();
   EXPECT_EQ(U_BBo_B_default.get_moments(), U_BBo_B.get_moments());
