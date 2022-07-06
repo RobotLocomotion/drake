@@ -9,6 +9,10 @@ load(
     "drake_cc_test",
 )
 load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_cc_hdrs_forwarding_library",
+)
+load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_unittest",
@@ -52,6 +56,11 @@ drake_cc_package_library(
         ":scope_exit",
         ":scoped_singleton",
         ":sorted_pair",
+        ":symbolic",
+        ":symbolic_decompose",
+        ":symbolic_forwarding",
+        ":symbolic_latex",
+        ":symbolic_trigonometric_polynomial",
         ":temp_directory",
         ":type_safe_index",
         ":unused",
@@ -184,6 +193,73 @@ drake_cc_library(
         ":default_scalars",
         ":essential",
         "//common/symbolic:expression",
+    ],
+)
+
+# Remove this deprecataion shim on or after 2022-11-01.
+drake_cc_library(
+    name = "symbolic",
+    hdrs = ["symbolic.h"],
+    deps = [":symbolic_forwarding"],
+)
+
+# Remove this deprecataion shim on or after 2022-11-01.
+drake_cc_hdrs_forwarding_library(
+    name = "symbolic_forwarding",
+    actual_subdir = "common/symbolic",
+    add_deprecation_warning = True,
+    relative_labels_map = {
+        ":symbolic_chebyshev_basis_element": ":chebyshev_basis_element",
+        ":symbolic_chebyshev_polynomial": ":chebyshev_polynomial",
+        ":symbolic_codegen": ":codegen",
+        ":symbolic_decompose": ":decompose",
+        ":symbolic_generic_polynomial": ":generic_polynomial",
+        ":symbolic_monomial": ":monomial",
+        ":symbolic_monomial_basis_element": ":monomial_basis_element",
+        ":symbolic_monomial_util": ":monomial_util",
+        ":symbolic_polynomial": ":polynomial",
+        ":symbolic_polynomial_basis": ":polynomial_basis",
+        ":symbolic_polynomial_basis_element": ":polynomial_basis_element",
+        ":symbolic_rational_function": ":rational_function",
+        ":symbolic_simplification": ":simplification",
+    },
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common/symbolic",
+    ],
+)
+
+# Remove this deprecataion shim on or after 2022-11-01.
+drake_cc_library(
+    name = "symbolic_decompose",
+    deps = [
+        ":symbolic",
+    ],
+)
+
+# Remove this deprecataion shim on or after 2022-11-01.
+drake_cc_hdrs_forwarding_library(
+    name = "symbolic_latex",
+    actual_subdir = "common/symbolic",
+    add_deprecation_warning = True,
+    relative_labels_map = {
+        ":symbolic_latex": ":latex",
+    },
+    deps = [
+        "//common/symbolic:latex",
+    ],
+)
+
+# Remove this deprecataion shim on or after 2022-11-01.
+drake_cc_hdrs_forwarding_library(
+    name = "symbolic_trigonometric_polynomial",
+    actual_subdir = "common/symbolic",
+    add_deprecation_warning = True,
+    relative_labels_map = {
+        ":symbolic_trigonometric_polynomial": ":trigonometric_polynomial",
+    },
+    deps = [
+        "//common/symbolic:trigonometric_polynomial",
     ],
 )
 
@@ -589,6 +665,17 @@ drake_cc_googletest(
     name = "bit_cast_test",
     deps = [
         ":bit_cast",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deprecated_symbolic_headers_test",
+    copts = ["-Wno-cpp"],
+    deps = [
+        ":symbolic",
+        ":symbolic_decompose",
+        ":symbolic_latex",
+        ":symbolic_trigonometric_polynomial",
     ],
 )
 
