@@ -1010,6 +1010,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "autodiffxd_make_coherent_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":autodiffxd_make_coherent",
         "//common/test_utilities:eigen_matrix_compare",
