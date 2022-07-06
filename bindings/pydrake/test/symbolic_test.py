@@ -1998,3 +1998,13 @@ class TestSinCosSubstitution(unittest.TestCase):
         self.assertEqual(msubs.shape, (4, 1))
         for i in range(4):
             self.assertTrue(msubs[i, 0].EqualTo(me[i]))
+
+
+class TestSubstituteStereographicProjection(unittest.TestCase):
+    def test(self):
+        theta = np.array([sym.Variable("theta0"), sym.Variable("theta1")])
+        t = np.array([sym.Variable("t0"), sym.Variable("t1")])
+        a = sym.Variable("a")
+
+        e = t[0] * np.sin(theta[0] + theta[1])
+        e_rational = sym.SubstituteStereographicProjection(e=e, subs={theta[0]:t[0], theta[1]:t[1]})

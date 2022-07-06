@@ -548,6 +548,27 @@ PYBIND11_MODULE(symbolic, m) {
       },
       py::arg("m"), py::arg("subs"), doc.Substitute.doc_sincos_matrix);
 
+  m.def(
+       "SubstituteStereographicProjection",
+       [](const symbolic::Expression& e,
+           const std::unordered_map<symbolic::Variable, symbolic::Variable>&
+               subs) {
+         return symbolic::SubstituteStereographicProjection(e, subs);
+       },
+       py::arg("e"), py::arg("subs"),
+       doc.SubstituteStereographicProjection.doc_2args)
+      .def(
+          "SubstituteStereographicProjection",
+          [](const symbolic::Polynomial& e,
+              const VectorX<symbolic::Variable>& cos_vars,
+              const VectorX<symbolic::Variable>& sin_vars,
+              const VectorX<symbolic::Variable>& t) {
+            return symbolic::SubstituteStereographicProjection(
+                e, cos_vars, sin_vars, t);
+          },
+          py::arg("e"), py::arg("cos_vars"), py::arg("sin_vars"), py::arg("t"),
+          doc.SubstituteStereographicProjection.doc_4args);
+
   {
     constexpr auto& cls_doc = doc.FormulaKind;
     py::enum_<FormulaKind>(m, "FormulaKind", doc.FormulaKind.doc)
