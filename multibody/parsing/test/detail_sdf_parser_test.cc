@@ -2450,6 +2450,7 @@ TEST_F(SdfParserTest, UnsupportedElements) {
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*lighting"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*script"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*shader"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*drake:QQQ_dynamic"));
 }
 
 }  // namespace
