@@ -486,8 +486,10 @@ ProximityProperties MakeProximityPropertiesForCollision(
       "drake:hydroelastic_modulus",
       "drake:hunt_crossley_dissipation",
       "drake:point_contact_stiffness",
-      "drake::mu_dynamic",
-      "drake::mu_static"};
+      "drake:mu_dynamic",
+      "drake:mu_static"};
+    CheckSupportedElements(diagnostic, drake_element,
+                           supported_proximity_elements);
 
     auto read_double =
         [drake_element](const char* element_name) -> std::optional<double> {
