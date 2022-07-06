@@ -456,6 +456,21 @@ ProximityProperties object under `(material, hunt_crossley_dissipation)`.
 @ref mbp_hydroelastic_materials_properties "Hydroelastic contact",
 @ref mbp_dissipation_model "Modeling Dissipation"
 
+@subsection tag_drake_dissipation_time_scale drake:dissipation_time_scale
+
+- SDFormat path: `//model/link/collision/drake:proximity_properies/drake:dissipation_time_scale`
+- URDF path: `/robot/link/collision/drake:proximity_properties/drake:dissipation_time_scale/@value`
+- Syntax: Non-negative floating point value.
+
+@subsubsection tag_drake_dissipation_time_scale_semantics Semantics
+
+If present, this element provides a value (units of time,
+i.e. seconds) for a linear model of dissipation. It is stored in a
+ProximityProperties object under `(material, dissipation_time_scale)`.
+
+@see drake::geometry::ProximityProperties,
+@ref mbp_dissipation_model "Modeling Dissipation"
+
 @subsection tag_drake_hydroelastic_modulus drake:hydroelastic_modulus
 
 - SDFormat path: `//model/link/collision/drake:proximity_properties/drake:hydroelastic_modulus`

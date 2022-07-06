@@ -216,12 +216,24 @@ T CompliantContactManager<T>::GetDissipationTimeConstant(
   const geometry::ProximityProperties* prop =
       inspector.GetProximityProperties(id);
   DRAKE_DEMAND(prop != nullptr);
+
+  if (!prop->HasProperty(geometry::internal::kMaterialGroup,
+                         "dissipation_time_constant")) {
+    const BodyIndex body_index = this->geometry_id_to_body_index().at(id);
+    const Body<T>& body = plant().get_body(body_index);
+    const std::string message = fmt::format(
+        "No `dissipation_time_constant` specified for geometry {} on body {}. "
+        "You are using a linear model of compliant contact that requires you "
+        "to specify dissipation explicitly.",
+        inspector.GetName(id), body.name());
+    throw std::runtime_error(message);
+  }
+
   // N.B. Here we rely on the resolution of #13289 and #5454 to get properties
   // with the proper scalar type T. This will not work on scalar converted
   // models until those issues are resolved.
-  return prop->template GetPropertyOrDefault<T>(
-      geometry::internal::kMaterialGroup, "dissipation_time_constant",
-      plant().time_step());
+  return prop->template GetProperty<T>(
+      geometry::internal::kMaterialGroup, "dissipation_time_constant");
 }
 
 template <typename T>

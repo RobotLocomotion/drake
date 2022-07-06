@@ -323,6 +323,21 @@ class SpheresStack : public ::testing::Test {
         EvalContactSurfaces(*plant_context_);
     ASSERT_EQ(surfaces.size(), 1u);
     const int num_hydro_pairs = surfaces[0].num_faces();
+
+    // In these tests we use a negative value of
+    // ContactParameters::dissipation_time_constant to indicate we want to build
+    // a model for which we forgot to specify the dissipation time scale in
+    // ProximityProperties. Here we verify this is required by the manager.
+    if (sphere1_point_params.dissipation_time_constant < 0 ||
+        sphere2_point_params.dissipation_time_constant < 0) {
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          EvalDiscreteContactPairs(*plant_context_),
+          "No `dissipation_time_constant` specified for geometry .* on body "
+          ".*. You are using a linear model of compliant contact that requires "
+          "you to specify dissipation explicitly.");
+      return;
+    }
+
     const std::vector<DiscreteContactPair<double>>& pairs =
         EvalDiscreteContactPairs(*plant_context_);
     EXPECT_EQ(pairs.size(), num_point_pairs + num_hydro_pairs);
@@ -523,6 +538,7 @@ class SpheresStack : public ::testing::Test {
   }
 
   // Utility to make ProximityProperties from ContactParameters.
+  // params.dissipation_time_constant is ignored if negative.
   static ProximityProperties MakeProximityProperties(
       const ContactParameters& params) {
     DRAKE_DEMAND(params.point_stiffness || params.hydro_modulus);
@@ -545,9 +561,12 @@ class SpheresStack : public ::testing::Test {
         CoulombFriction<double>(params.friction_coefficient,
                                 params.friction_coefficient),
         &properties);
-    properties.AddProperty(geometry::internal::kMaterialGroup,
-                           "dissipation_time_constant",
-                           params.dissipation_time_constant);
+
+    if (params.dissipation_time_constant >= 0) {
+      properties.AddProperty(geometry::internal::kMaterialGroup,
+                             "dissipation_time_constant",
+                             params.dissipation_time_constant);
+    }
     return properties;
   }
 };
@@ -556,6 +575,22 @@ class SpheresStack : public ::testing::Test {
 // different combinations of compliance.
 TEST_F(SpheresStack, VerifyDiscreteContactPairs) {
   ContactParameters soft_point_contact{1.0e3, std::nullopt, 0.01, 1.0};
+  ContactParameters hard_point_contact{1.0e40, std::nullopt, 0.0, 1.0};
+
+  // Hard sphere 1/soft sphere 2.
+  VerifyDiscreteContactPairs(hard_point_contact, soft_point_contact);
+
+  // Equally soft spheres.
+  VerifyDiscreteContactPairs(soft_point_contact, soft_point_contact);
+
+  // Soft sphere 1/hard sphere 2.
+  VerifyDiscreteContactPairs(soft_point_contact, hard_point_contact);
+}
+
+TEST_F(SpheresStack, DissipationTimeScaleIsRequired) {
+  ContactParameters soft_point_contact{
+      1.0e3, std::nullopt,
+      -1 /* Dissipation not included in ProximityProperties */, 1.0};
   ContactParameters hard_point_contact{1.0e40, std::nullopt, 0.0, 1.0};
 
   // Hard sphere 1/soft sphere 2.
