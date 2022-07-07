@@ -18,7 +18,7 @@ InstantaneousRealtimeRateCalculator::CalculateRealtimeRate(
       realtime_rate = sim_time_delta / wall_delta;
     }
   }
-  timer_->Start(); // Restarts the wall timer
+  timer_->Start();  // Restarts the wall timer
   prev_sim_time_ = current_sim_time;
   return realtime_rate;
 }

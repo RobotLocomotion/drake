@@ -214,6 +214,8 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   bool recording_{false};
   bool set_transforms_while_recording_{true};
 
+  /* TODO(#16486): ideally this mutable state will go away once it is safe to
+  run Meshcat multithreaded */
   mutable systems::internal::InstantaneousRealtimeRateCalculator
       realtime_rate_calculator_{};
 };
