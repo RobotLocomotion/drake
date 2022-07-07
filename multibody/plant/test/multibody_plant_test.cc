@@ -1888,28 +1888,6 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
       autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
 }
 
-GTEST_TEST(MultibodyPlantTest, CalcPointPairPenetrationsDisconnectedPorts) {
-  // Creates a plant and register geometry with a SceneGraph, but does not
-  // connect their respective ports in a Diagram. MultibodyPlant will know
-  // that it is registered as a source for geometry, but will fail to Eval
-  // its geometry_query_input_port(). Check that this failure happens as
-  // expected.
-  SceneGraph<double> scene_graph;
-  MultibodyPlant<double> plant(0.0);
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
-  plant.Finalize();
-  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
-
-  // Plant was not connected to the SceneGraph in a diagram, so its input port
-  // should be invalid.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MultibodyPlantTester::EvalGeometryQueryInput(plant, *context),
-      "[^]+The provided context doesn't show a connection for the plant's "
-      "query input port .see MultibodyPlant::get_geometry_query_input_port..."
-      ". See https://drake.mit.edu/trouble_shooting.html"
-      "#mbp-unconnected-query-object-port for help.");
-}
-
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
