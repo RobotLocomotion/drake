@@ -49,15 +49,13 @@ double GetVariableValue(
 template <typename Derived>
 typename std::enable_if_t<
     std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-    Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime>>
+    MatrixLikewise<double, Derived>>
 GetVariableValue(
     const Eigen::MatrixBase<Derived>& var,
     const std::optional<std::unordered_map<symbolic::Variable::Id, int>>&
         variable_index,
     const Eigen::Ref<const Eigen::VectorXd>& variable_values) {
-  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
-      value(var.rows(), var.cols());
+  MatrixLikewise<double, Derived> value(var.rows(), var.cols());
   for (int i = 0; i < var.rows(); ++i) {
     for (int j = 0; j < var.cols(); ++j) {
       value(i, j) =
@@ -185,8 +183,7 @@ class MathematicalProgramResult final {
   template <typename Derived>
   [[nodiscard]] typename std::enable_if_t<
       std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>
+      MatrixLikewise<double, Derived>>
   GetSolution(const Eigen::MatrixBase<Derived>& var) const {
     return GetVariableValue(var, decision_variable_index_, x_val_);
   }
@@ -232,12 +229,9 @@ class MathematicalProgramResult final {
   template <typename Derived>
   [[nodiscard]] typename std::enable_if_t<
       std::is_same_v<typename Derived::Scalar, symbolic::Expression>,
-      Eigen::Matrix<symbolic::Expression, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>
+      MatrixLikewise<symbolic::Expression, Derived>>
   GetSolution(const Eigen::MatrixBase<Derived>& m) const {
-    Eigen::Matrix<symbolic::Expression, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime>
-        value(m.rows(), m.cols());
+    MatrixLikewise<symbolic::Expression, Derived> value(m.rows(), m.cols());
     for (int i = 0; i < m.rows(); ++i) {
       for (int j = 0; j < m.cols(); ++j) {
         value(i, j) = GetSolution(m(i, j));
@@ -409,8 +403,7 @@ class MathematicalProgramResult final {
   template <typename Derived>
   [[nodiscard]] typename std::enable_if_t<
       std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>
+      MatrixLikewise<double, Derived>>
   GetSuboptimalSolution(const Eigen::MatrixBase<Derived>& var,
                         int solution_number) const {
     return GetVariableValue(var, decision_variable_index_,

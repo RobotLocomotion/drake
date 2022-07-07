@@ -139,6 +139,14 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 6>;
 template <typename Scalar>
 using Matrix6xUpTo6 = Eigen::Matrix<Scalar, 6, Eigen::Dynamic, 0, 6, 6>;
 
+/// A matrix with the same compile-time sizes and storage order as Derived, but
+/// with a different scalar type and its default alignment (Eigen::AutoAlign).
+template <typename Scalar, typename Derived>
+using MatrixLikewise = Eigen::Matrix<Scalar,
+    Derived::RowsAtCompileTime, Derived::ColsAtCompileTime,
+    Derived::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor,
+    Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
+
 /// A quaternion templated on scalar type.
 template <typename Scalar>
 using Quaternion = Eigen::Quaternion<Scalar>;
