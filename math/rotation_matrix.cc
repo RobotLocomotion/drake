@@ -10,7 +10,6 @@
 namespace drake {
 namespace math {
 
-// Use an unnamed namespace for functions whose scope is file-local.
 namespace {
 // Returns true if all the elements of a quaternion are zero, otherwise false.
 template <typename T>
