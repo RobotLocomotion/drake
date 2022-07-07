@@ -82,6 +82,16 @@ def MeshcatVisualizerCpp(*args, **kwargs):
 
 
 @_deprecated(
+    "MeshcatVisualizerCpp has been renamed to MeshcatVisualizer.",
+    date="2022-11-01")
+def _AddToBuilder(*args, **kwargs):
+    return MeshcatVisualizer.AddToBuilder(*args, **kwargs)
+
+
+MeshcatVisualizerCpp.AddToBuilder = _AddToBuilder
+
+
+@_deprecated(
     "MeshcatPointCloudVisualizerCpp has been renamed to "
     "MeshcatPointCloudVisualizer.",
     date="2022-11-01")
