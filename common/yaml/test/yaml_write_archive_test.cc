@@ -56,6 +56,11 @@ TEST_F(YamlWriteArchiveTest, Double) {
   test(5.6e-12, "5.6e-12");
   test(-5.6e+16, "-5.6e+16");
   test(-5.6e-12, "-5.6e-12");
+
+  // See https://yaml.org/spec/1.2.2/#10214-floating-point for the specs.
+  test(std::numeric_limits<double>::quiet_NaN(), ".nan");
+  test(std::numeric_limits<double>::infinity(), ".inf");
+  test(-std::numeric_limits<double>::infinity(), ".-inf");
 }
 
 TEST_F(YamlWriteArchiveTest, String) {
