@@ -18,5 +18,10 @@
         <sphere radius='0.4'/>
       </geometry>
     </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
   </link>
 </robot>
