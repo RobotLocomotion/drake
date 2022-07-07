@@ -1906,7 +1906,7 @@ GTEST_TEST(MultibodyPlantTest, CalcPointPairPenetrationsDisconnectedPorts) {
       MultibodyPlantTester::EvalGeometryQueryInput(plant, *context),
       "[^]+The provided context doesn't show a connection for the plant's "
       "query input port .see MultibodyPlant::get_geometry_query_input_port..."
-      ". See https://drake.mit.edu/trouble_shooting.html"
+      ". See https://drake.mit.edu/troubleshooting.html"
       "#mbp-unconnected-query-object-port for help.");
 }
 

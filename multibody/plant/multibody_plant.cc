@@ -929,7 +929,7 @@ const geometry::QueryObject<T>& MultibodyPlant<T>::EvalGeometryQueryInput(
     throw std::logic_error(std::string(explanation) +
         "\n\nThe provided context doesn't show a connection for the plant's "
         "query input port (see MultibodyPlant::get_geometry_query_input_port())"
-        ". See https://drake.mit.edu/trouble_shooting.html"
+        ". See https://drake.mit.edu/troubleshooting.html"
         "#mbp-unconnected-query-object-port for help.");
   }
   return get_geometry_query_input_port()
@@ -947,7 +947,7 @@ void MultibodyPlant<T>::ValidateGeometryInput(
         std::string(explanation) +
         "\n\nThe provided context doesn't show a connection for the plant's "
         "query input port (see MultibodyPlant::get_geometry_query_input_port())"
-        ". See https://drake.mit.edu/trouble_shooting.html"
+        ". See https://drake.mit.edu/troubleshooting.html"
         "#mbp-unconnected-query-object-port for help.");
   }
 }

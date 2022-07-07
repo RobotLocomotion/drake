@@ -634,7 +634,7 @@ TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
       GetContactResults(),
       ".+ 'contact_results' output port[^]+The provided context doesn't show a "
       "connection for the plant's query input port .+ See "
-      "https://drake.mit.edu/trouble_shooting.html"
+      "https://drake.mit.edu/troubleshooting.html"
       "#mbp-unconnected-query-object-port for help.");
 }
 
