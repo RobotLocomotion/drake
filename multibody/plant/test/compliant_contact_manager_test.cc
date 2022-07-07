@@ -885,8 +885,7 @@ TEST_F(SpheresStack, DoCalcContactSolverResults) {
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
   // N.B. We make sure both the manager and the manual invocations of the SAP
   // solver in this test both use the same set of parameters.
-  SapSolverParameters params;
-  params.ls_alpha_max = 1.0 / params.ls_rho;
+  SapSolverParameters params;  // Default set of parameters.
   contact_manager_->set_sap_solver_parameters(params);
   ContactSolverResults<double> contact_results;
   contact_manager_->CalcContactSolverResults(*plant_context_, &contact_results);
