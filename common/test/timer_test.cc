@@ -11,19 +11,20 @@ GTEST_TEST(TimeTest, Everything) {
 
   // Clock starts upon construction. Allow some time to pass and confirm
   // positive measurement.
-  EXPECT_GT(timer.Tick(), 0.0);
-
-  // Start resets the clock. Allow a small time to pass and confirm timer
-  // measures at least that amount.
-  timer.Start();
   using std::chrono::duration;
-  const duration<double> kShortInterval = std::chrono::milliseconds(10);
-  std::this_thread::sleep_for(kShortInterval);  // sleep for at least 10ms
-  const double t = timer.Tick();
-  EXPECT_GT(t, 0.0);
-  EXPECT_GE(t, std::chrono::duration<double>(kShortInterval).count());
+  const duration<double> kTestInterval = std::chrono::milliseconds(100);
+  std::this_thread::sleep_for(kTestInterval);  // sleep for at least 100ms
+  const double T1 = timer.Tick();
+  EXPECT_GT(T1, 0.0);
+  EXPECT_GE(T1, std::chrono::duration<double>(kTestInterval).count());
+
+  // Start restarts the timer, the new measurement should be less than T1.
+  timer.Start();
+  const double T2 = timer.Tick();
+  EXPECT_GT(T2, 0.0);
+  EXPECT_LT(T2, T1);  // ensure we measured less time after call to Start()
 
   // As time progresses, the tick value monotonically increases.
-  EXPECT_GT(timer.Tick(), t);
+  EXPECT_GT(timer.Tick(), T2);
 }
 }  // namespace drake
