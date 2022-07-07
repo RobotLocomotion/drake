@@ -12,6 +12,7 @@ using drake::multibody::MultibodyPlant;
 using drake::symbolic::Expression;
 using drake::systems::Context;
 using drake::test::LimitMalloc;
+using drake::test::LimitMallocParams;
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -94,6 +95,11 @@ class CassieDoubleFixture : public benchmark::Fixture {
     x_ = context_->get_continuous_state_vector().CopyToVector();
   }
 
+  using benchmark::Fixture::TearDown;
+  void TearDown(benchmark::State& state) override {
+    tracker_.Report(&state);
+  }
+
   // Use this method to invalidate state-dependent computations within each
   // benchmarked step. Disabling the cache entirely could affect the performance
   // differently because it would suppress any internal use of the cache during
@@ -107,6 +113,18 @@ class CassieDoubleFixture : public benchmark::Fixture {
   }
 
  protected:
+  // Enables heap use statistics for a benchmark case that does not otherwise
+  // have any allocation limits.
+  auto StartCountingAllocations() {
+    const LimitMallocParams no_limits;
+    return std::shared_ptr<LimitMalloc>(
+        new LimitMalloc(no_limits),
+        [this](LimitMalloc* limiter) {
+          tracker_.Update(limiter->num_allocations());
+          delete limiter;
+        });
+  }
+
   AllocationTracker tracker_;
   std::unique_ptr<MultibodyPlant<double>> plant_{};
   std::unique_ptr<Context<double>> context_;
@@ -127,7 +145,6 @@ BENCHMARK_F(CassieDoubleFixture, DoubleMassMatrix)(benchmark::State& state) {
     plant_->CalcMassMatrix(*context_, &M);
     tracker_.Update(guard.num_allocations());
   }
-  tracker_.Report(&state);
 }
 
 BENCHMARK_F(CassieDoubleFixture, DoubleInverseDynamics)
@@ -142,7 +159,6 @@ BENCHMARK_F(CassieDoubleFixture, DoubleInverseDynamics)
     plant_->CalcInverseDynamics(*context_, desired_vdot, external_forces);
     tracker_.Update(guard.num_allocations());
   }
-  tracker_.Report(&state);
 }
 
 BENCHMARK_F(CassieDoubleFixture, DoubleForwardDynamics)
@@ -159,7 +175,6 @@ BENCHMARK_F(CassieDoubleFixture, DoubleForwardDynamics)
     plant_->CalcTimeDerivatives(*context_, derivatives.get());
     tracker_.Update(guard.num_allocations());
   }
-  tracker_.Report(&state);
 }
 
 // Fixture that holds a Cassie robot model in a MultibodyPlant<AutoDiffXd>. It
@@ -191,12 +206,11 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
   auto x_autodiff = math::InitializeAutoDiff(x_);
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
       x_autodiff);
-
   for (auto _ : state) {
     InvalidateState();
+    auto guard = StartCountingAllocations();
     plant_autodiff_->CalcMassMatrix(*context_autodiff_, &M_autodiff);
   }
-  tracker_.Report(&state);
 }
 
 BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
@@ -211,14 +225,13 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
                                                 nq_ + nv_);
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
       x_autodiff);
-
   for (auto _ : state) {
     InvalidateState();
+    auto guard = StartCountingAllocations();
     plant_autodiff_->CalcInverseDynamics(*context_autodiff_,
                                          vdot_autodiff,
                                          external_forces_autodiff);
   }
-  tracker_.Report(&state);
 }
 
 BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
@@ -231,14 +244,13 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
   auto x_autodiff = math::InitializeAutoDiff(x_, nq_ + nv_ + nu_);
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
       x_autodiff);
-
   for (auto _ : state) {
     InvalidateState();
     port_value.GetMutableData();  // Invalidates caching of inputs.
+    auto guard = StartCountingAllocations();
     plant_autodiff_->CalcTimeDerivatives(*context_autodiff_,
                                          derivatives_autodiff.get());
   }
-  tracker_.Report(&state);
 }
 
 // Fixture that holds a Cassie robot model in a MultibodyPlant<Expression>. It
@@ -270,6 +282,7 @@ BENCHMARK_F(CassieExpressionFixture, ExpressionMassMatrix)
   MatrixX<Expression> M(nv_, nv_);
   for (auto _ : state) {
     InvalidateState();
+    auto guard = StartCountingAllocations();
     plant_expression_->CalcMassMatrix(*context_expression_, &M);
   }
 }
@@ -282,6 +295,7 @@ BENCHMARK_F(CassieExpressionFixture, ExpressionInverseDynamics)
   multibody::MultibodyForces<Expression> external_forces(*plant_expression_);
   for (auto _ : state) {
     InvalidateState();
+    auto guard = StartCountingAllocations();
     plant_expression_->CalcInverseDynamics(
         *context_expression_, desired_vdot, external_forces);
   }
@@ -297,6 +311,7 @@ BENCHMARK_F(CassieExpressionFixture, ExpressionForwardDynamics)
   for (auto _ : state) {
     InvalidateState();
     port_value.GetMutableData();  // Invalidates caching of inputs.
+    auto guard = StartCountingAllocations();
     plant_expression_->CalcTimeDerivatives(
         *context_expression_, derivatives.get());
   }
