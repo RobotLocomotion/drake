@@ -22,7 +22,7 @@ class InstantaneousRealtimeRateCalculator {
     @param current_sim_time the current simulated time.
     @return realtime rate if one can be calculated, nullopt otherwise.
    */
-  std::optional<double> CalculateRealtimeRate(double current_sim_time);
+  std::optional<double> UpdateAndRecalculate(double current_sim_time);
 
   /* (Internal use for unit testing only) Used to mock the monotonic wall time
      source to control time during unit testing.  */

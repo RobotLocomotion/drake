@@ -23,16 +23,16 @@ GTEST_TEST(InstantaneousRealtimeRateCalculatorTest, BasicTest) {
   InstantaneousRealtimeRateCalculator calculator{};
   calculator.InjectMockTimer(std::move(timer));
   // First call is seed and gives nullopt result.
-  EXPECT_FALSE(calculator.CalculateRealtimeRate(0.0).has_value());
+  EXPECT_FALSE(calculator.UpdateAndRecalculate(0.0).has_value());
 
   // Next calls return correct value.
-  EXPECT_DOUBLE_EQ(calculator.CalculateRealtimeRate(0.1).value(), 1.0);
-  EXPECT_DOUBLE_EQ(calculator.CalculateRealtimeRate(0.2).value(), 1.0);
-  EXPECT_DOUBLE_EQ(calculator.CalculateRealtimeRate(0.4).value(), 2.0);
+  EXPECT_DOUBLE_EQ(calculator.UpdateAndRecalculate(0.1).value(), 1.0);
+  EXPECT_DOUBLE_EQ(calculator.UpdateAndRecalculate(0.2).value(), 1.0);
+  EXPECT_DOUBLE_EQ(calculator.UpdateAndRecalculate(0.4).value(), 2.0);
 
   // Reset time and observe another nullopt result.
-  EXPECT_FALSE(calculator.CalculateRealtimeRate(0.0).has_value());
-  EXPECT_DOUBLE_EQ(calculator.CalculateRealtimeRate(0.1).value(), 1.0);
+  EXPECT_FALSE(calculator.UpdateAndRecalculate(0.0).has_value());
+  EXPECT_DOUBLE_EQ(calculator.UpdateAndRecalculate(0.1).value(), 1.0);
 }
 }  // namespace
 }  // namespace systems

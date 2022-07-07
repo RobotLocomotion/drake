@@ -7,7 +7,7 @@ namespace systems {
 namespace internal {
 
 std::optional<double>
-InstantaneousRealtimeRateCalculator::CalculateRealtimeRate(
+InstantaneousRealtimeRateCalculator::UpdateAndRecalculate(
     double current_sim_time) {
   std::optional<double> realtime_rate;
   if (prev_sim_time_.has_value()) {

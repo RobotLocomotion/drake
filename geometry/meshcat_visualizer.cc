@@ -97,7 +97,7 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
     version_ = current_version;
   }
   SetTransforms(context, query_object);
-  std::optional<double> rate = realtime_rate_calculator_.CalculateRealtimeRate(
+  std::optional<double> rate = realtime_rate_calculator_.UpdateAndRecalculate(
       ExtractDoubleOrThrow(context.get_time()));
   if (rate) {
     meshcat_->SetRealtimeRate(rate.value());
