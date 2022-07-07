@@ -680,6 +680,21 @@ generate_pybind_coverage(
     xml_docstrings = ":documentation_pybind.xml",
 )
 
+drake_py_binary(
+    name = "stubgen",
+    srcs = ["stubgen.py"],
+    args = [
+        "--no-setup-py",
+        # TODO(mwoehlke-kitware): Remove when #17520 is fixed.
+        "--ignore-invalid=all",
+    ],
+    visibility = ["//bindings:__pkg__"],
+    deps = [
+        ":all_py",
+        "@pybind11_stubgen_internal//:pybind11_stubgen",
+    ],
+)
+
 add_lint_tests_pydrake(
     python_lint_extra_srcs = [
         ":test/all_install_test.py",

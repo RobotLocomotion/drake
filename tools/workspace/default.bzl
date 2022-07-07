@@ -72,6 +72,7 @@ load("@drake//tools/workspace/petsc:repository.bzl", "petsc_repository")
 load("@drake//tools/workspace/picosat:repository.bzl", "picosat_repository")
 load("@drake//tools/workspace/picosha2:repository.bzl", "picosha2_repository")
 load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
+load("@drake//tools/workspace/pybind11_stubgen_internal:repository.bzl", "pybind11_stubgen_internal_repository")  # noqa
 load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
 load("@drake//tools/workspace/pygame_py:repository.bzl", "pygame_py_repository")  # noqa
 load("@drake//tools/workspace/python:repository.bzl", "python_repository")
@@ -290,6 +291,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         picosha2_repository(name = "picosha2", mirrors = mirrors)
     if "pybind11" not in excludes:
         pybind11_repository(name = "pybind11", mirrors = mirrors)
+    if "pybind11_stubgen_internal" not in excludes:
+        pybind11_stubgen_internal_repository(name = "pybind11_stubgen_internal", mirrors = mirrors)  # noqa
     if "pycodestyle" not in excludes:
         pycodestyle_repository(name = "pycodestyle", mirrors = mirrors)
     if "pygame_py" not in excludes:

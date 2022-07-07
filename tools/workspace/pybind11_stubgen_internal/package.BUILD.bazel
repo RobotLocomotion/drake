@@ -1,0 +1,11 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:py.bzl", "py_binary", "py_library")
+
+licenses(["notice"])  # BSD-3-Clause
+
+py_library(
+    name = "pybind11_stubgen",
+    srcs = ["pybind11_stubgen/__init__.py"],
+    visibility = ["//visibility:public"],
+)
