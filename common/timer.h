@@ -13,7 +13,7 @@ namespace drake {
 /// Abstract base class for timing utility.
 class Timer {
  public:
-  /// Timers start upon construction for convenience.
+  /// Properly implemented Timers must start timing upon construction.
   Timer() = default;
   virtual ~Timer() = default;
 
