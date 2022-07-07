@@ -1,4 +1,5 @@
 #pragma once
+
 #include <ostream>
 
 #include "drake/common/symbolic/polynomial.h"

@@ -194,8 +194,10 @@ TEST_F(SymbolicRationalFunctionTest, Addition) {
   EXPECT_PRED2(RationalFunctionEqual, f1_p3_sum, f1_p3_sum_expected);
   // p5 contains variable a in its indeterminates.
   if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(f3 + p5_, polynomial_invariant_error_);
-    DRAKE_EXPECT_THROWS_MESSAGE(p5_ + f3, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 + p5_,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ + f3,
+                                polynomial_invariant_error_);
   }
 
   const double c = 2;
@@ -247,8 +249,10 @@ TEST_F(SymbolicRationalFunctionTest, Subtraction) {
   EXPECT_PRED2(RationalFunctionEqual, f1_minus_p3, f1_minus_p3_expected);
   // p5 contains variable a in its indeterminates.
   if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(f3 - p5_, polynomial_invariant_error_);
-    DRAKE_EXPECT_THROWS_MESSAGE(p5_ - f3, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 - p5_,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ - f3,
+                                polynomial_invariant_error_);
   }
 
   const double c = 2;
@@ -354,8 +358,10 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
   p3_divides_f1 /= p3_;
   EXPECT_PRED2(RationalFunctionEqual, p3_divides_f1, p3_divides_f1_expected);
   if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(f3 / p5_, polynomial_invariant_error_);
-    DRAKE_EXPECT_THROWS_MESSAGE(p5_ / f3, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 / p5_,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ / f3,
+                                polynomial_invariant_error_);
     DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p3_, p1_) / p5_,
                                 rational_function_indeterminates_error_);
   }
@@ -371,7 +377,8 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
   const std::string zero_divider_error{
       "RationalFunction: operator/=: The divider is 0."};
   DRAKE_EXPECT_THROWS_MESSAGE(f1 / 0, zero_divider_error);
-  DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_zero_, zero_divider_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_zero_,
+                              zero_divider_error);
   const RationalFunction polynomial_fraction_zero;
   DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_fraction_zero,
                               zero_divider_error);
