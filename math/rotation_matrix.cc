@@ -14,13 +14,12 @@ namespace {
 // Returns true if all the elements of a quaternion are zero, otherwise false.
 template <typename T>
 bool IsQuaternionZero(const Eigen::Quaternion<T>& quaternion) {
-  // Note: This special-purpose function avoids memory allocation on the heap.
-  // Mitiguy found quaternion.coeffs().isZero() sometimes does memory allocation
-  // on the heap. Nimmer found this creative way to use DiscardGradient to avoid
-  // memory allocation. The pseudo-code below shows a simple alternative:
-  //  return quaternion.w() == 0.0 && quaternion.x() == 0.0 &&
-  //         quaternion.y() == 0.0 && quaternion.z() == 0.0;
-  return math::DiscardGradient(quaternion.coeffs()).isZero(0);
+  // Note: This special-purpose function avoids memory allocation on the heap
+  // that sometimes occurs in quaternion.coeffs().isZero().  Alternatively, the
+  // pseudo-code below uses DiscardGradient to reduce memory allocations.
+  // return math::DiscardGradient(quaternion.coeffs()).isZero(0);
+  return quaternion.w() == 0.0 && quaternion.x() == 0.0 &&
+         quaternion.y() == 0.0 && quaternion.z() == 0.0;
 }
 
 template <typename T>
