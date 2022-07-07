@@ -3,7 +3,7 @@
  an exception if a scene graph's query object port hasn't been connected to
  the MbP's input port.
 
- This test serves as a regressiontest of the various behaviors (positive and
+ This test serves as a regression test of the various behaviors (positive and
  negative) across the related APIs and configurations. */
 
 #include <functional>
@@ -188,15 +188,8 @@ TEST_P(MultibodySceneGraphConnectionTest, ConnectionError) {
   const bool has_collision_geometry = config.has_collision_geometry;
   const bool connected = config.connected;
 
-  // If the test has been declared in compatible with this continuous/discrete
-  // mode, skip it.
-  if ((time_step != 0 && config.modes == PlantMode::kContinuous) ||
-      (time_step == 0 && config.modes == PlantMode::kDiscrete)) {
-    return;
-  }
-
   DiagramBuilder<double> builder;
-  MultibodyPlant<double>& plant = PopulateTestDiagram(
+  const MultibodyPlant<double>& plant = PopulateTestDiagram(
       &builder, time_step, has_collision_geometry, connected);
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
@@ -208,10 +201,7 @@ TEST_P(MultibodySceneGraphConnectionTest, ConnectionError) {
   if (expect_throw) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         config.eval(plant, plant_context),
-        fmt::format(".*{}[^]+The provided context doesn't show a "
-                    "connection for the plant's query input port.+ See "
-                    "https://drake.mit.edu/trouble_shooting.html"
-                    "#mbp-unconnected-query-object-port for help.",
+        fmt::format(".*{}[^]+#mbp-unconnected-query-object-port for help.",
                     config.key_phrase));
   } else {
     EXPECT_NO_THROW(config.eval(plant, plant_context));
@@ -222,7 +212,7 @@ TEST_P(MultibodySceneGraphConnectionTest, ConnectionError) {
 // continuous mode, connection, collision geometry, etc. Exceptions are noted
 // below.
 std::vector<TestConfiguration> MakeTestConfigurations() {
-  std::vector<TestConfiguration> configurations{
+  std::vector<TestConfiguration> ref_configurations{
       // Ports don't depend on MbP mode.
       {.key_phrase = "'contact_results'", .eval = &EvalContactResults},
       {.key_phrase = "'DefaultModelInstance_generalized_contact_forces'",
@@ -246,13 +236,25 @@ std::vector<TestConfiguration> MakeTestConfigurations() {
        .modes = PlantMode::kDiscrete},
   };
 
-  for (double time_step : {1e-3, 0.0}) {
-    for (bool has_collision_geometry : {true, false}) {
-      for (bool connected : {true, false}) {
-        for (auto& config : configurations) {
-          config.time_step = time_step;
-          config.connected = connected;
-          config.has_collision_geometry = has_collision_geometry;
+  std::vector<TestConfiguration> configurations;
+  for (auto& ref_config : ref_configurations) {
+    for (double time_step : {1e-3, 0.0}) {
+      const bool is_continuous = time_step == 0.0;
+      // If the configuration has been declared as incompatible with this
+      // continuous/discrete mode, skip it.
+      if ((!is_continuous && ref_config.modes == PlantMode::kContinuous) ||
+          (is_continuous && ref_config.modes == PlantMode::kDiscrete)) {
+        continue;
+      }
+      for (bool has_collision_geometry : {true, false}) {
+        for (bool connected : {true, false}) {
+          configurations.push_back(
+              {.key_phrase = ref_config.key_phrase,
+               .eval = ref_config.eval,
+               .time_step = time_step,
+               .has_collision_geometry = has_collision_geometry,
+               .connected = connected,
+               .modes = ref_config.modes});
         }
       }
     }
