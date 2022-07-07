@@ -185,6 +185,190 @@ GTEST_TEST(SymbolicLatex, HalfAngleTest) {
       (2 * sx * cx) * (2 * cy * cy - 1) + (2 * sy * cy) * (1 - 2 * sx * sx));
 }
 
+void CheckSubstituteStereographicProjection(
+    const symbolic::Expression& e,
+    const std::unordered_map<symbolic::Variable, symbolic::Variable>& subs,
+    const symbolic::Polynomial& e_poly, const std::vector<SinCos>& sin_cos,
+    const VectorX<symbolic::Variable>& t_angle,
+    const symbolic::RationalFunction& e_rational_expected) {
+  // Test the overloaded version that takes e as a symbolic::Expression.
+  const symbolic::RationalFunction e_rational1 =
+      SubstituteStereographicProjection(e, subs);
+  EXPECT_PRED2(symbolic::test::PolyEqualAfterExpansion, e_rational1.numerator(),
+               e_rational_expected.numerator());
+  EXPECT_PRED2(symbolic::test::PolyEqualAfterExpansion,
+               e_rational1.denominator(), e_rational_expected.denominator());
+  // Test the overloaded version that takes e as a symbolic Polynomial.
+  const symbolic::RationalFunction e_rational2 =
+      SubstituteStereographicProjection(e_poly, sin_cos, t_angle);
+  EXPECT_PRED2(symbolic::test::PolyEqualAfterExpansion, e_rational2.numerator(),
+               e_rational_expected.numerator());
+  EXPECT_PRED2(symbolic::test::PolyEqualAfterExpansion,
+               e_rational2.denominator(), e_rational_expected.denominator());
+}
+
+GTEST_TEST(RationalForwardKinematics, ReplaceCosAndSinWithRationalFunction) {
+  VectorX<symbolic::Variable> cos_vars(3);
+  VectorX<symbolic::Variable> sin_vars(3);
+  VectorX<symbolic::Variable> t_angle(3);
+  VectorX<symbolic::Variable> theta(3);
+  std::vector<SinCos> sin_cos;
+  for (int i = 0; i < 3; ++i) {
+    theta(i) = symbolic::Variable("theta" + std::to_string(i));
+    cos_vars(i) = symbolic::Variable("cos(theta(" + std::to_string(i) + "))");
+    sin_vars(i) = symbolic::Variable("sin(theta(" + std::to_string(i) + "))");
+    t_angle(i) = symbolic::Variable("t_angle(" + std::to_string(i) + ")");
+    sin_cos.emplace_back(sin_vars(i), cos_vars(i));
+  }
+  symbolic::Variables cos_sin_vars;
+  cos_sin_vars.insert(symbolic::Variables(cos_vars));
+  cos_sin_vars.insert(symbolic::Variables(sin_vars));
+
+  symbolic::Variable a("a");
+  symbolic::Variable b("b");
+
+  symbolic::Variables t(t_angle);
+
+  std::unordered_map<symbolic::Variable, symbolic::Variable> subs;
+  for (int i = 0; i < 3; ++i) {
+    subs.emplace(theta(i), t_angle(i));
+  }
+
+  // test cos(theta(0))
+  CheckSubstituteStereographicProjection(
+      cos(theta(0)), subs, symbolic::Polynomial(cos_vars(0)), sin_cos, t_angle,
+      symbolic::RationalFunction(
+          symbolic::Polynomial(1 - t_angle(0) * t_angle(0)),
+          symbolic::Polynomial(1 + t_angle(0) * t_angle(0))));
+  // test sin(theta(0))
+  CheckSubstituteStereographicProjection(
+      sin(theta(0)), subs, symbolic::Polynomial(sin_vars(0)), sin_cos, t_angle,
+      symbolic::RationalFunction(
+          symbolic::Polynomial(2 * t_angle(0)),
+          symbolic::Polynomial(1 + t_angle(0) * t_angle(0))));
+  // test 1.
+  CheckSubstituteStereographicProjection(1, subs, symbolic::Polynomial(1),
+                                         sin_cos, t_angle,
+                                         symbolic::RationalFunction(1));
+
+  // test a + b
+  CheckSubstituteStereographicProjection(
+      a + b, subs, symbolic::Polynomial({{symbolic::Monomial(), a + b}}),
+      sin_cos, t_angle,
+      symbolic::RationalFunction(symbolic::Polynomial(
+          a + b,
+          t) /* A constant polynomial with a+b being the constant term */));
+
+  // test 1 + cos(theta(0))
+  CheckSubstituteStereographicProjection(
+      1 + cos(theta(0)), subs, symbolic::Polynomial(1 + cos_vars(0)), sin_cos,
+      t_angle,
+      symbolic::RationalFunction(
+          symbolic::Polynomial(2),
+          symbolic::Polynomial(1 + t_angle(0) * t_angle(0))));
+
+  // test a + b*cos(delta_q(0)) + sin(delta_q(1))
+  CheckSubstituteStereographicProjection(
+      a + b * cos(theta(0)) + sin(theta(1)), subs,
+      symbolic::Polynomial(a + b * cos_vars(0) + sin_vars(1), cos_sin_vars),
+      sin_cos, t_angle,
+      symbolic::RationalFunction(
+          symbolic::Polynomial(
+              a * (1 + t_angle(0) * t_angle(0)) *
+                      (1 + t_angle(1) * t_angle(1)) +
+                  b * (1 - t_angle(0) * t_angle(0)) *
+                      (1 + t_angle(1) * t_angle(1)) +
+                  2 * t_angle(1) * (1 + t_angle(0) * t_angle(0)),
+              t),
+          symbolic::Polynomial((1 + t_angle(0) * t_angle(0)) *
+                               (1 + t_angle(1) * t_angle(1)))));
+
+  // test a + b * cos(theta(0) * sin(theta(1)) + sin(theta(0))
+  CheckSubstituteStereographicProjection(
+      a + b * cos(theta(0)) * sin(theta(1)) + sin(theta(0)), subs,
+      symbolic::Polynomial(a + b * cos_vars(0) * sin_vars(1) + sin_vars(0),
+                           cos_sin_vars),
+      sin_cos, t_angle,
+      symbolic::RationalFunction(
+          symbolic::Polynomial(
+              a * (1 + t_angle(0) * t_angle(0)) *
+                      (1 + t_angle(1) * t_angle(1)) +
+                  b * (1 - t_angle(0) * t_angle(0)) * 2 * t_angle(1) +
+                  2 * t_angle(0) * (1 + t_angle(1) * t_angle(1)),
+              t),
+          symbolic::Polynomial((1 + t_angle(0) * t_angle(0)) *
+                               (1 + t_angle(1) * t_angle(1)))));
+
+  // test a + b * cos(theta(0)) * sin(theta(1)) + sin(theta(0)) * cos(theta(2))
+  CheckSubstituteStereographicProjection(
+      a + b * cos(theta(0)) * sin(theta(1)) + sin(theta(0)) * cos(theta(2)),
+      subs,
+      symbolic::Polynomial(
+          a + b * cos_vars(0) * sin_vars(1) + sin_vars(0) * cos_vars(2),
+          cos_sin_vars),
+      sin_cos, t_angle,
+      symbolic::RationalFunction(
+          symbolic::Polynomial(
+              a * (1 + t_angle(0) * t_angle(0)) *
+                      (1 + t_angle(1) * t_angle(1)) *
+                      (1 + t_angle(2) * t_angle(2)) +
+                  b * (1 - t_angle(0) * t_angle(0)) * 2 * t_angle(1) *
+                      (1 + t_angle(2) * t_angle(2)) +
+                  2 * t_angle(0) * (1 + t_angle(1) * t_angle(1)) *
+                      (1 - t_angle(2) * t_angle(2)),
+              t),
+          symbolic::Polynomial((1 + t_angle(0) * t_angle(0)) *
+                               (1 + t_angle(1) * t_angle(1)) *
+                               (1 + t_angle(2) * t_angle(2)))));
+
+  // test t_angle(0)
+  CheckSubstituteStereographicProjection(
+      t_angle(0), subs,
+      symbolic::Polynomial({{symbolic::Monomial(), t_angle(0)}}), sin_cos,
+      t_angle, symbolic::RationalFunction(symbolic::Polynomial(t_angle(0), t)));
+
+  // test t_angle(0) * cos(theta(0))
+  CheckSubstituteStereographicProjection(
+      t_angle(0) * cos(theta(0)), subs,
+      symbolic::Polynomial(t_angle(0) * cos_vars(0), cos_sin_vars), sin_cos,
+      t_angle,
+      symbolic::RationalFunction(
+          symbolic::Polynomial(
+              t_angle(0) - t_angle(0) * t_angle(0) * t_angle(0), t),
+          symbolic::Polynomial(1 + t_angle(0) * t_angle(0), t)));
+
+  // test t_angle(0) * sin(theta(0))
+  CheckSubstituteStereographicProjection(
+      t_angle(0) * sin(theta(0)), subs,
+      symbolic::Polynomial(t_angle(0) * sin_vars(0), cos_sin_vars), sin_cos,
+      t_angle,
+      symbolic::RationalFunction(
+          symbolic::Polynomial(2 * t_angle(0) * t_angle(0), t),
+          symbolic::Polynomial(1 + t_angle(0) * t_angle(0), t)));
+
+  // test (t_angle(0) * a + t_angle(1) * b) * sin(delta_q(0)) * cos(delta_q(1))
+  // + 2 * t_angle(0) * b
+  CheckSubstituteStereographicProjection(
+      (t_angle(0) * a + t_angle(1) * b) * sin(theta(0)) * cos(theta(1)) +
+          2 * t_angle(0) * b,
+      subs,
+      symbolic::Polynomial(
+          (t_angle(0) * a + t_angle(1) * b) * sin_vars(0) * cos_vars(1) +
+              2 * t_angle(0) * b,
+          cos_sin_vars),
+      sin_cos, t_angle,
+      symbolic::RationalFunction(
+          symbolic::Polynomial(
+              (a * t_angle(0) + b * t_angle(1)) * 2 * t_angle(0) *
+                      (1 - t_angle(1) * t_angle(1)) +
+                  2 * t_angle(0) * b * (1 + t_angle(0) * t_angle(0)) *
+                      (1 + t_angle(1) * t_angle(1)),
+              t),
+          symbolic::Polynomial(
+              (1 + t_angle(0) * t_angle(0)) * (1 + t_angle(1) * t_angle(1)),
+              t)));
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
