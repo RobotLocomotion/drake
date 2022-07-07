@@ -2641,12 +2641,10 @@ class MathematicalProgram {
   template <typename Derived>
   typename std::enable_if_t<
       std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>
+      MatrixLikewise<double, Derived>>
   GetInitialGuess(
       const Eigen::MatrixBase<Derived>& decision_variable_mat) const {
-    Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime>
+    MatrixLikewise<double, Derived>
         decision_variable_values(decision_variable_mat.rows(),
                                  decision_variable_mat.cols());
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {

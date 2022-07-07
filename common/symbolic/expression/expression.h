@@ -1327,9 +1327,7 @@ auto operator*(
 template <typename Derived>
 std::enable_if_t<
     std::is_same_v<typename Derived::Scalar, Expression>,
-    Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
-                  Derived::MaxColsAtCompileTime>>
+    MatrixLikewise<double, Derived>>
 Evaluate(const Eigen::MatrixBase<Derived>& m,
          const Environment& env = Environment{},
          RandomGenerator* random_generator = nullptr) {
@@ -1364,9 +1362,7 @@ Eigen::SparseMatrix<double> Evaluate(
 /// @returns a matrix of symbolic expressions whose size is the size of @p m.
 /// @throws std::exception if NaN is detected during substitution.
 template <typename Derived>
-Eigen::Matrix<Expression, Derived::RowsAtCompileTime,
-              Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
-              Derived::MaxColsAtCompileTime>
+MatrixLikewise<Expression, Derived>
 Substitute(const Eigen::MatrixBase<Derived>& m, const Substitution& subst) {
   static_assert(std::is_same_v<typename Derived::Scalar, Expression>,
                 "Substitute only accepts a symbolic matrix.");
@@ -1381,9 +1377,7 @@ Substitute(const Eigen::MatrixBase<Derived>& m, const Substitution& subst) {
 /// @returns a matrix of symbolic expressions whose size is the size of @p m.
 /// @throws std::exception if NaN is detected during substitution.
 template <typename Derived>
-Eigen::Matrix<Expression, Derived::RowsAtCompileTime,
-              Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
-              Derived::MaxColsAtCompileTime>
+MatrixLikewise<Expression, Derived>
 Substitute(const Eigen::MatrixBase<Derived>& m, const Variable& var,
            const Expression& e) {
   static_assert(std::is_same_v<typename Derived::Scalar, Expression>,
@@ -1474,9 +1468,7 @@ double ExtractDoubleOrThrow(const symbolic::Expression& e);
 template <typename Derived>
 typename std::enable_if_t<
     std::is_same_v<typename Derived::Scalar, symbolic::Expression>,
-    Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime, Derived::Options,
-                  Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>>
+    MatrixLikewise<double, Derived>>
 ExtractDoubleOrThrow(const Eigen::MatrixBase<Derived>& matrix) {
   return matrix
       .unaryExpr([](const typename Derived::Scalar& value) {
