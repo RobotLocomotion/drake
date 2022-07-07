@@ -2,7 +2,7 @@
 
 namespace drake {
 
-SteadyTimer::SteadyTimer() : start_time_{clock::now()} {}
+SteadyTimer::SteadyTimer() { Start(); }
 
 void SteadyTimer::Start() { start_time_ = clock::now(); }
 
