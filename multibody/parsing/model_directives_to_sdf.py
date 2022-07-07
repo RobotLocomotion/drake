@@ -57,10 +57,13 @@ class ModelDirectivesToSdf:
         self.all_directives = []
 
     def find_frame(self, name: str) -> str:
+        """Finds and returns a frame if it exsits in all directives"""
         frame = None
         for directive in self.all_directives:
             if 'add_frame' in directive:
-                if name == directive['add_frame']['name']:
+                add_frame_name = directive[
+                    'add_frame']['name'].split(SCOPE_DELIMITER)[-1]
+                if name == add_frame_name:
                     if frame is None:
                         frame = directive['add_frame']
                     else:
@@ -69,49 +72,22 @@ class ModelDirectivesToSdf:
                         return None
         return frame
 
-    # Finds the frame scope for a certain implicit frame name
-    def resolve_implicit_frame_scope(self, frame_name: str) -> str:
-        scope = []
+    def resolve_and_scope_frame(self, frame_name: str) -> str:
         frame = self.find_frame(frame_name)
-        if frame is None:
-            print(
-                f'Failed to convert add_weld directive: unable to'
-                f'find the parent frame [{frame_name}] for weld.')
-            return None
-        return frame['X_PF']['base_frame']
+        # Check if it's atached to other frame
+        final_frame = frame
+        while frame is not None:
+            final_frame = frame
+            frame = self.find_frame(frame['X_PF']['base_frame'])
 
-    # If name is not scoped it finds one from scoped_base_name
-    def scope_name(self, name: str, scoped_base_name: str) -> List[str]:
-        split_name = name.split(SCOPE_DELIMITER)
-        split_scoped_base_name = scoped_base_name.split(SCOPE_DELIMITER)
-        if len(split_name) == 1 and len(split_scoped_base_name) > 1:
-            scopes = split_scoped_base_name[:-1]
-            scopes.append(split_name[0])
-            return scopes
-        # Both are implicit: can't figure out scope
-        elif len(split_name) == 1 and len(split_scoped_base_name) == 1:
-            print(f'Name [{name}] and base_name [{scoped_base_name}]'
-                  ' are both implicit. Scope cannot be figured out.')
+        if final_frame is not None:
+            base_frame = final_frame['X_PF']['base_frame']
+        else:
             return None
-        # Explicit case: frame is nested more than its base_frame.
-        elif len(split_name) > len(split_scoped_base_name):
-            print(f'Name [{name}] is being added explicitly at'
-                  f' a more nested level than its base_name '
-                  f'[{scoped_base_name}]. This violates scoping rules in '
-                  ' sdformat, and the workflow should be modified.')
-            return None
-        # Explicit case: base_frame is nested more than the frame, we check
-        # that they have a common scope, so that the base_frame is reachable
-        # when the frame is constructed.
-        elif split_name[:-1] != split_scoped_base_name[
-                :len(split_name)-1]:
-            print(f'Name [{name}] and its base_name '
-                  f'[{scoped_base_name}] do not share a common scope, '
-                  'the name will be unreachable when the Element is '
-                  'constructed.')
-            return None
-        # Name is scoped or base_name has no scope
-        return split_name
+
+        split_scoped_name = base_frame.split(SCOPE_DELIMITER)[:-1]
+        split_scoped_name.append(frame_name)
+        return SCOPE_DELIMITER.join(split_scoped_name)
 
     def add_directives(self, root: ET, directive: Dict[str, Any]) -> bool:
         include_elem = None
@@ -136,9 +112,6 @@ class ModelDirectivesToSdf:
                 placement_frame_name = \
                     weld['child'][len(model_ns)+len(SCOPE_DELIMITER):]
                 include_elem.set('placement_frame', placement_frame_name)
-                pose_elem = ET.SubElement(include_elem, 'pose',
-                                          relative_to=weld['parent'])
-
         else:
             include_elem = ET.SubElement(root, 'include', merge='true')
         file_path = directive['file']
@@ -192,18 +165,20 @@ class ModelDirectivesToSdf:
         # If this model contains a frame used in an add_weld instance, we
         # use the placement_frame and pose combination to posture it.
         weld = self.child_frame_model_name_to_weld_map.pop(model_name)
-        base_scope = self.resolve_implicit_frame_scope(weld['parent'])
-        if base_scope is None:
-            print(f'Failed finding base scope for model: {model_name}')
-            return False
-        scoped_parent_name = self.scope_name(weld['parent'], base_scope)
-        if scoped_parent_name is None:
-            print(f'Failed scoping model: {model_name}')
-            return False
-        scoped_parent_name_str = SCOPE_DELIMITER.join(scoped_parent_name)
+        scoped_parent_name_str = weld['parent']
+        # Resolve frame name if implicit:
+        if len(weld['parent'].split(SCOPE_DELIMITER)) == 1:
+            scoped_parent_name_str = self.resolve_and_scope_frame(
+                weld['parent'])
+            if scoped_parent_name_str is None:
+                print(f'Failed trying to find scope for frame: '
+                      f'[{weld["parent"]}]. When tring to solve the '
+                      f'placement_frame for model: [{model_name}].')
+                return False
+
         if merge_include:
-            model_root.set('placement_frame', weld['child'][len(
-                model_name)+len(SCOPE_DELIMITER):])
+            model_root.set('placement_frame',
+                           weld['child'].split(SCOPE_DELIMITER)[-1])
             pose_elem = ET.SubElement(
                 model_root,
                 'pose',
@@ -212,7 +187,7 @@ class ModelDirectivesToSdf:
             placement_frame_elem = ET.SubElement(
                 include_elem, 'placement_frame')
             placement_frame_elem.text = \
-                weld['child'][len(model_name) + len(SCOPE_DELIMITER):]
+                weld['child'].split(SCOPE_DELIMITER)[-1]
             pose_elem = ET.SubElement(
                 include_elem,
                 'pose',
@@ -237,45 +212,36 @@ class ModelDirectivesToSdf:
     # (name: A::B::name, base_frame: A::B::frame).
     def add_frame(self, root: ET, directive: Dict[str, Any]) -> bool:
         x_pf = directive['X_PF']
-        scoped_base_frame = x_pf['base_frame']
-        if scoped_base_frame == WORLD_FRAME:
-            print(f'Workflows where base frame {WORLD_FRAME} exist are not '
+        base_frame = x_pf['base_frame']
+        if base_frame == WORLD_FRAME:
+            print(f'Workflows where base_frame="{self.WORLD_FRAME}" are not '
                   'supported to be converted using this script.')
             return False
 
-        # If the frame is attached to an existing frame
-        split_scoped_name = scoped_base_frame.split(SCOPE_DELIMITER)
-        if len(split_scoped_name) == 1:
-            frame = self.find_frame(scoped_base_frame)
-            # Check if it's atached to other frame
-            final_frame = frame
-            while frame is not None:
-                final_frame = frame
-                frame = self.find_frame(frame['X_PF']['base_frame'])
+        split_base_frame = base_frame.split(SCOPE_DELIMITER)
+        # Resolve frame name if implicit:
+        if len(split_base_frame) == 1:
+            base_frame = self.resolve_and_scope_frame(base_frame)
+            if base_frame is None:
+                print(f'Failed trying to find scope for frame: '
+                      f'[{x_pf["base_frame"]}]. When trying to add frame: '
+                      f'[{directive["name"]}].')
+                return False
+            split_base_frame = base_frame.split(SCOPE_DELIMITER)
 
-            if final_frame is not None:
-                scoped_base_frame = self.resolve_implicit_frame_scope(
-                    final_frame['name'])
-
-        split_scoped_name = self.scope_name(directive['name'],
-                                            scoped_base_frame)
-        if split_scoped_name is None:
-            print(f"Could not find a common scope for frame "
-                  f"[{directive['name']}] with base frame "
-                  f"[{scoped_base_frame}]")
-            return False
-
-        # scoped_base_frame must now be relative to where the frame is
-        # constructed.
-        split_base_frame_name = scoped_base_frame.split(SCOPE_DELIMITER)
-        split_relative_base_frame = \
-            split_base_frame_name[len(split_scoped_name) - 1:]
-        scoped_base_frame = SCOPE_DELIMITER.join(split_relative_base_frame)
+        # If name and base_frame are scoped both should have a common scope
+        split_frame_name = directive['name'].split(SCOPE_DELIMITER)
+        if len(split_base_frame) > 1 and len(split_frame_name) > 1:
+            if split_base_frame[:-1] != split_frame_name[:-1]:
+                print(f'Frame named: [{directive["name"]}] has a different '
+                      f'scope in its name and its base_frame: '
+                      f'[{x_pf["base_frame"]}].')
+                return False
 
         # Construct the necessary model scopes.
         current_model_scope = None
         model_root = root
-        for scope in split_scoped_name[:-1]:
+        for scope in split_base_frame[:-1]:
             if current_model_scope is None:
                 current_model_scope = scope
             else:
@@ -315,11 +281,11 @@ class ModelDirectivesToSdf:
                 return False
             rotation_str = f"{rot['deg'][0]} {rot['deg'][1]} {rot['deg'][2]}"
 
-        frame_name = split_scoped_name[-1]
+        frame_name = directive['name'].split(SCOPE_DELIMITER)[-1]
         frame_elem = ET.SubElement(model_root, 'frame', name=frame_name)
 
         pose_elem = ET.SubElement(
-            frame_elem, 'pose', relative_to=scoped_base_frame)
+            frame_elem, 'pose', relative_to=split_base_frame[-1])
         pose_elem.text = f'{translation_str}   {rotation_str}'
         return True
 
@@ -358,33 +324,45 @@ class ModelDirectivesToSdf:
             self, root: ET, directive: Dict[str, Any]) -> bool:
         """Welding fixes two frames in the same global pose, and adds a fixed
         joint between them"""
-        base_scope = self.resolve_implicit_frame_scope(directive['parent'])
-        if base_scope is None:
-            print(f"Failed trying to find base scope for weld between parent: "
-                  f"[{directive['parent']}] and child: [{directive['child']}]")
-            return False
-        scoped_parent_name_str = self.scope_name(
-            directive['parent'], base_scope)
-        if scoped_parent_name_str is None:
-            print(f"Failed trying to scope weld between parent: "
-                  f"[{directive['parent']}] and child: [{directive['child']}]")
-            return False
-        scoped_parent_name = SCOPE_DELIMITER.join(scoped_parent_name_str)
+        parent_name = directive['parent']
+        # Resolve scope if the frame is implicit
+        if len(directive['parent'].split(SCOPE_DELIMITER)) == 1:
+            parent_name = self.resolve_and_scope_frame(parent_name)
+            if parent_name is None:
+                print(f'Failed trying to find scope for frame: '
+                      f'[{directive["parent"]}]. When tring to add weld '
+                      f'between: [{directive["parent"]}] and: '
+                      f'[{directive["child"]}].')
+                return False
 
         child_name = directive['child']
+        if len(directive['child'].split(SCOPE_DELIMITER)) == 1:
+            child_name = self.resolve_and_scope_frame(directive['child'])
+            if child_name is None:
+                print(f'Failed trying to find scope for frame: '
+                      f'[{directive["child"]}]. When tring to add weld '
+                      f'between: [{directive["parent"]}] and: '
+                      f'[{directive["child"]}].')
+                return False
 
         joint_name = \
-            f'{scoped_parent_name.replace(SCOPE_DELIMITER, "__")}___to___' \
+            f'{parent_name.replace(SCOPE_DELIMITER, "__")}___to___' \
             f'{child_name.replace(SCOPE_DELIMITER, "__")}___weld_joint'
 
         joint_elem = ET.SubElement(root, 'joint', name=joint_name)
         joint_elem.set('type', 'fixed')
 
         parent_elem = ET.SubElement(joint_elem, 'parent')
-        parent_elem.text = scoped_parent_name
+        parent_elem.text = parent_name
 
         child_elem = ET.SubElement(joint_elem, 'child')
         child_elem.text = child_name
+
+        # Bookkeeping for posturing models that are added later.
+        split_child_name = child_name.split(SCOPE_DELIMITER)
+        self.child_frame_model_name_to_weld_map[
+            split_child_name[0]] = directive
+
         return True
 
     def convert_directive(self, input_path: str) -> str:
@@ -425,7 +403,7 @@ class ModelDirectivesToSdf:
                 weld_child = weld['child']
                 weld_child_scopes = weld_child.split(SCOPE_DELIMITER)
 
-                if len(weld_child_scopes) != 2:
+                if len(weld_child_scopes) > 2:
                     print(
                         'Child frame in weld can only be nested in one model '
                         'for it to be postured correctly in a weld.')
@@ -434,10 +412,6 @@ class ModelDirectivesToSdf:
                 if not self.add_weld_fixed_joint(root_model_elem, weld):
                     print('Failed to convert add_weld directive.')
                     return
-
-                # Bookkeeping for posturing models that are added later.
-                self.child_frame_model_name_to_weld_map[
-                    weld_child_scopes[0]] = weld
 
             else:
                 leftover_directives.append(directive)

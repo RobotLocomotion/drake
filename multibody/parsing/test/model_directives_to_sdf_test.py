@@ -112,7 +112,11 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         'multibody/parsing/test/convert_model_directives_test/'
         'hidden_frame.yaml',
         'multibody/parsing/test/convert_model_directives_test/'
-        'frame_attached_to_frame.yaml'
+        'frame_attached_to_frame.yaml',
+        'multibody/parsing/test/convert_model_directives_test/'
+        'weld_frames_from_models.yaml',
+        'multibody/parsing/test/convert_model_directives_test/'
+        'scoped_frame_name.yaml'
     ]
 
     @run_with_multiple_values([dict(file_path=file_path)
@@ -291,7 +295,20 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         s.seek(0)
         self.assertEqual(
             s.read(),
-            'Name [frame_name] and base_name [frame] are both implicit. '
-            'Scope cannot be figured out.\nCould not find a common scope '
-            'for frame [frame_name] with base frame [frame]\nFailed to '
-            'perform add_frame directive.\n')
+            'Failed trying to find scope for frame: [frame]. When trying'
+            ' to add frame: [frame_name].\nFailed to perform add_frame '
+            'directive.\n')
+
+    def test_error_different_scopes_frame(self):
+        s = io.StringIO()
+        sys.stdout = s
+        converter = model_directives_to_sdf.ModelDirectivesToSdf()
+        result = converter.convert_directive(
+            'multibody/parsing/test/convert_model_directives_test/'
+            'different_scopes_frame.yaml')
+        s.seek(0)
+        self.assertEqual(
+            s.read(),
+            'Frame named: [extra_model::sub_added_frame] has a different'
+            ' scope in its name and its base_frame: [simple_model::frame].\n'
+            'Failed to perform add_frame directive.\n')
