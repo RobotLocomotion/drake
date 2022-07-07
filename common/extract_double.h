@@ -13,9 +13,7 @@ inline double ExtractDoubleOrThrow(double scalar) { return scalar; }
 template <typename Derived>
 typename std::enable_if_t<
     std::is_same_v<typename Derived::Scalar, double>,
-    Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime, Derived::Options,
-                  Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>>
+    MatrixLikewise<double, Derived>>
 ExtractDoubleOrThrow(const Eigen::MatrixBase<Derived>& matrix) {
   return matrix.unaryExpr([](const typename Derived::Scalar& value) {
         return ExtractDoubleOrThrow(value);
