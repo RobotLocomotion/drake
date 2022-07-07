@@ -695,6 +695,14 @@ drake_py_binary(
     ],
 )
 
+drake_py_unittest(
+    name = "stubgen_test",
+    data = [":stubgen"],
+    deps = [
+        "//bindings/pydrake/common",
+    ],
+)
+
 add_lint_tests_pydrake(
     python_lint_extra_srcs = [
         ":test/all_install_test.py",
