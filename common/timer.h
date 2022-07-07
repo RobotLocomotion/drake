@@ -35,11 +35,11 @@ class SteadyTimer final : public Timer {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SteadyTimer)
   SteadyTimer();
-  using clock = std::chrono::steady_clock;
-  void Start() override;
-  double Tick() override;
+  void Start() final;
+  double Tick() final;
 
- protected:
+ private:
+  using clock = std::chrono::steady_clock;
   clock::time_point start_time_;
 };
 

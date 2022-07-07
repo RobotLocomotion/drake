@@ -48,8 +48,9 @@ struct MeshcatParams {
   */
   std::string web_url_pattern{"http://{host}:{port}"};
 
-  /** Determines whether or not to display the stats plot including realtime
-  rate display. */
+  /** Determines whether or not to display the stats plot widget in the Meshcat
+   * user interface. This plot including realtime rate and WebGL render
+   * statistics. */
   bool show_stats_plot{true};
 };
 
@@ -357,8 +358,12 @@ class Meshcat {
   See @ref meshcat_path for the detailed semantics of deletion. */
   void Delete(std::string_view path = "");
 
-  /** Sets the realtime rate that is displayed in the meshcat visualizer strip
-  chart.
+  // TODO(#16486): add low-pass filter to smooth the Realtime plot
+  /** Sets the realtime rate that is displayed in the meshcat visualizer stats
+   strip chart. This rate is the ratio between sim time and real
+   world time. 1 indicates the simulator is the same speed as real time. 2
+   indicates running twice as fast as real time, 0.5 is half speed, etc.
+  @see drake::systems::Simulator::set_target_realtime_rate()
   @param rate the realtime rate value to be displayed, will be converted to a
   percentage (multiplied by 100) */
   void SetRealtimeRate(double rate);

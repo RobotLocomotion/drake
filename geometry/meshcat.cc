@@ -1398,7 +1398,7 @@ class Meshcat::Impl {
     } catch (e) {
       console.info("Not connected to MeshCat websocket server: ", e);
     })""";
-    size_t pos = html.find(html_connect);
+    const size_t pos = html.find(html_connect);
     DRAKE_DEMAND(pos != std::string::npos);
     html.replace(pos, html_connect.size(), std::move(f.get()));
 
@@ -1408,12 +1408,12 @@ class Meshcat::Impl {
         {" src=\"stats.min.js\"", "/stats.min.js"},
         {" src=\"msgpack.min.js\"", "/msgpack.min.js"},
     };
-    for (const auto& js_pair : js_paths) {
-      const std::string src_link(js_pair.first);
-      pos = html.find(src_link);
-      DRAKE_DEMAND(pos != std::string::npos);
-      html.erase(pos, src_link.size());
-      html.insert(pos+1, GetUrlContent(js_pair.second));
+
+    for (const auto& [src_link, url] : js_paths) {
+      const size_t js_pos = html.find(src_link);
+      DRAKE_DEMAND(js_pos != std::string::npos);
+      html.erase(js_pos, src_link.size());
+      html.insert(js_pos+1, GetUrlContent(url));
     }
 
     return html;
@@ -1689,7 +1689,7 @@ class Meshcat::Impl {
     }
 
     // Tell client if the realtime rate plot should be hidden
-    internal::ShowRealtimeRate realtime_rate_message{};
+    internal::ShowRealtimeRate realtime_rate_message;
     realtime_rate_message.show = params_.show_stats_plot;
     std::stringstream realtime_message_stream;
     msgpack::pack(realtime_message_stream, realtime_rate_message);

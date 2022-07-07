@@ -143,12 +143,6 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
       const systems::OutputPort<T>& query_object_port,
       std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {});
 
-#ifndef DRAKE_DOXYGEN_CXX
-  /* (Internal use for unit testing only) Used to inject a mock timer to mock
-   time used in Realtime rate calculation. */
-  void InjectMockTimer(std::unique_ptr<Timer> t);
-#endif
-
  private:
   /* MeshcatVisualizer of different scalar types can all access each other's
    data. */
@@ -220,7 +214,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   bool recording_{false};
   bool set_transforms_while_recording_{true};
 
-  mutable systems::InstantaneousRealtimeRateCalculator
+  mutable systems::internal::InstantaneousRealtimeRateCalculator
       realtime_rate_calculator_{};
 };
 

@@ -911,10 +911,9 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
 
 // Check MeshcatParams.hide_stats_plot sends a hide_realtime_rate message
 GTEST_TEST(MeshcatTest, RealtimeRatePlot) {
-  MeshcatParams params{};
+  MeshcatParams params;
   params.show_stats_plot = true;
   Meshcat meshcat(params);
-  meshcat.SetRealtimeRate(0.123);
   CheckWebsocketCommand(meshcat, {}, 1, R"""({
       "type": "show_realtime_rate",
       "show": true

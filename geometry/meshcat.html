@@ -15,14 +15,19 @@
   <script type="text/javascript" src="stats.min.js"></script>
   <script type="text/javascript" src="msgpack.min.js"></script>
   <script>
-    var stats = new Stats(); // TODO(#16486): add tooltips to Stats to describe chart contents
-    var rtrPanel = stats.addPanel( new Stats.Panel( 'rtr%', '#ff8', '#221' ) );
-    document.body.appendChild( stats.dom );
+    // TODO(#16486): add tooltips to Stats to describe chart contents
+    var stats = new Stats();
+    var realtimeRatePanel = stats.addPanel(
+            new Stats.Panel('rtr%', '#ff8', '#221')
+    );
+    document.body.appendChild(stats.dom);
     stats.dom.id = "stats-plot";
+    // We want to show the realtime rate panel by default
+    // it is the last element in the stats.dom.children list
     stats.showPanel(stats.dom.children.length - 1)
-    var rtr = 0;
+    var latestRealtimeRate = 0;
     var viewer = new MeshCat.Viewer(document.getElementById("meshcat-pane"));
-    viewer.animate = function () {
+    viewer.animate = function() {
       viewer.animator.update();
         if (viewer.needs_render) {
           viewer.render();
@@ -31,19 +36,21 @@
 
     function animate() {
       stats.begin();
-      rtrPanel.update(rtr*100, 100); // easier to read as percentage
+      // convert realtime rate to percentage so it is easier to read
+      realtimeRatePanel.update(latestRealtimeRate*100, 100);
       viewer.animate()
       stats.end();
       requestAnimationFrame(animate);
     }
 
-    // TODO(#16486): Replace this function with more robust custom command handling in Meshcat
+    // TODO(#16486): Replace this function with more robust custom command
+    //  handling in Meshcat
     function handle_message(ws_message) {
       let decoded = msgpack.decode(new Uint8Array(ws_message.data));
       if (decoded.type == "realtime_rate") {
         rtr = decoded.rate;
       } else if (decoded.type == "show_realtime_rate") {
-       stats.dom.style.display = decoded.show ? "block" : "none";
+        stats.dom.style.display = decoded.show ? "block" : "none";
       } else {
         viewer.handle_command(decoded)
       }
