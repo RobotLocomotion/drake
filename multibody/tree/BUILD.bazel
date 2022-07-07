@@ -422,6 +422,7 @@ drake_cc_googletest(
         ":mobilizer_tester",
         ":tree",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
     ],
 )

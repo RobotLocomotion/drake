@@ -691,6 +691,7 @@ drake_cc_googletest(
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//multibody/benchmarks/free_body",
         "//multibody/test_utilities:floating_body_plant",
         "//systems/analysis:simulator",
