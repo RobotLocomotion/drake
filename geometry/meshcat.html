@@ -29,9 +29,9 @@
     var viewer = new MeshCat.Viewer(document.getElementById("meshcat-pane"));
     viewer.animate = function() {
       viewer.animator.update();
-        if (viewer.needs_render) {
-          viewer.render();
-        }
+      if (viewer.needs_render) {
+        viewer.render();
+      }
     }
 
     function animate() {
