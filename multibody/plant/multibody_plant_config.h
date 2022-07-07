@@ -18,6 +18,7 @@ struct MultibodyPlantConfig {
     a->Visit(DRAKE_NVP(penetration_allowance));
     a->Visit(DRAKE_NVP(stiction_tolerance));
     a->Visit(DRAKE_NVP(contact_model));
+    a->Visit(DRAKE_NVP(discrete_contact_solver_type));
     a->Visit(DRAKE_NVP(contact_surface_representation));
   }
 
@@ -41,6 +42,13 @@ struct MultibodyPlantConfig {
   /// - "hydroelastic"
   /// - "hydroelastic_with_fallback"
   std::string contact_model{"hydroelastic_with_fallback"};
+
+  /// Configures the MultibodyPlant::set_discrete_contact_solver_type().
+  /// Refer to drake::multibody::DiscreteContactSolverType for details.
+  /// Valid strings are:
+  /// - "tamsi"
+  /// - "sap"
+  std::string discrete_contact_solver_type{"tamsi"};
 
   /// Configures the MultibodyPlant::set_contact_surface_representation().
   /// Refer to drake::geometry::HydroelasticContactRepresentation for details.

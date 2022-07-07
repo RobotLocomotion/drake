@@ -8,6 +8,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -18,10 +19,13 @@ DEFINE_double(stiction_tolerance, 1.0E-3,
               "Allowable drift speed during stiction (m/s).");
 
 DEFINE_double(
-    mbp_discrete_update_period, 1.0E-3,
+    mbp_discrete_update_period, 0.01,
     "The fixed-time step period (in seconds) of discrete updates for the "
     "multibody plant modeled as a discrete system. Strictly positive. "
-    "Set to zero for a continuous plant model.");
+    "Set to zero for a continuous plant model. When using TAMSI, a smaller "
+    "time step of 1.0e-3 is recommended.");
+DEFINE_string(discrete_solver, "sap",
+              "Discrete contact solver. Options are: 'tamsi', 'sap'.");
 
 namespace drake {
 namespace examples {
@@ -30,6 +34,7 @@ namespace {
 
 using drake::math::RigidTransformd;
 using drake::multibody::MultibodyPlant;
+using drake::multibody::MultibodyPlantConfig;
 using Eigen::Translation3d;
 using Eigen::VectorXd;
 
@@ -41,10 +46,13 @@ int do_main() {
 
   // Build a generic multibody plant.
   systems::DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(
-      &builder,
-      std::make_unique<MultibodyPlant<double>>(
-          FLAGS_mbp_discrete_update_period));
+
+  MultibodyPlantConfig plant_config;
+  plant_config.time_step = FLAGS_mbp_discrete_update_period;
+  plant_config.stiction_tolerance = FLAGS_stiction_tolerance;
+  plant_config.discrete_contact_solver_type = FLAGS_discrete_solver;
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlant(plant_config, &builder);
 
   const std::string full_name =
       FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
