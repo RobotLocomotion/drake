@@ -216,12 +216,38 @@ T CompliantContactManager<T>::GetDissipationTimeConstant(
   const geometry::ProximityProperties* prop =
       inspector.GetProximityProperties(id);
   DRAKE_DEMAND(prop != nullptr);
+
+  auto provide_context_string =
+      [this, &inspector](geometry::GeometryId geometry_id) -> std::string {
+    const BodyIndex body_index =
+        this->geometry_id_to_body_index().at(geometry_id);
+    const Body<T>& body = plant().get_body(body_index);
+    return fmt::format("For geometry {} on body {}.",
+                       inspector.GetName(geometry_id), body.name());
+  };
+
+  if (!prop->HasProperty(geometry::internal::kMaterialGroup,
+                         "dissipation_timescale")) {
+    const std::string message =
+        "No `dissipation_timescale` specified. " + provide_context_string(id) +
+        " You are using a linear model of compliant contact that requires you "
+        "to specify dissipation explicitly.";
+    throw std::runtime_error(message);
+  }
+
   // N.B. Here we rely on the resolution of #13289 and #5454 to get properties
   // with the proper scalar type T. This will not work on scalar converted
   // models until those issues are resolved.
-  return prop->template GetPropertyOrDefault<T>(
-      geometry::internal::kMaterialGroup, "dissipation_time_constant",
-      plant().time_step());
+  const T dissipation_timescale = prop->template GetProperty<T>(
+      geometry::internal::kMaterialGroup, "dissipation_timescale");
+  if (dissipation_timescale < 0.0) {
+    const std::string message = fmt::format(
+        "Dissipation timescale must be non-negative and dissipation_timescale "
+        "= {} was provided. {}",
+        dissipation_timescale, provide_context_string(id));
+    throw std::runtime_error(message);
+  }
+  return dissipation_timescale;
 }
 
 template <typename T>
@@ -785,7 +811,7 @@ void CompliantContactManager<T>::AddLimitConstraints(
   // these forces implicitly and therefore these parameters can be tighten for
   // stiffer limits. Here we set the stiffness parameter to a very high value so
   // that SAP works in the "near-rigid" regime as described in the SAP paper,
-  // [Castro et al., 2021]. As shown in the SAP paper, a dissipation time scale
+  // [Castro et al., 2021]. As shown in the SAP paper, a dissipation timescale
   // of the order of the time step leads to a critically damped constraint.
   // TODO(amcastro-tri): allow users to specify joint limits stiffness and
   // damping.

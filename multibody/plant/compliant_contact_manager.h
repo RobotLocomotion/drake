@@ -114,7 +114,7 @@ struct ContactProblemCache {
 // (in Newtons) is modeled as:
 //   fₙ = k⋅(x + τ⋅ẋ)₊
 // where k is the point contact stiffness, see GetPointContactStiffness(), τ is
-// the dissipation time scale, and ()₊ corresponds to the "positive part"
+// the dissipation timescale, and ()₊ corresponds to the "positive part"
 // operator.
 // Similarly, for hydroelastic contact the normal traction p (in Pascals) is:
 //   p = (p₀+τ⋅dp₀/dn⋅ẋ)₊
@@ -210,7 +210,7 @@ class CompliantContactManager final
   static T CombineStiffnesses(const T& k1, const T& k2);
 
   // Utility to combine linear dissipation time constants. Consider two
-  // spring-dampers with stiffnesses k₁ and k₂, and dissipation time scales τ₁
+  // spring-dampers with stiffnesses k₁ and k₂, and dissipation timescales τ₁
   // and τ₂, respectively. When these spring-dampers are connected in series,
   // they result in an equivalent spring-damper with stiffness k  =
   // k₁⋅k₂/(k₁+k₂) and dissipation τ = τ₁ + τ₂.
