@@ -49,8 +49,8 @@ struct MeshcatParams {
   std::string web_url_pattern{"http://{host}:{port}"};
 
   /** Determines whether or not to display the stats plot widget in the Meshcat
-   * user interface. This plot including realtime rate and WebGL render
-   * statistics. */
+  user interface. This plot including realtime rate and WebGL render
+  statistics. */
   bool show_stats_plot{true};
 };
 
