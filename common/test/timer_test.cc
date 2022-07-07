@@ -16,7 +16,7 @@ GTEST_TEST(TimeTest, Everything) {
   std::this_thread::sleep_for(kTestInterval);  // sleep for at least 100ms
   const double T1 = timer.Tick();
   EXPECT_GT(T1, 0.0);
-  EXPECT_GE(T1, std::chrono::duration<double>(kTestInterval).count());
+  EXPECT_GE(T1, kTestInterval.count());
 
   // Start restarts the timer, the new measurement should be less than T1.
   timer.Start();
