@@ -899,6 +899,71 @@ PYBIND11_MODULE(symbolic, m) {
           },
           py::arg("vars"), doc.Polynomial.Jacobian.doc);
 
+  using symbolic::RationalFunction;
+  py::class_<RationalFunction> rat_fun_cls(
+      m, "RationalFunction", doc.RationalFunction.doc);
+  rat_fun_cls.def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
+      .def(py::init<Polynomial, Polynomial>(),
+          doc.RationalFunction.ctor.doc_2args_numerator_denominator)
+      .def(py::init<const Polynomial&>(), doc.RationalFunction.ctor.doc_1args_p)
+      .def(py::init<double>(), doc.RationalFunction.ctor.doc_1args_c)
+      .def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
+      .def("numerator", &RationalFunction::numerator,
+          doc.RationalFunction.numerator.doc)
+      .def("denominator", &RationalFunction::denominator,
+          doc.RationalFunction.denominator.doc)
+      .def("SetIndeterminates", &RationalFunction::SetIndeterminates,
+          doc.RationalFunction.SetIndeterminates.doc)
+      .def("__str__",
+          [](const RationalFunction& self) { return fmt::format("{}", self); })
+      .def("__repr__",
+          [](const RationalFunction& self) {
+            return fmt::format("<RationalFunction \"{}\">", self);
+          })
+      .def(
+          "Evaluate",
+          [](const RationalFunction& self, const Environment::map& env) {
+            return self.Evaluate(Environment{env});
+          },
+          doc.RationalFunction.Evaluate.doc)
+      .def("ToExpression", &RationalFunction::ToExpression,
+          doc.RationalFunction.ToExpression.doc)
+      .def("EqualTo", &RationalFunction::EqualTo,
+          doc.RationalFunction.EqualTo.doc)
+
+      .def(-py::self)
+      // Addition
+      .def(py::self + py::self)
+      .def(py::self + double())
+      .def(double() + py::self)
+      .def(py::self + Polynomial())
+      .def(Polynomial() + py::self)
+
+      // Subtraction
+      .def(py::self - py::self)
+      .def(py::self - double())
+      .def(double() - py::self)
+      .def(py::self - Polynomial())
+      .def(Polynomial() - py::self)
+
+      // Multiplication
+      .def(py::self * py::self)
+      .def(py::self * double())
+      .def(double() * py::self)
+      .def(py::self * Polynomial())
+      .def(Polynomial() * py::self)
+
+      // Division
+      .def(py::self / py::self)
+      .def(py::self / double())
+      .def(double() / py::self)
+      .def(py::self / Polynomial())
+      .def(Polynomial() / py::self)
+
+      // Logical comparison
+      .def(py::self == py::self)
+      .def(py::self != py::self);
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   polynomial_cls.def("EqualToAfterExpansion",

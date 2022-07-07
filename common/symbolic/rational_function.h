@@ -1,5 +1,4 @@
 #pragma once
-
 #include <ostream>
 
 #include "drake/common/symbolic/polynomial.h"
@@ -55,6 +54,12 @@ class RationalFunction {
    */
   explicit RationalFunction(double c);
 
+  /// Evaluates this polynomial under a given environment @p env.
+  ///
+  /// @throws std::exception if there is a variable in this polynomial whose
+  /// assignment is not provided by @p env.
+  double Evaluate(const Environment& env) const;
+
   ~RationalFunction() = default;
 
   /// Getter for the numerator.
@@ -104,6 +109,12 @@ class RationalFunction {
   Formula operator!=(const RationalFunction& f) const;
 
   friend std::ostream& operator<<(std::ostream&, const RationalFunction& f);
+
+  /// Returns an equivalent symbolic expression of this polynomial.
+  Expression ToExpression() const;
+
+  /// Set Indeterminates of the numerator and denominator polynomials
+  void SetIndeterminates(const Variables& new_indeterminates);
 
  private:
   // Throws std::exception if an indeterminate of the denominator (numerator,

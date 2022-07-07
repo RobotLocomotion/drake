@@ -20,7 +20,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import (
-    Expression, Formula, Monomial, Polynomial, Variable)
+    Expression, Formula, Monomial, Polynomial, Variable, RationalFunction)
 from pydrake.polynomial import Polynomial_ as RawPolynomial_
 
 
@@ -285,12 +285,18 @@ def _register_polynomial():
         RawPolynomial_[Expression], RawPolynomial_[Expression], _raw_eq,
         _raw_ne)
 
+def _register_rational_function():
+    _registry.register_comparator(
+        RationalFunction, RationalFunction, _raw_eq, _raw_ne)
+
+
 
 # Globals.
 _registry = _Registry()
 _register_autodiff()
 _register_symbolic()
 _register_polynomial()
+_register_rational_function()
 
 
 def check_all_types(check_func):

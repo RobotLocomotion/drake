@@ -26,6 +26,15 @@ class SymbolicRationalFunctionTest : public ::testing::Test {
   const Variables var_xyz_{var_x_, var_y_, var_z_};
   const Variables var_abc_{var_a_, var_b_, var_c_};
 
+  const Expression x_{var_x_};
+  const Expression y_{var_y_};
+  const Expression z_{var_z_};
+  const Expression a_{var_a_};
+  const Expression b_{var_b_};
+  const Expression c_{var_c_};
+  const Expression xy_{var_x_ + var_y_};
+  const Expression xyz_{var_x_ + var_y_ + var_z_};
+
   const Polynomial polynomial_zero_{0};
   const Polynomial polynomial_one_{1};
   const Polynomial p1_{var_x_ * var_x_ * 2 + var_y_, var_xy_};
@@ -176,10 +185,8 @@ TEST_F(SymbolicRationalFunctionTest, Addition) {
   EXPECT_PRED2(RationalFunctionEqual, f1_p3_sum, f1_p3_sum_expected);
   // p5 contains variable a in its indeterminates.
   if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(f3 + p5_,
-                                polynomial_invariant_error_);
-    DRAKE_EXPECT_THROWS_MESSAGE(p5_ + f3,
-                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 + p5_, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ + f3, polynomial_invariant_error_);
   }
 
   const double c = 2;
@@ -231,10 +238,8 @@ TEST_F(SymbolicRationalFunctionTest, Subtraction) {
   EXPECT_PRED2(RationalFunctionEqual, f1_minus_p3, f1_minus_p3_expected);
   // p5 contains variable a in its indeterminates.
   if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(f3 - p5_,
-                                polynomial_invariant_error_);
-    DRAKE_EXPECT_THROWS_MESSAGE(p5_ - f3,
-                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 - p5_, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ - f3, polynomial_invariant_error_);
   }
 
   const double c = 2;
@@ -262,20 +267,20 @@ TEST_F(SymbolicRationalFunctionTest, Product) {
                                 polynomial_invariant_error_);
     DRAKE_EXPECT_THROWS_MESSAGE(f3 * RationalFunction(p5_, p2_),
                                 rational_function_indeterminates_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 * RationalFunction(p2_, p5_),
-                              polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) * f3,
-                              polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 * RationalFunction(p2_, p5_),
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) * f3,
+                                polynomial_invariant_error_);
     DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) * f3,
                                 rational_function_indeterminates_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) * f3,
-                              polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) *= f3,
-                              polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) * f3,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) *= f3,
+                                polynomial_invariant_error_);
     DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) *= f3,
                                 rational_function_indeterminates_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) *= f3,
-                              polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) *= f3,
+                                polynomial_invariant_error_);
   }
 
   const RationalFunction f1_times_p3_expected(p1_ * p3_, p2_);
@@ -319,16 +324,16 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
                                 polynomial_invariant_error_);
     DRAKE_EXPECT_THROWS_MESSAGE(f3 / RationalFunction(p2_, p5_),
                                 rational_function_indeterminates_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) / f3,
-                              polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) / f3,
-                              polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) / f3,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) / f3,
+                                polynomial_invariant_error_);
     DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) / f3,
                                 rational_function_indeterminates_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) /= f3,
-                              polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) /= f3,
-                              polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) /= f3,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) /= f3,
+                                polynomial_invariant_error_);
     DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) /= f3,
                                 rational_function_indeterminates_error_);
   }
@@ -340,10 +345,8 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
   p3_divides_f1 /= p3_;
   EXPECT_PRED2(RationalFunctionEqual, p3_divides_f1, p3_divides_f1_expected);
   if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(f3 / p5_,
-                                polynomial_invariant_error_);
-    DRAKE_EXPECT_THROWS_MESSAGE(p5_ / f3,
-                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 / p5_, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ / f3, polynomial_invariant_error_);
     DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p3_, p1_) / p5_,
                                 rational_function_indeterminates_error_);
   }
@@ -359,8 +362,7 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
   const std::string zero_divider_error{
       "RationalFunction: operator/=: The divider is 0."};
   DRAKE_EXPECT_THROWS_MESSAGE(f1 / 0, zero_divider_error);
-  DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_zero_,
-                              zero_divider_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_zero_, zero_divider_error);
   const RationalFunction polynomial_fraction_zero;
   DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_fraction_zero,
                               zero_divider_error);
@@ -394,6 +396,45 @@ TEST_F(SymbolicRationalFunctionTest, ProductAndAddition) {
                result_expected.numerator());
   EXPECT_PRED2(test::PolyEqualAfterExpansion, result.denominator(),
                result_expected.denominator());
+}
+
+TEST_F(SymbolicRationalFunctionTest, Evaluate) {
+  // p = ax²y + bxy + cz
+  const Polynomial p{a_ * x_ * x_ * y_ + b_ * x_ * y_ + c_ * z_, var_xyz_};
+  // q = axz + byz + cxy
+  const Polynomial q{a_ * x_ * z_ + b_ * y_ * z_ + c_ * x_ * y_, var_xyz_};
+
+  // f = p/q
+  const RationalFunction f{p, q};
+
+  const Environment env1{{
+      {var_a_, 1.0},
+      {var_b_, 2.0},
+      {var_c_, 3.0},
+      {var_x_, -1.0},
+      {var_y_, -2.0},
+      {var_z_, -3.0},
+  }};
+  const double expected_numerator{1.0 * -1.0 * -1.0 * -2.0 + 2.0 * -1.0 * -2.0 +
+                                  3.0 * -3.0};
+  const double expected_denominator{1.0 * -1.0 * -3.0 + 2.0 * -2.0 * -3.0 +
+                                    3.0 * -1.0 * -2.0};
+  EXPECT_EQ(f.Evaluate(env1), expected_numerator / expected_denominator);
+
+  const Environment env2{{
+      {var_a_, 4.0},
+      {var_b_, 1.0},
+      {var_c_, 2.0},
+      {var_x_, -7.0},
+      {var_y_, -5.0},
+      {var_z_, -2.0},
+  }};
+  const double expected_numerator2{4.0 * -7.0 * -7.0 * -5.0 +
+                                   1.0 * -7.0 * -5.0 + 2.0 * -2.0};
+  const double expected_denominator2{4.0 * -7.0 * -2.0 + 1.0 * -5.0 * -2.0 +
+                                     2.0 * -7.0 * -5.0};
+
+  EXPECT_EQ(f.Evaluate(env2), expected_numerator2 / expected_denominator2);
 }
 
 }  // namespace
