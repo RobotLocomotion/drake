@@ -264,6 +264,17 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertIsInstance(vis_autodiff,
                               mut.MeshcatVisualizer_[AutoDiffXd])
 
+    def test_deprecated_meshcat_visualizer_cpp_add(self):
+        """This checks a deprecated API spelling; remove this on 2022-11-01."""
+        T = float
+        builder = DiagramBuilder_[T]()
+        scene_graph = builder.AddSystem(mut.SceneGraph_[T]())
+        meshcat = mut.Meshcat()
+        with catch_drake_warnings(expected_count=1):
+            added = mut.MeshcatVisualizerCpp.AddToBuilder(
+                builder=builder, scene_graph=scene_graph, meshcat=meshcat)
+        self.assertIsInstance(added, mut.MeshcatVisualizer)
+
     def test_deprecated_meshcat_visualizer_cpp_scalar_conversion(self):
         """This checks a deprecated API spelling; remove this on 2022-11-01."""
         meshcat = mut.Meshcat()
