@@ -48,6 +48,13 @@ class RationalFunction {
   explicit RationalFunction(const Polynomial& p);
 
   /**
+   * Constructs the rational function: p / 1 for any type which can
+   * be cast to a polynomial
+   * @param m The numerator of the rational function.
+   */
+  explicit RationalFunction(const Monomial& m);
+
+  /**
    * Constructs the rational function: c / 1. Note that we use 1 as the
    * denominator.
    * @param c The numerator of the rational function.
@@ -70,18 +77,22 @@ class RationalFunction {
 
   RationalFunction& operator+=(const RationalFunction& f);
   RationalFunction& operator+=(const Polynomial& p);
+  RationalFunction& operator+=(const Monomial& m);
   RationalFunction& operator+=(double c);
 
   RationalFunction& operator-=(const RationalFunction& f);
   RationalFunction& operator-=(const Polynomial& p);
+  RationalFunction& operator-=(const Monomial& m);
   RationalFunction& operator-=(double c);
 
   RationalFunction& operator*=(const RationalFunction& f);
   RationalFunction& operator*=(const Polynomial& p);
+  RationalFunction& operator*=(const Monomial& m);
   RationalFunction& operator*=(double c);
 
   RationalFunction& operator/=(const RationalFunction& f);
   RationalFunction& operator/=(const Polynomial& p);
+  RationalFunction& operator/=(const Monomial& m);
   RationalFunction& operator/=(double c);
 
   /**

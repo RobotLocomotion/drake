@@ -1641,40 +1641,47 @@ class TestSymbolicRationalFunction(unittest.TestCase):
         self.assertEqual(repr(r), '<RationalFunction "(0) / (1*1)">')
 
     def test_addition(self):
-        r = sym.RationalFunction(0.0, [x])
+        r = sym.RationalFunction(sym.Polynomial(0.0, [x]))
         numpy_compare.assert_equal(r + r, r)
-        m = sym.Monomial(x)
-        numpy_compare.assert_equal(m + r, sym.Polynomial(1 * x))
-        numpy_compare.assert_equal(r + m, sym.Polynomial(1 * x))
+        m = sym.Polynomial(x)
+        r2 = sym.RationalFunction(sym.Polynomial(1 * x))
+        numpy_compare.assert_equal(m + r, r2)
+        numpy_compare.assert_equal(r + m, r2)
         numpy_compare.assert_equal(r + 0, r)
         numpy_compare.assert_equal(0 + r, r)
-        numpy_compare.assert_equal(x + r, sym.Polynomial(x) + r)
-        numpy_compare.assert_equal(r + x, r + sym.Polynomial(x))
+        numpy_compare.assert_equal(r2 + r, r)
+        numpy_compare.assert_equal(r + r2, r)
 
 
     def test_subtraction(self):
         r = sym.RationalFunction(sym.Polynomial(0.0, [x]))
         numpy_compare.assert_equal(r - r, r)
-        m = sym.Monomial(x)
-        numpy_compare.assert_equal(m - r, sym.RationalFunction(1 * x))
-        numpy_compare.assert_equal(r - m, sym.RationalFunction(-1 * x))
+        r2 = sym.RationalFunction(sym.Polynomial(1 * x))
         numpy_compare.assert_equal(r - 0, r)
         numpy_compare.assert_equal(0 - r, -r)
-        numpy_compare.assert_equal(x - r, sym.RationalFunction(x))
-        numpy_compare.assert_equal(r - x, sym.RationalFunction(-x))
+        numpy_compare.assert_equal(sym.Polynomial(x) - r,
+                                   sym.RationalFunction(sym.Polynomial(x)))
+        numpy_compare.assert_equal(r - sym.Polynomial(x),
+                                   sym.RationalFunction(sym.Polynomial(-x)))
+        numpy_compare.assert_equal(r2 - r,
+                                   sym.RationalFunction(sym.Polynomial(x)))
+        numpy_compare.assert_equal(r - r2,
+                                   sym.RationalFunction(sym.Polynomial(-x)))
 
     def test_multiplication(self):
         r = sym.RationalFunction(sym.Polynomial(0.0, [x]))
         numpy_compare.assert_equal(r * r, r)
-        m = sym.Monomial(x)
+        m = sym.Polynomial(x)
         numpy_compare.assert_equal(m * r, r)
         numpy_compare.assert_equal(r * m, r)
         numpy_compare.assert_equal(r * 0, r)
         numpy_compare.assert_equal(0 * r, r)
-        numpy_compare.assert_equal(sym.RationalFunction(x) * x,
-                                   sym.RationalFunction(x * x))
-        numpy_compare.assert_equal(x * sym.RationalFunction(x),
-                                   sym.RationalFunction(x * x))
+        numpy_compare.assert_equal(sym.RationalFunction(m) * sym.Polynomial(x),
+                                   sym.RationalFunction(sym.Polynomial(x * x)))
+        numpy_compare.assert_equal(sym.Polynomial(x) * sym.RationalFunction(m),
+                                   sym.RationalFunction(sym.Polynomial(x * x)))
+        numpy_compare.assert_equal(sym.RationalFunction(m) * sym.RationalFunction(m),
+                                   sym.RationalFunction(sym.Polynomial(x * x)))
 
     def test_division(self):
         p1 = sym.Polynomial(x * x + x)
@@ -1738,7 +1745,7 @@ class TestSymbolicRationalFunction(unittest.TestCase):
 
 
     def test_rational_function_evaluate(self):
-        p = sym.Polynomial(a * x * x + b * x + c, [x])#
+        p = sym.Polynomial(a * x * x + b * x + c, [x])
         q = sym.Polynomial(b * x * z, [x,z])
         r = sym.RationalFunction(p, q)
         env = {a: 2.0,
@@ -1749,8 +1756,6 @@ class TestSymbolicRationalFunction(unittest.TestCase):
         expected_num = env[a] * env[x] * env[x] + env[b] * env[x] + env[c]
         expected_den = env[b] * env[x] * env[z]
         self.assertEqual(r.Evaluate(env),
-                         expected_num/expected_den)
-        self.assertEqual(r.Evaluate(env=env),
                          expected_num/expected_den)
 
     def test_evaluate_exception_np_nan(self):

@@ -20,6 +20,9 @@ RationalFunction::RationalFunction(Polynomial numerator, Polynomial denominator)
 RationalFunction::RationalFunction(const Polynomial& p)
     : RationalFunction(p, Polynomial(1)) {}
 
+RationalFunction::RationalFunction(const Monomial& m)
+    : RationalFunction(Polynomial(m)) {}
+
 RationalFunction::RationalFunction(double c)
     : RationalFunction(Polynomial(c), Polynomial(1)) {}
 

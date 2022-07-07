@@ -45,6 +45,8 @@ class SymbolicRationalFunctionTest : public ::testing::Test {
   const Polynomial p5_{var_a_ * var_x_};
   const Polynomial p6_{var_a_ * var_x_ + var_y_};
 
+  const Monomial m1_{var_x_};
+
   const std::string polynomial_invariant_error_{
       "Polynomial .* does not satisfy the invariant [^]*"};
   const std::string rational_function_indeterminates_error_{
@@ -72,6 +74,13 @@ TEST_F(SymbolicRationalFunctionTest, ConstructorWithPolynomial) {
   // Constructor with numerator only.
   RationalFunction f1(p1_);
   EXPECT_PRED2(PolyEqual, f1.numerator(), p1_);
+  EXPECT_PRED2(PolyEqual, f1.denominator(), polynomial_one_);
+}
+
+TEST_F(SymbolicRationalFunctionTest, ConstructorWithMonomial) {
+  // Constructor with numerator only.
+  RationalFunction f1(m1_);
+  EXPECT_PRED2(PolyEqual, f1.numerator(), Polynomial(m1_));
   EXPECT_PRED2(PolyEqual, f1.denominator(), polynomial_one_);
 }
 

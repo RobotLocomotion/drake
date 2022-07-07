@@ -287,7 +287,8 @@ def _register_polynomial():
 
 def _register_rational_function():
     _registry.register_comparator(
-        RationalFunction, RationalFunction, _raw_eq, _raw_ne)
+        RationalFunction, RationalFunction,
+        RationalFunction.__eq__, RationalFunction.__ne__)
 
 
 
