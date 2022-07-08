@@ -10,6 +10,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 drake_cc_googlebench_binary(
     name = "mesh_intersection_benchmark",
     srcs = ["mesh_intersection_benchmark.cc"],
+    add_test_rule = True,
     test_timeout = "moderate",
     deps = [
         "//common:essential",
@@ -26,6 +27,7 @@ drake_cc_googlebench_binary(
 drake_cc_binary(
     name = "render_benchmark",
     srcs = ["render_benchmark.cc"],
+    add_test_rule = False,
     defines = select({
         "//tools/cc_toolchain:apple": [
         ],

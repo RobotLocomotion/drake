@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_googlebench_binary(
     name = "acrobot",
     srcs = ["acrobot.cc"],
+    add_test_rule = True,
     deps = [
         "//common:essential",
         "//common:find_resource",
@@ -32,6 +33,7 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "cassie",
     srcs = ["cassie.cc"],
+    add_test_rule = True,
     data = ["cassie_v2.urdf"],
     deps = [
         "//common:essential",
@@ -51,6 +53,7 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "iiwa_relaxed_pos_ik",
     srcs = ["iiwa_relaxed_pos_ik.cc"],
+    add_test_rule = True,
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
@@ -71,6 +74,7 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "position_constraint",
     srcs = ["position_constraint.cc"],
+    add_test_rule = True,
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
