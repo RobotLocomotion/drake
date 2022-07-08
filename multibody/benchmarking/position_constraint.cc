@@ -4,10 +4,11 @@
 // This highlights the performance difference between using the analytical
 // derivatives (via CalcJacobian) vs the AutoDiffXd differences.
 
+#include "drake/multibody/inverse_kinematics/position_constraint.h"
+
 #include <benchmark/benchmark.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/multibody/inverse_kinematics/position_constraint.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/tools/performance/fixture_common.h"
 

@@ -78,7 +78,7 @@ class CassieDoubleFixture : public benchmark::Fixture {
 
     multibody::Parser parser(plant_.get());
     const auto& model =
-        "drake/examples/multibody/cassie_benchmark/cassie_v2.urdf";
+        "drake/multibody/benchmarking/cassie_v2.urdf";
     parser.AddModelFromFile(FindResourceOrThrow(model));
     plant_->Finalize();
 

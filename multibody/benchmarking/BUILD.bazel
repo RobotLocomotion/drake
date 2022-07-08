@@ -10,6 +10,45 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_googlebench_binary(
+    name = "acrobot",
+    srcs = ["acrobot.cc"],
+    deps = [
+        "//common:essential",
+        "//common:find_resource",
+        "//examples/acrobot:acrobot_plant",
+        "//math:autodiff",
+        "//math:gradient",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+        "//multibody/parsing",
+        "//tools/performance:fixture_common",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "acrobot_experiment",
+    googlebench_binary = ":acrobot",
+)
+
+drake_cc_googlebench_binary(
+    name = "cassie",
+    srcs = ["cassie.cc"],
+    data = ["cassie_v2.urdf"],
+    deps = [
+        "//common:essential",
+        "//common:find_resource",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+        "//multibody/parsing:parser",
+        "//tools/performance:fixture_common",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "cassie_experiment",
+    googlebench_binary = ":cassie",
+)
+
+drake_cc_googlebench_binary(
     name = "iiwa_relaxed_pos_ik",
     srcs = ["iiwa_relaxed_pos_ik.cc"],
     data = [
@@ -27,6 +66,26 @@ drake_cc_googlebench_binary(
 drake_py_experiment_binary(
     name = "iiwa_relaxed_pos_ik_experiment",
     googlebench_binary = ":iiwa_relaxed_pos_ik",
+)
+
+drake_cc_googlebench_binary(
+    name = "position_constraint",
+    srcs = ["position_constraint.cc"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//tools/performance:fixture_common",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "position_constraint_experiment",
+    googlebench_binary = ":position_constraint",
 )
 
 add_lint_tests()

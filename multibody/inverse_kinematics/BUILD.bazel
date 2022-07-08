@@ -10,11 +10,6 @@ load(
 )
 load("@drake//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "@drake//tools/performance:defs.bzl",
-    "drake_cc_googlebench_binary",
-    "drake_py_experiment_binary",
-)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -132,26 +127,6 @@ drake_cc_googletest(
         ":inverse_kinematics_test_utilities",
         ":kinematic_constraint",
     ],
-)
-
-drake_cc_googlebench_binary(
-    name = "position_constraint_benchmark",
-    srcs = ["position_constraint_benchmark.cc"],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":kinematic_constraint",
-        "//common:find_resource",
-        "//multibody/parsing",
-        "//multibody/plant",
-        "//tools/performance:fixture_common",
-    ],
-)
-
-drake_py_experiment_binary(
-    name = "position_constraint_experiment",
-    googlebench_binary = ":position_constraint_benchmark",
 )
 
 drake_cc_googletest(

@@ -1,5 +1,13 @@
-Cassie benchmark
-----------------
+Multibody Benchmarks
+--------------------
+
+# acrobot
+
+This is a simple benchmarking program that uses the acrobot plant to benchmark
+the performance of various plant operations under autodiff.  It is used by
+Drake developers to detect and avoid performance regressions.
+
+# cassie
 
 This is a real-world example of a medium-sized robot with timing
 tests for calculating its mass matrix, inverse dynamics, and
@@ -22,7 +30,7 @@ On the default supported platform, the following command will build code
 and save result data to a user supplied directory, under relatively
 controlled conditions.
 
-    $ bazel run //examples/multibody/cassie_benchmark:experiment -- --output_dir=trial1
+    $ bazel run //multibody/benchmarking:cassie_experiment -- --output_dir=trial1
 
 The script will attempt to reduce result variance by controlling cpu
 throttling and by setting a cpu affinity mask.
@@ -32,8 +40,7 @@ a virtual machine, for example), and relatively unloaded. Close as many
 running programs as is practical.
 
 Optionally, it is possible to pass command line arguments through to the
-`cassie_bench` executable. See 'Configuring details of benchmark runs'
-below.
+`cassie` executable. See 'Configuring details of benchmark runs' below.
 
 ## Comparing experiment data
 
@@ -63,13 +70,13 @@ complete. Still missing:
 In addition to the above forms, it is possible run the benchmark program
 directly:
 
-    $ bazel run //examples/multibody/cassie_benchmark:cassie_bench [-- [ARGS...]]
+    $ bazel run //multibody/benchmarking:cassie [-- [ARGS...]]
 
 or
 
-    $ bazel-bin/examples/multibody/cassie_benchmark/cassie_bench [ARGS...]
+    $ bazel-bin/multibody/benchmarking/cassie [ARGS...]
 
-if the `:cassie_bench` target is built. The direct forms may be useful
+if the `:cassie` target is built. The direct forms may be useful
 for combining debugging or profiling tools.
 
 All of these forms take the same set of command line arguments, which
@@ -79,3 +86,10 @@ alter output formatting, etc.
 Documentation for command line arguments is here:
 https://github.com/google/benchmark#command-line
 
+# iiwa_relaxed_pos_ik
+
+A benchmark for InverseKinematics.
+
+# position_constraint
+
+A benchmarks for PositionConstraint.
