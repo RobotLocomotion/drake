@@ -169,13 +169,23 @@ def setup_github_repository(repository_ctx):
     # We re-implement Bazel's workspace_and_buildfile utility, so that options
     # we don't care about (e.g., build_file_content) do not have to be declared
     # as attrs on our all of our own repository rules.
-    repository_ctx.file("WORKSPACE", "workspace(name = \"{name}\")\n".format(
-        name = repository_ctx.name,
-    ))
+    #
+    # Unlike workspace_and_buildfile, we create WORKSPACE.bazel and BUILD.bazel
+    # (rather than WORKSPACE and BUILD) because when the "*.bazel" flavor is
+    # present, it always takes precedence.
+    files_to_be_created = ["WORKSPACE.bazel"]
     if repository_ctx.attr.build_file:
-        for name in ["BUILD", "BUILD.bazel"]:
-            if repository_ctx.path(name).exists:
-                repository_ctx.execute(["/bin/mv", name, name + ".ignored"])
+        files_to_be_created.append("BUILD.bazel")
+    for name in files_to_be_created:
+        if repository_ctx.path(name).exists:
+            repository_ctx.execute(["/bin/mv", name, name + ".ignored"])
+    repository_ctx.file(
+        "WORKSPACE.bazel",
+        "workspace(name = \"{name}\")\n".format(
+            name = repository_ctx.name,
+        ),
+    )
+    if repository_ctx.attr.build_file:
         repository_ctx.symlink(repository_ctx.attr.build_file, "BUILD.bazel")
     return struct(error = None)
 
