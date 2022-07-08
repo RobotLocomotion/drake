@@ -59,6 +59,8 @@ load("@drake//tools/workspace/meshcat_python:repository.bzl", "meshcat_python_re
 load("@drake//tools/workspace/models_internal:repository.bzl", "models_internal_repository")  # noqa
 load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("@drake//tools/workspace/msgpack:repository.bzl", "msgpack_repository")
+load("@drake//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
+load("@drake//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
 load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
@@ -89,6 +91,8 @@ load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository
 load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
 load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
+load("@drake//tools/workspace/tomli_internal:repository.bzl", "tomli_internal_repository")  # noqa
+load("@drake//tools/workspace/typing_extensions_internal:repository.bzl", "typing_extensions_internal_repository")  # noqa
 load("@drake//tools/workspace/uritemplate_py_internal:repository.bzl", "uritemplate_py_internal_repository")  # noqa
 load("@drake//tools/workspace/usockets:repository.bzl", "usockets_repository")  # noqa
 load("@drake//tools/workspace/uwebsockets:repository.bzl", "uwebsockets_repository")  # noqa
@@ -262,6 +266,10 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         mosek_repository(name = "mosek")
     if "msgpack" not in excludes:
         msgpack_repository(name = "msgpack")
+    if "mypy_extensions_internal" not in excludes:
+        mypy_extensions_internal_repository(name = "mypy_extensions_internal", mirrors = mirrors)  # noqa
+    if "mypy_internal" not in excludes:
+        mypy_internal_repository(name = "mypy_internal", mirrors = mirrors)
     if "net_sf_jchart2d" not in excludes:
         net_sf_jchart2d_repository(name = "net_sf_jchart2d", mirrors = mirrors)
     if "nlopt" not in excludes:
@@ -342,6 +350,10 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         tinyobjloader_repository(name = "tinyobjloader", mirrors = mirrors)
     if "tinyxml2" not in excludes:
         tinyxml2_repository(name = "tinyxml2")
+    if "tomli_internal" not in excludes:
+        tomli_internal_repository(name = "tomli_internal", mirrors = mirrors)
+    if "typing_extensions_internal" not in excludes:
+        typing_extensions_internal_repository(name = "typing_extensions_internal", mirrors = mirrors)  # noqa
     if "uritemplate_py" not in excludes:
         add_deprecation(
             name = "uritemplate_py",

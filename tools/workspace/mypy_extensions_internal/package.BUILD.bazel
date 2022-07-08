@@ -1,0 +1,12 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+
+licenses(["notice"])  # MIT
+
+py_library(
+    name = "mypy_extensions",
+    srcs = glob(["mypy_extensions.py"]),
+    imports = ["."],
+    visibility = ["//visibility:public"],
+)
