@@ -696,7 +696,7 @@ class AcrobotPlantTests : public ::testing::Test {
       const Body<double>& body = plant_->get_body(body_index);
       const SpatialForce<double>& F_Bo_W =
           body.GetForceInWorld(*plant_context_, forces);
-      const double mass = body.get_default_mass();
+      const double mass = body.default_mass();
       // TODO(amcastro-tri): provide Body::EvalCOMInWorld().
       const Vector3<double> p_BoBcm_B =
           body.CalcCenterOfMassInBodyFrame(*plant_context_);
