@@ -32,6 +32,8 @@ CLANG_FLAGS = CXX_FLAGS + [
     # This was turned on via "-Wc99-designator", but is not an an error.
     # Our conventions permit using this language extension even in C++17 mode.
     "-Wno-c++20-designator",
+    # It's fine for Drake to use any C++20 extensions that pass our CI.
+    "-Wno-c++20-extensions",
 ]
 
 # The CLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the
