@@ -18,11 +18,11 @@ gradient matrices. */
 namespace drake {
 namespace math {
 
-/** Extracts the `derivatives()` portion from a matrix of AutoDiffScalar
+/** Extracts the `derivatives()` portion from a matrix of autodiff::Scalar
 entries. (Each entry contains a value and derivatives.)
 
 @param auto_diff_matrix An object whose Eigen type represents a matrix of
-    AutoDiffScalar entries.
+    autodiff::Scalar entries.
 @param num_derivatives (Optional) The number of derivatives to return in case
     the input matrix has none, which we interpret as `num_derivatives` zeroes.
     If `num_derivatives` is supplied and the input matrix has derivatives, the
@@ -32,7 +32,7 @@ entries. (Each entry contains a value and derivatives.)
     to the number of derivatives. Each output row corresponds to one entry of
     the input matrix, in input row order.
 
-@tparam Derived An Eigen type representing a matrix with AutoDiffScalar
+@tparam Derived An Eigen type representing a matrix with autodiff::Scalar
     entries. The type will be inferred from the type of the `auto_diff_matrix`
     parameter at the call site.
 
@@ -100,7 +100,7 @@ matrix.
 @param[in] gradient The gradient matrix. The number of rows must match the
     total size (nrow x ncol) of the value matrix. Derivatives of value(j) should
     be stored in row j of the gradient matrix.
-@param[out] auto_diff_matrix The matrix of AutoDiffScalars. Will be resized as
+@param[out] auto_diff_matrix The matrix of autodiff::Scalars. Will be resized as
     needed to have the same dimensions as the value matrix.
 @exclude_from_pydrake_mkdoc{Not bound in pydrake.} */
 template <typename DerivedValue, typename DerivedGradient,
@@ -150,7 +150,7 @@ matrix.
 @param[in] gradient The gradient matrix. The number of rows must match the
     total size (nrow x ncol) of the value matrix. Derivatives of value(j) should
     be stored in row j of the gradient matrix.
-@retval auto_diff_matrix The matrix of AutoDiffScalars. Will have the same
+@retval auto_diff_matrix The matrix of autodiff::Scalars. Will have the same
     dimensions as the value matrix.
 @pydrake_mkdoc_identifier{value_and_gradient} */
 template <typename DerivedValue, typename DerivedGradient>
@@ -165,7 +165,7 @@ InitializeAutoDiff(
 }
 
 /** `B = DiscardZeroGradient(A, precision)` enables casting from a matrix of
-AutoDiffScalars to AutoDiffScalar::Scalar type, but first checking that
+autodiff::Scalars to double, but first checking that
 the gradient matrix is empty or zero.  For a matrix of type, e.g.
 `MatrixX<AutoDiffXd> A`, the comparable operation
   `B = A.cast<double>()`
@@ -200,7 +200,7 @@ decltype(auto) DiscardZeroGradient(
 }
 
 /**
- * Given a matrix of AutoDiffScalars, returns the size of the
+ * Given a matrix of autodiff::Scalars, returns the size of the
  * derivatives.
  * @throw runtime_error if some entry has different (non-zero) number of
  * derivatives as the others.
