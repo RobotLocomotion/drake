@@ -1,0 +1,12 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+
+licenses(["notice"])  # Python-2.0
+
+py_library(
+    name = "typing_extensions",
+    srcs = ["src/typing_extensions.py"],
+    imports = ["src"],
+    visibility = ["//visibility:public"],
+)
