@@ -12,13 +12,17 @@ def drake_cc_googlebench_binary(
         srcs,
         deps,
         data = None,
+        add_test_rule,
         test_size = "small",
         test_timeout = None):
     """Declares a testonly binary that uses google benchmark.  Automatically
-    adds appropriate deps and ensures it has an automated smoke test.
+    adds appropriate deps and ensures it either has an automated smoke test
+    (via 'add_test_rule = True'), or else explicitly opts-out ('= False').
     """
     if not srcs:
         fail("Missing srcs")
+    if add_test_rule == None:
+        fail("Missing add_test_rule")
     new_deps = (deps or []) + ["@googlebenchmark//:benchmark"]
 
     # We need this to be a cc_binary (not a cc_test) so that Bazel's flag
@@ -34,22 +38,24 @@ def drake_cc_googlebench_binary(
         deps = new_deps,
     )
 
-    # We can't simply use a sh_test wrapper around the cc_binary to run it as
-    # a test, because that would exclude it from ASan, TSan, Memcheck, etc.
-    # We'll need to compile it a second time from scratch, unfortunately.
-    drake_cc_test(
-        name = name + "_test",
-        srcs = srcs,
-        data = data,
-        deps = new_deps,
-        size = test_size,
-        timeout = test_timeout,
-        args = [
-            # When running as a unit test, run each function only once to save
-            # time. (Once is sufficient to prove lack of runtime errors.)
-            "--benchmark_min_time=0",
-        ],
-    )
+    if add_test_rule:
+        # We can't simply use a sh_test wrapper around the cc_binary to run it
+        # as a test, because that would exclude it from ASan, Memcheck, etc.
+        # We'll need to compile it a second time from scratch, unfortunately.
+        drake_cc_test(
+            name = name + "_test",
+            srcs = srcs,
+            data = data,
+            deps = new_deps,
+            size = test_size,
+            timeout = test_timeout,
+            args = [
+                # When running as a unit test, run each function only once to
+                # save time. (Once should be sufficient to prove the lack of
+                # runtime errors.)
+                "--benchmark_min_time=0",
+            ],
+        )
 
 def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):
     """Declares a testonly binary that wraps google benchmark binary with
