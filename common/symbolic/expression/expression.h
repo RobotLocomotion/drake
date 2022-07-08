@@ -30,6 +30,7 @@
 #include "drake/common/extract_double.h"
 #include "drake/common/hash.h"
 #include "drake/common/random.h"
+#include "drake/common/reset_after_move.h"
 
 namespace drake {
 
@@ -193,19 +194,27 @@ symbolic::Expression can be used as a scalar type of Eigen types.
 class Expression {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Expression)
-  ~Expression() = default;
 
   /** Default constructor. It constructs Zero(). */
-  Expression() { *this = Zero(); }
+  Expression() = default;
 
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
-  Expression(double constant);
+  Expression(double constant)
+      : value_{constant}, ptr_{} {
+    if (std::isnan(constant)) {
+      *this = NaN();
+    }
+  }
+
   /** Constructs an expression from @p var.
    * @pre @p var is neither a dummy nor a BOOLEAN variable.
    */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(const Variable& var);
+
+  ~Expression() = default;
+
   /** Returns expression kind. */
   [[nodiscard]] ExpressionKind get_kind() const;
   /** Collects variables in expression. */
@@ -449,9 +458,13 @@ class Expression {
                                            std::vector<Expression> arguments);
 
   friend std::ostream& operator<<(std::ostream& os, const Expression& e);
-  friend void swap(Expression& a, Expression& b) { std::swap(a.ptr_, b.ptr_); }
+  friend void swap(Expression& a, Expression& b) {
+    std::swap(a.value_, b.value_);
+    std::swap(a.ptr_, b.ptr_);
+  }
 
   friend bool is_constant(const Expression& e);
+  friend double get_constant_value(const Expression& e);
   friend bool is_variable(const Expression& e);
   friend bool is_addition(const Expression& e);
   friend bool is_multiplication(const Expression& e);
@@ -482,7 +495,6 @@ class Expression {
   // and not exposed to the user of drake/common/symbolic_expression.h
   // header. These functions are declared in
   // drake/common/symbolic_expression_cell.h header.
-  friend const ExpressionConstant& to_constant(const Expression& e);
   friend const ExpressionVar& to_variable(const Expression& e);
   friend const UnaryExpressionCell& to_unary(const Expression& e);
   friend const BinaryExpressionCell& to_binary(const Expression& e);
@@ -513,7 +525,6 @@ class Expression {
   to_uninterpreted_function(const Expression& e);
 
   // Cast functions which takes a pointer to a non-const Expression.
-  friend ExpressionConstant& to_constant(Expression* e);
   friend ExpressionVar& to_variable(Expression* e);
   friend UnaryExpressionCell& to_unary(Expression* e);
   friend BinaryExpressionCell& to_binary(Expression* e);
@@ -547,14 +558,12 @@ class Expression {
   friend class ExpressionMulFactory;
 
  private:
-  // This is a helper function used to handle `Expression(double)` constructor.
-  static std::shared_ptr<ExpressionCell> make_cell(double d);
-
   explicit Expression(std::shared_ptr<ExpressionCell> ptr);
 
   void HashAppend(DelegatingHasher* hasher) const;
 
   // Returns a const reference to the owned cell.
+  // @pre This expression is not is_constant().
   const ExpressionCell& cell() const {
     DRAKE_ASSERT(ptr_ != nullptr);
     return *ptr_;
@@ -562,7 +571,13 @@ class Expression {
 
   // Returns a mutable reference to the owned cell. This function may only be
   // called when this object is the sole owner of the cell.
+  // @pre This expression is not is_constant().
   ExpressionCell& mutable_cell();
+
+  // If this Expression is a constant (other than NaN), then the constant value
+  // will be stored here and `ptr_` is set to nullptr.  Otherwise, `value_`
+  // will be ignored and `ptr_` will be non-null and should be used instead.
+  reset_after_move<double> value_;
 
   // Note: We use "non-const" ExpressionCell type. This allows us to perform
   // destructive updates on the pointed cell if the cell is not shared with
@@ -623,7 +638,7 @@ void swap(Expression& a, Expression& b);
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
 /** Checks if @p e is a constant expression. */
-bool is_constant(const Expression& e);
+inline bool is_constant(const Expression& e) { return e.ptr_ == nullptr; }
 /** Checks if @p e is a constant expression representing @p v. */
 bool is_constant(const Expression& e, double v);
 /** Checks if @p e is 0.0. */
@@ -690,7 +705,10 @@ bool is_uninterpreted_function(const Expression& e);
 /** Returns the constant value of the constant expression @p e.
  *  \pre{@p e is a constant expression.}
  */
-double get_constant_value(const Expression& e);
+inline double get_constant_value(const Expression& e) {
+  DRAKE_ASSERT(is_constant(e));
+  return e.value_;
+}
 /** Returns the embedded variable in the variable expression @p e.
  *  \pre{@p e is a variable expression.}
  */

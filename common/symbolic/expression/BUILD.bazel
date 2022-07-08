@@ -49,6 +49,7 @@ drake_cc_library(
         "//common:essential",
         "//common:hash",
         "//common:random",
+        "//common:reset_after_move",
     ],
     deps = [
         "@fmt",

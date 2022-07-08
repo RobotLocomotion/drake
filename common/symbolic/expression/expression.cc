@@ -60,44 +60,30 @@ Expression NegateMultiplication(const Expression& e) {
 }
 }  // namespace
 
-shared_ptr<ExpressionCell> Expression::make_cell(const double d) {
-  if (d == 0.0) {
-    // The objects created by `Expression(0.0)` share the unique
-    // `ExpressionConstant` object created in `Expression::Zero()`.
-    //
-    // See https://github.com/RobotLocomotion/drake/issues/12453 for details.
-    //
-    // Typically we should never access a ptr_ directly, but here we know it
-    // poses no risk because ExpressionConstant has no non-const member fields
-    // of any consequence (only "is_expanded_" is non-const, and it can never
-    // be reset to false).
-    return Expression::Zero().ptr_;
-  }
-  if (std::isnan(d)) {
-    return make_shared<ExpressionNaN>();
-  }
-  return make_shared<ExpressionConstant>(d);
-}
-
 Expression::Expression(const Variable& var)
     : Expression{make_shared<ExpressionVar>(var)} {}
 
-Expression::Expression(const double constant)
-    : Expression{make_cell(constant)} {}
-
 Expression::Expression(std::shared_ptr<ExpressionCell> ptr)
-    : ptr_{std::move(ptr)} {
+    : value_{std::numeric_limits<double>::quiet_NaN()},
+      ptr_{std::move(ptr)} {
   DRAKE_ASSERT(ptr_ != nullptr);
 }
 
 ExpressionKind Expression::get_kind() const {
+  if (is_constant(*this)) {
+    return ExpressionKind::Constant;
+  }
   return cell().get_kind();
 }
 
 void Expression::HashAppend(DelegatingHasher* hasher) const {
   using drake::hash_append;
   hash_append(*hasher, get_kind());
-  cell().HashAppendDetail(hasher);
+  if (is_constant(*this)) {
+    hash_append(*hasher, double{value_});
+  } else {
+    cell().HashAppendDetail(hasher);
+  }
 }
 
 ExpressionCell& Expression::mutable_cell() {
@@ -107,27 +93,19 @@ ExpressionCell& Expression::mutable_cell() {
 }
 
 Expression Expression::Zero() {
-  static const never_destroyed<Expression> zero{
-      Expression{make_shared<ExpressionConstant>(0.0)}};
-  return zero.access();
+  return {0.0};
 }
 
 Expression Expression::One() {
-  static const never_destroyed<Expression> one{
-      Expression{make_shared<ExpressionConstant>(1.0)}};
-  return one.access();
+  return {1.0};
 }
 
 Expression Expression::Pi() {
-  static const never_destroyed<Expression> pi{
-      Expression{make_shared<ExpressionConstant>(M_PI)}};
-  return pi.access();
+  return {M_PI};
 }
 
 Expression Expression::E() {
-  static const never_destroyed<Expression> e{
-      Expression{make_shared<ExpressionConstant>(M_E)}};
-  return e.access();
+  return {M_E};
 }
 
 Expression Expression::NaN() {
@@ -137,10 +115,21 @@ Expression Expression::NaN() {
 }
 
 Variables Expression::GetVariables() const {
+  if (is_constant(*this)) {
+    return {};
+  }
   return cell().GetVariables();
 }
 
 bool Expression::EqualTo(const Expression& e) const {
+  const bool this_is_constant = is_constant(*this);
+  const bool other_is_constant = is_constant(e);
+  if (this_is_constant && other_is_constant) {
+    return this->value_ == e.value_;
+  }
+  if (this_is_constant || other_is_constant) {
+    return false;
+  }
   const auto& this_cell = cell();
   const auto& other_cell = e.cell();
   if (&this_cell == &other_cell) {
@@ -154,10 +143,10 @@ bool Expression::EqualTo(const Expression& e) const {
 }
 
 bool Expression::Less(const Expression& e) const {
-  const auto& this_cell = cell();
-  const auto& other_cell = e.cell();
-  if (&this_cell == &other_cell) {
-    return false;  // this equals to e, not less-than.
+  const bool this_is_constant = is_constant(*this);
+  const bool other_is_constant = is_constant(e);
+  if (this_is_constant && other_is_constant) {
+    return this->value_ < e.value_;
   }
   const ExpressionKind k1{get_kind()};
   const ExpressionKind k2{e.get_kind()};
@@ -168,19 +157,33 @@ bool Expression::Less(const Expression& e) const {
     return false;
   }
   // k1 == k2
+  const auto& this_cell = cell();
+  const auto& other_cell = e.cell();
+  if (&this_cell == &other_cell) {
+    return false;  // this equals to e, not less-than.
+  }
   return this_cell.Less(other_cell);
 }
 
 bool Expression::is_polynomial() const {
+  if (is_constant(*this)) {
+    return true;
+  }
   return cell().is_polynomial();
 }
 
 bool Expression::is_expanded() const {
+  if (is_constant(*this)) {
+    return true;
+  }
   return cell().is_expanded();
 }
 
 double Expression::Evaluate(const Environment& env,
                             RandomGenerator* const random_generator) const {
+  if (is_constant(*this)) {
+    return value_;
+  }
   if (random_generator == nullptr) {
     return cell().Evaluate(env);
   } else {
@@ -190,6 +193,9 @@ double Expression::Evaluate(const Environment& env,
 }
 
 double Expression::Evaluate(RandomGenerator* const random_generator) const {
+  if (is_constant(*this)) {
+    return value_;
+  }
   return Evaluate(Environment{}, random_generator);
 }
 
@@ -211,6 +217,9 @@ Expression Expression::EvaluatePartial(const Environment& env) const {
 }
 
 Expression Expression::Expand() const {
+  if (is_constant(*this)) {
+    return *this;
+  }
   if (cell().is_expanded()) {
     // If it is already expanded, return the current expression without calling
     // Expand() on the cell.
@@ -226,10 +235,16 @@ Expression Expression::Expand() const {
 
 Expression Expression::Substitute(const Variable& var,
                                   const Expression& e) const {
+  if (is_constant(*this)) {
+    return *this;
+  }
   return cell().Substitute({{var, e}});
 }
 
 Expression Expression::Substitute(const Substitution& s) const {
+  if (is_constant(*this)) {
+    return *this;
+  }
   if (!s.empty()) {
     return cell().Substitute(s);
   }
@@ -237,6 +252,9 @@ Expression Expression::Substitute(const Substitution& s) const {
 }
 
 Expression Expression::Differentiate(const Variable& x) const {
+  if (is_constant(*this)) {
+    return 0.0;
+  }
   return cell().Differentiate(x);
 }
 
@@ -576,7 +594,12 @@ class PrecisionGuard {
 ostream& operator<<(ostream& os, const Expression& e) {
   const PrecisionGuard precision_guard{&os,
                                        numeric_limits<double>::max_digits10};
-  return e.cell().Display(os);
+  if (is_constant(e)) {
+    os << e.value_;
+  } else {
+    e.cell().Display(os);
+  }
+  return os;
 }
 
 Expression log(const Expression& e) {
@@ -795,48 +818,100 @@ Expression uninterpreted_function(string name, vector<Expression> arguments) {
       std::move(name), std::move(arguments))};
 }
 
-bool is_constant(const Expression& e) { return is_constant(e.cell()); }
 bool is_constant(const Expression& e, const double v) {
-  return is_constant(e) && (to_constant(e).get_value() == v);
+  return is_constant(e) && (get_constant_value(e) == v);
 }
-bool is_zero(const Expression& e) { return is_constant(e, 0.0); }
-bool is_one(const Expression& e) { return is_constant(e, 1.0); }
-bool is_neg_one(const Expression& e) { return is_constant(e, -1.0); }
-bool is_two(const Expression& e) { return is_constant(e, 2.0); }
-bool is_nan(const Expression& e) { return e.get_kind() == ExpressionKind::NaN; }
-bool is_variable(const Expression& e) { return is_variable(e.cell()); }
-bool is_addition(const Expression& e) { return is_addition(e.cell()); }
+bool is_zero(const Expression& e) {
+  return is_constant(e, 0.0);
+}
+bool is_one(const Expression& e) {
+  return is_constant(e, 1.0);
+}
+bool is_neg_one(const Expression& e) {
+  return is_constant(e, -1.0);
+}
+bool is_two(const Expression& e) {
+  return is_constant(e, 2.0);
+}
+bool is_nan(const Expression& e) {
+  return e.get_kind() == ExpressionKind::NaN;
+}
+bool is_variable(const Expression& e) {
+  return !is_constant(e) && is_variable(e.cell());
+}
+bool is_addition(const Expression& e) {
+  return !is_constant(e) && is_addition(e.cell());
+}
 bool is_multiplication(const Expression& e) {
-  return is_multiplication(e.cell());
+  return !is_constant(e) && is_multiplication(e.cell());
 }
-bool is_division(const Expression& e) { return is_division(e.cell()); }
-bool is_log(const Expression& e) { return is_log(e.cell()); }
-bool is_abs(const Expression& e) { return is_abs(e.cell()); }
-bool is_exp(const Expression& e) { return is_exp(e.cell()); }
-bool is_sqrt(const Expression& e) { return is_sqrt(e.cell()); }
-bool is_pow(const Expression& e) { return is_pow(e.cell()); }
-bool is_sin(const Expression& e) { return is_sin(e.cell()); }
-bool is_cos(const Expression& e) { return is_cos(e.cell()); }
-bool is_tan(const Expression& e) { return is_tan(e.cell()); }
-bool is_asin(const Expression& e) { return is_asin(e.cell()); }
-bool is_acos(const Expression& e) { return is_acos(e.cell()); }
-bool is_atan(const Expression& e) { return is_atan(e.cell()); }
-bool is_atan2(const Expression& e) { return is_atan2(e.cell()); }
-bool is_sinh(const Expression& e) { return is_sinh(e.cell()); }
-bool is_cosh(const Expression& e) { return is_cosh(e.cell()); }
-bool is_tanh(const Expression& e) { return is_tanh(e.cell()); }
-bool is_min(const Expression& e) { return is_min(e.cell()); }
-bool is_max(const Expression& e) { return is_max(e.cell()); }
-bool is_ceil(const Expression& e) { return is_ceil(e.cell()); }
-bool is_floor(const Expression& e) { return is_floor(e.cell()); }
-bool is_if_then_else(const Expression& e) { return is_if_then_else(e.cell()); }
+bool is_division(const Expression& e) {
+  return !is_constant(e) && is_division(e.cell());
+}
+bool is_log(const Expression& e) {
+  return !is_constant(e) && is_log(e.cell());
+}
+bool is_abs(const Expression& e) {
+  return !is_constant(e) && is_abs(e.cell());
+}
+bool is_exp(const Expression& e) {
+  return !is_constant(e) && is_exp(e.cell());
+}
+bool is_sqrt(const Expression& e) {
+  return !is_constant(e) && is_sqrt(e.cell());
+}
+bool is_pow(const Expression& e) {
+  return !is_constant(e) && is_pow(e.cell());
+}
+bool is_sin(const Expression& e) {
+  return !is_constant(e) && is_sin(e.cell());
+}
+bool is_cos(const Expression& e) {
+  return !is_constant(e) && is_cos(e.cell());
+}
+bool is_tan(const Expression& e) {
+  return !is_constant(e) && is_tan(e.cell());
+}
+bool is_asin(const Expression& e) {
+  return !is_constant(e) && is_asin(e.cell());
+}
+bool is_acos(const Expression& e) {
+  return !is_constant(e) && is_acos(e.cell());
+}
+bool is_atan(const Expression& e) {
+  return !is_constant(e) && is_atan(e.cell());
+}
+bool is_atan2(const Expression& e) {
+  return !is_constant(e) && is_atan2(e.cell());
+}
+bool is_sinh(const Expression& e) {
+  return !is_constant(e) && is_sinh(e.cell());
+}
+bool is_cosh(const Expression& e) {
+  return !is_constant(e) && is_cosh(e.cell());
+}
+bool is_tanh(const Expression& e) {
+  return !is_constant(e) && is_tanh(e.cell());
+}
+bool is_min(const Expression& e) {
+  return !is_constant(e) && is_min(e.cell());
+}
+bool is_max(const Expression& e) {
+  return !is_constant(e) && is_max(e.cell());
+}
+bool is_ceil(const Expression& e) {
+  return !is_constant(e) && is_ceil(e.cell());
+}
+bool is_floor(const Expression& e) {
+  return !is_constant(e) && is_floor(e.cell());
+}
+bool is_if_then_else(const Expression& e) {
+  return !is_constant(e) && is_if_then_else(e.cell());
+}
 bool is_uninterpreted_function(const Expression& e) {
-  return is_uninterpreted_function(e.cell());
+  return !is_constant(e) && is_uninterpreted_function(e.cell());
 }
 
-double get_constant_value(const Expression& e) {
-  return to_constant(e).get_value();
-}
 const Variable& get_variable(const Expression& e) {
   return to_variable(e).get_variable();
 }

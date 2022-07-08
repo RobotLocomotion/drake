@@ -182,25 +182,6 @@ class ExpressionVar : public ExpressionCell {
   const Variable var_;
 };
 
-/** Symbolic expression representing a constant. */
-class ExpressionConstant : public ExpressionCell {
- public:
-  explicit ExpressionConstant(double v);
-  [[nodiscard]] double get_value() const { return v_; }
-  void HashAppendDetail(DelegatingHasher*) const override;
-  [[nodiscard]] Variables GetVariables() const override;
-  [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
-  [[nodiscard]] bool Less(const ExpressionCell& e) const override;
-  [[nodiscard]] double Evaluate(const Environment& env) const override;
-  [[nodiscard]] Expression Expand() const override;
-  [[nodiscard]] Expression Substitute(const Substitution& s) const override;
-  [[nodiscard]] Expression Differentiate(const Variable& x) const override;
-  std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const double v_{};
-};
-
 /** Symbolic expression representing NaN (not-a-number). */
 class ExpressionNaN : public ExpressionCell {
  public:
