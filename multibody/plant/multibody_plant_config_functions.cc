@@ -34,7 +34,7 @@ namespace {
 // Use a switch() statement here, to ensure the compiler sends us a reminder
 // when somebody add a new value to the enum. New values must be listed here
 // as well as in the list of kContactModels below.
-constexpr const char* ContactModelToChars(ContactModel contact_model) {
+constexpr const char* EnumToChars(ContactModel contact_model) {
   switch (contact_model) {
     case ContactModel::kPointContactOnly:
       return "point";
@@ -45,20 +45,10 @@ constexpr const char* ContactModelToChars(ContactModel contact_model) {
   }
 }
 
-constexpr auto MakeContactModelPair(ContactModel value) {
-  return std::pair(value, ContactModelToChars(value));
-}
-
-constexpr std::array<std::pair<ContactModel, const char*>, 3> kContactModels{{
-  MakeContactModelPair(ContactModel::kPointContactOnly),
-  MakeContactModelPair(ContactModel::kHydroelasticsOnly),
-  MakeContactModelPair(ContactModel::kHydroelasticWithFallback),
-}};
-
 // Use a switch() statement here, to ensure the compiler sends us a reminder
 // when somebody adds a new value to the enum. New values must be listed here
 // as well as in the list of kDiscreteContactSolverTypes below.
-constexpr const char* DiscreteContactSolverTypeToChars(
+constexpr const char* EnumToChars(
     DiscreteContactSolverType type) {
   switch (type) {
     case DiscreteContactSolverType::kTamsi:
@@ -68,24 +58,13 @@ constexpr const char* DiscreteContactSolverTypeToChars(
   }
 }
 
-constexpr auto MakeDiscreteContactSolverTypePair(
-    DiscreteContactSolverType value) {
-  return std::pair(value, DiscreteContactSolverTypeToChars(value));
-}
-
-constexpr std::array<std::pair<DiscreteContactSolverType, const char*>, 2>
-    kDiscreteContactSolverTypes{{
-        MakeDiscreteContactSolverTypePair(DiscreteContactSolverType::kTamsi),
-        MakeDiscreteContactSolverTypePair(DiscreteContactSolverType::kSap),
-    }};
-
 // Take an alias to limit verbosity, especially in the constexpr boilerplate.
 using ContactRep = geometry::HydroelasticContactRepresentation;
 
 // Use a switch() statement here, to ensure the compiler sends us a reminder
 // when somebody add a new value to the enum. New values must be listed here
 // as well as in the list of (enum, name) pairs kContactReps below.
-constexpr const char* ContactRepToChars(ContactRep contact_model) {
+constexpr const char* EnumToChars(ContactRep contact_model) {
   switch (contact_model) {
     case ContactRep::kTriangle:
       return "triangle";
@@ -94,13 +73,31 @@ constexpr const char* ContactRepToChars(ContactRep contact_model) {
   }
 }
 
-constexpr auto MakeContactRepPair(ContactRep value) {
-  return std::pair(value, ContactRepToChars(value));
-}
+template <typename Enum>
+struct NamedEnum {
+  // NOLINTNEXTLINE(runtime/explicit)
+  constexpr NamedEnum(Enum value_in)
+      : value(value_in),
+        name(EnumToChars(value_in)) {}
+  const Enum value;
+  const char* const name;
+};
 
-constexpr std::array<std::pair<ContactRep, const char*>, 2> kContactReps{{
-  MakeContactRepPair(ContactRep::kTriangle),
-  MakeContactRepPair(ContactRep::kPolygon),
+constexpr std::array<NamedEnum<ContactModel>, 3> kContactModels{{
+  {ContactModel::kPointContactOnly},
+  {ContactModel::kHydroelasticsOnly},
+  {ContactModel::kHydroelasticWithFallback},
+}};
+
+constexpr std::array<NamedEnum<DiscreteContactSolverType>, 2>
+kDiscreteContactSolverTypes{{
+  {DiscreteContactSolverType::kTamsi},
+  {DiscreteContactSolverType::kSap},
+}};
+
+constexpr std::array<NamedEnum<ContactRep>, 2> kContactReps{{
+  {ContactRep::kTriangle},
+  {ContactRep::kPolygon},
 }};
 
 }  // namespace
