@@ -141,3 +141,14 @@ and the team at TRI
 *Interactive visualization:* [https://mntan3.github.io/](https://mntan3.github.io/)
 
 *Source Code:* [https://github.com/RobotLocomotion/gym/tree/master/gym/envs/robot_locomotion_group/drake/shoe](https://github.com/RobotLocomotion/gym/tree/master/gym/envs/robot_locomotion_group/drake/shoe)
+
+## Double Pendulum
+
+Exciting NNM in a double pendulum
+
+{% include video.html
+  url = "https://www.youtube.com/watch?v=DM_X9-yRePI"
+  full_width = true
+%}
+
+*Source Code:* https://deepnote.com/workspace/gabriel-meisler-4cf1-ac00820f-5cdf-4f86-a65c-a7786d1a46bb/project/Double-Pendulum-NNM-637ce096-eaf9-4fc7-bfc2-4cdde38a763e/%2Frobot.ipynb
