@@ -62,8 +62,7 @@ class RationalFunction {
    */
   explicit RationalFunction(double c);
 
-  /// Evaluates this polynomial under a given environment @p env.
-  ///
+  /// Evaluates this rational function under a given environment @p env.
   /// @throws std::exception if there is a variable in this polynomial whose
   /// assignment is not provided by @p env.
   double Evaluate(const Environment& env) const;
@@ -122,7 +121,7 @@ class RationalFunction {
 
   friend std::ostream& operator<<(std::ostream&, const RationalFunction& f);
 
-  /// Returns an equivalent symbolic expression of this polynomial.
+  /// Returns an equivalent symbolic expression of this rational function.
   Expression ToExpression() const;
 
   /// Set Indeterminates of the numerator and denominator polynomials

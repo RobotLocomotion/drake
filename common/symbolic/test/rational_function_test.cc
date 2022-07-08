@@ -207,6 +207,16 @@ TEST_F(SymbolicRationalFunctionTest, Addition) {
   RationalFunction f1_c_sum(p1_, p2_);
   f1_c_sum += c;
   EXPECT_PRED2(RationalFunctionEqual, f1_c_sum, f1_c_sum_expected);
+
+
+  const RationalFunction f4(p3_, p2_);
+  const RationalFunction f1_f4_sum_expected(p1_ + p3_, p2_);
+  EXPECT_PRED2(RationalFunctionEqual, f1+f4, f1_f4_sum_expected);
+  EXPECT_PRED2(RationalFunctionEqual, f4+f1, f1_f4_sum_expected);
+  RationalFunction f1_f4_sum(p1_, p2_);
+  f1_f4_sum += f4;
+  EXPECT_PRED2(RationalFunctionEqual, f1_f4_sum, f1_f4_sum_expected);
+
 }
 
 TEST_F(SymbolicRationalFunctionTest, Subtraction) {
@@ -451,6 +461,34 @@ TEST_F(SymbolicRationalFunctionTest, Evaluate) {
                                      2.0 * -7.0 * -5.0};
 
   EXPECT_EQ(f.Evaluate(env2), expected_numerator2 / expected_denominator2);
+}
+
+TEST_F(SymbolicRationalFunctionTest, ToExpression){
+  // p = ax²y + bxy + cz
+  const Polynomial p{a_ * x_ * x_ * y_ + b_ * x_ * y_ + c_ * z_, var_xyz_};
+  // q = axz + byz + cxy
+  const Polynomial q{a_ * x_ * z_ + b_ * y_ * z_ + c_ * x_ * y_, var_xyz_};
+
+  const RationalFunction f{p, q};
+  const RationalFunction p_rat{p};
+
+  EXPECT_EQ(f.ToExpression(), p.ToExpression()/q.ToExpression());
+  EXPECT_EQ(p_rat.ToExpression(), p.ToExpression());
+}
+
+TEST_F(SymbolicRationalFunctionTest, SetIndetermiantes){
+  // a rational function with indeterminates var_xy_
+  RationalFunction f{p1_, p4_};
+
+  // set indeterminates requires a type Variables not Variable
+  symbolic::Variables vars_a_{var_a_};
+  f.SetIndeterminates(vars_a_);
+  EXPECT_EQ(f.numerator().indeterminates(), vars_a_);
+  EXPECT_EQ(f.denominator().indeterminates(), vars_a_);
+
+  f.SetIndeterminates(var_xy_);
+  EXPECT_EQ(f.numerator().indeterminates(), var_xy_);
+  EXPECT_EQ(f.denominator().indeterminates(), var_xy_);
 }
 
 }  // namespace

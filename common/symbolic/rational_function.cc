@@ -73,7 +73,6 @@ void RationalFunction::CheckIndeterminates() const {
 }
 
 Expression RationalFunction::ToExpression() const {
-  // Returns ∑ᵢ (cᵢ * mᵢ).
   return numerator_.ToExpression() / denominator_.ToExpression();
 }
 
