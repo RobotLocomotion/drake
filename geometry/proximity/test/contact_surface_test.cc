@@ -99,6 +99,8 @@ unique_ptr<MeshFieldLinear<typename MeshType::ScalarType, MeshType>> MakeField(
 template <typename MeshType>
 ContactSurface<typename MeshType::ScalarType> TestContactSurface(
     bool test_return_value = true) {
+  const double kEps = std::numeric_limits<double>::epsilon();
+
   using T = typename MeshType::ScalarType;
   auto id_M = GeometryId::get_new_id();
   auto id_N = GeometryId::get_new_id();
@@ -150,23 +152,27 @@ ContactSurface<typename MeshType::ScalarType> TestContactSurface(
                 HydroelasticContactRepresentation::kTriangle);
       EXPECT_TRUE(contact_surface.is_triangle());
       EXPECT_EQ(&surface_mesh_ref, &contact_surface.tri_mesh_W());
-      EXPECT_EQ(contact_surface.tri_e_MN().EvaluateCartesian(
-                    0, contact_surface.centroid(0)),
-                (e0 + e1 + e2) / 3);
-      EXPECT_EQ(contact_surface.tri_e_MN().EvaluateCartesian(
-                    1, contact_surface.centroid(1)),
-                (e2 + e3 + e0) / 3);
+      EXPECT_NEAR(ExtractDoubleOrThrow(
+                      contact_surface.tri_e_MN().EvaluateCartesian(
+                          0, contact_surface.centroid(0))),
+                  ExtractDoubleOrThrow((e0 + e1 + e2) / 3), kEps);
+      EXPECT_NEAR(ExtractDoubleOrThrow(
+                      contact_surface.tri_e_MN().EvaluateCartesian(
+                          1, contact_surface.centroid(1))),
+                  ExtractDoubleOrThrow((e2 + e3 + e0) / 3), kEps);
     } else {
       EXPECT_EQ(contact_surface.representation(),
                 HydroelasticContactRepresentation::kPolygon);
       EXPECT_FALSE(contact_surface.is_triangle());
       EXPECT_EQ(&surface_mesh_ref, &contact_surface.poly_mesh_W());
-      EXPECT_EQ(contact_surface.poly_e_MN().EvaluateCartesian(
-                      0, contact_surface.centroid(0)),
-                  (e0 + e1 + e2) / 3);
-      EXPECT_EQ(contact_surface.poly_e_MN().EvaluateCartesian(
-                      1, contact_surface.centroid(1)),
-                  (e2 + e3 + e0) / 3);
+      EXPECT_NEAR(ExtractDoubleOrThrow(
+                      contact_surface.poly_e_MN().EvaluateCartesian(
+                          0, contact_surface.centroid(0))),
+                  ExtractDoubleOrThrow((e0 + e1 + e2) / 3), kEps);
+      EXPECT_NEAR(ExtractDoubleOrThrow(
+                      contact_surface.poly_e_MN().EvaluateCartesian(
+                          1, contact_surface.centroid(1))),
+                  ExtractDoubleOrThrow((e2 + e3 + e0) / 3), kEps);
     }
   }
 
