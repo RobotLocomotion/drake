@@ -6,8 +6,6 @@
 #ifdef DRAKE_ENABLE_AVX2_FMA
 #include <cstdint>
 
-#include <iostream>
-
 #include <cpuid.h>
 #include <immintrin.h>
 #endif
@@ -44,13 +42,7 @@ double* GetMutableRawMatrixStart(RigidTransform<double>* X) {
 // is available if AVX2 is supported by hardware, and do not need to test if it
 // is enabled in software as well.
 bool CheckCpuForAvxSupport() {
-  const bool has_avx = __builtin_cpu_supports("avx2");
-  if (has_avx) {
-    std::cout << "AVX2 SUPPORTED" << std::endl;
-  } else {
-    std::cout << "AVX2 NOT SUPPORTED" << std::endl;
-  }
-  return has_avx;
+  return __builtin_cpu_supports("avx2");
 }
 
 // Turn d into d d d d.

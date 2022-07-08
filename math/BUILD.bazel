@@ -25,6 +25,7 @@ drake_cc_package_library(
         ":eigen_sparse_triplet",
         ":evenly_distributed_pts_on_sphere",
         ":fast_pose_composition_functions",
+        ":fast_pose_composition_functions_avx2_fma",
         ":geometric_transform",
         ":gradient",
         ":gray_code",
