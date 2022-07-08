@@ -105,7 +105,7 @@ class PackageMap final {
   /// This function should not be used when populating manifests from the
   /// ROS_PACKAGE_PATH environment variable. To do so, the
   /// PopulateFromRosPackagePath function should be used instead, which follows
-  /// standard ROS package discovery semantices described in the documentation
+  /// standard ROS package discovery semantics described in the documentation
   /// for that function.
   void PopulateFromEnvironment(const std::string& environment_variable);
 
