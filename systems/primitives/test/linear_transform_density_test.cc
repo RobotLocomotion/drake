@@ -330,7 +330,7 @@ void CheckDensityGradient(RandomDistribution distribution,
        -A_val.inverse())
           .transpose();
   Eigen::VectorXd density_grad = density.derivatives().rows() == 0
-                                     ? Eigen::Vector2d::Zero()
+                                     ? Eigen::VectorXd::Zero(2).eval()
                                      : density.derivatives();
   EXPECT_TRUE(CompareMatrices(density_grad, ddensity_db_expected, 10 * kEps));
 
