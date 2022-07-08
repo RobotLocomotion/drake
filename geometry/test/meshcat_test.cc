@@ -903,8 +903,21 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   // Confirm that I have some base64 content.
   EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
 
-  // Confirm that the meshcat.js link was replaced.
+  // Confirm that the js source links were replaced.
   EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
+  EXPECT_THAT(html, ::testing::Not(HasSubstr("stats.min.js")));
+  EXPECT_THAT(html, ::testing::Not(HasSubstr("msgpack.min.js")));
+}
+
+// Check MeshcatParams.hide_stats_plot sends a hide_realtime_rate message
+GTEST_TEST(MeshcatTest, RealtimeRatePlot) {
+  MeshcatParams params;
+  params.show_stats_plot = true;
+  Meshcat meshcat(params);
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
+      "type": "show_realtime_rate",
+      "show": true
+    })""");
 }
 
 }  // namespace

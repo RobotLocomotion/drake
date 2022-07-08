@@ -191,12 +191,15 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def_readwrite("port", &MeshcatParams::port, cls_doc.port.doc)
         .def_readwrite("web_url_pattern", &MeshcatParams::web_url_pattern,
             cls_doc.web_url_pattern.doc)
+        .def_readwrite("show_stats_plot", &MeshcatParams::show_stats_plot,
+            cls_doc.show_stats_plot.doc)
         .def("__repr__", [](const Class& self) {
           return py::str(
               "MeshcatParams("
               "port={}, "
-              "web_url_pattern={})")
-              .format(self.port, self.web_url_pattern);
+              "web_url_pattern={}, "
+              "show_stats_plot={})")
+              .format(self.port, self.web_url_pattern, self.show_stats_plot);
         });
   }
 
@@ -274,6 +277,8 @@ void DoScalarIndependentDefinitions(py::module m) {
                 const Eigen::Ref<const Eigen::Matrix4d>&>(&Class::SetTransform),
             py::arg("path"), py::arg("matrix"), cls_doc.SetTransform.doc_matrix)
         .def("Delete", &Class::Delete, py::arg("path") = "", cls_doc.Delete.doc)
+        .def("SetRealtimeRate", &Class::SetRealtimeRate, py::arg("rate"),
+            cls_doc.SetRealtimeRate.doc)
         .def("SetProperty",
             py::overload_cast<std::string_view, std::string, bool>(
                 &Class::SetProperty),
