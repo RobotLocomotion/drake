@@ -14,10 +14,10 @@ def ros_xacro_internal_repository(
         # https://index.ros.org/p/xacro/github-ros-xacro/#noetic
         commit = "1.14.13",
         sha256 = "e210b1e9c478d53350ef565b502ff5e53f29fd2f78eff04bb16fd465b43f4143",  # noqa
-        build_file = "@drake//tools/workspace/ros_xacro_internal:package.BUILD.bazel",  # noqa
+        build_file = ":package.BUILD.bazel",
         patches = [
-            "@drake//tools/workspace/ros_xacro_internal:disable-console-print.patch",  # noqa
-            "@drake//tools/workspace/ros_xacro_internal:disable-import-warning.patch",  # noqa
+            ":disable-console-print.patch",
+            ":disable-import-warning.patch",
         ],
         mirrors = mirrors,
     )

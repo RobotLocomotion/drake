@@ -10,6 +10,6 @@ def usockets_repository(
         repository = "uNetworking/uSockets",
         commit = "v0.8.1",
         sha256 = "3b33b5924a92577854e2326b3e2d393849ec00beb865a1271bf24c0f210cc1d6",  # noqa
-        build_file = "@drake//tools/workspace/usockets:package.BUILD.bazel",
+        build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

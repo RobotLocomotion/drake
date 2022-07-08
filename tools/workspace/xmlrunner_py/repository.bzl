@@ -10,6 +10,6 @@ def xmlrunner_py_repository(
         repository = "xmlrunner/unittest-xml-reporting",
         commit = "3.0.2",
         sha256 = "dbe165386952ec5373d4db5b4ac0644b60b734f4b02b9e575b1d0dc873616ba4",  # noqa
-        build_file = "@drake//tools/workspace/xmlrunner_py:package.BUILD.bazel",  # noqa
+        build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
