@@ -6,6 +6,7 @@
 #if defined(__AVX2__) && defined(__FMA__)
 #include <cstdint>
 
+#include <cpuid.h>
 #include <immintrin.h>
 #endif
 
@@ -189,6 +190,20 @@ void ComposeXinvXPortable(const RigidTransform<double>& X_BA,
 #if defined(__AVX2__) && defined(__FMA__)
 
 namespace {
+// Check if AVX2 is supported by the CPU. We can assume that OS support for AVX2
+// is available if AVX2 is supported by hardware, and do not need to test if it
+// is enabled in software as well.
+bool CheckCpuForAvxSupport() {
+  unsigned int info[4] = {0, 0, 0, 0};
+  __get_cpuid(1, &info[0], &info[1], &info[2], &info[3]);
+  const bool has_avx = (info[1] & (1 << 5));
+  return has_avx;
+}
+
+bool AvxSupported() {
+  static const bool avx_supported = CheckCpuForAvxSupport();
+  return avx_supported;
+}
 
 // Turn d into d d d d.
 __m256d four(double d) {
@@ -532,27 +547,43 @@ void ComposeRR(const RotationMatrix<double>& R_AB,
                const RotationMatrix<double>& R_BC,
                RotationMatrix<double>* R_AC) {
   assert(R_AC != nullptr);
-  ComposeRRAvx(GetRawMatrixStart(R_AB), GetRawMatrixStart(R_BC),
-               GetMutableRawMatrixStart(R_AC));
+  if (AvxSupported()) {
+    ComposeRRAvx(GetRawMatrixStart(R_AB), GetRawMatrixStart(R_BC),
+                GetMutableRawMatrixStart(R_AC));
+  } else {
+    internal::ComposeRRPortable(R_AB, R_BC, R_AC);
+  }
 }
 void ComposeRinvR(const RotationMatrix<double>& R_BA,
                   const RotationMatrix<double>& R_BC,
                   RotationMatrix<double>* R_AC) {
   assert(R_AC != nullptr);
-  ComposeRinvRAvx(GetRawMatrixStart(R_BA), GetRawMatrixStart(R_BC),
-                  GetMutableRawMatrixStart(R_AC));
+  if (AvxSupported()) {
+    ComposeRinvRAvx(GetRawMatrixStart(R_BA), GetRawMatrixStart(R_BC),
+                    GetMutableRawMatrixStart(R_AC));
+  } else {
+    internal::ComposeRinvRPortable(R_BA, R_BC, R_AC);
+  }
 }
 void ComposeXX(const RigidTransform<double>& X_AB,
                const RigidTransform<double>& X_BC,
                RigidTransform<double>* X_AC) {
-  ComposeXXAvx(GetRawMatrixStart(X_AB), GetRawMatrixStart(X_BC),
-               GetMutableRawMatrixStart(X_AC));
+  if (AvxSupported()) {
+    ComposeXXAvx(GetRawMatrixStart(X_AB), GetRawMatrixStart(X_BC),
+                GetMutableRawMatrixStart(X_AC));
+  } else {
+    internal::ComposeXXPortable(X_AB, X_BC, X_AC);
+  }
 }
 void ComposeXinvX(const RigidTransform<double>& X_BA,
                   const RigidTransform<double>& X_BC,
                   RigidTransform<double>* X_AC) {
-  ComposeXinvXAvx(GetRawMatrixStart(X_BA), GetRawMatrixStart(X_BC),
-                  GetMutableRawMatrixStart(X_AC));
+  if (AvxSupported()) {
+    ComposeXinvXAvx(GetRawMatrixStart(X_BA), GetRawMatrixStart(X_BC),
+                    GetMutableRawMatrixStart(X_AC));
+  } else {
+    internal::ComposeXinvXPortable(X_BA, X_BC, X_AC);
+  }
 }
 
 #else
