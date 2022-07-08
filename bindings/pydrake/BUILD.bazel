@@ -680,6 +680,26 @@ generate_pybind_coverage(
     xml_docstrings = ":documentation_pybind.xml",
 )
 
+drake_py_binary(
+    name = "stubgen",
+    srcs = ["stubgen.py"],
+    args = ["--package=pydrake"],
+    deps = [
+        ":all_py",
+        "@mypy_internal//:mypy",
+    ],
+)
+
+# TODO(mwoehlke-kitware): actually install the .pyi's.
+
+drake_py_unittest(
+    name = "stubgen_test",
+    deps = [
+        ":all_py",
+        "@mypy_internal//:mypy",
+    ],
+)
+
 add_lint_tests_pydrake(
     python_lint_extra_srcs = [
         ":test/all_install_test.py",
