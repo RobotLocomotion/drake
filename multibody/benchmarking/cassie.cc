@@ -7,6 +7,7 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/tools/performance/fixture_common.h"
+#include "drake/tools/performance/fixture_memory.h"
 
 namespace drake {
 namespace multibody {
@@ -47,6 +48,7 @@ class Cassie : public benchmark::Fixture {
   void SetUp(BenchmarkStateRef state) override {
     SetUpNonZeroState();
     SetUpGradientsOrVariables(state);
+    tools::performance::TareMemoryManager();
   }
 
  protected:
@@ -355,5 +357,3 @@ BENCHMARK_REGISTER_F(CassieExpression, ForwardDynamics)
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
-
-BENCHMARK_MAIN();
