@@ -593,6 +593,22 @@ TEST_F(SymbolicPolynomialTest, BinaryOperationBetweenPolynomialAndVariable) {
 
     const Polynomial result4{var_x_ * p};
     EXPECT_TRUE(result4.EqualTo(result3));
+
+    // var_b_ doesn't show up in p, p * b will have b in the
+    // decision_variables(). result5 = 2a²bx²+3abx+7b
+    EXPECT_FALSE(p.decision_variables().include(var_b_));
+    EXPECT_FALSE(p.indeterminates().include(var_b_));
+    const symbolic::Polynomial result5 = var_b_ * p;
+    EXPECT_EQ(result5.indeterminates(), symbolic::Variables({var_x_}));
+    EXPECT_EQ(result5.decision_variables(),
+              symbolic::Variables({var_a_, var_b_}));
+    EXPECT_EQ(result5.monomial_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual, result5.monomial_to_coefficient_map().at(m_x_sq),
+                 2 * pow(a_, 2) * b_);
+    EXPECT_PRED2(ExprEqual, result5.monomial_to_coefficient_map().at(m_x),
+                 3 * a_ * b_);
+    EXPECT_PRED2(ExprEqual, result5.monomial_to_coefficient_map().at(m_one),
+                 7 * b_);
   }
 }
 
