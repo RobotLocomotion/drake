@@ -58,10 +58,21 @@ struct CompareMonomial {
 /// `p.decision_variables() ∩ p.indeterminates() = ∅`. We have CheckInvariant()
 /// method to check the invariant.
 ///
-/// Note that arithmetic operations (+,-,*) between a Polynomial and a Variable
-/// are not provided. The problem is that Variable class has no intrinsic
-/// information if a variable is a decision variable or an indeterminate while
-/// we need this information to perform arithmetic operations over Polynomials.
+/// @anchor polynomial_variable_operation
+/// <h3> Operation between a %Polynomial and a Variable </h3>
+/// Note that for arithmetic operations ⊕ (where ⊕ can be +,-,*) between a
+/// Polynomial `p` and a Variable `v`, if the variable `v` is an indeterminate
+/// of the polynomial `p`, then we regard `v` as a monomial with indeterminate
+/// `v` with coefficient 1; on the other hand, if the variable `v` is not an
+/// indeterminate of `p`, then we regard `v` as a monomial with 0 degree and
+/// coefficient `v`. For example, if p = ax²+y where (x,y) are indeterminates
+/// and a is a decision variable, then in the operation p + y, the result stores
+/// the monomial-to-coefficient mapping as {(x² -> a), (y -> 2)}; on the other
+/// hand, in the operation p + b, b is regarded as a 0-degree monomial with
+/// coefficient b, and p + b stores the monomial-to-coefficient mapping as {(x²
+/// ->  a), (y -> 1), (1 -> b)}.
+/// If you want to append the variable `v` to the indeterminates of the p⊕v,
+/// then explicitly convert it to a monomial as p +/-/* symbolic::Monomial(v).
 // TODO(hongkai.dai) when symbolic::GenericPolynomial is ready, we will
 // deprecate symbolic::Polynomial class, and create an alias using
 // symbolic::Polynomial=symbolic::GenericPolynomial<MonomialBasisElement>;
@@ -275,16 +286,28 @@ class Polynomial {
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
   Polynomial& operator+=(double c);
+  /// Depending on whether `v` is an indeterminate of this polynomial, the
+  /// operation generates different result. Refer to @ref
+  /// polynomial_variable_operation "the class documentation"
+  /// for more details.
   Polynomial& operator+=(const Variable& v);
 
   Polynomial& operator-=(const Polynomial& p);
   Polynomial& operator-=(const Monomial& m);
   Polynomial& operator-=(double c);
+  /// Depending on whether `v` is an indeterminate of this polynomial, the
+  /// operation generates different result. Refer to @ref
+  /// polynomial_variable_operation "the class documentation"
+  /// for more details.
   Polynomial& operator-=(const Variable& v);
 
   Polynomial& operator*=(const Polynomial& p);
   Polynomial& operator*=(const Monomial& m);
   Polynomial& operator*=(double c);
+  /// Depending on whether `v` is an indeterminate of this polynomial, the
+  /// operation generates different result. Refer to @ref
+  /// polynomial_variable_operation "the class documentation"
+  /// for more details.
   Polynomial& operator*=(const Variable& v);
 
   /// Returns true if this polynomial and @p p are structurally equal.
