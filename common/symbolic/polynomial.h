@@ -58,10 +58,6 @@ struct CompareMonomial {
 /// `p.decision_variables() ∩ p.indeterminates() = ∅`. We have CheckInvariant()
 /// method to check the invariant.
 ///
-/// Note that arithmetic operations (+,-,*) between a Polynomial and a Variable
-/// are not provided. The problem is that Variable class has no intrinsic
-/// information if a variable is a decision variable or an indeterminate while
-/// we need this information to perform arithmetic operations over Polynomials.
 // TODO(hongkai.dai) when symbolic::GenericPolynomial is ready, we will
 // deprecate symbolic::Polynomial class, and create an alias using
 // symbolic::Polynomial=symbolic::GenericPolynomial<MonomialBasisElement>;
