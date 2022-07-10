@@ -91,6 +91,11 @@ RationalFunction& RationalFunction::operator+=(const Polynomial& p) {
   return *this;
 }
 
+RationalFunction& RationalFunction::operator+=(const Monomial& m) {
+  numerator_ = m * denominator_ + numerator_;
+  return *this;
+}
+
 RationalFunction& RationalFunction::operator+=(double c) {
   numerator_ = c * denominator_ + numerator_;
   return *this;
@@ -106,6 +111,11 @@ RationalFunction& RationalFunction::operator-=(const Polynomial& p) {
   return *this;
 }
 
+RationalFunction& RationalFunction::operator-=(const Monomial& m) {
+  *this += -m;
+  return *this;
+}
+
 RationalFunction& RationalFunction::operator-=(double c) { return *this += -c; }
 
 RationalFunction& RationalFunction::operator*=(const RationalFunction& f) {
@@ -117,6 +127,12 @@ RationalFunction& RationalFunction::operator*=(const RationalFunction& f) {
 
 RationalFunction& RationalFunction::operator*=(const Polynomial& p) {
   numerator_ *= p;
+  DRAKE_ASSERT_VOID(CheckIndeterminates());
+  return *this;
+}
+
+RationalFunction& RationalFunction::operator*=(const Monomial& m) {
+  numerator_ *= m;
   DRAKE_ASSERT_VOID(CheckIndeterminates());
   return *this;
 }
@@ -141,6 +157,15 @@ RationalFunction& RationalFunction::operator/=(const Polynomial& p) {
     throw std::logic_error("RationalFunction: operator/=: The divider is 0.");
   }
   denominator_ *= p;
+  DRAKE_ASSERT_VOID(CheckIndeterminates());
+  return *this;
+}
+
+RationalFunction& RationalFunction::operator/=(const Monomial& m) {
+  if (m == Monomial()) {
+    throw std::logic_error("RationalFunction: operator/=: The divider is 0.");
+  }
+  denominator_ *= m;
   DRAKE_ASSERT_VOID(CheckIndeterminates());
   return *this;
 }
@@ -170,6 +195,14 @@ RationalFunction operator+(const Polynomial& p, RationalFunction f) {
   return f += p;
 }
 
+RationalFunction operator+(RationalFunction f, const Monomial& m) {
+  return f += m;
+}
+
+RationalFunction operator+(const Monomial& m, RationalFunction f) {
+  return f += m;
+}
+
 RationalFunction operator+(RationalFunction f, double c) { return f += c; }
 
 RationalFunction operator+(double c, RationalFunction f) { return f += c; }
@@ -184,6 +217,14 @@ RationalFunction operator-(RationalFunction f, const Polynomial& p) {
 
 RationalFunction operator-(const Polynomial& p, const RationalFunction& f) {
   return -f + p;
+}
+
+RationalFunction operator-(RationalFunction f, const Monomial& m) {
+  return f -= m;
+}
+
+RationalFunction operator-(const Monomial& m, RationalFunction f) {
+  return -f + m;
 }
 
 RationalFunction operator-(RationalFunction f, double c) { return f -= c; }
@@ -202,6 +243,14 @@ RationalFunction operator*(const Polynomial& p, RationalFunction f) {
   return f *= p;
 }
 
+RationalFunction operator*(RationalFunction f, const Monomial& m) {
+  return f *= m;
+}
+
+RationalFunction operator*(const Monomial& m, RationalFunction f) {
+  return f *= m;
+}
+
 RationalFunction operator*(RationalFunction f, double c) { return f *= c; }
 
 RationalFunction operator*(double c, RationalFunction f) { return f *= c; }
@@ -215,23 +264,32 @@ RationalFunction operator/(RationalFunction f, const Polynomial& p) {
 }
 
 RationalFunction operator/(const Polynomial& p, const RationalFunction& f) {
-  return RationalFunction(p * f.denominator(), f.numerator());
+  return {p * f.denominator(), f.numerator()};
 }
+
+RationalFunction operator/(RationalFunction f, const Monomial& m) {
+  return f /= m;
+}
+
+RationalFunction operator/(const Monomial& m, RationalFunction f) {
+  return {m * f.denominator(), f.numerator()};
+}
+
 
 RationalFunction operator/(RationalFunction f, double c) { return f /= c; }
 
 RationalFunction operator/(double c, const RationalFunction& f) {
-  return RationalFunction(c * f.denominator(), f.numerator());
+  return {c * f.denominator(), f.numerator()};
 }
 
 RationalFunction pow(const RationalFunction& f, int n) {
   if (n == 0) {
-    return RationalFunction(Polynomial(1), Polynomial(1));
+    return {Polynomial(1), Polynomial(1)};
   } else if (n >= 1) {
-    return RationalFunction(pow(f.numerator(), n), pow(f.denominator(), n));
+    return {pow(f.numerator(), n), pow(f.denominator(), n)};
   } else {
     // n < 0
-    return RationalFunction(pow(f.denominator(), -n), pow(f.numerator(), -n));
+    return {pow(f.denominator(), -n), pow(f.numerator(), -n)};
   }
 }
 

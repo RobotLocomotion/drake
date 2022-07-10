@@ -939,6 +939,8 @@ PYBIND11_MODULE(symbolic, m) {
       .def(double() + py::self)
       .def(py::self + Polynomial())
       .def(Polynomial() + py::self)
+      .def(py::self + Monomial())
+      .def(Monomial() + py::self)
 
       // Subtraction
       .def(py::self - py::self)
@@ -946,6 +948,8 @@ PYBIND11_MODULE(symbolic, m) {
       .def(double() - py::self)
       .def(py::self - Polynomial())
       .def(Polynomial() - py::self)
+      .def(py::self - Monomial())
+      .def(Monomial() - py::self)
 
       // Multiplication
       .def(py::self * py::self)
@@ -953,6 +957,8 @@ PYBIND11_MODULE(symbolic, m) {
       .def(double() * py::self)
       .def(py::self * Polynomial())
       .def(Polynomial() * py::self)
+      .def(py::self * Monomial())
+      .def(Monomial() * py::self)
 
       // Division
       .def(py::self / py::self)
@@ -960,6 +966,8 @@ PYBIND11_MODULE(symbolic, m) {
       .def(double() / py::self)
       .def(py::self / Polynomial())
       .def(Polynomial() / py::self)
+      .def(py::self / Monomial())
+      .def(Monomial() / py::self)
 
       // Logical comparison
       .def(py::self == py::self)

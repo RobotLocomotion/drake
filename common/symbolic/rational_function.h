@@ -62,10 +62,12 @@ class RationalFunction {
    */
   explicit RationalFunction(double c);
 
-  /// Evaluates this rational function under a given environment @p env.
-  /// @throws std::exception if there is a variable in this polynomial whose
-  /// assignment is not provided by @p env.
-  double Evaluate(const Environment& env) const;
+  /**
+   * Evaluates this rational function under a given environment @p env.
+   * @throws std::exception if there is a variable in this polynomial whose
+   * assignment is not provided by @p env.
+   */
+  [[nodiscard]] double Evaluate(const Environment& env) const;
 
   ~RationalFunction() = default;
 
@@ -122,7 +124,7 @@ class RationalFunction {
   friend std::ostream& operator<<(std::ostream&, const RationalFunction& f);
 
   /// Returns an equivalent symbolic expression of this rational function.
-  Expression ToExpression() const;
+  [[nodiscard]] Expression ToExpression() const;
 
   /// Set Indeterminates of the numerator and denominator polynomials
   void SetIndeterminates(const Variables& new_indeterminates);
@@ -138,26 +140,35 @@ class RationalFunction {
 RationalFunction operator+(RationalFunction f1, const RationalFunction& f2);
 RationalFunction operator+(RationalFunction f, const Polynomial& p);
 RationalFunction operator+(const Polynomial& p, RationalFunction f);
+RationalFunction operator+(const Monomial& m, RationalFunction f);
+RationalFunction operator+(RationalFunction f, const Monomial& m);
 RationalFunction operator+(RationalFunction f, double c);
 RationalFunction operator+(double c, RationalFunction f);
+
 
 RationalFunction operator-(RationalFunction f1, const RationalFunction& f2);
 RationalFunction operator-(RationalFunction f, const Polynomial& p);
 RationalFunction operator-(const Polynomial& p, const RationalFunction& f);
 RationalFunction operator-(RationalFunction f, double c);
 RationalFunction operator-(double c, RationalFunction f);
+RationalFunction operator-(const Monomial& m, RationalFunction f);
+RationalFunction operator-(RationalFunction f, const Monomial& m);
 
 RationalFunction operator*(RationalFunction f1, const RationalFunction& f2);
 RationalFunction operator*(RationalFunction f, const Polynomial& p);
 RationalFunction operator*(const Polynomial& p, RationalFunction f);
 RationalFunction operator*(RationalFunction f, double c);
 RationalFunction operator*(double c, RationalFunction f);
+RationalFunction operator*(const Monomial& m, RationalFunction f);
+RationalFunction operator*(RationalFunction f, const Monomial& m);
 
 RationalFunction operator/(RationalFunction f1, const RationalFunction& f2);
 RationalFunction operator/(RationalFunction f, const Polynomial& p);
 RationalFunction operator/(const Polynomial& p, const RationalFunction& f);
 RationalFunction operator/(RationalFunction f, double c);
 RationalFunction operator/(double c, const RationalFunction& f);
+RationalFunction operator/(const Monomial& m, RationalFunction f);
+RationalFunction operator/(RationalFunction f, const Monomial& m);
 
 /**
  * Returns the rational function @p f raised to @p n.

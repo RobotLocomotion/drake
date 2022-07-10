@@ -43,12 +43,12 @@ class _Registry:
         self._to_float = {}
 
     def register_comparator(
-        self,
-        cls_a,
-        cls_b,
-        assert_eq,
-        assert_ne=None,
-        assert_allclose=None,
+            self,
+            cls_a,
+            cls_b,
+            assert_eq,
+            assert_ne=None,
+            assert_allclose=None,
     ):
         key = (cls_a, cls_b)
         assert key not in self._comparators, key
@@ -211,7 +211,6 @@ def _str_ne(a, b):
 
 
 def _register_autodiff():
-
     def autodiff_eq(a, b):
         assert a.value() == b.value(), (a.value(), b.value())
         np.testing.assert_equal(a.derivatives(), b.derivatives())
@@ -237,7 +236,6 @@ def _register_autodiff():
 
 
 def _register_symbolic():
-
     def sym_struct_eq(a, b):
         assert a.EqualTo(b), (a, b)
 
@@ -285,11 +283,11 @@ def _register_polynomial():
         RawPolynomial_[Expression], RawPolynomial_[Expression], _raw_eq,
         _raw_ne)
 
+
 def _register_rational_function():
     _registry.register_comparator(
         RationalFunction, RationalFunction,
         RationalFunction.__eq__, RationalFunction.__ne__)
-
 
 
 # Globals.

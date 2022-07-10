@@ -45,7 +45,8 @@ class SymbolicRationalFunctionTest : public ::testing::Test {
   const Polynomial p5_{var_a_ * var_x_};
   const Polynomial p6_{var_a_ * var_x_ + var_y_};
 
-  const Monomial m1_{var_x_};
+  const Monomial monom_a_{var_a_};
+  const Monomial monom_x_{var_x_};
 
   const std::string polynomial_invariant_error_{
       "Polynomial .* does not satisfy the invariant [^]*"};
@@ -79,8 +80,8 @@ TEST_F(SymbolicRationalFunctionTest, ConstructorWithPolynomial) {
 
 TEST_F(SymbolicRationalFunctionTest, ConstructorWithMonomial) {
   // Constructor with numerator only.
-  RationalFunction f1(m1_);
-  EXPECT_PRED2(PolyEqual, f1.numerator(), Polynomial(m1_));
+  RationalFunction f1(monom_x_);
+  EXPECT_PRED2(PolyEqual, f1.numerator(), Polynomial(monom_x_));
   EXPECT_PRED2(PolyEqual, f1.denominator(), polynomial_one_);
 }
 
@@ -155,6 +156,7 @@ TEST_F(SymbolicRationalFunctionTest, UnaryMinus) {
 }
 
 TEST_F(SymbolicRationalFunctionTest, Addition) {
+  // Test RationalFunction + RationalFunction
   const RationalFunction f1(p1_, p2_);
   const RationalFunction f2(p3_, p4_);
   const RationalFunction f1_f2_sum_expected(p1_ * p4_ + p2_ * p3_, p2_ * p4_);
@@ -163,7 +165,16 @@ TEST_F(SymbolicRationalFunctionTest, Addition) {
   RationalFunction f1_f2_sum(p1_, p2_);
   f1_f2_sum += f2;
   EXPECT_PRED2(RationalFunctionEqual, f1_f2_sum, f1_f2_sum_expected);
-  // p5, p6 contains variable a in its indeterminates.
+  // Test RationalFunction + RationalFunction same denominator
+  const RationalFunction f4(p3_, p2_);
+  const RationalFunction f1_f4_sum_expected(p1_ + p3_, p2_);
+  EXPECT_PRED2(RationalFunctionEqual, f1 + f4, f1_f4_sum_expected);
+  EXPECT_PRED2(RationalFunctionEqual, f4 + f1, f1_f4_sum_expected);
+  RationalFunction f1_f4_sum(p1_, p2_);
+  f1_f4_sum += f4;
+  EXPECT_PRED2(RationalFunctionEqual, f1_f4_sum, f1_f4_sum_expected);
+  // Test RationalFunction + RationalFunction inconsistent indeterminate
+  // addition p5, p6 contains variable a in its indeterminates.
   const RationalFunction f3(p1_, p3_);
   if (kDrakeAssertIsArmed) {
     DRAKE_EXPECT_THROWS_MESSAGE(f3 + RationalFunction(p5_, p6_),
@@ -186,20 +197,35 @@ TEST_F(SymbolicRationalFunctionTest, Addition) {
                                 polynomial_invariant_error_);
   }
 
+  // Test Polynomial + RationalFunction
   const RationalFunction f1_p3_sum_expected(p1_ + p2_ * p3_, p2_);
   EXPECT_PRED2(RationalFunctionEqual, f1 + p3_, f1_p3_sum_expected);
   EXPECT_PRED2(RationalFunctionEqual, p3_ + f1, f1_p3_sum_expected);
   RationalFunction f1_p3_sum(p1_, p2_);
   f1_p3_sum += p3_;
   EXPECT_PRED2(RationalFunctionEqual, f1_p3_sum, f1_p3_sum_expected);
+  // Test Polynomial + RationalFunction with inconsistent indeterminates.
   // p5 contains variable a in its indeterminates.
   if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(f3 + p5_,
-                                polynomial_invariant_error_);
-    DRAKE_EXPECT_THROWS_MESSAGE(p5_ + f3,
-                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 + p5_, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ + f3, polynomial_invariant_error_);
   }
 
+  // Test Monomial + RationalFunction
+  const RationalFunction f1_monom_x_sum_expected(p1_ + p2_ * monom_x_, p2_);
+  EXPECT_PRED2(RationalFunctionEqual, f1 + monom_x_, f1_monom_x_sum_expected);
+  EXPECT_PRED2(RationalFunctionEqual, monom_x_ + f1, f1_monom_x_sum_expected);
+  RationalFunction f1_monom_x_sum(p1_, p2_);
+  f1_monom_x_sum += monom_x_;
+  EXPECT_PRED2(RationalFunctionEqual, f1_monom_x_sum, f1_monom_x_sum_expected);
+  // Test Monomial + RationalFunction with inconsistent indeterminates.
+  // monom_a_ contains variable a in its indeterminates.
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f1 + monom_a_, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(monom_a_ + f1, polynomial_invariant_error_);
+  }
+
+  // Test double + RationalFunction
   const double c = 2;
   const RationalFunction f1_c_sum_expected(p1_ + c * p2_, p2_);
   EXPECT_PRED2(RationalFunctionEqual, f1 + c, f1_c_sum_expected);
@@ -207,19 +233,10 @@ TEST_F(SymbolicRationalFunctionTest, Addition) {
   RationalFunction f1_c_sum(p1_, p2_);
   f1_c_sum += c;
   EXPECT_PRED2(RationalFunctionEqual, f1_c_sum, f1_c_sum_expected);
-
-
-  const RationalFunction f4(p3_, p2_);
-  const RationalFunction f1_f4_sum_expected(p1_ + p3_, p2_);
-  EXPECT_PRED2(RationalFunctionEqual, f1+f4, f1_f4_sum_expected);
-  EXPECT_PRED2(RationalFunctionEqual, f4+f1, f1_f4_sum_expected);
-  RationalFunction f1_f4_sum(p1_, p2_);
-  f1_f4_sum += f4;
-  EXPECT_PRED2(RationalFunctionEqual, f1_f4_sum, f1_f4_sum_expected);
-
 }
 
 TEST_F(SymbolicRationalFunctionTest, Subtraction) {
+  // Test RationalFunction - RationalFunction
   const RationalFunction f1(p1_, p2_);
   const RationalFunction f2(p3_, p4_);
   const RationalFunction f1_minus_f2_expected(p1_ * p4_ - p2_ * p3_, p2_ * p4_);
@@ -228,6 +245,16 @@ TEST_F(SymbolicRationalFunctionTest, Subtraction) {
   RationalFunction f1_minus_f2 = f1;
   f1_minus_f2 -= f2;
   EXPECT_PRED2(RationalFunctionEqual, f1_minus_f2, f1_minus_f2_expected);
+  // Test RationalFunction - RationalFunction same denominator
+  const RationalFunction f4(p3_, p2_);
+  const RationalFunction f1_minus_f4_expected(p1_ - p3_, p2_);
+  const RationalFunction f4_minus_f1_expected(p3_ - p1_, p2_);
+  EXPECT_PRED2(RationalFunctionEqual, f1 - f4, f1_minus_f4_expected);
+  EXPECT_PRED2(RationalFunctionEqual, f4 - f1, f4_minus_f1_expected);
+  RationalFunction f1_f4_minus(p1_, p2_);
+  f1_f4_minus -= f4;
+  EXPECT_PRED2(RationalFunctionEqual, f1_f4_minus, f1_minus_f4_expected);
+  // Test RationalFunction - RationalFunction with inconsistent indeterminates.
   // p5, p6 contains variable a in its indeterminates.
   const RationalFunction f3(p1_, p3_);
   if (kDrakeAssertIsArmed) {
@@ -251,20 +278,38 @@ TEST_F(SymbolicRationalFunctionTest, Subtraction) {
                                 polynomial_invariant_error_);
   }
 
+  // Test Polynomial - RationalFunction
   const RationalFunction f1_minus_p3_expected(p1_ - p2_ * p3_, p2_);
   EXPECT_PRED2(RationalFunctionEqual, f1 - p3_, f1_minus_p3_expected);
   EXPECT_PRED2(RationalFunctionEqual, p3_ - f1, -f1_minus_p3_expected);
   RationalFunction f1_minus_p3 = f1;
   f1_minus_p3 -= p3_;
   EXPECT_PRED2(RationalFunctionEqual, f1_minus_p3, f1_minus_p3_expected);
-  // p5 contains variable a in its indeterminates.
+  // Test Polynomial - RationalFunction and RationalFunction - Polynomial with
+  // inconsistent indeterminates. p5 contains variable a in its indeterminates.
   if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(f3 - p5_,
-                                polynomial_invariant_error_);
-    DRAKE_EXPECT_THROWS_MESSAGE(p5_ - f3,
-                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 - p5_, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ - f3, polynomial_invariant_error_);
   }
 
+  // Test Monomial - RationalFunction
+  const RationalFunction f1_minus_monom_x_expected(p1_ - p2_ * monom_x_, p2_);
+  EXPECT_PRED2(RationalFunctionEqual, f1 - monom_x_, f1_minus_monom_x_expected);
+  EXPECT_PRED2(RationalFunctionEqual, monom_x_ - f1,
+               -f1_minus_monom_x_expected);
+  RationalFunction f1_monom_x_minus(p1_, p2_);
+  f1_monom_x_minus -= monom_x_;
+  EXPECT_PRED2(RationalFunctionEqual, f1_monom_x_minus,
+               f1_minus_monom_x_expected);
+  // Test Monomial - RationalFunction and RationalFunction - Monomial with
+  // inconsistent indeterminates. monom_a_ contains variable a in its
+  // indeterminates.
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f1 - monom_a_, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(monom_a_ - f1, polynomial_invariant_error_);
+  }
+
+  // Test double - RationalFunction and RationalFunction - double
   const double c = 2;
   const RationalFunction f1_minus_c_expected(p1_ - p2_ * c, p2_);
   EXPECT_PRED2(RationalFunctionEqual, f1 - c, f1_minus_c_expected);
@@ -275,6 +320,7 @@ TEST_F(SymbolicRationalFunctionTest, Subtraction) {
 }
 
 TEST_F(SymbolicRationalFunctionTest, Product) {
+  // Test RationalFunction * RationalFunction
   const RationalFunction f1(p1_, p2_);
   const RationalFunction f2(p3_, p4_);
   const RationalFunction f1_times_f2_expected(p1_ * p3_, p2_ * p4_);
@@ -283,6 +329,7 @@ TEST_F(SymbolicRationalFunctionTest, Product) {
   RationalFunction f1_times_f2 = f1;
   f1_times_f2 *= f2;
   EXPECT_PRED2(RationalFunctionEqual, f1_times_f2, f1_times_f2_expected);
+  // Test RationalFunction * RationalFunction with inconsistent indeterminants.
   // p5, p6 contains variable a in its indeterminates.
   const RationalFunction f3(p1_, p3_);
   if (kDrakeAssertIsArmed) {
@@ -306,12 +353,14 @@ TEST_F(SymbolicRationalFunctionTest, Product) {
                                 polynomial_invariant_error_);
   }
 
+  // Test Polynomial * RationalFunction
   const RationalFunction f1_times_p3_expected(p1_ * p3_, p2_);
   EXPECT_PRED2(RationalFunctionEqual, f1 * p3_, f1_times_p3_expected);
   EXPECT_PRED2(RationalFunctionEqual, p3_ * f1, f1_times_p3_expected);
   RationalFunction f1_times_p3 = f1;
   f1_times_p3 *= p3_;
   EXPECT_PRED2(RationalFunctionEqual, f1_times_p3, f1_times_p3_expected);
+  // Test RationalFunction * RationalFunction with inconsistent indeterminants.
   // p5 contains variable a in its indeterminates.
   if (kDrakeAssertIsArmed) {
     DRAKE_EXPECT_THROWS_MESSAGE(f3 * p5_,
@@ -320,6 +369,22 @@ TEST_F(SymbolicRationalFunctionTest, Product) {
                                 rational_function_indeterminates_error_);
   }
 
+  // Test Monomial * RationalFunction
+  const RationalFunction f1_times_monom_x_expected(p1_ * monom_x_, p2_);
+  EXPECT_PRED2(RationalFunctionEqual, f1 * monom_x_, f1_times_monom_x_expected);
+  EXPECT_PRED2(RationalFunctionEqual, monom_x_ * f1, f1_times_monom_x_expected);
+  RationalFunction f1_times_monom_x(p1_, p2_);
+  f1_times_monom_x *= monom_x_;
+  EXPECT_PRED2(RationalFunctionEqual, f1_times_monom_x,
+               f1_times_monom_x_expected);
+  // Test Monomial * RationalFunction with inconsistent indeterminates.
+  // monom_a_ contains variable a in its indeterminates.
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f1 * monom_a_, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(monom_a_ * f1, polynomial_invariant_error_);
+  }
+
+  // Test double * RationalFunction
   const double c = 2;
   const RationalFunction f1_times_c_expected(p1_ * c, p2_);
   EXPECT_PRED2(RationalFunctionEqual, f1 * c, f1_times_c_expected);
@@ -330,6 +395,7 @@ TEST_F(SymbolicRationalFunctionTest, Product) {
 }
 
 TEST_F(SymbolicRationalFunctionTest, Division) {
+  // Test RationalFunction / RationalFunction.
   const RationalFunction f1(p1_, p2_);
   const RationalFunction f2(p3_, p4_);
   const RationalFunction f1_divides_f2_expected(p3_ * p2_, p1_ * p4_);
@@ -338,6 +404,7 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
   RationalFunction f1_divides_f2 = f2;
   f1_divides_f2 /= f1;
   EXPECT_PRED2(RationalFunctionEqual, f1_divides_f2, f1_divides_f2_expected);
+  // Test RationalFunction / RationalFunction with inconsistent indeterminants.
   // p5, p6 contains variable a in its indeterminates.
   const RationalFunction f3(p1_, p3_);
   if (kDrakeAssertIsArmed) {
@@ -361,21 +428,42 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
                                 rational_function_indeterminates_error_);
   }
 
+  // Test RationalFunction / Polynomial and Polynomial / RationalFunction.
   const RationalFunction p3_divides_f1_expected(p1_, p2_ * p3_);
   EXPECT_PRED2(RationalFunctionEqual, f1 / p3_, p3_divides_f1_expected);
   EXPECT_PRED2(RationalFunctionEqual, p3_ / f1, 1 / p3_divides_f1_expected);
   RationalFunction p3_divides_f1 = f1;
   p3_divides_f1 /= p3_;
   EXPECT_PRED2(RationalFunctionEqual, p3_divides_f1, p3_divides_f1_expected);
+  // Test RationalFunction / Polynomial and Polynomial / RationalFunction with
+  // inconsistent indeterminants. p5 contains variable a in its indeterminates.
   if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(f3 / p5_,
-                                polynomial_invariant_error_);
-    DRAKE_EXPECT_THROWS_MESSAGE(p5_ / f3,
-                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 / p5_, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ / f3, polynomial_invariant_error_);
     DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p3_, p1_) / p5_,
                                 rational_function_indeterminates_error_);
   }
 
+  // Test RationalFunction / Monomial and Monomial / RationalFunction.
+  const RationalFunction monom_x_divides_f1_expected(p1_, p2_ * monom_x_);
+  EXPECT_PRED2(RationalFunctionEqual, f1 / monom_x_,
+               monom_x_divides_f1_expected);
+  EXPECT_PRED2(RationalFunctionEqual, monom_x_ / f1,
+               1 / monom_x_divides_f1_expected);
+  RationalFunction monom_x_divides_f1 = f1;
+  monom_x_divides_f1 /= monom_x_;
+  EXPECT_PRED2(RationalFunctionEqual, monom_x_divides_f1,
+               monom_x_divides_f1_expected);
+  // Test RationalFunction / Monomial and Monomial / RationalFunction with
+  // inconsistent indeterminants. p5 contains variable a in its indeterminates.
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 / monom_a_, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(monom_a_ / f3, polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p3_, p1_) / monom_a_,
+                                rational_function_indeterminates_error_);
+  }
+
+  // Test RationalFunction / double and double / RationalFunction.
   const double c = 2;
   const RationalFunction c_divides_f1_expected(p1_, p2_ * c);
   EXPECT_PRED2(RationalFunctionEqual, f1 / c, c_divides_f1_expected);
@@ -387,8 +475,7 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
   const std::string zero_divider_error{
       "RationalFunction: operator/=: The divider is 0."};
   DRAKE_EXPECT_THROWS_MESSAGE(f1 / 0, zero_divider_error);
-  DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_zero_,
-                              zero_divider_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_zero_, zero_divider_error);
   const RationalFunction polynomial_fraction_zero;
   DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_fraction_zero,
                               zero_divider_error);
@@ -463,7 +550,7 @@ TEST_F(SymbolicRationalFunctionTest, Evaluate) {
   EXPECT_EQ(f.Evaluate(env2), expected_numerator2 / expected_denominator2);
 }
 
-TEST_F(SymbolicRationalFunctionTest, ToExpression){
+TEST_F(SymbolicRationalFunctionTest, ToExpression) {
   // p = ax²y + bxy + cz
   const Polynomial p{a_ * x_ * x_ * y_ + b_ * x_ * y_ + c_ * z_, var_xyz_};
   // q = axz + byz + cxy
@@ -472,11 +559,11 @@ TEST_F(SymbolicRationalFunctionTest, ToExpression){
   const RationalFunction f{p, q};
   const RationalFunction p_rat{p};
 
-  EXPECT_EQ(f.ToExpression(), p.ToExpression()/q.ToExpression());
+  EXPECT_EQ(f.ToExpression(), p.ToExpression() / q.ToExpression());
   EXPECT_EQ(p_rat.ToExpression(), p.ToExpression());
 }
 
-TEST_F(SymbolicRationalFunctionTest, SetIndetermiantes){
+TEST_F(SymbolicRationalFunctionTest, SetIndetermiantes) {
   // a rational function with indeterminates var_xy_
   RationalFunction f{p1_, p4_};
 
