@@ -13,6 +13,7 @@ def github_archive(
         commit_pin = None,
         sha256 = "0" * 64,
         build_file = None,
+        patches = None,
         extra_strip_prefix = "",
         local_repository_override = None,
         mirrors = None,
@@ -34,8 +35,16 @@ def github_archive(
             comment it out) and then the checksum-mismatch error message will
             offer a suggestion.
         build_file: optional build file is the BUILD file label to use for
-            building this external. When omitted, the BUILD file(s) within the
-            archive will be used.
+            building this external. As a Drake-specific abbreviation, when
+            provided as a relative label (e.g., ":package.BUILD.bazel"), it
+            will be taken as relative to the "@drake//tools/workspace/{name}/"
+            package. When no build_file is provided, the BUILD file(s) within
+            the archive will be used.
+        patches: optional list of patches to apply, matching what's described
+            at https://bazel.build/rules/lib/repo/git#git_repository-patches.
+            As a Drake-specific abbreviation, when provided using relative
+            labels (e.g., ":patches/foo.patch"), they will be taken as relative
+            to the "@drake//tools/workspace/{name}/" package.
         extra_strip_prefix: optional path to strip from the downloaded archive,
             e.g., "src" to root the repository at "./src/" instead of "./".
         local_repository_override: optional local repository override can be
@@ -54,6 +63,12 @@ def github_archive(
         fail("Missing commit=")
     if mirrors == None:
         fail("Missing mirrors=; see mirrors.bzl")
+
+    build_file = _resolve_drake_abbreviation(name, build_file)
+    patches = [
+        _resolve_drake_abbreviation(name, one_patch)
+        for one_patch in (patches or [])
+    ]
 
     if local_repository_override != None:
         path = local_repository_override
@@ -82,10 +97,23 @@ def github_archive(
         commit_pin = commit_pin,
         sha256 = sha256,
         build_file = build_file,
+        patches = patches,
         extra_strip_prefix = extra_strip_prefix,
         mirrors = mirrors,
         **kwargs
     )
+
+def _resolve_drake_abbreviation(name, label_str):
+    """De-abbreviates the given label_str as a Drake tools/workspace label.
+    If the label_str is None, returns None. If the label_str is relative,
+    interprets it relative to the "@drake//tools/workspace/{name}/" package
+    and returns an absolute label. Otherwise, returns the label_str unchanged.
+    """
+    if label_str == None:
+        return None
+    if label_str.startswith(":"):
+        return "@drake//tools/workspace/" + name + label_str
+    return label_str
 
 # Helper stub to implement a repository_rule in terms of a setup() function.
 def _github_archive_real_impl(repository_ctx):

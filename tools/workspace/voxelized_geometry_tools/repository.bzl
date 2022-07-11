@@ -16,6 +16,6 @@ def voxelized_geometry_tools_repository(
         # package.BUILD.bazel and BUILD.bazel in drake.
         commit = "c940ec07ecb4f109712d2be071798a00646823ca",
         sha256 = "b7718ca30b46c6d4420b3ed2f7890bce998bee659d056954c9051a9cba202404",  # noqa
-        build_file = "@drake//tools/workspace/voxelized_geometry_tools:package.BUILD.bazel",  # noqa
+        build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
