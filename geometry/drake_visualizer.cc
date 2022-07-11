@@ -512,20 +512,39 @@ DrakeVisualizer<T>::DrakeVisualizer(const DrakeVisualizer<U>& other)
 template <typename T>
 const DrakeVisualizer<T>& DrakeVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
-    lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params) {
+    lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params, Role role) {
   return AddToBuilder(builder, scene_graph.get_query_output_port(), lcm,
-                      std::move(params));
+                      std::move(params), role);
 }
 
 template <typename T>
 const DrakeVisualizer<T>& DrakeVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder,
     const systems::OutputPort<T>& query_object_port,
-    lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params) {
+    lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params, Role role) {
+  if (role != Role::kUnassigned) {
+    params.role = role;
+  }
   auto& visualizer =
       *builder->template AddSystem<DrakeVisualizer<T>>(lcm, std::move(params));
   builder->Connect(query_object_port, visualizer.query_object_input_port());
   return visualizer;
+}
+
+template <typename T>
+std::vector<const DrakeVisualizer<T>*> DrakeVisualizer<T>::AddToBuilderByRoles(
+    std::set<Role> roles,
+    systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
+    lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params) {
+  DRAKE_DEMAND(!roles.empty());
+  std::vector<const DrakeVisualizer<T>*> result;
+  for (const auto& role : roles) {
+    DRAKE_DEMAND(role != Role::kUnassigned);
+    result.push_back(
+        &AddToBuilder(builder, scene_graph.get_query_output_port(), lcm,
+                      std::move(params), role));
+  }
+  return result;
 }
 
 template <typename T>
