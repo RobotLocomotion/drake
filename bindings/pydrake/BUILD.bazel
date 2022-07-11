@@ -695,6 +695,7 @@ drake_py_binary(
 
 drake_py_unittest(
     name = "stubgen_test",
+    timeout = "moderate",
     deps = [
         ":all_py",
         "@mypy_internal//:mypy",
