@@ -739,6 +739,7 @@ Polynomial& Polynomial::operator*=(const Variable& v) {
       Expression& coeff = p.second;
       coeff *= v;
     }
+    decision_variables_.insert(v);
     return *this;
   }
 }
