@@ -6,6 +6,8 @@
 
 #include <algorithm>  // for cpplint only
 #include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <functional>
 #include <limits>
 #include <map>
@@ -35,10 +37,13 @@ namespace drake {
 
 namespace symbolic {
 
-/** Kinds of symbolic expressions. */
-enum class ExpressionKind {
+/** Kinds of symbolic expressions.
+@internal The constants here are carefully chosen to support nanboxing. For all
+elements except Constant, the bit pattern must contain 0x7FF0 but must not be
+exactly 0x7FF0 (reserved for +Inf) nor 0xFFF0 (reserved for -Inf). */
+enum class ExpressionKind : std::uint16_t {
   Constant,               ///< constant (double)
-  Var,                    ///< variable
+  Var = 0x7FF1u,          ///< variable
   Add,                    ///< addition (+)
   Mul,                    ///< multiplication (*)
   Div,                    ///< division (/)
@@ -53,7 +58,7 @@ enum class ExpressionKind {
   Asin,                   ///< arcsine
   Acos,                   ///< arccosine
   Atan,                   ///< arctangent
-  Atan2,                  ///< arctangent2 (atan2(y,x) = atan(y/x))
+  Atan2 = 0xFFF1u,        ///< arctangent2 (atan2(y,x) = atan(y/x))
   Sinh,                   ///< hyperbolic sine
   Cosh,                   ///< hyperbolic cosine
   Tanh,                   ///< hyperbolic tangent
@@ -68,7 +73,9 @@ enum class ExpressionKind {
 };
 
 /** Total ordering between ExpressionKinds. */
-bool operator<(ExpressionKind k1, ExpressionKind k2);
+EIGEN_ALWAYS_INLINE bool operator<(ExpressionKind k1, ExpressionKind k2) {
+  return static_cast<std::uint16_t>(k1) < static_cast<std::uint16_t>(k2);
+}
 
 class ExpressionCell;                   // In symbolic_expression_cell.h
 class ExpressionConstant;               // In symbolic_expression_cell.h
@@ -192,22 +199,87 @@ symbolic::Expression can be used as a scalar type of Eigen types.
 */
 class Expression {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Expression)
-  ~Expression() = default;
-
-  /** Default constructor. It constructs Zero(). */
-  Expression() { *this = Zero(); }
+  /** Default constructor. It constructs zero. */
+  Expression() : value_{0.0} {}
 
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
-  Expression(double constant);
+  Expression(double constant) {
+    if (std::isnan(constant)) {
+      ConstructNaN();
+    } else {
+      value_ = constant;
+    }
+  }
+
   /** Constructs an expression from @p var.
    * @pre @p var is neither a dummy nor a BOOLEAN variable.
    */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(const Variable& var);
+
+  /** Copyable-constructible. */
+  Expression(const Expression& other) {
+    if (is_constant(other)) {
+      value_ = other.value_;
+    } else {
+      ConstructCopy(other);
+    }
+  }
+
+  /** Copyable-assignable. */
+  Expression& operator=(const Expression& other) {
+    if (is_constant(*this) && is_constant(other)) {
+      value_ = other.value_;
+    } else {
+      AssignCopy(other);
+    }
+    return *this;
+  }
+
+  /** Move-constructible. */
+  Expression(Expression&& other) noexcept {
+    value_ = other.value_;
+    other.value_ = 0;
+  }
+
+  /** Move-assignable. */
+  Expression& operator=(Expression&& other) noexcept {
+    if (!is_constant(*this)) {
+      SetZero();
+    }
+    value_ = other.value_;
+    other.value_ = 0;
+    return *this;
+  }
+
+  ~Expression() {
+    // This is required in order to decrement our use_count of the cell.
+    SetZero();
+  }
+
   /** Returns expression kind. */
-  [[nodiscard]] ExpressionKind get_kind() const;
+  [[nodiscard]] ExpressionKind get_kind() const {
+    const std::uint16_t tag = tag_bits();
+    // When the floating-point exponent is all 1's, then the floating-point
+    // value is non-finite: either ±infinity, or NaN (which in our case is a
+    // tagged pointer). When the exponent is something _other than_ all 1's,
+    // then the floating-point value is finite, i.e., a Constant.
+    constexpr std::uint16_t non_finite_mask = 0b0111'1111'1111'0000;
+    if ((tag & non_finite_mask) != non_finite_mask) {
+      return ExpressionKind::Constant;
+    }
+    // To distinguish ±infinity, it's sufficient to check the lower four bits.
+    // The ExpressionKind tagging constants we were carefully assigned to never
+    // have 0b0000 there.
+    constexpr std::uint16_t infinity_mask = 0b1111;
+    if ((tag & infinity_mask) == 0) {
+      return ExpressionKind::Constant;
+    }
+    // We're a NaN (i.e., a tagged pointer). Our tag is the ExpressionKind.
+    return static_cast<ExpressionKind>(tag);
+  }
+
   /** Collects variables in expression. */
   [[nodiscard]] Variables GetVariables() const;
 
@@ -334,13 +406,13 @@ class Expression {
   [[nodiscard]] std::string to_string() const;
 
   /** Returns zero. */
-  static Expression Zero();
+  static Expression Zero() { return 0.0; }
   /** Returns one. */
-  static Expression One();
+  static Expression One() { return 1.0; }
   /** Returns Pi, the ratio of a circle’s circumference to its diameter. */
-  static Expression Pi();
+  static Expression Pi() { return M_PI; }
   /** Return e, the base of natural logarithms. */
-  static Expression E();
+  static Expression E() { return M_E; }
   /** Returns NaN (Not-a-Number). */
   static Expression NaN();
 
@@ -355,9 +427,21 @@ class Expression {
     item.HashAppend(&delegating_hasher);
   }
 
-  friend Expression operator+(Expression lhs, const Expression& rhs);
+  friend Expression operator+(Expression lhs, const Expression& rhs) {
+    lhs += rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator+=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator+=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) + Expression(c2) => Expression(c1 + c2)
+    const double speculative_value = lhs.value_ + rhs.value_;
+    if (!std::isnan(speculative_value)) {
+      lhs.value_ = speculative_value;
+    } else {
+      lhs.AddImpl(rhs);
+    }
+    return lhs;
+  }
 
   /** Provides prefix increment operator (i.e. ++x). */
   Expression& operator++();
@@ -366,9 +450,21 @@ class Expression {
   /** Provides unary plus operator. */
   friend Expression operator+(const Expression& e);
 
-  friend Expression operator-(Expression lhs, const Expression& rhs);
+  friend Expression operator-(Expression lhs, const Expression& rhs) {
+    lhs -= rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator-=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator-=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) - Expression(c2) => Expression(c1 - c2)
+    const double speculative_value = lhs.value_ - rhs.value_;
+    if (!std::isnan(speculative_value)) {
+      lhs.value_ = speculative_value;
+    } else {
+      lhs.SubImpl(rhs);
+    }
+    return lhs;
+  }
 
   /** Provides unary minus operator. */
   friend Expression operator-(const Expression& e);
@@ -377,13 +473,37 @@ class Expression {
   /** Provides postfix decrement operator (i.e. x--). */
   Expression operator--(int);
 
-  friend Expression operator*(Expression lhs, const Expression& rhs);
+  friend Expression operator*(Expression lhs, const Expression& rhs) {
+    lhs *= rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator*=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator*=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) * Expression(c2) => Expression(c1 * c2)
+    const double speculative_value = lhs.value_ * rhs.value_;
+    if (!std::isnan(speculative_value)) {
+      lhs.value_ = speculative_value;
+    } else {
+      lhs.MulImpl(rhs);
+    }
+    return lhs;
+  }
 
-  friend Expression operator/(Expression lhs, const Expression& rhs);
+  friend Expression operator/(Expression lhs, const Expression& rhs) {
+    lhs /= rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator/=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator/=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) / Expression(c2) => Expression(c1 / c2)
+    const double speculative_value = lhs.value_ / rhs.value_;
+    if ((rhs.value_ != 0.0) && !std::isnan(speculative_value)) {
+      lhs.value_ = speculative_value;
+    } else {
+      lhs.DivImpl(rhs);
+    }
+    return lhs;
+  }
 
   friend Expression log(const Expression& e);
   friend Expression abs(const Expression& e);
@@ -449,9 +569,12 @@ class Expression {
                                            std::vector<Expression> arguments);
 
   friend std::ostream& operator<<(std::ostream& os, const Expression& e);
-  friend void swap(Expression& a, Expression& b) { std::swap(a.ptr_, b.ptr_); }
+  friend void swap(Expression& a, Expression& b) {
+    std::swap(a.value_, b.value_);
+  }
 
   friend bool is_constant(const Expression& e);
+  friend bool is_nan(const Expression& e);
   friend bool is_variable(const Expression& e);
   friend bool is_addition(const Expression& e);
   friend bool is_multiplication(const Expression& e);
@@ -477,12 +600,13 @@ class Expression {
   friend bool is_floor(const Expression& e);
   friend bool is_if_then_else(const Expression& e);
   friend bool is_uninterpreted_function(const Expression& e);
+  friend bool is_constant(const Expression& e, double value);
+  friend double get_constant_value(const Expression& e);
 
   // Note that the following cast functions are only for low-level operations
   // and not exposed to the user of drake/common/symbolic_expression.h
   // header. These functions are declared in
   // drake/common/symbolic_expression_cell.h header.
-  friend const ExpressionConstant& to_constant(const Expression& e);
   friend const ExpressionVar& to_variable(const Expression& e);
   friend const UnaryExpressionCell& to_unary(const Expression& e);
   friend const BinaryExpressionCell& to_binary(const Expression& e);
@@ -513,7 +637,6 @@ class Expression {
   to_uninterpreted_function(const Expression& e);
 
   // Cast functions which takes a pointer to a non-const Expression.
-  friend ExpressionConstant& to_constant(Expression* e);
   friend ExpressionVar& to_variable(Expression* e);
   friend UnaryExpressionCell& to_unary(Expression* e);
   friend BinaryExpressionCell& to_binary(Expression* e);
@@ -547,29 +670,66 @@ class Expression {
   friend class ExpressionMulFactory;
 
  private:
-  // This is a helper function used to handle `Expression(double)` constructor.
-  static std::shared_ptr<ExpressionCell> make_cell(double d);
+  explicit Expression(std::unique_ptr<ExpressionCell> cell);
 
-  explicit Expression(std::shared_ptr<ExpressionCell> ptr);
+  void ConstructNaN();
+  void ConstructCopy(const Expression& other);
+  void AssignCopy(const Expression& other);
+  void SetSharedCell(const ExpressionCell* cell) noexcept;
+  void SetZero() noexcept;
 
   void HashAppend(DelegatingHasher* hasher) const;
 
+  void AddImpl(const Expression& rhs);
+  void SubImpl(const Expression& rhs);
+  void MulImpl(const Expression& rhs);
+  void DivImpl(const Expression& rhs);
+
+  // Returns our value_ as an unsigned integer. If this Expression is not an
+  // ExpressionKind::Constant, then the upper 16 bits will be the kind and
+  // the lower 48 bits will be the pointer to the shared ExpressionCell.
+  std::uintptr_t value_bits() const {
+    std::uintptr_t result;
+    std::memcpy(&result, &value_, sizeof(result));
+    return result;
+  }
+
+  // Returns the tag portion of our value_. If this Expression is not an
+  // ExpressionKind::Constant, then this will be the ExpressionKind.
+  std::uint16_t tag_bits() const {
+    return value_bits() >> 48;
+  }
+
+  // Returns the tag portion of our value_. If this Expression is not an
+  // ExpressionKind::Constant, then this will be the pointer to the shared
+  // ExpressionCell.
+  std::uintptr_t pointer_bits() const {
+    return value_bits() & ~(0xFFFFull << 48);
+  }
+
   // Returns a const reference to the owned cell.
+  // @pre This expression is not an ExpressionKind::Constant.
   const ExpressionCell& cell() const {
-    DRAKE_ASSERT(ptr_ != nullptr);
-    return *ptr_;
+    DRAKE_ASSERT(std::isnan(value_));
+    // Convert the bit pattern back to the `owned` pointer.
+    // https://en.cppreference.com/w/cpp/language/reinterpret_cast (case 3)
+    return *reinterpret_cast<ExpressionCell*>(pointer_bits());
   }
 
   // Returns a mutable reference to the owned cell. This function may only be
-  // called when this object is the sole owner of the cell.
+  // called when this object is the sole owner of the cell (use_count == 1).
+  // @pre This expression is not an ExpressionKind::Constant.
   ExpressionCell& mutable_cell();
 
-  // Note: We use "non-const" ExpressionCell type. This allows us to perform
-  // destructive updates on the pointed cell if the cell is not shared with
-  // other Expressions (that is, ptr_.use_count() == 1). However, because that
-  // pattern needs careful attention, our library code should never access
-  // ptr_ directly, it should always use cell() or mutable_cell().
-  std::shared_ptr<ExpressionCell> ptr_;
+  // When value_ is NaN, that means it's actually a (boxed) pointer to a
+  // shared ExpressionCell.
+#ifdef DRAKE_ASSERT_IS_ARMED
+  double value_{};
+#else
+  // N.B. We are careful that every constructor always sets this.
+  // Leaving it non-redundantly initialized here is slightly faster.
+  double value_;
+#endif
 };
 
 Expression operator+(Expression lhs, const Expression& rhs);
@@ -623,74 +783,142 @@ void swap(Expression& a, Expression& b);
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
 /** Checks if @p e is a constant expression. */
-bool is_constant(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_constant(const Expression& e) {
+  return !std::isnan(e.value_);
+}
 /** Checks if @p e is a constant expression representing @p v. */
-bool is_constant(const Expression& e, double v);
+EIGEN_ALWAYS_INLINE bool is_constant(const Expression& e, double v) {
+  return e.value_ == v;
+}
 /** Checks if @p e is 0.0. */
-bool is_zero(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_zero(const Expression& e) {
+  return is_constant(e, 0.0);
+}
 /** Checks if @p e is 1.0. */
-bool is_one(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_one(const Expression& e) {
+  return is_constant(e, 1.0);
+}
 /** Checks if @p e is -1.0. */
-bool is_neg_one(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_neg_one(const Expression& e) {
+  return is_constant(e, -1.0);
+}
 /** Checks if @p e is 2.0. */
-bool is_two(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_two(const Expression& e) {
+  return is_constant(e, 2.0);
+}
 /** Checks if @p e is NaN. */
-bool is_nan(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_nan(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::NaN);
+}
 /** Checks if @p e is a variable expression. */
-bool is_variable(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_variable(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Var);
+}
 /** Checks if @p e is an addition expression. */
-bool is_addition(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_addition(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Add);
+}
 /** Checks if @p e is a multiplication expression. */
-bool is_multiplication(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_multiplication(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Mul);
+}
 /** Checks if @p e is a division expression. */
-bool is_division(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_division(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Div);
+}
 /** Checks if @p e is a log expression. */
-bool is_log(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_log(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Log);
+}
 /** Checks if @p e is an abs expression. */
-bool is_abs(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_abs(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Abs);
+}
 /** Checks if @p e is an exp expression. */
-bool is_exp(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_exp(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Exp);
+}
 /** Checks if @p e is a square-root expression. */
-bool is_sqrt(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_sqrt(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Sqrt);
+}
 /** Checks if @p e is a power-function expression. */
-bool is_pow(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_pow(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Pow);
+}
 /** Checks if @p e is a sine expression. */
-bool is_sin(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_sin(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Sin);
+}
 /** Checks if @p e is a cosine expression. */
-bool is_cos(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_cos(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Cos);
+}
 /** Checks if @p e is a tangent expression. */
-bool is_tan(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_tan(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Tan);
+}
 /** Checks if @p e is an arcsine expression. */
-bool is_asin(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_asin(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Asin);
+}
 /** Checks if @p e is an arccosine expression. */
-bool is_acos(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_acos(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Acos);
+}
 /** Checks if @p e is an arctangent expression. */
-bool is_atan(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_atan(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Atan);
+}
 /** Checks if @p e is an arctangent2 expression. */
-bool is_atan2(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_atan2(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Atan2);
+}
 /** Checks if @p e is a hyperbolic-sine expression. */
-bool is_sinh(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_sinh(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Sinh);
+}
 /** Checks if @p e is a hyperbolic-cosine expression. */
-bool is_cosh(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_cosh(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Cosh);
+}
 /** Checks if @p e is a hyperbolic-tangent expression. */
-bool is_tanh(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_tanh(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Tanh);
+}
 /** Checks if @p e is a min expression. */
-bool is_min(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_min(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Min);
+}
 /** Checks if @p e is a max expression. */
-bool is_max(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_max(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Max);
+}
 /** Checks if @p e is a ceil expression. */
-bool is_ceil(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_ceil(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Ceil);
+}
 /** Checks if @p e is a floor expression. */
-bool is_floor(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_floor(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::Floor);
+}
 /** Checks if @p e is an if-then-else expression. */
-bool is_if_then_else(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_if_then_else(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(ExpressionKind::IfThenElse);
+}
 /** Checks if @p e is an uninterpreted-function expression. */
-bool is_uninterpreted_function(const Expression& e);
+EIGEN_ALWAYS_INLINE bool is_uninterpreted_function(const Expression& e) {
+  return e.tag_bits() == static_cast<std::uint16_t>(
+      ExpressionKind::UninterpretedFunction);
+}
 
 /** Returns the constant value of the constant expression @p e.
  *  \pre{@p e is a constant expression.}
  */
-double get_constant_value(const Expression& e);
+EIGEN_ALWAYS_INLINE double get_constant_value(const Expression& e) {
+  DRAKE_ASSERT(is_constant(e));
+  return e.value_;
+}
 /** Returns the embedded variable in the variable expression @p e.
  *  \pre{@p e is a variable expression.}
  */
