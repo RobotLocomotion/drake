@@ -32,7 +32,7 @@ class IiwaPositionConstraintFixture : public benchmark::Fixture {
   void SetUp(const ::benchmark::State&) override {
     tools::performance::AddMinMaxStatistics(this);
 
-    const int kNumIiwas = 1;
+    const int kNumIiwas = 10;
 
     const std::string iiwa_path = FindResourceOrThrow(
         "drake/manipulation/models/iiwa_description/sdf/"
