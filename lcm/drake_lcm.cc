@@ -141,6 +141,9 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
   static std::shared_ptr<DrakeSubscription> CreateMultichannel(
       ::lcm::LCM* native_instance,
       MultichannelHandlerFunction multichannel_handler) {
+    // TODO(jwnimmer-tri) If a channel_suffix was given, we should use it here
+    // for efficiency (to drop unwanted packets as early as possible). Be sure
+    // to regex-escape it first.
     return Create(native_instance, ".*", std::move(multichannel_handler));
   }
 
