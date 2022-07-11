@@ -294,12 +294,12 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeAllChannels(
           if (channel.length() >= suffix.length() &&
               channel.substr(channel.length() - suffix.length()) == suffix) {
             channel.remove_suffix(suffix.length());
+            handler(channel, data, length);
           } else {
             drake::log()->debug("DrakeLcm with suffix {} received message on"
                                 " channel {}, which lacks the suffix.",
                                 suffix, channel);
           }
-          handler(channel, data, length);
         };
   }
 
