@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 
-from pydrake.examples.pendulum import PendulumPlant
+from pydrake.examples import PendulumPlant
 from pydrake.math import eq
 from pydrake.trajectories import PiecewisePolynomial
 from pydrake.solvers import mathematicalprogram as mp

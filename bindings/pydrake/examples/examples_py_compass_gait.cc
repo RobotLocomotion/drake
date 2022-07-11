@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/compass_gait/compass_gait.h"
 #include "drake/examples/compass_gait/compass_gait_geometry.h"
@@ -10,17 +11,14 @@
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(compass_gait, m) {
+void DefineExamplesCompassGait(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::compass_gait;
-
-  m.doc() = "Bindings for the compass gait example.";
   constexpr auto& doc = pydrake_doc.drake.examples.compass_gait;
-
-  py::module::import("pydrake.systems.framework");
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
@@ -115,5 +113,6 @@ PYBIND11_MODULE(compass_gait, m) {
           py_rvp::reference, doc.CompassGaitGeometry.AddToBuilder.doc_3args);
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

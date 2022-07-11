@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
 #include "drake/examples/manipulation_station/manipulation_station_hardware_interface.h"  // noqa
@@ -14,19 +15,14 @@ using std::vector;
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(manipulation_station, m) {
+void DefineExamplesManipulationStation(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::manipulation_station;
-
-  m.doc() = "Bindings for the Manipulation Station example.";
   constexpr auto& doc = pydrake_doc.drake.examples.manipulation_station;
-
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.multibody.plant");
-  py::module::import("pydrake.systems.framework");
 
   // ManipulationStation currently only supports double.
   using T = double;
@@ -163,9 +159,8 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("num_iiwa_joints",
           &ManipulationStationHardwareInterface::num_iiwa_joints,
           doc.ManipulationStationHardwareInterface.num_iiwa_joints.doc);
-
-  ExecuteExtraPythonCode(m);
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
