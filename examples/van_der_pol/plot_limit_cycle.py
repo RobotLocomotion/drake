@@ -8,7 +8,7 @@ os.environ['MPLBACKEND'] = 'Agg'  # noqa
 import matplotlib.pyplot as plt
 import webbrowser
 
-from pydrake.examples.van_der_pol import VanDerPolOscillator
+from pydrake.examples import VanDerPolOscillator
 
 x = VanDerPolOscillator.CalcLimitCycle()
 

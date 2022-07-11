@@ -16,17 +16,7 @@ from drake.doc.defs import (
 )
 
 import pydrake.all
-# TODO(eric.cousineau): Make an optional `.all` module.
-from pydrake.examples import (
-    acrobot,
-    compass_gait,
-    manipulation_station,
-    pendulum,
-    quadrotor,
-    rimless_wheel,
-    van_der_pol,
-)
-from pydrake.examples.multibody import cart_pole_passive_simulation
+import pydrake.examples  # The examples are not part of "pydrake.all".
 # TODO(eric.cousineau): Indicate these as deprecated.
 from pydrake.common import (
     cpp_param,

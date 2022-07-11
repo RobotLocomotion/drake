@@ -2,22 +2,20 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/van_der_pol/van_der_pol.h"
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(van_der_pol, m) {
+void DefineExamplesVanDerPol(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::van_der_pol;
   constexpr auto& doc = pydrake_doc.drake.examples.van_der_pol;
-
-  m.doc() = "Bindings for the van_der_pol example.";
-
-  py::module::import("pydrake.systems.framework");
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
@@ -39,5 +37,6 @@ PYBIND11_MODULE(van_der_pol, m) {
           doc.VanDerPolOscillator.CalcLimitCycle.doc);
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
