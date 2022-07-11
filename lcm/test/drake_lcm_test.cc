@@ -388,8 +388,7 @@ TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
   params.channel_suffix = "_SUFFIX";
   dut_ = std::make_unique<DrakeLcm>(params);
 
-  // SubscribeAll using Drake LCM, expecting to see the fully qualified
-  // channel name.
+  // Check SubscribeAll, expecting to see the unadorned channel name.
   lcmt_drake_signal received_drake{};
   auto subscription = dut_->SubscribeAllChannels([&received_drake](
       std::string_view channel_name, const void* data, int size) {
