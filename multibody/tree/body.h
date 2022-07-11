@@ -339,7 +339,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
       topology_.inboard_mobilizer).velocity_suffix(velocity_index_in_body);
   }
 
-DRAKE_DEPRECATED("2022-06-01", "Use Body::default_mass()")
+  DRAKE_DEPRECATED("2022-11-01", "Use Body::default_mass().")
   double get_default_mass() const {
     return default_mass();
   }

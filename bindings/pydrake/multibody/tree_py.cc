@@ -296,13 +296,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    constexpr char doc_get_default_mass_deprecated[] =
-        "get_default_mass() is deprecated and will be removed on or around"
-        " 2022-11-01. Please use default_mass() instead.";
     cls.def("get_default_mass",
         WrapDeprecated(
-            doc_get_default_mass_deprecated, &Class::get_default_mass),
-        doc_get_default_mass_deprecated);
+            cls_doc.get_default_mass.doc_deprecated, &Class::get_default_mass),
+        cls_doc.get_default_mass.doc_deprecated);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
     cls                     // BR
         .def("get_mass", &Class::get_mass, py::arg("context"),
