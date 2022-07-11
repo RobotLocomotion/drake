@@ -5,7 +5,7 @@ import webbrowser
 
 import numpy as np
 
-from pydrake.examples.manipulation_station import (
+from pydrake.examples import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
 from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizer

@@ -295,7 +295,6 @@ drake_py_library(
 
 PYBIND_SUBPACKAGES_FOR_COVERAGE = [
     "//bindings/pydrake/common",
-    "//bindings/pydrake/examples",
     "//bindings/pydrake/manipulation",
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/solvers",
@@ -311,6 +310,8 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":polynomial_py",
     ":symbolic_py",
     ":trajectories_py",
+    "//bindings/pydrake/examples",
+    "//bindings/pydrake/examples/multibody",
     "//bindings/pydrake/visualization",
 ] + PYBIND_SUBPACKAGES_FOR_COVERAGE
 
