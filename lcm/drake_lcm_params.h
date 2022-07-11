@@ -25,7 +25,7 @@ struct DrakeLcmParams {
 
   The callback of DrakeLcm::SubscribeAllChannels() will receive the "base"
   channel name WITHOUT this suffix; messages received without the configured
-  suffix will generate a warning.
+  suffix will be discarded.
   */
   std::string channel_suffix;
 
