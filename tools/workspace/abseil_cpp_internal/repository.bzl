@@ -10,8 +10,8 @@ def abseil_cpp_internal_repository(
         commit = "f4988f5bd4176345aad2a525e24d5fd11b3c97ea",
         sha256 = "56c94a5e2d413110f7299ad388f4c816b9858e6e996042799754279d46be77a9",  # noqa
         patches = [
-            "@drake//tools/workspace/abseil_cpp_internal:patches/hidden_visibility.patch",  # noqa
-            "@drake//tools/workspace/abseil_cpp_internal:patches/inline_namespace.patch",  # noqa
+            ":patches/hidden_visibility.patch",
+            ":patches/inline_namespace.patch",
         ],
         patch_cmds = [
             # Force linkstatic = 1 everywhere. First, remove the few existing

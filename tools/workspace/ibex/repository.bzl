@@ -14,11 +14,11 @@ def ibex_repository(
         commit = "115e12323529d524786c1a744f5ffce04f4783b5",  # ibex-2.8.6_4
         commit_pin = True,
         sha256 = "3cc12cfffc24d9dff8dbe8c7ef48ebbae14bc8b2548a9ff778c5582ca7adf70c",  # noqa
-        build_file = "@drake//tools/workspace/ibex:package.BUILD.bazel",
+        build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
         patches = [
             # pkgconfig provides the clp/coin directory as an include, not clp/
-            "@drake//tools/workspace/ibex:clp_include_path.patch",
-            "@drake//tools/workspace/ibex:include_limits.patch",
+            ":clp_include_path.patch",
+            ":include_limits.patch",
         ],
     )

@@ -22,7 +22,7 @@ def pybind11_repository(
         repository = _REPOSITORY,
         commit = _COMMIT,
         sha256 = _SHA256,
-        build_file = "@drake//tools/workspace/pybind11:package.BUILD.bazel",
+        build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
 
