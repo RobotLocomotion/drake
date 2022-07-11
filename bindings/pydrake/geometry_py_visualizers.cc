@@ -46,28 +46,31 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
         .def_static("AddToBuilder",
             py::overload_cast<systems::DiagramBuilder<T>*, const SceneGraph<T>&,
-                lcm::DrakeLcmInterface*, DrakeVisualizerParams>(
+                lcm::DrakeLcmInterface*, DrakeVisualizerParams, Role>(
                 &DrakeVisualizer<T>::AddToBuilder),
             py::arg("builder"), py::arg("scene_graph"),
             py::arg("lcm") = nullptr,
             py::arg("params") = DrakeVisualizerParams{},
+            py::arg("role") = Role::kUnassigned,
             // Keep alive, ownership: `return` keeps `builder` alive.
             py::keep_alive<0, 1>(),
             // Keep alive, reference: `builder` keeps `lcm` alive.
             py::keep_alive<1, 3>(), py_rvp::reference,
-            cls_doc.AddToBuilder.doc_4args_builder_scene_graph_lcm_params)
+            cls_doc.AddToBuilder.doc_5args_builder_scene_graph_lcm_params_role)
         .def_static("AddToBuilder",
             py::overload_cast<systems::DiagramBuilder<T>*,
                 const systems::OutputPort<T>&, lcm::DrakeLcmInterface*,
-                DrakeVisualizerParams>(&DrakeVisualizer<T>::AddToBuilder),
+                DrakeVisualizerParams, Role>(&DrakeVisualizer<T>::AddToBuilder),
             py::arg("builder"), py::arg("query_object_port"),
             py::arg("lcm") = nullptr,
             py::arg("params") = DrakeVisualizerParams{},
+            py::arg("role") = Role::kUnassigned,
             // Keep alive, ownership: `return` keeps `builder` alive.
             py::keep_alive<0, 1>(),
             // Keep alive, reference: `builder` keeps `lcm` alive.
             py::keep_alive<1, 3>(), py_rvp::reference,
-            cls_doc.AddToBuilder.doc_4args_builder_query_object_port_lcm_params)
+            cls_doc.AddToBuilder
+                .doc_5args_builder_query_object_port_lcm_params_role)
         .def_static("DispatchLoadMessage",
             &DrakeVisualizer<T>::DispatchLoadMessage, py::arg("scene_graph"),
             py::arg("lcm"), py::arg("params") = DrakeVisualizerParams{},

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -180,6 +181,9 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
     return this->get_input_port(query_object_input_port_);
   }
 
+  /** Returns the params data passed to the constructor. */
+  const DrakeVisualizerParams& params() { return this->params_; }
+
   /** @name Utility functions for instantiating and connecting a visualizer
 
    These methods provide a convenient mechanism for adding a DrakeVisualizer
@@ -194,22 +198,31 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
         if omitted, the DrakeVisualizer instance will create its own
         self-configured lcm::DrakeLcmInterface object.
      - `params`: The DrakeVisualizer will be configured according to the
-        provided parameters. If omitted, it uses default parameters.  */
+        provided parameters. If omitted, it uses default parameters.
+     - `role`: TODO(rpoyner-tri): write this
+  */
   //@{
 
   /** Connects the newly added DrakeVisualizer to the given SceneGraph's
    QueryObject-valued output port.  */
   static const DrakeVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
-      lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
+      lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {},
+      Role role = Role::kUnassigned);
 
   /** Connects the newly added DrakeVisualizer to the given QueryObject-valued
    output port.  */
   static const DrakeVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& query_object_port,
-      lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
+      lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {},
+      Role role = Role::kUnassigned);
   //@}
+
+  static std::vector<const DrakeVisualizer<T>*> AddToBuilderByRoles(
+      std::set<Role> roles,
+      systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
+      lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
 
   // TODO(#7820) When we can easily bind lcmt_* messages, then replace
   //  the DispatchLoadMessage API with something like:
