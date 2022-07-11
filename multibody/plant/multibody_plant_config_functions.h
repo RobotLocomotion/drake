@@ -33,13 +33,13 @@ std::string GetStringFromContactModel(ContactModel contact_model);
 // value. Valid string names are listed in MultibodyPlantConfig's class
 // overview.
 // @throws std::exception if an invalid string is passed in.
-DiscreteContactSolverType GetDiscreteContactSolverTypeFromString(
-    std::string_view discrete_contact_solver_type);
+DiscreteContactSolver GetDiscreteContactSolverFromString(
+    std::string_view discrete_contact_solver);
 
 // (Exposed for unit testing only.) Returns the string name of an enumerated
 // value for a discrete contact solver type.
-std::string GetStringFromDiscreteContactSolverType(
-    DiscreteContactSolverType discrete_contact_solver_type);
+std::string GetStringFromDiscreteContactSolver(
+    DiscreteContactSolver discrete_contact_solver);
 
 // (Exposed for unit testing only.)
 // Parses a string name for a contact representation and returns the enumerated
