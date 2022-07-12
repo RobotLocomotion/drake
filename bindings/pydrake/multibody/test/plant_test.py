@@ -79,6 +79,7 @@ from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
@@ -409,7 +410,10 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(body.has_quaternion_dofs(), bool)
         self.assertIsInstance(body.floating_positions_start(), int)
         self.assertIsInstance(body.floating_velocities_start(), int)
-        self.assertIsInstance(body.get_default_mass(), float)
+        self.assertIsInstance(body.default_mass(), float)
+        # TODO(2022-11-01) Remove with completion of deprecation.
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(body.get_default_mass(), float)
 
     @numpy_compare.check_all_types
     def test_body_context_methods(self, T):

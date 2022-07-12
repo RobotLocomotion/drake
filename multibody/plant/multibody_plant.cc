@@ -151,13 +151,13 @@ struct JointLimitsPenaltyParametersEstimator {
     // Penalty parameters for the parent body (child fixed).
     const double parent_mass = joint.parent_body().index() == world_index() ?
                                std::numeric_limits<double>::infinity() :
-                               joint.parent_body().get_default_mass();
+                               joint.parent_body().default_mass();
     const auto parent_params = CalcCriticallyDampedHarmonicOscillatorParameters(
         numerical_time_scale, parent_mass);
     // Penalty parameters for the child body (parent fixed).
     const double child_mass = joint.child_body().index() == world_index() ?
                                std::numeric_limits<double>::infinity() :
-                               joint.child_body().get_default_mass();
+                               joint.child_body().default_mass();
     const auto child_params = CalcCriticallyDampedHarmonicOscillatorParameters(
         numerical_time_scale, child_mass);
 
@@ -1283,7 +1283,7 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   double mass = 0.0;
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
-    mass = std::max(mass, body.get_default_mass());
+    mass = std::max(mass, body.default_mass());
   }
 
   // For now, we use the model of a critically damped spring mass oscillator
