@@ -93,7 +93,7 @@ class RenderClient {
    @throws std::exception
      If the `path` cannot be opened or the hash fails to compute.
    */
-  std::string ComputeSha256(const std::string& path) const;
+  static std::string ComputeSha256(const std::string& path);
 
   /* Renames the specified file `response_data_path` to have the same name as
    `reference_path`, with a new file extension provided by `extension`.
@@ -126,11 +126,11 @@ class RenderClient {
    @return
      The path to the new file after renaming it.
    @throws std::exception
-     If `input_scene` or `path` do not exist, or any errors arise from renaming
+     If `response_data_path` does not exist or any errors arise from renaming
      the file. */
-  std::string RenameHttpServiceResponse(const std::string& response_data_path,
-                                        const std::string& reference_path,
-                                        const std::string& extension) const;
+  static std::string RenameHttpServiceResponse(
+      const std::string& response_data_path, const std::string& reference_path,
+      const std::string& extension);
 
   //@}
 
@@ -152,9 +152,9 @@ class RenderClient {
      If the specified `path` cannot be loaded as an unsigned char RGB or RGBA
      PNG file, or the image denoted by `path` does not have the same width and
      height of the specified `color_image_out`.*/
-  void LoadColorImage(
+  static void LoadColorImage(
       const std::string& path,
-      drake::systems::sensors::ImageRgba8U* color_image_out) const;
+      drake::systems::sensors::ImageRgba8U* color_image_out);
 
   /* Loads the specified image file to a drake output buffer.
 
@@ -175,9 +175,9 @@ class RenderClient {
      If the specified `path` cannot be loaded as a single channel 16-bit or
      32-bit TIFF image, or the image denoted by `path` does not have the same
      width and height of the specified `depth_image_out`. */
-  void LoadDepthImage(
+  static void LoadDepthImage(
       const std::string& path,
-      drake::systems::sensors::ImageDepth32F* depth_image_out) const;
+      drake::systems::sensors::ImageDepth32F* depth_image_out);
 
   /* Loads the specified image file to a drake output buffer.
 
@@ -192,9 +192,9 @@ class RenderClient {
      If the specified `path` cannot be loaded as a single channel unsigned short
      PNG image, or the image denoted by `path` does not have the same width and
      height of the specified `label_image_out`. */
-  void LoadLabelImage(
+  static void LoadLabelImage(
       const std::string& path,
-      drake::systems::sensors::ImageLabel16I* label_image_out) const;
+      drake::systems::sensors::ImageLabel16I* label_image_out);
 
   //@}
 

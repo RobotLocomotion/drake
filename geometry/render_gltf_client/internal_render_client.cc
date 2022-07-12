@@ -267,12 +267,7 @@ std::string RenderClient::RenderOnServer(
       scene_path, scene_sha256, bin_out_path));
 }
 
-std::string RenderClient::ComputeSha256(const std::string& path) const {
-  if (!fs::is_regular_file(path)) {
-    throw std::runtime_error(
-        fmt::format("ComputeSha256: input file '{}' does not exist.", path));
-  }
-
+std::string RenderClient::ComputeSha256(const std::string& path) {
   std::ifstream f_in(path, std::ios::binary);
   if (!f_in.good()) {
     throw std::runtime_error(
@@ -280,30 +275,16 @@ std::string RenderClient::ComputeSha256(const std::string& path) const {
   }
   std::vector<unsigned char> hash(picosha2::k_digest_size);
   picosha2::hash256(f_in, hash.begin(), hash.end());
-  f_in.close();
   return picosha2::bytes_to_hex_string(hash.begin(), hash.end());
 }
 
 std::string RenderClient::RenameHttpServiceResponse(
     const std::string& response_data_path, const std::string& reference_path,
-    const std::string& extension) const {
+    const std::string& extension) {
   const fs::path origin{response_data_path};
-  if (!fs::is_regular_file(origin)) {
-    throw std::runtime_error(
-        fmt::format("RenderClient: cannot rename '{}', file does not exist.",
-                    response_data_path));
-  }
-
-  // Require that input path to match is valid.
-  if (!fs::exists(reference_path)) {
-    throw std::runtime_error(
-        fmt::format("RenderClient: cannot rename '{0}' to '{1}' with extension "
-                    "'{2}' as '{1}' does not exist.",
-                    response_data_path, reference_path, extension));
-  }
-
   fs::path destination{reference_path};
   destination.replace_extension(fs::path{extension});
+
   // Do not overwrite files blindly, require a clean directory.
   if (fs::exists(destination)) {
     throw std::runtime_error(fmt::format(
@@ -311,18 +292,13 @@ std::string RenderClient::RenameHttpServiceResponse(
         origin.string(), destination.string()));
   }
 
-  // Rename and log what changed.
   fs::rename(origin, destination);
-  if (params_.verbose) {
-    drake::log()->debug("RenderClient: renamed '{}' to '{}'.", origin.string(),
-                        destination.string());
-  }
 
   return destination;
 }
 
 void RenderClient::LoadColorImage(const std::string& path,
-                                  ImageRgba8U* color_image_out) const {
+                                  ImageRgba8U* color_image_out) {
   DRAKE_DEMAND(color_image_out != nullptr);
 
   // Load the PNG file from disk if possible.
@@ -398,7 +374,7 @@ void RenderClient::LoadColorImage(const std::string& path,
 }
 
 void RenderClient::LoadDepthImage(const std::string& path,
-                                  ImageDepth32F* depth_image_out) const {
+                                  ImageDepth32F* depth_image_out) {
   DRAKE_DEMAND(depth_image_out != nullptr);
 
   // Load the TIFF file from disk if possible.
@@ -441,7 +417,7 @@ void RenderClient::LoadDepthImage(const std::string& path,
 }
 
 void RenderClient::LoadLabelImage(const std::string& path,
-                                  ImageLabel16I* label_image_out) const {
+                                  ImageLabel16I* label_image_out) {
   DRAKE_DEMAND(label_image_out != nullptr);
 
   // Load the PNG file from disk if possible.

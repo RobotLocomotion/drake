@@ -14,6 +14,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
@@ -51,8 +52,25 @@ const auto kTestDepthImagePath = FindResourceOrThrow(
 const auto kTestLabelImagePath = FindResourceOrThrow(
     "drake/geometry/render_gltf_client/test/test_label_16I.png");
 
+class RenderClientTest : public ::testing::Test {
+ public:
+  RenderClientTest() {}
+
+  // Creates the given filename (and returns the filename for convenience).
+  std::string Touch(const std::string& filename) {
+    std::ofstream stream{filename};
+    stream << "## RenderClientTest sample file " << filename << "\n";
+    DRAKE_DEMAND(stream.good());
+    return filename;
+  }
+
+ protected:
+  // A per-test-case temporary directory.
+  const fs::path scratch_{drake::temp_directory()};
+};
+
 // Constructor / destructor ----------------------------------------------------
-GTEST_TEST(RenderClient, Constructor) {
+TEST_F(RenderClientTest, Constructor) {
   const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
@@ -79,7 +97,7 @@ GTEST_TEST(RenderClient, Constructor) {
   make_client_and_verify(false);
 }
 
-GTEST_TEST(RenderClient, Destructor) {
+TEST_F(RenderClientTest, Destructor) {
   const std::string base_url{"127.0.0.1:8000"};
   const std::string render_endpoint = "render";
   const bool verbose = false;
@@ -262,7 +280,7 @@ class ProxyService : public HttpService {
  tests do *NOT* validate against image dimensions / content.  Image content
  tests take place in Load{Color,Depth,Label}Image tests, these tests are just
  for "round-trip" communications with the HttpService. */
-GTEST_TEST(RenderClient, RenderOnServer) {
+TEST_F(RenderClientTest, RenderOnServer) {
   /* NOTE: these values help ensure nothing actually gets sent over curl.  No
    test should proceed with the default HttpServiceCurl, the HttpService backend
    should be changed using client.SetHttpService before doing anything. */
@@ -527,375 +545,193 @@ GTEST_TEST(RenderClient, RenderOnServer) {
   fs::remove_all(temp_dir_path);
 }
 
-GTEST_TEST(RenderClient, ComputeSha256) {
-  const std::string base_url{"127.0.0.1:8000"};
-  const std::string render_endpoint{"render"};
-  const bool verbose = false;
-  const bool no_cleanup = false;
-  RenderClient client{
-      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
+TEST_F(RenderClientTest, ComputeSha256Good) {
+  // To obtain this magic number, use a bash command:
+  //   sha256sum geometry/render_gltf_client/test/test_depth_32F.tiff
+  EXPECT_EQ(
+      RenderClient::ComputeSha256(kTestDepthImagePath),
+      "6bb5621f3cdf06bb43c7104eb9a2dc5ab85db79b2c491be69c7704d03c476c1b");
+}
 
-  {
-    // Failure case 1: provided input file does not exist.
-    const auto unlikely = "/unlikely/to/be/a.file";
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.ComputeSha256(unlikely),
-        fmt::format("ComputeSha256: input file '{}' does not exist.",
-                    unlikely));
-  }
+TEST_F(RenderClientTest, ComputeSha256Bad) {
+  // Failure case: provided input file does not exist.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+        RenderClient::ComputeSha256("/no/such/file"),
+        ".*cannot open.*/no/such/file.*");
+}
 
-  {
-    // Failure case 2: sha256 cannot be computed.
-    const std::string bad_path = fs::path(client.temp_directory()) / "bad.file";
-    std::ofstream bad_file{bad_path};
-    bad_file << "contents should not matter.\n";
-    bad_file.close();
-    fs::permissions(bad_path, fs::perms::all, fs::perm_options::remove);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.ComputeSha256(bad_path),
-        fmt::format("ComputeSha256: cannot open file '{}'.", bad_path));
-    fs::remove(bad_path);
-  }
+TEST_F(RenderClientTest, RenameHttpServiceResponseGood) {
+  /* A testing tuple for RenameHttpService inputs and expected output. */
+  struct RenameResult {
+    // Input arguments.
+    std::string response_data_path;
+    std::string reference_path;
+    std::string extension;
+    // Expected return value.
+    std::string expected;
+  };
 
-  {
-    // Success case 1.
-    const std::string f1_path = fs::path(client.temp_directory()) / "f1.bin";
-    std::ofstream f1_file{f1_path};
-    f1_file << "some valuable data!\n";
-    f1_file.close();
-    // echo 'some valuable data!' | sha256sum
-    EXPECT_EQ(
-        "03cbafcd18635120cee6c8d51ac3534a315649627d822651b3d2b587e81ab6e5",
-        client.ComputeSha256(f1_path));
-    fs::remove(f1_path);
+  /* NOTE: files are created, not deleted, do not reuse names.
+   Additionally, do not test for no extension input_scene + ext="", this is
+   already tested for above as an expected exception. */
+  const fs::path base = scratch_;
+  const fs::path sub = base/"sub";
+  fs::create_directory(sub);
+  const std::vector<RenameResult> renames{
+      // All components have extensions.
+      {base/"path_0.bin",  base/"input_0.gltf", ".png",  base/"input_0.png"},
+      // Input scene does not have a file extension.
+      {base/"path_1.curl", base/"input_1",      ".foo",  base/"input_1.foo"},
+      // Input path does not have an extension.
+      {base/"path_2",      base/"input_2.gltf", ".tiff", base/"input_2.tiff"},
+      // Input and path do not have an extension.
+      {base/"path_3",      base/"input_3",      ".zip",  base/"input_3.zip"},
+      // Empty extension is allowed.
+      {base/"path_4.txt",  base/"input_4.txt",  "",      base/"input_4"},
+      // Source is in different directory.
+      {sub/"path_5.bin",   base/"input_5.gltf", ".jpg",  base/"input_5.jpg"}
+  };
 
-    // Success case 2 (proof that different hashes returned).
-    const std::string f2_path = fs::path(client.temp_directory()) / "f2.bin";
-    std::ofstream f2_file{f2_path};
-    f2_file << "additional data that is also valuable?";
-    f2_file.close();
-    // echo -n 'additional data that is also valuable?' | sha256sum
-    EXPECT_EQ(
-        "d40433c78b8f35adf78d25bcc374ea9dbf42f96d85ff29a8d726fe37178878fe",
-        client.ComputeSha256(f2_path));
-    fs::remove(f2_path);
+  for (const auto& r : renames) {
+    Touch(r.response_data_path);
+    // Before renaming, expected should not exist.
+    EXPECT_FALSE(fs::is_regular_file(r.expected));
+
+    // Renaming the file should return the expected value.
+    const std::string result = RenderClient::RenameHttpServiceResponse(
+        r.response_data_path, r.reference_path, r.extension);
+    EXPECT_EQ(result, r.expected);
+
+    // Check that the renaming actually happened.
+    EXPECT_FALSE(fs::is_regular_file(r.response_data_path));
+    EXPECT_TRUE(fs::is_regular_file(r.expected));
   }
 }
 
-GTEST_TEST(RenderClient, RenameHttpServiceResponse) {
-  const std::string base_url{"127.0.0.1:8000"};
-  const std::string render_endpoint{"render"};
-  // Keep verbose and no_cleanup `true` to get coverage on log() calls.
-  const bool verbose = true;
-  const bool no_cleanup = true;
-  const RenderClient client{
-      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
-  const fs::path temp_dir = fs::path(client.temp_directory());
-  const std::string scene = temp_dir / "scene.gltf";
-  std::ofstream scene_file{scene};
-  scene_file << "not a real glTF scene!\n";
-  scene_file.close();
-  const auto unlikely = "/unlikely/to/be/a.file";
+TEST_F(RenderClientTest, RenameHttpServiceResponseBad) {
+  const std::string scene = scratch_ / "scene.gltf";
+  Touch(scene);
 
-  {
-    // Failure case 1: file to rename does not exist.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenameHttpServiceResponse(unlikely, scene, ".png"),
-        fmt::format("RenderClient: cannot rename '{}', file does not exist.",
-                    unlikely));
+  // Failure case 1: file to rename does not exist.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RenderClient::RenameHttpServiceResponse("/no/such/file", scene, ".png"),
+      ".*[Nn]o such file.*/no/such/file.*");
 
-    // Failure case 2: file to rename based off does not exist.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenameHttpServiceResponse(scene, unlikely, ".tiff"),
-        fmt::format(
-            "RenderClient: cannot rename '{0}' to '{1}' with extension '{2}' "
-            "as '{1}' does not exist.",
-            scene, unlikely, ".tiff"));
-
-    // Failure case 3: destination file already exists.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenameHttpServiceResponse(scene, scene, ".gltf"),
-        fmt::format(
-            "RenderClient: refusing to rename '{}' to '{}', file already "
-            "exists!",
-            scene, scene));
-  }
-
-  {
-    /* Creates input scene and path for easy enumeration of extension rename
-     edge cases below. */
-    struct RenameResult {
-      RenameResult(const std::string response_data_path,
-                   std::string reference_path, const std::string extension,
-                   const std::string expected)
-          : response_data_path_{response_data_path},
-            reference_path_{reference_path},
-            extension_{extension},
-            expected_{expected} {
-        std::ofstream reference_path_file{reference_path_};
-        reference_path_file << "input_scene with contents.\n";
-        reference_path_file.close();
-
-        std::ofstream response_data_path_file{response_data_path_};
-        response_data_path_file << "path with contents.\n";
-        response_data_path_file.close();
-      }
-
-      const std::string response_data_path_;
-      const std::string reference_path_;
-      const std::string extension_;
-      const std::string expected_;
-    };
-
-    /* NOTE: files are created, not deleted, do not reuse names.
-     Additionally, do not test for no extension input_scene + ext="", this is
-     already tested for above as an expected exception. */
-    const fs::path sub_dir = temp_dir / "sub_directory";
-    fs::create_directory(sub_dir);
-    const std::vector<RenameResult> renames{
-        // All components have extensions.
-        {temp_dir / "path_0.bin", temp_dir / "input_0.gltf", ".png",
-         temp_dir / "input_0.png"},
-        // Input scene does not have a file extension.
-        {temp_dir / "path_1.curl", temp_dir / "input_1", ".foo",
-         temp_dir / "input_1.foo"},
-        // Input path does not have an extension.
-        {temp_dir / "path_2", temp_dir / "input_2.gltf", ".tiff",
-         temp_dir / "input_2.tiff"},
-        // Input and path do not have an extension.
-        {temp_dir / "path_3", temp_dir / "input_3", ".zip",
-         temp_dir / "input_3.zip"},
-        // Empty extension is allowed.
-        {temp_dir / "path_4.txt", temp_dir / "input_4.txt", "",
-         temp_dir / "input_4"},
-        // Source is in different directory.
-        {sub_dir / "path_5.bin", temp_dir / "input_5.gltf", ".jpg",
-         temp_dir / "input_5.jpg"}};
-    for (const auto& r : renames) {
-      /* Before renaming, response_data_path_ and reference_path_ exist, and
-       expected_ does not. */
-      EXPECT_TRUE(fs::is_regular_file(r.response_data_path_));
-      EXPECT_TRUE(fs::is_regular_file(r.reference_path_));
-      EXPECT_FALSE(fs::is_regular_file(r.expected_));
-
-      // Renaming the file should result in our expected value.
-      const auto result = client.RenameHttpServiceResponse(
-          r.response_data_path_, r.reference_path_, r.extension_);
-      EXPECT_EQ(result, r.expected_);
-
-      /* After renaming, response_data_path_ should no longer exist, and
-       expected_ should. */
-      EXPECT_TRUE(fs::is_regular_file(r.reference_path_));
-      EXPECT_FALSE(fs::is_regular_file(r.response_data_path_));
-      EXPECT_TRUE(fs::is_regular_file(r.expected_));
-    }
-  }
-
-  fs::remove_all(temp_dir);
+  // Failure case 2: destination file already exists.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RenderClient::RenameHttpServiceResponse(scene, scene, ".gltf"),
+      ".*refusing to rename.*file already exists.*");
 }
 
-GTEST_TEST(RenderClient, LoadColorImage) {
-  const std::string base_url{"127.0.0.1:8000"};
-  const std::string render_endpoint{"render"};
-  const bool verbose = false;
-  const bool no_cleanup = false;
-  const RenderClient client{
-      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
+TEST_F(RenderClientTest, LoadColorImageGood) {
+  // Loading a three channel (RGB) png file should work as expected.
+  ImageRgba8U rgb(kTestImageWidth, kTestImageHeight, 0);
+  RenderClient::LoadColorImage(kTestRgbImagePath, &rgb);
+  EXPECT_EQ(rgb, CreateTestColorImage(true));
 
-  /* Create a Drake Image buffer with the same dimension as the testing images,
-   i.e., test_{rgb, rgba}_8U.png, to exercise the image loading code.
-   LoadColorImage() will attempt to load the PNG file to the buffer and throw
-   exceptions if the dimension, channel number, or data type is incorrect. */
-  ImageRgba8U drake_image(kTestImageWidth, kTestImageHeight, 0);
-  {
-    // Failure case 1: not a valid PNG file.
-    const auto expected_message = "RenderClient: cannot load '{}' as PNG.";
-    const auto unlikely = "/not/likely/a.png";
-    DRAKE_EXPECT_THROWS_MESSAGE(client.LoadColorImage(unlikely, &drake_image),
-                                fmt::format(expected_message, unlikely));
+  // Loading a four channel (RGBA) png file should work as expected.
+  ImageRgba8U rgba(kTestImageWidth, kTestImageHeight, 0);
+  RenderClient::LoadColorImage(kTestRgbaImagePath, &rgba);
+  EXPECT_EQ(rgba, CreateTestColorImage(false));
+}
 
-    const fs::path temp_dir = fs::path(client.temp_directory());
-    const std::string fake_png_path = temp_dir / "fake.png";
-    std::ofstream fake_png{fake_png_path};
-    fake_png << "not a valid png file.\n";
-    fake_png.close();
+TEST_F(RenderClientTest, LoadColorImageBad) {
+  ImageRgba8U ignored(kTestImageWidth, kTestImageHeight, 0);
+
+  // Failure case 1: no such file.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RenderClient::LoadColorImage("/no/such/file", &ignored),
+      ".*cannot load.*/no/such/file.*");
+
+  // Failure case 2: not a valid image file.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RenderClient::LoadColorImage(Touch(scratch_/"fake.png"), &ignored),
+      ".*cannot load.*fake.*");
+
+  // Failure case 3: wrong image dimensions (on each axis).
+  for (const bool selector : {true, false}) {
+    int width = kTestImageWidth;
+    int height = kTestImageHeight;
+    if (selector) { ++width; } else { ++height; }
+    ImageRgba8U wrong_size(width, height, 0);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadColorImage(fake_png_path, &drake_image),
-        fmt::format(expected_message, fake_png_path));
-    fs::remove(fake_png_path);
+        RenderClient::LoadColorImage(kTestRgbaImagePath, &wrong_size),
+        ".*expected.*but got.*width=.*height=.*");
   }
 
-  {
-    /* Failure case 2: different image dimensions between the loaded image and
-     the Drake Image buffer.  `test_drake_image` should not be accessed. */
-    const std::vector<std::pair<int, int>> width_height{
-        {1, 1},
-        {kTestImageWidth + 12, kTestImageHeight},
-        {kTestImageWidth * 2, kTestImageHeight * 2}};
-    for (const auto& [w, h] : width_height) {
-      ImageRgba8U test_drake_image(w, h, 0);
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          client.LoadColorImage(kTestRgbaImagePath, &test_drake_image),
-          fmt::format("RenderClient: expected to import "
-                      "\\(width={},height={}\\) from the "
-                      "file '{}', but got \\(width={},height={}\\).",
-                      w, h, kTestRgbaImagePath, kTestImageWidth,
-                      kTestImageHeight));
-    }
-  }
+  // Failure case 4: wrong number of channels (== 1) instead of 3 or 4.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RenderClient::LoadColorImage(kTestLabelImagePath, &ignored),
+      ".*PNG image.*has 1 channel.*");
+}
 
-  {
-    /* Failure case 3: number of channels not equal to 3 or 4. Test this by
-     loading a single-channel label png instead. */
+TEST_F(RenderClientTest, LoadDepthGood) {
+  // Loading a single channel 32 bit tiff file should work as expected.
+  ImageDepth32F depth(kTestImageWidth, kTestImageHeight, 0);
+  RenderClient::LoadDepthImage(kTestDepthImagePath, &depth);
+  EXPECT_EQ(depth, CreateTestDepthImage());
+}
+
+TEST_F(RenderClientTest, LoadDepthImageBad) {
+  ImageDepth32F ignored(kTestImageWidth, kTestImageHeight, 0);
+
+  // Failure case 1: no such file.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RenderClient::LoadDepthImage("/no/such/file", &ignored),
+      ".*cannot load.*/no/such/file.*");
+
+  // Failure case 2: not a valid image file.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RenderClient::LoadDepthImage(Touch(scratch_/"fake.tiff"), &ignored),
+      ".*cannot load.*fake.*");
+
+  // Failure case 3: wrong image dimensions (on each axis).
+  for (const bool selector : {true, false}) {
+    int width = kTestImageWidth;
+    int height = kTestImageHeight;
+    if (selector) { ++width; } else { ++height; }
+    ImageDepth32F wrong_size(width, height, 0);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadColorImage(kTestLabelImagePath, &drake_image),
-        fmt::format(
-            "RenderClient: loaded PNG image from '{}' has 1 channel\\(s\\), "
-            "but either 3 \\(RGB\\) or 4 \\(RGBA\\) are required for color "
-            "images.",
-            kTestLabelImagePath));
-  }
-
-  {
-    // Loading a three channel (RGB) png file should work as expected.
-    DRAKE_EXPECT_NO_THROW(
-        client.LoadColorImage(kTestRgbImagePath, &drake_image));
-    EXPECT_EQ(drake_image, CreateTestColorImage(true));
-  }
-
-  {
-    // Loading a four channel (RGBA) png file should work as expected.
-    DRAKE_EXPECT_NO_THROW(
-        client.LoadColorImage(kTestRgbaImagePath, &drake_image));
-    EXPECT_EQ(drake_image, CreateTestColorImage(false));
+        RenderClient::LoadDepthImage(kTestDepthImagePath, &wrong_size),
+        ".*expected.*but got.*width=.*height=.*");
   }
 }
 
-GTEST_TEST(RenderClient, LoadDepthImage) {
-  const std::string base_url{"127.0.0.1:8000"};
-  const std::string render_endpoint{"render"};
-  const bool verbose = false;
-  const bool no_cleanup = false;
-  const RenderClient client{
-      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
-
-  /* Create a Drake Image buffer with the same dimension as the testing image,
-   i.e., test_depth_32F.tiff, to exercise the image loading code.
-   LoadDepthImage() will attempt to load the TIFF file to the buffer and throw
-   exceptions if the dimension, channel number, or data type is incorrect. */
-  ImageDepth32F drake_image(kTestImageWidth, kTestImageHeight, 0);
-  {
-    // Failure case 1: not a valid TIFF file.
-    const auto expected_message = "RenderClient: cannot load '{}' as TIFF.";
-    const auto unlikely = "/not/likely/a.tiff";
-    DRAKE_EXPECT_THROWS_MESSAGE(client.LoadDepthImage(unlikely, &drake_image),
-                                fmt::format(expected_message, unlikely));
-
-    const fs::path temp_dir = fs::path(client.temp_directory());
-    const std::string fake_tiff_path = temp_dir / "fake.tiff";
-    std::ofstream fake_tiff{fake_tiff_path};
-    fake_tiff << "not a valid tiff file.\n";
-    fake_tiff.close();
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadDepthImage(fake_tiff_path, &drake_image),
-        fmt::format(expected_message, fake_tiff_path));
-    fs::remove(fake_tiff_path);
-  }
-
-  {
-    /* Failure case 2: different image dimensions between the loaded image and
-     the drake image buffer.  `test_drake_image` should not be accessed. */
-    const std::vector<std::pair<int, int>> width_height{
-        {1, 1},
-        {kTestImageWidth + 12, kTestImageHeight},
-        {kTestImageWidth * 2, kTestImageHeight * 2}};
-    for (const auto& [w, h] : width_height) {
-      ImageDepth32F test_drake_image(w, h, 0);
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          client.LoadDepthImage(kTestDepthImagePath, &test_drake_image),
-          fmt::format("RenderClient: expected to import "
-                      "\\(width={},height={}\\) from the "
-                      "file '{}', but got \\(width={},height={}\\).",
-                      w, h, kTestDepthImagePath, kTestImageWidth,
-                      kTestImageHeight));
-    }
-  }
-
-  {
-    // Loading a single channel 32 bit tiff file should work as expected.
-    DRAKE_EXPECT_NO_THROW(
-        client.LoadDepthImage(kTestDepthImagePath, &drake_image));
-    EXPECT_EQ(drake_image, CreateTestDepthImage());
-  }
+TEST_F(RenderClientTest, LoadLabelImageGood) {
+  // Loading a 16 bit label image file should work as expected.
+  ImageLabel16I label(kTestImageWidth, kTestImageHeight, 0);
+  RenderClient::LoadLabelImage(kTestLabelImagePath, &label);
+  EXPECT_EQ(label, CreateTestLabelImage());
 }
 
-GTEST_TEST(RenderClient, LoadLabelImage) {
-  const std::string base_url{"127.0.0.1:8000"};
-  const std::string render_endpoint{"render"};
-  const bool verbose = false;
-  const bool no_cleanup = true;
-  const RenderClient client{
-      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
+TEST_F(RenderClientTest, LoadLabelImageBad) {
+  ImageLabel16I ignored(kTestImageWidth, kTestImageHeight, 0);
 
-  /* Create a Drake Image buffer with the same dimension as the testing image,
-   i.e., test_label_16U.png, to exercise the image loading code.
-   LoadLabelImage() will attempt to load the PNG file to the buffer and throw
-   exceptions if the dimension, channel number, or data type is incorrect. */
-  ImageLabel16I drake_image(kTestImageWidth, kTestImageHeight, 0);
-  {
-    // Failure case 1: not a valid PNG file.
-    const auto expected_message = "RenderClient: cannot load '{}' as PNG.";
-    const auto unlikely = "/not/likely/a.png";
-    DRAKE_EXPECT_THROWS_MESSAGE(client.LoadLabelImage(unlikely, &drake_image),
-                                fmt::format(expected_message, unlikely));
+  // Failure case 1: no such file.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RenderClient::LoadLabelImage("/no/such/file", &ignored),
+      ".*cannot load.*/no/such/file.*");
 
-    const fs::path temp_dir = fs::path(client.temp_directory());
-    const std::string fake_png_path = temp_dir / "fake.png";
-    std::ofstream fake_png{fake_png_path};
-    fake_png << "not a valid png file.\n";
-    fake_png.close();
+  // Failure case 2: not a valid image file.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RenderClient::LoadLabelImage(Touch(scratch_/"fake.png"), &ignored),
+      ".*cannot load.*fake.*");
+
+  // Failure case 3: wrong image dimensions (on each axis).
+  for (const bool selector : {true, false}) {
+    int width = kTestImageWidth;
+    int height = kTestImageHeight;
+    if (selector) { ++width; } else { ++height; }
+    ImageLabel16I wrong_size(width, height, 0);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadLabelImage(fake_png_path, &drake_image),
-        fmt::format(expected_message, fake_png_path));
-    fs::remove(fake_png_path);
+        RenderClient::LoadLabelImage(kTestLabelImagePath, &wrong_size),
+        ".*expected.*but got.*width=.*height=.*");
   }
 
-  {
-    /* Failure case 2: different image dimensions between the loaded image and
-     the drake image buffer.  `test_drake_image` should not be accessed. */
-    const std::vector<std::pair<int, int>> width_height{
-        {1, 1},
-        {kTestImageWidth + 12, kTestImageHeight},
-        {kTestImageWidth * 2, kTestImageHeight * 2}};
-    for (const auto& [w, h] : width_height) {
-      ImageLabel16I test_drake_image(w, h, 0);
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          client.LoadLabelImage(kTestLabelImagePath, &test_drake_image),
-          fmt::format("RenderClient: expected to import "
-                      "\\(width={},height={}\\) from the "
-                      "file '{}', but got \\(width={},height={}\\).",
-                      w, h, kTestLabelImagePath, kTestImageWidth,
-                      kTestImageHeight));
-    }
-  }
-
-  {
-    /* Failure case 3: number of channels not equal to 1. Test this by loading
-     an RGB image instead. */
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadLabelImage(kTestRgbImagePath, &drake_image),
-        fmt::format(
-            "RenderClient: loaded PNG image from '{}' has 3 channels, but only "
-            "1 is allowed for label images.",
-            kTestRgbImagePath));
-  }
-
-  {
-    // Loading a 16 bit label image file should work as expected.
-    DRAKE_EXPECT_NO_THROW(
-        client.LoadLabelImage(kTestLabelImagePath, &drake_image));
-    EXPECT_EQ(drake_image, CreateTestLabelImage());
-  }
+  // Failure case 4: wrong number of channels (== 4) instead of 1.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RenderClient::LoadLabelImage(kTestRgbImagePath, &ignored),
+      ".*PNG image.*has 3 channel.*");
 }
 
 }  // namespace
