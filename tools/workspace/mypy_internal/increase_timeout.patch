@@ -1,0 +1,13 @@
+diff --git mypy/moduleinspect.py mypy/moduleinspect.py
+index 326876ec5..90532ae19 100644
+--- mypy/moduleinspect.py
++++ mypy/moduleinspect.py
+@@ -157,7 +157,7 @@ class ModuleInspect:
+ 
+         Return the value read from the queue, or None if the process unexpectedly died.
+         """
+-        max_iter = 100
++        max_iter = 600
+         n = 0
+         while True:
+             if n == max_iter:

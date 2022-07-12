@@ -13,4 +13,5 @@ def mypy_internal_repository(
         sha256 = "866503aed58d7207c0fe4bca9a6a51c1eaa6668157b1c5ed61b40eda71af9175",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
+        patches = [":increase_timeout.patch"],
     )
