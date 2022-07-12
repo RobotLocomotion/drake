@@ -58,20 +58,21 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
       });
   ASSERT_TRUE(bvhs_collide);
 
-  DeformableRigidContactSurface<double> deformable_rigid_contact_surface =
-      ComputeContactSurfaceFromDeformableVolumeRigidSurface(
-          deformable_id, deformable_W, rigid_id, rigid_mesh_R, rigid_bvh_R,
-          X_WR);
+  DeformableContactData<double> contact_data(
+      deformable_id, deformable_W.deformable_mesh().mesh().num_vertices());
+  AppendDeformableRigidContact(
+      deformable_W, rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR,
+      &contact_data);
 
-  EXPECT_FALSE(deformable_rigid_contact_surface.has_data());
+  EXPECT_EQ(contact_data.num_contact_points(), 0);
+  EXPECT_EQ(contact_data.num_vertices_in_contact(), 0);
 }
 
 // Note that the deformable rigid contact surface computation largely utilizes
-// previously tested code in mesh_intersection.cc. The only things it adds is
-// the detection and addition of penetration distances, tet indices, and
-// centroid barycentric coordinates. We only test the correctness of these newly
-// added operations here in this test. For the remaining data, we only check
-// that they have the correct sizes.
+// previously tested code in mesh_intersection.cc. On top of that, it adds
+// the detection and addition of signed distances, vertex participating in
+// contact, and centroid barycentric coordinates. We test the correctness
+// of these newly added operations here in this test.
 GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   const GeometryId deformable_id = GeometryId::get_new_id();
   const Sphere unit_sphere(1.0);
@@ -96,38 +97,41 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   // xy-plane).
   const math::RigidTransform<double> X_WR(Vector3<double>{0, 0, 0.5});
 
-  DeformableRigidContactSurface<double> contact_surface =
-      ComputeContactSurfaceFromDeformableVolumeRigidSurface(
-          deformable_id, deformable_W, rigid_id, rigid_mesh_R, rigid_bvh_R,
-          X_WR);
-  ASSERT_TRUE(contact_surface.has_data());
+  DeformableContactData<double> contact_data(deformable_id, 4);
+  AppendDeformableRigidContact(
+      deformable_W, rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR,
+      &contact_data);
   constexpr int kExpectedNumContactPoints = 1;
-  EXPECT_EQ(contact_surface.num_contact_points(), kExpectedNumContactPoints);
-  const auto [contact_mesh_W, penetration_distances, tet_indexes,
-              barycentric_centroids, R_CWs] = contact_surface.release_data();
 
-  ASSERT_EQ(contact_mesh_W.num_faces(), kExpectedNumContactPoints);
+  EXPECT_EQ(contact_data.contact_mesh_W(0).num_faces(),
+            kExpectedNumContactPoints);
 
   // The approximated signed distance function on the tetrahedron is
   // s(x,y,z) = x + y + z - 1.  Therefore, the centroid (1/6, 1/6, 1/2) has
   // the signed distance = 1/6 + 1/6 + 1/2 - 1 = -1/6
-  ASSERT_EQ(penetration_distances.size(), kExpectedNumContactPoints);
-  const double signed_distance_at_contact_point = penetration_distances[0];
+  ASSERT_EQ(contact_data.signed_distances().size(), kExpectedNumContactPoints);
+  const double signed_distance_at_contact_point =
+      contact_data.signed_distances()[0];
   constexpr double kEps = 1e-14;
   EXPECT_NEAR(signed_distance_at_contact_point, -1.0 / 6, kEps);
 
-  ASSERT_EQ(tet_indexes.size(), kExpectedNumContactPoints);
-  EXPECT_EQ(tet_indexes[0], 0);
+  // Only on tetrahedron is participating in contact and there are 4 vertices
+  // incident to a tetrahedron.
+  EXPECT_EQ(contact_data.num_contact_points(), 1);
+  EXPECT_EQ(contact_data.num_vertices_in_contact(), 4);
 
   // The centroid is (1/6, 1/6, 1/2), and the vertex positions are (0, 0, 0),
   // (1, 0, 0), (0, 1, 0), (0, 0, 1). The the barycentric weights is (1/6, 1/6,
   // 1/6, 1/2).
-  ASSERT_EQ(barycentric_centroids.size(), kExpectedNumContactPoints);
+  ASSERT_EQ(contact_data.barycentric_coordinates().size(),
+            kExpectedNumContactPoints);
   EXPECT_TRUE(CompareMatrices(
-      barycentric_centroids[0],
+      contact_data.barycentric_coordinates()[0],
       Vector4<double>(1.0 / 6, 1.0 / 6, 1.0 / 6, 1.0 / 2), kEps));
 
-  ASSERT_EQ(R_CWs.size(), kExpectedNumContactPoints);
+  // The correctnes of R_CWs are tested in the unit tests for
+  // DeformableContactData. Here we only verify the correctness of the size.
+  EXPECT_EQ(contact_data.R_CWs().size(), kExpectedNumContactPoints);
 }
 
 }  // namespace
