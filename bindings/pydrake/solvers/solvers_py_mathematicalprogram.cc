@@ -156,7 +156,7 @@ void CheckArrayShape(
 // Checks array type, provides user-friendly message if it fails.
 template <typename T>
 void CheckArrayType(py::str var_name, py::array x) {
-  py::module m = py::module::import("pydrake.solvers.mathematicalprogram");
+  py::module m = py::module::import("pydrake.solvers._extra");
   m.attr("_check_array_type")(var_name, x, GetPyParam<T>()[0]);
 }
 
@@ -2006,26 +2006,15 @@ void BindFreeFunctions(py::module m) {
       .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc);
 }
 
-PYBIND11_MODULE(mathematicalprogram, m) {
-  m.doc() = R"""(
-Bindings for MathematicalProgram
-
-If you are formulating constraints using symbolic formulas, please review the
-top-level documentation for :py:mod:`pydrake.math`.
-)""";
-
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.symbolic");
-
+namespace internal {
+void DefineSolversMathematicalProgram(py::module m) {
   BindEvaluatorsAndBindings(m);
   BindSolverInterfaceAndFlags(m);
   BindMathematicalProgram(m);
   BindFreeFunctions(m);
-
   DefTesting(m.def_submodule("_testing"));
-
-  ExecuteExtraPythonCode(m);
 }
+}  // namespace internal
 
 }  // namespace pydrake
 }  // namespace drake

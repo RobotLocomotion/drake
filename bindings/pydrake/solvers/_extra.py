@@ -1,12 +1,9 @@
-# See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
-# rationale.
-
-import numpy as np
+import numpy as _np
 
 
 def _resolve_array_type(x):
     # Resolves the scalar type for a given array.
-    assert isinstance(x, np.ndarray), type(x)
+    assert isinstance(x, _np.ndarray), type(x)
     assert x.size != 0
     if x.dtype != object:
         if x.dtype == float or x.dtype == int:

@@ -8,14 +8,12 @@
 
 namespace drake {
 namespace pydrake {
-PYBIND11_MODULE(branch_and_bound, m) {
+namespace internal {
+
+void DefineSolversBranchAndBound(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
-
-  m.doc() = "branch_and_bound bindings for MathematicalProgram";
-
-  py::module::import("pydrake.solvers.mathematicalprogram");
 
   {
     using Class = MixedIntegerBranchAndBound;
@@ -59,5 +57,6 @@ PYBIND11_MODULE(branch_and_bound, m) {
   }
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
