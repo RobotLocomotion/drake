@@ -151,6 +151,17 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertIs(self.ik_two_bodies.get_mutable_context(),
                       self.ik_two_bodies.context())
 
+    def test_AddPositionCost(self):
+        p_BQ = np.array([0.2, 0.3, 0.5])
+        p_AP = np.array([-0.1, -0.2, -0.3])
+
+        binding = self.ik_two_bodies.AddPositionCost(frameA=self.body1_frame,
+                                                     p_AP=p_AP,
+                                                     frameB=self.body2_frame,
+                                                     p_BQ=p_BQ,
+                                                     C=np.eye(3))
+        self.assertIsInstance(binding, mp.Binding[mp.Cost])
+
     def test_AddOrientationConstraint(self):
         theta_bound = 0.2 * math.pi
         R_AbarA = RotationMatrix(quaternion=Quaternion(0.5, -0.5, 0.5, 0.5))
@@ -513,6 +524,17 @@ class TestConstraints(unittest.TestCase):
         constraint.UpdateLowerBound(new_lb=np.array([-2, -3, -0.5]))
         constraint.UpdateUpperBound(new_ub=np.array([10., 0.5, 2.]))
         constraint.set_bounds(new_lb=[-1, -2, -2.], new_ub=[1., 2., 3.])
+
+    @check_type_variables
+    def test_position_cost(self, variables):
+        cost = ik.PositionCost(plant=variables.plant,
+                               frameA=variables.body1_frame,
+                               p_AP=[-0.1, -0.2, -0.3],
+                               frameB=variables.body2_frame,
+                               p_BQ=[0.2, 0.3, 0.5],
+                               C=np.eye(3),
+                               plant_context=variables.plant_context)
+        self.assertIsInstance(cost, mp.Cost)
 
     @check_type_variables
     def test_com_position_constraint(self, variables):

@@ -10,8 +10,6 @@
 
 namespace drake {
 namespace multibody {
-// TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
-// limits) should be imposed automatically.
 /**
  * Solves an inverse kinematics (IK) problem on a MultibodyPlant, to find the
  * postures of the robot satisfying certain constraints.
@@ -110,7 +108,7 @@ class InverseKinematics {
    * measured and expressed in frame B.
    * @param frameAbar We will compute frame A from frame Abar. The bounding box
    * p_AQ_lower <= p_AQ <= p_AQ_upper is expressed in frame A.
-   * @param X_AbarAThe relative transform between frame Abar and A. If empty,
+   * @param X_AbarA The relative transform between frame Abar and A. If empty,
    * then we use the identity transform.
    * @param p_AQ_lower The lower bound on the position of point Q, measured and
    * expressed in frame A.
@@ -124,6 +122,22 @@ class InverseKinematics {
       const std::optional<math::RigidTransformd>& X_AbarA,
       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper);
+
+  /** Adds a cost of the form (p_AP - p_AQ)ᵀ C (p_AP - p_AQ), where point P is
+   * specified relative to frame A and point Q is specified relative to frame
+   * B, and the cost is evaluated in frame A.
+   * @param frameA The frame in which point P's position is measured.
+   * @param p_AP The point P.
+   * @param frameB The frame in which point Q's position is measured.
+   * @param p_BQ The point Q.
+   * @param C A 3x3 matrix representing the cost in quadratic form.
+   */
+  solvers::Binding<solvers::Cost> AddPositionCost(
+      const Frame<double>& frameA,
+      const Eigen::Ref<const Eigen::Vector3d>& p_AP,
+      const Frame<double>& frameB,
+      const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+      const Eigen::Ref<const Eigen::Matrix3d>& C);
 
   /**
    * Constrains that the angle difference θ between the orientation of frame A
