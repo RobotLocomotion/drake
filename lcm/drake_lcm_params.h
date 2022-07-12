@@ -23,9 +23,17 @@ struct DrakeLcmParams {
   When provided, calls to DrakeLcm::Publish() or DrakeLcm::Subscribe() will
   append this string to the `channel` name requested for publish or subscribe.
 
-  The callback of DrakeLcm::SubscribeAllChannels() will receive the "fully
-  qualified" channel name including this suffix.
-  */
+  For example, with the channel_suffix set to "_ALT" a call to
+  `Publish(&drake_lcm, "FOO", message)` will transmit on the network using the
+  channel name "FOO_ALT", and a call to `Subscribe(&lcm, "BAR", handler)` will
+  only call the handler for messages received on the "BAR_ALT" channel name.
+
+  Simiarly, DrakeLcm::SubscribeAllChannels() only subscribes to network messages
+  that end with the suffix. A network message on a non-matching channel name
+  (e.g., "QUUX") will silently discarded.
+  The DrakeLcmInterface::MultichannelHandlerFunction callback will be passed the
+  _unadaorned_  channel name as its first argument (e.g., "FOO" or "BAR"), not
+  "FOO_ALT", etc. */
   std::string channel_suffix;
 
   /** (Advanced) Controls whether or not LCM's background receive thread will
