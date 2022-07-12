@@ -14,7 +14,7 @@ using geometry::GeometryProperties;
 using geometry::ProximityProperties;
 using geometry::internal::HydroelasticType;
 using geometry::internal::kComplianceType;
-using geometry::internal::kDissipationTimescale;
+using geometry::internal::kRelaxationTime;
 using geometry::internal::kElastic;
 using geometry::internal::kFriction;
 using geometry::internal::kHcDissipation;
@@ -253,10 +253,10 @@ TEST_F(ParseProximityPropertiesTest, Dissipation) {
 TEST_F(ParseProximityPropertiesTest, LinearDissipation) {
   const double kValue = 1.25;
   ProximityProperties properties = ParseProximityProperties(
-      param_read_double("drake:dissipation_timescale", kValue), !rigid,
+      param_read_double("drake:relaxation_time", kValue), !rigid,
       !compliant);
   EXPECT_TRUE(
-      ExpectScalar(kMaterialGroup, kDissipationTimescale, kValue, properties));
+      ExpectScalar(kMaterialGroup, kRelaxationTime, kValue, properties));
   // Dissipation is the only property.
   EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
   EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.

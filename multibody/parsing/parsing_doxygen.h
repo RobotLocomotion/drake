@@ -151,7 +151,6 @@ Here is the full list of custom elements:
 - @ref tag_drake_damping
 - @ref tag_drake_declare_convex
 - @ref tag_drake_diffuse_map
-- @ref tag_drake_dissipation_timescale
 - @ref tag_drake_ellipsoid
 - @ref tag_drake_gear_ratio
 - @ref tag_drake_hunt_crossley_dissipation
@@ -166,6 +165,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_parent
 - @ref tag_drake_point_contact_stiffness
 - @ref tag_drake_proximity_properties
+- @ref tag_drake_relaxation_time
 - @ref tag_drake_rigid_hydroelastic
 - @ref tag_drake_rotor_inertia
 
@@ -457,21 +457,6 @@ ProximityProperties object under `(material, hunt_crossley_dissipation)`.
 @ref mbp_hydroelastic_materials_properties "Hydroelastic contact",
 @ref mbp_dissipation_model "Modeling Dissipation"
 
-@subsection tag_drake_dissipation_timescale drake:dissipation_timescale
-
-- SDFormat path: `//model/link/collision/drake:proximity_properies/drake:dissipation_timescale`
-- URDF path: `/robot/link/collision/drake:proximity_properties/drake:dissipation_timescale/@value`
-- Syntax: Non-negative floating point value.
-
-@subsubsection tag_drake_dissipation_timescale_semantics Semantics
-
-If present, this element provides a value (units of time,
-i.e. seconds) for a linear model of dissipation. It is stored in a
-ProximityProperties object under `(material, dissipation_timescale)`.
-
-@see drake::geometry::ProximityProperties,
-@ref mbp_dissipation_model "Modeling Dissipation"
-
 @subsection tag_drake_hydroelastic_modulus drake:hydroelastic_modulus
 
 - SDFormat path: `//model/link/collision/drake:proximity_properties/drake:hydroelastic_modulus`
@@ -666,6 +651,21 @@ following nested elements may be present:
 @ref tag_drake_point_contact_stiffness,
 @ref tag_drake_rigid_hydroelastic,
 drake::geometry::ProximityProperties
+
+@subsection tag_drake_relaxation_time drake:relaxation_time
+
+- SDFormat path: `//model/link/collision/drake:proximity_properies/drake:relaxation_time`
+- URDF path: `/robot/link/collision/drake:proximity_properties/drake:relaxation_time/@value`
+- Syntax: Non-negative floating point value.
+
+@subsubsection tag_drake_relaxation_time_semantics Semantics
+
+If present, this element provides a value (units of time, i.e. seconds) for a
+linear Kelvin-Voigt model of dissipation. It is stored in a ProximityProperties
+object under `(material, relaxation_time)`.
+
+@see drake::geometry::ProximityProperties,
+@ref mbp_dissipation_model "Modeling Dissipation"
 
 @subsection tag_drake_rigid_hydroelastic drake:rigid_hydroelastic
 
