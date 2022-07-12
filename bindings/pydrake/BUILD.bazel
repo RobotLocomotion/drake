@@ -695,6 +695,11 @@ drake_py_binary(
 
 drake_py_unittest(
     name = "stubgen_test",
+    tags = [
+        # TODO(jwnimmer-tri) Re-enable this test once Debug build timeouts
+        # have been fixed.
+        "manual",
+    ],
     deps = [
         ":all_py",
         "@mypy_internal//:mypy",
