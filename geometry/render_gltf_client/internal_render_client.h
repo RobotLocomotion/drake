@@ -91,7 +91,7 @@ class RenderClient {
 
   /* Computes and returns the `sha256sum` of the specified `path`.
    @throws std::exception
-     If the `path` cannot be opened or the hash fails to compute.
+     If the `path` cannot be opened.
    */
   static std::string ComputeSha256(const std::string& path);
 

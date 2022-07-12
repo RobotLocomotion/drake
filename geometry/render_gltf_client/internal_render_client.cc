@@ -27,8 +27,10 @@ namespace internal {
 
 namespace {
 
+using drake::geometry::render::ClippingRange;
 using drake::geometry::render::DepthRange;
 using drake::geometry::render::RenderCameraCore;
+using drake::systems::sensors::CameraInfo;
 using drake::systems::sensors::ImageDepth32F;
 using drake::systems::sensors::ImageLabel16I;
 using drake::systems::sensors::ImageRgba8U;
@@ -161,10 +163,10 @@ std::string RenderClient::RenderOnServer(
   const std::string scene_sha256 = ComputeSha256(scene_path);
   AddField(&field_map, "scene_sha256", scene_sha256);
   AddField(&field_map, "image_type", image_type);
-  const auto& intrinsics = camera_core.intrinsics();
+  const CameraInfo& intrinsics = camera_core.intrinsics();
   AddField(&field_map, "width", intrinsics.width());
   AddField(&field_map, "height", intrinsics.height());
-  const auto& clipping = camera_core.clipping();
+  const ClippingRange& clipping = camera_core.clipping();
   AddField(&field_map, "near", clipping.near());
   AddField(&field_map, "far", clipping.far());
   AddField(&field_map, "focal_x", intrinsics.focal_x());
@@ -176,8 +178,8 @@ std::string RenderClient::RenderOnServer(
   // For depth images, an additional min_depth and max_depth are sent for the
   // depth range of the sensor (the range sensor's clipping range for valid
   // measurements, not the perspective clipping of the sensor's curvature).
-  if (image_type == RenderImageType::kDepthDepth32F) {
-    const auto& range = depth_range.value();  // has_value checked above.
+  if (is_depth_type) {
+    const DepthRange& range = depth_range.value();  // has_value checked above.
     AddField(&field_map, "min_depth", range.min_depth());
     AddField(&field_map, "max_depth", range.max_depth());
   }
@@ -185,41 +187,38 @@ std::string RenderClient::RenderOnServer(
 
   const std::string url = params_.GetUrl();
   // Post the form and validate the results.
-  auto response =
+  const HttpResponse response =
       http_service_->PostForm(temp_directory_, url, field_map,
                               {{"scene", {scene_path, mime_type}}},
                               params_.verbose);
   if (!response.Good()) {
     /* Server may have responded with meaningful text, try and load the file
      as a string. */
-    std::string server_message = "None.";
+    std::string server_message{"None."};
     if (response.data_path.has_value()) {
       /* See if the file is "small enough" to be json rather than an image.
         Anything larger than or equal to 8192 bytes is considered too large. */
-      const auto& data_path = response.data_path.value();
-      const auto bin_size = fs::file_size(data_path);
+      const std::string& data_path = response.data_path.value();
+      const std::uintmax_t bin_size = fs::file_size(data_path);
       if (bin_size > 0 && bin_size < 8192) {
         std::ifstream bin_in(data_path, std::ios::binary);
         if (bin_in.is_open()) {
           std::stringstream buff;
           buff << bin_in.rdbuf();
           server_message = buff.str();
-        } else {
-          throw std::runtime_error(
-            fmt::format("RenderOnServer: cannot open file {}", data_path));
         }
       }
     }
-    const auto service_error_message =
+    const std::string service_error_message =
         response.service_error_message.value_or("None.");
     throw std::runtime_error(fmt::format(
-        R"(
+        R"""(
         ERROR doing POST:
           URL:             {}
           Service Message: {}
           HTTP Code:       {}
           Server Message:  {}
-        )",
+        )""",
         url, service_error_message, response.http_code, server_message));
   }
 
@@ -341,7 +340,7 @@ void RenderClient::LoadColorImage(const std::string& path,
   using data_t = typename ImageRgba8U::T;
   data_t* out_data = color_image_out->at(0, 0);
   data_t* in_data = static_cast<data_t*>(image_data->GetScalarPointer(0, 0, 0));
-  constexpr auto kNumChannels = ImageRgba8U::kNumChannels;
+  constexpr int kNumChannels = ImageRgba8U::kNumChannels;
   static_assert(  // The logic below is not valid if this ever changes.
       kNumChannels == 4, "Expected ImageRgba8U::kNumChannels to be 4.");
   const int width = color_image_out->width();
