@@ -5,4 +5,4 @@ Ks 1.000000 1.000000 1.000000
 d 1.000000
 illum 2
 Ns 0.000000
-map_Kd box.png
+map_Kd -s 1 1 1 box.png
