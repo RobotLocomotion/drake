@@ -10,8 +10,6 @@
 
 namespace drake {
 namespace multibody {
-// TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
-// limits) should be imposed automatically.
 /**
  * Solves an inverse kinematics (IK) problem on a MultibodyPlant, to find the
  * postures of the robot satisfying certain constraints.
@@ -110,7 +108,7 @@ class InverseKinematics {
    * measured and expressed in frame B.
    * @param frameAbar We will compute frame A from frame Abar. The bounding box
    * p_AQ_lower <= p_AQ <= p_AQ_upper is expressed in frame A.
-   * @param X_AbarAThe relative transform between frame Abar and A. If empty,
+   * @param X_AbarA The relative transform between frame Abar and A. If empty,
    * then we use the identity transform.
    * @param p_AQ_lower The lower bound on the position of point Q, measured and
    * expressed in frame A.
@@ -159,6 +157,24 @@ class InverseKinematics {
       const math::RotationMatrix<double>& R_AbarA,
       const Frame<double>& frameBbar,
       const math::RotationMatrix<double>& R_BbarB, double theta_bound);
+
+  /** Adds a cost of the form `c * (1 - cos(θ))`, where θ is the angle between
+   * the orientation of frame A and the orientation of frame B, and @p c is a
+   * cost scaling.
+   * @param frameAbar A frame on the MultibodyPlant.
+   * @param R_AbarA The rotation matrix describing the orientation of frame A
+   * relative to Abar.
+   * @param frameBbar A frame on the MultibodyPlant.
+   * @param R_BbarB The rotation matrix describing the orientation of frame B
+   * relative to Bbar.
+   * @param c A scalar cost weight.
+   */
+  solvers::Binding<solvers::Cost> AddOrientationCost(
+      const Frame<double>& frameAbar,
+      const math::RotationMatrix<double>& R_AbarA,
+      const Frame<double>& frameBbar,
+      const math::RotationMatrix<double>& R_BbarB,
+      double c);
 
   /**
    * Constrains a target point T to be within a cone K. The point T ("T" stands
