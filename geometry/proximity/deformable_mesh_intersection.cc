@@ -1,12 +1,12 @@
 #include "drake/geometry/proximity/deformable_mesh_intersection.h"
 
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/deformable_volume_mesh.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
-#include "drake/geometry/query_results/contact_surface.h"
 
 namespace drake {
 namespace geometry {
@@ -74,13 +74,14 @@ class DeformableSurfaceVolumeIntersector
   std::vector<VolumeMesh<double>::Barycentric<double>> barycentric_centroids_{};
 };
 
-DeformableRigidContactSurface<double>
-ComputeContactSurfaceFromDeformableVolumeRigidSurface(
-    const GeometryId deformable_id,
+void AppendDeformableRigidContact(
     const deformable::DeformableGeometry& deformable_D,
     const GeometryId rigid_id, const TriangleSurfaceMesh<double>& rigid_mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& rigid_bvh_R,
-    const math::RigidTransform<double>& X_DR) {
+    const math::RigidTransform<double>& X_DR,
+    DeformableContactData<double>* deformable_rigid_contact) {
+  DRAKE_DEMAND(deformable_rigid_contact != nullptr);
+  const VolumeMesh<double>& mesh = deformable_D.deformable_mesh().mesh();
   // TODO(DamrongGuoy) Is there a better way than creating a new
   //  VolumeMeshFieldLinear here? We do it here, so we can reuse
   //  SurfaceVolumeIntersector. These are some ideas that Xuchen and Damrong
@@ -95,38 +96,44 @@ ComputeContactSurfaceFromDeformableVolumeRigidSurface(
   //        SampleVolumeFieldOnSurface(). Right now it uses the mesh of the
   //        given VolumeMeshFieldLinear.
   VolumeMeshFieldLinear<double, double> field_D(
-      std::vector<double>(deformable_D.signed_distance_field().values()),
-      &deformable_D.deformable_mesh().mesh(), true /*calculate gradient*/);
+      std::vector<double>(deformable_D.signed_distance_field().values()), &mesh,
+      true /*calculate gradient*/);
 
   DeformableSurfaceVolumeIntersector intersect;
   intersect.SampleVolumeFieldOnSurface(
       field_D, deformable_D.deformable_mesh().bvh(), rigid_mesh_R, rigid_bvh_R,
       X_DR, false /* don't filter face normal along field gradient */);
 
-  if (!intersect.has_intersection()) {
-    return {};
-  }
+  if (intersect.has_intersection()) {
+    std::unique_ptr<PolygonSurfaceMesh<double>> contact_mesh_W =
+        intersect.release_mesh();
+    const PolygonSurfaceMeshFieldLinear<double, double>& signed_distance_field =
+        intersect.mutable_field();
+    const int num_faces = contact_mesh_W->num_faces();
+    /* Compute the penetration distance at the centroid of each contact polygon
+     using the signed distance field. */
+    std::vector<double> penetration_distances(num_faces);
+    for (int i = 0; i < num_faces; ++i) {
+      /* `signed_distance_field` has a gradient, therefore `EvaluateCartesian()`
+       should be cheap. */
+      penetration_distances[i] = signed_distance_field.EvaluateCartesian(
+          i, contact_mesh_W->element_centroid(i));
+    }
 
-  std::unique_ptr<PolygonSurfaceMesh<double>> contact_surface_mesh_W =
-      intersect.release_mesh();
-  const PolygonSurfaceMeshFieldLinear<double, double>& signed_distance_field =
-      intersect.mutable_field();
-  const int num_faces = contact_surface_mesh_W->num_faces();
-  /* Compute the penetration distance at the centroid of each contact polygon
-   using the signed distance field. */
-  std::vector<double> penetration_distances(num_faces);
-  for (int i = 0; i < num_faces; ++i) {
-    /* `signed_distance_field` has a gradient, therefore `EvaluateCartesian()`
-     should be cheap. */
-    penetration_distances[i] = signed_distance_field.EvaluateCartesian(
-        i, contact_surface_mesh_W->element_centroid(i));
-  }
+    std::vector<int>& participating_tetrahedra =
+        intersect.mutable_tetrahedron_index_of_polygons();
+    std::unordered_set<int> participating_vertices;
+    for (int e : participating_tetrahedra) {
+      for (int v = 0; v < VolumeMesh<double>::kVertexPerElement; ++v) {
+        participating_vertices.insert(mesh.element(e).vertex(v));
+      }
+    }
 
-  return DeformableRigidContactSurface<double>(
-      std::move(*contact_surface_mesh_W), std::move(penetration_distances),
-      std::move(intersect.mutable_tetrahedron_index_of_polygons()),
-      std::move(intersect.mutable_barycentric_centroids()), rigid_id,
-      deformable_id);
+    deformable_rigid_contact->Append(
+        rigid_id, participating_vertices, std::move(*contact_mesh_W),
+        std::move(penetration_distances), std::move(participating_tetrahedra),
+        std::move(intersect.mutable_barycentric_centroids()));
+  }
 }
 
 }  // namespace internal
