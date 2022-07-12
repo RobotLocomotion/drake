@@ -1,7 +1,5 @@
-import warnings
-
+# Import the contents of the shim modules.
 from .mathematicalprogram import *  # noqa
-# TODO(eric.cousineau): Merge these into `mathematicalprogram`.
 from .augmented_lagrangian import *  # noqa
 from .branch_and_bound import *  # noqa
 from .clp import *  # noqa
@@ -17,3 +15,6 @@ from .osqp import *  # noqa
 from .scs import *  # noqa
 from .sdpa_free_format import *  # noqa
 from .snopt import *  # noqa
+
+# Also add anything that isn't part of a shim module.
+from pydrake.solvers import *

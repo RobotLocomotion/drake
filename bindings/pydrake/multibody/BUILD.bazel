@@ -166,10 +166,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         ":plant_py",
-        "//bindings/pydrake/solvers:mathematicalprogram_py",
-        "//bindings/pydrake/solvers:gurobi_py",
-        "//bindings/pydrake/solvers:mixed_integer_optimization_util_py",
-        "//bindings/pydrake/solvers:mixed_integer_rotation_constraint_py",
+        "//bindings/pydrake/solvers",
     ],
 )
 
@@ -185,7 +182,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         ":plant_py",
-        "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake/solvers",
     ],
 )
 
@@ -338,8 +335,7 @@ drake_py_unittest(
         ":parsing_py",
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/solvers:ipopt_py",
-        "//bindings/pydrake/solvers:snopt_py",
+        "//bindings/pydrake/solvers",
     ],
 )
 

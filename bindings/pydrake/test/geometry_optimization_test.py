@@ -14,10 +14,9 @@ from pydrake.math import RigidTransform
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.solvers.clp import ClpSolver
-from pydrake.solvers.mathematicalprogram import (
-    MathematicalProgram, MathematicalProgramResult, Binding, Cost, Constraint,
-    SolverOptions
+from pydrake.solvers import (
+    Binding, ClpSolver, Constraint, Cost, MathematicalProgram,
+    MathematicalProgramResult, SolverOptions,
 )
 from pydrake.symbolic import Variable
 

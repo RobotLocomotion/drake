@@ -4,20 +4,17 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/solvers/nlopt_solver.h"
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(nlopt, m) {
+void DefineSolversNlopt(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
-
-  m.doc() = "NLopt solver bindings for MathematicalProgram";
-
-  py::module::import("pydrake.common.value");
-  py::module::import("pydrake.solvers.mathematicalprogram");
 
   py::class_<NloptSolver, SolverInterface>(
       m, "NloptSolver", doc.NloptSolver.doc)
@@ -31,5 +28,6 @@ PYBIND11_MODULE(nlopt, m) {
   AddValueInstantiation<NloptSolverDetails>(m);
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
