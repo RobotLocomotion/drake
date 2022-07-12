@@ -328,20 +328,16 @@ class SpheresStack : public ::testing::Test {
 
     // In these tests ContactParameters::relaxation_time = nullopt
     // indicates we want to build a model for which we forgot to specify the
-    // relaxation time in ProximityProperties. Here we verify this is
-    // required by the manager.
+    // relaxation time in ProximityProperties. Here we verify this is not
+    // required by the manager, since the manager specifies a default value.
     if (!sphere1_point_params.relaxation_time.has_value() ||
         !sphere2_point_params.relaxation_time.has_value()) {
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          EvalDiscreteContactPairs(*plant_context_),
-          "No `relaxation_time` specified. For geometry .* on body .*. "
-          "You are using a linear model of compliant contact that requires you "
-          "to specify dissipation explicitly.");
+      EXPECT_NO_THROW(EvalDiscreteContactPairs(*plant_context_));
       return;
     }
 
-    // Verify that the manager throws an exception if a negative dissipation
-    // timescale is provided.
+    // Verify that the manager throws an exception if a negative relaxation
+    // times is provided.
     if (*sphere1_point_params.relaxation_time < 0 ||
         *sphere2_point_params.relaxation_time < 0) {
       DRAKE_EXPECT_THROWS_MESSAGE(EvalDiscreteContactPairs(*plant_context_),
@@ -600,7 +596,7 @@ TEST_F(SpheresStack, VerifyDiscreteContactPairs) {
   VerifyDiscreteContactPairs(soft_point_contact, hard_point_contact);
 }
 
-TEST_F(SpheresStack, DissipationTimeScaleIsRequired) {
+TEST_F(SpheresStack, RelaxationTimeIsNotRequired) {
   ContactParameters soft_point_contact{
       1.0e3, std::nullopt,
       std::nullopt /* Dissipation not included in ProximityProperties */, 1.0};
@@ -616,7 +612,7 @@ TEST_F(SpheresStack, DissipationTimeScaleIsRequired) {
   VerifyDiscreteContactPairs(soft_point_contact, hard_point_contact);
 }
 
-TEST_F(SpheresStack, DissipationTimeScaleMustBePositive) {
+TEST_F(SpheresStack, RelaxationTimeMustBePositive) {
   ContactParameters soft_point_contact{
       1.0e3, std::nullopt, -1.0 /* Negative dissipation timescale */, 1.0};
   ContactParameters hard_point_contact{1.0e40, std::nullopt, 0.0, 1.0};
