@@ -226,28 +226,19 @@ T CompliantContactManager<T>::GetDissipationTimeConstant(
                        inspector.GetName(geometry_id), body.name());
   };
 
-  if (!prop->HasProperty(geometry::internal::kMaterialGroup,
-                         "dissipation_timescale")) {
-    const std::string message =
-        "No `dissipation_timescale` specified. " + provide_context_string(id) +
-        " You are using a linear model of compliant contact that requires you "
-        "to specify dissipation explicitly.";
-    throw std::runtime_error(message);
-  }
-
   // N.B. Here we rely on the resolution of #13289 and #5454 to get properties
   // with the proper scalar type T. This will not work on scalar converted
   // models until those issues are resolved.
-  const T dissipation_timescale = prop->template GetProperty<T>(
-      geometry::internal::kMaterialGroup, "dissipation_timescale");
-  if (dissipation_timescale < 0.0) {
+  const T relaxation_time = prop->template GetPropertyOrDefault<double>(
+      geometry::internal::kMaterialGroup, "relaxation_time", 0.1);
+  if (relaxation_time < 0.0) {
     const std::string message = fmt::format(
-        "Dissipation timescale must be non-negative and dissipation_timescale "
+        "Relaxation time must be non-negative and relaxation_time "
         "= {} was provided. {}",
-        dissipation_timescale, provide_context_string(id));
+        relaxation_time, provide_context_string(id));
     throw std::runtime_error(message);
   }
-  return dissipation_timescale;
+  return relaxation_time;
 }
 
 template <typename T>
