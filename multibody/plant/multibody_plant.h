@@ -1625,7 +1625,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Sets the contact solver type used for discrete %MultibodyPlant models.
   /// @throws std::exception iff called post-finalize.
-  void set_discrete_contact_solver(DiscreteContactSolver solver_type);
+  void set_discrete_contact_solver(DiscreteContactSolver contact_solver);
 
   /// Returns the contact solver type used for discrete %MultibodyPlant models.
   DiscreteContactSolver get_discrete_contact_solver() const;
@@ -4917,7 +4917,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // The solver type used by a discrete plant. Keep this in sync
   // with the default value in multibody_plant_config.h; there are already
   // assertions in the cc file that enforce this.
-  DiscreteContactSolver solver_type_{DiscreteContactSolver::kTamsi};
+  DiscreteContactSolver contact_solver_enum_{DiscreteContactSolver::kTamsi};
 
   // User's choice of the representation of contact surfaces in discrete
   // systems. The default value is dependent on whether the system is

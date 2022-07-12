@@ -34,8 +34,8 @@ namespace {
 // Use a switch() statement here, to ensure the compiler sends us a reminder
 // when somebody add a new value to the enum. New values must be listed here
 // as well as in the list of kContactModels below.
-constexpr const char* ContactModelToChars(ContactModel contact_model) {
-  switch (contact_model) {
+constexpr const char* EnumToChars(ContactModel enum_value) {
+  switch (enum_value) {
     case ContactModel::kPointContactOnly:
       return "point";
     case ContactModel::kHydroelasticsOnly:
@@ -45,22 +45,11 @@ constexpr const char* ContactModelToChars(ContactModel contact_model) {
   }
 }
 
-constexpr auto MakeContactModelPair(ContactModel value) {
-  return std::pair(value, ContactModelToChars(value));
-}
-
-constexpr std::array<std::pair<ContactModel, const char*>, 3> kContactModels{{
-  MakeContactModelPair(ContactModel::kPointContactOnly),
-  MakeContactModelPair(ContactModel::kHydroelasticsOnly),
-  MakeContactModelPair(ContactModel::kHydroelasticWithFallback),
-}};
-
 // Use a switch() statement here, to ensure the compiler sends us a reminder
 // when somebody adds a new value to the enum. New values must be listed here
 // as well as in the list of kDiscreteContactSolvers below.
-constexpr const char* DiscreteContactSolverToChars(
-    DiscreteContactSolver type) {
-  switch (type) {
+constexpr const char* EnumToChars(DiscreteContactSolver enum_value) {
+  switch (enum_value) {
     case DiscreteContactSolver::kTamsi:
       return "tamsi";
     case DiscreteContactSolver::kSap:
@@ -68,25 +57,14 @@ constexpr const char* DiscreteContactSolverToChars(
   }
 }
 
-constexpr auto MakeDiscreteContactSolverPair(
-    DiscreteContactSolver value) {
-  return std::pair(value, DiscreteContactSolverToChars(value));
-}
-
-constexpr std::array<std::pair<DiscreteContactSolver, const char*>, 2>
-    kDiscreteContactSolvers{{
-        MakeDiscreteContactSolverPair(DiscreteContactSolver::kTamsi),
-        MakeDiscreteContactSolverPair(DiscreteContactSolver::kSap),
-    }};
-
 // Take an alias to limit verbosity, especially in the constexpr boilerplate.
 using ContactRep = geometry::HydroelasticContactRepresentation;
 
 // Use a switch() statement here, to ensure the compiler sends us a reminder
 // when somebody add a new value to the enum. New values must be listed here
 // as well as in the list of (enum, name) pairs kContactReps below.
-constexpr const char* ContactRepToChars(ContactRep contact_model) {
-  switch (contact_model) {
+constexpr const char* EnumToChars(ContactRep enum_value) {
+  switch (enum_value) {
     case ContactRep::kTriangle:
       return "triangle";
     case ContactRep::kPolygon:
@@ -94,13 +72,31 @@ constexpr const char* ContactRepToChars(ContactRep contact_model) {
   }
 }
 
-constexpr auto MakeContactRepPair(ContactRep value) {
-  return std::pair(value, ContactRepToChars(value));
-}
+template <typename Enum>
+struct NamedEnum {
+  // An implicit conversion here enables the convenient initializer_list syntax
+  // that's used below, so we'll say NOLINTNEXTLINE(runtime/explicit).
+  constexpr NamedEnum(Enum value_in)
+      : value(value_in),
+        name(EnumToChars(value_in)) {}
+  const Enum value;
+  const char* const name;
+};
 
-constexpr std::array<std::pair<ContactRep, const char*>, 2> kContactReps{{
-  MakeContactRepPair(ContactRep::kTriangle),
-  MakeContactRepPair(ContactRep::kPolygon),
+constexpr std::array<NamedEnum<ContactModel>, 3> kContactModels{{
+  {ContactModel::kPointContactOnly},
+  {ContactModel::kHydroelasticsOnly},
+  {ContactModel::kHydroelasticWithFallback},
+}};
+
+constexpr std::array<NamedEnum<DiscreteContactSolver>, 2> kContactSolvers{{
+  {DiscreteContactSolver::kTamsi},
+  {DiscreteContactSolver::kSap},
+}};
+
+constexpr std::array<NamedEnum<ContactRep>, 2> kContactReps{{
+  {ContactRep::kTriangle},
+  {ContactRep::kPolygon},
 }};
 
 }  // namespace
@@ -126,7 +122,7 @@ std::string GetStringFromContactModel(ContactModel contact_model) {
 
 DiscreteContactSolver GetDiscreteContactSolverFromString(
     std::string_view discrete_contact_solver) {
-  for (const auto& [value, name] : kDiscreteContactSolvers) {
+  for (const auto& [value, name] : kContactSolvers) {
     if (name == discrete_contact_solver) {
       return value;
     }
@@ -138,7 +134,7 @@ DiscreteContactSolver GetDiscreteContactSolverFromString(
 
 std::string GetStringFromDiscreteContactSolver(
     DiscreteContactSolver contact_solver) {
-  for (const auto& [value, name] : kDiscreteContactSolvers) {
+  for (const auto& [value, name] : kContactSolvers) {
     if (value == contact_solver) {
       return name;
     }
