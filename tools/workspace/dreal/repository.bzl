@@ -12,8 +12,8 @@ def dreal_repository(
         sha256 = "7bbd328a25c14cff814753694b1823257bb7cff7f84a7b705b9f111624d5b2e4",  # noqa
         mirrors = mirrors,
         patches = [
-            "@drake//tools/workspace/dreal:patches/ibex_2.8.6.patch",
-            "@drake//tools/workspace/dreal:patches/warnings.patch",
+            ":patches/ibex_2.8.6.patch",
+            ":patches/warnings.patch",
         ],
         repo_mapping = {
             "@nlopt": "@nlopt_internal",

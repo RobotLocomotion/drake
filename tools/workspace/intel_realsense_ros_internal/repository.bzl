@@ -15,7 +15,7 @@ def intel_realsense_ros_internal_repository(
         # https://github.com/IntelRealSense/realsense-ros/releases
         commit = "2.3.2",
         sha256 = "18c0f90eeea2b64889388e2e441221931e220d1fea06fe6eff8d70442c456459",  # noqa
-        build_file = "@drake//tools/workspace/intel_realsense_ros_internal:package.BUILD.bazel",  # noqa
+        build_file = ":package.BUILD.bazel",
         patch_cmds = [
             "cp LICENSE realsense2_description/",
             "sed -i.orig -e 's|$(find realsense2_description)/urdf/||' realsense2_description/urdf/*.xacro",  # noqa

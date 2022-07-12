@@ -10,6 +10,6 @@ def pycodestyle_repository(
         repository = "PyCQA/pycodestyle",
         commit = "2.8.0",
         sha256 = "9116bd3686beaa22be34be1e5259fb9eecbf246a3991849d33ff6ab07d52f86e",  # noqa
-        build_file = "@drake//tools/workspace/pycodestyle:package.BUILD.bazel",  # noqa
+        build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

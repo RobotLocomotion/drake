@@ -2875,7 +2875,7 @@ double MultibodyTree<T>::CalcTotalDefaultMass(
   double total_mass = 0;
   for (BodyIndex body_index : body_indexes) {
     const Body<T>& body_B = get_body(body_index);
-    const double mass_B = body_B.get_default_mass();
+    const double mass_B = body_B.default_mass();
     if (!std::isnan(mass_B)) total_mass += mass_B;
   }
   return total_mass;

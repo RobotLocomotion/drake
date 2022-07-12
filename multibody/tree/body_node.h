@@ -1066,7 +1066,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       ldlt_D_B = math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>(
           MatrixUpTo6<T>(D_B.template selfadjointView<Eigen::Lower>()));
 
-      // Ensure that D_B is not singular.
+      // Ensure that D_B (the articulated body hinge inertia) is not singular.
       // Singularity means that a non-physical hinge mapping matrix was used or
       // that this articulated body inertia has some non-physical quantities
       // (such as zero moment of inertia along an axis which the hinge mapping

@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/pendulum/gen/pendulum_input.h"
 #include "drake/examples/pendulum/gen/pendulum_params.h"
@@ -15,17 +16,14 @@ using std::vector;
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(pendulum, m) {
+void DefineExamplesPendulum(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::pendulum;
-
-  m.doc() = "Bindings for the Pendulum example.";
   constexpr auto& doc = pydrake_doc.drake.examples.pendulum;
-
-  py::module::import("pydrake.systems.framework");
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
@@ -117,5 +115,6 @@ PYBIND11_MODULE(pendulum, m) {
           py_rvp::reference, doc.PendulumGeometry.AddToBuilder.doc);
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

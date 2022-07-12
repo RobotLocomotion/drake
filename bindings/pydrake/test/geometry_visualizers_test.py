@@ -93,9 +93,14 @@ class TestGeometryVisualizers(unittest.TestCase):
         params = mut.MeshcatParams(
             host="*",
             port=port,
-            web_url_pattern="http://host:{port}")
+            web_url_pattern="http://host:{port}",
+            show_stats_plot=False)
         meshcat = mut.Meshcat(params=params)
         self.assertEqual(meshcat.port(), port)
+        self.assertEqual(repr(params),
+                         ("MeshcatParams(port=7051,"
+                          " web_url_pattern=http://host:{port},"
+                          " show_stats_plot=False)"))
         with self.assertRaises(RuntimeError):
             meshcat2 = mut.Meshcat(port=port)
         self.assertIn("http", meshcat.web_url())
@@ -150,6 +155,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.DeleteAddedControls()
         self.assertIn("data:application/octet-binary;base64",
                       meshcat.StaticHtml())
+        meshcat.SetRealtimeRate(1.0)
         meshcat.Flush()
 
         # PerspectiveCamera

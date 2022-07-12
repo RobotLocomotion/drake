@@ -14,6 +14,6 @@ def libcmaes_repository(
         # could use (i.e., newer than v0.10).
         commit = "17cbf58aec13c1d494fa0fed826f78560b817de1",
         sha256 = "759ab2d70d6d86d7d8fce6d80863a6368d7d245c96116c0f70cbc7c144873d51",  # noqa
-        build_file = "@drake//tools/workspace/libcmaes:package.BUILD.bazel",
+        build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

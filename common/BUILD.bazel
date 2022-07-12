@@ -62,6 +62,7 @@ drake_cc_package_library(
         ":symbolic_latex",
         ":symbolic_trigonometric_polynomial",
         ":temp_directory",
+        ":timer",
         ":type_safe_index",
         ":unused",
         ":value",
@@ -555,6 +556,15 @@ drake_cc_library(
 drake_cc_library(
     name = "scoped_singleton",
     hdrs = ["scoped_singleton.h"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "timer",
+    srcs = ["timer.cc"],
+    hdrs = ["timer.h"],
     deps = [
         ":essential",
     ],
@@ -1127,6 +1137,13 @@ drake_cc_googletest(
     name = "scoped_singleton_test",
     deps = [
         ":scoped_singleton",
+    ],
+)
+
+drake_cc_googletest(
+    name = "timer_test",
+    deps = [
+        ":timer",
     ],
 )
 

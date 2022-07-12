@@ -131,7 +131,7 @@ int do_main() {
   for (BodyIndex body_index(1); body_index < strandbeest.num_bodies();
        ++body_index) {
     const auto& body = strandbeest.get_body(body_index);
-    total_mass += body.get_default_mass();
+    total_mass += body.default_mass();
   }
 
   // Set the penetration allowance and stiction tolerance to values that make

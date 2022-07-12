@@ -147,6 +147,7 @@ drake_cc_library(
         "//common:essential",
         "//common:is_approx_equal_abstol",
         "//common:unused",
+        "//math:gradient",
     ],
 )
 

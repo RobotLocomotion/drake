@@ -276,6 +276,7 @@ drake_cc_library(
     hdrs = ["trigonometric_polynomial.h"],
     deps = [
         ":expression",
+        ":rational_function",
     ],
 )
 

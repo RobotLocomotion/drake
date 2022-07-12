@@ -3,6 +3,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/benchmarks/free_body/free_body.h"
 #include "drake/multibody/test_utilities/floating_body_plant.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -51,8 +52,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const Vector3d v0_WBcm = Vector3d::Zero();
 
   // There are no external forces in this test, not even gravity.
-  const double acceleration_of_gravity = 9.81;
-  const Vector3d gravity_W = -acceleration_of_gravity * Vector3d::UnitZ();
+  const double kGravity = 9.81;
+  const Vector3d gravity_W = -kGravity * Vector3d::UnitZ();
 
   // Body mass. Not important really since there is no friction.
   const double kMass = 1.0;
@@ -65,7 +66,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
-      kMass, benchmark_.get_I(), benchmark_.get_J(), acceleration_of_gravity);
+      kMass, benchmark_.get_I(), benchmark_.get_J(), kGravity);
 
   // Simulator will create a Context by calling this system's
   // CreateDefaultContext(). This in turn will initialize its state by making a
@@ -261,11 +262,11 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   // rotational inertias, mass and, gravity in order to instantiate the model.
   const double kInertia = 0.05;
   const double kMass = 1.0;
-  const double acceleration_of_gravity = 9.81;
+  const double kGravity = 9.81;
 
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
-      kMass, kInertia, kInertia, acceleration_of_gravity);
+      kMass, kInertia, kInertia, kGravity);
   const internal::MultibodyTree<double>& model =
       internal::GetInternalTree(free_body_plant);
 
@@ -328,11 +329,11 @@ GTEST_TEST(QuaternionFloatingMobilizer, InboardJointLocking) {
   // rotational inertias, mass and, gravity in order to instantiate the model.
   const double kInertia = 0.05;
   const double kMass = 1.0;
-  const double acceleration_of_gravity = 9.81;
+  const double kGravity = 9.81;
 
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
-      kMass, kInertia, kInertia, acceleration_of_gravity,
+      kMass, kInertia, kInertia, kGravity,
       0.001/* time_step */);
   const internal::MultibodyTree<double>& model =
       internal::GetInternalTree(free_body_plant);
@@ -363,6 +364,45 @@ GTEST_TEST(QuaternionFloatingMobilizer, InboardJointLocking) {
 
   free_body.Unlock(&context);
   EXPECT_FALSE(free_body.is_locked(context));
+}
+
+// This test verifies that a reasonable error message is thrown when the
+// initial state contains an invalid quaternion.
+GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
+  // Instantiate the model for a free body in space.  For this test, it is OK
+  // to use somewhat arbitrary values for mass, inertia, gravity, etc.
+  const double kMass = 1.0;
+  const double kInertia = 0.04;
+  const double kGravity = 9.8;
+  AxiallySymmetricFreeBodyPlant<double> free_body_plant(
+    kMass, kInertia, kInertia, kGravity);
+
+  // Simulator will create a Context by calling this system's
+  // CreateDefaultContext(). This in turn will initialize its state by making a
+  // call to this system's SetDefaultState().
+  systems::Simulator<double> simulator(free_body_plant);
+  systems::Context<double>& context = simulator.get_mutable_context();
+
+  // Allocate space to hold the time-derivative of the Drake state.
+  std::unique_ptr<systems::ContinuousState<double>> stateDt =
+      free_body_plant.AllocateTimeDerivatives();
+  drake::systems::ContinuousState<double>* stateDt_ptr = stateDt.get();
+
+  // Initial position, translational velocity, and angular velocity are zero.
+  const Vector3d p0_WBcm_W = Vector3d::Zero();
+  const Vector3d v0_WBcm_W = Vector3d::Zero();
+  const Vector3d w0_WB_W = Vector3d::Zero();
+  const Quaterniond bad_quat(0, 0, 0, 0);  // Invalid quaternion.
+  Eigen::Matrix<double, 13, 1> state_initial;
+  state_initial << bad_quat.w(), bad_quat.x(), bad_quat.y(), bad_quat.z(),
+                   p0_WBcm_W, w0_WB_W, v0_WBcm_W;
+  context.SetContinuousState(state_initial);
+
+  // A zero quaternion should throw an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      free_body_plant.CalcTimeDerivatives(context, stateDt_ptr),
+      "QuaternionToRotationMatrix\\(\\):"
+      " All the elements in a quaternion are zero\\.");
 }
 
 }  // namespace

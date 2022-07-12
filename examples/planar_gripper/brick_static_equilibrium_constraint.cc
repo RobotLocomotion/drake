@@ -27,7 +27,7 @@ BrickStaticEquilibriumNonlinearConstraint::
       plant_mutable_context_(plant_mutable_context) {
   brick_mass_ = gripper_brick_system_.plant()
                     .GetBodyByName("brick_link")
-                    .get_default_mass();
+                    .default_mass();
 }
 
 template <typename T>

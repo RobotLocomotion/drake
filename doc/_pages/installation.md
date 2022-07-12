@@ -14,11 +14,12 @@ notebooks. See the [Tutorials](/index.html#tutorials) page for details.
 The following table shows the configurations and platforms that Drake
 officially supports:
 
-| Operating System ⁽⁴⁾             | Architecture | Python  |
-|----------------------------------|--------------|---------|
-| Ubuntu 20.04 LTS (Focal Fossa)   | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾ |
-| macOS Big Sur (11)               | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ |
-| macOS Monterey (12)              | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ |
+| Operating System ⁽⁴⁾⁽⁵⁾            | Architecture | Python   |
+|------------------------------------|--------------|----------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾  |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64 ⁽¹⁾   | 3.10 ⁽³⁾ |
+| macOS Big Sur (11)                 | x86_64 ⁽²⁾   | 3.9 ⁽³⁾  |
+| macOS Monterey (12)                | x86_64 ⁽²⁾   | 3.9 ⁽³⁾  |
 
 ⁽¹⁾ Drake Ubuntu builds assume support for Intel's AVX2 and FMA instructions,
 introduced with the Haswell architecture in 2013 with substantial performance
@@ -46,15 +47,20 @@ reported `which -a python python3` refer to conda.
 require a working display server.  Most personal computers will have this
 already built in, but some cloud or docker environments may not.
 
+⁽⁵⁾ Ubuntu 22.04 (Jammy Jellyfish) builds are only supported from source or
+as nightly binaries. Drake does not yet publish stable binaries for this
+platform.
+
 Additionally, if you are compiling your own C++ code against Drake's C++ code
 and are using Drake's pre-compiled binaries, then you must use the same
 compiler as our releases:
 
-| Operating System                 | C/C++ Compiler                 |
-|----------------------------------|--------------------------------|
-| Ubuntu 20.04 LTS (Focal Fossa)   | GCC 9.3                        |
-| macOS Big Sur (11)               | Apple LLVM 12.0.0 (Xcode 12.4) |
-| macOS Monterey (12)              | Apple LLVM 12.0.0 (Xcode 12.4) |
+| Operating System                   | C/C++ Compiler                 |
+|------------------------------------|--------------------------------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | GCC 9.3                        |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11.2                       |
+| macOS Big Sur (11)                 | Apple LLVM 12.0.0 (Xcode 12.4) |
+| macOS Monterey (12)                | Apple LLVM 12.0.0 (Xcode 12.4) |
 
 ## Available Versions
 

@@ -157,7 +157,7 @@ class ParticleTest : public ::testing::Test {
     driver_.mutable_plant().SetContactSolver(std::move(solver));
 
     // Verify that solvers/test/particle.sdf is in sync with this test.
-    const double mass = particle.get_default_mass();
+    const double mass = particle.default_mass();
     ASSERT_NEAR(mass, kParticleMass, kEpsilon);
 
     // MultibodyPlant state.

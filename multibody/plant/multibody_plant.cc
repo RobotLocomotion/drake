@@ -22,6 +22,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/sparse_linear_operator.h"
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
@@ -150,13 +151,13 @@ struct JointLimitsPenaltyParametersEstimator {
     // Penalty parameters for the parent body (child fixed).
     const double parent_mass = joint.parent_body().index() == world_index() ?
                                std::numeric_limits<double>::infinity() :
-                               joint.parent_body().get_default_mass();
+                               joint.parent_body().default_mass();
     const auto parent_params = CalcCriticallyDampedHarmonicOscillatorParameters(
         numerical_time_scale, parent_mass);
     // Penalty parameters for the child body (parent fixed).
     const double child_mass = joint.child_body().index() == world_index() ?
                                std::numeric_limits<double>::infinity() :
-                               joint.child_body().get_default_mass();
+                               joint.child_body().default_mass();
     const auto child_params = CalcCriticallyDampedHarmonicOscillatorParameters(
         numerical_time_scale, child_mass);
 
@@ -364,6 +365,8 @@ MultibodyPlant<T>::MultibodyPlant(double time_step)
   DRAKE_DEMAND(contact_model_ == ContactModel::kHydroelasticWithFallback);
   DRAKE_DEMAND(MultibodyPlantConfig{}.contact_model ==
                "hydroelastic_with_fallback");
+  DRAKE_DEMAND(solver_type_ == DiscreteContactSolver::kTamsi);
+  DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_solver == "tamsi");
 }
 
 template <typename T>
@@ -487,6 +490,19 @@ template <typename T>
 void MultibodyPlant<T>::set_contact_model(ContactModel model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   contact_model_ = model;
+}
+
+template <typename T>
+void MultibodyPlant<T>::set_discrete_contact_solver(
+    DiscreteContactSolver solver_type) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  solver_type_ = solver_type;
+}
+
+template <typename T>
+DiscreteContactSolver MultibodyPlant<T>::get_discrete_contact_solver()
+    const {
+  return solver_type_;
 }
 
 template <typename T>
@@ -806,6 +822,27 @@ void MultibodyPlant<T>::Finalize() {
     ExcludeCollisionsWithVisualGeometry();
   }
   FinalizePlantOnly();
+
+  // Set discrete update manager. Currently, CompliantContactManager does not
+  // support T = symbolic::Expression.
+  // N.B. Unlike SAP, currently the TAMSI solver is incorporated directly into
+  // MultibodyPlant's source, rather than in CompliantContactManager. The plan
+  // is to move TAMSI, as well as the entirety of the discrete handling of
+  // contact, into CompliantContactManager.
+  if (is_discrete()) {
+    if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+      if (solver_type_ == DiscreteContactSolver::kSap) {
+        SetDiscreteUpdateManager(
+            std::make_unique<internal::CompliantContactManager<T>>());
+      }
+    } else {
+      if (solver_type_ == DiscreteContactSolver::kSap) {
+        throw std::runtime_error(
+            "SAP solver not supported for scalar type T = "
+            "symbolic::Expression.");
+      }
+    }
+  }
 }
 
 template<typename T>
@@ -1193,6 +1230,7 @@ void MultibodyPlant<T>::SetDiscreteUpdateManager(
   // least to build the contact problem. However, here we play safe and demand
   // finalization right here.
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(is_discrete());
   DRAKE_DEMAND(manager != nullptr);
   manager->SetOwningMultibodyPlant(this);
   discrete_update_manager_ = std::move(manager);
@@ -1245,7 +1283,7 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   double mass = 0.0;
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
-    mass = std::max(mass, body.get_default_mass());
+    mass = std::max(mass, body.default_mass());
   }
 
   // For now, we use the model of a critically damped spring mass oscillator

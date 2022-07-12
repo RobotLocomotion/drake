@@ -295,7 +295,6 @@ drake_py_library(
 
 PYBIND_SUBPACKAGES_FOR_COVERAGE = [
     "//bindings/pydrake/common",
-    "//bindings/pydrake/examples",
     "//bindings/pydrake/manipulation",
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/solvers",
@@ -311,6 +310,8 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":polynomial_py",
     ":symbolic_py",
     ":trajectories_py",
+    "//bindings/pydrake/examples",
+    "//bindings/pydrake/examples/multibody",
     "//bindings/pydrake/visualization",
 ] + PYBIND_SUBPACKAGES_FOR_COVERAGE
 
@@ -678,6 +679,31 @@ generate_pybind_coverage(
     file_coverage = ":file_coverage.csv",
     pybind_coverage_data = [":pybind_coverage_data"],
     xml_docstrings = ":documentation_pybind.xml",
+)
+
+drake_py_binary(
+    name = "stubgen",
+    srcs = ["stubgen.py"],
+    args = ["--package=pydrake"],
+    deps = [
+        ":all_py",
+        "@mypy_internal//:mypy",
+    ],
+)
+
+# TODO(mwoehlke-kitware): actually install the .pyi's.
+
+drake_py_unittest(
+    name = "stubgen_test",
+    tags = [
+        # TODO(jwnimmer-tri) Re-enable this test once Debug build timeouts
+        # have been fixed.
+        "manual",
+    ],
+    deps = [
+        ":all_py",
+        "@mypy_internal//:mypy",
+    ],
 )
 
 add_lint_tests_pydrake(

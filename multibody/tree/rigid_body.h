@@ -99,7 +99,7 @@ class RigidBody : public Body<T> {
   /// this rigid body's %SpatialInertia or a parameter that is stored in a
   /// Context. The default constant mass value is used to initialize the mass
   /// parameter in the Context.
-  double default_mass() const {
+  double default_mass() const final {
     return default_spatial_inertia_.get_mass();
   }
 
@@ -371,17 +371,6 @@ class RigidBody : public Body<T> {
   }
 
  private:
-  // Ideally, the pure virtual function get_default_mass() in body.h would
-  // instead be called default_mass() (consistent with related function names
-  // in rigid_body.h). This override get_default_mass() function currently
-  // exists to facilitate elimination of redundant data that existed when
-  // default mass was stored in both the Body and RigidBody classes.
-  // TODO(Mitiguy) Get rid of get_default_mass() in both body.h and
-  //  rigid_body.h in favor of default_mass().
-  double get_default_mass() const final {
-    return default_mass();  // Returns the mass stored in `this` RigidBody.
-  }
-
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(

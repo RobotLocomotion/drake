@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/quadrotor/quadrotor_geometry.h"
 #include "drake/examples/quadrotor/quadrotor_plant.h"
@@ -9,18 +10,14 @@
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(quadrotor, m) {
+void DefineExamplesQuadrotor(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::quadrotor;
   constexpr auto& doc = pydrake_doc.drake.examples.quadrotor;
-
-  m.doc() = "Bindings for the Quadrotor example.";
-
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.primitives");
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
@@ -58,5 +55,6 @@ PYBIND11_MODULE(quadrotor, m) {
       doc.StabilizingLQRController.doc);
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

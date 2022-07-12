@@ -243,7 +243,7 @@ void BackpropTest(PerceptronActivationType type, bool use_sin_cos = false) {
   EXPECT_TRUE(CompareMatrices(dloss_dparams,
                               loss_ad.derivatives().size()
                                   ? loss_ad.derivatives()
-                                  : Eigen::VectorXd::Zero(mlp.num_parameters()),
+                                  : VectorXd::Zero(mlp.num_parameters()).eval(),
                               1e-14));
 
   {  // A second call with the same size input should not allocate.
@@ -312,7 +312,7 @@ GTEST_TEST(MultilayerPereceptronTest, BatchOutputWithGradients) {
       // (e.g. for ReLU the input might be truncated before reaching the
       // output).
       dYdX_desired.col(i) =
-          y.derivatives().size() ? y.derivatives() : Eigen::Vector2d::Zero();
+          y.derivatives().size() ? y.derivatives() : VectorXd::Zero(2).eval();
     }
     mlp.BatchOutput(*context, X, &Y, &dYdX);
 
@@ -392,7 +392,7 @@ GTEST_TEST(MultilayerPerceptronTest, SinCosFeatures) {
     AutoDiffXd y = mlp_ad.get_output_port().Eval(*context_ad)[0];
     Y_desired(0, i) = y.value();
     dYdX_desired.col(i) =
-        y.derivatives().size() ? y.derivatives() : Eigen::Vector2d::Zero();
+        y.derivatives().size() ? y.derivatives() : VectorXd::Zero(2).eval();
   }
   mlp.BatchOutput(*context, X, &Y, &dYdX);
 

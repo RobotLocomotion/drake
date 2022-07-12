@@ -1,0 +1,12 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+
+licenses(["notice"])  # MIT
+
+py_library(
+    name = "tomli",
+    srcs = glob(["src/tomli/*.py"]),
+    imports = ["src"],
+    visibility = ["//visibility:public"],
+)

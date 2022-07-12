@@ -485,6 +485,7 @@ ProximityProperties MakeProximityPropertiesForCollision(
       "drake:mesh_resolution_hint",
       "drake:hydroelastic_modulus",
       "drake:hunt_crossley_dissipation",
+      "drake:dissipation_timescale",
       "drake:point_contact_stiffness",
       "drake:mu_dynamic",
       "drake:mu_static"};

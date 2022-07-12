@@ -89,6 +89,9 @@ geometry::ProximityProperties ParseProximityProperties(
   std::optional<double> dissipation =
       read_double("drake:hunt_crossley_dissipation");
 
+  std::optional<double> dissipation_timescale =
+      read_double("drake:dissipation_timescale");
+
   std::optional<double> stiffness =
       read_double("drake:point_contact_stiffness");
 
@@ -106,6 +109,17 @@ geometry::ProximityProperties ParseProximityProperties(
   }
 
   geometry::AddContactMaterial(dissipation, stiffness, friction, &properties);
+
+  if (dissipation_timescale.has_value()) {
+    if (*dissipation_timescale < 0) {
+      throw std::logic_error(
+          fmt::format("The dissipation time scale can't be negative; given {}",
+                      *dissipation));
+    }
+    properties.AddProperty(geometry::internal::kMaterialGroup,
+                           geometry::internal::kDissipationTimescale,
+                           *dissipation_timescale);
+  }
 
   return properties;
 }
