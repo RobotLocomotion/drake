@@ -135,6 +135,36 @@ TEST_F(TwoFreeBodiesTest, PositionConstraint) {
           .all());
 }
 
+TEST_F(TwoFreeBodiesTest, PositionCost) {
+  const Eigen::Vector3d p_AP(-0.1, -0.2, -0.3);
+  const Eigen::Vector3d p_BQ(0.2, 0.3, 0.5);
+  auto binding = ik_.AddPositionCost(body1_frame_, p_AP, body2_frame_, p_BQ,
+                                     Eigen::Matrix3d::Identity());
+
+  // We don't need to test the cost implementation, only that the arguments are
+  // passed correctly.  Just set an arbitrary (but valid) q and evaluate the
+  // cost.
+  math::RigidTransform<double> X_WA(
+      math::RollPitchYaw<double>(0.32, -0.24, -0.51),
+      Eigen::Vector3d(0.1, 0.3, 0.72));
+  math::RigidTransform<double> X_WB(math::RollPitchYaw<double>(8.1, 0.42, -0.2),
+                                    Eigen::Vector3d(-0.84, 0.2, 1.4));
+  auto context = two_bodies_plant_->CreateDefaultContext();
+  two_bodies_plant_->SetFreeBodyPose(
+      context.get(), two_bodies_plant_->GetBodyByName("body1"), X_WA);
+  two_bodies_plant_->SetFreeBodyPose(
+      context.get(), two_bodies_plant_->GetBodyByName("body2"), X_WB);
+  ik_.get_mutable_prog()->SetInitialGuess(
+      ik_.q(), two_bodies_plant_->GetPositions(*context));
+
+  const Eigen::Vector3d p_AQ = X_WA.inverse() * X_WB * p_BQ;
+  const Eigen::Vector3d err = p_AQ - p_AP;
+  const double expected_cost = err.dot(err);
+
+  EXPECT_NEAR(ik_.prog().EvalBindingAtInitialGuess(binding)[0], expected_cost,
+              1e-12);
+}
+
 TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
   const double angle_bound = 0.05 * M_PI;
 

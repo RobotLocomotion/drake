@@ -221,13 +221,13 @@ class GlobalInverseKinematics {
       double angle_tol);
 
   /** Penalizes the deviation to the desired posture.
+   *
    * For each body (except the world) in the kinematic tree, we add the cost
    *
    *     ∑ᵢ body_position_cost(i) * body_position_error(i) +
    *     body_orientation_cost(i) * body_orientation_error(i)
    * where `body_position_error(i)` is computed as the Euclidean distance error
-   * |p_WBo(i) - p_WBo_desired(i)|
-   * where
+   * |p_WBo(i) - p_WBo_desired(i)| where
    * - p_WBo(i)        : position of body i'th origin `Bo` in the world frame
    *                     `W`.
    * - p_WBo_desired(i): position of body i'th origin `Bo` in the world frame
@@ -236,22 +236,21 @@ class GlobalInverseKinematics {
    * body_orientation_error(i) is computed as (1 - cos(θ)), where θ is the
    * angle between the orientation of body i'th frame and body i'th frame using
    * the desired posture. Notice that 1 - cos(θ) = θ²/2 + O(θ⁴), so this cost
-   * is on the square of θ, when θ is small.
-   * Notice that since body 0 is the world, the cost on that body is always 0,
-   * no matter what value `body_position_cost(0)` and `body_orientation_cost(0)`
-   * take.
+   * is on the square of θ, when θ is small. Notice that since body 0 is the
+   * world, the cost on that body is always 0, no matter what value
+   * `body_position_cost(0)` and `body_orientation_cost(0)` take.
    * @param q_desired  The desired posture.
-   * @param body_position_cost  The cost for each body's position error. Unit is
-   * [1/m] (one over meters).
+   * @param body_position_cost  The cost for each body's position error. Unit
+   * is [1/m] (one over meters).
    * @pre
-   * 1. body_position_cost.rows() == plant.num_bodies(), where `plant`
-   *    is the input argument in the constructor of the class.
+   * 1. body_position_cost.rows() == plant.num_bodies(), where `plant` is the
+   *    input argument in the constructor of the class.
    * 2. body_position_cost(i) is non-negative.
    * @throws std::exception if the precondition is not satisfied.
    * @param body_orientation_cost The cost for each body's orientation error.
    * @pre
-   * 1. body_orientation_cost.rows() == plant.num_bodies() , where
-   *    `plant` is the input argument in the constructor of the class.
+   * 1. body_orientation_cost.rows() == plant.num_bodies() , where `plant` is
+   *    the input argument in the constructor of the class.
    * 2. body_position_cost(i) is non-negative.
    * @throws std::exception if the precondition is not satisfied.
    */
