@@ -9,16 +9,12 @@
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(augmented_lagrangian, m) {
+void DefineSolversAugmentedLagrangian(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
-
-  m.doc() = "Augmented Lagrangian solver bindings for MathematicalProgram";
-
-  py::module::import("pydrake.solvers.mathematicalprogram");
-  py::module::import("pydrake.autodiffutils");
 
   {
     using Class = AugmentedLagrangianNonsmooth;
@@ -109,5 +105,6 @@ PYBIND11_MODULE(augmented_lagrangian, m) {
   }
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

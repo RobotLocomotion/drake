@@ -4,20 +4,19 @@
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 
 namespace drake {
 namespace pydrake {
-PYBIND11_MODULE(mixed_integer_rotation_constraint, m) {
+namespace internal {
+
+void DefineSolversMixedIntegerRotationConstraint(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
-
-  m.doc() = "mixed integer rotation constraint bindings";
-
-  py::module::import("pydrake.solvers.mathematicalprogram");
 
   {
     using Class = MixedIntegerRotationConstraintGenerator;
@@ -57,5 +56,7 @@ PYBIND11_MODULE(mixed_integer_rotation_constraint, m) {
             py::arg("prog"), cls_doc.AddToProgram.doc);
   }
 }
+
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

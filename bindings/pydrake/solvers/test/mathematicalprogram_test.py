@@ -27,7 +27,7 @@ from pydrake.solvers.mathematicalprogram import (
     SolverId,
     SolverInterface
     )
-import pydrake.solvers.mathematicalprogram._testing as mp_testing
+import pydrake.solvers._testing as mp_testing
 import pydrake.symbolic as sym
 
 

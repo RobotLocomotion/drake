@@ -25,7 +25,7 @@ from pydrake.multibody.tree import (
 )
 import pydrake.multibody.inverse_kinematics as ik
 import pydrake.solvers.mathematicalprogram as mp
-from pydrake.solvers.snopt import SnoptSolver
+from pydrake.solvers import SnoptSolver
 from pydrake.systems.framework import DiagramBuilder_
 from pydrake.geometry import (
     Box,
