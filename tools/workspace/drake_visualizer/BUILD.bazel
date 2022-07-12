@@ -66,7 +66,9 @@ install_files(
         # participate in the install target.  Nerf the linter warning for that.
         "no_install_lint",
     ],
-    files = ["drake_visualizer_installed.py"],
+    files = [
+        "drake_visualizer_installed.py",
+    ] if _DRAKE_VISUALIZER_ENABLED else [],
     rename = {
         "bin/drake_visualizer_installed.py": "drake-visualizer",
     },
