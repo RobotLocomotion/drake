@@ -21,7 +21,6 @@ drake_cc_package_library(
         ":contact_surface_utility",
         ":deformable_contact_geometries",
         ":deformable_mesh_intersection",
-        ":deformable_rigid_contact_surface",
         ":deformable_volume_mesh",
         ":field_intersection",
         ":hydroelastic_internal",
@@ -169,22 +168,11 @@ drake_cc_library(
     deps = [
         ":bvh",
         ":deformable_contact_geometries",
-        ":deformable_rigid_contact_surface",
         ":deformable_volume_mesh",
         ":mesh_intersection",
         ":triangle_surface_mesh",
         "//geometry/query_results:contact_surface",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
-    name = "deformable_rigid_contact_surface",
-    srcs = ["deformable_rigid_contact_surface.cc"],
-    hdrs = ["deformable_rigid_contact_surface.h"],
-    deps = [
-        "//geometry:geometry_ids",
-        "//geometry/proximity:polygon_surface_mesh",
+        "//geometry/query_results:deformable_contact_data",
         "//math:geometric_transform",
     ],
 )
@@ -862,14 +850,6 @@ drake_cc_googletest(
         ":deformable_mesh_intersection",
         ":make_box_mesh",
         ":make_sphere_mesh",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "deformable_rigid_contact_surface_test",
-    deps = [
-        ":deformable_rigid_contact_surface",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

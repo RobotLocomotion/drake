@@ -73,8 +73,8 @@ drake_cc_library(
     srcs = ["deformable_contact_data.cc"],
     hdrs = ["deformable_contact_data.h"],
     deps = [
-        "//geometry/proximity:deformable_rigid_contact_surface",
-        "//geometry/proximity:volume_mesh",
+        "//geometry:geometry_ids",
+        "//geometry/proximity:polygon_surface_mesh",
         "//multibody/contact_solvers/sap:partial_permutation",
     ],
 )
@@ -83,6 +83,7 @@ drake_cc_googletest(
     name = "deformable_contact_data_test",
     deps = [
         ":deformable_contact_data",
+        "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
     ],
 )
