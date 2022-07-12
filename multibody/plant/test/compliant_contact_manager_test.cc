@@ -157,11 +157,11 @@ class SpheresStack : public ::testing::Test {
     // Hydroelastic modulus. If nullopt, this property is not added to the
     // model.
     std::optional<double> hydro_modulus;
-    // Dissipation time constant τ is used to setup the linear dissipation model
+    // Relaxation time constant τ is used to setup the linear dissipation model
     // where dissipation is c = τ⋅k, with k the point pair stiffness.
     // If nullopt, no dissipation is specified, i.e. the corresponding
     // ProximityProperties will not have dissipation defined.
-    std::optional<double> dissipation_timescale;
+    std::optional<double> relaxation_time;
     // Coefficient of dynamic friction.
     double friction_coefficient{nan()};
   };
@@ -326,15 +326,15 @@ class SpheresStack : public ::testing::Test {
     ASSERT_EQ(surfaces.size(), 1u);
     const int num_hydro_pairs = surfaces[0].num_faces();
 
-    // In these tests ContactParameters::dissipation_timescale = nullopt
+    // In these tests ContactParameters::relaxation_time = nullopt
     // indicates we want to build a model for which we forgot to specify the
-    // dissipation timescale in ProximityProperties. Here we verify this is
+    // relaxation time in ProximityProperties. Here we verify this is
     // required by the manager.
-    if (!sphere1_point_params.dissipation_timescale.has_value() ||
-        !sphere2_point_params.dissipation_timescale.has_value()) {
+    if (!sphere1_point_params.relaxation_time.has_value() ||
+        !sphere2_point_params.relaxation_time.has_value()) {
       DRAKE_EXPECT_THROWS_MESSAGE(
           EvalDiscreteContactPairs(*plant_context_),
-          "No `dissipation_timescale` specified. For geometry .* on body .*. "
+          "No `relaxation_time` specified. For geometry .* on body .*. "
           "You are using a linear model of compliant contact that requires you "
           "to specify dissipation explicitly.");
       return;
@@ -342,11 +342,11 @@ class SpheresStack : public ::testing::Test {
 
     // Verify that the manager throws an exception if a negative dissipation
     // timescale is provided.
-    if (*sphere1_point_params.dissipation_timescale < 0 ||
-        *sphere2_point_params.dissipation_timescale < 0) {
+    if (*sphere1_point_params.relaxation_time < 0 ||
+        *sphere2_point_params.relaxation_time < 0) {
       DRAKE_EXPECT_THROWS_MESSAGE(EvalDiscreteContactPairs(*plant_context_),
-                                  "Dissipation timescale must be non-negative "
-                                  "and dissipation_timescale = .* was "
+                                  "Relaxation time must be non-negative "
+                                  "and relaxation_time = .* was "
                                   "provided. For geometry .* on body .*.");
       return;
     }
@@ -392,10 +392,10 @@ class SpheresStack : public ::testing::Test {
       EXPECT_TRUE(CompareMatrices(point_pair.nhat_BA_W, normal_expected));
 
       // Verify dissipation.
-      const double tau1 = *sphere1_contact_params.dissipation_timescale;
+      const double tau1 = *sphere1_contact_params.relaxation_time;
       const double tau2 = i == 0
-                              ? *sphere2_contact_params.dissipation_timescale
-                              : *hard_hydro_contact.dissipation_timescale;
+                              ? *sphere2_contact_params.relaxation_time
+                              : *hard_hydro_contact.relaxation_time;
       const double tau_expected = tau1 + tau2;
       EXPECT_NEAR(point_pair.dissipation_time_scale, tau_expected,
                   kEps * tau_expected);
@@ -551,7 +551,7 @@ class SpheresStack : public ::testing::Test {
   }
 
   // Utility to make ProximityProperties from ContactParameters.
-  // params.dissipation_timescale is ignored if nullopt.
+  // params.relaxation_time is ignored if nullopt.
   static ProximityProperties MakeProximityProperties(
       const ContactParameters& params) {
     DRAKE_DEMAND(params.point_stiffness || params.hydro_modulus);
@@ -575,10 +575,10 @@ class SpheresStack : public ::testing::Test {
                                 params.friction_coefficient),
         &properties);
 
-    if (params.dissipation_timescale.has_value()) {
+    if (params.relaxation_time.has_value()) {
       properties.AddProperty(geometry::internal::kMaterialGroup,
-                             "dissipation_timescale",
-                             *params.dissipation_timescale);
+                             "relaxation_time",
+                             *params.relaxation_time);
     }
     return properties;
   }
