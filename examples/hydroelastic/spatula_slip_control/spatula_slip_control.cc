@@ -139,7 +139,7 @@ int DoMain() {
   plant_config.time_step = FLAGS_mbp_discrete_update_period;
   plant_config.stiction_tolerance = FLAGS_stiction_tolerance;
   plant_config.contact_model = FLAGS_contact_model;
-  plant_config.discrete_contact_solver_type = FLAGS_discrete_solver;
+  plant_config.discrete_contact_solver = FLAGS_discrete_solver;
   plant_config.contact_surface_representation =
       FLAGS_contact_surface_representation;
 

@@ -111,7 +111,7 @@ enum class ContactModel {
 /// - [Castro et al., 2022] Castro A., Permenter F. and Han X., 2022. An
 ///   Unconstrained Convex Formulation of Compliant Contact. Available online at
 ///   https://arxiv.org/abs/2110.10107.
-enum class DiscreteContactSolverType {
+enum class DiscreteContactSolver {
   /// TAMSI solver, see [Castro et al., 2019].
   kTamsi,
   /// SAP solver, see [Castro et al., 2022].
@@ -407,10 +407,10 @@ the following properties for point contact modeling:
 ⁴ We allow to specify both hunt_crossley_dissipation and dissipation_timescale
   for a given geometry. However only one of these will get used, depending on
   the configuration of the %MultibodyPlant. As an example, if the SAP solver is
-  specified (see set_discrete_contact_solver_type()) only the
+  specified (see set_discrete_contact_solver()) only the
   dissipation_timescale is used while hunt_crossley_dissipation is ignored.
   Conversely, if the TAMSI solver is used (see
-  set_discrete_contact_solver_type()) only hunt_crossley_dissipation is used
+  set_discrete_contact_solver()) only hunt_crossley_dissipation is used
   while dissipation_timescale is ignored. Currently, a continuous
   %MultibodyPlant model will always use the Hunt & Crossley model and
   dissipation_timescale will be ignored.
@@ -1625,10 +1625,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Sets the contact solver type used for discrete %MultibodyPlant models.
   /// @throws std::exception iff called post-finalize.
-  void set_discrete_contact_solver_type(DiscreteContactSolverType solver_type);
+  void set_discrete_contact_solver(DiscreteContactSolver solver_type);
 
   /// Returns the contact solver type used for discrete %MultibodyPlant models.
-  DiscreteContactSolverType get_discrete_contact_solver_type() const;
+  DiscreteContactSolver get_discrete_contact_solver() const;
 
   /// Return the default value for contact representation, given the desired
   /// time step. Discrete systems default to use polygons; continuous systems
@@ -4917,7 +4917,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // The solver type used by a discrete plant. Keep this in sync
   // with the default value in multibody_plant_config.h; there are already
   // assertions in the cc file that enforce this.
-  DiscreteContactSolverType solver_type_{DiscreteContactSolverType::kTamsi};
+  DiscreteContactSolver solver_type_{DiscreteContactSolver::kTamsi};
 
   // User's choice of the representation of contact surfaces in discrete
   // systems. The default value is dependent on whether the system is
