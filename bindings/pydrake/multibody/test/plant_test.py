@@ -170,7 +170,7 @@ class TestPlant(unittest.TestCase):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         self.assertEqual(plant.time_step(), 0.0)
-        spatial_inertia = SpatialInertia_[float].MakeTestCube()
+        spatial_inertia = SpatialInertia()
         body = plant.AddRigidBody(name="new_body",
                                   M_BBo_B=spatial_inertia)
         body_mass = body.default_mass()
@@ -608,7 +608,6 @@ class TestPlant(unittest.TestCase):
         SpatialInertia.MakeFromCentralInertia(
             mass=1.3, p_PScm_E=[0.1, -0.2, 0.3],
             I_SScm_E=RotationalInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
-        SpatialInertia.MakeTestCube(mass=2.3, length=3.4)
         spatial_inertia = SpatialInertia(
             mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
             G_SP_E=UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
@@ -1615,8 +1614,7 @@ class TestPlant(unittest.TestCase):
 
         def loop_body(make_joint, time_step):
             plant = MultibodyPlant_[T](time_step)
-            child = plant.AddRigidBody("Child",
-                                       SpatialInertia_[float].MakeTestCube())
+            child = plant.AddRigidBody("Child", SpatialInertia_[float]())
             joint = make_joint(
                 plant=plant, P=plant.world_frame(), C=child.body_frame())
             joint_out = plant.AddJoint(joint)
@@ -2323,7 +2321,7 @@ class TestPlant(unittest.TestCase):
         model_instance = plant.AddModelInstance("new instance")
         added_body = plant.AddRigidBody(
             name="body", model_instance=model_instance,
-            M_BBo_B=SpatialInertia_[float].MakeTestCube())
+            M_BBo_B=SpatialInertia_[float]())
         plant.Finalize()
         self.assertTrue(plant.HasBodyNamed("body", model_instance))
         self.assertTrue(plant.HasUniqueFreeBaseBody(model_instance))

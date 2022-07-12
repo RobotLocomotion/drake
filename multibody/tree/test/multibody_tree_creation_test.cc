@@ -895,10 +895,10 @@ GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
   EXPECT_EQ(mass_ABC, mA + mB + mC);
 
   // Verify whether all default rotational inertia in these sets are zero.
-  EXPECT_TRUE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_AA));
-  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_AB));
-  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_BC));
-  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_ABC));
+  EXPECT_FALSE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_AA));
+  EXPECT_TRUE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_AB));
+  EXPECT_TRUE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_BC));
+  EXPECT_TRUE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_ABC));
 }
 
 // Helper function to add a x-axis prismatic joint between two bodies.
@@ -927,7 +927,7 @@ void AddWeldJoint(MultibodyTree<double>* model, const std::string& name,
 
 // Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() throws an
 // exception if a sole composite rigid body can translate and has zero mass.
-GTEST_TEST(WeldedBodies, IssueWarningAboutCompositeBodyWithZeroMass) {
+GTEST_TEST(WeldedBodies, IssueWarningForDistalCompositeBodyWithZeroMass) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
   const double mass = 0;    // Mass of link.
@@ -953,7 +953,7 @@ GTEST_TEST(WeldedBodies, IssueWarningAboutCompositeBodyWithZeroMass) {
 
 // Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() throws an
 // exception if a sole composite rigid body can rotate but has no inertia.
-GTEST_TEST(WeldedBodies, IssueWarningAboutCompositeBodyWithZeroInertia) {
+GTEST_TEST(WeldedBodies, IssueWarningForDistalCompositeBodyWithZeroInertia) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
   const double mass = 0;    // Mass of link.
@@ -971,9 +971,9 @@ GTEST_TEST(WeldedBodies, IssueWarningAboutCompositeBodyWithZeroInertia) {
   model.Finalize();
 
   // The next function is usually called from MultibodyPlant::Finalize().
-  const std::string expected_message = "It seems that body bodyA has no "
-    "rotational inertia, yet it is attached by a joint that has a "
-    "rotational degree of freedom.";
+  const std::string expected_message = "It seems that body bodyA has zero or "
+    "NaN rotational inertia, yet it is attached by a joint "
+    "that has a rotational degree of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.IssuePostFinalizeMassInertiaWarnings(),
       expected_message);
 }
