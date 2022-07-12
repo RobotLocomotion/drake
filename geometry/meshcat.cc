@@ -406,8 +406,16 @@ class MeshcatShapeReifier : public ShapeReifier {
 
         // Scan .mtl file for map_ lines.  For each, load the file and add
         // the contents to geometry.resources.
-        // TODO(russt): Make this parsing more robust.
-        std::regex map_regex("map_[^\\s]+\\s+([^\\s]+)");
+        // The syntax (http://paulbourke.net/dataformats/mtl/) is e.g.
+        //   map_Ka -options args filename
+        // Here we ignore the options and only extract the filename (by
+        // extracting the last word before the end of line/string).
+        //  - "map_.+" matches the map_ plus any options,
+        //  - "\s" matches one whitespace (before the filename),
+        //  - "[^\s]+" matches the filename, and
+        //  - "[$\r\n]" matches the end of string or end of line.
+        // TODO(russt): This parsing could still be more robust.
+        std::regex map_regex(R"""(map_.+\s([^\s]+)[$\r\n])""");
         for (std::sregex_iterator iter(meshfile_object.mtl_library.begin(),
                                        meshfile_object.mtl_library.end(),
                                        map_regex);
