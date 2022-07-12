@@ -9,6 +9,7 @@
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
+#include "drake/multibody/inverse_kinematics/position_cost.h"
 #include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
 
 namespace drake {
@@ -65,6 +66,15 @@ solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
       &plant_, frameAbar, X_AbarA, p_AQ_lower, p_AQ_upper, frameB, p_BQ,
       get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
+}
+
+solvers::Binding<solvers::Cost> InverseKinematics::AddPositionCost(
+    const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& p_AP,
+    const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+    const Eigen::Ref<const Eigen::Matrix3d>& C) {
+  auto cost = std::make_shared<PositionCost>(&plant_, frameA, p_AP, frameB,
+                                             p_BQ, C, get_mutable_context());
+  return prog_->AddCost(cost, q_);
 }
 
 solvers::Binding<solvers::Constraint>
