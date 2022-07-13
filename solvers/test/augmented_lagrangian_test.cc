@@ -199,9 +199,9 @@ T al_equality(const Eigen::Ref<const VectorX<T>>& lhs,
 }
 
 // This function is only used inside the test
-// AugmentedLagrangianNonsmooth.EqualityConstraints. Ideally I want to put it
-// inside the test as a templated lambda, but our current compiler on Bionic
-// doesn't support this feature yet.
+// AugmentedLagrangianNonsmooth.EqualityConstraints. Next time we are making
+// any changes here, consider moving it to live directly within that test case
+// as a templated lambda.
 template <typename T>
 void CheckAugmentedLagrangianEqualityConstraint(
     const MathematicalProgram& prog, const Binding<Constraint>& constraint,
