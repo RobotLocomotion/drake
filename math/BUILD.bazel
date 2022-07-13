@@ -409,6 +409,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "jacobian_test",
+    # tags = ["manual"],
     deps = [
         ":gradient",
         ":jacobian",
@@ -441,6 +442,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "linear_solve_test",
+    tags = ["manual"],  # XXX
     deps = [
         ":linear_solve",
         "//common/test_utilities:eigen_matrix_compare",
