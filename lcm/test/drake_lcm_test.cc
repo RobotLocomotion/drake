@@ -400,10 +400,10 @@ TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
     EXPECT_EQ(channel_name, "SuffixDrakeLcmTest");
     received_drake.decode(data, 0, size);
   });
-  LoopUntilDone(&received_drake, 20 /* retries */, [&]() {
+  LoopUntilDone(&received_drake, 200 /* retries */, [&]() {
     Publish(publisher.get(), "SuffixDrakeLcmTest_ShouldBeDiscarded", message_);
     Publish(publisher.get(), "SuffixDrakeLcmTest_SUFFIX", message_);
-    dut_->HandleSubscriptions(50 /* millis */);
+    dut_->HandleSubscriptions(5 /* millis */);
   });
 }
 
