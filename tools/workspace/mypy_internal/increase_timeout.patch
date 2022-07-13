@@ -1,0 +1,25 @@
+From ee95d22371b272314a8c268c5c4304e8dd12eac4 Mon Sep 17 00:00:00 2001
+From: Matthew Woehlke <matthew.woehlke@kitware.com>
+Date: Tue, 12 Jul 2022 11:15:54 -0400
+Subject: [PATCH] Increase get_package_properties timeout
+
+Some packages may take a very long time to import, which can spuriously
+trip the timeout in ModuleInspect. To make this less likely, increase
+the timeout from 5s to 30s.
+
+diff --git mypy/moduleinspect.py mypy/moduleinspect.py
+index 326876ec5..90532ae19 100644
+--- mypy/moduleinspect.py
++++ mypy/moduleinspect.py
+@@ -157,7 +157,7 @@ class ModuleInspect:
+ 
+         Return the value read from the queue, or None if the process unexpectedly died.
+         """
+-        max_iter = 100
++        max_iter = 600
+         n = 0
+         while True:
+             if n == max_iter:
+-- 
+2.25.1
+
