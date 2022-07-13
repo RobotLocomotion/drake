@@ -28,7 +28,7 @@ namespace multibody {
 /// RotationalInertia, UnitInertia, and SpatialInertia make objects that are
 /// filled with NaNs or construct inertias that are consistent with the default
 /// values specified in the SDFormat <inertial> tag, found at:
-/// http://sdformat.org/spec?elem=link
+/// http://sdformat.org/spec?elem=link#inertial_inertia
 enum class InertiaValue {kNaN, kSdformat};
 
 /// This class describes the mass distribution (inertia properties) of a
@@ -172,16 +172,16 @@ class RotationalInertia {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
 
-  /// Creates a rotational inertia that depends on the argument inertiaValue.
-  /// @param[in] inertiaValue The type of rotational inertia to be constructed.
-  /// If inertiaValue is omitted or inertiaValue is InertiaValue::kNaN, the
+  /// Creates a rotational inertia that depends on the argument inertia_value.
+  /// @param[in] inertia_value The type of rotational inertia to be constructed.
+  /// If inertia_value is omitted or inertia_value is InertiaValue::kNaN, the
   /// constructed rotational inertia has moments and products of inertia set to
   /// NaN, which can be helpful in quickly detecting an uninitialized rotational
-  /// inertia. If inertiaValue is InertiaValue::kSdformat, the spatial inertia
+  /// inertia. If inertia_value is InertiaValue::kSdformat, the spatial inertia
   /// has moments of inertia Ixx = Iyy = Izz = 1 and products of inertia
   /// Ixy = Ixz = Iyx = 0.
-  explicit RotationalInertia(InertiaValue inertiaValue = InertiaValue::kNaN) {
-    const bool is_nan = inertiaValue == InertiaValue::kNaN;
+  explicit RotationalInertia(InertiaValue inertia_value = InertiaValue::kNaN) {
+    const bool is_nan = inertia_value == InertiaValue::kNaN;
     const T Ikk = is_nan ? NAN : 1.0;  // Generic moment of inertia.
     const T Iij = is_nan ? NAN : 0.0;  // Generic product of inertia.
     set_moments_and_products_no_validity_check(Ikk, Ikk, Ikk, Iij, Iij, Iij);

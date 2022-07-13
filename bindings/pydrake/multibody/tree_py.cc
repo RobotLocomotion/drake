@@ -858,7 +858,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "RotationalInertia", param, cls_doc.doc);
     cls  // BR
         .def(py::init<InertiaValue>(),
-            py::arg("inertiaValue") = InertiaValue::kNaN,
+            py::arg("inertia_value") = InertiaValue::kNaN,
             cls_doc.ctor.doc_1args)
         .def(py::init<const T&, const T&, const T&>(), py::arg("Ixx"),
             py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args)
@@ -941,8 +941,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "UnitInertia", param, cls_doc.doc);
     cls  // BR
         .def(py::init<InertiaValue>(),
-            py::arg("inertiaValue") = InertiaValue::kNaN,
-            cls_doc.ctor.doc_1args_inertiaValue)
+            py::arg("inertia_value") = InertiaValue::kNaN,
+            cls_doc.ctor.doc_1args_inertia_value)
         .def(py::init<const T&, const T&, const T&>(), py::arg("Ixx"),
             py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args_Ixx_Iyy_Izz)
         .def(py::init<const T&, const T&, const T&, const T&, const T&,
@@ -1006,7 +1006,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("I_SScm_E"),
             cls_doc.MakeFromCentralInertia.doc)
         .def(py::init<InertiaValue>(),
-            py::arg("inertiaValue") = InertiaValue::kNaN,
+            py::arg("inertia_value") = InertiaValue::kNaN,
             cls_doc.ctor.doc_1args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),

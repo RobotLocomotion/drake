@@ -841,7 +841,7 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
 // to sides (edges) of the cube. Point Bo is the centroid of the face of the
 // cube whose outward normal is -Bx. Hence, the position vector from Bo to Bcm
 // (B's center of mass) is p_BoBcm_B = Lx/2 Bx.
-const UnitInertia<double> MakeTestCubeUnitInertia(const double length = 1.0) {
+UnitInertia<double> MakeTestCubeUnitInertia(const double length = 1.0) {
     const UnitInertia<double> G_BBcm_B = UnitInertia<double>::SolidCube(length);
     const Vector3<double> p_BoBcm_B(length / 2, 0, 0);
     const UnitInertia<double> G_BBo_B =
