@@ -54,7 +54,7 @@ class SapSolverTester {
 
 constexpr double kEps = std::numeric_limits<double>::epsilon();
 // Suggested value for the dimensionless parameter used in the regularization of
-// friction, see [Castro et al. 2021].
+// friction, see [Castro et al. 2022].
 constexpr double kDefaultSigma = 1.0e-3;
 
 /* Model of a "pizza saver":
@@ -315,7 +315,7 @@ class PizzaSaverTest
         problem.time_step() *
         Vector4d(0.0, 0.0, problem.mass() * problem.g(), -Mz);
 
-    // Maximum expected slip. See Castro et al. 2021 for details (Eq. 31).
+    // Maximum expected slip. See Castro et al. 2022 for details (Eq. 31).
     const double max_slip_expected =
         kDefaultSigma * problem.mu() * problem.time_step() * problem.g();
 
@@ -595,8 +595,9 @@ TEST_P(PizzaSaverTest, NearRigidStiction) {
   const Vector4d j_expected(0.0, 0.0, dt * problem.mass() * problem.g(),
                             -dt * Mz);
 
-  // Maximum expected slip. See Castro et al. 2021 for details (Eq. 22).
-  const double max_slip_expected = kDefaultSigma * dt * problem.g();
+  // Maximum expected slip. See Castro et al. 2022 for details (Eq. 31).
+  const double max_slip_expected =
+      kDefaultSigma * problem.mu() * dt * problem.g();
 
   EXPECT_TRUE(CompareMatrices(result.v.head<3>(), Vector3d::Zero(), 1.0e-9));
   EXPECT_TRUE((result.j - j_expected).norm() / j_expected.norm() <
