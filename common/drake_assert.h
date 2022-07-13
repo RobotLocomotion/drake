@@ -141,8 +141,8 @@ constexpr bool kDrakeAssertIsDisarmed = false;
 #else
 // Assertions are disabled, so just typecheck the expression.
 namespace drake {
-constexpr bool kDrakeAssertIsArmed = true; //false;
-constexpr bool kDrakeAssertIsDisarmed = false; //true;
+constexpr bool kDrakeAssertIsArmed = false;
+constexpr bool kDrakeAssertIsDisarmed = true;
 }  // namespace drake
 # define DRAKE_ASSERT(condition) do {                                        \
     typedef ::drake::assert::ConditionTraits<                                \
