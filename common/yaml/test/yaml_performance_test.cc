@@ -1,9 +1,11 @@
 #include <vector>
 
+#include <Eigen/Core>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <unsupported/Eigen/AutoDiff>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/common/yaml/yaml_io.h"
