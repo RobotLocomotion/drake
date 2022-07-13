@@ -119,16 +119,15 @@ class SpatialInertia {
     return SpatialInertia(mass, p_PScm_E, G_SP_E);
   }
 
-  /// Creates a spatial inertia that depends on the argument inertia_value.
-  /// @param[in] inertia_value The type of spatial inertia to be constructed.
-  /// If inertia_value is omitted or is InertiaValue::kNaN, the constructor
-  /// spatial inertia has its mass, center of mass, and rotational inertia set
-  /// to NaN -- which can be helpful in quickly detecting an uninitialized
-  /// spatial inertia. If inertia value is InertiaValue::kSdformat, the
-  /// constructed spatial inertia has a mass of 1, a zero center of mass offset,
-  /// and a rotational inertia with moments of inertia Ixx = Iyy = Izz = 1 and
-  /// products of inertia Ixy = Ixz = Iyx = 0.
-  explicit SpatialInertia(InertiaValue inertia_value = InertiaValue::kNaN);
+  /// (Internal use only) Creates a spatial inertia whose mass is 1, position
+  /// vector to center of mass is zero, and whose rotational inertia has
+  /// moments of inertia of 1 and products of inertia of 0.
+  static SpatialInertia<T> MakeUnitary();
+
+  /// Default SpatialInertia constructor initializes mass, center of mass and
+  /// rotational inertia to invalid NaN's for a quick detection of
+  /// uninitialized values.
+  SpatialInertia() {}
 
   /// Constructs a spatial inertia for a physical body or composite body S about
   /// a point P from a given mass, center of mass and rotational inertia. The

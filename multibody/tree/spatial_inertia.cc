@@ -8,12 +8,11 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-SpatialInertia<T>::SpatialInertia(InertiaValue inertia_value) {
-  const bool is_NaN = inertia_value == InertiaValue::kNaN;
-  mass_ = is_NaN ? NAN : 1.0;
-  const T xyz = is_NaN ? NAN : 0.0;  // Generic value for center of mass offset.
-  p_PScm_E_ = Vector3<T>(xyz, xyz, xyz);  // Position from Bo to Bcm.
-  G_SP_E_ = UnitInertia<T>(inertia_value);
+SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
+  const T mass = 1;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();  // Position from Bo to Bcm.
+  const UnitInertia<T> G_BBo_B(/* Ixx = */ 1, /* Iyy = */ 1, /* Izz = */ 1);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
 }
 
 template <typename T>

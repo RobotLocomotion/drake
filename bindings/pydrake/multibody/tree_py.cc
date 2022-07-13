@@ -6,6 +6,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
@@ -138,14 +139,6 @@ void DoScalarIndependentDefinitions(py::module m) {
     enum_py  // BR
         .value("kQDot", Enum::kQDot, enum_doc.kQDot.doc)
         .value("kV", Enum::kV, enum_doc.kV.doc);
-  }
-
-  {
-    using Enum = InertiaValue;
-    constexpr auto& enum_doc = doc.InertiaValue;
-    py::enum_<Enum>(m, "InertiaValue", enum_doc.doc)
-        .value("kNaN", Enum::kNaN, enum_doc.kNaN.doc)
-        .value("kSdformat", Enum::kSdformat, enum_doc.kSdformat.doc);
   }
 }
 
@@ -300,8 +293,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.floating_position_suffix.doc)
         .def("floating_velocity_suffix", &Class::floating_velocity_suffix,
             cls_doc.floating_velocity_suffix.doc)
-        .def("get_default_mass", &Class::get_default_mass,
-            cls_doc.get_default_mass.doc)
+        .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("get_default_mass",
+        WrapDeprecated(
+            cls_doc.get_default_mass.doc_deprecated, &Class::get_default_mass),
+        cls_doc.get_default_mass.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls                     // BR
         .def("get_mass", &Class::get_mass, py::arg("context"),
             cls_doc.get_mass.doc)
         .def("CalcCenterOfMassInBodyFrame", &Class::CalcCenterOfMassInBodyFrame,
@@ -857,9 +857,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "RotationalInertia", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<InertiaValue>(),
-            py::arg("inertia_value") = InertiaValue::kNaN,
-            cls_doc.ctor.doc_1args)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const T&, const T&>(), py::arg("Ixx"),
             py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args)
         .def(py::init<const T&, const T&, const T&, const T&, const T&,
@@ -940,18 +938,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, RotationalInertia<T>>(
         m, "UnitInertia", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<InertiaValue>(),
-            py::arg("inertia_value") = InertiaValue::kNaN,
-            cls_doc.ctor.doc_1args_inertia_value)
+        .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const T&, const T&>(), py::arg("Ixx"),
-            py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args_Ixx_Iyy_Izz)
+            py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args)
         .def(py::init<const T&, const T&, const T&, const T&, const T&,
                  const T&>(),
             py::arg("Ixx"), py::arg("Iyy"), py::arg("Izz"), py::arg("Ixy"),
-            py::arg("Ixz"), py::arg("Iyz"),
-            cls_doc.ctor.doc_6args_Ixx_Iyy_Izz_Ixy_Ixz_Iyz)
+            py::arg("Ixz"), py::arg("Iyz"), cls_doc.ctor.doc_6args)
         .def(py::init([](const RotationalInertia<T>& I) { return Class(I); }),
-            py::arg("I"), cls_doc.ctor.doc_1args_I)
+            py::arg("I"), cls_doc.ctor.doc_1args)
         .def("SetFromRotationalInertia", &Class::SetFromRotationalInertia,
             py::arg("I"), py::arg("mass"), py_rvp::reference,
             cls_doc.SetFromRotationalInertia.doc)
@@ -1005,9 +1000,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("MakeFromCentralInertia", &Class::MakeFromCentralInertia,
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("I_SScm_E"),
             cls_doc.MakeFromCentralInertia.doc)
-        .def(py::init<InertiaValue>(),
-            py::arg("inertia_value") = InertiaValue::kNaN,
-            cls_doc.ctor.doc_1args)
+        .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),

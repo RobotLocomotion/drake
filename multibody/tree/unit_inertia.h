@@ -41,15 +41,9 @@ class UnitInertia : public RotationalInertia<T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnitInertia)
 
-  /// Creates a unit inertia that depends on the argument inertia_value.
-  /// @param[in] inertia_value The type of unit inertia to be constructed.
-  /// If inertia_value is omitted or inertia_value is InertiaValue::kNaN, the
-  /// constructed unit inertia has moments and products of inertia set to NaN,
-  /// which can be helpful in quickly detecting an uninitialized unit inertia.
-  /// If inertia_value is InertiaValue::kSdformat, the unit inertia has moments
-  /// and products of inertia of Ixx = Iyy = Izz = 1 and Ixy = Ixz = Iyx = 0.
-  explicit UnitInertia(InertiaValue inertia_value = InertiaValue::kNaN)
-      : RotationalInertia<T>(inertia_value) {}
+  /// Default %UnitInertia constructor sets all entries to NaN for quick
+  /// detection of uninitialized values.
+  UnitInertia() {}
 
   /// Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with each product of inertia set to zero.

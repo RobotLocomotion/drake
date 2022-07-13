@@ -46,28 +46,24 @@ SpatialInertia<double> MakeArbitrarySpatialInertia() {
                                                         I_Bcm_W);
 }
 
-GTEST_TEST(SpatialInertia, DefaultConstructorOrConstructorWithOneArgument) {
-  // Test default constructor which leaves entries initialized to NaN for a
-  // quick detection of uninitialized values.
+// Test default constructor which leaves entries initialized to NaN for a
+// quick detection of uninitialized values.
+GTEST_TEST(SpatialInertia, DefaultConstructor) {
   SpatialInertia<double> I;
   ASSERT_TRUE(I.IsNaN());
+}
 
-  // Test the one argument SpatialInertia constructor with one of its values.
-  const SpatialInertia<double> M0(InertiaValue::kNaN);
-  ASSERT_TRUE(M0.IsNaN());
-
-  // Test the one argument SpatialInertia constructor with its other value.
-  // Note: By default in SDformat, the mass is 1.0, the body's center of mass is
-  // coincident with the body origin (i.e., the center of mass offset is zero),
-  // the moments of inertia are 1.0 and the products of inertia are 0.0.
-  const SpatialInertia<double> M1(InertiaValue::kSdformat);
-  EXPECT_TRUE(M1.IsPhysicallyValid());
-  EXPECT_EQ(M1.get_mass(), 1.0);  // The default mass in SDformat is 1.0
-  EXPECT_EQ(M1.get_com(), Vector3<double>::Zero());
-  const Vector3<double> M1_unit_moments = M1.get_unit_inertia().get_moments();
-  const Vector3<double> M1_unit_products = M1.get_unit_inertia().get_products();
-  EXPECT_EQ(M1_unit_moments, Vector3<double>(1, 1, 1));
-  EXPECT_EQ(M1_unit_products, Vector3<double>::Zero());
+GTEST_TEST(SpatialInertia, MakeUnitary) {
+  const double expected_mass = 1;
+  const SpatialInertia<double> M = SpatialInertia<double>::MakeUnitary();
+  EXPECT_TRUE(M.IsPhysicallyValid());
+  EXPECT_EQ(M.get_mass(), expected_mass);
+  EXPECT_EQ(M.get_com(), Vector3<double>::Zero());
+  const Vector3<double> M_unit_moments = M.get_unit_inertia().get_moments();
+  const Vector3<double> M_unit_products = M.get_unit_inertia().get_products();
+  const double Ixx = 1;  // Expected Ixx = Iyy = Izz unit moment of inertia.
+  EXPECT_EQ(M_unit_moments, Vector3<double>(Ixx, Ixx, Ixx));
+  EXPECT_EQ(M_unit_products, Vector3<double>::Zero());
 }
 
 // Test the construction from the mass, center of mass, and unit inertia of a
