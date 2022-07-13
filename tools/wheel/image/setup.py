@@ -46,6 +46,14 @@ def find_data_files(*patterns):
     return result
 
 
+def _actually_find_packages():
+    """Work around broken(?!) setuptools."""
+    result = find_packages()
+    result.extend(["pydrake.examples", "pydrake.solvers"])
+    print(f"Using packages={result}")
+    return result
+
+
 setup(name='drake',
       version=DRAKE_VERSION,
       description='Model-based design and verification for robotics',
@@ -78,7 +86,7 @@ design/analysis.'''.strip(),
       # TODO Check this: do we need to add third-party licenses?
       license='BSD 3-Clause License',
       platforms=['linux_x86_64', 'macosx_x86_64'],
-      packages=find_packages(),
+      packages=_actually_find_packages(),
       # Add in any packaged data.
       include_package_data=True,
       package_data={
