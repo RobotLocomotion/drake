@@ -32,8 +32,6 @@ class SymbolicRationalFunctionTest : public ::testing::Test {
   const Expression a_{var_a_};
   const Expression b_{var_b_};
   const Expression c_{var_c_};
-  const Expression xy_{var_x_ + var_y_};
-  const Expression xyz_{var_x_ + var_y_ + var_z_};
 
   const Polynomial polynomial_zero_{0};
   const Polynomial polynomial_one_{1};

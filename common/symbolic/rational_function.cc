@@ -162,7 +162,7 @@ RationalFunction& RationalFunction::operator/=(const Polynomial& p) {
 }
 
 RationalFunction& RationalFunction::operator/=(const Monomial& m) {
-  if (m == Monomial()) {
+  if (m.total_degree() == 0) {
     throw std::logic_error("RationalFunction: operator/=: The divider is 0.");
   }
   denominator_ *= m;
