@@ -1,0 +1,20 @@
+--- include/pybind11/eigen.h
++++ include/pybind11/eigen.h
+@@ -730,9 +730,14 @@
+             return false;
+ 
+         auto obj = reinterpret_borrow<object>(src);
+-        object sparse_module = module_::import("scipy.sparse");
+-        object matrix_type = sparse_module.attr(
+-            rowMajor ? "csr_matrix" : "csc_matrix");
++        object matrix_type;
++        try {
++            object sparse_module = module_::import("scipy.sparse");
++            matrix_type = sparse_module.attr(
++                rowMajor ? "csr_matrix" : "csc_matrix");
++        } catch (const error_already_set &) {
++            return false;
++        }
+ 
+         if (!type::handle_of(obj).is(matrix_type)) {
+             try {
