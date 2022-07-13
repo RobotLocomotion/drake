@@ -32,6 +32,12 @@ CLANG_FLAGS = CXX_FLAGS + [
     # This was turned on via "-Wc99-designator", but is not an an error.
     # Our conventions permit using this language extension even in C++17 mode.
     "-Wno-c++20-designator",
+    # As a kind of portability hint, by default Clang will warn about the use
+    # of C++20 features when compiling in -std=c++17 mode (i.e., the warning
+    # flag "-Wc++-20-extensions" is enabled by default). For Drake, we are
+    # content to use any C++20 extensions that pass our CI, so the warning is
+    # always a false positive. We'll turn it off via the "-Wno..." syntax.
+    "-Wno-c++20-extensions",
 ]
 
 # The CLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the

@@ -10,11 +10,13 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 
+using Eigen::Matrix2d;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::AutoDiffScalar;
+using Vector5d = Eigen::Matrix<double, 5, 1>;
 
 namespace drake {
 namespace math {
@@ -199,6 +201,32 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeNoGradientMatrix) {
   EXPECT_TRUE(CompareMatrices(ExtractGradient(adX_return),
                               Eigen::Matrix4d::Identity()));
 
+  // Row-major order is preserved through InitializeAutoDiff.
+  Eigen::Matrix<double, 2, 3, Eigen::RowMajor> value_rowmajor;
+  value_rowmajor <<
+      1.0, 2.0, 3.0,
+      4.0, 5.0, 6.0;
+  const auto adXT_return = InitializeAutoDiff(value_rowmajor);
+  EXPECT_TRUE(decltype(adXT_return)::IsRowMajor);
+  EXPECT_EQ(decltype(adXT_return)::RowsAtCompileTime, 2);
+  EXPECT_EQ(decltype(adXT_return)::ColsAtCompileTime, 3);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(adXT_return), value_rowmajor));
+  // ExtractGradient always uses rows==num_values and cols==num_derivs
+  // with the i'th row referring to column-major order through adXT_return.
+  // This might not be the most intuitive answer (and so, it'd be okay to
+  // change our mind later about what this should be) but in any case we
+  // should have a test case here to demonstrate the current reality.
+  MatrixXd wacko_gradient(6, 6);
+  wacko_gradient <<
+      1, 0, 0, 0, 0, 0,
+      0, 0, 0, 1, 0, 0,
+      0, 1, 0, 0, 0, 0,
+      0, 0, 0, 0, 1, 0,
+      0, 0, 1, 0, 0, 0,
+      0, 0, 0, 0, 0, 1;
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(adXT_return),
+                              wacko_gradient));
+
   // Fixed-size value, variable-size gradient.
   Eigen::Matrix<AutoDiffXd, 2, 2> autodiffX;
   InitializeAutoDiff(value, {}, {}, &autodiffX);
@@ -285,44 +313,49 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeWithGradientMatrix) {
 }
 
 GTEST_TEST(AdditionalAutodiffTest, InitializeAutoDiffTuple) {
-  // When all sizes are known at compile time, the resulting
-  // AutoDiffScalars should have a compile time number of
-  // derivatives.
-  const Eigen::Matrix2d matrix2 = Eigen::Matrix2d::Identity();
-  const Eigen::Vector3d vec3{1., 2., 3.};
-  const Eigen::Vector4d vec4{5., 6., 7., 8.};
+  // When all sizes are known at compile time, the resulting AutoDiffScalars
+  // should have a compile time number of derivatives. Each matrix has a
+  // distinct size, so that we can detect mistakes in the left-to-right vs
+  // right-to-left order of derivative assignments.
+  const Matrix2d matrix2 = Eigen::Matrix2d::Identity();
+  const Vector3d vec3{1., 2., 3.};
+  const Vector5d vec5 = VectorXd::LinSpaced(5, 5.0, 9.0);
 
-  const auto tuple = math::InitializeAutoDiffTuple(matrix2, vec3, vec4);
+  const auto tuple = math::InitializeAutoDiffTuple(matrix2, vec3, vec5);
   EXPECT_EQ(std::tuple_size_v<decltype(tuple)>, 3);
 
   EXPECT_EQ(std::get<0>(tuple).rows(), 2);
   EXPECT_EQ(std::get<0>(tuple).cols(), 2);
-  EXPECT_EQ(std::get<1>(tuple).size(), 3);
-  EXPECT_EQ(std::get<2>(tuple).size(), 4);
+  EXPECT_EQ(std::get<1>(tuple).rows(), 3);
+  EXPECT_EQ(std::get<1>(tuple).cols(), 1);
+  EXPECT_EQ(std::get<2>(tuple).rows(), 5);
+  EXPECT_EQ(std::get<2>(tuple).cols(), 1);
 
   // This is the expected type of the derivatives vector (in every element).
-  const Eigen::Matrix<double, 11, 1>& deriv_12 =
+  const Eigen::Matrix<double, 12, 1>& deriv_12 =
       std::get<1>(tuple).coeffRef(2).derivatives();
   // Check that we didn't create a new copy (i.e. we got the right type).
   EXPECT_EQ(&deriv_12, &std::get<1>(tuple).coeffRef(2).derivatives());
 
   // Since vec3[2] is the 7th variable, we expect only element 7 of its
   // derivatives vector to be 1.
-  VectorXd expected(11);
-  expected << 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0;
+  VectorXd expected(12);
+  expected << 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0;
   EXPECT_EQ(deriv_12, expected);
 
   // Now let's replace vec3 with a dynamic version of the same size.
   Eigen::VectorXd vec3d(3);
   vec3d << 10., 11., 12.;
 
-  const auto tupled = math::InitializeAutoDiffTuple(matrix2, vec3d, vec4);
+  const auto tupled = math::InitializeAutoDiffTuple(matrix2, vec3d, vec5);
   EXPECT_EQ(std::tuple_size_v<decltype(tupled)>, 3);
 
   EXPECT_EQ(std::get<0>(tupled).rows(), 2);
   EXPECT_EQ(std::get<0>(tupled).cols(), 2);
-  EXPECT_EQ(std::get<1>(tupled).size(), 3);
-  EXPECT_EQ(std::get<2>(tupled).size(), 4);
+  EXPECT_EQ(std::get<1>(tupled).rows(), 3);
+  EXPECT_EQ(std::get<1>(tupled).cols(), 1);
+  EXPECT_EQ(std::get<2>(tupled).rows(), 5);
+  EXPECT_EQ(std::get<2>(tupled).cols(), 1);
 
   // This is the expected type of the derivatives vector (in every element).
   const Eigen::Matrix<double, Eigen::Dynamic, 1>& deriv_12d =
@@ -331,7 +364,7 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeAutoDiffTuple) {
   EXPECT_EQ(&deriv_12d, &std::get<1>(tupled).coeffRef(2).derivatives());
 
   // We should still get the same value at run time.
-  expected << 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0;
+  expected << 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0;
   EXPECT_EQ(deriv_12d, expected);
 }
 
