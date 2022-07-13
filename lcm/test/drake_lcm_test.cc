@@ -383,26 +383,27 @@ TEST_F(DrakeLcmTest, Suffix) {
 }
 
 // Tests the channel name suffix feature.
-TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
+TEST_F(DrakeLcmTest, SuffixInMultiChannel) {
   // The device under test will listen for messages.
   DrakeLcmParams params;
   params.channel_suffix = "_SUFFIX";
   params.lcm_url = kUdpmUrl;
   dut_ = std::make_unique<DrakeLcm>(params);
 
-  // Use a separate publisher, to have direct control over the channel name.
-  auto publisher = std::make_unique<DrakeLcm>(kUdpmUrl);
-
   // Check SubscribeAll, expecting to see the unadorned channel name.
   lcmt_drake_signal received_drake{};
   auto subscription = dut_->SubscribeAllChannels([&received_drake](
       std::string_view channel_name, const void* data, int size) {
-    EXPECT_EQ(channel_name, "SuffixDrakeLcmTest");
+    EXPECT_EQ(channel_name, "SuffixInMultiChannel");
     received_drake.decode(data, 0, size);
   });
+
+  // Use a separate publisher, to have direct control over the channel name.
+  auto publisher = std::make_unique<DrakeLcm>(kUdpmUrl);
+  const lcmt_drake_signal wrong{};
   LoopUntilDone(&received_drake, 200 /* retries */, [&]() {
-    Publish(publisher.get(), "SuffixDrakeLcmTest_ShouldBeDiscarded", message_);
-    Publish(publisher.get(), "SuffixDrakeLcmTest_SUFFIX", message_);
+    Publish(publisher.get(), "SuffixInMultiChannel_ShouldBeDiscarded", wrong);
+    Publish(publisher.get(), "SuffixInMultiChannel_SUFFIX", message_);
     dut_->HandleSubscriptions(5 /* millis */);
   });
 }
