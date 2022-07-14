@@ -12,6 +12,7 @@ using drake::multibody::MultibodyPlant;
 using drake::symbolic::Expression;
 using drake::systems::Context;
 using drake::test::LimitMalloc;
+using drake::test::LimitMallocParams;
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -19,13 +20,6 @@ using Eigen::VectorXd;
 namespace drake {
 namespace examples {
 namespace {
-
-// @note LimitMalloc: This program uses LimitMalloc to indicate the count of
-// malloc calls measured at the time the benchmark cases were written. At best,
-// they are empirical observations. If there is a good reason to exceed these
-// limits, maintainers should not hesitate to change them. If they are exceeded
-// without a good reason, maintainers should revisit their changes to see why
-// heap usage has increased.
 
 // Track and report simple streaming statistics on allocations. Variance
 // tracking is adapted from:
@@ -121,11 +115,11 @@ class CassieDoubleFixture : public benchmark::Fixture {
 BENCHMARK_F(CassieDoubleFixture, DoubleMassMatrix)(benchmark::State& state) {
   MatrixXd M(nv_, nv_);
   for (auto _ : state) {
-    // @see LimitMalloc note above.
-    LimitMalloc guard({.max_num_allocations = 0});
+    const LimitMallocParams no_limit;
+    LimitMalloc malloc_counter(no_limit);
     InvalidateState();
     plant_->CalcMassMatrix(*context_, &M);
-    tracker_.Update(guard.num_allocations());
+    tracker_.Update(malloc_counter.num_allocations());
   }
   tracker_.Report(&state);
 }
@@ -136,11 +130,11 @@ BENCHMARK_F(CassieDoubleFixture, DoubleInverseDynamics)
   VectorXd desired_vdot = VectorXd::Zero(nv_);
   multibody::MultibodyForces<double> external_forces(*plant_);
   for (auto _ : state) {
-    // @see LimitMalloc note above.
-    LimitMalloc guard({.max_num_allocations = 3});
+    const LimitMallocParams no_limit;
+    LimitMalloc malloc_counter(no_limit);
     InvalidateState();
     plant_->CalcInverseDynamics(*context_, desired_vdot, external_forces);
-    tracker_.Update(guard.num_allocations());
+    tracker_.Update(malloc_counter.num_allocations());
   }
   tracker_.Report(&state);
 }
@@ -152,12 +146,12 @@ BENCHMARK_F(CassieDoubleFixture, DoubleForwardDynamics)
   auto& port_value =
       plant_->get_actuation_input_port().FixValue(context_.get(), u_);
   for (auto _ : state) {
-    // @see LimitMalloc note above.
-    LimitMalloc guard({.max_num_allocations = 22});
+    const LimitMallocParams no_limit;
+    LimitMalloc malloc_counter(no_limit);
     InvalidateState();
     port_value.GetMutableData();  // Invalidates caching of inputs.
     plant_->CalcTimeDerivatives(*context_, derivatives.get());
-    tracker_.Update(guard.num_allocations());
+    tracker_.Update(malloc_counter.num_allocations());
   }
   tracker_.Report(&state);
 }
@@ -196,7 +190,6 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
     InvalidateState();
     plant_autodiff_->CalcMassMatrix(*context_autodiff_, &M_autodiff);
   }
-  tracker_.Report(&state);
 }
 
 BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
@@ -218,7 +211,6 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
                                          vdot_autodiff,
                                          external_forces_autodiff);
   }
-  tracker_.Report(&state);
 }
 
 BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
@@ -238,7 +230,6 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
     plant_autodiff_->CalcTimeDerivatives(*context_autodiff_,
                                          derivatives_autodiff.get());
   }
-  tracker_.Report(&state);
 }
 
 // Fixture that holds a Cassie robot model in a MultibodyPlant<Expression>. It

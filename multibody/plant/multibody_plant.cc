@@ -1999,7 +1999,9 @@ template<typename T>
 VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
     const systems::Context<T>& context) const {
   this->ValidateContext(context);
+
   // Assemble the vector from the model instance input ports.
+  // TODO(sherm1) Heap allocation here. Get rid of it.
   VectorX<T> actuation_input(num_actuated_dofs());
 
   const auto& actuation_port = this->get_input_port(actuation_port_);
