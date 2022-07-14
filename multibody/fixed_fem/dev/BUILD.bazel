@@ -12,48 +12,6 @@ package(
 )
 
 drake_cc_library(
-    name = "reference_deformable_geometry",
-    srcs = [
-        "reference_deformable_geometry.cc",
-    ],
-    hdrs = [
-        "reference_deformable_geometry.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//common:essential",
-        "//geometry/proximity:mesh_field",
-        "//geometry/proximity:volume_mesh",
-    ],
-)
-
-drake_cc_library(
-    name = "deformable_visualizer",
-    srcs = ["deformable_visualizer.cc"],
-    hdrs = ["deformable_visualizer.h"],
-    deps = [
-        ":reference_deformable_geometry",
-        "//common:essential",
-        "//geometry/proximity:sorted_triplet",
-        "//geometry/proximity:volume_mesh",
-        "//lcm:drake_lcm",
-        "//lcmtypes:experimental_deformable_mesh",
-        "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "fem_indexes",
-    hdrs = [
-        "fem_indexes.h",
-    ],
-    deps = [
-        "//common:essential",
-        "//common:type_safe_index",
-    ],
-)
-
-drake_cc_library(
     name = "mesh_utilities",
     srcs = [
         "mesh_utilities.cc",
@@ -62,11 +20,8 @@ drake_cc_library(
         "mesh_utilities.h",
     ],
     deps = [
-        ":reference_deformable_geometry",
         "//common:default_scalars",
         "//common:essential",
-        "//geometry:scene_graph",
-        "//geometry/proximity:deformable_contact_geometries",
         "//geometry/proximity:make_box_mesh",
         "//geometry/proximity:volume_mesh",
         "//math:geometric_transform",
@@ -78,10 +33,6 @@ drake_cc_googletest(
     name = "mesh_utilities_test",
     deps = [
         ":mesh_utilities",
-        "//geometry/proximity:deformable_contact_geometries",
-        "//geometry/proximity:make_box_field",
-        "//geometry/proximity:make_box_mesh",
-        "//geometry/proximity:mesh_to_vtk",
         "//geometry/proximity:proximity_utilities",
     ],
 )
