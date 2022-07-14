@@ -16,7 +16,6 @@
 
 namespace drake {
 namespace multibody {
-namespace c_iris {
 
 std::unique_ptr<drake::multibody::MultibodyPlant<double>> ConstructIiwaPlant(
     const std::string& iiwa_sdf_name, bool finalize);
@@ -78,6 +77,5 @@ void AddDualArmIiwa(const drake::math::RigidTransformd& X_WL,
                     drake::multibody::MultibodyPlant<double>* plant,
                     drake::multibody::ModelInstanceIndex* left_iiwa_instance,
                     drake::multibody::ModelInstanceIndex* right_iiwa_instance);
-}  // namespace c_iris
 }  // namespace multibody
 }  // namespace drake

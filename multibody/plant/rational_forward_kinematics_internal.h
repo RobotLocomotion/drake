@@ -11,7 +11,6 @@
 
 namespace drake {
 namespace multibody {
-namespace c_iris {
 namespace internal {
 /**
  * In the changed-root tree (where link A is treated as the root of the tree,
@@ -75,6 +74,5 @@ multibody::BodyIndex FindBodyInTheMiddleOfChain(
     const multibody::MultibodyPlant<double>& plant, multibody::BodyIndex start,
     multibody::BodyIndex end);
 }  // namespace internal
-}  // namespace c_iris
 }  // namespace multibody
 }  // namespace drake
