@@ -374,7 +374,8 @@ def _raw_drake_cc_library(
         testonly = None,
         visibility = None,
         declare_installed_headers = None,
-        install_hdrs_exclude = None):
+        install_hdrs_exclude = None,
+        deprecation = None):
     """Creates a rule to declare a C++ library.  Uses Drake's include_prefix
     and checks the deps blacklist.  If declare_installed_headers is true, also
     adds a drake_installed_headers() target.  (This should be set if and only
@@ -411,6 +412,7 @@ def _raw_drake_cc_library(
     # that implementation instead of making our own sandwich.
     compiled_name = name
     compiled_visibility = visibility
+    compiled_deprecation = deprecation
     if implementation_deps:
         if not linkstatic:
             fail("implementation_deps are only supported for static libraries")
@@ -432,6 +434,7 @@ def _raw_drake_cc_library(
         tags = tags,
         testonly = testonly,
         visibility = compiled_visibility,
+        deprecation = compiled_deprecation,
     )
 
     # If we're using implementation_deps, then make me an "implementation
@@ -468,6 +471,7 @@ def _raw_drake_cc_library(
             tags = tags,
             testonly = testonly,
             visibility = visibility,
+            deprecation = deprecation,
         )
 
 def _maybe_add_pruned_private_hdrs_dep(
