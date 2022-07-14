@@ -17,6 +17,7 @@ using Eigen::MatrixXd;
 using Eigen::RowVectorXd;
 using Eigen::VectorXd;
 
+// TODO(jwnimmer-tri) Rewrite these to use googlebench Args().
 DEFINE_int32(batch_size, 2, "Number of batch evaluations.");
 DEFINE_int32(width, 256, "Number of units in each hidden layer.");
 DEFINE_int32(iterations, 2, "Number of times to call the method.");

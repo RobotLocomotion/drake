@@ -66,4 +66,3 @@ BENCHMARK_F(BasicFixture, PassThrough3)(benchmark::State& state) {
 }  // namespace systems
 }  // namespace drake
 
-BENCHMARK_MAIN();

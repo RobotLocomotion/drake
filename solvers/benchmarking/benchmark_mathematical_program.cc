@@ -119,5 +119,3 @@ BENCHMARK(BenchmarkSosProgram3);
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
-
-BENCHMARK_MAIN();

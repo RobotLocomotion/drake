@@ -116,5 +116,3 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
 }  // namespace inverse_kinematics
 }  // namespace multibody
 }  // namespace drake
-
-BENCHMARK_MAIN();

@@ -275,6 +275,9 @@ void ReportContactSurfaces() {
 }  // namespace geometry
 }  // namespace drake
 
+// TODO(jwnimmer-tri) Port this to use //tools/performance:gflags_main instead
+// or writing one by hand.  Add the ReportContactSurfaces to the benchmark
+// output data using the googlebenchmark API instead of bespoke code.
 int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();

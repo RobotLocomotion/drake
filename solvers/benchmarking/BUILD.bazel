@@ -13,8 +13,10 @@ drake_cc_googlebench_binary(
     add_test_rule = True,
     test_timeout = "moderate",
     deps = [
+        "//common:add_text_logging_gflags",
         "//solvers:mathematical_program",
         "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
     ],
 )
 
