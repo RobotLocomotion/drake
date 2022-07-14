@@ -38,7 +38,6 @@ drake_cc_googlebench_binary(
     deps = [
         "//common:essential",
         "//common:find_resource",
-        "//common/test_utilities:limit_malloc",
         "//math:gradient",
         "//multibody/parsing:parser",
         "//tools/performance:fixture_common",
