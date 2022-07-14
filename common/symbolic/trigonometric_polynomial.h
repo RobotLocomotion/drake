@@ -85,6 +85,33 @@ Substitute(const Eigen::MatrixBase<Derived>& m,
   });
 }
 
+namespace internal {
+/**
+ * This is the actual implementation of SubstituteStereographicProjection()
+ * function. We expose this function because if repeated calls
+ * SubstituteStereographicProjection() requires re-constructing the polynomial
+ * 1+t², 2t, 1-t²; it is more efficient to construct these polynomials
+ * beforehand and then call this SubstituteStereographicProjectionImpl()
+ * function.
+ * @param e_poly The polynomial before substitution.
+ * @param sin_cos The sin and cos variables in e_poly to be replaced.
+ * @param t We will replace sin and cos function as rational function of t.
+ * @param t_set The set of variables @p t.
+ * @param one_plus_t_angles_squared 1+t²
+ * @param two_t_angles 2t
+ * @param one_minus_t_angles_squared 1-t²
+ * @param[out] e_rational The rational polynomial after replacing sin/cos in @p
+ * e_poly with rational functions of t.
+ */
+void SubstituteStereographicProjectionImpl(
+    const symbolic::Polynomial& e_poly, const std::vector<SinCos>& sin_cos,
+    const VectorX<symbolic::Variable>& t, const symbolic::Variables& t_set,
+    const VectorX<symbolic::Polynomial>& one_plus_t_angles_squared,
+    const VectorX<symbolic::Polynomial>& two_t_angles,
+    const VectorX<symbolic::Polynomial>& one_minus_t_angles_squared,
+    symbolic::RationalFunction* e_rational);
+}  // namespace internal
+
 /**
  * Substitutes the variables representing sine and cosine functions with their
  * stereographic projection.

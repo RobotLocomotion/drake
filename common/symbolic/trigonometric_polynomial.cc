@@ -410,7 +410,9 @@ bool CheckPolynomialIndeterminatesAreSinCos(
   }
   return e_poly.indeterminates().IsSubsetOf(sin_cos_vars);
 }
+}  // namespace
 
+namespace internal {
 void SubstituteStereographicProjectionImpl(
     const symbolic::Polynomial& e_poly, const std::vector<SinCos>& sin_cos,
     const VectorX<symbolic::Variable>& t, const symbolic::Variables& t_set,
@@ -478,7 +480,7 @@ void SubstituteStereographicProjectionImpl(
 
   *e_rational = symbolic::RationalFunction(numerator, denominator);
 }
-}  // namespace
+}  // namespace internal
 
 symbolic::RationalFunction SubstituteStereographicProjection(
     const symbolic::Polynomial& e_poly, const std::vector<SinCos>& sin_cos,
@@ -496,9 +498,9 @@ symbolic::RationalFunction SubstituteStereographicProjection(
   }
   const symbolic::Variables t_set{t};
   symbolic::RationalFunction e_rational;
-  SubstituteStereographicProjectionImpl(e_poly, sin_cos, t, t_set,
-                                        one_plus_t_square, two_t,
-                                        one_minus_t_square, &e_rational);
+  internal::SubstituteStereographicProjectionImpl(
+      e_poly, sin_cos, t, t_set, one_plus_t_square, two_t, one_minus_t_square,
+      &e_rational);
   return e_rational;
 }
 
