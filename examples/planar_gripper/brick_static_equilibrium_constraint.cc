@@ -5,7 +5,7 @@
 #include "drake/examples/planar_gripper/gripper_brick_planning_constraint_helper.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
+#include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
 
 namespace drake {
 namespace examples {

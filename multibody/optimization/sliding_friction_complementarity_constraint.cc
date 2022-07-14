@@ -4,7 +4,7 @@
 #include <limits>
 #include <memory>
 
-#include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
+#include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
 
 namespace drake {
 

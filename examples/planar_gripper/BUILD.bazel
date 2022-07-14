@@ -54,7 +54,7 @@ drake_cc_library(
         ":gripper_brick",
         ":gripper_brick_planning_constraint_helper",
         "//math:autodiff",
-        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/inverse_kinematics:kinematic_evaluators",
         "//multibody/plant",
         "//solvers:constraint",
         "//solvers:mathematical_program",
@@ -134,7 +134,7 @@ drake_cc_library(
     hdrs = ["gripper_brick_planning_constraint_helper.h"],
     deps = [
         ":gripper_brick",
-        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/inverse_kinematics:kinematic_evaluators",
         "//solvers:mathematical_program",
     ],
 )

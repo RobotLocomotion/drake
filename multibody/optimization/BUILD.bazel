@@ -33,7 +33,7 @@ drake_cc_library(
     srcs = ["centroidal_momentum_constraint.cc"],
     hdrs = ["centroidal_momentum_constraint.h"],
     deps = [
-        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/inverse_kinematics:kinematic_evaluators",
         "//multibody/plant",
         "//solvers:constraint",
     ],
@@ -54,7 +54,7 @@ drake_cc_library(
     hdrs = ["contact_wrench_evaluator.h"],
     deps = [
         "//common:sorted_pair",
-        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/inverse_kinematics:kinematic_evaluators",
         "//multibody/plant",
         "//solvers:evaluator_base",
     ],
@@ -83,7 +83,7 @@ drake_cc_library(
     deps = [
         ":contact_wrench_evaluator",
         "//geometry:scene_graph",
-        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/inverse_kinematics:kinematic_evaluators",
         "//multibody/plant",
         "//solvers:binding",
         "//solvers:constraint",
@@ -97,7 +97,7 @@ drake_cc_library(
     deps = [
         ":contact_wrench_evaluator",
         "//geometry:scene_graph",
-        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/inverse_kinematics:kinematic_evaluators",
         "//multibody/plant",
         "//solvers:binding",
         "//solvers:constraint",
@@ -271,7 +271,7 @@ drake_cc_googletest(
     deps = [
         ":quaternion_integration_constraint",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/inverse_kinematics:kinematic_evaluators",
         "//solvers:mathematical_program",
         "//solvers:solve",
     ],
