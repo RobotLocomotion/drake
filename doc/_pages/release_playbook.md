@@ -196,9 +196,10 @@ the main body of the document:
 
 ## Post-release tutorials updates
 
-Upgrade our Deepnote-hosted tutorials to the latest release.  This requires that
-you have "Edit" permission in the Deepnote project.  If you don't have that yet,
-then ask for help on slack in the ``#releases`` channel.
+Upgrade our Deepnote-hosted tutorials to the latest release.  This requires
+that you have "Edit" permission in the Deepnote project.  If you don't have
+that yet, then ask for help on slack in the ``#releases`` channel.  Provide
+the email address associated with your github account.
 
 1. Open the tutorials [Dockerfile](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2FDockerfile):
    1. Edit the first line to refer to the YYYYMMDD for this release.
@@ -244,13 +245,17 @@ then ask for help on slack in the ``#releases`` channel.
          one of the middle cells where it uses JointSliders. It is _not_ hung,
          rather it is waiting for user input. Find the "Meshcat URL" link
          earlier in the notebook, click through to open Meshcat in a new tab,
-         click "Open Controls", then click "Stop JointSliders".
+         click "Open Controls", then click "Stop JointSliders" repeatedly until
+         the option vanishes and the notebook completes.
       2. Do not try to run the ``licensed_solvers_deepnote`` notebook.
          (You do not have a suitable license key.)
+      3. If you get an error like "Synchronization of file ... failed, your changes are not being saved. You might be running out of disk quota" you may ignore it.
    2. For all markdown cells, quickly skim over the rendered output to check
       that no markup errors have snuck through (e.g., LaTeX syntax errors).
    3. For all code cells, examine the output of each cell to check that no
       exceptions have snuck through (or any other unexpected error text).
+      * The error "'%matplotlib notebook' is not supported in Deepnote" is
+        expected and can be ignored.
    4. Leave the notebook output intact (do not clear the outputs). We want
       users to be able to read the outputs on their own, without necessarily
       running the notebook themselves.
@@ -282,5 +287,5 @@ instructions to obtain a username and password.
 8. Run ``./setup/ubuntu/source_distribution/install_prereqs_user_environment.sh``
 9. Run ``bazel run //tools/wheel:builder -- --output-dir=${PWD} --test 1.N.0``
 10. Wait a long time for it to finish (around 30 minutes on a beefy workstation). It will take over all of your computer's resources, so don't plan to do much else concurrently.
-11. There should have been exactly two whl files created. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path to each of the wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64``, etc.)
+11. There should have been exactly two whl files created. Run ``twine upload <...> <...>``, replacing the ``<...>`` placeholders with the paths to the two wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64.whl``, etc.)
     1. You will need your PyPI username and password for this. (Do not use drake-robot.)
