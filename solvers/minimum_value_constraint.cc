@@ -154,10 +154,9 @@ void MinimumValueConstraint::set_penalty_function(
 template <>
 VectorX<double> MinimumValueConstraint::Values(
     const Eigen::Ref<const VectorX<double>>& x) const {
-  return value_function_double_
-             ? value_function_double_(x, influence_value_)
-             : math::ExtractValue(value_function_(math::InitializeAutoDiff(x),
-                                                  influence_value_));
+  return value_function_double_ ? value_function_double_(x, influence_value_)
+                                : math::ExtractValue(value_function_(
+                                      x.cast<AutoDiffXd>(), influence_value_));
 }
 
 template <>

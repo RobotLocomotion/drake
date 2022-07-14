@@ -82,7 +82,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override {
     AutoDiffVecXd y_t;
-    Eval(math::InitializeAutoDiff(x), &y_t);
+    Eval(x.cast<AutoDiffXd>(), &y_t);
     *y = math::ExtractValue(y_t);
   }
 
