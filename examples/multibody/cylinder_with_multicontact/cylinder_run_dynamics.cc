@@ -3,7 +3,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/multibody/cylinder_with_multicontact/make_cylinder_plant.h"
+#include "drake/examples/multibody/cylinder_with_multicontact/populate_cylinder_plant.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"

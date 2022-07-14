@@ -12,12 +12,12 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "make_rolling_sphere_plant",
+    name = "populate_ball_plant",
     srcs = [
-        "make_rolling_sphere_plant.cc",
+        "populate_ball_plant.cc",
     ],
     hdrs = [
-        "make_rolling_sphere_plant.h",
+        "populate_ball_plant.h",
     ],
     deps = [
         "//common:default_scalars",
@@ -37,7 +37,7 @@ drake_cc_binary(
         "--simulator_target_realtime_rate=0.0",
     ],
     deps = [
-        ":make_rolling_sphere_plant",
+        ":populate_ball_plant",
         "//common:add_text_logging_gflags",
         "//geometry:drake_visualizer",
         "//multibody/plant:contact_results_to_lcm",

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/examples/multibody/rolling_sphere/make_rolling_sphere_plant.h"
+#include "drake/examples/multibody/rolling_sphere/populate_ball_plant.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/autodiff.h"
 #include "drake/multibody/plant/multibody_plant.h"

@@ -4,7 +4,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/multibody/rolling_sphere/make_rolling_sphere_plant.h"
+#include "drake/examples/multibody/rolling_sphere/populate_ball_plant.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_properties.h"

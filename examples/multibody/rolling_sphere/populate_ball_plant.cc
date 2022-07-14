@@ -1,4 +1,4 @@
-#include "drake/examples/multibody/rolling_sphere/make_rolling_sphere_plant.h"
+#include "drake/examples/multibody/rolling_sphere/populate_ball_plant.h"
 
 #include <utility>
 
