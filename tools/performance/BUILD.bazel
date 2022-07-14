@@ -27,6 +27,26 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "fixture_memory",
+    srcs = ["fixture_memory.cc"],
+    hdrs = ["fixture_memory.h"],
+    deps = [
+        "//common:essential",
+        "@googlebenchmark//:benchmark",
+    ],
+)
+
+drake_cc_library(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [
+        ":fixture_memory",
+        "@gflags",
+        "@googlebenchmark//:benchmark",
+    ],
+)
+
 drake_py_binary(
     name = "benchmark_tool",
     testonly = True,

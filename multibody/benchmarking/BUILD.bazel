@@ -36,11 +36,13 @@ drake_cc_googlebench_binary(
     add_test_rule = True,
     data = ["cassie_v2.urdf"],
     deps = [
+        "//common:add_text_logging_gflags",
         "//common:essential",
         "//common:find_resource",
         "//math:gradient",
         "//multibody/parsing:parser",
         "//tools/performance:fixture_common",
+        "//tools/performance:main",
     ],
 )
 
