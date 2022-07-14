@@ -264,6 +264,10 @@ RationalFunction operator/(RationalFunction f, const Polynomial& p) {
 }
 
 RationalFunction operator/(const Polynomial& p, const RationalFunction& f) {
+  if (f.numerator().EqualTo(Polynomial())) {
+    throw std::logic_error(
+        "RationalFunction: operator/=: The divider is 0.");
+  }
   return {p * f.denominator(), f.numerator()};
 }
 
@@ -272,13 +276,20 @@ RationalFunction operator/(RationalFunction f, const Monomial& m) {
 }
 
 RationalFunction operator/(const Monomial& m, RationalFunction f) {
+  if (f.numerator().EqualTo(Polynomial())) {
+    throw std::logic_error(
+        "RationalFunction: operator/=: The divider is 0.");
+  }
   return {m * f.denominator(), f.numerator()};
 }
-
 
 RationalFunction operator/(RationalFunction f, double c) { return f /= c; }
 
 RationalFunction operator/(double c, const RationalFunction& f) {
+  if (f.numerator().EqualTo(Polynomial())) {
+    throw std::logic_error(
+        "RationalFunction: operator/=: The divider is 0.");
+  }
   return {c * f.denominator(), f.numerator()};
 }
 

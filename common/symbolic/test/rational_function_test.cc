@@ -470,6 +470,7 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
   c_divides_f1 /= c;
   EXPECT_PRED2(RationalFunctionEqual, c_divides_f1, c_divides_f1_expected);
 
+  // Test divide by zero error
   const std::string zero_divider_error{
       "RationalFunction: operator/=: The divider is 0."};
   DRAKE_EXPECT_THROWS_MESSAGE(f1 / 0, zero_divider_error);
@@ -477,6 +478,11 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
   const RationalFunction polynomial_fraction_zero;
   DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_fraction_zero,
                               zero_divider_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(p1_ / polynomial_fraction_zero,
+                              zero_divider_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(monom_x_ / polynomial_fraction_zero,
+                              zero_divider_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(2 / polynomial_fraction_zero, zero_divider_error);
 }
 
 TEST_F(SymbolicRationalFunctionTest, Exponentiation) {
@@ -558,6 +564,8 @@ TEST_F(SymbolicRationalFunctionTest, ToExpression) {
   const RationalFunction p_rat{p};
 
   EXPECT_EQ(f.ToExpression(), p.ToExpression() / q.ToExpression());
+  // Ensures that the elision of the implied 1 in the denominator occurs in
+  // ToExpression
   EXPECT_EQ(p_rat.ToExpression(), p.ToExpression());
 }
 

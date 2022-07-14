@@ -899,21 +899,25 @@ PYBIND11_MODULE(symbolic, m) {
           },
           py::arg("vars"), doc.Polynomial.Jacobian.doc);
 
-  using symbolic::RationalFunction;
   py::class_<RationalFunction> rat_fun_cls(
       m, "RationalFunction", doc.RationalFunction.doc);
   rat_fun_cls.def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
-      .def(py::init<Polynomial, Polynomial>(),
+      .def(py::init<Polynomial, Polynomial>(), py::arg("numerator"),
+          py::arg("denominator"),
           doc.RationalFunction.ctor.doc_2args_numerator_denominator)
-      .def(py::init<const Polynomial&>(), doc.RationalFunction.ctor.doc_1args_p)
-      .def(py::init<const Monomial&>(), doc.RationalFunction.ctor.doc_1args_m)
-      .def(py::init<double>(), doc.RationalFunction.ctor.doc_1args_c)
+      .def(py::init<const Polynomial&>(), py::arg("numerator"),
+          doc.RationalFunction.ctor.doc_1args_p)
+      .def(py::init<const Monomial&>(), py::arg("numerator"),
+          doc.RationalFunction.ctor.doc_1args_m)
+      .def(py::init<double>(), py::arg("numerator"),
+          doc.RationalFunction.ctor.doc_1args_c)
       .def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
       .def("numerator", &RationalFunction::numerator,
           doc.RationalFunction.numerator.doc)
       .def("denominator", &RationalFunction::denominator,
           doc.RationalFunction.denominator.doc)
       .def("SetIndeterminates", &RationalFunction::SetIndeterminates,
+          py::arg("new_indeterminates"),
           doc.RationalFunction.SetIndeterminates.doc)
       .def("__str__",
           [](const RationalFunction& self) { return fmt::format("{}", self); })
@@ -926,10 +930,10 @@ PYBIND11_MODULE(symbolic, m) {
           [](const RationalFunction& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
-          doc.RationalFunction.Evaluate.doc)
+          py::arg("env"), doc.RationalFunction.Evaluate.doc)
       .def("ToExpression", &RationalFunction::ToExpression,
           doc.RationalFunction.ToExpression.doc)
-      .def("EqualTo", &RationalFunction::EqualTo,
+      .def("EqualTo", &RationalFunction::EqualTo, py::arg("f"),
           doc.RationalFunction.EqualTo.doc)
 
       .def(-py::self)

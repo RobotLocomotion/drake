@@ -48,14 +48,12 @@ class _Registry:
             cls_b,
             assert_eq,
             assert_ne=None,
-            assert_allclose=None,
-    ):
+            assert_allclose=None):
         key = (cls_a, cls_b)
         assert key not in self._comparators, key
         assert_eq = np.vectorize(assert_eq)
         self._comparators[key] = self.AssertComparator(
-            assert_eq, assert_ne, assert_allclose
-        )
+            assert_eq, assert_ne, assert_allclose)
 
     def get_comparator_from_arrays(self, a, b):
         # Ensure all types are homogeneous.

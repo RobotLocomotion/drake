@@ -1587,7 +1587,7 @@ class TestSymbolicRationalFunction(unittest.TestCase):
         m = {sym.Monomial(x): sym.Expression(3),
              sym.Monomial(y): sym.Expression(2)}  # 3x + 2y
         p = sym.Polynomial(m)
-        r = sym.RationalFunction(p)
+        r = sym.RationalFunction(numerator=p)
         expected = 3 * x + 2 * y
         numpy_compare.assert_equal(r.ToExpression(), expected)
 
@@ -1599,12 +1599,12 @@ class TestSymbolicRationalFunction(unittest.TestCase):
         m2 = {sym.Monomial(z): sym.Expression(5)}  # 5z
         q = sym.Polynomial(m2)
 
-        r = sym.RationalFunction(p, q)
+        r = sym.RationalFunction(numerator=p, denominator=q)
         expected = (3 * x + 2 * y) / (5 * z)
         numpy_compare.assert_equal(r.ToExpression(), expected)
 
     def test_double_constructor(self):
-        r = sym.RationalFunction(3)
+        r = sym.RationalFunction(numerator=3)
         expected = sym.Expression(3)
         numpy_compare.assert_equal(r.ToExpression(), expected)
 
@@ -1630,7 +1630,7 @@ class TestSymbolicRationalFunction(unittest.TestCase):
         q = sym.Polynomial(e_den)
         r = sym.RationalFunction(p, q)
 
-        r.SetIndeterminates(indeterminates1)
+        r.SetIndeterminates(new_indeterminates=indeterminates1)
         self.assertEqual(r.numerator().TotalDegree(), 2)
         self.assertEqual(r.denominator().TotalDegree(), 3)
 
@@ -1798,7 +1798,7 @@ class TestSymbolicRationalFunction(unittest.TestCase):
                z: 5.0}
         expected_num = env[a] * env[x] * env[x] + env[b] * env[x] + env[c]
         expected_den = env[b] * env[x] * env[z]
-        self.assertEqual(r.Evaluate(env),
+        self.assertEqual(r.Evaluate(env=env),
                          expected_num/expected_den)
 
     def test_evaluate_exception_np_nan(self):
@@ -1811,7 +1811,7 @@ class TestSymbolicRationalFunction(unittest.TestCase):
         r = sym.RationalFunction(sym.Polynomial(x * x, [x]))
         env = {x: float('nan')}
         with self.assertRaises(RuntimeError):
-            r.Evaluate(env)
+            r.Evaluate(env=env)
 
 
 class TestExtractVariablesFromExpression(unittest.TestCase):
