@@ -1,0 +1,170 @@
+#pragma once
+
+#include <unordered_map>
+#include <vector>
+
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/polynomial.h"
+#include "drake/common/symbolic/rational_function.h"
+#include "drake/common/symbolic/trigonometric_polynomial.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_tree.h"
+
+namespace drake {
+namespace multibody {
+namespace c_iris {
+/**
+ * We can represent the pose (position, orientation) of each link, as rational
+ * functions, namely n(s) / d(s) where both the numerator n(s) and denominator
+ * d(s) are polynomials of s, and s is some variable related to the generalized
+ * position.
+ *
+ * One example is that for a rotation matrix with angle θ and axis a, the
+ * rotation matrix can be written as I + sinθ A + (1-cosθ) A², where A is the
+ * skew-symmetric matrix from axis a. We can use the half-angle formulat to
+ * substitute the trigonometric function sinθ and cosθ as
+ * cosθ = cos(θ*+Δθ) = cosθ*cosΔθ - sinθ*sinΔθ
+ *      = (1-s²)/(1+s²) cosθ*- 2s/(1+s²) sinθ*     (1)
+ * sinθ = sin(θ*+Δθ) = sinθ*cosΔθ - cosθ*sinΔθ
+ *      = (1-s²)/(1+s²) sinθ*- 2s/(1+s²) cosθ*     (2)
+ * where θ = θ*+Δθ, and s = tan(Δθ/2). θ* is some given angle.
+ * With (1) and (2), both sinθ and cosθ are written as a rational function of s.
+ * Thus the rotation matrix can be written as rational functions of s.
+ */
+class RationalForwardKinematics {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RationalForwardKinematics)
+
+  explicit RationalForwardKinematics(
+      const drake::multibody::MultibodyPlant<double>& plant);
+
+  template <typename T>
+  struct Pose {
+    Vector3<T> p_AB;
+    Matrix3<T> R_AB;
+    multibody::BodyIndex frame_A_index;
+  };
+
+  /**
+   * Computes the pose X_AB as a multilinear polynomial function. The
+   * indeterminates of the polynomials are cos_delta and sin_delta() .
+   * We will later convert these polynomials to rational function with
+   * indeterminates s().
+   * @param q_star The nominal posture
+   * @param link_index Frame B, the link whose pose is computed.
+   * @param expressed_body_index Frame A, the link in whose frame the pose is
+   * expressed.
+   */
+  Pose<symbolic::Polynomial> CalcLinkPoseAsMultilinearPolynomial(
+      const Eigen::Ref<const Eigen::VectorXd>& q_star,
+      multibody::BodyIndex link_index,
+      multibody::BodyIndex expressed_body_index) const;
+
+  /**
+   * Given a polynomial whose indeterminates are cos_delta() and sin_delta()
+   * (typically this polynomial is obtained from calling
+   * CalcLinkPoseAsMultilinearPolynomial()), convert this polynomial to a
+   * rational function with indeterminates s().
+   */
+  symbolic::RationalFunction ConvertMultilinearPolynomialToRationalFunction(
+      const symbolic::Polynomial& e) const;
+
+  /**
+   * compute s = tan((q_val - q_star_val / 2)), while handling the index
+   * matching between q and s. If @p clamp_angle = true, then s = infinity if
+   * q_val >= q_star_val + pi, and s = -infinity if q_val <= q_star_val - pi.
+   */
+  Eigen::VectorXd ComputeSValue(
+      const Eigen::Ref<const Eigen::VectorXd>& q_val,
+      const Eigen::Ref<const Eigen::VectorXd>& q_star_val,
+      bool clamp_angle = false) const;
+
+  const multibody::MultibodyPlant<double>& plant() const { return plant_; }
+
+  const VectorX<drake::symbolic::Variable>& s() const { return s_; }
+
+  /** Each s(i) is associated with a mobilizer.
+   */
+  const std::unordered_map<symbolic::Variable::Id,
+                           multibody::internal::MobilizerIndex>&
+  map_s_to_mobilizer() const {
+    return map_s_to_mobilizer_;
+  }
+
+  const VectorX<symbolic::Variable>& cos_delta() const { return cos_delta_; }
+
+  const VectorX<symbolic::Variable>& sin_delta() const { return sin_delta_; }
+
+ private:
+  // Compute the pose of the link, connected to its parent link through a
+  // revolute joint.
+  // We will first compute the link pose as multilinear polynomials, with
+  // indeterminates cos_delta and sin_delta, representing cos(Δθ) and sin(Δθ)
+  // respectively. We will then replace cos_delta and sin_delta in the link
+  // pose with rational functions (1-s^2)/(1+s^2) and 2s/(1+s^2) respectively.
+  // The reason why we don't use RationalFunction directly, is that currently
+  // our rational function can't find the common factor in the denominator,
+  // namely the sum between rational functions p1(x) / (q1(x) * r(x)) + p2(x) /
+  // r(x) is computed as (p1(x) * r(x) + p2(x) * q1(x) * r(x)) / (q1(x) * r(x) *
+  // r(x)), without handling the common factor r(x) in the denominator.
+  template <typename T>
+  void CalcLinkPoseAsMultilinearPolynomialWithRevoluteJoint(
+      const Eigen::Ref<const Eigen::Vector3d>& axis_F,
+      const drake::math::RigidTransformd& X_PF,
+      const drake::math::RigidTransformd& X_MC, const Pose<T>& X_AP,
+      double theta_star, const drake::symbolic::Variable& cos_delta,
+      const drake::symbolic::Variable& sin_delta, Pose<T>* X_AC) const;
+
+  // Compute the pose of the link, connected to its parent link through a
+  // weld joint.
+  template <typename T>
+  void CalcLinkPoseWithWeldJoint(const drake::math::RigidTransformd& X_FM,
+                                 const drake::math::RigidTransformd& X_PF,
+                                 const drake::math::RigidTransformd& X_MC,
+                                 const Pose<T>& X_AP, Pose<T>* X_AC) const;
+
+  /**
+   * Given the pose of the parent frame X_AP measured in a frame A, calculate
+   * the pose of `child` measured as expressed in frame A as a multilinear
+   * polynomial, with indeterminates being s and c, where s represents sin(q -
+   * q_star) and c represents cos(q - q_star).
+   */
+  void CalcChangedRootChildLinkPoseAsMultilinearPolynomial(
+      const Eigen::Ref<const Eigen::VectorXd>& q_star,
+      drake::multibody::BodyIndex parent, drake::multibody::BodyIndex child,
+      const Pose<drake::symbolic::Polynomial>& X_AP,
+      Pose<drake::symbolic::Polynomial>* X_AC) const;
+
+  const multibody::MultibodyPlant<double>& plant_;
+  // The variables used in computing the pose as rational functions. s_ are the
+  // indeterminates in the rational functions.
+  VectorX<drake::symbolic::Variable> s_;
+  // Each s(i) is associated with a mobilizer.
+  std::unordered_map<symbolic::Variable::Id,
+                     multibody::internal::MobilizerIndex>
+      map_s_to_mobilizer_;
+  // Given a mobilizer, returns the index of the mobilizer's slack variable in
+  // s_.
+  std::unordered_map<drake::multibody::internal::MobilizerIndex, int>
+      map_mobilizer_to_s_index_;
+
+  // The variables used to represent tan(θ / 2).
+  VectorX<symbolic::Variable> s_angles_;
+  std::vector<symbolic::SinCos> sin_cos_;
+  VectorX<symbolic::Polynomial> one_plus_s_angles_squared_;
+  VectorX<symbolic::Polynomial> two_s_angles_;
+  VectorX<symbolic::Polynomial> one_minus_s_angles_squared_;
+
+  VectorX<symbolic::Variable> cos_delta_;
+  VectorX<symbolic::Variable> sin_delta_;
+  // s_ could contain both prismatic s and revolue s.
+  // s_angles_[map_s_index_to_angle_index_[i]] = s_[i]
+  std::unordered_map<int, int> map_s_index_to_angle_index_;
+  std::unordered_map<int, int> map_angle_index_to_s_index_;
+  // s_id_to_index_(s_(i).get_id()) = i
+  std::unordered_map<drake::symbolic::Variable::Id, int> s_id_to_index_;
+  symbolic::Variables s_variables_;
+};
+}  // namespace c_iris
+}  // namespace multibody
+}  // namespace drake
