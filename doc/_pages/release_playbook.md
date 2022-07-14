@@ -103,7 +103,7 @@ the main body of the document:
 
 ## Cutting the release
 
-9. Find a plausible build to use
+1. Find a plausible build to use
    1. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean
    2. Make sure <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>
       has nothing still running (modulo the ``*-coverage`` builds, which we can
@@ -123,43 +123,43 @@ the main body of the document:
       instructions are atop its source code:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
 
-10. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
-    sure that the nightly build git sha from the prior step matches the
-    ``newest_commit`` whose changes are enumerated in the notes.  Some dates
-    are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
-    them all.
+2. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
+   sure that the nightly build git sha from the prior step matches the
+   ``newest_commit`` whose changes are enumerated in the notes.  Some dates
+   are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
+   them all.
    1. Update the github links within doc/_pages/from_binary.md to reflect the
       upcoming v1.N.0 and YYYYMMDD.
-11. Re-enable CI by reverting the commit you added in step 3.
-12. Merge the release notes PR
+3. Re-enable CI by reverting the commit you added in step 3.
+4. Merge the release notes PR
    1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
    2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-focal-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
-13. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
-    a new release".  Note that this page does has neither history nor undo.  Be
-    slow and careful!
-    1. Tag version is: v1.N.0
-    2. Target is: [the git sha from above]
-      *  You should select the commit from Target > Recent Commits. The search
-         via commit does not work if you don't use the correct length.
-    3. Release title is: Drake v1.N.0
-    4. The body of the release should be forked from the prior release (open the
-       prior release's web page and click "Edit" to get the markdown), with
-       appropriate edits as follows:
-       * The version number
-    5. Into the box labeled "Attach binaries by dropping them here or selecting
-       them.", drag and drop the 6 release binary artifacts from above (the 2
-       tarballs, and their 3 checksums).
-    6. Choose "Save draft" and take a deep breath.
-14. Once the documentation build finishes, release!
-    1. Check that the link to drake.mit.edu docs from the GitHub release draft
-       page actually works.
-    2. Click "Publish release"
-    3. Notify `@BetsyMcPhail` via a GitHub comment to manually tag docker images
-       and upload the releases to S3. Be sure to provide her with the binary
-       date, commit SHA, and release tag in the same ping.
-    4. Announce on Drake Slack, ``#general``.
-    5. Party on, Wayne.
+5. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
+   a new release".  Note that this page does has neither history nor undo.  Be
+   slow and careful!
+   1. Tag version is: v1.N.0
+   2. Target is: [the git sha from above]
+     *  You should select the commit from Target > Recent Commits. The search
+        via commit does not work if you don't use the correct length.
+   3. Release title is: Drake v1.N.0
+   4. The body of the release should be forked from the prior release (open the
+      prior release's web page and click "Edit" to get the markdown), with
+      appropriate edits as follows:
+      * The version number
+   5. Into the box labeled "Attach binaries by dropping them here or selecting
+      them.", drag and drop the 6 release binary artifacts from above (the 2
+      tarballs, and their 4 checksums).
+   6. Choose "Save draft" and take a deep breath.
+6. Once the documentation build finishes, release!
+   1. Check that the link to drake.mit.edu docs from the GitHub release draft
+      page actually works.
+   2. Click "Publish release"
+   3. Notify `@BetsyMcPhail` via a GitHub comment to manually tag docker images
+      and upload the releases to S3. Be sure to provide her with the binary
+      date, commit SHA, and release tag in the same ping.
+   4. Announce on Drake Slack, ``#general``.
+   5. Party on, Wayne.
 
 ## Post-release follow up
 
