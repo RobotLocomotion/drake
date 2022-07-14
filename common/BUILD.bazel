@@ -1142,6 +1142,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "timer_test",
+    flaky = True,
     deps = [
         ":timer",
     ],

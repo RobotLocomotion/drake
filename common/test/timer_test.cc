@@ -21,7 +21,7 @@ GTEST_TEST(TimeTest, Everything) {
   // Start restarts the timer, the new measurement should be less than T1.
   timer.Start();
   const double T2 = timer.Tick();
-  EXPECT_GT(T2, 0.0);
+  EXPECT_GE(T2, 0.0);
   EXPECT_LT(T2, T1);  // ensure we measured less time after call to Start()
 
   // As time progresses, the tick value monotonically increases.
