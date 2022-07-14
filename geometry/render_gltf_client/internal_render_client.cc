@@ -230,12 +230,7 @@ std::string RenderClient::RenderOnServer(
         url, response.http_code));
   }
   const std::string bin_out_path = response.data_path.value();
-  if (!fs::is_regular_file(bin_out_path)) {
-    throw std::runtime_error(fmt::format(
-        "ERROR doing POST to {}, HTTP code={}: the service responded with a "
-        "file path '{}' but the file does not exist.",
-        url, response.http_code, bin_out_path));
-  }
+  DRAKE_DEMAND(fs::is_regular_file(bin_out_path));
 
   /* At this point we have a seemingly valid return file from the server. See
    if it can be loaded as one of the supported image types.  We do not check for

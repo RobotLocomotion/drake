@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/filesystem.h"
@@ -61,7 +60,7 @@ class RenderClientTest : public ::testing::Test {
   // Creates the given filename (and returns the filename for convenience).
   std::string Touch(const std::string& filename) {
     std::ofstream stream{filename};
-    stream << "## RenderClientTest sample file " << filename << "\n";
+    stream << "## RenderClientTest sample file." << "\n";
     DRAKE_DEMAND(stream.good());
     return filename;
   }
@@ -87,8 +86,7 @@ TEST_F(RenderClientTest, Constructor) {
   const bool no_cleanup = true;
   const RenderClient client{
       Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
-  EXPECT_EQ(client.get_params().GetUrl(),
-            base_url + "/" + render_endpoint);
+  EXPECT_EQ(client.get_params().GetUrl(), base_url + "/" + render_endpoint);
   EXPECT_EQ(client.get_params().verbose, verbose);
   EXPECT_EQ(client.get_params().no_cleanup, no_cleanup);
 }
@@ -105,7 +103,6 @@ TEST_F(RenderClientTest, Destructor) {
     // Test whether temp_directory is handled properly.
     if (no_cleanup) {
       EXPECT_TRUE(fs::is_directory(temp_dir_path));
-      fs::remove(temp_dir_path);
     } else {
       EXPECT_FALSE(fs::is_directory(temp_dir_path));
     }
@@ -285,12 +282,10 @@ TEST_F(RenderClientTest, RenderOnServer) {
 
   // Create a fake scene to "upload" to the "server" and fake response file.
   const auto fake_scene_path = (temp_dir_path / "fake_scene.gltf").string();
-  std::ofstream fake_scene{fake_scene_path};
-  fake_scene << "This is not a real glTF scene!\n";
-  fake_scene.close();
-  // This value is from: echo 'This is not a real glTF scene!' | sha256sum
+  Touch(fake_scene_path);
+  // This value is from: echo '## RenderClientTest sample file.' | sha256sum
   const auto fake_scene_sha256 =
-      "8985d0a8aec5a091dce05fef24ee2f3daaa20b4c0dbcd521f0217632c9001a4c";
+      "ebf937a31924de40bef25563110837a2608a3e832f1449145e8f5b3b148c1f3b";
 
   /* Create some render camera instances to validate against.  Note that the
    atypical values chosen for e.g., clipping or depth ranges is to ensure there
@@ -324,8 +319,6 @@ TEST_F(RenderClientTest, RenderOnServer) {
      use DRAKE_EXPECTS_THROWS_MESSAGE all looking for the same error being
      raised, as no image response is provided.  However, the bulk of the test
      takes place in the assertions in FieldCheckService::PostForm. */
-    const std::string expected_throw_pattern =
-        "[\\s\\S]*ERROR doing POST:[\\s\\S]*HTTP Code:[\\s\\S]*500[\\s\\S]*";
 
     // Check fields for a color render.
     client.SetHttpService(std::make_unique<FieldCheckService>(
@@ -334,7 +327,7 @@ TEST_F(RenderClientTest, RenderOnServer) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(),
                               RenderImageType::kColorRgba8U, fake_scene_path),
-        expected_throw_pattern);
+        "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
 
     /* Check fields for a depth render.  This test also includes a verification
      that the provided mime_type is propagated correctly.  There is no special
@@ -347,7 +340,7 @@ TEST_F(RenderClientTest, RenderOnServer) {
         client.RenderOnServer(depth_camera.core(),
                               RenderImageType::kDepthDepth32F, fake_scene_path,
                               "test/mime_type", depth_camera.depth_range()),
-        expected_throw_pattern);
+        "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
 
     // Check fields for a label render.
     client.SetHttpService(std::make_unique<FieldCheckService>(
@@ -356,7 +349,7 @@ TEST_F(RenderClientTest, RenderOnServer) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
                               fake_scene_path),
-        expected_throw_pattern);
+        "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
   }
 
   {
@@ -366,8 +359,6 @@ TEST_F(RenderClientTest, RenderOnServer) {
      all produce 'None.' as the server message.
      NOTE: file extensions do not matter. */
     // NOTE: all tests using this must use http code 400.
-    const std::string expected_throw_pattern =
-        "[\\s\\S]*ERROR doing POST:[\\s\\S]*Server Message:\\s*{}[\\s\\S]*";
 
     PostFormCallback callback{nullptr};
     // Case 1: edge case, service populated data_path but file is length 0.
@@ -375,14 +366,13 @@ TEST_F(RenderClientTest, RenderOnServer) {
       const auto response_path =
           (temp_dir_path / "zero_length.response").string();
       std::ofstream response{response_path};
-      response.close();
       return HttpResponse{400, response_path};
     };
     client.SetHttpService(std::make_unique<ProxyService>(callback));
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(),
                               RenderImageType::kColorRgba8U, fake_scene_path),
-        fmt::format(expected_throw_pattern, "None\\."));
+        "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
 
     // Case 2: edge case, bad response but provided message "too long".
     callback = [&]() {
@@ -390,46 +380,25 @@ TEST_F(RenderClientTest, RenderOnServer) {
       std::ofstream response{response_path};
       // NOTE: this value is hard-coded in RenderClient::RenderOnServer.
       for (int i = 0; i < 8192; ++i) response << '0';
-      response.close();
       return HttpResponse{400, response_path};
     };
     client.SetHttpService(std::make_unique<ProxyService>(callback));
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
                               fake_scene_path),
-        fmt::format(expected_throw_pattern, "None\\."));
+        "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
 
-    // Case 3: edge case, message provided of valid length but cannot be opened.
-    const auto bad_permission_path =
-        (temp_dir_path / "bad_permission.response").string();
-    callback = [&]() {
-      std::ofstream response{bad_permission_path};
-      response << "If only you could read me!\n";
-      response.close();
-      fs::permissions(bad_permission_path, fs::perms::all,
-                      fs::perm_options::remove);
-      return HttpResponse{400, bad_permission_path};
-    };
-    client.SetHttpService(std::make_unique<ProxyService>(callback));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenderOnServer(color_camera.core(),
-                              RenderImageType::kColorRgba8U, fake_scene_path),
-        fmt::format(expected_throw_pattern, "None\\."));
-
-    // Case 4: server response that can be read.
-    const auto response_text = "You are not a valid request :p";
+    // Case 3: server response that can be read.
     callback = [&]() {
       const auto response_path = (temp_dir_path / "can_read.response").string();
-      std::ofstream response{response_path};
-      response << response_text;
-      response.close();
+      Touch(response_path);
       return HttpResponse{400, response_path};
     };
     client.SetHttpService(std::make_unique<ProxyService>(callback));
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
                               fake_scene_path),
-        fmt::format(expected_throw_pattern, response_text));
+        "[\\s\\S]*RenderClientTest sample file[\\s\\S]*");
   }
 
   {
@@ -443,27 +412,11 @@ TEST_F(RenderClientTest, RenderOnServer) {
   }
 
   {
-    // File response provided that does not exist should be reported correctly.
-    const auto response_path =
-        (temp_dir_path / "does_not_exist.response").string();
-    PostFormCallback callback = [&]() {
-      return HttpResponse{200, response_path};
-    };
-    client.SetHttpService(std::make_unique<ProxyService>(callback));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
-                              fake_scene_path),
-        "ERROR doing POST.*the file does not exist.");
-  }
-
-  {
     const auto response_path =
         (temp_dir_path / "not_an_image.response").string();
     // File response cannot be loaded as image should be reported correctly.
     PostFormCallback callback = [&]() {
-      std::ofstream response{response_path};
-      response << "I am not an image file!\n";
-      response.close();
+      Touch(response_path);
       return HttpResponse{200, response_path};
     };
     client.SetHttpService(std::make_unique<ProxyService>(callback));
@@ -506,8 +459,6 @@ TEST_F(RenderClientTest, RenderOnServer) {
         "test/mime_type", depth_camera.depth_range());
     EXPECT_EQ(response_tiff, expected_path);
   }
-
-  fs::remove_all(temp_dir_path);
 }
 
 TEST_F(RenderClientTest, ComputeSha256Good) {
