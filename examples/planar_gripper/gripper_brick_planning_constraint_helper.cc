@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
+#include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 
 namespace drake {

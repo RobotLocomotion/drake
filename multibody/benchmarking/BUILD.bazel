@@ -80,7 +80,7 @@ drake_cc_googlebench_binary(
     ],
     deps = [
         "//common:find_resource",
-        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/inverse_kinematics:kinematic_evaluators",
         "//multibody/parsing",
         "//multibody/plant",
         "//tools/performance:fixture_common",
