@@ -97,7 +97,7 @@ void DirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
 void DirectCollocationConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   AutoDiffVecXd y_t;
-  Eval(math::InitializeAutoDiff(x), &y_t);
+  Eval(x.cast<AutoDiffXd>(), &y_t);
   *y = math::ExtractValue(y_t);
 }
 
