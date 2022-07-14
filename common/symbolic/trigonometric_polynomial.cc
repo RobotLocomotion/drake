@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include "drake/common/symbolic/rational_function.h"
 
 #define DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
 #include "drake/common/symbolic/expression/expression_cell.h"
@@ -410,15 +411,19 @@ bool CheckPolynomialIndeterminatesAreSinCos(
   }
   return e_poly.indeterminates().IsSubsetOf(sin_cos_vars);
 }
+}  // namespace
 
-void SubstituteStereographicProjectionImpl(
+namespace internal {
+symbolic::RationalFunction SubstituteStereographicProjectionImpl(
     const symbolic::Polynomial& e_poly, const std::vector<SinCos>& sin_cos,
     const VectorX<symbolic::Variable>& t, const symbolic::Variables& t_set,
     const VectorX<symbolic::Polynomial>& one_plus_t_angles_squared,
     const VectorX<symbolic::Polynomial>& two_t_angles,
-    const VectorX<symbolic::Polynomial>& one_minus_t_angles_squared,
-    symbolic::RationalFunction* e_rational) {
+    const VectorX<symbolic::Polynomial>& one_minus_t_angles_squared) {
   DRAKE_DEMAND(static_cast<int>(sin_cos.size()) == t.rows());
+  DRAKE_DEMAND(one_plus_t_angles_squared.size() == t.rows());
+  DRAKE_DEMAND(two_t_angles.size() == t.rows());
+  DRAKE_DEMAND(one_minus_t_angles_squared.size() == t.rows());
   DRAKE_DEMAND(CheckPolynomialIndeterminatesAreSinCos(e_poly, sin_cos));
   // First find the angles whose cos or sin appear in the polynomial. This
   // will determine the denominator of the rational function.
@@ -438,9 +443,8 @@ void SubstituteStereographicProjectionImpl(
     }
   }
   if (angle_indices.empty()) {
-    *e_rational = symbolic::RationalFunction(
+    return symbolic::RationalFunction(
         symbolic::Polynomial(e_poly.ToExpression(), t_set));
-    return;
   }
   const symbolic::Monomial monomial_one{};
   symbolic::Polynomial denominator{1};
@@ -476,9 +480,9 @@ void SubstituteStereographicProjectionImpl(
     numerator += numerator_term;
   }
 
-  *e_rational = symbolic::RationalFunction(numerator, denominator);
+  return symbolic::RationalFunction(numerator, denominator);
 }
-}  // namespace
+}  // namespace internal
 
 symbolic::RationalFunction SubstituteStereographicProjection(
     const symbolic::Polynomial& e_poly, const std::vector<SinCos>& sin_cos,
@@ -495,10 +499,8 @@ symbolic::RationalFunction SubstituteStereographicProjection(
         {{monomial_one, 1}, {symbolic::Monomial(t(i), 2), 1}});
   }
   const symbolic::Variables t_set{t};
-  symbolic::RationalFunction e_rational;
-  SubstituteStereographicProjectionImpl(e_poly, sin_cos, t, t_set,
-                                        one_plus_t_square, two_t,
-                                        one_minus_t_square, &e_rational);
+  const symbolic::RationalFunction e_rational= internal::SubstituteStereographicProjectionImpl(
+      e_poly, sin_cos, t, t_set, one_plus_t_square, two_t, one_minus_t_square);
   return e_rational;
 }
 
