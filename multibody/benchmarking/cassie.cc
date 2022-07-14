@@ -1,65 +1,45 @@
 #include <benchmark/benchmark.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/tools/performance/fixture_common.h"
 
-using drake::multibody::MultibodyPlant;
-using drake::symbolic::Expression;
-using drake::systems::Context;
-using drake::test::LimitMalloc;
-using drake::test::LimitMallocParams;
-
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
-
 namespace drake {
-namespace examples {
+namespace multibody {
 namespace {
 
-// Track and report simple streaming statistics on allocations. Variance
-// tracking is adapted from:
-// https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
-class AllocationTracker {
+using math::RigidTransform;
+using math::RollPitchYaw;
+using symbolic::Expression;
+using symbolic::MakeVectorVariable;
+using systems::Context;
+using systems::ContinuousState;
+using systems::FixedInputPortValue;
+using systems::System;
+
+// We use this alias to silence cpplint barking at mutable references.
+using BenchmarkStateRef = benchmark::State&;
+
+// In the benchmark case instantiations at the bottom of this file, we'll use
+// a bitmask for the case's "Arg" to denote which quantities are in scope as
+// either gradients (for T=AutoDiffXd) or variables (for T=Expression).
+constexpr int kWantNoGrad   = 0x0;
+constexpr int kWantGradQ    = 0x1;
+constexpr int kWantGradV    = 0x2;
+constexpr int kWantGradX    = kWantGradQ | kWantGradV;
+constexpr int kWantGradVdot = 0x4;
+constexpr int kWantGradU    = 0x8;
+
+// Fixture that holds a Cassie robot model and offers helper functions to
+// configure the benchmark case.
+template <typename T>
+class Cassie : public benchmark::Fixture {
  public:
-  AllocationTracker() {}
-
-  void Report(benchmark::State* state) {
-    state->counters["Allocs.min"] = min_;
-    state->counters["Allocs.max"] = max_;
-    state->counters["Allocs.mean"] = mean_;
-    state->counters["Allocs.stddev"] =
-        updates_ < 2 ? std::numeric_limits<double>::quiet_NaN()
-                     : std::sqrt(m2_ / (updates_ - 1));
-  }
-
-  void Update(int allocs) {
-    min_ = std::min(min_, allocs);
-    max_ = std::max(max_, allocs);
-    ++updates_;
-    double delta = allocs - mean_;
-    mean_ += delta / updates_;
-    m2_ += delta * (allocs - mean_);
-  }
-
- private:
-  int min_{std::numeric_limits<int>::max()};
-  int max_{std::numeric_limits<int>::min()};
-  int updates_{};
-  double mean_{};
-  double m2_{};
-};
-
-// Fixture that holds a Cassie robot model in a MultibodyPlant<double>. The
-// class also holds a default context for the plant, and dimensions of its
-// state and inputs.
-class CassieDoubleFixture : public benchmark::Fixture {
- public:
-  CassieDoubleFixture() {
+  Cassie() {
     tools::performance::AddMinMaxStatistics(this);
   }
 
@@ -67,234 +47,322 @@ class CassieDoubleFixture : public benchmark::Fixture {
   // errors in g++. All of this is a consequence of the weird deprecation of
   // const-ref State versions of SetUp() and TearDown() in benchmark.h.
   using benchmark::Fixture::SetUp;
-  void SetUp(benchmark::State&) override {
-    plant_ = std::make_unique<MultibodyPlant<double>>(0);
-
-    multibody::Parser parser(plant_.get());
-    const auto& model =
-        "drake/multibody/benchmarking/cassie_v2.urdf";
-    parser.AddModelFromFile(FindResourceOrThrow(model));
-    plant_->Finalize();
-
-    nq_ = plant_->num_positions();
-    nv_ = plant_->num_velocities();
-    nu_ = plant_->num_actuators();
-
-    context_ = plant_->CreateDefaultContext();
-
-    u_ = VectorXd::Zero(nu_);
-
-    // Use default state to avoid problems with all-zero quaternions.
-    x_ = context_->get_continuous_state_vector().CopyToVector();
+  void SetUp(BenchmarkStateRef state) override {
+    SetUpNonZeroState();
+    SetUpGradientsOrVariables(state);
   }
 
-  // Use this method to invalidate state-dependent computations within each
-  // benchmarked step. Disabling the cache entirely could affect the performance
-  // differently because it would suppress any internal use of the cache during
+ protected:
+  // Loads the plant.
+  static std::unique_ptr<MultibodyPlant<T>> MakePlant();
+
+  // Sets the plant to have non-zero state and input. In some cases, computing
+  // using zeros will not tickle the relevant paths through the code.
+  void SetUpNonZeroState();
+
+  // In the benchmark case instantiations at the bottom of this file, we'll use
+  // a bitmask for the case's "Arg" to denote which quantities are in scope as
+  // either gradients (for T=AutoDiffXd) or variables (for T=Expression).
+  static bool want_grad_q(const benchmark::State& state) {
+    return state.range(0) & kWantGradQ;
+  }
+  static bool want_grad_v(const benchmark::State& state) {
+    return state.range(0) & kWantGradV;
+  }
+  static bool want_grad_vdot(const benchmark::State& state) {
+    return state.range(0) & kWantGradVdot;
+  }
+  static bool want_grad_u(const benchmark::State& state) {
+    return state.range(0) & kWantGradU;
+  }
+
+  // Using the "Arg" from the given benchmark state, sets up the MbP
+  // state and/or input to use gradients and/or symbolic variables
+  // as configured in this benchmark case.
+  //
+  // For T=double, any request for gradients is an error.
+  // For T=AutoDiffXd, sets the specified gradients to the identity matrix.
+  // For T=Expression, sets the specified quantities to symbolic variables.
+  void SetUpGradientsOrVariables(BenchmarkStateRef state);
+
+  // Use these functions to invalidate input- or state-dependent computations
+  // each benchmarked step. Disabling the cache entirely would affect the
+  // performance because it would suppress any internal use of the cache during
   // complicated computations like forward dynamics. For example, if there are
   // multiple places in forward dynamics that access body positions, currently
   // those would get computed once and re-used (like in real applications) but
   // with caching off they would get recalculated repeatedly, affecting the
   // timing results.
-  virtual void InvalidateState() {
+  void InvalidateInput() {
+    input_.GetMutableData();
+  }
+  void InvalidateState() {
     context_->NoteContinuousStateChange();
   }
 
- protected:
-  AllocationTracker tracker_;
-  std::unique_ptr<MultibodyPlant<double>> plant_{};
-  std::unique_ptr<Context<double>> context_;
-  int nq_{};
-  int nv_{};
-  int nu_{};
-  VectorXd u_{};
-  VectorXd x_{};
+  // Runs the MassMatrix benchmark.
+  void DoMassMatrix(BenchmarkStateRef state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcMassMatrix(*context_, &mass_matrix_out_);
+    }
+  }
+
+  // Runs the InverseDynamics benchmark.
+  void DoInverseDynamics(BenchmarkStateRef state) {
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcInverseDynamics(*context_, desired_vdot_, external_forces_);
+    }
+  }
+
+  // Runs the ForwardDynamics benchmark.
+  void DoForwardDynamics(BenchmarkStateRef state) {
+    DRAKE_DEMAND(want_grad_vdot(state) == false);
+    for (auto _ : state) {
+      InvalidateInput();
+      InvalidateState();
+      plant_->EvalTimeDerivatives(*context_);
+    }
+  }
+
+  // The plant itself.
+  const std::unique_ptr<const MultibodyPlant<T>> plant_{MakePlant()};
+  const int nq_{plant_->num_positions()};
+  const int nv_{plant_->num_velocities()};
+  const int nu_{plant_->num_actuators()};
+
+  // The plant's context.
+  std::unique_ptr<Context<T>> context_{plant_->CreateDefaultContext()};
+  FixedInputPortValue& input_ = plant_->get_actuation_input_port().FixValue(
+      context_.get(), VectorX<T>::Zero(nu_));
+
+  // Data used in the MassMatrix cases (only).
+  MatrixX<T> mass_matrix_out_;
+
+  // Data used in the InverseDynamics cases (only).
+  VectorX<T> desired_vdot_;
+  MultibodyForces<T> external_forces_{*plant_};
 };
 
-// NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-BENCHMARK_F(CassieDoubleFixture, DoubleMassMatrix)(benchmark::State& state) {
-  MatrixXd M(nv_, nv_);
-  for (auto _ : state) {
-    const LimitMallocParams no_limit;
-    LimitMalloc malloc_counter(no_limit);
-    InvalidateState();
-    plant_->CalcMassMatrix(*context_, &M);
-    tracker_.Update(malloc_counter.num_allocations());
-  }
-  tracker_.Report(&state);
-}
+using CassieDouble = Cassie<double>;
+using CassieAutoDiff = Cassie<AutoDiffXd>;
+using CassieExpression = Cassie<Expression>;
 
-BENCHMARK_F(CassieDoubleFixture, DoubleInverseDynamics)
-    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-    (benchmark::State& state) {
-  VectorXd desired_vdot = VectorXd::Zero(nv_);
-  multibody::MultibodyForces<double> external_forces(*plant_);
-  for (auto _ : state) {
-    const LimitMallocParams no_limit;
-    LimitMalloc malloc_counter(no_limit);
-    InvalidateState();
-    plant_->CalcInverseDynamics(*context_, desired_vdot, external_forces);
-    tracker_.Update(malloc_counter.num_allocations());
-  }
-  tracker_.Report(&state);
-}
-
-BENCHMARK_F(CassieDoubleFixture, DoubleForwardDynamics)
-    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-    (benchmark::State& state) {
-  auto derivatives = plant_->AllocateTimeDerivatives();
-  auto& port_value =
-      plant_->get_actuation_input_port().FixValue(context_.get(), u_);
-  for (auto _ : state) {
-    const LimitMallocParams no_limit;
-    LimitMalloc malloc_counter(no_limit);
-    InvalidateState();
-    port_value.GetMutableData();  // Invalidates caching of inputs.
-    plant_->CalcTimeDerivatives(*context_, derivatives.get());
-    tracker_.Update(malloc_counter.num_allocations());
-  }
-  tracker_.Report(&state);
-}
-
-// Fixture that holds a Cassie robot model in a MultibodyPlant<AutoDiffXd>. It
-// also holds a default context for autodiff.
-class CassieAutodiffFixture : public CassieDoubleFixture {
- public:
-  using CassieDoubleFixture::SetUp;
-  void SetUp(benchmark::State& state) override {
-    CassieDoubleFixture::SetUp(state);
-    plant_autodiff_ = systems::System<double>::ToAutoDiffXd(*plant_);
-    context_autodiff_ = plant_autodiff_->CreateDefaultContext();
-  }
-
-  // @see CassieDoubleFixture::InvalidateState(). This method invalidates the
-  // autodiff version of state.
-  void InvalidateState() override {
-    context_autodiff_->NoteContinuousStateChange();
-  }
-
- protected:
-  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff_;
-  std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
-};
-
-BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
-    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-    (benchmark::State& state) {
-  MatrixX<AutoDiffXd> M_autodiff(nv_, nv_);
-  auto x_autodiff = math::InitializeAutoDiff(x_);
-  plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
-      x_autodiff);
-
-  for (auto _ : state) {
-    InvalidateState();
-    plant_autodiff_->CalcMassMatrix(*context_autodiff_, &M_autodiff);
+template <typename T>
+std::unique_ptr<MultibodyPlant<T>> Cassie<T>::MakePlant() {
+  auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
+  Parser parser(plant.get());
+  const auto& model = "drake/multibody/benchmarking/cassie_v2.urdf";
+  parser.AddModelFromFile(FindResourceOrThrow(model));
+  plant->Finalize();
+  if constexpr (std::is_same_v<T, double>) {
+    return plant;
+  } else {
+    return System<double>::ToScalarType<T>(*plant);
   }
 }
 
-BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
-    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-    (benchmark::State& state) {
-  VectorXd desired_vdot = VectorXd::Zero(nv_);
-  multibody::MultibodyForces<AutoDiffXd> external_forces_autodiff(
-      *plant_autodiff_);
-  auto x_autodiff = math::InitializeAutoDiff(x_, nq_ + 2 * nv_);
-  auto vdot_autodiff = math::InitializeAutoDiff(desired_vdot,
-                                                nq_ + 2 * nv_,
-                                                nq_ + nv_);
-  plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
-      x_autodiff);
+template <typename T>
+void Cassie<T>::SetUpNonZeroState() {
+  // Reset 'x'; be sure to set quaternions back to a sane value.
+  context_->get_mutable_continuous_state_vector().SetFromVector(
+      VectorX<T>::LinSpaced(nq_ + nv_, 0.1, 0.9));
+  for (const BodyIndex& index : plant_->GetFloatingBaseBodies()) {
+    const Body<T>& body = plant_->get_body(index);
+    const RigidTransform<T> pose(
+        RollPitchYaw<T>(0.1, 0.2, 0.3), Vector3<T>(0.4, 0.5, 0.6));
+    plant_->SetFreeBodyPose(context_.get(), body, pose);
+  }
 
-  for (auto _ : state) {
-    InvalidateState();
-    plant_autodiff_->CalcInverseDynamics(*context_autodiff_,
-                                         vdot_autodiff,
-                                         external_forces_autodiff);
+  // Reset 'vdot'.
+  desired_vdot_ = VectorX<T>::Constant(nv_, 0.5);
+
+  // Reset 'u'.
+  input_.GetMutableVectorData<T>()->SetFromVector(
+      VectorX<T>::Constant(nu_, 0.5));
+
+  // Reset 'tau'.
+  external_forces_.mutable_generalized_forces() =
+      VectorX<T>::LinSpaced(nv_, 0.01, 0.09);
+
+  // Reset temporaries.
+  mass_matrix_out_ = MatrixX<T>::Zero(nv_, nv_);
+}
+
+template <>
+void Cassie<double>::SetUpGradientsOrVariables(BenchmarkStateRef state) {
+  DRAKE_DEMAND(want_grad_q(state) == false);
+  DRAKE_DEMAND(want_grad_v(state) == false);
+  DRAKE_DEMAND(want_grad_vdot(state) == false);
+  DRAKE_DEMAND(want_grad_u(state) == false);
+}
+
+template <>
+void Cassie<AutoDiffXd>::SetUpGradientsOrVariables(BenchmarkStateRef state) {
+  // For the quantities destined for InitializeAutoDiff, read their default
+  // values (without any gradients). For the others, leave the matrix empty.
+  VectorX<double> q, v, vdot, u;
+  if (want_grad_q(state)) {
+    q = math::DiscardGradient(plant_->GetPositions(*context_));
+  }
+  if (want_grad_v(state)) {
+    v = math::DiscardGradient(plant_->GetVelocities(*context_));
+  }
+  if (want_grad_vdot(state)) {
+    vdot = math::DiscardGradient(desired_vdot_);
+  }
+  if (want_grad_u(state)) {
+    u = math::DiscardGradient(input_.get_vector_value<AutoDiffXd>().value());
+  }
+
+  // Initialize the desired gradients.
+  VectorX<AutoDiffXd> q_grad, v_grad, vdot_grad, u_grad;
+  std::tie(q_grad, v_grad, vdot_grad, u_grad) =
+      math::InitializeAutoDiffTuple(q, v, vdot, u);
+
+  // Write the gradients back to the plant.
+  if (want_grad_q(state)) {
+    plant_->SetPositions(context_.get(), q_grad);
+  }
+  if (want_grad_v(state)) {
+    plant_->SetVelocities(context_.get(), v_grad);
+  }
+  if (want_grad_vdot(state)) {
+    desired_vdot_ = vdot_grad;
+  }
+  if (want_grad_u(state)) {
+    input_.GetMutableVectorData<AutoDiffXd>()->SetFromVector(u_grad);
   }
 }
 
-BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
-    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-    (benchmark::State& state) {
-  auto derivatives_autodiff = plant_autodiff_->AllocateTimeDerivatives();
-  auto u_autodiff = math::InitializeAutoDiff(u_, nq_ + nv_ + nu_, nq_ + nv_);
-  auto& port_value = plant_autodiff_->get_actuation_input_port().FixValue(
-      context_autodiff_.get(), u_autodiff);
-  auto x_autodiff = math::InitializeAutoDiff(x_, nq_ + nv_ + nu_);
-  plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
-      x_autodiff);
-
-  for (auto _ : state) {
-    InvalidateState();
-    port_value.GetMutableData();  // Invalidates caching of inputs.
-    plant_autodiff_->CalcTimeDerivatives(*context_autodiff_,
-                                         derivatives_autodiff.get());
+template <>
+void Cassie<Expression>::SetUpGradientsOrVariables(BenchmarkStateRef state) {
+  if (want_grad_q(state)) {
+    const VectorX<Expression> q = MakeVectorVariable(nq_, "q");
+    plant_->SetPositions(context_.get(), q);
+  }
+  if (want_grad_v(state)) {
+    const VectorX<Expression> v = MakeVectorVariable(nv_, "v");
+    plant_->SetVelocities(context_.get(), v);
+  }
+  if (want_grad_vdot(state)) {
+    desired_vdot_ = MakeVectorVariable(nv_, "vd");
+  }
+  if (want_grad_u(state)) {
+    const VectorX<Expression> u = MakeVectorVariable(nu_, "u");
+    input_.GetMutableVectorData<Expression>()->SetFromVector(u);
   }
 }
 
-// Fixture that holds a Cassie robot model in a MultibodyPlant<Expression>. It
-// also holds a default context for Expression.
-class CassieExpressionFixture : public CassieDoubleFixture {
- public:
-  using CassieDoubleFixture::SetUp;
-  void SetUp(benchmark::State& state) override {
-    CassieDoubleFixture::SetUp(state);
-    plant_expression_ = systems::System<double>::ToSymbolic(*plant_);
-    context_expression_ = plant_expression_->CreateDefaultContext();
-  }
+// All that remains is to add the sensible combinations of benchmark configs.
+//
+// For T=double, there's only a single config. We still use a range arg so
+// that its correspondence with the non-double cases is apparent.
+//
+// For T=AutoDiff, the range arg sets which gradients to use, using a bitmask.
+//
+// For T=Expression, the range arg sets which variables to use, using a bitmask.
 
-  // @see CassieDoubleFixture::InvalidateState(). This method invalidates the
-  // expression version of state.
-  void InvalidateState() override {
-    context_expression_->NoteContinuousStateChange();
-  }
-
- protected:
-  std::unique_ptr<MultibodyPlant<Expression>> plant_expression_;
-  std::unique_ptr<Context<Expression>> context_expression_;
-};
-
-// This uses T=Expression, but all values are still constants (not variables).
-BENCHMARK_F(CassieExpressionFixture, ExpressionMassMatrix)
-    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-    (benchmark::State& state) {
-  MatrixX<Expression> M(nv_, nv_);
-  for (auto _ : state) {
-    InvalidateState();
-    plant_expression_->CalcMassMatrix(*context_expression_, &M);
-  }
+BENCHMARK_DEFINE_F(CassieDouble, MassMatrix)(BenchmarkStateRef state) {
+  DoMassMatrix(state);
 }
+BENCHMARK_REGISTER_F(CassieDouble, MassMatrix)
+  ->Unit(benchmark::kMicrosecond)
+  ->Arg(kWantNoGrad);
 
-// This uses T=Expression, but all values are still constants (not variables).
-BENCHMARK_F(CassieExpressionFixture, ExpressionInverseDynamics)
-    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-    (benchmark::State& state) {
-  VectorX<Expression> desired_vdot = VectorXd::Zero(nv_);
-  multibody::MultibodyForces<Expression> external_forces(*plant_expression_);
-  for (auto _ : state) {
-    InvalidateState();
-    plant_expression_->CalcInverseDynamics(
-        *context_expression_, desired_vdot, external_forces);
-  }
+BENCHMARK_DEFINE_F(CassieDouble, InverseDynamics)(BenchmarkStateRef state) {
+  DoInverseDynamics(state);
 }
+BENCHMARK_REGISTER_F(CassieDouble, InverseDynamics)
+  ->Unit(benchmark::kMicrosecond)
+  ->Arg(kWantNoGrad);
 
-// This uses T=Expression, but all values are still constants (not variables).
-BENCHMARK_F(CassieExpressionFixture, ExpressionForwardDynamics)
-    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
-    (benchmark::State& state) {
-  auto derivatives = plant_expression_->AllocateTimeDerivatives();
-  auto& port_value = plant_expression_->get_actuation_input_port().FixValue(
-      context_expression_.get(), u_.cast<Expression>().eval());
-  for (auto _ : state) {
-    InvalidateState();
-    port_value.GetMutableData();  // Invalidates caching of inputs.
-    plant_expression_->CalcTimeDerivatives(
-        *context_expression_, derivatives.get());
-  }
+BENCHMARK_DEFINE_F(CassieDouble, ForwardDynamics)(BenchmarkStateRef state) {
+  DoForwardDynamics(state);
 }
+BENCHMARK_REGISTER_F(CassieDouble, ForwardDynamics)
+  ->Unit(benchmark::kMicrosecond)
+  ->Arg(kWantNoGrad);
+
+BENCHMARK_DEFINE_F(CassieAutoDiff, MassMatrix)(BenchmarkStateRef state) {
+  DoMassMatrix(state);
+}
+BENCHMARK_REGISTER_F(CassieAutoDiff, MassMatrix)
+  ->Unit(benchmark::kMicrosecond)
+  ->Arg(kWantNoGrad)
+  ->Arg(kWantGradQ)
+  ->Arg(kWantGradV)
+  ->Arg(kWantGradX);
+
+BENCHMARK_DEFINE_F(CassieAutoDiff, InverseDynamics)(BenchmarkStateRef state) {
+  DoInverseDynamics(state);
+}
+BENCHMARK_REGISTER_F(CassieAutoDiff, InverseDynamics)
+  ->Unit(benchmark::kMicrosecond)
+  ->Arg(kWantNoGrad)
+  ->Arg(kWantGradQ)
+  ->Arg(kWantGradV)
+  ->Arg(kWantGradX)
+  ->Arg(kWantGradVdot)
+  ->Arg(kWantGradQ|kWantGradVdot)
+  ->Arg(kWantGradV|kWantGradVdot)
+  ->Arg(kWantGradX|kWantGradVdot);
+
+BENCHMARK_DEFINE_F(CassieAutoDiff, ForwardDynamics)(BenchmarkStateRef state) {
+  DoForwardDynamics(state);
+}
+BENCHMARK_REGISTER_F(CassieAutoDiff, ForwardDynamics)
+  ->Unit(benchmark::kMicrosecond)
+  ->Arg(kWantNoGrad)
+  ->Arg(kWantGradQ)
+  ->Arg(kWantGradV)
+  ->Arg(kWantGradX)
+  ->Arg(kWantGradU)
+  ->Arg(kWantGradQ|kWantGradU)
+  ->Arg(kWantGradV|kWantGradU)
+  ->Arg(kWantGradX|kWantGradU);
+
+BENCHMARK_DEFINE_F(CassieExpression, MassMatrix)(BenchmarkStateRef state) {
+  DoMassMatrix(state);
+}
+BENCHMARK_REGISTER_F(CassieExpression, MassMatrix)
+  ->Unit(benchmark::kMicrosecond)
+  ->Arg(kWantNoGrad)
+  ->Arg(kWantGradQ)
+  ->Arg(kWantGradV)
+  ->Arg(kWantGradX);
+
+BENCHMARK_DEFINE_F(CassieExpression, InverseDynamics)(BenchmarkStateRef state) {
+  DoInverseDynamics(state);
+}
+BENCHMARK_REGISTER_F(CassieExpression, InverseDynamics)
+  ->Unit(benchmark::kMicrosecond)
+  ->Arg(kWantNoGrad)
+  ->Arg(kWantGradQ)
+  ->Arg(kWantGradV)
+  ->Arg(kWantGradX)
+  ->Arg(kWantGradVdot)
+  ->Arg(kWantGradQ|kWantGradVdot)
+  ->Arg(kWantGradV|kWantGradVdot)
+  ->Arg(kWantGradX|kWantGradVdot);
+
+BENCHMARK_DEFINE_F(CassieExpression, ForwardDynamics)(BenchmarkStateRef state) {
+  DoForwardDynamics(state);
+}
+BENCHMARK_REGISTER_F(CassieExpression, ForwardDynamics)
+  ->Unit(benchmark::kMicrosecond)
+  ->Arg(kWantNoGrad)
+  // N.B. MbP does not support forward dynamics with Variables in 'q'.
+  ->Arg(kWantGradV)
+  ->Arg(kWantGradU)
+  ->Arg(kWantGradV|kWantGradU);
 
 }  // namespace
-}  // namespace examples
+}  // namespace multibody
 }  // namespace drake
 
 BENCHMARK_MAIN();
