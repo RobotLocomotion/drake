@@ -5,6 +5,11 @@ import unittest
 
 from mypy import stubgen
 
+# Mypy can time out if importing takes an inordinate length of time. Try to
+# avoid this by importing ourselves up front when the import isn't being run
+# under a timeout.
+import pydrake.all
+
 
 class TestStubgen(unittest.TestCase):
     # TODO(mwoehlke-kitware): test the already-generated files instead.
