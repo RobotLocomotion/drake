@@ -39,6 +39,7 @@ class PositionConstraint : public solvers::Constraint {
    * @pre p_AQ_lower(i) <= p_AQ_upper(i) for i = 1, 2, 3.
    * @throws std::exception if `plant` is nullptr.
    * @throws std::exception if `plant_context` is nullptr.
+   * @pydrake_mkdoc_identifier{double}
    */
   PositionConstraint(const MultibodyPlant<double>* plant,
                      const Frame<double>& frameA,
@@ -52,8 +53,7 @@ class PositionConstraint : public solvers::Constraint {
    * Overloaded constructor. Same as the constructor with the double version
    * (using MultibodyPlant<double> and Context<double>). Except the gradient of
    * the constraint is computed from autodiff.
-   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-   * Documentation string is manually recreated in Python.}
+   * @pydrake_mkdoc_identifier{autodiff}
    */
   PositionConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                      const Frame<AutoDiffXd>& frameA,
@@ -86,6 +86,7 @@ class PositionConstraint : public solvers::Constraint {
    * @pre p_AQ_lower(i) <= p_AQ_upper(i) for i = 1, 2, 3.
    * @throws std::exception if `plant` is nullptr.
    * @throws std::exception if `plant_context` is nullptr.
+   * @pydrake_mkdoc_identifier{double_Abar}
    */
   PositionConstraint(const MultibodyPlant<double>* plant,
                      const Frame<double>& frameAbar,
@@ -100,8 +101,7 @@ class PositionConstraint : public solvers::Constraint {
    * Overloaded constructor. Same as the constructor with the double version
    * (using MultibodyPlant<double> and Context<double>). Except the gradient of
    * the constraint is computed from autodiff.
-   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-   * Documentation string is manually recreated in Python.}
+   * @pydrake_mkdoc_identifier{autodiff_Abar}
    */
   PositionConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                      const Frame<AutoDiffXd>& frameAbar,

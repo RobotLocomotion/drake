@@ -88,6 +88,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   a SceneGraph object.
   @throws std::exception if influence_distance_offset = ∞.
   @throws std::exception if influence_distance_offset ≤ 0.
+  @pydrake_mkdoc_identifier{double}
   */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<double>* const plant,
@@ -98,8 +99,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   /**
   Overloaded constructor.
   Constructs the constraint using MultibodyPlant<AutoDiffXd>.
-  @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-  Documentation string is manually recreated in Python.}
+  @pydrake_mkdoc_identifier{autodiff}
   */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<AutoDiffXd>* const plant,

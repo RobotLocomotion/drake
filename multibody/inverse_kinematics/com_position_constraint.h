@@ -34,7 +34,7 @@ class ComPositionConstraint final : public solvers::Constraint {
    *   `plant`. We will update the context when evaluating the constraint.
    *   `plant_context` should be alive during the lifetime of this constraint.
    * @throws std::exception if `plant` or `plant_context` is nullptr.
-   * @pydrake_mkdoc_identifier{ctor_double}
+   * @pydrake_mkdoc_identifier{double}
    */
   ComPositionConstraint(
       const MultibodyPlant<double>* const plant,
@@ -48,7 +48,7 @@ class ComPositionConstraint final : public solvers::Constraint {
    * It is preferrable to use the constructor with MBP<double> and
    * Context<double>. But if you only have MBP<AutoDiffXd> and
    * Context<AutoDiffXd>, then use this constructor.
-   * @pydrake_mkdoc_identifier{ctor_autodiff}
+   * @pydrake_mkdoc_identifier{autodiff}
    */
   ComPositionConstraint(
       const MultibodyPlant<AutoDiffXd>* const plant,

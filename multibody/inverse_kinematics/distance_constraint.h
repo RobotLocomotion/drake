@@ -30,6 +30,7 @@ class DistanceConstraint : public solvers::Constraint {
    * outlive this DistanceConstraint object.
    * @param distance_lower The lower bound on the distance.
    * @param distance_upper The upper bound on the distance.
+   * @pydrake_mkdoc_identifier{double}
    */
   DistanceConstraint(const multibody::MultibodyPlant<double>* const plant,
                      SortedPair<geometry::GeometryId> geometry_pair,
@@ -39,8 +40,7 @@ class DistanceConstraint : public solvers::Constraint {
   /**
    * Overloaded constructor. Constructs the constraint with
    * MultibodyPlant<AutoDiffXd>.
-   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-   * Documentation string is manually recreated in Python.}
+   * @pydrake_mkdoc_identifier{autodiff}
    */
   DistanceConstraint(const multibody::MultibodyPlant<AutoDiffXd>* const plant,
                      SortedPair<geometry::GeometryId> geometry_pair,

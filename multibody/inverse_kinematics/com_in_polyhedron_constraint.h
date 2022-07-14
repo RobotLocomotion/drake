@@ -38,6 +38,7 @@ class ComInPolyhedronConstraint : public solvers::Constraint {
    * @param plant_context The Context that has been allocated for this
    * `plant`. We will update the context when evaluating the constraint.
    * `plant_context` must be alive during the lifetime of this constraint.
+   * @pydrake_mkdoc_identifier{double}
    */
   ComInPolyhedronConstraint(
       const MultibodyPlant<double>* plant,
@@ -54,8 +55,7 @@ class ComInPolyhedronConstraint : public solvers::Constraint {
    * the constraint is computed from autodiff.
    * @pre if model_instances is not std::nullopt, then all indices in
    * `model_instances` refer to valid model instances in `plant`.
-   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-   * Documentation string is manually recreated in Python.}
+   * @pydrake_mkdoc_identifier{autodiff}
    */
   ComInPolyhedronConstraint(
       const MultibodyPlant<AutoDiffXd>* plant,
