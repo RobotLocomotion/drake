@@ -57,6 +57,7 @@ class OrientationConstraint : public solvers::Constraint {
    *   `plant`.
    * @throws std::exception if angle_bound < 0.
    * @throws std::exception if `plant_context` is nullptr.
+   * @pydrake_mkdoc_identifier{double}
    */
   OrientationConstraint(
       const MultibodyPlant<double>* const plant,
@@ -69,8 +70,7 @@ class OrientationConstraint : public solvers::Constraint {
   /**
    * Overloaded constructor.
    * Constructs the constraint using MultibodyPlant<AutoDiffXd>
-   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-   * Documentation string is manually recreated in Python.}
+   * @pydrake_mkdoc_identifier{autodiff}
    */
   OrientationConstraint(const MultibodyPlant<AutoDiffXd>* const plant,
                         const Frame<AutoDiffXd>& frameAbar,

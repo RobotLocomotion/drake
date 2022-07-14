@@ -49,6 +49,7 @@ class GazeTargetConstraint : public solvers::Constraint {
    * @throws std::exception if `n_A` is close to zero.
    * @throws std::exception if `cone_half_angle` ∉ [0, π/2].
    * @throws std::exception if `plant_context` is nullptr.
+   * @pydrake_mkdoc_identifier{double}
    */
   GazeTargetConstraint(const MultibodyPlant<double>* plant,
                        const Frame<double>& frameA,
@@ -63,8 +64,7 @@ class GazeTargetConstraint : public solvers::Constraint {
    * Overloaded constructor.
    * Construct from MultibodyPlant<AutoDiffXd> instead of
    * MultibodyPlant<double>.
-   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-   * Documentation string is manually recreated in Python.}
+   * @pydrake_mkdoc_identifier{autodiff}
    */
   GazeTargetConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                        const Frame<AutoDiffXd>& frameA,
