@@ -36,11 +36,13 @@ drake_cc_googlebench_binary(
     add_test_rule = True,
     data = ["cassie_v2.urdf"],
     deps = [
+        "//common:add_text_logging_gflags",
         "//common:essential",
         "//common:find_resource",
         "//math:gradient",
         "//multibody/parsing:parser",
         "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
     ],
 )
 
@@ -57,11 +59,13 @@ drake_cc_googlebench_binary(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
+        "//common:add_text_logging_gflags",
         "//common:find_resource",
         "//multibody/inverse_kinematics",
         "//multibody/parsing",
         "//solvers:solve",
         "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
     ],
 )
 

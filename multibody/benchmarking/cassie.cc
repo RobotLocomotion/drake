@@ -364,5 +364,3 @@ BENCHMARK_REGISTER_F(CassieExpression, ForwardDynamics)
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
-
-BENCHMARK_MAIN();

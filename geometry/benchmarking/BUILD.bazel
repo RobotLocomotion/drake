@@ -22,26 +22,24 @@ drake_cc_googlebench_binary(
     ],
 )
 
-# TODO(jwnimmer-tri) Change this to a drake_cc_googlebench_binary (i.e., add
-# a unit test here) once we figure out how to mate googlebench with gflags.
-drake_cc_binary(
+drake_cc_googlebench_binary(
     name = "render_benchmark",
     srcs = ["render_benchmark.cc"],
-    add_test_rule = False,
-    defines = select({
-        "//tools/cc_toolchain:apple": [
-        ],
-        "//conditions:default": ["RENDER_ENGINE_GL_SUPPORTED"],
-    }),
+    add_test_rule = True,
+    test_args = [
+        # To save time, only run the low-resolution tests in CI.
+        "--benchmark_filter=.*/1/1/320/240",
+    ],
     deps = [
+        "//common:add_text_logging_gflags",
         "//common:filesystem",
         "//geometry/render",
         "//geometry/render_gl",
         "//geometry/render_vtk",
         "//systems/sensors:image_writer",
+        "//tools/performance:gflags_main",
         "@fmt",
         "@gflags",
-        "@googlebenchmark//:benchmark",
     ],
 )
 
