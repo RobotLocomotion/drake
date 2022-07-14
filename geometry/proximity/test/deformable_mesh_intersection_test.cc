@@ -58,28 +58,23 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
       });
   ASSERT_TRUE(bvhs_collide);
 
-  // Initialize these two variables as non-empty sequences of nonsense
-  // values expected to be become empty later.
-  std::vector<int> tetrahedron_index_of_polygons{2022, 6, 9};
-  std::vector<VolumeMesh<double>::Barycentric<double>> barycentric_centroids{
-      {0.1, 1.2, 2.3, 3.4}};
-  std::unique_ptr<ContactSurface<double>> contact_surface_W =
-      ComputeContactSurfaceFromDeformableVolumeRigidSurface(
-          deformable_id, deformable_W,
-          rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR,
-          &tetrahedron_index_of_polygons,
-          &barycentric_centroids);
+  DeformableRigidContact<double> contact_data(
+      deformable_id, deformable_W.deformable_mesh().mesh().num_vertices());
+  AppendDeformableRigidContact(
+      deformable_W, rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR,
+      &contact_data);
 
-  EXPECT_EQ(contact_surface_W, nullptr);
-  // Confirm that they become empty.
-  EXPECT_EQ(tetrahedron_index_of_polygons.size(), 0);
-  EXPECT_EQ(barycentric_centroids.size(), 0);
+  // Zero contact points and no vertices in contact are good enough indication
+  // that the contact data is empty.
+  EXPECT_EQ(contact_data.num_contact_points(), 0);
+  EXPECT_EQ(contact_data.num_vertices_in_contact(), 0);
 }
 
-// Note that the deformable rigid contact surface computation largely utilizes
-// previously tested code in mesh_intersection.cc. The only thing it adds is the
-// detection and addition of tet indices and centroid coordinates. We only test
-// the newly added operations here in this test.
+// Note that the deformable rigid contact computation largely utilizes
+// previously tested code in mesh_intersection.cc. On top of that, it evaluates
+// signed distances, reports deformable vertices and tets participating in
+// contact, and contact point barycentric coordinates. We test the correctness
+// of these newly added operations here in this test.
 GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   const GeometryId deformable_id = GeometryId::get_new_id();
   const Sphere unit_sphere(1.0);
@@ -104,51 +99,49 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   // xy-plane).
   const math::RigidTransform<double> X_WR(Vector3<double>{0, 0, 0.5});
 
-  std::vector<int> tetrahedron_index_of_polygons;
-  std::vector<VolumeMesh<double>::Barycentric<double>> barycentric_centroids;
-  std::unique_ptr<ContactSurface<double>> contact_surface_W =
-      ComputeContactSurfaceFromDeformableVolumeRigidSurface(
-          deformable_id, deformable_W,
-          rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR,
-          &tetrahedron_index_of_polygons,
-          &barycentric_centroids);
+  DeformableRigidContact<double> contact_data(deformable_id, 4);
+  AppendDeformableRigidContact(
+      deformable_W, rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR,
+      &contact_data);
+  constexpr int kExpectedNumRigidGeometries = 1;
+  constexpr int kExpectedNumContactPoints = 1;
 
-  const int kExpectedNumPolygons = 1;
-  ASSERT_EQ(tetrahedron_index_of_polygons.size(), kExpectedNumPolygons);
-  ASSERT_EQ(barycentric_centroids.size(), kExpectedNumPolygons);
+  EXPECT_EQ(contact_data.contact_meshes_W().size(),
+            kExpectedNumRigidGeometries);
+  EXPECT_EQ(contact_data.contact_meshes_W()[0].num_faces(),
+            kExpectedNumContactPoints);
 
-  const std::vector<int> kExpectedTetrahedronIndexOfPolygons{0};
-  EXPECT_EQ(tetrahedron_index_of_polygons, kExpectedTetrahedronIndexOfPolygons);
-
-  // Since the triangle is quite large, its intersection with the
-  // tetrahedron is an isosceles right triangle with two edges of length 0.5.
-  // Its three vertices are at (0, 0, 0.5), (0.5, 0, 0.5), (0, 0.5, 0.5), not
-  // necessarily in this order. Its centroid is at (1/6, 1/6, 1/2).
-  const Vector3<double> kExpectedCentroid_W(1.0 / 6, 1.0 / 6, 1.0 / 2);
-  const VolumeMesh<double>::Barycentric<double> expected_barycentric =
-      single_tetrahedron_mesh_W.CalcBarycentric(kExpectedCentroid_W, 0);
-
-  const double kEps = 1e-14;
-  EXPECT_TRUE(
-      CompareMatrices(barycentric_centroids[0], expected_barycentric, kEps));
-
-  ASSERT_NE(contact_surface_W, nullptr);
-  EXPECT_EQ(contact_surface_W->num_faces(), kExpectedNumPolygons);
-  // Area of the isosceles right triangle with two edges of length 0.5 is
-  // 0.5 * 0.5 / 2 = 0.125.
-  EXPECT_NEAR(contact_surface_W->area(0), 0.125, kEps);
-  EXPECT_EQ(contact_surface_W->face_normal(0), Vector3<double>::UnitZ());
-  EXPECT_TRUE(CompareMatrices(contact_surface_W->centroid(0),
-                              kExpectedCentroid_W, kEps));
-
-  const double signed_distance_at_centroid_of_polygon0 =
-      contact_surface_W->poly_e_MN().EvaluateCartesian(
-          0, contact_surface_W->centroid(0));
   // The approximated signed distance function on the tetrahedron is
   // s(x,y,z) = x + y + z - 1.  Therefore, the centroid (1/6, 1/6, 1/2) has
   // the signed distance = 1/6 + 1/6 + 1/2 - 1 = -1/6
-  EXPECT_NEAR(signed_distance_at_centroid_of_polygon0,
-              -1.0 / 6, kEps);
+  ASSERT_EQ(contact_data.signed_distances().size(), kExpectedNumContactPoints);
+  const double signed_distance_at_contact_point =
+      contact_data.signed_distances()[0];
+  constexpr double kEps = 1e-14;
+  EXPECT_NEAR(signed_distance_at_contact_point, -1.0 / 6, kEps);
+
+  ASSERT_EQ(contact_data.tetrahedra_indexes().size(),
+            kExpectedNumContactPoints);
+  constexpr int kTetIndex = 0;
+  EXPECT_EQ(contact_data.tetrahedra_indexes()[0], kTetIndex);
+
+  // Only on tetrahedron is participating in contact and there are 4 vertices
+  // incident to a tetrahedron.
+  EXPECT_EQ(contact_data.num_contact_points(), 1);
+  EXPECT_EQ(contact_data.num_vertices_in_contact(), 4);
+
+  // The centroid is (1/6, 1/6, 1/2), and the vertex positions are (0, 0, 0),
+  // (1, 0, 0), (0, 1, 0), (0, 0, 1). The the barycentric weights is (1/6, 1/6,
+  // 1/6, 1/2).
+  ASSERT_EQ(contact_data.barycentric_coordinates().size(),
+            kExpectedNumContactPoints);
+  EXPECT_TRUE(CompareMatrices(
+      contact_data.barycentric_coordinates()[0],
+      Vector4<double>(1.0 / 6, 1.0 / 6, 1.0 / 6, 1.0 / 2), kEps));
+
+  // The correctnes of R_CWs are tested in the unit tests for
+  // DeformableRigidContact. Here we only verify the correctness of the size.
+  EXPECT_EQ(contact_data.R_CWs().size(), kExpectedNumContactPoints);
 }
 
 }  // namespace
