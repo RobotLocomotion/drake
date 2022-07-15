@@ -77,18 +77,23 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Binary packages of Drake for Ubuntu 20.04 (Focal) and
+Binary packages of Drake for Ubuntu 20.04 (Focal), Ubuntu 22.04 (Jammy), and
 Mac are generated nightly and are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz)
+
+The nightly `latest` archives are retained for approximately 18 hours before
+they are overwritten.
 
 Older packages for specific dates are available by replacing ``latest`` with an
 8-digit date, e.g., ``20200102`` for January 2nd, 2020.
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-20220714-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20220714-focal.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20220714-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20220714-jammy.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-20220714-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20220714-mac.tar.gz)
 
-Individual packages are archived two years from their date of creation.
+Individual archives are retained for 56 days from their date of creation.
 
 The installation instructions are identical to stable releases as shown above.
