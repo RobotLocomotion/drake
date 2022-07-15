@@ -119,20 +119,10 @@ class SpatialInertia {
     return SpatialInertia(mass, p_PScm_E, G_SP_E);
   }
 
-  /// (Internal use only) Creates a spatial inertia for a uniform-density cube B
-  /// about Bo (B's origin point) with a given mass and length.
-  /// @param[in] mass The mass of the cube.
-  /// @param[in] length The length (or width or depth) of the cube.
-  /// @retval M_BBo_B Cube B's spatial inertia about point Bo (B's origin),
-  /// expressed in terms of unit vectors Bx, By, Bz, each of which are parallel
-  /// to sides of the cube. Point Bo is the centroid of the face of the cube
-  /// whose outward normal is -Bx. The position vector from Bo to Bcm (B's
-  /// center of mass) is p_BoBcm_B = length/2 Bx.
-  /// @throws std::exception if the spatial inertia is invalid, which happens
-  /// if mass is negative or length is negative.
-  /// @note The default parameters mass = 2 and length = 3 correspond to a mass
-  /// moment of inertia of 3 for any line that pass through Bcm.
-  static SpatialInertia<T> MakeTestCube(T mass = T(2), T length = T(3));
+  /// (Internal use only) Creates a spatial inertia whose mass is 1, position
+  /// vector to center of mass is zero, and whose rotational inertia has
+  /// moments of inertia of 1 and products of inertia of 0.
+  static SpatialInertia<T> MakeUnitary();
 
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of

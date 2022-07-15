@@ -832,14 +832,33 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
   }
 }
 
+// Helper function to create a unit inertia for a uniform-density cube B about
+// Bo (B's origin point) from a given dimension (length).
+// If length = 0, the spatial inertia is that of a particle.
+// @param[in] length The length of any of the cube's edges.
+// @retval M_BBo_B Cube B's unit inertia about point Bo (B's origin),
+// expressed in terms of unit vectors Bx, By, Bz, each of which are parallel
+// to sides (edges) of the cube. Point Bo is the centroid of the face of the
+// cube whose outward normal is -Bx. Hence, the position vector from Bo to Bcm
+// (B's center of mass) is p_BoBcm_B = Lx/2 Bx.
+UnitInertia<double> MakeTestCubeUnitInertia(const double length = 1.0) {
+    const UnitInertia<double> G_BBcm_B = UnitInertia<double>::SolidCube(length);
+    const Vector3<double> p_BoBcm_B(length / 2, 0, 0);
+    const UnitInertia<double> G_BBo_B =
+        G_BBcm_B.ShiftFromCenterOfMass(-p_BoBcm_B);
+    return G_BBo_B;
+}
+
 // Helper function to add a rigid body to a model.
 const RigidBody<double>& AddRigidBody(MultibodyTree<double>* model,
                                       const std::string& name,
                                       const double mass,
                                       const double link_length = 1.0) {
     DRAKE_DEMAND(model != nullptr);
-    return model->AddRigidBody(name,
-        SpatialInertia<double>::MakeTestCube(mass, link_length));
+    const Vector3<double> p_BoBcm_B(link_length / 2, 0, 0);
+    const UnitInertia<double> G_BBo_B = MakeTestCubeUnitInertia(link_length);
+    const SpatialInertia<double> M_BBo_B(mass, p_BoBcm_B, G_BBo_B);
+    return model->AddRigidBody(name, M_BBo_B);
 }
 
 // Verify Body::default_rotational_inertia() and related MultibodyTree methods.
@@ -859,8 +878,7 @@ GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
 
   // Verify the default rotational inertia for each of the bodies.
   // To help with testing, create a RotationalInertia for a unit mass cube.
-  const UnitInertia<double> G_SSo_S =
-      SpatialInertia<double>::MakeTestCube(1.0, length).get_unit_inertia();
+  const UnitInertia<double> G_SSo_S = MakeTestCubeUnitInertia(length);
   const RotationalInertia<double> I_A = body_A.default_rotational_inertia();
   const RotationalInertia<double> I_B = body_B.default_rotational_inertia();
   const RotationalInertia<double> I_C = body_C.default_rotational_inertia();
