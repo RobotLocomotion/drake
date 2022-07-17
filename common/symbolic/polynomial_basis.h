@@ -111,8 +111,7 @@ void AddPolynomialBasisElementsOfDegreeN(
  * the elements' degrees are even numbers no larger than @p degree. If
  * degree_type is kOdd, then the elements' degrees are odd numbers no larger
  * than @p degree.
- * TODO(hongkai.dai): this will replace ComputeMonomialBasis in
- * symbolic_monomial_util.h
+ * TODO(hongkai.dai): this will replace ComputeMonomialBasis in monomial_util.h.
  */
 template <int rows, typename BasisElement>
 Eigen::Matrix<BasisElement, rows, 1> ComputePolynomialBasisUpToDegree(

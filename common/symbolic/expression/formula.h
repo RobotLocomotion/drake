@@ -45,24 +45,24 @@ enum class FormulaKind {
 // Total ordering between FormulaKinds
 bool operator<(FormulaKind k1, FormulaKind k2);
 
-class FormulaCell;                  // In drake/common/symbolic_formula_cell.h
-class FormulaFalse;                 // In drake/common/symbolic_formula_cell.h
-class FormulaTrue;                  // In drake/common/symbolic_formula_cell.h
-class FormulaVar;                   // In drake/common/symbolic_formula_cell.h
-class RelationalFormulaCell;        // In drake/common/symbolic_formula_cell.h
-class FormulaEq;                    // In drake/common/symbolic_formula_cell.h
-class FormulaNeq;                   // In drake/common/symbolic_formula_cell.h
-class FormulaGt;                    // In drake/common/symbolic_formula_cell.h
-class FormulaGeq;                   // In drake/common/symbolic_formula_cell.h
-class FormulaLt;                    // In drake/common/symbolic_formula_cell.h
-class FormulaLeq;                   // In drake/common/symbolic_formula_cell.h
-class NaryFormulaCell;              // In drake/common/symbolic_formula_cell.h
-class FormulaNot;                   // In drake/common/symbolic_formula_cell.h
-class FormulaAnd;                   // In drake/common/symbolic_formula_cell.h
-class FormulaOr;                    // In drake/common/symbolic_formula_cell.h
-class FormulaForall;                // In drake/common/symbolic_formula_cell.h
-class FormulaIsnan;                 // In drake/common/symbolic_formula_cell.h
-class FormulaPositiveSemidefinite;  // In drake/common/symbolic_formula_cell.h
+class FormulaCell;                  // In drake/common/formula_cell.h
+class FormulaFalse;                 // In drake/common/formula_cell.h
+class FormulaTrue;                  // In drake/common/formula_cell.h
+class FormulaVar;                   // In drake/common/formula_cell.h
+class RelationalFormulaCell;        // In drake/common/formula_cell.h
+class FormulaEq;                    // In drake/common/formula_cell.h
+class FormulaNeq;                   // In drake/common/formula_cell.h
+class FormulaGt;                    // In drake/common/formula_cell.h
+class FormulaGeq;                   // In drake/common/formula_cell.h
+class FormulaLt;                    // In drake/common/formula_cell.h
+class FormulaLeq;                   // In drake/common/formula_cell.h
+class NaryFormulaCell;              // In drake/common/formula_cell.h
+class FormulaNot;                   // In drake/common/formula_cell.h
+class FormulaAnd;                   // In drake/common/formula_cell.h
+class FormulaOr;                    // In drake/common/formula_cell.h
+class FormulaForall;                // In drake/common/formula_cell.h
+class FormulaIsnan;                 // In drake/common/formula_cell.h
+class FormulaPositiveSemidefinite;  // In drake/common/formula_cell.h
 
 /** Represents a symbolic form of a first-order logic formula.
 
@@ -235,8 +235,8 @@ class Formula {
   friend bool is_positive_semidefinite(const Formula& f);
 
   // Note that the following cast functions are only for low-level operations
-  // and not exposed to the user of symbolic_formula.h. These functions are
-  // declared in symbolic_formula_cell.h header.
+  // and not exposed to the user of drake/common/symbolic/expression.h header.
+  // These functions are declared in the formula_cell.h header.
   friend std::shared_ptr<const FormulaFalse> to_false(const Formula& f);
   friend std::shared_ptr<const FormulaTrue> to_true(const Formula& f);
   friend std::shared_ptr<const FormulaVar> to_variable(const Formula& f);
