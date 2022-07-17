@@ -118,8 +118,8 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2,
 // already expanded.
 Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
   // Precondition: e1 and e2 are already expanded.
-  DRAKE_ASSERT(e1.EqualTo(e1.Expand()));
-  DRAKE_ASSERT(e2.EqualTo(e2.Expand()));
+  DRAKE_ASSERT(e1.is_expanded());
+  DRAKE_ASSERT(e2.is_expanded());
 
   if (is_addition(e1)) {
     //   (c0 + c1 * e_{1,1} + ... + c_n * e_{1, n}) * e2
@@ -185,7 +185,7 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2,
 // Helper function expanding pow(base, n). It assumes that base is expanded.
 Expression ExpandPow(const Expression& base, const int n) {
   // Precondition: base is already expanded.
-  DRAKE_ASSERT(base.EqualTo(base.Expand()));
+  DRAKE_ASSERT(base.is_expanded());
   DRAKE_ASSERT(n >= 1);
   if (n == 1) {
     return base;
@@ -203,8 +203,8 @@ Expression ExpandPow(const Expression& base, const int n) {
 // and exponent are already expanded.
 Expression ExpandPow(const Expression& base, const Expression& exponent) {
   // Precondition: base and exponent are already expanded.
-  DRAKE_ASSERT(base.EqualTo(base.Expand()));
-  DRAKE_ASSERT(exponent.EqualTo(exponent.Expand()));
+  DRAKE_ASSERT(base.is_expanded());
+  DRAKE_ASSERT(exponent.is_expanded());
   if (is_multiplication(base)) {
     //   pow(c * ∏ᵢ pow(e₁ᵢ, e₂ᵢ), exponent)
     // = pow(c, exponent) * ∏ᵢ pow(e₁ᵢ, e₂ᵢ * exponent)
