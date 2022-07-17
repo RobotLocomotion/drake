@@ -55,7 +55,10 @@ const auto kTestLabelImagePath = FindResourceOrThrow(
 
 class RenderClientTest : public ::testing::Test {
  public:
-  RenderClientTest() {}
+  RenderClientTest()
+      : color_camera_{{"proxy_render", {798, 247, M_PI_4}, {0.11, 111.111}, {}},
+                      false},
+        depth_camera_{color_camera_.core(), {0.12, 21.12}} {}
 
   // Creates the given filename (and returns the filename for convenience).
   std::string Touch(const std::string& filename) {
@@ -65,9 +68,24 @@ class RenderClientTest : public ::testing::Test {
     return filename;
   }
 
+  std::string sha256() {
+    // This value is from: echo '## RenderClientTest sample file.' | sha256sum
+    return "ebf937a31924de40bef25563110837a2608a3e832f1449145e8f5b3b148c1f3b";
+  }
+
+  /* Create some render camera instances to validate against.  Note that the
+   atypical values chosen for e.g., clipping or depth ranges is to ensure there
+   are no hard-coded or default values leaking in anywhere. */
+  const ColorRenderCamera& color_camera() { return color_camera_; }
+
+  const DepthRenderCamera& depth_camera() { return depth_camera_; }
+
  protected:
   // A per-test-case temporary directory.
   const fs::path scratch_{drake::temp_directory()};
+  const std::string fake_scene_path_{scratch_ / "fake_scene.gltf"};
+  const ColorRenderCamera color_camera_;
+  const DepthRenderCamera depth_camera_;
 };
 
 // Constructor / destructor ----------------------------------------------------
@@ -110,71 +128,115 @@ TEST_F(RenderClientTest, Destructor) {
 }
 
 // RenderOnServer --------------------------------------------------------------
-// A simple HttpService that always fails.
-class FailService : public HttpService {
+
+using DoPostFormCallback = typename std::function<HttpResponse(
+    const DataFieldsMap&, const FileFieldsMap&)>;
+
+// TODO(zachfang): consider replacing it with GMock.
+/* A proxy HttpService that can be constructed with an std::function to directly
+ modify the behavior of DoPostForm(). The following tests fake different server
+ responses, such as http_code and data_path, and examine the corresponding
+ behavior of RenderClient::RenderOnServer(). */
+class ProxyService : public HttpService {
  public:
-  FailService() = default;
+  explicit ProxyService(const DoPostFormCallback& callback)
+      : do_post_form_callback_{callback} {}
 
-  HttpResponse DoPostForm(const std::string& /* temp_directory */,
-                          const std::string& /* url */,
-                          const DataFieldsMap& /* data_fields */,
-                          const FileFieldsMap& /* file_fields */,
-                          bool /* verbose */ = false) override {
-    HttpResponse ret;
-    ret.http_code = 500;
-    ret.service_error_message = "FailService always fails.";
-    return ret;
-  }
-};
-
-/* Verifies the contract fullfilled by RenderClient::RenderOnServer, checking
- that all fields are exactly as expected (and where min_depth / max_depth are
- concerned, they are included / excluded as expected).  The code checks in
- DoPostForm are more or less a duplication of RenderClient::RenderOnServer,
- meaning any changes to the code populating the <form> will break this test case
- (intentionally).
-
- A test using a FieldCheckService will construct with the exact same parameters
- that RenderClient::RenderOnServer is going to use, so that when PostForm is
- called behind the scenes we have all the information to cross-check against. */
-class FieldCheckService : public HttpService {
- public:
-  /* All parameters for HttpService, followed by RenderClient::RenderOnServer
-   with the addition of the sha256. */
-  FieldCheckService(const RenderCameraCore& camera_core,
-                    RenderImageType image_type, const std::string& scene_path,
-                    const std::string& scene_sha256,
-                    const std::optional<std::string>& mime_type = std::nullopt,
-                    const std::optional<DepthRange>& depth_range = std::nullopt)
-      : camera_core_{camera_core},
-        image_type_{image_type},
-        scene_path_{scene_path},
-        scene_sha256_{scene_sha256},
-        mime_type_{mime_type},
-        depth_range_{depth_range} {}
-
-  // Checks all of the <form> fields and always responds with a failure HTTP
-  // response code (500).
   HttpResponse DoPostForm(const std::string& /* temp_directory */,
                           const std::string& /* url */,
                           const DataFieldsMap& data_fields,
                           const FileFieldsMap& file_fields,
                           bool /* verbose */ = false) override {
-    /* Validate all of the expected fields.  This also implicitly validates that
-     every expected key has actually been provided since the test will fail on
-     directly accessing a key that does not exist. */
-    EXPECT_EQ(data_fields.at("scene_sha256"), scene_sha256_);
-    if (image_type_ == RenderImageType::kColorRgba8U) {
-      EXPECT_EQ(data_fields.at("image_type"), "color");
-    } else if (image_type_ == RenderImageType::kDepthDepth32F) {
-      EXPECT_EQ(data_fields.at("image_type"), "depth");
-    } else {  // image_type_ := RenderImageType::kLabel16I
-      EXPECT_EQ(data_fields.at("image_type"), "label");
+    return do_post_form_callback_(data_fields, file_fields);
+  }
+
+  DoPostFormCallback do_post_form_callback_;
+};
+
+/* These tests are only for the various error conditions that can come up in
+ RenderOnServer.  They are tested linearly start to finish following the
+ implementation.  There are additional tests at the end to ensure that valid
+ images returned from the server (png and tiff) are accepted, however these
+ tests do *NOT* validate against image dimensions / content.  Image content
+ tests take place in Load{Color,Depth,Label}Image tests, these tests are just
+ for "round-trip" communications with the HttpService.
+
+ NOTE: the params to create the test RenderClient are to help ensure nothing
+ actually gets sent over curl.  No test should proceed with the default
+ HttpServiceCurl, the HttpService backend should be changed using
+ client.SetHttpService before doing anything. */
+
+/* Verifies DepthRange is specified whenever appropriate. */
+TEST_F(RenderClientTest, RenderOnServerDepthRange) {
+  RenderClient client{Params{.base_url = "notarealserver:8192",
+                             .render_endpoint = "no_render"}};
+  Touch(fake_scene_path_);
+
+  /* A simple callback that does nothing but return a failed http_code and
+   service message. */
+  DoPostFormCallback callback = [&](const DataFieldsMap&,
+                                    const FileFieldsMap&) {
+    return HttpResponse{.http_code = 500,
+                        .service_error_message = "Always fails."};
+  };
+  client.SetHttpService(std::make_unique<ProxyService>(callback));
+
+  // Forgetting to include the depth_range for a depth render should raise.
+  EXPECT_THROW(
+      client.RenderOnServer(depth_camera().core(),
+                            RenderImageType::kDepthDepth32F, fake_scene_path_),
+      std::runtime_error);
+  // Providing depth_range for non-depth should raise.
+  EXPECT_THROW(
+      client.RenderOnServer(color_camera().core(),
+                            RenderImageType::kColorRgba8U, fake_scene_path_,
+                            std::nullopt, depth_camera().depth_range()),
+      std::runtime_error);
+  EXPECT_THROW(
+      client.RenderOnServer(color_camera().core(), RenderImageType::kLabel16I,
+                            fake_scene_path_, std::nullopt,
+                            depth_camera().depth_range()),
+      std::runtime_error);
+}
+
+/* Verifies that the RenderClient::RenderOnServer adheres to the API contract by
+ populating the correct data and file fields.  Tests in this section use
+ DRAKE_EXPECT_THROWS_MESSAGE all looking for the same error being raised, as no
+ image response is provided. */
+TEST_F(RenderClientTest, RenderOnServerFieldsCheck) {
+  RenderClient client(Params{.base_url = "notarealserver:8192",
+                             .render_endpoint = "no_render"});
+  Touch(fake_scene_path_);
+
+  // Placeholders for different values when calling RenderOnServer().
+  RenderImageType image_type{};
+  std::optional<std::string> mime_type{std::nullopt};
+  const DepthRange depth_range = depth_camera().depth_range();
+
+  /* This callback validates all of the expected fields.  It also implicitly
+   validates that every expected key has actually been provided since the test
+   will fail on directly accessing a key that does not exist. */
+  DoPostFormCallback callback = [&](const DataFieldsMap& data_fields,
+                                    const FileFieldsMap& file_fields) {
+    switch (image_type) {
+      case RenderImageType::kColorRgba8U: {
+        EXPECT_EQ(data_fields.at("image_type"), "color");
+        break;
+      }
+      case RenderImageType::kDepthDepth32F: {
+        EXPECT_EQ(data_fields.at("image_type"), "depth");
+        break;
+      }
+      case RenderImageType::kLabel16I: {
+        EXPECT_EQ(data_fields.at("image_type"), "label");
+        break;
+      }
     }
-    const CameraInfo& intrinsics = camera_core_.intrinsics();
+    EXPECT_EQ(data_fields.at("scene_sha256"), sha256());
+    const CameraInfo& intrinsics = color_camera().core().intrinsics();
     EXPECT_EQ(data_fields.at("width"), std::to_string(intrinsics.width()));
     EXPECT_EQ(data_fields.at("height"), std::to_string(intrinsics.height()));
-    const ClippingRange& clipping = camera_core_.clipping();
+    const ClippingRange& clipping = color_camera().core().clipping();
     EXPECT_EQ(data_fields.at("near"), std::to_string(clipping.near()));
     EXPECT_EQ(data_fields.at("far"), std::to_string(clipping.far()));
     EXPECT_EQ(data_fields.at("focal_x"), std::to_string(intrinsics.focal_x()));
@@ -186,10 +248,11 @@ class FieldCheckService : public HttpService {
     EXPECT_EQ(data_fields.at("center_y"),
               std::to_string(intrinsics.center_y()));
     // min_depth and max_depth should only be provided for depth renders.
-    if (image_type_ == RenderImageType::kDepthDepth32F) {
-      const DepthRange& range = depth_range_.value();
-      EXPECT_EQ(data_fields.at("min_depth"), std::to_string(range.min_depth()));
-      EXPECT_EQ(data_fields.at("max_depth"), std::to_string(range.max_depth()));
+    if (image_type == RenderImageType::kDepthDepth32F) {
+      EXPECT_EQ(data_fields.at("min_depth"),
+                std::to_string(depth_range.min_depth()));
+      EXPECT_EQ(data_fields.at("max_depth"),
+                std::to_string(depth_range.max_depth()));
     } else {
       EXPECT_EQ(data_fields.find("min_depth"), data_fields.end());
       EXPECT_EQ(data_fields.find("max_depth"), data_fields.end());
@@ -201,7 +264,7 @@ class FieldCheckService : public HttpService {
         "scene_sha256", "image_type", "width",   "height", "near",
         "far",          "focal_x",    "focal_y", "fov_x",  "fov_y",
         "center_x",     "center_y",   "submit"};
-    if (image_type_ == RenderImageType::kDepthDepth32F) {
+    if (image_type == RenderImageType::kDepthDepth32F) {
       data_fields_keys.insert("min_depth");
       data_fields_keys.insert("max_depth");
     }
@@ -214,251 +277,161 @@ class FieldCheckService : public HttpService {
 
     // Make sure the scene file path has been provided with the expected mime.
     const auto& [path, mime] = file_fields.at("scene");
-    EXPECT_EQ(path, scene_path_);
-    EXPECT_EQ(mime, mime_type_);
+    EXPECT_EQ(path, fake_scene_path_);
+    EXPECT_EQ(mime, mime_type);
 
     // Only one file should be getting added.
     EXPECT_EQ(file_fields.size(), 1);
 
     // Fail the test so that no attempted image loading occurs.
-    HttpResponse ret;
-    ret.http_code = 500;
-    return ret;
-  }
+    return HttpResponse{.http_code = 500,
+                        .service_error_message = "Always fails."};
+  };
+  client.SetHttpService(std::make_unique<ProxyService>(callback));
 
-  const RenderCameraCore& camera_core_;
-  /* NOTE: do not store references for the data fields, EXPECT_EQ may not work
-   correctly for value comparisons. */
-  const RenderImageType image_type_;
-  const std::string scene_path_;
-  const std::string scene_sha256_;
-  const std::optional<std::string> mime_type_;
-  const std::optional<DepthRange> depth_range_;
-};
+  // Check fields for a color render.
+  image_type = RenderImageType::kColorRgba8U;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      client.RenderOnServer(color_camera().core(), image_type,
+                            fake_scene_path_),
+      "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
 
-using PostFormCallback = typename std::function<HttpResponse()>;
+  // Check fields for a label render.
+  image_type = RenderImageType::kLabel16I;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      client.RenderOnServer(color_camera().core(), image_type,
+                            fake_scene_path_),
+      "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
 
-/* A proxy HttpService that can be constructed with an std::function to directly
- modify the behavior of DoPostForm(). The following tests fake different server
- responses, such as http_code and data_path, and examine the corresponding
- behavior of RenderClient::RenderOnServer(). */
-class ProxyService : public HttpService {
- public:
-  explicit ProxyService(const PostFormCallback& callback)
-      : post_form_callback_{callback} {}
+  /* Check fields for a depth render.  This test also includes a verification
+   that the provided mime_type is propagated correctly.  There is no special
+   reason for this to be checked with the depth render. */
+  image_type = RenderImageType::kDepthDepth32F;
+  mime_type = "test/mime_type";
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      client.RenderOnServer(depth_camera().core(), image_type, fake_scene_path_,
+                            mime_type, depth_range),
+      "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
+}
 
-  HttpResponse DoPostForm(const std::string& /* temp_directory */,
-                          const std::string& /* url */,
-                          const DataFieldsMap& /* data_fields */,
-                          const FileFieldsMap& /* file_fields */,
-                          bool /* verbose */ = false) override {
-    return post_form_callback_();
-  }
+/* Tests bad HttpResponse's that have a server message provided. Edge cases
+ should all produce 'None.' as the server message.
+ NOTE: file extensions do not matter and all tests must use http code 400. */
+TEST_F(RenderClientTest, RenderOnServerMessageFromServer) {
+  RenderClient client(Params{.base_url = "notarealserver:8192",
+                             .render_endpoint = "no_render"});
+  Touch(fake_scene_path_);
+  DoPostFormCallback callback{nullptr};
 
-  PostFormCallback post_form_callback_;
-};
+  // Case 1: edge case, service populated data_path but file is length 0.
+  callback = [&](const DataFieldsMap&, const FileFieldsMap&) {
+    const std::string response_path = scratch_ / "zero_length.response";
+    std::ofstream response{response_path};
+    return HttpResponse{.http_code = 400, .data_path = response_path};
+  };
+  client.SetHttpService(std::make_unique<ProxyService>(callback));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      client.RenderOnServer(color_camera().core(),
+                            RenderImageType::kColorRgba8U, fake_scene_path_),
+      "[\\s\\S]*Server Message:[\\s\\S]*None.[\\s\\S]*");
 
-/* These tests are only for the various error conditions that can come up in
- RenderOnServer.  They are tested linearly start to finish following the
- implementation.  There are additional tests at the end to ensure that valid
- images returned from the server (png and tiff) are accepted, however these
- tests do *NOT* validate against image dimensions / content.  Image content
- tests take place in Load{Color,Depth,Label}Image tests, these tests are just
- for "round-trip" communications with the HttpService. */
-TEST_F(RenderClientTest, RenderOnServer) {
-  /* NOTE: these values help ensure nothing actually gets sent over curl.  No
-   test should proceed with the default HttpServiceCurl, the HttpService backend
-   should be changed using client.SetHttpService before doing anything. */
-  const std::string base_url{"notarealserver:8192"};
-  const std::string render_endpoint{"no_render"};
-  const bool verbose{false};
-  const bool no_cleanup{false};
+  // Case 2: edge case, bad response but provided message "too long".
+  callback = [&](const DataFieldsMap&, const FileFieldsMap&) {
+    const std::string response_path = scratch_ / "too_long.response";
+    std::ofstream response{response_path};
+    // NOTE: this value is hard-coded in RenderClient::RenderOnServer.
+    for (int i = 0; i < 8192; ++i) response << '0';
+    return HttpResponse{.http_code = 400, .data_path = response_path};
+  };
+  client.SetHttpService(std::make_unique<ProxyService>(callback));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      client.RenderOnServer(color_camera().core(), RenderImageType::kLabel16I,
+                            fake_scene_path_),
+      "[\\s\\S]*Server Message:[\\s\\S]*None.[\\s\\S]*");
 
-  // Create a client and proxy HttpService creation helper.
-  RenderClient client(
-      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup});
-  // All the files generated under `temp_dir_path` will be purged in the end.
-  const auto temp_dir_path = fs::path(client.temp_directory());
+  // Case 3: server response that can be read.
+  callback = [&](const DataFieldsMap&, const FileFieldsMap&) {
+    const std::string response_path = scratch_ / "can_read.response";
+    Touch(response_path);
+    return HttpResponse{.http_code = 400, .data_path = response_path};
+  };
+  client.SetHttpService(std::make_unique<ProxyService>(callback));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      client.RenderOnServer(color_camera().core(), RenderImageType::kLabel16I,
+                            fake_scene_path_),
+      "[\\s\\S]*RenderClientTest sample file.[\\s\\S]*");
+}
 
-  // Create a fake scene to "upload" to the "server" and fake response file.
-  const auto fake_scene_path = (temp_dir_path / "fake_scene.gltf").string();
-  Touch(fake_scene_path);
-  // This value is from: echo '## RenderClientTest sample file.' | sha256sum
-  const auto fake_scene_sha256 =
-      "ebf937a31924de40bef25563110837a2608a3e832f1449145e8f5b3b148c1f3b";
+TEST_F(RenderClientTest, RenderOnServerNoFileReturn) {
+  RenderClient client(Params{.base_url = "notarealserver:8192",
+                             .render_endpoint = "no_render"});
+  Touch(fake_scene_path_);
 
-  /* Create some render camera instances to validate against.  Note that the
-   atypical values chosen for e.g., clipping or depth ranges is to ensure there
-   are no hard-coded or default values leaking in anywhere. */
-  const ColorRenderCamera color_camera{
-      {"proxy_render", {798, 247, M_PI_4}, {0.11, 111.111}, {}}, false};
-  const DepthRenderCamera depth_camera{color_camera.core(), {0.12, 21.12}};
+  // No file response from server should be reported correctly.
+  DoPostFormCallback callback = [&](const DataFieldsMap&,
+                                    const FileFieldsMap&) {
+    return HttpResponse{.http_code = 200};
+  };
+  client.SetHttpService(std::make_unique<ProxyService>(callback));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      client.RenderOnServer(color_camera().core(),
+                            RenderImageType::kColorRgba8U, fake_scene_path_),
+      "ERROR doing POST.*supposed to respond with a file but did not.");
+}
 
-  {
-    // Forgetting to include the depth_range for a depth render should raise.
-    client.SetHttpService(std::make_unique<FailService>());
-    EXPECT_THROW(
-        client.RenderOnServer(depth_camera.core(),
-                              RenderImageType::kDepthDepth32F, fake_scene_path),
-        std::runtime_error);
+TEST_F(RenderClientTest, RenderOnServerInvalidImageReturn) {
+  RenderClient client(Params{.base_url = "notarealserver:8192",
+                             .render_endpoint = "no_render"});
+  Touch(fake_scene_path_);
 
-    // Providing depth_range for non-depth should raise.
-    EXPECT_THROW(client.RenderOnServer(
-                     color_camera.core(), RenderImageType::kColorRgba8U,
-                     fake_scene_path, std::nullopt, depth_camera.depth_range()),
-                 std::runtime_error);
-    EXPECT_THROW(client.RenderOnServer(
-                     color_camera.core(), RenderImageType::kLabel16I,
-                     fake_scene_path, std::nullopt, depth_camera.depth_range()),
-                 std::runtime_error);
-  }
+  // File response cannot be loaded as image should be reported correctly.
+  DoPostFormCallback callback = [&](const DataFieldsMap&,
+                                    const FileFieldsMap&) {
+    const std::string response_path = scratch_ / "not_an_image.response";
+    Touch(response_path);
+    return HttpResponse{.http_code = 200, .data_path = response_path};
+  };
+  client.SetHttpService(std::make_unique<ProxyService>(callback));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      client.RenderOnServer(color_camera().core(),
+                            RenderImageType::kColorRgba8U, fake_scene_path_),
+      ".*is not understood as an image type that is supported.*");
+}
 
-  {
-    /* Verify that the RenderClient::RenderOnServer adheres to the API contract
-     by populating the correct data and file fields.  Tests in this section
-     use DRAKE_EXPECTS_THROWS_MESSAGE all looking for the same error being
-     raised, as no image response is provided.  However, the bulk of the test
-     takes place in the assertions in FieldCheckService::PostForm. */
+TEST_F(RenderClientTest, RenderOnServerValidImageReturn) {
+  RenderClient client(Params{.base_url = "notarealserver:8192",
+                             .render_endpoint = "no_render"});
+  Touch(fake_scene_path_);
+  DoPostFormCallback callback{nullptr};
 
-    // Check fields for a color render.
-    client.SetHttpService(std::make_unique<FieldCheckService>(
-        color_camera.core(), RenderImageType::kColorRgba8U, fake_scene_path,
-        fake_scene_sha256));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenderOnServer(color_camera.core(),
-                              RenderImageType::kColorRgba8U, fake_scene_path),
-        "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
+  // Copy a "valid" PNG file and check that it is renamed.
+  callback = [&](const DataFieldsMap&, const FileFieldsMap&) {
+    const std::string response_path = scratch_ / "valid_png.response";
+    fs::copy_file(kTestRgbaImagePath, response_path);
+    return HttpResponse{.http_code = 200, .data_path = response_path};
+  };
+  client.SetHttpService(std::make_unique<ProxyService>(callback));
+  const std::string expected_png_path =
+      fs::path(fake_scene_path_).replace_extension(".png");
+  const std::string response_png = client.RenderOnServer(
+      color_camera().core(), RenderImageType::kColorRgba8U, fake_scene_path_);
+  EXPECT_EQ(response_png, expected_png_path);
 
-    /* Check fields for a depth render.  This test also includes a verification
-     that the provided mime_type is propagated correctly.  There is no special
-     reason for this to be checked with the depth render, it is just convenient
-     since a new HttpService is being set for the client. */
-    client.SetHttpService(std::make_unique<FieldCheckService>(
-        depth_camera.core(), RenderImageType::kDepthDepth32F, fake_scene_path,
-        fake_scene_sha256, "test/mime_type", depth_camera.depth_range()));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenderOnServer(depth_camera.core(),
-                              RenderImageType::kDepthDepth32F, fake_scene_path,
-                              "test/mime_type", depth_camera.depth_range()),
-        "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
-
-    // Check fields for a label render.
-    client.SetHttpService(std::make_unique<FieldCheckService>(
-        color_camera.core(), RenderImageType::kLabel16I, fake_scene_path,
-        fake_scene_sha256, std::nullopt, std::nullopt));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
-                              fake_scene_path),
-        "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
-  }
-
-  {
-    /* Test bad HttpResponse's that have a server message provided.  Previous
-     tests validating the FieldCheckService exception have already validated the
-     path that the HttpResponse.data_path is not populated.  Edge cases should
-     all produce 'None.' as the server message.
-     NOTE: file extensions do not matter. */
-    // NOTE: all tests using this must use http code 400.
-
-    PostFormCallback callback{nullptr};
-    // Case 1: edge case, service populated data_path but file is length 0.
-    callback = [&]() {
-      const auto response_path =
-          (temp_dir_path / "zero_length.response").string();
-      std::ofstream response{response_path};
-      return HttpResponse{400, response_path};
-    };
-    client.SetHttpService(std::make_unique<ProxyService>(callback));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenderOnServer(color_camera.core(),
-                              RenderImageType::kColorRgba8U, fake_scene_path),
-        "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
-
-    // Case 2: edge case, bad response but provided message "too long".
-    callback = [&]() {
-      const auto response_path = (temp_dir_path / "too_long.response").string();
-      std::ofstream response{response_path};
-      // NOTE: this value is hard-coded in RenderClient::RenderOnServer.
-      for (int i = 0; i < 8192; ++i) response << '0';
-      return HttpResponse{400, response_path};
-    };
-    client.SetHttpService(std::make_unique<ProxyService>(callback));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
-                              fake_scene_path),
-        "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
-
-    // Case 3: server response that can be read.
-    callback = [&]() {
-      const auto response_path = (temp_dir_path / "can_read.response").string();
-      Touch(response_path);
-      return HttpResponse{400, response_path};
-    };
-    client.SetHttpService(std::make_unique<ProxyService>(callback));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
-                              fake_scene_path),
-        "[\\s\\S]*RenderClientTest sample file[\\s\\S]*");
-  }
-
-  {
-    // No file response from server should be reported correctly.
-    PostFormCallback callback = [&]() { return HttpResponse{200}; };
-    client.SetHttpService(std::make_unique<ProxyService>(callback));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenderOnServer(color_camera.core(),
-                              RenderImageType::kColorRgba8U, fake_scene_path),
-        "ERROR doing POST.*supposed to respond with a file but did not.");
-  }
-
-  {
-    const auto response_path =
-        (temp_dir_path / "not_an_image.response").string();
-    // File response cannot be loaded as image should be reported correctly.
-    PostFormCallback callback = [&]() {
-      Touch(response_path);
-      return HttpResponse{200, response_path};
-    };
-    client.SetHttpService(std::make_unique<ProxyService>(callback));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.RenderOnServer(color_camera.core(),
-                              RenderImageType::kColorRgba8U, fake_scene_path),
-        ".*is not understood as an image type that is supported.*");
-  }
-
-  {
-    // Copy a "valid" PNG file and check that it is renamed.
-    PostFormCallback callback = [&]() {
-      const auto response_path =
-          (temp_dir_path / "valid_png.response").string();
-      fs::copy_file(kTestRgbaImagePath, response_path);
-      return HttpResponse{200, response_path};
-    };
-    client.SetHttpService(std::make_unique<ProxyService>(callback));
-    const auto expected_path =
-        fs::path(fake_scene_path).replace_extension(".png").string();
-    const auto response_png = client.RenderOnServer(
-        color_camera.core(), RenderImageType::kColorRgba8U, fake_scene_path);
-    EXPECT_EQ(response_png, expected_path);
-  }
-
-  {
-    /* Manufacture a "valid" (not the same width and height) TIFF file and check
-     that it is renamed. */
-    PostFormCallback callback = [&]() {
-      const auto response_path =
-          (temp_dir_path / "valid_but_wrong_dims.response").string();
-      fs::copy_file(kTestDepthImagePath, response_path);
-      return HttpResponse{200, response_path};
-    };
-    client.SetHttpService(std::make_unique<ProxyService>(callback));
-    const auto expected_path =
-        fs::path(fake_scene_path).replace_extension(".tiff").string();
-    const auto response_tiff = client.RenderOnServer(
-        depth_camera.core(), RenderImageType::kDepthDepth32F, fake_scene_path,
-        "test/mime_type", depth_camera.depth_range());
-    EXPECT_EQ(response_tiff, expected_path);
-  }
+  /* Manufacture a "valid" (not the same width and height) TIFF file and check
+   that it is renamed. */
+  callback = [&](const DataFieldsMap&, const FileFieldsMap&) {
+    const std::string response_path =
+        scratch_ / "valid_but_wrong_dims.response";
+    fs::copy_file(kTestDepthImagePath, response_path);
+    return HttpResponse{.http_code = 200, .data_path = response_path};
+  };
+  client.SetHttpService(std::make_unique<ProxyService>(callback));
+  const std::string expected_tiff_path =
+      fs::path(fake_scene_path_).replace_extension(".tiff");
+  const std::string response_tiff = client.RenderOnServer(
+      depth_camera().core(), RenderImageType::kDepthDepth32F, fake_scene_path_,
+      "test/mime_type", depth_camera().depth_range());
+  EXPECT_EQ(response_tiff, expected_tiff_path);
 }
 
 TEST_F(RenderClientTest, ComputeSha256Good) {
