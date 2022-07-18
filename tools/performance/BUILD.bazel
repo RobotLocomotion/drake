@@ -27,6 +27,15 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "gflags_main",
+    srcs = ["gflags_main.cc"],
+    deps = [
+        "@gflags",
+        "@googlebenchmark//:benchmark",
+    ],
+)
+
 drake_py_binary(
     name = "benchmark_tool",
     testonly = True,

@@ -14,7 +14,9 @@ def drake_cc_googlebench_binary(
         data = None,
         add_test_rule,
         test_size = "small",
-        test_timeout = None):
+        test_timeout = None,
+        test_args = None,
+        test_tags = None):
     """Declares a testonly binary that uses google benchmark.  Automatically
     adds appropriate deps and ensures it either has an automated smoke test
     (via 'add_test_rule = True'), or else explicitly opts-out ('= False').
@@ -54,7 +56,8 @@ def drake_cc_googlebench_binary(
                 # save time. (Once should be sufficient to prove the lack of
                 # runtime errors.)
                 "--benchmark_min_time=0",
-            ],
+            ] + (test_args or []),
+            tags = test_tags,
         )
 
 def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):
