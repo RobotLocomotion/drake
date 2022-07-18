@@ -10,6 +10,7 @@ Utilities for arithmetic on AutoDiffScalar. */
 #include <utility>
 
 #include <Eigen/Dense>
+#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"

@@ -923,8 +923,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
 
   /**
    * @param x The stacked columns of the symmetric matrix. This function is not
-   * supported yet, since Eigen's eigen value solver does not accept
-   * AutoDiffScalar.
+   * supported yet, since Eigen's eigen value solver does not accept AutoDiffXd.
    */
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override;
@@ -986,7 +985,7 @@ class LinearMatrixInequalityConstraint : public Constraint {
 
   /**
    * This function is not supported, since Eigen's eigen value solver does not
-   * accept AutoDiffScalar type.
+   * accept AutoDiffXd.
    */
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override;
