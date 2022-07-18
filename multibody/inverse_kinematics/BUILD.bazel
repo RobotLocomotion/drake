@@ -47,6 +47,7 @@ drake_cc_library(
         "minimum_distance_constraint.cc",
         "orientation_constraint.cc",
         "point_to_point_distance_constraint.cc",
+        "polyhedron_constraint.cc",
         "position_constraint.cc",
         "unit_quaternion_constraint.cc",
     ],
@@ -61,6 +62,7 @@ drake_cc_library(
         "minimum_distance_constraint.h",
         "orientation_constraint.h",
         "point_to_point_distance_constraint.h",
+        "polyhedron_constraint.h",
         "position_constraint.h",
         "unit_quaternion_constraint.h",
     ],
@@ -203,6 +205,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "point_to_point_distance_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_evaluators",
+        "//solvers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "polyhedron_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
         ":kinematic_evaluators",

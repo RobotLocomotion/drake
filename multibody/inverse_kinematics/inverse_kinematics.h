@@ -281,6 +281,23 @@ class InverseKinematics {
       const Eigen::Ref<const Eigen::Vector3d>& p_B2P2, double distance_lower,
       double distance_upper);
 
+  /**
+   * Adds the constraint that the position of P1, ..., Pn satisfy A *
+   * [p_FP1; p_FP2; ...; p_FPn] <= b.
+   * @param frameF The frame in which the position P is measured and expressed
+   * @param frameG The frame in which the point P is rigidly attached.
+   * @param p_GP p_GP.col(i) is the position of the i'th point Pi measured and
+   * expressed in frame G.
+   * @param A We impose the constraint A * [p_FP1; p_FP2; ...; p_FPn] <= b. @pre
+   * A.cols() = 3 * p_GP.cols();
+   * @param b We impose the constraint A * [p_FP1; p_FP2; ...; p_FPn] <= b
+   */
+  solvers::Binding<solvers::Constraint> AddPolyhedronConstraint(
+      const Frame<double>& frameF, const Frame<double>& frameG,
+      const Eigen::Ref<const Eigen::Matrix3Xd>& p_GP,
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b);
+
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */
   const solvers::VectorXDecisionVariable& q() const { return q_; }
