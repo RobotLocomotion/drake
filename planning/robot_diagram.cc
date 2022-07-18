@@ -1,16 +1,16 @@
-#include "planning/robot_diagram.h"
+#include "drake/planning/robot_diagram.h"
 
 #include <vector>
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
-using drake::geometry::SceneGraph;
-using drake::multibody::MultibodyPlant;
-using drake::systems::Diagram;
-using drake::systems::DiagramBuilder;
-using drake::systems::System;
-using drake::systems::SystemTypeTag;
+using geometry::SceneGraph;
+using multibody::MultibodyPlant;
+using systems::Diagram;
+using systems::DiagramBuilder;
+using systems::System;
+using systems::SystemTypeTag;
 
 // These are a consequence of AddMultibodyPlantSceneGraph.
 constexpr size_t kPlantIndex = 0;
@@ -61,7 +61,7 @@ RobotDiagram<T>::RobotDiagram(const RobotDiagram<U>& other)
       scene_graph_(DowncastSubsystem<T, SceneGraph>(this, kSceneGraphIndex)) {}
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::anzu::planning::RobotDiagram)
+    class ::drake::planning::RobotDiagram)

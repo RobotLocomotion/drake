@@ -1,25 +1,23 @@
-#include "planning/robot_diagram.h"
+#include "drake/planning/robot_diagram.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "planning/robot_diagram_builder.h"
+#include "drake/planning/robot_diagram_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
-using drake::AutoDiffXd;
-using drake::FindResourceOrThrow;
-using drake::geometry::SceneGraph;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
-using drake::symbolic::Expression;
-using drake::systems::Context;
-using drake::systems::DiagramBuilder;
-using drake::systems::System;
+using geometry::SceneGraph;
+using multibody::MultibodyPlant;
+using multibody::Parser;
+using symbolic::Expression;
+using systems::Context;
+using systems::DiagramBuilder;
+using systems::System;
 
 std::unique_ptr<RobotDiagramBuilder<double>> MakeSampleDut() {
   auto builder = std::make_unique<RobotDiagramBuilder<double>>();
@@ -167,5 +165,5 @@ GTEST_TEST(RobotDiagramTest, ContextGetters) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 

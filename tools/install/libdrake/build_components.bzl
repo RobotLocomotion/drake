@@ -76,6 +76,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/tree",
     "//multibody/triangle_quadrature",
     "//perception",
+    "//planning",
     "//solvers",
     "//solvers/fbstab",
     "//solvers/fbstab/components",
