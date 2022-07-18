@@ -240,7 +240,7 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
       result->emplace_back(std::move(body_A), std::move(body_B), centroid_W,
                            force_C_W, moment_C_W, vertices, faces, pressure);
     } else {
-      const auto& mesh = contact_surface.tri_mesh_W();
+      const auto& mesh = contact_surface.poly_mesh_W();
       Eigen::Matrix3Xd vertices(3, contact_surface.num_vertices());
       for (int i = 0; i < contact_surface.num_vertices(); ++i) {
         vertices.col(i) = ExtractDoubleOrThrow(mesh.vertex(i));

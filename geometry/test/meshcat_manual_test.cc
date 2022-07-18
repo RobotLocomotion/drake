@@ -14,6 +14,7 @@
 #include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/systems/analysis/simulator.h"
 
 /* To test, you must manually run `bazel run //geometry:meshcat_manual_test`,
@@ -219,6 +220,54 @@ Open up your browser to the URL above.
 
   meshcat->SetProperty("/Lights/AmbientLight/<object>", "intensity", 0.6);
 
+  {
+    systems::DiagramBuilder<double> builder;
+    auto [plant, scene_graph] =
+        multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
+
+    multibody::Parser parser(&plant);
+
+    // Add the hydroelastic spheres and joints between them.
+    const std::string hydro_sdf =
+        FindResourceOrThrow("drake/multibody/meshcat/test/hydroelastic.sdf");
+    parser.AddModelFromFile(hydro_sdf);
+    const auto& body1 = plant.GetBodyByName("body1");
+    plant.AddJoint<multibody::PrismaticJoint>("body1", plant.world_body(),
+                                              std::nullopt, body1, std::nullopt,
+                                              Eigen::Vector3d::UnitZ());
+    const auto& body2 = plant.GetBodyByName("body2");
+    plant.AddJoint<multibody::PrismaticJoint>("body2", plant.world_body(),
+                                              std::nullopt, body2, std::nullopt,
+                                              Eigen::Vector3d::UnitZ());
+
+    plant.Finalize();
+
+    MeshcatVisualizerParams params;
+    params.delete_on_initialization_event = false;
+    auto& visualizer = MeshcatVisualizerd::AddToBuilder(
+        &builder, scene_graph, meshcat, std::move(params));
+
+    multibody::meshcat::ContactVisualizerParams cparams;
+    cparams.newtons_per_meter = 60.0;
+    auto& contact = multibody::meshcat::ContactVisualizerd::AddToBuilder(
+        &builder, plant, meshcat, std::move(cparams));
+
+    auto diagram = builder.Build();
+    auto context = diagram->CreateDefaultContext();
+
+    plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()),
+                       Eigen::Vector2d{-0.05, 0.1});
+    diagram->Publish(*context);
+    std::cout << "- Now you should see two colliding hydroelastic spheres."
+              << std::endl;
+    std::cout << "[Press RETURN to continue]." << std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    contact.Delete();
+    visualizer.Delete();
+  }
+
+  {
   systems::DiagramBuilder<double> builder;
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
@@ -280,6 +329,8 @@ Open up your browser to the URL above.
 
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  }
 
   const std::string html_filename(temp_directory() + "/meshcat_static.html");
   std::ofstream html_file(html_filename);

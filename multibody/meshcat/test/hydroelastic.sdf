@@ -14,6 +14,16 @@
           <iyz>0</iyz>
         </inertia>
       </inertial>
+      <visual name="body1_visual">
+        <geometry>
+          <sphere>
+            <radius>0.2</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.0 0.0 0.5</diffuse>
+        </material>
+      </visual>
       <collision name="body1_collision">
         <geometry>
           <sphere>
@@ -40,6 +50,16 @@
           <iyz>0</iyz>
         </inertia>
       </inertial>
+      <visual name="body2_visual">
+        <geometry>
+          <sphere>
+            <radius>0.2</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>0.0 0.0 1.0 0.5</diffuse>
+        </material>
+      </visual>
       <collision name="body2_collision">
         <geometry>
           <sphere>
