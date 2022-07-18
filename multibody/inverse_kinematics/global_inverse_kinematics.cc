@@ -6,10 +6,12 @@
 #include <string>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/scope_exit.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/solvers/rotation_constraint.h"
+#include "drake/solvers/solve.h"
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
@@ -130,7 +132,9 @@ GlobalInverseKinematics::GlobalInverseKinematics(
           const WeldJoint<double>* weld_joint =
               dynamic_cast<const WeldJoint<double>*>(joint);
 
-          const RigidTransformd X_PC = weld_joint->X_PC();
+          const RigidTransformd X_JpJc = weld_joint->X_PC();  // see #17600.
+          const RigidTransformd X_PC =
+              X_PJp * X_JpJc * X_CJc.inverse();
           // Fixed to the parent body.
 
           // The position can be computed from the parent body pose.
@@ -471,7 +475,7 @@ void GlobalInverseKinematics::AddPostureCost(
 
     // The orientation error is on the angle θ between the body orientation and
     // the desired orientation, namely 1 - cos(θ).
-    // cos(θ) can be computed as (trace( R_WB_desired * R_WB_[i]ᵀ) - 1) / 2
+    // cos(θ) can be computed as (trace( R_WB_desired * R_WB_[i]ᵀ) - 1) / 2.
     // To see how the angle is computed from a rotation matrix, please refer to
     // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
     orient_err_sum +=
@@ -828,5 +832,47 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
       throw std::runtime_error("Unsupported joint type.");
   }
 }
+
+// TODO(russt): This method is currently calling Solve in order to compute the
+// integer variables (given the poses). This is an easy, but relatively
+// expensive way; we could instead compute them in closed form based on the
+// implementation of the McCormick envelope constraints.
+void GlobalInverseKinematics::SetInitialGuess(
+    const Eigen::Ref<const Eigen::VectorXd>& q) {
+  auto context = plant_.CreateDefaultContext();
+  plant_.SetPositions(context.get(), q);
+
+  std::vector<solvers::Binding<solvers::BoundingBoxConstraint>> bindings;
+
+  // body 0 is the world. There is no position or orientation error on the
+  // world, so we just skip i = 0 and start from i = 1.
+  for (int i = 1; i < plant_.num_bodies(); ++i) {
+    const auto& X_WB = plant_.CalcRelativeTransform(
+        *context, plant_.world_frame(),
+        plant_.get_body(BodyIndex{i}).body_frame());
+
+    bindings.push_back(prog_.AddBoundingBoxConstraint(
+        X_WB.translation(), X_WB.translation(), p_WBo_[i]));
+    bindings.push_back(prog_.AddBoundingBoxConstraint(
+        X_WB.rotation().matrix(), X_WB.rotation().matrix(), R_WB_[i]));
+  }
+
+  ScopeExit guard([&]() {
+    for (const auto& b : bindings) {
+      prog_.RemoveConstraint(b);
+    }
+  });
+
+  const auto result = solvers::Solve(prog_);
+
+  if (!result.is_success()) {
+    throw std::runtime_error(
+        "SetInitialGuess tried to solve a variant of your IK problem, but "
+        "failed.");
+  }
+
+  prog_.SetInitialGuessForAllVariables(result.GetSolution());
+}
+
 }  // namespace multibody
 }  // namespace drake

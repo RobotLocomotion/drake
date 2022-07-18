@@ -28,6 +28,55 @@ GTEST_TEST(GlobalInverseKinematicsTest, TestConstructor) {
   EXPECT_TRUE(global_ik_milp.prog().rotated_lorentz_cone_constraints().empty());
 }
 
+TEST_F(KukaTest, SetInitialGuess) {
+  const Eigen::VectorXd initial_guess0 =
+      Eigen::VectorXd::Zero(global_ik_.prog().num_vars());
+  global_ik_.get_mutable_prog()->SetInitialGuessForAllVariables(initial_guess0);
+
+  const int num_bb_constraints =
+      global_ik_.prog().bounding_box_constraints().size();
+  Eigen::VectorXd q(7);
+  q << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+  global_ik_.SetInitialGuess(q);
+  // Check that SetInitialGuess does not leave any new constraints.
+  EXPECT_EQ(num_bb_constraints,
+            global_ik_.prog().bounding_box_constraints().size());
+
+  EXPECT_FALSE(
+      CompareMatrices(global_ik_.prog().initial_guess(), initial_guess0));
+
+  Eigen::Map<const VectorX<symbolic::Variable> > variables =
+      global_ik_.prog().decision_variables();
+
+  const double kTol = 1e-6;  // Choose a typical solver tolerance.
+
+  // Check that at least one binary variable has been set to 1.
+  bool found_one_for_binary = false;
+  for (int i = 0; i < static_cast<int>(variables.size()); ++i) {
+    symbolic::Variable v = variables[i];
+    if (v.get_type() == symbolic::Variable::Type::BINARY) {
+      const double value = global_ik_.prog().GetInitialGuess(v);
+      if (abs(value - 1.0) < kTol) {
+        found_one_for_binary = true;
+        break;
+      }
+    }
+  }
+  EXPECT_TRUE(found_one_for_binary);
+
+  auto context = plant_->CreateDefaultContext();
+  plant_->SetPositions(context.get(), q);
+  const Body<double>& link7 = plant_->GetBodyByName("iiwa_link_7");
+  const RigidTransformd X_W7 = plant_->EvalBodyPoseInWorld(*context, link7);
+  EXPECT_TRUE(CompareMatrices(global_ik_.prog().GetInitialGuess(
+                                  global_ik_.body_position(link7.index())),
+                              X_W7.translation(), kTol));
+  EXPECT_TRUE(
+      CompareMatrices(global_ik_.prog().GetInitialGuess(
+                          global_ik_.body_rotation_matrix(link7.index())),
+                      X_W7.rotation().matrix(), kTol));
+}
+
 TEST_F(KukaTest, UnreachableTest) {
   // Test a cartesian pose that we know is not reachable.
   Eigen::Vector3d ee_pos_lb(0.8, -0.1, 0.7);

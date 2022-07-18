@@ -678,6 +678,7 @@ class TestGlobalInverseKinematics(unittest.TestCase):
             body_orientation_cost=[1] * plant.num_bodies())
         gurobi_solver = GurobiSolver()
         if gurobi_solver.available():
+            global_ik.SetInitialGuess(q=plant.GetPositions(context))
             result = gurobi_solver.Solve(global_ik.prog())
             self.assertTrue(result.is_success())
             global_ik.ReconstructGeneralizedPositionSolution(result=result)
