@@ -917,7 +917,6 @@ class Meshcat::Impl {
     auto material = std::make_unique<internal::MaterialData>();
     material->uuid = uuids::to_string(uuid_generator());
     material->type = "MeshPhongMaterial";
-    //material->color = ToMeshcatColor(rgba);
     material->transparent = false;
     material->opacity = 1.0;
     material->wireframe = wireframe;
