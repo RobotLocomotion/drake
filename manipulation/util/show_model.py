@@ -60,11 +60,13 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import (
     Cylinder,
     DrakeVisualizer,
+    DrakeVisualizerParams,
     GeometryInstance,
     MakePhongIllustrationProperties,
     Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
+    Rgba,
     Role,
 )
 from pydrake.math import RigidTransform, RotationMatrix
@@ -277,20 +279,6 @@ def parse_visualizers(args_parser, args):
     underlying ``Meshcat`` instance.  Otherwise, it returns ``None``.
     """
     def update_visualization(plant, scene_graph):
-        if args.visualize_collisions:
-            # Find all the geometries that have not already been marked as
-            # 'illustration' (visual) and assume they are collision geometries.
-            # Then add illustration properties to them that will draw them in
-            # red and fifty percent translucent.
-            source_id = plant.get_source_id()
-            inspector = scene_graph.model_inspector()
-            diffuse_rgba = [1, 0, 0, 0.5]
-            red_illustration = MakePhongIllustrationProperties(diffuse_rgba)
-            for geometry_id in inspector.GetAllGeometryIds():
-                if inspector.GetIllustrationProperties(geometry_id) is None:
-                    scene_graph.AssignRole(
-                        source_id, geometry_id, red_illustration)
-
         if args.visualize_frames:
             # Visualize frames
             # Find all the frames and draw them using add_triad().
@@ -311,8 +299,17 @@ def parse_visualizers(args_parser, args):
                 )
 
     def connect_visualizers(builder, plant, scene_graph):
-        # Connect this to drake_visualizer.
-        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
+        # Connect this to drake_visualizer. By default, send illustration
+        # geometry on the legacy channels, and proximity geometry on the
+        # proximity channels. If visualize_collisions is set, perform the
+        # legacy behavior of sending proximity geometry only on the legacy
+        # channels.
+        if not args.visualize_collisions:
+            DrakeVisualizer.AddToBuilder(builder, scene_graph)
+        params = DrakeVisualizerParams(
+            role=Role.kProximity, default_color=Rgba(1.0, 0.0, 0.0, 0.5),
+            use_role_channel_suffix=(not args.visualize_collisions))
+        DrakeVisualizer.AddToBuilder(builder, scene_graph, params=params)
 
         # Connect to Meshcat.  If the consuming application needs to connect,
         # e.g., JointSliders, the meshcat instance is required.

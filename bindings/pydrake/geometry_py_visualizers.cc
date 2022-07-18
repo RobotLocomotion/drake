@@ -167,15 +167,19 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def_readwrite("show_hydroelastic",
             &DrakeVisualizerParams::show_hydroelastic,
             cls_doc.show_hydroelastic.doc)
+        .def_readwrite("use_role_channel_suffix",
+            &DrakeVisualizerParams::use_role_channel_suffix,
+            cls_doc.use_role_channel_suffix.doc)
         .def("__repr__", [](const Class& self) {
           return py::str(
               "DrakeVisualizerParams("
               "publish_period={}, "
               "role={}, "
               "default_color={}, "
-              "show_hydroelastic={})")
+              "show_hydroelastic={}, "
+              "use_role_channel_suffix={})")
               .format(self.publish_period, self.role, self.default_color,
-                  self.show_hydroelastic);
+                  self.show_hydroelastic, self.use_role_channel_suffix);
         });
   }
 
