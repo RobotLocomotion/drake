@@ -462,6 +462,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_query_object_connect_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "@fmt",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_symbolic_test",
     deps = [
         ":plant",
