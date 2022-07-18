@@ -19,6 +19,7 @@
 #include <cmath>
 #include <limits>
 #include <ostream>
+#include <type_traits>
 
 #include <Eigen/Dense>
 
