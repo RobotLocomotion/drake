@@ -18,9 +18,11 @@ drake_cc_googlebench_binary(
     srcs = ["framework_benchmarks.cc"],
     add_test_rule = True,
     deps = [
+        "//common:add_text_logging_gflags",
         "//systems/framework:diagram_builder",
         "//systems/primitives:pass_through",
         "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
     ],
 )
 
@@ -34,6 +36,7 @@ drake_cc_binary(
     srcs = ["multilayer_perceptron_performance.cc"],
     add_test_rule = True,
     deps = [
+        "//common:add_text_logging_gflags",
         "//systems/primitives:multilayer_perceptron",
         "@gflags",
     ],
