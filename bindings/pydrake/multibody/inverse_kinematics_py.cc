@@ -721,7 +721,9 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                   q_desired, body_position_cost, body_orientation_cost);
             },
             py::arg("q_desired"), py::arg("body_position_cost"),
-            py::arg("body_orientation_cost"), cls_doc.AddPostureCost.doc);
+            py::arg("body_orientation_cost"), cls_doc.AddPostureCost.doc)
+        .def("SetInitialGuess", &Class::SetInitialGuess, py::arg("q"),
+            cls_doc.SetInitialGuess.doc);
     // TODO(russt): Add bindings for Polytope3D struct and related methods
     // (or convert those methods to use ConvexSets).
   }

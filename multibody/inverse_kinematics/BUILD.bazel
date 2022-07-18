@@ -109,6 +109,7 @@ drake_cc_library(
         "//solvers:mathematical_program_result",
         "//solvers:mixed_integer_rotation_constraint",
         "//solvers:rotation_constraint",
+        "//solvers:solve",
     ],
 )
 

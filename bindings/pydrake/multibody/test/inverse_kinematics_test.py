@@ -676,6 +676,7 @@ class TestGlobalInverseKinematics(unittest.TestCase):
             q_desired=plant.GetPositions(context),
             body_position_cost=[1] * plant.num_bodies(),
             body_orientation_cost=[1] * plant.num_bodies())
+        global_ik.SetInitialGuess(q=plant.GetPositions(context))
         gurobi_solver = GurobiSolver()
         if gurobi_solver.available():
             result = gurobi_solver.Solve(global_ik.prog())

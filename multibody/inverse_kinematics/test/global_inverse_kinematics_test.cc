@@ -28,6 +28,36 @@ GTEST_TEST(GlobalInverseKinematicsTest, TestConstructor) {
   EXPECT_TRUE(global_ik_milp.prog().rotated_lorentz_cone_constraints().empty());
 }
 
+TEST_F(KukaTest, SetInitialGuess) {
+  const Eigen::VectorXd initial_guess0 =
+      Eigen::VectorXd::Zero(global_ik_.prog().num_vars());
+  global_ik_.get_mutable_prog()->SetInitialGuessForAllVariables(initial_guess0);
+
+  Eigen::VectorXd q;
+  q << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+  global_ik_.SetInitialGuess(q);
+
+  EXPECT_FALSE(
+      CompareMatrices(global_ik_.prog().initial_guess(), initial_guess0));
+
+  Eigen::Map<const VectorX<symbolic::Variable> > variables =
+      global_ik_.prog().decision_variables();
+
+  // Check that at least one binary variable has been set to 1.
+  bool found_one_for_binary = false;
+  for (int i = 0; i < static_cast<int>(variables.size()); ++i) {
+    symbolic::Variable v = variables[i];
+    if (v.get_type() == symbolic::Variable::Type::BINARY) {
+      double value = global_ik_.prog().GetInitialGuess(v);
+      if (abs(value - 1.0) < 1e-6) {
+        found_one_for_binary = true;
+        break;
+      }
+    }
+  }
+  EXPECT_TRUE(found_one_for_binary);
+}
+
 TEST_F(KukaTest, UnreachableTest) {
   // Test a cartesian pose that we know is not reachable.
   Eigen::Vector3d ee_pos_lb(0.8, -0.1, 0.7);

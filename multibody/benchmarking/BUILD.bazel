@@ -75,6 +75,29 @@ drake_py_experiment_binary(
 )
 
 drake_cc_googlebench_binary(
+    name = "homecart_global_ik",
+    srcs = ["homecart_global_ik.cc"],
+    add_test_rule = False,
+    data = [
+        "//manipulation/models/tri_homecart:models",
+        "//manipulation/models/ur3e:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//multibody/inverse_kinematics",
+        "//multibody/parsing",
+        "//solvers:solve",
+        "//tools/performance:fixture_common",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "homecart_global_ik_experiment",
+    googlebench_binary = ":homecart_global_ik",
+)
+
+drake_cc_googlebench_binary(
     name = "position_constraint",
     srcs = ["position_constraint.cc"],
     add_test_rule = True,
