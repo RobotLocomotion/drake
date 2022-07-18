@@ -60,11 +60,13 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import (
     Cylinder,
     DrakeVisualizer,
+    DrakeVisualizerParams,
     GeometryInstance,
     MakePhongIllustrationProperties,
     Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
+    Rgba,
     Role,
 )
 from pydrake.math import RigidTransform, RotationMatrix
@@ -173,11 +175,6 @@ def add_visualizers_argparse_arguments(args_parser):
     # TODO(russt): Consider supporting the PlanarSceneGraphVisualizer
     #  options as additional arguments.
     args_parser.add_argument(
-        "--visualize_collisions", action="store_true",
-        help="Visualize the collision geometry in the visualizer. The "
-        "collision geometries will be shown in red to differentiate "
-        "them from the visual geometries.")
-    args_parser.add_argument(
         "--visualize_frames",
         action="store_true",
         help="Visualize the frames as triads for all links.",
@@ -277,20 +274,6 @@ def parse_visualizers(args_parser, args):
     underlying ``Meshcat`` instance.  Otherwise, it returns ``None``.
     """
     def update_visualization(plant, scene_graph):
-        if args.visualize_collisions:
-            # Find all the geometries that have not already been marked as
-            # 'illustration' (visual) and assume they are collision geometries.
-            # Then add illustration properties to them that will draw them in
-            # red and fifty percent translucent.
-            source_id = plant.get_source_id()
-            inspector = scene_graph.model_inspector()
-            diffuse_rgba = [1, 0, 0, 0.5]
-            red_illustration = MakePhongIllustrationProperties(diffuse_rgba)
-            for geometry_id in inspector.GetAllGeometryIds():
-                if inspector.GetIllustrationProperties(geometry_id) is None:
-                    scene_graph.AssignRole(
-                        source_id, geometry_id, red_illustration)
-
         if args.visualize_frames:
             # Visualize frames
             # Find all the frames and draw them using add_triad().
@@ -311,8 +294,13 @@ def parse_visualizers(args_parser, args):
                 )
 
     def connect_visualizers(builder, plant, scene_graph):
-        # Connect this to drake_visualizer.
-        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
+        # Connect this to drake_visualizer or meldis. Meldis provides
+        # simultaneous visualization of illustration and proximity geometry.
+        DrakeVisualizer.AddToBuilder(builder, scene_graph)
+        params = DrakeVisualizerParams(
+            role=Role.kProximity, default_color=Rgba(1.0, 0.0, 0.0, 0.5),
+            use_role_channel_suffix=True)
+        DrakeVisualizer.AddToBuilder(builder, scene_graph, params=params)
 
         # Connect to Meshcat.  If the consuming application needs to connect,
         # e.g., JointSliders, the meshcat instance is required.
