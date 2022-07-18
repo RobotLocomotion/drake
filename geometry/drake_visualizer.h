@@ -51,6 +51,12 @@ struct DeformableMeshData {
   int volume_vertex_count{};
 };
 
+/* If requested in @p params, adds a suffix to the provided LCM channel name,
+ based on the geometry role. If a suffix is requested, the passed role
+ parameter cannot be kUnassigned. See also DrakeVisualizerParams. */
+std::string MakeLcmChannelNameForRole(const std::string& channel,
+                                      const DrakeVisualizerParams& params);
+
 }  // namespace internal
 
 /** A system that publishes LCM messages compatible with the `drake_visualizer`
@@ -66,11 +72,19 @@ struct DeformableMeshData {
  The %DrakeVisualizer system broadcasts three kinds of LCM messages:
 
    - a message that defines the non-deformable geometries in the world on the
- lcm channel named "DRAKE_VIEWER_LOAD_ROBOT"
+     lcm channel named "DRAKE_VIEWER_LOAD_ROBOT"
    - a message that updates the poses of those non-deformable geometries on the
- lcm channel named "DRAKE_VIEWER_DRAW",
+     lcm channel named "DRAKE_VIEWER_DRAW",
    - a message that sets the world space vertex positions of the deformable
-    geometries on the lcm channel named "DRAKE_VIEWER_DEFORMABLE"
+     geometries on the lcm channel named "DRAKE_VIEWER_DEFORMABLE"
+
+ If requested in DrakeVisualizerParams, the above channel names are modified
+ according to the role specified. This allows simultaneous availability of
+ geometry from multiple roles, by using multiple DrakeVisualizer instances.
+
+   - kIllustration: channel names gain a "_ILLUSTRATION" suffix.
+   - kProximity: channel names gain a "_PROXIMITY" suffix.
+   - kPerception: channel names gain a "_PERCEPTION" suffix.
 
  The system uses the versioning mechanism provided by SceneGraph to detect
  changes to the geometry so that a change in SceneGraph's data will propagate
@@ -244,6 +258,7 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
    definition of the poses of all non-deformable geometries. */
   static void SendDrawNonDeformableMessage(
       const QueryObject<T>& query_object,
+      const DrakeVisualizerParams& params,
       const std::vector<internal::DynamicFrameData>& dynamic_frames,
       double time, lcm::DrakeLcmInterface* lcm);
 

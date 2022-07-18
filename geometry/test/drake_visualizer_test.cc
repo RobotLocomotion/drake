@@ -32,6 +32,7 @@ namespace drake {
 namespace geometry {
 
 using Eigen::Vector3d;
+using internal::MakeLcmChannelNameForRole;
 using lcm::DrakeLcmInterface;
 using math::RigidTransform;
 using math::RigidTransformd;
@@ -220,17 +221,16 @@ class DrakeVisualizerTest : public ::testing::Test {
 
   /* Processes the message queue, reporting the number of load and draw messges
    and, if that number is non-zero, the last message of each type received.  */
-  MessageResults ProcessMessages() {
+  MessageResults ProcessMessages(std::optional<Role> role = std::nullopt) {
     lcm_.HandleSubscriptions(0);
-    const int num_draw = draw_subscriber_.count();
-    lcmt_viewer_draw draw_message = draw_subscriber_.message();
-    const int num_load = load_subscriber_.count();
-    lcmt_viewer_load_robot load_message = load_subscriber_.message();
-    const int num_deformable = deformable_subscriber_.count();
-    lcmt_viewer_link_data deformable_message = deformable_subscriber_.message();
-    draw_subscriber_.clear();
-    load_subscriber_.clear();
-    deformable_subscriber_.clear();
+    Subscribers& subs = GetSubscribers(role);
+    const int num_draw = subs.draw.count();
+    lcmt_viewer_draw draw_message = subs.draw.message();
+    const int num_load = subs.load.count();
+    lcmt_viewer_load_robot load_message = subs.load.message();
+    const int num_deformable = subs.deformable.count();
+    lcmt_viewer_link_data deformable_message = subs.deformable.message();
+    subs.clear();
     // clang-format off
     return {num_load,       load_message,
             num_draw,       draw_message,
@@ -352,13 +352,22 @@ class DrakeVisualizerTest : public ::testing::Test {
     }
   }
 
+  struct Subscribers;
+  Subscribers& GetSubscribers(std::optional<Role> role) {
+    std::map<Role, Subscribers *> subscribers_{
+      {Role::kIllustration, &illustration_subs_},
+      {Role::kProximity, &proximity_subs_},
+      {Role::kPerception, &perception_subs_},
+    };
+    if (role.has_value()) {
+      DRAKE_DEMAND(*role != Role::kUnassigned);
+      return *subscribers_[*role];
+    }
+    return default_subs_;
+  }
+
+
   static constexpr double kPublishPeriod = 1 / 64.0;
-  /* The LCM channel names. We are implicitly confirming that DrakeVisualizer
-   broadcasts on the right channels via the subscribers. The reception of
-   expected messages on those subscribers is proof.  */
-  static constexpr char kLoadChannel[] = "DRAKE_VIEWER_LOAD_ROBOT";
-  static constexpr char kDrawChannel[] = "DRAKE_VIEWER_DRAW";
-  static constexpr char kDeformableDrawChannel[] = "DRAKE_VIEWER_DEFORMABLE";
 
   /* The names of the sources registered with the SceneGraph.  */
   static constexpr char kPoseSourceName[] = "DrakeVisualizerTestPoseSource";
@@ -367,11 +376,45 @@ class DrakeVisualizerTest : public ::testing::Test {
 
   /* The LCM visualizer broadcasts messages on.  */
   lcm::DrakeLcm lcm_;
+
   /* The subscribers for draw and load messages.  */
-  lcm::Subscriber<lcmt_viewer_draw> draw_subscriber_{&lcm_, kDrawChannel};
-  lcm::Subscriber<lcmt_viewer_load_robot> load_subscriber_{&lcm_, kLoadChannel};
-  lcm::Subscriber<lcmt_viewer_link_data> deformable_subscriber_{
-      &lcm_, kDeformableDrawChannel};
+  struct Subscribers {
+    /* The LCM channel names. We are implicitly confirming that DrakeVisualizer
+       broadcasts on the right channels via the subscribers. The reception of
+       expected messages on those subscribers is proof.  */
+    static constexpr char kLoadChannel[] = "DRAKE_VIEWER_LOAD_ROBOT";
+    static constexpr char kDrawChannel[] = "DRAKE_VIEWER_DRAW";
+    static constexpr char kDeformableDrawChannel[] = "DRAKE_VIEWER_DEFORMABLE";
+
+    Subscribers(lcm::DrakeLcm* lcm, std::optional<Role> role)
+        : draw(lcm, MakeRoleChannelName(kDrawChannel, role)),
+          load(lcm, MakeRoleChannelName(kLoadChannel, role)),
+          deformable(lcm, MakeRoleChannelName(kDeformableDrawChannel, role)) {}
+
+    void clear() {
+      draw.clear();
+      load.clear();
+      deformable.clear();
+    }
+
+    static std::string MakeRoleChannelName(const std::string& channel,
+                                           std::optional<Role> role) {
+      DrakeVisualizerParams params;
+      if (role.has_value()) {
+        params.role = *role;
+        params.use_role_channel_suffix = true;
+      }
+      return MakeLcmChannelNameForRole(channel, params);
+    }
+
+    lcm::Subscriber<lcmt_viewer_draw> draw;
+    lcm::Subscriber<lcmt_viewer_load_robot> load;
+    lcm::Subscriber<lcmt_viewer_link_data> deformable;
+  };
+  Subscribers default_subs_{&lcm_, std::nullopt};
+  Subscribers illustration_subs_{&lcm_, Role::kIllustration};
+  Subscribers proximity_subs_{&lcm_, Role::kProximity};
+  Subscribers perception_subs_{&lcm_, Role::kPerception};
 
   /* Raw pointer into the diagram's scene graph.  */
   SceneGraph<T>* scene_graph_{};
@@ -498,7 +541,8 @@ TYPED_TEST(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
        {Rgba{0.75, 0.25, 0.125, 1.0}, Rgba{0.5, 0.75, 0.875, 0.5}}) {
     this->ConfigureDiagram({.publish_period = this->kPublishPeriod,
                             .role = Role::kProximity,
-                            .default_color = expected_rgba});
+                            .default_color = expected_rgba,
+                            .use_role_channel_suffix = true});
     const FrameId f_id = this->scene_graph_->RegisterFrame(
         this->pose_source_id_, GeometryFrame("frame", 0));
     const GeometryId g_id = this->scene_graph_->RegisterGeometry(
@@ -511,7 +555,7 @@ TYPED_TEST(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
     this->pose_source_->SetPoses({{f_id, RigidTransform<T>{}}});
     Simulator<T> simulator(*(this->diagram_));
     simulator.AdvanceTo(0.0);
-    MessageResults results = this->ProcessMessages();
+    MessageResults results = this->ProcessMessages(Role::kProximity);
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.load_message.num_links, 1);
     ASSERT_EQ(results.load_message.link[0].num_geom, 1);
@@ -528,7 +572,8 @@ TYPED_TEST(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
 TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
   using T = TypeParam;
   this->ConfigureDiagram(
-      {.publish_period = this->kPublishPeriod, .role = Role::kProximity});
+      {.publish_period = this->kPublishPeriod, .role = Role::kProximity,
+       .use_role_channel_suffix = true});
   const FrameId f_id = this->scene_graph_->RegisterFrame(
       this->pose_source_id_, GeometryFrame("frame", 0));
   const GeometryId g0_id = this->scene_graph_->RegisterGeometry(
@@ -555,7 +600,7 @@ TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
 
   Simulator<T> simulator(*(this->diagram_));
   simulator.AdvanceTo(0.0);
-  MessageResults results = this->ProcessMessages();
+  MessageResults results = this->ProcessMessages(Role::kProximity);
 
   // Confirm load message; three geometries on two links.
   ASSERT_EQ(results.num_load, 1);
@@ -581,7 +626,8 @@ TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
 }
 
 /* Confirms that the role parameter leads to the correct geometry being
- selected.  */
+ selected, and that all roles can be directed to both suffixed channels and the
+ legacy/default channel.  */
 TYPED_TEST(DrakeVisualizerTest, TargetRole) {
   using T = TypeParam;
   const string source_name(this->kPoseSourceName);
@@ -592,25 +638,32 @@ TYPED_TEST(DrakeVisualizerTest, TargetRole) {
       {Role::kPerception, source_name + "::perception"},
       {Role::kProximity, source_name + "::proximity"}};
   for (const auto& [role, name] : expected) {
-    this->ConfigureDiagram(
-        {.publish_period = this->kPublishPeriod, .role = role});
-    this->PopulateScene();
-    Simulator<T> simulator(*(this->diagram_));
-    simulator.AdvanceTo(0.0);
-    MessageResults results = this->ProcessMessages();
+    for (const bool use_suffix : {false, true}) {
+      SCOPED_TRACE(fmt::format("role '{}', name '{}', use_suffix '{}'",
+                               role, name, use_suffix));
+      this->ConfigureDiagram(
+          {.publish_period = this->kPublishPeriod, .role = role,
+           .use_role_channel_suffix = use_suffix});
+      this->PopulateScene();
+      Simulator<T> simulator(*(this->diagram_));
+      simulator.AdvanceTo(0.0);
+      std::optional<Role> maybe_role;
+      if (use_suffix) { maybe_role = role; }
+      MessageResults results = this->ProcessMessages(maybe_role);
 
-    /* Confirm that messages were sent.  */
-    ASSERT_EQ(results.num_load, 1);
-    ASSERT_EQ(results.load_message.num_links, 1);
-    EXPECT_EQ(results.load_message.link[0].name, name);
-    EXPECT_EQ(results.load_message.link[0].num_geom, 1);
+      /* Confirm that messages were sent.  */
+      ASSERT_EQ(results.num_load, 1);
+      ASSERT_EQ(results.load_message.num_links, 1);
+      EXPECT_EQ(results.load_message.link[0].name, name);
+      EXPECT_EQ(results.load_message.link[0].num_geom, 1);
 
-    ASSERT_EQ(results.num_draw, 1);
-    ASSERT_EQ(results.draw_message.num_links, 1);
-    EXPECT_EQ(results.draw_message.link_name[0], name);
+      ASSERT_EQ(results.num_draw, 1);
+      ASSERT_EQ(results.draw_message.num_links, 1);
+      EXPECT_EQ(results.draw_message.link_name[0], name);
 
-    ASSERT_EQ(results.num_deformable, 1);
-    ASSERT_EQ(results.deformable_message.num_geom, 0);
+      ASSERT_EQ(results.num_deformable, 1);
+      ASSERT_EQ(results.deformable_message.num_geom, 0);
+    }
   }
 }
 
@@ -635,7 +688,8 @@ TYPED_TEST(DrakeVisualizerTest, ForcePublish) {
 TYPED_TEST(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
   using T = TypeParam;
   this->ConfigureDiagram(
-      {.publish_period = this->kPublishPeriod, .role = Role::kProximity});
+      {.publish_period = this->kPublishPeriod, .role = Role::kProximity,
+       .use_role_channel_suffix = true});
   const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
       this->pose_source_id_,
       make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
@@ -652,7 +706,7 @@ TYPED_TEST(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
   simulator.AdvanceTo(0.0);
 
   // We're just checking the load message for the right color.
-  MessageResults results = this->ProcessMessages();
+  MessageResults results = this->ProcessMessages(Role::kProximity);
   ASSERT_EQ(results.num_load, 1);
   ASSERT_EQ(results.load_message.num_links, 1);
   ASSERT_EQ(results.load_message.link[0].num_geom, 1);
@@ -667,7 +721,8 @@ TYPED_TEST(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
   using T = TypeParam;
   for (const Role role : {Role::kProximity, Role::kPerception}) {
     this->ConfigureDiagram(
-        {.publish_period = this->kPublishPeriod, .role = role});
+        {.publish_period = this->kPublishPeriod, .role = role,
+         .use_role_channel_suffix = true});
     const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
         this->pose_source_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
@@ -688,7 +743,7 @@ TYPED_TEST(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
     simulator.AdvanceTo(0.0);
 
     // We're just checking the load message for the right color.
-    MessageResults results = this->ProcessMessages();
+    MessageResults results = this->ProcessMessages(role);
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.load_message.num_links, 1);
     ASSERT_EQ(results.load_message.link[0].num_geom, 1);
@@ -730,7 +785,8 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
   for (const Role role :
        {Role::kProximity, Role::kPerception, Role::kIllustration}) {
     this->ConfigureDiagram(
-        {.publish_period = this->kPublishPeriod, .role = role});
+        {.publish_period = this->kPublishPeriod, .role = role,
+         .use_role_channel_suffix = true});
     const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
         this->pose_source_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
@@ -743,7 +799,7 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
     double t = 0.0;
     simulator.AdvanceTo(t);
     // Confirm the initial load/draw message pair.
-    MessageResults results = this->ProcessMessages();
+    MessageResults results = this->ProcessMessages(role);
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.num_draw, 1);
     ASSERT_EQ(results.num_deformable, 1);
@@ -751,7 +807,7 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
     t += this->kPublishPeriod;
     simulator.AdvanceTo(t);
     // Confirm draw only.
-    results = this->ProcessMessages();
+    results = this->ProcessMessages(role);
     ASSERT_EQ(results.num_load, 0);
     ASSERT_EQ(results.num_draw, 1);
     ASSERT_EQ(results.num_deformable, 1);
@@ -774,7 +830,7 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
       }
       t += this->kPublishPeriod;
       simulator.AdvanceTo(t);
-      results = this->ProcessMessages();
+      results = this->ProcessMessages(role);
       EXPECT_EQ(results.num_load, modified_role == role ? 1 : 0)
           << "For visualized role '" << role << "' and modified role '" << role
           << "'\n";
@@ -883,6 +939,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
   params.default_color = Rgba{0.25, 0.5, 0.75, 0.5};
   params.role = Role::kProximity;
   params.show_hydroelastic = true;
+  params.use_role_channel_suffix = true;
   this->ConfigureDiagram(params);
 
   FramePoseVector<T> poses;
@@ -931,7 +988,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
   this->visualizer_->Publish(vis_context);
 
   /* Confirm that messages were sent.  */
-  MessageResults results = this->ProcessMessages();
+  MessageResults results = this->ProcessMessages(params.role);
   ASSERT_EQ(results.num_load, 1);
   ASSERT_EQ(results.load_message.num_links, 5);
 
@@ -1097,9 +1154,10 @@ TYPED_TEST(DrakeVisualizerTest, DispatchLoadMessageFromModel) {
     // Case: role = proximity --> one frame labeled with "proximity".
     DrakeVisualizerParams params;
     params.role = Role::kProximity;
+    params.use_role_channel_suffix = true;
     DrakeVisualizer<T>::DispatchLoadMessage(*(this->scene_graph_),
                                             &(this->lcm_), params);
-    MessageResults results = this->ProcessMessages();
+    MessageResults results = this->ProcessMessages(params.role);
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.load_message.num_links, 1);
     ASSERT_EQ(results.load_message.link[0].name,

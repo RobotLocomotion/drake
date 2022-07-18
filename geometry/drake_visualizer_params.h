@@ -35,6 +35,11 @@ struct DrakeVisualizerParams {
    none of the collision meshes have a hydroelastic mesh associated with them.
    */
   bool show_hydroelastic{false};
+
+  /** Setting this to `true` will cause LCM channel names to have a suffix
+   appended, allowing simultaneous transmission of multiple geometry roles via
+   multiple DrakeVisualizer instances. See DrakeVisualizer for details. */
+  bool use_role_channel_suffix{false};
 };
 
 }  // namespace geometry
