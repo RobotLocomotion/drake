@@ -2480,10 +2480,15 @@ class MultibodyTree {
   double CalcTotalDefaultMass(const std::set<BodyIndex>& body_indexes) const;
 
   // (Internal use only) In the set of bodies associated with BodyIndex, returns
-  // false if any of the bodies have a NaN default rotational inertia or if all
-  // the bodies have a zero default rotational inertia. Otherwise returns true.
+  // true if any of the bodies have a NaN default rotational inertia.
   // @param[in] body_indexes A set of BodyIndex.
-  bool IsTotalDefaultRotationalInertiaNonZero(
+  bool IsAnyDefaultRotationalInertiaNaN(
+      const std::set<BodyIndex>& body_indexes) const;
+
+  // (Internal use only) In the set of bodies associated with BodyIndex, returns
+  // true if all of the bodies have a zero default rotational inertia.
+  // @param[in] body_indexes A set of BodyIndex.
+  bool IsDefaultRotationalInertiaZero(
       const std::set<BodyIndex>& body_indexes) const;
 
   // Throw an exception if there are bodies whose default mass or inertia
