@@ -217,6 +217,9 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
     Vector3d moment_C_W = ExtractDoubleOrThrow(info.F_Ac_W().rotational());
 
     if (contact_surface.is_triangle()) {
+
+      std::cout << "TRIANGLE\n";
+
       const auto& mesh = contact_surface.tri_mesh_W();
 
       Eigen::Matrix3Xd vertices(3, contact_surface.num_vertices());

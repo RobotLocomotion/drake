@@ -238,7 +238,7 @@ Open up your browser to the URL above.
     const auto& body2 = plant.GetBodyByName("body2");
     plant.AddJoint<multibody::PrismaticJoint>("body2", plant.world_body(),
                                               std::nullopt, body2, std::nullopt,
-                                              Eigen::Vector3d::UnitZ());
+                                              Eigen::Vector3d::UnitX());
 
     plant.Finalize();
 
@@ -256,7 +256,7 @@ Open up your browser to the URL above.
     auto context = diagram->CreateDefaultContext();
 
     plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()),
-                       Eigen::Vector2d{-0.05, 0.1});
+                       Eigen::Vector2d{0.1, 0.2});
     diagram->Publish(*context);
     std::cout << "- Now you should see two colliding hydroelastic spheres."
               << std::endl;
