@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":collision_filter",
         ":contact_surface_utility",
         ":deformable_contact_geometries",
+        ":deformable_contact_internal",
         ":deformable_mesh_intersection",
         ":deformable_volume_mesh",
         ":field_intersection",
@@ -158,6 +159,19 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry:proximity_properties",
         "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_contact_internal",
+    srcs = ["deformable_contact_internal.cc"],
+    hdrs = ["deformable_contact_internal.h"],
+    deps = [
+        ":deformable_mesh_intersection",
+        "//common:essential",
+        "//geometry:geometry_ids",
+        "//geometry:shape_specification",
+        "//geometry/query_results:deformable_rigid_contact",
     ],
 )
 
@@ -828,6 +842,22 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_contact_internal_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
+    deps = [
+        ":deformable_contact_internal",
+        ":make_box_mesh",
+        ":make_sphere_mesh",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
