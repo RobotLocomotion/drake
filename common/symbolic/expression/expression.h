@@ -70,36 +70,36 @@ enum class ExpressionKind {
 /** Total ordering between ExpressionKinds. */
 bool operator<(ExpressionKind k1, ExpressionKind k2);
 
-class ExpressionCell;                   // In symbolic_expression_cell.h
-class ExpressionConstant;               // In symbolic_expression_cell.h
-class ExpressionVar;                    // In symbolic_expression_cell.h
-class UnaryExpressionCell;              // In symbolic_expression_cell.h
-class BinaryExpressionCell;             // In symbolic_expression_cell.h
-class ExpressionAdd;                    // In symbolic_expression_cell.h
-class ExpressionMul;                    // In symbolic_expression_cell.h
-class ExpressionDiv;                    // In symbolic_expression_cell.h
-class ExpressionLog;                    // In symbolic_expression_cell.h
-class ExpressionAbs;                    // In symbolic_expression_cell.h
-class ExpressionExp;                    // In symbolic_expression_cell.h
-class ExpressionSqrt;                   // In symbolic_expression_cell.h
-class ExpressionPow;                    // In symbolic_expression_cell.h
-class ExpressionSin;                    // In symbolic_expression_cell.h
-class ExpressionCos;                    // In symbolic_expression_cell.h
-class ExpressionTan;                    // In symbolic_expression_cell.h
-class ExpressionAsin;                   // In symbolic_expression_cell.h
-class ExpressionAcos;                   // In symbolic_expression_cell.h
-class ExpressionAtan;                   // In symbolic_expression_cell.h
-class ExpressionAtan2;                  // In symbolic_expression_cell.h
-class ExpressionSinh;                   // In symbolic_expression_cell.h
-class ExpressionCosh;                   // In symbolic_expression_cell.h
-class ExpressionTanh;                   // In symbolic_expression_cell.h
-class ExpressionMin;                    // In symbolic_expression_cell.h
-class ExpressionMax;                    // In symbolic_expression_cell.h
-class ExpressionCeiling;                // In symbolic_expression_cell.h
-class ExpressionFloor;                  // In symbolic_expression_cell.h
-class ExpressionIfThenElse;             // In symbolic_expression_cell.h
-class ExpressionUninterpretedFunction;  // In symbolic_expression_cell.h
-class Formula;                          // In symbolic_formula.h
+class ExpressionCell;                   // In expression_cell.h
+class ExpressionConstant;               // In expression_cell.h
+class ExpressionVar;                    // In expression_cell.h
+class UnaryExpressionCell;              // In expression_cell.h
+class BinaryExpressionCell;             // In expression_cell.h
+class ExpressionAdd;                    // In expression_cell.h
+class ExpressionMul;                    // In expression_cell.h
+class ExpressionDiv;                    // In expression_cell.h
+class ExpressionLog;                    // In expression_cell.h
+class ExpressionAbs;                    // In expression_cell.h
+class ExpressionExp;                    // In expression_cell.h
+class ExpressionSqrt;                   // In expression_cell.h
+class ExpressionPow;                    // In expression_cell.h
+class ExpressionSin;                    // In expression_cell.h
+class ExpressionCos;                    // In expression_cell.h
+class ExpressionTan;                    // In expression_cell.h
+class ExpressionAsin;                   // In expression_cell.h
+class ExpressionAcos;                   // In expression_cell.h
+class ExpressionAtan;                   // In expression_cell.h
+class ExpressionAtan2;                  // In expression_cell.h
+class ExpressionSinh;                   // In expression_cell.h
+class ExpressionCosh;                   // In expression_cell.h
+class ExpressionTanh;                   // In expression_cell.h
+class ExpressionMin;                    // In expression_cell.h
+class ExpressionMax;                    // In expression_cell.h
+class ExpressionCeiling;                // In expression_cell.h
+class ExpressionFloor;                  // In expression_cell.h
+class ExpressionIfThenElse;             // In expression_cell.h
+class ExpressionUninterpretedFunction;  // In expression_cell.h
+class Formula;                          // In formula.h
 class Expression;
 
 // Substitution is a map from a Variable to a symbolic expression. It is used in
@@ -164,9 +164,9 @@ std::domain_error exception if a function is not well-defined for a given
 argument(s).
 
 Relational operators over expressions (==, !=, <, >, <=, >=) return
-symbolic::Formula instead of bool. Those operations are declared in
-symbolic_formula.h file. To check structural equality between two expressions a
-separate function, Expression::EqualTo, is provided.
+symbolic::Formula instead of bool. Those operations are declared in formula.h
+file. To check structural equality between two expressions a separate function,
+Expression::EqualTo, is provided.
 
 Regarding NaN, we have the following rules:
  1. NaN values are extremely rare during typical computations. Because they are
@@ -479,9 +479,8 @@ class Expression {
   friend bool is_uninterpreted_function(const Expression& e);
 
   // Note that the following cast functions are only for low-level operations
-  // and not exposed to the user of drake/common/symbolic_expression.h
-  // header. These functions are declared in
-  // drake/common/symbolic_expression_cell.h header.
+  // and not exposed to the user of drake/common/symbolic/expression.h header.
+  // These functions are declared in the expression_cell.h header.
   friend const ExpressionConstant& to_constant(const Expression& e);
   friend const ExpressionVar& to_variable(const Expression& e);
   friend const UnaryExpressionCell& to_unary(const Expression& e);

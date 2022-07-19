@@ -386,7 +386,7 @@ class Polynomial {
 [[nodiscard]] Polynomial operator*(Polynomial p, double c);
 [[nodiscard]] Polynomial operator*(const Monomial& m, Polynomial p);
 // Note that `Monomial * Monomial -> Monomial` is provided in
-// symbolic_monomial.h file.
+// monomial.h file.
 [[nodiscard]] Polynomial operator*(const Monomial& m, double c);
 [[nodiscard]] Polynomial operator*(double c, Polynomial p);
 [[nodiscard]] Polynomial operator*(double c, const Monomial& m);

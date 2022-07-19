@@ -28,7 +28,7 @@ namespace internal {
 // UFuncs.
 
 // Adds math function overloads for Expression (ADL free functions from
-// `symbolic_expression.h`) for both NumPy methods and `pydrake.math`.
+// `expression.h`) for both NumPy methods and `pydrake.math`.
 // @param obj
 //   This is used to register functions or overloads in either
 //   `pydrake.symbolic` or `pydrake.math`.
