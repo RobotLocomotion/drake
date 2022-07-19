@@ -234,6 +234,14 @@ class RigidGeometry {
     return geometry_->mesh();
   }
 
+  /* Releases the RigidMesh representation of this `RigidGeometry`, rendering
+   `this` RigidGeometry invalid.
+   @pre is_half_space() == false. */
+  std::unique_ptr<RigidMesh> release_mesh() {
+    DRAKE_DEMAND(!is_half_space());
+    return std::make_unique<RigidMesh>(std::move(*geometry_));
+  }
+
   /* Returns a reference to the bounding volume hierarchy -- calling this will
    throw unless is_half_space() returns false.  */
   const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh() const {
