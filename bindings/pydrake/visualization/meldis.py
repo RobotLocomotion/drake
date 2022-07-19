@@ -296,7 +296,6 @@ class _ContactApplet:
                 contact_point=lcm_item.contact_point))
         self._point_helper.Update(viz_items)
 
-
         # Handle hydroelastic contact pairs
         viz_items = []
         for lcm_item in message.hydroelastic_contacts:
