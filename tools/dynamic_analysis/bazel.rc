@@ -33,7 +33,6 @@ build:kcov_everything --test_timeout=600,3000,9000,36000
 
 ### ASan build. Clang only. ###
 build:asan --build_tests_only
-build:asan --local_ram_resources=HOST_RAM*0.5
 build:asan --copt=-g
 # https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
 build:asan --copt=-fno-common
@@ -63,7 +62,6 @@ build:asan --test_timeout=150,750,2250,9000  # 2.5x
 
 ### ASan everything build. Clang only. ###
 build:asan_everything --build_tests_only
-build:asan_everything --local_ram_resources=HOST_RAM*0.5
 build:asan_everything --define=WITH_GUROBI=ON
 build:asan_everything --define=WITH_MOSEK=ON
 build:asan_everything --define=WITH_SNOPT=ON
