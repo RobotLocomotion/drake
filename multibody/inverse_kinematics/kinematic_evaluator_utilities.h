@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <string>
 
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -83,6 +84,15 @@ const MultibodyPlant<T>& RefFromPtrOrThrow(
   if (plant == nullptr) throw std::invalid_argument("plant is nullptr.");
   return *plant;
 }
+
+template <typename T>
+T* PtrOrThrow(T* ptr, std::string error) {
+  if (ptr == nullptr) {
+    throw std::invalid_argument(error);
+  }
+  return ptr;
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
