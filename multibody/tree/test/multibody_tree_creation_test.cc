@@ -870,13 +870,13 @@ const RigidBody<double>& AddRigidBody(MultibodyTree<double>* model,
 
 // Verify Body::default_rotational_inertia() and related MultibodyTree methods.
 GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
-  // Create a model and add three rigid bodies.
+  // Create a model and add trhee rigid bodies, namely A, B, C.
   MultibodyTree<double> model;
-  const double mA = 0, mB = 1, mC = 3;  // Mass of link A, B, and C.
+  const double mA = 0, mB = 1, mC = 3;  // Mass of links A, B, C.
   const double length = 3;         // Length of each thin uniform-density link.
   const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", mB, length);
-  const RigidBody<double>& body_C = AddRigidBody(&model, "bodyC", mC, length);
+  const RigidBody<double>& body_C = AddRigidBody(&model, "bodyC", mC, length);;
 
   // Verify the default mass for each of the bodies.
   EXPECT_EQ(body_A.default_mass(), mA);
@@ -916,10 +916,10 @@ GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
   EXPECT_EQ(mass_ABC, mA + mB + mC);
 
   // Verify whether all default rotational inertia in these sets are zero.
-  EXPECT_FALSE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_AA));
-  EXPECT_TRUE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_AB));
-  EXPECT_TRUE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_BC));
-  EXPECT_TRUE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_ABC));
+  EXPECT_TRUE(model.IsDefaultRotationalInertiaZero(bodies_AA));
+  EXPECT_FALSE(model.IsDefaultRotationalInertiaZero(bodies_AB));
+  EXPECT_FALSE(model.IsDefaultRotationalInertiaZero(bodies_BC));
+  EXPECT_FALSE(model.IsDefaultRotationalInertiaZero(bodies_ABC));
 }
 
 // Helper function to add a x-axis prismatic joint between two bodies.
@@ -992,9 +992,9 @@ GTEST_TEST(WeldedBodies, IssueWarningForDistalCompositeBodyWithZeroInertia) {
   model.Finalize();
 
   // The next function is usually called from MultibodyPlant::Finalize().
-  const std::string expected_message = "It seems that body bodyA has zero or "
-    "NaN rotational inertia, yet it is attached by a joint "
-    "that has a rotational degree of freedom.";
+  const std::string expected_message = "Body bodyA has a zero rotational "
+    "inertia, yet it is attached by a joint that "
+    "has a rotational degree of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),
       expected_message);
 }

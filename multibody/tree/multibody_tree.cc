@@ -2935,14 +2935,22 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
       //  to create a non-zero moment of inertia. So instead, consider forming
       //  the actual rotational inertia about the relevant inboard mobilizer's
       //  axis (or axes if the mobilizer has more than one degree-of-freedom).
-      const bool can_rotate_but_no_inertia = parent_mobilizer.can_rotate() &&
-        !IsTotalDefaultRotationalInertiaNonZero(welded_parent_children_bodies);
-      if (can_rotate_but_no_inertia && has_no_mass) {
-        const std::string msg = fmt::format(
-            "It seems that body {} has zero or NaN rotational inertia, yet it "
+      if (parent_mobilizer.can_rotate()) {
+        if (IsAnyDefaultRotationalInertiaNaN(welded_parent_children_bodies)) {
+          const std::string msg = fmt::format(
+            "Body {} has a NaN rotational inertia, yet it "
             "is attached by a joint that has a rotational degree of freedom.",
             parent_body.name());
-        throw std::logic_error(msg);
+          throw std::logic_error(msg);
+        }
+        if (has_no_mass &&
+        IsDefaultRotationalInertiaZero(welded_parent_children_bodies)) {
+          const std::string msg = fmt::format(
+            "Body {} has a zero rotational inertia, yet it "
+            "is attached by a joint that has a rotational degree of freedom.",
+            parent_body.name());
+          throw std::logic_error(msg);
+        }
       }
     }
   }
@@ -2961,17 +2969,27 @@ double MultibodyTree<T>::CalcTotalDefaultMass(
 }
 
 template <typename T>
-bool MultibodyTree<T>::IsTotalDefaultRotationalInertiaNonZero(
+bool MultibodyTree<T>::IsAnyDefaultRotationalInertiaNaN(
     const std::set<BodyIndex>& body_indexes) const {
-  bool is_total_nonzero = false;
   for (BodyIndex body_index : body_indexes) {
     const Body<T>& body_B = get_body(body_index);
     const RotationalInertia<double> I_BBo_B =
         body_B.default_rotational_inertia();
-    if (I_BBo_B.IsNaN()) return false;
-    if (!I_BBo_B.IsZero()) is_total_nonzero = true;
+    if (I_BBo_B.IsNaN()) return true;
   }
-  return is_total_nonzero;
+  return false;
+}
+
+template <typename T>
+bool MultibodyTree<T>::IsDefaultRotationalInertiaZero(
+    const std::set<BodyIndex>& body_indexes) const {
+  for (BodyIndex body_index : body_indexes) {
+    const Body<T>& body_B = get_body(body_index);
+    const RotationalInertia<double> I_BBo_B =
+        body_B.default_rotational_inertia();
+    if (I_BBo_B.IsNaN() || !I_BBo_B.IsZero()) return false;
+  }
+  return true;
 }
 
 template <typename T>
