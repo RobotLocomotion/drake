@@ -4,24 +4,11 @@
 #include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
 
 using drake::multibody::internal::RefFromPtrOrThrow;
+using drake::multibody::internal::PtrOrThrow;
 using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
-
-namespace {
-
-// TODO(russt): Consider moving this to kinematics_utilities (possibly by
-// generalizing RefWithPointerOrThrow).
-template <typename T>
-systems::Context<T>* ContextOrThrow(
-    systems::Context<T>* plant_context) {
-  if (plant_context == nullptr)
-    throw std::invalid_argument("OrientationCost(): plant_context is nullptr.");
-  return plant_context;
-}
-
-}  // namespace
 
 OrientationCost::OrientationCost(const MultibodyPlant<double>* const plant,
                                  const Frame<double>& frameAbar,
@@ -32,7 +19,8 @@ OrientationCost::OrientationCost(const MultibodyPlant<double>* const plant,
                                  systems::Context<double>* plant_context)
     : solvers::Cost(RefFromPtrOrThrow(plant).num_positions()),
       constraint_(plant, frameAbar, R_AbarA, frameBbar, R_BbarB, 0,
-                  ContextOrThrow(plant_context)),
+                  PtrOrThrow(plant_context,
+                             "OrientationCost(): plant_context is nullptr")),
       c_{c} {}
 
 OrientationCost::OrientationCost(const MultibodyPlant<AutoDiffXd>* const plant,
@@ -44,14 +32,15 @@ OrientationCost::OrientationCost(const MultibodyPlant<AutoDiffXd>* const plant,
                                  systems::Context<AutoDiffXd>* plant_context)
     : solvers::Cost(RefFromPtrOrThrow(plant).num_positions()),
       constraint_(plant, frameAbar, R_AbarA, frameBbar, R_BbarB, 0,
-                  ContextOrThrow(plant_context)),
+                  PtrOrThrow(plant_context,
+                             "OrientationCost(): plant_context is nullptr")),
       c_{c} {}
 
 OrientationCost::~OrientationCost() = default;
 
 void OrientationCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                              Eigen::VectorXd* y) const {
-  // OrientationConstraint computes  tr(R_AB) = 1 - 2cosθ
+  // OrientationConstraint computes tr(R_AB) = 1 - 2cosθ
   // So 1 - cosθ = (1 + tr(R_AB))/2
   y->resize(1);
   Eigen::VectorXd trace_R_AB(1);
