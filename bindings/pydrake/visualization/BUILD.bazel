@@ -60,10 +60,21 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "video_py",
+    srcs = ["video.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+)
+
 PY_LIBRARIES = [
     ":module_py",
     ":meldis_py",
     ":plotting_py",
+    ":video_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -103,6 +114,14 @@ drake_py_unittest(
     name = "plotting_test",
     deps = [
         ":plotting_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "video_test",
+    deps = [
+        ":video_py",
+        "//bindings/pydrake/multibody",
     ],
 )
 
