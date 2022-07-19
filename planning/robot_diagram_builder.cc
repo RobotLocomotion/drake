@@ -1,12 +1,12 @@
-#include "planning/robot_diagram_builder.h"
+#include "drake/planning/robot_diagram_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
-using drake::geometry::SceneGraph;
-using drake::multibody::AddMultibodyPlantSceneGraph;
-using drake::systems::DiagramBuilder;
-using drake::systems::System;
+using geometry::SceneGraph;
+using multibody::AddMultibodyPlantSceneGraph;
+using systems::DiagramBuilder;
+using systems::System;
 
 template <typename T>
 RobotDiagramBuilder<T>::RobotDiagramBuilder(double time_step)
@@ -30,7 +30,7 @@ std::unique_ptr<RobotDiagram<T>> RobotDiagramBuilder<T>::BuildDiagram() {
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::anzu::planning::RobotDiagramBuilder)
+    class ::drake::planning::RobotDiagramBuilder)
