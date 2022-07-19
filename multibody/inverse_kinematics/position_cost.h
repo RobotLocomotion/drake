@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/multibody/inverse_kinematics/position_constraint.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/cost.h"
 #include "drake/systems/framework/context.h"
@@ -65,18 +66,8 @@ class PositionCost : public solvers::Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
               VectorX<symbolic::Expression>*) const override;
 
-  bool use_autodiff() const { return plant_autodiff_; }
-
-  const MultibodyPlant<double>* const plant_double_;
-  const FrameIndex frameA_index_;
-  const Eigen::Vector3d p_AP_;
-  const FrameIndex frameB_index_;
-  const Eigen::Vector3d p_BQ_;
+  const PositionConstraint constraint_;
   const Eigen::Matrix3d C_;
-  systems::Context<double>* const context_double_;
-
-  const MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
-  systems::Context<AutoDiffXd>* const context_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake
