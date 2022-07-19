@@ -14,7 +14,19 @@ namespace geometry {
 namespace internal {
 namespace deformable {
 
+namespace {
+
+// Compare function to use with ordering results of
+// ComputeDeformableRigidContact.
+bool OrderDeformableRigidContact(const DeformableRigidContact<double>& c1,
+                                 const DeformableRigidContact<double>& c2) {
+  return c1.deformable_id() < c2.deformable_id();
+}
+
+}  // namespace
+
 void Geometries::RemoveGeometry(GeometryId id) {
+  deformable_geometries_.erase(id);
   rigid_geometries_.erase(id);
 }
 
@@ -37,6 +49,45 @@ void Geometries::UpdateRigidWorldPose(
   if (is_rigid(id)) {
     rigid_geometries_.at(id).set_pose_in_world(X_WG);
   }
+}
+
+void Geometries::AddDeformableGeometry(GeometryId id, VolumeMesh<double> mesh) {
+  deformable_geometries_.insert({id, DeformableGeometry(std::move(mesh))});
+}
+
+void Geometries::UpdateDeformableVertexPositions(
+    GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WG) {
+  if (is_deformable(id)) {
+    deformable_geometries_.at(id).UpdateVertexPositions(q_WG);
+  }
+}
+
+void Geometries::ComputeDeformableRigidContact(
+    std::vector<DeformableRigidContact<double>>* deformable_rigid_contact)
+    const {
+  DRAKE_DEMAND(deformable_rigid_contact != nullptr);
+  deformable_rigid_contact->clear();
+  deformable_rigid_contact->reserve(deformable_geometries_.size());
+
+  for (const auto& [deformable_id, deformable_geometry] :
+       deformable_geometries_) {
+    const VolumeMesh<double>& deformable_mesh =
+        deformable_geometry.deformable_mesh().mesh();
+    DeformableRigidContact<double> contact_data(deformable_id,
+                                                deformable_mesh.num_vertices());
+    for (const auto& [rigid_id, rigid_geometry] : rigid_geometries_) {
+      const math::RigidTransform<double>& X_WR = rigid_geometry.pose_in_world();
+      const auto& rigid_bvh = rigid_geometry.rigid_mesh().bvh();
+      const auto& rigid_tri_mesh = rigid_geometry.rigid_mesh().mesh();
+      AppendDeformableRigidContact(deformable_geometry, rigid_id,
+                                   rigid_tri_mesh, rigid_bvh, X_WR,
+                                   &contact_data);
+    }
+    deformable_rigid_contact->emplace_back(std::move(contact_data));
+  }
+
+  std::sort(deformable_rigid_contact->begin(), deformable_rigid_contact->end(),
+            OrderDeformableRigidContact);
 }
 
 void Geometries::ImplementGeometry(const Sphere& sphere, void* user_data) {
