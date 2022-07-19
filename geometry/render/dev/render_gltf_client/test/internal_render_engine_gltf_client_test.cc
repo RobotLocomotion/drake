@@ -11,8 +11,9 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/geometry/render/dev/render_gltf_client/factory.h"
-#include "drake/geometry/render/dev/render_gltf_client/test/internal_sample_image_data.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
+#include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
+#include "drake/geometry/render_gltf_client/test/internal_sample_image_data.h"
 
 namespace drake {
 namespace geometry {
@@ -44,14 +45,10 @@ class RenderEngineGltfClientTester {
   }
 
   // RenderClient access methods.
-  const std::string& base_url() const {
-    return engine_->render_client_->base_url();
+  const RenderEngineGltfClientParams& get_params() const {
+    return engine_->render_client_->get_params();
   }
-  const std::string& render_endpoint() const {
-    return engine_->render_client_->render_endpoint();
-  }
-  bool verbose() const { return engine_->render_client_->verbose(); }
-  bool no_cleanup() const { return engine_->render_client_->no_cleanup(); }
+
   const std::string& temp_directory() const {
     return engine_->render_client_->temp_directory();
   }
@@ -101,10 +98,9 @@ GTEST_TEST(RenderEngineGltfClient, Constructor) {
     auto* actual_engine = dynamic_cast<RenderEngineGltfClient*>(engine.get());
     EXPECT_NE(actual_engine, nullptr);
     Tester tester{actual_engine};
-    EXPECT_EQ(tester.base_url(), "http://127.0.0.1:8000");
-    EXPECT_EQ(tester.render_endpoint(), "render");
-    EXPECT_EQ(tester.verbose(), false);
-    EXPECT_EQ(tester.no_cleanup(), false);
+    EXPECT_EQ(tester.get_params().GetUrl(), "http://127.0.0.1:8000/render");
+    EXPECT_EQ(tester.get_params().verbose, false);
+    EXPECT_EQ(tester.get_params().no_cleanup, false);
 
     temp_dir = tester.temp_directory();
     EXPECT_TRUE(fs::is_directory(temp_dir));
@@ -117,10 +113,9 @@ GTEST_TEST(RenderEngineGltfClient, Constructor) {
                         true};
     Engine engine{params};
     Tester tester{&engine};
-    EXPECT_EQ(tester.base_url(), "0.0.0.0:8000");
-    EXPECT_EQ(tester.render_endpoint(), "super_render");
-    EXPECT_EQ(tester.verbose(), true);
-    EXPECT_EQ(tester.no_cleanup(), true);
+    EXPECT_EQ(tester.get_params().GetUrl(), "0.0.0.0:8000/super_render");
+    EXPECT_EQ(tester.get_params().verbose, true);
+    EXPECT_EQ(tester.get_params().no_cleanup, true);
 
     temp_dir = tester.temp_directory();
     EXPECT_TRUE(fs::is_directory(temp_dir));
@@ -140,10 +135,10 @@ GTEST_TEST(RenderEngineGltfClient, Clone) {
   ASSERT_NE(actual_engine, nullptr);
   Tester clone_tester{actual_engine};
 
-  EXPECT_EQ(tester.base_url(), clone_tester.base_url());
-  EXPECT_EQ(tester.render_endpoint(), clone_tester.render_endpoint());
-  EXPECT_EQ(tester.verbose(), clone_tester.verbose());
-  EXPECT_EQ(tester.no_cleanup(), clone_tester.no_cleanup());
+  EXPECT_EQ(tester.get_params().GetUrl(), clone_tester.get_params().GetUrl());
+  EXPECT_EQ(tester.get_params().verbose, clone_tester.get_params().verbose);
+  EXPECT_EQ(tester.get_params().no_cleanup,
+            clone_tester.get_params().no_cleanup);
   /* Cloning creates a new temporary directory, the underlying RenderClient is
    not cloned and as such a new temporary directory is created. */
   EXPECT_NE(tester.temp_directory(), clone_tester.temp_directory());
@@ -252,15 +247,13 @@ class FakeServer : public HttpService {
     std::string test_image_path;
     if (image_type == "color") {
       test_image_path = FindResourceOrThrow(
-          "drake/geometry/render/dev/render_gltf_client/test/test_rgba_8U.png");
+          "drake/geometry/render_gltf_client/test/test_rgba_8U.png");
     } else if (image_type == "depth") {
       test_image_path = FindResourceOrThrow(
-          "drake/geometry/render/dev/render_gltf_client/test/"
-          "test_depth_32F.tiff");
+          "drake/geometry/render_gltf_client/test/test_depth_32F.tiff");
     } else {  // image_type := "label"
       test_image_path = FindResourceOrThrow(
-          "drake/geometry/render/dev/render_gltf_client/test/"
-          "test_label_16I.png");
+          "drake/geometry/render_gltf_client/test/test_label_16I.png");
     }
     fs::copy_file(test_image_path, path);
     ret.data_path = path;

@@ -4,7 +4,7 @@
 #include <string>
 
 #include "drake/geometry/render/dev/render_gltf_client/factory.h"
-#include "drake/geometry/render/dev/render_gltf_client/internal_render_client.h"
+#include "drake/geometry/render_gltf_client/internal_render_client.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 namespace drake {
@@ -82,7 +82,6 @@ class RenderEngineGltfClient : public geometry::render::RenderEngineVtk {
   Eigen::Matrix4d CameraModelViewTransformMatrix(
       geometry::render::internal::ImageType image_type) const;
 
- private:
   friend class RenderEngineGltfClientTester;
   std::unique_ptr<RenderClient> render_client_;
 };

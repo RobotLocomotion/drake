@@ -62,6 +62,30 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "internal_render_client",
+    srcs = [
+        "internal_render_client.cc",
+    ],
+    hdrs = [
+        "internal_render_client.h",
+    ],
+    internal = True,
+    visibility = _VISIBILITY,
+    deps = [
+        ":internal_http_service",
+        ":internal_http_service_curl",
+        ":render_engine_gltf_client_params",
+        "//common:filesystem",
+        "//common:temp_directory",
+        "//geometry/render:render_camera",
+        "//geometry/render:render_engine",
+        "//systems/sensors:image",
+        "@picosha2",
+        "@vtk//:vtkIOImage",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -87,6 +111,41 @@ drake_cc_googletest(
     deps = [
         ":internal_http_service_curl",
         "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+filegroup(
+    name = "test_resources",
+    srcs = [
+        "test/test_depth_32F.tiff",
+        "test/test_label_16I.png",
+        "test/test_rgb_8U.png",
+        "test/test_rgba_8U.png",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_sample_image_data",
+    testonly = True,
+    srcs = ["test/internal_sample_image_data.cc"],
+    hdrs = ["test/internal_sample_image_data.h"],
+    visibility = _VISIBILITY,
+    deps = [
+        "//systems/sensors:image",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_render_client_test",
+    data = [
+        ":test_resources",
+    ],
+    deps = [
+        ":internal_render_client",
+        ":internal_sample_image_data",
+        "//common:find_resource",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
 )
