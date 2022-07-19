@@ -19,9 +19,9 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
   const GeometryId deformable_id = GeometryId::get_new_id();
   const Sphere unit_sphere(1.0);
   const deformable::DeformableGeometry deformable_W(
-      unit_sphere, MakeSphereVolumeMesh<double>(
-                       unit_sphere, 10.0 /* very coarse resolution */,
-                       TessellationStrategy::kDenseInteriorVertices));
+      MakeSphereVolumeMesh<double>(
+          unit_sphere, 10.0 /* very coarse resolution */,
+          TessellationStrategy::kDenseInteriorVertices));
 
   const GeometryId rigid_id = GeometryId::get_new_id();
   // The cube of edge length 2.0 occupies the space [-1,1]x[-1,1]x[-1,1].
@@ -60,9 +60,8 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
 
   DeformableRigidContact<double> contact_data(
       deformable_id, deformable_W.deformable_mesh().mesh().num_vertices());
-  AppendDeformableRigidContact(
-      deformable_W, rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR,
-      &contact_data);
+  AppendDeformableRigidContact(deformable_W, rigid_id, rigid_mesh_R,
+                               rigid_bvh_R, X_WR, &contact_data);
 
   // Zero contact points and no vertices in contact are good enough indication
   // that the contact data is empty.
@@ -77,14 +76,11 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
 // of these newly added operations here in this test.
 GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   const GeometryId deformable_id = GeometryId::get_new_id();
-  const Sphere unit_sphere(1.0);
-  // We use only one tetrahedron for simplicity. The fact that it doesn't cover
-  // the sphere is irrelevant to this test.
   const VolumeMesh<double> single_tetrahedron_mesh_W(
       {{0, 1, 2, 3}}, {Vector3<double>::Zero(), Vector3<double>::UnitX(),
                        Vector3<double>::UnitY(), Vector3<double>::UnitZ()});
   const deformable::DeformableGeometry deformable_W(
-      unit_sphere, single_tetrahedron_mesh_W);
+      std::move(single_tetrahedron_mesh_W));
 
   const GeometryId rigid_id = GeometryId::get_new_id();
   // Single-triangle surface mesh with the triangle large enough to intersect
@@ -100,9 +96,8 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   const math::RigidTransform<double> X_WR(Vector3<double>{0, 0, 0.5});
 
   DeformableRigidContact<double> contact_data(deformable_id, 4);
-  AppendDeformableRigidContact(
-      deformable_W, rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR,
-      &contact_data);
+  AppendDeformableRigidContact(deformable_W, rigid_id, rigid_mesh_R,
+                               rigid_bvh_R, X_WR, &contact_data);
   constexpr int kExpectedNumRigidGeometries = 1;
   constexpr int kExpectedNumContactPoints = 1;
 
@@ -111,14 +106,13 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   EXPECT_EQ(contact_data.contact_meshes_W()[0].num_faces(),
             kExpectedNumContactPoints);
 
-  // The approximated signed distance function on the tetrahedron is
-  // s(x,y,z) = x + y + z - 1.  Therefore, the centroid (1/6, 1/6, 1/2) has
-  // the signed distance = 1/6 + 1/6 + 1/2 - 1 = -1/6
+  // The approximated signed distance function is zero because all vertices of
+  // the tet mesh are on the boundary.
   ASSERT_EQ(contact_data.signed_distances().size(), kExpectedNumContactPoints);
   const double signed_distance_at_contact_point =
       contact_data.signed_distances()[0];
-  constexpr double kEps = 1e-14;
-  EXPECT_NEAR(signed_distance_at_contact_point, -1.0 / 6, kEps);
+  EXPECT_NEAR(signed_distance_at_contact_point, 0.0,
+              std::numeric_limits<double>::epsilon());
 
   ASSERT_EQ(contact_data.tetrahedra_indexes().size(),
             kExpectedNumContactPoints);
@@ -135,6 +129,7 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   // 1/6, 1/2).
   ASSERT_EQ(contact_data.barycentric_coordinates().size(),
             kExpectedNumContactPoints);
+  constexpr double kEps = 1e-14;
   EXPECT_TRUE(CompareMatrices(
       contact_data.barycentric_coordinates()[0],
       Vector4<double>(1.0 / 6, 1.0 / 6, 1.0 / 6, 1.0 / 2), kEps));
