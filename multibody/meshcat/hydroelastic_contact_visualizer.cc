@@ -1,7 +1,7 @@
 #include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
 
-#include <utility>
 #include <algorithm>
+#include <utility>
 
 #include <fmt/format.h>
 

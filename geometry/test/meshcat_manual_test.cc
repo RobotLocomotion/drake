@@ -268,68 +268,67 @@ Open up your browser to the URL above.
   }
 
   {
-  systems::DiagramBuilder<double> builder;
-  auto [plant, scene_graph] =
-      multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
-  multibody::Parser parser(&plant);
-  parser.AddModelFromFile(
-      FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
-                          "iiwa14_spheres_collision.urdf"));
-  plant.WeldFrames(plant.world_frame(),
-                   plant.GetFrameByName("base"));
-  parser.AddModelFromFile(
-      FindResourceOrThrow("drake/examples/kuka_iiwa_arm/models/table/"
-                          "extra_heavy_duty_table_surface_only_collision.sdf"));
-  const double table_height = 0.7645;
-  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("link"),
-                   RigidTransformd(Vector3d{0, 0, -table_height-.01}));
-  plant.Finalize();
+    systems::DiagramBuilder<double> builder;
+    auto [plant, scene_graph] =
+        multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+    multibody::Parser parser(&plant);
+    parser.AddModelFromFile(
+        FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
+                            "iiwa14_spheres_collision.urdf"));
+    plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
+    parser.AddModelFromFile(FindResourceOrThrow(
+        "drake/examples/kuka_iiwa_arm/models/table/"
+        "extra_heavy_duty_table_surface_only_collision.sdf"));
+    const double table_height = 0.7645;
+    plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("link"),
+                     RigidTransformd(Vector3d{0, 0, -table_height - .01}));
+    plant.Finalize();
 
-  builder.ExportInput(plant.get_actuation_input_port(), "actuation_input");
-  MeshcatVisualizerParams params;
-  params.delete_on_initialization_event = false;
-  auto& visualizer = MeshcatVisualizerd::AddToBuilder(
-      &builder, scene_graph, meshcat, std::move(params));
+    builder.ExportInput(plant.get_actuation_input_port(), "actuation_input");
+    MeshcatVisualizerParams params;
+    params.delete_on_initialization_event = false;
+    auto& visualizer = MeshcatVisualizerd::AddToBuilder(
+        &builder, scene_graph, meshcat, std::move(params));
 
-  multibody::meshcat::ContactVisualizerParams cparams;
-  cparams.newtons_per_meter = 60.0;
-  auto& contact = multibody::meshcat::ContactVisualizerd::AddToBuilder(
-      &builder, plant, meshcat, std::move(cparams));
+    multibody::meshcat::ContactVisualizerParams cparams;
+    cparams.newtons_per_meter = 60.0;
+    auto& contact = multibody::meshcat::ContactVisualizerd::AddToBuilder(
+        &builder, plant, meshcat, std::move(cparams));
 
-  auto diagram = builder.Build();
-  auto context = diagram->CreateDefaultContext();
-  diagram->get_input_port().FixValue(context.get(), Eigen::VectorXd::Zero(7));
+    auto diagram = builder.Build();
+    auto context = diagram->CreateDefaultContext();
+    diagram->get_input_port().FixValue(context.get(), Eigen::VectorXd::Zero(7));
 
-  diagram->Publish(*context);
-  std::cout
-      << "- Now you should see a kuka model (from MultibodyPlant/SceneGraph)"
-      << std::endl;
+    diagram->Publish(*context);
+    std::cout
+        << "- Now you should see a kuka model (from MultibodyPlant/SceneGraph)"
+        << std::endl;
 
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cout << "[Press RETURN to continue]." << std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-  std::cout << "Now we'll run the simulation...\n"
-            << "- You should see the robot fall down and hit the table\n"
-            << "- You should see the contact force vectors (when it hits)\n"
-            << "- You will also see large forces near the wrist until we "
-               "resolve #15965\n"
-            << std::endl;
+    std::cout << "Now we'll run the simulation...\n"
+              << "- You should see the robot fall down and hit the table\n"
+              << "- You should see the contact force vectors (when it hits)\n"
+              << "- You will also see large forces near the wrist until we "
+                 "resolve #15965\n"
+              << std::endl;
 
-  systems::Simulator<double> simulator(*diagram, std::move(context));
-  simulator.set_target_realtime_rate(1.0);
-  visualizer.StartRecording();
-  simulator.AdvanceTo(4.0);
-  visualizer.PublishRecording();
-  contact.Delete();
+    systems::Simulator<double> simulator(*diagram, std::move(context));
+    simulator.set_target_realtime_rate(1.0);
+    visualizer.StartRecording();
+    simulator.AdvanceTo(4.0);
+    visualizer.PublishRecording();
+    contact.Delete();
 
-  std::cout << "The recorded simulation results should now be available as an "
-               "animation.  Use the animation GUI to confirm.  The contact "
-               "forces are not recorded (yet)."
-            << std::endl;
+    std::cout
+        << "The recorded simulation results should now be available as an "
+           "animation.  Use the animation GUI to confirm.  The contact "
+           "forces are not recorded (yet)."
+        << std::endl;
 
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
+    std::cout << "[Press RETURN to continue]." << std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   }
 
   const std::string html_filename(temp_directory() + "/meshcat_static.html");
