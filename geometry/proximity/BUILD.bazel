@@ -163,6 +163,7 @@ drake_cc_library(
     srcs = ["deformable_contact_geometries.cc"],
     hdrs = ["deformable_contact_geometries.h"],
     deps = [
+        ":calc_distance_to_surface_mesh",
         ":deformable_volume_mesh",
         ":hydroelastic_internal",
         ":triangle_surface_mesh",
