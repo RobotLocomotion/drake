@@ -7,6 +7,7 @@
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
+#include "drake/multibody/inverse_kinematics/orientation_cost.h"
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_cost.h"
@@ -41,8 +42,7 @@ InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
     prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
                                     plant.GetPositionUpperLimits(), q_);
   }
-  // TODO(hongkai.dai) Add other position constraints, such as unit length
-  // quaternion constraint here.
+  AddUnitQuaternionConstraintOnPlant(plant, q_, prog_.get());
 }
 
 solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
@@ -86,6 +86,16 @@ InverseKinematics::AddOrientationConstraint(
       &plant_, frameAbar, R_AbarA, frameBbar, R_BbarB, angle_bound,
       get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
+}
+
+solvers::Binding<solvers::Cost> InverseKinematics::AddOrientationCost(
+    const Frame<double>& frameAbar, const math::RotationMatrix<double>& R_AbarA,
+    const Frame<double>& frameBbar, const math::RotationMatrix<double>& R_BbarB,
+    double c) {
+  auto cost =
+      std::make_shared<OrientationCost>(&plant_, frameAbar, R_AbarA, frameBbar,
+                                        R_BbarB, c, get_mutable_context());
+  return prog_->AddCost(cost, q_);
 }
 
 solvers::Binding<solvers::Constraint>

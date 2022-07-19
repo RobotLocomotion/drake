@@ -14,6 +14,7 @@
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
+#include "drake/multibody/inverse_kinematics/orientation_cost.h"
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_cost.h"
@@ -89,6 +90,9 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::arg("frameAbar"), py::arg("R_AbarA"), py::arg("frameBbar"),
             py::arg("R_BbarB"), py::arg("theta_bound"),
             cls_doc.AddOrientationConstraint.doc)
+        .def("AddOrientationCost", &Class::AddOrientationCost,
+            py::arg("frameAbar"), py::arg("R_AbarA"), py::arg("frameBbar"),
+            py::arg("R_BbarB"), py::arg("c"), cls_doc.AddOrientationCost.doc)
         .def("AddGazeTargetConstraint", &Class::AddGazeTargetConstraint,
             py::arg("frameA"), py::arg("p_AS"), py::arg("n_A"),
             py::arg("frameB"), py::arg("p_BT"), py::arg("cone_half_angle"),
@@ -566,6 +570,46 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_autodiff);
   }
+
+  {
+    using Class = OrientationCost;
+    constexpr auto& cls_doc = doc.OrientationCost;
+    using Ptr = std::shared_ptr<Class>;
+    py::class_<Class, solvers::Cost, Ptr>(m, "OrientationCost", cls_doc.doc)
+        .def(py::init([](const MultibodyPlant<double>* plant,
+                          const Frame<double>& frameAbar,
+                          const math::RotationMatrix<double>& R_AbarA,
+                          const Frame<double>& frameBbar,
+                          const math::RotationMatrix<double>& R_BbarB, double c,
+                          systems::Context<double>* plant_context) {
+          return std::make_unique<Class>(
+              plant, frameAbar, R_AbarA, frameBbar, R_BbarB, c, plant_context);
+        }),
+            py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
+            py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("c"),
+            py::arg("plant_context"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 8>(), cls_doc.ctor.doc_double)
+        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
+                          const Frame<AutoDiffXd>& frameAbar,
+                          const math::RotationMatrix<double>& R_AbarA,
+                          const Frame<AutoDiffXd>& frameBbar,
+                          const math::RotationMatrix<double>& R_BbarB, double c,
+                          systems::Context<AutoDiffXd>* plant_context) {
+          return std::make_unique<Class>(
+              plant, frameAbar, R_AbarA, frameBbar, R_BbarB, c, plant_context);
+        }),
+            py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
+            py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("c"),
+            py::arg("plant_context"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 8>(), cls_doc.ctor.doc_autodiff);
+  }
+
   {
     using Class = UnitQuaternionConstraint;
     constexpr auto& cls_doc = doc.UnitQuaternionConstraint;

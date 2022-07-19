@@ -174,6 +174,24 @@ class InverseKinematics {
       const Frame<double>& frameBbar,
       const math::RotationMatrix<double>& R_BbarB, double theta_bound);
 
+  /** Adds a cost of the form `c * (1 - cos(θ))`, where θ is the angle between
+   * the orientation of frame A and the orientation of frame B, and @p c is a
+   * cost scaling.
+   * @param frameAbar A frame on the MultibodyPlant.
+   * @param R_AbarA The rotation matrix describing the orientation of frame A
+   * relative to Abar.
+   * @param frameBbar A frame on the MultibodyPlant.
+   * @param R_BbarB The rotation matrix describing the orientation of frame B
+   * relative to Bbar.
+   * @param c A scalar cost weight.
+   */
+  solvers::Binding<solvers::Cost> AddOrientationCost(
+      const Frame<double>& frameAbar,
+      const math::RotationMatrix<double>& R_AbarA,
+      const Frame<double>& frameBbar,
+      const math::RotationMatrix<double>& R_BbarB,
+      double c);
+
   /**
    * Constrains a target point T to be within a cone K. The point T ("T" stands
    * for "target") is fixed in a frame B, with position p_BT. The cone

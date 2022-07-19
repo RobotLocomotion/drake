@@ -199,6 +199,15 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertGreater(R_AB.trace(),
                            1 + 2 * math.cos(theta_bound) - 1E-6)
 
+    def test_AddOrientationCost(self):
+        binding = self.ik_two_bodies.AddOrientationCost(
+            frameAbar=self.body1_frame,
+            R_AbarA=RotationMatrix(),
+            frameBbar=self.body2_frame,
+            R_BbarB=RotationMatrix(),
+            c=1.0)
+        self.assertIsInstance(binding, mp.Binding[mp.Cost])
+
     def test_AddGazeTargetConstraint(self):
         p_AS = np.array([0.1, 0.2, 0.3])
         n_A = np.array([0.3, 0.5, 1.2])
@@ -565,6 +574,17 @@ class TestConstraints(unittest.TestCase):
             frameBbar=variables.body2_frame, R_BbarB=RotationMatrix(),
             theta_bound=0.2 * math.pi, plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
+
+    @check_type_variables
+    def test_orientation_cost(self, variables):
+        cost = ik.OrientationCost(plant=variables.plant,
+                                  frameAbar=variables.body1_frame,
+                                  R_AbarA=RotationMatrix(),
+                                  frameBbar=variables.body2_frame,
+                                  R_BbarB=RotationMatrix(),
+                                  c=1.0,
+                                  plant_context=variables.plant_context)
+        self.assertIsInstance(cost, mp.Cost)
 
     @check_type_variables
     def test_point_to_point_distance_constraint(self, variables):

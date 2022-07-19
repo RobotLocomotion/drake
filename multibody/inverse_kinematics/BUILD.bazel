@@ -46,6 +46,7 @@ drake_cc_library(
         "kinematic_evaluator_utilities.cc",
         "minimum_distance_constraint.cc",
         "orientation_constraint.cc",
+        "orientation_cost.cc",
         "point_to_point_distance_constraint.cc",
         "position_constraint.cc",
         "position_cost.cc",
@@ -61,6 +62,7 @@ drake_cc_library(
         "kinematic_evaluator_utilities.h",
         "minimum_distance_constraint.h",
         "orientation_constraint.h",
+        "orientation_cost.h",
         "point_to_point_distance_constraint.h",
         "position_constraint.h",
         "position_cost.h",
@@ -173,6 +175,14 @@ drake_cc_googletest(
         ":inverse_kinematics_test_utilities",
         ":kinematic_evaluators",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "orientation_cost_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_evaluators",
     ],
 )
 
