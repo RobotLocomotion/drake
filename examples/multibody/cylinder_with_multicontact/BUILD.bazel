@@ -10,12 +10,12 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "make_cylinder_plant",
+    name = "populate_cylinder_plant",
     srcs = [
-        "make_cylinder_plant.cc",
+        "populate_cylinder_plant.cc",
     ],
     hdrs = [
-        "make_cylinder_plant.h",
+        "populate_cylinder_plant.h",
     ],
     deps = [
         "//common:default_scalars",
@@ -27,11 +27,12 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "make_cylinder_plant_test",
+    name = "populate_cylinder_plant_test",
     deps = [
-        ":make_cylinder_plant",
+        ":populate_cylinder_plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/plant",
+        "//systems/framework:diagram_builder",
     ],
 )
 
@@ -57,7 +58,7 @@ drake_cc_binary(
     ],
     test_rule_timeout = "long",
     deps = [
-        ":make_cylinder_plant",
+        ":populate_cylinder_plant",
         "//common:add_text_logging_gflags",
         "//geometry:drake_visualizer",
         "//multibody/plant:contact_results_to_lcm",

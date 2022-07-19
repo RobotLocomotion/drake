@@ -791,7 +791,7 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
-        "//examples/multibody/rolling_sphere:make_rolling_sphere_plant",
+        "//examples/multibody/rolling_sphere:populate_ball_plant",
     ],
 )
 
