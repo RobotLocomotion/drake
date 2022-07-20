@@ -12,6 +12,7 @@ from pydrake.geometry import (
     GeometryInstance, SceneGraph, Sphere,
 )
 from pydrake.math import RigidTransform
+from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.framework import DiagramBuilder
@@ -362,6 +363,9 @@ class TestGeometryOptimization(unittest.TestCase):
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
         options = mut.IrisOptions()
+        ik = InverseKinematics(plant)
+        options.prog_with_additional_constraints = ik.prog()
+        options.num_additional_constraint_infeasible_samples = 2
         plant.SetPositions(plant.GetMyMutableContextFromRoot(context), [0])
         region = mut.IrisInConfigurationSpace(
             plant=plant, context=plant.GetMyContextFromRoot(context),

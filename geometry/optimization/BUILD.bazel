@@ -182,6 +182,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":iris",
+        "//geometry:meshcat",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/inverse_kinematics",
         "//multibody/parsing:parser",
         "//systems/framework:diagram_builder",
     ],
