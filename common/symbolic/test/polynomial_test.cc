@@ -126,6 +126,19 @@ TEST_F(SymbolicPolynomialTest, ConstructFromMapType3) {
   }
 }
 
+TEST_F(SymbolicPolynomialTest, ConstructFromMapType4) {
+  // map has some coefficient being 0.
+  Polynomial::MapType map;
+  map.emplace(Monomial{var_x_}, 0);
+  symbolic::Polynomial p{map};
+  EXPECT_TRUE(p.monomial_to_coefficient_map().empty());
+
+  map.emplace(Monomial{var_y_}, 2 * a_);
+  p = symbolic::Polynomial{map};
+  EXPECT_EQ(p.monomial_to_coefficient_map().size(), 1u);
+  EXPECT_EQ(p.monomial_to_coefficient_map().at(Monomial{var_y_}), 2 * a_);
+}
+
 TEST_F(SymbolicPolynomialTest, ConstructFromMonomial) {
   for (int i = 0; i < monomials_.size(); ++i) {
     const Polynomial p{monomials_[i]};
@@ -187,6 +200,14 @@ TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates2) {
   const Polynomial p1{e, {var_x_, var_y_}};
   const Polynomial p2{e, {var_x_, var_y_, var_z_}};
   EXPECT_EQ(p1, p2);
+}
+
+TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates3) {
+  // The expression has some coefficient being 0. Show that the constructed
+  // polynomial removed the 0-coefficient term.
+  const symbolic::Expression e1{0};
+  const symbolic::Polynomial p1{e1, {var_x_}};
+  EXPECT_TRUE(p1.monomial_to_coefficient_map().empty());
 }
 
 TEST_F(SymbolicPolynomialTest, IndeterminatesAndDecisionVariables) {
@@ -485,6 +506,10 @@ TEST_F(SymbolicPolynomialTest, MultiplicationPolynomialDouble) {
       p *= c;
       EXPECT_PRED2(ExprEqual, p.ToExpression(), (e * c).Expand());
     }
+
+    Polynomial p{e};
+    p *= 0;
+    EXPECT_TRUE(p.monomial_to_coefficient_map().empty());
   }
 }
 
