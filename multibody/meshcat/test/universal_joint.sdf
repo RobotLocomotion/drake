@@ -17,6 +17,12 @@
     <joint name="charlie" type="universal">
       <child>bob</child>
       <parent>world</parent>
+      <axis>
+        <xyz>0 1 0</xyz>
+      </axis>
+      <axis2>
+        <xyz>0 0 1</xyz>
+      </axis2>
     </joint>
   </model>
 </sdf>
