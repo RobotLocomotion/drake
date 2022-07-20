@@ -101,13 +101,13 @@ that any duplicated conjunct/disjunct is removed. For example, both of `f1 &&
 simplified into `f1 && f2`. As a result, the two are identified as the same
 formula.
 
-\note Formula class has an explicit conversion operator to bool. It evaluates a
+\note Formula class has an implicit conversion operator to bool. It evaluates a
 symbolic formula under an empty environment. If a symbolic formula includes
 variables, the conversion operator throws an exception. This operator is only
 intended for third-party code doing things like `(imag(SymbolicExpression(0))
-== SymbolicExpression(0)) { ... };` that we found in Eigen3 codebase. In
-general, a user of this class should explicitly call `Evaluate` from within
-Drake for readability.
+== SymbolicExpression(0)) { ... };` and `return symbolic_expr_a <
+symbolic_expr_b;` that we found in Eigen3 codebase. In general, a user of this
+class should explicitly call `Evaluate` from within Drake for readability.
 
 */
 class Formula {
@@ -202,7 +202,7 @@ class Formula {
   static Formula False();
 
   /** Conversion to bool. */
-  explicit operator bool() const { return Evaluate(); }
+  /*implicit*/ operator bool() const { return Evaluate(); }
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
