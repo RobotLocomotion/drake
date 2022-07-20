@@ -33,7 +33,7 @@ class RationalFunction {
    * Constructs the rational function: numerator / denominator.
    * @param numerator The numerator of the fraction.
    * @param denominator The denominator of the fraction.
-   * @pre denominator cannot be structurally equal to 0.
+   * @pre denominator is not equal to zero.
    * @pre None of the indeterminates in the numerator can be decision variables
    * in the denominator; similarly none of the indeterminates in the denominator
    * can be decision variables in the numerator.
@@ -91,9 +91,22 @@ class RationalFunction {
   RationalFunction& operator*=(const Monomial& m);
   RationalFunction& operator*=(double c);
 
+  /**
+   * @throws std::logic_error if the numerator of the divisor is structurally
+   * equal to zero. Note that this does not guarantee that the denominator of
+   * the result is not zero after expansion.
+   */
   RationalFunction& operator/=(const RationalFunction& f);
+  /**
+   * @throws std::logic_error if the divisor is structurally equal to zero.
+   * Note that this does not guarantee that the denominator of the result is not
+   * zero after expansion.
+   */
   RationalFunction& operator/=(const Polynomial& p);
   RationalFunction& operator/=(const Monomial& m);
+  /**
+   * @throws std::logic_error if c is 0
+   */
   RationalFunction& operator/=(double c);
 
   /**
@@ -160,10 +173,33 @@ RationalFunction operator*(double c, RationalFunction f);
 RationalFunction operator*(const Monomial& m, RationalFunction f);
 RationalFunction operator*(RationalFunction f, const Monomial& m);
 
+/**
+ * @throws std::logic_error if the numerator of the divisor is structurally
+ * equal to zero. Note that this does not guarantee that the denominator of the
+ * result is not zero after expansion.
+ */
 RationalFunction operator/(RationalFunction f1, const RationalFunction& f2);
+/**
+ * @throws std::logic_error if the divisor is structurally equal to zero.
+ * Note that this does not guarantee that the denominator of the result is not
+ * zero after expansion.
+ */
 RationalFunction operator/(RationalFunction f, const Polynomial& p);
+/**
+ * @throws std::logic_error if the numerator of the divisor is structurally
+ * equal to zero. Note that this does not guarantee that the denominator of the
+ * result is not zero after expansion.
+ */
 RationalFunction operator/(const Polynomial& p, const RationalFunction& f);
+/**
+ * @throws std::logic_error if c is 0
+ */
 RationalFunction operator/(RationalFunction f, double c);
+/**
+ * @throws std::logic_error if the numerator of  the divisor is structurally
+ * equal to zero. Note that this does not guarantee that the denominator of the
+ * result is not zero after expansion.
+ */
 RationalFunction operator/(double c, const RationalFunction& f);
 RationalFunction operator/(const Monomial& m, RationalFunction f);
 RationalFunction operator/(RationalFunction f, const Monomial& m);

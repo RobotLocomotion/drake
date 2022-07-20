@@ -370,7 +370,7 @@ TEST_F(SymbolicRationalFunctionTest, Evaluate) {
   // f = p/q
   const RationalFunction f{p, q};
 
-  const Environment env2{{
+  const Environment env{{
       {var_a_, 4.0},
       {var_b_, 1.0},
       {var_c_, 2.0},
@@ -378,12 +378,12 @@ TEST_F(SymbolicRationalFunctionTest, Evaluate) {
       {var_y_, -5.0},
       {var_z_, -2.0},
   }};
-  const double expected_numerator2{4.0 * -7.0 * -7.0 * -5.0 +
+  const double expected_numerator{4.0 * -7.0 * -7.0 * -5.0 +
                                    1.0 * -7.0 * -5.0 + 2.0 * -2.0};
-  const double expected_denominator2{4.0 * -7.0 * -2.0 + 1.0 * -5.0 * -2.0 +
+  const double expected_denominator{4.0 * -7.0 * -2.0 + 1.0 * -5.0 * -2.0 +
                                      2.0 * -7.0 * -5.0};
 
-  EXPECT_EQ(f.Evaluate(env2), expected_numerator2 / expected_denominator2);
+  EXPECT_EQ(f.Evaluate(env), expected_numerator / expected_denominator);
 }
 
 TEST_F(SymbolicRationalFunctionTest, ToExpression) {

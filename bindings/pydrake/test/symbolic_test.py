@@ -1587,7 +1587,7 @@ class TestSymbolicRationalFunction(unittest.TestCase):
         m = {sym.Monomial(x): sym.Expression(3),
              sym.Monomial(y): sym.Expression(2)}  # 3x + 2y
         p = sym.Polynomial(m)
-        r = sym.RationalFunction(numerator=p)
+        r = sym.RationalFunction(p=p)
         expected = 3 * x + 2 * y
         numpy_compare.assert_equal(r.ToExpression(), expected)
 
@@ -1603,8 +1603,13 @@ class TestSymbolicRationalFunction(unittest.TestCase):
         expected = (3 * x + 2 * y) / (5 * z)
         numpy_compare.assert_equal(r.ToExpression(), expected)
 
+    def test_monomial_constructor(self):
+        r = sym.RationalFunction(m=sym.Monomial(x))
+        expected = sym.Expression(x)
+        numpy_compare.assert_equal(r.ToExpression(), expected)
+
     def test_double_constructor(self):
-        r = sym.RationalFunction(numerator=3)
+        r = sym.RationalFunction(c=3)
         expected = sym.Expression(3)
         numpy_compare.assert_equal(r.ToExpression(), expected)
 
@@ -1773,6 +1778,24 @@ class TestSymbolicRationalFunction(unittest.TestCase):
         numpy_compare.assert_equal(r, sym.RationalFunction())
         r *= 3
         numpy_compare.assert_equal(r, sym.RationalFunction())
+
+    def test_division_assignment(self):
+        r = sym.RationalFunction(1)
+        r /= sym.RationalFunction(1)
+        numpy_compare.assert_equal(r, sym.RationalFunction(1))
+
+        r /= sym.Monomial(x)
+        numpy_compare.assert_equal(r, sym.RationalFunction(sym.Polynomial(1),
+                                                           sym.Polynomial(x)))
+
+        r = sym.RationalFunction(1)
+        r /= sym.Polynomial(x)
+        numpy_compare.assert_equal(r, sym.RationalFunction(sym.Polynomial(1),
+                                                           sym.Polynomial(x)))
+
+        r = sym.RationalFunction(1)
+        r /= 3
+        numpy_compare.assert_equal(r, sym.RationalFunction(1/3))
 
     def test_comparison(self):
         r = sym.RationalFunction()
