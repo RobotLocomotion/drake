@@ -68,6 +68,20 @@ void Geometries::ImplementGeometry(const Convex& convex, void* user_data) {
   AddRigidGeometry(convex, *static_cast<ReifyData*>(user_data));
 }
 
+void Geometries::ImplementGeometry(const HalfSpace&, void*) {
+  static const logging::Warn log_once(
+      "Rigid (non-deformable) half spaces are not currently supported for "
+      "deformable contact; registration is allowed, but no contact data will "
+      "be reported.");
+}
+
+void Geometries::ImplementGeometry(const MeshcatCone&, void*) {
+  static const logging::Warn log_once(
+      "Rigid (non-deformable) Meshcat cones are not currently supported for "
+      "deformable contact; registration is allowed, but no contact data will "
+      "be reported.");
+}
+
 template <typename ShapeType>
 void Geometries::AddRigidGeometry(const ShapeType& shape,
                                   const ReifyData& data) {
@@ -79,14 +93,6 @@ void Geometries::AddRigidGeometry(const ShapeType& shape,
   DRAKE_DEMAND(hydro_rigid_geometry.has_value());
   rigid_geometries_.insert(
       {data.id, RigidGeometry(hydro_rigid_geometry->release_mesh())});
-}
-
-void Geometries::ThrowUnsupportedGeometry(const std::string& shape_name) {
-  static const logging::Warn log_once(
-      "Rigid (non-deformable) {} shapes are not currently supported for "
-      "deformable contact; registration is allowed, but an error will be "
-      "thrown during contact.",
-      shape_name);
 }
 
 }  // namespace deformable

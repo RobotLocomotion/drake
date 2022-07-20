@@ -62,8 +62,9 @@ GTEST_TEST(GeometriesTest, AddRigidGeometry) {
   EXPECT_FALSE(geometries.is_rigid(g_id));
 }
 
-/* Test coverage for all shapes as rigid geometries. */
-GTEST_TEST(GeometriesTest, RigidShapes) {
+/* Test coverage for all unsupported shapes as rigid geometries: MeshcatCone and
+ * HalfSpace. */
+GTEST_TEST(GeometriesTest, UnsupportedRigidShapes) {
   constexpr double kRezHint = 0.5;
   ProximityProperties props = MakeProximityPropsWithRezHint(kRezHint);
   Geometries geometries;
@@ -86,13 +87,26 @@ GTEST_TEST(GeometriesTest, RigidShapes) {
         geometries.MaybeAddRigidGeometry(HalfSpace(), hs_id, props));
     EXPECT_FALSE(geometries.is_rigid(hs_id));
   }
+}
 
-  /* Supported shapes: Box, Sphere (tested in GeometriesTest::AddRigidGeometry),
-   Cylinder, Capsule, Ellipsoid, Mesh, Convex. */
+/* Test coverage for all supported shapes as rigid geometries: Box, Sphere,
+ Cylinder, Capsule, Ellipsoid, Mesh, Convex. */
+GTEST_TEST(GeometriesTest, SupportedRigidShapes) {
+  constexpr double kRezHint = 0.5;
+  ProximityProperties props = MakeProximityPropsWithRezHint(kRezHint);
+  Geometries geometries;
+
   /* Box */
   {
     GeometryId box_id = GeometryId::get_new_id();
     geometries.MaybeAddRigidGeometry(Box::MakeCube(1.0), box_id, props);
+    EXPECT_TRUE(geometries.is_rigid(box_id));
+  }
+  /* Sphere */
+  {
+    const double radius = 1.0;
+    GeometryId box_id = GeometryId::get_new_id();
+    geometries.MaybeAddRigidGeometry(Sphere(radius), box_id, props);
     EXPECT_TRUE(geometries.is_rigid(box_id));
   }
   /* Cylinder */
@@ -189,8 +203,8 @@ GTEST_TEST(GeometriesTest, RemoveGeometry) {
    no-op. */
   {
     GeometryId invalid_id = GeometryId::get_new_id();
-    geometries.RemoveGeometry(invalid_id);
-    geometries.RemoveGeometry(rigid_id0);
+    EXPECT_NO_THROW(geometries.RemoveGeometry(invalid_id));
+    EXPECT_NO_THROW(geometries.RemoveGeometry(rigid_id0));
 
     EXPECT_FALSE(geometries.is_rigid(rigid_id0));
     EXPECT_TRUE(geometries.is_rigid(rigid_id1));
