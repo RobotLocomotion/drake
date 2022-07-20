@@ -160,6 +160,9 @@ Defines an SDF model with various types of joints used for testing the parser.
           <xyz expressed_in="__model__">0 0 1</xyz>
         </axis>
         <axis2>
+          <dynamics>
+            <damping>0.1</damping>
+          </dynamics>
           <limit>
             <!-- not actuated -->
             <effort>0</effort>

@@ -334,6 +334,32 @@ Vector3d ExtractJointAxis(
   return axis_J;
 }
 
+// Extracts a Vector3d representation of `axis` and `axis2` for joints with both
+// attributes.
+std::pair<Vector3d, Vector3d> ExtractJointAxisAndAxis2(
+    const DiagnosticPolicy& diagnostic,
+    const sdf::Model& model_spec,
+    const sdf::Joint& joint_spec) {
+  unused(model_spec);
+  DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE2 ||
+      joint_spec.Type() == sdf::JointType::UNIVERSAL);
+
+  // Axis specification.
+  const sdf::JointAxis* axis = joint_spec.Axis(0);
+  const sdf::JointAxis* axis2 = joint_spec.Axis(1);
+  if (axis == nullptr || axis2 == nullptr) {
+    diagnostic.Error(fmt::format(
+        "Both axis and axis2 must be specified for joint '{}'",
+        joint_spec.Name()));
+    return std::make_pair(Vector3d(0, 0, 1), Vector3d(0, 0, 1));
+  }
+
+  // Joint axis and axis2 in the joint frame J.
+  Vector3d axis_J = ResolveAxisXyz(diagnostic, *axis);
+  Vector3d axis2_J = ResolveAxisXyz(diagnostic, *axis2);
+  return std::make_pair(axis_J, axis2_J);
+}
+
 // Helper to parse the damping for a given joint specification.
 // Right now we only parse the <damping> tag.
 double ParseJointDamping(
@@ -358,6 +384,19 @@ double ParseJointDamping(
         joint_spec.Name()));
     return 0.0;
   }
+  // If there are more than one axis (e.g. universal joint), we ignore the
+  // damping specified for the second axis.
+  const sdf::JointAxis* axis2 = joint_spec.Axis(1);
+  if (axis2 != nullptr) {
+    const double damping2 = axis2->Damping();
+    if (damping2 != damping) {
+      diagnostic.Warning(fmt::format(
+          "Joint damping must be equal for both axes for joint '{}'. "
+          "The damping coefficient for axis2 is ignored.",
+          joint_spec.Name()));
+    }
+  }
+
   return damping;
 }
 
@@ -669,12 +708,44 @@ void AddJointFromSpecification(
     }
     case sdf::JointType::UNIVERSAL: {
       const double damping = ParseJointDamping(diagnostic, joint_spec);
-      const auto& joint = plant->AddJoint<UniversalJoint>(
-          joint_spec.Name(),
-          parent_body, X_PJ,
-          child_body, X_CJ, damping);
-      // At most, this prints a warning (it does not add an actuator).
-      AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
+      // In Drake's implementation of universal joint, the rotation axies are
+      // built into the frames M and F; the first rotation is about Fx and the
+      // second is about My. Therefore, we can't arbitrarily set them M and F to
+      // be J. We have to deviate from the convention here.
+
+      // Construct frame I and find X_PI and X_CI. See definition of frame I in
+      // the class doc of UniversalJoint.
+      auto [Ix_J, Iy_J] =
+          ExtractJointAxisAndAxis2(diagnostic, model_spec, joint_spec);
+      Ix_J.normalize();
+      Iy_J.normalize();
+      const Vector3d Iz_J = Ix_J.cross(Iy_J);
+      Matrix3d R_JI;
+      R_JI.col(0) = Ix_J;
+      R_JI.col(1) = Iy_J;
+      R_JI.col(2) = Iz_J;
+      // We require that axis and axis2 are orthogonal. As a result, R_JI should
+      // be a valid rotation matrix.
+      if (!math::RotationMatrixd::IsValid(R_JI)) {
+        diagnostic.Error(fmt::format(
+            "axis and axis2 must be orthogonal for joint '{}'",
+            joint_spec.Name()));
+      } else {
+        const RigidTransformd X_JI(math::RotationMatrix<double>{R_JI});
+        // The value of X_PJ is the identity if X_PJ == nullopt.
+        const auto X_PI = X_PJ.has_value() ? (*X_PJ) * X_JI : X_JI;
+        const auto X_CI = X_CJ * X_JI;
+        // Frames M and F should both coincide with I when rotation angles are
+        // zero.
+        const auto& X_PF = X_PI;
+        const auto& X_CM = X_CI;
+        const auto& joint = plant->AddJoint<UniversalJoint>(
+            joint_spec.Name(),
+            parent_body, X_PF,
+            child_body, X_CM, damping);
+        // At most, this prints a warning (it does not add an actuator).
+        AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
+      }
       break;
     }
     case sdf::JointType::BALL: {
