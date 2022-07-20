@@ -37,7 +37,6 @@ class RationalFunction {
    * @pre None of the indeterminates in the numerator can be decision variables
    * in the denominator; similarly none of the indeterminates in the denominator
    * can be decision variables in the numerator.
-   * @throws std::exception if the precondition is not satisfied.
    */
   RationalFunction(Polynomial numerator, Polynomial denominator);
 

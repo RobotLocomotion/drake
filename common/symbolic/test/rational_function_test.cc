@@ -317,6 +317,9 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
   const std::string zero_divider_error{
       "RationalFunction: operator/=: The divider is 0."};
   DRAKE_EXPECT_THROWS_MESSAGE(f1 / 0, zero_divider_error);
+  // Note that it is too expensive to catch in general whether we are performing
+  // division by a zero polynomial. These only test whether our cheap test to
+  // catch division by zero are working.
   DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_zero_, zero_divider_error);
   const RationalFunction polynomial_fraction_zero;
   DRAKE_EXPECT_THROWS_MESSAGE(f1 / polynomial_fraction_zero,

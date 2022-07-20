@@ -905,11 +905,11 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::init<Polynomial, Polynomial>(), py::arg("numerator"),
           py::arg("denominator"),
           doc.RationalFunction.ctor.doc_2args_numerator_denominator)
-      .def(py::init<const Polynomial&>(), py::arg("numerator"),
+      .def(py::init<const Polynomial&>(), py::arg("p"),
           doc.RationalFunction.ctor.doc_1args_p)
-      .def(py::init<const Monomial&>(), py::arg("numerator"),
+      .def(py::init<const Monomial&>(), py::arg("m"),
           doc.RationalFunction.ctor.doc_1args_m)
-      .def(py::init<double>(), py::arg("numerator"),
+      .def(py::init<double>(), py::arg("c"),
           doc.RationalFunction.ctor.doc_1args_c)
       .def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
       .def("numerator", &RationalFunction::numerator,
