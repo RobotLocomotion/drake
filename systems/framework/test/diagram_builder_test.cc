@@ -44,11 +44,13 @@ GTEST_TEST(DiagramBuilderTest, AddNamedSystem) {
   EXPECT_EQ(c->get_name(), "c");
 }
 
-// Tests one example of ThrowIfAlreadyBuilt().
+// Tests already_built() and one example of ThrowIfAlreadyBuilt().
 GTEST_TEST(DiagramBuilderTest, AlreadyBuilt) {
   DiagramBuilder<double> builder;
   builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
+  EXPECT_FALSE(builder.already_built());
   auto diagram = builder.Build();
+  EXPECT_TRUE(builder.already_built());
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.AddSystem<Adder>(2, 2),
       ".*DiagramBuilder may no longer be used.*");

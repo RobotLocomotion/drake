@@ -5,14 +5,13 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_throw.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/planning/robot_diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "planning/robot_diagram.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** Storage for a combined diagram builder, plant, and scene graph.
@@ -34,16 +33,17 @@ class RobotDiagramBuilder {
   ~RobotDiagramBuilder();
 
   /** Gets the contained DiagramBuilder (mutable).
+  Do not call Build() on the return value; instead, call BuildDiagram() on this.
   @throws exception when IsDiagramBuilt() already. */
-  drake::systems::DiagramBuilder<T>& mutable_builder() {
-    DRAKE_THROW_UNLESS(!IsDiagramBuilt());
+  systems::DiagramBuilder<T>& mutable_builder() {
+    ThrowIfAlreadyBuilt();
     return *builder_;
   }
 
   /** Gets the contained DiagramBuilder (readonly).
   @throws exception when IsDiagramBuilt() already. */
-  const drake::systems::DiagramBuilder<T>& builder() const {
-    DRAKE_THROW_UNLESS(!IsDiagramBuilt());
+  const systems::DiagramBuilder<T>& builder() const {
+    ThrowIfAlreadyBuilt();
     return *builder_;
   }
 
@@ -51,8 +51,8 @@ class RobotDiagramBuilder {
   @throws exception when IsDiagramBuilt() already. */
   template <typename T1 = T, typename std::enable_if_t<
     std::is_same_v<T1, double>>* = nullptr>
-  drake::multibody::Parser& mutable_parser() {
-    DRAKE_THROW_UNLESS(!IsDiagramBuilt());
+  multibody::Parser& mutable_parser() {
+    ThrowIfAlreadyBuilt();
     return parser_;
   }
 
@@ -60,57 +60,55 @@ class RobotDiagramBuilder {
   @throws exception when IsDiagramBuilt() already. */
   template <typename T1 = T, typename std::enable_if_t<
     std::is_same_v<T1, double>>* = nullptr>
-  const drake::multibody::Parser& parser() const {
-    DRAKE_THROW_UNLESS(!IsDiagramBuilt());
+  const multibody::Parser& parser() const {
+    ThrowIfAlreadyBuilt();
     return parser_;
   }
 
   /** Gets the contained plant (mutable).
   @throws exception when IsDiagramBuilt() already. */
-  drake::multibody::MultibodyPlant<T>& mutable_plant() {
-    DRAKE_THROW_UNLESS(!IsDiagramBuilt());
+  multibody::MultibodyPlant<T>& mutable_plant() {
+    ThrowIfAlreadyBuilt();
     return plant_;
   }
 
   /** Gets the contained plant (readonly).
   @throws exception when IsDiagramBuilt() already. */
-  const drake::multibody::MultibodyPlant<T>& plant() const {
-    DRAKE_THROW_UNLESS(!IsDiagramBuilt());
+  const multibody::MultibodyPlant<T>& plant() const {
+    ThrowIfAlreadyBuilt();
     return plant_;
   }
 
   /** Gets the contained scene graph (mutable).
   @throws exception when IsDiagramBuilt() already. */
-  drake::geometry::SceneGraph<T>& mutable_scene_graph() {
-    DRAKE_THROW_UNLESS(!IsDiagramBuilt());
+  geometry::SceneGraph<T>& mutable_scene_graph() {
+    ThrowIfAlreadyBuilt();
     return scene_graph_;
   }
 
   /** Gets the contained scene graph (readonly).
   @throws exception when IsDiagramBuilt() already. */
-  const drake::geometry::SceneGraph<T>& scene_graph() const {
-    DRAKE_THROW_UNLESS(!IsDiagramBuilt());
+  const geometry::SceneGraph<T>& scene_graph() const {
+    ThrowIfAlreadyBuilt();
     return scene_graph_;
   }
 
   /** Checks if the contained plant is finalized.
   @throws exception when IsDiagramBuilt() already. */
   bool IsPlantFinalized() const {
-    DRAKE_THROW_UNLESS(!IsDiagramBuilt());
+    ThrowIfAlreadyBuilt();
     return plant_.is_finalized();
   }
 
   /** Finalizes the contained plant.
   @throws exception when IsDiagramBuilt() already. */
   void FinalizePlant() {
-    DRAKE_THROW_UNLESS(!IsDiagramBuilt());
+    ThrowIfAlreadyBuilt();
     plant_.Finalize();
   }
 
   /** Checks if the diagram has already been built. */
-  bool IsDiagramBuilt() const {
-    return builder_ == nullptr;
-  }
+  bool IsDiagramBuilt() const;
 
   /** Builds the diagram and returns the diagram plus plant and scene graph in a
   RobotDiagram. The plant will be finalized during this function, unless it's
@@ -119,21 +117,23 @@ class RobotDiagramBuilder {
   std::unique_ptr<RobotDiagram<T>> BuildDiagram();
 
  private:
+  void ThrowIfAlreadyBuilt() const;
+
   // Storage for the diagram and its plant and scene graph.
-  // After building, the `builder_` is set to nullptr.
-  std::unique_ptr<drake::systems::DiagramBuilder<T>> builder_;
-  drake::multibody::AddMultibodyPlantSceneGraphResult<T> pair_;
-  drake::multibody::MultibodyPlant<T>& plant_;
-  drake::geometry::SceneGraph<T>& scene_graph_;
+  // After BuildDiagram(), the `builder_` is set to nullptr.
+  std::unique_ptr<systems::DiagramBuilder<T>> builder_;
+  multibody::AddMultibodyPlantSceneGraphResult<T> pair_;
+  multibody::MultibodyPlant<T>& plant_;
+  geometry::SceneGraph<T>& scene_graph_;
 
   // The Parser object only exists when T == double.
   using MaybeParser = std::conditional_t<
-      std::is_same_v<T, double>, drake::multibody::Parser, void*>;
+      std::is_same_v<T, double>, multibody::Parser, void*>;
   MaybeParser parser_;
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::anzu::planning::RobotDiagramBuilder)
+    class ::drake::planning::RobotDiagramBuilder)
