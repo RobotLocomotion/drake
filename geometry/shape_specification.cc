@@ -151,43 +151,47 @@ MeshcatCone::MeshcatCone(double height, double a, double b)
 ShapeReifier::~ShapeReifier() = default;
 
 void ShapeReifier::ImplementGeometry(const Sphere&, void*) {
-  ThrowUnsupportedGeometry("Sphere");
+  HandleUnsupportedGeometry("Sphere");
 }
 
 void ShapeReifier::ImplementGeometry(const Cylinder&, void*) {
-  ThrowUnsupportedGeometry("Cylinder");
+  HandleUnsupportedGeometry("Cylinder");
 }
 
 void ShapeReifier::ImplementGeometry(const HalfSpace&, void*) {
-  ThrowUnsupportedGeometry("HalfSpace");
+  HandleUnsupportedGeometry("HalfSpace");
 }
 
 void ShapeReifier::ImplementGeometry(const Box&, void*) {
-  ThrowUnsupportedGeometry("Box");
+  HandleUnsupportedGeometry("Box");
 }
 
 void ShapeReifier::ImplementGeometry(const Capsule&, void*) {
-  ThrowUnsupportedGeometry("Capsule");
+  HandleUnsupportedGeometry("Capsule");
 }
 
 void ShapeReifier::ImplementGeometry(const Ellipsoid&, void*) {
-  ThrowUnsupportedGeometry("Ellipsoid");
+  HandleUnsupportedGeometry("Ellipsoid");
 }
 void ShapeReifier::ImplementGeometry(const Mesh&, void*) {
-  ThrowUnsupportedGeometry("Mesh");
+  HandleUnsupportedGeometry("Mesh");
 }
 
 void ShapeReifier::ImplementGeometry(const Convex&, void*) {
-  ThrowUnsupportedGeometry("Convex");
+  HandleUnsupportedGeometry("Convex");
 }
 
 void ShapeReifier::ImplementGeometry(const MeshcatCone&, void*) {
-  ThrowUnsupportedGeometry("MeshcatCone");
+  HandleUnsupportedGeometry("MeshcatCone");
 }
 
 void ShapeReifier::ThrowUnsupportedGeometry(const std::string& shape_name) {
   throw std::runtime_error(fmt::format("This class ({}) does not support {}.",
                                        NiceTypeName::Get(*this), shape_name));
+}
+
+void ShapeReifier::HandleUnsupportedGeometry(const std::string& shape_name) {
+  ThrowUnsupportedGeometry(shape_name);
 }
 
 ShapeName::ShapeName(const Shape& shape) {

@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 
@@ -36,7 +37,7 @@ struct ShapeTag{};
   When you add a new subclass of Shape to Drake, you must:
 
   1. add a virtual function ImplementGeometry() for the new shape in
-     ShapeReifier that invokes the ThrowUnsupportedGeometry method, and add to
+     ShapeReifier that invokes the HandleUnsupportedGeometry method, and add to
      the test for it in shape_specification_test.cc.
   2. implement ImplementGeometry in derived ShapeReifiers to continue support
      if desired, otherwise ensure unimplemented functions are not hidden in new
@@ -420,10 +421,18 @@ class ShapeReifier {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
   ShapeReifier() = default;
 
+  // TODO(xuchenhan-tri): Find a way to deprecate this virtual function.
+  // Subclasses can override HandleUnsupportedGeometry() instead.
   /** Derived ShapeReifiers can replace the default message for unsupported
    geometries by overriding this method. The name of the unsupported shape type
    is given as the single parameter.  */
   virtual void ThrowUnsupportedGeometry(const std::string& shape_name);
+
+  /** Defaults to throwing an exception by calling ThrowUnsupportedGeometry.
+   Derived ShapeReifiers can replace the default behavior towards unsupported
+   geometries by overriding this method. The name of the unsupported shape type
+   is given as the single parameter.  */
+  virtual void HandleUnsupportedGeometry(const std::string& shape_name);
 };
 
 // TODO(SeanCurtis-TRI): Merge this into shape_to_string.h so that there's a

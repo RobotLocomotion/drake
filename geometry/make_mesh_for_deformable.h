@@ -35,7 +35,7 @@ class MeshBuilderForDeformable : public ShapeReifier {
   // TODO(xuchenhan-tri): As other shapes get supported, include their specific
   //  overrides here.
 
-  void ThrowUnsupportedGeometry(const std::string& shape_name) override;
+  void HandleUnsupportedGeometry(const std::string& shape_name) override;
 };
 
 }  // namespace internal

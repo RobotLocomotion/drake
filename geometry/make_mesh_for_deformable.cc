@@ -27,7 +27,7 @@ void MeshBuilderForDeformable::ImplementGeometry(const Sphere& sphere,
       TessellationStrategy::kDenseInteriorVertices));
 }
 
-void MeshBuilderForDeformable::ThrowUnsupportedGeometry(
+void MeshBuilderForDeformable::HandleUnsupportedGeometry(
     const std::string& shape_name) {
   throw std::logic_error(
       fmt::format("MeshBuilderForDeformable: We don't yet generate deformable "
