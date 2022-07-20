@@ -254,6 +254,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":scoped_names",
+        "//common:diagnostic_policy",
         "//common:filesystem",
         "//common:find_resource",
         "//common/yaml",

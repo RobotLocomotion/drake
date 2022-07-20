@@ -284,6 +284,17 @@ GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       LoadModelDirectives("no-such-file.yaml"),
       ".*no-such-file.yaml.*");
+
+  // User specifies a package that hasn't been properly registered.
+  {
+    MultibodyPlant<double> plant(0.0);
+    ModelDirectives directives = LoadModelDirectives(
+        FindResourceOrThrow(std::string(kTestDir) + "/bad_package_uri.yaml"));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ProcessModelDirectives(directives, &plant, nullptr,
+                               make_parser(&plant).get()),
+        ".*unknown package 'nonexistant'.*");
+  }
 }
 
 }  // namespace

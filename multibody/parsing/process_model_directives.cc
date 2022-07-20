@@ -7,12 +7,14 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/schema/transform.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 #include "drake/multibody/parsing/detail_composite_parse.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/scoped_names.h"
 
@@ -194,35 +196,8 @@ void ProcessModelDirectivesImpl(
 
 std::string ResolveModelDirectiveUri(const std::string& uri,
                                      const PackageMap& package_map) {
-  const std::string scheme_separator = "://";
-  const size_t scheme_end = uri.find(scheme_separator);
-  if (scheme_end == std::string::npos) {
-    drake::log()->error("Model resource '{}' is not a valid URI.",
-                        uri);
-    std::abort();
-  }
-
-  const std::string scheme = uri.substr(0, scheme_end);
-  const size_t package_end = uri.find("/", scheme_end + 3);
-  if (package_end == std::string::npos) {
-    drake::log()->error("Model resource '{}' has no path in package.",
-                        uri);
-    std::abort();
-  }
-
-  const std::string package_name =
-      uri.substr(scheme_end + scheme_separator.size(),
-                 package_end - scheme_end - scheme_separator.size());
-  const std::string path_in_package = uri.substr(package_end + 1);
-
-  DRAKE_DEMAND(scheme == "package");  // No other schemes supported for now.
-  if (!package_map.Contains(package_name)) {
-    drake::log()->error(
-        "Unable to resolve package '{}' for URI '{}' using package map: '{}'",
-        package_name, uri, package_map);
-    std::abort();
-  }
-  return package_map.GetPath(package_name) + "/" + path_in_package;
+  ::drake::internal::DiagnosticPolicy policy;
+  return ::drake::multibody::internal::ResolveUri(policy, uri, package_map, "");
 }
 
 void ProcessModelDirectives(
