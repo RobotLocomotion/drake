@@ -895,6 +895,25 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_lower_limits(),
                               neg_inf2));
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
+  // axis = (0, 0, 1) and axis2 = (0, 1, 0) in the model frame (aka the world
+  // frame in this case). So Ix, Iy, Iz are (0, 0, 1), (0, 1, 0), and (-1, 0, 0)
+  // respectively when expressed in the world frame. Since M = F = I and C = P =
+  // W, We have R_PF = R_CM = R_WI, and R_WI has column vectors Ix_W, Iy_W, and
+  // Iz_W.
+  Matrix3<double> R_WI;
+  // clang-format off
+  R_WI << 0, 0, -1,
+          0, 1, 0,
+          1, 0, 0;
+  // clang-format on
+  const RigidTransform<double> X_WI =
+      RigidTransform<double>(math::RotationMatrix<double>(R_WI));
+  EXPECT_TRUE(universal_joint.frame_on_parent()
+                  .GetFixedPoseInBodyFrame()
+                  .IsExactlyEqualTo(X_WI));
+  EXPECT_TRUE(universal_joint.frame_on_child()
+                  .GetFixedPoseInBodyFrame()
+                  .IsExactlyEqualTo(X_WI));
 
   // Planar joint
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<PlanarJoint>("planar_joint",
@@ -954,6 +973,82 @@ TEST_F(SdfParserTest, ActuatedUniversalJointParsingTest) {
 </model>)""");
   EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
       ".*effort limits.*universal joint.*not implemented.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling when axis2 isn't specified for universal joints.
+TEST_F(SdfParserTest, UniversalJointAxisParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz> 0 0 1</xyz>
+    </axis>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstError(),
+              ::testing::MatchesRegex(
+                  ".*Both axis and axis2 must be specified.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for an non-orthogonal axis and axis2 in universal
+// joints.
+TEST_F(SdfParserTest, UniversalJointNonOrthogonalAxisParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+    </axis>
+    <axis2>
+      <xyz>0 0 1</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(
+      FormatFirstError(),
+      ::testing::MatchesRegex(".*axis and axis2 must be orthogonal.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for axis and axis2 with incompatible damping
+// coefficients in universal joints.
+TEST_F(SdfParserTest, UniversalJointDampingCoeffParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <limit>
+        <effort>0</effort>
+      </limit>
+      <dynamics>
+        <damping>0.1</damping>
+      </dynamics>
+      <xyz>0 0 1</xyz>
+    </axis>
+    <axis2>
+      <limit>
+        <effort>0</effort>
+      </limit>
+      <dynamics>
+        <damping>0.2</damping>
+      </dynamics>
+      <xyz>0 1 0</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstWarning(),
+              ::testing::MatchesRegex(".*damping must be equal.*jerry.*"));
   ClearDiagnostics();
 }
 
