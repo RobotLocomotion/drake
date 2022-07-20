@@ -152,6 +152,8 @@ class Polynomial {
 
   /// Returns the mapping from a Monomial to its corresponding coefficient of
   /// this polynomial.
+  /// We maintain the invariance that for ancy [monomial, coeff] pair in
+  /// monomial_to_coefficient_map(), symbolic:is_zero(coeff) is false.
   [[nodiscard]] const MapType& monomial_to_coefficient_map() const;
 
   /// Returns an equivalent symbolic expression of this polynomial.
@@ -347,8 +349,11 @@ class Polynomial {
   friend Polynomial operator/(Polynomial p, double v);
 
  private:
-  // Throws std::exception if there is a variable appeared in both of
-  // decision_variables() and indeterminates().
+  // Throws std::exception if any of the condition is true.
+  // 1. There is a variable appeared in both of decision_variables() and
+  // indeterminates().
+  // 2. There is a [monomial, coeff] pair in monomial_to_coefficient_map_ that
+  // symbolic::is_zero(coeff) is true.
   void CheckInvariant() const;
 
   MapType monomial_to_coefficient_map_;
