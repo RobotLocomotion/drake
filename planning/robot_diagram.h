@@ -8,18 +8,20 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** Storage for a combined diagram, plant, and scene graph.
 
 This class is a convenient syntactic sugar, especially in C++ code where it
 simplifies object lifetime tracking and downcasting of the plant and scene graph
-references.
+references. It's purpose is to serve as planner-specific syntactic sugar for
+operating on a MultibodyPlant. For other purposes (e.g., simulation), users
+should generally prefer to just use a Diagram, instead.
 
 @tparam_default_scalar */
 template <typename T>
-class RobotDiagram final : public drake::systems::Diagram<T> {
+class RobotDiagram final : public systems::Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotDiagram)
 
@@ -35,20 +37,20 @@ class RobotDiagram final : public drake::systems::Diagram<T> {
   /** Creates a default context for this diagram.
   This is one way to create a valid `root_context` argument to pass to the
   context-related helper functions below. */
-  using drake::systems::Diagram<T>::CreateDefaultContext;
+  using systems::Diagram<T>::CreateDefaultContext;
 
   /** Gets the contained plant (readonly). */
-  const drake::multibody::MultibodyPlant<T>& plant() const {
+  const multibody::MultibodyPlant<T>& plant() const {
     return plant_;
   }
 
   /** Gets the contained scene graph (mutable). */
-  drake::geometry::SceneGraph<T>& mutable_scene_graph() {
+  geometry::SceneGraph<T>& mutable_scene_graph() {
     return scene_graph_;
   }
 
   /** Gets the contained scene graph (readonly). */
-  const drake::geometry::SceneGraph<T>& scene_graph() const {
+  const geometry::SceneGraph<T>& scene_graph() const {
     return scene_graph_;
   }
 
@@ -56,8 +58,8 @@ class RobotDiagram final : public drake::systems::Diagram<T> {
   context. Refer to drake::systems::System::GetMyContextFromRoot() to
   understand `root_context`.
   @throws std::exception if the `root_context` is not a root context. */
-  drake::systems::Context<T>& mutable_plant_context(
-      drake::systems::Context<T>* root_context) const {
+  systems::Context<T>& mutable_plant_context(
+      systems::Context<T>* root_context) const {
     return plant_.GetMyMutableContextFromRoot(root_context);
   }
 
@@ -65,8 +67,8 @@ class RobotDiagram final : public drake::systems::Diagram<T> {
   context. Refer to drake::systems::System::GetMyContextFromRoot() to
   understand `root_context`.
   @throws std::exception if the `root_context` is not a root context. */
-  const drake::systems::Context<T>& plant_context(
-      const drake::systems::Context<T>& root_context) const {
+  const systems::Context<T>& plant_context(
+      const systems::Context<T>& root_context) const {
     return plant_.GetMyContextFromRoot(root_context);
   }
 
@@ -74,8 +76,8 @@ class RobotDiagram final : public drake::systems::Diagram<T> {
   context. Refer to drake::systems::System::GetMyContextFromRoot() to
   understand `root_context`.
   @throws std::exception if the `root_context` is not a root context. */
-  drake::systems::Context<T>& mutable_scene_graph_context(
-      drake::systems::Context<T>* root_context) const {
+  systems::Context<T>& mutable_scene_graph_context(
+      systems::Context<T>* root_context) const {
     return scene_graph_.GetMyMutableContextFromRoot(root_context);
   }
 
@@ -83,8 +85,8 @@ class RobotDiagram final : public drake::systems::Diagram<T> {
   context. Refer to drake::systems::System::GetMyContextFromRoot() to
   understand `root_context`.
   @throws std::exception if the `root_context` is not a root context. */
-  const drake::systems::Context<T>& scene_graph_context(
-      const drake::systems::Context<T>& root_context) const {
+  const systems::Context<T>& scene_graph_context(
+      const systems::Context<T>& root_context) const {
     return scene_graph_.GetMyContextFromRoot(root_context);
   }
 
@@ -93,16 +95,15 @@ class RobotDiagram final : public drake::systems::Diagram<T> {
   template <typename> friend class RobotDiagramBuilder;
 
   // For use by RobotDiagramBuilder.
-  explicit RobotDiagram(
-      std::unique_ptr<drake::systems::DiagramBuilder<T>>);
+  explicit RobotDiagram(std::unique_ptr<systems::DiagramBuilder<T>>);
 
   // Aliases for the plant and scene graph (which are owned by our base class).
-  drake::multibody::MultibodyPlant<T>& plant_;
-  drake::geometry::SceneGraph<T>& scene_graph_;
+  multibody::MultibodyPlant<T>& plant_;
+  geometry::SceneGraph<T>& scene_graph_;
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::anzu::planning::RobotDiagram)
+    class ::drake::planning::RobotDiagram)

@@ -1,31 +1,29 @@
-#include "planning/robot_diagram.h"
+#include "drake/planning/robot_diagram.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "planning/robot_diagram_builder.h"
+#include "drake/planning/robot_diagram_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
-using drake::AutoDiffXd;
-using drake::FindResourceOrThrow;
-using drake::geometry::SceneGraph;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
-using drake::symbolic::Expression;
-using drake::systems::Context;
-using drake::systems::DiagramBuilder;
-using drake::systems::System;
+using geometry::SceneGraph;
+using multibody::MultibodyPlant;
+using multibody::Parser;
+using symbolic::Expression;
+using systems::Context;
+using systems::DiagramBuilder;
+using systems::System;
 
 std::unique_ptr<RobotDiagramBuilder<double>> MakeSampleDut() {
   auto builder = std::make_unique<RobotDiagramBuilder<double>>();
   builder->mutable_parser().AddAllModelsFromFile(FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_spheres_dense_elbow_collision.urdf"));
+      "iiwa14_spheres_dense_collision.urdf"));
   return builder;
 }
 
@@ -69,6 +67,10 @@ GTEST_TEST(RobotDiagramBuilderTest, Lifecycle) {
   EXPECT_FALSE(dut->IsDiagramBuilt());
 
   auto robot_diagram = dut->BuildDiagram();
+  EXPECT_TRUE(dut->IsDiagramBuilt());
+
+  // The lifecycle of the built Diagram has no effect on the builder's ability
+  // to report its own lifecycle status.
   robot_diagram.reset();
   EXPECT_TRUE(dut->IsDiagramBuilt());
 }
@@ -79,7 +81,7 @@ GTEST_TEST(RobotDiagramBuilderTest, LifecycleFailFast) {
   robot_diagram.reset();
 
   EXPECT_TRUE(dut->IsDiagramBuilt());
-  constexpr const char* error = ".*IsDiagramBuilt.*";
+  constexpr const char* error = ".*may no longer be used.*";
   DRAKE_EXPECT_THROWS_MESSAGE(dut->mutable_builder(), error);
   DRAKE_EXPECT_THROWS_MESSAGE(dut->builder(), error);
   DRAKE_EXPECT_THROWS_MESSAGE(dut->mutable_parser(), error);
@@ -167,5 +169,5 @@ GTEST_TEST(RobotDiagramTest, ContextGetters) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 

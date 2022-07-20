@@ -248,6 +248,13 @@ class DiagramBuilder {
     return registered_systems_.empty();
   }
 
+  /// Returns true iff Build() or BuildInto() has been called on this Builder,
+  /// in which case it's an error to call any member function other than the
+  /// the destructor.
+  bool already_built() const {
+    return already_built_;
+  }
+
   /// Returns the list of contained Systems.
   /// See also GetMutableSystems().
   std::vector<const System<T>*> GetSystems() const;

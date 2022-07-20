@@ -1,0 +1,61 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "planning",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":robot_diagram",
+        ":robot_diagram_builder",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_diagram",
+    srcs = ["robot_diagram.cc"],
+    hdrs = ["robot_diagram.h"],
+    deps = [
+        "//common:default_scalars",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_diagram_builder",
+    srcs = ["robot_diagram_builder.cc"],
+    hdrs = ["robot_diagram_builder.h"],
+    deps = [
+        ":robot_diagram",
+        "//common:default_scalars",
+        "//geometry:scene_graph",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "robot_diagram_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":robot_diagram",
+        ":robot_diagram_builder",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+add_lint_tests()

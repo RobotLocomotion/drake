@@ -1,12 +1,16 @@
-#include "planning/robot_diagram_builder.h"
+#include "drake/planning/robot_diagram_builder.h"
 
-namespace anzu {
+#include <stdexcept>
+
+#include "drake/common/drake_throw.h"
+
+namespace drake {
 namespace planning {
 
-using drake::geometry::SceneGraph;
-using drake::multibody::AddMultibodyPlantSceneGraph;
-using drake::systems::DiagramBuilder;
-using drake::systems::System;
+using geometry::SceneGraph;
+using multibody::AddMultibodyPlantSceneGraph;
+using systems::DiagramBuilder;
+using systems::System;
 
 template <typename T>
 RobotDiagramBuilder<T>::RobotDiagramBuilder(double time_step)
@@ -21,7 +25,7 @@ RobotDiagramBuilder<T>::~RobotDiagramBuilder() = default;
 
 template <typename T>
 std::unique_ptr<RobotDiagram<T>> RobotDiagramBuilder<T>::BuildDiagram() {
-  DRAKE_THROW_UNLESS(!IsDiagramBuilt());
+  ThrowIfAlreadyBuilt();
   if (!IsPlantFinalized()) {
     FinalizePlant();
   }
@@ -29,8 +33,30 @@ std::unique_ptr<RobotDiagram<T>> RobotDiagramBuilder<T>::BuildDiagram() {
       new RobotDiagram<T>(std::move(builder_)));
 }
 
+template <typename T>
+bool RobotDiagramBuilder<T>::IsDiagramBuilt() const {
+  if (builder_ == nullptr) {
+    return true;
+  }
+  if (builder_->already_built()) {
+    throw std::logic_error(
+        "RobotDiagramBuilder: Do not call mutable_builder().Build() to create"
+        " a Diagram; instead, call BuildDiagram() to create a RobotDiagram.");
+  }
+  return false;
+}
+
+template <typename T>
+void RobotDiagramBuilder<T>::ThrowIfAlreadyBuilt() const {
+  if (IsDiagramBuilt()) {
+    throw std::logic_error(
+        "RobotDiagramBuilder: Build() has already been called to create a"
+        " RobotDiagram; this RobotDiagramBuilder may no longer be used.");
+  }
+}
+
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::anzu::planning::RobotDiagramBuilder)
+    class ::drake::planning::RobotDiagramBuilder)

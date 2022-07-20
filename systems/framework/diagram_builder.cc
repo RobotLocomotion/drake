@@ -290,9 +290,9 @@ bool DiagramBuilder<T>::IsConnectedOrExported(const InputPort<T>& port) const {
 template <typename T>
 void DiagramBuilder<T>::ThrowIfAlreadyBuilt() const {
   if (already_built_) {
-    throw std::logic_error(fmt::format(
+    throw std::logic_error(
         "DiagramBuilder: Build() or BuildInto() has already been called to "
-        "create a Diagram; this DiagramBuilder may no longer be used."));
+        "create a Diagram; this DiagramBuilder may no longer be used.");
   }
 }
 
