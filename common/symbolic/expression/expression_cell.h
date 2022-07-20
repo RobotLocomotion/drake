@@ -8,6 +8,7 @@
 #endif
 
 #include <algorithm>  // for cpplint only
+#include <atomic>
 #include <cstddef>
 #include <map>
 #include <ostream>
@@ -42,6 +43,11 @@ bool is_non_negative_integer(double v);
 class ExpressionCell {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionCell)
+
+  virtual ~ExpressionCell();
+
+  /** Returns the intrusive use count (ala boost::intrusive_ptr). */
+  std::atomic<int>& use_count() const { return use_count_; }
 
   /** Returns expression kind. */
   [[nodiscard]] ExpressionKind get_kind() const { return kind_; }
@@ -97,13 +103,12 @@ class ExpressionCell {
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
  protected:
-  /** Constructs ExpressionCell of kind @p k with @p is_poly and @p is_expanded.
-   */
+  /** Constructs ExpressionCell of kind @p k with @p is_poly and @p is_expanded,
+  with a @p use_count of zero. */
   ExpressionCell(ExpressionKind k, bool is_poly, bool is_expanded);
-  /** Default destructor. */
-  virtual ~ExpressionCell() = default;
 
  private:
+  mutable std::atomic<int> use_count_{0};
   const ExpressionKind kind_{};
   const bool is_polynomial_{false};
   bool is_expanded_{false};
@@ -180,25 +185,6 @@ class ExpressionVar : public ExpressionCell {
 
  private:
   const Variable var_;
-};
-
-/** Symbolic expression representing a constant. */
-class ExpressionConstant : public ExpressionCell {
- public:
-  explicit ExpressionConstant(double v);
-  [[nodiscard]] double get_value() const { return v_; }
-  void HashAppendDetail(DelegatingHasher*) const override;
-  [[nodiscard]] Variables GetVariables() const override;
-  [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
-  [[nodiscard]] bool Less(const ExpressionCell& e) const override;
-  [[nodiscard]] double Evaluate(const Environment& env) const override;
-  [[nodiscard]] Expression Expand() const override;
-  [[nodiscard]] Expression Substitute(const Substitution& s) const override;
-  [[nodiscard]] Expression Differentiate(const Variable& x) const override;
-  std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const double v_{};
 };
 
 /** Symbolic expression representing NaN (not-a-number). */
@@ -780,8 +766,6 @@ class ExpressionUninterpretedFunction : public ExpressionCell {
   const std::vector<Expression> arguments_;
 };
 
-/** Checks if @p c is a constant expression. */
-bool is_constant(const ExpressionCell& c);
 /** Checks if @p c is a variable expression. */
 bool is_variable(const ExpressionCell& c);
 /** Checks if @p c is a unary expression. */
