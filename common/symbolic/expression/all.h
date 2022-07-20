@@ -21,6 +21,8 @@
 #include "drake/common/symbolic/expression/variable.h"
 #include "drake/common/symbolic/expression/variables.h"
 #include "drake/common/symbolic/expression/environment.h"
+#include "drake/common/symbolic/expression/expression_kind.h"
+#include "drake/common/symbolic/expression/boxed_cell.h"
 #include "drake/common/symbolic/expression/expression.h"
 #include "drake/common/symbolic/expression/expression_visitor.h"
 #include "drake/common/symbolic/expression/ldlt.h"
