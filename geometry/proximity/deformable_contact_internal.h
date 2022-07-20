@@ -58,15 +58,17 @@ class Geometries final : public ShapeReifier {
       rigid geometry.
    2. The `shape` type is supported for rigid representation for deformable
       contact. The set of supported geometries is the set of all supported hydro
-      rigid geometries minus half space.
-   This function is a no-op if no rigid geometry is not added.
+      rigid geometries minus half space. We use the same implementation that the
+      hydro-rigid reifier is using for supported shapes.
+   This function is a no-op if the resolution_hint property is not specified.
 
    @param shape         The shape to possibly represent.
    @param id            The unique identifier for the geometry.
    @param properties    The proximity properties that specifies the properties
                         of the rigid representation.
    @throws std::exception if the shape is a supported type but the properties
-                          are malformed (i.e. resolution hint <= 0).
+           are malformed (e.g. resolution hint <= 0 for Sphere, Cylinder,
+           Capsule, and Ellipsoid).
    @pre There is no previous representation associated with id.  */
   void MaybeAddRigidGeometry(const Shape& shape, GeometryId id,
                              const ProximityProperties& props);
@@ -86,8 +88,6 @@ class Geometries final : public ShapeReifier {
     const ProximityProperties& properties;
   };
 
-  using ShapeReifier::ImplementGeometry;
-
   void ImplementGeometry(const Sphere& sphere, void* user_data) override;
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
   void ImplementGeometry(const Box& box, void* user_data) override;
@@ -95,15 +95,13 @@ class Geometries final : public ShapeReifier {
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override;
   void ImplementGeometry(const Mesh& mesh, void* user_data) override;
   void ImplementGeometry(const Convex& convex, void* user_data) override;
+  void ImplementGeometry(const HalfSpace& half_space, void* user_data) override;
+  void ImplementGeometry(const MeshcatCone& cone, void* user_data) override;
 
   /* Makes a rigid (non-deformable) geometry from a supported shape type using
    the given `data`. */
   template <typename ShapeType>
   void AddRigidGeometry(const ShapeType& shape, const ReifyData& data);
-
-  /* We override the behavior towards unsupported geometry from throwing to
-   logging a warning. */
-  void ThrowUnsupportedGeometry(const std::string& shape_name) override;
 
   // TODO(xuchenhan-tri): Add deformable geometries.
 
