@@ -32,43 +32,7 @@
 #include "drake/common/random.h"
 
 namespace drake {
-
 namespace symbolic {
-
-/** Kinds of symbolic expressions. */
-enum class ExpressionKind {
-  Constant,               ///< constant (double)
-  Var,                    ///< variable
-  Add,                    ///< addition (+)
-  Mul,                    ///< multiplication (*)
-  Div,                    ///< division (/)
-  Log,                    ///< logarithms
-  Abs,                    ///< absolute value function
-  Exp,                    ///< exponentiation
-  Sqrt,                   ///< square root
-  Pow,                    ///< power function
-  Sin,                    ///< sine
-  Cos,                    ///< cosine
-  Tan,                    ///< tangent
-  Asin,                   ///< arcsine
-  Acos,                   ///< arccosine
-  Atan,                   ///< arctangent
-  Atan2,                  ///< arctangent2 (atan2(y,x) = atan(y/x))
-  Sinh,                   ///< hyperbolic sine
-  Cosh,                   ///< hyperbolic cosine
-  Tanh,                   ///< hyperbolic tangent
-  Min,                    ///< min
-  Max,                    ///< max
-  Ceil,                   ///< ceil
-  Floor,                  ///< floor
-  IfThenElse,             ///< if then else
-  NaN,                    ///< NaN
-  UninterpretedFunction,  ///< Uninterpreted function
-  // TODO(soonho): add Integral
-};
-
-/** Total ordering between ExpressionKinds. */
-bool operator<(ExpressionKind k1, ExpressionKind k2);
 
 class ExpressionCell;                   // In expression_cell.h
 class ExpressionConstant;               // In expression_cell.h
