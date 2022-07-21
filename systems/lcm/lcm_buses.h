@@ -7,9 +7,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
 
-namespace anzu {
-namespace sim {
-// TODO(zachfang): move this file (and the cc file) to `drake/systems/lcm`.
+namespace drake {
+namespace systems {
+namespace lcm {
 
 /** A mapping from {bus_name: interface} with sugar for error checking with
 nice error messages during access.
@@ -52,5 +52,6 @@ class LcmBuses final {
   std::map<std::string, drake::lcm::DrakeLcmInterface*> buses_;
 };
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace lcm
+}  // namespace systems
+}  // namespace drake

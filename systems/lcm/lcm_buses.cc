@@ -1,4 +1,4 @@
-#include "sim/common/lcm_buses.h"
+#include "drake/systems/lcm/lcm_buses.h"
 
 #include <stdexcept>
 #include <utility>
@@ -10,8 +10,9 @@
 
 using drake::lcm::DrakeLcmInterface;
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace lcm {
 
 LcmBuses::LcmBuses() = default;
 
@@ -54,5 +55,6 @@ void LcmBuses::Add(std::string bus_name, drake::lcm::DrakeLcmInterface* bus) {
   }
 }
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace lcm
+}  // namespace systems
+}  // namespace drake

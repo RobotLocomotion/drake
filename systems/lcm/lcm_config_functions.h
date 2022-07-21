@@ -6,11 +6,11 @@
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_params.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "sim/common/lcm_buses.h"
+#include "drake/systems/lcm/lcm_buses.h"
 
-namespace anzu {
-namespace sim {
-// TODO(zachfang): move this file (and the cc file) to `drake/systems/lcm`.
+namespace drake {
+namespace systems {
+namespace lcm {
 
 /** Given a list of LCM buses, adds an LcmInterfaceSystem for each bus within
 the given diagram builder, and returns a {bus_name: interface} map.
@@ -28,5 +28,6 @@ LcmBuses ApplyLcmBusConfig(
     const std::map<std::string, drake::lcm::DrakeLcmParams>& lcm_buses,
     drake::systems::DiagramBuilder<double>* builder);
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace lcm
+}  // namespace systems
+}  // namespace drake
