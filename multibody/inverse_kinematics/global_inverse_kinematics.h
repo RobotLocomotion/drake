@@ -351,6 +351,7 @@ class GlobalInverseKinematics {
 
   /**
    * Adds joint limits on a specified joint.
+   * @note This method is called from the constructor.
    * @param body_index The joint connecting the parent link to this body will be
    * constrained.
    * @param joint_lower_bound The lower bound for the joint.
@@ -367,6 +368,16 @@ class GlobalInverseKinematics {
   void AddJointLimitConstraint(BodyIndex body_index, double joint_lower_bound,
                                double joint_upper_bound,
                                bool linear_constraint_approximation = false);
+
+  /**
+   * Sets an initial guess for all variables (including the binary variables)
+   * by evaluating the kinematics of the plant at `q`.  Currently, this is
+   * accomplished by solving the global IK problem subject to constraints that
+   * the positions and rotation matrices match the kinematics, which is
+   * dramatically faster than solving the original problem.
+   * @throws std::runtime_error if solving results in an infeasible program.
+   */
+  void SetInitialGuess(const Eigen::Ref<const Eigen::VectorXd>& q);
 
  private:
   // This is an utility function for `ReconstructGeneralizedPositionSolution`.

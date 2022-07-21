@@ -104,11 +104,13 @@ drake_cc_library(
         "global_inverse_kinematics.h",
     ],
     deps = [
+        "//common:scope_exit",
         "//multibody/plant",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
         "//solvers:mixed_integer_rotation_constraint",
         "//solvers:rotation_constraint",
+        "//solvers:solve",
     ],
 )
 
