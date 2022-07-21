@@ -131,6 +131,7 @@ class DecomposePolynomialVisitor {
       const Expression& e, const Variables& indeterminates) const {
     // e = c * ∏ᵢ pow(baseᵢ, exponentᵢ).
     const double c = get_constant_in_multiplication(e);
+    DRAKE_DEMAND(c != 0);
     Expression coeff{c};
     Monomial m{};
     for (const pair<const Expression, Expression>& p :
@@ -144,6 +145,7 @@ class DecomposePolynomialVisitor {
       m *= m_i;
       coeff *= coeff_i;
     }
+    DRAKE_DEMAND(!symbolic::is_zero(coeff));
     return Polynomial::MapType{{m, coeff}};
   }
 
@@ -370,6 +372,16 @@ Polynomial::Polynomial(MapType map)
     : monomial_to_coefficient_map_{move(map)},
       indeterminates_{GetIndeterminates(monomial_to_coefficient_map_)},
       decision_variables_{GetDecisionVariables(monomial_to_coefficient_map_)} {
+  // Remove all [monomial, coeff] pair in monomial_to_coefficient_map_ if
+  // symbolic::is_zero(coeff) is true;
+  for (auto it = monomial_to_coefficient_map_.begin();
+       it != monomial_to_coefficient_map_.end();) {
+    if (symbolic::is_zero(it->second)) {
+      it = monomial_to_coefficient_map_.erase(it);
+    } else {
+      ++it;
+    }
+  }
   DRAKE_ASSERT_VOID(CheckInvariant());
 };
 
@@ -391,8 +403,7 @@ Polynomial::Polynomial(const Expression& e, Variables indeterminates)
           e, indeterminates)},
       indeterminates_{std::move(indeterminates)},
       decision_variables_{GetDecisionVariables(monomial_to_coefficient_map_)} {
-  // No need to call CheckInvariant() because DecomposePolynomialVisitor is
-  // supposed to make sure the invariant holds as a post-condition.
+  DRAKE_ASSERT_VOID(CheckInvariant());
 }
 
 const Variables& Polynomial::indeterminates() const { return indeterminates_; }
@@ -724,10 +735,16 @@ Polynomial& Polynomial::operator*=(const Monomial& m) {
 }
 
 Polynomial& Polynomial::operator*=(const double c) {
+  if (c == 0) {
+    this->monomial_to_coefficient_map_.clear();
+    return *this;
+  }
   for (pair<const Monomial, Expression>& p : monomial_to_coefficient_map_) {
     Expression& coeff = p.second;
     coeff *= c;
-  }  // No need to call CheckInvariant() since `c` doesn't include a variable.
+  }
+  // No need to call CheckInvariant() since `c` doesn't include a variable
+  // and c != 0.
   return *this;
 }
 
@@ -875,6 +892,17 @@ void Polynomial::CheckInvariant() const {
            "time:\n"
         << vars << ".";
     throw runtime_error(oss.str());
+  }
+  // Check if any [monomial, coeff] pair has symbolic::is_zero(coeff)
+  for (const auto& [monomial, coeff] : monomial_to_coefficient_map_) {
+    if (symbolic::is_zero(coeff)) {
+      ostringstream oss;
+      oss << "Polynomial " << *this
+          << " does not satisfy the invariant because the coefficient of the "
+             "monomial "
+          << monomial << " is 0.\n";
+      throw runtime_error(oss.str());
+    }
   }
 }
 
