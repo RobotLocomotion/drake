@@ -14,6 +14,15 @@ struct DrakeLcmParams {
   DrakeLcmParams() = default;
   ~DrakeLcmParams();
 
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(lcm_url));
+    a->Visit(DRAKE_NVP(channel_suffix));
+    a->Visit(DRAKE_NVP(defer_initialization));
+  }
+
   /** The URL for DrakeLcm communication. If empty, DrakeLcm will use the
   default URL per the DrakeLcm::DrakeLcm() no-argument constructor. */
   std::string lcm_url;
@@ -42,13 +51,6 @@ struct DrakeLcmParams {
   configuration for new threads varies between the construction time and first
   use. */
   bool defer_initialization{false};
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(lcm_url));
-    a->Visit(DRAKE_NVP(channel_suffix));
-    a->Visit(DRAKE_NVP(defer_initialization));
-  }
 };
 
 }  // namespace lcm

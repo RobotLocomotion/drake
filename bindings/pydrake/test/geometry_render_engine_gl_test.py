@@ -1,5 +1,6 @@
 import pydrake.geometry as mut
 
+import copy
 import sys
 import unittest
 

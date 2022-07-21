@@ -65,6 +65,7 @@ drake_cc_library(
     name = "contact_visualizer_params",
     hdrs = ["contact_visualizer_params.h"],
     deps = [
+        "//common:name_value",
         "//geometry:rgba",
     ],
 )

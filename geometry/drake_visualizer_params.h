@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/name_value.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/rgba.h"
 
@@ -8,6 +9,17 @@ namespace geometry {
 
 /** The set of parameters for configuring DrakeVisualizer.  */
 struct DrakeVisualizerParams {
+  /** Passes this object to an Archive.
+   Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(publish_period));
+    a->Visit(DRAKE_NVP(role));
+    a->Visit(DRAKE_NVP(default_color));
+    a->Visit(DRAKE_NVP(show_hydroelastic));
+    a->Visit(DRAKE_NVP(use_role_channel_suffix));
+  }
+
   /** The duration (in seconds) between published LCM messages that update the
    poses of the scene's geometry. (To help avoid small simulation timesteps, we
    use a default period that has an exact representation in binary floating

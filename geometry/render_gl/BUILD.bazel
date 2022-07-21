@@ -134,6 +134,7 @@ drake_cc_library(
     name = "render_engine_gl_params",
     hdrs = ["render_engine_gl_params.h"],
     deps = [
+        "//common:name_value",
         "//geometry:rgba",
         "//geometry/render:render_label",
     ],

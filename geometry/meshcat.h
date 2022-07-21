@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/name_value.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/rgba.h"
@@ -21,6 +22,16 @@ namespace geometry {
 
 /** The set of parameters for configuring Meshcat. */
 struct MeshcatParams {
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(host));
+    a->Visit(DRAKE_NVP(port));
+    a->Visit(DRAKE_NVP(web_url_pattern));
+    a->Visit(DRAKE_NVP(show_stats_plot));
+  }
+
   /** Meshcat will listen only on the given hostname (e.g., "localhost").
   If "*" is specified, then it will listen on all interfaces.
   If empty, an appropriate default value will be chosen (currently "*"). */
@@ -268,6 +279,17 @@ class Meshcat {
   /** Properties for a perspective camera in three.js:
    https://threejs.org/docs/#api/en/cameras/PerspectiveCamera */
   struct PerspectiveCamera {
+    /** Passes this object to an Archive.
+    Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(fov));
+      a->Visit(DRAKE_NVP(aspect));
+      a->Visit(DRAKE_NVP(near));
+      a->Visit(DRAKE_NVP(far));
+      a->Visit(DRAKE_NVP(zoom));
+    }
+
     double fov{75};    ///< Camera frustum vertical field of view.
     double aspect{1};  ///< Camera frustum aspect ratio.
     double near{.01};  ///< Camera frustum near plane.
@@ -287,6 +309,19 @@ class Meshcat {
   /** Properties for an orthographic camera in three.js:
    https://threejs.org/docs/#api/en/cameras/OrthographicCamera */
   struct OrthographicCamera {
+    /** Passes this object to an Archive.
+    Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(left));
+      a->Visit(DRAKE_NVP(right));
+      a->Visit(DRAKE_NVP(top));
+      a->Visit(DRAKE_NVP(bottom));
+      a->Visit(DRAKE_NVP(near));
+      a->Visit(DRAKE_NVP(far));
+      a->Visit(DRAKE_NVP(zoom));
+    }
+
     double left{-1};     ///< Camera frustum left plane.
     double right{1};     ///< Camera frustum right plane.
     double top{-1};      ///< Camera frustum top plane.

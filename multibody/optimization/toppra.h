@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/name_value.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -34,6 +35,16 @@ using trajectories::Trajectory;
 enum class ToppraDiscretization { kCollocation, kInterpolation };
 
 struct CalcGridPointsOptions {
+  /** Passes this object to an Archive.
+   * Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(max_err));
+    a->Visit(DRAKE_NVP(max_iter));
+    a->Visit(DRAKE_NVP(max_seg_length));
+    a->Visit(DRAKE_NVP(min_points));
+  }
+
   double max_err{1e-3};
   int max_iter{100};
   double max_seg_length{0.05};

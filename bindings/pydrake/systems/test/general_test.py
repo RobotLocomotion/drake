@@ -499,6 +499,7 @@ class TestGeneral(unittest.TestCase):
             self.assertEqual(repr(params), "".join([
                 "InitializeParams("
                 "suppress_initialization_events=True)"]))
+            copy.copy(params)
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.

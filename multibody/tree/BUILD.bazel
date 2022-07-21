@@ -184,6 +184,7 @@ drake_cc_library(
         ":spatial_inertia",
         ":string_view_map_key",
         "//common:default_scalars",
+        "//common:name_value",
         "//common:nice_type_name",
         "//common:unused",
         "//math:geometric_transform",

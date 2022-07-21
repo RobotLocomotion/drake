@@ -135,6 +135,7 @@ drake_cc_library(
     deps = [
         ":geometry_roles",
         ":rgba",
+        "//common:name_value",
     ],
 )
 
@@ -474,6 +475,7 @@ drake_cc_library(
         ":rgba",
         ":shape_specification",
         "//common:essential",
+        "//common:name_value",
         "//geometry/proximity:triangle_surface_mesh",
         "//math:geometric_transform",
         "//perception:point_cloud",
@@ -565,6 +567,7 @@ drake_cc_library(
     deps = [
         ":geometry_roles",
         ":rgba",
+        "//common:name_value",
     ],
 )
 

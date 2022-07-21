@@ -13,6 +13,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/name_value.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/simulator_config.h"
 #include "drake/systems/analysis/simulator_status.h"
@@ -27,6 +28,13 @@ namespace systems {
 /// Parameters for fine control of simulator initialization.
 /// @see Simulator<T>::Initialize().
 struct InitializeParams {
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(suppress_initialization_events));
+  }
+
   /// Whether to trigger initialization events. Events are triggered by
   /// default; it may be useful to suppress them when reusing a simulator.
   bool suppress_initialization_events{false};

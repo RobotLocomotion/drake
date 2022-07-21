@@ -4,6 +4,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/name_value.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -13,6 +14,20 @@ namespace multibody {
 
 /// Configuration structure for the DoorHinge.
 struct DoorHingeConfig {
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(spring_zero_angle_rad));
+    a->Visit(DRAKE_NVP(spring_constant));
+    a->Visit(DRAKE_NVP(dynamic_friction_torque));
+    a->Visit(DRAKE_NVP(static_friction_torque));
+    a->Visit(DRAKE_NVP(viscous_friction));
+    a->Visit(DRAKE_NVP(catch_width));
+    a->Visit(DRAKE_NVP(catch_torque));
+    a->Visit(DRAKE_NVP(motion_threshold));
+  }
+
   /// qs₀ measured outward from the closed position [radian].
   double spring_zero_angle_rad{};
   /// k_ts torsional spring constant measured toward the spring zero angle
