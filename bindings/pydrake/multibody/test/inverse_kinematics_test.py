@@ -322,6 +322,17 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(self.q), q_val))
 
+    def test_AddPolyhedronConstraint(self):
+        p_GP = np.array([[0.2, -0.4], [0.9, 0.2], [-0.1, 1]])
+        A = np.array([[0.5, 1., 0.1, 0.2, 0.5, 1.5]])
+        b = np.array([10.])
+
+        self.ik_two_bodies.AddPolyhedronConstraint(
+            frameF=self.body1_frame, frameG=self.body2_frame,
+            p_GP=p_GP, A=A, b=b)
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+
     def test_AddMinimumDistanceConstraint(self):
         ik = self.ik_two_bodies
         W = self.plant.world_frame()
@@ -593,6 +604,18 @@ class TestConstraints(unittest.TestCase):
             frame1=variables.body1_frame, p_B1P1=[0.1, 0.2, 0.3],
             frame2=variables.body2_frame, p_B2P2=[0.3, 0.4, 0.5],
             distance_lower=0.1, distance_upper=0.2,
+            plant_context=variables.plant_context)
+        self.assertIsInstance(constraint, mp.Constraint)
+
+    @check_type_variables
+    def test_polyhedron_constraint(self, variables):
+        constraint = ik.PolyhedronConstraint(
+            plant=variables.plant,
+            frameF=variables.body1_frame,
+            frameG=variables.body2_frame,
+            p_GP=np.array([[0.2, 0.3], [0.1, 0.5], [1.2, 1.3]]),
+            A=np.array([[1, 2, 3, 4, 5, 6]]),
+            b=np.array([10.]),
             plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
 

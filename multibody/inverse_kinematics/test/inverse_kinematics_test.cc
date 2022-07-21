@@ -33,12 +33,17 @@ class TwoFreeBodiesTest : public ::testing::Test {
 
   ~TwoFreeBodiesTest() override {}
 
-  void RetrieveSolution(const solvers::MathematicalProgramResult& result) {
+  std::unique_ptr<systems::Context<double>> RetrieveSolution(
+      const solvers::MathematicalProgramResult& result) {
     const auto q_sol = result.GetSolution(ik_.q());
     body1_quaternion_sol_ = Vector4ToQuaternion(q_sol.head<4>());
     body1_position_sol_ = q_sol.segment<3>(4);
     body2_quaternion_sol_ = Vector4ToQuaternion(q_sol.segment<4>(7));
     body2_position_sol_ = q_sol.tail<3>();
+
+    auto context = two_bodies_plant_->CreateDefaultContext();
+    two_bodies_plant_->SetPositions(context.get(), q_sol);
+    return context;
   }
 
  protected:
@@ -330,6 +335,36 @@ TEST_F(TwoFreeBodiesTest, PointToPointDistanceConstraint) {
   const double distance_sol = (p_WP1 - p_WP2).norm();
   EXPECT_GE(distance_sol, distance_lower - 1e-6);
   EXPECT_LE(distance_sol, distance_upper + 1e-6);
+}
+
+TEST_F(TwoFreeBodiesTest, PolyhedronConstraint) {
+  const Frame<double>& frameF = body1_frame_;
+  const Frame<double>& frameG = body2_frame_;
+  Eigen::Matrix<double, 3, 2> p_GP;
+  p_GP.col(0) << 0.1, 0.2, 0.3;
+  p_GP.col(1) << 0.4, 0.5, 0.6;
+  Eigen::Matrix<double, 1, 6> A;
+  A << 1, 2, 3, 4, 5, 6;
+  Vector1d b(10);
+
+  ik_.AddPolyhedronConstraint(frameF, frameG, p_GP, A, b);
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  const auto result = Solve(ik_.prog());
+  EXPECT_TRUE(result.is_success());
+
+  auto context = RetrieveSolution(result);
+
+  Eigen::Matrix3Xd p_FP(3, p_GP.cols());
+  two_bodies_plant_->CalcPointsPositions(*context, frameG, p_GP, frameF, &p_FP);
+  Eigen::Map<Eigen::VectorXd> p_FP_stack(p_FP.data(), 3 * p_FP.cols());
+  const Eigen::VectorXd y_expected = A * p_FP_stack;
+  EXPECT_EQ(y_expected.rows(), b.rows());
+  for (int i = 0; i < b.rows(); ++i) {
+    EXPECT_LE(y_expected(i), b(i) + 1E-5);
+  }
 }
 
 TEST_F(TwoFreeSpheresTest, MinimumDistanceConstraintTest) {

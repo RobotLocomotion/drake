@@ -9,6 +9,7 @@
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_cost.h"
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
+#include "drake/multibody/inverse_kinematics/polyhedron_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_cost.h"
 #include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
@@ -149,6 +150,17 @@ InverseKinematics::AddPointToPointDistanceConstraint(
   auto constraint = std::make_shared<PointToPointDistanceConstraint>(
       &plant_, frame1, p_B1P1, frame2, p_B2P2, distance_lower, distance_upper,
       get_mutable_context());
+  return prog_->AddConstraint(constraint, q_);
+}
+
+solvers::Binding<solvers::Constraint>
+InverseKinematics::AddPolyhedronConstraint(
+    const Frame<double>& frameF, const Frame<double>& frameG,
+    const Eigen::Ref<const Eigen::Matrix3Xd>& p_GP,
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b) {
+  auto constraint = std::make_shared<PolyhedronConstraint>(
+      &plant_, frameF, frameG, p_GP, A, b, get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 }  // namespace multibody
