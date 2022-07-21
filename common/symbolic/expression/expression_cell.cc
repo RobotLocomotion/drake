@@ -231,6 +231,8 @@ Expression ExpandPow(const Expression& base, const Expression& exponent) {
 }
 }  // anonymous namespace
 
+ExpressionCell::~ExpressionCell() = default;
+
 ExpressionCell::ExpressionCell(const ExpressionKind k, const bool is_poly,
                                const bool is_expanded)
     : kind_{k}, is_polynomial_{is_poly}, is_expanded_{is_expanded} {}

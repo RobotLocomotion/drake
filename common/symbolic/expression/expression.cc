@@ -40,10 +40,6 @@ using std::streamsize;
 using std::string;
 using std::vector;
 
-bool operator<(ExpressionKind k1, ExpressionKind k2) {
-  return static_cast<int>(k1) < static_cast<int>(k2);
-}
-
 namespace {
 // Negates an addition expression.
 // - (E_1 + ... + E_n) => (-E_1 + ... + -E_n)
