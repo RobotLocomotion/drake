@@ -22,6 +22,7 @@ drake_cc_library(
     name = "everything",
     srcs = [
         "all.cc",
+        "boxed_cell.cc",
         "environment.cc",
         "expression.cc",
         "expression_cell.cc",
@@ -33,9 +34,11 @@ drake_cc_library(
     ],
     hdrs = [
         "all.h",
+        "boxed_cell.h",
         "environment.h",
         "expression.h",
         "expression_cell.h",
+        "expression_kind.h",
         "expression_visitor.h",
         "formula.h",
         "formula_cell.h",
@@ -52,6 +55,13 @@ drake_cc_library(
     ],
     deps = [
         "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "boxed_cell_test",
+    deps = [
+        ":expression",
     ],
 )
 
