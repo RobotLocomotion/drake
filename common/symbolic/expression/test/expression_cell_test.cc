@@ -53,8 +53,6 @@ class SymbolicExpressionCellTest : public ::testing::Test {
 };
 
 TEST_F(SymbolicExpressionCellTest, CastFunctionsConst) {
-  EXPECT_EQ(to_constant(e_constant_).get_value(),
-            get_constant_value(e_constant_));
   EXPECT_EQ(to_variable(e_var_).get_variable(), get_variable(e_var_));
 
   EXPECT_EQ(to_addition(e_add_).get_constant(),
@@ -122,8 +120,6 @@ TEST_F(SymbolicExpressionCellTest, CastFunctionsConst) {
 }
 
 TEST_F(SymbolicExpressionCellTest, CastFunctionsNonConst) {
-  EXPECT_EQ(to_constant(Expression{e_constant_}).get_value(),
-            get_constant_value(e_constant_));
   EXPECT_EQ(to_variable(Expression{e_var_}).get_variable(),
             get_variable(e_var_));
 
