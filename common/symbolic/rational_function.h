@@ -33,11 +33,10 @@ class RationalFunction {
    * Constructs the rational function: numerator / denominator.
    * @param numerator The numerator of the fraction.
    * @param denominator The denominator of the fraction.
-   * @pre denominator cannot be structurally equal to 0.
+   * @pre denominator is not equal to zero.
    * @pre None of the indeterminates in the numerator can be decision variables
    * in the denominator; similarly none of the indeterminates in the denominator
    * can be decision variables in the numerator.
-   * @throws std::exception if the precondition is not satisfied.
    */
   RationalFunction(Polynomial numerator, Polynomial denominator);
 
@@ -49,11 +48,25 @@ class RationalFunction {
   explicit RationalFunction(const Polynomial& p);
 
   /**
+   * Constructs the rational function: m / 1 for any type which can
+   * be cast to a monomial
+   * @param m The numerator of the rational function.
+   */
+  explicit RationalFunction(const Monomial& m);
+
+  /**
    * Constructs the rational function: c / 1. Note that we use 1 as the
    * denominator.
    * @param c The numerator of the rational function.
    */
   explicit RationalFunction(double c);
+
+  /**
+   * Evaluates this rational function under a given environment @p env.
+   * @throws std::exception if there is a variable in this rational function
+   * whose assignment is not provided by @p env.
+   */
+  [[nodiscard]] double Evaluate(const Environment& env) const;
 
   ~RationalFunction() = default;
 
@@ -65,18 +78,35 @@ class RationalFunction {
 
   RationalFunction& operator+=(const RationalFunction& f);
   RationalFunction& operator+=(const Polynomial& p);
+  RationalFunction& operator+=(const Monomial& m);
   RationalFunction& operator+=(double c);
 
   RationalFunction& operator-=(const RationalFunction& f);
   RationalFunction& operator-=(const Polynomial& p);
+  RationalFunction& operator-=(const Monomial& m);
   RationalFunction& operator-=(double c);
 
   RationalFunction& operator*=(const RationalFunction& f);
   RationalFunction& operator*=(const Polynomial& p);
+  RationalFunction& operator*=(const Monomial& m);
   RationalFunction& operator*=(double c);
 
+  /**
+   * @throws std::exception if the numerator of the divisor is structurally
+   * equal to zero. Note that this does not guarantee that the denominator of
+   * the result is not zero after expansion.
+   */
   RationalFunction& operator/=(const RationalFunction& f);
+  /**
+   * @throws std::exception if the divisor is structurally equal to zero.
+   * Note that this does not guarantee that the denominator of the result is not
+   * zero after expansion.
+   */
   RationalFunction& operator/=(const Polynomial& p);
+  RationalFunction& operator/=(const Monomial& m);
+  /**
+   * @throws std::exception if c is 0
+   */
   RationalFunction& operator/=(double c);
 
   /**
@@ -105,6 +135,12 @@ class RationalFunction {
 
   friend std::ostream& operator<<(std::ostream&, const RationalFunction& f);
 
+  /// Returns an equivalent symbolic expression of this rational function.
+  [[nodiscard]] Expression ToExpression() const;
+
+  /// Sets the indeterminates of the numerator and denominator polynomials
+  void SetIndeterminates(const Variables& new_indeterminates);
+
  private:
   // Throws std::exception if an indeterminate of the denominator (numerator,
   // respectively) is a decision variable of the numerator (denominator).
@@ -116,6 +152,8 @@ class RationalFunction {
 RationalFunction operator+(RationalFunction f1, const RationalFunction& f2);
 RationalFunction operator+(RationalFunction f, const Polynomial& p);
 RationalFunction operator+(const Polynomial& p, RationalFunction f);
+RationalFunction operator+(const Monomial& m, RationalFunction f);
+RationalFunction operator+(RationalFunction f, const Monomial& m);
 RationalFunction operator+(RationalFunction f, double c);
 RationalFunction operator+(double c, RationalFunction f);
 
@@ -124,18 +162,47 @@ RationalFunction operator-(RationalFunction f, const Polynomial& p);
 RationalFunction operator-(const Polynomial& p, const RationalFunction& f);
 RationalFunction operator-(RationalFunction f, double c);
 RationalFunction operator-(double c, RationalFunction f);
+RationalFunction operator-(const Monomial& m, RationalFunction f);
+RationalFunction operator-(RationalFunction f, const Monomial& m);
 
 RationalFunction operator*(RationalFunction f1, const RationalFunction& f2);
 RationalFunction operator*(RationalFunction f, const Polynomial& p);
 RationalFunction operator*(const Polynomial& p, RationalFunction f);
 RationalFunction operator*(RationalFunction f, double c);
 RationalFunction operator*(double c, RationalFunction f);
+RationalFunction operator*(const Monomial& m, RationalFunction f);
+RationalFunction operator*(RationalFunction f, const Monomial& m);
 
+/**
+ * @throws std::exception if the numerator of the divisor is structurally
+ * equal to zero. Note that this does not guarantee that the denominator of the
+ * result is not zero after expansion.
+ */
 RationalFunction operator/(RationalFunction f1, const RationalFunction& f2);
+/**
+ * @throws std::exception if the divisor is structurally equal to zero.
+ * Note that this does not guarantee that the denominator of the result is not
+ * zero after expansion.
+ */
 RationalFunction operator/(RationalFunction f, const Polynomial& p);
+/**
+ * @throws std::exception if the numerator of the divisor is structurally
+ * equal to zero. Note that this does not guarantee that the denominator of the
+ * result is not zero after expansion.
+ */
 RationalFunction operator/(const Polynomial& p, const RationalFunction& f);
+/**
+ * @throws std::exception if c is 0
+ */
 RationalFunction operator/(RationalFunction f, double c);
+/**
+ * @throws std::exception if the numerator of  the divisor is structurally
+ * equal to zero. Note that this does not guarantee that the denominator of the
+ * result is not zero after expansion.
+ */
 RationalFunction operator/(double c, const RationalFunction& f);
+RationalFunction operator/(const Monomial& m, RationalFunction f);
+RationalFunction operator/(RationalFunction f, const Monomial& m);
 
 /**
  * Returns the rational function @p f raised to @p n.

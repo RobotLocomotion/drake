@@ -899,6 +899,84 @@ PYBIND11_MODULE(symbolic, m) {
           },
           py::arg("vars"), doc.Polynomial.Jacobian.doc);
 
+  py::class_<RationalFunction> rat_fun_cls(
+      m, "RationalFunction", doc.RationalFunction.doc);
+  rat_fun_cls.def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
+      .def(py::init<Polynomial, Polynomial>(), py::arg("numerator"),
+          py::arg("denominator"),
+          doc.RationalFunction.ctor.doc_2args_numerator_denominator)
+      .def(py::init<const Polynomial&>(), py::arg("p"),
+          doc.RationalFunction.ctor.doc_1args_p)
+      .def(py::init<const Monomial&>(), py::arg("m"),
+          doc.RationalFunction.ctor.doc_1args_m)
+      .def(py::init<double>(), py::arg("c"),
+          doc.RationalFunction.ctor.doc_1args_c)
+      .def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
+      .def("numerator", &RationalFunction::numerator,
+          doc.RationalFunction.numerator.doc)
+      .def("denominator", &RationalFunction::denominator,
+          doc.RationalFunction.denominator.doc)
+      .def("SetIndeterminates", &RationalFunction::SetIndeterminates,
+          py::arg("new_indeterminates"),
+          doc.RationalFunction.SetIndeterminates.doc)
+      .def("__str__",
+          [](const RationalFunction& self) { return fmt::format("{}", self); })
+      .def("__repr__",
+          [](const RationalFunction& self) {
+            return fmt::format("<RationalFunction \"{}\">", self);
+          })
+      .def(
+          "Evaluate",
+          [](const RationalFunction& self, const Environment::map& env) {
+            return self.Evaluate(Environment{env});
+          },
+          py::arg("env"), doc.RationalFunction.Evaluate.doc)
+      .def("ToExpression", &RationalFunction::ToExpression,
+          doc.RationalFunction.ToExpression.doc)
+      .def("EqualTo", &RationalFunction::EqualTo, py::arg("f"),
+          doc.RationalFunction.EqualTo.doc)
+
+      .def(-py::self)
+      // Addition
+      .def(py::self + py::self)
+      .def(py::self + double())
+      .def(double() + py::self)
+      .def(py::self + Polynomial())
+      .def(Polynomial() + py::self)
+      .def(py::self + Monomial())
+      .def(Monomial() + py::self)
+
+      // Subtraction
+      .def(py::self - py::self)
+      .def(py::self - double())
+      .def(double() - py::self)
+      .def(py::self - Polynomial())
+      .def(Polynomial() - py::self)
+      .def(py::self - Monomial())
+      .def(Monomial() - py::self)
+
+      // Multiplication
+      .def(py::self * py::self)
+      .def(py::self * double())
+      .def(double() * py::self)
+      .def(py::self * Polynomial())
+      .def(Polynomial() * py::self)
+      .def(py::self * Monomial())
+      .def(Monomial() * py::self)
+
+      // Division
+      .def(py::self / py::self)
+      .def(py::self / double())
+      .def(double() / py::self)
+      .def(py::self / Polynomial())
+      .def(Polynomial() / py::self)
+      .def(py::self / Monomial())
+      .def(Monomial() / py::self)
+
+      // Logical comparison
+      .def(py::self == py::self)
+      .def(py::self != py::self);
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   polynomial_cls.def("EqualToAfterExpansion",
