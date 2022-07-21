@@ -1,4 +1,4 @@
-#include "sim/common/lcm_buses.h"
+#include "drake/systems/lcm/lcm_buses.h"
 
 #include <stdexcept>
 #include <utility>
@@ -10,8 +10,9 @@
 
 using drake::lcm::DrakeLcmInterface;
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace lcm {
 
 LcmBuses::LcmBuses() = default;
 
@@ -21,12 +22,12 @@ int LcmBuses::size() const {
   return buses_.size();
 }
 
-drake::lcm::DrakeLcmInterface* LcmBuses::Find(
+DrakeLcmInterface* LcmBuses::Find(
     std::string_view description_of_caller,
     const std::string& bus_name) const {
   auto iter = buses_.find(bus_name);
   if (iter != buses_.end()) {
-    drake::lcm::DrakeLcmInterface* result = iter->second;
+    DrakeLcmInterface* result = iter->second;
     DRAKE_DEMAND(result != nullptr);
     return result;
   }
@@ -44,7 +45,7 @@ std::vector<std::string_view> LcmBuses::GetAllBusNames() const {
   return result;
 }
 
-void LcmBuses::Add(std::string bus_name, drake::lcm::DrakeLcmInterface* bus) {
+void LcmBuses::Add(std::string bus_name, DrakeLcmInterface* bus) {
   DRAKE_THROW_UNLESS(bus != nullptr);
   const bool inserted = buses_.emplace(std::move(bus_name), bus).second;
   if (!inserted) {
@@ -54,5 +55,6 @@ void LcmBuses::Add(std::string bus_name, drake::lcm::DrakeLcmInterface* bus) {
   }
 }
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace lcm
+}  // namespace systems
+}  // namespace drake

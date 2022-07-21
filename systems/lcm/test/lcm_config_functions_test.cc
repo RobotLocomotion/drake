@@ -1,4 +1,4 @@
-#include "sim/common/lcm_config_functions.h"
+#include "drake/systems/lcm/lcm_config_functions.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -8,8 +8,9 @@
 using drake::lcm::DrakeLcmParams;
 using drake::systems::DiagramBuilder;
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace lcm {
 namespace {
 
 // A basic acceptance test.
@@ -39,11 +40,12 @@ GTEST_TEST(LcmConfigFunctionsTest, Basic) {
   EXPECT_THAT(drawing, ::testing::HasSubstr("lcm_url=memq://1"));
   EXPECT_THAT(drawing, ::testing::HasSubstr("lcm_url=memq://2"));
 
-  // TODO(jeremy.nimmer) It might be worth trying to pub/sub some messages
+  // TODO(jwnimmer-tri) It might be worth trying to pub/sub some messages
   // here to confirm the wiring? But the risk of a bug seems low, at least
   // for now. We can revisit later, if we ever have doubts.
 }
 
 }  // namespace
-}  // namespace sim
-}  // namespace anzu
+}  // namespace lcm
+}  // namespace systems
+}  // namespace drake

@@ -1,4 +1,4 @@
-#include "sim/common/lcm_buses.h"
+#include "drake/systems/lcm/lcm_buses.h"
 
 #include <gtest/gtest.h>
 
@@ -7,8 +7,9 @@
 using drake::lcm::DrakeLcm;
 using drake::lcm::DrakeLcmInterface;
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace lcm {
 namespace {
 
 // A basic acceptance test.
@@ -34,5 +35,6 @@ GTEST_TEST(LcmBuses, Basic) {
 }
 
 }  // namespace
-}  // namespace sim
-}  // namespace anzu
+}  // namespace lcm
+}  // namespace systems
+}  // namespace drake

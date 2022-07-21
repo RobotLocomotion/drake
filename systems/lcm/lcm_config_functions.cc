@@ -1,4 +1,4 @@
-#include "sim/common/lcm_config_functions.h"
+#include "drake/systems/lcm/lcm_config_functions.h"
 
 #include <memory>
 
@@ -9,15 +9,17 @@
 
 using drake::lcm::DrakeLcm;
 using drake::lcm::DrakeLcmParams;
+using drake::systems::DiagramBuilder;
 using drake::systems::SharedPointerSystem;
 using drake::systems::lcm::LcmInterfaceSystem;
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace lcm {
 
 LcmBuses ApplyLcmBusConfig(
     const std::map<std::string, DrakeLcmParams>& lcm_buses,
-    drake::systems::DiagramBuilder<double>* builder) {
+    DiagramBuilder<double>* builder) {
   DRAKE_THROW_UNLESS(builder != nullptr);
   LcmBuses result;
   for (const auto& [bus_name, lcm_params] : lcm_buses) {
@@ -46,5 +48,6 @@ LcmBuses ApplyLcmBusConfig(
   return result;
 }
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace lcm
+}  // namespace systems
+}  // namespace drake

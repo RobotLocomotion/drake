@@ -6,27 +6,29 @@
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_params.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "sim/common/lcm_buses.h"
+#include "drake/systems/lcm/lcm_buses.h"
 
-namespace anzu {
-namespace sim {
-// TODO(zachfang): move this file (and the cc file) to `drake/systems/lcm`.
+namespace drake {
+namespace systems {
+namespace lcm {
 
-/** Given a list of LCM buses, adds an LcmInterfaceSystem for each bus within
-the given diagram builder, and returns a {bus_name: interface} map.
+/** Given LCM bus names and parameters, adds an LcmInterfaceSystem for each bus
+within the given diagram builder, and returns an LcmBuses object that provides
+access to the DrakeLcmInterface objects that were created.
 
-Because the interface lives within the builder (and so eventually, the diagram),
-the diagram will pump the interface when it's used with a simulator.  Refer to
+Because the interfaces live within the builder (and so eventually, the diagram),
+the diagram will pump the interfaces when it's used with a simulator. Refer to
 the LcmInterfaceSystem documentation for details.
 
-The returned pointers (i.e., the values of the map) remain owned by the builder;
-the returned value merely aliases into the builder (eventually, the diagram).
+The interface pointers remain owned by the builder; the LcmBuses object merely
+aliases into the builder (and then eventually, the diagram).
 
-@param lcm_buses A map of {bus_name: lcm_params} for LCM transceivers to be
+@param lcm_buses A map of {bus_name: params} for LCM transceivers, to be used
 used by drivers, sensors, etc. */
 LcmBuses ApplyLcmBusConfig(
     const std::map<std::string, drake::lcm::DrakeLcmParams>& lcm_buses,
-    drake::systems::DiagramBuilder<double>* builder);
+    systems::DiagramBuilder<double>* builder);
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace lcm
+}  // namespace systems
+}  // namespace drake
