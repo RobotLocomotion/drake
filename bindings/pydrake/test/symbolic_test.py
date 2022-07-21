@@ -2259,3 +2259,32 @@ class TestSinCosSubstitution(unittest.TestCase):
         self.assertEqual(msubs.shape, (4, 1))
         for i in range(4):
             self.assertTrue(msubs[i, 0].EqualTo(me[i]))
+
+
+class TestStereographicSubstitution(unittest.TestCase):
+    def test(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        sx = sym.Variable("sx")
+        sy = sym.Variable("sy")
+        cx = sym.Variable("cx")
+        cy = sym.Variable("cy")
+        tx = sym.Variable("tx")
+        ty = sym.Variable("ty")
+
+        p = sym.Polynomial(2*sx+sy*cx)
+        r = sym.SubstituteStereographicProjection(
+            e=p,
+            sin_cos=[sym.SinCos(s=sx, c=cx), sym.SinCos(s=sy, c=cy)],
+            t=[tx, ty])
+        self.assertTrue(r.numerator().Expand().EqualTo(
+            sym.Polynomial(4*tx*(1+ty*ty) + 2*ty * (1-tx*tx)).Expand()))
+        self.assertTrue(r.denominator().Expand().EqualTo(
+            sym.Polynomial((1+ty*ty)*(1+tx*tx)).Expand()))
+
+        e = 2 * np.sin(x) + np.sin(y) * np.cos(x)
+        r = sym.SubstituteStereographicProjection(e=e, subs={x: tx, y: ty})
+        self.assertTrue(r.numerator().Expand().EqualTo(
+            sym.Polynomial(4*tx*(1+ty*ty) + 2*ty * (1-tx*tx)).Expand()))
+        self.assertTrue(r.denominator().Expand().EqualTo(
+            sym.Polynomial((1+ty*ty)*(1+tx*tx)).Expand()))
