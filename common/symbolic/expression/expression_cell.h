@@ -8,6 +8,7 @@
 #endif
 
 #include <algorithm>  // for cpplint only
+#include <atomic>
 #include <cstddef>
 #include <map>
 #include <ostream>
@@ -42,6 +43,12 @@ bool is_non_negative_integer(double v);
 class ExpressionCell {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionCell)
+
+  virtual ~ExpressionCell();
+
+  /** Returns the intrusive use count (ala boost::intrusive_ptr).
+  @warning This value is currently UNUSED except in unit tests; ignore it. */
+  std::atomic<int>& use_count() const { return use_count_; }
 
   /** Returns expression kind. */
   [[nodiscard]] ExpressionKind get_kind() const { return kind_; }
@@ -97,13 +104,12 @@ class ExpressionCell {
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
  protected:
-  /** Constructs ExpressionCell of kind @p k with @p is_poly and @p is_expanded.
-   */
+  /** Constructs ExpressionCell of kind @p k with @p is_poly and @p is_expanded,
+  with a @p use_count of zero. */
   ExpressionCell(ExpressionKind k, bool is_poly, bool is_expanded);
-  /** Default destructor. */
-  virtual ~ExpressionCell() = default;
 
  private:
+  mutable std::atomic<int> use_count_{0};
   const ExpressionKind kind_{};
   const bool is_polynomial_{false};
   bool is_expanded_{false};
