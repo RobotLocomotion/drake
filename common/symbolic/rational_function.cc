@@ -11,10 +11,7 @@ RationalFunction::RationalFunction()
 RationalFunction::RationalFunction(Polynomial numerator, Polynomial denominator)
     : numerator_{std::move(numerator)}, denominator_{std::move(denominator)} {
   // TODO(hongkai.dai): replace EqualTo(Polynomial()) with Polynomial::empty()
-  if (denominator_.EqualTo(Polynomial() /* zero polynomial */)) {
-    throw std::invalid_argument(
-        "RationalFunction: the denominator should not be 0.");
-  }
+  DRAKE_DEMAND(!denominator_.EqualTo(Polynomial() /* zero polynomial */));
   DRAKE_ASSERT_VOID(CheckIndeterminates());
 }
 

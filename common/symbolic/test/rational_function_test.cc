@@ -81,39 +81,6 @@ TEST_F(SymbolicRationalFunctionTest, ConstructorWithDouble) {
   EXPECT_PRED2(PolyEqual, f1.denominator(), polynomial_one_);
 }
 
-TEST_F(SymbolicRationalFunctionTest, ConstructorWithError) {
-  // Test throwing error in the constructor.
-  // Denominator is 0.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RationalFunction(polynomial_one_, polynomial_zero_),
-      "RationalFunction: the denominator should not be 0.");
-  // The indeterminate in the denominator is a decision variable in the
-  // numerator.
-  const Polynomial p1(var_x_ * var_a_, {var_x_});
-  const Polynomial p2(var_x_ * var_b_ + var_y_, {var_b_, var_y_});
-  if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RationalFunction(p2, p1),
-        "[^]* are used as decision variables in the numerator [^]*");
-  }
-  // The indeterminate in the numerator is a decision variable in the
-  // denominator.
-  const symbolic::Polynomial p3(var_x_ * var_y_, {var_y_});
-  if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RationalFunction(p1, p3),
-        "[^]* are used as indeterminates in the numerator [^]*");
-  }
-
-  if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RationalFunction(Polynomial(var_a_ * var_x_, {var_x_}),
-                         Polynomial(var_a_ * var_x_, {var_a_})),
-        "[^]* are used as indeterminates in the numerator [^]* are used as "
-        "decision variables in the numerator [^]*");
-  }
-}
-
 TEST_F(SymbolicRationalFunctionTest, EqualTo) {
   const Polynomial p1(var_x_ * var_x_ + var_y_);
   const Polynomial p2(var_x_ + var_y_);
