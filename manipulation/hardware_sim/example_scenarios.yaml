@@ -1,0 +1,4 @@
+Example1:
+  directives:
+  - add_directives:
+      file: package://drake/manipulation/models/tri_homecart/homecart.yaml
