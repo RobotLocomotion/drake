@@ -34,8 +34,8 @@ class TestMeldis(unittest.TestCase):
         meshcat = dut.meshcat
         lcm = dut._lcm
 
-        # The path is created by the constructor.
-        self.assertEqual(meshcat.HasPath("/DRAKE_VIEWER"), True)
+        # Polling before any messages doesn't crash.
+        dut._invoke_poll()
 
         # Enqueue the load + draw messages.
         sdf_file = FindResourceOrThrow(
@@ -52,12 +52,14 @@ class TestMeldis(unittest.TestCase):
         diagram.Publish(context)
 
         # The geometry isn't registered until the load is processed.
+        self.assertEqual(meshcat.HasPath("/DRAKE_VIEWER"), False)
         link_path = "/DRAKE_VIEWER/2/plant/acrobot/Link2/0"
         self.assertEqual(meshcat.HasPath(link_path), False)
 
         # Process the load + draw; make sure the geometry exists now.
         lcm.HandleSubscriptions(timeout_millis=0)
         dut._invoke_subscriptions()
+        self.assertEqual(meshcat.HasPath("/DRAKE_VIEWER"), True)
         self.assertEqual(meshcat.HasPath(link_path), True)
 
     def test_contact_applet_point_pair(self):

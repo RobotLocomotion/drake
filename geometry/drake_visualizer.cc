@@ -27,6 +27,7 @@ namespace drake {
 namespace geometry {
 
 using Eigen::Quaterniond;
+using internal::MakeLcmChannelNameForRole;
 using internal::SortedTriplet;
 using math::RigidTransformd;
 using std::array;
@@ -465,6 +466,31 @@ class ShapeToLcm : public ShapeReifier {
 
 }  // namespace
 
+namespace internal {
+std::string MakeLcmChannelNameForRole(const std::string& channel,
+                                      const DrakeVisualizerParams& params) {
+  if (!params.use_role_channel_suffix) {
+    return channel;
+  }
+  DRAKE_DEMAND(params.role != Role::kUnassigned);
+
+  // These channel name transformations must be kept in sync with message
+  // consumers (meldis, drake_visualizer) in order for visualization of all
+  // roles to work.
+  switch (params.role) {
+    case Role::kIllustration:
+      return channel + "_ILLUSTRATION";
+    case Role::kProximity:
+      return channel + "_PROXIMITY";
+    case Role::kPerception:
+      return channel + "_PERCEPTION";
+    case Role::kUnassigned:
+      DRAKE_UNREACHABLE();
+  }
+  DRAKE_UNREACHABLE();
+}
+}  // namespace internal
+
 template <typename T>
 DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
                                     DrakeVisualizerParams params)
@@ -584,7 +610,8 @@ EventStatus DrakeVisualizer<T>::SendGeometryMessage(
     RefreshDeformableMeshData(context);
   }
 
-  SendDrawNonDeformableMessage(query_object, EvalDynamicFrameData(context),
+  SendDrawNonDeformableMessage(query_object, params_,
+                               EvalDynamicFrameData(context),
                                ExtractDoubleOrThrow(context.get_time()), lcm_);
   SendDeformableGeometriesMessage(
       query_object, params_, EvalDeformableMeshData(context),
@@ -674,12 +701,16 @@ void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
     ++link_index;
   }
 
-  lcm::Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message, time);
+
+  std::string channel = MakeLcmChannelNameForRole("DRAKE_VIEWER_LOAD_ROBOT",
+                                                  params);
+  lcm::Publish(lcm, channel, message, time);
 }
 
 template <typename T>
 void DrakeVisualizer<T>::SendDrawNonDeformableMessage(
     const QueryObject<T>& query_object,
+    const DrakeVisualizerParams& params,
     const vector<internal::DynamicFrameData>& dynamic_frames, double time,
     lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_draw message{};
@@ -714,7 +745,9 @@ void DrakeVisualizer<T>::SendDrawNonDeformableMessage(
     message.quaternion[i][3] = q.z();
   }
 
-  lcm::Publish(lcm, "DRAKE_VIEWER_DRAW", message, time);
+  std::string channel = MakeLcmChannelNameForRole("DRAKE_VIEWER_DRAW",
+                                                  params);
+  lcm::Publish(lcm, channel, message, time);
 }
 
 template <typename T>
@@ -744,7 +777,9 @@ void DrakeVisualizer<T>::SendDeformableGeometriesMessage(
     message.geom[i] =
         MakeDeformableSurfaceMesh(vertex_positions, data, params.default_color);
   }
-  lcm::Publish(lcm, "DRAKE_VIEWER_DEFORMABLE", message, time);
+  std::string channel = MakeLcmChannelNameForRole("DRAKE_VIEWER_DEFORMABLE",
+                                                  params);
+  lcm::Publish(lcm, channel, message, time);
 }
 
 template <typename T>
