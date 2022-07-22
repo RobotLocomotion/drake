@@ -141,7 +141,8 @@ class UrdfInnerParser {
 
 const char* kWorldName = "world";
 
-SpatialInertia<double> UrdfInnerParser::ExtractSpatialInertiaAboutBoExpressedInB(
+SpatialInertia<double>
+UrdfInnerParser::ExtractSpatialInertiaAboutBoExpressedInB(
     XMLElement* node) {
   RigidTransformd X_BBi;
 
@@ -936,7 +937,7 @@ std::vector<ModelInstanceIndex> UrdfParser::AddAllModels(
     const std::optional<std::string>& scope_name,
     const ParsingWorkspace& workspace) {
   auto result = AddModel(data_source, {}, scope_name, workspace);
-  if (result.has_value)  {
+  if (result.has_value()) {
     return {*result};
   }
   return {};

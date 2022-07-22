@@ -62,6 +62,23 @@ FileType DetermineFileType(const std::string& file_name) {
       "The file type '{}' is not supported for '{}'",
       ext, file_name));
 }
+
+internal::ParserInterface* SelectParser(const std::string& file_name) {
+  static internal::UrdfParser urdf;
+  static internal::SdfParser sdf;
+  static internal::MujocoParser mujoco;
+  const FileType type = DetermineFileType(file_name);
+  switch (type) {
+    case FileType::kUrdf:
+      return &urdf;
+    case FileType::kSdf:
+      return &sdf;
+    case FileType::kMjcf:
+      return &mujoco;
+  }
+  DRAKE_UNREACHABLE();
+}
+
 }  // namespace
 
 std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
@@ -76,22 +93,13 @@ std::vector<ModelInstanceIndex> Parser::CompositeAddAllModelsFromFile(
   CollisionFilterGroupResolver resolver{plant_};
   ParsingWorkspace workspace{
     package_map_, diagnostic_policy_, plant_,
-    composite ? &composite->collision_resolver() : &resolver};
-  const FileType type = DetermineFileType(file_name);
+    composite ? &composite->collision_resolver() : &resolver, SelectParser};
+  internal::ParserInterface* parser = SelectParser(file_name);
   std::vector<ModelInstanceIndex> result;
-  if (type == FileType::kSdf) {
-    result = AddModelsFromSdf(data_source, workspace);
-  } else if (type == FileType::kUrdf) {
-    const std::optional<ModelInstanceIndex> maybe_model =
-        AddModelFromUrdf(data_source, {}, {}, workspace);
-    if (maybe_model.has_value()) {
-      result = {*maybe_model};
-    } else {
-      throw std::runtime_error(
-          fmt::format("{}: URDF model file parsing failed", file_name));
-    }
-  } else {  // type == FileType::kMjcf
-    result = {AddModelFromMujocoXml(data_source, {}, {}, plant_)};
+  result = parser->AddAllModels(data_source, {}, workspace);
+  if (result.empty()) {
+    throw std::runtime_error(
+        fmt::format("{}: parsing failed", file_name));
   }
   if (!composite) { resolver.Resolve(diagnostic_policy_); }
   return result;
@@ -111,17 +119,10 @@ ModelInstanceIndex Parser::CompositeAddModelFromFile(
   CollisionFilterGroupResolver resolver{plant_};
   ParsingWorkspace workspace{
     package_map_, diagnostic_policy_, plant_,
-    composite ? &composite->collision_resolver() : &resolver};
-  const FileType type = DetermineFileType(file_name);
+    composite ? &composite->collision_resolver() : &resolver, SelectParser};
   std::optional<ModelInstanceIndex> maybe_model;
-  if (type == FileType::kSdf) {
-    maybe_model = AddModelFromSdf(data_source, model_name, workspace);
-  } else if (type == FileType::kUrdf) {
-    maybe_model = AddModelFromUrdf(data_source, model_name, {}, workspace);
-  } else {
-    maybe_model =
-        AddModelFromMujocoXml(data_source, model_name, {}, plant_);
-  }
+  internal::ParserInterface* parser = SelectParser(file_name);
+  maybe_model = parser->AddModel(data_source, model_name, {}, workspace);
   if (!maybe_model.has_value()) {
     throw std::runtime_error(
         fmt::format("{}: parsing failed", file_name));
@@ -147,16 +148,10 @@ ModelInstanceIndex Parser::CompositeAddModelFromString(
   CollisionFilterGroupResolver resolver{plant_};
   ParsingWorkspace workspace{
     package_map_, diagnostic_policy_, plant_,
-    composite ? &composite->collision_resolver() : &resolver};
-  const FileType type = DetermineFileType(pseudo_name);
+    composite ? &composite->collision_resolver() : &resolver, SelectParser};
   std::optional<ModelInstanceIndex> maybe_model;
-  if (type == FileType::kSdf) {
-    maybe_model = AddModelFromSdf(data_source, model_name, workspace);
-  } else if (type == FileType::kUrdf) {
-    maybe_model = AddModelFromUrdf(data_source, model_name, {}, workspace);
-  } else {  // FileType::kMjcf
-    maybe_model = AddModelFromMujocoXml(data_source, model_name, {}, plant_);
-  }
+  internal::ParserInterface* parser = SelectParser(pseudo_name);
+  maybe_model = parser->AddModel(data_source, model_name, {}, workspace);
   if (!maybe_model.has_value()) {
     throw std::runtime_error(
         fmt::format("{}: parsing failed", pseudo_name));

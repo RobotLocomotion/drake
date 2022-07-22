@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_parsing_workspace.h"

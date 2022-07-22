@@ -74,9 +74,9 @@ void ApplyDefaultAttributes(const XMLElement& default_node, XMLElement* node) {
   }
 }
 
-class MujocoParser {
+class MujocoInnerParser {
  public:
-  explicit MujocoParser(MultibodyPlant<double>* plant) : plant_{plant} {}
+  explicit MujocoInnerParser(MultibodyPlant<double>* plant) : plant_{plant} {}
 
   RigidTransformd ParseTransform(
       XMLElement* node, const RigidTransformd& X_default = RigidTransformd{}) {
@@ -975,8 +975,25 @@ ModelInstanceIndex AddModelFromMujocoXml(
     }
   }
 
-  MujocoParser parser(plant);
+  MujocoInnerParser parser(plant);
   return parser.Parse(model_name_in, parent_model_name, &xml_doc);
+}
+
+MujocoParser::MujocoParser() {}
+MujocoParser::~MujocoParser() {}
+std::optional<ModelInstanceIndex> MujocoParser::AddModel(
+    const DataSource& data_source, const std::string& model_name,
+    const std::optional<std::string>& scope_name,
+    const ParsingWorkspace& workspace) {
+  return AddModelFromMujocoXml(data_source, model_name, scope_name,
+                               workspace.plant);
+}
+
+std::vector<ModelInstanceIndex> MujocoParser::AddAllModels(
+    const DataSource& data_source,
+    const std::optional<std::string>& scope_name,
+    const ParsingWorkspace& workspace) {
+  return {*AddModel(data_source, {}, scope_name, workspace)};
 }
 
 }  // namespace internal
