@@ -57,7 +57,8 @@ class ModelDirectivesToSdf:
         self.all_directives = []
 
     def find_frame(self, name: str) -> str:
-        """Finds and returns a frame if it exsits in all directives"""
+        """Finds and returns a frame if it exists in all directives,
+           if 0 or more than one are found it returns None."""
         frame = None
         for directive in self.all_directives:
             if 'add_frame' in directive:
@@ -73,6 +74,7 @@ class ModelDirectivesToSdf:
         return frame
 
     def resolve_and_scope_frame(self, frame_name: str) -> str:
+        """Returns the frame scoped, None if the scope could not be found."""
         frame = self.find_frame(frame_name)
         # Check if it's atached to other frame
         final_frame = frame
@@ -179,7 +181,7 @@ class ModelDirectivesToSdf:
         if merge_include:
             model_root.set('placement_frame',
                            weld['child'].split(SCOPE_DELIMITER)[-1])
-            pose_elem = ET.SubElement(
+            ET.SubElement(
                 model_root,
                 'pose',
                 relative_to=scoped_parent_name_str)
@@ -188,7 +190,7 @@ class ModelDirectivesToSdf:
                 include_elem, 'placement_frame')
             placement_frame_elem.text = \
                 weld['child'].split(SCOPE_DELIMITER)[-1]
-            pose_elem = ET.SubElement(
+            ET.SubElement(
                 include_elem,
                 'pose',
                 relative_to=scoped_parent_name_str)
