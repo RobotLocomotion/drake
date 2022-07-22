@@ -63,6 +63,21 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
     const ParsingWorkspace& workspace);
 
+class SdfParser : public ParserInterface {
+ public:
+  SdfParser();
+  ~SdfParser() override;
+  std::optional<ModelInstanceIndex> AddModel(
+      const DataSource& data_source, const std::string& model_name,
+      const std::optional<std::string>& scope_name,
+      const ParsingWorkspace& workspace) override;
+
+  std::vector<ModelInstanceIndex> AddAllModels(
+      const DataSource& data_source,
+      const std::optional<std::string>& scope_name,
+      const ParsingWorkspace& workspace) override;
+};
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

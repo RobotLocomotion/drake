@@ -79,7 +79,9 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
       "drake/multibody/benchmarks/acrobot/acrobot.urdf");
   const std::string xml_name = FindResourceOrThrow(
       "drake/multibody/parsing/dm_control/suite/acrobot.xml");
-
+  const std::string dmd_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/process_model_directives_test/"
+      "acrobot.dmd.yaml");
   // Load an SDF via string.
   {
     const std::string sdf_contents = ReadEntireFile(sdf_name);
@@ -104,6 +106,16 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     const ModelInstanceIndex id = dut.AddModelFromString(xml_contents, "xml");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+  }
+
+  // Load a DMD.YAML via string.
+  {
+    const std::string dmd_contents = ReadEntireFile(dmd_name);
+    MultibodyPlant<double> plant(0.0);
+    Parser dut(&plant);
+    const ModelInstanceIndex id =
+        dut.AddModelFromString(dmd_contents, "dmd.yaml");
     EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
   }
 }
@@ -185,10 +197,10 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
   MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromFile("acrobot.foo"),
-      ".*file type '\\.foo' is not supported .*");
+      ".*file.*\\.foo.* is not.*recognized.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddAllModelsFromFile("acrobot.foo"),
-      ".*file type '\\.foo' is not supported .*");
+      ".*file.*\\.foo.* is not.*recognized.*");
 
   // Uppercase extensions are accepted (i.e., still call the underlying SDF or
   // URDF parser, shown here by it generating a different exception message).
@@ -217,7 +229,7 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   // Unknown extension is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromString("<bad/>", "weird-ext"),
-      ".*file type '\\.weird-ext' is not supported .*");
+      ".*file.*\\.weird-ext.* is not.*recognized.*");
 }
 
 // If a non-Drake URDF or SDF file uses package URIs, this confirms that it is
