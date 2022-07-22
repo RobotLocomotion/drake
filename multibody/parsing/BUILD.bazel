@@ -180,6 +180,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":detail_misc",
+        ":detail_parsing_workspace",
         ":scoped_names",
         "//multibody/plant",
         "@fmt",

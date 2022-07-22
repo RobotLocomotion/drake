@@ -1,5 +1,9 @@
 #pragma once
 
+#include <optional>
+#include <string>
+#include <vector>
+
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -15,7 +19,7 @@ struct ParsingWorkspace;
 
 class ParserInterface {
  public:
-  virtual ~ParserInterface();
+  virtual ~ParserInterface() {}
   virtual std::optional<ModelInstanceIndex> AddModel(
       const DataSource& data_source, const std::string& model_name,
       const std::optional<std::string>& scope_name,
@@ -26,6 +30,7 @@ class ParserInterface {
       const std::optional<std::string>& scope_name,
       const ParsingWorkspace& workspace) = 0;
 };
+inline ParserInterface* NoSelect(const std::string&) { DRAKE_UNREACHABLE(); }
 
 // ParsingWorkspace bundles the commonly-needed elements for parsing routines.
 // It owns nothing; all members are references or pointers to objects owned
@@ -44,22 +49,22 @@ struct ParsingWorkspace {
       const drake::internal::DiagnosticPolicy& diagnostic_in,
       MultibodyPlant<double>* plant_in,
       internal::CollisionFilterGroupResolver* collision_resolver_in,
-      ParserInterface* parser_interface_in)
+      std::function<ParserInterface*(const std::string&)> parser_selector_in)
       : package_map(package_map_in),
         diagnostic(diagnostic_in),
         plant(plant_in),
         collision_resolver(collision_resolver_in),
-        parser_interface(parser_interface_in) {
+        parser_selector(parser_selector_in) {
     DRAKE_DEMAND(plant != nullptr);
     DRAKE_DEMAND(collision_resolver != nullptr);
-    DRAKE_DEMAND(parser_interface != nullptr);
+    DRAKE_DEMAND(parser_selector != nullptr);
   }
 
   const PackageMap& package_map;
   const drake::internal::DiagnosticPolicy& diagnostic;
   MultibodyPlant<double>* const plant;
   internal::CollisionFilterGroupResolver* const collision_resolver;
-  ParserInterface* const parser_interface;
+  std::function<ParserInterface*(const std::string&)> const parser_selector;
 };
 
 }  // namespace internal
