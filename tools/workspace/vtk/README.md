@@ -74,6 +74,11 @@ where the artifacts from `build_binaries_with_docker` reside on your local
 machine.  You will additionally need to modify `repository.bzl` to update the
 `sha256` for the corresponding archives (search `sha256` in that file).
 
+VTK archives for compiling drake hosted at
+https://drake-packages.csail.mit.edu/vtk are accessible for 5 years after the
+date of creation.  Afterward they are moved to glacier storage on s3 and will
+not be available for public download.
+
 ### macOS
 
 Compiled artifacts are produced by
