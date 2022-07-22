@@ -27,11 +27,6 @@ Gurobi, you will need to [build Drake from source](/from_source.html).
 ## Stable Releases
 
 <div class="warning" markdown="1">
-Drake's pip wheels are only published for CPython 3.8 through CPython 3.9
-running on Linux.  In the future, we intend to publish macOS wheel builds.
-</div>
-
-<div class="warning" markdown="1">
 Drake does not support the Python environment supplied by Anaconda. Before
 installing or using Drake, please `conda deactivate` (repeatedly, until even
 the conda base environment has been deactivated) such that none of the paths
@@ -68,6 +63,8 @@ For Ubuntu 20.04, install these additional libraries:
 sudo apt-get install --no-install-recommends \
   libpython3.8 libx11-6 libsm6 libxt6 libglib2.0-0
 ```
+
+For macOS, ensure that you're using Homebrew Python (not Apple's system Python).
 
 Activate the virtual environment:
 

@@ -87,7 +87,7 @@ All other packages support both C++ and/or Python.
 
 |                       | Ubuntu | macOS |
 |-----------------------|--------|-------|
-| Using pip             | [Stable](/pip.html#stable-releases) | |
+| Using pip             | [Stable](/pip.html#stable-releases) | [Stable](/pip.html#stable-releases) |
 | Using apt (deb)       | [Stable](/apt.html#stable-releases) | |
 | Using tar.gz download | [Stable](/from_binary.html#stable-releases) or [Nightly](/from_binary.html#nightly-releases) | [Stable](/from_binary.html#stable-releases) or [Nightly](/from_binary.html#nightly-releases) |
 | Using Docker Hub      | [Stable](/docker.html#stable-releases) or [Nightly](/docker.html#nightly-releases) | [Stable](/docker.html#stable-releases) or [Nightly](/docker.html#nightly-releases) |
