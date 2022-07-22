@@ -199,6 +199,13 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "noscipy_test",
+    deps = [
+        ":solvers",
+    ],
+)
+
+drake_py_unittest(
     name = "nlopt_solver_test",
     args = select({
         "//tools:no_nlopt": ["TestNloptSolver.unavailable"],
