@@ -50,12 +50,12 @@ namespace {
 using JointEffortLimits = std::map<std::string, double>;
 
 // Helper class to share infrastructure among parsing methods.
-class UrdfParser {
+class UrdfInnerParser {
  public:
   // Note that @p data_source, @p xml_doc, and @p w are aliased for the
   // lifetime of this object. Their lifetimes must exceed that of the created
   // object.
-  UrdfParser(
+  UrdfInnerParser(
       const DataSource* data_source,
       const std::string& model_name,
       const std::optional<std::string>& parent_model_name,
@@ -141,7 +141,7 @@ class UrdfParser {
 
 const char* kWorldName = "world";
 
-SpatialInertia<double> UrdfParser::ExtractSpatialInertiaAboutBoExpressedInB(
+SpatialInertia<double> UrdfInnerParser::ExtractSpatialInertiaAboutBoExpressedInB(
     XMLElement* node) {
   RigidTransformd X_BBi;
 
@@ -194,7 +194,7 @@ SpatialInertia<double> UrdfParser::ExtractSpatialInertiaAboutBoExpressedInB(
       body_mass, p_BoBcm_B, I_BBcm_B);
 }
 
-void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
+void UrdfInnerParser::ParseBody(XMLElement* node, MaterialMap* materials) {
   // TODO(rpoyner-tri): legacy undocumented tag: remove, fix?
   std::string drake_ignore;
   if (ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
@@ -275,7 +275,7 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
   }
 }
 
-void UrdfParser::ParseCollisionFilterGroup(XMLElement* node) {
+void UrdfInnerParser::ParseCollisionFilterGroup(XMLElement* node) {
   auto next_child_element = [](const ElementNode& data_element,
                                const char* element_name) {
     return std::get<XMLElement*>(data_element)
@@ -331,11 +331,11 @@ void UrdfParser::ParseCollisionFilterGroup(XMLElement* node) {
 // parent link should be saved.
 // @param[out] child_link_name A reference to a string where the name of the
 // child link should be saved.
-void UrdfParser::ParseJointKeyParams(XMLElement* node,
-                                     std::string* name,
-                                     std::string* type,
-                                     std::string* parent_link_name,
-                                     std::string* child_link_name) {
+void UrdfInnerParser::ParseJointKeyParams(XMLElement* node,
+                                          std::string* name,
+                                          std::string* type,
+                                          std::string* parent_link_name,
+                                          std::string* child_link_name) {
   if (!ParseStringAttribute(node, "name", name)) {
     Error(*node, "joint tag is missing name attribute");
     return;
@@ -371,7 +371,7 @@ void UrdfParser::ParseJointKeyParams(XMLElement* node,
   }
 }
 
-void UrdfParser::ParseJointLimits(
+void UrdfInnerParser::ParseJointLimits(
     XMLElement* node, double* lower, double* upper,
     double* velocity, double* acceleration, double* effort) {
   *lower = -std::numeric_limits<double>::infinity();
@@ -390,7 +390,7 @@ void UrdfParser::ParseJointLimits(
   }
 }
 
-void UrdfParser::ParseJointDynamics(XMLElement* node, double* damping) {
+void UrdfInnerParser::ParseJointDynamics(XMLElement* node, double* damping) {
   *damping = 0.0;
   double coulomb_friction = 0.0;
   double coulomb_window = std::numeric_limits<double>::epsilon();
@@ -413,7 +413,7 @@ void UrdfParser::ParseJointDynamics(XMLElement* node, double* damping) {
   }
 }
 
-const Body<double>* UrdfParser::GetBodyForElement(
+const Body<double>* UrdfInnerParser::GetBodyForElement(
     const std::string& element_name,
     const std::string& link_name) {
   auto plant = w_.plant;
@@ -430,7 +430,7 @@ const Body<double>* UrdfParser::GetBodyForElement(
   return &plant->GetBodyByName(link_name, model_instance_);
 }
 
-void UrdfParser::ParseJoint(
+void UrdfInnerParser::ParseJoint(
     JointEffortLimits* joint_effort_limits,
     XMLElement* node) {
   // TODO(rpoyner-tri): legacy undocumented tag: remove, fix?
@@ -570,7 +570,7 @@ void UrdfParser::ParseJoint(
   joint_effort_limits->emplace(name, effort);
 }
 
-void UrdfParser::ParseMechanicalReduction(const XMLElement& node) {
+void UrdfInnerParser::ParseMechanicalReduction(const XMLElement& node) {
   const XMLElement* child = node.FirstChildElement("mechanicalReduction");
   if (!child) { return; }
   const char* text = child->GetText();
@@ -584,7 +584,7 @@ void UrdfParser::ParseMechanicalReduction(const XMLElement& node) {
               node.Name(), text));
 }
 
-void UrdfParser::ParseTransmission(
+void UrdfInnerParser::ParseTransmission(
     const JointEffortLimits& joint_effort_limits,
     XMLElement* node) {
   WarnUnsupportedElement(*node, "leftActuator");
@@ -716,7 +716,7 @@ void UrdfParser::ParseTransmission(
   }
 }
 
-void UrdfParser::ParseFrame(XMLElement* node) {
+void UrdfInnerParser::ParseFrame(XMLElement* node) {
   std::string name;
   if (!ParseStringAttribute(node, "name", &name)) {
     Error(*node, "parsing frame name.");
@@ -738,7 +738,7 @@ void UrdfParser::ParseFrame(XMLElement* node) {
       name, body->body_frame(), X_BF));
 }
 
-void UrdfParser::ParseBushing(XMLElement* node) {
+void UrdfInnerParser::ParseBushing(XMLElement* node) {
   // Functor to read a child element with a vector valued `value` attribute.
   // Returns a zero vector if unable to find the tag or if the value attribute
   // is improperly formed.
@@ -793,7 +793,7 @@ void UrdfParser::ParseBushing(XMLElement* node) {
   ParseLinearBushingRollPitchYaw(read_vector, read_frame, w_.plant);
 }
 
-std::optional<ModelInstanceIndex> UrdfParser::Parse() {
+std::optional<ModelInstanceIndex> UrdfInnerParser::Parse() {
   XMLElement* node = xml_doc_->FirstChildElement("robot");
   if (!node) {
     Error(*xml_doc_, "URDF does not contain a robot tag.");
@@ -916,9 +916,30 @@ std::optional<ModelInstanceIndex> AddModelFromUrdf(
     }
   }
 
-  UrdfParser parser(&data_source, model_name_in, parent_model_name,
-                    data_source.GetRootDir(), &xml_doc, workspace);
+  UrdfInnerParser parser(&data_source, model_name_in, parent_model_name,
+                         data_source.GetRootDir(), &xml_doc, workspace);
   return parser.Parse();
+}
+
+UrdfParser::UrdfParser() {}
+UrdfParser::~UrdfParser() {}
+
+std::optional<ModelInstanceIndex> UrdfParser::AddModel(
+    const DataSource& data_source, const std::string& model_name,
+    const std::optional<std::string>& scope_name,
+    const ParsingWorkspace& workspace) {
+  return AddModelFromUrdf(data_source, model_name, scope_name, workspace);
+}
+
+std::vector<ModelInstanceIndex> UrdfParser::AddAllModels(
+    const DataSource& data_source,
+    const std::optional<std::string>& scope_name,
+    const ParsingWorkspace& workspace) {
+  auto result = AddModel(data_source, {}, scope_name, workspace);
+  if (result.has_value)  {
+    return {*result};
+  }
+  return {};
 }
 
 }  // namespace internal
