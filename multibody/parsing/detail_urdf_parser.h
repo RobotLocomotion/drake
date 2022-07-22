@@ -49,6 +49,21 @@ std::optional<ModelInstanceIndex> AddModelFromUrdf(
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace);
 
+class UrdfParser : public ParserInterface {
+ public:
+  UrdfParser();
+  ~UrdfParser() override;
+  std::optional<ModelInstanceIndex> AddModel(
+      const DataSource& data_source, const std::string& model_name,
+      const std::optional<std::string>& scope_name,
+      const ParsingWorkspace& workspace) override;
+
+  std::vector<ModelInstanceIndex> AddAllModels(
+      const DataSource& data_source,
+      const std::optional<std::string>& scope_name,
+      const ParsingWorkspace& workspace) override;
+};
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
