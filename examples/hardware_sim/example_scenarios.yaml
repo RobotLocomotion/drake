@@ -1,0 +1,5 @@
+# This simulation loads the "TRI homecart" model (two arms and a countertop).
+Homecart:
+  directives:
+  - add_directives:
+      file: package://drake/manipulation/models/tri_homecart/homecart.yaml
