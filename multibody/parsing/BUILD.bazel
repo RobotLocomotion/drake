@@ -189,6 +189,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "detail_dmd_parser",
+    srcs = ["detail_dmd_parser.cc"],
+    hdrs = ["detail_dmd_parser.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":detail_misc",
+        ":detail_parsing_workspace",
+        ":scoped_names",
+        "//multibody/plant",
+        "@fmt",
+    ],
+)
+
+drake_cc_library(
     name = "detail_parsing_workspace",
     hdrs = ["detail_parsing_workspace.h"],
     internal = True,
@@ -222,6 +237,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
+        ":detail_dmd_parser",
         ":detail_mujoco_parser",
         ":detail_parsing_workspace",
         ":detail_sdf_parser",
