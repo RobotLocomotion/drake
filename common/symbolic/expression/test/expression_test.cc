@@ -112,6 +112,7 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression pi_{M_PI};
   const Expression neg_pi_{-M_PI};
   const Expression e_{M_E};
+  const Expression inf_{std::numeric_limits<double>::infinity()};
 
   const Expression c1_{-10.0};
   const Expression c2_{1.0};
@@ -156,6 +157,12 @@ class SymbolicExpressionTest : public ::testing::Test {
 
 TEST_F(SymbolicExpressionTest, Dummy) {
   EXPECT_TRUE(is_nan(dummy_value<Expression>::get()));
+}
+
+TEST_F(SymbolicExpressionTest, AssignCopyFromConstant) {
+  Expression e{x_};
+  e = c2_;
+  EXPECT_TRUE(is_constant(e, 1.0));
 }
 
 TEST_F(SymbolicExpressionTest, IsConstant1) {
@@ -1000,6 +1007,10 @@ TEST_F(SymbolicExpressionTest, Add4) {
   EXPECT_EQ(e2.to_string(), "(-2 - x - 3 * y)");
 }
 
+TEST_F(SymbolicExpressionTest, Add5) {
+  EXPECT_EQ((inf_ + (-inf_)).to_string(), e_nan_.to_string());
+}
+
 TEST_F(SymbolicExpressionTest, Inc1) {
   // Prefix increment
   Expression x{var_x_};
@@ -1248,6 +1259,10 @@ TEST_F(SymbolicExpressionTest, Div4) {
   const Environment env2{{var_x_, 1.0}, {var_y_, 0.0}};
   EXPECT_EQ(e.Evaluate(env1), 1.0 / 5.0);
   EXPECT_THROW(e.Evaluate(env2), std::runtime_error);
+}
+
+TEST_F(SymbolicExpressionTest, Div5) {
+  EXPECT_EQ((inf_ / inf_).to_string(), e_nan_.to_string());
 }
 
 // This test checks whether symbolic::Expression is compatible with
@@ -2614,7 +2629,10 @@ TEST_F(SymbolicExpressionTest, ExponentialDistribution) {
     const Expression& e, const Environment& env,
     RandomGenerator* const random_generator) {
   RandomGenerator random_generator_copy(*random_generator);
-  const double v1{e.Evaluate(env, random_generator)};
+  const double v1{
+      e.GetVariables().empty()
+          ? e.Evaluate(random_generator)
+          : e.Evaluate(env, random_generator)};
 
   const Environment env_extended{
       PopulateRandomVariables(env, e.GetVariables(), &random_generator_copy)};
@@ -2641,6 +2659,7 @@ TEST_F(SymbolicExpressionTest, EvaluateExpressionsIncludingRandomVariables) {
   const Variable exp2{"exponential2", Variable::Type::RANDOM_EXPONENTIAL};
 
   const vector<Expression> expressions{
+      c2_,
       uni1 * uni2,
       gau1 * gau2,
       exp1 * exp2,
