@@ -7,6 +7,7 @@
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_composite_parse.h"
+#include "drake/multibody/parsing/detail_dmd_parser.h"
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 #include "drake/multibody/parsing/detail_parsing_workspace.h"
 #include "drake/multibody/parsing/detail_sdf_parser.h"
@@ -46,27 +47,37 @@ Parser::Parser(
 }
 
 namespace {
-enum class FileType { kSdf, kUrdf, kMjcf };
+
+bool EndsWith(const std::string_view str, const std::string_view ext) {
+  return (ext.size() < str.size()) &&
+      std::equal(str.end() - ext.size(), str.end(), ext.begin());
+}
+
+enum class FileType { kSdf, kUrdf, kMjcf, kDmdf };
 FileType DetermineFileType(const std::string& file_name) {
-  const std::string ext = filesystem::path(file_name).extension().string();
-  if ((ext == ".urdf") || (ext == ".URDF")) {
+  if (EndsWith(file_name, ".urdf") || EndsWith(file_name, ".URDF")) {
     return FileType::kUrdf;
   }
-  if ((ext == ".sdf") || (ext == ".SDF")) {
+  if (EndsWith(file_name, ".sdf") || EndsWith(file_name, ".SDF")) {
     return FileType::kSdf;
   }
-  if ((ext == ".xml") || (ext == ".XML")) {
+  if (EndsWith(file_name, ".xml") || EndsWith(file_name, ".XML")) {
     return FileType::kMjcf;
   }
+  if (EndsWith(file_name, ".dmd.yaml") || EndsWith(file_name, ".DMD.YAML")) {
+    return FileType::kDmdf;
+  }
   throw std::runtime_error(fmt::format(
-      "The file type '{}' is not supported for '{}'",
-      ext, file_name));
+      "The file '{}' is not a recognized type."
+      " Known types are: .urdf, .sdf, .xml (Mujoco), .dmd.yaml",
+      file_name));
 }
 
 internal::ParserInterface* SelectParser(const std::string& file_name) {
   static internal::UrdfParser urdf;
   static internal::SdfParser sdf;
   static internal::MujocoParser mujoco;
+  static internal::DmdParser dmd;
   const FileType type = DetermineFileType(file_name);
   switch (type) {
     case FileType::kUrdf:
@@ -75,6 +86,8 @@ internal::ParserInterface* SelectParser(const std::string& file_name) {
       return &sdf;
     case FileType::kMjcf:
       return &mujoco;
+    case FileType::kDmdf:
+      return &dmd;
   }
   DRAKE_UNREACHABLE();
 }
