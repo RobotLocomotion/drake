@@ -20,20 +20,11 @@ CompositeParse::CompositeParse(Parser* parser)
                  &parser->plant(), &resolver_, SelectParser) {}
 
 CompositeParse::~CompositeParse() {
-  resolver_.Resolve(parser_->diagnostic_policy_);
-}
-
-CollisionFilterGroupResolver& CompositeParse::collision_resolver() {
-  return resolver_;
+  resolver_.Resolve(workspace_.diagnostic);
 }
 
 const ParsingWorkspace& CompositeParse::workspace() {
   return workspace_;
-}
-
-ModelInstanceIndex CompositeParse::AddModelFromFile(
-    const std::string& file_name, const std::string& model_name) {
-  return parser_->CompositeAddModelFromFile(file_name, model_name, this);
 }
 
 }  // namespace internal

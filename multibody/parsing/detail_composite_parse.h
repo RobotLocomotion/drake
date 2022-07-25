@@ -23,13 +23,7 @@ class CompositeParse {
 
   ~CompositeParse();
 
-  CollisionFilterGroupResolver& collision_resolver();
   const ParsingWorkspace& workspace();
-
-  ModelInstanceIndex AddModelFromFile(
-    const std::string& file_name,
-    const std::string& model_name);
-  // TODO(rpoyner-tri): add model parsing methods as needed.
 
  private:
   explicit CompositeParse(Parser* parser);
