@@ -335,7 +335,7 @@ Vector3d ExtractJointAxis(
 }
 
 // Extracts a Vector3d representation of `axis` and `axis2` for joints with both
-// attributes.
+// attributes. Both axes are required. Otherwise, an error is triggered.
 std::pair<Vector3d, Vector3d> ExtractJointAxisAndAxis2(
     const DiagnosticPolicy& diagnostic,
     const sdf::Model& model_spec,
@@ -711,12 +711,15 @@ void AddJointFromSpecification(
       // In Drake's implementation of universal joint, the rotation axies are
       // built into the frames M and F; the first rotation is about Fx and the
       // second is about My. Therefore, we can't arbitrarily set them M and F to
-      // be J. We have to deviate from the convention here.
+      // be J. We have to be more careful on how we define F and M so that the
+      // joint imposes the correct kinematics.
 
       // Construct frame I and find X_PI and X_CI. See definition of frame I in
       // the class doc of UniversalJoint.
       auto [Ix_J, Iy_J] =
           ExtractJointAxisAndAxis2(diagnostic, model_spec, joint_spec);
+      // Safe to normalize as libsdformat parser would have generated an error
+      // if the axes are zero. 
       Ix_J.normalize();
       Iy_J.normalize();
       const Vector3d Iz_J = Ix_J.cross(Iy_J);
@@ -733,12 +736,12 @@ void AddJointFromSpecification(
       } else {
         const RigidTransformd X_JI(math::RotationMatrix<double>{R_JI});
         // The value of X_PJ is the identity if X_PJ == nullopt.
-        const auto X_PI = X_PJ.has_value() ? (*X_PJ) * X_JI : X_JI;
-        const auto X_CI = X_CJ * X_JI;
+        const RigidTransformd X_PI = X_PJ.has_value() ? (*X_PJ) * X_JI : X_JI;
+        const RigidTransformd X_CI = X_CJ * X_JI;
         // Frames M and F should both coincide with I when rotation angles are
         // zero.
-        const auto& X_PF = X_PI;
-        const auto& X_CM = X_CI;
+        const RigidTransformd& X_PF = X_PI;
+        const RigidTransformd& X_CM = X_CI;
         const auto& joint = plant->AddJoint<UniversalJoint>(
             joint_spec.Name(),
             parent_body, X_PF,
