@@ -50,13 +50,15 @@ index 2558f30..dac9334 100644
  
  #Sequential:
 diff --git a/Makefile b/Makefile
-index 3c0f645..55ac6ba 100644
+index 59d74d7..4a2b467 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -59,6 +59,17 @@ $(libdir)/libpord$(PLAT)$(LIBEXT):
- 	  cp $(LPORDDIR)/libpord$(LIBEXT) $@; \
+@@ -103,8 +103,16 @@ $(libdir)/libpord$(PLAT)$(LIBEXT_SHARED):
+ 	  cp $(LPORDDIR)/libpord$(LIBEXT_SHARED) $@; \
  	fi;
  
+-
+-
 +install: d
 +	if ( test ! -d $(PREFIX)/lib ) ; then mkdir -p $(PREFIX)/lib ; fi
 +	if ( test ! -d $(PREFIX)/include ) ; then mkdir -p $(PREFIX)/include ; fi
@@ -67,7 +69,6 @@ index 3c0f645..55ac6ba 100644
 +	done
 +	ginstall -m 644 -t $(PREFIX)/include include/*.h
 +	ginstall -m 644 -t $(PREFIX)/include/mumps_seq libseq/mpi.h
-+
+ 
  clean:
  	(cd src; $(MAKE) clean)
- 	(cd examples; $(MAKE) clean)
