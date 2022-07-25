@@ -125,6 +125,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:identifier_pybind",
         "//bindings/pydrake/common:monostate_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
@@ -157,6 +158,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_srcs = ["lcm_py.cc"],
     package_info = PACKAGE_INFO,

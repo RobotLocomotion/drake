@@ -34,9 +34,9 @@ PYBIND11_MODULE(analysis, m) {
     constexpr auto& cls_doc = pydrake_doc.drake.systems.SimulatorConfig;
     py::class_<Class> cls(m, "SimulatorConfig", cls_doc.doc);
     cls  // BR
-        .def(py::init<>())
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -73,15 +73,12 @@ PYBIND11_MODULE(analysis, m) {
   {
     constexpr auto& cls_doc = pydrake_doc.drake.systems.InitializeParams;
     using Class = InitializeParams;
-    py::class_<Class>(m, "InitializeParams", cls_doc.doc)
-        .def(ParamInit<Class>())
-        .def_readwrite("suppress_initialization_events",
-            &Class::suppress_initialization_events,
-            cls_doc.suppress_initialization_events.doc)
-        .def("__repr__", [](const Class& self) {
-          return py::str("InitializeParams(suppress_initialization_events={})")
-              .format(self.suppress_initialization_events);
-        });
+    py::class_<Class> cls(m, "InitializeParams", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 
   auto bind_scalar_types = [m](auto dummy) {

@@ -53,6 +53,7 @@ PYBIND11_MODULE(serialize_test_util, m) {
       .def(py::init())
       .def(ParamInit<MyData>());
   DefAttributesUsingSerialize(&cls, cls_doc);
+  DefReprUsingSerialize(&cls);
 
   // Bind MyData2 with no documentation.
   py::class_<MyData2> cls2(m, "MyData2");
@@ -60,6 +61,7 @@ PYBIND11_MODULE(serialize_test_util, m) {
       .def(py::init())
       .def(ParamInit<MyData2>());
   DefAttributesUsingSerialize(&cls2);
+  DefReprUsingSerialize(&cls2);
 }
 
 }  // namespace pydrake
