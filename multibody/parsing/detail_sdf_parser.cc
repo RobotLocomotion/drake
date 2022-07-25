@@ -1410,7 +1410,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   ParsingWorkspace subworkspace{
     package_map, subdiagnostic, plant, collision_resolver, parser_selector};
   const std::optional<ModelInstanceIndex> maybe_model =
-      workspace.parser_selector(include.ResolvedFileName())->
+      workspace.parser_selector(workspace.diagnostic,
+                                include.ResolvedFileName())->
       AddModel(data_source, include.LocalModelName().value_or(""),
                include.AbsoluteParentName(), workspace);
   if (maybe_model.has_value()) {
@@ -1672,10 +1673,11 @@ SdfParser::SdfParser() {}
 SdfParser::~SdfParser() {}
 std::optional<ModelInstanceIndex> SdfParser::AddModel(
     const DataSource& data_source, const std::string& model_name,
-    const std::optional<std::string>&,
+    const std::optional<std::string>& scope_name,
     const ParsingWorkspace& workspace) {
-  // TODO(rpoyner-tri): scope_name dropped?
-  return AddModelFromSdf(data_source, model_name, workspace);
+  std::string full_name =
+      parsing::PrefixName(scope_name.value_or(""), model_name);
+  return AddModelFromSdf(data_source, full_name, workspace);
 }
 
 std::vector<ModelInstanceIndex> SdfParser::AddAllModels(

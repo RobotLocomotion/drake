@@ -8,6 +8,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
+#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -30,7 +31,14 @@ class ParserInterface {
       const std::optional<std::string>& scope_name,
       const ParsingWorkspace& workspace) = 0;
 };
-inline ParserInterface* NoSelect(const std::string&) { DRAKE_UNREACHABLE(); }
+using ParserSelector = std::function<ParserInterface*(
+    const drake::internal::DiagnosticPolicy&, const std::string&)>;
+
+inline ParserInterface* NoSelect(
+    const drake::internal::DiagnosticPolicy&, const std::string&) {
+  DRAKE_UNREACHABLE();
+}
+
 
 // ParsingWorkspace bundles the commonly-needed elements for parsing routines.
 // It owns nothing; all members are references or pointers to objects owned
@@ -49,7 +57,7 @@ struct ParsingWorkspace {
       const drake::internal::DiagnosticPolicy& diagnostic_in,
       MultibodyPlant<double>* plant_in,
       internal::CollisionFilterGroupResolver* collision_resolver_in,
-      std::function<ParserInterface*(const std::string&)> parser_selector_in)
+      ParserSelector parser_selector_in)
       : package_map(package_map_in),
         diagnostic(diagnostic_in),
         plant(plant_in),
@@ -64,7 +72,7 @@ struct ParsingWorkspace {
   const drake::internal::DiagnosticPolicy& diagnostic;
   MultibodyPlant<double>* const plant;
   internal::CollisionFilterGroupResolver* const collision_resolver;
-  std::function<ParserInterface*(const std::string&)> const parser_selector;
+  ParserSelector const parser_selector;
 };
 
 }  // namespace internal

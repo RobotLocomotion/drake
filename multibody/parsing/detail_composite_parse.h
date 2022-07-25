@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
+#include "drake/multibody/parsing/detail_parsing_workspace.h"
 #include "drake/multibody/parsing/parser.h"
 
 namespace drake {
@@ -23,7 +24,7 @@ class CompositeParse {
   ~CompositeParse();
 
   CollisionFilterGroupResolver& collision_resolver();
-  // TODO(rpoyner-tri): add some way to get more expressive diagnostics.
+  const ParsingWorkspace& workspace();
 
   ModelInstanceIndex AddModelFromFile(
     const std::string& file_name,
@@ -35,6 +36,7 @@ class CompositeParse {
 
   Parser* const parser_;
   CollisionFilterGroupResolver resolver_;
+  const ParsingWorkspace workspace_;
 };
 
 }  // namespace internal

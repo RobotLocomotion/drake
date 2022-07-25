@@ -66,7 +66,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
   }
 
-  static ParserInterface* Select(const std::string&) {
+  static ParserInterface* Select(const DiagnosticPolicy&, const std::string&) {
     // TODO(rpoyner-tri): add more formats here, as tests use them.
     static UrdfParser urdf;
     return &urdf;

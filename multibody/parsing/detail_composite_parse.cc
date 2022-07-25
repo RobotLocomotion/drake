@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/detail_composite_parse.h"
 
+#include "drake/multibody/parsing/detail_select_parser.h"
+
 namespace drake {
 namespace multibody {
 namespace internal {
@@ -12,7 +14,10 @@ std::unique_ptr<CompositeParse> CompositeParse::MakeCompositeParse(
 }
 
 CompositeParse::CompositeParse(Parser* parser)
-    : parser_(parser), resolver_(&parser->plant()) {}
+    : parser_(parser),
+      resolver_(&parser->plant()),
+      workspace_(parser->package_map(), parser->diagnostic_policy_,
+                 &parser->plant(), &resolver_, SelectParser) {}
 
 CompositeParse::~CompositeParse() {
   resolver_.Resolve(parser_->diagnostic_policy_);
@@ -20,6 +25,10 @@ CompositeParse::~CompositeParse() {
 
 CollisionFilterGroupResolver& CompositeParse::collision_resolver() {
   return resolver_;
+}
+
+const ParsingWorkspace& CompositeParse::workspace() {
+  return workspace_;
 }
 
 ModelInstanceIndex CompositeParse::AddModelFromFile(

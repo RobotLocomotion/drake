@@ -7,23 +7,19 @@
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_composite_parse.h"
-#include "drake/multibody/parsing/detail_dmd_parser.h"
-#include "drake/multibody/parsing/detail_mujoco_parser.h"
 #include "drake/multibody/parsing/detail_parsing_workspace.h"
-#include "drake/multibody/parsing/detail_sdf_parser.h"
-#include "drake/multibody/parsing/detail_urdf_parser.h"
+#include "drake/multibody/parsing/detail_select_parser.h"
 
 namespace drake {
 namespace multibody {
 
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
-using internal::AddModelFromSdf;
-using internal::AddModelFromUrdf;
-using internal::AddModelsFromSdf;
 using internal::CollisionFilterGroupResolver;
 using internal::DataSource;
+using internal::ParserInterface;
 using internal::ParsingWorkspace;
+using internal::SelectParser;
 
 Parser::Parser(
     MultibodyPlant<double>* plant,
@@ -46,54 +42,6 @@ Parser::Parser(
   diagnostic_policy_.SetActionForWarnings(warnings_maybe_strict);
 }
 
-namespace {
-
-bool EndsWith(const std::string_view str, const std::string_view ext) {
-  return (ext.size() < str.size()) &&
-      std::equal(str.end() - ext.size(), str.end(), ext.begin());
-}
-
-enum class FileType { kSdf, kUrdf, kMjcf, kDmdf };
-FileType DetermineFileType(const std::string& file_name) {
-  if (EndsWith(file_name, ".urdf") || EndsWith(file_name, ".URDF")) {
-    return FileType::kUrdf;
-  }
-  if (EndsWith(file_name, ".sdf") || EndsWith(file_name, ".SDF")) {
-    return FileType::kSdf;
-  }
-  if (EndsWith(file_name, ".xml") || EndsWith(file_name, ".XML")) {
-    return FileType::kMjcf;
-  }
-  if (EndsWith(file_name, ".dmd.yaml") || EndsWith(file_name, ".DMD.YAML")) {
-    return FileType::kDmdf;
-  }
-  throw std::runtime_error(fmt::format(
-      "The file '{}' is not a recognized type."
-      " Known types are: .urdf, .sdf, .xml (Mujoco), .dmd.yaml",
-      file_name));
-}
-
-internal::ParserInterface* SelectParser(const std::string& file_name) {
-  static internal::UrdfParser urdf;
-  static internal::SdfParser sdf;
-  static internal::MujocoParser mujoco;
-  static internal::DmdParser dmd;
-  const FileType type = DetermineFileType(file_name);
-  switch (type) {
-    case FileType::kUrdf:
-      return &urdf;
-    case FileType::kSdf:
-      return &sdf;
-    case FileType::kMjcf:
-      return &mujoco;
-    case FileType::kDmdf:
-      return &dmd;
-  }
-  DRAKE_UNREACHABLE();
-}
-
-}  // namespace
-
 std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
     const std::string& file_name) {
   return CompositeAddAllModelsFromFile(file_name, {});
@@ -107,7 +55,7 @@ std::vector<ModelInstanceIndex> Parser::CompositeAddAllModelsFromFile(
   ParsingWorkspace workspace{
     package_map_, diagnostic_policy_, plant_,
     composite ? &composite->collision_resolver() : &resolver, SelectParser};
-  internal::ParserInterface* parser = SelectParser(file_name);
+  ParserInterface* parser = SelectParser(diagnostic_policy_, file_name);
   std::vector<ModelInstanceIndex> result;
   result = parser->AddAllModels(data_source, {}, workspace);
   if (result.empty()) {
@@ -134,7 +82,7 @@ ModelInstanceIndex Parser::CompositeAddModelFromFile(
     package_map_, diagnostic_policy_, plant_,
     composite ? &composite->collision_resolver() : &resolver, SelectParser};
   std::optional<ModelInstanceIndex> maybe_model;
-  internal::ParserInterface* parser = SelectParser(file_name);
+  ParserInterface* parser = SelectParser(diagnostic_policy_, file_name);
   maybe_model = parser->AddModel(data_source, model_name, {}, workspace);
   if (!maybe_model.has_value()) {
     throw std::runtime_error(
@@ -163,7 +111,7 @@ ModelInstanceIndex Parser::CompositeAddModelFromString(
     package_map_, diagnostic_policy_, plant_,
     composite ? &composite->collision_resolver() : &resolver, SelectParser};
   std::optional<ModelInstanceIndex> maybe_model;
-  internal::ParserInterface* parser = SelectParser(pseudo_name);
+  ParserInterface* parser = SelectParser(diagnostic_policy_, pseudo_name);
   maybe_model = parser->AddModel(data_source, model_name, {}, workspace);
   if (!maybe_model.has_value()) {
     throw std::runtime_error(
