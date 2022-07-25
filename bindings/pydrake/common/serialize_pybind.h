@@ -1,6 +1,10 @@
 #pragma once
 
 #include <climits>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "pybind11/pybind11.h"
 #include <fmt/format.h>
@@ -127,6 +131,55 @@ void DefAttributesUsingSerialize(PyClass* ppy_class) {
   internal::DefAttributesArchive<PyClass, void> archive(
       ppy_class, &prototype, nullptr);
   prototype.Serialize(&archive);
+}
+
+namespace internal {
+
+// Helper for DefReprUsingSerialize.
+class DefReprArchive {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DefReprArchive)
+  DefReprArchive() = default;
+
+  // Appends the visited item's name to the list of names.
+  template <typename NameValuePair>
+  void Visit(const NameValuePair& nvp) {
+    const char* const name = nvp.name();
+    property_names_.push_back(name);
+  }
+
+  std::vector<std::string>& property_names() { return property_names_; }
+
+ private:
+  std::vector<std::string> property_names_;
+};
+
+}  // namespace internal
+
+/// Binds __repr__ using a C++ class Serialize function.
+/// The class must be default-constructible.
+template <typename PyClass>
+void DefReprUsingSerialize(PyClass* ppy_class) {
+  using CxxClass = typename PyClass::type;
+  internal::DefReprArchive archive;
+  CxxClass prototype{};
+  prototype.Serialize(&archive);
+  ppy_class->def("__repr__",
+      [names = std::move(archive.property_names())](pybind11::object self) {
+        std::ostringstream result;
+        result << pybind11::str(self.attr("__class__").attr("__name__"));
+        result << "(";
+        bool first = true;
+        for (const std::string& name : names) {
+          if (!first) {
+            result << ", ";
+          }
+          result << name << "=" << pybind11::repr(self.attr(name.c_str()));
+          first = false;
+        }
+        result << ")";
+        return result.str();
+      });
 }
 
 }  // namespace pydrake

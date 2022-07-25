@@ -1,3 +1,4 @@
+import copy
 import unittest
 import typing
 from collections import namedtuple
@@ -194,6 +195,9 @@ class TestToppra(unittest.TestCase):
         options.max_seg_length = 0.1
         self.assertEqual(options.min_points, 100)
         options.min_points = 10
+
+        self.assertIn("max_err", repr(options))
+        copy.copy(options)
 
         grid_points = Toppra.CalcGridPoints(path=path, options=options)
         self.assertIsInstance(grid_points, np.ndarray)
