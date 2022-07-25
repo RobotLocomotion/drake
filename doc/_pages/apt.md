@@ -68,3 +68,27 @@ variables may be useful:
   ```
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
+
+## Nightly Releases
+
+Unsigned nightly apt packages of Drake for Ubuntu 20.04 (Focal) and Ubuntu 22.04
+(Jammy) are available to download at:
+
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-focal.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-focal.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-jammy.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-jammy.deb)
+
+Older packages for specific dates are available by replacing ``latest`` with an
+8-digit date, e.g., ``20220721`` for July 21st, 2022.
+
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-focal.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-focal.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-jammy.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-jammy.deb)
+
+Nightly packages are retained for 56 days from their date of creation.
+
+For installing a nightly apt package, download the archive and install it
+directly:
+
+  ```bash
+  wget https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-focal.deb
+  sudo apt-get install --no-install-recommends ./drake-latest-focal.deb
+  ```
