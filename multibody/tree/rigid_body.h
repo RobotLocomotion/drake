@@ -7,6 +7,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/body.h"
@@ -46,14 +47,6 @@ class RigidBody : public Body<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
 
-  /// Constructs a %RigidBody with the given default SpatialInertia.
-  /// @param[in] M_BBo_B
-  ///   Spatial inertia of `this` body B about the frame's origin `Bo` and
-  ///   expressed in the body frame B.
-  /// @note See @ref multibody_spatial_inertia for details on the monogram
-  /// notation used for spatial inertia quantities.
-  explicit RigidBody(const SpatialInertia<double>& M_BBo_B);
-
   /// Constructs a %RigidBody named `body_name` with the given default
   /// SpatialInertia.
   ///
@@ -66,6 +59,10 @@ class RigidBody : public Body<T> {
   /// notation used for spatial inertia quantities.
   RigidBody(const std::string& body_name,
             const SpatialInertia<double>& M_BBo_B);
+
+  DRAKE_DEPRECATED("2022-12-01",
+      "The body_name parameter to the RigidBody constructor is now required.")
+  explicit RigidBody(const SpatialInertia<double>& M_BBo_B);
 
   /// Constructs a %RigidBody named `body_name` with the given default
   /// SpatialInertia.

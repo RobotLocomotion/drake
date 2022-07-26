@@ -48,7 +48,7 @@ class FrameTests : public ::testing::Test {
     // Create an empty model.
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
-    bodyB_ = &model->AddBody<RigidBody>(M_Bo_B);
+    bodyB_ = &model->AddBody<RigidBody>("B", M_Bo_B);
     frameB_ = &bodyB_->body_frame();
 
     // Mobilizer connecting bodyB to the world.
@@ -64,7 +64,7 @@ class FrameTests : public ::testing::Test {
                             Translation3d(0.0, -1.0, 0.0));
     // Frame P is rigidly attached to B with pose X_BP.
     frameP_ =
-        &model->AddFrame<FixedOffsetFrame>(bodyB_->body_frame(), X_BP_);
+        &model->AddFrame<FixedOffsetFrame>("P", bodyB_->body_frame(), X_BP_);
 
     // Some arbitrary pose of frame Q in frame P.
     X_PQ_ = RigidTransformd(AngleAxisd(-M_PI / 3.0, Vector3d::UnitZ()) *
@@ -72,7 +72,7 @@ class FrameTests : public ::testing::Test {
                             Translation3d(0.5, 1.0, -2.0));
     // Frame Q is rigidly attached to P with pose X_PQ.
     frameQ_ =
-        &model->AddFrame<FixedOffsetFrame>(*frameP_, X_PQ_);
+        &model->AddFrame<FixedOffsetFrame>("Q", *frameP_, X_PQ_);
 
     // Frame R is arbitrary, but named.
     frameR_ = &model->AddFrame<FixedOffsetFrame>(
@@ -239,7 +239,6 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
 //         X_BP       X_PQ
 //     B -------> P -------> Q
 TEST_F(FrameTests, ChainedFixedOffsetFrames) {
-  EXPECT_TRUE(frameQ_->name().empty());
   // Verify this method computes the pose of frame Q in the body frame B as:
   // X_BQ = X_BP * X_PQ.
   // Similarly verify the method CalcRotationMatrixInBodyFrame() returns R_BQ.

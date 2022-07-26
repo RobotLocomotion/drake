@@ -126,8 +126,8 @@ class DoublePendulumModel {
     SpatialInertia<double> M2_L2 = M2_L2cm.Shift(-p_L2oL2cm);
 
     // Adds the upper and lower links of the pendulum:
-    link1_ = &model->template AddBody<RigidBody>(M1_L1);
-    link2_ = &model->template AddBody<RigidBody>(M2_L2);
+    link1_ = &model->template AddBody<RigidBody>("Link1", M1_L1);
+    link2_ = &model->template AddBody<RigidBody>("Link2", M2_L2);
     world_body_ = &model->world_body();
 
     // The shoulder joint connects the world with link 1.

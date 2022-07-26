@@ -306,7 +306,7 @@ class BadDerivedMBSystem : public MultibodyTreeSystem<double> {
  public:
   explicit BadDerivedMBSystem(bool double_finalize)
       : MultibodyTreeSystem<double>() {
-    mutable_tree().AddBody<RigidBody>(SpatialInertia<double>());
+    mutable_tree().AddBody<RigidBody>("body", SpatialInertia<double>());
     Finalize();
     if (double_finalize) {
       Finalize();
@@ -1509,8 +1509,8 @@ class WeldMobilizerTest : public ::testing::Test {
     // Create an empty model.
     auto model = std::make_unique<MultibodyTree<double>>();
 
-    body1_ = &model->AddBody<RigidBody>(M_B);
-    body2_ = &model->AddBody<RigidBody>(M_B);
+    body1_ = &model->AddBody<RigidBody>("body1", M_B);
+    body2_ = &model->AddBody<RigidBody>("body2", M_B);
 
     model->AddMobilizer<WeldMobilizer>(model->world_body().body_frame(),
                                        body1_->body_frame(), X_WB1_);
@@ -1518,9 +1518,9 @@ class WeldMobilizerTest : public ::testing::Test {
     // Add a weld joint between bodies 1 and 2 by welding together inboard
     // frame F (on body 1) with outboard frame M (on body 2).
     const auto& frame_F =
-        model->AddFrame<FixedOffsetFrame>(*body1_, X_B1F_);
+        model->AddFrame<FixedOffsetFrame>("F", *body1_, X_B1F_);
     const auto& frame_M =
-        model->AddFrame<FixedOffsetFrame>(*body2_, X_B2M_);
+        model->AddFrame<FixedOffsetFrame>("M", *body2_, X_B2M_);
     model->AddMobilizer<WeldMobilizer>(frame_F, frame_M, X_FM_);
 
     // We are done adding modeling elements. Transfer tree to system and get

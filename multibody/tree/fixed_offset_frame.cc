@@ -19,10 +19,25 @@ FixedOffsetFrame<T>::FixedOffsetFrame(
     Frame<T>(name, P.body(), model_instance.value_or(P.model_instance())),
     parent_frame_(P), X_PF_(X_PF) {}
 
+// (This overload is deprecated.)
+template <typename T>
+FixedOffsetFrame<T>::FixedOffsetFrame(
+    const Frame<T>& P, const math::RigidTransform<double>& X_PF)
+    : FixedOffsetFrame("", P, X_PF) {}
+
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(const std::string& name, const Body<T>& B,
                                       const math::RigidTransform<double>& X_BF)
     : Frame<T>(name, B), parent_frame_(B.body_frame()), X_PF_(X_BF) {}
+
+// (This overload is deprecated.)
+template <typename T>
+FixedOffsetFrame<T>::FixedOffsetFrame(
+    const Body<T>& bodyB, const math::RigidTransform<double>& X_BF)
+    : FixedOffsetFrame("", bodyB, X_BF) {}
+
+template <typename T>
+FixedOffsetFrame<T>::~FixedOffsetFrame() = default;
 
 template <typename T>
 template <typename ToScalar>

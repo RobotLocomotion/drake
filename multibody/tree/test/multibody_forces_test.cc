@@ -29,8 +29,8 @@ class MultibodyForcesTests : public ::testing::Test {
   // MultibodyForces objects for this model.
   void SetUp() override {
     SpatialInertia<double> M;
-    const RigidBody<double>& body1 = model_.AddBody<RigidBody>(M);
-    const RigidBody<double>& body2 = model_.AddBody<RigidBody>(M);
+    const RigidBody<double>& body1 = model_.AddBody<RigidBody>("Body1", M);
+    const RigidBody<double>& body2 = model_.AddBody<RigidBody>("Body2", M);
     model_.AddJoint<RevoluteJoint>("Joint1", model_.world_body(), std::nullopt,
                                    body1, std::nullopt, Vector3d::UnitZ());
     model_.AddJoint<RevoluteJoint>("Joint2", body1, std::nullopt, body2,
