@@ -294,7 +294,7 @@ Open up your browser to the URL above.
             << std::endl;
 
   std::cout << "[Press RETURN to continue]." << std::endl;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
   std::remove(html_filename.c_str());
   std::cout

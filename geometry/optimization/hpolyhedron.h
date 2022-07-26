@@ -110,6 +110,26 @@ class HPolyhedron final : public ConvexSet {
    runtime error if `this` or `other` are ill-conditioned.*/
   HPolyhedron PontryaginDifference(const HPolyhedron& other) const;
 
+  /** Draw an (approximately) uniform sample from the set using the hit and run
+  Markov-chain Monte-Carlo strategy described at
+  https://mathoverflow.net/a/162327 and the cited paper.
+
+  To generate many samples, pass the output of one iteration in as the @p
+  previous_sample to the next; in this case the distribution of samples will
+  converge to the true uniform distribution in total variation at a geometric
+  rate.  If @p previous_sample is not set, then the ChebyshevCenter() will be
+  used to seed the algorithm.
+
+  @throws std::exception if previous_sample is not in the set.
+  */
+  Eigen::VectorXd UniformSample(
+      RandomGenerator* generator,
+      const Eigen::Ref<Eigen::VectorXd>& previous_sample) const;
+
+  /** Variant of UniformSample that uses the ChebyshevCenter() as the
+  previous_sample as a feasible point to start the Markov chain sampling. */
+  Eigen::VectorXd UniformSample(RandomGenerator* generator) const;
+
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
   corners. */
   static HPolyhedron MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,
