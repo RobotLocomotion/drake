@@ -507,3 +507,84 @@ class TestGeometrySceneGraph(unittest.TestCase):
     def test_value_instantiations(self, T):
         Value[mut.FramePoseVector_[T]]
         Value[mut.QueryObject_[T]]
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_contact_surface(self, T):
+        # We can't construct a ContactSurface directly. So, we need to evaluate
+        # hydroelastic contact in order to get a result that we can assess.
+        RigidTransform = RigidTransform_[T]
+        RigidTransformd = RigidTransform_[float]
+        SceneGraph = mut.SceneGraph_[T]
+        FramePoseVector = mut.FramePoseVector_[T]
+
+        scene_graph = SceneGraph()
+        s_id = scene_graph.RegisterSource("source")
+
+        # Add a compliant "moving" ball.
+        f_id = scene_graph.RegisterFrame(
+            source_id=s_id, frame=mut.GeometryFrame("frame"))
+        g_id0 = scene_graph.RegisterGeometry(
+            source_id=s_id, frame_id=f_id,
+            geometry=mut.GeometryInstance(X_PG=RigidTransformd(),
+                                          shape=mut.Sphere(1.), name="sphere"))
+        props = mut.ProximityProperties()
+        mut.AddCompliantHydroelasticProperties(
+            resolution_hint=1.0, hydroelastic_modulus=1e5, properties=props)
+        scene_graph.AssignRole(s_id, g_id0, props)
+
+        # Add a rigd half space.
+        g_id1 = scene_graph.RegisterAnchoredGeometry(
+            source_id=s_id,
+            geometry=mut.GeometryInstance(X_PG=RigidTransformd(),
+                                          shape=mut.HalfSpace(), name="plane"))
+        props = mut.ProximityProperties()
+        mut.AddRigidHydroelasticProperties(properties=props)
+        scene_graph.AssignRole(s_id, g_id1, props)
+
+        context = scene_graph.CreateDefaultContext()
+
+        # Provide poses so we can evaluate the query object. The poses should
+        # lead to a single collision.
+        poses = FramePoseVector()
+        poses.set_value(id=f_id, value=RigidTransform([0, 0, 0.5]))
+        scene_graph.get_source_pose_port(s_id).FixValue(context, poses)
+        query_object = scene_graph.get_query_output_port().Eval(context)
+
+        # Test both mesh representations.
+        for rep in (mut.HydroelasticContactRepresentation.kTriangle,
+                    mut.HydroelasticContactRepresentation.kPolygon):
+            expect_triangles = (
+                rep == mut.HydroelasticContactRepresentation.kTriangle)
+
+            results = query_object.ComputeContactSurfaces(rep)
+
+            self.assertEqual(len(results), 1)
+            contact_surface = results[0]
+            self.assertLess(g_id0, g_id1)  # confirm M = 0 and N = 1.
+            self.assertEqual(contact_surface.id_M(), g_id0)
+            self.assertEqual(contact_surface.id_N(), g_id1)
+            self.assertGreater(contact_surface.num_faces(), 0)
+            self.assertGreater(contact_surface.num_vertices(), 0)
+            self.assertGreater(contact_surface.area(face_index=0), 0)
+            self.assertGreater(contact_surface.total_area(), 0)
+            contact_surface.face_normal(face_index=0)
+            contact_surface.centroid(face_index=0)
+            contact_surface.centroid()
+
+            self.assertEqual(contact_surface.is_triangle(), expect_triangles)
+            self.assertEqual(contact_surface.representation(), rep)
+            if expect_triangles:
+                # Details of mesh are tested in geometry_hydro_test.py
+                contact_surface.tri_mesh_W()
+                field = contact_surface.tri_e_MN()
+                # Only triangle mesh fields can evaluate barycentric coords.
+                field.Evaluate(e=0, b=(0.25, 0.5, 0.25))
+            else:
+                # Details of mesh are tested in geometry_hydro_test.py
+                contact_surface.poly_mesh_W()
+                field = contact_surface.poly_e_MN()
+                # Only the Polygonal mesh has gradients pre-computed.
+                field.EvaluateGradient(e=0)
+            # APIs available to both Triangle and Polygon-based fields.
+            field.EvaluateAtVertex(v=0)
+            field.EvaluateCartesian(e=0, p_MQ=(0.25, 0.25, 0))
