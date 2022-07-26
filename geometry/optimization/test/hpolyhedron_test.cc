@@ -525,6 +525,40 @@ GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestNonAxisAligned) {
   EXPECT_TRUE(CompareMatrices(H_C.b(), H_C_expected.b(), 1e-8));
 }
 
+GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
+  Matrix<double, 4, 2> A;
+  Vector4d b;
+  // clang-format off
+  A << -2, -1,  // 2x + y ≥ 4
+        2,  1,  // 2x + y ≤ 6
+       -1,  2,  // x - 2y ≥ 2
+        1, -2;  // x - 2y ≤ 8
+  b << -4, 6, -2, 8;
+  // clang-format on
+  HPolyhedron H(A, b);
+
+  // Draw random samples.
+  RandomGenerator generator(1234);
+  const int N{1000};
+  MatrixXd samples(2, N);
+  samples.col(0) = H.UniformSample(&generator);
+  for (int i = 1; i < N; ++i) {
+    samples.col(i) = H.UniformSample(&generator, samples.col(i - 1));
+  }
+
+  // Check that they are all in the polyhedron.
+  EXPECT_LE((A * samples - b).maxCoeff(), 0.0);
+
+  const int kTol = 100;
+  // Check that approximately half of them satisfy 2x+y ≥ 5.
+  EXPECT_NEAR(((2 * samples.row(0) + samples.row(1)).array() >= 5.0).count(),
+              N / 2, kTol);
+
+  // Check that approximately half of them satisfy x - 2y ≥ 5.
+  EXPECT_NEAR(((samples.row(0) - 2 * samples.row(1)).array() >= 5.0).count(),
+              N / 2, kTol);
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
