@@ -7,11 +7,14 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/perception/point_cloud.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -523,6 +526,64 @@ GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestNonAxisAligned) {
 
   EXPECT_TRUE(CompareMatrices(H_C.A(), H_C_expected.A(), 1e-8));
   EXPECT_TRUE(CompareMatrices(H_C.b(), H_C_expected.b(), 1e-8));
+}
+
+GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
+  Matrix<double, 4, 2> A;
+  Vector4d b;
+  // clang-format off
+  A << -2, -1,  // 2x + y ≥ 4
+        2,  1,  // 2x + y ≤ 6
+       -1,  2,  // x - 2y ≥ 2
+        1, -2;  // x - 2y ≤ 8
+  b << -4, 6, -2, 8;
+  // clang-format on
+  HPolyhedron H(A, b);
+
+  // Draw random samples.
+  RandomGenerator generator(1234);
+  const int N{10000};
+  MatrixXd samples(2, N);
+  samples.col(0) = H.UniformSample(&generator);
+  for (int i = 1; i < N; ++i) {
+    samples.col(i) = H.UniformSample(&generator, samples.col(i - 1));
+  }
+
+  // Provide a visualization of the points.
+  {
+    std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
+    meshcat->SetProperty("/Background", "visible", false);
+    perception::PointCloud cloud(N);
+    cloud.mutable_xyzs().topRows<2>() = samples.cast<float>();
+    cloud.mutable_xyzs().bottomRows<1>().setZero();
+    meshcat->SetObject("samples", cloud, 0.01, Rgba(0, 0, 1));
+
+    // Note: This will not pause execution when running as a bazel test.
+    std::cout << "[Press RETURN to continue]." << std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  }
+
+  // Check that they are all in the polyhedron.
+  for (int i = 0; i < A.rows(); ++i) {
+    EXPECT_LE((A.row(i) * samples).maxCoeff(), b(i));
+  }
+
+  const double kTol = 0.05 * N;
+  // Check that approximately half of them satisfy 2x+y ≥ 5.
+  EXPECT_NEAR(((2 * samples.row(0) + samples.row(1)).array() >= 5.0).count(),
+              0.5 * N, kTol);
+
+  // Check that approximately half of them satisfy x - 2y ≥ 5.
+  EXPECT_NEAR(((samples.row(0) - 2 * samples.row(1)).array() >= 5.0).count(),
+              0.5 * N, kTol);
+
+  // Check that an off-center box gets the number of samples proportional to
+  // its (relative) volume. H is a rotated box with volume 1 x 2.5 = 2.5. We'll
+  // check the box: 3 ≤ x ≤ 3.5, -1.5 ≤ y ≤ -1, which has volume .5 x .5 = .25.
+  EXPECT_NEAR((samples.row(0).array() >= 3 && samples.row(0).array() <= 3.5 &&
+               samples.row(1).array() >= -1.5 && samples.row(1).array() <= -1)
+                  .count(),
+              N / 10, kTol);
 }
 
 }  // namespace optimization
