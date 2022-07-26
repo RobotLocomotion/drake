@@ -9,6 +9,8 @@
 #include "drake/bindings/pydrake/systems/lcm_py_bind_cpp_serializers.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
+#include "drake/systems/lcm/lcm_buses.h"
+#include "drake/systems/lcm/lcm_config_functions.h"
 #include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_scope_system.h"
@@ -144,6 +146,25 @@ PYBIND11_MODULE(lcm, m) {
             py::arg("abstract_value"), cls_doc.Serialize.doc);
     DefClone(&cls);
   }
+
+  {
+    using Class = LcmBuses;
+    constexpr auto& cls_doc = doc.LcmBuses;
+    py::class_<Class> cls(m, "LcmBuses");
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc)
+        .def("size", &Class::size, cls_doc.size.doc)
+        .def("Find", &Class::Find, py::arg("description_of_caller"),
+            py::arg("bus_name"), cls_doc.Find.doc)
+        .def("GetAllBusNames", &Class::GetAllBusNames,
+            cls_doc.GetAllBusNames.doc)
+        .def("Add", &Class::Add, py::arg("bus_name"), py::arg("bus"),
+            // Keep alive, ownership: `self` keeps `bus` alive.
+            py::keep_alive<1, 3>(), cls_doc.Add.doc);
+  }
+
+  m.def("ApplyLcmBusConfig", &ApplyLcmBusConfig, py::arg("lcm_buses"),
+      py::arg("builder"), doc.ApplyLcmBusConfig.doc);
 
   {
     using Class = LcmPublisherSystem;
