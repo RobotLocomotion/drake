@@ -15,7 +15,7 @@ import drake as drake_lcmtypes
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
-from pydrake.lcm import DrakeLcm, Subscriber
+from pydrake.lcm import DrakeLcm, DrakeLcmParams, Subscriber
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     BasicVector, DiagramBuilder, LeafSystem, TriggerType,
@@ -118,6 +118,22 @@ class TestSystemsLcm(unittest.TestCase):
             mut.LcmPublisherSystem.Make(
                 channel="TEST_CHANNEL", lcm_type=message_class, lcm=lcm,
                 use_cpp_serializer=True)
+
+    def test_buses(self):
+        dut = mut.LcmBuses()
+        dut.Add("default", DrakeLcm())
+        self.assertEqual(dut.size(), 1)
+        self.assertIsInstance(dut.Find("Basic test", "default"), DrakeLcm)
+        self.assertEqual(len(dut.GetAllBusNames()), 1)
+
+    def test_bus_config(self):
+        bus_config = {"foo": DrakeLcmParams(), "bar": DrakeLcmParams()}
+        bus_config["foo"].lcm_url = "memq://1"
+        bus_config["bar"].lcm_url = "memq://2"
+
+        builder = DiagramBuilder()
+        buses = mut.ApplyLcmBusConfig(bus_config, builder)
+        self.assertEqual(buses.size(), 2)
 
     def _process_event(self, dut):
         # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be
