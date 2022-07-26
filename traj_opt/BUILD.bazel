@@ -1,0 +1,55 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "traj_opt",
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+drake_cc_library(
+    name = "trajectory_optimizer",
+    hdrs = [
+        "trajectory_optimizer.h",
+    ],
+    srcs = ["trajectory_optimizer.cc"],
+    deps = [
+        "//common:essential",
+        "//multibody/plant",
+        ":problem_definition",
+    ],
+)
+
+drake_cc_library(
+    name = "problem_definition",
+    hdrs = [
+        "problem_definition.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "trajectory_optimizer_test",
+    data = ["//examples/pendulum:prod_models"],
+    deps = [
+        ":trajectory_optimizer",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
