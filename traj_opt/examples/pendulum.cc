@@ -8,9 +8,6 @@
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/traj_opt/problem_definition.h"
-#include "drake/traj_opt/solution_data.h"
-#include "drake/traj_opt/trajectory_optimizer.h"
 
 namespace drake {
 namespace traj_opt {
@@ -41,7 +38,7 @@ void run_passive_simulation(double time_step, double sim_time) {
   auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
 
   const std::string urdf_file =
-      FindResourceOrThrow("drake/traj_opt/examples/pendulum.urdf");
+      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
   Parser(&plant).AddAllModelsFromFile(urdf_file);
   plant.Finalize();
 

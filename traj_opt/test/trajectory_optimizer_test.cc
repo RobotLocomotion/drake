@@ -88,7 +88,7 @@ GTEST_TEST(TrajectoryOptimizerTest, PendulumCalcVAndTau) {
   {
     // It appears, via trial and error, that CalcInverseDynamics makes exactly
     // 15 allocations for this example.
-    LimitMalloc guard({ .max_num_allocations = 15 });
+    LimitMalloc guard({.max_num_allocations = 15});
     optimizer.CalcV(q, &v);
     optimizer.CalcTau(q, v, &a, &f_ext, &tau);
   }
@@ -105,7 +105,6 @@ GTEST_TEST(TrajectoryOptimizerTest, PendulumCalcVAndTau) {
     EXPECT_TRUE(CompareMatrices(tau[t], tau_gt[t], kToleranceTau,
                                 MatrixCompareType::relative));
   }
-  
 }
 
 /**
@@ -123,7 +122,7 @@ GTEST_TEST(TrajectoryOptimizerTest, CalcV) {
   plant.Finalize();
   ProblemDefinition opt_prob;
   opt_prob.q_init = Vector2d(0.1, 0.2);
-  opt_prob.v_init = Vector2d(0.5/dt, 1.5/dt);
+  opt_prob.v_init = Vector2d(0.5 / dt, 1.5 / dt);
   opt_prob.num_steps = num_steps;
   TrajectoryOptimizer optimizer(&plant, opt_prob);
 
@@ -132,7 +131,7 @@ GTEST_TEST(TrajectoryOptimizerTest, CalcV) {
   //              [0.2 + 1.5*t]
   std::vector<VectorXd> q;
   for (int t = 0; t <= num_steps; ++t) {
-    q.push_back(Vector2d(0.1 + 0.5*t, 0.2 + 1.5*t));
+    q.push_back(Vector2d(0.1 + 0.5 * t, 0.2 + 1.5 * t));
   }
 
   // Compute v from q

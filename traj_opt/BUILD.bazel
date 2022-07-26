@@ -16,19 +16,22 @@ package(
 drake_cc_package_library(
     name = "traj_opt",
     visibility = ["//visibility:public"],
-    deps = [],
+    deps = [
+        ":problem_definition",
+        ":trajectory_optimizer",
+    ],
 )
 
 drake_cc_library(
     name = "trajectory_optimizer",
+    srcs = ["trajectory_optimizer.cc"],
     hdrs = [
         "trajectory_optimizer.h",
     ],
-    srcs = ["trajectory_optimizer.cc"],
     deps = [
+        ":problem_definition",
         "//common:essential",
         "//multibody/plant",
-        ":problem_definition",
     ],
 )
 
@@ -54,3 +57,5 @@ drake_cc_googletest(
         "//multibody/plant",
     ],
 )
+
+add_lint_tests()

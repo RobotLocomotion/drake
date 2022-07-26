@@ -11,9 +11,8 @@ using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
 using systems::System;
 
-TrajectoryOptimizer::TrajectoryOptimizer(
-    const MultibodyPlant<double>* plant,
-    const ProblemDefinition& prob)
+TrajectoryOptimizer::TrajectoryOptimizer(const MultibodyPlant<double>* plant,
+                                         const ProblemDefinition& prob)
     : plant_(plant), prob_(prob) {
   context_ = plant_->CreateDefaultContext();
 
