@@ -239,7 +239,6 @@ Open up your browser to the URL above.
     plant.AddJoint<multibody::PrismaticJoint>("body2", plant.world_body(),
                                               std::nullopt, body2, std::nullopt,
                                               Eigen::Vector3d::UnitX());
-
     plant.Finalize();
 
     MeshcatVisualizerParams params;
@@ -256,9 +255,9 @@ Open up your browser to the URL above.
     auto context = diagram->CreateDefaultContext();
 
     plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()),
-                       Eigen::Vector2d{0.1, 0.2});
+                       Eigen::Vector2d{0.1, 0.3});
     diagram->Publish(*context);
-    std::cout << "- Now you should see two colliding hydroelastic spheres."
+    std::cout << "- Now you should see three colliding hydroelastic spheres."
               << std::endl;
     std::cout << "[Press RETURN to continue]." << std::endl;
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');

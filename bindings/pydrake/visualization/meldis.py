@@ -257,29 +257,54 @@ class _ContactApplet:
         params.prefix = "/CONTACT_RESULTS/hydroelastic"
         self._hydro_helper = _HydroelasticContactVisualizer(meshcat, params)
 
-    # Converts poly_data from a hydro lcm message to numpy array
+    # Converts poly_data from a hydro lcm message to numpy array.
     def convert_faces(self, poly_data):
         poly_index = 0
         faces = []
-        while(poly_index < len(poly_data)):
-            ci = poly_data[poly_index]
-            p0 = poly_index + 1
-            v0 = poly_data[p0]
-            for i in range(1, ci-1):
-                v1 = poly_data[p0 + i]
-                v2 = poly_data[p0 + i+1]
-                faces.append([v0, v1, v2])
-            poly_index += ci + 1
+        while poly_index < len(poly_data):
+            poly_i_num_vertices = poly_data[poly_index]
+            vertex_0_index = poly_index + 1
+            vertex_0_global_index = poly_data[vertex_0_index]
+            for i in range(1, poly_i_num_vertices - 1):
+                vertex_1_global_index = poly_data[vertex_0_index + i]
+                vertex_2_global_index = poly_data[vertex_0_index + i + 1]
+                faces.append([vertex_0_global_index,
+                              vertex_1_global_index,
+                              vertex_2_global_index])
+            poly_index += poly_i_num_vertices + 1
         return np.array(faces).transpose()
 
     # Converts verts from hydro lcm message to numpy array
     def convert_verts(self, p_WV):
-        verts = np.zeros((3, len(p_WV)))
+        verts = np.empty((3, len(p_WV)))
         for i in range(len(p_WV)):
             verts[0, i] = p_WV[i].x
             verts[1, i] = p_WV[i].y
             verts[2, i] = p_WV[i].z
         return verts
+
+    def get_full_names(self, item):
+        name1 = []
+        name2 = []
+
+        # Use model instance name if necessary.
+        if not item.body1_unique:
+            name1.append(item.model1_name)
+
+        if not item.body2_unique:
+            name2.append(item.model2_name)
+
+        name1.append(item.body1_name)
+        name2.append(item.body2_name)
+
+        # Use geometry name if necessary.
+        if item.collision_count1 > 1:
+            name1.append(item.geometry1_name)
+
+        if item.collision_count2 > 1:
+            name2.append(item.geometry2_name)
+
+        return (".".join(name1), ".".join(name2))
 
     def on_contact_results(self, message):
         """Handler for lcmt_contact_results_for_viz. Note that only point
@@ -299,9 +324,10 @@ class _ContactApplet:
         # Handle hydroelastic contact pairs
         viz_items = []
         for lcm_item in message.hydroelastic_contacts:
+            (name1, name2) = self.get_full_names(lcm_item)
             viz_items.append(_HydroelasticContactVisualizerItem(
-                body_A=lcm_item.body1_name,
-                body_B=lcm_item.body2_name,
+                body_A=name1,
+                body_B=name2,
                 centroid_W=lcm_item.centroid_W,
                 force_C_W=lcm_item.force_C_W,
                 moment_C_W=lcm_item.moment_C_W,

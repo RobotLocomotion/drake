@@ -113,7 +113,20 @@ void HydroelasticContactVisualizer::Update(
 
     // Contact surface
     {
-      // Flame map
+      // Map normalized pressure values to color using a flame map.
+
+      // TODO(#17599): Currently, the color map applied to each contact surface
+      // is applied based on the range of pressures observed on that surface.
+      // This does not match parity with DrakeVisualizer. In order to match:
+      // Update this class to store a user defined min/max pressure that can
+      // be passed in at runtime via MeshcatVisualizerParams. Eventually, add
+      // functionality to have min and max pressure fields in the Meshcat
+      // dropdown menu, and monitor them in this class, updating the stored
+      // global min and max when user values change.
+      //
+      // Possibly consider storing a min/max pressure on a per contact pair
+      // basis for when geometries with large hydroelastic modulus discrepancies
+      // exist in the same sim.
       double min_pressure = item.pressure.minCoeff();
       double max_pressure = item.pressure.maxCoeff();
 
@@ -134,15 +147,28 @@ void HydroelasticContactVisualizer::Update(
         }
       }
 
+      // TODO(#17599): Change from per-vertex coloring to per-fragment.
+      // Update `Meshcat` to provide a datatype and message packing scheme for
+      // the Three.js `Texture` type. Then we can pass the pressure values as
+      // texture coordinates along with the mesh and have the renderer
+      // interpolate the texture coords instead of colors, providing the
+      // better looking per-fragment coloring.
+      //
+      // Another possibility would be to pass a custom vertex/fragment shader to
+      // the Three.js material where the "pressure" attribute is a varying
+      // quantity (i.e. interpolated and passed from vertex shader to fragment
+      // shader), and the fragment shader does to color mapping.
       meshcat_->SetTriangleColorMesh(path + "/contact_surface", item.p_WV,
                                      item.faces, colors, false);
       meshcat_->SetTransform(path + "/contact_surface",
                              RigidTransformd(-item.centroid_W));
-      meshcat_->SetTriangleMesh(path + "/contact_surface_wireframe", item.p_WV,
-                                item.faces, geometry::Rgba(1.0, 1.0, 1.0, 1.0),
-                                true);
-      meshcat_->SetTransform(path + "/contact_surface_wireframe",
-                             RigidTransformd(-item.centroid_W));
+
+      // TODO(#17599): Draw the edges of the contact surface polygons.
+      // The "wireframe" option on the Material object will just use the same
+      // geometry but render it in GL_LINES mode, so we will always see the
+      // triangulated version. We need to send separate geometry that sends all
+      // of the edges as line strips or line segments for the polygonal surface
+      // and uses the Three.js line material.
     }
   }
 
