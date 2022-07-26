@@ -7,6 +7,7 @@
 namespace drake {
 namespace multibody {
 
+// (This overload is deprecated.)
 template <typename T>
 RigidBody<T>::RigidBody(const SpatialInertia<double>& M)
     : Body<T>("", default_model_instance()),

@@ -1018,7 +1018,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     const Frame<T>* frame_on_parent{nullptr};
     if (X_PF) {
       frame_on_parent = &this->AddFrame(
-          std::make_unique<FixedOffsetFrame<T>>(parent, *X_PF));
+          std::make_unique<FixedOffsetFrame<T>>(
+              name + "_parent", parent, *X_PF));
     } else {
       frame_on_parent = &parent.body_frame();
     }
@@ -1026,7 +1027,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     const Frame<T>* frame_on_child{nullptr};
     if (X_BM) {
       frame_on_child = &this->AddFrame(
-          std::make_unique<FixedOffsetFrame<T>>(child, *X_BM));
+          std::make_unique<FixedOffsetFrame<T>>(
+              name + "_child", child, *X_BM));
     } else {
       frame_on_child = &child.body_frame();
     }

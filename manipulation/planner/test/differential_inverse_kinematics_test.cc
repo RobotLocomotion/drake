@@ -46,7 +46,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     const math::RigidTransformd X_7E(AngleAxis<double>(M_PI, Vector3d::UnitZ()),
                                      Vector3d(0.1, 0, 0));
     frame_E_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        plant_->GetBodyByName("iiwa_link_7").body_frame(), X_7E));
+        "E", plant_->GetBodyByName("iiwa_link_7").body_frame(), X_7E));
     plant_->Finalize();
     owned_context_ = plant_->CreateDefaultContext();
     context_ = owned_context_.get();

@@ -49,7 +49,7 @@ class RevoluteJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add some bodies so we can add joints between them:
-    body1_ = &model->AddBody<RigidBody>(M_B);
+    body1_ = &model->AddBody<RigidBody>("Body1", M_B);
 
     // Add a revolute joint between the world and body1:
     joint1_ = &model->AddJoint<RevoluteJoint>(

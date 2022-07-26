@@ -30,7 +30,7 @@ class WeldJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add a body so we can add joint to it.
-    body_ = &model->AddBody<RigidBody>(M_B);
+    body_ = &model->AddBody<RigidBody>("body", M_B);
 
     // Add a prismatic joint between the world and the body.
     joint_ = &model->AddJoint<WeldJoint>(

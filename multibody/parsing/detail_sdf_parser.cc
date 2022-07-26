@@ -1403,13 +1403,13 @@ void AddFramesToInterfaceModel(const MultibodyPlant<double>& plant,
     if (frame.model_instance() != model_instance) {
       continue;
     }
-    if (frame.name().empty() || frame.name() == "__model__" ||
+    if (frame.name() == "__model__" ||
         plant.HasBodyNamed(frame.name(), model_instance)) {
-      // Skip unnamed frames, and __model__ since it's already added.  Also
-      // skip frames with the same name as a link since those are frames added
-      // by Drake and are considered implicit by SDFormat. Sending such frames
-      // to SDFormat would imply that these frames are explicit (i.e., frames
-      // created using the <frame> tag).
+      // Skip __model__ since it's already added.  Also skip frames with the
+      // same name as a link since those are frames added by Drake and are
+      // considered implicit by SDFormat. Sending such frames to SDFormat would
+      // imply that these frames are explicit (i.e., frames created using the
+      // <frame> tag).
       continue;
     }
     interface_model->AddFrame(

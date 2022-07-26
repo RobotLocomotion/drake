@@ -104,6 +104,7 @@ drake_cc_library(
         "body_node_impl.cc",
         "door_hinge.cc",
         "fixed_offset_frame.cc",
+        "frame.cc",
         "joint.cc",
         "joint_actuator.cc",
         "linear_bushing_roll_pitch_yaw.cc",

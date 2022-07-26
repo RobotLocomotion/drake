@@ -19,7 +19,7 @@ GTEST_TEST(RigidBody, RigidBodyConstructor) {
   const Vector3d p_BoBcm_B(0.4, 0.3, 0.2);
   const UnitInertia<double> U_BBo_B(6, 7, 8);
   const SpatialInertia<double> M_Bo_B(mass, p_BoBcm_B, U_BBo_B);
-  const RigidBody<double> B(M_Bo_B);
+  const RigidBody<double> B("B", M_Bo_B);
 
   // Test that after construction, RigidBody class properly returns its default
   // spatial inertia or parts of it.

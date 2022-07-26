@@ -38,7 +38,7 @@ class UniversalJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add some bodies so we can add joints between them:
-    body_ = &model->AddBody<RigidBody>(M_B);
+    body_ = &model->AddBody<RigidBody>("Body", M_B);
 
     // Add a universal joint between the world and body1:
     joint_ = &model->AddJoint<UniversalJoint>("Joint", model->world_body(),
