@@ -51,6 +51,8 @@ void HydroelasticContactVisualizer::Update(
     const std::string path =
         fmt::format("{}/{}+{}", params_.prefix, item.body_A, item.body_B);
 
+    std::cout << "path: " << path << "\n";
+
     VisibilityStatus& status = FindOrAdd(path);
 
     // Decide whether the contact should be shown.

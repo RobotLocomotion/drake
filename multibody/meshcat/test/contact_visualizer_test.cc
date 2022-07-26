@@ -67,7 +67,7 @@ class ContactVisualizerTest : public ::testing::Test {
     const auto& body2 = plant.GetBodyByName("body2");
     plant.AddJoint<multibody::PrismaticJoint>(
         "body2", plant.world_body(), std::nullopt, body2, std::nullopt,
-        Eigen::Vector3d::UnitZ());
+        Eigen::Vector3d::UnitX());
 
     plant.Finalize();
 
@@ -97,7 +97,7 @@ class ContactVisualizerTest : public ::testing::Test {
     diagram_ = builder.Build();
     context_ = diagram_->CreateDefaultContext();
     plant.SetPositions(&plant.GetMyMutableContextFromRoot(context_.get()),
-                       Eigen::Vector4d{-0.03, 0.03, -0.05, 0.1});
+                       Eigen::Vector4d{-0.03, 0.03, 0.1, 0.3});
   }
 
   void PublishAndCheck(
@@ -111,7 +111,10 @@ class ContactVisualizerTest : public ::testing::Test {
           "contact_forces/point/sphere1.base_link+sphere2.base_link"));
     }
 
-    EXPECT_TRUE(meshcat_->HasPath("contact_forces/hydroelastic/body1+body2"));
+    EXPECT_TRUE(meshcat_->HasPath(
+        "contact_forces/hydroelastic/body1.body1_collision+body2"));
+    EXPECT_TRUE(meshcat_->HasPath(
+        "contact_forces/hydroelastic/body1.body1_collision2+body2"));
   }
 
   std::shared_ptr<Meshcat> meshcat_;

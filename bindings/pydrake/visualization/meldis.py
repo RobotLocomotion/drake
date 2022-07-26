@@ -325,6 +325,8 @@ class _ContactApplet:
         viz_items = []
         for lcm_item in message.hydroelastic_contacts:
             (name1, name2) = self.get_full_names(lcm_item)
+            print("name1: {}", name1)
+            print("name2: {}", name2)
             viz_items.append(_HydroelasticContactVisualizerItem(
                 body_A=name1,
                 body_B=name2,
