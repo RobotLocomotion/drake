@@ -38,6 +38,33 @@
           <drake:compliant_hydroelastic/>
         </drake:proximity_properties>
       </collision>
+      <visual name="body1_visual2">
+        <pose>0.6 0 0.0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.2</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.0 0.0 0.5</diffuse>
+        </material>
+      </visual>
+      <collision name="body1_collision2">
+        <pose>0.6 0 0.0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.2</radius>
+          </sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:mesh_resolution_hint>0.05</drake:mesh_resolution_hint>
+          <drake:hydroelastic_modulus>1.0e7</drake:hydroelastic_modulus>
+          <drake:compliant_hydroelastic/>
+        </drake:proximity_properties>
+      </collision>
+
     </link>
     <link name="body2">
       <inertial>

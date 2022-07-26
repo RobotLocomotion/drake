@@ -217,9 +217,6 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
     Vector3d moment_C_W = ExtractDoubleOrThrow(info.F_Ac_W().rotational());
 
     if (contact_surface.is_triangle()) {
-
-      std::cout << "TRIANGLE\n";
-
       const auto& mesh = contact_surface.tri_mesh_W();
 
       Eigen::Matrix3Xd vertices(3, contact_surface.num_vertices());
@@ -255,15 +252,14 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
       }
 
       Eigen::Matrix3Xi faces(3, num_triangles);
-      int x = 0;
+      int face_count = 0;
       for (int i = 0; i < mesh.num_elements(); ++i) {
         const auto& e = mesh.element(i);
         for (int j = 1; j < e.num_vertices()-1; ++j) {
-          const int k = j + 1;
-          faces(0, x) = e.vertex(0);
-          faces(1, x) = e.vertex(j);
-          faces(2, x) = e.vertex(k);
-          ++x;
+          faces(0, face_count) = e.vertex(0);
+          faces(1, face_count) = e.vertex(j);
+          faces(2, face_count) = e.vertex(j+1);
+          ++face_count;
         }
       }
 
@@ -275,7 +271,8 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
       const Eigen::VectorXd pressure = ExtractDoubleOrThrow(pressure_T);
 
       result->emplace_back(std::move(body_A), std::move(body_B), centroid_W,
-                           force_C_W, moment_C_W, vertices, faces, pressure);
+                           force_C_W, moment_C_W, std::move(vertices),
+                           std::move(faces), std::move(pressure));
     }
   }
 }
