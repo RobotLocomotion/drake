@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
