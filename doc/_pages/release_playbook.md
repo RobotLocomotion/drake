@@ -271,6 +271,25 @@ If you haven't done so already, follow Drake's PyPI
 [account setup](https://docs.google.com/document/d/17D0yzyr0kGH44eWpiNY7E33A8hW1aiJRmADaoAlVISE/edit#)
 instructions to obtain a username and password.
 
+### Mac wheel builds
+
+1. Open the [Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Wheel/job/mac-big-sur-unprovisioned-clang-wheel-staging-snopt-mosek-release/) page.
+2. In the upper right, click "log in" (unless you're already logged in). This
+   will use your GitHub credentials.
+3. Click "Build with Parameters".
+4. Change "sha1" to the full **git sha** corresponding to ``v1.N.0`` and
+   "release_version" to ``1.N.0``.
+5. Click "Build"; the build will finish after approximately 75 minutes.
+6. After it's finished, open the "Console Output" and scroll to the bottom to
+   find the URL of the built wheel, which will be something like
+   `https://drake-packages.csail.mit.edu/drake/staging/drake-1.N.0-cp39-cp39-macosx_11_0_x86_64.whl`.
+7. Download that wheel.
+8. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path
+   to the file you downloaded.
+    1. You will need your PyPI username and password for this. (Do not use drake-robot.)
+
+### Linux wheel builds
+
 1. Use your Ubuntu 20.04 workstation for these steps.  (Do not use any other OS.)
 2. Create some empty scratch folder to use for these steps, and then ``cd`` into it.
 3. Run ``sudo apt install docker.io twine``

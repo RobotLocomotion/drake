@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -111,25 +112,12 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = DoorHingeConfig;
     constexpr auto& cls_doc = doc.DoorHingeConfig;
-    py::class_<Class>(m, "DoorHingeConfig", cls_doc.doc)
-        .def(ParamInit<Class>(), cls_doc.ctor.doc)
-        .def_readwrite("spring_zero_angle_rad", &Class::spring_zero_angle_rad,
-            cls_doc.spring_zero_angle_rad.doc)
-        .def_readwrite("spring_constant", &Class::spring_constant,
-            cls_doc.spring_constant.doc)
-        .def_readwrite("dynamic_friction_torque",
-            &Class::dynamic_friction_torque,
-            cls_doc.dynamic_friction_torque.doc)
-        .def_readwrite("static_friction_torque", &Class::static_friction_torque,
-            cls_doc.static_friction_torque.doc)
-        .def_readwrite("viscous_friction", &Class::viscous_friction,
-            cls_doc.viscous_friction.doc)
-        .def_readwrite(
-            "catch_width", &Class::catch_width, cls_doc.catch_width.doc)
-        .def_readwrite(
-            "catch_torque", &Class::catch_torque, cls_doc.catch_torque.doc)
-        .def_readwrite("motion_threshold", &Class::motion_threshold,
-            cls_doc.motion_threshold.doc);
+    py::class_<Class> cls(m, "DoorHingeConfig", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>(), cls_doc.ctor.doc);
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {

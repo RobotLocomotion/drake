@@ -1,5 +1,6 @@
 import pydrake.geometry as mut
 
+import copy
 import unittest
 
 import numpy as np
@@ -28,13 +29,10 @@ class TestGeometryVisualizers(unittest.TestCase):
         params = mut.DrakeVisualizerParams(
             publish_period=0.1, role=mut.Role.kIllustration,
             default_color=mut.Rgba(0.1, 0.2, 0.3, 0.4),
-            show_hydroelastic=False)
-        self.assertEqual(repr(params), "".join([
-            "DrakeVisualizerParams("
-            "publish_period=0.1, "
-            "role=Role.kIllustration, "
-            "default_color=Rgba(r=0.1, g=0.2, b=0.3, a=0.4), "
-            "show_hydroelastic=False)"]))
+            show_hydroelastic=False,
+            use_role_channel_suffix=False)
+        self.assertIn("publish_period", repr(params))
+        copy.copy(params)
 
         # Add some subscribers to detect message broadcast.
         load_channel = "DRAKE_VIEWER_LOAD_ROBOT"
@@ -97,10 +95,8 @@ class TestGeometryVisualizers(unittest.TestCase):
             show_stats_plot=False)
         meshcat = mut.Meshcat(params=params)
         self.assertEqual(meshcat.port(), port)
-        self.assertEqual(repr(params),
-                         ("MeshcatParams(port=7051,"
-                          " web_url_pattern=http://host:{port},"
-                          " show_stats_plot=False)"))
+        self.assertIn("host", repr(params))
+        copy.copy(params)
         with self.assertRaises(RuntimeError):
             meshcat2 = mut.Meshcat(port=port)
         self.assertIn("http", meshcat.web_url())
@@ -169,13 +165,8 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertEqual(camera.near, 0.2)
         self.assertEqual(camera.far, 200)
         self.assertEqual(camera.zoom, 1.3)
-        self.assertEqual(repr(camera), "".join([
-            r"PerspectiveCamera(",
-            r"fov=80.0, "
-            r"aspect=1.2, ",
-            r"near=0.2, ",
-            r"far=200.0, ",
-            r"zoom=1.3)"]))
+        self.assertIn("fov", repr(camera))
+        copy.copy(camera)
         meshcat.SetCamera(camera=camera, path="mypath")
 
         # OrthographicCamera
@@ -193,15 +184,8 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertEqual(camera.near, 0.2)
         self.assertEqual(camera.far, 200)
         self.assertEqual(camera.zoom, 1.3)
-        self.assertEqual(repr(camera), "".join([
-            r"OrthographicCamera(",
-            r"left=0.1, "
-            r"right=1.3, ",
-            r"top=0.3, "
-            r"bottom=1.4, ",
-            r"near=0.2, ",
-            r"far=200.0, ",
-            r"zoom=1.3)"]))
+        self.assertIn("left", repr(camera))
+        copy.copy(camera)
         meshcat.SetCamera(camera=camera, path="mypath")
 
     def test_meshcat_animation(self):
@@ -240,7 +224,8 @@ class TestGeometryVisualizers(unittest.TestCase):
         params.default_color = mut.Rgba(0.5, 0.5, 0.5)
         params.prefix = "py_visualizer"
         params.delete_on_initialization_event = False
-        self.assertNotIn("object at 0x", repr(params))
+        self.assertIn("publish_period", repr(params))
+        copy.copy(params)
         vis = mut.MeshcatVisualizer_[T](meshcat=meshcat, params=params)
         vis.Delete()
         self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])

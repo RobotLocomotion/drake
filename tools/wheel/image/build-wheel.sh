@@ -103,7 +103,6 @@ rm -rf \
     ${WHEEL_DATA_DIR}/manipulation/models/ur3e/*.obj \
     ${WHEEL_DATA_DIR}/manipulation/models/ur3e/*.png \
     ${WHEEL_DATA_DIR}/manipulation/models/ycb/meshes \
-    ${WHEEL_DATA_DIR}/manipulation/models/ycb/meshes \
     ${WHEEL_DATA_DIR}/examples/atlas \
     ${WHEEL_DATA_DIR}/examples/hydroelastic/spatula_slip_control
 

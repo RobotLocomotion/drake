@@ -5,6 +5,7 @@
 #endif
 
 #include <algorithm>  // for cpplint only
+#include <cmath>
 #include <cstddef>
 #include <functional>
 #include <limits>
@@ -32,46 +33,9 @@
 #include "drake/common/random.h"
 
 namespace drake {
-
 namespace symbolic {
 
-/** Kinds of symbolic expressions. */
-enum class ExpressionKind {
-  Constant,               ///< constant (double)
-  Var,                    ///< variable
-  Add,                    ///< addition (+)
-  Mul,                    ///< multiplication (*)
-  Div,                    ///< division (/)
-  Log,                    ///< logarithms
-  Abs,                    ///< absolute value function
-  Exp,                    ///< exponentiation
-  Sqrt,                   ///< square root
-  Pow,                    ///< power function
-  Sin,                    ///< sine
-  Cos,                    ///< cosine
-  Tan,                    ///< tangent
-  Asin,                   ///< arcsine
-  Acos,                   ///< arccosine
-  Atan,                   ///< arctangent
-  Atan2,                  ///< arctangent2 (atan2(y,x) = atan(y/x))
-  Sinh,                   ///< hyperbolic sine
-  Cosh,                   ///< hyperbolic cosine
-  Tanh,                   ///< hyperbolic tangent
-  Min,                    ///< min
-  Max,                    ///< max
-  Ceil,                   ///< ceil
-  Floor,                  ///< floor
-  IfThenElse,             ///< if then else
-  NaN,                    ///< NaN
-  UninterpretedFunction,  ///< Uninterpreted function
-  // TODO(soonho): add Integral
-};
-
-/** Total ordering between ExpressionKinds. */
-bool operator<(ExpressionKind k1, ExpressionKind k2);
-
 class ExpressionCell;                   // In expression_cell.h
-class ExpressionConstant;               // In expression_cell.h
 class ExpressionVar;                    // In expression_cell.h
 class UnaryExpressionCell;              // In expression_cell.h
 class BinaryExpressionCell;             // In expression_cell.h
@@ -118,13 +82,11 @@ Its syntax tree is as follows:
        | NaN | uninterpreted_function(name, {v_1, ..., v_n})
 @endverbatim
 
-In the implementation, Expression is a simple wrapper including a shared pointer
-to ExpressionCell class which is a super-class of different kinds of symbolic
-expressions (i.e. ExpressionAdd, ExpressionMul, ExpressionLog,
-ExpressionSin). Note that it includes a shared pointer, not a unique pointer, to
-allow sharing sub-expressions.
-
-@note The sharing of sub-expressions is not yet implemented.
+In the implementation, Expression directly stores Constant values inline, but in
+all other cases stores a shared pointer to a const ExpressionCell class that is
+a super-class of different kinds of symbolic expressions (i.e., ExpressionAdd,
+ExpressionMul, ExpressionLog, ExpressionSin), which makes it efficient to copy,
+move, and assign to an Expression.
 
 @note -E is represented as -1 * E internally.
 
@@ -168,7 +130,8 @@ symbolic::Formula instead of bool. Those operations are declared in formula.h
 file. To check structural equality between two expressions a separate function,
 Expression::EqualTo, is provided.
 
-Regarding NaN, we have the following rules:
+Regarding the arithmetic of an Expression when operating on NaNs, we have the
+following rules:
  1. NaN values are extremely rare during typical computations. Because they are
     difficult to handle symbolically, we will round that up to "must never
     occur". We allow the user to form ExpressionNaN cells in a symbolic
@@ -188,6 +151,10 @@ Regarding NaN, we have the following rules:
     appears in an evaluated trunk. That goes against rule (1) where a NaN
     anywhere in a computation (other than dead code) is an error.
 
+@internal note for Drake developers: under the hood of Expression, we have an
+internal::BoxedCell helper class that uses NaN for pointer tagging; that's a
+distinct concept from the Expression::NaN() rules enumerated just above.
+
 symbolic::Expression can be used as a scalar type of Eigen types.
 */
 class Expression {
@@ -196,18 +163,28 @@ class Expression {
   ~Expression() = default;
 
   /** Default constructor. It constructs Zero(). */
-  Expression() { *this = Zero(); }
+  Expression() = default;
 
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
-  Expression(double constant);
+  Expression(double constant)
+      : boxed_(std::isnan(constant) ? 0.0 : constant) {
+    if (std::isnan(constant)) {
+      ConstructExpressionCellNaN();
+    }
+  }
+
   /** Constructs an expression from @p var.
    * @pre @p var is neither a dummy nor a BOOLEAN variable.
    */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(const Variable& var);
+
   /** Returns expression kind. */
-  [[nodiscard]] ExpressionKind get_kind() const;
+  [[nodiscard]] ExpressionKind get_kind() const {
+    return boxed_.get_kind();
+  }
+
   /** Collects variables in expression. */
   [[nodiscard]] Variables GetVariables() const;
 
@@ -334,13 +311,13 @@ class Expression {
   [[nodiscard]] std::string to_string() const;
 
   /** Returns zero. */
-  static Expression Zero();
+  static Expression Zero() { return 0.0; }
   /** Returns one. */
-  static Expression One();
+  static Expression One() { return 1.0; }
   /** Returns Pi, the ratio of a circle’s circumference to its diameter. */
-  static Expression Pi();
+  static Expression Pi() { return M_PI; }
   /** Return e, the base of natural logarithms. */
-  static Expression E();
+  static Expression E() { return M_E; }
   /** Returns NaN (Not-a-Number). */
   static Expression NaN();
 
@@ -355,9 +332,35 @@ class Expression {
     item.HashAppend(&delegating_hasher);
   }
 
-  friend Expression operator+(Expression lhs, const Expression& rhs);
+  friend Expression operator+(Expression lhs, const Expression& rhs) {
+    lhs += rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator+=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator+=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) + Expression(c2) => Expression(c1 + c2)
+    //
+    // Recall that BoxedCell can efficiently provide us with a `double` that is
+    // either the Constant stored inside the box, or else is NaN.
+    //
+    // When both the lhs and rhs are constants, we need to perform the addition
+    // inline, for performance. For that case, it's more efficient to perform
+    // the sum and then check for NaN afterward (returning immediately in case
+    // it wasn't, i.e., terms were Constant) rather that doing two separate
+    // checks for lhs.is_constant() and rhs.is_constant() ahead of time.
+    //
+    // Note that operations on infinities might also produce a NaN as the
+    // speculative value. That's fine, we'll handle it during AddImpl; that
+    // case is rare, so doesn't need to be inline.
+    const double speculative_value =
+        lhs.boxed_.constant_or_nan() + rhs.boxed_.constant_or_nan();
+    if (!std::isnan(speculative_value)) {
+      lhs.boxed_.update_constant(speculative_value);
+    } else {
+      lhs.AddImpl(rhs);
+    }
+    return lhs;
+  }
 
   /** Provides prefix increment operator (i.e. ++x). */
   Expression& operator++();
@@ -366,9 +369,23 @@ class Expression {
   /** Provides unary plus operator. */
   friend Expression operator+(const Expression& e);
 
-  friend Expression operator-(Expression lhs, const Expression& rhs);
+  friend Expression operator-(Expression lhs, const Expression& rhs) {
+    lhs -= rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator-=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator-=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) - Expression(c2) => Expression(c1 - c2)
+    // Refer to operator+= comment for how the speculative_value works here.
+    const double speculative_value =
+        lhs.boxed_.constant_or_nan() - rhs.boxed_.constant_or_nan();
+    if (!std::isnan(speculative_value)) {
+      lhs.boxed_.update_constant(speculative_value);
+    } else {
+      lhs.SubImpl(rhs);
+    }
+    return lhs;
+  }
 
   /** Provides unary minus operator. */
   friend Expression operator-(const Expression& e);
@@ -377,13 +394,46 @@ class Expression {
   /** Provides postfix decrement operator (i.e. x--). */
   Expression operator--(int);
 
-  friend Expression operator*(Expression lhs, const Expression& rhs);
+  friend Expression operator*(Expression lhs, const Expression& rhs) {
+    lhs *= rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator*=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator*=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) * Expression(c2) => Expression(c1 * c2)
+    // Refer to operator+= comment for how the speculative_value works here.
+    const double speculative_value =
+        lhs.boxed_.constant_or_nan() * rhs.boxed_.constant_or_nan();
+    if (!std::isnan(speculative_value)) {
+      lhs.boxed_.update_constant(speculative_value);
+    } else {
+      lhs.MulImpl(rhs);
+    }
+    return lhs;
+  }
 
-  friend Expression operator/(Expression lhs, const Expression& rhs);
+  friend Expression operator/(Expression lhs, const Expression& rhs) {
+    lhs /= rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator/=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator/=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) / Expression(c2) => Expression(c1 / c2)
+    // Refer to operator+= comment for how the speculative_value works here.
+    //
+    // We check rhs for zero here because DivImpl needs to throw an exception
+    // in that case. TODO(jwnimmer-tri) I don't understand why we need to throw
+    // during division by zero. The result is typically well-defined (infinity).
+    const double rhs_or_nan = rhs.boxed_.constant_or_nan();
+    const double speculative_value =
+        lhs.boxed_.constant_or_nan() / rhs_or_nan;
+    if ((rhs_or_nan != 0.0) && !std::isnan(speculative_value)) {
+      lhs.boxed_.update_constant(speculative_value);
+    } else {
+      lhs.DivImpl(rhs);
+    }
+    return lhs;
+  }
 
   friend Expression log(const Expression& e);
   friend Expression abs(const Expression& e);
@@ -449,9 +499,13 @@ class Expression {
                                            std::vector<Expression> arguments);
 
   friend std::ostream& operator<<(std::ostream& os, const Expression& e);
-  friend void swap(Expression& a, Expression& b) { std::swap(a.ptr_, b.ptr_); }
+  friend void swap(Expression& a, Expression& b) {
+    std::swap(a.boxed_, b.boxed_);
+  }
 
   friend bool is_constant(const Expression& e);
+  friend bool is_constant(const Expression& e, double value);
+  friend bool is_nan(const Expression& e);
   friend bool is_variable(const Expression& e);
   friend bool is_addition(const Expression& e);
   friend bool is_multiplication(const Expression& e);
@@ -477,11 +531,11 @@ class Expression {
   friend bool is_floor(const Expression& e);
   friend bool is_if_then_else(const Expression& e);
   friend bool is_uninterpreted_function(const Expression& e);
+  friend double get_constant_value(const Expression& e);
 
   // Note that the following cast functions are only for low-level operations
   // and not exposed to the user of drake/common/symbolic/expression.h header.
   // These functions are declared in the expression_cell.h header.
-  friend const ExpressionConstant& to_constant(const Expression& e);
   friend const ExpressionVar& to_variable(const Expression& e);
   friend const UnaryExpressionCell& to_unary(const Expression& e);
   friend const BinaryExpressionCell& to_binary(const Expression& e);
@@ -512,7 +566,6 @@ class Expression {
   to_uninterpreted_function(const Expression& e);
 
   // Cast functions which takes a pointer to a non-const Expression.
-  friend ExpressionConstant& to_constant(Expression* e);
   friend ExpressionVar& to_variable(Expression* e);
   friend UnaryExpressionCell& to_unary(Expression* e);
   friend BinaryExpressionCell& to_binary(Expression* e);
@@ -546,29 +599,28 @@ class Expression {
   friend class ExpressionMulFactory;
 
  private:
-  // This is a helper function used to handle `Expression(double)` constructor.
-  static std::shared_ptr<ExpressionCell> make_cell(double d);
-
-  explicit Expression(std::shared_ptr<ExpressionCell> ptr);
+  explicit Expression(std::unique_ptr<ExpressionCell> cell);
+  void ConstructExpressionCellNaN();
 
   void HashAppend(DelegatingHasher* hasher) const;
 
+  void AddImpl(const Expression& rhs);
+  void SubImpl(const Expression& rhs);
+  void MulImpl(const Expression& rhs);
+  void DivImpl(const Expression& rhs);
+
   // Returns a const reference to the owned cell.
+  // @pre This expression is not a Constant.
   const ExpressionCell& cell() const {
-    DRAKE_ASSERT(ptr_ != nullptr);
-    return *ptr_;
+    return boxed_.cell();
   }
 
   // Returns a mutable reference to the owned cell. This function may only be
-  // called when this object is the sole owner of the cell.
+  // called when this object is the sole owner of the cell (use_count == 1).
+  // @pre This expression is not an ExpressionKind::Constant.
   ExpressionCell& mutable_cell();
 
-  // Note: We use "non-const" ExpressionCell type. This allows us to perform
-  // destructive updates on the pointed cell if the cell is not shared with
-  // other Expressions (that is, ptr_.use_count() == 1). However, because that
-  // pattern needs careful attention, our library code should never access
-  // ptr_ directly, it should always use cell() or mutable_cell().
-  std::shared_ptr<ExpressionCell> ptr_;
+  internal::BoxedCell boxed_;
 };
 
 Expression operator+(Expression lhs, const Expression& rhs);
@@ -622,74 +674,142 @@ void swap(Expression& a, Expression& b);
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
 /** Checks if @p e is a constant expression. */
-bool is_constant(const Expression& e);
+inline bool is_constant(const Expression& e) {
+  return e.boxed_.is_constant();
+}
 /** Checks if @p e is a constant expression representing @p v. */
-bool is_constant(const Expression& e, double v);
+inline bool is_constant(const Expression& e, double v) {
+  // N.B. This correctly returns `false` even when comparing e's cell against
+  // a `v` value of NaN, because NaN == NaN is false.
+  return e.boxed_.constant_or_nan() == v;
+}
 /** Checks if @p e is 0.0. */
-bool is_zero(const Expression& e);
+inline bool is_zero(const Expression& e) {
+  return is_constant(e, 0.0);
+}
 /** Checks if @p e is 1.0. */
-bool is_one(const Expression& e);
+inline bool is_one(const Expression& e) {
+  return is_constant(e, 1.0);
+}
 /** Checks if @p e is -1.0. */
-bool is_neg_one(const Expression& e);
+inline bool is_neg_one(const Expression& e) {
+  return is_constant(e, -1.0);
+}
 /** Checks if @p e is 2.0. */
-bool is_two(const Expression& e);
+inline bool is_two(const Expression& e) {
+  return is_constant(e, 2.0);
+}
 /** Checks if @p e is NaN. */
-bool is_nan(const Expression& e);
+inline bool is_nan(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::NaN>();
+}
 /** Checks if @p e is a variable expression. */
-bool is_variable(const Expression& e);
+inline bool is_variable(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Var>();
+}
 /** Checks if @p e is an addition expression. */
-bool is_addition(const Expression& e);
+inline bool is_addition(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Add>();
+}
 /** Checks if @p e is a multiplication expression. */
-bool is_multiplication(const Expression& e);
+inline bool is_multiplication(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Mul>();
+}
 /** Checks if @p e is a division expression. */
-bool is_division(const Expression& e);
+inline bool is_division(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Div>();
+}
 /** Checks if @p e is a log expression. */
-bool is_log(const Expression& e);
+inline bool is_log(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Log>();
+}
 /** Checks if @p e is an abs expression. */
-bool is_abs(const Expression& e);
+inline bool is_abs(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Abs>();
+}
 /** Checks if @p e is an exp expression. */
-bool is_exp(const Expression& e);
+inline bool is_exp(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Exp>();
+}
 /** Checks if @p e is a square-root expression. */
-bool is_sqrt(const Expression& e);
+inline bool is_sqrt(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Sqrt>();
+}
 /** Checks if @p e is a power-function expression. */
-bool is_pow(const Expression& e);
+inline bool is_pow(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Pow>();
+}
 /** Checks if @p e is a sine expression. */
-bool is_sin(const Expression& e);
+inline bool is_sin(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Sin>();
+}
 /** Checks if @p e is a cosine expression. */
-bool is_cos(const Expression& e);
+inline bool is_cos(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Cos>();
+}
 /** Checks if @p e is a tangent expression. */
-bool is_tan(const Expression& e);
+inline bool is_tan(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Tan>();
+}
 /** Checks if @p e is an arcsine expression. */
-bool is_asin(const Expression& e);
+inline bool is_asin(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Asin>();
+}
 /** Checks if @p e is an arccosine expression. */
-bool is_acos(const Expression& e);
+inline bool is_acos(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Acos>();
+}
 /** Checks if @p e is an arctangent expression. */
-bool is_atan(const Expression& e);
+inline bool is_atan(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Atan>();
+}
 /** Checks if @p e is an arctangent2 expression. */
-bool is_atan2(const Expression& e);
+inline bool is_atan2(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Atan2>();
+}
 /** Checks if @p e is a hyperbolic-sine expression. */
-bool is_sinh(const Expression& e);
+inline bool is_sinh(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Sinh>();
+}
 /** Checks if @p e is a hyperbolic-cosine expression. */
-bool is_cosh(const Expression& e);
+inline bool is_cosh(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Cosh>();
+}
 /** Checks if @p e is a hyperbolic-tangent expression. */
-bool is_tanh(const Expression& e);
+inline bool is_tanh(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Tanh>();
+}
 /** Checks if @p e is a min expression. */
-bool is_min(const Expression& e);
+inline bool is_min(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Min>();
+}
 /** Checks if @p e is a max expression. */
-bool is_max(const Expression& e);
+inline bool is_max(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Max>();
+}
 /** Checks if @p e is a ceil expression. */
-bool is_ceil(const Expression& e);
+inline bool is_ceil(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Ceil>();
+}
 /** Checks if @p e is a floor expression. */
-bool is_floor(const Expression& e);
+inline bool is_floor(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::Floor>();
+}
 /** Checks if @p e is an if-then-else expression. */
-bool is_if_then_else(const Expression& e);
+inline bool is_if_then_else(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::IfThenElse>();
+}
 /** Checks if @p e is an uninterpreted-function expression. */
-bool is_uninterpreted_function(const Expression& e);
+inline bool is_uninterpreted_function(const Expression& e) {
+  return e.boxed_.is_kind<ExpressionKind::UninterpretedFunction>();
+}
 
 /** Returns the constant value of the constant expression @p e.
  *  \pre{@p e is a constant expression.}
  */
-double get_constant_value(const Expression& e);
+inline double get_constant_value(const Expression& e) {
+  return e.boxed_.constant();
+}
 /** Returns the embedded variable in the variable expression @p e.
  *  \pre{@p e is a variable expression.}
  */

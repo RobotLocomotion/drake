@@ -27,6 +27,7 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//common:essential",
+        "//common:name_value",
         "//geometry/render:render_label",
     ],
 )

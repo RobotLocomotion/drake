@@ -12,6 +12,8 @@ namespace multibody {
 /// The field names and defaults here match MultibodyPlant's defaults exactly,
 /// with the exception of time_step.
 struct MultibodyPlantConfig {
+  /// Passes this object to an Archive.
+  /// Refer to @ref yaml_serialization "YAML Serialization" for background.
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(time_step));

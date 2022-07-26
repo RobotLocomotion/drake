@@ -235,6 +235,7 @@ class TestPlant(unittest.TestCase):
         MultibodyPlantConfig()
         config = MultibodyPlantConfig(time_step=0.01)
         self.assertEqual(config.time_step, 0.01)
+        self.assertIn("time_step", repr(config))
         copy.copy(config)
 
         builder = DiagramBuilder_[float]()
@@ -736,6 +737,7 @@ class TestPlant(unittest.TestCase):
                          door_hinge_config.spring_zero_angle_rad)
         self.assertEqual(door_hinge_config_test.static_friction_torque,
                          door_hinge_config.static_friction_torque)
+        self.assertIn("spring_zero_angle_rad", repr(door_hinge_config))
 
         # Test DoorHinge torque calculation. Set the angle to be the half of
         # the catch width so that there is only torsional spring torque which

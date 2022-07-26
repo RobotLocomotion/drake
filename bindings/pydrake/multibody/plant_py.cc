@@ -1276,9 +1276,9 @@ PYBIND11_MODULE(plant, m) {
     constexpr auto& cls_doc = doc.MultibodyPlantConfig;
     py::class_<Class> cls(m, "MultibodyPlantConfig", cls_doc.doc);
     cls  // BR
-        .def(py::init<>())
         .def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }
 

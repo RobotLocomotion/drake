@@ -41,3 +41,9 @@ class TestSerializePybind(unittest.TestCase):
         dut.quux = -1.0
         self.assertEqual(dut.quux, -1.0)
         self.assertEqual(inspect.getdoc(MyData2.quux), "")
+
+    def test_repr_using_serialize(self):
+        self.assertEqual(repr(MyData(foo=1.0, bar=[2.0, 3.0])),
+                         "MyData(foo=1.0, bar=[2.0, 3.0])")
+        self.assertEqual(repr(MyData2(quux=1.0)),
+                         "MyData2(quux=1.0)")
