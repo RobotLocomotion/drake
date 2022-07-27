@@ -11,6 +11,7 @@
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
@@ -36,6 +37,7 @@ using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MergeNormalAndTangent;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
+using drake::multibody::contact_solvers::internal::SapHolonomicConstraint;
 using drake::multibody::contact_solvers::internal::SapLimitConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
@@ -1167,7 +1169,30 @@ class KukaIiwaArmTests : public ::testing::Test {
     LoadIiwaWithGripper(&plant_);
     AddInReflectedInertia(&plant_, kRotorInertias, kGearRatios);
 
+    // Only SAP supports the modeling of constraints.
+    plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+
+    // Thus far the model has no constraints.
+    EXPECT_EQ(plant_.num_constraints(), 0);
+
+    // Constrain the gripper fingers to be coupled.
+    const Joint<double>& left_finger_slider =
+        plant_.GetJointByName("left_finger_sliding_joint");
+    const Joint<double>& right_finger_slider =
+        plant_.GetJointByName("right_finger_sliding_joint");
+    // While for a typical gripper most likely the gear ratio is one and the
+    // offset is zero, here we use an arbitrary set of values to verify later on
+    // in the test that the manager created a constraint consistent with these
+    // numbers.
+    ConstraintIndex constraint_index =
+        plant_.AddCouplerConstraint(left_finger_slider, right_finger_slider,
+                                    kCouplerGearRatio, kCouplerOffset);
+    EXPECT_EQ(constraint_index, ConstraintIndex(0));
+
     plant_.Finalize();
+
+    // The model has a single coupler constraint.
+    EXPECT_EQ(plant_.num_constraints(), 1);
 
     auto owned_contact_manager =
         std::make_unique<CompliantContactManager<double>>();
@@ -1368,6 +1393,8 @@ class KukaIiwaArmTests : public ::testing::Test {
   const double kTimeStep{0.015};
   const VectorXd kRotorInertias{VectorXd::LinSpaced(kNumJoints, 0.1, 12.0)};
   const VectorXd kGearRatios{VectorXd::LinSpaced(kNumJoints, 1.5, 100.0)};
+  const double kCouplerGearRatio{-1.5};
+  const double kCouplerOffset{3.1};
   MultibodyPlant<double> plant_{kTimeStep};
   CompliantContactManager<double>* manager_{nullptr};
   std::unique_ptr<Context<double>> context_;
@@ -1480,8 +1507,10 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
 
   // This model has no contact. We expect the number of constraints and
   // equations be consistent with limits_specification defined above.
-  EXPECT_EQ(problem.num_constraints(), kNumJointsWithLimits);
-  EXPECT_EQ(problem.num_constraint_equations(), kNumConstraintEquations);
+  // Recall the model has one additional constraint to model the coupler between
+  // the gripper fingers.
+  EXPECT_EQ(problem.num_constraints(), kNumJointsWithLimits + 1);
+  EXPECT_EQ(problem.num_constraint_equations(), kNumConstraintEquations + 1);
 
   // In this model we clearly have single tree, the arm with its gripper.
   const int tree_expected = 0;
@@ -1718,6 +1747,82 @@ GTEST_TEST(CompliantContactManager,
   // No limit constraints are added since the only one joint in the model has
   // no limits.
   EXPECT_EQ(problem.num_constraints(), 0);
+}
+
+// This test verifies that the manager properly added holonomic constraints for
+// the coupler constraints specified in the MultibodyPlant model.
+TEST_F(KukaIiwaArmTests, CouplerConstraints) {
+  // Specify a state in which all kNumJoints are within limits so that we know
+  // the contact problem has no limit constraints.
+  std::vector<InitializePositionAt> limits_specification(
+      kNumJoints, InitializePositionAt::WellWithinLimits);
+  SetArbitraryStateWithLimitsSpecification(plant_, limits_specification,
+                                           context_.get());
+
+  // We are assuming there is no contact. Assert this.
+  const std::vector<DiscreteContactPair<double>>& discrete_pairs =
+      CompliantContactManagerTest::EvalDiscreteContactPairs(*manager_,
+                                                            *context_);
+  const int num_contacts = discrete_pairs.size();
+  ASSERT_EQ(num_contacts, 0);
+
+  const ContactProblemCache<double>& problem_cache =
+      CompliantContactManagerTest::EvalContactProblemCache(*manager_,
+                                                           *context_);
+  const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+
+  // This model has no contact and the configuration is set to be within joint
+  // limits. Therefore we expect the problem to only have a single constraint to
+  // model the coupler between the gripper fingers.
+  EXPECT_EQ(problem.num_constraints(), 1);
+  EXPECT_EQ(problem.num_constraint_equations(), 1);
+
+  // Get the one and only constraint of the problem.
+  const auto* constraint = dynamic_cast<const SapHolonomicConstraint<double>*>(
+      &problem.get_constraint(0));
+
+  // Verify it is a SapHolonomicConstraint as expected.
+  ASSERT_NE(constraint, nullptr);
+
+  // There is a single clique in this model corresponding to the single
+  // kinematic tree composed of the robot arm and gripper.
+  const int tree_expected = 0;
+  EXPECT_EQ(constraint->num_cliques(), 1);
+  EXPECT_EQ(constraint->first_clique(), tree_expected);
+
+  const PrismaticJoint<double>& left_finger_slider =
+      plant_.GetJointByName<PrismaticJoint>("left_finger_sliding_joint");
+  const PrismaticJoint<double>& right_finger_slider =
+      plant_.GetJointByName<PrismaticJoint>("right_finger_sliding_joint");
+
+  // Verify the value of the constraint function.
+  const double q_left = left_finger_slider.get_translation(*context_);
+  const double q_right = right_finger_slider.get_translation(*context_);
+  const Vector1d g0_expected(q_left - kCouplerGearRatio * q_right -
+                             kCouplerOffset);
+  const VectorXd& g0 = constraint->constraint_function();
+  EXPECT_EQ(g0, g0_expected);
+
+  // Verify the Jacobian involves only the DOFs of the gripper, in opposition.
+  const int left_index = left_finger_slider.velocity_start();
+  const int right_index = right_finger_slider.velocity_start();
+  const MatrixXd J_expected =
+      (VectorXd::Unit(kNumJoints, left_index) -
+      kCouplerGearRatio * VectorXd::Unit(kNumJoints, right_index)).transpose();
+  EXPECT_EQ(constraint->first_clique_jacobian(), J_expected);
+
+  // N.B. Default values implemented in
+  // CompliantContactManager::AddCouplerConstraints(), keep these values in
+  // sync.
+  const Vector1d kInfinity =
+      Vector1d::Constant(std::numeric_limits<double>::infinity());
+  const SapHolonomicConstraint<double>::Parameters& params =
+      constraint->parameters();
+  EXPECT_EQ(params.impulse_lower_limits(), -kInfinity);
+  EXPECT_EQ(params.impulse_upper_limits(), kInfinity);
+  EXPECT_EQ(params.stiffnesses(), kInfinity);
+  EXPECT_EQ(params.relaxation_times(), Vector1d::Constant(plant_.time_step()));
+  EXPECT_EQ(params.beta(), 0.1);
 }
 
 }  // namespace internal

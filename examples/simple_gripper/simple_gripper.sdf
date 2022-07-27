@@ -67,7 +67,7 @@
       </visual>
     </link>
     <link name="left_finger">
-      <pose>0.040 0.029 0 0 0 0</pose>
+      <pose>-0.055 0.029 0 0 0 0</pose>
       <inertial>
         <mass>0.05</mass>
         <inertia>
@@ -108,13 +108,21 @@
         </geometry>
       </visual>
     </link>
-    <joint name="weld_right_finger" type="fixed">
+    <joint name="left_slider" type="prismatic">
+      <parent>body</parent>
+      <child>left_finger</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <!-- Drake attaches an actuator to all joints with a non-zero effort
+             limit. We do want an actuator for this joint. -->
+        <limit>
+          <effort>500</effort>
+        </limit>
+      </axis>
+    </joint>
+    <joint name="right_slider" type="prismatic">
       <parent>body</parent>
       <child>right_finger</child>
-    </joint>
-    <joint name="finger_sliding_joint" type="prismatic">
-      <parent>right_finger</parent>
-      <child>left_finger</child>
       <axis>
         <xyz>1 0 0</xyz>
         <!-- Drake attaches an actuator to all joints with a non-zero effort

@@ -18,6 +18,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":calc_distance_and_time_derivative",
+        ":constraint_specs",
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
@@ -35,6 +36,20 @@ drake_cc_package_library(
         ":propeller",
         ":tamsi_solver",
         ":wing",
+    ],
+)
+
+drake_cc_library(
+    name = "constraint_specs",
+    srcs = [
+        "constraint_specs.cc",
+    ],
+    hdrs = [
+        "constraint_specs.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
@@ -112,6 +127,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        ":constraint_specs",
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
