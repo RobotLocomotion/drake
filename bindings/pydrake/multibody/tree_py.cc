@@ -241,15 +241,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
                  const RigidTransform<double>&,
                  std::optional<ModelInstanceIndex>>(),
             py::arg("name"), py::arg("P"), py::arg("X_PF"),
-            py::arg("model_instance") = std::nullopt, cls_doc.ctor.doc_4args)
-        .def(py::init<const Frame<T>&, const math::RigidTransform<double>&>(),
-            py::arg("P"), py::arg("X_PF"), cls_doc.ctor.doc_2args)
+            py::arg("model_instance") = std::nullopt,
+            cls_doc.ctor.doc_4args_name_P_X_PF_model_instance)
+        .def(py_init_deprecated<Class, const Frame<T>&,
+                 const math::RigidTransform<double>&>(
+                 cls_doc.ctor.doc_deprecated_deprecated_2args_P_X_PF),
+            py::arg("P"), py::arg("X_PF"),
+            cls_doc.ctor.doc_deprecated_deprecated_2args_P_X_PF)
         .def(py::init<const std::string&, const Body<T>&,
                  const math::RigidTransform<double>&>(),
             py::arg("name"), py::arg("bodyB"), py::arg("X_BF"),
-            cls_doc.ctor.doc_3args)
-        .def(py::init<const Body<T>&, const math::RigidTransform<double>&>(),
-            py::arg("bodyB"), py::arg("X_BF"), cls_doc.ctor.doc_2args)
+            cls_doc.ctor.doc_3args_name_bodyB_X_BF)
+        .def(py_init_deprecated<Class, const Body<T>&,
+                 const math::RigidTransform<double>&>(
+                 cls_doc.ctor.doc_deprecated_deprecated_2args_bodyB_X_BF),
+            py::arg("bodyB"), py::arg("X_BF"),
+            cls_doc.ctor.doc_deprecated_deprecated_2args_bodyB_X_BF)
         .def("SetPoseInBodyFrame", &Class::SetPoseInBodyFrame,
             py::arg("context"), py::arg("X_PF"),
             cls_doc.SetPoseInBodyFrame.doc);
@@ -323,8 +330,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Body<T>>(
         m, "RigidBody", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<const SpatialInertia<double>&>(), py::arg("M_BBo_B"),
-            cls_doc.ctor.doc_1args)
+        .def(py_init_deprecated<Class, const SpatialInertia<double>&>(
+                 cls_doc.ctor.doc_deprecated_1args),
+            py::arg("M_BBo_B"), cls_doc.ctor.doc_deprecated_1args)
         .def(py::init<const std::string&, const SpatialInertia<double>&>(),
             py::arg("body_name"), py::arg("M_BBo_B"), cls_doc.ctor.doc_2args)
         .def(py::init<const std::string&, ModelInstanceIndex,

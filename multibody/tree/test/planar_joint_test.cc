@@ -40,7 +40,7 @@ class PlanarJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add a body so we can add a joint between it and the world:
-    body_ = &model->AddBody<RigidBody>(M_B);
+    body_ = &model->AddBody<RigidBody>("Body", M_B);
 
     // Add a planar joint between the world and body1:
     joint_ = &model->AddJoint<PlanarJoint>("Joint", model->world_body(),

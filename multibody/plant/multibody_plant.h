@@ -957,7 +957,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   braces `{}` imply that frame F **is** the same body frame P. If instead
   ///   your intention is to make a frame F with pose `X_PF` equal to the
   ///   identity pose, provide `RigidTransform<double>::Identity()` as your
-  ///   input.
+  ///   input. When non-nullopt, adds a FixedOffsetFrame named `{name}_parent`.
   /// @param[in] child
   ///   The child body connected by the new joint.
   /// @param[in] X_BM
@@ -966,7 +966,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   braces `{}` imply that frame M **is** the same body frame B. If instead
   ///   your intention is to make a frame M with pose `X_BM` equal to the
   ///   identity pose, provide `RigidTransform<double>::Identity()` as your
-  ///   input.
+  ///   input.  When non-nullopt, adds a FixedOffsetFrame named `{name}_child`.
   /// @param[in] args
   ///   Zero or more parameters provided to the constructor of the new joint. It
   ///   must be the case that
@@ -1018,7 +1018,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     const Frame<T>* frame_on_parent{nullptr};
     if (X_PF) {
       frame_on_parent = &this->AddFrame(
-          std::make_unique<FixedOffsetFrame<T>>(parent, *X_PF));
+          std::make_unique<FixedOffsetFrame<T>>(
+              name + "_parent", parent, *X_PF));
     } else {
       frame_on_parent = &parent.body_frame();
     }
@@ -1026,7 +1027,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     const Frame<T>* frame_on_child{nullptr};
     if (X_BM) {
       frame_on_child = &this->AddFrame(
-          std::make_unique<FixedOffsetFrame<T>>(child, *X_BM));
+          std::make_unique<FixedOffsetFrame<T>>(
+              name + "_child", child, *X_BM));
     } else {
       frame_on_child = &child.body_frame();
     }
