@@ -1,7 +1,8 @@
 # Only ever uses the defaults.
 Defaults: {}
 
-# Has at least one example of every kind of option.
+# Has at least one example of every kind of top-level option.
+# The specific details of the sub-structs are tested elsewhere.
 OneOfEverything:
   random_seed: 1
   simulation_duration: 3.14
@@ -18,3 +19,6 @@ OneOfEverything:
         rotation: !Rpy { deg: [10.0, 20.0, 30.0] }
   lcm_buses:
     extra_bus: {}
+  visualizer:
+    lcm_bus: extra_bus
+    publish_period: 0.125

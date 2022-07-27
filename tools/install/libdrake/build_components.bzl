@@ -90,6 +90,7 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
+    "//visualization",
     # N.B. These are added by hand for deprecation 2022-09-01. Once the
     # deprecation clears, we should go back to auto-generating this file
     # without any manual edits.

@@ -1,0 +1,57 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "visualization",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":visualizer_config",
+        ":visualizer_config_functions",
+    ],
+)
+
+drake_cc_library(
+    name = "visualizer_config",
+    srcs = ["visualizer_config.cc"],
+    hdrs = ["visualizer_config.h"],
+    deps = [
+        "//common:name_value",
+        "//geometry:drake_visualizer_params",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "visualizer_config_functions",
+    srcs = ["visualizer_config_functions.cc"],
+    hdrs = ["visualizer_config_functions.h"],
+    deps = [
+        ":visualizer_config",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_buses",
+    ],
+)
+
+drake_cc_googletest(
+    name = "visualizer_config_functions_test",
+    deps = [
+        ":visualizer_config_functions",
+        "//lcm:drake_lcm",
+        "//systems/analysis:simulator",
+    ],
+)
+
+add_lint_tests()

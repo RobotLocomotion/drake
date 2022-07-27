@@ -1,4 +1,4 @@
-#include "sim/common/drake_visualizer_config_functions.h"
+#include "drake/visualization/visualizer_config_functions.h"
 
 #include <stdexcept>
 #include <string>
@@ -6,36 +6,46 @@
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 
-using drake::geometry::DrakeVisualizer;
-using drake::geometry::DrakeVisualizerParams;
-using drake::geometry::Rgba;
-using drake::geometry::Role;
-using drake::geometry::SceneGraph;
-using drake::lcm::DrakeLcmInterface;
-using drake::multibody::ConnectContactResultsToDrakeVisualizer;
-using drake::multibody::MultibodyPlant;
-using drake::systems::lcm::LcmBuses;
+namespace drake {
+namespace visualization {
 
-namespace anzu {
-namespace sim {
+using geometry::DrakeVisualizer;
+using geometry::DrakeVisualizerParams;
+using geometry::Rgba;
+using geometry::Role;
+using geometry::SceneGraph;
+using lcm::DrakeLcmInterface;
+using multibody::ConnectContactResultsToDrakeVisualizer;
+using multibody::MultibodyPlant;
+using systems::DiagramBuilder;
+using systems::lcm::LcmBuses;
 
-void ApplyDrakeVisualizerConfig(
-    const DrakeVisualizerConfig& config,
+void ApplyVisualizerConfig(
+    const VisualizerConfig& config,
     const MultibodyPlant<double>& plant,
     const SceneGraph<double>& scene_graph,
-    const LcmBuses& lcm_buses,
-    drake::systems::DiagramBuilder<double>* builder) {
+    DrakeLcmInterface* lcm,
+    DiagramBuilder<double>* builder) {
   // This is required due to BuildContactsPublisher().
   DRAKE_THROW_UNLESS(plant.is_finalized());
-  DrakeLcmInterface* lcm = lcm_buses.Find("DrakeVisualizer", config.lcm_bus);
   const std::vector<DrakeVisualizerParams> all_params =
-      internal::ConvertDrakeVisualizerConfigToParams(config);
+      internal::ConvertVisualizerConfigToParams(config);
   for (const DrakeVisualizerParams& params : all_params) {
     DrakeVisualizer<double>::AddToBuilder(builder, scene_graph, lcm, params);
   }
   if (config.publish_contacts) {
     ConnectContactResultsToDrakeVisualizer(builder, plant, scene_graph, lcm);
   }
+}
+
+void ApplyVisualizerConfig(
+    const VisualizerConfig& config,
+    const MultibodyPlant<double>& plant,
+    const SceneGraph<double>& scene_graph,
+    const LcmBuses& lcm_buses,
+    DiagramBuilder<double>* builder) {
+  DrakeLcmInterface* lcm = lcm_buses.Find("DrakeVisualizer", config.lcm_bus);
+  ApplyVisualizerConfig(config, plant, scene_graph, lcm, builder);
 }
 
 namespace {
@@ -61,8 +71,8 @@ Rgba VectorToRgba(const Eigen::VectorXd& input) {
 namespace internal {
 
 std::vector<DrakeVisualizerParams>
-ConvertDrakeVisualizerConfigToParams(
-    const DrakeVisualizerConfig& config) {
+ConvertVisualizerConfigToParams(
+    const VisualizerConfig& config) {
   std::vector<DrakeVisualizerParams> result;
 
   if (config.publish_illustration) {
@@ -89,5 +99,5 @@ ConvertDrakeVisualizerConfigToParams(
 }
 
 }  // namespace internal
-}  // namespace sim
-}  // namespace anzu
+}  // namespace visualization
+}  // namespace drake
