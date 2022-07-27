@@ -71,6 +71,7 @@ RunfilesSingleton Create() {
     result.runfiles.reset(Runfiles::Create(argv0, &bazel_error));
   }
   drake::log()->debug("FindRunfile mechanism = {}", mechanism);
+  drake::log()->debug("cwd = {}", filesystem::current_path());
 
   // If there were runfiles, identify the RUNFILES_DIR.
   if (result.runfiles) {
@@ -81,8 +82,10 @@ RunfilesSingleton Create() {
         // `bazel-bin/target`.
         // TODO(eric.cousineau): Show this in Drake itself. This behavior was
         // encountered in Anzu issue 5653, in a Python binary.
-        result.runfiles_dir =
-            filesystem::path(key_value.second).lexically_normal().string();
+        filesystem::path path = key_value.second;
+        path = filesystem::absolute(path);
+        path = path.lexically_normal();
+        result.runfiles_dir = path.string();
         break;
       }
     }
