@@ -143,6 +143,9 @@ class CompliantContactManager final
     sap_parameters_ = parameters;
   }
 
+  bool is_cloneable_to_double() const final { return true; }
+  bool is_cloneable_to_autodiff() const final { return true; }
+
  private:
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
@@ -152,12 +155,22 @@ class CompliantContactManager final
     systems::CacheIndex non_contact_forces_accelerations;
   };
 
+  // Allow different specializations to access each other's private data for
+  // scalar conversion.
+  template <typename U>
+  friend class CompliantContactManager;
+
   // Provide private access for unit testing only.
   friend class CompliantContactManagerTest;
 
   const MultibodyTreeTopology& tree_topology() const {
     return internal::GetInternalTree(this->plant()).get_topology();
   }
+
+  std::unique_ptr<DiscreteUpdateManager<double>> CloneToDouble()
+      const final;
+  std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>> CloneToAutoDiffXd()
+      const final;
 
   // Extracts non state dependent model information from MultibodyPlant. See
   // DiscreteUpdateManager for details.

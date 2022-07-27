@@ -929,6 +929,26 @@ void CompliantContactManager<T>::DoCalcDiscreteValues(
 }
 
 template <typename T>
+std::unique_ptr<DiscreteUpdateManager<double>>
+CompliantContactManager<T>::CloneToDouble() const {
+  auto clone = std::make_unique<CompliantContactManager<double>>();
+  // N.B. we should copy all members except for those overwritten in
+  // ExtractModelInfo and DeclareCacheEntries.
+  clone->sap_parameters_ = this->sap_parameters_;
+  return clone;
+}
+
+template <typename T>
+std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>>
+CompliantContactManager<T>::CloneToAutoDiffXd() const {
+  auto clone = std::make_unique<CompliantContactManager<AutoDiffXd>>();
+  // N.B. we should copy all members except for those overwritten in
+  // ExtractModelInfo and DeclareCacheEntries.
+  clone->sap_parameters_ = this->sap_parameters_;
+  return clone;
+}
+
+template <typename T>
 void CompliantContactManager<T>::ExtractModelInfo() {
   // Collect joint damping coefficients into a vector.
   joint_damping_ = VectorX<T>::Zero(plant().num_velocities());

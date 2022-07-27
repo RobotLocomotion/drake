@@ -241,7 +241,8 @@ class SapSolver {
   SapSolver() = default;
 
   // Solve the contact problem specified by the input data. Currently, only `T =
-  // double` is supported. An exception is thrown if `T != double`.
+  // double` is fully supported. An exception is thrown if `T != double` and the
+  // set of constraints is non-empty.
   //
   // Convergence of the solver is controlled by set_parameters(). Refer to
   // SapSolverParameters for details on the convergence conditions.
