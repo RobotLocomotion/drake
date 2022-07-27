@@ -1,5 +1,8 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/common/autodiff.h"
-#include "drake/common/test/autodiffxd_test.h"
+#include "drake/common/ad/test/standard_operations_test.h"
+/* clang-format on */
+
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
