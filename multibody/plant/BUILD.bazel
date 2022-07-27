@@ -347,6 +347,16 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "compliant_contact_manager_scalar_conversion_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
     name = "compliant_contact_manager_test",
     data = [
         "//manipulation/models/iiwa_description:models",
