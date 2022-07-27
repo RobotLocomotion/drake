@@ -55,6 +55,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "eigen_specializations_heap_test",
+    deps = [
+        ":auto_diff",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
     name = "partials_test",
     deps = [
         "//common:autodiff",
