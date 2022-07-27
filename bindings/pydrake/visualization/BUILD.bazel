@@ -3,6 +3,9 @@
 load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/skylark:pybind.bzl",
+    "add_pybind_coverage_data",
+    "drake_pybind_library",
+    "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
@@ -21,24 +24,31 @@ package(default_visibility = [
 # bindings.
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
-drake_py_library(
-    name = "module_py",
-    srcs = ["__init__.py"],
-    deps = [
-        "//bindings/pydrake:module_py",
+drake_pybind_library(
+    name = "visualization",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
     ],
-)
-
-drake_py_library(
-    name = "meldis_py",
-    srcs = ["meldis.py"],
-    imports = PACKAGE_INFO.py_imports,
-    deps = [
-        ":module_py",
+    cc_so_name = "__init__",
+    cc_srcs = [
+        "visualization_py.cc",
+        "visualization_py_config.cc",
+        "visualization_py.h",
+    ],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        "//bindings/pydrake/multibody",
+        "//bindings/pydrake/solvers",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:lcm_py",
-        "//bindings/pydrake/multibody:meshcat_py",
+        "//bindings/pydrake:symbolic_py",
         "//lcmtypes:lcmtypes_drake_py",
+    ],
+    py_srcs = [
+        "all.py",
+        "meldis.py",
+        "plotting.py",
     ],
 )
 
@@ -46,44 +56,25 @@ drake_py_binary(
     name = "meldis",
     srcs = ["meldis.py"],
     visibility = ["//tools:__pkg__"],
-    deps = [":meldis_py"],
-)
-
-drake_py_library(
-    name = "plotting_py",
-    srcs = ["plotting.py"],
-    imports = PACKAGE_INFO.py_imports,
-    deps = [
-        ":module_py",
-        "//bindings/pydrake:symbolic_py",
-        "//bindings/pydrake/solvers",
-    ],
+    deps = [":visualization"],
 )
 
 PY_LIBRARIES = [
-    ":module_py",
-    ":meldis_py",
-    ":plotting_py",
+    ":visualization",
 ]
-
-# Symbol roll-up (for user ease).
-drake_py_library(
-    name = "all_py",
-    srcs = ["all.py"],
-    deps = PY_LIBRARIES,
-)
-
-# Package roll-up (for Bazel dependencies).
-drake_py_library(
-    name = "visualization",
-    imports = PACKAGE_INFO.py_imports,
-    deps = [":all_py"],
-)
 
 install(
     name = "install",
-    targets = PY_LIBRARIES + [":all_py"],
+    targets = [":visualization"],
     py_dest = PACKAGE_INFO.py_dest,
+    deps = get_drake_py_installs([":visualization"]),
+)
+
+drake_py_unittest(
+    name = "config_test",
+    deps = [
+        ":visualization",
+    ],
 )
 
 drake_py_unittest(
@@ -94,17 +85,17 @@ drake_py_unittest(
         "//multibody/meshcat:models",
     ],
     deps = [
-        ":meldis_py",
-        "//bindings/pydrake/multibody:parsing_py",
-        "//bindings/pydrake/multibody:plant_py",
+        ":visualization",
     ],
 )
 
 drake_py_unittest(
     name = "plotting_test",
     deps = [
-        ":plotting_py",
+        ":visualization",
     ],
 )
+
+add_pybind_coverage_data()
 
 add_lint_tests_pydrake()

@@ -1,1 +1,1 @@
-#include "sim/common/drake_visualizer_config.h"
+#include "drake/visualization/visualizer_config.h"

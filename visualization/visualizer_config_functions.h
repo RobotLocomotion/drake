@@ -7,27 +7,40 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_buses.h"
-#include "sim/common/drake_visualizer_config.h"
+#include "drake/visualization/visualizer_config.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace visualization {
+
+// TODO(jwnimmer-tri) We should be able to drop the `scene_graph` argument,
+// inferring it from the plant instead.
 
 /** Adds LCM visualization publishers to communicate to drake-visualizer.
 @pre plant.is_finalized() */
-void ApplyDrakeVisualizerConfig(
-    const DrakeVisualizerConfig& config,
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const drake::geometry::SceneGraph<double>& scene_graph,
-    const drake::systems::lcm::LcmBuses& lcm,
-    drake::systems::DiagramBuilder<double>* builder);
+void ApplyVisualizerConfig(
+    const VisualizerConfig& config,
+    const multibody::MultibodyPlant<double>& plant,
+    const geometry::SceneGraph<double>& scene_graph,
+    const systems::lcm::LcmBuses& lcm_buses,
+    systems::DiagramBuilder<double>* builder);
+
+/** Adds LCM visualization publishers to communicate to drake-visualizer.
+This overload always publishes to the given `lcm` instance, thus ignoring
+the given `config.lcm_bus` setting.
+@pre plant.is_finalized() */
+void ApplyVisualizerConfig(
+    const VisualizerConfig& config,
+    const multibody::MultibodyPlant<double>& plant,
+    const geometry::SceneGraph<double>& scene_graph,
+    lcm::DrakeLcmInterface* lcm,
+    systems::DiagramBuilder<double>* builder);
 
 namespace internal {
 
 // (For unit testing only.)
-std::vector<drake::geometry::DrakeVisualizerParams>
-ConvertDrakeVisualizerConfigToParams(
-    const DrakeVisualizerConfig&);
+std::vector<geometry::DrakeVisualizerParams>
+ConvertVisualizerConfigToParams(const VisualizerConfig&);
 
 }  // namespace internal
-}  // namespace sim
-}  // namespace anzu
+}  // namespace visualization
+}  // namespace drake

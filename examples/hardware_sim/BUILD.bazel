@@ -23,6 +23,7 @@ drake_cc_library(
         "//multibody/plant:multibody_plant_config",
         "//multibody/parsing:model_directives",
         "//systems/analysis:simulator_config",
+        "//visualization:visualizer_config",
     ],
     deps = [
         "//common/yaml",
@@ -36,12 +37,12 @@ drake_cc_binary(
     deps = [
         ":scenario",
         "//common:add_text_logging_gflags",
-        "//geometry:drake_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_config_functions",
         "//systems/lcm:lcm_config_functions",
+        "//visualization:visualizer_config_functions",
     ],
 )
 
