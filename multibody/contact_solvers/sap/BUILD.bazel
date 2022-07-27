@@ -227,6 +227,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "sap_solver_autodiff_test",
+    deps = [
+        ":sap_friction_cone_constraint",
+        ":sap_solver",
+        ":sap_solver_results",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "sap_solver_test",
     deps = [
         ":sap_friction_cone_constraint",
