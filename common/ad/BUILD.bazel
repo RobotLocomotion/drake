@@ -1,0 +1,64 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_package_library(
+    name = "ad",
+    visibility = ["//visibility:private"],
+    deps = [
+        ":auto_diff",
+    ],
+)
+
+drake_cc_library(
+    name = "auto_diff",
+    srcs = [
+        "internal/partials.cc",
+        "internal/standard_operations.cc",
+    ],
+    hdrs = [
+        "auto_diff.h",
+        "internal/partials.h",
+        "internal/standard_operations.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "auto_diff_basic_test",
+    deps = [
+        ":auto_diff",
+    ],
+)
+
+drake_cc_googletest(
+    name = "partials_test",
+    deps = [
+        ":auto_diff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "standard_operations_test",
+    # The test is split into multiple source files to improve compilation time.
+    srcs = [
+        "test/standard_operations_stream_test.cc",
+    ],
+    deps = [
+        ":auto_diff",
+    ],
+)
+
+add_lint_tests()
