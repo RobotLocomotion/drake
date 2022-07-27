@@ -7,6 +7,8 @@ from pydrake.common import (
 )
 from pydrake.geometry import (
     DrakeVisualizer,
+    DrakeVisualizerParams,
+    Role,
 )
 from pydrake.multibody.parsing import (
     Parser,
@@ -25,6 +27,17 @@ from pydrake.systems.framework import (
 
 class TestMeldis(unittest.TestCase):
 
+    def _make_diagram(self, *, sdf_filename, visualizer_params, lcm):
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        parser = Parser(plant=plant)
+        parser.AddModelFromFile(FindResourceOrThrow(sdf_filename))
+        plant.Finalize()
+        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
+                                     params=visualizer_params, lcm=lcm)
+        diagram = builder.Build()
+        return diagram
+
     def test_viewer_applet(self):
         """Check that _ViewerApplet doesn't crash when receiving messages.
         Note that many geometry types are not yet covered by this test.
@@ -38,16 +51,10 @@ class TestMeldis(unittest.TestCase):
         dut._invoke_poll()
 
         # Enqueue the load + draw messages.
-        sdf_file = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-        parser = Parser(plant=plant)
-        parser.AddModelFromFile(sdf_file)
-        plant.Finalize()
-        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
-                                     lcm=lcm)
-        diagram = builder.Build()
+        diagram = self._make_diagram(
+            sdf_filename="drake/multibody/benchmarks/acrobot/acrobot.sdf",
+            visualizer_params=DrakeVisualizerParams(),
+            lcm=lcm)
         context = diagram.CreateDefaultContext()
         diagram.Publish(context)
 
@@ -61,6 +68,24 @@ class TestMeldis(unittest.TestCase):
         dut._invoke_subscriptions()
         self.assertEqual(meshcat.HasPath("/DRAKE_VIEWER"), True)
         self.assertEqual(meshcat.HasPath(link_path), True)
+
+    def test_hydroelastic_geometry(self):
+        """Check that _ViewerApplet doesn't crash when receiving
+        hydroelastic geometry.
+        """
+        dut = mut.Meldis()
+        lcm = dut._lcm
+        diagram = self._make_diagram(
+            sdf_filename="drake/examples/hydroelastic/"
+                         "spatula_slip_control/models/spatula.sdf",
+            visualizer_params=DrakeVisualizerParams(
+                show_hydroelastic=True,
+                role=Role.kProximity),
+            lcm=lcm)
+        context = diagram.CreateDefaultContext()
+        diagram.Publish(context)
+        lcm.HandleSubscriptions(timeout_millis=0)
+        dut._invoke_subscriptions()
 
     def test_contact_applet_point_pair(self):
         """Check that _ContactApplet doesn't crash when receiving point

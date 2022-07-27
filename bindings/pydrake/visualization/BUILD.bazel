@@ -89,6 +89,7 @@ install(
 drake_py_unittest(
     name = "meldis_test",
     data = [
+        "//examples/hydroelastic/spatula_slip_control:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/meshcat:models",
     ],
