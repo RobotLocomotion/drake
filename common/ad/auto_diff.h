@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/ad/derivatives_xpr.h"
 #include "drake/common/ad/internal/partials.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -12,9 +13,11 @@ namespace ad {
 Drake's AutoDiff is not templated; it only supports dynamically-sized
 derivatives using floating-point doubles.
 
-At the moment, the features of this class are similar to Eigen::AutoDiffScalar,
-but in the future Drake will further customize this class to optimize its
-runtime performance and better integrate it with our optimization tools. */
+However, using modern C++ implementation tricks (reference-counted,
+copy-on-write derivatives storage) and a more careful representation
+(maintaining the derivatives scale separately, and using inline storage
+in case only one partial is non-zero) it runs much faster than
+`Eigen::AutoDiffScalar<Eigen::VectorXd>`. */
 class AutoDiff {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AutoDiff);
@@ -61,13 +64,8 @@ class AutoDiff {
   Operations on this value will NOT alter the derivatives. */
   double& value() { return value_; }
 
-  /** Returns a view of the derivatives part of this %AutoDiff (readonly).
-
-  Do not presume any specific C++ type for the the return value. It will act
-  like an Eigen column-vector expression (e.g., Eigen::Block<const VectorXd>),
-  but we reserve the right to change the return type for efficiency down the
-  road. */
-  const Eigen::VectorXd& derivatives() const {
+  /** Returns a view of the derivatives part of this %AutoDiff (readonly). */
+  DerivativesConstXpr derivatives() const {
     return partials_.make_const_xpr();
   }
 
@@ -77,12 +75,12 @@ class AutoDiff {
   Instead of mutating the derivatives after construction, it's generally
   preferable to set them directly in the constructor if possible.
 
-  Do not presume any specific C++ type for the the return value. It will act
-  like a mutable Eigen column-vector expression (e.g., Eigen::Block<VectorXd>)
-  that also allows for assignment and resizing, but we reserve the right to
-  change the return type for efficiency down the road. */
-  Eigen::VectorXd& derivatives() {
-    return partials_.get_raw_storage_mutable();
+  @note This function name is kept for compatibility with Eigen::AutoDiffScalar
+  but it does NOT run in constant-time even though its name is lowercase.
+  Calling this function often needs to copy the derivatives prior to returning
+  the reference, so is O(N) in the size of the derivatives. */
+  DerivativesMutableXpr derivatives() {
+    return partials_.MakeMutableXpr();
   }
 
   /// @name Internal use only
@@ -109,3 +107,5 @@ class AutoDiff {
 /* clang-format off to disable clang-format-includes */
 // These further refine our AutoDiff type and must appear in exactly this order.
 #include "drake/common/ad/internal/standard_operations.h"
+#include "drake/common/ad/internal/eigen_specializations.h"
+

@@ -140,13 +140,12 @@ drake_cc_library(
     hdrs = [
         "autodiff.h",
         "autodiff_overloads.h",
-        "autodiffxd.h",
-        "eigen_autodiff_types.h",
     ],
     deps = [
         ":cond",
         ":dummy_value",
         ":essential",
+        "//common/ad:auto_diff",
     ],
 )
 
@@ -652,6 +651,7 @@ drake_cc_googletest(
         "-DDRAKE_AUTODIFFXD_DUT=drake::AutoDiffXd",
         "-DStandardOperationsTest=AutoDiffXdTest",
     ],
+    tags = ["manual"],
     deps = [
         ":autodiff",
         "//common/ad:standard_operations_test_h",
@@ -661,6 +661,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "autodiffxd_heap_test",
+    tags = ["manual"],
     deps = [
         ":autodiff",
         "//common/test_utilities:limit_malloc",
@@ -669,6 +670,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "autodiff_overloads_test",
+    tags = ["manual"],
     deps = [
         ":autodiff",
         ":essential",
@@ -1129,6 +1131,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "eigen_autodiff_types_test",
+    tags = ["manual"],
     deps = [":autodiff"],
 )
 
