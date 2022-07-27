@@ -98,12 +98,14 @@ drake_cc_library(
     srcs = [
         "compliant_contact_manager.cc",
         "discrete_update_manager.cc",
+        "make_discrete_update_manager.cc",
         "multibody_plant.cc",
         "physical_model.cc",
     ],
     hdrs = [
         "compliant_contact_manager.h",
         "discrete_update_manager.h",
+        "make_discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
         "multibody_plant_model_attorney.h",
