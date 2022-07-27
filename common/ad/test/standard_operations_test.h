@@ -68,7 +68,7 @@ class StandardOperationsTest : public ::testing::Test {
 
     return CompareMatrices(
         value_and_der_x, value_and_der_3,
-        2.0 * std::numeric_limits<double>::epsilon(),
+        10 * std::numeric_limits<double>::epsilon(),
         MatrixCompareType::relative)
       << "\n(where xd.size() = " << e_xd.derivatives().size() << ")";
   }
@@ -149,15 +149,33 @@ class StandardOperationsTest : public ::testing::Test {
   CHECK_EXPR(f(x + y, c) + y);                       \
   CHECK_EXPR(f(x - x + 5.0, c) - y);                 \
   CHECK_EXPR(f(x - x + 5.0, c) - y);                 \
-  CHECK_EXPR(f(x* x, c) * y);                        \
-  CHECK_EXPR(f(x* x, c) * y);                        \
+  CHECK_EXPR(f(x * x, c) * y);                       \
+  CHECK_EXPR(f(x * x, c) * y);                       \
   CHECK_EXPR(f(x / x, c) / y);                       \
   CHECK_EXPR(f(x / x, c) / y);                       \
   CHECK_EXPR(f(x + c, c) + y);                       \
   CHECK_EXPR(f(c + x, c) + y);                       \
-  CHECK_EXPR(f(x* c, c) + y);                        \
-  CHECK_EXPR(f(c* x, c) + y);                        \
+  CHECK_EXPR(f(x * c, c) + y);                       \
+  CHECK_EXPR(f(c * x, c) + y);                       \
   CHECK_EXPR(f(-x, c) + y);
+
+// The additive factor 5.0 let us call functions whose arguments must be
+// positive in order to have well defined derivatives. Eg.: sqrt, pow.
+#define CHECK_BINARY_FUNCTION_SCALAR_ADS(f, x, y, c) \
+  CHECK_EXPR(f(c, x) + y);                           \
+  CHECK_EXPR(f(c, x + x) + y);                       \
+  CHECK_EXPR(f(c, x + y) + y);                       \
+  CHECK_EXPR(f(c, x - x + 5.0) - y);                 \
+  CHECK_EXPR(f(c, x - x + 5.0) - y);                 \
+  CHECK_EXPR(f(c, x * x) * y);                       \
+  CHECK_EXPR(f(c, x * x) * y);                       \
+  CHECK_EXPR(f(c, x / x) / y);                       \
+  CHECK_EXPR(f(c, x / x) / y);                       \
+  CHECK_EXPR(f(c, x + c) + y);                       \
+  CHECK_EXPR(f(c, c + x) + y);                       \
+  CHECK_EXPR(f(c, x * c) + y);                       \
+  CHECK_EXPR(f(c, c * x) + y);                       \
+  CHECK_EXPR(f(c, -x) + y);
 
 }  // namespace test
 }  // namespace drake
