@@ -98,12 +98,14 @@ drake_cc_library(
     srcs = [
         "compliant_contact_manager.cc",
         "discrete_update_manager.cc",
+        "make_discrete_update_manager.cc",
         "multibody_plant.cc",
         "physical_model.cc",
     ],
     hdrs = [
         "compliant_contact_manager.h",
         "discrete_update_manager.h",
+        "make_discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
         "multibody_plant_model_attorney.h",
@@ -862,6 +864,15 @@ drake_cc_googletest(
         ":multibody_plant_config_functions",
         "//common/test_utilities:expect_throws_message",
         "//common/yaml",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_discrete_update_manager_test",
+    deps = [
+        ":multibody_plant_core",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:is_dynamic_castable",
     ],
 )
 
