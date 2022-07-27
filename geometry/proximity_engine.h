@@ -13,8 +13,10 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/proximity/collision_filter.h"
+#include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/query_results/contact_surface.h"
+#include "drake/geometry/query_results/deformable_rigid_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -106,6 +108,12 @@ class ProximityEngine {
                            const math::RigidTransformd& X_WG, GeometryId id,
                            const ProximityProperties& props = {});
 
+  /* Adds a new deformable geometry the engine.
+   @param mesh    The volume mesh representation of the deformable geometry.
+   @param id      The id of the geometry in SceneGraph to which this geometry
+                  belongs. */
+  void AddDeformableGeometry(const VolumeMesh<double>& mesh, GeometryId id);
+
   /* Possibly updates the proximity representation of the given `geometry`
    based on the relationship between its _current_ proximity properties and the
    given _new_ proximity properties. The underlying representation may not
@@ -130,8 +138,14 @@ class ProximityEngine {
    @param id          The id of the geometry to be removed.
    @param is_dynamic  True if the geometry is dynamic, false if anchored.
    @throws std::exception if `id` does not refer to a geometry in this engine.
-  */
+   @throws std::exception if `id` corresponds to a deformable geometry. Use
+   RemoveDeformableGeometry to remove deformable geomtries.  */
   void RemoveGeometry(GeometryId id, bool is_dynamic);
+
+  /* Removes the given deformable geometry indicated by `id` from the engine.
+   Trying to remove an non-existent deformable geometry is a no-op.
+   @param id          The id of the geometry to be removed. */
+  void RemoveDeformableGeometry(GeometryId id);
 
   /* Reports the _total_ number of geometries in the engine -- dynamic and
    anchored (spanning all sources).  */
@@ -166,6 +180,15 @@ class ProximityEngine {
   //    a vector and the caller sets values there directly.
   void UpdateWorldPoses(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs);
+
+  /* Updates the vertex positions for all of deformable geometries in the
+   engine.
+   @param q_WGs  The vertex positions of each deformable geometry `G` measured
+                 and expressed in the the world frame `W` (including
+                 deformable geometries which may *not* be registered with the
+                 proximity engine). */
+  void UpdateDeformableVertexPositions(
+      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs);
 
   // ----------------------------------------------------------------------
   /* @name              Signed Distance Queries
@@ -243,6 +266,14 @@ class ProximityEngine {
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
+  /* Implementation of GeometryState::ComputeDeformableRigidContact(). Assumes
+   the poses of rigid bodies and the vertex positions of the deformable bodies
+   are up-to-date. */
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeDeformableRigidContact(
+      std::vector<DeformableRigidContact<T>>* deformable_rigid_contact) const;
+
   /* Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
@@ -254,6 +285,10 @@ class ProximityEngine {
   /* The representation of every geometry that was successfully requested for
    use for hydroelastic contact surface computation. */
   const hydroelastic::Geometries& hydroelastic_geometries() const;
+
+  /* The representation of every geometry that was successfully requested for
+   use for proximity queries for deformable contact. */
+  const deformable::Geometries& deformable_contact_geometries() const;
 
  private:
   // Testing utilities:
