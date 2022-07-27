@@ -195,11 +195,23 @@ class _ViewerApplet:
         elif geom.type == lcmt_viewer_geometry_data.ELLIPSOID:
             (a, b, c) = geom.float_data
             shape = Ellipsoid(a=a, b=b, c=c)
-        elif geom.type == lcmt_viewer_geometry_data.MESH:
+        elif geom.type == lcmt_viewer_geometry_data.MESH and geom.string_data:
+            # A mesh to be loaded from a file.
             (scale_x, scale_y, scale_z) = geom.float_data
             filename = geom.string_data
             assert scale_x == scale_y and scale_y == scale_z
             shape = Mesh(absolute_filename=filename, scale=scale_x)
+        elif geom.type == lcmt_viewer_geometry_data.MESH:
+            assert not geom.string_data
+            # A mesh with the data inline, i.e.,
+            #   V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
+            # where
+            #   V: The number of vertices.
+            #   T: The number of triangles.
+            #   N: 3V, the number of floating point values for the V vertices.
+            #   M: 3T, the number of vertex indices for the T triangles.
+            _logger.warning("Meldis cannot yet display hydroelastic collision "
+                            "meshes; that geometry will be ignored.")
         elif geom.type == lcmt_viewer_geometry_data.SPHERE:
             (radius,) = geom.float_data
             shape = Sphere(radius=radius)
