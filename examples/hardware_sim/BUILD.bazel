@@ -73,6 +73,8 @@ sh_binary(
         "//manipulation/models/ur3e:prod_models",
         "//manipulation/models/wsg_50_description:prod_models",
     ],
+    # Use the runfiles of the ":homecart", not of the ":hardware_sim".
+    env = {"RUNFILES_DIR": "../"},
 )
 
 add_lint_tests()
