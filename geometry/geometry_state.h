@@ -500,6 +500,16 @@ class GeometryState {
         representation, kinematics_data_.X_WGs, surfaces, point_pairs);
   }
 
+  /** Implementation of QueryObject::ComputeDeformableRigidContact().  */
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeDeformableRigidContact(
+      std::vector<internal::DeformableRigidContact<T>>*
+          deformable_rigid_contact) const {
+    return geometry_engine_->ComputeDeformableRigidContact(
+        deformable_rigid_contact);
+  }
+
   /** Implementation of QueryObject::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const {
     return geometry_engine_->FindCollisionCandidates();
