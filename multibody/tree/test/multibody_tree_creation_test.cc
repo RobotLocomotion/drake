@@ -75,7 +75,8 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
   SpatialInertia<double> M_Bo_B;
 
   // Adds a new body to the world.
-  const RigidBody<double>& pendulum = model->AddBody<RigidBody>(M_Bo_B);
+  const RigidBody<double>& pendulum = model->AddBody<RigidBody>(
+      "pendulum", M_Bo_B);
 
   // Adds a revolute mobilizer.
   DRAKE_EXPECT_NO_THROW((model->AddMobilizer<RevoluteMobilizer>(
@@ -97,7 +98,8 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
       Vector3d::UnitZ())), std::runtime_error);
 
   // Adds a second pendulum.
-  const RigidBody<double>& pendulum2 = model->AddBody<RigidBody>(M_Bo_B);
+  const RigidBody<double>& pendulum2 = model->AddBody<RigidBody>(
+      "pendulum2", M_Bo_B);
   model->AddMobilizer<RevoluteMobilizer>(
       model->world_frame(), pendulum2.body_frame(), Vector3d::UnitZ());
 
@@ -139,7 +141,7 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
   EXPECT_THROW(model->Finalize(), std::logic_error);
 
   // Verifies that after compilation no more bodies can be added.
-  EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
+  EXPECT_THROW(model->AddBody<RigidBody>("B", M_Bo_B), std::logic_error);
 }
 
 // Tests the correctness of MultibodyElement checks to verify one or more
@@ -155,8 +157,8 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
   // expressed in the body frame B.
   SpatialInertia<double> M_Bo_B;
 
-  const RigidBody<double>& body1 = model1->AddBody<RigidBody>(M_Bo_B);
-  const RigidBody<double>& body2 = model2->AddBody<RigidBody>(M_Bo_B);
+  const RigidBody<double>& body1 = model1->AddBody<RigidBody>("body1", M_Bo_B);
+  const RigidBody<double>& body2 = model2->AddBody<RigidBody>("body2", M_Bo_B);
 
   // Verifies we can add a mobilizer between body1 and the world of model1.
   const RevoluteMobilizer<double>& pin1 =
@@ -254,8 +256,8 @@ class TreeTopologyTests : public ::testing::Test {
 
     const int kNumBodies = 10;
     bodies_.push_back(&model_->world_body());
-    for (int i =1; i < kNumBodies; ++i)
-      AddTestBody();
+    for (int i = 1; i < kNumBodies; ++i)
+      AddTestBody(i);
 
     // Adds mobilizers to connect bodies according to the following diagram:
     ConnectBodies(*bodies_[1], *bodies_[6]);  // mob. 0
@@ -269,11 +271,12 @@ class TreeTopologyTests : public ::testing::Test {
     WeldBodies(*bodies_[9], *bodies_[8]);     // mob. 8
   }
 
-  const RigidBody<double>* AddTestBody() {
+  const RigidBody<double>* AddTestBody(int i) {
     // NaN SpatialInertia to instantiate the RigidBody objects.
     // It is safe here since this tests only focus on topological information.
     const SpatialInertia<double> M_Bo_B;
-    const RigidBody<double>* body = &model_->AddBody<RigidBody>(M_Bo_B);
+    const RigidBody<double>* body = &model_->AddBody<RigidBody>(
+       fmt::format("TestBody_{}", i), M_Bo_B);
     bodies_.push_back(body);
     return body;
   }

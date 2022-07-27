@@ -28,9 +28,9 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
   const SpatialInertia<double> M_B;  // Default construction is ok for this.
 
   // Add bodies so we can add joints to them.
-  const auto body1 = &tree.AddBody<RigidBody>(M_B);
-  const auto body2 = &tree.AddBody<RigidBody>(M_B);
-  const auto body3 = &tree.AddBody<RigidBody>(M_B);
+  const auto body1 = &tree.AddBody<RigidBody>("body1", M_B);
+  const auto body2 = &tree.AddBody<RigidBody>("body2", M_B);
+  const auto body3 = &tree.AddBody<RigidBody>("body3", M_B);
 
   // Add a prismatic joint between the world and body1:
   const Joint<double>& body1_world =
@@ -66,7 +66,7 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(actuator1.num_inputs(),
                               ".*after the MultibodyPlant is finalized.");
 
-  const auto body4 = &tree.AddBody<RigidBody>(M_B);
+  const auto body4 = &tree.AddBody<RigidBody>("body4", M_B);
   const Joint<double>& body4_world =
       tree.AddJoint(std::make_unique<PlanarJoint<double>>(
           "planar4", tree.world_body().body_frame(), body4->body_frame(),

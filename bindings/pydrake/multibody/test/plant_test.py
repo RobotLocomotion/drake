@@ -656,9 +656,10 @@ class TestPlant(unittest.TestCase):
         RigidBody = RigidBody_[T]
         M = SpatialInertia_[float]()
         i = ModelInstanceIndex(0)
-        RigidBody(M_BBo_B=M)
         RigidBody(body_name="body_name", M_BBo_B=M)
         RigidBody(body_name="body_name", model_instance=i, M_BBo_B=M)
+        with catch_drake_warnings(expected_count=1):
+            RigidBody(M_BBo_B=M)
 
     @numpy_compare.check_all_types
     def test_multibody_force_element(self, T):
@@ -1884,12 +1885,14 @@ class TestPlant(unittest.TestCase):
     def test_fixed_offset_frame_api(self, T):
         FixedOffsetFrame = FixedOffsetFrame_[T]
         P = MultibodyPlant_[T](0.0).world_frame()
-        B = RigidBody_[T](SpatialInertia_[float]())
+        B = RigidBody_[T]("body", SpatialInertia_[float]())
         X = RigidTransform_[float].Identity()
         FixedOffsetFrame(name="name", P=P, X_PF=X, model_instance=None)
-        FixedOffsetFrame(P=P, X_PF=X)
         FixedOffsetFrame(name="name", bodyB=B, X_BF=X)
-        FixedOffsetFrame(bodyB=B, X_BF=X)
+        with catch_drake_warnings(expected_count=1):
+            FixedOffsetFrame(P=P, X_PF=X)
+        with catch_drake_warnings(expected_count=1):
+            FixedOffsetFrame(bodyB=B, X_BF=X)
 
     @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):
