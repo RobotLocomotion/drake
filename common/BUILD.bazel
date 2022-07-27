@@ -645,10 +645,16 @@ drake_cc_googletest(
         "test/autodiffxd_subtraction_test.cc",
         "test/autodiffxd_tan_test.cc",
         "test/autodiffxd_tanh_test.cc",
-        "test/autodiffxd_test.h",
+    ],
+    copts = [
+        # The test fixture at //common/ad:standard_operations_test_h requires
+        # some configuration for the specific autodiff class to be tested.
+        "-DDRAKE_AUTODIFFXD_DUT=drake::AutoDiffXd",
+        "-DStandardOperationsTest=AutoDiffXdTest",
     ],
     deps = [
         ":autodiff",
+        "//common/ad:standard_operations_test_h",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

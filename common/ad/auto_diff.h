@@ -85,6 +85,19 @@ class AutoDiff {
     return partials_.get_raw_storage_mutable();
   }
 
+  /// @name Internal use only
+  //@{
+
+  /** (Internal use only)
+  Users should call derivatives() instead. */
+  const internal::Partials& partials() const { return partials_; }
+
+  /** (Internal use only)
+  Users should call derivatives() instead. */
+  internal::Partials& partials() { return partials_; }
+
+  //@}
+
  private:
   double value_{0.0};
   internal::Partials partials_;
