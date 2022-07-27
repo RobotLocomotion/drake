@@ -52,6 +52,31 @@ class TrajectoryOptimizer {
   const MultibodyPlant<double>& plant() const { return *plant_; }
 
   /**
+   * Compute and return the total (unconstrained) cost of the optimization
+   * problem,
+   *
+   *     L(q) = x_err(T)'*Qf*x_err(T)
+   *                + dt*sum_{t=0}^{T-1} x_err(t)'*Q*x_err(t) + u(t)'*R*u(t),
+   *
+   * where:
+   *      x_err(t) = x(t) - x_nom is the state error,
+   *      T = num_steps() is the time horizon of the optimization problem,
+   *      x(t) = [q(t); v(t)] is the system state at time t,
+   *      u(t) are control inputs, and we assume (for now) that u(t) = tau(t),
+   *      Q{f} = diag([Qq{f}, Qv{f}]) are a block diagonal PSD state-error
+   *       weighting matrices,
+   *      R is a PSD control weighting matrix.
+   *
+   * @param q sequence of generalized positions
+   * @param v sequence of generalized velocities (consistent with q)
+   * @param tau sequence of generalized forces (consistent with q and v)
+   * @return double the total cost
+   */
+  double CalcCost(const std::vector<VectorXd>& q,
+                  const std::vector<VectorXd>& v,
+                  const std::vector<VectorXd>& tau) const;
+
+  /**
    * Compute a sequence of generalized velocities v from a sequence of
    * generalized positions, where
    *

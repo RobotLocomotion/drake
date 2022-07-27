@@ -13,6 +13,7 @@ namespace drake {
 namespace traj_opt {
 namespace internal {
 
+using Eigen::Matrix2d;
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::VectorXd;
@@ -21,6 +22,52 @@ using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using test::LimitMalloc;
+
+/**
+ * Test our computation of the total cost L(q)
+ */
+GTEST_TEST(TrajectoryOptimizerTest, CalcCost) {
+  const int num_steps = 100;
+  const double dt = 1e-2;
+
+  // Set up an (empty) system model
+  MultibodyPlant<double> plant(dt);
+  plant.Finalize();
+
+  // Set up the optimization problem
+  ProblemDefinition opt_prob;
+  opt_prob.num_steps = num_steps;
+  opt_prob.q_init = Vector2d(0.2, 0.1);
+  opt_prob.v_init = Vector2d(-0.1, 0.0);
+  opt_prob.Qq = 0.1 * Matrix2d::Identity();
+  opt_prob.Qv = 0.2 * Matrix2d::Identity();
+  opt_prob.Qf_q = 0.3 * Matrix2d::Identity();
+  opt_prob.Qf_v = 0.4 * Matrix2d::Identity();
+  opt_prob.R = 0.5 * Matrix2d::Identity();
+  opt_prob.q_nom = Vector2d(1.2, 1.1);
+  opt_prob.v_nom = Vector2d(-1.1, 1.0);
+
+  // Make some fake data
+  std::vector<VectorXd> q;
+  std::vector<VectorXd> v;
+  std::vector<VectorXd> tau;
+  for (int t = 0; t < opt_prob.num_steps; ++t) {
+    q.push_back(Vector2d(0.2, 0.1));
+    v.push_back(Vector2d(-0.1, 0.0));
+    tau.push_back(Vector2d(-1.0, 1.0));
+  }
+  q.push_back(Vector2d(0.2, 0.1));
+  v.push_back(Vector2d(-0.1, 0.0));
+
+  // Compute the cost and compare with the true value
+  TrajectoryOptimizer optimizer(&plant, opt_prob);
+  double L = optimizer.CalcCost(q, v, tau);
+  double L_gt =
+      num_steps * dt * (2 * 0.1 + 2 * 0.2 + 2 * 0.5) + 2 * 0.3 + 2 * 0.4;
+
+  const double kTolerance = std::numeric_limits<double>::epsilon() / dt;
+  EXPECT_NEAR(L, L_gt, kTolerance);
+}
 
 /**
  * Test our computation of generalized velocities
