@@ -5,6 +5,7 @@
 #include <string>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
@@ -40,7 +41,7 @@ class FixedOffsetFrame final : public Frame<T> {
   /// see class documentation for more information.
   ///
   /// @param[in] name
-  ///   The name of this frame.
+  ///   The name of this frame. Cannot be empty.
   /// @param[in] P
   ///   The frame to which this frame is attached with a fixed pose.
   /// @param[in] X_PF
@@ -54,8 +55,8 @@ class FixedOffsetFrame final : public Frame<T> {
       const math::RigidTransform<double>& X_PF,
       std::optional<ModelInstanceIndex> model_instance = {});
 
-  /// Creates an unnamed material Frame F. See overload with name for more
-  /// information.
+  DRAKE_DEPRECATED("2022-12-01",
+      "The name parameter to the FixedOffsetFrame constructor is now required.")
   FixedOffsetFrame(
       const Frame<T>& P, const math::RigidTransform<double>& X_PF)
       : FixedOffsetFrame("", P, X_PF) {}
@@ -65,15 +66,14 @@ class FixedOffsetFrame final : public Frame<T> {
   /// The pose is given by a spatial transform `X_BF`; see class documentation
   /// for more information.
   ///
-  /// @param[in] name  The name of this frame.
+  /// @param[in] name  The name of this frame. Cannot be empty.
   /// @param[in] bodyB The body whose BodyFrame B is to be F's parent frame.
   /// @param[in] X_BF  The transform giving the pose of F in B.
   FixedOffsetFrame(
       const std::string& name, const Body<T>& bodyB,
       const math::RigidTransform<double>& X_BF);
 
-  /// Creates an unnamed material Frame F. See overload with name for more
-  /// information.
+  DRAKE_DEPRECATED("2022-12-01", "FixedOffsetFrame must always have name")
   FixedOffsetFrame(
       const Body<T>& bodyB, const math::RigidTransform<double>& X_BF)
       : FixedOffsetFrame("", bodyB, X_BF) {}

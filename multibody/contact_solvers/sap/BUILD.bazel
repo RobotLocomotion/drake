@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":sap_constraint_bundle",
         ":sap_contact_problem",
         ":sap_friction_cone_constraint",
+        ":sap_holonomic_constraint",
         ":sap_limit_constraint",
         ":sap_model",
         ":sap_solver",
@@ -79,6 +80,17 @@ drake_cc_library(
     hdrs = ["sap_contact_problem.h"],
     deps = [
         ":contact_problem_graph",
+        ":sap_constraint",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_holonomic_constraint",
+    srcs = ["sap_holonomic_constraint.cc"],
+    hdrs = ["sap_holonomic_constraint.h"],
+    deps = [
         ":sap_constraint",
         "//common:default_scalars",
         "//common:essential",
@@ -182,6 +194,15 @@ drake_cc_googletest(
         ":sap_constraint",
         ":sap_contact_problem",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_holonomic_constraint_test",
+    deps = [
+        ":sap_holonomic_constraint",
+        "//common:pointer_cast",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

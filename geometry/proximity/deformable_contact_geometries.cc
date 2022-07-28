@@ -2,84 +2,68 @@
 
 #include <algorithm>
 
+#include "drake/geometry/proximity/calc_distance_to_surface_mesh.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace deformable {
+namespace {
 
 using std::make_unique;
 using std::move;
 using std::vector;
 
-ReferenceDeformableGeometry::ReferenceDeformableGeometry(
-    const Shape& shape, VolumeMesh<double> mesh)
-    : mesh_(std::make_unique<VolumeMesh<double>>(move(mesh))) {
-  vector<double> signed_distance = ComputeSignedDistanceOfVertices(shape);
-  signed_distance_field_ = make_unique<VolumeMeshFieldLinear<double, double>>(
-      move(signed_distance), mesh_.get());
+/* Returns an approximation of the signed distance field inside the given
+ `mesh`. The distance field samples on the mesh vertices are exact (to the
+ accuracy of the distance query algorithm). All values in the field are
+ non-positive.
+
+ @warning The resultant field aliases the given `mesh` and the mesh must be
+ kept alive at least as long as the returned field.
+ @pre mesh != nullptr. */
+std::unique_ptr<VolumeMeshFieldLinear<double, double>>
+ApproximateSignedDistanceField(const VolumeMesh<double>* mesh) {
+  DRAKE_DEMAND(mesh != nullptr);
+  vector<double> signed_distance;
+  signed_distance.reserve(mesh->num_vertices());
+  const TriangleSurfaceMesh<double> surface_mesh =
+      ConvertVolumeToSurfaceMesh(*mesh);
+  /* The values for vertices on the surface are zero (to the accuracy of
+   `CalcDistanceSurfaceMesh`). */
+  for (const Vector3<double>& vertex : mesh->vertices()) {
+    signed_distance.emplace_back(
+        -CalcDistanceToSurfaceMesh(vertex, surface_mesh));
+  }
+  return make_unique<VolumeMeshFieldLinear<double, double>>(
+      move(signed_distance), mesh);
 }
 
-ReferenceDeformableGeometry::ReferenceDeformableGeometry(
-    const ReferenceDeformableGeometry& other) {
+}  // namespace
+
+DeformableGeometry::DeformableGeometry(const DeformableGeometry& other) {
   *this = other;
 }
 
-ReferenceDeformableGeometry& ReferenceDeformableGeometry::operator=(
-    const ReferenceDeformableGeometry& other) {
+DeformableGeometry& DeformableGeometry::operator=(
+    const DeformableGeometry& other) {
   if (this == &other) return *this;
 
-  mesh_ = make_unique<VolumeMesh<double>>(*(other.mesh_));
-  /* We can't simply copy the mesh field; the copy must contain a pointer to
-   the new mesh. So, we use CloneAndSetMesh() instead. */
+  deformable_mesh_ =
+      std::make_unique<DeformableVolumeMesh<double>>(*other.deformable_mesh_);
+  // We can't simply copy the field; the copy must contain a pointer to
+  // the new mesh. So, we use CloneAndSetMesh() instead.
   signed_distance_field_ =
-      other.signed_distance_field().CloneAndSetMesh(mesh_.get());
-
+      other.signed_distance_field_->CloneAndSetMesh(&deformable_mesh_->mesh());
   return *this;
 }
 
-vector<double> ReferenceDeformableGeometry::ComputeSignedDistanceOfVertices(
-    const Shape& shape) {
-  ReifyData data;
-  shape.Reify(this, &data);
-  return data.signed_distance;
-}
-
-void ReferenceDeformableGeometry::ImplementGeometry(const Sphere& sphere,
-                                                    void* user_data) {
-  ReifyData& data = *static_cast<ReifyData*>(user_data);
-  vector<double>& signed_distance = data.signed_distance;
-  signed_distance.resize(mesh_->num_vertices());
-  const double r = sphere.radius();
-  for (int v = 0; v < mesh_->num_vertices(); ++v) {
-    const Vector3<double>& q_MV = mesh_->vertex(v);
-    signed_distance[v] = q_MV.norm() - r;
-  }
-}
-
-void ReferenceDeformableGeometry::ImplementGeometry(const Box& box,
-                                                    void* user_data) {
-  ReifyData& data = *static_cast<ReifyData*>(user_data);
-  vector<double>& signed_distance = data.signed_distance;
-  signed_distance.resize(mesh_->num_vertices());
-  for (int v = 0; v < mesh_->num_vertices(); ++v) {
-    /* Given a point inside a box, find its distance to the surface of the
-     box. */
-    // TODO(xuchenhan-tri): This assumes the mesh is contained in the box shape.
-    // We should switch to an implementation that doesn't rely on this
-    // assumption.
-    const Vector3<double>& q_MV = mesh_->vertex(v);
-    const double q_MV_x = q_MV(0);
-    const double q_MV_y = q_MV(1);
-    const double q_MV_z = q_MV(2);
-    const double x_distance = std::abs(q_MV_x) - box.width() / 2.0;
-    const double y_distance = std::abs(q_MV_y) - box.depth() / 2.0;
-    const double z_distance = std::abs(q_MV_z) - box.height() / 2.0;
-    DRAKE_DEMAND(x_distance <= 0.0);
-    DRAKE_DEMAND(y_distance <= 0.0);
-    DRAKE_DEMAND(z_distance <= 0.0);
-    signed_distance[v] = std::max({x_distance, y_distance, z_distance});
-  }
-}
+DeformableGeometry::DeformableGeometry(VolumeMesh<double> mesh)
+    : deformable_mesh_(
+          std::make_unique<DeformableVolumeMesh<double>>(std::move(mesh))),
+      signed_distance_field_(
+          ApproximateSignedDistanceField(&deformable_mesh_->mesh())) {}
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const HalfSpace&, const ProximityProperties&) {

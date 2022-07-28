@@ -41,6 +41,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":model_directives",
+        ":model_instance_info",
         ":package_map",
         ":parser",
         ":process_model_directives",
@@ -242,12 +243,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "model_instance_info",
+    hdrs = ["model_instance_info.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//math:geometric_transform",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
     name = "process_model_directives",
     srcs = ["process_model_directives.cc"],
     hdrs = ["process_model_directives.h"],
     visibility = ["//visibility:public"],
     interface_deps = [
         ":model_directives",
+        ":model_instance_info",
         ":parser",
         "//multibody/plant",
     ],

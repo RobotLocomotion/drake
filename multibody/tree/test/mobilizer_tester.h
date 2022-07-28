@@ -32,7 +32,7 @@ class MobilizerTester : public ::testing::Test {
     tree_ = owned_tree_.get();
 
     // Add a body so we can add a mobilizer to it.
-    body_ = &owned_tree_->AddBody<RigidBody>(M_B);
+    body_ = &owned_tree_->AddBody<RigidBody>("body", M_B);
   }
 
   template <template <typename> class MobilizerType>

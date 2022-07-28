@@ -185,7 +185,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
 
-  /// Gets the `name` associated with `this` body.
+  /// Gets the `name` associated with `this` body. The name will never be empty.
   const std::string& name() const { return name_; }
 
   /// Returns the number of generalized positions q describing flexible
@@ -477,9 +477,11 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
 
  protected:
   /// Creates a %Body named `name` in model instance `model_instance`.
+  /// The `name` must not be empty.
   Body(const std::string& name, ModelInstanceIndex model_instance)
       : MultibodyElement<Body, T, BodyIndex>(model_instance),
-        name_(name), body_frame_(*this) {}
+        name_(internal::DeprecateWhenEmptyName(name, "Body")),
+        body_frame_(*this) {}
 
   /// @name Methods to make a clone templated on different scalar types.
   ///
@@ -554,7 +556,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   // A string identifying the body in its model.
   // Within a MultibodyPlant model this string is guaranteed to be unique by
   // MultibodyPlant's API.
-  std::string name_;
+  const std::string name_;
 
   // Body frame associated with this body.
   BodyFrame<T> body_frame_;

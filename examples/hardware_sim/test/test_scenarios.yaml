@@ -1,0 +1,24 @@
+# Only ever uses the defaults.
+Defaults: {}
+
+# Has at least one example of every kind of top-level option.
+# The specific details of the sub-structs are tested elsewhere.
+OneOfEverything:
+  random_seed: 1
+  simulation_duration: 3.14
+  simulator_config:
+    target_realtime_rate: 5.0
+  plant_config:
+    stiction_tolerance: 1e-2
+  directives:
+  - add_frame:
+      name: bonus_frame
+      X_PF:
+        base_frame: world
+        translation: [0.1, 0.2, 0.3]
+        rotation: !Rpy { deg: [10.0, 20.0, 30.0] }
+  lcm_buses:
+    extra_bus: {}
+  visualizer:
+    lcm_bus: extra_bus
+    publish_period: 0.125

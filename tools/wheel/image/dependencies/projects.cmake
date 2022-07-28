@@ -116,9 +116,12 @@ set(clp_dlname "clp-${clp_version}.tar.gz")
 list(APPEND ALL_PROJECTS clp)
 
 if(APPLE)
-    set(mumps_version 5.4.0)  # Current version in Homebrew.
-    set(mumps_url "http://mumps.enseeiht.fr/MUMPS_${mumps_version}.tar.gz")
-    set(mumps_md5 "808178997dc571c748e9cf0cabf9a26e")
+    set(mumps_version 5.4.1)  # Latest available in Ubuntu.
+    set(mumps_url
+         "http://archive.ubuntu.com/ubuntu/pool/universe/m/mumps/mumps_${mumps_version}.orig.tar.gz"
+        "http://mumps.enseeiht.fr/MUMPS_${mumps_version}.tar.gz"
+    )
+    set(mumps_md5 "93be789bf9c6c341a78c16038da3241b")
     set(mumps_dlname "mumps-${mumps_version}.tar.gz")
     list(APPEND ALL_PROJECTS mumps)
 endif()

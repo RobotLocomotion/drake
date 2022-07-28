@@ -2152,7 +2152,8 @@ TEST_F(SplitPendulum, GetMultibodyPlantFromElement) {
   // Create an element-owning MBTreeSystem that _is not_ an MBPlant.
   struct MyMBSystem : public internal::MultibodyTreeSystem<double> {
     MyMBSystem() {
-      rigid_body = &mutable_tree().AddBody<RigidBody>(SpatialInertia<double>());
+      rigid_body = &mutable_tree().AddBody<RigidBody>(
+          "Body", SpatialInertia<double>());
       Finalize();
     }
     const RigidBody<double>* rigid_body{};

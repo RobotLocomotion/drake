@@ -323,14 +323,16 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
 
   const Frame<T>* frame_on_parent{nullptr};
   if (X_PF) {
-    frame_on_parent = &this->AddFrame<FixedOffsetFrame>(parent, *X_PF);
+    frame_on_parent = &this->AddFrame<FixedOffsetFrame>(
+       name + "_parent", parent, *X_PF);
   } else {
     frame_on_parent = &parent.body_frame();
   }
 
   const Frame<T>* frame_on_child{nullptr};
   if (X_BM) {
-    frame_on_child = &this->AddFrame<FixedOffsetFrame>(child, *X_BM);
+    frame_on_child = &this->AddFrame<FixedOffsetFrame>(
+        name + "_child", child, *X_BM);
   } else {
     frame_on_child = &child.body_frame();
   }
