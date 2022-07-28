@@ -59,8 +59,6 @@ import numpy as np
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import (
     Cylinder,
-    DrakeVisualizer,
-    DrakeVisualizerParams,
     GeometryInstance,
     MakePhongIllustrationProperties,
     Meshcat,
@@ -69,6 +67,7 @@ from pydrake.geometry import (
     Rgba,
     Role,
 )
+from pydrake.lcm import DrakeLcm
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
@@ -76,6 +75,10 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.planar_scenegraph_visualizer import (
     ConnectPlanarSceneGraphVisualizer,
+)
+from pydrake.visualization import (
+    VisualizerConfig,
+    ApplyVisualizerConfig,
 )
 
 
@@ -293,14 +296,15 @@ def parse_visualizers(args_parser, args):
                     opacity=args.triad_opacity,
                 )
 
-    def connect_visualizers(builder, plant, scene_graph):
+    def connect_visualizers(builder, plant, scene_graph,
+                            publish_contacts=True):
         # Connect this to drake_visualizer or meldis. Meldis provides
         # simultaneous visualization of illustration and proximity geometry.
-        DrakeVisualizer.AddToBuilder(builder, scene_graph)
-        params = DrakeVisualizerParams(
-            role=Role.kProximity, default_color=Rgba(1.0, 0.0, 0.0, 0.5),
-            use_role_channel_suffix=True)
-        DrakeVisualizer.AddToBuilder(builder, scene_graph, params=params)
+        ApplyVisualizerConfig(
+            config=VisualizerConfig(publish_contacts=publish_contacts),
+            plant=plant,
+            scene_graph=scene_graph,
+            builder=builder)
 
         # Connect to Meshcat.  If the consuming application needs to connect,
         # e.g., JointSliders, the meshcat instance is required.
