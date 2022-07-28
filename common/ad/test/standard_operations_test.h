@@ -1,17 +1,38 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
+#include <unsupported/Eigen/AutoDiff>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace test {
 
-class AutoDiffXdTest : public ::testing::Test {
+// While we are transitioning between the old and new auto diff implementations
+// (`Eigen::AutoDiffScalar<Eigen::VectorXd>` and `drake::ad::AutoDiff`) this
+// DRAKE_AUTODIFFXD_DUT preprocessor macro allows us to reuse the
+// StandardOperationsTest fixture and its associated macros for both
+// implementations' test suites.
+//
+// The value used for DRAKE_AUTODIFFXD_DUT is defined by the build system as
+// either `drake::AutoDiffXd` or `drake::ad::AutoDiff` for the old and new
+// implementations, respectively (via `copts` in `common/BUILD.bazel` and
+// `common/ad/BUILD.bazel`).
+//
+// Once we finally drop the old implementation, we should undo the use of
+// the preprocessor for this alias.
+using AutoDiffDut = DRAKE_AUTODIFFXD_DUT;
+
+// This is Eigen's "reference implementation" of autodiff. We'll compare our
+// AutoDiff results to Eigen's AutoDiffScalar results for unit testing.
+using AutoDiff3 = Eigen::AutoDiffScalar<Eigen::Matrix<double, 3, 1>>;
+
+class StandardOperationsTest : public ::testing::Test {
  protected:
   // Evaluates a given function f with values of AutoDiffXd and values with
   // AutoDiffd<3>. It checks if the values and the derivatives of those
@@ -19,20 +40,20 @@ class AutoDiffXdTest : public ::testing::Test {
   template <typename F>
   ::testing::AssertionResult Check(const F& f) {
     // AutoDiffXd constants -- x and y.
-    const AutoDiffXd x_xd{0.4};
-    AutoDiffXd y_xd{0.3};
+    const AutoDiffDut x_xd{0.4};
+    AutoDiffDut y_xd{0.3};
 
     // AutoDiffd<3> constants -- x and y.
-    const AutoDiffd<3> x_3d{x_xd.value()};
-    AutoDiffd<3> y_3d{y_xd.value()};
+    const AutoDiff3 x_3d{x_xd.value()};
+    AutoDiff3 y_3d{y_xd.value()};
 
     // We only set the derivatives of y and leave x's uninitialized.
     y_xd.derivatives() = Eigen::VectorXd::Ones(3);
     y_3d.derivatives() = Eigen::Vector3d::Ones();
 
     // Compute the expression results.
-    const AutoDiffXd e_xd{f(x_xd, y_xd)};
-    const AutoDiffd<3> e_3d{f(x_3d, y_3d)};
+    const AutoDiffDut e_xd{f(x_xd, y_xd)};
+    const AutoDiff3 e_3d{f(x_3d, y_3d)};
 
     // Pack the results into a 4-vector (for easier comparison and reporting).
     Eigen::Vector4d value_and_der_x;
@@ -65,7 +86,7 @@ class AutoDiffXdTest : public ::testing::Test {
 };
 
 // We need to specify the return type of the polymorphic lambda function that is
-// passed to AutoDiffXdTest::Check() method.
+// passed to StandardOperationsTest::Check() method.
 #define CHECK_EXPR(expr)                                                    \
   EXPECT_TRUE(                                                              \
       Check([](const auto& x, const auto& y) ->                             \
