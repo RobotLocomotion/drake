@@ -1,4 +1,4 @@
-#include "sim/common/drake_visualizer_config_functions.h"
+#include "drake/visualization/visualizer_config_functions.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -17,8 +17,8 @@ using drake::systems::DiagramBuilder;
 using drake::systems::Simulator;
 using drake::systems::lcm::LcmBuses;
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace visualization {
 namespace internal {
 namespace {
 
@@ -26,8 +26,8 @@ namespace {
 // match up with other default params code in Drake. If these tests ever
 // fail, we'll need to revisit whether the Config should change to match
 // the Params, or whether we agree they can differ (and remove the test).
-GTEST_TEST(DrakeVisualizerConfigTest, Defaults) {
-  const DrakeVisualizerConfig config;
+GTEST_TEST(VisualizerConfigTest, Defaults) {
+  const VisualizerConfig config;
   const DrakeVisualizerParams params;
   EXPECT_EQ(config.publish_period, params.publish_period);
   ASSERT_EQ(config.default_illustration_color_rgba.size(), 3);
@@ -40,10 +40,10 @@ GTEST_TEST(DrakeVisualizerConfigTest, Defaults) {
 }
 
 // Tests the mapping from default schema data to geometry params.
-GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ParamConversionDefault) {
-  const DrakeVisualizerConfig config;
+GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionDefault) {
+  const VisualizerConfig config;
   const std::vector<DrakeVisualizerParams> params =
-      ConvertDrakeVisualizerConfigToParams(config);
+      ConvertVisualizerConfigToParams(config);
   ASSERT_EQ(params.size(), 2);
   EXPECT_EQ(params.at(0).role, Role::kIllustration);
   EXPECT_FALSE(params.at(0).show_hydroelastic);
@@ -55,13 +55,13 @@ GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ParamConversionDefault) {
 }
 
 // Tests the mapping from non-default schema data to geometry params.
-GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ParamConversionSpecial) {
-  DrakeVisualizerConfig config;
+GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionSpecial) {
+  VisualizerConfig config;
   config.publish_period = 0.5;
   config.publish_proximity = false;
   config.default_illustration_color_rgba = Eigen::Vector4d::Constant(0.25);
   const std::vector<DrakeVisualizerParams> params =
-      ConvertDrakeVisualizerConfigToParams(config);
+      ConvertVisualizerConfigToParams(config);
   ASSERT_EQ(params.size(), 1);
   EXPECT_EQ(params.at(0).role, Role::kIllustration);
   EXPECT_FALSE(params.at(0).show_hydroelastic);
@@ -70,24 +70,24 @@ GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ParamConversionSpecial) {
 }
 
 // Tests everything disabled.
-GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ParamConversionAllDisabled) {
-  DrakeVisualizerConfig config;
+GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionAllDisabled) {
+  VisualizerConfig config;
   config.publish_illustration = false;
   config.publish_proximity = false;
   const std::vector<DrakeVisualizerParams> params =
-      ConvertDrakeVisualizerConfigToParams(config);
+      ConvertVisualizerConfigToParams(config);
   EXPECT_EQ(params.size(), 0);
 }
 
 // Tests that bad values cause an exception, not a segfault.
-GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ParamConversionValidation) {
-  DrakeVisualizerConfig bad_color;
+GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionValidation) {
+  VisualizerConfig bad_color;
   bad_color.default_illustration_color_rgba = {};
-  EXPECT_THROW(ConvertDrakeVisualizerConfigToParams(bad_color), std::exception);
+  EXPECT_THROW(ConvertVisualizerConfigToParams(bad_color), std::exception);
 }
 
 // Overall acceptance test with everything enabled.
-GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ApplyDefault) {
+GTEST_TEST(VisualizerConfigFunctionsTest, ApplyDefault) {
   // We'll monitor which LCM channel names appear.
   DrakeLcm drake_lcm;
   std::set<std::string> observed_channels;
@@ -103,8 +103,8 @@ GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ApplyDefault) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
-  const DrakeVisualizerConfig config;
-  ApplyDrakeVisualizerConfig(config, plant, scene_graph, lcm_buses, &builder);
+  const VisualizerConfig config;
+  ApplyVisualizerConfig(config, plant, scene_graph, lcm_buses, &builder);
   Simulator<double> simulator(builder.Build());
 
   // Simulate for a moment and make sure everything showed up.
@@ -119,9 +119,9 @@ GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ApplyDefault) {
 }
 
 // Overall acceptance test with nothing enabled.
-GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ApplyNothing) {
+GTEST_TEST(VisualizerConfigFunctionsTest, ApplyNothing) {
   // Disable everything.
-  DrakeVisualizerConfig config;
+  VisualizerConfig config;
   config.publish_illustration = false;
   config.publish_proximity = false;
   config.publish_contacts = false;
@@ -136,7 +136,7 @@ GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ApplyNothing) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
-  ApplyDrakeVisualizerConfig(config, plant, scene_graph, lcm_buses, &builder);
+  ApplyVisualizerConfig(config, plant, scene_graph, lcm_buses, &builder);
   Simulator<double> simulator(builder.Build());
 
   // Simulate for a moment and make sure nothing showed up.
@@ -146,5 +146,5 @@ GTEST_TEST(DrakeVisualizerConfigFunctionsTest, ApplyNothing) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace sim
-}  // namespace anzu
+}  // namespace visualization
+}  // namespace drake

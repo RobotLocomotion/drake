@@ -12,7 +12,6 @@ while some (separate) controller operates the robot, without extra hassle. */
 #include <gflags/gflags.h>
 
 #include "drake/examples/hardware_sim/scenario.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/multibody/parsing/process_model_directives.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
@@ -20,6 +19,7 @@ while some (separate) controller operates the robot, without extra hassle. */
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
+#include "drake/visualization/visualizer_config_functions.h"
 
 DEFINE_string(scenario_file, "",
     "Scenario filename, e.g., "
@@ -35,8 +35,6 @@ DEFINE_string(scenario_text, "{}",
 namespace drake {
 namespace {
 
-using geometry::DrakeVisualizer;
-using geometry::DrakeVisualizerParams;
 using lcm::DrakeLcmInterface;
 using multibody::ModelInstanceIndex;
 using multibody::parsing::ProcessModelDirectives;
@@ -46,6 +44,7 @@ using systems::DiagramBuilder;
 using systems::Simulator;
 using systems::lcm::ApplyLcmBusConfig;
 using systems::lcm::LcmBuses;
+using visualization::ApplyVisualizerConfig;
 
 /* Class that holds the configuration and data of a simulation. */
 class Simulation {
@@ -84,14 +83,9 @@ void Simulation::Setup() {
   // Now the plant is complete.
   sim_plant.Finalize();
 
-  // Add visualizer(s).
-  // TODO(jwnimmer-tri) Sugar for this.
-  DrakeLcmInterface* lcm = lcm_buses.Find("hardware_sim visualizer", "default");
-  DrakeVisualizer<double>::AddToBuilder(&builder, scene_graph, lcm);
-  DrakeVisualizerParams params{.role = geometry::Role::kProximity,
-                               .default_color = {1.0, 0.0, 0.0, 0.5},
-                               .use_role_channel_suffix = true};
-  DrakeVisualizer<double>::AddToBuilder(&builder, scene_graph, lcm, params);
+  // Add visualizer.
+  ApplyVisualizerConfig(scenario_.visualizer, sim_plant, scene_graph, lcm_buses,
+                        &builder);
 
   // Build the diagram and its simulator.
   diagram_ = builder.Build();

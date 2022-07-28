@@ -6,12 +6,17 @@
 
 #include "drake/common/name_value.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace visualization {
 
 /** Settings for what MultibodyPlant and SceneGraph should send to meldis
-and/or drake_visualizer. */
-struct DrakeVisualizerConfig {
+and/or drake_visualizer.
+
+@experimental The exact configuration details (names and types) are subject to
+change as we polish this new feature.
+
+See ApplyVisualizerConfig() for how to enact this configuration. */
+struct VisualizerConfig {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(lcm_bus));
@@ -52,5 +57,5 @@ struct DrakeVisualizerConfig {
   bool publish_contacts{true};
 };
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace visualization
+}  // namespace drake

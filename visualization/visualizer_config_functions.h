@@ -7,27 +7,30 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_buses.h"
-#include "sim/common/drake_visualizer_config.h"
+#include "drake/visualization/visualizer_config.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace visualization {
 
 /** Adds LCM visualization publishers to communicate to drake-visualizer.
+
+@experimental The exact function signature is subject to change as we polish
+this new feature.
+
 @pre plant.is_finalized() */
-void ApplyDrakeVisualizerConfig(
-    const DrakeVisualizerConfig& config,
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const drake::geometry::SceneGraph<double>& scene_graph,
-    const drake::systems::lcm::LcmBuses& lcm,
-    drake::systems::DiagramBuilder<double>* builder);
+void ApplyVisualizerConfig(
+    const VisualizerConfig& config,
+    const multibody::MultibodyPlant<double>& plant,
+    const geometry::SceneGraph<double>& scene_graph,
+    const systems::lcm::LcmBuses& lcm_buses,
+    systems::DiagramBuilder<double>* builder);
 
 namespace internal {
 
 // (For unit testing only.)
-std::vector<drake::geometry::DrakeVisualizerParams>
-ConvertDrakeVisualizerConfigToParams(
-    const DrakeVisualizerConfig&);
+std::vector<geometry::DrakeVisualizerParams>
+ConvertVisualizerConfigToParams(const VisualizerConfig&);
 
 }  // namespace internal
-}  // namespace sim
-}  // namespace anzu
+}  // namespace visualization
+}  // namespace drake
