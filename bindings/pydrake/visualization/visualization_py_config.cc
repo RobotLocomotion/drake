@@ -36,7 +36,17 @@ void DefineVisualizationConfig(py::module m) {
               &ApplyVisualizerConfig),
           py::arg("config"), py::arg("plant"), py::arg("scene_graph"),
           py::arg("lcm_buses"), py::arg("builder"),
-          doc.ApplyVisualizerConfig.doc);
+          doc.ApplyVisualizerConfig
+              .doc_5args_config_plant_scene_graph_lcm_buses_builder)
+      .def("ApplyVisualizerConfig",
+          py::overload_cast<const VisualizerConfig&,
+              const multibody::MultibodyPlant<double>&,
+              const geometry::SceneGraph<double>&, lcm::DrakeLcmInterface*,
+              systems::DiagramBuilder<double>*>(&ApplyVisualizerConfig),
+          py::arg("config"), py::arg("plant"), py::arg("scene_graph"),
+          py::arg("lcm"), py::arg("builder"),
+          doc.ApplyVisualizerConfig
+              .doc_5args_config_plant_scene_graph_lcm_builder);
 }
 
 }  // namespace internal

@@ -24,11 +24,10 @@ void ApplyVisualizerConfig(
     const VisualizerConfig& config,
     const MultibodyPlant<double>& plant,
     const SceneGraph<double>& scene_graph,
-    const LcmBuses& lcm_buses,
+    DrakeLcmInterface* lcm,
     DiagramBuilder<double>* builder) {
   // This is required due to BuildContactsPublisher().
   DRAKE_THROW_UNLESS(plant.is_finalized());
-  DrakeLcmInterface* lcm = lcm_buses.Find("DrakeVisualizer", config.lcm_bus);
   const std::vector<DrakeVisualizerParams> all_params =
       internal::ConvertVisualizerConfigToParams(config);
   for (const DrakeVisualizerParams& params : all_params) {
@@ -41,6 +40,16 @@ void ApplyVisualizerConfig(
   if (config.publish_contacts) {
     ConnectContactResultsToDrakeVisualizer(builder, plant, scene_graph, lcm);
   }
+}
+
+void ApplyVisualizerConfig(
+    const VisualizerConfig& config,
+    const MultibodyPlant<double>& plant,
+    const SceneGraph<double>& scene_graph,
+    const LcmBuses& lcm_buses,
+    DiagramBuilder<double>* builder) {
+  DrakeLcmInterface* lcm = lcm_buses.Find("DrakeVisualizer", config.lcm_bus);
+  ApplyVisualizerConfig(config, plant, scene_graph, lcm, builder);
 }
 
 namespace {
