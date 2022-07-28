@@ -5,13 +5,14 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/traj_opt/problem_data.h"
 #include "drake/traj_opt/problem_definition.h"
+#include "drake/traj_opt/trajectory_optimizer_workspace.h"
 
 namespace drake {
 namespace traj_opt {
 
 using Eigen::VectorXd;
-using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
 using systems::Context;
 
@@ -116,15 +117,65 @@ class TrajectoryOptimizer {
    *
    * @param q sequence of generalized positions
    * @param v sequence of generalized velocities
-   * @param a scratch space for computing accelerations
-   * @param f_ext scratch space for computing external forces (e.g., gravity)
+   * @param workspace scratch space for intermediate computations
    * @param tau sequence of generalized forces
    */
   void CalcTau(const std::vector<VectorXd>& q, const std::vector<VectorXd>& v,
-               VectorXd* a, MultibodyForces<double>* f_ext,
+               TrajectoryOptimizerWorkspace* workspace,
                std::vector<VectorXd>* tau) const;
 
+  /**
+   * Compute partial derivatives of the inverse dynamics
+   *
+   *    tau_t = ID(q_{t-1}, q_t, q_{t+1})
+   *
+   * and store them in the given GradientData struct.
+   *
+   * @param q sequence of generalized positions
+   * @param v sequence of generalized velocities (computed from q)
+   * @param workspace scratch space for intermediate computations
+   * @param grad_data struct for holding dtau/dq
+   */
+  void CalcInverseDynamicsPartials(const std::vector<VectorXd>& q,
+                                   const std::vector<VectorXd>& v,
+                                   TrajectoryOptimizerWorkspace* workspace,
+                                   GradientData* grad_data) const;
+
  private:
+  /**
+   * Compute partial derivatives of the inverse dynamics
+   *
+   *    tau_t = ID(q_{t-1}, q_t, q_{t+1})
+   *
+   * using finite differences.
+   *
+   * For testing purposes only - this is very inefficient.
+   *
+   * @param q sequence of generalized positions
+   * @param v sequence of generalized velocities (computed from q)
+   * @param workspace scratch space for intermediate computations
+   * @param grad_data struct for holding dtau/dq
+   */
+  void CalcInverseDynamicsPartialsFiniteDiff(
+      const std::vector<VectorXd>& q, const std::vector<VectorXd>& v,
+      TrajectoryOptimizerWorkspace* workspace, GradientData* grad_data) const;
+
+  /**
+   * Helper function for computing the inverse dynamics
+   *
+   *  tau = ID(a, v, q, f_ext)
+   *
+   * @param q generalized position
+   * @param v generalized velocity
+   * @param a generalized acceleration
+   * @param workspace scratch space for intermediate computations
+   * @param tau generalized forces
+   */
+  void CalcInverseDynamics(const VectorXd& q, const VectorXd& v,
+                           const VectorXd& a,
+                           TrajectoryOptimizerWorkspace* workspace,
+                           VectorXd* tau) const;
+
   // A model of the system that we are trying to find an optimal trajectory for.
   const MultibodyPlant<double>* plant_;
 
