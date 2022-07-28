@@ -34,7 +34,8 @@ void ApplyVisualizerConfig(
 this new feature.
 
 This overload always publishes to the given `lcm` instance, thus ignoring
-the given `config.lcm_bus` setting.
+the given `config.lcm_bus` setting. If `lcm` is nullptr, creates a default
+instance internally.
 
 @pre plant.is_finalized() */
 void ApplyVisualizerConfig(
