@@ -301,6 +301,7 @@ PYBIND_SUBPACKAGES_FOR_COVERAGE = [
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/solvers",
     "//bindings/pydrake/systems",
+    "//bindings/pydrake/visualization",
 ]
 
 PY_LIBRARIES_WITH_INSTALL = [
@@ -314,7 +315,6 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":trajectories_py",
     "//bindings/pydrake/examples",
     "//bindings/pydrake/examples/multibody",
-    "//bindings/pydrake/visualization",
 ] + PYBIND_SUBPACKAGES_FOR_COVERAGE
 
 add_pybind_coverage_data(
