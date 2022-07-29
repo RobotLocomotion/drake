@@ -101,7 +101,7 @@ std::unique_ptr<Simulator<T>> MakeSimulatorFromGflags(
     FLAGS_simulator_target_realtime_rate,
     FLAGS_simulator_publish_every_time_step
   };
-  ApplySimulatorConfig(simulator.get(), config);
+  ApplySimulatorConfig(config, simulator.get());
 
   return simulator;
 }

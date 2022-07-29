@@ -206,7 +206,7 @@ int DoMain() {
   sim_config.publish_every_time_step = false;
 
   systems::Simulator<double> simulator(*diagram);
-  ApplySimulatorConfig(&simulator, sim_config);
+  ApplySimulatorConfig(sim_config, &simulator);
 
   // Set the initial conditions for the spatula pose and the gripper finger
   // positions.

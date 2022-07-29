@@ -83,7 +83,7 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
                            target_realtime_rate=target_realtime_rate,
                            publish_every_time_step=True)
     simulator = Simulator(diagram)
-    ApplySimulatorConfig(simulator, simulator_config)
+    ApplySimulatorConfig(simulator_config, simulator)
 
     plant_context = diagram.GetSubsystemContext(ball_paddle_plant,
                                                 simulator.get_context())
