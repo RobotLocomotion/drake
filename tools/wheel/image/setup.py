@@ -48,7 +48,11 @@ def find_data_files(*patterns):
 def _actually_find_packages():
     """Work around broken(?!) setuptools."""
     result = find_packages()
-    result.extend(["pydrake.examples", "pydrake.solvers"])
+    result.extend([
+        "pydrake.examples",
+        "pydrake.solvers",
+        "pydrake.visualization",
+    ])
     print(f"Using packages={result}")
     return result
 
