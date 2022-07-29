@@ -180,6 +180,13 @@ template <typename T>
 void ApplySimulatorConfig(
     Simulator<T>* simulator,
     const SimulatorConfig& config) {
+  ApplySimulatorConfig(config, simulator);
+}
+
+template <typename T>
+void ApplySimulatorConfig(
+    const SimulatorConfig& config,
+    Simulator<T>* simulator) {
   DRAKE_THROW_UNLESS(simulator != nullptr);
   IntegratorBase<T>& integrator = ResetIntegratorFromFlags(
       simulator, config.integration_scheme, T(config.max_step_size));
@@ -219,10 +226,20 @@ SimulatorConfig ExtractSimulatorConfig(const Simulator<T>& simulator) {
   return result;
 }
 
+// TODO(2022-11-01) When the old ApplySimulatorConfig<T> has been deprecated,
+// remove these by-hand instantiationsand the ApplyFunc static_cast helper.
+template void ApplySimulatorConfig<double>(Simulator<double>*,
+                                           const SimulatorConfig&);
+template void ApplySimulatorConfig<AutoDiffXd>(Simulator<AutoDiffXd>*,
+                                               const SimulatorConfig&);
+
+template <typename T>
+using ApplyFunc = void (*)(const SimulatorConfig&, Simulator<T>*);
+
 // We can't support T=symbolic::Expression because Simulator doesn't support it.
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
       &ResetIntegratorFromFlags<T>,
-      &ApplySimulatorConfig<T>,
+      static_cast<ApplyFunc<T>>(&ApplySimulatorConfig<T>),
       &ExtractSimulatorConfig<T>
 ))
 }  // namespace systems

@@ -2,6 +2,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -203,12 +204,24 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.get_system.doc);
 
     m  // BR
-        .def("ApplySimulatorConfig", &ApplySimulatorConfig<T>,
-            py::arg("simulator"), py::arg("config"),
-            pydrake_doc.drake.systems.ApplySimulatorConfig.doc)
+        .def("ApplySimulatorConfig",
+            py::overload_cast<const SimulatorConfig&,
+                drake::systems::Simulator<T>*>(&ApplySimulatorConfig<T>),
+            py::arg("config"), py::arg("simulator"),
+            pydrake_doc.drake.systems.ApplySimulatorConfig.doc_config_sim)
         .def("ExtractSimulatorConfig", &ExtractSimulatorConfig<T>,
             py::arg("simulator"),
             pydrake_doc.drake.systems.ExtractSimulatorConfig.doc);
+    m  // BR
+        .def("ApplySimulatorConfig",
+            WrapDeprecated(
+                pydrake_doc.drake.systems.ApplySimulatorConfig.doc_deprecated,
+                [](drake::systems::Simulator<T>* simulator,
+                    const SimulatorConfig& config) {
+                  ApplySimulatorConfig(config, simulator);
+                }),
+            py::arg("simulator"), py::arg("config"),
+            pydrake_doc.drake.systems.ApplySimulatorConfig.doc_deprecated);
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 
