@@ -68,13 +68,23 @@ drake_cc_googletest(
     name = "standard_operations_test",
     # The test is split into multiple source files to improve compilation time.
     srcs = [
+        "test/standard_operations_acos_test.cc",
         "test/standard_operations_add_test.cc",
+        "test/standard_operations_asin_test.cc",
+        "test/standard_operations_atan2_test.cc",
+        "test/standard_operations_atan_test.cc",
+        "test/standard_operations_cos_test.cc",
+        "test/standard_operations_cosh_test.cc",
         "test/standard_operations_dec_test.cc",
         "test/standard_operations_div_test.cc",
         "test/standard_operations_inc_test.cc",
         "test/standard_operations_mul_test.cc",
+        "test/standard_operations_sin_test.cc",
+        "test/standard_operations_sinh_test.cc",
         "test/standard_operations_stream_test.cc",
         "test/standard_operations_sub_test.cc",
+        "test/standard_operations_tan_test.cc",
+        "test/standard_operations_tanh_test.cc",
     ],
     copts = [
         # The test fixture at requires some configuration for the specific
