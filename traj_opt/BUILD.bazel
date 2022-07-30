@@ -72,7 +72,10 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "trajectory_optimizer_test",
-    data = ["//examples/pendulum:prod_models"],
+    data = [
+        "//examples/pendulum:prod_models",
+        "//manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":problem_data",
         ":trajectory_optimizer",
