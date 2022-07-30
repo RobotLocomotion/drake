@@ -71,11 +71,25 @@ class TrajectoryOptimizer {
    * @param q sequence of generalized positions
    * @param v sequence of generalized velocities (consistent with q)
    * @param tau sequence of generalized forces (consistent with q and v)
+   * @param workspace scratch space for intermediate computations
    * @return double the total cost
+   *
+   * TODO(vincekurtz): take a TrajectoryOptimizerState instead of q, v, tau
    */
   double CalcCost(const std::vector<VectorXd>& q,
                   const std::vector<VectorXd>& v,
-                  const std::vector<VectorXd>& tau) const;
+                  const std::vector<VectorXd>& tau,
+                  TrajectoryOptimizerWorkspace* workspace) const;
+
+  /**
+   * Convienience function which computes the total cost as a function of q
+   * directly, and includes the intermediate computation of v(q) and tau(q).
+   *
+   * @param q sequence of generalized positions
+   * @return double the total cost
+   */
+  double CalcCost(const std::vector<VectorXd>& q,
+                  TrajectoryOptimizerWorkspace* workspace) const;
 
   /**
    * Compute a sequence of generalized velocities v from a sequence of
@@ -123,6 +137,35 @@ class TrajectoryOptimizer {
   void CalcTau(const std::vector<VectorXd>& q, const std::vector<VectorXd>& v,
                TrajectoryOptimizerWorkspace* workspace,
                std::vector<VectorXd>* tau) const;
+
+  /**
+   * Compute the gradient of the unconstrained cost L(q).
+   *
+   * @param q vector of generalized positions at each timestep
+   * @param g a single VectorXd containing the partials of L w.r.t. each
+   *          decision variable (q_t[i]).
+   */
+  void CalcGradient(const std::vector<VectorXd>& q,
+                    const GradientData& grad_data,
+                    TrajectoryOptimizerWorkspace* workspace,
+                    EigenPtr<VectorXd> g) const;
+
+  /**
+   * Compute the gradient of the unconstrained cost L(q) using finite
+   * differences.
+   *
+   * Uses central differences, so with a perturbation on the order of eps^(1/3),
+   * we expect errors on the order of eps^(2/3).
+   *
+   * For testing purposes only.
+   *
+   * @param q vector of generalized positions at each timestep
+   * @param g a single VectorXd containing the partials of L w.r.t. each
+   *          decision variable (q_t[i]).
+   */
+  void CalcGradientFiniteDiff(const std::vector<VectorXd>& q,
+                              TrajectoryOptimizerWorkspace* workspace,
+                              EigenPtr<VectorXd> g) const;
 
   /**
    * Compute partial derivatives of the inverse dynamics

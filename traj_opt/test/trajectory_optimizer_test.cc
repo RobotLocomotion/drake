@@ -26,6 +26,60 @@ using multibody::MultibodyPlant;
 using multibody::Parser;
 using test::LimitMalloc;
 
+GTEST_TEST(TrajectoryOptimizerTest, CalcGradient) {
+  // Set up an optimization problem
+  const int num_steps = 5;
+  const double dt = 1e-3;
+
+  ProblemDefinition opt_prob;
+  opt_prob.num_steps = num_steps;
+  opt_prob.q_init = Vector1d(0.1);
+  opt_prob.v_init = Vector1d(0.0);
+  opt_prob.Qq = 0.1 * MatrixXd::Identity(1, 1);
+  opt_prob.Qv = 0.2 * MatrixXd::Identity(1, 1);
+  opt_prob.Qf_q = 0.3 * MatrixXd::Identity(1, 1);
+  opt_prob.Qf_v = 0.4 * MatrixXd::Identity(1, 1);
+  opt_prob.R = 0.5 * MatrixXd::Identity(1, 1);
+  opt_prob.q_nom = Vector1d(0.1);
+  opt_prob.v_nom = Vector1d(-0.1);
+
+  // Create a pendulum model
+  MultibodyPlant<double> plant(dt);
+  const std::string urdf_file =
+      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
+  Parser(&plant).AddAllModelsFromFile(urdf_file);
+  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.Finalize();
+
+  // Create an optimizer
+  TrajectoryOptimizerWorkspace workspace(plant);
+  TrajectoryOptimizer optimizer(&plant, opt_prob);
+
+  // Make some fake data
+  std::vector<VectorXd> q(num_steps + 1);
+  q[0] = opt_prob.q_init;
+  for (int t = 1; t <= num_steps; ++t) {
+    q[t] = q[t - 1] + 0.1 * dt * MatrixXd::Identity(1, 1);
+  }
+
+  // Compute the ("ground truth") gradient with finite differences
+  VectorXd g_gt(plant.num_positions() * (num_steps + 1));
+  optimizer.CalcGradientFiniteDiff(q, &workspace, &g_gt);
+
+  // Compute the gradient with our method
+  VectorXd g(plant.num_positions() * (num_steps + 1));
+  GradientData grad_data(num_steps, 1, 1);
+  std::vector<VectorXd> v(num_steps + 1);
+  optimizer.CalcV(q, &v);
+  optimizer.CalcInverseDynamicsPartials(q, v, &workspace, &grad_data);
+  optimizer.CalcGradient(q, grad_data, &workspace, &g);
+
+  // Compare the two (we don't quite get the theoretical eps^(2/3) accuracy)
+  const double kTolerance = pow(std::numeric_limits<double>::epsilon(), 0.5);
+  EXPECT_TRUE(
+      CompareMatrices(g, g_gt, kTolerance, MatrixCompareType::relative));
+}
+
 GTEST_TEST(TrajectoryOptimizerTest, PendulumDtauDq) {
   const int num_steps = 5;
   const double dt = 1e-2;
@@ -141,8 +195,9 @@ GTEST_TEST(TrajectoryOptimizerTest, CalcCost) {
   v.push_back(Vector2d(-0.1, 0.0));
 
   // Compute the cost and compare with the true value
+  TrajectoryOptimizerWorkspace workspace(plant);
   TrajectoryOptimizer optimizer(&plant, opt_prob);
-  double L = optimizer.CalcCost(q, v, tau);
+  double L = optimizer.CalcCost(q, v, tau, &workspace);
   double L_gt =
       num_steps * dt * (2 * 0.1 + 2 * 0.2 + 2 * 0.5) + 2 * 0.3 + 2 * 0.4;
 
