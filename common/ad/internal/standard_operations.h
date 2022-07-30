@@ -215,6 +215,84 @@ inline AutoDiff operator/(double a, const AutoDiff& b) {
 
 //@}
 
+/// @name Math functions: Exponential and Power functions
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Exponential_functions
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Power_functions
+//@{
+
+/** ADL overload to mimic std::exp from <cmath>. */
+AutoDiff exp(AutoDiff x);
+
+/** ADL overload to mimic std::log from <cmath>. */
+AutoDiff log(AutoDiff x);
+
+/** ADL overload to mimic std::pow from <cmath>. */
+AutoDiff pow(AutoDiff base, const AutoDiff& exp);
+
+/** ADL overload to mimic std::pow from <cmath>. */
+AutoDiff pow(double base, const AutoDiff& exp);
+
+/** ADL overload to mimic std::pow from <cmath>. */
+AutoDiff pow(AutoDiff base, double exp);
+
+/** ADL overload to mimic std::sqrt from <cmath>. */
+AutoDiff sqrt(AutoDiff x);
+
+//@}
+
+/// @name Math functions: Nearest integer floating point operations
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Nearest_integer_floating_point_operations
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Floating_point_manipulation_functions
+//@{
+
+/** ADL overload to mimic std::ceil from <cmath>.
+Discards the derivatives. */
+inline double ceil(const AutoDiff& x) {
+  return std::ceil(x.value());
+}
+
+/** ADL overload to mimic std::floor from <cmath>.
+Discards the derivatives. */
+inline double floor(const AutoDiff& x) {
+  return std::floor(x.value());
+}
+
+/** ADL overload to mimic std::round from <cmath>.
+Discards the derivatives. */
+inline double round(const AutoDiff& x) {
+  return std::round(x.value());
+}
+
+/** ADL overload to mimic std::nexttoward from <cmath>.
+Discards the derivatives. */
+inline double nexttoward(const AutoDiff& from, long double to) {
+  return std::nexttoward(from.value(), to);
+}
+
+/** ADL overload to mimic std::isfinite from <cmath>.
+Discards the derivatives. */
+inline bool isfinite(const AutoDiff& x) {
+  return std::isfinite(x.value());
+}
+
+/** ADL overload to mimic std::isinf from <cmath>.
+Discards the derivatives. */
+inline bool isinf(const AutoDiff& x) {
+  return std::isinf(x.value());
+}
+
+/** ADL overload to mimic std::isnan from <cmath>.
+Discards the derivatives. */
+inline bool isnan(const AutoDiff& x) {
+  return std::isnan(x.value());
+}
+
+//@}
+
 /// @name Miscellaneous functions
 //@{
 

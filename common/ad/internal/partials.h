@@ -46,6 +46,12 @@ class Partials {
     return derivatives_.size();
   }
 
+  /* Updates `this` to be the same size as `other`. If this and other are
+  already the same size, or if other has size 0, does nothing. Otherwise,
+  updates this to be the same size as other, filling this with zeros.
+  @throws std:exception if this and other have different, non-zero sizes. */
+  void MatchSizeOf(const Partials& other);
+
   /* Set this to zero. */
   void SetZero() {
     derivatives_.setZero();
@@ -80,6 +86,8 @@ class Partials {
   }
 
  private:
+  void ThrowIfDifferentSize(const Partials& other);
+
   // TODO(jwnimmer-tri) Replace this implementation with a more efficient
   // representation.
   Eigen::VectorXd derivatives_;
