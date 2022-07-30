@@ -41,6 +41,13 @@ Partials::Partials(Eigen::Index size, Eigen::Index offset, double coeff)
 Partials::Partials(const Eigen::Ref<const Eigen::VectorXd>& value)
     : derivatives_{value} {}
 
+void Partials::SetConstantMatchingSize(double value, const Partials& other) {
+  // TODO(jwnimmer-tri) Use a more efficient implementation here. Using Add()
+  // to matches the sizes is somewhat wasteful.
+  Add(other);
+  derivatives_.setConstant(value);
+}
+
 void Partials::Add(const Partials& other) {
   AddScaled(1.0, other);
 }

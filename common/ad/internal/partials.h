@@ -51,6 +51,10 @@ class Partials {
     derivatives_.setZero();
   }
 
+  /* Set all vector elements to `value`, while also inheriting the size of
+  `other`. */
+  void SetConstantMatchingSize(double value, const Partials& other);
+
   /* Scales this vector by the given amount. */
   void Mul(double factor) {
     derivatives_ *= factor;

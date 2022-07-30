@@ -93,6 +93,28 @@ TEST_F(PartialsTest, SetZeroFromFullCtor) {
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Zero()));
 }
 
+TEST_F(PartialsTest, SetConstantMatchingSize) {
+  Partials dut{4, 2};
+
+  // Valid to match size == 0.
+  dut.SetConstantMatchingSize(1.0, Partials{});
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Constant(1.0)));
+
+  // Valid to match size == 4.
+  dut.SetConstantMatchingSize(2.0, dut);
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Constant(2.0)));
+
+  // Inherits size == 4 from dut.
+  Partials foo;
+  foo.SetConstantMatchingSize(3.0, dut);
+  EXPECT_TRUE(CompareMatrices(foo.make_const_xpr(), Vector4d::Constant(3.0)));
+
+  // Mismatched sizes.
+  Partials wrong{5, 0};
+  DRAKE_EXPECT_THROWS_MESSAGE(foo.SetConstantMatchingSize(0.0, wrong),
+      ".*different sizes.*");
+}
+
 TEST_F(PartialsTest, Mul) {
   Partials dut{4, 2};
 
