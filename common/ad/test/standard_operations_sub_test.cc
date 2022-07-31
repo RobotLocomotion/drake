@@ -27,6 +27,17 @@ TEST_F(StandardOperationsTest, UnaryNegation) {
   CHECK_UNARY_FUNCTION(unary_negate, y, x, -1.0);
 }
 
+TEST_F(StandardOperationsTest, UnaryNegationZero) {
+  const Eigen::Vector3d derivatives = Eigen::Vector3d::LinSpaced(1.0, 3.0);
+  const AutoDiffDut positive_zero{+0.0, derivatives};
+  EXPECT_FALSE(std::signbit(positive_zero.value()));
+
+  const AutoDiffDut negative_zero = -positive_zero;
+  EXPECT_EQ(negative_zero.value(), 0);
+  EXPECT_TRUE(std::signbit(negative_zero.value()));
+  EXPECT_EQ(negative_zero.derivatives(), -derivatives);
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace drake
