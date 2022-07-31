@@ -72,6 +72,7 @@ drake_cc_googletest(
         "test/standard_operations_dec_test.cc",
         "test/standard_operations_div_test.cc",
         "test/standard_operations_inc_test.cc",
+        "test/standard_operations_integer_test.cc",
         "test/standard_operations_mul_test.cc",
         "test/standard_operations_stream_test.cc",
         "test/standard_operations_sub_test.cc",
