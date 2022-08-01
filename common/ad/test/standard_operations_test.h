@@ -107,7 +107,7 @@ class StandardOperationsTest : public ::testing::Test {
   CHECK_EXPR(c bop(x bop y));
 
 // The multiplicative factor 0.9 < 1.0 let us call function such as asin, acos,
-// etc. whose arguments must be in (-1, 1).
+// etc. whose arguments must be in [-1, 1].
 #define CHECK_UNARY_FUNCTION(f, x, y, c) \
   CHECK_EXPR(f(x + x) + (y + y));        \
   CHECK_EXPR(f(x + y) + (x + y));        \
@@ -155,10 +155,7 @@ class StandardOperationsTest : public ::testing::Test {
   CHECK_EXPR(f(x + x, c) + y);                       \
   CHECK_EXPR(f(x + y, c) + y);                       \
   CHECK_EXPR(f(x - x + 5.0, c) - y);                 \
-  CHECK_EXPR(f(x - x + 5.0, c) - y);                 \
   CHECK_EXPR(f(x * x, c) * y);                       \
-  CHECK_EXPR(f(x * x, c) * y);                       \
-  CHECK_EXPR(f(x / x, c) / y);                       \
   CHECK_EXPR(f(x / x, c) / y);                       \
   CHECK_EXPR(f(x + c, c) + y);                       \
   CHECK_EXPR(f(c + x, c) + y);                       \
@@ -171,10 +168,7 @@ class StandardOperationsTest : public ::testing::Test {
   CHECK_EXPR(f(c, x + x) + y);                       \
   CHECK_EXPR(f(c, x + y) + y);                       \
   CHECK_EXPR(f(c, x - x + 5.0) - y);                 \
-  CHECK_EXPR(f(c, x - x + 5.0) - y);                 \
   CHECK_EXPR(f(c, x * x) * y);                       \
-  CHECK_EXPR(f(c, x * x) * y);                       \
-  CHECK_EXPR(f(c, x / x) / y);                       \
   CHECK_EXPR(f(c, x / x) / y);                       \
   CHECK_EXPR(f(c, x + c) + y);                       \
   CHECK_EXPR(f(c, c + x) + y);                       \
