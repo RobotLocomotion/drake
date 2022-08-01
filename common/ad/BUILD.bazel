@@ -68,11 +68,16 @@ drake_cc_googletest(
     name = "standard_operations_test",
     # The test is split into multiple source files to improve compilation time.
     srcs = [
+        "test/standard_operations_abs2_test.cc",
+        "test/standard_operations_abs_test.cc",
         "test/standard_operations_add_test.cc",
+        "test/standard_operations_cmp_test.cc",
         "test/standard_operations_dec_test.cc",
         "test/standard_operations_div_test.cc",
         "test/standard_operations_inc_test.cc",
         "test/standard_operations_integer_test.cc",
+        "test/standard_operations_max_test.cc",
+        "test/standard_operations_min_test.cc",
         "test/standard_operations_mul_test.cc",
         "test/standard_operations_stream_test.cc",
         "test/standard_operations_sub_test.cc",
@@ -82,6 +87,7 @@ drake_cc_googletest(
         # autodiff class to be tested.
         "-DDRAKE_AUTODIFFXD_DUT=drake::ad::AutoDiff",
     ],
+    shard_count = 16,
     deps = [
         ":auto_diff",
         ":standard_operations_test_h",
