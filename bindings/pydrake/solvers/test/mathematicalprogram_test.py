@@ -1544,7 +1544,7 @@ class DummySolverInterface(SolverInterface):
             return result
 
     def _DoSolve(self, prog, initial_guess, solver_options, result):
-        assert(isinstance(result, mp.MathematicalProgramResult))
+        assert isinstance(result, mp.MathematicalProgramResult)
         if not self.can_solve:
             raise Exception("Dummy solver cannot solve")
         # TODO(jwnimmer-tri) We should be setting the result here, but the

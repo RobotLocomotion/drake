@@ -90,7 +90,7 @@ void Simulation::Setup() {
   // Build the diagram and its simulator.
   diagram_ = builder.Build();
   simulator_ = std::make_unique<Simulator<double>>(*diagram_);
-  ApplySimulatorConfig(simulator_.get(), scenario_.simulator_config);
+  ApplySimulatorConfig(scenario_.simulator_config, simulator_.get());
 
   // Sample the random elements of the context.
   RandomGenerator random(scenario_.random_seed);
