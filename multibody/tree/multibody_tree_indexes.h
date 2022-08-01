@@ -38,6 +38,9 @@ using JointIndex = TypeSafeIndex<class JointElementTag>;
 /// Type used to identify actuators by index within a multibody tree system.
 using JointActuatorIndex = TypeSafeIndex<class JointActuatorElementTag>;
 
+/// Type used to identify constraints by index within a multibody system.
+using ConstraintIndex = TypeSafeIndex<class ConstraintTag>;
+
 /// Type used to identify model instances by index within a multibody
 /// tree system.
 using ModelInstanceIndex = TypeSafeIndex<class ModelInstanceTag>;

@@ -15,6 +15,7 @@ from pydrake.multibody.tree import (
     BallRpyJoint_,
     Body_,
     BodyIndex,
+    ConstraintIndex,
     DoorHinge_,
     DoorHingeConfig,
     FixedOffsetFrame_,
@@ -1890,6 +1891,44 @@ class TestPlant(unittest.TestCase):
         FixedOffsetFrame(P=P, X_PF=X)
         FixedOffsetFrame(name="name", bodyB=B, X_BF=X)
         FixedOffsetFrame(bodyB=B, X_BF=X)
+
+    @numpy_compare.check_all_types
+    def test_coupler_constraint_api(self, T):
+        MultibodyPlantConfig()
+        config = MultibodyPlantConfig(time_step=0.01,
+                                      discrete_contact_solver="sap")
+        self.assertEqual(config.time_step, 0.01)
+        self.assertEqual(config.discrete_contact_solver, "sap")
+
+        # Create a MultibodyPlant with only a WSG gripper.
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlant(config, builder)
+        self.assertIsNotNone(plant)
+        self.assertIsNotNone(scene_graph)
+
+        wsg50_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/"
+            "wsg_50_description/sdf/schunk_wsg_50.sdf")
+
+        parser = Parser(plant)
+        gripper_model = parser.AddModelFromFile(
+            file_name=wsg50_sdf_path, model_name='gripper')
+
+        # Add coupler constraint.
+        left_slider = plant.GetJointByName("left_finger_sliding_joint")
+        right_slider = plant.GetJointByName("right_finger_sliding_joint")
+        coupler_index = plant.AddCouplerConstraint(
+            joint0=left_slider, joint1=right_slider,
+            gear_ratio=1.2, offset=3.4)
+
+        # Constraint indexes are assigned in increasing order starting at zero.
+        self.assertEqual(coupler_index, ConstraintIndex(0))
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify the constraint was added.
+        self.assertEqual(plant.num_constraints(), 1)
 
     @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):
