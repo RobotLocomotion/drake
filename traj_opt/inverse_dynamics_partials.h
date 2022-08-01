@@ -8,13 +8,15 @@ namespace drake {
 namespace traj_opt {
 
 using Eigen::MatrixXd;
-using Eigen::VectorXd;
 
 /**
- * Struct containing the gradients of key dynamics terms that are used to
- * compute the (approximate) gradient and Hessian for our Gauss-Newton steps.
+ * Struct containing the gradients of generalized forces (tau) with respect to
+ * generalized positions (q).
+ *
+ * This is essentially a tri-diagonal matrix, since
+ * tau_t is a function of q at times t-1, t, and t+1.
  */
-struct GradientData {
+struct InverseDynamicsPartials {
   /**
    * Constructor which allocates variables of the proper sizes.
    *
@@ -22,7 +24,7 @@ struct GradientData {
    * @param nv number of generalized velocities (size of tau and v)
    * @param nq number of generalized positions (size of q)
    */
-  GradientData(const int num_steps, const int nv, const int nq) {
+  InverseDynamicsPartials(const int num_steps, const int nv, const int nq) {
     dtau_dqm.assign(num_steps, MatrixXd(nv, nq));
     dtau_dqt.assign(num_steps, MatrixXd(nv, nq));
     dtau_dqp.assign(num_steps, MatrixXd(nv, nq));

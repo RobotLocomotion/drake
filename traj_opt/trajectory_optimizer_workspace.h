@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -16,7 +18,8 @@ using multibody::MultibodyPlant;
  */
 struct TrajectoryOptimizerWorkspace {
   // Construct a workspace with size matching the given plant.
-  explicit TrajectoryOptimizerWorkspace(const MultibodyPlant<double>& plant)
+  TrajectoryOptimizerWorkspace(const int num_steps,
+                               const MultibodyPlant<double>& plant)
       : f_ext(plant) {
     const int nq = plant.num_positions();
     const int nv = plant.num_velocities();
@@ -34,6 +37,10 @@ struct TrajectoryOptimizerWorkspace {
     a_size_tmp1.resize(nq);
     a_size_tmp2.resize(nq);
     a_size_tmp3.resize(nq);
+
+    // Allocate sequences
+    q_sequence_tmp1.assign(num_steps, VectorXd(nq));
+    q_sequence_tmp2.assign(num_steps, VectorXd(nq));
   }
 
   // Storage for multibody forces
@@ -55,6 +62,10 @@ struct TrajectoryOptimizerWorkspace {
   VectorXd a_size_tmp1;
   VectorXd a_size_tmp2;
   VectorXd a_size_tmp3;
+
+  // Storage of sequence of q
+  std::vector<VectorXd> q_sequence_tmp1;
+  std::vector<VectorXd> q_sequence_tmp2;
 };
 
 }  // namespace traj_opt

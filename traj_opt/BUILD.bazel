@@ -17,10 +17,12 @@ drake_cc_package_library(
     name = "traj_opt",
     visibility = ["//visibility:public"],
     deps = [
-        ":problem_data",
+        ":inverse_dynamics_partials",
         ":problem_definition",
         ":trajectory_optimizer",
+        ":trajectory_optimizer_state",
         ":trajectory_optimizer_workspace",
+        ":velocity_partials",
     ],
 )
 
@@ -31,9 +33,11 @@ drake_cc_library(
         "trajectory_optimizer.h",
     ],
     deps = [
-        ":problem_data",
+        ":inverse_dynamics_partials",
         ":problem_definition",
+        ":trajectory_optimizer_state",
         ":trajectory_optimizer_workspace",
+        ":velocity_partials",
         "//common:essential",
         "//multibody/plant",
     ],
@@ -50,12 +54,36 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "problem_data",
+    name = "velocity_partials",
     hdrs = [
-        "problem_data.h",
+        "velocity_partials.h",
     ],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "inverse_dynamics_partials",
+    hdrs = [
+        "inverse_dynamics_partials.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "trajectory_optimizer_state",
+    hdrs = [
+        "trajectory_optimizer_state.h",
+    ],
+    deps = [
+        ":inverse_dynamics_partials",
+        ":trajectory_optimizer_workspace",
+        ":velocity_partials",
+        "//common:essential",
+        "//multibody/plant",
     ],
 )
 
@@ -77,9 +105,10 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
-        ":problem_data",
+        ":inverse_dynamics_partials",
         ":trajectory_optimizer",
         ":trajectory_optimizer_workspace",
+        ":velocity_partials",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",

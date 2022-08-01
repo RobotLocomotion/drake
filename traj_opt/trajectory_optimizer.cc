@@ -29,6 +29,13 @@ TrajectoryOptimizer::TrajectoryOptimizer(const MultibodyPlant<double>* plant,
 }
 
 double TrajectoryOptimizer::CalcCost(
+    const TrajectoryOptimizerState& state) const {
+  if (!state.cache().up_to_date) UpdateCache(state);
+  return CalcCost(state.q(), state.cache().v, state.cache().tau,
+                  &state.workspace);
+}
+
+double TrajectoryOptimizer::CalcCost(
     const std::vector<VectorXd>& q, const std::vector<VectorXd>& v,
     const std::vector<VectorXd>& tau,
     TrajectoryOptimizerWorkspace* workspace) const {
@@ -59,55 +66,49 @@ double TrajectoryOptimizer::CalcCost(
   return cost;
 }
 
-double TrajectoryOptimizer::CalcCost(
-    const std::vector<VectorXd>& q,
-    TrajectoryOptimizerWorkspace* workspace) const {
-  // These are expensive heap allocations: prefer versions of CalcCost that
-  // use precomputed v and tau whenever possible.
-  std::vector<VectorXd> v(num_steps() + 1);
-  std::vector<VectorXd> tau(num_steps());
-
-  CalcV(q, &v);
-  CalcTau(q, v, workspace, &tau);
-
-  return CalcCost(q, v, tau, workspace);
-}
-
-void TrajectoryOptimizer::CalcV(const std::vector<VectorXd>& q,
-                                std::vector<VectorXd>* v) const {
+void TrajectoryOptimizer::CalcVelocities(const std::vector<VectorXd>& q,
+                                         std::vector<VectorXd>* v) const {
   // x = [x0, x1, ..., xT]
   DRAKE_DEMAND(static_cast<int>(q.size()) == num_steps() + 1);
   DRAKE_DEMAND(static_cast<int>(v->size()) == num_steps() + 1);
 
   v->at(0) = prob_.v_init;
-  for (int i = 1; i <= num_steps(); ++i) {
-    v->at(i) = (q[i] - q[i - 1]) / time_step();
+  for (int t = 1; t <= num_steps(); ++t) {
+    v->at(t) = (q[t] - q[t - 1]) / time_step();
   }
 }
 
-void TrajectoryOptimizer::CalcTau(const std::vector<VectorXd>& q,
-                                  const std::vector<VectorXd>& v,
-                                  TrajectoryOptimizerWorkspace* workspace,
-                                  std::vector<VectorXd>* tau) const {
+void TrajectoryOptimizer::CalcAccelerations(const std::vector<VectorXd>& v,
+                                            std::vector<VectorXd>* a) const {
+  DRAKE_DEMAND(static_cast<int>(v.size()) == num_steps() + 1);
+  DRAKE_DEMAND(static_cast<int>(a->size()) == num_steps());
+
+  for (int t = 0; t < num_steps(); ++t) {
+    a->at(t) = (v[t + 1] - v[t]) / time_step();
+  }
+}
+
+void TrajectoryOptimizer::CalcInverseDynamics(
+    const std::vector<VectorXd>& q, const std::vector<VectorXd>& v,
+    const std::vector<VectorXd>& a, TrajectoryOptimizerWorkspace* workspace,
+    std::vector<VectorXd>* tau) const {
   // Generalized forces aren't defined for the last timestep
   // TODO(vincekurtz): additional checks that q_t, v_t, tau_t are the right size
   // for the plant?
   DRAKE_DEMAND(static_cast<int>(q.size()) == num_steps() + 1);
   DRAKE_DEMAND(static_cast<int>(v.size()) == num_steps() + 1);
+  DRAKE_DEMAND(static_cast<int>(a.size()) == num_steps());
   DRAKE_DEMAND(static_cast<int>(tau->size()) == num_steps());
 
   for (int t = 0; t < num_steps(); ++t) {
-    // Acceleration at time t
-    VectorXd& a = workspace->a_size_tmp1;
-    a = (v[t + 1] - v[t]) / time_step();
-
     // All dynamics terms are treated implicitly, i.e.,
     // tau[t] = M(q[t+1]) * a[t] - k(q[t+1],v[t+1]) - f_ext[t+1]
-    CalcInverseDynamics(q[t + 1], v[t + 1], a, workspace, &tau->at(t));
+    CalcInverseDynamicsSingleTimeStep(q[t + 1], v[t + 1], a[t], workspace,
+                                      &tau->at(t));
   }
 }
 
-void TrajectoryOptimizer::CalcInverseDynamics(
+void TrajectoryOptimizer::CalcInverseDynamicsSingleTimeStep(
     const VectorXd& q, const VectorXd& v, const VectorXd& a,
     TrajectoryOptimizerWorkspace* workspace, VectorXd* tau) const {
   plant().SetPositions(context_.get(), q);
@@ -122,36 +123,26 @@ void TrajectoryOptimizer::CalcInverseDynamics(
 
 void TrajectoryOptimizer::CalcInverseDynamicsPartials(
     const std::vector<VectorXd>& q, const std::vector<VectorXd>& v,
-    TrajectoryOptimizerWorkspace* workspace, GradientData* grad_data) const {
+    const std::vector<VectorXd>& a, const std::vector<VectorXd>& tau,
+    TrajectoryOptimizerWorkspace* workspace,
+    InverseDynamicsPartials* id_partials) const {
   // TODO(vincekurtz): use a solver flag to choose between finite differences
   // and an analytical approximation
-  CalcInverseDynamicsPartialsFiniteDiff(q, v, workspace, grad_data);
+  CalcInverseDynamicsPartialsFiniteDiff(q, v, a, tau, workspace, id_partials);
 }
 
 void TrajectoryOptimizer::CalcInverseDynamicsPartialsFiniteDiff(
     const std::vector<VectorXd>& q, const std::vector<VectorXd>& v,
-    TrajectoryOptimizerWorkspace* workspace, GradientData* grad_data) const {
-  // Check that grad_data has been allocated correctly.
-  DRAKE_DEMAND(grad_data->size() == num_steps());
+    const std::vector<VectorXd>& a, const std::vector<VectorXd>& tau,
+    TrajectoryOptimizerWorkspace* workspace,
+    InverseDynamicsPartials* id_partials) const {
+  // Check that id_partials has been allocated correctly.
+  DRAKE_DEMAND(id_partials->size() == num_steps());
 
   // Get references to the partials that we'll be setting
-  std::vector<MatrixXd>& dtau_dqm = grad_data->dtau_dqm;
-  std::vector<MatrixXd>& dtau_dqt = grad_data->dtau_dqt;
-  std::vector<MatrixXd>& dtau_dqp = grad_data->dtau_dqp;
-
-  // Compute tau(q) [all timesteps] using the orignal value of q
-  // TODO(vincekurtz): consider passing this as an argument along with q and v,
-  // perhaps combined into a TrajectoryData struct
-  std::vector<VectorXd> tau(num_steps());
-  CalcTau(q, v, workspace, &tau);
-
-  // Compute a(q) [all timesteps] store (unperturbed) accelerations
-  // TODO(vincekurt): put this all in the same object as q, v, and
-  // tau. Possibly with a State[q]/Cache[v,a,tau,dtau/dq] structure.
-  std::vector<VectorXd> a(num_steps());
-  for (int t = 0; t < num_steps(); ++t) {
-    a[t] = (v[t + 1] - v[t]) / time_step();
-  }
+  std::vector<MatrixXd>& dtau_dqm = id_partials->dtau_dqm;
+  std::vector<MatrixXd>& dtau_dqt = id_partials->dtau_dqt;
+  std::vector<MatrixXd>& dtau_dqp = id_partials->dtau_dqp;
 
   // Get references to perturbed versions of q, v, tau, and a, at (t-1, t, t).
   // These are all of the quantities that change when we perturb q_t.
@@ -220,18 +211,20 @@ void TrajectoryOptimizer::CalcInverseDynamicsPartialsFiniteDiff(
       // via finite differencing
       if (t > 0) {
         // tau[t-1] = ID(q[t], v[t], a[t-1])
-        CalcInverseDynamics(q_eps_t, v_eps_t, a_eps_tm, workspace, &tau_eps_tm);
+        CalcInverseDynamicsSingleTimeStep(q_eps_t, v_eps_t, a_eps_tm, workspace,
+                                          &tau_eps_tm);
         dtau_dqp[t - 1].col(i) = (tau_eps_tm - tau[t - 1]) / dq_i;
       }
       if (t < num_steps()) {
         // tau[t] = ID(q[t+1], v[t+1], a[t])
-        CalcInverseDynamics(q[t + 1], v_eps_tp, a_eps_t, workspace, &tau_eps_t);
+        CalcInverseDynamicsSingleTimeStep(q[t + 1], v_eps_tp, a_eps_t,
+                                          workspace, &tau_eps_t);
         dtau_dqt[t].col(i) = (tau_eps_t - tau[t]) / dq_i;
       }
       if (t < num_steps() - 1) {
         // tau[t+1] = ID(q[t+2], v[t+2], a[t+1])
-        CalcInverseDynamics(q[t + 2], v[t + 2], a_eps_tp, workspace,
-                            &tau_eps_tp);
+        CalcInverseDynamicsSingleTimeStep(q[t + 2], v[t + 2], a_eps_tp,
+                                          workspace, &tau_eps_tp);
         dtau_dqm[t + 1].col(i) = (tau_eps_tp - tau[t + 1]) / dq_i;
       }
 
@@ -252,13 +245,32 @@ void TrajectoryOptimizer::CalcInverseDynamicsPartialsFiniteDiff(
   }
 }
 
+void TrajectoryOptimizer::CalcVelocityPartials(
+    const std::vector<VectorXd>&, VelocityPartials* v_partials) const {
+  if (plant().num_velocities() != plant().num_positions()) {
+    throw std::runtime_error("Quaternion DoFs not yet supported");
+  } else {
+    const int nq = plant().num_positions();
+    for (int t = 0; t <= num_steps(); ++t) {
+      v_partials->dvt_dqt[t] = 1 / time_step() * MatrixXd::Identity(nq, nq);
+      if (t > 0) {
+        v_partials->dvt_dqm[t] = -1 / time_step() * MatrixXd::Identity(nq, nq);
+      }
+    }
+  }
+}
+
 void TrajectoryOptimizer::CalcGradientFiniteDiff(
-    const std::vector<VectorXd>& q, TrajectoryOptimizerWorkspace* workspace,
+    const TrajectoryOptimizerState& state,
     EigenPtr<VectorXd> g) const {
-  // Allocate perturbed versions of q
-  // TODO(vincekurtz): consider allocating in workspace
-  std::vector<VectorXd> q_plus(q);
-  std::vector<VectorXd> q_minus(q);
+  // Perturbed versions of q
+  std::vector<VectorXd>& q_plus = state.workspace.q_sequence_tmp1;
+  std::vector<VectorXd>& q_minus = state.workspace.q_sequence_tmp2;
+  q_plus = state.q();
+  q_minus = state.q();
+
+  // non-constant copy of state that we can perturb
+  TrajectoryOptimizerState state_eps(state);
 
   // Set first block of g (derivatives w.r.t. q_0) to zero, since q0 = q_init
   // are constant.
@@ -271,42 +283,41 @@ void TrajectoryOptimizer::CalcGradientFiniteDiff(
   for (int t = 1; t <= num_steps(); ++t) {
     for (int i = 0; i < plant().num_positions(); ++i) {
       // Set finite difference step size
-      dqt_i = eps * std::max(1.0, std::abs(q[t](i)));
+      dqt_i = eps * std::max(1.0, std::abs(state.q()[t](i)));
       q_plus[t](i) += dqt_i;
       q_minus[t](i) -= dqt_i;
 
       // Set g_j = using central differences
-      double L_plus = CalcCost(q_plus, workspace);
-      double L_minus = CalcCost(q_minus, workspace);
+      state_eps.set_q(q_plus);
+      double L_plus = CalcCost(state_eps);
+      state_eps.set_q(q_minus);
+      double L_minus = CalcCost(state_eps);
       (*g)(j) = (L_plus - L_minus) / (2 * dqt_i);
 
       // reset our perturbed Q and move to the next row of g.
-      q_plus[t](i) = q[t](i);
-      q_minus[t](i) = q[t](i);
+      q_plus[t](i) = state.q()[t](i);
+      q_minus[t](i) = state.q()[t](i);
       ++j;
     }
   }
 }
 
-void TrajectoryOptimizer::CalcGradient(const std::vector<VectorXd>& q,
-                                       const GradientData& grad_data,
-                                       TrajectoryOptimizerWorkspace* workspace,
+void TrajectoryOptimizer::CalcGradient(const TrajectoryOptimizerState& state,
                                        EigenPtr<VectorXd> g) const {
+  if (!state.cache().up_to_date) UpdateCache(state);
+
+  // Set some aliases
   const double dt = time_step();
   const int nq = plant().num_positions();
-
-  // Compute v and tau
-  // TODO(vincekurtz): wrap all this data into a TrajectoryOptimizerState and
-  // compute ahead of time
-  std::vector<VectorXd> v(num_steps() + 1);
-  std::vector<VectorXd> tau(num_steps());
-  CalcV(q, &v);
-  CalcTau(q, v, workspace, &tau);
-
-  // TODO(vincekurtz) this should also go in the TrajectoryOptimizerState (cache
-  // part)
-  double dvt_dqt = 1 / time_step();  // assuming no quaternion DoFs
-  double dvt_dqm = -1 / time_step();
+  const std::vector<VectorXd>& q = state.q();
+  const std::vector<VectorXd>& v = state.cache().v;
+  const std::vector<VectorXd>& tau = state.cache().tau;
+  const std::vector<MatrixXd>& dvt_dqt = state.cache().v_partials.dvt_dqt;
+  const std::vector<MatrixXd>& dvt_dqm = state.cache().v_partials.dvt_dqm;
+  const std::vector<MatrixXd>& dtau_dqp = state.cache().id_partials.dtau_dqp;
+  const std::vector<MatrixXd>& dtau_dqt = state.cache().id_partials.dtau_dqt;
+  const std::vector<MatrixXd>& dtau_dqm = state.cache().id_partials.dtau_dqm;
+  TrajectoryOptimizerWorkspace* workspace = &state.workspace;
 
   // Set first block of g (derivatives w.r.t. q_0) to zero, since q0 = q_init
   // are constant.
@@ -325,25 +336,24 @@ void TrajectoryOptimizer::CalcGradient(const std::vector<VectorXd>& q,
     qt_term = (q[t] - prob_.q_nom).transpose() * 2 * prob_.Qq * dt;
 
     // Contribution from velocity cost
-    vt_term = (v[t] - prob_.v_nom).transpose() * 2 * prob_.Qv * dt * dvt_dqt;
+    vt_term = (v[t] - prob_.v_nom).transpose() * 2 * prob_.Qv * dt * dvt_dqt[t];
     if (t == num_steps() - 1) {
       // The terminal cost needs to be handled differently
-      vp_term = (v[t + 1] - prob_.v_nom).transpose() * 2 * prob_.Qf_v * dvt_dqm;
+      vp_term = (v[t + 1] - prob_.v_nom).transpose() * 2 * prob_.Qf_v *
+                dvt_dqm[t + 1];
     } else {
-      vp_term =
-          (v[t + 1] - prob_.v_nom).transpose() * 2 * prob_.Qv * dt * dvt_dqm;
+      vp_term = (v[t + 1] - prob_.v_nom).transpose() * 2 * prob_.Qv * dt *
+                dvt_dqm[t + 1];
     }
 
     // Contribution from control cost
-    taum_term =
-        tau[t - 1].transpose() * 2 * prob_.R * dt * grad_data.dtau_dqp[t - 1];
-    taut_term = tau[t].transpose() * 2 * prob_.R * dt * grad_data.dtau_dqt[t];
+    taum_term = tau[t - 1].transpose() * 2 * prob_.R * dt * dtau_dqp[t - 1];
+    taut_term = tau[t].transpose() * 2 * prob_.R * dt * dtau_dqt[t];
     if (t == num_steps() - 1) {
       // There is no constrol input at the final timestep
       taup_term.setZero(nq);
     } else {
-      taup_term =
-          tau[t + 1].transpose() * 2 * prob_.R * dt * grad_data.dtau_dqm[t + 1];
+      taup_term = tau[t + 1].transpose() * 2 * prob_.R * dt * dtau_dqm[t + 1];
     }
 
     // Put it all together to get the gradient w.r.t q[t]
@@ -354,11 +364,46 @@ void TrajectoryOptimizer::CalcGradient(const std::vector<VectorXd>& q,
   // Last step is different, because there is terminal cost and v[t+1] doesn't
   // exist
   taum_term = tau[num_steps() - 1].transpose() * 2 * prob_.R * dt *
-              grad_data.dtau_dqp[num_steps() - 1];
+              dtau_dqp[num_steps() - 1];
   qt_term = (q[num_steps()] - prob_.q_nom).transpose() * 2 * prob_.Qf_q;
-  vt_term =
-      (v[num_steps()] - prob_.v_nom).transpose() * 2 * prob_.Qf_v * dvt_dqt;
+  vt_term = (v[num_steps()] - prob_.v_nom).transpose() * 2 * prob_.Qf_v *
+            dvt_dqt[num_steps()];
   g->tail(nq) = qt_term + vt_term + taum_term;
+}
+
+void TrajectoryOptimizer::UpdateCache(
+    const TrajectoryOptimizerState& state) const {
+  TrajectoryOptimizerCache& cache = state.mutable_cache();
+  TrajectoryOptimizerWorkspace& workspace = state.workspace;
+
+  // Some aliases for things that we'll set
+  std::vector<VectorXd>& v = cache.v;
+  std::vector<VectorXd>& a = cache.a;
+  std::vector<VectorXd>& tau = cache.tau;
+  InverseDynamicsPartials& id_partials = cache.id_partials;
+  VelocityPartials& v_partials = cache.v_partials;
+
+  // The generalized positions that everything is computed from
+  const std::vector<VectorXd>& q = state.q();
+
+  // Compute corresponding generalized velocities
+  // TODO(vincekurtz) consider making this & similar functions private
+  CalcVelocities(q, &v);
+
+  // Compute corresponding generalized accelerations
+  CalcAccelerations(v, &a);
+
+  // Compute corresponding generalized torques
+  CalcInverseDynamics(q, v, a, &workspace, &tau);
+
+  // Compute partial derivatives of inverse dynamics d(tau)/d(q)
+  CalcInverseDynamicsPartials(q, v, a, tau, &workspace, &id_partials);
+
+  // Compute partial derivatives of velocities d(v)/d(q)
+  CalcVelocityPartials(q, &v_partials);
+
+  // Set cache invalidation flag
+  cache.up_to_date = true;
 }
 
 }  // namespace traj_opt
