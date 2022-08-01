@@ -93,8 +93,14 @@ inline AutoDiff& operator-=(AutoDiff& a, double b) {
 // NOLINTNEXTLINE(runtime/references) to match the required signature.
 inline AutoDiff& operator*=(AutoDiff& a, const AutoDiff& b) {
   // ∂/∂x a * b = ba' + ab'
-  a.partials().Mul(b.value());
-  a.partials().AddScaled(a.value(), b.partials());
+  // Special case to avoid changing b.partials() via a.partials() aliasing.
+  if (&a == &b) {
+    // ∂/∂x a * a = 2aa'
+    a.partials().Mul(2.0 * a.value());
+  } else {
+    a.partials().Mul(b.value());
+    a.partials().AddScaled(a.value(), b.partials());
+  }
   a.value() *= b.value();
   return a;
 }
@@ -112,9 +118,15 @@ inline AutoDiff& operator*=(AutoDiff& a, double b) {
 // NOLINTNEXTLINE(runtime/references) to match the required signature.
 inline AutoDiff& operator/=(AutoDiff& a, const AutoDiff& b) {
   // ∂/∂x a / b = (ba' - ab') / b²
-  a.partials().Mul(b.value());
-  a.partials().AddScaled(-a.value(), b.partials());
-  a.partials().Div(b.value() * b.value());
+  // Special case to avoid changing b.partials() via a.partials() aliasing.
+  if (&a == &b) {
+    // ∂/∂x a / a = 0
+    a.partials().SetZero();
+  } else {
+    a.partials().Mul(b.value());
+    a.partials().AddScaled(-a.value(), b.partials());
+    a.partials().Div(b.value() * b.value());
+  }
   a.value() /= b.value();
   return a;
 }
