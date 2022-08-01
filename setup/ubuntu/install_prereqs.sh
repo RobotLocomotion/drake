@@ -35,10 +35,6 @@ while [ "${1:-}" != "" ]; do
     --with-doc-only)
       source_distribution_args+=(--with-doc-only)
       ;;
-    # TODO(betsymcphail): Remove this deprecated option on or after 2022-08-01
-    --with-kcov)
-      source_distribution_args+=(--with-kcov)
-      ;;
     # Install prerequisites that are only needed for --config clang, i.e.,
     # opts-in to the ability to compile Drake's C++ code using Clang.
     --with-clang)

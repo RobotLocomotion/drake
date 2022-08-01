@@ -68,10 +68,6 @@ GTEST_TEST(TestConstraint, LinearConstraintSparse) {
   EXPECT_TRUE(
       CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
   EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE(CompareMatrices(dut.A(), A_sparse.toDense()));
-#pragma GCC diagnostic pop
   EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
   EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
 

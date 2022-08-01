@@ -15,7 +15,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic/expression.h"
@@ -575,14 +574,6 @@ class LinearConstraint : public Constraint {
 
   ~LinearConstraint() override {}
 
-  DRAKE_DEPRECATED("2022-08-01",
-                   "Use get_sparse_A() instead of GetSparseMatrix()")
-  virtual Eigen::SparseMatrix<double> GetSparseMatrix() const {
-    // TODO(eric.cousineau): Consider storing or caching sparse matrix, such
-    // that we can return a const lvalue reference.
-    return A_.get_as_sparse();
-  }
-
   const Eigen::SparseMatrix<double>& get_sparse_A() const {
     return A_.get_as_sparse();
   }
@@ -594,14 +585,6 @@ class LinearConstraint : public Constraint {
    * returns a sparse matrix.
    */
   const Eigen::MatrixXd& GetDenseA() const;
-
-  /**
-   * Gets the coefficient matrix A as a dense matrix.
-   * @note This function will allocate new memory on the heap. For better
-   * performance you should call get_sparse_A() which returns a sparse matrix.
-   */
-  DRAKE_DEPRECATED("2022-08-01", "Use GetDenseA() instead of A()")
-  virtual const Eigen::MatrixXd& A() const { return A_.GetAsDense(); }
 
   /**
    * Updates the linear term, upper and lower bounds in the linear constraint.

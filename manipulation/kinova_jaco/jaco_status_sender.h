@@ -1,7 +1,6 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/lcmt_jaco_status.hpp"
 #include "drake/manipulation/kinova_jaco/jaco_constants.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -50,9 +49,6 @@ class JacoStatusSender : public systems::LeafSystem<double> {
   JacoStatusSender(int num_joints = kJacoDefaultArmNumJoints,
                    int num_fingers = kJacoDefaultArmNumFingers);
 
-  DRAKE_DEPRECATED("2022-08-01", "Use position/velocity input ports instead.")
-  const systems::InputPort<double>& get_state_input_port() const;
-
   /// @name Named accessors for this System's input and output ports.
   //@{
   const systems::InputPort<double>& get_position_input_port() const {
@@ -77,7 +73,6 @@ class JacoStatusSender : public systems::LeafSystem<double> {
 
   const int num_joints_;
   const int num_fingers_;
-  const systems::InputPort<double>* state_input_{};
   const systems::InputPort<double>* position_input_{};
   const systems::InputPort<double>* velocity_input_{};
   const systems::InputPort<double>* torque_input_{};

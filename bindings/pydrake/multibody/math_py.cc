@@ -4,7 +4,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -134,14 +133,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("h"), py::arg("l"), cls_doc.ctor.doc_2args)
         .def(
             py::init<const Vector6<T>&>(), py::arg("L"), cls_doc.ctor.doc_1args)
-        .def("Shift", &Class::Shift, py::arg("offset"), cls_doc.Shift.doc);
-    constexpr char doc_Shift_deprecatedArgName[] =
-        "The keyword argument (kwarg) has been renamed from"
-        " Shift(p_BpBq_E) to"
-        " Shift(offset)."
-        " Deprecated kwarg will be unavailable after 2022-08-01.";
-    cls.def("Shift", WrapDeprecated(doc_Shift_deprecatedArgName, &Class::Shift),
-           py::arg("p_BpBq_E"), doc_Shift_deprecatedArgName)
+        .def("Shift", &Class::Shift, py::arg("offset"), cls_doc.Shift.doc)
         .def("dot", &Class::dot, py::arg("velocity"), cls_doc.dot.doc);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
@@ -194,15 +186,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Shift",
             overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift),
             py::arg("offset"), cls_doc.Shift.doc_1args);
-    constexpr char doc_Shift_deprecatedArgName[] =
-        "The keyword argument (kwarg) has been renamed from"
-        " Shift(p_BqBq_E) to"
-        " Shift(offset)."
-        " Deprecated kwarg will be unavailable after 2022-08-01.";
-    cls.def("Shift",
-        WrapDeprecated(doc_Shift_deprecatedArgName,
-            overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift)),
-        py::arg("p_BpBq_E"), doc_Shift_deprecatedArgName);
     cls.def("dot",
         overload_cast_explicit<T, const SpatialVelocity<T>&>(&Class::dot),
         py::arg("velocity"), cls_doc.dot.doc);
