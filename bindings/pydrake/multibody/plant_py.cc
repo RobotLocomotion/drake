@@ -172,6 +172,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_actuators", &Class::num_actuators, cls_doc.num_actuators.doc)
         .def("num_force_elements", &Class::num_force_elements,
             cls_doc.num_force_elements.doc)
+        .def("num_constraints", &Class::num_constraints,
+            cls_doc.num_constraints.doc)
         .def("num_model_instances", &Class::num_model_instances,
             cls_doc.num_model_instances.doc)
         .def("num_positions",
@@ -250,7 +252,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   std::move(force_element));
             },
             py::arg("force_element"), py_rvp::reference_internal,
-            cls_doc.AddForceElement.doc);
+            cls_doc.AddForceElement.doc)
+        .def("AddCouplerConstraint", &Class::AddCouplerConstraint,
+            py::arg("joint0"), py::arg("joint1"), py::arg("gear_ratio"),
+            py::arg("offset") = 0.0, cls_doc.AddCouplerConstraint.doc);
     // Mathy bits
     cls  // BR
         .def(
