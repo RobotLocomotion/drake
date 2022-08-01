@@ -1467,6 +1467,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "mosek_solver_test",
+    args = select({
+        # Disable all test cases on Mac M1 CI.
+        # TODO(17566) re-enable mac arm64 mosek tests.
+        "@platforms//cpu:arm64": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
     tags = mosek_test_tags(),
     use_default_main = False,
     deps = [
@@ -1488,6 +1494,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "mosek_solver_moseklm_license_file_test",
+    args = select({
+        # Disable all test cases on Mac M1 CI.
+        # TODO(17566) re-enable mac arm64 mosek tests.
+        "@platforms//cpu:arm64": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
     tags = mosek_test_tags(),
     deps = [
         ":mathematical_program",
@@ -1723,6 +1735,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "sos_constraint_test",
+    args = select({
+        # Disable all test cases on Mac M1 CI.
+        # TODO(17566) re-enable mac arm64 mosek tests.
+        "@platforms//cpu:arm64": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
     tags = mosek_test_tags(),
     deps = [
         ":mathematical_program",

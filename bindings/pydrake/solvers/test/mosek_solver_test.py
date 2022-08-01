@@ -34,3 +34,12 @@ class TestMathematicalProgram(unittest.TestCase):
         with MosekSolver.AcquireLicense() as license:
             self.assertTrue(license.is_valid())
         self.assertFalse(license.is_valid())
+
+    def unavailable(self):
+        """Per the BUILD file, this test is only run when MOSEK is disabled."""
+        # The context manager for the license raises if it cannot be found.
+        try:
+            with MosekSolver.AcquireLicense():
+                self.fail("MOSEK license was not expected to be obtainable.")
+        except RuntimeError as re:
+            self.assertIn("mosek", str(re).lower())

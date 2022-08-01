@@ -19,7 +19,12 @@ drake_cc_binary(
 drake_cc_binary(
     name = "backward_reachability",
     srcs = ["backward_reachability.cc"],
-    add_test_rule = 1,
+    # TODO(17026): re-enable mac arm64 mosek tests.
+    # TODO(svenevs): this doesn't actually work
+    add_test_rule = select({
+        "@platforms//cpu:arm64": 0,
+        "//conditions:default": 1,
+    }),
     test_rule_tags = mosek_test_tags(),
     deps = [
         "//common/proto:call_python",

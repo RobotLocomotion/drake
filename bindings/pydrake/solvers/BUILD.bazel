@@ -192,6 +192,11 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "mosek_solver_test",
+    args = select({
+        # TODO(17026): re-enable mac arm64 mosek tests.
+        "@platforms//cpu:arm64": ["TestMathematicalProgram.unavailable"],
+        "//conditions:default": [],
+    }),
     tags = mosek_test_tags(),
     deps = [
         ":solvers",
