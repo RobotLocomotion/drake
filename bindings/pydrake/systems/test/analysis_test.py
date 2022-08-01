@@ -2,6 +2,7 @@ import copy
 import unittest
 
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.symbolic import Variable, Expression
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.systems.primitives import (
@@ -130,7 +131,18 @@ class TestAnalysis(unittest.TestCase):
             simulator = Simulator_[T](source)
             config = ExtractSimulatorConfig(simulator)
             config.target_realtime_rate = 100.0
-            ApplySimulatorConfig(simulator, config)
+            ApplySimulatorConfig(config=config, simulator=simulator)
+            self.assertEqual(simulator.get_target_realtime_rate(), 100.0)
+
+    # TODO(2022-11-01) Delete this entire test
+    def test_simulator_config_functions_deprecated(self):
+        for T in (float, AutoDiffXd):
+            source = ConstantVectorSource_[T]([2, 3])
+            simulator = Simulator_[T](source)
+            config = ExtractSimulatorConfig(simulator)
+            config.target_realtime_rate = 100.0
+            with catch_drake_warnings(expected_count=1):
+                ApplySimulatorConfig(simulator, config)
             self.assertEqual(simulator.get_target_realtime_rate(), 100.0)
 
     def test_system_monitor(self):
