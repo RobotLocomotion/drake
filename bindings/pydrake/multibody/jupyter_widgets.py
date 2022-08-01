@@ -124,7 +124,7 @@ class JointSliders(VectorSystem):
             q: a vector whose length is the same as the number of joint
             positions (also the number of sliders) for the robot.
         """
-        assert(len(q) == len(self._slider))
+        assert len(q) == len(self._slider)
         for i in range(len(self._slider)):
             self._slider[i].value = q[i]
 
