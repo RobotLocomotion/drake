@@ -155,10 +155,7 @@ class StandardOperationsTest : public ::testing::Test {
   CHECK_EXPR(f(x + x, c) + y);                       \
   CHECK_EXPR(f(x + y, c) + y);                       \
   CHECK_EXPR(f(x - x + 5.0, c) - y);                 \
-  CHECK_EXPR(f(x - x + 5.0, c) - y);                 \
   CHECK_EXPR(f(x * x, c) * y);                       \
-  CHECK_EXPR(f(x * x, c) * y);                       \
-  CHECK_EXPR(f(x / x, c) / y);                       \
   CHECK_EXPR(f(x / x, c) / y);                       \
   CHECK_EXPR(f(x + c, c) + y);                       \
   CHECK_EXPR(f(c + x, c) + y);                       \
@@ -171,10 +168,7 @@ class StandardOperationsTest : public ::testing::Test {
   CHECK_EXPR(f(c, x + x) + y);                       \
   CHECK_EXPR(f(c, x + y) + y);                       \
   CHECK_EXPR(f(c, x - x + 5.0) - y);                 \
-  CHECK_EXPR(f(c, x - x + 5.0) - y);                 \
   CHECK_EXPR(f(c, x * x) * y);                       \
-  CHECK_EXPR(f(c, x * x) * y);                       \
-  CHECK_EXPR(f(c, x / x) / y);                       \
   CHECK_EXPR(f(c, x / x) / y);                       \
   CHECK_EXPR(f(c, x + c) + y);                       \
   CHECK_EXPR(f(c, c + x) + y);                       \

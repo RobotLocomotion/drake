@@ -426,6 +426,56 @@ inline AutoDiff abs2(AutoDiff x) {
 
 //@}
 
+/// @name Math functions: Trigonometric functions
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Trigonometric_functions
+//@{
+
+/** ADL overload to mimic std::sin from <cmath>. */
+AutoDiff sin(AutoDiff x);
+
+/** ADL overload to mimic std::cos from <cmath>. */
+AutoDiff cos(AutoDiff x);
+
+/** ADL overload to mimic std::tan from <cmath>. */
+AutoDiff tan(AutoDiff x);
+
+/** ADL overload to mimic std::asin from <cmath>. */
+AutoDiff asin(AutoDiff x);
+
+/** ADL overload to mimic std::acos from <cmath>. */
+AutoDiff acos(AutoDiff x);
+
+/** ADL overload to mimic std::atan from <cmath>. */
+AutoDiff atan(AutoDiff x);
+
+/** ADL overload to mimic std::atan2 from <cmath>. */
+AutoDiff atan2(AutoDiff a, const AutoDiff& b);
+
+/** ADL overload to mimic std::atan2 from <cmath>. */
+AutoDiff atan2(AutoDiff a, double b);
+
+/** ADL overload to mimic std::atan2 from <cmath>. */
+AutoDiff atan2(double a, AutoDiff b);
+
+//@}
+
+/// @name Math functions: Hyperbolic functions
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Hyperbolic_functions
+//@{
+
+/** ADL overload to mimic std::sinh from <cmath>. */
+AutoDiff sinh(AutoDiff x);
+
+/** ADL overload to mimic std::cosh from <cmath>. */
+AutoDiff cosh(AutoDiff x);
+
+/** ADL overload to mimic std::tanh from <cmath>. */
+AutoDiff tanh(AutoDiff x);
+
+//@}
+
 /// @name Math functions: Nearest integer floating point operations
 ///
 /// https://en.cppreference.com/w/cpp/numeric/math#Nearest_integer_floating_point_operations
