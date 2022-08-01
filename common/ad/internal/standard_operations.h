@@ -5,7 +5,16 @@
 
 /* This file contains free function operators for Drake's AutoDiff type.
 
-The functions provide arithmetic (+,-,*,/) for now and more to come later.
+The functions provide not only arithmetic (+,-,*,/) and boolean comparison
+(<,<=,>,>=,==,!=) but also argument-dependent lookup ("ADL") compatiblity with
+the standard library's mathematical functions (abs, etc.)
+
+(See https://en.cppreference.com/w/cpp/language/adl for details about ADL.)
+
+A few functions for Eigen::numext are also added to argument-dependent lookup.
+
+Functions that cannot preserve gradients will return a primitive type (`bool`
+or `double`) instead of an AutoDiff.
 
 NOTE: This file should never be included directly, rather only from
 auto_diff.h in a very specific order. */
@@ -223,6 +232,196 @@ inline AutoDiff operator/(double a, const AutoDiff& b) {
   AutoDiff result{a};
   result /= b;
   return result;
+}
+
+//@}
+
+/// @name Comparison operators
+///
+/// https://en.cppreference.com/w/cpp/language/operators#Comparison_operators
+//@{
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator<(const AutoDiff& a, const AutoDiff& b) {
+  return a.value() < b.value();
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator<=(const AutoDiff& a, const AutoDiff& b) {
+  return a.value() <= b.value();
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator>(const AutoDiff& a, const AutoDiff& b) {
+  return a.value() > b.value();
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator>=(const AutoDiff& a, const AutoDiff& b) {
+  return a.value() >= b.value();
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator==(const AutoDiff& a, const AutoDiff& b) {
+  return a.value() == b.value();
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator!=(const AutoDiff& a, const AutoDiff& b) {
+  return a.value() != b.value();
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator<(const AutoDiff& a, double b) {
+  return a.value() < b;
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator<=(const AutoDiff& a, double b) {
+  return a.value() <= b;
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator>(const AutoDiff& a, double b) {
+  return a.value() > b;
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator>=(const AutoDiff& a, double b) {
+  return a.value() >= b;
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator==(const AutoDiff& a, double b) {
+  return a.value() == b;
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator!=(const AutoDiff& a, double b) {
+  return a.value() != b;
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator<(double a, const AutoDiff& b) {
+  return a < b.value();
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator<=(double a, const AutoDiff& b) {
+  return a <= b.value();
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator>(double a, const AutoDiff& b) {
+  return a > b.value();
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator>=(double a, const AutoDiff& b) {
+  return a >= b.value();
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator==(double a, const AutoDiff& b) {
+  return a == b.value();
+}
+
+/** Standard comparison operator. Discards the derivatives. */
+inline bool operator!=(double a, const AutoDiff& b) {
+  return a != b.value();
+}
+
+//@}
+
+/// @name Minimum/maximum operations
+///
+/// https://en.cppreference.com/w/cpp/algorithm#Minimum.2Fmaximum_operations
+//@{
+
+/** ADL overload to mimic std::max from <algorithm>.
+Note that like std::max, this function returns a reference to whichever
+argument was chosen; it does not make a copy. When `a` and `b` are equal,
+retains the derivatives of `a` (by returning `a`) unless `a` has empty
+derivatives, in which case `b` is returned. */
+inline const AutoDiff& max(const AutoDiff& a, const AutoDiff& b) {
+  if (a.value() == b.value()) {
+    return a.derivatives().size() > 0 ? a : b;
+  }
+  return a.value() < b.value() ? b : a;
+}
+
+/** ADL overload to mimic std::max from <algorithm>.
+When `a` and `b` are equal, retains the derivatives of `a`. */
+inline AutoDiff max(AutoDiff a, double b) {
+  if (a.value() < b) {
+    a = b;
+  }
+  return a;
+}
+
+/** ADL overload to mimic std::max from <algorithm>.
+When `a` and `b` are equal, retains the derivatives of `b`. */
+inline AutoDiff max(double a, AutoDiff b) {
+  if (a < b.value()) {
+    return b;
+  }
+  b = a;
+  return b;
+}
+
+/** ADL overload to mimic std::min from <algorithm>.
+Note that like std::min, this function returns a reference to whichever
+argument was chosen; it does not make a copy. When `a` and `b` are equal,
+retains the derivatives of `a` (by returning `a`) unless `a` has empty
+derivatives, in which case `b` is returned. */
+inline const AutoDiff& min(const AutoDiff& a, const AutoDiff& b) {
+  if (a.value() == b.value()) {
+    return a.derivatives().size() > 0 ? a : b;
+  }
+  return b.value() < a.value() ? b : a;
+}
+
+/** ADL overload to mimic std::min from <algorithm>.
+When `a` and `b` are equal, retains the derivatives of `a`. */
+inline AutoDiff min(AutoDiff a, double b) {
+  if (b < a.value()) {
+    a = b;
+  }
+  return a;
+}
+
+/** ADL overload to mimic std::min from <algorithm>.
+When `a` and `b` are equal, retains the derivatives of `b`. */
+// NOLINTNEXTLINE(build/include_what_you_use) false positive.
+inline AutoDiff min(double a, AutoDiff b) {
+  if (a < b.value()) {
+    b = a;
+  }
+  return b;
+}
+
+//@}
+
+/// @name Math functions: Basic operations
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Basic_operations
+//@{
+
+/** ADL overload to mimic std::abs from <cmath>. */
+inline AutoDiff abs(AutoDiff x) {
+  // Conditionally negate negative numbers.
+  if (x.value() < 0) {
+    x *= -1;
+  }
+  return x;
+}
+
+/** ADL overload to mimic Eigen::numext::abs2. */
+inline AutoDiff abs2(AutoDiff x) {
+  // ∂/∂x x² = 2x
+  x.partials().Mul(2 * x.value());
+  x.value() *= x.value();
+  return x;
 }
 
 //@}
