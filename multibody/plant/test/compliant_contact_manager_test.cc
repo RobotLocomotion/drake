@@ -1,5 +1,8 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 
+#include <algorithm>
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -11,6 +14,7 @@
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
@@ -36,6 +40,7 @@ using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MergeNormalAndTangent;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
+using drake::multibody::contact_solvers::internal::SapHolonomicConstraint;
 using drake::multibody::contact_solvers::internal::SapLimitConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
@@ -389,9 +394,8 @@ class SpheresStack : public ::testing::Test {
 
       // Verify dissipation.
       const double tau1 = *sphere1_contact_params.relaxation_time;
-      const double tau2 = i == 0
-                              ? *sphere2_contact_params.relaxation_time
-                              : *hard_hydro_contact.relaxation_time;
+      const double tau2 = i == 0 ? *sphere2_contact_params.relaxation_time
+                                 : *hard_hydro_contact.relaxation_time;
       const double tau_expected = tau1 + tau2;
       EXPECT_NEAR(point_pair.dissipation_time_scale, tau_expected,
                   kEps * tau_expected);
@@ -573,8 +577,7 @@ class SpheresStack : public ::testing::Test {
 
     if (params.relaxation_time.has_value()) {
       properties.AddProperty(geometry::internal::kMaterialGroup,
-                             "relaxation_time",
-                             *params.relaxation_time);
+                             "relaxation_time", *params.relaxation_time);
     }
     return properties;
   }
@@ -1163,20 +1166,54 @@ class KukaIiwaArmTests : public ::testing::Test {
   // Setup model of the Kuka iiwa arm with Schunk gripper and allocate context
   // resources. The model includes reflected inertias. Input ports are fixed to
   // arbitrary non-zero values.
-  void SetUp() override {
-    LoadIiwaWithGripper(&plant_);
-    AddInReflectedInertia(&plant_, kRotorInertias, kGearRatios);
+  void SetSingleRobotModel() {
+    // Only SAP supports the modeling of constraints.
+    plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
 
+    // Load robot model from files.
+    const std::vector<ModelInstanceIndex> models = SetUpArmModel(1, &plant_);
     plant_.Finalize();
+
+    // The model has a single coupler constraint.
+    EXPECT_EQ(plant_.num_constraints(), 1);
 
     auto owned_contact_manager =
         std::make_unique<CompliantContactManager<double>>();
     manager_ = owned_contact_manager.get();
     plant_.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+    // Model with a single robot and gripper. A single coupler constraint to
+    // model the gripper.
+    EXPECT_EQ(plant_.num_constraints(), 1);
 
     context_ = plant_.CreateDefaultContext();
-    SetArbitraryNonZeroActuation(plant_, context_.get());
+    SetArbitraryNonZeroActuation(plant_, models[0], models[1], context_.get());
     SetArbitraryState(plant_, context_.get());
+  }
+
+  // Setup model of the Kuka iiwa arm with Schunk gripper. The model includes
+  // reflected inertias. The gripper is modeled with a coupler constraint.
+  std::vector<ModelInstanceIndex> SetUpArmModel(
+      int robot_number, MultibodyPlant<double>* plant) const {
+    std::vector<ModelInstanceIndex> models =
+        LoadIiwaWithGripper(robot_number, plant);
+    AddInReflectedInertia(plant, models, kRotorInertias, kGearRatios);
+
+    // Constrain the gripper fingers to be coupled.
+    const ModelInstanceIndex gripper_model = models[1];
+    const Joint<double>& left_finger_slider =
+        plant->GetJointByName("left_finger_sliding_joint", gripper_model);
+    const Joint<double>& right_finger_slider =
+        plant->GetJointByName("right_finger_sliding_joint", gripper_model);
+    // While for a typical gripper most likely the gear ratio is one and the
+    // offset is zero, here we use an arbitrary set of values to verify later on
+    // in the test that the manager created a constraint consistent with these
+    // numbers.
+    const ConstraintIndex next_constraint_index(plant->num_constraints());
+    ConstraintIndex constraint_index =
+        plant->AddCouplerConstraint(left_finger_slider, right_finger_slider,
+                                    kCouplerGearRatio, kCouplerOffset);
+    EXPECT_EQ(constraint_index, next_constraint_index);
+    return models;
   }
 
   // The manager solves free motion velocities using a discrete scheme with
@@ -1219,13 +1256,11 @@ class KukaIiwaArmTests : public ::testing::Test {
       const MultibodyPlant<double>& plant,
       const std::vector<InitializePositionAt>& limits_specification,
       Context<double>* context) {
-    DRAKE_DEMAND(static_cast<int>(limits_specification.size()) == kNumJoints);
-
     // Arbitrary positive slop used for positions.
     const double kPositiveDeltaQ = M_PI / 10.0;
     const double dt = plant.time_step();
-    VectorXd v0(kNumJoints);
-    VectorXd q0(kNumJoints);
+    VectorXd v0(plant.num_velocities());
+    VectorXd q0(plant.num_positions());
 
     for (JointIndex joint_index(0); joint_index < plant.num_joints();
          ++joint_index) {
@@ -1282,8 +1317,23 @@ class KukaIiwaArmTests : public ::testing::Test {
     plant.SetVelocities(context, v0);
   }
 
+  // Fixes all input ports to have non-zero actuation.
+  void SetArbitraryNonZeroActuation(const MultibodyPlant<double>& plant,
+                                    ModelInstanceIndex arm_model,
+                                    ModelInstanceIndex gripper_model,
+                                    Context<double>* context) const {
+    const VectorX<double> tau_arm = VectorX<double>::LinSpaced(
+        plant.num_actuated_dofs(arm_model), 10.0, 1000.0);
+    const VectorX<double> tau_gripper = VectorX<double>::LinSpaced(
+        plant.num_actuated_dofs(gripper_model), 10.0, 1000.0);
+    plant.get_actuation_input_port(arm_model).FixValue(context, tau_arm);
+    plant.get_actuation_input_port(gripper_model)
+        .FixValue(context, tau_gripper);
+  }
+
  private:
-  void LoadIiwaWithGripper(MultibodyPlant<double>* plant) {
+  std::vector<ModelInstanceIndex> LoadIiwaWithGripper(
+      int robot_number, MultibodyPlant<double>* plant) const {
     DRAKE_DEMAND(plant != nullptr);
     const char kArmFilePath[] =
         "drake/manipulation/models/iiwa_description/urdf/"
@@ -1293,28 +1343,40 @@ class KukaIiwaArmTests : public ::testing::Test {
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
 
     Parser parser(plant);
-    arm_model_ = parser.AddModelFromFile(FindResourceOrThrow(kArmFilePath));
+    ModelInstanceIndex arm_model =
+        parser.AddModelFromFile(FindResourceOrThrow(kArmFilePath),
+                                "robot_" + std::to_string(robot_number));
 
     // Add the gripper.
-    gripper_model_ =
-        parser.AddModelFromFile(FindResourceOrThrow(kWsg50FilePath));
+    ModelInstanceIndex gripper_model =
+        parser.AddModelFromFile(FindResourceOrThrow(kWsg50FilePath),
+                                "gripper_" + std::to_string(robot_number));
 
-    const auto& base_body = plant->GetBodyByName("base", arm_model_);
-    const auto& end_effector = plant->GetBodyByName("iiwa_link_7", arm_model_);
-    const auto& gripper_body = plant->GetBodyByName("body", gripper_model_);
+    const auto& base_body = plant->GetBodyByName("base", arm_model);
+    const auto& end_effector = plant->GetBodyByName("iiwa_link_7", arm_model);
+    const auto& gripper_body = plant->GetBodyByName("body", gripper_model);
     plant->WeldFrames(plant->world_frame(), base_body.body_frame());
     plant->WeldFrames(end_effector.body_frame(), gripper_body.body_frame());
+
+    return {arm_model, gripper_model};
   }
 
   void AddInReflectedInertia(MultibodyPlant<double>* plant,
+                             const std::vector<ModelInstanceIndex>& models,
                              const VectorX<double>& rotor_inertias,
-                             const VectorX<double>& gear_ratios) {
+                             const VectorX<double>& gear_ratios) const {
     DRAKE_DEMAND(plant != nullptr);
+    int local_joint_index = 0;
     for (JointActuatorIndex index(0); index < plant->num_actuators(); ++index) {
       JointActuator<double>& joint_actuator =
           plant->get_mutable_joint_actuator(index);
-      joint_actuator.set_default_rotor_inertia(rotor_inertias(int{index}));
-      joint_actuator.set_default_gear_ratio(gear_ratios(int{index}));
+      if (std::count(models.begin(), models.end(),
+                     joint_actuator.model_instance()) > 0) {
+        joint_actuator.set_default_rotor_inertia(
+            rotor_inertias(local_joint_index));
+        joint_actuator.set_default_gear_ratio(gear_ratios(local_joint_index));
+        local_joint_index++;
+      }
     }
   }
 
@@ -1351,33 +1413,22 @@ class KukaIiwaArmTests : public ::testing::Test {
     }
   }
 
-  // Fixes all input ports to have non-zero actuation.
-  void SetArbitraryNonZeroActuation(const MultibodyPlant<double>& plant,
-                                    Context<double>* context) const {
-    const VectorX<double> tau_arm = VectorX<double>::LinSpaced(
-        plant.num_actuated_dofs(arm_model_), 10.0, 1000.0);
-    const VectorX<double> tau_gripper = VectorX<double>::LinSpaced(
-        plant.num_actuated_dofs(gripper_model_), 10.0, 1000.0);
-    plant.get_actuation_input_port(arm_model_).FixValue(context, tau_arm);
-    plant.get_actuation_input_port(gripper_model_)
-        .FixValue(context, tau_gripper);
-  }
-
  protected:
   const int kNumJoints = 9;
   const double kTimeStep{0.015};
   const VectorXd kRotorInertias{VectorXd::LinSpaced(kNumJoints, 0.1, 12.0)};
   const VectorXd kGearRatios{VectorXd::LinSpaced(kNumJoints, 1.5, 100.0)};
+  const double kCouplerGearRatio{-1.5};
+  const double kCouplerOffset{3.1};
   MultibodyPlant<double> plant_{kTimeStep};
   CompliantContactManager<double>* manager_{nullptr};
   std::unique_ptr<Context<double>> context_;
-  ModelInstanceIndex arm_model_;
-  ModelInstanceIndex gripper_model_;
 };
 
 // This test verifies that the linear dynamics matrix is properly computed
 // according to A = ∂m/∂v = (M + dt⋅D).
 TEST_F(KukaIiwaArmTests, CalcLinearDynamicsMatrix) {
+  SetSingleRobotModel();
   const std::vector<MatrixXd> A =
       CompliantContactManagerTest::CalcLinearDynamicsMatrix(*manager_,
                                                             *context_);
@@ -1399,6 +1450,7 @@ TEST_F(KukaIiwaArmTests, CalcLinearDynamicsMatrix) {
 // This test verifies that the computation of free motion velocities v*
 // correctly include the effect of damping implicitly.
 TEST_F(KukaIiwaArmTests, CalcFreeMotionVelocities) {
+  SetSingleRobotModel();
   const VectorXd v_star = CompliantContactManagerTest::CalcFreeMotionVelocities(
       *manager_, *context_);
 
@@ -1423,6 +1475,7 @@ TEST_F(KukaIiwaArmTests, CalcFreeMotionVelocities) {
 // kinematics with the proper results. The correctness of the computations we
 // rely on in this test (computation of accelerations) are tested elsewhere.
 TEST_F(KukaIiwaArmTests, CalcAccelerationKinematicsCache) {
+  SetSingleRobotModel();
   const VectorXd& v0 = plant_.GetVelocities(*context_);
   ContactSolverResults<double> contact_results;
   manager_->CalcContactSolverResults(*context_, &contact_results);
@@ -1445,6 +1498,7 @@ TEST_F(KukaIiwaArmTests, CalcAccelerationKinematicsCache) {
 }
 
 TEST_F(KukaIiwaArmTests, LimitConstraints) {
+  SetSingleRobotModel();
   // Arbitrary selection of how positions and velocities are initialized.
   std::vector<InitializePositionAt> limits_specification(
       kNumJoints, InitializePositionAt::WellWithinLimits);
@@ -1480,8 +1534,10 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
 
   // This model has no contact. We expect the number of constraints and
   // equations be consistent with limits_specification defined above.
-  EXPECT_EQ(problem.num_constraints(), kNumJointsWithLimits);
-  EXPECT_EQ(problem.num_constraint_equations(), kNumConstraintEquations);
+  // Recall the model has one additional constraint to model the coupler between
+  // the gripper fingers.
+  EXPECT_EQ(problem.num_constraints(), kNumJointsWithLimits + 1);
+  EXPECT_EQ(problem.num_constraint_equations(), kNumConstraintEquations + 1);
 
   // In this model we clearly have single tree, the arm with its gripper.
   const int tree_expected = 0;
@@ -1668,8 +1724,8 @@ class MultiDofJointWithLimits final : public Joint<T> {
 GTEST_TEST(CompliantContactManager, ThrowForUnsupportedJoints) {
   MultibodyPlant<double> plant(1.0e-3);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const RigidBody<double>& body = plant.AddRigidBody("DummyBody",
-      SpatialInertia<double>::MakeUnitary());
+  const RigidBody<double>& body =
+      plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeUnitary());
   plant.AddJoint(std::make_unique<MultiDofJointWithLimits<double>>(
       plant.world_frame(), body.body_frame(), -1.0, 2.0));
   plant.Finalize();
@@ -1697,8 +1753,8 @@ GTEST_TEST(CompliantContactManager,
            VerifyMultiDofJointsWithoutLimitsAreSupported) {
   MultibodyPlant<double> plant(1.0e-3);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const RigidBody<double>& body = plant.AddRigidBody("DummyBody",
-      SpatialInertia<double>::MakeUnitary());
+  const RigidBody<double>& body =
+      plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeUnitary());
   const double kInf = std::numeric_limits<double>::infinity();
   plant.AddJoint(std::make_unique<MultiDofJointWithLimits<double>>(
       plant.world_frame(), body.body_frame(), -kInf, kInf));
@@ -1718,6 +1774,157 @@ GTEST_TEST(CompliantContactManager,
   // No limit constraints are added since the only one joint in the model has
   // no limits.
   EXPECT_EQ(problem.num_constraints(), 0);
+}
+
+// This test verifies that the manager properly added holonomic constraints for
+// the coupler constraints specified in the MultibodyPlant model.
+TEST_F(KukaIiwaArmTests, CouplerConstraints) {
+  // Only SAP supports the modeling of constraints.
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+
+  // Load two robot models.
+  std::vector<ModelInstanceIndex> arm_gripper1 = SetUpArmModel(1, &plant_);
+  std::vector<ModelInstanceIndex> arm_gripper2 = SetUpArmModel(2, &plant_);
+
+  // For testing purposes, we'll add a coupler constraint between joints in two
+  // different arms.
+  const Joint<double>& arm1_joint3 =
+      plant_.GetJointByName("iiwa_joint_3", arm_gripper1[0]);
+  const Joint<double>& arm2_joint6 =
+      plant_.GetJointByName("iiwa_joint_6", arm_gripper2[0]);
+  ConstraintIndex constraint_index = plant_.AddCouplerConstraint(
+      arm1_joint3, arm2_joint6, kCouplerGearRatio, kCouplerOffset);
+  EXPECT_EQ(constraint_index, ConstraintIndex(2));
+
+  plant_.Finalize();
+
+  // There should be three coupler constraints: one for each gripper and a third
+  // one between the two arms.
+  EXPECT_EQ(plant_.num_constraints(), 3);
+
+  // Set manager using the experimental API so that we can bring it to scope.
+  auto owned_contact_manager =
+      std::make_unique<CompliantContactManager<double>>();
+  manager_ = owned_contact_manager.get();
+  plant_.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+
+  context_ = plant_.CreateDefaultContext();
+  SetArbitraryNonZeroActuation(plant_, arm_gripper1[0], arm_gripper1[1],
+                               context_.get());
+  SetArbitraryNonZeroActuation(plant_, arm_gripper2[0], arm_gripper2[1],
+                               context_.get());
+
+  // Specify a state in which all kNumJoints are within limits so that we know
+  // the contact problem has no limit constraints.
+  std::vector<InitializePositionAt> limits_specification(
+      2 * kNumJoints, InitializePositionAt::WellWithinLimits);
+  SetArbitraryStateWithLimitsSpecification(plant_, limits_specification,
+                                           context_.get());
+
+  // We are assuming there is no contact. Assert this.
+  const std::vector<DiscreteContactPair<double>>& discrete_pairs =
+      CompliantContactManagerTest::EvalDiscreteContactPairs(*manager_,
+                                                            *context_);
+  const int num_contacts = discrete_pairs.size();
+  ASSERT_EQ(num_contacts, 0);
+
+  const ContactProblemCache<double>& problem_cache =
+      CompliantContactManagerTest::EvalContactProblemCache(*manager_,
+                                                           *context_);
+  const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+
+  // This model has no contact and the configuration is set to be within joint
+  // limits. Therefore we expect the problem to have the three couple
+  // constraints we added to the model.
+  EXPECT_EQ(problem.num_constraints(), 3);
+  EXPECT_EQ(problem.num_constraint_equations(), 3);
+
+  std::vector<std::pair<JointIndex, JointIndex>> coupler_joints;
+  // Coupler on first robot's gripper.
+  coupler_joints.push_back({
+      plant_.GetJointByName("left_finger_sliding_joint", arm_gripper1[1])
+          .index(),
+      plant_.GetJointByName("right_finger_sliding_joint", arm_gripper1[1])
+          .index(),
+  });
+
+  // Coupler on second robot's gripper.
+  coupler_joints.push_back({
+      plant_.GetJointByName("left_finger_sliding_joint", arm_gripper2[1])
+          .index(),
+      plant_.GetJointByName("right_finger_sliding_joint", arm_gripper2[1])
+          .index(),
+  });
+
+  // Coupler between the two robots.
+  coupler_joints.push_back({
+      plant_.GetJointByName("iiwa_joint_3", arm_gripper1[0]).index(),
+      plant_.GetJointByName("iiwa_joint_6", arm_gripper2[0]).index(),
+  });
+
+  // Verify each of the coupler constraints.
+  for (int i = 0; i < 3; ++i) {
+    const auto* constraint =
+        dynamic_cast<const SapHolonomicConstraint<double>*>(
+            &problem.get_constraint(i));
+
+    // Verify it is a SapHolonomicConstraint as expected.
+    ASSERT_NE(constraint, nullptr);
+
+    // There are two cliques in this model, one for each robot arm.
+    const int num_cliques = i == 2 ? 2 : 1;
+    EXPECT_EQ(constraint->num_cliques(), num_cliques);
+    const int first_clique = i == 1 ? 1 : 0;
+    EXPECT_EQ(constraint->first_clique(), first_clique);
+    if (i == 2) {
+      // constraint between the two robots.
+      EXPECT_EQ(constraint->second_clique(), 1);
+    }
+
+    const Joint<double>& joint0 = plant_.get_joint(coupler_joints[i].first);
+    const Joint<double>& joint1 = plant_.get_joint(coupler_joints[i].second);
+
+    // Verify the value of the constraint function.
+    const double q0 = joint0.GetOnePosition(*context_);
+    const double q1 = joint1.GetOnePosition(*context_);
+    const Vector1d g0_expected(q0 - kCouplerGearRatio * q1 - kCouplerOffset);
+    const VectorXd& g0 = constraint->constraint_function();
+    EXPECT_EQ(g0, g0_expected);
+
+    if (i < 2) {
+      // For the grippers, fingers are the last two DOFs in their tree.
+      const int left_index = 7;
+      const int right_index = 8;
+      const MatrixXd J_expected =
+          (VectorXd::Unit(kNumJoints, left_index) -
+           kCouplerGearRatio * VectorXd::Unit(kNumJoints, right_index))
+              .transpose();
+      EXPECT_EQ(constraint->first_clique_jacobian(), J_expected);
+    } else {
+      // The third constraint couples the two robot arms.
+      const MatrixXd J0_expected =
+          VectorXd::Unit(kNumJoints, 2 /* third joint. */).transpose();
+      const MatrixXd J1_expected =
+          -kCouplerGearRatio *
+          VectorXd::Unit(kNumJoints, 5 /* sixth joint. */).transpose();
+      EXPECT_EQ(constraint->first_clique_jacobian(), J0_expected);
+      EXPECT_EQ(constraint->second_clique_jacobian(), J1_expected);
+    }
+
+    // N.B. Default values implemented in
+    // CompliantContactManager::AddCouplerConstraints(), keep these values in
+    // sync.
+    const Vector1d kInfinity =
+        Vector1d::Constant(std::numeric_limits<double>::infinity());
+    const SapHolonomicConstraint<double>::Parameters& params =
+        constraint->parameters();
+    EXPECT_EQ(params.impulse_lower_limits(), -kInfinity);
+    EXPECT_EQ(params.impulse_upper_limits(), kInfinity);
+    EXPECT_EQ(params.stiffnesses(), kInfinity);
+    EXPECT_EQ(params.relaxation_times(),
+              Vector1d::Constant(plant_.time_step()));
+    EXPECT_EQ(params.beta(), 0.1);
+  }
 }
 
 }  // namespace internal

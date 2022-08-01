@@ -103,6 +103,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       m, "JointActuatorIndex", doc.JointActuatorIndex.doc);
   BindTypeSafeIndex<ModelInstanceIndex>(
       m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
+  BindTypeSafeIndex<ConstraintIndex>(
+      m, "ConstraintIndex", doc.ConstraintIndex.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
   m.def("world_model_instance", &world_model_instance,
       doc.world_model_instance.doc);
