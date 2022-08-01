@@ -215,6 +215,49 @@ inline AutoDiff operator/(double a, const AutoDiff& b) {
 
 //@}
 
+/// @name Math functions: Nearest integer floating point operations
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Nearest_integer_floating_point_operations
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Floating_point_manipulation_functions
+//@{
+
+/** ADL overload to mimic std::ceil from <cmath>.
+The result's derivatives are always zero. */
+AutoDiff ceil(AutoDiff x);
+
+/** ADL overload to mimic std::floor from <cmath>.
+The result's derivatives are always zero. */
+AutoDiff floor(AutoDiff x);
+
+/** ADL overload to mimic std::round from <cmath>.
+The result's derivatives are always zero. */
+AutoDiff round(AutoDiff x);
+
+/** ADL overload to mimic std::nexttoward from <cmath>.
+The result's derivatives are always zero. */
+AutoDiff nexttoward(AutoDiff from, long double to);
+
+/** ADL overload to mimic std::isfinite from <cmath>.
+Because the return type is `bool`, the derivatives are not preserved. */
+inline bool isfinite(const AutoDiff& x) {
+  return std::isfinite(x.value());
+}
+
+/** ADL overload to mimic std::isinf from <cmath>.
+Because the return type is `bool`, the derivatives are not preserved. */
+inline bool isinf(const AutoDiff& x) {
+  return std::isinf(x.value());
+}
+
+/** ADL overload to mimic std::isnan from <cmath>.
+Because the return type is `bool`, the derivatives are not preserved. */
+inline bool isnan(const AutoDiff& x) {
+  return std::isnan(x.value());
+}
+
+//@}
+
 /// @name Miscellaneous functions
 //@{
 
