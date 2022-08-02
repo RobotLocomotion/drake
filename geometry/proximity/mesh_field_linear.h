@@ -355,7 +355,9 @@ class MeshFieldLinear {
   // Clones MeshFieldLinear data under the assumption that the mesh
   // pointer is null.
   [[nodiscard]] std::unique_ptr<MeshFieldLinear<T, MeshType>>
-  CloneWithNullMesh() const { return std::make_unique<MeshFieldLinear>(*this); }
+  CloneWithNullMesh() const {
+    return std::unique_ptr<MeshFieldLinear>(new MeshFieldLinear(*this));
+  }
 
   void CalcGradientField() {
     gradients_.clear();
