@@ -136,6 +136,20 @@ void DiscreteUpdateManager<T>::CalcForceElementsContribution(
 }
 
 template <typename T>
+VectorX<T> DiscreteUpdateManager<T>::AssembleActuationInput(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::AssembleActuationInput(
+      plant(), context);
+}
+
+template <typename T>
+VectorX<T> DiscreteUpdateManager<T>::AssembleDesiredStateInput(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::AssembleDesiredStateInput(plant(), context);
+}
+
+template <typename T>
 const std::vector<std::vector<geometry::GeometryId>>&
 DiscreteUpdateManager<T>::collision_geometries() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::collision_geometries(

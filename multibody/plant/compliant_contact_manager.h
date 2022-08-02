@@ -21,6 +21,18 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+struct PdControllerConstraintSpecs {
+  // Joint on which the PD controller is added.
+  JointActuatorIndex actuator_index;
+  // Proportional gain, with units consistent to the type of joint (i.e. N/m for
+  // prismatic and Nm/rad for revolute).
+  T proportional_gain{NAN};
+  // Derivative gain, with units consistent to the type of joint (i.e. Ns/m for
+  // prismatic and Nms/rad for revolute)
+  T derivative_gain{0.0};
+};
+
+template <typename T>
 struct ContactPairKinematics {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactPairKinematics);
 
@@ -343,6 +355,10 @@ class CompliantContactManager final
       const systems::Context<T>& context,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
+  void AddPdControllerConstraints(
+      const systems::Context<T>& context,
+      contact_solvers::internal::SapContactProblem<T>* problem) const;
+
   // This method takes SAP results for a given `problem` and loads forces due to
   // contact only into `contact_results`. `contact_results` is properly resized
   // on output.
@@ -365,6 +381,8 @@ class CompliantContactManager final
   // Vector of joint damping coefficients, of size plant().num_velocities().
   // This information is extracted during the call to ExtractModelInfo().
   VectorX<T> joint_damping_;
+
+  std::vector<internal::PdControllerConstraintSpecs<T>> pd_controller_specs_;
 };
 
 }  // namespace internal

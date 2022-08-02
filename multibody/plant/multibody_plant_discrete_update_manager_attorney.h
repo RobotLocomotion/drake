@@ -94,6 +94,18 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.CalcForceElementsContribution(context, forces);
   }
 
+  static VectorX<T> AssembleActuationInput(
+      const MultibodyPlant<T>& plant,
+      const systems::Context<T>& context) {
+    return plant.AssembleActuationInput(context);
+  }
+
+  static VectorX<T> AssembleDesiredStateInput(
+      const MultibodyPlant<T>& plant,
+      const systems::Context<T>& context) {
+    return plant.AssembleDesiredStateInput(context);
+  }
+
   // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
   //  geometries.
   /* Returns the per-body arrays of collision geometries indexed by BodyIndex

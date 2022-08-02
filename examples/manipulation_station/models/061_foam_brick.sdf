@@ -44,6 +44,9 @@
             <size>0.074 0.049 0.049</size>
           </box>
         </geometry>
+        <drake:proximity_properties>
+          <drake:point_contact_stiffness>1.0e6</drake:point_contact_stiffness>
+        </drake:proximity_properties>
       </collision>
       <collision name="point_collision1">
         <pose>0.0375 0.025 0 0 0 0</pose>

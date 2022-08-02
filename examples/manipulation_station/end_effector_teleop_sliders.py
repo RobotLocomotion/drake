@@ -194,7 +194,16 @@ def main():
         station = builder.AddSystem(ManipulationStationHardwareInterface())
         station.Connect(wait_for_cameras=False)
     else:
-        station = builder.AddSystem(ManipulationStation())
+        station = builder.AddSystem(ManipulationStation(time_step=0.01))
+        kp_gain = 100000 * np.ones(7)
+        kd_gain = np.zeros(7)
+        print(kp_gain)
+        print(kd_gain)
+        station.SetIiwaPositionGains(kp_gain)
+        station.SetIiwaVelocityGains(kd_gain)
+        gripper_kp = 1000
+        gripper_kd = 200
+        station.SetWsgGains(gripper_kp, gripper_kd)
 
         if args.schunk_collision_model == "box":
             schunk_model = SchunkCollisionModel.kBox
@@ -306,8 +315,6 @@ def main():
     wsg_buttons = builder.AddSystem(SchunkWsgButtons(meshcat=meshcat))
     builder.Connect(wsg_buttons.GetOutputPort("position"),
                     station.GetInputPort("wsg_position"))
-    builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
-                    station.GetInputPort("wsg_force_limit"))
 
     # When in regression test mode, log our joint velocities to later check
     # that they were sufficiently quiet.
