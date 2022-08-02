@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "drake/geometry/render/render_engine.h"
-#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
 
 namespace drake {
@@ -11,18 +10,19 @@ namespace geometry {
 
 /** Constructs a RenderEngine implementation which generates
  <a href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
- </a> files to upload to a rendering server, and retrieves renderings from said
- server to copy back into drake systems::sensors::Image buffers.  The server
- url, port, and endpoint are provided through the specified
+ </a> files to upload to a render server, and retrieves renderings from said
+ server by copying image data back into drake systems::sensors::Image buffers.
+ The server url and endpoint are provided through the specified
  RenderEngineGltfClientParams.  The returned RenderEngine implements the client
  side of the @ref render_engine_gltf_client_server_api.  The rules for supported
- geometries and textures are described in MakeRenderEngineVtk().
+ geometries and textures are the same as for the VTK-based engine and are
+ described in MakeRenderEngineVtk().
 
  @note
    The underlying RenderEngine utilizes [libcurl][libcurl] to communicate with
-   the server.  Static curl initialization must be performed once per process,
-   and this operation is [**not** thread-safe][libcurl_threadsafe]!  Curl is
-   initialized by instantiating this RenderEngine with the default
+   a server.  Static curl initialization must be performed once per process, and
+   the operation is [**not** thread-safe][libcurl_threadsafe]!  Instantiating
+   this RenderEngine automatically initializes curl with the default
    [`curl_global_init(CURL_GLOBAL_ALL | CURL_GLOBAL_ACK_EINTR)`][libcurl_init],
    the implication for consuming applications being:
  @note
@@ -33,37 +33,34 @@ namespace geometry {
       have been initialized.
       @code{.cpp}
       // Setup your server information and create the RenderEngine.  This must
-      // be done in a non-threaded context (e.g., at program start).
+      // be done in a non-threaded context (e.g., at the program start).
       RenderEngineGltfClientParams params;
       params.base_url = "http://some-server.url";
       auto render_engine = MakeRenderEngineGltfClient(params);
 
-      // After MakeRenderEngineGltfClient, libcurl has been initialized and you
-      // may now create whatever threads desired.
+      // After MakeRenderEngineGltfClient() function call, libcurl has been
+      // initialized and you may now create threads if desired.
       @endcode
    2. If you need to use a different initialization strategy for libcurl in your
       application, you should first create the RenderEngine using
       %MakeRenderEngineGltfClient, then manually call
-      [`curl_global_cleanup()`][libcurl_cleanup], followed by manually
-      calling [`curl_global_init(...)`][libcurl_init] with your desired flags.
-      Generally speaking, this scenario is **atypical** and you should not need
-      to worry about this.  Applications with specialized libcurl needs, though,
-      must understand the construction and initialization order to be able to
-      modify the behavior to suit their needs.
+      [`curl_global_cleanup()`][libcurl_cleanup], followed by manually calling
+      [`curl_global_init(...)`][libcurl_init] with your desired flags. In
+      general, this scenario is **atypical** and you should not need to worry
+      about this.  Applications with specialized libcurl needs, though, must
+      understand the construction and initialization order to be able to modify
+      the behavior to suit their needs.
       @code{.cpp}
-      // Setup your server information and create the RenderEngine.  This must
-      // be done in a non-threaded context (e.g., at program start).
-      RenderEngineGltfClientParams params;
-      params.base_url = "http://some-server.url";
-      auto render_engine = MakeRenderEngineGltfClient(params);
+      // Follow the steps above to construct the RenderEngine given the
+      // specified RenderEngineGltfClientParams.
 
-      // After MakeRenderEngineGltfClient, libcurl has been initialized so your
-      // application needs to cleanup and re-initialize as needed.
+      // Libcurl has been initialized at this point, so your application needs
+      // to reset and re-initialize curl again.
       curl_global_cleanup();
-      curl_global_init();  // <<< your custom flags here
+      curl_global_init(...);  // <<< your custom flags here
 
       // Now that libcurl has been re-initialized to suit your application's
-      // needs, you may now create whatever threads desired.
+      // needs, you may now create threads if desired.
       @endcode
 
  [libcurl]: https://curl.se/libcurl/
