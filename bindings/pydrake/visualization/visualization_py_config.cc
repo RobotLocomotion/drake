@@ -28,15 +28,12 @@ void DefineVisualizationConfig(py::module m) {
   }
 
   m  // BR
-      .def("ApplyVisualizerConfig",
-          py::overload_cast<const VisualizerConfig&,
-              const multibody::MultibodyPlant<double>&,
-              const geometry::SceneGraph<double>&,
-              const systems::lcm::LcmBuses&, systems::DiagramBuilder<double>*>(
-              &ApplyVisualizerConfig),
-          py::arg("config"), py::arg("plant"), py::arg("scene_graph"),
-          py::arg("lcm_buses"), py::arg("builder"),
-          doc.ApplyVisualizerConfig.doc);
+      .def("ApplyVisualizerConfig", &ApplyVisualizerConfig, py::arg("config"),
+          py::arg("builder"), py::arg("lcm_buses") = nullptr,
+          py::arg("plant") = nullptr, py::arg("scene_graph") = nullptr,
+          py::arg("lcm") = nullptr, doc.ApplyVisualizerConfig.doc)
+      .def("AddDefaultVisualizer", &AddDefaultVisualizer, py::arg("builder"),
+          doc.AddDefaultVisualizer.doc);
 }
 
 }  // namespace internal

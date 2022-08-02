@@ -22,6 +22,10 @@ int LcmBuses::size() const {
   return buses_.size();
 }
 
+DrakeLcmInterface* LcmBuses::get_default() const {
+  return Find("LcmBuses::get_default()", "default");
+}
+
 DrakeLcmInterface* LcmBuses::Find(
     std::string_view description_of_caller,
     const std::string& bus_name) const {

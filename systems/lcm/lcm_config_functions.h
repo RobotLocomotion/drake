@@ -24,9 +24,17 @@ The interface pointers remain owned by the builder; the LcmBuses object merely
 aliases into the builder (and then eventually, the diagram).
 
 @param lcm_buses A map of {bus_name: params} for LCM transceivers, to be used
-used by drivers, sensors, etc. */
+used by drivers, sensors, etc.
+
+In many cases, the builder only requires a single "default" bus. In that case,
+see AddDefaultLcmBus() for a convenient shortcut.
+*/
 LcmBuses ApplyLcmBusConfig(
     const std::map<std::string, drake::lcm::DrakeLcmParams>& lcm_buses,
+    systems::DiagramBuilder<double>* builder);
+
+/** Calls ApplyLcmBusConfig() to add a single bus named "default". */
+LcmBuses AddDefaultLcmBus(
     systems::DiagramBuilder<double>* builder);
 
 }  // namespace lcm

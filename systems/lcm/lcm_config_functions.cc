@@ -37,7 +37,7 @@ LcmBuses ApplyLcmBusConfig(
         "DrakeLcm(bus_name={}, lcm_url={})",
         bus_name, canonical_url));
     pumper_system->set_name(fmt::format(
-        "LcmInterfaceSystem(bus_name={}, lcm_url={})",
+        "LcmInterfaceSystem(bus_name={})",
         bus_name, canonical_url));
 
     // Display an update; provide the interface pointer to our caller.
@@ -46,6 +46,13 @@ LcmBuses ApplyLcmBusConfig(
     result.Add(bus_name, pumper_system);
   }
   return result;
+}
+
+LcmBuses AddDefaultLcmBus(
+    DiagramBuilder<double>* builder) {
+  DRAKE_THROW_UNLESS(builder != nullptr);
+  const std::map<std::string, DrakeLcmParams> lcm_buses{{"default", {}}};
+  return ApplyLcmBusConfig(lcm_buses, builder);
 }
 
 }  // namespace lcm

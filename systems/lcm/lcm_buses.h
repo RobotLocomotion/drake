@@ -30,6 +30,9 @@ class LcmBuses final {
   /** Returns the total number of buses. */
   int size() const;
 
+  /** Returns the bus named "default". */
+  drake::lcm::DrakeLcmInterface* get_default() const;
+
   /** Finds the bus of the given name, or throws if there is no such bus.
   The return value is an alias into memory owned by the DiagramBuilder,
   and is never nullptr.
