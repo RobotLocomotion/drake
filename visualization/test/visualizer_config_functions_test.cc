@@ -104,7 +104,7 @@ GTEST_TEST(VisualizerConfigFunctionsTest, ApplyDefault) {
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
   const VisualizerConfig config;
-  ApplyVisualizerConfig(config, plant, scene_graph, lcm_buses, &builder);
+  ApplyVisualizerConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
   Simulator<double> simulator(builder.Build());
 
   // Simulate for a moment and make sure everything showed up.
@@ -136,7 +136,7 @@ GTEST_TEST(VisualizerConfigFunctionsTest, ApplyNothing) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
-  ApplyVisualizerConfig(config, plant, scene_graph, lcm_buses, &builder);
+  ApplyVisualizerConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
   Simulator<double> simulator(builder.Build());
 
   // Simulate for a moment and make sure nothing showed up.
