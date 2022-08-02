@@ -20,7 +20,21 @@ drake_cc_package_library(
     name = "render_gltf_client",
     visibility = ["//visibility:public"],
     deps = [
+        ":factory",
         ":render_engine_gltf_client_params",
+    ],
+)
+
+drake_cc_library(
+    name = "factory",
+    srcs = ["factory.cc"],
+    hdrs = ["factory.h"],
+    interface_deps = [
+        ":render_engine_gltf_client_params",
+        "//geometry/render:render_camera",
+    ],
+    deps = [
+        ":internal_render_engine_gltf_client",
     ],
 )
 
@@ -108,6 +122,16 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "factory_test",
+    deps = [
+        ":factory",
+        ":internal_render_engine_gltf_client",
+        ":render_engine_gltf_client_params",
+        "//geometry/render:render_camera",
+    ],
+)
 
 drake_cc_googletest(
     name = "render_engine_gltf_client_params_test",

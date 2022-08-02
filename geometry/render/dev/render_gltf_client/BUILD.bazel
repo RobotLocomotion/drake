@@ -14,21 +14,6 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:private"])
 
-# TODO(zachfang): The factory should not be marked as "internal" after moving
-# out of the dev folder.
-drake_cc_library(
-    name = "factory",
-    srcs = ["factory.cc"],
-    hdrs = ["factory.h"],
-    internal = True,
-    visibility = ["//visibility:private"],
-    deps = [
-        "//geometry/render:render_camera",
-        "//geometry/render_gltf_client:internal_render_engine_gltf_client",
-        "//geometry/render_gltf_client:render_engine_gltf_client_params",
-    ],
-)
-
 # === test/ ===
 
 # - Server integration test targets. ------------------------------------------
@@ -88,10 +73,10 @@ drake_cc_binary(
     ],
     test_rule_tags = vtk_test_tags(),
     deps = [
-        ":factory",
         "//common:filesystem",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
+        "//geometry/render_gltf_client:factory",
         "//geometry/render_vtk",
         "//multibody/parsing",
         "//multibody/plant",
