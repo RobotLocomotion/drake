@@ -101,34 +101,34 @@ TEST_F(RenderClientTest, Constructor) {
   EXPECT_EQ(
       default_client.get_params().GetUrl(), "http://127.0.0.1:8000/render");
   EXPECT_EQ(default_client.get_params().verbose, false);
-  EXPECT_EQ(default_client.get_params().no_cleanup, false);
+  EXPECT_EQ(default_client.get_params().cleanup, true);
 
   // Verify attributes are set properly given a specific `Params`.
   const std::string base_url{"http://127.0.0.1:1234"};
   const std::string render_endpoint{"testing"};
   const bool verbose = true;
-  const bool no_cleanup = true;
+  const bool cleanup = false;
   const RenderClient client{
-      Params{base_url, render_endpoint, std::nullopt, verbose, no_cleanup}};
+      Params{base_url, render_endpoint, std::nullopt, verbose, cleanup}};
   EXPECT_EQ(client.get_params().GetUrl(), base_url + "/" + render_endpoint);
   EXPECT_EQ(client.get_params().verbose, verbose);
-  EXPECT_EQ(client.get_params().no_cleanup, no_cleanup);
+  EXPECT_EQ(client.get_params().cleanup, cleanup);
 }
 
 TEST_F(RenderClientTest, Destructor) {
-  for (const bool no_cleanup : {true, false}) {
+  for (const bool cleanup : {true, false}) {
     std::string temp_dir_path;
     {
-      const RenderClient client{Params{.no_cleanup = no_cleanup}};
+      const RenderClient client{Params{.cleanup = cleanup}};
       temp_dir_path = client.temp_directory();
       EXPECT_TRUE(fs::is_directory(temp_dir_path));
     }  // Client is deleted.
 
     // Test whether temp_directory is handled properly.
-    if (no_cleanup) {
-      EXPECT_TRUE(fs::is_directory(temp_dir_path));
-    } else {
+    if (cleanup) {
       EXPECT_FALSE(fs::is_directory(temp_dir_path));
+    } else {
+      EXPECT_TRUE(fs::is_directory(temp_dir_path));
     }
   }
 }

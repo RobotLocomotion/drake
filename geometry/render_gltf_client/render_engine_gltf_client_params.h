@@ -30,17 +30,16 @@ struct RenderEngineGltfClientParams {
   bool verbose = false;
 
   /** Whether or not the client should cleanup files generated / retrieved from
-   the server.  By default (`no_cleanup=false`), as soon as a glTF scene file
-   as well as server image response for a given frame are no longer needed they
-   will be deleted.  To inspect generated scene files or server response images
-   set `no_cleanup=true` to prevent the files and their governing temporary
-   directory from being deleted.  During the construction process a number of
-   copies and clones are created, when `no_cleanup=true` there will be more than
-   one empty temporary directory created that will not be deleted.  The path
-   to the temporary directory can be observed by setting
+   the server.  By default (`cleanup=true`), after a server image response has
+   been loaded into the client's memory, the glTF scene file and images will be
+   deleted.  To keep the generated scene files or server response images for
+   inspection purposes, set `cleanup=false` instead.  During the construction
+   process a number of copies and clones are created, when `cleanup=false` there
+   will be more than one empty temporary directory created that will not be
+   deleted.  The path to the temporary directory can be observed by setting
    RenderEngineGltfClientParams::verbose to `true`, or inspecting the parent
    directory described by drake::temp_directory(). */
-  bool no_cleanup = false;
+  bool cleanup = true;
 
   /** Returns the post-processed full url used for client-server communication.
    The full url is constructed as `{base_url}/{render_endpoint}` where all
