@@ -55,52 +55,6 @@ class JacoStatusReceiverNoFingersTest : public JacoStatusReceiverTestBase {
             kJacoDefaultArmNumJoints, 0) {}
 };
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-TEST_F(JacoStatusReceiverTest, DeprecatedAcceptanceTest) {
-  // Populate the status message with distinct values.
-  const VectorXd state = VectorXd::LinSpaced((N + N_F) * 2, 0.0, 1.0);
-  const VectorXd torque = VectorXd::LinSpaced(N + N_F, 2.0, 3.0);
-  const VectorXd torque_external = VectorXd::LinSpaced(N + N_F, 4.0, 5.0);
-  const VectorXd current = VectorXd::LinSpaced(N + N_F, 6.0, 7.0);
-
-  status_.utime = 1;
-  status_.num_joints = kJacoDefaultArmNumJoints;
-  status_.num_fingers = kJacoDefaultArmNumFingers;
-  Copy(state.head(kJacoDefaultArmNumJoints), &status_.joint_position);
-  Copy(state.segment(N + N_F, kJacoDefaultArmNumJoints) / 2,
-       &status_.joint_velocity);
-  Copy(state.segment(kJacoDefaultArmNumJoints, kJacoDefaultArmNumFingers) *
-       kFingerUrdfToSdk,
-       &status_.finger_position);
-  Copy(state.tail(kJacoDefaultArmNumFingers) * kFingerUrdfToSdk,
-       &status_.finger_velocity);
-  Copy(torque.head(kJacoDefaultArmNumJoints), &status_.joint_torque);
-  Copy(torque.tail(kJacoDefaultArmNumFingers), &status_.finger_torque);
-  Copy(torque_external.head(kJacoDefaultArmNumJoints),
-       &status_.joint_torque_external);
-  Copy(torque_external.tail(kJacoDefaultArmNumFingers),
-       &status_.finger_torque_external);
-  Copy(current.head(kJacoDefaultArmNumJoints), &status_.joint_current);
-  Copy(current.tail(kJacoDefaultArmNumFingers), &status_.finger_current);
-
-  SetInput();
-
-  // Confirm that real message values are output correctly.
-  EXPECT_TRUE(CompareMatrices(
-      dut_.get_state_output_port().Eval(context_), state, 1e-15));
-  EXPECT_TRUE(CompareMatrices(
-      dut_.get_torque_output_port().Eval(context_), torque));
-  EXPECT_TRUE(CompareMatrices(
-      dut_.get_torque_external_output_port().Eval(context_),
-      torque_external));
-  EXPECT_TRUE(CompareMatrices(
-      dut_.get_current_output_port().Eval(context_), current));
-}
-
-#pragma GCC diagnostic pop
-
 TEST_F(JacoStatusReceiverTest, ZeroOutputTest) {
   // Confirm that output is zero for uninitialized lcm input.
   const int num_output_ports = dut_.num_output_ports();

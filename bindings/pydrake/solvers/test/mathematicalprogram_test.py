@@ -11,7 +11,6 @@ import scipy.sparse
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import kDrakeAssertIsArmed
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
 from pydrake.solvers.gurobi import GurobiSolver
@@ -351,8 +350,6 @@ class TestMathematicalProgram(unittest.TestCase):
                 prog.FindDecisionVariableIndex(var=binding.variables()[1]),
                 prog.FindDecisionVariableIndex(var=x[1]))
             self.assertTrue(np.allclose(constraint.GetDenseA(), [3, -1]))
-            with catch_drake_warnings(expected_count=1):
-                self.assertTrue(np.allclose(constraint.A(), [3, -1]))
             self.assertTrue(constraint.lower_bound(), -2)
             self.assertTrue(constraint.upper_bound(), np.inf)
 
