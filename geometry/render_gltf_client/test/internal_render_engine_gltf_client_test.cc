@@ -75,14 +75,14 @@ TEST_F(RenderEngineGltfClientTest, Constructor) {
   EXPECT_EQ(default_engine.get_params().GetUrl(),
             "http://127.0.0.1:8000/render");
   EXPECT_EQ(default_engine.get_params().verbose, false);
-  EXPECT_EQ(default_engine.get_params().no_cleanup, false);
+  EXPECT_EQ(default_engine.get_params().cleanup, true);
 
   // Make sure that alternative values are passed to the underlying client.
   const RenderEngineGltfClient engine{params_};
   EXPECT_EQ(engine.get_params().GetUrl(),
             "http://notarealserver:8192/no_render");
   EXPECT_EQ(engine.get_params().verbose, true);
-  EXPECT_EQ(engine.get_params().no_cleanup, false);
+  EXPECT_EQ(engine.get_params().cleanup, true);
 }
 
 TEST_F(RenderEngineGltfClientTest, Clone) {
@@ -94,8 +94,8 @@ TEST_F(RenderEngineGltfClientTest, Clone) {
 
   EXPECT_EQ(engine.get_params().GetUrl(), clone_engine->get_params().GetUrl());
   EXPECT_EQ(engine.get_params().verbose, clone_engine->get_params().verbose);
-  EXPECT_EQ(engine.get_params().no_cleanup,
-            clone_engine->get_params().no_cleanup);
+  EXPECT_EQ(engine.get_params().cleanup,
+            clone_engine->get_params().cleanup);
   /* Cloning creates a new temporary directory, the underlying RenderClient is
    not cloned and as such a new temporary directory is created. */
   EXPECT_NE(engine.temp_directory(), clone_engine->temp_directory());
@@ -218,15 +218,15 @@ std::vector<fs::path> FindRegularFiles(const std::string& directory) {
 }
 
 /* Helper function for checking the contents of a directory after a Render*Image
- call.  If `no_cleanup` is false, then there should not be any files found.  If
- true, then two files should exist: a .gltf file (from the export before sending
- to the server) and an image file (from the server).  The image file should have
- the same name as the .gltf file, only with a different file extension, e.g.,
- `".png"` or `".tiff"`). */
-void CheckExpectedFiles(const std::string& directory, bool no_cleanup,
+ call.  If `cleanup` is true, then there should not be any files found.  If
+ false, then two files should exist: a .gltf file (from the export before
+ sending to the server) and an image file (from the server).  The image file
+ should have the same name as the .gltf file, only with a different file
+ extension, e.g., `".png"` or `".tiff"`). */
+void CheckExpectedFiles(const std::string& directory, bool cleanup,
                         const std::string& extension) {
   const std::vector<fs::path> files = FindRegularFiles(directory);
-  if (!no_cleanup) {
+  if (cleanup) {
     EXPECT_EQ(files.size(), 0);
   } else {
     ASSERT_EQ(files.size(), 2);
@@ -238,30 +238,30 @@ void CheckExpectedFiles(const std::string& directory, bool no_cleanup,
 }
 
 TEST_F(RenderEngineGltfClientTest, DoRenderColorImage) {
-  for (const bool no_cleanup : {true, false}) {
-    RenderEngineGltfClient engine{Params{.no_cleanup = no_cleanup}};
+  for (const bool cleanup : {true, false}) {
+    RenderEngineGltfClient engine{Params{.cleanup = cleanup}};
     engine.SetHttpService(std::make_unique<FakeServer>());
 
     ImageRgba8U color_image{kTestImageWidth, kTestImageHeight};
     DRAKE_EXPECT_NO_THROW(engine.RenderColorImage(color_camera_, &color_image));
 
     // Make sure the temporary directory is / is not being cleaned up.
-    CheckExpectedFiles(engine.temp_directory(), no_cleanup, ".png");
+    CheckExpectedFiles(engine.temp_directory(), cleanup, ".png");
     // Make sure the image got loaded as expected.
     EXPECT_EQ(color_image, CreateTestColorImage(false));
   }
 }
 
 TEST_F(RenderEngineGltfClientTest, DoRenderDepthImage) {
-  for (const bool no_cleanup : {true, false}) {
-    RenderEngineGltfClient engine{Params{.no_cleanup = no_cleanup}};
+  for (const bool cleanup : {true, false}) {
+    RenderEngineGltfClient engine{Params{.cleanup = cleanup}};
     engine.SetHttpService(std::make_unique<FakeServer>());
 
     ImageDepth32F depth_image{kTestImageWidth, kTestImageHeight};
     DRAKE_EXPECT_NO_THROW(engine.RenderDepthImage(depth_camera_, &depth_image));
 
     // Make sure the temporary directory is / is not being cleaned up.
-    CheckExpectedFiles(engine.temp_directory(), no_cleanup, ".tiff");
+    CheckExpectedFiles(engine.temp_directory(), cleanup, ".tiff");
 
     // Make sure the image got loaded as expected.
     EXPECT_EQ(depth_image, CreateTestDepthImage());
@@ -269,15 +269,15 @@ TEST_F(RenderEngineGltfClientTest, DoRenderDepthImage) {
 }
 
 TEST_F(RenderEngineGltfClientTest, DoRenderLabelImage) {
-  for (const bool no_cleanup : {true, false}) {
-    RenderEngineGltfClient engine{Params{.no_cleanup = no_cleanup}};
+  for (const bool cleanup : {true, false}) {
+    RenderEngineGltfClient engine{Params{.cleanup = cleanup}};
     engine.SetHttpService(std::make_unique<FakeServer>());
 
     ImageLabel16I label_image{kTestImageWidth, kTestImageHeight};
     DRAKE_EXPECT_NO_THROW(engine.RenderLabelImage(color_camera_, &label_image));
 
     // Make sure the temporary directory is / is not being cleaned up.
-    CheckExpectedFiles(engine.temp_directory(), no_cleanup, ".png");
+    CheckExpectedFiles(engine.temp_directory(), cleanup, ".png");
 
     // Make sure the image got loaded as expected.
     EXPECT_EQ(label_image, CreateTestLabelImage());
