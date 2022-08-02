@@ -132,7 +132,7 @@ void LogFrameServerResponsePath(ImageType image_type, const std::string& path) {
 }
 
 /* Deletes the files, i.e., `scene_path` and `image_path`, and logs if verbose.
- This function is called only when get_params().no_cleanup == false. */
+ This function is called only when get_params().cleanup == true. */
 void CleanupFrame(const std::string& scene_path, const std::string& image_path,
                   bool verbose) {
   fs::remove(scene_path);
@@ -259,7 +259,7 @@ void RenderEngineGltfClient::DoRenderColorImage(
 
   // Load the returned image back to the drake buffer.
   render_client_->LoadColorImage(image_path, color_image_out);
-  if (!get_params().no_cleanup) {
+  if (get_params().cleanup) {
     CleanupFrame(scene_path, image_path, get_params().verbose);
   }
 }
@@ -298,7 +298,7 @@ void RenderEngineGltfClient::DoRenderDepthImage(
 
   // Load the returned image back to the drake buffer.
   render_client_->LoadDepthImage(image_path, depth_image_out);
-  if (!get_params().no_cleanup) {
+  if (get_params().cleanup) {
     CleanupFrame(scene_path, image_path, get_params().verbose);
   }
 }
@@ -338,7 +338,7 @@ void RenderEngineGltfClient::DoRenderLabelImage(
 
   // Load the returned image back to the drake buffer.
   render_client_->LoadLabelImage(image_path, label_image_out);
-  if (!get_params().no_cleanup) {
+  if (get_params().cleanup) {
     CleanupFrame(scene_path, image_path, get_params().verbose);
   }
 }
