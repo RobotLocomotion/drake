@@ -157,8 +157,11 @@ GTEST_TEST(MeshFieldLinearTest, TestTransform) {
 
   RigidTransformd X_NM(RollPitchYawd(M_PI_2, M_PI_4, M_PI / 6.),
                        Vector3d(1.2, 1.3, -4.3));
-  MeshFieldLinear<double, TriangleSurfaceMesh<double>> mesh_field_N(
-      mesh_field_M);
+  std::unique_ptr<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>
+      mesh_field_N_ptr = mesh_field_M.CloneAndSetMesh(mesh_M.get());
+  MeshFieldLinear<double, TriangleSurfaceMesh<double>>& mesh_field_N =
+      *mesh_field_N_ptr;
+
   // NOTE: re-expressing the field like this (and subsequent calls to
   // EvaluateCartesian()) don't actually require the field's captured mesh to
   // have properly transformed vertex positions. That is not generally true and

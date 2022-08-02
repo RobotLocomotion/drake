@@ -113,7 +113,12 @@ namespace geometry {
 template <class T, class MeshType>
 class MeshFieldLinear {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshFieldLinear)
+  /** The move constructor and the move-assigment operator are available;
+   however, the copy constructor and the copy-assignment operator are not
+   available. Use CloneAndSetMesh() as replacement of the copy constructor.
+   */
+  MeshFieldLinear(MeshFieldLinear&&) = default;
+  MeshFieldLinear& operator=(MeshFieldLinear&&) = default;
 
   /** Constructs a MeshFieldLinear.
    @param values  The field value at each vertex of the mesh.
@@ -348,10 +353,15 @@ class MeshFieldLinear {
   }
 
  private:
+  MeshFieldLinear(const MeshFieldLinear&) = default;
+  MeshFieldLinear& operator=(const MeshFieldLinear&) = default;
+
   // Clones MeshFieldLinear data under the assumption that the mesh
   // pointer is null.
   [[nodiscard]] std::unique_ptr<MeshFieldLinear<T, MeshType>>
-  CloneWithNullMesh() const { return std::make_unique<MeshFieldLinear>(*this); }
+  CloneWithNullMesh() const {
+    return std::unique_ptr<MeshFieldLinear>(new MeshFieldLinear(*this));
+  }
 
   void CalcGradientField() {
     gradients_.clear();

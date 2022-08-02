@@ -170,7 +170,9 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneNone) {
   // that are nowhere equal.
   {
     const RigidTransformd X_ML(Vector3d(0.4, 0.3, 0.5));
-    VolumeMeshFieldLinear<double, double> field2_L(field0_M_);
+    std::unique_ptr<VolumeMeshFieldLinear<double, double>> field2_L_ptr =
+        field0_M_.CloneAndSetMesh(&field0_M_.mesh());
+    const VolumeMeshFieldLinear<double, double>& field2_L = *field2_L_ptr;
 
     // An arbitrary initial value of the plane.
     const Plane<double> init_plane_M{Vector3d::UnitX(), Vector3d(1, 2, 3)};
