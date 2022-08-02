@@ -38,7 +38,7 @@ cmake_configure_file(
     out = "include/ignition/math/config.hh",
     cmakelists = ["CMakeLists.txt"],
     defines = [
-        "IGN_DESIGNATION=math",
+        "GZ_DESIGNATION=math",
         "PROJECT_VERSION_MAJOR=0",
         "PROJECT_VERSION_MINOR=0",
         "PROJECT_VERSION_PATCH=0",
@@ -59,6 +59,7 @@ generate_file(
 )
 
 _MOST_HDRS = [
+    "include/ignition/math/AdditivelySeparableScalarField3.hh",
     "include/ignition/math/Angle.hh",
     "include/ignition/math/AxisAlignedBox.hh",
     "include/ignition/math/Box.hh",
@@ -72,6 +73,7 @@ _MOST_HDRS = [
     "include/ignition/math/GaussMarkovProcess.hh",
     "include/ignition/math/Helpers.hh",
     "include/ignition/math/Inertial.hh",
+    "include/ignition/math/Interval.hh",
     "include/ignition/math/Kmeans.hh",
     "include/ignition/math/Line2.hh",
     "include/ignition/math/Line3.hh",
@@ -80,13 +82,17 @@ _MOST_HDRS = [
     "include/ignition/math/MaterialType.hh",
     "include/ignition/math/Matrix3.hh",
     "include/ignition/math/Matrix4.hh",
+    "include/ignition/math/Matrix6.hh",
     "include/ignition/math/MovingWindowFilter.hh",
     "include/ignition/math/OrientedBox.hh",
     "include/ignition/math/PID.hh",
+    "include/ignition/math/PiecewiseScalarField3.hh",
     "include/ignition/math/Plane.hh",
+    "include/ignition/math/Polynomial3.hh",
     "include/ignition/math/Pose3.hh",
     "include/ignition/math/Quaternion.hh",
     "include/ignition/math/Rand.hh",
+    "include/ignition/math/Region3.hh",
     "include/ignition/math/RollingMean.hh",
     "include/ignition/math/RotationSpline.hh",
     "include/ignition/math/SemanticVersion.hh",
