@@ -415,7 +415,12 @@ class CallPythonClient:
         if function_name == "exec":
             assert len(inputs) == 1
             assert kwargs is None or len(kwargs) == 0
-            exec(inputs[0], self.scope_globals, self.scope_locals)
+            # Merge globals and locals so that any functions or lambdas can
+            # have closures that refer to locals. For more information, see
+            # https://stackoverflow.com/a/28951271/7829525
+            globals_and_locals = _merge_dicts(
+                self.scope_globals, self.scope_locals)
+            exec(inputs[0], globals_and_locals, self.scope_locals)
             out = None
         else:
             out = eval(function_name + "(*_tmp_args, **_tmp_kwargs)",

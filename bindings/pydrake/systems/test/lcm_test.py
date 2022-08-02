@@ -134,6 +134,8 @@ class TestSystemsLcm(unittest.TestCase):
         builder = DiagramBuilder()
         buses = mut.ApplyLcmBusConfig(bus_config, builder)
         self.assertEqual(buses.size(), 2)
+        self.assertIsInstance(buses.Find("Config test", "foo"),
+                              mut.LcmInterfaceSystem)
 
     def _process_event(self, dut):
         # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be
@@ -148,6 +150,15 @@ class TestSystemsLcm(unittest.TestCase):
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm)
         model_message = self._model_message()
+        lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
+        lcm.HandleSubscriptions(0)
+        context = self._process_event(dut)
+        actual_message = dut.get_output_port(0).Eval(context)
+        self.assert_lcm_equal(actual_message, model_message)
+        # Test LcmInterfaceSystem overloads
+        lcm_system = mut.LcmInterfaceSystem(lcm=lcm)
+        dut = mut.LcmSubscriberSystem.Make(
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm_system)
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
         lcm.HandleSubscriptions(0)
         context = self._process_event(dut)
@@ -202,6 +213,18 @@ class TestSystemsLcm(unittest.TestCase):
         # Test `publish_triggers` overload.
         mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
+            publish_period=0.1, publish_triggers={TriggerType.kPeriodic})
+        # Test LcmInterfaceSystem overloads
+        lcm_system = mut.LcmInterfaceSystem(lcm=lcm)
+        dut = mut.LcmPublisherSystem.Make(
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm_system,
+            publish_period=0.1)
+        self._fix_and_publish(dut, AbstractValue.Make(model_message))
+        lcm.HandleSubscriptions(0)
+        self.assert_lcm_equal(subscriber.message, model_message)
+        # Test `publish_triggers` overload.
+        mut.LcmPublisherSystem.Make(
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm_system,
             publish_period=0.1, publish_triggers={TriggerType.kPeriodic})
 
     def test_publisher_cpp(self):
