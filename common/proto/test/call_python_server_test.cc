@@ -121,6 +121,15 @@ GTEST_TEST(TestCallPython, RemoteVarTest) {
   CallPython("setvar", "b1", 10);
   CallPython("exec", "b1 += 20");
   CallPython("exec", "assert b1 == 30");
+
+  // Test defining function with closure.
+  CallPython("exec", "def my_func(x): return x + b1");
+  CallPython("exec", "my_func(10) == 40");
+  // - with mutation (closure of mutable object by reference).
+  CallPython("exec", "items = []");
+  CallPython("exec", "def add_item(x): items.append(x)");
+  CallPython("exec", "add_item(1); add_item(2)");
+  CallPython("exec", "assert items == [1, 2]");
 }
 
 GTEST_TEST(TestCallPython, Plot2d) {
