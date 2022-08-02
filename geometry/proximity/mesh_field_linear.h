@@ -319,7 +319,7 @@ class MeshFieldLinear {
     DRAKE_DEMAND(new_mesh->num_vertices() == mesh_->num_vertices());
     // TODO(DamrongGuoy): Check that the `new_mesh` is equivalent to the
     //  current `mesh_M_`.
-    std::unique_ptr<MeshFieldLinear> new_mesh_field = CloneWithNullMesh();
+    auto new_mesh_field = std::make_unique<MeshFieldLinear>(*this);
     new_mesh_field->mesh_ = new_mesh;
     return new_mesh_field;
   }
@@ -348,11 +348,6 @@ class MeshFieldLinear {
   }
 
  private:
-  // Clones MeshFieldLinear data under the assumption that the mesh
-  // pointer is null.
-  [[nodiscard]] std::unique_ptr<MeshFieldLinear<T, MeshType>>
-  CloneWithNullMesh() const { return std::make_unique<MeshFieldLinear>(*this); }
-
   void CalcGradientField() {
     gradients_.clear();
     gradients_.reserve(this->mesh().num_elements());
@@ -392,9 +387,7 @@ class MeshFieldLinear {
     return values_[v0] - gradients_[e].dot(p_MV0);
   }
 
-  // We use `reset_on_copy` so that the default copy constructor resets
-  // the pointer to null when a MeshFieldLinear is copied.
-  reset_on_copy<const MeshType*> mesh_;
+  const MeshType* mesh_;
 
   // The field values are indexed in the same way as vertices, i.e.,
   // values_[i] is the field value for the mesh vertices_[i].
