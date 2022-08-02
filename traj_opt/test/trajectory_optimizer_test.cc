@@ -22,46 +22,47 @@ class TrajectoryOptimizerTester {
  public:
   TrajectoryOptimizerTester() = delete;
 
-  static double CalcCost(const TrajectoryOptimizer& optimizer,
+  static double CalcCost(const TrajectoryOptimizer<double>& optimizer,
                          const std::vector<VectorXd>& q,
                          const std::vector<VectorXd>& v,
                          const std::vector<VectorXd>& tau,
-                         TrajectoryOptimizerWorkspace* workspace) {
+                         TrajectoryOptimizerWorkspace<double>* workspace) {
     return optimizer.CalcCost(q, v, tau, workspace);
   }
 
-  static void CalcVelocities(const TrajectoryOptimizer& optimizer,
+  static void CalcVelocities(const TrajectoryOptimizer<double>& optimizer,
                              const std::vector<VectorXd>& q,
                              std::vector<VectorXd>* v) {
     optimizer.CalcVelocities(q, v);
   }
 
-  static void CalcAccelerations(const TrajectoryOptimizer& optimizer,
+  static void CalcAccelerations(const TrajectoryOptimizer<double>& optimizer,
                                 const std::vector<VectorXd>& v,
                                 std::vector<VectorXd>* a) {
     optimizer.CalcAccelerations(v, a);
   }
 
-  static void CalcInverseDynamics(const TrajectoryOptimizer& optimizer,
-                                  const std::vector<VectorXd>& q,
-                                  const std::vector<VectorXd>& v,
-                                  const std::vector<VectorXd>& a,
-                                  TrajectoryOptimizerWorkspace* workspace,
-                                  std::vector<VectorXd>* tau) {
+  static void CalcInverseDynamics(
+      const TrajectoryOptimizer<double>& optimizer,
+      const std::vector<VectorXd>& q, const std::vector<VectorXd>& v,
+      const std::vector<VectorXd>& a,
+      TrajectoryOptimizerWorkspace<double>* workspace,
+      std::vector<VectorXd>* tau) {
     optimizer.CalcInverseDynamics(q, v, a, workspace, tau);
   }
 
   static void CalcInverseDynamicsPartials(
-      const TrajectoryOptimizer& optimizer, const std::vector<VectorXd>& q,
-      const std::vector<VectorXd>& v, const std::vector<VectorXd>& a,
-      const std::vector<VectorXd>& tau, TrajectoryOptimizerWorkspace* workspace,
-      InverseDynamicsPartials* id_partials) {
+      const TrajectoryOptimizer<double>& optimizer,
+      const std::vector<VectorXd>& q, const std::vector<VectorXd>& v,
+      const std::vector<VectorXd>& a, const std::vector<VectorXd>& tau,
+      TrajectoryOptimizerWorkspace<double>* workspace,
+      InverseDynamicsPartials<double>* id_partials) {
     optimizer.CalcInverseDynamicsPartials(q, v, a, tau, workspace, id_partials);
   }
 
-  static void CalcGradientFiniteDiff(const TrajectoryOptimizer& optimizer,
-                                     const TrajectoryOptimizerState& state,
-                                     EigenPtr<VectorXd> g) {
+  static void CalcGradientFiniteDiff(
+      const TrajectoryOptimizer<double>& optimizer,
+      const TrajectoryOptimizerState<double>& state, EigenPtr<VectorXd> g) {
     optimizer.CalcGradientFiniteDiff(state, g);
   }
 };
@@ -76,6 +77,70 @@ using multibody::DiscreteContactSolver;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using test::LimitMalloc;
+
+GTEST_TEST(TrajectoryOptimizerTest, AutodiffGradient) {
+  // Test our gradient computations using autodiff
+  const int num_steps = 5;
+  const double dt = 1e-2;
+
+  ProblemDefinition opt_prob;
+  opt_prob.num_steps = num_steps;
+  opt_prob.q_init = Vector1d(0.1);
+  opt_prob.v_init = Vector1d(0.0);
+  opt_prob.Qq = 0.1 * MatrixXd::Identity(1, 1);
+  opt_prob.Qv = 0.2 * MatrixXd::Identity(1, 1);
+  opt_prob.Qf_q = 0.3 * MatrixXd::Identity(1, 1);
+  opt_prob.Qf_v = 0.4 * MatrixXd::Identity(1, 1);
+  opt_prob.R = 0.5 * MatrixXd::Identity(1, 1);
+  opt_prob.q_nom = Vector1d(0.1);
+  opt_prob.v_nom = Vector1d(-0.1);
+
+  // Create a pendulum model
+  MultibodyPlant<double> plant(dt);
+  const std::string urdf_file =
+      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
+  Parser(&plant).AddAllModelsFromFile(urdf_file);
+  plant.Finalize();
+
+  // Create an optimizer
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
+  TrajectoryOptimizerState<double> state = optimizer.CreateState();
+  TrajectoryOptimizerWorkspace<double> workspace(num_steps, plant);
+
+  // Make some fake data
+  std::vector<VectorXd> q(num_steps + 1);
+  q[0] = opt_prob.q_init;
+  for (int t = 1; t <= num_steps; ++t) {
+    q[t] = q[t - 1] + 0.1 * dt * MatrixXd::Identity(1, 1);
+  }
+  state.set_q(q);
+
+  // Compute the gradient analytically
+  VectorXd g(plant.num_positions() * (num_steps + 1));
+  optimizer.CalcGradient(state, &g);
+
+  // Compute the gradient using autodiff
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+  TrajectoryOptimizer<AutoDiffXd> optimizer_ad(plant_ad.get(), opt_prob);
+  TrajectoryOptimizerState<AutoDiffXd> state_ad = optimizer_ad.CreateState();
+  TrajectoryOptimizerWorkspace<AutoDiffXd> workspace_ad(num_steps, *plant_ad);
+
+  std::vector<VectorX<AutoDiffXd>> q_ad(num_steps + 1);
+  for (int t = 0; t <= num_steps; ++t) {
+    q_ad[t] = math::InitializeAutoDiff(q[t], num_steps + 1, t);
+  }
+  state_ad.set_q(q_ad);
+
+  AutoDiffXd cost_ad = optimizer_ad.CalcCost(state_ad);
+  VectorXd g_ad = cost_ad.derivatives();
+
+  // We neglect the top row of the gradient, since we are setting it to zero.
+  const double kTolerance = sqrt(std::numeric_limits<double>::epsilon());
+  EXPECT_TRUE(CompareMatrices(g.bottomRows(num_steps),
+                              g_ad.bottomRows(num_steps), kTolerance,
+                              MatrixCompareType::relative));
+}
 
 GTEST_TEST(TrajectoryOptimizerTest, CalcGradientKuka) {
   const int num_steps = 3;
@@ -110,9 +175,9 @@ GTEST_TEST(TrajectoryOptimizerTest, CalcGradientKuka) {
   opt_prob.v_nom.setConstant(-0.1);
 
   // Create an optimizer
-  TrajectoryOptimizer optimizer(&plant, opt_prob);
-  TrajectoryOptimizerState state = optimizer.CreateState();
-  TrajectoryOptimizerWorkspace workspace(num_steps, plant);
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
+  TrajectoryOptimizerState<double> state = optimizer.CreateState();
+  TrajectoryOptimizerWorkspace<double> workspace(num_steps, plant);
 
   // Make some fake data
   std::vector<VectorXd> q(num_steps + 1);
@@ -167,9 +232,9 @@ GTEST_TEST(TrajectoryOptimizerTest, CalcGradientPendulum) {
   plant.Finalize();
 
   // Create an optimizer
-  TrajectoryOptimizer optimizer(&plant, opt_prob);
-  TrajectoryOptimizerState state = optimizer.CreateState();
-  TrajectoryOptimizerWorkspace workspace(num_steps, plant);
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
+  TrajectoryOptimizerState<double> state = optimizer.CreateState();
+  TrajectoryOptimizerWorkspace<double> workspace(num_steps, plant);
 
   // Make some fake data
   std::vector<VectorXd> q(num_steps + 1);
@@ -210,8 +275,8 @@ GTEST_TEST(TrajectoryOptimizerTest, PendulumDtauDq) {
   opt_prob.q_init = Vector1d(0.0);
   opt_prob.v_init = Vector1d(0.1);
   opt_prob.num_steps = num_steps;
-  TrajectoryOptimizer optimizer(&plant, opt_prob);
-  TrajectoryOptimizerWorkspace workspace(num_steps, plant);
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
+  TrajectoryOptimizerWorkspace<double> workspace(num_steps, plant);
 
   // Create some fake data
   std::vector<VectorXd> q;
@@ -221,7 +286,7 @@ GTEST_TEST(TrajectoryOptimizerTest, PendulumDtauDq) {
   }
 
   // Compute inverse dynamics partials
-  InverseDynamicsPartials grad_data(num_steps, 1, 1);
+  InverseDynamicsPartials<double> grad_data(num_steps, 1, 1);
   std::vector<VectorXd> v(num_steps + 1);
   std::vector<VectorXd> a(num_steps);
   std::vector<VectorXd> tau(num_steps);
@@ -242,7 +307,7 @@ GTEST_TEST(TrajectoryOptimizerTest, PendulumDtauDq) {
   const double b = 0.1;
   const double g = 9.81;
 
-  InverseDynamicsPartials grad_data_gt(num_steps, 1, 1);
+  InverseDynamicsPartials<double> grad_data_gt(num_steps, 1, 1);
   for (int t = 0; t < num_steps; ++t) {
     // dtau[t]/dq[t+1]
     grad_data_gt.dtau_dqp[t](0, 0) =
@@ -312,8 +377,8 @@ GTEST_TEST(TrajectoryOptimizerTest, CalcCostFromState) {
   }
 
   // Create an optimizer
-  TrajectoryOptimizer optimizer(&plant, opt_prob);
-  TrajectoryOptimizerState state = optimizer.CreateState();
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
+  TrajectoryOptimizerState<double> state = optimizer.CreateState();
   state.set_q(q);
 
   // Evaluate the cost
@@ -361,8 +426,8 @@ GTEST_TEST(TrajectoryOptimizerTest, CalcCost) {
   v.push_back(Vector2d(-0.1, 0.0));
 
   // Compute the cost and compare with the true value
-  TrajectoryOptimizer optimizer(&plant, opt_prob);
-  TrajectoryOptimizerWorkspace workspace(num_steps, plant);
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
+  TrajectoryOptimizerWorkspace<double> workspace(num_steps, plant);
   double L =
       TrajectoryOptimizerTester::CalcCost(optimizer, q, v, tau, &workspace);
   double L_gt =
@@ -424,8 +489,8 @@ GTEST_TEST(TrajectoryOptimizerTest, PendulumCalcInverseDynamics) {
   // Create a trajectory optimizer object
   ProblemDefinition opt_prob;
   opt_prob.num_steps = num_steps;
-  TrajectoryOptimizer optimizer(&plant, opt_prob);
-  TrajectoryOptimizerWorkspace workspace(num_steps, plant);
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
+  TrajectoryOptimizerWorkspace<double> workspace(num_steps, plant);
 
   // Compute tau from q and v
   std::vector<VectorXd> tau(num_steps, VectorXd(1));
@@ -464,7 +529,7 @@ GTEST_TEST(TrajectoryOptimizerTest, CalcVelocities) {
   opt_prob.q_init = Vector2d(0.1, 0.2);
   opt_prob.v_init = Vector2d(0.5 / dt, 1.5 / dt);
   opt_prob.num_steps = num_steps;
-  TrajectoryOptimizer optimizer(&plant, opt_prob);
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
 
   // Construct a std::vector of generalized positions (q)
   // where q(t) = [0.1 + 0.5*t]

@@ -55,26 +55,31 @@ drake_cc_library(
 
 drake_cc_library(
     name = "velocity_partials",
+    srcs = ["velocity_partials.cc"],
     hdrs = [
         "velocity_partials.h",
     ],
     deps = [
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
 
 drake_cc_library(
     name = "inverse_dynamics_partials",
+    srcs = ["inverse_dynamics_partials.cc"],
     hdrs = [
         "inverse_dynamics_partials.h",
     ],
     deps = [
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
 
 drake_cc_library(
     name = "trajectory_optimizer_state",
+    srcs = ["trajectory_optimizer_state.cc"],
     hdrs = [
         "trajectory_optimizer_state.h",
     ],
@@ -82,6 +87,7 @@ drake_cc_library(
         ":inverse_dynamics_partials",
         ":trajectory_optimizer_workspace",
         ":velocity_partials",
+        "//common:default_scalars",
         "//common:essential",
         "//multibody/plant",
     ],
@@ -89,10 +95,12 @@ drake_cc_library(
 
 drake_cc_library(
     name = "trajectory_optimizer_workspace",
+    srcs = ["trajectory_optimizer_workspace.cc"],
     hdrs = [
         "trajectory_optimizer_workspace.h",
     ],
     deps = [
+        "//common:default_scalars",
         "//common:essential",
         "//multibody/plant",
     ],
