@@ -113,7 +113,8 @@ namespace geometry {
 template <class T, class MeshType>
 class MeshFieldLinear {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshFieldLinear)
+  MeshFieldLinear(MeshFieldLinear&&) = default;
+  MeshFieldLinear& operator=(MeshFieldLinear&&) = default;
 
   /** Constructs a MeshFieldLinear.
    @param values  The field value at each vertex of the mesh.
@@ -348,6 +349,9 @@ class MeshFieldLinear {
   }
 
  private:
+  MeshFieldLinear(const MeshFieldLinear&) = default;
+  MeshFieldLinear& operator=(const MeshFieldLinear&) = default;
+
   // Clones MeshFieldLinear data under the assumption that the mesh
   // pointer is null.
   [[nodiscard]] std::unique_ptr<MeshFieldLinear<T, MeshType>>
