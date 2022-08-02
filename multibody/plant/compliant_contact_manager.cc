@@ -928,6 +928,28 @@ void CompliantContactManager<T>::DoCalcDiscreteValues(
   updates->set_value(this->multibody_state_index(), x_next);
 }
 
+// TODO(xuchenhan-tri): Consider a scalar converting constructor to cut down
+// repeated code in CloneToDouble() and CloneToAutoDiffXd().
+template <typename T>
+std::unique_ptr<DiscreteUpdateManager<double>>
+CompliantContactManager<T>::CloneToDouble() const {
+  auto clone = std::make_unique<CompliantContactManager<double>>();
+  // N.B. we should copy all members except for those overwritten in
+  // ExtractModelInfo and DeclareCacheEntries.
+  clone->sap_parameters_ = this->sap_parameters_;
+  return clone;
+}
+
+template <typename T>
+std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>>
+CompliantContactManager<T>::CloneToAutoDiffXd() const {
+  auto clone = std::make_unique<CompliantContactManager<AutoDiffXd>>();
+  // N.B. we should copy all members except for those overwritten in
+  // ExtractModelInfo and DeclareCacheEntries.
+  clone->sap_parameters_ = this->sap_parameters_;
+  return clone;
+}
+
 template <typename T>
 void CompliantContactManager<T>::ExtractModelInfo() {
   // Collect joint damping coefficients into a vector.

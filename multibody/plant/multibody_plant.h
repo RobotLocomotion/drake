@@ -102,6 +102,12 @@ enum class ContactModel {
 
 /// The type of the contact solver used for a discrete MultibodyPlant model.
 ///
+/// Note: the SAP solver only fully supports scalar type `double`. For
+/// scalar type `AutoDiffXd`, the SAP solver throws if any constraint (including
+/// contact) is detected. As a consequence, one can only run dynamic simulations
+/// without any constraints under the combination of SAP and `AutoDiffXd`. The
+/// SAP solver does not support symbolic calculations.
+///
 /// <h2>References</h2>
 ///
 /// - [Castro et al., 2019] Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A.,
