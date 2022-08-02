@@ -63,22 +63,35 @@
     // Set the initial view looking up the y-axis.
     viewer.set_property(['Cameras', 'default', 'rotated', '<object>'],
                         "position", [0.0, 1.0, 3.0])
-    try {
-      url = location.toString();
-      url = url.replace("http://", "ws://")
-      url = url.replace("https://", "wss://")
-      url = url.replace("/index.html", "/")
-      url = url.replace("/meshcat.html", "/")
-      connection = new WebSocket(url);
-      connection.binaryType = "arraybuffer";
-      connection.onmessage = (msg) => handle_message(msg);
-      connection.onclose = function(evt) {
-        console.log("onclose:", evt);
+
+    // When the connection closes, try creating a new connection automatically.
+    function make_connection(url, reconnect_ms) {
+      try {
+        connection = new WebSocket(url);
+        connection.binaryType = "arraybuffer";
+        connection.onmessage = (msg) => handle_message(msg);
+        connection.onclose = function(evt) {
+          // Immediately schedule an attempt to reconnect.
+          setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);
+        }
+        viewer.connection = connection
+      } catch (e) {
+        console.info("Not connected to MeshCat websocket server: ", e);
+        setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);
       }
-      viewer.connection = connection
-    } catch (e) {
-      console.info("Not connected to MeshCat websocket server: ", e);
     }
+
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    reconnect_ms = parseInt(urlParams.get('reconnect_ms')) || 1000;
+
+    url = location.toString();
+    url = url.replace("http://", "ws://")
+    url = url.replace("https://", "wss://")
+    url = url.replace("/index.html", "/")
+    url = url.replace("/meshcat.html", "/")
+    make_connection(url, reconnect_ms);
+
   </script>
 
   <style>

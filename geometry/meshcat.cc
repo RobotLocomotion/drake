@@ -564,6 +564,13 @@ class Meshcat::Impl {
       websocket_thread_.join();
       throw std::runtime_error("Meshcat failed to open a websocket port.");
     }
+
+    // We want to make sure that the render mode artifacts are explicitly
+    // contained in the scene tree. If a MeshCat visualizer *reconnects* to
+    // this server, but its render mode is different from the current render
+    // mode, it will get updated, but only if the properties are stored in the
+    // tree.
+    ResetRenderMode();
   }
 
   ~Impl() {
@@ -1390,22 +1397,33 @@ class Meshcat::Impl {
     // websockets with the static javascript commands.
     // Note: If the html code changes, the DRAKE_DEMAND will fail, and the code
     // string here will need to be updated to once again match the html.
-    const std::string html_connect = R"""(try {
-      url = location.toString();
-      url = url.replace("http://", "ws://")
-      url = url.replace("https://", "wss://")
-      url = url.replace("/index.html", "/")
-      url = url.replace("/meshcat.html", "/")
-      connection = new WebSocket(url);
-      connection.binaryType = "arraybuffer";
-      connection.onmessage = (msg) => handle_message(msg);
-      connection.onclose = function(evt) {
-        console.log("onclose:", evt);
+    const std::string html_connect = R"""(// When the connection closes, try creating a new connection automatically.
+    function make_connection(url, reconnect_ms) {
+      try {
+        connection = new WebSocket(url);
+        connection.binaryType = "arraybuffer";
+        connection.onmessage = (msg) => handle_message(msg);
+        connection.onclose = function(evt) {
+          // Immediately schedule an attempt to reconnect.
+          setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);
+        }
+        viewer.connection = connection
+      } catch (e) {
+        console.info("Not connected to MeshCat websocket server: ", e);
+        setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);
       }
-      viewer.connection = connection
-    } catch (e) {
-      console.info("Not connected to MeshCat websocket server: ", e);
-    })""";
+    }
+
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    reconnect_ms = parseInt(urlParams.get('reconnect_ms')) || 1000;
+
+    url = location.toString();
+    url = url.replace("http://", "ws://")
+    url = url.replace("https://", "wss://")
+    url = url.replace("/index.html", "/")
+    url = url.replace("/meshcat.html", "/")
+    make_connection(url, reconnect_ms);)""";
     const size_t pos = html.find(html_connect);
     DRAKE_DEMAND(pos != std::string::npos);
     html.replace(pos, html_connect.size(), std::move(f.get()));
@@ -1675,6 +1693,18 @@ class Meshcat::Impl {
     DRAKE_DEMAND(new_count >= 0);
     DRAKE_DEMAND(new_count == static_cast<int>(websockets_.size()));
     ws->subscribe("all");
+    {
+      // This connection may represent a *reconnection*. The client may have had
+      // data from a previous session. So, before populating it with the current
+      // state of `this` MeshCat, clear out whatever the old MeshCat put there.
+      // Note, if the two MeshCat instances didn't share a prefix, this won't
+      // clear out the old.
+      std::stringstream message_stream;
+      internal::DeleteData data;
+      data.path = prefix_;
+      msgpack::pack(message_stream, data);
+      ws->send(message_stream.str());
+    }
     // Update this new connection with previously published data.
     scene_tree_root_.Send(ws);
     if (!animation_.empty()) {
