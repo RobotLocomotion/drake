@@ -10,3 +10,4 @@ build --define NO_DREAL=ON
 
 # TODO(#17026) Mosek 10 is required for arm64.
 build:everything --define WITH_MOSEK=OFF
+build:everything --test_tag_filters=-mosek,-no_everything
