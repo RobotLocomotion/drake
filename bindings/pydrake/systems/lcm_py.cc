@@ -155,7 +155,7 @@ PYBIND11_MODULE(lcm, m) {
         .def(py::init(), cls_doc.ctor.doc)
         .def("size", &Class::size, cls_doc.size.doc)
         .def("Find", &Class::Find, py::arg("description_of_caller"),
-            py::arg("bus_name"), cls_doc.Find.doc)
+            py::arg("bus_name"), py_rvp::reference_internal, cls_doc.Find.doc)
         .def("GetAllBusNames", &Class::GetAllBusNames,
             cls_doc.GetAllBusNames.doc)
         .def("Add", &Class::Add, py::arg("bus_name"), py::arg("bus"),
@@ -172,9 +172,25 @@ PYBIND11_MODULE(lcm, m) {
     py::class_<Class, LeafSystem<double>> cls(m, "LcmPublisherSystem");
     cls  // BR
         .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
+                 LcmInterfaceSystem*, double>(),
+            py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
+            py::arg("publish_period") = 0.0,
+            // Keep alive, ownership: `serializer` keeps `self` alive.
+            py::keep_alive<3, 1>(),
+            // Keep alive, reference: `self` keeps `lcm` alive.
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_4args)
+        .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
                  DrakeLcmInterface*, double>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
             py::arg("publish_period") = 0.0,
+            // Keep alive, ownership: `serializer` keeps `self` alive.
+            py::keep_alive<3, 1>(),
+            // Keep alive, reference: `self` keeps `lcm` alive.
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_4args)
+        .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
+                 LcmInterfaceSystem*, const systems::TriggerTypeSet&, double>(),
+            py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
+            py::arg("publish_triggers"), py::arg("publish_period") = 0.0,
             // Keep alive, ownership: `serializer` keeps `self` alive.
             py::keep_alive<3, 1>(),
             // Keep alive, reference: `self` keeps `lcm` alive.
@@ -193,6 +209,13 @@ PYBIND11_MODULE(lcm, m) {
     using Class = LcmSubscriberSystem;
     constexpr auto& cls_doc = doc.LcmSubscriberSystem;
     py::class_<Class, LeafSystem<double>>(m, "LcmSubscriberSystem")
+        .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
+                 LcmInterfaceSystem*>(),
+            py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
+            // Keep alive, ownership: `serializer` keeps `self` alive.
+            py::keep_alive<3, 1>(),
+            // Keep alive, reference: `self` keeps `lcm` alive.
+            py::keep_alive<1, 4>(), doc.LcmSubscriberSystem.ctor.doc)
         .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
                  DrakeLcmInterface*>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
