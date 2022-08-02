@@ -66,6 +66,17 @@ struct DistanceConstraintSpecs {
   double damping{0.0};  // Constraint damping c in N⋅s/m.
 };
 
+struct PdControllerConstraintSpecs {
+  // Joint on which the PD controller is added.
+  JointActuatorIndex actuator_index;
+  // Proportional gain, with units consistent to the type of joint (i.e. N/m for
+  // prismatic and Nm/rad for revolute).
+  double proportional_gain{NAN};
+  // Derivative gain, with units consistent to the type of joint (i.e. Ns/m for
+  // prismatic and Nms/rad for revolute)
+  double derivative_gain{0.0};
+};
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

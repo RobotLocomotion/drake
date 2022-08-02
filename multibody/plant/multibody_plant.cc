@@ -912,6 +912,9 @@ void MultibodyPlant<T>::Finalize() {
       SetDiscreteUpdateManager(std::move(manager));
     }
   }
+
+  // TODO(amcastro-tri): throw exception if any JointActuator has controller
+  // gains but the plant is continuous or we are not using SAP.
 }
 
 template<typename T>
@@ -2208,27 +2211,95 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
       const int instance_num_dofs = num_actuated_dofs(model_instance_index);
       if (instance_num_dofs == 0) continue;
 
+      // The user can apply an external torque to an actuator. In addition, the
+      // actuator might apply PD control. If there is PD control we do not
+      // require this actuation to be connected and we assume a zero feedforward
+      // torque.
       const auto& input_port =
           this->get_input_port(instance_actuation_ports_[model_instance_index]);
+      VectorX<T> u_values = VectorX<T>::Zero(instance_num_dofs);
       if (!input_port.HasValue(context)) {
-        throw std::logic_error(fmt::format("Actuation input port for model "
-            "instance {} must be connected.",
-            GetModelInstanceName(model_instance_index)));
+        const auto& qd_input_port = this->get_input_port(
+            instance_desired_state_ports_[model_instance_index]);
+        if (!qd_input_port.HasValue(context)) {
+          throw std::logic_error(
+              fmt::format("Actuation input port for model "
+                          "instance {} must be connected.",
+                          GetModelInstanceName(model_instance_index)));
+        }
+      } else {
+        u_values = input_port.Eval(context);
       }
-      const auto& u_instance = input_port.Eval(context);
 
-      if (u_instance.hasNaN()) {
+      if (u_values.hasNaN()) {
         throw std::runtime_error(
             fmt::format("Actuation input port for model "
                         "instance {} contains NaN.",
                         GetModelInstanceName(model_instance_index)));
       }
-      actuation_input.segment(u_offset, instance_num_dofs) = u_instance;
+      actuation_input.segment(u_offset, instance_num_dofs) = u_values;
       u_offset += instance_num_dofs;
     }
     DRAKE_ASSERT(u_offset == num_actuated_dofs());
   }
+
   return actuation_input;
+}
+
+template <typename T>
+VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
+    const systems::Context<T>& context) const {
+  this->ValidateContext(context);
+
+  // Assemble the vector from the model instance input ports.
+  // TODO(amcastro-tri): Heap allocation here. Get rid of it. Make it EvalFoo().
+  // Desired states of size 2 * num_actuators() for the full model packed as xd
+  // = [qd, vd].
+  VectorX<T> xd(2 * num_actuated_dofs());
+
+  const ModelInstanceIndex first_non_world_index(1);
+
+  int qd_offset = 0;
+  int vd_offset = num_actuators();
+  for (ModelInstanceIndex model_instance_index(first_non_world_index);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    // Ignore the port if the model instance has no actuated DoFs.
+    const int instance_num_u = num_actuated_dofs(model_instance_index);
+    const int instance_num_xd = 2 * instance_num_u;
+
+    // TODO(amcastro-tri): probably better to at least warn once if the desired
+    // state port is connected for a model with no PD actuation.
+    if (instance_num_xd == 0) continue;
+
+    const auto& xd_input_port =
+        this->get_desired_state_input_port(model_instance_index);
+
+    if (xd_input_port.HasValue(context)) {
+      const auto& xd_instance = xd_input_port.Eval(context);
+      // TODO(amcastro-tri): NaN values are actually allowed on actuators
+      // without PD control.
+      if (xd_instance.hasNaN()) {
+        throw std::runtime_error(
+            fmt::format("Desired state input port for model "
+                        "instance {} contains NaN.",
+                        GetModelInstanceName(model_instance_index)));
+      }
+      xd.segment(qd_offset, instance_num_u) = xd_instance.head(instance_num_u);
+      xd.segment(vd_offset, instance_num_u) = xd_instance.tail(instance_num_u);
+    } else {
+      // TODO(amcastro-tri): Throw only for models with PD controllers.
+      throw std::runtime_error(
+            fmt::format("Desired state input port for model "
+                        "instance {} not connected.",
+                        GetModelInstanceName(model_instance_index)));
+    }
+    qd_offset += instance_num_u;
+    vd_offset += instance_num_u;
+  }
+  DRAKE_ASSERT(qd_offset == num_actuators());
+  DRAKE_ASSERT(vd_offset == 2 * num_actuators());
+
+  return xd;
 }
 
 template <typename T>
@@ -2603,6 +2674,22 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   actuation_port_ =
       this->DeclareVectorInputPort("actuation", num_actuated_dofs())
           .get_index();
+
+  // Declare per model instance desired states.
+  instance_desired_state_ports_.resize(num_model_instances());
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    const int instance_num_xd = 2 * num_actuated_dofs(model_instance_index);
+    if (instance_num_xd > 0) {
+      ++num_actuated_instances;
+      last_actuated_instance = model_instance_index;
+    }
+    instance_desired_state_ports_[model_instance_index] =
+        this->DeclareVectorInputPort(
+                GetModelInstanceName(model_instance_index) + "_desired_state",
+                instance_num_xd)
+            .get_index();
+  }
 
   // Declare the generalized force input port.
   applied_generalized_force_input_port_ =
@@ -3018,6 +3105,17 @@ const systems::InputPort<T>& MultibodyPlant<T>::get_actuation_input_port()
     const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return systems::System<T>::get_input_port(actuation_port_);
+}
+
+template <typename T>
+const systems::InputPort<T>&
+MultibodyPlant<T>::get_desired_state_input_port(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(model_instance.is_valid());
+  DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+  return systems::System<T>::get_input_port(
+      instance_desired_state_ports_.at(model_instance));
 }
 
 template <typename T>

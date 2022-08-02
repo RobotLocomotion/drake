@@ -116,6 +116,14 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
   SapHolonomicConstraint(int clique, VectorX<T> g, MatrixX<T> J,
                          Parameters parameters);
 
+  // Constraint with non-zero bias b.
+  SapHolonomicConstraint(int clique, VectorX<T> g, MatrixX<T> J, VectorX<T> b,
+                         Parameters parameters)
+      : SapHolonomicConstraint(clique, std::move(g), std::move(J),
+                               std::move(parameters)) {
+    bias_ = std::move(b);
+  }
+
   /* Constructs a holonomic constraint involving two cliques.
    @param[in] first_clique First clique involved in the constraint.
    @param[in] second_clique Second clique involved in the constraint.
@@ -154,6 +162,7 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
 
  private:
   Parameters parameters_;
+  VectorX<T> bias_;
 };
 
 }  // namespace internal

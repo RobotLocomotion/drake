@@ -720,6 +720,23 @@ void CompliantContactManager<T>::ExtractModelInfo() {
       break;
   }
 
+  // Extract specs for PD controllers, modeled as constraints.
+  for (JointActuatorIndex a(0); a < plant().num_actuators(); ++a) {
+    const JointActuator<T>& actuator = plant().get_joint_actuator(a);
+    if (actuator.has_controller()) {
+      if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+        const std::string msg =
+            "PD controlled actuators are not supported by the TAMSI solver. "
+            "Either use the SAP solver or use MultibodyPlant's actuation ports "
+            "to apply control inputs.";
+        throw std::logic_error(msg);
+      }
+      const PdControllerGains& gains = actuator.get_controller_gains();
+      pd_controller_specs_.push_back(PdControllerConstraintSpecs{
+          a, gains.proportional_gain, gains.derivative_gain});
+    }
+  }
+
   // Collect information from each PhysicalModel owned by the plant.
   const std::vector<const multibody::PhysicalModel<T>*> physical_models =
       this->plant().physical_models();
