@@ -6,7 +6,6 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.cpp_param import List
 from pydrake.common.value import Value
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.symbolic import Expression
 from pydrake.math import RotationMatrix_
@@ -161,9 +160,6 @@ class TestMultibodyTreeMath(unittest.TestCase):
         to_T = np.vectorize(T)
         p = to_T(np.zeros(3))
         self.assertIsInstance(F.Shift(offset=p), SpatialForce_[T])
-        # TODO(2022-08-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(F.Shift(p_BpBq_E=p), SpatialForce_[T])
         V = SpatialVelocity_[T].Zero()
         self.assertIsInstance(F.dot(velocity=V), T)
         self.assertIsInstance(F @ V, T)
@@ -179,8 +175,5 @@ class TestMultibodyTreeMath(unittest.TestCase):
         V = SpatialVelocity_[T].Zero()
         dut = SpatialMomentum_[T].Zero()
         self.assertIsInstance(dut.Shift(offset=p), SpatialMomentum_[T])
-        # TODO(2022-08-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(dut.Shift(p_BpBq_E=p), SpatialMomentum_[T])
         self.assertIsInstance(dut.dot(velocity=V), T)
         self.assertIsInstance(dut @ V, T)

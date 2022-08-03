@@ -80,7 +80,6 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
 //@}
 
  private:
-  Eigen::VectorXd input_state(const systems::Context<double>&) const;
   void CalcInput(const systems::Context<double>&, lcmt_jaco_command*) const;
 
   void DoCalcNextUpdateTime(
@@ -107,7 +106,6 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   systems::DiscreteStateIndex latched_position_measured_is_set_;
   systems::DiscreteStateIndex latched_position_measured_;
   const systems::CacheEntry* groomed_input_{};
-  const systems::OutputPort<double>* state_output_{};
   const systems::OutputPort<double>* commanded_position_output_{};
   const systems::OutputPort<double>* commanded_velocity_output_{};
 };

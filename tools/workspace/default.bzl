@@ -76,7 +76,6 @@ load("@drake//tools/workspace/picosat:repository.bzl", "picosat_repository")
 load("@drake//tools/workspace/picosha2:repository.bzl", "picosha2_repository")
 load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
-load("@drake//tools/workspace/pygame_py:repository.bzl", "pygame_py_repository")  # noqa
 load("@drake//tools/workspace/python:repository.bzl", "python_repository")
 load("@drake//tools/workspace/qdldl:repository.bzl", "qdldl_repository")
 load("@drake//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
@@ -304,8 +303,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         pybind11_repository(name = "pybind11", mirrors = mirrors)
     if "pycodestyle" not in excludes:
         pycodestyle_repository(name = "pycodestyle", mirrors = mirrors)
-    if "pygame_py" not in excludes:
-        pygame_py_repository(name = "pygame_py", mirrors = mirrors)
     if "python" not in excludes:
         python_repository(name = "python")
     if "qdldl" not in excludes:
