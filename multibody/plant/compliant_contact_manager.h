@@ -337,6 +337,12 @@ class CompliantContactManager final
       const systems::Context<T>& context, const VectorX<T>& v_star,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
+  // Adds holonomic constraints to model couplers specified in the
+  // MultibodyPlant.
+  void AddCouplerConstraints(
+      const systems::Context<T>& context,
+      contact_solvers::internal::SapContactProblem<T>* problem) const;
+
   // This method takes SAP results for a given `problem` and loads forces due to
   // contact only into `contact_results`. `contact_results` is properly resized
   // on output.

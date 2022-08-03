@@ -454,6 +454,48 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 }
 
 template <typename T>
+ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
+                                                        const Joint<T>& joint1,
+                                                        const T& gear_ratio,
+                                                        const T& offset) {
+  // N.B. The manager is setup at Finalize() and therefore we must require
+  // constraints to be added pre-finalize.
+  DRAKE_MBP_THROW_IF_FINALIZED();
+
+  if (!is_discrete()) {
+    throw std::runtime_error(
+        "Currently coupler constraints are only supported for discrete "
+        "MultibodyPlant models.");
+  }
+
+  // TAMSI does not support coupler constraints. For all other solvers, we let
+  // the discrete update manger to throw an exception at finalize time.
+  if (contact_solver_enum_ == DiscreteContactSolver::kTamsi) {
+    throw std::runtime_error(
+        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
+        "does not support coupler constraints. Use "
+        "set_discrete_contact_solver() to set a different solver type.");
+  }
+
+  if (joint0.num_velocities() != 1 || joint1.num_velocities() != 1) {
+    const std::string message = fmt::format(
+        "Coupler constraints can only be defined on single-DOF joints. "
+        "However joint '{}' has {} DOFs and joint '{}' has {} "
+        "DOFs.",
+        joint0.name(), joint0.num_velocities(), joint1.name(),
+        joint1.num_velocities());
+    throw std::runtime_error(message);
+  }
+
+  const ConstraintIndex constraint_index(num_constraints());
+
+  coupler_constraints_specs_.push_back(internal::CouplerConstraintSpecs<T>{
+      joint0.index(), joint1.index(), gear_ratio, offset});
+
+  return constraint_index;
+}
+
+template <typename T>
 std::string MultibodyPlant<T>::GetTopologyGraphvizString() const {
   std::string graphviz = "digraph MultibodyPlant {\n";
   graphviz += "label=\"" + this->get_name() + "\";\n";
