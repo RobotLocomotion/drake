@@ -18,11 +18,32 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":inverse_dynamics_partials",
+        ":penta_diagonal_matrix",
+        ":penta_diagonal_solver",
         ":problem_definition",
         ":trajectory_optimizer",
         ":trajectory_optimizer_state",
         ":trajectory_optimizer_workspace",
-        ":velocity_partials",
+        ":velocity_partials",        
+    ],
+)
+
+drake_cc_library(
+    name = "penta_diagonal_matrix",
+    srcs = ["penta_diagonal_matrix.cc"],
+    hdrs = ["penta_diagonal_matrix.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "penta_diagonal_solver",
+    srcs = [],
+    hdrs = ["penta_diagonal_solver.h"],
+    deps = [
+        ":penta_diagonal_matrix",
+        "//common:essential",
     ],
 )
 
@@ -74,6 +95,15 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "penta_diagonal_solver_test",
+    deps = [
+        ":penta_diagonal_matrix",
+        ":penta_diagonal_solver",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
