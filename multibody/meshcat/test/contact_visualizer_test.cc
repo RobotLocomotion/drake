@@ -111,10 +111,20 @@ class ContactVisualizerTest : public ::testing::Test {
           "contact_forces/point/sphere1.base_link+sphere2.base_link"));
     }
 
-    EXPECT_TRUE(meshcat_->HasPath(
-        "contact_forces/hydroelastic/body1.body1_collision+body2"));
-    EXPECT_TRUE(meshcat_->HasPath(
-        "contact_forces/hydroelastic/body1.body1_collision2+body2"));
+    // If the query object port is not connected, the geometry names will
+    // be in their "basic" form (i.e. just Ids).
+    if (visualizer_->query_object_input_port().HasValue(
+            visualizer_->GetMyContextFromRoot(*context_))) {
+      EXPECT_TRUE(meshcat_->HasPath(
+          "contact_forces/hydroelastic/body1.body1_collision+body2"));
+      EXPECT_TRUE(meshcat_->HasPath(
+          "contact_forces/hydroelastic/body1.body1_collision2+body2"));
+    } else {
+      EXPECT_TRUE(
+          meshcat_->HasPath("contact_forces/hydroelastic/body1.Id(173)+body2"));
+      EXPECT_TRUE(
+          meshcat_->HasPath("contact_forces/hydroelastic/body1.Id(175)+body2"));
+    }
   }
 
   std::shared_ptr<Meshcat> meshcat_;
