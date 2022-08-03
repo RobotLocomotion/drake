@@ -3,6 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 
@@ -80,10 +81,19 @@ GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionAllDisabled) {
 }
 
 // Tests that bad values cause an exception, not a segfault.
+// We check too-short and too-long values, and both geometry types.
 GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionValidation) {
-  VisualizerConfig bad_color;
-  bad_color.default_illustration_color_rgba = {};
-  EXPECT_THROW(ConvertVisualizerConfigToParams(bad_color), std::exception);
+  VisualizerConfig bad_illus_color;
+  bad_illus_color.default_illustration_color_rgba = {};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ConvertVisualizerConfigToParams(bad_illus_color),
+      "Rgba must .*");
+
+  VisualizerConfig bad_prox_color;
+  bad_prox_color.default_proximity_color_rgba = Eigen::VectorXd::Zero(6);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ConvertVisualizerConfigToParams(bad_prox_color),
+      "Rgba must .*");
 }
 
 // Overall acceptance test with everything enabled.
@@ -104,7 +114,7 @@ GTEST_TEST(VisualizerConfigFunctionsTest, ApplyDefault) {
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
   const VisualizerConfig config;
-  ApplyVisualizerConfig(config, plant, scene_graph, lcm_buses, &builder);
+  ApplyVisualizerConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
   Simulator<double> simulator(builder.Build());
 
   // Simulate for a moment and make sure everything showed up.
@@ -136,12 +146,83 @@ GTEST_TEST(VisualizerConfigFunctionsTest, ApplyNothing) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
-  ApplyVisualizerConfig(config, plant, scene_graph, lcm_buses, &builder);
+  ApplyVisualizerConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
   Simulator<double> simulator(builder.Build());
 
   // Simulate for a moment and make sure nothing showed up.
   simulator.AdvanceTo(0.25);
   drake_lcm.HandleSubscriptions(1);
+}
+
+// When the lcm pointer is directly provided, the lcm_buses can be nullptr
+// and nothing crashes.
+GTEST_TEST(VisualizerConfigFunctionsTest, IgnoredLcmBuses) {
+  DrakeLcm drake_lcm;
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  VisualizerConfig config;
+  config.lcm_bus = "will_be_ignored";
+  ApplyVisualizerConfig(config, &builder, nullptr, nullptr, nullptr,
+      &drake_lcm);
+  // Guard against any crashes or dangling pointers during diagram construction.
+  builder.Build();
+}
+
+// When the lcm pointer is directly provided, the lcm_bus config string can
+// refer to a missing bus_name and nothing crashes.
+GTEST_TEST(VisualizerConfigFunctionsTest, IgnoredLcmBusName) {
+  DrakeLcm drake_lcm;
+  const LcmBuses empty_lcm_buses;
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  VisualizerConfig config;
+  config.lcm_bus = "will_be_ignored";
+  ApplyVisualizerConfig(config, &builder, &empty_lcm_buses, nullptr, nullptr,
+      &drake_lcm);
+  // Guard against any crashes or dangling pointers during diagram construction.
+  builder.Build();
+}
+
+// The AddDefault... sugar shouldn't crash.
+GTEST_TEST(VisualizerConfigFunctionsTest, AddDefault) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  AddDefaultVisualizer(&builder);
+  Simulator<double> simulator(builder.Build());
+  simulator.AdvanceTo(0.25);
+}
+
+// A missing plant causes an exception.
+GTEST_TEST(VisualizerConfigFunctionsTest, NoPlant) {
+  DiagramBuilder<double> builder;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddDefaultVisualizer(&builder),
+      ".*does not contain.*plant.*");
+}
+
+// A missing scene_graph causes an exception.
+GTEST_TEST(VisualizerConfigFunctionsTest, NoSceneGraph) {
+  DiagramBuilder<double> builder;
+  auto* plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
+  plant->set_name("plant");
+  plant->Finalize();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddDefaultVisualizer(&builder),
+      ".*does not contain.*scene_graph.*");
+}
+
+// Type confusion causes an exception.
+GTEST_TEST(VisualizerConfigFunctionsTest, WrongSystemTypes) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.set_name("scene_graph");
+  scene_graph.set_name("plant");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddDefaultVisualizer(&builder),
+      ".*of the wrong type.*");
 }
 
 }  // namespace

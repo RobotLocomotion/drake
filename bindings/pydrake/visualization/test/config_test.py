@@ -20,7 +20,7 @@ from pydrake.systems.framework import (
 class TestConfig(unittest.TestCase):
 
     def test_apply_visualizer_config(self):
-        """Exercises VisualizerConfig and ApplyVisualizerConfig
+        """Exercises VisualizerConfig and ApplyVisualizerConfig.
         """
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
@@ -37,3 +37,11 @@ class TestConfig(unittest.TestCase):
             scene_graph=scene_graph,
             lcm_buses=lcm_buses,
             builder=builder)
+
+    def test_add_default_visualizer(self):
+        """Exercises AddDefaultVisualizer.
+        """
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        plant.Finalize()
+        config = mut.AddDefaultVisualizer(builder=builder)
