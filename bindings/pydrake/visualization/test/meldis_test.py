@@ -173,7 +173,7 @@ class TestMeldis(unittest.TestCase):
         self.assertEqual(meshcat.HasPath(hydro_path2), False)
 
         # Process the load + draw; contact results should now exist.
-        lcm.HandleSubscriptions(timeout_millis=0)
+        lcm.HandleSubscriptions(timeout_millis=1)
         dut._invoke_subscriptions()
 
         self.assertEqual(meshcat.HasPath("/CONTACT_RESULTS/hydroelastic"),
