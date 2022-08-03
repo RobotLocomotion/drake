@@ -27,16 +27,16 @@ load("@drake//tools/workspace:execute.bzl", "which")
 def _impl(repository_ctx):
     # When these values are updated, tools/dynamic_analysis/tsan.supp may also
     # need updating.
-    mosek_major_version = 9
-    mosek_minor_version = 3
-    mosek_patch_version = 20
+    mosek_major_version = 10
+    mosek_minor_version = 0
+    mosek_patch_version = 16
 
     if repository_ctx.os.name == "mac os x":
         mosek_platform = "osx64x86"
-        sha256 = "e804225fdc48933d753645e6e4afe415aabbabb32233dd376d0dd6bf985756ef"  # noqa
+        sha256 = "FIXME"  # noqa
     elif repository_ctx.os.name == "linux":
         mosek_platform = "linux64x86"
-        sha256 = "2fa2e1f742a31d7a7249ae083748f377dc68e378eb5ba18279647a433dc2e595"  # noqa
+        sha256 = "05081e5fab3cbc6694e1d108e0e0340c9de55328aeca35c3fb8ae49fd74d15a1"  # noqa
     else:
         fail(
             "Operating system is NOT supported",
@@ -70,13 +70,14 @@ def _impl(repository_ctx):
         install_name_tool = which(repository_ctx, "install_name_tool")
 
         # Note that libmosek64.dylib is (erroneously) a copy of
-        # libmosek64.9.3.dylib instead of a symlink. Otherwise, the list of
+        # libmosek64.10.0.dylib instead of a symlink. Otherwise, the list of
         # files should include the following in place of bin/libmosek64.dylib:
         #
         # "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,
         #                                     mosek_minor_version)
         files = [
-            "bin/libcilkrts.5.dylib",
+            # TODO(jwnimmer-tri) libcilk is no longer correct as of Mosek 10.
+            # "bin/libcilkrts.5.dylib",  FIXME
             "bin/libmosek64.dylib",
         ]
 
@@ -108,11 +109,10 @@ def _impl(repository_ctx):
         ]
     else:
         files = [
-            # We unconditionally use the the MOSEK™ copy of libcilkrts. Even
-            # though Ubuntu 20 offers a cilk shared library for legacy support,
-            # Ubuntu 22 has dropped it, and it's simplest for us to just use
-            # the MOSEK™ copy of the library everywhere.
-            "bin/libcilkrts.so.5",
+            # We use the the MOSEK™ copy of libtbb. The version of libtbb
+            # available in Ubuntu is too old.
+            "bin/libtbb.so.12",
+            "bin/libtbb.so.12.4",
             "bin/libmosek64.so.{}.{}".format(
                 mosek_major_version,
                 mosek_minor_version,
@@ -160,11 +160,10 @@ install(
    name = "install",
    docs = [
        "mosek-eula.pdf",
-       "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
        "@drake//tools/workspace/mosek:drake_mosek_redistribution.txt",
-   ],
-   allowed_externals = [
-       "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
+       # TODO(jwnimmer-tri) MOSEK uses TBB now, so upstream should probably
+       # be shipping the required Apache 2.0 notice in their Downloads (but
+       # isn't yet) and Drake should propgatate the TBB license here also.
    ],
    deps = [":install_libraries"],
 )
