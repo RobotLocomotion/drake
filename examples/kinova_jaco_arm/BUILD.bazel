@@ -54,8 +54,10 @@ drake_cc_binary(
         "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
+        "//systems/lcm:lcm_config_functions",
         "//systems/primitives:demultiplexer",
         "//systems/primitives:multiplexer",
+        "//visualization:visualizer_config_functions",
         "@gflags",
     ],
 )
