@@ -252,14 +252,14 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
       }
 
       Eigen::Matrix3Xi faces(3, num_triangles);
-      int face_count = 0;
+      int f_index = 0;
       for (int i = 0; i < mesh.num_elements(); ++i) {
         const auto& e = mesh.element(i);
-        for (int j = 1; j < e.num_vertices()-1; ++j) {
-          faces(0, face_count) = e.vertex(0);
-          faces(1, face_count) = e.vertex(j);
-          faces(2, face_count) = e.vertex(j+1);
-          ++face_count;
+        for (int j = 1; j < e.num_vertices() - 1; ++j) {
+          faces(0, f_index) = e.vertex(0);
+          faces(1, f_index) = e.vertex(j);
+          faces(2, f_index) = e.vertex(j + 1);
+          ++f_index;
         }
       }
 

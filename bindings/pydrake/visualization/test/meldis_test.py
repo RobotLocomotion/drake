@@ -128,6 +128,7 @@ class TestMeldis(unittest.TestCase):
         # Process the load + draw; make sure the geometry exists now.
         lcm.HandleSubscriptions(timeout_millis=0)
         dut._invoke_subscriptions()
+
         self.assertEqual(meshcat.HasPath(pair_path), True)
 
     def test_contact_applet_hydroelastic(self):
@@ -156,7 +157,7 @@ class TestMeldis(unittest.TestCase):
             frame_on_child=body2.body_frame(), axis=[1, 0, 0]))
         plant.Finalize()
         ConnectContactResultsToDrakeVisualizer(
-            builder=builder, plant=plant, scene_graph=scene_graph)#, lcm=lcm)
+            builder=builder, plant=plant, scene_graph=scene_graph, lcm=lcm)
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
         plant.SetPositions(plant.GetMyMutableContextFromRoot(context),
@@ -164,8 +165,10 @@ class TestMeldis(unittest.TestCase):
         diagram.Publish(context)
 
         # The geometry isn't registered until the load is processed.
-        hydro_path = "/CONTACT_RESULTS/hydroelastic/body1.two_bodies::body1_collision+body2"
-        hydro_path2 = "/CONTACT_RESULTS/hydroelastic/body1.two_bodies::body1_collision2+body2"
+        hydro_path = "/CONTACT_RESULTS/hydroelastic/" + \
+                     "body1.two_bodies::body1_collision+body2"
+        hydro_path2 = "/CONTACT_RESULTS/hydroelastic/" + \
+                      "body1.two_bodies::body1_collision2+body2"
         self.assertEqual(meshcat.HasPath(hydro_path), False)
         self.assertEqual(meshcat.HasPath(hydro_path2), False)
 
@@ -173,6 +176,7 @@ class TestMeldis(unittest.TestCase):
         lcm.HandleSubscriptions(timeout_millis=0)
         dut._invoke_subscriptions()
 
-        self.assertEqual(meshcat.HasPath("/CONTACT_RESULTS/hydroelastic"), True)
+        self.assertEqual(meshcat.HasPath("/CONTACT_RESULTS/hydroelastic"),
+                         True)
         self.assertEqual(meshcat.HasPath(hydro_path), True)
         self.assertEqual(meshcat.HasPath(hydro_path2), True)

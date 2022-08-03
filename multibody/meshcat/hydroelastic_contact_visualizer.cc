@@ -51,8 +51,6 @@ void HydroelasticContactVisualizer::Update(
     const std::string path =
         fmt::format("{}/{}+{}", params_.prefix, item.body_A, item.body_B);
 
-    std::cout << "path: " << path << "\n";
-
     VisibilityStatus& status = FindOrAdd(path);
 
     // Decide whether the contact should be shown.
@@ -117,18 +115,10 @@ void HydroelasticContactVisualizer::Update(
     {
       // Map normalized pressure values to color using a flame map.
 
-      // TODO(#17599): Currently, the color map applied to each contact surface
-      // is applied based on the range of pressures observed on that surface.
-      // This does not match parity with DrakeVisualizer. In order to match:
-      // Update this class to store a user defined min/max pressure that can
-      // be passed in at runtime via MeshcatVisualizerParams. Eventually, add
-      // functionality to have min and max pressure fields in the Meshcat
-      // dropdown menu, and monitor them in this class, updating the stored
-      // global min and max when user values change.
-      //
-      // Possibly consider storing a min/max pressure on a per contact pair
-      // basis for when geometries with large hydroelastic modulus discrepancies
-      // exist in the same sim.
+      // TODO(#17683): This creates a unique mapping from pressure to color for
+      // *each surface* at *each time step*, making the interpretation of a
+      // color value impossible. See the referenced issue for further
+      // discussion.
       double min_pressure = item.pressure.minCoeff();
       double max_pressure = item.pressure.maxCoeff();
 
@@ -149,28 +139,12 @@ void HydroelasticContactVisualizer::Update(
         }
       }
 
-      // TODO(#17599): Change from per-vertex coloring to per-fragment.
-      // Update `Meshcat` to provide a datatype and message packing scheme for
-      // the Three.js `Texture` type. Then we can pass the pressure values as
-      // texture coordinates along with the mesh and have the renderer
-      // interpolate the texture coords instead of colors, providing the
-      // better looking per-fragment coloring.
-      //
-      // Another possibility would be to pass a custom vertex/fragment shader to
-      // the Three.js material where the "pressure" attribute is a varying
-      // quantity (i.e. interpolated and passed from vertex shader to fragment
-      // shader), and the fragment shader does to color mapping.
+      // TODO(#17682): Applying color map values as *vertex colors* produces
+      // terrible visual artifacts. See the referenced issue for discussion.
       meshcat_->SetTriangleColorMesh(path + "/contact_surface", item.p_WV,
                                      item.faces, colors, false);
       meshcat_->SetTransform(path + "/contact_surface",
                              RigidTransformd(-item.centroid_W));
-
-      // TODO(#17599): Draw the edges of the contact surface polygons.
-      // The "wireframe" option on the Material object will just use the same
-      // geometry but render it in GL_LINES mode, so we will always see the
-      // triangulated version. We need to send separate geometry that sends all
-      // of the edges as line strips or line segments for the polygonal surface
-      // and uses the Three.js line material.
     }
   }
 
