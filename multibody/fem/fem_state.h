@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
@@ -81,6 +82,9 @@ class FemState {
   bool is_created_from_system(const internal::FemStateSystem<T>& system) const {
     return &system == system_;
   }
+
+  /** Returns an identical copy of `this` FemState. */
+  std::unique_ptr<FemState<T>> Clone() const;
 
  private:
   const systems::Context<T>& get_context() const {

@@ -56,6 +56,17 @@ void FemState<T>::SetAccelerations(const Eigen::Ref<const VectorX<T>>& a) {
   get_mutable_context().SetDiscreteState(system_->fem_acceleration_index(), a);
 }
 
+template <typename T>
+std::unique_ptr<FemState<T>> FemState<T>::Clone() const {
+  if (owned_context_ != nullptr) {
+    auto clone = std::make_unique<FemState<T>>(this->system_);
+    clone->owned_context_ = this->owned_context_;
+    return clone;
+  }
+  DRAKE_DEMAND(context_ != nullptr);
+  return std::make_unique<FemState<T>>(this->system_, this->context_);
+}
+
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake

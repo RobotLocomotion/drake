@@ -67,6 +67,23 @@ class FemStateTest : public ::testing::Test {
             .cache_index();
   }
 
+  /* Checks that `clone` is a deep copy of `state`. */
+  void VerifyIsClone(const FemState<T>& state, const FemState<T>& clone) {
+    EXPECT_EQ(state.num_dofs(), clone.num_dofs());
+    EXPECT_EQ(state.GetPositions(), clone.GetPositions());
+    EXPECT_EQ(state.GetVelocities(), clone.GetVelocities());
+    EXPECT_EQ(state.GetAccelerations(), clone.GetAccelerations());
+
+    const std::vector<Data<T>>& element_data =
+        state.template EvalElementData<Data<T>>(cache_index_);
+    const std::vector<Data<T>>& cloned_data =
+        clone.template EvalElementData<Data<T>>(cache_index_);
+    ASSERT_EQ(element_data.size(), cloned_data.size());
+    for (int i = 0; i < static_cast<int>(element_data.size()); ++i) {
+      EXPECT_EQ(element_data[i].val, cloned_data[i].val);
+    }
+  }
+
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   systems::CacheIndex cache_index_;
 };
@@ -131,6 +148,23 @@ TYPED_TEST(FemStateTest, ElementData) {
    */
   EXPECT_THROW(state.template EvalElementData<double>(this->cache_index_),
                std::exception);
+}
+
+TYPED_TEST(FemStateTest, Clone) {
+  using T = TypeParam;
+  /* Owned context version. */
+  {
+    const FemState<T> state(this->fem_state_system_.get());
+    std::unique_ptr<FemState<T>> clone = state.Clone();
+    this->VerifyIsClone(state, *clone);
+  }
+  /* Shared context version. */
+  {
+    auto context = this->fem_state_system_->CreateDefaultContext();
+    FemState<T> state(this->fem_state_system_.get(), context.get());
+    std::unique_ptr<FemState<T>> clone = state.Clone();
+    this->VerifyIsClone(state, *clone);
+  }
 }
 
 }  // namespace
