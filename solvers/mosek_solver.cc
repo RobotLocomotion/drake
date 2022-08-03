@@ -29,10 +29,10 @@ namespace drake {
 namespace solvers {
 namespace {
 // Mosek treats psd matrix variables in a special manner.
-// Check https://docs.mosek.com/9.3/capi/tutorial-sdo-shared.html for more
+// Check https://docs.mosek.com/10.0/capi/tutorial-sdo-shared.html for more
 // details. To summarize, Mosek stores a positive semidefinite (psd) matrix
 // variable as a "bar var" (as called in Mosek's API, for example
-// https://docs.mosek.com/9.3/capi/tutorial-sdo-shared.html). Inside Mosek, it
+// https://docs.mosek.com/10.0/capi/tutorial-sdo-shared.html). Inside Mosek, it
 // accesses each of the psd matrix variable with a unique ID. Moreover, the
 // Mosek user cannot access the entries of the psd matrix variable individually;
 // instead, the user can only access the matrix X̅ as a whole. To impose
@@ -92,7 +92,7 @@ class MatrixVariableEntry {
 
 // Mosek stores dual variable in different categories, called slc, suc, slx, sux
 // and snx. Refer to
-// https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getsolution
+// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
 // for more information.
 enum class DualVarType {
   kLinearConstraint,  ///< Corresponds to Mosek's slc and suc.
@@ -112,8 +112,8 @@ using ConstraintDualIndices = std::vector<ConstraintDualIndex>;
 
 // This function is used to print information for each iteration to the console,
 // it will show PRSTATUS, PFEAS, DFEAS, etc. For more information, check out
-// https://docs.mosek.com/9.3/capi/solver-io.html. This printstr is copied
-// directly from https://docs.mosek.com/9.3/capi/solver-io.html#stream-logging.
+// https://docs.mosek.com/10.0/capi/solver-io.html. This printstr is copied
+// directly from https://docs.mosek.com/10.0/capi/solver-io.html#stream-logging.
 void MSKAPI printstr(void*, const char str[]) { printf("%s", str); }
 
 enum class LinearConstraintBoundType {
@@ -1414,13 +1414,13 @@ MSKrescodee AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable(
 }
 
 // @param slx Mosek dual variables for variable lower bound. See
-// https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getslx
+// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getslx
 // @param sux Mosek dual variables for variable upper bound. See
-// https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getsux
+// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsux
 // @param slc Mosek dual variables for linear constraint lower bound. See
-// https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getslc
+// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getslc
 // @param suc Mosek dual variables for linear constraint upper bound. See
-// https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getsuc
+// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsuc
 void SetBoundingBoxDualSolution(
     const std::vector<Binding<BoundingBoxConstraint>>& constraints,
     const std::vector<MSKrealt>& slx, const std::vector<MSKrealt>& sux,
@@ -1588,7 +1588,7 @@ MSKrescodee SetDualSolution(
   if (which_sol != MSK_SOL_ITG) {
     // Mosek cannot return dual solution if the solution type is MSK_SOL_ITG
     // (which stands for mixed integer optimizer), see
-    // https://docs.mosek.com/9.3/capi/accessing-solution.html#available-solutions
+    // https://docs.mosek.com/10.0/capi/accessing-solution.html#available-solutions
     int num_mosek_vars{0};
     rescode = MSK_getnumvar(task, &num_mosek_vars);
     if (rescode != MSK_RES_OK) {
@@ -1596,7 +1596,7 @@ MSKrescodee SetDualSolution(
     }
     // Mosek dual variables for variable lower bounds (slx) and upper bounds
     // (sux). Refer to
-    // https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getsolution
+    // https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
     // for more explanation.
     std::vector<MSKrealt> slx(num_mosek_vars);
     std::vector<MSKrealt> sux(num_mosek_vars);
@@ -1615,7 +1615,7 @@ MSKrescodee SetDualSolution(
     }
     // Mosek dual variables for linear constraints lower bounds (slc) and upper
     // bounds (suc). Refer to
-    // https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getsolution
+    // https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
     // for more explanation.
     std::vector<MSKrealt> slc(num_linear_constraints);
     std::vector<MSKrealt> suc(num_linear_constraints);
@@ -1734,7 +1734,7 @@ class MosekSolver::License {
 std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
   // According to
   // https://docs.mosek.com/8.1/cxxfusion/solving-parallel.html sharing
-  // an env used between threads is safe (not mentioned in 9.3 documentation),
+  // an env used between threads is safe (not mentioned in 10.0 documentation),
   // but nothing mentions thread-safety when allocating the environment. We can
   // safeguard against this ambiguity by using GetScopedSingleton for basic
   // thread-safety when acquiring / releasing the license.
@@ -1804,7 +1804,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
 
   // Create the optimization task.
   // task is initialized as a null pointer, same as in Mosek's documentation
-  // https://docs.mosek.com/9.3/capi/design.html#hello-world-in-mosek
+  // https://docs.mosek.com/10.0/capi/design.html#hello-world-in-mosek
   MSKtask_t task = nullptr;
   rescode = MSK_maketask(env, 0, num_nonmatrix_vars_in_prog, &task);
   ScopeExit guard([&task]() { MSK_deletetask(&task); });
@@ -1956,7 +1956,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   // log file.
   const bool print_to_console = merged_options.get_print_to_console();
   const std::string print_file_name = merged_options.get_print_file_name();
-  // Refer to https://docs.mosek.com/9.3/capi/solver-io.html#stream-logging
+  // Refer to https://docs.mosek.com/10.0/capi/solver-io.html#stream-logging
   // for Mosek stream logging.
   // First we check if the user wants to print to both the console and the file.
   // If true, throw an error BEFORE we create the log file through
@@ -1978,34 +1978,43 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     }
   }
 
-  // Mosek can accept the initial guess on its integer/binary variables, but
-  // not on the continuous variables. So it allows some of the variables'
-  // initial guess to be unset, while setting the others. If the initial guess
-  // for any variable is finite, then we ask Mosek to set the initial guess.
+  // Determines the solution type.
+  MSKsoltypee solution_type;
+  if (with_integer_or_binary_variable) {
+    solution_type = MSK_SOL_ITG;
+  } else if (prog.quadratic_costs().empty() &&
+             prog.lorentz_cone_constraints().empty() &&
+             prog.rotated_lorentz_cone_constraints().empty() &&
+             prog.positive_semidefinite_constraints().empty() &&
+             prog.linear_matrix_inequality_constraints().empty() &&
+             prog.exponential_cone_constraints().empty()) {
+    solution_type = MSK_SOL_BAS;
+  } else {
+    solution_type = MSK_SOL_ITR;
+  }
+
+  // Since Mosek 10, it allows setting the initial guess for both continuous and
+  // integer/binary variables. See
+  // https://docs.mosek.com/latest/rmosek/tutorial-mio-shared.html#specifying-an-initial-solution
+  // for more details.
   const bool has_any_finite_initial_guess =
       initial_guess.unaryExpr([](double g) { return std::isfinite(g); }).any();
-  if (with_integer_or_binary_variable && has_any_finite_initial_guess) {
-    // Set the initial guess for the integer/binary variables.
+  if (has_any_finite_initial_guess) {
     DRAKE_ASSERT(initial_guess.size() == prog.num_vars());
-    MSKint32t num_mosek_vars{0};
-    if (rescode == MSK_RES_OK) {
-      rescode = MSK_getnumvar(task, &num_mosek_vars);
-    }
     for (int i = 0; i < prog.num_vars(); ++i) {
       auto it = decision_variable_index_to_mosek_nonmatrix_variable.find(i);
       if (it != decision_variable_index_to_mosek_nonmatrix_variable.end()) {
-        const auto var_type = prog.decision_variable(i).get_type();
-        if (var_type == MathematicalProgram::VarType::INTEGER ||
-            var_type == MathematicalProgram::VarType::BINARY) {
-          if (rescode == MSK_RES_OK) {
-            const MSKrealt initial_guess_i = initial_guess(i);
-            rescode = MSK_putxxslice(task, MSK_SOL_ITG, it->second,
+        if (rescode == MSK_RES_OK) {
+          const MSKrealt initial_guess_i = initial_guess(i);
+          if (!std::isnan(initial_guess_i)) {
+            rescode = MSK_putxxslice(task, solution_type, it->second,
                                      it->second + 1, &initial_guess_i);
           }
         }
       }
     }
   }
+
 
   result->set_solution_result(SolutionResult::kUnknownError);
   // Run optimizer.
@@ -2025,21 +2034,6 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
 
   if (rescode == MSK_RES_OK && msk_writedata.has_value()) {
     rescode = MSK_writedata(task, msk_writedata.value().c_str());
-  }
-
-  // Determines the solution type.
-  MSKsoltypee solution_type;
-  if (with_integer_or_binary_variable) {
-    solution_type = MSK_SOL_ITG;
-  } else if (prog.quadratic_costs().empty() &&
-             prog.lorentz_cone_constraints().empty() &&
-             prog.rotated_lorentz_cone_constraints().empty() &&
-             prog.positive_semidefinite_constraints().empty() &&
-             prog.linear_matrix_inequality_constraints().empty() &&
-             prog.exponential_cone_constraints().empty()) {
-    solution_type = MSK_SOL_BAS;
-  } else {
-    solution_type = MSK_SOL_ITR;
   }
 
   MSKsolstae solution_status{MSK_SOL_STA_UNKNOWN};
