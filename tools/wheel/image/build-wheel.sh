@@ -69,12 +69,12 @@ if [ "$(uname)" == "Darwin" ]; then
     # copied to the same place as libdrake.so.
     cp -r -t ${WHEEL_DIR}/pydrake/lib \
         /opt/drake/lib/libmosek*.dylib \
-        /opt/drake/lib/libcilkrts*.dylib
+        /opt/drake/lib/libtbb*.dylib
 else
     # On Linux, it needs to be copied somewhere where auditwheel can find it.
     cp -r -t /opt/drake-dependencies/lib \
         /opt/drake/lib/libmosek*.so* \
-        /opt/drake/lib/libcilkrts*.so*
+        /opt/drake/lib/libtbb*.so*
 fi
 
 # TODO(mwoehlke-kitware) We need a different way of shipping non-arch files
