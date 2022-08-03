@@ -472,6 +472,19 @@ class TestMath(unittest.TestCase):
 
         mut.DiscreteAlgebraicRiccatiEquation(A=A, B=B, Q=Q, R=R)
 
+    def test_compute_numerical_gradient(self):
+        option = mut.NumericalGradientOption(
+            method=mut.NumericalGradientMethod.kCentral,
+            function_accuracy=1E-15)
+
+        def foo(x):
+            return np.array([x[0] ** 2, x[0] * x[1]])
+
+        grad = mut.ComputeNumericalGradient(
+            calc_func=foo, x=np.array([1., 2.]), option=option)
+        np.testing.assert_allclose(
+            grad, np.array([[2., 0.], [2., 1.]]), atol=1E-5)
+
     @numpy_compare.check_all_types
     def test_value_instantiations(self, T):
         # Existence checks.
