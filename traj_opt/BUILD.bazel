@@ -24,7 +24,7 @@ drake_cc_package_library(
         ":trajectory_optimizer",
         ":trajectory_optimizer_state",
         ":trajectory_optimizer_workspace",
-        ":velocity_partials",        
+        ":velocity_partials",
     ],
 )
 
