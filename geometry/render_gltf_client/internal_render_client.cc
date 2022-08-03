@@ -132,7 +132,7 @@ RenderClient::RenderClient(const RenderEngineGltfClientParams& params)
 
 RenderClient::~RenderClient() {
   const fs::path temp_dir{temp_directory_};
-  if (!params_.no_cleanup) {
+  if (params_.cleanup) {
     try {
       fs::remove_all(temp_dir);
       // no cover: OS dependent exceptions for fs::remove_all not known.

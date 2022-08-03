@@ -52,7 +52,7 @@ drake_cc_library(
     hdrs = ["internal_render_engine_vtk.h"],
     internal = True,
     visibility = [
-        "//geometry/render_client_gltf:__pkg__",
+        "//geometry/render_gltf_client:__pkg__",
         # TODO(jwnimmer-tri) Remove this once the dev package is gone.
         "//geometry/render/dev/render_gltf_client:__pkg__",
         # TODO(jwnimmer-tri) Remove this after deprecation 2022-09-01.

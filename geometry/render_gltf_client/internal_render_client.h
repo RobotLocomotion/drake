@@ -30,7 +30,7 @@ class RenderClient {
   /* Constructs the render engine from the given RenderEngineGltfClientParams.
 
    @note
-     RenderEngineGltfClientParams.default_label struct member is not relavant
+     RenderEngineGltfClientParams.default_label struct member is not relevant
      for the RenderClient construction. */
   explicit RenderClient(const RenderEngineGltfClientParams& params);
 
@@ -46,7 +46,7 @@ class RenderClient {
    path returned will be in temp_directory(), users do not need to delete the
    file manually after they are finished.
 
-   @sa get_params().no_cleanup
+   @sa get_params().cleanup
    @param camera_core
      The RenderCameraCore of the camera being rendered.  Its
      RenderCameraCore::intrinsics() will be communicated to the server.
@@ -212,7 +212,7 @@ class RenderClient {
    encouraged) to utilize this directory to create any additional files needed
    to communicate with the server such as scene files to upload.  The temporary
    directory will be deleted upon destruction of this instance unless
-   get_params().no_cleanup is true. */
+   get_params().cleanup is false. */
   const std::string& temp_directory() const { return temp_directory_; }
 
   //@}
