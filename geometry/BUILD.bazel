@@ -509,8 +509,6 @@ drake_cc_binary(
     deps = [
         ":meshcat",
         ":meshcat_visualizer",
-        ":drake_visualizer",
-        "//multibody/plant:contact_results_to_lcm",
         "//multibody/meshcat:contact_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
