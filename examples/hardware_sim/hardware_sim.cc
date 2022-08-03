@@ -84,8 +84,7 @@ void Simulation::Setup() {
   sim_plant.Finalize();
 
   // Add visualizer.
-  ApplyVisualizerConfig(scenario_.visualizer, sim_plant, scene_graph, lcm_buses,
-                        &builder);
+  ApplyVisualizerConfig(scenario_.visualizer, &builder, &lcm_buses);
 
   // Build the diagram and its simulator.
   diagram_ = builder.Build();
