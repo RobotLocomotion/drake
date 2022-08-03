@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -13,8 +14,10 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/proximity/collision_filter.h"
+#include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/query_results/contact_surface.h"
+#include "drake/geometry/query_results/deformable_rigid_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -106,6 +109,14 @@ class ProximityEngine {
                            const math::RigidTransformd& X_WG, GeometryId id,
                            const ProximityProperties& props = {});
 
+  /* Adds a new deformable geometry to the engine.
+   @param mesh_W  The volume mesh representation of the deformable geometry
+                  represented in the world frame, including initial positions of
+                  the vertices.
+   @param id      The id of the geometry in SceneGraph to which this mesh
+                  belongs. */
+  void AddDeformableGeometry(const VolumeMesh<double>& mesh_W, GeometryId id);
+
   /* Possibly updates the proximity representation of the given `geometry`
    based on the relationship between its _current_ proximity properties and the
    given _new_ proximity properties. The underlying representation may not
@@ -130,8 +141,15 @@ class ProximityEngine {
    @param id          The id of the geometry to be removed.
    @param is_dynamic  True if the geometry is dynamic, false if anchored.
    @throws std::exception if `id` does not refer to a geometry in this engine.
-  */
+   @throws std::exception if `id` corresponds to a deformable geometry. Use
+   RemoveDeformableGeometry to remove deformable geometries.  */
   void RemoveGeometry(GeometryId id, bool is_dynamic);
+
+  /* Removes the given deformable geometry indicated by `id` from the engine.
+   @param id  The id of the geometry to be removed.
+   @throws std::exception if `id` does not refer to a deformable geometry in
+   this engine. */
+  void RemoveDeformableGeometry(GeometryId id);
 
   /* Reports the _total_ number of geometries in the engine -- dynamic and
    anchored (spanning all sources).  */
@@ -166,6 +184,17 @@ class ProximityEngine {
   //    a vector and the caller sets values there directly.
   void UpdateWorldPoses(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs);
+
+  /* Updates the vertex positions of deformable geometries in the engine.
+   @param q_WGs  The mapping from GeometryId `id` to vertex positions of
+                 deformable geometry `G` measured and expressed in the the
+                 world frame `W`. If a deformable geometry with the given `id`
+                 is registered in the engine (and hasn't been removed), its
+                 vertex position is updated to the value in the given map.
+   @pre if a deformable geometry with the given `id` is registered, its number
+   of dofs matches the size of the value in the corresponding q_WG. */
+  void UpdateDeformableVertexPositions(
+      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs);
 
   // ----------------------------------------------------------------------
   /* @name              Signed Distance Queries
@@ -243,6 +272,16 @@ class ProximityEngine {
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
+  // TODO(xuchenhan-tri): Add ComputeDeformableRigidContact() to GeometryState
+  // and QueryObject.
+  /* Implementation of GeometryState::ComputeDeformableRigidContact(). Assumes
+   the poses of rigid bodies and the vertex positions of the deformable bodies
+   are up-to-date. */
+  template <typename T1 = T>
+  typename std::enable_if_t<std::is_same_v<T1, double>, void>
+  ComputeDeformableRigidContact(
+      std::vector<DeformableRigidContact<T>>* deformable_rigid_contact) const;
+
   /* Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
@@ -254,6 +293,10 @@ class ProximityEngine {
   /* The representation of every geometry that was successfully requested for
    use for hydroelastic contact surface computation. */
   const hydroelastic::Geometries& hydroelastic_geometries() const;
+
+  /* The representation of every geometry that was successfully requested for
+   use for proximity queries for deformable contact. */
+  const deformable::Geometries& deformable_contact_geometries() const;
 
  private:
   // Testing utilities:
