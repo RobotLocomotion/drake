@@ -69,6 +69,13 @@ class ContactVisualizerTest : public ::testing::Test {
         "body2", plant.world_body(), std::nullopt, body2, std::nullopt,
         Eigen::Vector3d::UnitX());
 
+    auto geometry_ids = plant.GetCollisionGeometriesForBody(body1);
+
+    DRAKE_ASSERT(geometry_ids.size() == 2);
+
+    body1_id1 = geometry_ids[0];
+    body1_id2 = geometry_ids[1];
+
     plant.Finalize();
 
     // Add the visualizer.
@@ -120,10 +127,10 @@ class ContactVisualizerTest : public ::testing::Test {
       EXPECT_TRUE(meshcat_->HasPath(
           "contact_forces/hydroelastic/body1.body1_collision2+body2"));
     } else {
-      EXPECT_TRUE(
-          meshcat_->HasPath("contact_forces/hydroelastic/body1.Id(173)+body2"));
-      EXPECT_TRUE(
-          meshcat_->HasPath("contact_forces/hydroelastic/body1.Id(175)+body2"));
+      EXPECT_TRUE(meshcat_->HasPath(fmt::format(
+          "contact_forces/hydroelastic/body1.Id({})+body2", body1_id1)));
+      EXPECT_TRUE(meshcat_->HasPath(fmt::format(
+          "contact_forces/hydroelastic/body1.Id({})+body2", body1_id2)));
     }
   }
 
@@ -131,6 +138,8 @@ class ContactVisualizerTest : public ::testing::Test {
   const ContactVisualizer<double>* visualizer_{};
   std::unique_ptr<systems::Diagram<double>> diagram_{};
   std::unique_ptr<systems::Context<double>> context_{};
+  geometry::GeometryId body1_id1{};
+  geometry::GeometryId body1_id2{};
 };
 
 // Tests the preferred spelling of AddToBuilder.
