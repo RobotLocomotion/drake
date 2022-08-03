@@ -3,11 +3,11 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
-namespace multibody {
-namespace trajopt {
+namespace traj_opt {
 namespace internal {
 
 /** A sparse representation of a (square) banded penta-diagonal matrix. Denoting
@@ -33,6 +33,16 @@ namespace internal {
 class PentaDiagonalMatrix {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PentaDiagonalMatrix);
+
+  /* Constructor for a pentadiagonal matrix with num_blocks rows/columns blocks
+  of size block_size x block_size each. That is, the main diagonal vector C()
+  will have size num_blocks and rows() will equal num_blocks*block_size.
+
+  The matrix will be symmetric if is_symmetric is true.
+
+  @note Block Matrices in each diagonal initialized to zero, including A₀, B₀,
+  A₁, Eₙ₋₂, Dₙ₋₁, Eₙ₋₁. */
+  PentaDiagonalMatrix(int num_blocks, int block_size, bool is_symmetric = true);
 
   /* Constructs a pentadiagonal matrix from the given diagonals as described in
   this class's main documentation. The size n of the matrix is given by the size
@@ -91,18 +101,35 @@ class PentaDiagonalMatrix {
 
   // Returns a reference to the second lower diagonal.
   const std::vector<Eigen::MatrixXd>& A() const { return A_; }
+  std::vector<Eigen::MatrixXd>& mutable_A() { return A_; }
 
   // Returns a reference to the first lower diagonal.
   const std::vector<Eigen::MatrixXd>& B() const { return B_; }
+  std::vector<Eigen::MatrixXd>& mutable_B() { return B_; }
 
   // Returns a reference to the main diagonal.
   const std::vector<Eigen::MatrixXd>& C() const { return C_; }
+  std::vector<Eigen::MatrixXd>& mutable_C() { return C_; }
 
   // Returns a reference to the first upper diagonal.
   const std::vector<Eigen::MatrixXd>& D() const { return D_; }
 
+  // Mutable version of D().
+  // @pre matrix is not symmetric.
+  std::vector<Eigen::MatrixXd>& mutable_D() {
+    DRAKE_THROW_UNLESS(!is_symmetric());
+    return D_;
+  }
+
   // Returns a reference to the second upper diagonal.
   const std::vector<Eigen::MatrixXd>& E() const { return E_; }
+
+  // Mutable version of E().
+  // @pre matrix is not symmetric.
+  std::vector<Eigen::MatrixXd>& mutable_E() {
+    DRAKE_THROW_UNLESS(!is_symmetric());
+    return E_;
+  }
 
   bool is_symmetric() const { return is_symmetric_; }
 
@@ -120,6 +147,5 @@ class PentaDiagonalMatrix {
 };
 
 }  // namespace internal
-}  // namespace trajopt
-}  // namespace multibody
+}  // namespace traj_opt
 }  // namespace drake

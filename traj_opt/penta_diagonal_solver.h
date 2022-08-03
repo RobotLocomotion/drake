@@ -7,8 +7,7 @@
 #include "drake/traj_opt/penta_diagonal_matrix.h"
 
 namespace drake {
-namespace multibody {
-namespace trajopt {
+namespace traj_opt {
 namespace internal {
 
 /// Status reported by PentaDiagonalFactorization::status().
@@ -41,6 +40,9 @@ class PentaDiagonalFactorization {
   /// This constructor only throws if the matrix is not symmetric. Call status()
   /// to check whether the factorization succeeded or not, typically because M
   /// is not SPD.
+  ///
+  /// @warning Even when mathematically they do not exist, our implementation
+  /// assumes that A₀, B₀, A₁, Eₙ₋₂, Dₙ₋₁, Eₙ₋₁ are initialized to zero.
   ///
   /// @pre Matrix M is symmetric and positive definite.
   /// @throws if M is not symmetric.
@@ -230,6 +232,5 @@ void PentaDiagonalFactorization<kBlockSize>::SolveInPlace(
 }
 
 }  // namespace internal
-}  // namespace trajopt
-}  // namespace multibody
+}  // namespace traj_opt
 }  // namespace drake

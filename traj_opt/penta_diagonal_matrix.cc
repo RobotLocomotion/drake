@@ -7,9 +7,19 @@
 using Eigen::MatrixXd;
 
 namespace drake {
-namespace multibody {
-namespace trajopt {
+namespace traj_opt {
 namespace internal {
+
+PentaDiagonalMatrix::PentaDiagonalMatrix(int num_blocks, int block_size,
+                                         bool is_symmetric)
+    : is_symmetric_(is_symmetric) {
+  const MatrixXd Z = MatrixXd::Zero(block_size, block_size);
+  A_.resize(num_blocks, Z);
+  B_.resize(num_blocks, Z);
+  C_.resize(num_blocks, Z);
+  D_.resize(num_blocks, Z);
+  E_.resize(num_blocks, Z);
+}
 
 PentaDiagonalMatrix::PentaDiagonalMatrix(std::vector<Eigen::MatrixXd> A,
                                          std::vector<Eigen::MatrixXd> B,
@@ -149,6 +159,5 @@ bool PentaDiagonalMatrix::VerifyAllBlocksOfSameSize(
 }
 
 }  // namespace internal
-}  // namespace trajopt
-}  // namespace multibody
+}  // namespace traj_opt
 }  // namespace drake
