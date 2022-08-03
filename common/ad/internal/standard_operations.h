@@ -426,6 +426,33 @@ inline AutoDiff abs2(AutoDiff x) {
 
 //@}
 
+/// @name Math functions: Exponential and Power functions
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Exponential_functions
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Power_functions
+//@{
+
+/** ADL overload to mimic std::exp from <cmath>. */
+AutoDiff exp(AutoDiff x);
+
+/** ADL overload to mimic std::log from <cmath>. */
+AutoDiff log(AutoDiff x);
+
+/** ADL overload to mimic std::pow from <cmath>. */
+AutoDiff pow(AutoDiff base, const AutoDiff& exp);
+
+/** ADL overload to mimic std::pow from <cmath>. */
+AutoDiff pow(double base, const AutoDiff& exp);
+
+/** ADL overload to mimic std::pow from <cmath>. */
+AutoDiff pow(AutoDiff base, double exp);
+
+/** ADL overload to mimic std::sqrt from <cmath>. */
+AutoDiff sqrt(AutoDiff x);
+
+//@}
+
 /// @name Math functions: Trigonometric functions
 ///
 /// https://en.cppreference.com/w/cpp/numeric/math#Trigonometric_functions
