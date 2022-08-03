@@ -389,6 +389,79 @@ void TrajectoryOptimizer<T>::CalcGradient(
 }
 
 template <typename T>
+void TrajectoryOptimizer<T>::CalcHessian(
+    const TrajectoryOptimizerState<T>& state, PentaDiagonalMatrix<T>* H) const {
+  DRAKE_DEMAND(H->is_symmetric());
+  DRAKE_DEMAND(H->block_rows() == num_steps() + 1);
+  DRAKE_DEMAND(H->block_size() == plant().num_positions());
+
+  // Make sure the cache is up to date
+  if (!state.cache().up_to_date) UpdateCache(state);
+  const TrajectoryOptimizerCache<T>& cache = state.cache();
+
+  // Some convienient aliases
+  const double dt = time_step();
+  const MatrixX<T> Qq = 2 * prob_.Qq * dt;
+  const MatrixX<T> Qv = 2 * prob_.Qv * dt;
+  const MatrixX<T> R = 2 * prob_.R * dt;
+  const MatrixX<T> Qf_q = 2 * prob_.Qf_q;
+  const MatrixX<T> Qf_v = 2 * prob_.Qf_v;
+  const std::vector<MatrixX<T>>& dvt_dqt = cache.v_partials.dvt_dqt;
+  const std::vector<MatrixX<T>>& dvt_dqm = cache.v_partials.dvt_dqm;
+  const std::vector<MatrixX<T>>& dtau_dqp = cache.id_partials.dtau_dqp;
+  const std::vector<MatrixX<T>>& dtau_dqt = cache.id_partials.dtau_dqt;
+  const std::vector<MatrixX<T>>& dtau_dqm = cache.id_partials.dtau_dqm;
+
+  // Get mutable references to the non-zero bands of the Hessian
+  std::vector<MatrixX<T>>& A = H->mutable_A();  // 2 rows below diagonal
+  std::vector<MatrixX<T>>& B = H->mutable_B();  // 1 row below diagonal
+  std::vector<MatrixX<T>>& C = H->mutable_C();  // diagonal
+
+  // Fill in the non-zero blocks
+  C[0].setIdentity();  // Initial condition q0 fixed at t=0
+  for (int t = 1; t < num_steps(); ++t) {
+    // dg_t/dq_t
+    MatrixX<T>& dgt_dqt = C[t];
+    dgt_dqt = Qq;
+    dgt_dqt += dvt_dqt[t].transpose() * Qv * dvt_dqt[t];
+    dgt_dqt += dtau_dqp[t - 1].transpose() * R * dtau_dqp[t - 1];
+    dgt_dqt += dtau_dqt[t].transpose() * R * dtau_dqt[t];
+    if (t < num_steps() - 1) {
+      dgt_dqt += dtau_dqm[t + 1].transpose() * R * dtau_dqm[t + 1];
+      dgt_dqt += dvt_dqm[t + 1].transpose() * Qv * dvt_dqm[t + 1];
+    } else {
+      dgt_dqt += dvt_dqm[t + 1].transpose() * Qf_v * dvt_dqm[t + 1];
+    }
+
+    // dg_t/dq_{t+1}
+    MatrixX<T>& dgt_dqp = B[t + 1];
+    dgt_dqp = dtau_dqp[t].transpose() * R * dtau_dqt[t];
+    if (t < num_steps() - 1) {
+      dgt_dqp += dtau_dqt[t + 1].transpose() * R * dtau_dqm[t + 1];
+      dgt_dqp += dvt_dqt[t + 1].transpose() * Qv * dvt_dqm[t + 1];
+    } else {
+      dgt_dqp += dvt_dqt[t + 1].transpose() * Qf_v * dvt_dqm[t + 1];
+    }
+
+    // dg_t/dq_{t+2}
+    if (t < num_steps() - 1) {
+      MatrixX<T>& dgt_dqpp = A[t + 2];
+      dgt_dqpp = dtau_dqp[t + 1].transpose() * R * dtau_dqm[t + 1];
+    }
+  }
+
+  // dg_t/dq_t for the final timestep
+  MatrixX<T>& dgT_dqT = C[num_steps()];
+  dgT_dqT = Qf_q;
+  dgT_dqT += dvt_dqt[num_steps()].transpose() * Qf_v * dvt_dqt[num_steps()];
+  dgT_dqT +=
+      dtau_dqp[num_steps() - 1].transpose() * R * dtau_dqp[num_steps() - 1];
+
+  // Copy lower triangular part to upper triangular part
+  H->MakeSymmetric();
+}
+
+template <typename T>
 void TrajectoryOptimizer<T>::UpdateCache(
     const TrajectoryOptimizerState<T>& state) const {
   TrajectoryOptimizerCache<T>& cache = state.mutable_cache();

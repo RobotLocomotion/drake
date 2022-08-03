@@ -6,6 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/traj_opt/inverse_dynamics_partials.h"
+#include "drake/traj_opt/penta_diagonal_matrix.h"
 #include "drake/traj_opt/problem_definition.h"
 #include "drake/traj_opt/trajectory_optimizer_state.h"
 #include "drake/traj_opt/trajectory_optimizer_workspace.h"
@@ -14,6 +15,7 @@
 namespace drake {
 namespace traj_opt {
 
+using internal::PentaDiagonalMatrix;
 using multibody::MultibodyPlant;
 using systems::Context;
 
@@ -97,6 +99,18 @@ class TrajectoryOptimizer {
   void CalcGradient(const TrajectoryOptimizerState<T>& state,
                     EigenPtr<VectorX<T>> g) const;
 
+  /**
+   * Compute the Hessian of the unconstrained cost L(q) as a sparse
+   * penta-diagonal matrix.
+   *
+   * @param state optimizer state, including q, v, tau, gradients, etc.
+   * @param H a PentaDiagonalMatrix containing the second-order derivatives of
+   *          the total cost L(q). This matrix is composed of (num_steps+1 x
+   *          num_steps+1) blocks of size (nq x nq) each.
+   */
+  void CalcHessian(const TrajectoryOptimizerState<T>& state,
+                   PentaDiagonalMatrix<T>* H) const;
+
  private:
   // Friend class to facilitate testing.
   friend class TrajectoryOptimizerTester;
@@ -120,10 +134,9 @@ class TrajectoryOptimizer {
    * @param workspace scratch space for intermediate computations
    * @return double, total cost
    */
-  T CalcCost(const std::vector<VectorX<T>>& q,
-                  const std::vector<VectorX<T>>& v,
-                  const std::vector<VectorX<T>>& tau,
-                  TrajectoryOptimizerWorkspace<T>* workspace) const;
+  T CalcCost(const std::vector<VectorX<T>>& q, const std::vector<VectorX<T>>& v,
+             const std::vector<VectorX<T>>& tau,
+             TrajectoryOptimizerWorkspace<T>* workspace) const;
 
   /**
    * Compute a sequence of generalized velocities v from a sequence of

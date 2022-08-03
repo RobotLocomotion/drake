@@ -30,6 +30,7 @@ namespace internal {
  Eᵢ. Notice that blocks A₀, B₀, A₁, Eₙ₋₂, Dₙ₋₁, Eₙ₋₁ are not part of the matrix.
  However this class does store them and initializes them to zero for convenience
  when writting alorithms that operate on this matrix. */
+template <typename T>
 class PentaDiagonalMatrix {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PentaDiagonalMatrix);
@@ -56,11 +57,9 @@ class PentaDiagonalMatrix {
   semantics (with std::move) to avoid unnecessary heap allocation and copies
   when making a new matrix object (highly recommended if local copies are not
   needed). */
-  PentaDiagonalMatrix(std::vector<Eigen::MatrixXd> A,
-                      std::vector<Eigen::MatrixXd> B,
-                      std::vector<Eigen::MatrixXd> C,
-                      std::vector<Eigen::MatrixXd> D,
-                      std::vector<Eigen::MatrixXd> E);
+  PentaDiagonalMatrix(std::vector<MatrixX<T>> A, std::vector<MatrixX<T>> B,
+                      std::vector<MatrixX<T>> C, std::vector<MatrixX<T>> D,
+                      std::vector<MatrixX<T>> E);
 
   /* Convenience constructor for a symmetric penta-diagonal matrix. That is,
    Eᵢ = Aᵢ₊₂ᵀ and Dᵢ = Bᵢ₊₁ᵀ. Only the lower triangular part of Cᵢ is used,
@@ -74,59 +73,87 @@ class PentaDiagonalMatrix {
    semantics (with std::move) to avoid unnecessary heap allocation and copies
    when making a new matrix object (highly recommended if local copies are not
    needed). */
-  PentaDiagonalMatrix(std::vector<Eigen::MatrixXd> A,
-                      std::vector<Eigen::MatrixXd> B,
-                      std::vector<Eigen::MatrixXd> C);
+  PentaDiagonalMatrix(std::vector<MatrixX<T>> A, std::vector<MatrixX<T>> B,
+                      std::vector<MatrixX<T>> C);
 
-  static PentaDiagonalMatrix MakeIdentity(int num_blocks, int block_size);
+  /* Copy the lower triangular part of this matrix to the upper triangular part,
+   i.e., Eᵢ = Aᵢ₊₂ᵀ and Dᵢ = Bᵢ₊₁ᵀ, to make this a symmetric matrix.
 
-  static PentaDiagonalMatrix MakeSymmetricFromLowerDense(
-      const Eigen::MatrixXd& M, int num_blocks, int block_size);
+   @pre All vectors A, B, C, D and E must have the same size.
+   @pre All blocks must be square of the same size k×k. This invariant is
+   verified only in Debug builds. */
+  void MakeSymmetric();
 
-  Eigen::MatrixXd MakeDense() const;
+  static PentaDiagonalMatrix<T> MakeIdentity(int num_blocks, int block_size);
+
+  static PentaDiagonalMatrix<T> MakeSymmetricFromLowerDense(const MatrixX<T>& M,
+                                                            int num_blocks,
+                                                            int block_size);
+
+  MatrixX<T> MakeDense() const;
 
   // The size k of each of the blocks in the diagonals. All blocks have the same
   // size k x k.
   int block_size() const { return A_.size() == 0 ? 0 : A_[0].rows(); }
 
-  // Returns the the total number of rows.
+  // Returns the total number of rows.
   int rows() const { return block_rows() * block_size(); }
 
-  // Returns the number of block rows.
-  int block_rows() const { return C_.size(); }
-
-  int block_cols() const { return block_rows(); }
-
+  // Returns the total number of columns.
   int cols() const { return rows(); }
 
+  // Returns the number of blocks in each row.
+  int block_rows() const { return C_.size(); }
+
+  // Returns the number of blocks in each column.
+  int block_cols() const { return block_rows(); }
+
   // Returns a reference to the second lower diagonal.
-  const std::vector<Eigen::MatrixXd>& A() const { return A_; }
-  std::vector<Eigen::MatrixXd>& mutable_A() { return A_; }
+  const std::vector<MatrixX<T>>& A() const { return A_; }
+
+  // Mutable version of A().
+  // @warning makes the matrix non-symmetric
+  std::vector<MatrixX<T>>& mutable_A() {
+    is_symmetric_ = false;
+    return A_;
+  }
 
   // Returns a reference to the first lower diagonal.
-  const std::vector<Eigen::MatrixXd>& B() const { return B_; }
-  std::vector<Eigen::MatrixXd>& mutable_B() { return B_; }
+  const std::vector<MatrixX<T>>& B() const { return B_; }
+
+  // Mutable version of B().
+  // @warning makes the matrix non-symmetric
+  std::vector<MatrixX<T>>& mutable_B() {
+    is_symmetric_ = false;
+    return B_;
+  }
 
   // Returns a reference to the main diagonal.
-  const std::vector<Eigen::MatrixXd>& C() const { return C_; }
-  std::vector<Eigen::MatrixXd>& mutable_C() { return C_; }
+  const std::vector<MatrixX<T>>& C() const { return C_; }
+
+  // Mutable version of C().
+  // @warning makes the matrix non-symmetric
+  std::vector<MatrixX<T>>& mutable_C() {
+    is_symmetric_ = false;
+    return C_;
+  }
 
   // Returns a reference to the first upper diagonal.
-  const std::vector<Eigen::MatrixXd>& D() const { return D_; }
+  const std::vector<MatrixX<T>>& D() const { return D_; }
 
   // Mutable version of D().
   // @pre matrix is not symmetric.
-  std::vector<Eigen::MatrixXd>& mutable_D() {
+  std::vector<MatrixX<T>>& mutable_D() {
     DRAKE_THROW_UNLESS(!is_symmetric());
     return D_;
   }
 
   // Returns a reference to the second upper diagonal.
-  const std::vector<Eigen::MatrixXd>& E() const { return E_; }
+  const std::vector<MatrixX<T>>& E() const { return E_; }
 
   // Mutable version of E().
   // @pre matrix is not symmetric.
-  std::vector<Eigen::MatrixXd>& mutable_E() {
+  std::vector<MatrixX<T>>& mutable_E() {
     DRAKE_THROW_UNLESS(!is_symmetric());
     return E_;
   }
@@ -134,15 +161,15 @@ class PentaDiagonalMatrix {
   bool is_symmetric() const { return is_symmetric_; }
 
  private:
-  static bool VerifyAllBlocksOfSameSize(const std::vector<Eigen::MatrixXd>& X,
+  static bool VerifyAllBlocksOfSameSize(const std::vector<MatrixX<T>>& X,
                                         int size);
   bool VerifySizes() const;
 
-  std::vector<Eigen::MatrixXd> A_;
-  std::vector<Eigen::MatrixXd> B_;
-  std::vector<Eigen::MatrixXd> C_;
-  std::vector<Eigen::MatrixXd> D_;
-  std::vector<Eigen::MatrixXd> E_;
+  std::vector<MatrixX<T>> A_;
+  std::vector<MatrixX<T>> B_;
+  std::vector<MatrixX<T>> C_;
+  std::vector<MatrixX<T>> D_;
+  std::vector<MatrixX<T>> E_;
   bool is_symmetric_{false};
 };
 

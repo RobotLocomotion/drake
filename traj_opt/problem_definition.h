@@ -31,6 +31,8 @@ struct ProblemDefinition {
 
   // Running cost coefficients for generalized positions
   // N.B. these weights are per unit of time
+  // TODO(vincekurtz): consider storing these as VectorXd, assuming they are
+  // diagonal, and using X.asDiagonal() when multiplying.
   MatrixXd Qq;
 
   // Running cost coefficients for generalized velocities

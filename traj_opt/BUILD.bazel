@@ -33,6 +33,7 @@ drake_cc_library(
     srcs = ["penta_diagonal_matrix.cc"],
     hdrs = ["penta_diagonal_matrix.h"],
     deps = [
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
@@ -55,6 +56,7 @@ drake_cc_library(
     ],
     deps = [
         ":inverse_dynamics_partials",
+        ":penta_diagonal_matrix",
         ":problem_definition",
         ":trajectory_optimizer_state",
         ":trajectory_optimizer_workspace",
@@ -141,9 +143,11 @@ drake_cc_googletest(
     data = [
         "//examples/pendulum:prod_models",
         "//manipulation/models/iiwa_description:models",
+        "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
         ":inverse_dynamics_partials",
+        ":penta_diagonal_matrix",
         ":trajectory_optimizer",
         ":trajectory_optimizer_workspace",
         ":velocity_partials",

@@ -46,7 +46,7 @@ class PentaDiagonalFactorization {
   ///
   /// @pre Matrix M is symmetric and positive definite.
   /// @throws if M is not symmetric.
-  explicit PentaDiagonalFactorization(const PentaDiagonalMatrix& M);
+  explicit PentaDiagonalFactorization(const PentaDiagonalMatrix<double>& M);
 
   /// Reports whether the factorization succeeded or not.
   PentaDiagonalFactorizationStatus status() const { return status_; }
@@ -92,7 +92,7 @@ class PentaDiagonalFactorization {
     std::vector<BlockType> Zm2;  // The very first entry is i=-1 (one-based).
   };
 
-  void Factorize(const PentaDiagonalMatrix& M);
+  void Factorize(const PentaDiagonalMatrix<double>& M);
 
   Factorization factorization_;
   Eigen::VectorXd r_;  // Convenient storage for the Solve() stage.
@@ -102,14 +102,14 @@ class PentaDiagonalFactorization {
 
 template <int kBlockSize>
 PentaDiagonalFactorization<kBlockSize>::PentaDiagonalFactorization(
-    const PentaDiagonalMatrix& M) {
+    const PentaDiagonalMatrix<double>& M) {
   Factorize(M);
   r_.resize(M.block_size() * (M.block_rows() + 2));
 }
 
 template <int kBlockSize>
 void PentaDiagonalFactorization<kBlockSize>::Factorize(
-    const PentaDiagonalMatrix& M) {
+    const PentaDiagonalMatrix<double>& M) {
   DRAKE_DEMAND(M.is_symmetric());
 
   const int k = M.block_size();

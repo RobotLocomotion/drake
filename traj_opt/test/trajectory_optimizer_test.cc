@@ -78,6 +78,216 @@ using multibody::MultibodyPlant;
 using multibody::Parser;
 using test::LimitMalloc;
 
+/**
+ * Test our computation of the Hessian on a system
+ * with more than one DoF.
+ */
+GTEST_TEST(TrajectoryOptimizerTest, HessianAcrobot) {
+  // Define an optimization problem.
+  const int num_steps = 5;
+  const double dt = 1e-2;
+
+  ProblemDefinition opt_prob;
+  opt_prob.num_steps = num_steps;
+  opt_prob.q_init = Vector2d(0.1, 0.2);
+  opt_prob.v_init = Vector2d(-0.01, 0.03);
+  opt_prob.Qq = 0.1 * MatrixXd::Identity(2, 2);
+  opt_prob.Qv = 0.2 * MatrixXd::Identity(2, 2);
+  opt_prob.Qf_q = 0.3 * MatrixXd::Identity(2, 2);
+  opt_prob.Qf_v = 0.4 * MatrixXd::Identity(2, 2);
+  opt_prob.R = 0.01 * MatrixXd::Identity(2, 2);
+  opt_prob.q_nom = Vector2d(1.5, -0.1);
+  opt_prob.v_nom = Vector2d(0.2, 0.1);
+
+  // Create a pendulum model
+  MultibodyPlant<double> plant(dt);
+  const std::string urdf_file =
+      FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.urdf");
+  Parser(&plant).AddAllModelsFromFile(urdf_file);
+  plant.Finalize();
+
+  // Create an optimizer
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
+  TrajectoryOptimizerState<double> state = optimizer.CreateState();
+
+  // Make some fake data
+  std::vector<VectorXd> q(num_steps + 1);
+  q[0] = opt_prob.q_init;
+  for (int t = 1; t <= num_steps; ++t) {
+    q[t] = q[t - 1] + dt * opt_prob.v_init;
+  }
+  state.set_q(q);
+
+  // Compute the Gauss-Newton Hessian approximation numerically
+  const int nq = plant.num_positions();
+  const int num_vars = nq * (num_steps + 1);
+  PentaDiagonalMatrix<double> H_sparse(num_steps + 1, nq);
+  optimizer.CalcHessian(state, &H_sparse);
+  MatrixXd H = H_sparse.MakeDense();
+
+  // Set up an autodiff copy of the optimizer and plant
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+  TrajectoryOptimizer<AutoDiffXd> optimizer_ad(plant_ad.get(), opt_prob);
+  TrajectoryOptimizerState<AutoDiffXd> state_ad = optimizer_ad.CreateState();
+
+  std::vector<VectorX<AutoDiffXd>> q_ad(num_steps + 1, VectorX<AutoDiffXd>(2));
+  int ad_idx = 0;  // index for autodiff variables
+  for (int t = 0; t <= num_steps; ++t) {
+    for (int i = 0; i < nq; ++i) {
+      q_ad[t].segment<1>(i) =
+          math::InitializeAutoDiff(q[t].segment<1>(i), num_vars, ad_idx);
+      ++ad_idx;
+    }
+  }
+  state_ad.set_q(q_ad);
+  AutoDiffXd L_ad = optimizer_ad.CalcCost(state_ad);  // forces cache update
+
+  // Formulate an equivalent least-squares problem, where
+  //
+  //    L(q) = 1/2 r(q)'*r(q)
+  //    J = dr(q)/dq
+  //
+  // and the gradient and Gauss-Newton Hessian approximation are given by
+  //
+  //    g = J'r,
+  //    H = J'J.
+  //
+  Matrix2d Qq_sqrt = (dt * 2 * opt_prob.Qq).cwiseSqrt();  // diagonal matrices
+  Matrix2d Qv_sqrt = (dt * 2 * opt_prob.Qv).cwiseSqrt();
+  Matrix2d R_sqrt = (dt * 2 * opt_prob.R).cwiseSqrt();
+  Matrix2d Qfq_sqrt = (2 * opt_prob.Qf_q).cwiseSqrt();
+  Matrix2d Qfv_sqrt = (2 * opt_prob.Qf_v).cwiseSqrt();
+
+  const std::vector<VectorX<AutoDiffXd>>& v_ad = state_ad.cache().v;
+  const std::vector<VectorX<AutoDiffXd>>& u_ad = state_ad.cache().tau;
+
+  // Here we construct the residual
+  //        [        ...           ]
+  //        [ sqrt(Qq)*(q_t-q_nom) ]
+  // r(q) = [ sqrt(Qv)*(v_t-v_nom) ]
+  //        [ sqrt(R) * tau_t      ]
+  //        [        ...           ]
+  //        [ sqrt(Qfq)*(q_T-q_nom)]
+  //        [ sqrt(Qfv)*(v_T-v_nom)]
+  VectorX<AutoDiffXd> r(num_steps * 6 + 4);
+  r.setZero();
+  for (int t = 0; t < num_steps; ++t) {
+    r.segment(t * 6, 2) = Qq_sqrt * (q_ad[t] - opt_prob.q_nom);
+    r.segment(t * 6 + 2, 2) = Qv_sqrt * (v_ad[t] - opt_prob.v_nom);
+    r.segment(t * 6 + 4, 2) = R_sqrt * u_ad[t];
+  }
+  r.segment(num_steps * 6, 2) = Qfq_sqrt * (q_ad[num_steps] - opt_prob.q_nom);
+  r.segment(num_steps * 6 + 2, 2) =
+      Qfv_sqrt * (v_ad[num_steps] - opt_prob.v_nom);
+
+  MatrixXd J = math::ExtractGradient(r);
+  AutoDiffXd L_lsqr = 0.5 * r.transpose() * r;
+  VectorXd g_lsqr = J.transpose() * math::ExtractValue(r);
+  MatrixXd H_lsqr = J.transpose() * J;
+
+  // Check that the cost from our least-squares formulation is correct
+  const double kToleranceCost = 10 * std::numeric_limits<double>::epsilon();
+  double L = optimizer.CalcCost(state);
+  EXPECT_NEAR(L, L_lsqr.value(), kToleranceCost);
+
+  // Check that the gradient from our least-squares formulation matches what we
+  // compute analytically. Primary source of error is our use of finite
+  // differences to compute dtau/dq. We ignore the top block of the gradient,
+  // since this is overwritten with zero, because q0 is fixed.
+  const double kToleranceGrad =
+      sqrt(std::numeric_limits<double>::epsilon()) / dt;
+  VectorXd g(num_vars);
+  optimizer.CalcGradient(state, &g);
+  EXPECT_TRUE(CompareMatrices(g.bottomRows(num_steps * nq),
+                              g_lsqr.bottomRows(num_steps * nq), kToleranceGrad,
+                              MatrixCompareType::relative));
+
+  // Check that the Hessian approximation from least-squares (Gauss-Newton)
+  // matches what we compute analytically. Finite differences is again the
+  // primary source of error. We ignore the rows and columns, since these are
+  // overwritten to fix q0.
+  const double kToleranceHess = sqrt(std::numeric_limits<double>::epsilon());
+  EXPECT_TRUE(
+      CompareMatrices(H.bottomRightCorner(num_steps * nq, num_steps * nq),
+                      H_lsqr.bottomRightCorner(num_steps * nq, num_steps * nq),
+                      kToleranceHess, MatrixCompareType::relative));
+}
+
+/**
+ * Test our computation of the Hessian by comparing
+ * with autodiff.
+ */
+GTEST_TEST(TrajectoryOptimizerTest, HessianPendulum) {
+  // Define an optimization problem.
+  const int num_steps = 5;
+  const double dt = 1e-2;
+
+  ProblemDefinition opt_prob;
+  opt_prob.num_steps = num_steps;
+  opt_prob.q_init = Vector1d(0.1);
+  opt_prob.v_init = Vector1d(0.0);
+  opt_prob.Qq = 0.1 * MatrixXd::Identity(1, 1);
+  opt_prob.Qv = 0.2 * MatrixXd::Identity(1, 1);
+  opt_prob.Qf_q = 0.3 * MatrixXd::Identity(1, 1);
+  opt_prob.Qf_v = 0.4 * MatrixXd::Identity(1, 1);
+  opt_prob.R = 0.05 * MatrixXd::Identity(1, 1);
+  opt_prob.q_nom = Vector1d(0.1);
+  opt_prob.v_nom = Vector1d(-0.1);
+
+  // Create a pendulum model
+  MultibodyPlant<double> plant(dt);
+  const std::string urdf_file =
+      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
+  Parser(&plant).AddAllModelsFromFile(urdf_file);
+  plant.Finalize();
+
+  // Create an optimizer
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
+  TrajectoryOptimizerState<double> state = optimizer.CreateState();
+
+  // Make some fake data
+  std::vector<VectorXd> q(num_steps + 1);
+  q[0] = opt_prob.q_init;
+  for (int t = 1; t <= num_steps; ++t) {
+    q[t] = q[t - 1] + 0.1 * dt * MatrixXd::Identity(1, 1);
+  }
+  state.set_q(q);
+
+  // Compute the Hessian analytically
+  const int nq = plant.num_positions();
+  const int num_vars = nq * (num_steps + 1);
+  PentaDiagonalMatrix<double> H_sparse(num_steps + 1, nq);
+  optimizer.CalcHessian(state, &H_sparse);
+  MatrixXd H = H_sparse.MakeDense();
+
+  // Compute the Hessian using autodiff
+  // Note that this is the true Hessian, and not the Gauss-Newton approximation
+  // that we will use. But for this simple pendulum the two are very close
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+  TrajectoryOptimizer<AutoDiffXd> optimizer_ad(plant_ad.get(), opt_prob);
+  TrajectoryOptimizerState<AutoDiffXd> state_ad = optimizer_ad.CreateState();
+
+  std::vector<VectorX<AutoDiffXd>> q_ad(num_steps + 1);
+  for (int t = 0; t <= num_steps; ++t) {
+    q_ad[t] = math::InitializeAutoDiff(q[t], num_steps + 1, t);
+  }
+  state_ad.set_q(q_ad);
+
+  VectorX<AutoDiffXd> g_ad(num_vars);
+  optimizer_ad.CalcGradient(state_ad, &g_ad);
+  MatrixXd H_ad = math::ExtractGradient(g_ad);
+
+  // We overwrite the first row and column of the Hessian, so we won't compare
+  // those
+  const double kTolerance = sqrt(std::numeric_limits<double>::epsilon()) / dt;
+  EXPECT_TRUE(
+      CompareMatrices(H.bottomRightCorner(num_steps * nq, num_steps * nq),
+                      H_ad.bottomRightCorner(num_steps * nq, num_steps * nq),
+                      kTolerance, MatrixCompareType::relative));
+}
+
 GTEST_TEST(TrajectoryOptimizerTest, AutodiffGradient) {
   // Test our gradient computations using autodiff
   const int num_steps = 5;
