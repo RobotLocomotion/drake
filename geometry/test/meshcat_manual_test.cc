@@ -17,9 +17,6 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/systems/analysis/simulator.h"
 
-#include "drake/geometry/drake_visualizer.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
-
 /* To test, you must manually run `bazel run //geometry:meshcat_manual_test`,
 then follow the instructions on your console. */
 
@@ -248,9 +245,6 @@ Open up your browser to the URL above.
     params.delete_on_initialization_event = false;
     auto& visualizer = MeshcatVisualizerd::AddToBuilder(
         &builder, scene_graph, meshcat, std::move(params));
-
-    DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
-    ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph);
 
     multibody::meshcat::ContactVisualizerParams cparams;
     cparams.newtons_per_meter = 60.0;
