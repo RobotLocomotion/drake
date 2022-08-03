@@ -125,7 +125,8 @@ def main():
     update_visualization(plant, scene_graph)
     plant.Finalize()
 
-    meshcat = connect_visualizers(builder, plant, scene_graph)
+    meshcat = connect_visualizers(builder, plant, scene_graph,
+                                  publish_contacts=False)
     assert meshcat is not None, "Meshcat visualizer not created but required."
 
     # Add sliders to set positions of the joints.
