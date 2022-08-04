@@ -564,13 +564,6 @@ class Meshcat::Impl {
       websocket_thread_.join();
       throw std::runtime_error("Meshcat failed to open a websocket port.");
     }
-
-    // We want to make sure that the render mode artifacts are explicitly
-    // contained in the scene tree. If a MeshCat visualizer *reconnects* to
-    // this server, but its render mode is different from the current render
-    // mode, it will get updated, but only if the properties are stored in the
-    // tree.
-    ResetRenderMode();
   }
 
   ~Impl() {
@@ -1403,7 +1396,10 @@ class Meshcat::Impl {
         connection = new WebSocket(url);
         connection.binaryType = "arraybuffer";
         connection.onmessage = (msg) => handle_message(msg);
+        connection.onopen = (evt) => {
+          if (!fresh_connection) location.reload(); };
         connection.onclose = function(evt) {
+          fresh_connection = false;
           // Immediately schedule an attempt to reconnect.
           setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);
         }
@@ -1693,18 +1689,6 @@ class Meshcat::Impl {
     DRAKE_DEMAND(new_count >= 0);
     DRAKE_DEMAND(new_count == static_cast<int>(websockets_.size()));
     ws->subscribe("all");
-    {
-      // This connection may represent a *reconnection*. The client may have had
-      // data from a previous session. So, before populating it with the current
-      // state of `this` MeshCat, clear out whatever the old MeshCat put there.
-      // Note, if the two MeshCat instances didn't share a prefix, this won't
-      // clear out the old.
-      std::stringstream message_stream;
-      internal::DeleteData data;
-      data.path = prefix_;
-      msgpack::pack(message_stream, data);
-      ws->send(message_stream.str());
-    }
     // Update this new connection with previously published data.
     scene_tree_root_.Send(ws);
     if (!animation_.empty()) {
