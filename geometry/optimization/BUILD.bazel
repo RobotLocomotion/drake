@@ -139,6 +139,8 @@ drake_cc_googletest(
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:meshcat",
+        "//geometry/test_utilities:meshcat_environment",
     ],
 )
 
