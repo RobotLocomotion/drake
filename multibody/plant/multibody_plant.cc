@@ -22,10 +22,10 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/sparse_linear_operator.h"
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
-#include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
+#include "drake/multibody/plant/make_discrete_update_manager.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
@@ -872,17 +872,10 @@ void MultibodyPlant<T>::Finalize() {
   // is to move TAMSI, as well as the entirety of the discrete handling of
   // contact, into CompliantContactManager.
   if (is_discrete()) {
-    if constexpr (!std::is_same_v<T, symbolic::Expression>) {
-      if (contact_solver_enum_ == DiscreteContactSolver::kSap) {
-        SetDiscreteUpdateManager(
-            std::make_unique<internal::CompliantContactManager<T>>());
-      }
-    } else {
-      if (contact_solver_enum_ == DiscreteContactSolver::kSap) {
-        throw std::runtime_error(
-            "SAP solver not supported for scalar type T = "
-            "symbolic::Expression.");
-      }
+    std::unique_ptr<internal::DiscreteUpdateManager<T>> manager =
+        internal::MakeDiscreteUpdateManager<T>(contact_solver_enum_);
+    if (manager) {
+      SetDiscreteUpdateManager(std::move(manager));
     }
   }
 }
