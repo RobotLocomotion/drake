@@ -1390,7 +1390,20 @@ class Meshcat::Impl {
     // websockets with the static javascript commands.
     // Note: If the html code changes, the DRAKE_DEMAND will fail, and the code
     // string here will need to be updated to once again match the html.
-    const std::string html_connect = R"""(// When the connection closes, try creating a new connection automatically.
+    const std::string html_connect = R"""(// The lifespan of the server may be much shorter than this visualizer
+    // client. We'd like the user to not have to explicitly reload when they
+    // start a new server. So, we automatically try to reconnect at some given
+    // rate. However, due to the split of visualizer state between server and
+    // client, simply reconnecting may leave the *existing* visualizer in a
+    // strange state with various stale artifacts. So, when we detect a
+    // *reconnection*, we simply reload the page, so that every *meaningful*
+    // connection is accompanied by a fresh client state. This
+    // `fresh_connection` variable allows us to distinguish between a server
+    // connection from a clean client state versus a reconnection after the
+    // original connection was lost.
+    var fresh_connection = true;
+    status_dom = document.getElementById("status-message");
+    // When the connection closes, try creating a new connection automatically.
     function make_connection(url, reconnect_ms) {
       try {
         connection = new WebSocket(url);
@@ -1399,6 +1412,7 @@ class Meshcat::Impl {
         connection.onopen = (evt) => {
           if (!fresh_connection) location.reload(); };
         connection.onclose = function(evt) {
+          status_dom.style.display = "block";
           fresh_connection = false;
           // Immediately schedule an attempt to reconnect.
           setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);

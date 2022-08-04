@@ -8,6 +8,9 @@
 </head>
 
 <body>
+  <div id="status-message">
+    No connection to server. Attempting to find a new connection...
+  </div>
   <div id="meshcat-pane">
   </div>
 
@@ -76,6 +79,7 @@
     // connection from a clean client state versus a reconnection after the
     // original connection was lost.
     var fresh_connection = true;
+    status_dom = document.getElementById("status-message");
     // When the connection closes, try creating a new connection automatically.
     function make_connection(url, reconnect_ms) {
       try {
@@ -85,6 +89,7 @@
         connection.onopen = (evt) => {
           if (!fresh_connection) location.reload(); };
         connection.onclose = function(evt) {
+          status_dom.style.display = "block";
           fresh_connection = false;
           // Immediately schedule an attempt to reconnect.
           setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);
@@ -118,6 +123,17 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
+    }
+
+    #status-message{
+      width: 50vw;
+      text-align: center;
+      font-weight: bold;
+      background-color: yellow;
+      position: fixed;
+      left: 25%;
+      /* margin-left: -25vw; */
+      display: none;
     }
 
     #stats-plot {
