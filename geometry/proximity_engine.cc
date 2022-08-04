@@ -315,9 +315,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     hydroelastic_geometries_.RemoveGeometry(id);
     hydroelastic_geometries_.MaybeAddGeometry(geometry.shape(), id,
                                               new_properties);
+    const RigidTransformd X_WG = GetX_WG(id, geometry.is_dynamic());
     geometries_for_deformable_contact_.RemoveGeometry(id);
     geometries_for_deformable_contact_.MaybeAddRigidGeometry(
-        geometry.shape(), id, new_properties);
+        geometry.shape(), id, new_properties, X_WG);
   }
 
   // Returns true if the geometry with the given Id has been registered in
@@ -419,13 +420,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                                              void* user_data) {
     const ReifyData& data = *static_cast<ReifyData*>(user_data);
 
-    geometries_for_deformable_contact_.MaybeAddRigidGeometry(shape, data.id,
-                                                             data.properties);
-    // TODO(xuchenhan-tri): Update MaybeAddRigidGeometry to take in an X_WG
-    // argument to initialize the pose.
-    // Ensure that the rigid pose is up-to-date at registration because anchored
-    // geometries don't update their poses before proximity queries.
-    geometries_for_deformable_contact_.UpdateRigidWorldPose(data.id, data.X_WG);
+    geometries_for_deformable_contact_.MaybeAddRigidGeometry(
+        shape, data.id, data.properties, data.X_WG);
   }
 
   void ImplementGeometry(const Sphere& sphere, void* user_data) override {
