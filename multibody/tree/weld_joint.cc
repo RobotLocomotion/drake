@@ -20,7 +20,7 @@ WeldJoint<T>::TemplatedDoCloneToScalar(
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<WeldJoint<ToScalar>>(
       this->name(),
-      frame_on_parent_body_clone, frame_on_child_body_clone, X_PC());
+      frame_on_parent_body_clone, frame_on_child_body_clone, X_FM());
 
   return joint_clone;
 }
@@ -52,7 +52,7 @@ WeldJoint<T>::MakeImplementationBlueprint() const {
   auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
   blue_print->mobilizers_.push_back(
       std::make_unique<internal::WeldMobilizer<T>>(
-          this->frame_on_parent(), this->frame_on_child(), X_PC_));
+          this->frame_on_parent(), this->frame_on_child(), X_FM_));
   return blue_print;
 }
 

@@ -241,8 +241,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("WeldFrames",
             py::overload_cast<const Frame<T>&, const Frame<T>&,
                 const RigidTransform<double>&>(&Class::WeldFrames),
-            py::arg("frame_on_parent_P"), py::arg("frame_on_child_C"),
-            py::arg("X_PC") = RigidTransform<double>::Identity(),
+            py::arg("frame_on_parent_F"), py::arg("frame_on_child_M"),
+            py::arg("X_FM") = RigidTransform<double>::Identity(),
             py_rvp::reference_internal, cls_doc.WeldFrames.doc)
         .def(
             "AddForceElement",
