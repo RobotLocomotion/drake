@@ -907,6 +907,9 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
   EXPECT_THAT(html, ::testing::Not(HasSubstr("stats.min.js")));
   EXPECT_THAT(html, ::testing::Not(HasSubstr("msgpack.min.js")));
+  // If the html changes its connection block delimiter to something else,
+  // this test will still pass, but lose meaning.
+  EXPECT_THAT(html, ::testing::Not(HasSubstr("CONNECTION BLOCK")));
 }
 
 // Check MeshcatParams.hide_stats_plot sends a hide_realtime_rate message
