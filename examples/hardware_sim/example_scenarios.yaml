@@ -1,5 +1,33 @@
-# This simulation loads the "TRI homecart" model (two arms and a countertop).
-Homecart:
+# This simulation loads an IIWA and WSG.
+Demo:
   directives:
-  - add_directives:
-      file: package://drake/manipulation/models/tri_homecart/homecart.yaml
+  - add_model:
+      name: amazon_table
+      file: package://drake/examples/manipulation_station/models/amazon_table_simplified.sdf
+  - add_weld:
+      parent: world
+      child: amazon_table::amazon_table
+  - add_frame:
+      name: iiwa_on_world
+      X_PF:
+        base_frame: world
+        translation: [0, -0.7, 0]
+        rotation: !Rpy { deg: [0, 0, 90] }
+  - add_model:
+      name: iiwa
+      file: package://drake/manipulation/models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
+  - add_weld:
+      parent: iiwa_on_world
+      child: iiwa::base
+  - add_frame:
+      name: wsg_on_iiwa
+      X_PF:
+        base_frame: iiwa_link_7
+        translation: [0, 0, 0.114]
+        rotation: !Rpy { deg: [90, 0, 90] }
+  - add_model:
+      name: wsg
+      file: package://drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+  - add_weld:
+      parent: wsg_on_iiwa
+      child: wsg::body
