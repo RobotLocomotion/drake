@@ -24,6 +24,7 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/multiplexer.h"
+#include "drake/visualization/visualizer_config_functions.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
@@ -46,6 +47,7 @@ using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::systems::controllers::InverseDynamicsController;
 using drake::systems::Demultiplexer;
+using drake::visualization::AddDefaultVisualizer;
 
 namespace drake {
 namespace examples {
@@ -81,14 +83,10 @@ int DoMain() {
   builder.Connect(jaco_plant.get_state_output_port(jaco_id),
                   jaco_controller->get_input_port_estimated_state());
 
+  AddDefaultVisualizer(&builder);
+
   systems::lcm::LcmInterfaceSystem* lcm =
       builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, lcm);
-  geometry::DrakeVisualizerParams params{.role = geometry::Role::kProximity,
-                                         .default_color = {1.0, 0.0, 0.0, 0.5},
-                                         .use_role_channel_suffix = true};
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, lcm, params);
-
   auto command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_jaco_command>(
           "KINOVA_JACO_COMMAND", lcm));
