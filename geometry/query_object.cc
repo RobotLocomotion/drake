@@ -36,7 +36,7 @@ QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>& query_object) {
     state_ = query_object.state_;
   } else if (query_object.context_ && query_object.scene_graph_) {
     // Create a new baked state; make sure the source is fully updated.
-    query_object.FullPoseUpdate();
+    query_object.FullPoseAndConfigurationUpdate();
     state_ = std::make_shared<GeometryState<T>>(query_object.geometry_state());
   }
   inspector_.set(state_.get());
@@ -146,6 +146,21 @@ QueryObject<T>::ComputeContactSurfacesWithFallback(
 }
 
 template <typename T>
+template <typename T1>
+typename std::enable_if_t<std::is_same_v<T1, double>, void>
+QueryObject<T>::ComputeDeformableRigidContact(
+    std::vector<internal::DeformableRigidContact<T>>* deformable_rigid_contact)
+    const {
+  DRAKE_DEMAND(deformable_rigid_contact != nullptr);
+  ThrowIfNotCallable();
+
+  FullPoseAndConfigurationUpdate();
+
+  const GeometryState<T>& state = geometry_state();
+  state.ComputeDeformableRigidContact(deformable_rigid_contact);
+}
+
+template <typename T>
 std::vector<SignedDistancePair<T>>
 QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
     const double max_distance) const {
@@ -239,6 +254,9 @@ const GeometryState<T>& QueryObject<T>::geometry_state() const {
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&QueryObject<T>::template ComputeContactSurfaces<T>,
      &QueryObject<T>::template ComputeContactSurfacesWithFallback<T>))
+
+template void QueryObject<double>::ComputeDeformableRigidContact<double>(
+    std::vector<internal::DeformableRigidContact<double>>*) const;
 
 }  // namespace geometry
 }  // namespace drake

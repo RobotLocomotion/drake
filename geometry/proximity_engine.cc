@@ -281,6 +281,16 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void AddDeformableGeometry(const VolumeMesh<double>& mesh_W, GeometryId id) {
     geometries_for_deformable_contact_.AddDeformableGeometry(id, mesh_W);
+    // Currently, even though no collision filtering is done for deformable
+    // geometries, the collision filter still needs to be aware of the existence
+    // of deformable geometries. This is because collision filters implicitly
+    // assumes that it is aware of all geometries registered with the proximity
+    // engine.
+    // Currently, all deformable geometries are registered with the world
+    // frame, if the collision filter isn't aware of the geometry, we will
+    // trigger an assertion when adding geometries whose collision with
+    // world-framed geometries are filtered out.
+    collision_filter_.AddGeometry(id);
   }
 
   void UpdateRepresentationForNewProperties(
