@@ -646,7 +646,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("name"), py::arg("frame_on_parent_F"),
             py::arg("frame_on_child_M"), py::arg("X_FM"), cls_doc.ctor.doc)
         .def("X_PC", &Class::X_PC, cls_doc.X_PC.doc)
-        .def("X_FM", &Class::X_FM, cls_dox.X_FM.doc);
+        .def("X_FM", &Class::X_FM, cls_doc.X_FM.doc);
   }
 
   // Actuators.
