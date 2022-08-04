@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/query_results/contact_surface.h"
+#include "drake/geometry/query_results/deformable_rigid_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -392,6 +393,22 @@ class QueryObject {
       HydroelasticContactRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
+
+  /** Reports contact information between all deformable geometries against all
+   rigid (non-deformable) geometries. This function only supports double as the
+   scalar type.
+   @param[out] deformable_rigid_contact
+     Contains all deformable rigid contact data on output. Any data passed in is
+     cleared before the computation. On output, it has size equal to the number
+     of deformable geometries and sorted by their geometry ids in increasing
+     order.
+   @pre deformable_rigid_contact != nullptr.
+   @experimental */
+  template <typename T1 = T>
+  typename std::enable_if_t<std::is_same_v<T1, double>, void>
+  ComputeDeformableRigidContact(
+      std::vector<internal::DeformableRigidContact<T>>*
+          deformable_rigid_contact) const;
 
   /** Applies a conservative culling mechanism to create a subset of all
    possible geometry pairs based on non-zero intersections. A geometry pair
@@ -779,8 +796,8 @@ class QueryObject {
     inspector_.set(&geometry_state());
   }
 
-  // Update all poses. This method does no work if this is a "baked" query
-  // object (see class docs for discussion).
+  // Update poses for all rigid (non-deformable) geometries. This method does no
+  // work if this is a "baked" query object (see class docs for discussion).
   void FullPoseUpdate() const {
     // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
     //  Ideally, QueryObject should never have to invoke any explicit state
@@ -789,14 +806,22 @@ class QueryObject {
     if (scene_graph_) scene_graph_->FullPoseUpdate(*context_);
   }
 
-  // Update all deformable configurations. This method does no work if this is
-  // a "baked" query object (see class docs for discussion).
+  // Update configurations for all deformable geometries. This method does no
+  // work if this is a "baked" query object (see class docs for discussion).
   void FullConfigurationUpdate() const {
     // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
     //  Ideally, QueryObject should never have to invoke any explicit state
     //  updating call at all. It should simply request the geometry state and
     //  rely on the fact that it will always get an up-to-date version.
     if (scene_graph_) scene_graph_->FullConfigurationUpdate(*context_);
+  }
+
+  // Update poses for all rigid (non-deformable) geometries and configurations
+  // for all deformable geometries. This method does no work if this is a
+  // "baked" query object (see class docs for discussion).
+  void FullPoseAndConfigurationUpdate() const {
+    FullPoseUpdate();
+    FullConfigurationUpdate();
   }
 
   // Reports true if this object is configured so that it can support a query.

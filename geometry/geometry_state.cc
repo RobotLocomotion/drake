@@ -825,6 +825,23 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   geometry_version_.modify_proximity();
   switch (assign) {
     case RoleAssign::kNew: {
+      geometry.SetRole(std::move(properties));
+      if (geometry.is_deformable()) {
+        DRAKE_DEMAND(geometry.reference_mesh() != nullptr);
+        geometry_engine_->AddDeformableGeometry(*geometry.reference_mesh(),
+                                                geometry_id);
+      } else if (geometry.is_dynamic()) {
+        // Pass the geometry to the engine.
+        const RigidTransformd& X_WG =
+            convert_to_double(kinematics_data_.X_WGs.at(geometry_id));
+        geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG,
+                                             geometry_id,
+                                             *geometry.proximity_properties());
+      } else {
+        geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
+                                              geometry_id,
+                                              *geometry.proximity_properties());
+      }
       // The set of geometries G such that I need to introduce filtered pairs
       // (geometry_id, gᵢ) ∀ gᵢ ∈ G. Generally, it consists of those proximity
       // geometries affixed to the same frame as geometry_id (that frame would
@@ -833,23 +850,7 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       // no other geometries affixed to that frame -- attempting to apply
       // filters in that case would be a harmless act.
       GeometrySet ids_for_filtering;
-      geometry.SetRole(std::move(properties));
-      if (geometry.is_dynamic()) {
-        // Pass the geometry to the engine.
-        const RigidTransformd& X_WG =
-            convert_to_double(kinematics_data_.X_WGs.at(geometry_id));
-        geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG,
-                                             geometry_id,
-                                             *geometry.proximity_properties());
-
-        ids_for_filtering.Add(geometry.frame_id());
-      } else {
-        geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
-                                              geometry_id,
-                                              *geometry.proximity_properties());
-        ids_for_filtering.Add(InternalFrame::world_frame_id());
-      }
-
+      ids_for_filtering.Add(geometry.frame_id());
       // Apply collision filter between geometry id and any geometries that have
       // been identified. If none have been identified, this makes no changes.
       geometry_engine_->collision_filter().Apply(
@@ -1244,6 +1245,15 @@ void GeometryState<T>::FinalizePoseUpdate(
   for (auto* render_engine : render_engines) {
     render_engine->UpdatePoses(kinematics_data.X_WGs);
   }
+}
+
+template <typename T>
+void GeometryState<T>::FinalizeConfigurationUpdate(
+    const internal::KinematicsData<T>& kinematics_data,
+    internal::ProximityEngine<T>* proximity_engine,
+    std::vector<render::RenderEngine*>) const {
+  proximity_engine->UpdateDeformableVertexPositions(kinematics_data.q_WGs);
+  // TODO(xuchenhan-tri): Update render engine as necessary.
 }
 
 template <typename T>
