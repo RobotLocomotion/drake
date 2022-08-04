@@ -29,15 +29,14 @@ class WeldJointTest : public ::testing::Test {
     // Create an empty model.
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
-    // Add a body so we can add joint to it.
+    // Add a body so we can add a joint to it.
     body_ = &model->AddBody<RigidBody>("body", M_B);
 
-    // Add a prismatic joint between the world and the body.
     joint_ = &model->AddJoint<WeldJoint>(
         "Welder",
-        model->world_body(), std::nullopt,  // X_PF
-        *body_, std::nullopt,               // X_BM
-        X_FM_);                             // X_FM
+        model->world_body(), X_PF_,  // X_PF
+        *body_, X_CM_,               // X_CM
+        X_FM_);                      // X_FM
 
     // We are done adding modeling elements. Transfer tree to system for
     // computation.
@@ -55,6 +54,8 @@ class WeldJointTest : public ::testing::Test {
   const RigidBody<double>* body_{nullptr};
   const WeldJoint<double>* joint_{nullptr};
   const Translation3d X_FM_{0, 0.5, 0};
+  const Translation3d X_PF_{0.5, 0, 0};
+  const Translation3d X_CM_{0, 0, 0.5};
 };
 
 TEST_F(WeldJointTest, CanRotateOrTranslate) {
@@ -80,8 +81,14 @@ TEST_F(WeldJointTest, NumDOFs) {
 }
 
 // Verify we can retrieve the fixed posed between the welded frames.
+TEST_F(WeldJointTest, GetX_FM) {
+  EXPECT_TRUE(joint_->X_FM().IsExactlyEqualTo(X_FM_));
+}
+
+// Verify that the convenience function X_PC() gives the correct pose.
 TEST_F(WeldJointTest, GetX_PC) {
-  EXPECT_TRUE(joint_->X_PC().IsExactlyEqualTo(X_FM_));
+  EXPECT_FALSE(joint_->X_PC().IsExactlyEqualTo(X_FM_));
+  EXPECT_TRUE(joint_->X_PC().IsExactlyEqualTo(X_PF_ * X_FM_ * X_CM_.inverse()));
 }
 
 TEST_F(WeldJointTest, GetJointLimits) {

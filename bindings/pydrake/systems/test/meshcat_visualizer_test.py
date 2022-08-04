@@ -267,9 +267,9 @@ class TestMeshcat(unittest.TestCase):
 
         # Weld table to world.
         plant.WeldFrames(
-            frame_on_parent_P=plant.world_frame(),
-            frame_on_child_C=plant.GetFrameByName("link", table_model),
-            X_PC=RigidTransform(RotationMatrix.MakeXRotation(0.2)))
+            frame_on_parent_F=plant.world_frame(),
+            frame_on_child_M=plant.GetFrameByName("link", table_model),
+            X_FM=RigidTransform(RotationMatrix.MakeXRotation(0.2)))
 
         plant.Finalize()
 

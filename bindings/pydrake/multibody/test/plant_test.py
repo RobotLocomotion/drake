@@ -1258,9 +1258,9 @@ class TestPlant(unittest.TestCase):
         X_EeGripper = RigidTransform_[float](
             RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant_f.WeldFrames(
-            frame_on_parent_P=plant_f.world_frame(),
-            frame_on_child_C=plant_f.GetFrameByName("iiwa_link_0", iiwa_model),
-            X_PC=RigidTransform_[float]())
+            frame_on_parent_F=plant_f.world_frame(),
+            frame_on_child_M=plant_f.GetFrameByName("iiwa_link_0", iiwa_model),
+            X_FM=RigidTransform_[float]())
         # Perform the second weld without named arguments to ensure that the
         # proper binding gets invoked.
         plant_f.WeldFrames(
@@ -1407,13 +1407,13 @@ class TestPlant(unittest.TestCase):
         X_EeGripper = RigidTransform_[float](
             RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant_f.WeldFrames(
-            frame_on_parent_P=plant_f.world_frame(),
-            frame_on_child_C=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
+            frame_on_parent_F=plant_f.world_frame(),
+            frame_on_child_M=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
         plant_f.WeldFrames(
-            frame_on_parent_P=plant_f.GetFrameByName(
+            frame_on_parent_F=plant_f.GetFrameByName(
                 "iiwa_link_7", iiwa_model),
-            frame_on_child_C=plant_f.GetFrameByName("body", gripper_model),
-            X_PC=X_EeGripper)
+            frame_on_child_M=plant_f.GetFrameByName("body", gripper_model),
+            X_FM=X_EeGripper)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
 
@@ -1602,9 +1602,9 @@ class TestPlant(unittest.TestCase):
         def make_weld_joint(plant, P, C):
             return WeldJoint_[T](
                 name="weld",
-                frame_on_parent_P=P,
-                frame_on_child_C=C,
-                X_PC=X_PC,
+                frame_on_parent_F=P,
+                frame_on_child_M=C,
+                X_FM=X_PC,
             )
 
         make_joint_list = [
@@ -1771,7 +1771,7 @@ class TestPlant(unittest.TestCase):
                 joint.set_default_angles(angles=[1.0, 2.0])
             elif joint.name() == "weld":
                 numpy_compare.assert_float_equal(
-                    joint.X_PC().GetAsMatrix4(),
+                    joint.X_FM().GetAsMatrix4(),
                     X_PC.GetAsMatrix4())
             else:
                 raise TypeError(
