@@ -30,8 +30,9 @@ void Geometries::RemoveGeometry(GeometryId id) {
   rigid_geometries_.erase(id);
 }
 
-void Geometries::MaybeAddRigidGeometry(const Shape& shape, GeometryId id,
-                                       const ProximityProperties& props) {
+void Geometries::MaybeAddRigidGeometry(
+    const Shape& shape, GeometryId id, const ProximityProperties& props,
+    const math::RigidTransform<double>& X_WG) {
   // TODO(xuchenhan-tri): Right now, rigid geometries participating in
   // deformable contact share the property "kRezHint" with hydroelastics. It's
   // reasonable to use the contact mesh with the same resolution for both hydro
@@ -41,6 +42,7 @@ void Geometries::MaybeAddRigidGeometry(const Shape& shape, GeometryId id,
   if (props.HasProperty(kHydroGroup, kRezHint)) {
     ReifyData data{id, props};
     shape.Reify(this, &data);
+    UpdateRigidWorldPose(id, X_WG);
   }
 }
 

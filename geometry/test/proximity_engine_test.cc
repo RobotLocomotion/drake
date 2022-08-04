@@ -4543,6 +4543,34 @@ TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesRigid) {
   }
 }
 
+// Tests that replacing proximity properties for a non-deformable geometry
+// doesn't change the pose of its deformable contact representation.
+TEST_F(ProximityEngineDeformableContactTest,
+       ReplacePropertiesDoesNotAffectPose) {
+  const RigidTransform<double> X_FG(RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6));
+  const InternalGeometry sphere_anchored(
+      SourceId::get_new_id(), make_unique<Sphere>(kSphereRadius),
+      InternalFrame::world_frame_id(), GeometryId::get_new_id(),
+      "sphere_anchored", X_FG);
+
+  const ProximityProperties props = MakeProximityPropsWithRezHint(1.0);
+  engine_.AddAnchoredGeometry(sphere_anchored.shape(), {}, sphere_anchored.id(),
+                              props);
+  const RigidTransformd X_WG =
+      deformable::GeometriesTester::get_rigid_geometry(
+          deformable_contact_geometries(), sphere_anchored.id())
+          .pose_in_world();
+
+  const ProximityProperties replacement_props =
+      MakeProximityPropsWithRezHint(2.0);
+  engine_.UpdateRepresentationForNewProperties(sphere_anchored,
+                                               replacement_props);
+  EXPECT_TRUE(deformable::GeometriesTester::get_rigid_geometry(
+                  deformable_contact_geometries(), sphere_anchored.id())
+                  .pose_in_world()
+                  .IsExactlyEqualTo(X_WG));
+}
+
 // Tests that replacing properties for deformable geometries yields expected
 // behaviors.
 TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesDeformable) {
