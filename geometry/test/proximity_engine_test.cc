@@ -4498,10 +4498,10 @@ TEST_F(ProximityEngineDeformableContactTest, AddUnsupportedRigidGeometries) {
 // Tests that replacing properties for rigid (non-deformable geometries) yields
 // expected behaviors.
 TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesRigid) {
-  InternalGeometry sphere(SourceId::get_new_id(),
-                          make_unique<Sphere>(kSphereRadius),
-                          FrameId::get_new_id(), GeometryId::get_new_id(),
-                          "sphere", RigidTransformd());
+  const RigidTransform<double> X_FG(RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6));
+  InternalGeometry sphere(
+      SourceId::get_new_id(), make_unique<Sphere>(kSphereRadius),
+      FrameId::get_new_id(), GeometryId::get_new_id(), "sphere", X_FG);
 
   // Note: The order of these tests matter; one builds on the next. Re-ordering
   // *may* break the test.
@@ -4531,6 +4531,34 @@ TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesRigid) {
     DRAKE_EXPECT_NO_THROW(
         engine_.UpdateRepresentationForNewProperties(sphere, props));
     EXPECT_TRUE(deformable_contact_geometries().is_rigid(sphere.id()));
+  }
+
+  // Case: Both the old and the new properties have resolution hint, but with
+  // different values; the rigid representation would have a new mesh but pose
+  // of the geometry won't change.
+  {
+    const deformable::RigidGeometry geometry_old =
+        deformable::GeometriesTester::get_rigid_geometry(
+            deformable_contact_geometries(), sphere.id());
+    const RigidTransformd X_WG_old = geometry_old.pose_in_world();
+    const int num_vertices_old =
+        geometry_old.rigid_mesh().mesh().num_vertices();
+
+    ProximityProperties props = MakeProximityPropsWithRezHint(0.5);
+    engine_.UpdateRepresentationForNewProperties(sphere, props);
+
+    const deformable::RigidGeometry geometry_new =
+        deformable::GeometriesTester::get_rigid_geometry(
+            deformable_contact_geometries(), sphere.id());
+    const RigidTransformd X_WG_new = geometry_new.pose_in_world();
+    const int num_vertices_new =
+        geometry_new.rigid_mesh().mesh().num_vertices();
+
+    EXPECT_TRUE(deformable_contact_geometries().is_rigid(sphere.id()));
+    EXPECT_TRUE(X_WG_new.IsExactlyEqualTo(X_WG_old));
+    // The inequality in number of vertices of the rigid mesh indicates the mesh
+    // has changed.
+    EXPECT_NE(num_vertices_old, num_vertices_new);
   }
 
   // Case: The new properties don't have resolution hint while the old do;

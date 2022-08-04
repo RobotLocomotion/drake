@@ -72,12 +72,14 @@ class Geometries final : public ShapeReifier {
    @param id            The unique identifier for the geometry.
    @param properties    The proximity properties that specifies the properties
                         of the rigid representation.
+   @param X_WG          The pose of the geometry in the world frame.
    @throws std::exception if resolution hint <= 0 for the following shapes: Box,
            Sphere, Cylinder, Capsule, and Ellipsoid. Note that Mesh and Convex
            don't restrict the range of resolution_hint.
    @pre There is no previous representation associated with id.  */
   void MaybeAddRigidGeometry(const Shape& shape, GeometryId id,
-                             const ProximityProperties& props);
+                             const ProximityProperties& props,
+                             const math::RigidTransform<double>& X_WG);
 
   /* Updates the world pose of the rigid geometry with the given id, if it
    exists, to `X_WG`. */
