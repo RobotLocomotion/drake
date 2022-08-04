@@ -3,8 +3,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
 
 /** A driver that applies zero actuation to every joint of a model.  Useful for
 debugging and testing; useless in reality.  No LCM channels are created. */
@@ -14,8 +14,8 @@ struct ZeroForceDriver {
 
   // Currently there is no configuration here.
   template <typename Archive>
-  void Serialize(Archive* a) { }
+  void Serialize(Archive*) {}
 };
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace manipulation
+}  // namespace drake

@@ -3,3 +3,8 @@ Homecart:
   directives:
   - add_directives:
       file: package://drake/manipulation/models/tri_homecart/homecart.yaml
+  model_drivers:
+    ur3_left: !ZeroForceDriver {}
+    ur3_right: !ZeroForceDriver {}
+    gripper_left: !ZeroForceDriver {}
+    gripper_right: !ZeroForceDriver {}
