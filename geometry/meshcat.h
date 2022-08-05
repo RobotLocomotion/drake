@@ -254,7 +254,7 @@ class Meshcat {
               @ref meshcat_path "Meshcat paths" for the semantics.
   @param vertices is a 3-by-N matrix of 3D point defining the vertices of the
                   mesh.
-  @param faces is a 3-by-N integer matrix with each entry denoting an index
+  @param faces is a 3-by-M integer matrix with each entry denoting an index
                into vertices and each column denoting one face (aka
                SurfaceTriangle).
   @param rgba is the mesh face or wireframe color.
@@ -271,13 +271,13 @@ class Meshcat {
                        double wireframe_line_width = 1.0);
 
   /** Sets the "object" at `path` in the scene tree to a triangular mesh with
-   *  per-vertex coloring.
+      per-vertex coloring.
 
   @param path a "/"-delimited string indicating the path in the scene tree. See
               @ref meshcat_path "Meshcat paths" for the semantics.
   @param vertices is a 3-by-N matrix of 3D point defining the vertices of the
                   mesh.
-  @param faces is a 3-by-N integer matrix with each entry denoting an index
+  @param faces is a 3-by-M integer matrix with each entry denoting an index
                into vertices and each column denoting one face (aka
                SurfaceTriangle).
   @param colors is a 3-by-N matrix of color values, one color per vertex of the
