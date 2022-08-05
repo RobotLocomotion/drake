@@ -503,6 +503,7 @@ drake_cc_binary(
         "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/ycb:models",
+        "//multibody/meshcat:models",
     ],
     visibility = ["//visibility:private"],
     deps = [

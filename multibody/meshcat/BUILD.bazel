@@ -49,6 +49,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "contact_visualizer_test",
+    timeout = "moderate",
     data = [
         ":models",
         "//examples/manipulation_station:models",

@@ -1,5 +1,6 @@
 #include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
 
+#include <algorithm>
 #include <utility>
 
 #include <fmt/format.h>
@@ -108,6 +109,42 @@ void HydroelasticContactVisualizer::Update(
           path + "/moment_C_W/head",
           RigidTransformd(RotationMatrixd::MakeXRotation(M_PI),
                           Vector3d{0, 0, height + arrowhead_height}));
+    }
+
+    // Contact surface
+    {
+      // Map normalized pressure values to color using a flame map.
+
+      // TODO(#17683): This creates a unique mapping from pressure to color for
+      // *each surface* at *each time step*, making the interpretation of a
+      // color value impossible. See the referenced issue for further
+      // discussion.
+      double min_pressure = item.pressure.minCoeff();
+      double max_pressure = item.pressure.maxCoeff();
+
+      Eigen::Matrix3Xd colors(3, item.pressure.size());
+      for (int i = 0; i < item.pressure.size(); ++i) {
+        const double norm_pressure =
+            (item.pressure[i] - min_pressure) / (max_pressure - min_pressure);
+
+        colors(0, i) = std::clamp(((norm_pressure - 0.25) * 4.0), 0.0, 1.0);
+        colors(1, i) = std::clamp(((norm_pressure - 0.5) * 4.0), 0.0, 1.0);
+        if (norm_pressure < 0.25) {
+          colors(2, i) = std::clamp(norm_pressure * 4.0, 0.0, 1.0);
+        } else if (norm_pressure > 0.75) {
+          colors(2, i) = std::clamp((norm_pressure - 0.75) * 4.0, 0.0, 1.0);
+        } else {
+          colors(2, i) =
+              std::clamp(1.0 - (norm_pressure - 0.25) * 4.0, 0.0, 1.0);
+        }
+      }
+
+      // TODO(#17682): Applying color map values as *vertex colors* produces
+      // terrible visual artifacts. See the referenced issue for discussion.
+      meshcat_->SetTriangleColorMesh(path + "/contact_surface", item.p_WV,
+                                     item.faces, colors, false);
+      meshcat_->SetTransform(path + "/contact_surface",
+                             RigidTransformd(-item.centroid_W));
     }
   }
 
