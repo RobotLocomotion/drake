@@ -1,4 +1,4 @@
-#include "drake/visualization/visualizer_config_functions.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -27,8 +27,8 @@ namespace {
 // match up with other default params code in Drake. If these tests ever
 // fail, we'll need to revisit whether the Config should change to match
 // the Params, or whether we agree they can differ (and remove the test).
-GTEST_TEST(VisualizerConfigTest, Defaults) {
-  const VisualizerConfig config;
+GTEST_TEST(VisualizationConfigTest, Defaults) {
+  const VisualizationConfig config;
   const DrakeVisualizerParams params;
   EXPECT_EQ(config.publish_period, params.publish_period);
   ASSERT_EQ(config.default_illustration_color_rgba.size(), 3);
@@ -41,10 +41,10 @@ GTEST_TEST(VisualizerConfigTest, Defaults) {
 }
 
 // Tests the mapping from default schema data to geometry params.
-GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionDefault) {
-  const VisualizerConfig config;
+GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
+  const VisualizationConfig config;
   const std::vector<DrakeVisualizerParams> params =
-      ConvertVisualizerConfigToParams(config);
+      ConvertVisualizationConfigToParams(config);
   ASSERT_EQ(params.size(), 2);
   EXPECT_EQ(params.at(0).role, Role::kIllustration);
   EXPECT_FALSE(params.at(0).show_hydroelastic);
@@ -56,13 +56,13 @@ GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionDefault) {
 }
 
 // Tests the mapping from non-default schema data to geometry params.
-GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionSpecial) {
-  VisualizerConfig config;
+GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionSpecial) {
+  VisualizationConfig config;
   config.publish_period = 0.5;
   config.publish_proximity = false;
   config.default_illustration_color_rgba = Eigen::Vector4d::Constant(0.25);
   const std::vector<DrakeVisualizerParams> params =
-      ConvertVisualizerConfigToParams(config);
+      ConvertVisualizationConfigToParams(config);
   ASSERT_EQ(params.size(), 1);
   EXPECT_EQ(params.at(0).role, Role::kIllustration);
   EXPECT_FALSE(params.at(0).show_hydroelastic);
@@ -71,33 +71,33 @@ GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionSpecial) {
 }
 
 // Tests everything disabled.
-GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionAllDisabled) {
-  VisualizerConfig config;
+GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionAllDisabled) {
+  VisualizationConfig config;
   config.publish_illustration = false;
   config.publish_proximity = false;
   const std::vector<DrakeVisualizerParams> params =
-      ConvertVisualizerConfigToParams(config);
+      ConvertVisualizationConfigToParams(config);
   EXPECT_EQ(params.size(), 0);
 }
 
 // Tests that bad values cause an exception, not a segfault.
 // We check too-short and too-long values, and both geometry types.
-GTEST_TEST(VisualizerConfigFunctionsTest, ParamConversionValidation) {
-  VisualizerConfig bad_illus_color;
+GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionValidation) {
+  VisualizationConfig bad_illus_color;
   bad_illus_color.default_illustration_color_rgba = {};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ConvertVisualizerConfigToParams(bad_illus_color),
+      ConvertVisualizationConfigToParams(bad_illus_color),
       "Rgba must .*");
 
-  VisualizerConfig bad_prox_color;
+  VisualizationConfig bad_prox_color;
   bad_prox_color.default_proximity_color_rgba = Eigen::VectorXd::Zero(6);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ConvertVisualizerConfigToParams(bad_prox_color),
+      ConvertVisualizationConfigToParams(bad_prox_color),
       "Rgba must .*");
 }
 
 // Overall acceptance test with everything enabled.
-GTEST_TEST(VisualizerConfigFunctionsTest, ApplyDefault) {
+GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
   // We'll monitor which LCM channel names appear.
   DrakeLcm drake_lcm;
   std::set<std::string> observed_channels;
@@ -113,8 +113,8 @@ GTEST_TEST(VisualizerConfigFunctionsTest, ApplyDefault) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
-  const VisualizerConfig config;
-  ApplyVisualizerConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
+  const VisualizationConfig config;
+  ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
   Simulator<double> simulator(builder.Build());
 
   // Simulate for a moment and make sure everything showed up.
@@ -129,9 +129,9 @@ GTEST_TEST(VisualizerConfigFunctionsTest, ApplyDefault) {
 }
 
 // Overall acceptance test with nothing enabled.
-GTEST_TEST(VisualizerConfigFunctionsTest, ApplyNothing) {
+GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
   // Disable everything.
-  VisualizerConfig config;
+  VisualizationConfig config;
   config.publish_illustration = false;
   config.publish_proximity = false;
   config.publish_contacts = false;
@@ -146,7 +146,7 @@ GTEST_TEST(VisualizerConfigFunctionsTest, ApplyNothing) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
-  ApplyVisualizerConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
+  ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
   Simulator<double> simulator(builder.Build());
 
   // Simulate for a moment and make sure nothing showed up.
@@ -156,14 +156,14 @@ GTEST_TEST(VisualizerConfigFunctionsTest, ApplyNothing) {
 
 // When the lcm pointer is directly provided, the lcm_buses can be nullptr
 // and nothing crashes.
-GTEST_TEST(VisualizerConfigFunctionsTest, IgnoredLcmBuses) {
+GTEST_TEST(VisualizationConfigFunctionsTest, IgnoredLcmBuses) {
   DrakeLcm drake_lcm;
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
-  VisualizerConfig config;
+  VisualizationConfig config;
   config.lcm_bus = "will_be_ignored";
-  ApplyVisualizerConfig(config, &builder, nullptr, nullptr, nullptr,
+  ApplyVisualizationConfig(config, &builder, nullptr, nullptr, nullptr,
       &drake_lcm);
   // Guard against any crashes or dangling pointers during diagram construction.
   builder.Build();
@@ -171,57 +171,57 @@ GTEST_TEST(VisualizerConfigFunctionsTest, IgnoredLcmBuses) {
 
 // When the lcm pointer is directly provided, the lcm_bus config string can
 // refer to a missing bus_name and nothing crashes.
-GTEST_TEST(VisualizerConfigFunctionsTest, IgnoredLcmBusName) {
+GTEST_TEST(VisualizationConfigFunctionsTest, IgnoredLcmBusName) {
   DrakeLcm drake_lcm;
   const LcmBuses empty_lcm_buses;
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
-  VisualizerConfig config;
+  VisualizationConfig config;
   config.lcm_bus = "will_be_ignored";
-  ApplyVisualizerConfig(config, &builder, &empty_lcm_buses, nullptr, nullptr,
+  ApplyVisualizationConfig(config, &builder, &empty_lcm_buses, nullptr, nullptr,
       &drake_lcm);
   // Guard against any crashes or dangling pointers during diagram construction.
   builder.Build();
 }
 
 // The AddDefault... sugar shouldn't crash.
-GTEST_TEST(VisualizerConfigFunctionsTest, AddDefault) {
+GTEST_TEST(VisualizationConfigFunctionsTest, AddDefault) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
-  AddDefaultVisualizer(&builder);
+  AddDefaultVisualization(&builder);
   Simulator<double> simulator(builder.Build());
   simulator.AdvanceTo(0.25);
 }
 
 // A missing plant causes an exception.
-GTEST_TEST(VisualizerConfigFunctionsTest, NoPlant) {
+GTEST_TEST(VisualizationConfigFunctionsTest, NoPlant) {
   DiagramBuilder<double> builder;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualizer(&builder),
+      AddDefaultVisualization(&builder),
       ".*does not contain.*plant.*");
 }
 
 // A missing scene_graph causes an exception.
-GTEST_TEST(VisualizerConfigFunctionsTest, NoSceneGraph) {
+GTEST_TEST(VisualizationConfigFunctionsTest, NoSceneGraph) {
   DiagramBuilder<double> builder;
   auto* plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
   plant->set_name("plant");
   plant->Finalize();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualizer(&builder),
+      AddDefaultVisualization(&builder),
       ".*does not contain.*scene_graph.*");
 }
 
 // Type confusion causes an exception.
-GTEST_TEST(VisualizerConfigFunctionsTest, WrongSystemTypes) {
+GTEST_TEST(VisualizationConfigFunctionsTest, WrongSystemTypes) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.set_name("scene_graph");
   scene_graph.set_name("plant");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualizer(&builder),
+      AddDefaultVisualization(&builder),
       ".*of the wrong type.*");
 }
 

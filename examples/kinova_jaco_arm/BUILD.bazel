@@ -56,7 +56,7 @@ drake_cc_binary(
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/primitives:demultiplexer",
         "//systems/primitives:multiplexer",
-        "//visualization:visualizer_config_functions",
+        "//visualization:visualization_config_functions",
         "@gflags",
     ],
 )

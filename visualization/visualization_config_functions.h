@@ -7,7 +7,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_buses.h"
-#include "drake/visualization/visualizer_config.h"
+#include "drake/visualization/visualization_config.h"
 
 namespace drake {
 namespace visualization {
@@ -30,8 +30,8 @@ MultibodyPlant<double>& plant = AddMultibodyPlant(plant_config, &builder);
 plant.Finalize();
 
 // Add the visualization.
-const VisualizerConfig vis_config = ...;
-ApplyVisualizerConfig(config, &builder);
+const VisualizationConfig vis_config = ...;
+ApplyVisualizationConfig(config, &builder);
 
 // Simulate.
 Simulator<double> simulator(builder.Build());
@@ -80,11 +80,11 @@ or else the provided `scene_graph` is non-null.
 
 @pre The MultibodyPlant is already finalized, as in `plant.Finalize()`.
 
-@see drake::visualization::AddDefaultVisualizer()
+@see drake::visualization::AddDefaultVisualization()
 @see drake::multibody::AddMultibodyPlant()
 @see drake::systems::lcm::ApplyLcmBusConfig() */
-void ApplyVisualizerConfig(
-    const VisualizerConfig& config,
+void ApplyVisualizationConfig(
+    const VisualizationConfig& config,
     systems::DiagramBuilder<double>* builder,
     const systems::lcm::LcmBuses* lcm_buses = nullptr,
     const multibody::MultibodyPlant<double>* plant = nullptr,
@@ -106,7 +106,7 @@ MultibodyPlant<double>& plant = AddMultibodyPlant(plant_config, &builder);
 plant.Finalize();
 
 // Add the visualization.
-AddDefaultVisualizer(&builder);
+AddDefaultVisualization(&builder);
 
 // Simulate.
 Simulator<double> simulator(builder.Build());
@@ -120,15 +120,15 @@ Simulator<double> simulator(builder.Build());
 @pre The MultibodyPlant in the given `builder` is already finalized, as in
      `plant.Finalize()`.
 
-@see drake::visualization::ApplyVisualizerConfig()
+@see drake::visualization::ApplyVisualizationConfig()
 @see drake::multibody::AddMultibodyPlant() */
-void AddDefaultVisualizer(systems::DiagramBuilder<double>* builder);
+void AddDefaultVisualization(systems::DiagramBuilder<double>* builder);
 
 namespace internal {
 
 // (For unit testing only.)
 std::vector<geometry::DrakeVisualizerParams>
-ConvertVisualizerConfigToParams(const VisualizerConfig&);
+ConvertVisualizationConfigToParams(const VisualizationConfig&);
 
 }  // namespace internal
 }  // namespace visualization

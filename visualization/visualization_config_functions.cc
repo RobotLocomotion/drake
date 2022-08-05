@@ -1,4 +1,4 @@
-#include "drake/visualization/visualizer_config_functions.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 #include <memory>
 #include <stdexcept>
@@ -36,7 +36,7 @@ const ChildSystem<double>* DowncastSubsystem(
       const auto* child = dynamic_cast<const ChildSystem<double>*>(system);
       if (child == nullptr) {
         throw std::logic_error(fmt::format(
-            "ApplyVisualizerConfig: the DiagramBuilder contains a system"
+            "ApplyVisualizationConfig: the DiagramBuilder contains a system"
             " named '{}' but of the wrong type (expected: {}, actual {}).",
             name, NiceTypeName::Get<ChildSystem<double>>(),
             NiceTypeName::Get(*system)));
@@ -45,12 +45,12 @@ const ChildSystem<double>* DowncastSubsystem(
     }
   }
   throw std::logic_error(fmt::format(
-      "ApplyVisualizerConfig: the DiagramBuilder does not contain a system"
+      "ApplyVisualizationConfig: the DiagramBuilder does not contain a system"
       " named '{}'.",  name));
 }
 
-void ApplyVisualizerConfigImpl(
-    const VisualizerConfig& config,
+void ApplyVisualizationConfigImpl(
+    const VisualizationConfig& config,
     DrakeLcmInterface* lcm,
     const MultibodyPlant<double>& plant,
     const SceneGraph<double>& scene_graph,
@@ -58,7 +58,7 @@ void ApplyVisualizerConfigImpl(
   // This is required due to ConnectContactResultsToDrakeVisualizer().
   DRAKE_THROW_UNLESS(plant.is_finalized());
   const std::vector<DrakeVisualizerParams> all_params =
-      internal::ConvertVisualizerConfigToParams(config);
+      internal::ConvertVisualizationConfigToParams(config);
   for (const DrakeVisualizerParams& params : all_params) {
     // TODO(jwnimmer-tri) At the moment, meldis cannot yet display hydroelastic
     // geometry. So long as that's true, we should not enable it.
@@ -73,8 +73,8 @@ void ApplyVisualizerConfigImpl(
 
 }  // namespace
 
-void ApplyVisualizerConfig(
-    const VisualizerConfig& config,
+void ApplyVisualizationConfig(
+    const VisualizationConfig& config,
     systems::DiagramBuilder<double>* builder,
     const systems::lcm::LcmBuses* lcm_buses,
     const multibody::MultibodyPlant<double>* plant,
@@ -83,7 +83,7 @@ void ApplyVisualizerConfig(
   DRAKE_THROW_UNLESS(builder != nullptr);
   if (lcm == nullptr) {
     if (lcm_buses != nullptr) {
-      lcm = lcm_buses->Find("ApplyVisualizerConfig", config.lcm_bus);
+      lcm = lcm_buses->Find("ApplyVisualizationConfig", config.lcm_bus);
     } else {
       DRAKE_THROW_UNLESS(config.lcm_bus == "default");
       auto* owner_system = builder->AddSystem<SharedPointerSystem<double>>(
@@ -98,11 +98,11 @@ void ApplyVisualizerConfig(
   if (scene_graph == nullptr) {
     scene_graph = DowncastSubsystem<SceneGraph>(builder, "scene_graph");
   }
-  ApplyVisualizerConfigImpl(config, lcm, *plant, *scene_graph, builder);
+  ApplyVisualizationConfigImpl(config, lcm, *plant, *scene_graph, builder);
 }
 
-void AddDefaultVisualizer(DiagramBuilder<double>* builder) {
-  ApplyVisualizerConfig(VisualizerConfig{}, builder);
+void AddDefaultVisualization(DiagramBuilder<double>* builder) {
+  ApplyVisualizationConfig(VisualizationConfig{}, builder);
 }
 
 namespace {
@@ -128,8 +128,8 @@ Rgba VectorToRgba(const Eigen::VectorXd& input) {
 namespace internal {
 
 std::vector<DrakeVisualizerParams>
-ConvertVisualizerConfigToParams(
-    const VisualizerConfig& config) {
+ConvertVisualizationConfigToParams(
+    const VisualizationConfig& config) {
   std::vector<DrakeVisualizerParams> result;
 
   if (config.publish_illustration) {
