@@ -1,0 +1,32 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/performance:defs.bzl",
+    "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_googlebench_binary(
+    name = "benchmark_polynomial",
+    srcs = ["benchmark_polynomial.cc"],
+    add_test_rule = True,
+    test_timeout = "moderate",
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//common/symbolic:monomial_util",
+        "//common/symbolic:polynomial",
+        "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
+        "@fmt",
+    ],
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_py_experiment_binary(
+    name = "polynomial_experiment",
+    googlebench_binary = ":benchmark_polynomial",
+)
+
+add_lint_tests()

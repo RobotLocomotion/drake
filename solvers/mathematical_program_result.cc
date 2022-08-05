@@ -93,20 +93,18 @@ symbolic::Polynomial MathematicalProgramResult::GetSolution(
     }
   }
 
-  symbolic::Environment env;
+  symbolic::Substitution subst;
+  for (const auto& var : p.decision_variables()) {
+    subst.emplace(var, this->GetSolution(var));
+  }
+
   symbolic::Polynomial::MapType monomial_to_coefficient_result_map;
   for (const auto& [monomial, coefficient] : p.monomial_to_coefficient_map()) {
-    for (const auto& var : coefficient.GetVariables()) {
-      const auto it = decision_variable_index_->find(var.get_id());
-      if (it != decision_variable_index_->end()) {
-        env.insert(var, x_val_(it->second));
-      }
-    }
-    // Evaluate the coefficient using env, and then add the pair (monomial,
+    // Evaluate the coefficient using subst, and then add the pair (monomial,
     // coefficient_evaluate_result) to the new map.
     monomial_to_coefficient_result_map.emplace_hint(
         monomial_to_coefficient_result_map.end(), monomial,
-        coefficient.EvaluatePartial(env));
+        coefficient.Substitute(subst));
   }
   return symbolic::Polynomial(monomial_to_coefficient_result_map);
 }

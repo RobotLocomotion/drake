@@ -12,6 +12,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = [
     # All benchmarks should be in folders named "benchmarking".
+    "//common/symbolic/benchmarking:__pkg__",
     "//geometry/benchmarking:__pkg__",
     "//multibody/benchmarking:__pkg__",
     "//solvers/benchmarking:__pkg__",
