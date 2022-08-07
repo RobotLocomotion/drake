@@ -563,9 +563,16 @@ double Polynomial::Evaluate(const Environment& env) const {
 
 Polynomial Polynomial::EvaluatePartial(const Environment& env) const {
   MapType new_map;  // Will use this to construct the return value.
+
+  // Create a substitution that will be used for all coefficients in this
+  // polynomial.
+  symbolic::Substitution subst;
+  for (const auto& [var, val] : env) {
+    subst.emplace(var, val);
+  }
   for (const auto& product_i : monomial_to_coefficient_map_) {
     const Expression& coeff_i{product_i.second};
-    const Expression coeff_i_partial_evaluated{coeff_i.EvaluatePartial(env)};
+    const Expression coeff_i_partial_evaluated{coeff_i.Substitute(subst)};
     const Monomial& monomial_i{product_i.first};
     const pair<double, Monomial> partial_eval_result{
         monomial_i.EvaluatePartial(env)};
