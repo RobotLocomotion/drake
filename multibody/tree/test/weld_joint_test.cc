@@ -85,12 +85,6 @@ TEST_F(WeldJointTest, GetX_FM) {
   EXPECT_TRUE(joint_->X_FM().IsExactlyEqualTo(X_FM_));
 }
 
-// Verify that the convenience function X_PC() gives the correct pose.
-TEST_F(WeldJointTest, GetX_PC) {
-  EXPECT_FALSE(joint_->X_PC().IsExactlyEqualTo(X_FM_));
-  EXPECT_TRUE(joint_->X_PC().IsExactlyEqualTo(X_PF_ * X_FM_ * X_CM_.inverse()));
-}
-
 TEST_F(WeldJointTest, GetJointLimits) {
   EXPECT_EQ(joint_->position_lower_limits().size(), 0);
   EXPECT_EQ(joint_->position_upper_limits().size(), 0);

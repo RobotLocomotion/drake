@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/weld_mobilizer.h"
@@ -48,15 +49,11 @@ class WeldJoint final : public Joint<T> {
     return name.access();
   }
 
-  /// Returns the pose X_PC of this joint's child body frame C in this joint's
-  /// parent body frame P.
-  math::RigidTransform<T> X_PC() const {
-    const math::RigidTransform<T> X_PF =
-        this->frame_on_parent().GetFixedPoseInBodyFrame();
-    const math::RigidTransform<T> X_MC =
-        this->frame_on_child().GetFixedPoseInBodyFrame().inverse();
-    return X_PF * X_FM_.template cast<T>() * X_MC;
-  }
+  /// Returns the pose X_PC of frame C in P.
+  DRAKE_DEPRECATED(
+      "2022-12-01",
+      "WeldJoint frame notation has changed. Use `X_FM()` instead.")
+  const math::RigidTransform<double>& X_PC() const { return X_FM_; }
 
   /// Returns the pose X_FM of frame M in F.
   const math::RigidTransform<double>& X_FM() const {
