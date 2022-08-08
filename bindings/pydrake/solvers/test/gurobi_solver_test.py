@@ -71,3 +71,45 @@ class TestMathematicalProgram(unittest.TestCase):
         options.SetOption(solver.id(), "GRBcomputeIIS", 1)
         result = solver.Solve(prog, None, options)
         self.assertTrue(os.path.exists(ilp_file_name))
+
+    def test_callback(self):
+        prog = mp.MathematicalProgram()
+        b = prog.NewBinaryVariables(4)
+        prog.AddLinearConstraint(b[0] <= 1 - 0.5 * b[1])
+        prog.AddLinearConstraint(b[1] <= 1 - 0.5 * b[0])
+        prog.AddLinearCost(-b[0] - b[1])
+
+        prog.SetSolverOption(GurobiSolver.id(), "Presolve", 0)
+        prog.SetSolverOption(GurobiSolver.id(), "Heuristics", 0.)
+        prog.SetSolverOption(GurobiSolver.id(), "Cuts", 0)
+        prog.SetSolverOption(GurobiSolver.id(), "NodeMethod", 2)
+
+        b_init = np.array([0, 0., 0., 0.])
+
+        prog.SetInitialGuess(b, b_init)
+        solver = GurobiSolver()
+
+        explored_node_count = 0
+
+        def node_callback(prog, solver_status_info, x, x_vals):
+            nonlocal explored_node_count
+            explored_node_count = solver_status_info.explored_node_count
+
+        solver.AddMipNodeCallback(
+            callback=lambda prog, solver_status_info, x, x_vals: node_callback(
+                prog, solver_status_info, x, x_vals))
+
+        best_objectives = []
+
+        def sol_callback(prog, callback_info, objectives):
+            print(f"explored nodes {callback_info.explored_node_count}")
+            objectives.append(callback_info.best_objective)
+
+        solver.AddMipSolCallback(
+            callback=lambda prog, callback_info: sol_callback(
+                prog, callback_info, best_objectives))
+
+        result = solver.Solve(prog)
+        self.assertTrue(result.is_success())
+        self.assertGreater(explored_node_count, 0)
+        self.assertGreater(len(best_objectives), 0)
