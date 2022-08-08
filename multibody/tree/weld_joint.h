@@ -49,16 +49,14 @@ class WeldJoint final : public Joint<T> {
     return name.access();
   }
 
+  /// Returns the pose X_FM of frame M in F.
+  const math::RigidTransform<double>& X_FM() const { return X_FM_; }
+
   /// Returns the pose X_PC of frame C in P.
   DRAKE_DEPRECATED(
       "2022-12-01",
       "WeldJoint frame notation has changed. Use `X_FM()` instead.")
   const math::RigidTransform<double>& X_PC() const { return X_FM_; }
-
-  /// Returns the pose X_FM of frame M in F.
-  const math::RigidTransform<double>& X_FM() const {
-    return X_FM_;
-  }
 
  protected:
   /// Joint<T> override called through public NVI, Joint::AddInForce().

@@ -32,11 +32,8 @@ class WeldJointTest : public ::testing::Test {
     // Add a body so we can add a joint to it.
     body_ = &model->AddBody<RigidBody>("body", M_B);
 
-    joint_ = &model->AddJoint<WeldJoint>(
-        "Welder",
-        model->world_body(), X_PF_,  // X_PF
-        *body_, X_CM_,               // X_CM
-        X_FM_);                      // X_FM
+    joint_ = &model->AddJoint<WeldJoint>("Welder", model->world_body(), X_PF_,
+                                         *body_, X_CM_, X_FM_);
 
     // We are done adding modeling elements. Transfer tree to system for
     // computation.
