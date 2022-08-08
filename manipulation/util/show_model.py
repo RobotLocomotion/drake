@@ -76,8 +76,8 @@ from pydrake.systems.planar_scenegraph_visualizer import (
     ConnectPlanarSceneGraphVisualizer,
 )
 from pydrake.visualization import (
-    VisualizerConfig,
-    ApplyVisualizerConfig,
+    VisualizationConfig,
+    ApplyVisualizationConfig,
 )
 
 
@@ -299,8 +299,8 @@ def parse_visualizers(args_parser, args):
                             publish_contacts=True):
         # Connect this to drake_visualizer or meldis. Meldis provides
         # simultaneous visualization of illustration and proximity geometry.
-        ApplyVisualizerConfig(
-            config=VisualizerConfig(publish_contacts=publish_contacts),
+        ApplyVisualizationConfig(
+            config=VisualizationConfig(publish_contacts=publish_contacts),
             plant=plant,
             scene_graph=scene_graph,
             builder=builder)

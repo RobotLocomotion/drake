@@ -19,7 +19,7 @@ while some (separate) controller operates the robot, without extra hassle. */
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
-#include "drake/visualization/visualizer_config_functions.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 DEFINE_string(scenario_file, "",
     "Scenario filename, e.g., "
@@ -44,7 +44,7 @@ using systems::DiagramBuilder;
 using systems::Simulator;
 using systems::lcm::ApplyLcmBusConfig;
 using systems::lcm::LcmBuses;
-using visualization::ApplyVisualizerConfig;
+using visualization::ApplyVisualizationConfig;
 
 /* Class that holds the configuration and data of a simulation. */
 class Simulation {
@@ -83,8 +83,8 @@ void Simulation::Setup() {
   // Now the plant is complete.
   sim_plant.Finalize();
 
-  // Add visualizer.
-  ApplyVisualizerConfig(scenario_.visualizer, &builder, &lcm_buses);
+  // Add visualization.
+  ApplyVisualizationConfig(scenario_.visualization, &builder, &lcm_buses);
 
   // Build the diagram and its simulator.
   diagram_ = builder.Build();

@@ -11,7 +11,7 @@
 #include "drake/multibody/parsing/model_directives.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/systems/analysis/simulator_config.h"
-#include "drake/visualization/visualizer_config.h"
+#include "drake/visualization/visualization_config.h"
 
 namespace drake {
 
@@ -26,7 +26,7 @@ struct Scenario {
     a->Visit(DRAKE_NVP(plant_config));
     a->Visit(DRAKE_NVP(directives));
     a->Visit(DRAKE_NVP(lcm_buses));
-    a->Visit(DRAKE_NVP(visualizer));
+    a->Visit(DRAKE_NVP(visualization));
   }
 
   /* Random seed for any random elements in the scenario.
@@ -55,7 +55,7 @@ struct Scenario {
   sensors, etc. */
   std::map<std::string, lcm::DrakeLcmParams> lcm_buses{{"default", {}}};
 
-  visualization::VisualizerConfig visualizer;
+  visualization::VisualizationConfig visualization;
 };
 
 /* Returns a C++ representation of the given YAML scenario.

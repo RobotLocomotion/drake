@@ -24,7 +24,7 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/multiplexer.h"
-#include "drake/visualization/visualizer_config_functions.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
@@ -47,7 +47,7 @@ using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::systems::controllers::InverseDynamicsController;
 using drake::systems::Demultiplexer;
-using drake::visualization::AddDefaultVisualizer;
+using drake::visualization::AddDefaultVisualization;
 
 namespace drake {
 namespace examples {
@@ -83,7 +83,7 @@ int DoMain() {
   builder.Connect(jaco_plant.get_state_output_port(jaco_id),
                   jaco_controller->get_input_port_estimated_state());
 
-  AddDefaultVisualizer(&builder);
+  AddDefaultVisualization(&builder);
 
   systems::lcm::LcmInterfaceSystem* lcm =
       builder.AddSystem<systems::lcm::LcmInterfaceSystem>();

@@ -5,8 +5,8 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/visualization/visualization_py.h"
-#include "drake/visualization/visualizer_config.h"
-#include "drake/visualization/visualizer_config_functions.h"
+#include "drake/visualization/visualization_config.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace pydrake {
@@ -18,9 +18,9 @@ void DefineVisualizationConfig(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.visualization;
 
   {
-    using Class = VisualizerConfig;
-    constexpr auto& cls_doc = doc.VisualizerConfig;
-    py::class_<Class> cls(m, "VisualizerConfig", cls_doc.doc);
+    using Class = VisualizationConfig;
+    constexpr auto& cls_doc = doc.VisualizationConfig;
+    py::class_<Class> cls(m, "VisualizationConfig", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -28,12 +28,12 @@ void DefineVisualizationConfig(py::module m) {
   }
 
   m  // BR
-      .def("ApplyVisualizerConfig", &ApplyVisualizerConfig, py::arg("config"),
-          py::arg("builder"), py::arg("lcm_buses") = nullptr,
+      .def("ApplyVisualizationConfig", &ApplyVisualizationConfig,
+          py::arg("config"), py::arg("builder"), py::arg("lcm_buses") = nullptr,
           py::arg("plant") = nullptr, py::arg("scene_graph") = nullptr,
-          py::arg("lcm") = nullptr, doc.ApplyVisualizerConfig.doc)
-      .def("AddDefaultVisualizer", &AddDefaultVisualizer, py::arg("builder"),
-          doc.AddDefaultVisualizer.doc);
+          py::arg("lcm") = nullptr, doc.ApplyVisualizationConfig.doc)
+      .def("AddDefaultVisualization", &AddDefaultVisualization,
+          py::arg("builder"), doc.AddDefaultVisualization.doc);
 }
 
 }  // namespace internal

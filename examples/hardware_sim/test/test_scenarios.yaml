@@ -19,6 +19,6 @@ OneOfEverything:
         rotation: !Rpy { deg: [10.0, 20.0, 30.0] }
   lcm_buses:
     extra_bus: {}
-  visualizer:
+  visualization:
     lcm_bus: extra_bus
     publish_period: 0.125
