@@ -1797,7 +1797,7 @@ class TestPlant(unittest.TestCase):
               ", and `X_FM`. The deprecated code will be removed from Drake "\
               "on or after 2022-12-01."
 
-        # Old constructor arguments raise a warning.
+        # Old keyword arguments raise a warning.
         with self.assertWarns(DrakeDeprecationWarning) as cm:
             world_body1 = WeldJoint_[float](
                 name="world_body1",
@@ -1828,7 +1828,7 @@ class TestPlant(unittest.TestCase):
               "`frame_on_child_M`, and `X_FM`. The deprecated code will be "\
               "removed from Drake on or after 2022-12-01."
 
-        # Old constructor arguments raise a warning.
+        # Old keyword arguments raise a warning.
         with self.assertWarns(DrakeDeprecationWarning) as cm:
             plant.WeldFrames(
                 frame_on_parent_P=plant.world_frame(),
