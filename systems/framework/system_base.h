@@ -618,13 +618,18 @@ class SystemBase : public internal::SystemMessageInterface {
   // require that this SystemBase has a valid system id.)
 
   // @pre `this` System has a valid system id.
-  /** Checks whether the given object was created for this system.
+  /** Checks whether the given (non-Context) object was created for this system.
+  To validate a Context, use ValidateContext().
   @note This method is sufficiently fast for performance sensitive code.
   @throws std::exception if the System Ids don't match or if `object` doesn't
                          have an associated System Id.
   @throws std::exception if the argument type is a pointer and it is null. */
   template <class Clazz>
   void ValidateCreatedForThisSystem(const Clazz& object) const {
+    static_assert(!std::is_base_of_v<
+                      ContextBase,
+                      std::remove_cv_t<std::remove_pointer_t<Clazz>>>,
+                      "Use ValidateContext() for validating a Context");
     const internal::SystemId id = [&]() {
       if constexpr (std::is_pointer_v<Clazz>) {
         DRAKE_THROW_UNLESS(object != nullptr);

@@ -262,10 +262,47 @@ void SystemBase::ThrowCantEvaluateInputPort(const char* func,
 
 void SystemBase::ThrowValidateContextMismatch(
     const ContextBase& context) const {
-  throw std::logic_error(fmt::format(
-      "Context was not created for {} system {}; it was created for system {}",
-      this->GetSystemType(), this->GetSystemPathname(),
-      context.GetSystemPathname()));
+  // We special case the most common error conditions with more targeted error
+  // messages.
+
+  // Either `this` has a parent from which we can access the root system, or
+  // `this` *is* the root system.
+  const internal::SystemId root_id =
+      get_parent_service()
+          ? get_parent_service()->GetRootSystemBase().get_system_id()
+          : system_id_;
+
+  std::string message;
+  if (context.get_system_id() == root_id) {
+    // The most common case, root context has been passed to child system.
+    message = fmt::format(
+        "A function call on a {} system called '{}' was passed the root "
+        "Diagram's Context instead of the appropriate subsystem Context. "
+        "Use GetMyContextFromRoot() or similar to acquire the appropriate "
+        "subsystem Context.",
+        this->GetSystemType(), this->GetSystemPathname());
+  } else if (system_id_ == root_id) {
+    // TODO(SeanCurtis-TRI): If we want to distinguish between passing a
+    // subsystem context and passing some arbitrary context, we can use
+    // internal::SystemBaseContextBaseAttorney to find the root ancestor of the
+    // given context.
+    // Less common case, wrong context passed into root system.
+    message = fmt::format(
+        "A function call on the root Diagram was passed the Context of some "
+        "other system named '{}' instead of its own Context.",
+        context.GetSystemPathname());
+  } else {
+    message = fmt::format(
+        "A function call on a {} system called '{}' was passed the Context of "
+        "a system named '{}' instead of the appropriate subsystem Context.",
+        this->GetSystemType(), this->GetSystemPathname(),
+        context.GetSystemPathname());
+  }
+  throw std::logic_error(
+      message +
+      "\nFor more information about Context-System mismatches, see "
+      "https://drake.mit.edu/"
+      "troubleshooting.html#framework-context-system-mismatch");
 }
 
 void SystemBase::ThrowNotCreatedForThisSystemImpl(
