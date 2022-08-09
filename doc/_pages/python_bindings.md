@@ -126,6 +126,9 @@ In general, the [Python API](https://drake.mit.edu/pydrake/index.html) should be
 [C++ API](https://drake.mit.edu/doxygen_cxx/index.html). There are some exceptions:
 
 ### C++ Class Template Instantiations in Python
+{:.no_toc}
+<!-- TOC is set to include level 3 for troubleshooting. We don't want it here.
+-->
 
 When you define a general class template, e.g.
 ``template <typename T> class Value``, something like ``Value<std::string>`` is

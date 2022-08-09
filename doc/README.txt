@@ -103,6 +103,21 @@ index f33a459..51ba7a4 100644
 +</article>
 ```
 
+The table of contents has been configured to use three levels (e.g., #, ##, and
+### or <h1>, <h2>, and <h3>). This is for the benefit of troubleshooting.md.
+Generally, we limit the other pages to two levels. However, this is a global
+setting. To omit any header from the TOC (either tagged as ### or <h3>), follow
+the header declaration with `{:.no_toc}`. E.g.,
+
+```md
+## This header is included in the TOC
+
+### This header is left out
+{:.no_toc}
+
+#### Level four and below are automatically omitted
+```
+
 ### Use another plugin
 
 * <https://github.com/allejo/jekyll-toc> is neat, but does some Liquid+Jekyll (and Ruby?) voodoo. Nah for now, maybe later.

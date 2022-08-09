@@ -633,6 +633,17 @@ class SystemBase : public internal::SystemMessageInterface {
         return object.get_system_id();
       }
     }();
+    // If object is a Context, we should get the same error messages as when
+    // calling ValidateContext(object). But only if the context has a valid
+    // system id. Otherwise, we use the generic error.
+    if constexpr (std::is_base_of_v<
+                      ContextBase,
+                      std::remove_cv_t<std::remove_pointer_t<Clazz>>>) {
+      if (id.is_valid()) {
+        ValidateContext(object);
+        return;
+      }
+    }
     if (!id.is_same_as_valid_id(system_id_))
       ThrowNotCreatedForThisSystem(object, id);
   }

@@ -7,6 +7,7 @@
 
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/systems/framework/discrete_values.h"
 
 // TODO(sherm1) As SystemBase gains more functionality, move type-agnostic
 // tests here from {system, diagram, leaf}_test.cc.
@@ -37,6 +38,15 @@ class MyContextBase final : public ContextBase {
 class MySystemBase final : public SystemBase {
  public:
   MySystemBase() {}
+
+  // Approximate LeafSystem in the ability to allocate a non-Context framework
+  // quantity (in this case, an empty set of DiscreteValues()).
+  std::unique_ptr<DiscreteValues<double>> AllocateDiscreteState() const {
+    auto values = std::make_unique<DiscreteValues<double>>();
+    // Allocated entities have their owner system id set.
+    values->set_system_id(this->get_system_id());
+    return values;
+  }
 
  private:
   std::unique_ptr<ContextBase> DoAllocateContext() const final {
@@ -71,13 +81,15 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
 
   EXPECT_EQ(system.GetSystemType(),
             "drake::systems::system_base_test_internal::MySystemBase");
+}
 
-  // Test specialized ValidateContext() and more-general
-  // ValidateCreatedForThisSystem() which can check anything that supports
-  // a get_system_id() method (we'll just use Context here for that also
-  // since it qualifies). Both methods have pointer and non-pointer variants
-  // but should ignore that distinction in the error message.
-
+// This tests validation of contexts. A context can be validated using either
+// ValidateContext or ValidateCreatedForThisSystem. Not only should the two
+// methods classify a Context as valid or not consistently, in the error cases,
+// they should provide the same error messages. The two APIs are fully
+// equivalent with respect to Contexts with valid system ids.
+GTEST_TEST(SystemBaseTest, ValidatingContexts) {
+  MySystemBase system;
   std::unique_ptr<ContextBase> context = system.AllocateContext();
   DRAKE_EXPECT_NO_THROW(system.ValidateContext(*context));
   DRAKE_EXPECT_NO_THROW(system.ValidateContext(context.get()));
@@ -86,16 +98,29 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
 
   MySystemBase other_system;
   auto other_context = other_system.AllocateContext();
-  DRAKE_EXPECT_THROWS_MESSAGE(system.ValidateContext(*other_context),
-                              ".*Context.*was not created for.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(system.ValidateContext(other_context.get()),
-                              ".*Context.*was not created for.*");
+  // Note: ValidateContext() has special failure messages based on the
+  // relationship between system and context. If either system or context is the
+  // "root" system, the message specifically refers to the root diagram. In
+  // this test, we only have single systems. By definition, the system is the
+  // root of its own diagram. Therefore, we can only test:
+  //   (root system, root context) --> no throw (tested above).
+  //   (root system, non-root context) --> throw message about root system.
+  // The tests for the following combinations are contained in diagram_test.cc.
+  //   (leaf system, root context)
+  //   (root system, leaf context)
+  //   (leaf system A, leaf context B)
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system.ValidateContext(*other_context),
+      ".*Context.*was not created for the root[^]*troubleshooting.html.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system.ValidateContext(other_context.get()),
+      ".*Context.*was not created for the root[^]*troubleshooting.html.+");
   DRAKE_EXPECT_THROWS_MESSAGE(
       system.ValidateCreatedForThisSystem(*other_context),
-      ".*ContextBase.*was not created for.*MySystemBase.*any_name_will_do.*");
+      ".*Context.*was not created for the root[^]*troubleshooting.html.+");
   DRAKE_EXPECT_THROWS_MESSAGE(
       system.ValidateCreatedForThisSystem(other_context.get()),
-      ".*ContextBase.*was not created for.*MySystemBase.*any_name_will_do.*");
+      ".*Context.*was not created for the root[^]*troubleshooting.html.+");
 
   // These methods check for null pointers even in Release builds but don't
   // generate fancy messages for them. We're happy as long as "nullptr" gets
@@ -106,14 +131,55 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
   DRAKE_EXPECT_THROWS_MESSAGE(system.ValidateCreatedForThisSystem(null_context),
                               ".*nullptr.*");
 
-  MyContextBase disconnected_context;  // No system id.
-  // ValidateContext() can't be used on a Context that has no system id.
+  // We don't test ValidateContext() against a context without a system id;
+  // having a system id is a pre-requisite.
+}
+
+// This tests validation of objects that are *not* contexts, but are similarly
+// associated with systems (state, parameters, etc.).
+GTEST_TEST(SystemBaseTest, ValidatingFrameworkEntity) {
+  MySystemBase system;
+  system.set_name("any_name_will_do");
+  MySystemBase other_system;
+
+  // Calling ValidateCreatedForThisSystem() with some non-Context object gets
+  // a different message than for Context.
+  std::unique_ptr<DiscreteValues<double>> state =
+      system.AllocateDiscreteState();
+  DRAKE_EXPECT_NO_THROW(system.ValidateCreatedForThisSystem(state.get()));
+  DRAKE_EXPECT_NO_THROW(system.ValidateCreatedForThisSystem(*state));
+  std::unique_ptr<DiscreteValues<double>> other_state =
+      other_system.AllocateDiscreteState();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system.ValidateCreatedForThisSystem(other_state.get()),
+      ".*DiscreteValues.*was not created .+MySystemBase.*any_name_will_do.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system.ValidateCreatedForThisSystem(*other_state),
+      ".*DiscreteValues.*was not created .+MySystemBase.*any_name_will_do.*");
+
+  // These methods check for null pointers even in Release builds but don't
+  // generate fancy messages for them. We're happy as long as "nullptr" gets
+  // mentioned.
+  DiscreteValues<double>* null_state = nullptr;
+  DRAKE_EXPECT_THROWS_MESSAGE(system.ValidateCreatedForThisSystem(null_state),
+                              ".*nullptr.*");
+
+  // We *can* pass a context without system id to ValidateCreatedForThisSystem.
+  // The result should be the same as passing any other "disconnected" framework
+  // entity.
+  MyContextBase disconnected_context;         // No system id.
+  DiscreteValues<double> disconnected_state;  // No system id.
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       system.ValidateCreatedForThisSystem(disconnected_context),
       ".*MyContextBase.*was not associated.*should have been "
       "created for.*MySystemBase.*any_name_will_do.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system.ValidateCreatedForThisSystem(disconnected_state),
+      ".*DiscreteValues.*was not associated.*should have been "
+      "created for.*MySystemBase.*any_name_will_do.*");
 }
+
 
 }  // namespace system_base_test_internal
 }  // namespace systems

@@ -262,10 +262,43 @@ void SystemBase::ThrowCantEvaluateInputPort(const char* func,
 
 void SystemBase::ThrowValidateContextMismatch(
     const ContextBase& context) const {
-  throw std::logic_error(fmt::format(
-      "Context was not created for {} system {}; it was created for system {}",
-      this->GetSystemType(), this->GetSystemPathname(),
-      context.GetSystemPathname()));
+  // We special case the most common error conditions with more targeted error
+  // conditions.
+
+  // Either `this` has a parent from which we can access the root system, or
+  // `this` *is* the root system.
+  const internal::SystemId root_id =
+      get_parent_service()
+          ? get_parent_service()->GetRootSystemBase().get_system_id()
+          : system_id_;
+
+  std::string core_message;
+  if (context.get_system_id() == root_id) {
+    // The most common case, root context has been passed to child system.
+    core_message = fmt::format(
+        "Context was not created for the {} system '{}'; it was created for "
+        "the root diagram. Use GetMyContextFromRoot() or "
+        "GetMyMutableContextFromRoot() to acquire the sub-system's Context.",
+        this->GetSystemType(), this->GetSystemPathname());
+  } else if (system_id_ == root_id) {
+    // Less common case, child context passed into root system.
+    core_message = fmt::format(
+        "Context was not created for the root diagram; it was created for the "
+        "system '{}'.",
+        context.GetSystemPathname());
+  } else {
+    core_message = fmt::format(
+        "Context was not created for {} system '{}'; it was created for the "
+        "system '{}'. Use GetMyContextFromRoot() or "
+        "GetMyMutableContextFromRoot() to acquire the sub-system's Context.",
+        this->GetSystemType(), this->GetSystemPathname(),
+        context.GetSystemPathname());
+  }
+  throw std::logic_error(
+      core_message +
+      "\nFor more information about Context-System mismatches, see "
+      "https://drake.mit.edu/"
+      "troubleshooting.html#framework-context-system-mismatch");
 }
 
 void SystemBase::ThrowNotCreatedForThisSystemImpl(
