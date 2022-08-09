@@ -68,6 +68,24 @@ struct HydroelasticContactInfoAndBodySpatialForces {
   std::vector<HydroelasticContactInfo<T>> contact_info;
 };
 
+// This struct contains the parameters to compute forces to enforce
+// no-interpenetration between bodies by a penalty method.
+struct ContactByPenaltyMethodParameters {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactByPenaltyMethodParameters);
+
+  ContactByPenaltyMethodParameters() = default;
+
+  // Penalty method coefficients used to compute contact forces.
+  double geometry_stiffness{0};
+  double dissipation{0};
+  // An estimated time scale in which objects come to a relative stop during
+  // contact.
+  double time_scale{-1.0};
+  // Acceleration of gravity in the model. Used to estimate penalty method
+  // constants from a static equilibrium analysis.
+  std::optional<double> gravity;
+};
+
 // Forward declaration.
 template <typename>
 class MultibodyPlantModelAttorney;
@@ -4869,27 +4887,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // (dynamics only).
   std::optional<geometry::SourceId> source_id_{std::nullopt};
 
-  // Frame Id's for each body in the model:
-  // Not all bodies need to be in this map.
-
-  // Map provided at construction that tells how bodies (referenced by name),
-  // map to frame ids.
-  std::unordered_map<std::string, geometry::FrameId> body_name_to_frame_id_;
-
-  // This struct contains the parameters to compute forces to enforce
-  // no-interpenetration between bodies by a penalty method.
-  struct ContactByPenaltyMethodParameters {
-    // Penalty method coefficients used to compute contact forces.
-    double geometry_stiffness{0};
-    double dissipation{0};
-    // An estimated time scale in which objects come to a relative stop during
-    // contact.
-    double time_scale{-1.0};
-    // Acceleration of gravity in the model. Used to estimate penalty method
-    // constants from a static equilibrium analysis.
-    std::optional<double> gravity;
-  };
-  ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
+  internal::ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
 
   // Penetration allowance used to estimate ContactByPenaltyMethodParameters.
   // See set_penetration_allowance() for details.
