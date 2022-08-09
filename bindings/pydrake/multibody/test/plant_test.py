@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from cmath import exp
 import collections
 import copy
 import itertools
-from tkinter import E
 import unittest
 
 import numpy as np
