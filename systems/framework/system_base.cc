@@ -1,6 +1,7 @@
 #include "drake/systems/framework/system_base.h"
 
 #include <atomic>
+#include <stdexcept>
 
 #include <fmt/format.h>
 
@@ -262,10 +263,55 @@ void SystemBase::ThrowCantEvaluateInputPort(const char* func,
 
 void SystemBase::ThrowValidateContextMismatch(
     const ContextBase& context) const {
+  const char* const info_link =
+      "For more information about Context-System mismatches, see "
+      "https://drake.mit.edu/"
+      "troubleshooting.html#framework-context-system-mismatch";
+
+  // Check if we are a subsystem within a Diagram and the user passed us the
+  // root context instead of our subsystem context. In that case, we can provide
+  // a more specific error message.
+  if (get_parent_service() != nullptr) {
+    // N.B. get_parent_service() is only non-null for subsystems in Diagrams.
+    const internal::SystemId root_id =
+        get_parent_service()->GetRootSystemBase().get_system_id();
+    if (context.get_system_id() == root_id) {
+      throw std::logic_error(fmt::format(
+          "A function call on a {} system named '{}' was passed the root "
+          "Diagram's Context instead of the appropriate subsystem Context. "
+          "Use GetMyContextFromRoot() or similar to acquire the appropriate "
+          "subsystem Context.\n{}",
+          this->GetSystemType(), this->GetSystemPathname(), info_link));
+    }
+  }
+
+  // Check if the context is a sub-context whose root context was created by
+  // this Diagram. In that case, we can provide a more specific error message.
+  const ContextBase& root_context = [&context]() -> const ContextBase& {
+    const ContextBase* iterator = &context;
+    while (true)  {
+      const ContextBase* parent =
+          internal::SystemBaseContextBaseAttorney::get_parent_base(*iterator);
+      if (parent == nullptr) {
+        return *iterator;
+      }
+      iterator = parent;
+    }
+  }();
+  if (root_context.get_system_id() == get_system_id()) {
+    throw std::logic_error(fmt::format(
+        "A function call on the root Diagram was passed a subcontext "
+        "associated with its subsystem named '{}' instead of the root "
+        "context. When calling a function on a the root Digram, you must "
+        "pass a reference to the root Context, not a subcontext.\n{}",
+        context.GetSystemPathname(), info_link));
+  }
+
   throw std::logic_error(fmt::format(
-      "Context was not created for {} system {}; it was created for system {}",
+      "A function call on a {} system named '{}' was passed the Context of "
+      "a system named '{}' instead of the appropriate subsystem Context.\n{}",
       this->GetSystemType(), this->GetSystemPathname(),
-      context.GetSystemPathname()));
+      context.GetSystemPathname(), info_link));
 }
 
 void SystemBase::ThrowNotCreatedForThisSystemImpl(

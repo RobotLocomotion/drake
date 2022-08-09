@@ -75,8 +75,9 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
   // Test specialized ValidateContext() and more-general
   // ValidateCreatedForThisSystem() which can check anything that supports
   // a get_system_id() method (we'll just use Context here for that also
-  // since it qualifies). Both methods have pointer and non-pointer variants
-  // but should ignore that distinction in the error message.
+  // since it qualifies). We should ignore the differences in the error messages
+  // between the two functions. Both methods have pointer and non-pointer
+  // variants, so we exercise both.
 
   std::unique_ptr<ContextBase> context = system.AllocateContext();
   DRAKE_EXPECT_NO_THROW(system.ValidateContext(*context));
@@ -86,10 +87,14 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
 
   MySystemBase other_system;
   auto other_context = other_system.AllocateContext();
+  // N.B. the error message we're looking for in ValidateContext() should *not*
+  // indicate that the system (or the context) is a root system/context.
   DRAKE_EXPECT_THROWS_MESSAGE(system.ValidateContext(*other_context),
-                              ".*Context.*was not created for.*");
+                              ".+call on a .+ system.+was passed the Context "
+                              "of[^]*#framework-context-system-mismatch.*");
   DRAKE_EXPECT_THROWS_MESSAGE(system.ValidateContext(other_context.get()),
-                              ".*Context.*was not created for.*");
+                              ".+call on a .+ system.+was passed the Context "
+                              "of[^]*#framework-context-system-mismatch.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       system.ValidateCreatedForThisSystem(*other_context),
       ".*ContextBase.*was not created for.*MySystemBase.*any_name_will_do.*");

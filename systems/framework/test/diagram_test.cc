@@ -791,6 +791,34 @@ TEST_F(DiagramTest, Path) {
             diagram_->GetSystemPathname());
 }
 
+// Tests the special cases in ValidateContext() that recognize if the context
+// or system is the root.
+TEST_F(DiagramTest, ValidateContext) {
+  // Root diagram given root context.
+  DRAKE_EXPECT_NO_THROW(diagram_->ValidateContext(*context_));
+
+  // Internal system given root diagram's context.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      adder0()->ValidateContext(*context_),
+      ".*was passed the root Diagram's Context.+GetMyContextFromRoot"
+      "[^]*troubleshooting.html.+");
+
+  // Root diagram given context for internal system.
+  const auto& adder_context = adder0()->GetMyContextFromRoot(*context_);
+  DRAKE_EXPECT_THROWS_MESSAGE(diagram_->ValidateContext(adder_context),
+                              ".*root Diagram was passed a subcontext"
+                              "[^]*troubleshooting.html.+");
+
+  // And for the sake of completeness, one leaf system's context passed to
+  // another leaf system.
+  const auto& integrator0_context =
+      integrator0()->GetMyContextFromRoot(*context_);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      integrator1()->ValidateContext(integrator0_context),
+      "A function call on .+ system named '.+' was passed the Context of a "
+      "system named '.+'[^]*troubleshooting.html.+");
+}
+
 TEST_F(DiagramTest, Graphviz) {
   const std::string id = std::to_string(
       reinterpret_cast<int64_t>(diagram_.get()));
