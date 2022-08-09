@@ -78,7 +78,8 @@ from pydrake.multibody.benchmarks.acrobot import (
 )
 from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.deprecation import install_numpy_warning_filters
+from pydrake.common.deprecation import DrakeDeprecationWarning, \
+    install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
@@ -1781,6 +1782,66 @@ class TestPlant(unittest.TestCase):
             with self.subTest(make_joint=make_joint):
                 loop_body(make_joint, 0.0)
                 loop_body(make_joint, 0.001)
+
+    def test_deprecated_weld_joint_api(self):
+        plant = MultibodyPlant_[float](0.01)
+        body1 = plant.AddRigidBody(
+            name="body1",
+            M_BBo_B=SpatialInertia_[float]())
+        body2 = plant.AddRigidBody(
+            name="body2",
+            M_BBo_B=SpatialInertia_[float]())
+
+        msg = "Deprecated:\n    WeldJoint frame notation has changed. Use the"\
+              " constructor that uses `frame_on_parent_F`, `frame_on_child_M`"\
+              ", and `X_FM`. The deprecated code will be removed from Drake "\
+              "on or after 2022-12-01."
+
+        # Old constructor arguments raise a warning.
+        with self.assertWarns(DrakeDeprecationWarning) as cm:
+            world_body1 = WeldJoint_[float](
+                name="world_body1",
+                frame_on_parent_P=plant.world_frame(),
+                frame_on_child_C=body1.body_frame(),
+                X_PC=RigidTransform_[float].Identity())
+        self.assertEqual(str(cm.warning), msg)
+
+        # No keywords defaults to the first constructor defined in the binding.
+        # No warning.
+        world_body2 = WeldJoint_[float](
+            "world_body2",
+            plant.world_frame(),
+            body2.body_frame(),
+            RigidTransform_[float].Identity())
+
+    def test_deprecated_weld_frames_api(self):
+        plant = MultibodyPlant_[float](0.01)
+        body1 = plant.AddRigidBody(
+            name="body1",
+            M_BBo_B=SpatialInertia_[float]())
+        body2 = plant.AddRigidBody(
+            name="body2",
+            M_BBo_B=SpatialInertia_[float]())
+
+        msg = "Deprecated:\n    Frame notation for `WeldFrames` has changed. "\
+              "Use the version that uses `frame_on_parent_F`, "\
+              "`frame_on_child_M`, and `X_FM`. The deprecated code will be "\
+              "removed from Drake on or after 2022-12-01."
+
+        # Old constructor arguments raise a warning.
+        with self.assertWarns(DrakeDeprecationWarning) as cm:
+            plant.WeldFrames(
+                frame_on_parent_P=plant.world_frame(),
+                frame_on_child_C=body1.body_frame(),
+                X_PC=RigidTransform_[float].Identity())
+        self.assertEqual(str(cm.warning), msg)
+
+        # No keywords defaults to the first function named `WeldFrames` defined
+        # in the binding. No warning.
+        plant.WeldFrames(
+            plant.world_frame(),
+            body2.body_frame(),
+            RigidTransform_[float].Identity())
 
     @numpy_compare.check_all_types
     def test_multibody_add_frame(self, T):
