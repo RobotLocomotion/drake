@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
@@ -238,11 +239,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 const SpatialInertia<double>&>(&Class::AddRigidBody),
             py::arg("name"), py::arg("model_instance"), py::arg("M_BBo_B"),
             py_rvp::reference_internal, cls_doc.AddRigidBody.doc_3args)
-        .def("WeldFrames",
-            py::overload_cast<const Frame<T>&, const Frame<T>&,
-                const RigidTransform<double>&>(&Class::WeldFrames),
-            py::arg("frame_on_parent_P"), py::arg("frame_on_child_C"),
-            py::arg("X_PC") = RigidTransform<double>::Identity(),
+        .def("WeldFrames", &Class::WeldFrames, py::arg("frame_on_parent_F"),
+            py::arg("frame_on_child_M"),
+            py::arg("X_FM") = RigidTransform<double>::Identity(),
             py_rvp::reference_internal, cls_doc.WeldFrames.doc)
         .def(
             "AddForceElement",
@@ -256,6 +255,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("AddCouplerConstraint", &Class::AddCouplerConstraint,
             py::arg("joint0"), py::arg("joint1"), py::arg("gear_ratio"),
             py::arg("offset") = 0.0, cls_doc.AddCouplerConstraint.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    constexpr char kWeldFramesDeprecated[] =
+        "Deprecated:\n    Frame notation for `WeldFrames` has changed. Use the "
+        "version that uses `frame_on_parent_F`, `frame_on_child_M`, and "
+        "`X_FM`. The deprecated code will be removed from Drake on or after "
+        "2022-12-01.";
+    cls.def("WeldFrames",
+        WrapDeprecated(kWeldFramesDeprecated, &Class::WeldFrames),
+        py::arg("frame_on_parent_P"), py::arg("frame_on_child_C"),
+        py::arg("X_PC") = RigidTransform<double>::Identity(),
+        py_rvp::reference_internal, kWeldFramesDeprecated);
+#pragma GCC diagnostic pop
     // Mathy bits
     cls  // BR
         .def(

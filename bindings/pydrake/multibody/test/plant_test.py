@@ -1258,9 +1258,9 @@ class TestPlant(unittest.TestCase):
         X_EeGripper = RigidTransform_[float](
             RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant_f.WeldFrames(
-            frame_on_parent_P=plant_f.world_frame(),
-            frame_on_child_C=plant_f.GetFrameByName("iiwa_link_0", iiwa_model),
-            X_PC=RigidTransform_[float]())
+            frame_on_parent_F=plant_f.world_frame(),
+            frame_on_child_M=plant_f.GetFrameByName("iiwa_link_0", iiwa_model),
+            X_FM=RigidTransform_[float]())
         # Perform the second weld without named arguments to ensure that the
         # proper binding gets invoked.
         plant_f.WeldFrames(
@@ -1407,13 +1407,13 @@ class TestPlant(unittest.TestCase):
         X_EeGripper = RigidTransform_[float](
             RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant_f.WeldFrames(
-            frame_on_parent_P=plant_f.world_frame(),
-            frame_on_child_C=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
+            frame_on_parent_F=plant_f.world_frame(),
+            frame_on_child_M=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
         plant_f.WeldFrames(
-            frame_on_parent_P=plant_f.GetFrameByName(
+            frame_on_parent_F=plant_f.GetFrameByName(
                 "iiwa_link_7", iiwa_model),
-            frame_on_child_C=plant_f.GetFrameByName("body", gripper_model),
-            X_PC=X_EeGripper)
+            frame_on_child_M=plant_f.GetFrameByName("body", gripper_model),
+            X_FM=X_EeGripper)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
 
@@ -1602,9 +1602,9 @@ class TestPlant(unittest.TestCase):
         def make_weld_joint(plant, P, C):
             return WeldJoint_[T](
                 name="weld",
-                frame_on_parent_P=P,
-                frame_on_child_C=C,
-                X_PC=X_PC,
+                frame_on_parent_F=P,
+                frame_on_child_M=C,
+                X_FM=X_PC,
             )
 
         make_joint_list = [
@@ -1771,7 +1771,7 @@ class TestPlant(unittest.TestCase):
                 joint.set_default_angles(angles=[1.0, 2.0])
             elif joint.name() == "weld":
                 numpy_compare.assert_float_equal(
-                    joint.X_PC().GetAsMatrix4(),
+                    joint.X_FM().GetAsMatrix4(),
                     X_PC.GetAsMatrix4())
             else:
                 raise TypeError(
@@ -1781,6 +1781,56 @@ class TestPlant(unittest.TestCase):
             with self.subTest(make_joint=make_joint):
                 loop_body(make_joint, 0.0)
                 loop_body(make_joint, 0.001)
+
+    def test_deprecated_weld_joint_api(self):
+        plant = MultibodyPlant_[float](0.01)
+        body1 = plant.AddRigidBody(
+            name="body1",
+            M_BBo_B=SpatialInertia_[float]())
+        body2 = plant.AddRigidBody(
+            name="body2",
+            M_BBo_B=SpatialInertia_[float]())
+
+        # Old keyword arguments raise a warning.
+        with catch_drake_warnings(expected_count=1) as w:
+            world_body1 = WeldJoint_[float](
+                name="world_body1",
+                frame_on_parent_P=plant.world_frame(),
+                frame_on_child_C=body1.body_frame(),
+                X_PC=RigidTransform_[float].Identity())
+            self.assertIn("2022-12-01", str(w[0].message))
+
+        # No keywords defaults to the first constructor defined in the binding.
+        # No warning.
+        world_body2 = WeldJoint_[float](
+            "world_body2",
+            plant.world_frame(),
+            body2.body_frame(),
+            RigidTransform_[float].Identity())
+
+    def test_deprecated_weld_frames_api(self):
+        plant = MultibodyPlant_[float](0.01)
+        body1 = plant.AddRigidBody(
+            name="body1",
+            M_BBo_B=SpatialInertia_[float]())
+        body2 = plant.AddRigidBody(
+            name="body2",
+            M_BBo_B=SpatialInertia_[float]())
+
+        # Old keyword arguments raise a warning.
+        with catch_drake_warnings(expected_count=1) as w:
+            plant.WeldFrames(
+                frame_on_parent_P=plant.world_frame(),
+                frame_on_child_C=body1.body_frame(),
+                X_PC=RigidTransform_[float].Identity())
+            self.assertIn("2022-12-01", str(w[0].message))
+
+        # No keywords defaults to the first function named `WeldFrames` defined
+        # in the binding. No warning.
+        plant.WeldFrames(
+            plant.world_frame(),
+            body2.body_frame(),
+            RigidTransform_[float].Identity())
 
     @numpy_compare.check_all_types
     def test_multibody_add_frame(self, T):

@@ -643,9 +643,27 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const RigidTransform<double>&>(),
-            py::arg("name"), py::arg("frame_on_parent_P"),
-            py::arg("frame_on_child_C"), py::arg("X_PC"), cls_doc.ctor.doc)
-        .def("X_PC", &Class::X_PC, cls_doc.X_PC.doc);
+            py::arg("name"), py::arg("frame_on_parent_F"),
+            py::arg("frame_on_child_M"), py::arg("X_FM"), cls_doc.ctor.doc)
+        .def("X_FM", &Class::X_FM, cls_doc.X_FM.doc);
+
+    // Deprecated definitions
+    constexpr char kInitDeprecated[] =
+        "Deprecated:\n    WeldJoint frame notation has changed. Use "
+        "the constructor that uses `frame_on_parent_F`, "
+        "`frame_on_child_M`, and `X_FM`. The deprecated code will be "
+        "removed from Drake on or after 2022-12-01.";
+    cls.def(
+        py_init_deprecated<Class, const string&, const Frame<T>&,
+            const Frame<T>&, const RigidTransform<double>&>(kInitDeprecated),
+        py::arg("name"), py::arg("frame_on_parent_P"),
+        py::arg("frame_on_child_C"), py::arg("X_PC"), kInitDeprecated);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("X_PC", WrapDeprecated(cls_doc.X_PC.doc_deprecated, &Class::X_PC),
+        cls_doc.X_PC.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 
   // Actuators.
