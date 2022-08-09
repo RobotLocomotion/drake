@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from cmath import exp
 import collections
 import copy
 import itertools
+from tkinter import E
 import unittest
 
 import numpy as np
@@ -78,8 +80,7 @@ from pydrake.multibody.benchmarks.acrobot import (
 )
 from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.deprecation import DrakeDeprecationWarning, \
-    install_numpy_warning_filters
+from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
@@ -1792,19 +1793,14 @@ class TestPlant(unittest.TestCase):
             name="body2",
             M_BBo_B=SpatialInertia_[float]())
 
-        msg = "Deprecated:\n    WeldJoint frame notation has changed. Use the"\
-              " constructor that uses `frame_on_parent_F`, `frame_on_child_M`"\
-              ", and `X_FM`. The deprecated code will be removed from Drake "\
-              "on or after 2022-12-01."
-
         # Old keyword arguments raise a warning.
-        with self.assertWarns(DrakeDeprecationWarning) as cm:
+        with catch_drake_warnings(expected_count=1) as w:
             world_body1 = WeldJoint_[float](
                 name="world_body1",
                 frame_on_parent_P=plant.world_frame(),
                 frame_on_child_C=body1.body_frame(),
                 X_PC=RigidTransform_[float].Identity())
-        self.assertEqual(str(cm.warning), msg)
+            self.assertIn("2022-12-01", str(w[0].message))
 
         # No keywords defaults to the first constructor defined in the binding.
         # No warning.
@@ -1823,18 +1819,13 @@ class TestPlant(unittest.TestCase):
             name="body2",
             M_BBo_B=SpatialInertia_[float]())
 
-        msg = "Deprecated:\n    Frame notation for `WeldFrames` has changed. "\
-              "Use the version that uses `frame_on_parent_F`, "\
-              "`frame_on_child_M`, and `X_FM`. The deprecated code will be "\
-              "removed from Drake on or after 2022-12-01."
-
         # Old keyword arguments raise a warning.
-        with self.assertWarns(DrakeDeprecationWarning) as cm:
+        with catch_drake_warnings(expected_count=1) as w:
             plant.WeldFrames(
                 frame_on_parent_P=plant.world_frame(),
                 frame_on_child_C=body1.body_frame(),
                 X_PC=RigidTransform_[float].Identity())
-        self.assertEqual(str(cm.warning), msg)
+            self.assertIn("2022-12-01", str(w[0].message))
 
         # No keywords defaults to the first function named `WeldFrames` defined
         # in the binding. No warning.
