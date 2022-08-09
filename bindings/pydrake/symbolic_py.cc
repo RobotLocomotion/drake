@@ -17,6 +17,7 @@
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/symbolic/latex.h"
 #include "drake/common/symbolic/monomial_util.h"
+#include "drake/common/symbolic/replace_bilinear_terms.h"
 #include "drake/common/symbolic/trigonometric_polynomial.h"
 
 namespace drake {
@@ -1128,6 +1129,10 @@ PYBIND11_MODULE(symbolic, m) {
       .def("DecomposeLumpedParameters", &DecomposeLumpedParameters,
           py::arg("f"), py::arg("parameters"),
           doc.DecomposeLumpedParameters.doc);
+
+  // Bind free function in replace_bilinear_terms.
+  m.def("ReplaceBilinearTerms", &ReplaceBilinearTerms, py::arg("e"),
+      py::arg("x"), py::arg("y"), py::arg("W"), doc.ReplaceBilinearTerms.doc);
 
   // NOLINTNEXTLINE(readability/fn_size)
 }
