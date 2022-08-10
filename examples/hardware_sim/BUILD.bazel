@@ -49,32 +49,33 @@ drake_cc_binary(
 drake_py_unittest(
     name = "hardware_sim_test",
     data = [
-        "example_scenarios.yaml",
         "test/test_scenarios.yaml",
+        ":demo",
         ":hardware_sim",
-        ":homecart",
     ],
+    shard_count = 3,
     deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
 )
 
-# Binds the hardware_sim program to the data files required for the Homecart
+# Binds the hardware_sim program to the data files required for the Demo
 # example scenario.
 sh_binary(
-    name = "homecart",
+    name = "demo",
     srcs = [":hardware_sim"],
     args = [
         "--scenario_file=examples/hardware_sim/example_scenarios.yaml",
-        "--scenario_name=Homecart",
+        "--scenario_name=Demo",
     ],
     data = [
+        ":example_iiwa_wsg.yaml",
         ":example_scenarios.yaml",
-        "//manipulation/models/tri_homecart:prod_models",
-        "//manipulation/models/ur3e:prod_models",
+        "//examples/manipulation_station:prod_models",
+        "//manipulation/models/iiwa_description:prod_models",
         "//manipulation/models/wsg_50_description:prod_models",
     ],
-    # Use the runfiles of the ":homecart", not of the ":hardware_sim".
+    # Use the runfiles of the ":demo", not of the ":hardware_sim".
     env = {"RUNFILES_DIR": "../"},
 )
 

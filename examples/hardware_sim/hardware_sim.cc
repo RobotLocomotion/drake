@@ -25,7 +25,7 @@ DEFINE_string(scenario_file, "",
     "Scenario filename, e.g., "
     "drake/examples/hardware_sim/example_scenarios.yaml");
 DEFINE_string(scenario_name, "",
-    "Scenario name within the scenario_file, e.g., Homecart in the "
+    "Scenario name within the scenario_file, e.g., Demo in the "
     "example_scenarios.yaml; scenario names appears as the keys of the "
     "YAML document's top-level mapping item");
 DEFINE_string(scenario_text, "{}",

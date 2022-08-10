@@ -30,7 +30,7 @@ class HardwareSimTest(unittest.TestCase):
             "drake/examples/hardware_sim/test/test_scenarios.yaml")
         self._default_extra = {
             # For our smoke test, exit fairly quickly.
-            "simulation_duration": 1.0,
+            "simulation_duration": 0.25,
         }
 
     def _dict_to_single_line_yaml(self, *, data):
@@ -68,6 +68,6 @@ class HardwareSimTest(unittest.TestCase):
         """Tests the OneOfEverything test scenario."""
         self._run(self._test_scenarios, "OneOfEverything")
 
-    def test_Homecart(self):
-        """Tests the Homecart example."""
-        self._run(self._example_scenarios, "Homecart")
+    def test_Demo(self):
+        """Tests the Demo example."""
+        self._run(self._example_scenarios, "Demo")
