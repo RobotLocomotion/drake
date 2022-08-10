@@ -7,7 +7,7 @@ directives:
 - add_model_instance:
     name: nested
 - add_directives:
-    file: package://process_model_directives_test/add_scoped_sub.yaml
+    file: package://process_model_directives_test/add_scoped_sub.dmd.yaml
     model_namespace: nested
 # This frame is only for testing name scoping.
 # TODO(aaronchongth): Add testing for posturing and welding.

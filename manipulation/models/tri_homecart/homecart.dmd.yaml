@@ -1,0 +1,5 @@
+directives:
+- add_directives:
+    file: package://drake/manipulation/models/tri_homecart/homecart_no_grippers.dmd.yaml
+- add_directives:
+    file: package://drake/manipulation/models/tri_homecart/homecart_grippers.dmd.yaml

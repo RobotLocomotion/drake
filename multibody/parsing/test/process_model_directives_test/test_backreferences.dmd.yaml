@@ -14,13 +14,13 @@ directives:
 
 # Including a backreference without specifying a model namespace.
 - add_directives:
-    file: package://process_model_directives_test/add_backreference.yaml
+    file: package://process_model_directives_test/add_backreference.dmd.yaml
 
 # Including simple_model within another model namespace called 'nested'.
 - add_model_instance:
     name: nested
 - add_directives:
-    file: package://process_model_directives_test/add_scoped_sub.yaml
+    file: package://process_model_directives_test/add_scoped_sub.dmd.yaml
     model_namespace: nested
 - add_frame:
     name: nested::simple_model_origin
@@ -30,5 +30,5 @@ directives:
 
 # Including the same backreference under the 'nested' model namespace.
 - add_directives:
-    file: package://process_model_directives_test/add_backreference.yaml
+    file: package://process_model_directives_test/add_backreference.dmd.yaml
     model_namespace: nested

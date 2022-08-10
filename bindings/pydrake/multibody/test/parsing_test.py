@@ -144,7 +144,7 @@ class TestParsing(unittest.TestCase):
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
         parser.package_map().PopulateFromFolder(model_dir)
-        directives_file = model_dir + "/add_scoped_top.yaml"
+        directives_file = model_dir + "/add_scoped_top.dmd.yaml"
         directives = LoadModelDirectives(directives_file)
         return (plant, parser, directives)
 
