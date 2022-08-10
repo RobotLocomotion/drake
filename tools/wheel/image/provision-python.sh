@@ -16,6 +16,8 @@ ${PYTHON} -m venv /usr/local
 
 pip install \
     lxml \
+    matplotlib \
+    numpy \
     pyyaml \
     semantic-version \
     setuptools \
