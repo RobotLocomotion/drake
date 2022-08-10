@@ -1,0 +1,16 @@
+directives:
+- add_model:
+    name: iiwa
+    file: package://drake/manipulation/models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
+- add_model:
+    name: wsg
+    file: package://drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+- add_frame:
+    name: wsg_on_iiwa
+    X_PF:
+      base_frame: iiwa_link_7
+      translation: [0, 0, 0.114]
+      rotation: !Rpy { deg: [90, 0, 90] }
+- add_weld:
+    parent: wsg_on_iiwa
+    child: wsg::body
