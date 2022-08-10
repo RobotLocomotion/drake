@@ -32,6 +32,9 @@ namespace manipulation {
 /// model some physical properties of the robot that are not easily reflected
 /// in MultibodyPlant (e.g., the WSG belt drive).
 ///
+/// The caller of this function is responsible for including the variant
+/// members' apply function, such as schunk_wsg_driver_functions.h.
+///
 /// @p driver_configs The configurations to apply.
 /// @p sim_plant The plant containing the model.
 /// @p models_from_directives All of the `ModelInstanceInfo`s from previously-

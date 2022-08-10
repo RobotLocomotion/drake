@@ -1,4 +1,4 @@
-#include "sim/common/build_wsg_control.h"
+#include "drake/manipulation/schunk_wsg/build_schunk_wsg_control.h"
 
 #include <memory>
 #include <utility>
@@ -13,26 +13,27 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-using drake::math::RigidTransformd;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
-
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
+namespace schunk_wsg {
 namespace {
+
+using math::RigidTransformd;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::Parser;
 
 constexpr double kTolerance = 1e-3;
 
-class BuildWsgControlTest : public ::testing::Test {
+class BuildSchunkWsgControlTest : public ::testing::Test {
  public:
-  BuildWsgControlTest() = default;
+  BuildSchunkWsgControlTest() = default;
 
  protected:
   void SetUp() {
     sim_plant_ = builder_.AddSystem<MultibodyPlant<double>>(0.001);
     Parser parser{sim_plant_};
-    const std::string wsg_file = drake::FindResourceOrThrow(
+    const std::string wsg_file = FindResourceOrThrow(
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
     wsg_instance_ = parser.AddModelFromFile(wsg_file, "wsg_instance");
 
@@ -43,23 +44,22 @@ class BuildWsgControlTest : public ::testing::Test {
     sim_plant_->Finalize();
   }
 
-  drake::systems::DiagramBuilder<double> builder_;
+  systems::DiagramBuilder<double> builder_;
   MultibodyPlant<double>* sim_plant_{nullptr};
-  drake::lcm::DrakeLcm lcm_;
+  lcm::DrakeLcm lcm_;
   ModelInstanceIndex wsg_instance_;
 };
 
-TEST_F(BuildWsgControlTest, BuildWsgControl) {
-  BuildWsgControl(*sim_plant_, wsg_instance_, &lcm_, &builder_);
+TEST_F(BuildSchunkWsgControlTest, BuildSchunkWsgControl) {
+  BuildSchunkWsgControl(*sim_plant_, wsg_instance_, &lcm_, &builder_);
   const auto diagram = builder_.Build();
-  drake::systems::Simulator<double> simulator(*diagram);
+  systems::Simulator<double> simulator(*diagram);
 
-  drake::lcm::Subscriber<drake::lcmt_schunk_wsg_status> sub{
-      &lcm_, "SCHUNK_WSG_STATUS"};
+  lcm::Subscriber<lcmt_schunk_wsg_status> sub{&lcm_, "SCHUNK_WSG_STATUS"};
 
   // Publish commands and check whether the wsg gripper moves to the correct
   // positions.
-  drake::lcmt_schunk_wsg_command command{};
+  lcmt_schunk_wsg_command command{};
   command.force = 40.0;
   command.target_position_mm = 100.0;
   Publish(&lcm_, "SCHUNK_WSG_COMMAND", command);
@@ -77,5 +77,6 @@ TEST_F(BuildWsgControlTest, BuildWsgControl) {
 }
 
 }  // namespace
-}  // namespace sim
-}  // namespace anzu
+}  // namespace schunk_wsg
+}  // namespace manipulation
+}  // namespace drake
