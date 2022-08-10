@@ -20,6 +20,7 @@ drake_cc_library(
     interface_deps = [
         "//common:name_value",
         "//lcm:drake_lcm_params",
+        "//manipulation/util:zero_force_driver",
         "//multibody/plant:multibody_plant_config",
         "//multibody/parsing:model_directives",
         "//systems/analysis:simulator_config",
@@ -37,6 +38,8 @@ drake_cc_binary(
     deps = [
         ":scenario",
         "//common:add_text_logging_gflags",
+        "//manipulation/util:apply_driver_configs",
+        "//manipulation/util:zero_force_driver_functions",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",

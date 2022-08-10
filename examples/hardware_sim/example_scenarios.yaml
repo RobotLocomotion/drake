@@ -18,3 +18,6 @@ Demo:
   - add_weld:
       parent: iiwa_on_world
       child: iiwa::base
+  model_drivers:
+    iiwa: !ZeroForceDriver {}
+    wsg: !ZeroForceDriver {}

@@ -12,6 +12,8 @@ while some (separate) controller operates the robot, without extra hassle. */
 #include <gflags/gflags.h>
 
 #include "drake/examples/hardware_sim/scenario.h"
+#include "drake/manipulation/util/apply_driver_configs.h"
+#include "drake/manipulation/util/zero_force_driver_functions.h"
 #include "drake/multibody/parsing/process_model_directives.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
@@ -37,6 +39,7 @@ namespace {
 
 using lcm::DrakeLcmInterface;
 using multibody::ModelInstanceIndex;
+using multibody::parsing::ModelInstanceInfo;
 using multibody::parsing::ProcessModelDirectives;
 using systems::ApplySimulatorConfig;
 using systems::Diagram;
@@ -74,14 +77,19 @@ void Simulation::Setup() {
       AddMultibodyPlant(scenario_.plant_config, &builder);
 
   // Add model directives.
-  ProcessModelDirectives({scenario_.directives}, &sim_plant);
+  std::vector<ModelInstanceInfo> added_models;
+  ProcessModelDirectives({scenario_.directives}, &sim_plant, &added_models);
+
+  // Now the plant is complete.
+  sim_plant.Finalize();
 
   // Add LCM buses. (The simulator will handle polling the network for new
   // messages and dispatching them to the receivers, i.e., "pump" the bus.)
   const LcmBuses lcm_buses = ApplyLcmBusConfig(scenario_.lcm_buses, &builder);
 
-  // Now the plant is complete.
-  sim_plant.Finalize();
+  // Add actuation inputs.
+  ApplyDriverConfigs(scenario_.model_drivers, sim_plant, added_models,
+                     lcm_buses, &builder);
 
   // Add visualization.
   ApplyVisualizationConfig(scenario_.visualization, &builder, &lcm_buses);
@@ -94,16 +102,6 @@ void Simulation::Setup() {
   // Sample the random elements of the context.
   RandomGenerator random(scenario_.random_seed);
   diagram_->SetRandomContext(&simulator_->get_mutable_context(), &random);
-
-  // TODO(jwnimmer-tri) Until we add driver stacks to the scenario, we need to
-  // placate MbP's requirement for actuation input.
-  for (ModelInstanceIndex i{0}; i < sim_plant.num_model_instances(); ++i) {
-    auto& input_port = sim_plant.get_actuation_input_port(i);
-    const int size = input_port.size();
-    auto& plant_context = sim_plant.GetMyMutableContextFromRoot(
-        &simulator_->get_mutable_context());
-    input_port.FixValue(&plant_context, Eigen::VectorXd::Zero(size));
-  }
 }
 
 void Simulation::Simulate() {
