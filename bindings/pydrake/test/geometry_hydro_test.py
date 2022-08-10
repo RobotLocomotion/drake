@@ -122,13 +122,38 @@ class TestGeometryHydro(unittest.TestCase):
 
         self.assertListEqual(list(v0), [-1, 1, 0])
 
-        mesh = mut.TriangleSurfaceMesh(triangles=(t_a, t_b),
-                                       vertices=(v0, v1, v2, v3))
-        self.assertEqual(len(mesh.triangles()), 2)
-        self.assertEqual(len(mesh.vertices()), 4)
-        self.assertListEqual(list(mesh.centroid()), [0, 0, 0])
-        self.assertListEqual(list(mesh.element_centroid(t=1)),
+        dut = mut.TriangleSurfaceMesh(triangles=(t_a, t_b),
+                                      vertices=(v0, v1, v2, v3))
+
+        # Sanity check every accessor.
+        dut.element(e=0)
+        dut.vertex(v=0)
+        dut.num_vertices()
+        dut.num_elements()
+        dut.num_triangles()
+        dut.area(t=0)
+        dut.total_area()
+        dut.face_normal(t=0)
+        dut.element_centroid(t=0)
+        dut.centroid()
+
+        # Sanity check some calculations
+        dut.CalcBoundingBox()
+        dut.Equal(mesh=dut)
+        dut.CalcCartesianFromBarycentric(element_index=1,
+                                         b_Q=[1/3.0, 1/3.0, 1/3.0])
+        dut.CalcBarycentric(p_MQ=[-1/3.0, 1/3.0, 0], t=1)
+
+        self.assertEqual(len(dut.triangles()), 2)
+        self.assertEqual(len(dut.vertices()), 4)
+        self.assertListEqual(list(dut.centroid()), [0, 0, 0])
+        self.assertListEqual(list(dut.element_centroid(t=1)),
                              [-1/3.0, 1/3.0, 0])
+
+        # Now check the SurfaceTriangle bindings.
+        triangle0 = dut.element(e=0)
+        self.assertEqual(triangle0.num_vertices(), 3)
+        self.assertEqual(triangle0.vertex(i=0), 3)
 
     def test_volume_mesh(self):
         # Create a mesh out of two tetrahedra with a single, shared face
