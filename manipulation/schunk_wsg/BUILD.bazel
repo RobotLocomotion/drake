@@ -20,8 +20,11 @@ drake_cc_package_library(
     name = "schunk_wsg",
     visibility = ["//visibility:public"],
     deps = [
+        ":build_schunk_wsg_control",
         ":schunk_wsg_constants",
         ":schunk_wsg_controller",
+        ":schunk_wsg_driver",
+        ":schunk_wsg_driver_functions",
         ":schunk_wsg_lcm",
         ":schunk_wsg_plain_controller",
         ":schunk_wsg_position_controller",
@@ -110,6 +113,45 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "build_schunk_wsg_control",
+    srcs = ["build_schunk_wsg_control.cc"],
+    hdrs = ["build_schunk_wsg_control.h"],
+    deps = [
+        "//common:essential",
+        "//manipulation/schunk_wsg:schunk_wsg_constants",
+        "//manipulation/schunk_wsg:schunk_wsg_controller",
+        "//manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "schunk_wsg_driver",
+    hdrs = ["schunk_wsg_driver.h"],
+    deps = [
+        "//common:name_value",
+    ],
+)
+
+drake_cc_library(
+    name = "schunk_wsg_driver_functions",
+    srcs = ["schunk_wsg_driver_functions.cc"],
+    hdrs = ["schunk_wsg_driver_functions.h"],
+    deps = [
+        ":build_schunk_wsg_control",
+        ":schunk_wsg_driver",
+        "//common:essential",
+        "//multibody/parsing:model_instance_info",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_buses",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -168,6 +210,23 @@ drake_cc_googletest(
     deps = [
         ":schunk_wsg_trajectory_generator",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "build_schunk_wsg_control_test",
+    data = [
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":build_schunk_wsg_control",
+        ":schunk_wsg_lcm",
+        "//common:find_resource",
+        "//multibody/parsing:parser",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm",
     ],
 )
 

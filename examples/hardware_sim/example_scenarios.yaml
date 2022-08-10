@@ -20,4 +20,4 @@ Demo:
       child: iiwa::base
   model_drivers:
     iiwa: !ZeroForceDriver {}
-    wsg: !ZeroForceDriver {}
+    wsg: !SchunkWsgDriver {}
