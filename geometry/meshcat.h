@@ -248,14 +248,13 @@ class Meshcat {
                        double line_width = 1.0,
                        const Rgba& rgba = Rgba(0.1, 0.1, 0.1, 1.0));
 
-  // TODO(russt): Support per-vertex coloring (maybe rgba as std::variant).
   /** Sets the "object" at `path` in the scene tree to a triangular mesh.
 
   @param path a "/"-delimited string indicating the path in the scene tree. See
               @ref meshcat_path "Meshcat paths" for the semantics.
   @param vertices is a 3-by-N matrix of 3D point defining the vertices of the
                   mesh.
-  @param faces is a 3-by-N integer matrix with each entry denoting an index
+  @param faces is a 3-by-M integer matrix with each entry denoting an index
                into vertices and each column denoting one face (aka
                SurfaceTriangle).
   @param rgba is the mesh face or wireframe color.
@@ -268,6 +267,30 @@ class Meshcat {
                        const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
                        const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
                        const Rgba& rgba = Rgba(0.1, 0.1, 0.1, 1.0),
+                       bool wireframe = false,
+                       double wireframe_line_width = 1.0);
+
+  /** Sets the "object" at `path` in the scene tree to a triangular mesh with
+      per-vertex coloring.
+
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param vertices is a 3-by-N matrix of 3D point defining the vertices of the
+                  mesh.
+  @param faces is a 3-by-M integer matrix with each entry denoting an index
+               into vertices and each column denoting one face (aka
+               SurfaceTriangle).
+  @param colors is a 3-by-N matrix of color values, one color per vertex of the
+                mesh.
+  @param wireframe if "true", then only the triangle edges are visualized, not
+                   the faces.
+  @param wireframe_line_width is the width in pixels.  Due to limitations in
+                              WebGL implementations, the line width may be 1
+                              regardless of the set value. */
+  void SetTriangleColorMesh(std::string_view path,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                       const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
                        bool wireframe = false,
                        double wireframe_line_width = 1.0);
 

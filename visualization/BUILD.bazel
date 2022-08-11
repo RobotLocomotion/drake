@@ -14,15 +14,15 @@ drake_cc_package_library(
     name = "visualization",
     visibility = ["//visibility:public"],
     deps = [
-        ":visualizer_config",
-        ":visualizer_config_functions",
+        ":visualization_config",
+        ":visualization_config_functions",
     ],
 )
 
 drake_cc_library(
-    name = "visualizer_config",
-    srcs = ["visualizer_config.cc"],
-    hdrs = ["visualizer_config.h"],
+    name = "visualization_config",
+    srcs = ["visualization_config.cc"],
+    hdrs = ["visualization_config.h"],
     deps = [
         "//common:name_value",
         "//geometry:drake_visualizer_params",
@@ -31,24 +31,30 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "visualizer_config_functions",
-    srcs = ["visualizer_config_functions.cc"],
-    hdrs = ["visualizer_config_functions.h"],
-    deps = [
-        ":visualizer_config",
-        "//geometry:drake_visualizer",
+    name = "visualization_config_functions",
+    srcs = ["visualization_config_functions.cc"],
+    hdrs = ["visualization_config_functions.h"],
+    interface_deps = [
+        ":visualization_config",
+        "//geometry:drake_visualizer_params",
         "//geometry:scene_graph",
         "//multibody/plant",
-        "//multibody/plant:contact_results_to_lcm",
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_buses",
+    ],
+    deps = [
+        "//geometry:drake_visualizer",
+        "//lcm:drake_lcm",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/primitives:shared_pointer_system",
     ],
 )
 
 drake_cc_googletest(
-    name = "visualizer_config_functions_test",
+    name = "visualization_config_functions_test",
     deps = [
-        ":visualizer_config_functions",
+        ":visualization_config_functions",
+        "//common/test_utilities:expect_throws_message",
         "//lcm:drake_lcm",
         "//systems/analysis:simulator",
     ],

@@ -6,7 +6,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/drake_visualizer.h"
-#include "drake/geometry/render/dev/render_gltf_client/factory.h"
+#include "drake/geometry/render_gltf_client/factory.h"
 #include "drake/geometry/render_vtk/factory.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"

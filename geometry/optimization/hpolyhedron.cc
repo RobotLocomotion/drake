@@ -1,5 +1,6 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -145,6 +146,49 @@ HPolyhedron HPolyhedron::Intersection(const HPolyhedron& other) const {
   VectorXd b_intersect(b_.size() + other.b().size());
   b_intersect << b_, other.b();
   return {A_intersect, b_intersect};
+}
+
+VectorXd HPolyhedron::UniformSample(
+    RandomGenerator* generator,
+    const Eigen::Ref<Eigen::VectorXd>& previous_sample) const {
+  std::normal_distribution<double> gaussian;
+  // Choose a random direction.
+  VectorXd direction(ambient_dimension());
+  for (int i = 0; i < direction.size(); ++i) {
+    direction[i] = gaussian(*generator);
+  }
+  // Find max and min θ subject to
+  //   A(previous_sample + θ*direction) ≤ b.
+  VectorXd line_b = b_ - A_ * previous_sample;
+  VectorXd line_a = A_ * direction;
+  double theta_max = std::numeric_limits<double>::infinity();
+  double theta_min = -theta_max;
+  for (int i = 0; i < line_a.size(); ++i) {
+    if (line_a[i] < 0.0) {
+      theta_min = std::max(theta_min, line_b[i] / line_a[i]);
+    } else if (line_a[i] > 0.0) {
+      theta_max = std::min(theta_max, line_b[i] / line_a[i]);
+    }
+  }
+  if (std::isinf(theta_max) || std::isinf(theta_min)) {
+    throw std::invalid_argument(
+        "The Hit and Run algorithm failed to find a feasible point in the set. "
+        "The `previous_sample` must be in the set.");
+  }
+  // Now pick θ uniformly from [θ_min, θ_max].
+  std::uniform_real_distribution<double> uniform_theta(theta_min, theta_max);
+  const double theta = uniform_theta(*generator);
+  // The new sample is previous_sample + θ * direction.
+  return previous_sample + theta * direction;
+}
+
+// Note: This method only exists to effectively provide ChebyshevCenter(),
+// which is a non-static class method, as a default argument for
+// previous_sample in the UniformSample method above.
+VectorXd HPolyhedron::UniformSample(
+    RandomGenerator* generator) const {
+  VectorXd center = ChebyshevCenter();
+  return UniformSample(generator, center);
 }
 
 HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,

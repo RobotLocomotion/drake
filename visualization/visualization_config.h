@@ -9,14 +9,17 @@
 namespace drake {
 namespace visualization {
 
+// TODO(jwnimmer-tri) Add an option run a Meshcat server within the builder,
+// and/or disable LCM entirely.
+
 /** Settings for what MultibodyPlant and SceneGraph should send to meldis
 and/or drake_visualizer.
 
 @experimental The exact configuration details (names and types) are subject to
 change as we polish this new feature.
 
-See ApplyVisualizerConfig() for how to enact this configuration. */
-struct VisualizerConfig {
+See ApplyVisualizationConfig() for how to enact this configuration. */
+struct VisualizationConfig {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(lcm_bus));

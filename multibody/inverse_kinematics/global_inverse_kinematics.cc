@@ -132,7 +132,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
           const WeldJoint<double>* weld_joint =
               dynamic_cast<const WeldJoint<double>*>(joint);
 
-          const RigidTransformd X_JpJc = weld_joint->X_PC();  // see #17600.
+          const RigidTransformd X_JpJc = weld_joint->X_FM();
           const RigidTransformd X_PC =
               X_PJp * X_JpJc * X_CJc.inverse();
           // Fixed to the parent body.

@@ -53,68 +53,6 @@ const std::vector<double> ToStdVec(const Eigen::VectorXd& in) {
   return std::vector<double>{in.data(), in.data() + in.size()};
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-TEST_F(JacoStatusSenderTest, DeprecatedAcceptanceTest) {
-  constexpr int total_dof = N + N_F;
-
-  const VectorXd state = VectorXd::LinSpaced(total_dof * 2, 0.0, 1.0);
-  const VectorXd torque = VectorXd::LinSpaced(total_dof, 2.0, 3.0);
-  const VectorXd torque_external = VectorXd::LinSpaced(total_dof, 4.0, 5.0);
-  const VectorXd current = VectorXd::LinSpaced(total_dof, 6.0, 7.0);
-
-  // Fix only the required inputs ...
-  Fix(dut_.get_state_input_port(), state);
-
-  // ... so that some outputs have passthrough values ...
-  EXPECT_EQ(output().joint_position,
-            ToStdVec(state.head(kJacoDefaultArmNumJoints)));
-  EXPECT_EQ(output().joint_velocity,
-            ToStdVec(state.segment(total_dof, kJacoDefaultArmNumJoints) / 2));
-  EXPECT_EQ(output().finger_position,
-            ToStdVec(
-                state.segment(kJacoDefaultArmNumJoints,
-                              kJacoDefaultArmNumFingers) * kFingerUrdfToSdk));
-  EXPECT_EQ(output().finger_velocity,
-            ToStdVec(
-                state.tail(kJacoDefaultArmNumFingers) * kFingerUrdfToSdk));
-  // ... and some outputs have default values.
-  EXPECT_EQ(output().joint_torque,
-            std::vector<double>(kJacoDefaultArmNumJoints, 0.0));
-  EXPECT_EQ(output().joint_torque_external,
-            std::vector<double>(kJacoDefaultArmNumJoints, 0.0));
-  EXPECT_EQ(output().joint_current,
-            std::vector<double>(kJacoDefaultArmNumJoints, 0.0));
-  EXPECT_EQ(output().finger_torque,
-            std::vector<double>(kJacoDefaultArmNumFingers, 0.0));
-  EXPECT_EQ(output().finger_torque_external,
-            std::vector<double>(kJacoDefaultArmNumFingers, 0.0));
-  EXPECT_EQ(output().finger_current,
-            std::vector<double>(kJacoDefaultArmNumFingers, 0.0));
-
-  // Fix all of the inputs ...
-  Fix(dut_.get_torque_input_port(), torque);
-  Fix(dut_.get_torque_external_input_port(), torque_external);
-  Fix(dut_.get_current_input_port(), current);
-
-  // ... so all ouputs have values.
-  EXPECT_EQ(output().joint_torque,
-            ToStdVec(torque.head(kJacoDefaultArmNumJoints)));
-  EXPECT_EQ(output().joint_torque_external,
-            ToStdVec(torque_external.head(kJacoDefaultArmNumJoints)));
-  EXPECT_EQ(output().joint_current,
-            ToStdVec(current.head(kJacoDefaultArmNumJoints)));
-  EXPECT_EQ(output().finger_torque,
-            ToStdVec(torque.tail(kJacoDefaultArmNumFingers)));
-  EXPECT_EQ(output().finger_torque_external,
-            ToStdVec(torque_external.tail(kJacoDefaultArmNumFingers)));
-  EXPECT_EQ(output().finger_current,
-            ToStdVec(current.tail(kJacoDefaultArmNumFingers)));
-}
-
-#pragma GCC diagnostic pop
-
 TEST_F(JacoStatusSenderTest, AcceptanceTestWithFingers) {
   const VectorXd q0 = VectorXd::LinSpaced(N + N_F, 0.2, 0.3);
   const VectorXd v0 = VectorXd::LinSpaced(N + N_F, 0.3, 0.4);

@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/weld_mobilizer.h"
@@ -28,34 +29,38 @@ class WeldJoint final : public Joint<T> {
 
   static const char kTypeName[];
 
-  /// Constructor for a %WeldJoint between a `frame_on_parent_P` and a
-  /// `frame_on_child_C` so that their relative pose `X_PC` is fixed as if
+  /// Constructor for a %WeldJoint between a `frame_on_parent_F` and a
+  /// `frame_on_child_M` so that their relative pose `X_FM` is fixed as if
   /// they were "welded" together.
-  WeldJoint(const std::string& name, const Frame<T>& frame_on_parent_P,
-            const Frame<T>& frame_on_child_C,
-            const math::RigidTransform<double>& X_PC)
-      : Joint<T>(name, frame_on_parent_P, frame_on_child_C,
+  WeldJoint(const std::string& name, const Frame<T>& frame_on_parent_F,
+            const Frame<T>& frame_on_child_M,
+            const math::RigidTransform<double>& X_FM)
+      : Joint<T>(name, frame_on_parent_F, frame_on_child_M,
                  VectorX<double>() /* no pos lower limits */,
                  VectorX<double>() /* no pos upper limits */,
                  VectorX<double>() /* no vel lower limits */,
                  VectorX<double>() /* no vel upper limits */,
                  VectorX<double>() /* no acc lower limits */,
                  VectorX<double>() /* no acc upper limits */),
-        X_PC_(X_PC) {}
+        X_FM_(X_FM) {}
 
   const std::string& type_name() const override {
     static const never_destroyed<std::string> name{kTypeName};
     return name.access();
   }
 
+  /// Returns the pose X_FM of frame M in F.
+  const math::RigidTransform<double>& X_FM() const { return X_FM_; }
+
   /// Returns the pose X_PC of frame C in P.
-  const math::RigidTransform<double>& X_PC() const {
-    return X_PC_;
-  }
+  DRAKE_DEPRECATED(
+      "2022-12-01",
+      "WeldJoint frame notation has changed. Use `X_FM()` instead.")
+  const math::RigidTransform<double>& X_PC() const { return X_FM_; }
 
  protected:
   /// Joint<T> override called through public NVI, Joint::AddInForce().
-  /// Since frame P and C are welded together, it is physically not possible to
+  /// Since frame F and M are welded together, it is physically not possible to
   /// apply forces between them. Therefore this method throws an exception if
   /// invoked.
   void DoAddInOneForce(
@@ -142,8 +147,8 @@ class WeldJoint final : public Joint<T> {
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 
-  // The pose of frame C in P.
-  const math::RigidTransform<double> X_PC_;
+  // The pose of frame M in F.
+  const math::RigidTransform<double> X_FM_;
 };
 
 template <typename T> const char WeldJoint<T>::kTypeName[] = "weld";

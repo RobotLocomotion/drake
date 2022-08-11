@@ -22,10 +22,10 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/sparse_linear_operator.h"
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
-#include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
+#include "drake/multibody/plant/make_discrete_update_manager.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
@@ -454,6 +454,48 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 }
 
 template <typename T>
+ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
+                                                        const Joint<T>& joint1,
+                                                        const T& gear_ratio,
+                                                        const T& offset) {
+  // N.B. The manager is setup at Finalize() and therefore we must require
+  // constraints to be added pre-finalize.
+  DRAKE_MBP_THROW_IF_FINALIZED();
+
+  if (!is_discrete()) {
+    throw std::runtime_error(
+        "Currently coupler constraints are only supported for discrete "
+        "MultibodyPlant models.");
+  }
+
+  // TAMSI does not support coupler constraints. For all other solvers, we let
+  // the discrete update manger to throw an exception at finalize time.
+  if (contact_solver_enum_ == DiscreteContactSolver::kTamsi) {
+    throw std::runtime_error(
+        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
+        "does not support coupler constraints. Use "
+        "set_discrete_contact_solver() to set a different solver type.");
+  }
+
+  if (joint0.num_velocities() != 1 || joint1.num_velocities() != 1) {
+    const std::string message = fmt::format(
+        "Coupler constraints can only be defined on single-DOF joints. "
+        "However joint '{}' has {} DOFs and joint '{}' has {} "
+        "DOFs.",
+        joint0.name(), joint0.num_velocities(), joint1.name(),
+        joint1.num_velocities());
+    throw std::runtime_error(message);
+  }
+
+  const ConstraintIndex constraint_index(num_constraints());
+
+  coupler_constraints_specs_.push_back(internal::CouplerConstraintSpecs<T>{
+      joint0.index(), joint1.index(), gear_ratio, offset});
+
+  return constraint_index;
+}
+
+template <typename T>
 std::string MultibodyPlant<T>::GetTopologyGraphvizString() const {
   std::string graphviz = "digraph MultibodyPlant {\n";
   graphviz += "label=\"" + this->get_name() + "\";\n";
@@ -521,10 +563,12 @@ void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
 
 template <typename T>
 const WeldJoint<T>& MultibodyPlant<T>::WeldFrames(
-    const Frame<T>& A, const Frame<T>& B,
-    const math::RigidTransform<double>& X_AB) {
-  const std::string joint_name = A.name() + "_welds_to_" + B.name();
-  return AddJoint(std::make_unique<WeldJoint<T>>(joint_name, A, B, X_AB));
+    const Frame<T>& frame_on_parent_F, const Frame<T>& frame_on_child_M,
+    const math::RigidTransform<double>& X_FM) {
+  const std::string joint_name =
+      frame_on_parent_F.name() + "_welds_to_" + frame_on_child_M.name();
+  return AddJoint(std::make_unique<WeldJoint<T>>(joint_name, frame_on_parent_F,
+                                                 frame_on_child_M, X_FM));
 }
 
 template <typename T>
@@ -830,17 +874,10 @@ void MultibodyPlant<T>::Finalize() {
   // is to move TAMSI, as well as the entirety of the discrete handling of
   // contact, into CompliantContactManager.
   if (is_discrete()) {
-    if constexpr (!std::is_same_v<T, symbolic::Expression>) {
-      if (contact_solver_enum_ == DiscreteContactSolver::kSap) {
-        SetDiscreteUpdateManager(
-            std::make_unique<internal::CompliantContactManager<T>>());
-      }
-    } else {
-      if (contact_solver_enum_ == DiscreteContactSolver::kSap) {
-        throw std::runtime_error(
-            "SAP solver not supported for scalar type T = "
-            "symbolic::Expression.");
-      }
+    std::unique_ptr<internal::DiscreteUpdateManager<T>> manager =
+        internal::MakeDiscreteUpdateManager<T>(contact_solver_enum_);
+    if (manager) {
+      SetDiscreteUpdateManager(std::move(manager));
     }
   }
 }

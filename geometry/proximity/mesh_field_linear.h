@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/reset_on_copy.h"
@@ -113,7 +112,14 @@ namespace geometry {
 template <class T, class MeshType>
 class MeshFieldLinear {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshFieldLinear)
+  /** @name Implements MoveConstructible, MoveAssignable
+
+   To copy a %MeshFieldLinear, use CloneAndSetMesh().
+  */
+  //@{
+  MeshFieldLinear(MeshFieldLinear&&) = default;
+  MeshFieldLinear& operator=(MeshFieldLinear&&) = default;
+  //@}
 
   /** Constructs a MeshFieldLinear.
    @param values  The field value at each vertex of the mesh.
@@ -348,10 +354,15 @@ class MeshFieldLinear {
   }
 
  private:
+  MeshFieldLinear(const MeshFieldLinear&) = default;
+  MeshFieldLinear& operator=(const MeshFieldLinear&) = default;
+
   // Clones MeshFieldLinear data under the assumption that the mesh
   // pointer is null.
   [[nodiscard]] std::unique_ptr<MeshFieldLinear<T, MeshType>>
-  CloneWithNullMesh() const { return std::make_unique<MeshFieldLinear>(*this); }
+  CloneWithNullMesh() const {
+    return std::unique_ptr<MeshFieldLinear>(new MeshFieldLinear(*this));
+  }
 
   void CalcGradientField() {
     gradients_.clear();

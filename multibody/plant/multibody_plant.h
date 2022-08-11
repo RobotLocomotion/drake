@@ -21,6 +21,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
+#include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -1047,17 +1048,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return joint;
   }
 
-  /// Welds `frame_on_parent_P` and `frame_on_child_C` with relative pose
-  /// `X_PC`. That is, the pose of frame C in frame P is fixed, with value
-  /// `X_PC`.  If `X_PC` is omitted, the identity transform will be used. The
+  /// Welds `frame_on_parent_F` and `frame_on_child_M` with relative pose
+  /// `X_FM`. That is, the pose of frame M in frame F is fixed, with value
+  /// `X_FM`.  If `X_FM` is omitted, the identity transform will be used. The
   /// call to this method creates and adds a new WeldJoint to the model.  The
-  /// new WeldJoint is named as: P.name() + "_welds_to_" + C.name().
+  /// new WeldJoint is named as:
+  ///     frame_on_parent_F.name() + "_welds_to_" + frame_on_child_M.name().
   /// @returns a constant reference to the WeldJoint welding frames
-  /// P and C.
+  /// F and M.
   /// @throws std::exception if the weld produces a duplicate joint name.
-  const WeldJoint<T>& WeldFrames(const Frame<T>& frame_on_parent_P,
-                                 const Frame<T>& frame_on_child_C,
-                                 const math::RigidTransform<double>& X_PC =
+  const WeldJoint<T>& WeldFrames(const Frame<T>& frame_on_parent_F,
+                                 const Frame<T>& frame_on_child_M,
+                                 const math::RigidTransform<double>& X_FM =
                                      math::RigidTransform<double>::Identity());
 
   /// Adds a new force element model of type `ForceElementType` to `this`
@@ -1153,6 +1155,51 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if the %MultibodyPlant has already been
   /// finalized.
   void Finalize();
+  /// @}
+
+  /// @anchor mbp_constraints
+  /// @name                      Constraints
+  ///
+  /// Set of APIs to define constraints. To mention a few important examples,
+  /// constraints can be used to couple the motion of joints, to create
+  /// kinematic loops, or to weld bodies together.
+  ///
+  /// Currently constraints are only supported for discrete %MultibodyPlant
+  /// models and not for all discrete solvers, see
+  /// set_discrete_contact_solver(). If the model contains constraints not
+  /// supported by the discrete solver, the plant will throw an exception at
+  /// Finalize() time. At this point the user has the option to either change
+  /// the contact solver with set_discrete_contact_solver() or in the
+  /// MultibodyPlantConfig, or to re-define the model so that such a constraint
+  /// is not needed.
+  /// @{
+
+  /// Returns the total number of constraints specified by the user.
+  int num_constraints() const { return coupler_constraints_specs_.size(); }
+
+  /// Defines a holonomic constraint between two single-dof joints `joint0`
+  /// and `joint1` with positions q₀ and q₁, respectively, such that q₀ = ρ⋅q₁ +
+  /// Δq, where ρ is the gear ratio and Δq is a fixed offset. The gear ratio
+  /// can have units if the units of q₀ and q₁ are different. For instance,
+  /// between a prismatic and a revolute joint the gear ratio will specify the
+  /// "pitch" of the resulting mechanism. As defined, `offset` has units of
+  /// `q₀`.
+  ///
+  /// @note joint0 and/or joint1 can still be actuated, regardless of whether we
+  /// have coupler constraint among them. That is, one or both of these joints
+  /// can have external actuation applied to them.
+  ///
+  /// @note Generally, to couple (q0, q1, q2), the user would define a coupler
+  /// between (q0, q1) and a second coupler between (q1, q2), or any
+  /// combination therein.
+  ///
+  /// @throws if joint0 and joint1 are not both single-dof joints.
+  /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  ConstraintIndex AddCouplerConstraint(const Joint<T>& joint0,
+                                       const Joint<T>& joint1,
+                                       const T& gear_ratio,
+                                       const T& offset = 0.0);
+
   /// @}
 
   /// @anchor mbp_geometry
@@ -5047,6 +5094,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // (Experimental) The vector of physical models owned by MultibodyPlant.
   std::vector<std::unique_ptr<internal::PhysicalModel<T>>> physical_models_;
+
+  // Vector of coupler constraints specifications.
+  std::vector<internal::CouplerConstraintSpecs<T>> coupler_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

@@ -74,14 +74,19 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Class>(m, "_HydroelasticContactVisualizerItem",
         py::dynamic_attr(), doc_internal)
         .def(py::init<std::string, std::string, Eigen::Vector3d,
-                 Eigen::Vector3d, Eigen::Vector3d>(),
+                 Eigen::Vector3d, Eigen::Vector3d, Eigen::Matrix3Xd,
+                 Eigen::Matrix3Xi, Eigen::VectorXd>(),
             py::arg("body_A"), py::arg("body_B"), py::arg("centroid_W"),
-            py::arg("force_C_W"), py::arg("moment_C_W"), doc_internal)
+            py::arg("force_C_W"), py::arg("moment_C_W"), py::arg("p_WV"),
+            py::arg("faces"), py::arg("pressure"), doc_internal)
         .def_readwrite("body_A", &Class::body_A, doc_internal)
         .def_readwrite("body_B", &Class::body_B, doc_internal)
         .def_readwrite("centroid_W", &Class::centroid_W, doc_internal)
         .def_readwrite("force_C_W", &Class::force_C_W, doc_internal)
-        .def_readwrite("moment_C_W", &Class::moment_C_W, doc_internal);
+        .def_readwrite("moment_C_W", &Class::moment_C_W, doc_internal)
+        .def_readwrite("p_WV", &Class::p_WV, doc_internal)
+        .def_readwrite("faces", &Class::faces, doc_internal)
+        .def_readwrite("pressure", &Class::pressure, doc_internal);
   }
 
   // HydroelasticContactVisualizer (internal)

@@ -10,7 +10,6 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -1690,14 +1689,6 @@ void BindEvaluatorsAndBindings(py::module m) {
             self.set_bounds(new_lb, new_ub);
           },
           py::arg("new_lb"), py::arg("new_ub"), doc.Constraint.set_bounds.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  linear_constraint_cls.def("A",
-      WrapDeprecated(
-          doc.LinearConstraint.A.doc_deprecated, &LinearConstraint::A),
-      doc.LinearConstraint.A.doc_deprecated);
-#pragma GCC diagnostic pop
 
   py::class_<LorentzConeConstraint, Constraint,
       std::shared_ptr<LorentzConeConstraint>>

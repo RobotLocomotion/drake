@@ -6,7 +6,7 @@ To see the demo, run:
 
 $ cd drake
 $ bazel run //tools:meldis -- -w &
-$ bazel run //examples/hardware_sim:homecart
+$ bazel run //examples/hardware_sim:demo
 
 At the moment, the capabilities demonstrated by the example are somewhat
 limited. We will be adding more features in the near future.
