@@ -2466,6 +2466,7 @@ GTEST_TEST(TestMathematicalProgram, AddPositiveSemidefiniteConstraint) {
 
   auto psd_cnstr = prog.AddPositiveSemidefiniteConstraint(X).evaluator();
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
+  EXPECT_EQ(prog.GetAllConstraints().size(), 1);
   const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();
   EXPECT_EQ(psd_cnstr.get(), new_psd_cnstr.evaluator().get());
   Eigen::Map<Eigen::Matrix<Variable, 16, 1>> X_flat(&X(0, 0));
@@ -2987,16 +2988,25 @@ GTEST_TEST(TestMathematicalProgram, TestClone) {
       Vector4<symbolic::Expression>(x(0) + x(1), x(1) + x(2), +x(0), +x(1)));
   prog.AddPositiveSemidefiniteConstraint(X);
   prog.AddPositiveSemidefiniteConstraint(X - Eigen::Matrix3d::Ones());
+  int num_all_constraints = prog.GetAllConstraints().size();
   prog.AddLinearMatrixInequalityConstraint(
       {Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones(),
        2 * Eigen::Matrix2d::Ones()},
       x.head<2>());
+  EXPECT_EQ(prog.GetAllConstraints().size(), num_all_constraints + 1);
+  num_all_constraints++;
   prog.AddLinearComplementarityConstraint(Eigen::Matrix2d::Identity(),
                                           Eigen::Vector2d::Ones(), x.head<2>());
+  EXPECT_EQ(prog.GetAllConstraints().size(), num_all_constraints + 1);
+  num_all_constraints++;
   prog.AddLinearComplementarityConstraint(2 * Eigen::Matrix2d::Identity(),
                                           Eigen::Vector2d::Ones(), x.tail<2>());
+  EXPECT_EQ(prog.GetAllConstraints().size(), num_all_constraints + 1);
+  num_all_constraints++;
   prog.AddExponentialConeConstraint(Eigen::Matrix3d::Identity().sparseView(),
                                     Eigen::Vector3d::Ones(), x.head<3>());
+  EXPECT_EQ(prog.GetAllConstraints().size(), num_all_constraints + 1);
+  num_all_constraints++;
 
   // Set initial guess
   prog.SetInitialGuessForAllVariables(Eigen::VectorXd::Ones(prog.num_vars()));
