@@ -88,6 +88,10 @@ class QueryObject;
  See the details in KinematicsVector for details on how to provide values for
  this port.
 
+ <!-- TODO(xuchenhan-tri): Consider adding some clarification about
+  "configuration" as in "deformable vertex positions" compared to
+  "configuration" as in articulated rigid-body configurations (and that we use
+  the word to exclusively mean the former in SceneGraph). -->
  __configuration port__: An abstract-valued port providing an instance of
  GeometryConfigurationVector. For each registered deformable geometry, this
  "configuration vector" maps the registered GeometryId to its world space
@@ -842,7 +846,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    Rather than modifying %SceneGraph's model, it modifies the copy of the model
    stored in the provided context.  */
   int RemoveRole(systems::Context<T>* context, SourceId source_id,
-                  FrameId frame_id, Role role) const;
+                 FrameId frame_id, Role role) const;
 
   /** Removes the indicated `role` from the geometry indicated by `geometry_id`.
    Potentially modifies the proximity, perception, or illustration version based
@@ -864,7 +868,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    geometries. Rather than modifying %SceneGraph's model, it modifies the copy
    of the model stored in the provided context.  */
   int RemoveRole(systems::Context<T>* context, SourceId source_id,
-                  GeometryId geometry_id, Role role) const;
+                 GeometryId geometry_id, Role role) const;
 
   //@}
 

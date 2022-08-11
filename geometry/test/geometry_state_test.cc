@@ -53,6 +53,8 @@ using std::vector;
 
 template <typename T>
 using IdPoseMap = unordered_map<GeometryId, RigidTransform<T>>;
+template <typename T>
+using IdConfigurationMap = unordered_map<GeometryId, VectorX<T>>;
 
 // Implementation of friend class that allows me to peek into the geometry state
 // to confirm invariants on the state's internal workings as a result of
@@ -107,6 +109,10 @@ class GeometryStateTester {
     return state_->kinematics_data_.X_WGs;
   }
 
+  const IdConfigurationMap<T>& get_geometry_world_configurations() const {
+    return state_->kinematics_data_.q_WGs;
+  }
+
   const vector<RigidTransform<T>>& get_frame_world_poses() const {
     return state_->kinematics_data_.X_WFs;
   }
@@ -134,6 +140,12 @@ class GeometryStateTester {
     state_->FinalizePoseUpdate(state_->kinematics_data_,
                                &state_->mutable_proximity_engine(),
                                state_->GetMutableRenderEngines());
+  }
+
+  void FinalizeConfigurationUpdate() {
+    state_->FinalizeConfigurationUpdate(state_->kinematics_data_,
+                                        &state_->mutable_proximity_engine(),
+                                        state_->GetMutableRenderEngines());
   }
 
   template <typename ValueType>
@@ -530,6 +542,19 @@ class GeometryStateTestBase {
     return source_id_;
   }
 
+  // This function sets up a dummy GeometryState that contains both rigid
+  // (non-deformable) and deformable geometries to facilitate testing.
+  SourceId SetUpWithRigidAndDeformableGeometries() {
+    SourceId s_id = SetUpSingleSourceTree();
+    const Sphere sphere(1.0);
+    constexpr double kRezHint = 0.5;
+    auto instance = make_unique<GeometryInstance>(
+        RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
+    geometry_state_.RegisterDeformableGeometry(
+        s_id, InternalFrame::world_frame_id(), move(instance), kRezHint);
+    return s_id;
+  }
+
   // Reports characteristics of the dummy tree.
   int single_tree_frame_count() const {
     // Added dynamic frames plus the world frame.
@@ -921,9 +946,9 @@ void ExpectSuccessfulTransmogrification(
     }
   };
 
-  auto test_T_vs_double_map = [test_T_vs_double_pose](
-                                   const IdPoseMap<T>& test,
-                                   const IdPoseMap<double>& ref) {
+  auto test_T_vs_double_pose_map = [test_T_vs_double_pose](
+                                       const IdPoseMap<T>& test,
+                                       const IdPoseMap<double>& ref) {
     ASSERT_EQ(test.size(), ref.size());
     for (const auto& id_pose_pair : ref) {
       const GeometryId id = id_pose_pair.first;
@@ -932,12 +957,27 @@ void ExpectSuccessfulTransmogrification(
     }
   };
 
+  auto test_T_vs_double_configuration_map =
+      [](const IdConfigurationMap<T>& test,
+         const IdConfigurationMap<double>& ref) {
+        ASSERT_EQ(test.size(), ref.size());
+        for (const auto& id_configuration_pair : ref) {
+          const GeometryId id = id_configuration_pair.first;
+          const VectorX<double>& ref_configuration =
+              id_configuration_pair.second;
+          EXPECT_EQ(ExtractDoubleOrThrow(test.at(id)), ref_configuration);
+        }
+      };
+
   test_T_vs_double(T_tester.get_frame_parent_poses(),
                     d_tester.get_frame_parent_poses());
-  test_T_vs_double_map(T_tester.get_geometry_world_poses(),
-                        d_tester.get_geometry_world_poses());
+  test_T_vs_double_pose_map(T_tester.get_geometry_world_poses(),
+                            d_tester.get_geometry_world_poses());
   test_T_vs_double(T_tester.get_frame_world_poses(),
-                    d_tester.get_frame_world_poses());
+                   d_tester.get_frame_world_poses());
+  test_T_vs_double_configuration_map(
+      T_tester.get_geometry_world_configurations(),
+      d_tester.get_geometry_world_configurations());
 
   // 5. Engine transmogrification tested in its own test; it will *not* be done
   // here.
@@ -946,7 +986,7 @@ void ExpectSuccessfulTransmogrification(
 // This tests the ability to assign a GeometryState<double> to a
 // GeometryState<T>. Implicitly uses transmogrification.
 TEST_F(GeometryStateTest, AssignDoubleToScalarType) {
-  SetUpSingleSourceTree();
+  SetUpWithRigidAndDeformableGeometries();
   GeometryState<AutoDiffXd> ad_state{};
   ad_state = geometry_state_;
   GeometryStateTester<AutoDiffXd> ad_tester;
@@ -962,7 +1002,7 @@ TEST_F(GeometryStateTest, AssignDoubleToScalarType) {
 
 // Uses the single source tree to confirm that the data has migrated properly.
 TEST_F(GeometryStateTest, Transmogrify) {
-  SetUpSingleSourceTree();
+  SetUpWithRigidAndDeformableGeometries();
   unique_ptr<GeometryState<AutoDiffXd>> ad_state =
       geometry_state_.ToAutoDiffXd();
   GeometryStateTester<AutoDiffXd> ad_tester;
@@ -1681,25 +1721,64 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   EXPECT_EQ(deformable_ids[0], g_id);
 }
 
+/* This tests for two things:
+ 1. SetGeometryConfiguration() successfully sets the geometry configuration for
+    a given geometry, and
+ 2. FinalizeConfigurationUpdate propagates the configuration to the
+    ProximityEngine.
+ We test for 2 by initializing a rigid geometry in contact with the deformable
+ geometry and verifying that the rigid/deformable geometry pair are no longer in
+ contact after the deformable vertices are moved away by
+ SetGeometryConfiguration() *and* FinalizeConfigurationUpdate() is invoked. */
 TEST_F(GeometryStateTest, SetGeometryConfiguration) {
   const SourceId s_id = NewSource("new source");
-  auto instance = make_unique<GeometryInstance>(
-      RigidTransformd::Identity(), make_unique<Sphere>(1.0), "sphere");
-  const auto g_id = geometry_state_.RegisterDeformableGeometry(
-      s_id, InternalFrame::world_frame_id(), move(instance),
-      /* resolution_hint */ 0.5);
-  const VectorX<double> default_configuration =
-      geometry_state_.get_configurations_in_world(g_id);
-  VectorX<double> new_configuration(default_configuration.size());
-  new_configuration.setZero();
-  EXPECT_FALSE(CompareMatrices(default_configuration, new_configuration, 0.1));
+  // Add a deformable geometry with proximity property.
+  auto deformable_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(1.0),
+      "deformable sphere");
+  deformable_instance->set_proximity_properties(ProximityProperties());
+  const auto deformable_id = geometry_state_.RegisterDeformableGeometry(
+      s_id, InternalFrame::world_frame_id(), move(deformable_instance),
+      /* resolution_hint */ 2.0);
+  // Add a rigid geometry with a resolution hint (so that it can be in contact
+  // with deformable geometries).
+  auto rigid_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Box>(1.5, 1.5, 1.5),
+      "rigid_box");
+  ProximityProperties rigid_properties;
+  rigid_properties.AddProperty(internal::kHydroGroup, internal::kRezHint, 1.0);
+  rigid_instance->set_proximity_properties(move(rigid_properties));
+  const FrameId f_id =
+      geometry_state_.RegisterFrame(s_id, GeometryFrame("frame"));
+  geometry_state_.RegisterGeometry(s_id, f_id, move(rigid_instance));
 
+  // Update the deformable geometry's configuration by translating it away from
+  // the rigid geometry.
+  const VectorX<double> q_WG_default =
+      geometry_state_.get_configurations_in_world(deformable_id);
+  VectorX<double> q_WG = q_WG_default;
+  VectorX<double> offset_W = 10.0 * VectorX<double>::Ones(q_WG.size());
+  q_WG += offset_W;
+  EXPECT_FALSE(CompareMatrices(q_WG_default, q_WG, 0.1));
   GeometryConfigurationVector<double> configurations;
-  configurations.set_value(g_id, new_configuration);
-  gs_tester_.SetGeometryConfiguration(
-      s_id, configurations, &gs_tester_.mutable_kinematics_data());
-  EXPECT_EQ(new_configuration,
-            geometry_state_.get_configurations_in_world(g_id));
+  configurations.set_value(deformable_id, q_WG);
+  gs_tester_.SetGeometryConfiguration(s_id, configurations,
+                                      &gs_tester_.mutable_kinematics_data());
+  EXPECT_EQ(q_WG, geometry_state_.get_configurations_in_world(deformable_id));
+
+  // Verify that the two geometries are still in contact *before"
+  // FinalizeConfigurationUpdate() is called.
+  std::vector<internal::DeformableRigidContact<double>> contacts;
+  geometry_state_.ComputeDeformableRigidContact(&contacts);
+  ASSERT_EQ(contacts.size(), 1);
+  EXPECT_EQ(contacts[0].num_rigid_geometries(), 1);
+
+  // Verify that the two geometries are no longer in contact *after"
+  // FinalizeConfigurationUpdate() is called.
+  gs_tester_.FinalizeConfigurationUpdate();
+  geometry_state_.ComputeDeformableRigidContact(&contacts);
+  ASSERT_EQ(contacts.size(), 1);
+  EXPECT_EQ(contacts[0].num_rigid_geometries(), 0);
 }
 
 // Tests the RemoveGeometry() functionality. This action will have several
