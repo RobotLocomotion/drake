@@ -65,6 +65,13 @@ class TrajectoryOptimizerTester {
       const TrajectoryOptimizerState<double>& state, EigenPtr<VectorXd> g) {
     optimizer.CalcGradientFiniteDiff(state, g);
   }
+
+  static void CalcInverseDynamicsSingleTimeStep(
+      const TrajectoryOptimizer<double>& optimizer, const VectorXd& q,
+      const VectorXd& v, const VectorXd a,
+      TrajectoryOptimizerWorkspace<double>* workspace, VectorXd* tau) {
+    optimizer.CalcInverseDynamicsSingleTimeStep(q, v, a, workspace, tau);
+  }
 };
 
 namespace internal {
@@ -77,6 +84,59 @@ using multibody::DiscreteContactSolver;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using test::LimitMalloc;
+
+/**
+ * Test our optimizer with a simple pendulum swingup task.
+ */
+GTEST_TEST(TrajectoryOptimizerTest, PendulumSwingup) {
+  // Define the optimization problem
+  const int num_steps = 20;
+  const double dt = 5e-2;
+
+  ProblemDefinition opt_prob;
+  opt_prob.num_steps = num_steps;
+  opt_prob.q_init = Vector1d(0.1);
+  opt_prob.v_init = Vector1d(0.0);
+  opt_prob.Qq = 1.0 * MatrixXd::Identity(1, 1);
+  opt_prob.Qv = 0.1 * MatrixXd::Identity(1, 1);
+  opt_prob.Qf_q = 1000 * MatrixXd::Identity(1, 1);
+  opt_prob.Qf_v = 1 * MatrixXd::Identity(1, 1);
+  opt_prob.R = 0.01 * MatrixXd::Identity(1, 1);
+  opt_prob.q_nom = Vector1d(M_PI);
+  opt_prob.v_nom = Vector1d(0);
+
+  // Create a pendulum model
+  MultibodyPlant<double> plant(dt);
+  const std::string urdf_file =
+      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
+  Parser(&plant).AddAllModelsFromFile(urdf_file);
+  plant.Finalize();
+
+  // Create an optimizer
+  SolverParameters solver_params;
+  solver_params.max_iterations = 20;
+  solver_params.verbose = false;
+
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob, solver_params);
+  TrajectoryOptimizerState<double> state = optimizer.CreateState();
+
+  // Set an initial guess
+  std::vector<VectorXd> q_guess;
+  for (int t = 0; t <= num_steps; ++t) {
+    q_guess.push_back(opt_prob.q_init);
+  }
+
+  // Solve the optimization problem
+  TrajectoryOptimizerSolution<double> solution;
+  TrajectoryOptimizerStats<double> stats;
+
+  SolverFlag status = optimizer.Solve(q_guess, &solution, &stats);
+  EXPECT_EQ(status, SolverFlag::kSuccess);
+
+  // With such a large penalty on the final position, and such a low control
+  // penalty, we should be close to the target position at the last timestep.
+  EXPECT_NEAR(solution.q[num_steps][0], opt_prob.q_nom[0], 1e-3);
+}
 
 /**
  * Test our computation of the Hessian on a system
@@ -141,7 +201,7 @@ GTEST_TEST(TrajectoryOptimizerTest, HessianAcrobot) {
     }
   }
   state_ad.set_q(q_ad);
-  AutoDiffXd L_ad = optimizer_ad.CalcCost(state_ad);  // forces cache update
+  AutoDiffXd L_ad = optimizer_ad.EvalCost(state_ad);  // forces cache update
 
   // Formulate an equivalent least-squares problem, where
   //
@@ -159,8 +219,8 @@ GTEST_TEST(TrajectoryOptimizerTest, HessianAcrobot) {
   Matrix2d Qfq_sqrt = (2 * opt_prob.Qf_q).cwiseSqrt();
   Matrix2d Qfv_sqrt = (2 * opt_prob.Qf_v).cwiseSqrt();
 
-  const std::vector<VectorX<AutoDiffXd>>& v_ad = state_ad.cache().v;
-  const std::vector<VectorX<AutoDiffXd>>& u_ad = state_ad.cache().tau;
+  const std::vector<VectorX<AutoDiffXd>>& v_ad = optimizer_ad.EvalV(state_ad);
+  const std::vector<VectorX<AutoDiffXd>>& u_ad = optimizer_ad.EvalTau(state_ad);
 
   // Here we construct the residual
   //        [        ...           ]
@@ -188,7 +248,7 @@ GTEST_TEST(TrajectoryOptimizerTest, HessianAcrobot) {
 
   // Check that the cost from our least-squares formulation is correct
   const double kToleranceCost = 10 * std::numeric_limits<double>::epsilon();
-  double L = optimizer.CalcCost(state);
+  double L = optimizer.EvalCost(state);
   EXPECT_NEAR(L, L_lsqr.value(), kToleranceCost);
 
   // Check that the gradient from our least-squares formulation matches what we
@@ -342,7 +402,7 @@ GTEST_TEST(TrajectoryOptimizerTest, AutodiffGradient) {
   }
   state_ad.set_q(q_ad);
 
-  AutoDiffXd cost_ad = optimizer_ad.CalcCost(state_ad);
+  AutoDiffXd cost_ad = optimizer_ad.EvalCost(state_ad);
   VectorXd g_ad = cost_ad.derivatives();
 
   // We neglect the top row of the gradient, since we are setting it to zero.
@@ -414,6 +474,148 @@ GTEST_TEST(TrajectoryOptimizerTest, CalcGradientKuka) {
       pow(std::numeric_limits<double>::epsilon(), 1. / 2.) / dt / dt;
   EXPECT_TRUE(
       CompareMatrices(g, g_gt, kTolerance, MatrixCompareType::relative));
+}
+
+GTEST_TEST(TrajectoryOptimizerTest, CalcGradientPendulumNoGravity) {
+  const int num_steps = 10;
+  const double dt = 5e-2;
+
+  // Set up a system model: pendulum w/o gravity yields a linear system
+  MultibodyPlant<double> plant(dt);
+  const std::string urdf_file =
+      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
+  Parser(&plant).AddAllModelsFromFile(urdf_file);
+  plant.mutable_gravity_field().set_gravity_vector(VectorXd::Zero(3));
+  plant.Finalize();
+
+  // Set up a toy optimization problem
+  ProblemDefinition opt_prob;
+  opt_prob.num_steps = num_steps;
+  opt_prob.q_init = Vector1d(0.0);
+  opt_prob.v_init = Vector1d(0.0);
+  opt_prob.Qq = 0.1 * MatrixXd::Identity(1, 1);
+  opt_prob.Qv = 0.2 * MatrixXd::Identity(1, 1);
+  opt_prob.Qf_q = 0.3 * MatrixXd::Identity(1, 1);
+  opt_prob.Qf_v = 0.4 * MatrixXd::Identity(1, 1);
+  opt_prob.R = 0.5 * MatrixXd::Identity(1, 1);
+  opt_prob.q_nom = Vector1d(M_PI);
+  opt_prob.v_nom = Vector1d(-0.1);
+
+  // Create an optimizer
+  TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
+  TrajectoryOptimizerState<double> state = optimizer.CreateState();
+  TrajectoryOptimizerWorkspace<double> workspace(num_steps, plant);
+
+  // Create some fake data
+  std::vector<VectorXd> q;
+  q.push_back(Vector1d(0.0000000000000000000000000));
+  q.push_back(Vector1d(0.0950285641187840757204697));
+  q.push_back(Vector1d(0.2659896360172592788551071));
+  q.push_back(Vector1d(0.4941147113506765831125733));
+  q.push_back(Vector1d(0.7608818755930255584019051));
+  q.push_back(Vector1d(1.0479359055822168311777887));
+  q.push_back(Vector1d(1.3370090901260500704239575));
+  q.push_back(Vector1d(1.6098424281109515732168802));
+  q.push_back(Vector1d(1.8481068641834854648919872));
+  q.push_back(Vector1d(2.0333242222438583368671061));
+  q.push_back(Vector1d(2.1467874956452459578315484));
+  state.set_q(q);
+
+  // Compute the ground truth gradient with autodiff
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+  TrajectoryOptimizer<AutoDiffXd> optimizer_ad(plant_ad.get(), opt_prob);
+  TrajectoryOptimizerState<AutoDiffXd> state_ad = optimizer_ad.CreateState();
+  TrajectoryOptimizerWorkspace<AutoDiffXd> workspace_ad(num_steps, *plant_ad);
+
+  std::vector<VectorX<AutoDiffXd>> q_ad(num_steps + 1);
+  for (int t = 0; t <= num_steps; ++t) {
+    q_ad[t] = math::InitializeAutoDiff(q[t], num_steps + 1, t);
+  }
+  state_ad.set_q(q_ad);
+
+  AutoDiffXd cost_ad = optimizer_ad.EvalCost(state_ad);
+  VectorXd g_gt = cost_ad.derivatives();
+  g_gt[0] = 0;  // q0 is fixed
+
+  // Compute the gradient with our method
+  VectorXd g(plant.num_positions() * (num_steps + 1));
+  optimizer.CalcGradient(state, &g);
+
+  // Even without gravity (a.k.a. linear system), finite differences is only
+  // accurate to sqrt(epsilon)
+  const double kTolerance = sqrt(std::numeric_limits<double>::epsilon());
+  EXPECT_TRUE(
+      CompareMatrices(g, g_gt, kTolerance, MatrixCompareType::relative));
+
+  // Evaluate error in d(tau)/d(q), as compared to the ground truth pendulum
+  // model
+  //
+  //     m*l^2*a + m*g*l*sin(q) + b*v = tau
+  //
+  // where q is the joint angle and a = dv/dt, v = dq/dt.
+  const double m = 1.0;
+  const double l = 0.5;
+  const double b = 0.1;
+
+  InverseDynamicsPartials<double> id_partials_gt(num_steps, 1, 1);
+  for (int t = 0; t < num_steps; ++t) {
+    // dtau[t]/dq[t+1]
+    id_partials_gt.dtau_dqp[t](0, 0) = 1 / dt / dt * m * l * l + 1 / dt * b;
+
+    // dtau[t]/dq[t]
+    if (t == 0) {
+      // v[0] is constant
+      id_partials_gt.dtau_dqt[t](0, 0) = -1 / dt / dt * m * l * l - 1 / dt * b;
+    } else {
+      id_partials_gt.dtau_dqt[t](0, 0) = -2 / dt / dt * m * l * l - 1 / dt * b;
+    }
+
+    // dtau[t]/dq[t-1]
+    id_partials_gt.dtau_dqm[t](0, 0) = 1 / dt / dt * m * l * l;
+
+    // Derivatives w.r.t. q[t-1] do not exist
+    if (t == 0) {
+      id_partials_gt.dtau_dqm[t](0, 0) = NAN;
+    }
+  }
+
+  const InverseDynamicsPartials<double>& id_partials =
+      optimizer.EvalInverseDynamicsPartials(state);
+  for (int t = 0; t < num_steps; ++t) {
+    if (t > 0) {
+      EXPECT_NEAR(id_partials.dtau_dqm[t](0), id_partials_gt.dtau_dqm[t](0),
+                  10 * kTolerance);
+    }
+    EXPECT_NEAR(id_partials.dtau_dqt[t](0), id_partials_gt.dtau_dqt[t](0),
+                10 * kTolerance);
+    EXPECT_NEAR(id_partials.dtau_dqp[t](0), id_partials_gt.dtau_dqp[t](0),
+                10 * kTolerance);
+  }
+
+  // Check that mass matrix of the plant is truely constant
+  auto plant_context = plant.CreateDefaultContext();
+  MatrixXd M(1, 1);
+  for (int t = 0; t < num_steps; ++t) {
+    plant.SetPositions(plant_context.get(), q[t]);
+    plant.SetVelocities(plant_context.get(), optimizer.EvalV(state)[t]);
+    plant.CalcMassMatrix(*plant_context, &M);
+
+    EXPECT_NEAR(M(0, 0), m * l * l, std::numeric_limits<double>::epsilon());
+  }
+
+  // Check our computation of tau(q)
+  double tau;
+  double tau_gt;
+  const std::vector<VectorXd>& v = optimizer.EvalV(state);
+  const std::vector<VectorXd>& a = optimizer.EvalA(state);
+  const std::vector<VectorXd>& tau_comp = optimizer.EvalTau(state);
+  const double kToleranceTau = 10 * std::numeric_limits<double>::epsilon();
+  for (int t = 0; t < num_steps; ++t) {
+    tau = tau_comp[t](0);
+    tau_gt = m * l * l * a[t](0) + b * v[t + 1](0);
+    EXPECT_NEAR(tau_gt, tau, kToleranceTau);
+  }
 }
 
 GTEST_TEST(TrajectoryOptimizerTest, CalcGradientPendulum) {
@@ -553,49 +755,91 @@ GTEST_TEST(TrajectoryOptimizerTest, PendulumDtauDq) {
 }
 
 /**
- * Quick sanity check on our computation of costs using the state abstraction.
+ * Check the precision of our computation of costs using the state abstraction.
  */
 GTEST_TEST(TrajectoryOptimizerTest, CalcCostFromState) {
   const int num_steps = 10;
-  const double dt = 1e-3;
+  const double dt = 5e-2;
 
-  // Set up a system model
+  // Set up a system model: pendulum w/o gravity yields a linear system
   MultibodyPlant<double> plant(dt);
   const std::string urdf_file =
       FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
   Parser(&plant).AddAllModelsFromFile(urdf_file);
+  plant.mutable_gravity_field().set_gravity_vector(VectorXd::Zero(3));
   plant.Finalize();
 
   // Set up a toy optimization problem
   ProblemDefinition opt_prob;
   opt_prob.num_steps = num_steps;
   opt_prob.q_init = Vector1d(0.0);
-  opt_prob.v_init = Vector1d(-0.1);
+  opt_prob.v_init = Vector1d(0.0);
   opt_prob.Qq = 0.0 * MatrixXd::Identity(1, 1);
-  opt_prob.Qv = 1.0 * MatrixXd::Identity(1, 1);
-  opt_prob.Qf_q = 0.0 * MatrixXd::Identity(1, 1);
+  opt_prob.Qv = 0.1 * MatrixXd::Identity(1, 1);
+  opt_prob.Qf_q = 10.0 * MatrixXd::Identity(1, 1);
   opt_prob.Qf_v = 1.0 * MatrixXd::Identity(1, 1);
-  opt_prob.R = 0.0 * MatrixXd::Identity(1, 1);
-  opt_prob.q_nom = Vector1d(0.1);
-  opt_prob.v_nom = Vector1d(0.9);
+  opt_prob.R = 1.0 * MatrixXd::Identity(1, 1);
+  opt_prob.q_nom = Vector1d(M_PI);
+  opt_prob.v_nom = Vector1d(0.0);
 
-  // Create some fake data
+  // Create some fake data, which are very close to optimality.
   std::vector<VectorXd> q;
-  q.push_back(opt_prob.q_init);
-  for (int t = 1; t <= num_steps; ++t) {
-    q.push_back(Vector1d(0.0 - 0.1 * dt * t));
-  }
+  q.push_back(Vector1d(0.0000000000000000000000000));
+  q.push_back(Vector1d(0.0950285641187840757204697));
+  q.push_back(Vector1d(0.2659896360172592788551071));
+  q.push_back(Vector1d(0.4941147113506765831125733));
+  q.push_back(Vector1d(0.7608818755930255584019051));
+  q.push_back(Vector1d(1.0479359055822168311777887));
+  q.push_back(Vector1d(1.3370090901260500704239575));
+  q.push_back(Vector1d(1.6098424281109515732168802));
+  q.push_back(Vector1d(1.8481068641834854648919872));
+  q.push_back(Vector1d(2.0333242222438583368671061));
+  q.push_back(Vector1d(2.1467874956452459578315484));
 
-  // Create an optimizer
+  // Compute the cost as a function of state
   TrajectoryOptimizer<double> optimizer(&plant, opt_prob);
   TrajectoryOptimizerState<double> state = optimizer.CreateState();
   state.set_q(q);
+  double L = optimizer.EvalCost(state);
 
-  // Evaluate the cost
-  double L = optimizer.CalcCost(state);
-  double L_gt = num_steps * dt + 1;
+  // Compute the ground truth cost using an analytical model of the (linear)
+  // pendulum dynamics.
+  //
+  //     m*l^2*a + m*g*l*sin(q) + b*v = tau
+  //
+  // where q is the joint angle and a = dv/dt, v = dq/dt, and g=0.
+  const double m = 1.0;
+  const double l = 0.5;
+  const double b = 0.1;
 
-  const double kTolerance = std::numeric_limits<double>::epsilon() / dt;
+  double L_gt = 0;
+  double qt;
+  double vt = opt_prob.v_init[0];
+  double vp;
+  double ut;
+  for (int t = 0; t < num_steps; ++t) {
+    qt = q[t][0];
+    if (t > 0) {
+      vt = (q[t][0] - q[t - 1][0]) / dt;
+    }
+    vp = (q[t + 1][0] - q[t][0]) / dt;
+    ut = m * l * l * (vp - vt) / dt + b * vp;
+
+    L_gt += dt * (qt - opt_prob.q_nom(0)) * opt_prob.Qq(0) *
+            (qt - opt_prob.q_nom(0));
+    L_gt += dt * (vt - opt_prob.v_nom(0)) * opt_prob.Qv(0) *
+            (vt - opt_prob.v_nom(0));
+    L_gt += dt * ut * opt_prob.R(0) * ut;
+  }
+
+  qt = q[num_steps][0];
+  vt = (q[num_steps][0] - q[num_steps - 1][0]) / dt;
+  L_gt +=
+      (qt - opt_prob.q_nom(0)) * opt_prob.Qf_q(0) * (qt - opt_prob.q_nom(0));
+  L_gt +=
+      (vt - opt_prob.v_nom(0)) * opt_prob.Qf_v(0) * (vt - opt_prob.v_nom(0));
+
+  const double kTolerance = 100 * std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(L, L_gt, kTolerance);
 }
 

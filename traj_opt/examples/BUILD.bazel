@@ -10,10 +10,16 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_binary(
-    name = "pendulum",
-    srcs = ["pendulum.cc"],
+    name = "acrobot",
+    srcs = ["acrobot.cc"],
     add_test_rule = 1,
-    data = ["//examples/pendulum:prod_models"],
+    data = [
+        "//examples/acrobot:prod_models",
+    ],
+    test_rule_args = [
+        "-max_iters=20",
+        "-visualize=false",
+    ],
     deps = [
         "//common:find_resource",
         "//geometry:drake_visualizer",
@@ -21,6 +27,31 @@ drake_cc_binary(
         "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
+        "//traj_opt:problem_definition",
+        "//traj_opt:trajectory_optimizer",
+        "@gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "pendulum",
+    srcs = ["pendulum.cc"],
+    add_test_rule = 1,
+    data = ["//examples/pendulum:prod_models"],
+    test_rule_args = [
+        "-num_steps=100",
+        "-visualize=false",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//geometry:drake_visualizer",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//traj_opt:problem_definition",
+        "//traj_opt:trajectory_optimizer",
+        "@gflags",
     ],
 )
 

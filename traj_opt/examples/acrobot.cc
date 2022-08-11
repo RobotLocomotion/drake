@@ -19,26 +19,28 @@
 namespace drake {
 namespace traj_opt {
 namespace examples {
-namespace pendulum {
+namespace acrobot {
 
 // Command line options
 DEFINE_double(time_step, 5e-2,
               "Discretization timestep for the optimizer (seconds).");
-DEFINE_int32(num_steps, 40,
-             "Number of timesteps in the optimization problem.");
+DEFINE_int32(num_steps, 40, "Number of timesteps in the optimization problem.");
 DEFINE_int32(max_iters, 100,
              "Maximum number of Gauss-Newton iterations to take.");
-DEFINE_double(Qq, 0.0, "Running cost weight on the joint angle.");
-DEFINE_double(Qv, 0.1, "Running cost weight on the joint velocity.");
-DEFINE_double(R, 1.0, "Running cost weight on control inputs.");
-DEFINE_double(Qfq, 100.0, "Terminal cost weight on the joint angle.");
-DEFINE_double(Qfv, 1.0, "Terminal cost weight on the joint velocity.");
+DEFINE_double(Qq, 0.0, "Running cost weight on the joint angles.");
+DEFINE_double(Qv, 0.1, "Running cost weight on the joint velocities.");
+DEFINE_double(R, 0.1, "Running cost weight on control inputs.");
+DEFINE_double(unactuated_penalty, 1e3,
+              "Running cost weight on unactuated joint.");
+DEFINE_double(Qfq, 100.0, "Terminal cost weight on the joint angles.");
+DEFINE_double(Qfv, 1.0, "Terminal cost weight on the joint velocities.");
 DEFINE_bool(save_data, false, "Flag for writing solver data to a csv file.");
 DEFINE_bool(visualize, true, "Flag for displaying the optimal solution.");
 DEFINE_double(gravity, 9.81, "Magnitude of gravity in the z-direction.");
 DEFINE_string(linesearch, "armijo",
               "Linesearch strategy, {backtracking} or {armijo}.");
 
+using Eigen::Vector2d;
 using geometry::DrakeVisualizerd;
 using geometry::SceneGraph;
 using multibody::AddMultibodyPlant;
@@ -62,7 +64,7 @@ void play_back_trajectory(std::vector<VectorXd> q, double time_step) {
   auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
 
   const std::string urdf_file =
-      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
+      FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf");
   Parser(&plant).AddAllModelsFromFile(urdf_file);
   plant.Finalize();
 
@@ -101,7 +103,7 @@ void solve_trajectory_optimization(double time_step, int num_steps) {
   // Create a system model
   MultibodyPlant<double> plant(time_step);
   const std::string urdf_file =
-      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
+      FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf");
   Parser(&plant).AddAllModelsFromFile(urdf_file);
   plant.mutable_gravity_field().set_gravity_vector(
       Eigen::Vector3d(0, 0, -FLAGS_gravity));
@@ -110,15 +112,15 @@ void solve_trajectory_optimization(double time_step, int num_steps) {
   // Set up an optimization problem
   ProblemDefinition opt_prob;
   opt_prob.num_steps = num_steps;
-  opt_prob.q_init = Vector1d(0.0);
-  opt_prob.v_init = Vector1d(0.0);
-  opt_prob.Qq = FLAGS_Qq * MatrixXd::Identity(1, 1);
-  opt_prob.Qv = FLAGS_Qv * MatrixXd::Identity(1, 1);
-  opt_prob.Qf_q = FLAGS_Qfq * MatrixXd::Identity(1, 1);
-  opt_prob.Qf_v = FLAGS_Qfv * MatrixXd::Identity(1, 1);
-  opt_prob.R = FLAGS_R * MatrixXd::Identity(1, 1);
-  opt_prob.q_nom = Vector1d(M_PI);
-  opt_prob.v_nom = Vector1d(0.0);
+  opt_prob.q_init = Vector2d(0.0, 0.0);
+  opt_prob.v_init = Vector2d(0.0, 0.0);
+  opt_prob.Qq = FLAGS_Qq * MatrixXd::Identity(2, 2);
+  opt_prob.Qv = FLAGS_Qv * MatrixXd::Identity(2, 2);
+  opt_prob.Qf_q = FLAGS_Qfq * MatrixXd::Identity(2, 2);
+  opt_prob.Qf_v = FLAGS_Qfv * MatrixXd::Identity(2, 2);
+  opt_prob.R = Vector2d(FLAGS_unactuated_penalty, FLAGS_R).asDiagonal();
+  opt_prob.q_nom = Vector2d(M_PI, 0.0);
+  opt_prob.v_nom = Vector2d(0.0, 0.0);
 
   // Set our solver options
   SolverParameters solver_params;
@@ -145,13 +147,34 @@ void solve_trajectory_optimization(double time_step, int num_steps) {
   TrajectoryOptimizerStats<double> stats;
 
   SolverFlag status = optimizer.Solve(q_guess, &solution, &stats);
-  DRAKE_ASSERT(status == SolverFlag::kSuccess);
-  std::cout << "Solved in " << stats.solve_time << " seconds."
-            << std::endl;
+
+  if (status == SolverFlag::kSuccess) {
+    std::cout << "Solved in " << stats.solve_time << " seconds." << std::endl;
+    // Report maximum torques applied to the unactuated shoulder and actuated
+    // elbow.
+    double max_unactuated_torque = 0;
+    double max_actuated_torque = 0;
+    double unactuated_torque;
+    double actuated_torque;
+    for (int t = 0; t < num_steps; ++t) {
+      unactuated_torque = abs(solution.tau[t](0));
+      actuated_torque = abs(solution.tau[t](1));
+      if (unactuated_torque > max_unactuated_torque) {
+        max_unactuated_torque = unactuated_torque;
+      }
+      if (actuated_torque > max_actuated_torque) {
+        max_actuated_torque = actuated_torque;
+      }
+    }
+    std::cout << "Maximum actuated torque: " << max_actuated_torque
+              << std::endl;
+    std::cout << "Maximum unactuated torque: " << max_unactuated_torque
+              << std::endl;
+  }
 
   // Save data to CSV, if requested
   if (FLAGS_save_data) {
-    stats.SaveToCsv("pendulum_data.csv");
+    stats.SaveToCsv("acrobot_data.csv");
   }
 
   // Play back the result on the visualizer
@@ -161,21 +184,18 @@ void solve_trajectory_optimization(double time_step, int num_steps) {
 }
 
 int do_main() {
-  // For now we'll just run a simple passive simulation of the pendulum
-  // run_passive_simulation(1e-2, 2.0);
-
-  // Solve an optimization problem to swing-up the pendulum
+  // Solve an optimization problem to swing-up the acrobot
   solve_trajectory_optimization(FLAGS_time_step, FLAGS_num_steps);
 
   return 0;
 }
 
-}  // namespace pendulum
+}  // namespace acrobot
 }  // namespace examples
 }  // namespace traj_opt
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::traj_opt::examples::pendulum::do_main();
+  return drake::traj_opt::examples::acrobot::do_main();
 }
