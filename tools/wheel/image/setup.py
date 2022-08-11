@@ -94,6 +94,8 @@ design/analysis.'''.strip(),
       include_package_data=True,
       package_data={
           '': find_data_files(
+              'pydrake/py.typed',
+              'pydrake/**/*.pyi',
               'pydrake/**/*.so',
               'pydrake/lib/**',
               'pydrake/doc/**',
