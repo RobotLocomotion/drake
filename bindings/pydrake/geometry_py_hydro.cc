@@ -126,18 +126,43 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // TriangleSurfaceMesh
   {
     using Class = TriangleSurfaceMesh<T>;
+    constexpr auto& cls_doc = doc.TriangleSurfaceMesh;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "TriangleSurfaceMesh", param, doc.TriangleSurfaceMesh.doc);
+        m, "TriangleSurfaceMesh", param, cls_doc.doc);
     cls  // BR
+        .def("element", &Class::element, py::arg("e"), cls_doc.element.doc)
+        .def("vertex", &Class::vertex, py::arg("v"), cls_doc.vertex.doc)
+        .def("num_vertices", &Class::num_vertices, cls_doc.num_vertices.doc)
+        .def("num_elements", &Class::num_elements, cls_doc.num_elements.doc)
         .def(py::init<std::vector<SurfaceTriangle>, std::vector<Vector3<T>>>(),
-            py::arg("triangles"), py::arg("vertices"),
-            doc.TriangleSurfaceMesh.ctor.doc)
-        .def("triangles", &Class::triangles,
-            doc.TriangleSurfaceMesh.triangles.doc)
-        .def("vertices", &Class::vertices, doc.TriangleSurfaceMesh.vertices.doc)
-        .def("centroid", &Class::centroid, doc.TriangleSurfaceMesh.centroid.doc)
+            py::arg("triangles"), py::arg("vertices"), cls_doc.ctor.doc)
+        .def("num_triangles", &Class::num_triangles, cls_doc.num_triangles.doc)
+        .def("area", &Class::area, py::arg("t"), cls_doc.area.doc)
+        .def("total_area", &Class::total_area, cls_doc.total_area.doc)
+        .def("face_normal", &Class::face_normal, py::arg("t"),
+            cls_doc.face_normal.doc)
+        .def("triangles", &Class::triangles, cls_doc.triangles.doc)
+        .def("vertices", &Class::vertices, cls_doc.vertices.doc)
+        .def("centroid", &Class::centroid, cls_doc.centroid.doc)
         .def("element_centroid", &Class::element_centroid, py::arg("t"),
-            doc.TriangleSurfaceMesh.element_centroid.doc);
+            cls_doc.element_centroid.doc)
+        .def("CalcBoundingBox", &Class::CalcBoundingBox,
+            cls_doc.CalcBoundingBox.doc)
+        .def("Equal", &Class::Equal, py::arg("mesh"), cls_doc.Equal.doc)
+        .def(
+            "CalcCartesianFromBarycentric",
+            [](const Class* self, int element_index, const Vector3<T>& b_Q) {
+              return self->template CalcCartesianFromBarycentric(
+                  element_index, b_Q);
+            },
+            py::arg("element_index"), py::arg("b_Q"),
+            cls_doc.CalcCartesianFromBarycentric.doc)
+        .def(
+            "CalcBarycentric",
+            [](const Class* self, const Vector3<T>& p_MQ, int t) {
+              return self->template CalcBarycentric(p_MQ, t);
+            },
+            py::arg("p_MQ"), py::arg("t"), cls_doc.CalcBarycentric.doc);
   }
 
   // TriangleSurfaceMeshFieldLinear
@@ -210,6 +235,7 @@ void DoScalarIndependentDefinitions(py::module m) {
     cls  // BR
         .def(py::init<int, int, int>(), py::arg("v0"), py::arg("v1"),
             py::arg("v2"), cls_doc.ctor.doc_3args)
+        .def("num_vertices", &Class::num_vertices, cls_doc.num_vertices.doc)
         // TODO(SeanCurtis-TRI): Bind constructor that takes array of ints.
         .def("vertex", &Class::vertex, py::arg("i"), cls_doc.vertex.doc);
     DefCopyAndDeepCopy(&cls);
