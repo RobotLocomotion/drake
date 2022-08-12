@@ -3,8 +3,8 @@
 #include <cmath>
 #include <limits>
 
+#include "drake/common/symbolic/replace_bilinear_terms.h"
 #include "drake/math/gray_code.h"
-#include "drake/solvers/bilinear_product_util.h"
 #include "drake/solvers/integer_optimization_util.h"
 #include "drake/solvers/mixed_integer_rotation_constraint_internal.h"
 
@@ -138,12 +138,12 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
     for (int j = i + 1; j < 3; ++j) {
       // Orthogonal constraint between R.col(i), R.col(j).
       prog->AddLinearConstraint(
-          ReplaceBilinearTerms(
+          symbolic::ReplaceBilinearTerms(
               R.col(i).dot(R.col(j).cast<symbolic::Expression>()), R_flat,
               R_flat, W_expr) == 0);
       // Orthogonal constraint between R.row(i), R.row(j)
       prog->AddLinearConstraint(
-          ReplaceBilinearTerms(
+          symbolic::ReplaceBilinearTerms(
               R.row(i).transpose().dot(
                   R.row(j).cast<symbolic::Expression>().transpose()),
               R_flat, R_flat, W_expr) == 0);
@@ -159,13 +159,13 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
         R.row(j).transpose().cast<symbolic::Expression>());
     for (int row = 0; row < 3; ++row) {
       // R.col(i) x R.col(j) = R.col(k).
-      prog->AddLinearConstraint(ReplaceBilinearTerms(cross_product1(row),
-                                                     R_flat, R_flat,
-                                                     W_expr) == R(row, k));
+      prog->AddLinearConstraint(
+          symbolic::ReplaceBilinearTerms(cross_product1(row), R_flat, R_flat,
+                                         W_expr) == R(row, k));
       // R.row(i) x R.row(j) = R.row(k).
-      prog->AddLinearConstraint(ReplaceBilinearTerms(cross_product2(row),
-                                                     R_flat, R_flat,
-                                                     W_expr) == R(k, row));
+      prog->AddLinearConstraint(
+          symbolic::ReplaceBilinearTerms(cross_product2(row), R_flat, R_flat,
+                                         W_expr) == R(k, row));
     }
   }
 }
