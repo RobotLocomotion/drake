@@ -30,15 +30,16 @@ class RigidTransform;
 
 namespace internal {
 
-#ifdef DRAKE_ENABLE_AVX2_FMA
-/* Detects if AVX2 is supported by the current CPU. */
+/* Detects if the AVX2 implementations below are supported. */
 bool AvxSupported();
 
 /* Composes two drake::math::RotationMatrix<double> objects as quickly as
 possible, resulting in a new RotationMatrix.
 
 Here we calculate `R_AC = R_AB * R_BC`. It is OK for R_AC to overlap
-with one or both inputs. */
+with one or both inputs.
+
+Note: if AVX2 is not supported, calling this function will crash the program. */
 void ComposeRRAvx(
     const RotationMatrix<double>& R_AB,
     const RotationMatrix<double>& R_BC,
@@ -53,7 +54,9 @@ matrix is just its transpose. This function assumes orthonormality and hence
 simply multiplies the transpose of its first argument by the second.
 
 Here we calculate `R_AC = R_BA⁻¹ * R_BC`. It is OK for R_AC to overlap
-with one or both inputs. */
+with one or both inputs.
+
+Note: if AVX2 is not supported, calling this function will crash the program. */
 void ComposeRinvRAvx(
     const RotationMatrix<double>& R_BA,
     const RotationMatrix<double>& R_BC,
@@ -66,7 +69,9 @@ possible, resulting in a new RigidTransform.
 matrix multiply.
 
 Here we calculate `X_AC = X_AB * X_BC`. It is OK for X_AC to overlap
-with one or both inputs. */
+with one or both inputs.
+
+Note: if AVX2 is not supported, calling this function will crash the program. */
 void ComposeXXAvx(
     const RigidTransform<double>& X_AB,
     const RigidTransform<double>& X_BC,
@@ -80,12 +85,13 @@ possible, resulting in a new RigidTransform.
 matrix multiply.
 
 Here we calculate `X_AC = X_BA⁻¹ * X_BC`. It is OK for X_AC to overlap
-with one or both inputs. */
+with one or both inputs.
+
+Note: if AVX2 is not supported, calling this function will crash the program. */
 void ComposeXinvXAvx(
     const RigidTransform<double>& X_BA,
     const RigidTransform<double>& X_BC,
     RigidTransform<double>* X_AC);
-#endif
 
 }  // namespace internal
 }  // namespace math

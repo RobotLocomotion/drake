@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <type_traits>
 
 #include "drake/math/fast_pose_composition_functions_avx2_fma.h"
 
@@ -133,6 +134,86 @@ double* GetMutableRawMatrixStart(RigidTransform<double>* X) {
   return reinterpret_cast<double*>(X);
 }
 
+/* Wrapper class to select the appropriate implementation of the composition
+functions given: (1) the options enabled at build time, and (2) which features
+are supported by the hardware the process is currently running on. Note that
+since PoseCompositionFunctionsHelper is used as a static, it must be trivially
+destructible. */
+class PoseCompositionFunctionsHelper {
+ public:
+  PoseCompositionFunctionsHelper() {
+    static_assert(
+        std::is_trivially_destructible_v<PoseCompositionFunctionsHelper>,
+        "PoseCompositionFunctionsHelper must be trivially destructible");
+    if (internal::AvxSupported()) {
+      compose_rr_ = internal::ComposeRRAvx;
+      compose_rinvr_ = internal::ComposeRinvRAvx;
+      compose_xx_ = internal::ComposeXXAvx;
+      compose_xinvx_ = internal::ComposeXinvXAvx;
+      is_using_portable_functions_ = false;
+    } else {
+      compose_rr_ = internal::ComposeRRPortable;
+      compose_rinvr_ = internal::ComposeRinvRPortable;
+      compose_xx_ = internal::ComposeXXPortable;
+      compose_xinvx_ = internal::ComposeXinvXPortable;
+      is_using_portable_functions_ = true;
+    }
+  }
+
+  void ComposeRR(
+      const RotationMatrix<double>& R_AB,
+      const RotationMatrix<double>& R_BC,
+      RotationMatrix<double>* R_AC) const {
+    (*compose_rr_)(R_AB, R_BC, R_AC);
+  }
+
+  void ComposeRinvR(const RotationMatrix<double>& R_BA,
+                    const RotationMatrix<double>& R_BC,
+                    RotationMatrix<double>* R_AC) const {
+    (*compose_rinvr_)(R_BA, R_BC, R_AC);
+  }
+
+  void ComposeXX(const RigidTransform<double>& X_AB,
+                const RigidTransform<double>& X_BC,
+                RigidTransform<double>* X_AC) const {
+    (*compose_xx_)(X_AB, X_BC, X_AC);
+  }
+
+  void ComposeXinvX(const RigidTransform<double>& X_BA,
+                    const RigidTransform<double>& X_BC,
+                    RigidTransform<double>* X_AC) const {
+    (*compose_xinvx_)(X_BA, X_BC, X_AC);
+  }
+
+  bool is_using_portable_functions() const {
+    return is_using_portable_functions_;
+  }
+
+ private:
+  void (*compose_rr_)(
+      const RotationMatrix<double>&,
+      const RotationMatrix<double>&,
+      RotationMatrix<double>*) = nullptr;
+
+  void (*compose_rinvr_)(
+      const RotationMatrix<double>&,
+      const RotationMatrix<double>&,
+      RotationMatrix<double>*) = nullptr;
+
+  void (*compose_xx_)(
+      const RigidTransform<double>&,
+      const RigidTransform<double>&,
+      RigidTransform<double>*) = nullptr;
+
+  void (*compose_xinvx_)(
+      const RigidTransform<double>&,
+      const RigidTransform<double>&,
+      RigidTransform<double>*) = nullptr;
+
+  bool is_using_portable_functions_ = false;
+};
+
+static const PoseCompositionFunctionsHelper g_pose_composition_functions_helper;
 }  // namespace
 
 /* Composition of rotation matrices R_AC = R_AB * R_BC. Each matrix is 9
@@ -182,80 +263,31 @@ void ComposeXinvXPortable(const RigidTransform<double>& X_BA,
   std::copy(X_AC_temp, X_AC_temp + 12, GetMutableRawMatrixStart(X_AC));
 }
 
-#ifdef DRAKE_ENABLE_AVX2_FMA
-
-/* Use AVX methods. */
-bool IsUsingPortableCompositionFunctions() { return false; }
-
-// See note above as to why these reinterpret_casts are safe.
+bool IsUsingPortableCompositionFunctions() {
+  return g_pose_composition_functions_helper.is_using_portable_functions();
+}
 
 void ComposeRR(const RotationMatrix<double>& R_AB,
                const RotationMatrix<double>& R_BC,
                RotationMatrix<double>* R_AC) {
-  assert(R_AC != nullptr);
-  if (internal::AvxSupported()) {
-    internal::ComposeRRAvx(R_AB, R_BC, R_AC);
-  } else {
-    internal::ComposeRRPortable(R_AB, R_BC, R_AC);
-  }
+  g_pose_composition_functions_helper.ComposeRR(R_AB, R_BC, R_AC);
 }
 void ComposeRinvR(const RotationMatrix<double>& R_BA,
                   const RotationMatrix<double>& R_BC,
                   RotationMatrix<double>* R_AC) {
-  assert(R_AC != nullptr);
-  if (internal::AvxSupported()) {
-    internal::ComposeRinvRAvx(R_BA, R_BC, R_AC);
-  } else {
-    internal::ComposeRinvRPortable(R_BA, R_BC, R_AC);
-  }
-}
-void ComposeXX(const RigidTransform<double>& X_AB,
-               const RigidTransform<double>& X_BC,
-               RigidTransform<double>* X_AC) {
-  assert(X_AC != nullptr);
-  if (internal::AvxSupported()) {
-    internal::ComposeXXAvx(X_AB, X_BC, X_AC);
-  } else {
-    internal::ComposeXXPortable(X_AB, X_BC, X_AC);
-  }
-}
-void ComposeXinvX(const RigidTransform<double>& X_BA,
-                  const RigidTransform<double>& X_BC,
-                  RigidTransform<double>* X_AC) {
-  assert(X_AC != nullptr);
-  if (internal::AvxSupported()) {
-    internal::ComposeXinvXAvx(X_BA, X_BC, X_AC);
-  } else {
-    internal::ComposeXinvXPortable(X_BA, X_BC, X_AC);
-  }
-}
-
-#else
-/* Use portable functions. */
-bool IsUsingPortableCompositionFunctions() { return true; }
-
-void ComposeRR(const RotationMatrix<double>& R_AB,
-               const RotationMatrix<double>& R_BC,
-               RotationMatrix<double>* R_AC) {
-  internal::ComposeRRPortable(R_AB, R_BC, R_AC);
-}
-void ComposeRinvR(const RotationMatrix<double>& R_BA,
-                  const RotationMatrix<double>& R_BC,
-                  RotationMatrix<double>* R_AC) {
-  internal::ComposeRinvRPortable(R_BA, R_BC, R_AC);
+  g_pose_composition_functions_helper.ComposeRinvR(R_BA, R_BC, R_AC);
 }
 
 void ComposeXX(const RigidTransform<double>& X_AB,
                const RigidTransform<double>& X_BC,
                RigidTransform<double>* X_AC) {
-  internal::ComposeXXPortable(X_AB, X_BC, X_AC);
+  g_pose_composition_functions_helper.ComposeXX(X_AB, X_BC, X_AC);
 }
 void ComposeXinvX(const RigidTransform<double>& X_BA,
                   const RigidTransform<double>& X_BC,
                   RigidTransform<double>* X_AC) {
-  internal::ComposeXinvXPortable(X_BA, X_BC, X_AC);
+  g_pose_composition_functions_helper.ComposeXinvX(X_BA, X_BC, X_AC);
 }
-#endif
 
 }  // namespace internal
 }  // namespace math

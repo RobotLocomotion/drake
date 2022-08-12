@@ -391,23 +391,52 @@ void ComposeRRAvx(const RotationMatrix<double>& R_AB,
   ComposeRRAvx(GetRawMatrixStart(R_AB), GetRawMatrixStart(R_BC),
                GetMutableRawMatrixStart(R_AC));
 }
+
 void ComposeRinvRAvx(const RotationMatrix<double>& R_BA,
                      const RotationMatrix<double>& R_BC,
                      RotationMatrix<double>* R_AC) {
   ComposeRinvRAvx(GetRawMatrixStart(R_BA), GetRawMatrixStart(R_BC),
                   GetMutableRawMatrixStart(R_AC));
 }
+
 void ComposeXXAvx(const RigidTransform<double>& X_AB,
                   const RigidTransform<double>& X_BC,
                   RigidTransform<double>* X_AC) {
   ComposeXXAvx(GetRawMatrixStart(X_AB), GetRawMatrixStart(X_BC),
                GetMutableRawMatrixStart(X_AC));
 }
+
 void ComposeXinvXAvx(const RigidTransform<double>& X_BA,
                      const RigidTransform<double>& X_BC,
                      RigidTransform<double>* X_AC) {
   ComposeXinvXAvx(GetRawMatrixStart(X_BA), GetRawMatrixStart(X_BC),
                   GetMutableRawMatrixStart(X_AC));
+}
+#else
+bool AvxSupported() { return false; }
+
+void ComposeRRAvx(const RotationMatrix<double>&,
+                  const RotationMatrix<double>&,
+                  RotationMatrix<double>*) {
+  assert(false);
+}
+
+void ComposeRinvRAvx(const RotationMatrix<double>&,
+                     const RotationMatrix<double>&,
+                     RotationMatrix<double>*) {
+  assert(false);
+}
+
+void ComposeXXAvx(const RigidTransform<double>&,
+                  const RigidTransform<double>&,
+                  RigidTransform<double>*) {
+  assert(false);
+}
+
+void ComposeXinvXAvx(const RigidTransform<double>&,
+                     const RigidTransform<double>&,
+                     RigidTransform<double>*) {
+  assert(false);
 }
 #endif
 
