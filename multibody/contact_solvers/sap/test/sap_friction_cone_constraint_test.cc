@@ -24,6 +24,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+namespace kcov339_avoidance_magic {
 namespace {
 
 // These Jacobian matrices have arbitrary values for testing. We specify the
@@ -384,6 +385,7 @@ GTEST_TEST(SapFrictionConeConstraint, TwoCliquesConstraintClone) {
 }
 
 }  // namespace
+}  // namespace kcov339_avoidance_magic
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
