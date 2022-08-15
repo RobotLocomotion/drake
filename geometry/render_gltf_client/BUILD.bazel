@@ -2,9 +2,15 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
@@ -208,6 +214,43 @@ drake_cc_googletest(
         "//common:filesystem",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_py_binary(
+    name = "gltf_render_server",
+    srcs = ["test/gltf_render_server.py"],
+    data = [":gltf_render_server_backend"],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+drake_cc_binary(
+    name = "gltf_render_server_backend",
+    srcs = ["test/gltf_render_server_backend.cc"],
+    deps = [
+        "//common:filesystem",
+        "//geometry/render:render_label",
+        "//geometry/render/shaders:depth_shaders",
+        "//geometry/render_vtk:factory",
+        "//geometry/render_vtk:internal_render_engine_vtk",
+        "//math:geometric_transform",
+        "//systems/sensors:color_palette",
+        "//systems/sensors:image",
+        "@gflags",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkIOImport",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+drake_py_unittest(
+    name = "gltf_render_server_test",
+    deps = [
+        ":gltf_render_server",
+        "@bazel_tools//tools/python/runfiles",
     ],
 )
 
