@@ -8,6 +8,9 @@
 </head>
 
 <body>
+  <div id="status-message">
+    No connection to server.
+  </div>
   <div id="meshcat-pane">
   </div>
 
@@ -63,22 +66,62 @@
     // Set the initial view looking up the y-axis.
     viewer.set_property(['Cameras', 'default', 'rotated', '<object>'],
                         "position", [0.0, 1.0, 3.0])
-    try {
-      url = location.toString();
-      url = url.replace("http://", "ws://")
-      url = url.replace("https://", "wss://")
-      url = url.replace("/index.html", "/")
-      url = url.replace("/meshcat.html", "/")
-      connection = new WebSocket(url);
-      connection.binaryType = "arraybuffer";
-      connection.onmessage = (msg) => handle_message(msg);
-      connection.onclose = function(evt) {
-        console.log("onclose:", evt);
+
+    <!-- CONNECTION BLOCK BEGIN -->
+    // The lifespan of the server may be much shorter than this visualizer
+    // client. We'd like the user to not have to explicitly reload when they
+    // start a new server. So, we automatically try to reconnect at some given
+    // rate. However, due to the split of visualizer state between server and
+    // client, simply reconnecting may leave the *existing* visualizer in a
+    // strange state with various stale artifacts. So, when we detect a
+    // *reconnection*, we simply reload the page, so that every *meaningful*
+    // connection is accompanied by a fresh client state. Upon loading the
+    // page, it can accept a connection. After that first connection, any
+    // new connection is interpreted as a signal to reload.
+    var accepting_connections = true;
+    status_dom = document.getElementById("status-message");
+    // When the connection closes, try creating a new connection automatically.
+    function make_connection(url, reconnect_ms) {
+      try {
+        connection = new WebSocket(url);
+        connection.binaryType = "arraybuffer";
+        connection.onmessage = (msg) => handle_message(msg);
+        connection.onopen = (evt) => {
+          if (!accepting_connections) location.reload();
+          accepting_connections = false
+        };
+        connection.onclose = function(evt) {
+          status_dom.style.display = "block";
+          if (do_reconnect) {
+            // Immediately schedule an attempt to reconnect.
+            setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);
+          }
+        }
+        viewer.connection = connection
+      } catch (e) {
+        console.info("Not connected to MeshCat websocket server: ", e);
+        if (do_reconnect) {
+          setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);
+        }
       }
-      viewer.connection = connection
-    } catch (e) {
-      console.info("Not connected to MeshCat websocket server: ", e);
     }
+
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    reconnect_ms = parseInt(urlParams.get('reconnect_ms')) || 1000;
+    var do_reconnect = reconnect_ms > 0;
+    if (do_reconnect) {
+      status_dom.textContent = "No connection to server. Attempting to reconnect...";
+    }
+
+    url = location.toString();
+    url = url.replace("http://", "ws://")
+    url = url.replace("https://", "wss://")
+    url = url.replace("/index.html", "/")
+    url = url.replace("/meshcat.html", "/")
+    make_connection(url, reconnect_ms);
+    <!-- CONNECTION BLOCK END -->
+
   </script>
 
   <style>
@@ -90,6 +133,16 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
+    }
+
+    #status-message{
+      width: 50vw;
+      text-align: center;
+      font-weight: bold;
+      background-color: yellow;
+      position: fixed;
+      left: 25%;
+      display: none;
     }
 
     #stats-plot {
