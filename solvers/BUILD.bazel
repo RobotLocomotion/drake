@@ -450,11 +450,9 @@ drake_cc_library(
     hdrs = ["bilinear_product_util.h"],
     interface_deps = [
         ":decision_variable",
-        "//common:essential",
-        "//common/symbolic:expression",
     ],
     deps = [
-        "//common/symbolic:polynomial",
+        "//common/symbolic:replace_bilinear_terms",
     ],
 )
 
@@ -496,9 +494,9 @@ drake_cc_library(
         ":mixed_integer_optimization_util",
     ],
     deps = [
-        ":bilinear_product_util",
         ":integer_optimization_util",
         ":solve",
+        "//common/symbolic:replace_bilinear_terms",
         "//math:gray_code",
     ],
 )

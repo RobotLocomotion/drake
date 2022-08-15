@@ -12,6 +12,47 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
+/* Holds the scratch data used in the solver to avoid unnecessary
+ reallocation.
+ @tparam_double_only */
+template <typename T>
+class FemSolverScratchData {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemSolverScratchData);
+
+  /* Constructs a scratch data that is compatible with the given model. */
+  explicit FemSolverScratchData(const FemModel<T>& model) { Resize(model); }
+
+  /* Resizes scratch data to have sizes compatible with the given `model`. */
+  void Resize(const FemModel<T>& model);
+
+  std::unique_ptr<FemSolverScratchData<T>> Clone() const;
+
+  int num_dofs() const { return b_.size(); }
+
+  /* Returns the residual of the model. */
+  const VectorX<T>& b() const { return b_; }
+  /* Returns the solution to A * dz = -b, where A is the tangent matrix. */
+  const VectorX<T>& dz() const { return dz_; }
+  const internal::PetscSymmetricBlockSparseMatrix& tangent_matrix() const {
+    return *tangent_matrix_;
+  }
+
+  VectorX<T>& mutable_b() { return b_; }
+  VectorX<T>& mutable_dz() { return dz_; }
+  internal::PetscSymmetricBlockSparseMatrix& mutable_tangent_matrix() {
+    return *tangent_matrix_;
+  }
+
+ private:
+  /* Private default constructor to facilitate cloning. */
+  FemSolverScratchData() = default;
+
+  std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix> tangent_matrix_;
+  VectorX<T> b_;
+  VectorX<T> dz_;
+};
+
 /* FemSolver solves discrete dynamic elasticity problems. The governing PDE of
  the dynamics is spatially discretized in FemModel and temporally discretized by
  DiscreteTimeIntegrator. FemSolver provides the `AdvanceOneTimeStep()` function
@@ -19,8 +60,6 @@ namespace internal {
  constraints) of the spatially discretized FEM model by one time step according
  to the prescribed discrete time integration scheme using a Newton-Raphson
  solver.
- // TODO(xuchenhan-tri): This class contains mutable data modified in const
- //  functions. See TODO at the top of `AdvanceOneTimeStep()` for more details.
  @tparam_double_only */
 template <typename T>
 class FemSolver {
@@ -36,23 +75,25 @@ class FemSolver {
   FemSolver(const FemModel<T>* model,
             const DiscreteTimeIntegrator<T>* integrator);
 
-  // TODO(xuchenhan-tri): The existance of the mutable scratch_data makes
-  // AdvanceOneTimeStep() not thread-safe. As a result FemSolver can't currently
-  // be placed in contact managers. A potential solution is to have the
-  // caller pass in the scratch data instead of having a mutable data member.
   /* Advances the state of the FEM model by one time step with the integrator
    prescribed at construction.
-   @param[in] prev_state   The state of the FEM model evaluated at the previous
-                           time step.
-   @param[out] next_state  The state of the FEM model evaluated at the next time
-                           step.
+   @param[in] prev_state    The state of the FEM model evaluated at the previous
+                            time step.
+   @param[out] next_state   The state of the FEM model evaluated at the next
+                            time step.
+   @param[in, out] scratch  A scratch pad for storing intermediary data used in
+                            the computation. We use this scratch only to avoid
+                            memory allocation. The actual value of scratch is
+                            unused. The size of scratch will be set to be
+                            compatible with the model referenced by this solver
+                            on output if it's not already appropriately sized.
    @returns the number of Newton-Raphson iterations the solver takes to
    converge if the solver converges or -1 if the solver fails to converge.
    @pre next_state != nullptr.
    @throws std::exception if the input `prev_state` or `next_state` is
    incompatible with the FEM model solved by this solver. */
-  int AdvanceOneTimeStep(const FemState<T>& prev_state,
-                         FemState<T>* next_state) const;
+  int AdvanceOneTimeStep(const FemState<T>& prev_state, FemState<T>* next_state,
+                         FemSolverScratchData<T>* scratch) const;
 
   /* Returns the FEM model that this solver solves for. */
   const FemModel<T>& model() const { return *model_; }
@@ -83,28 +124,6 @@ class FemSolver {
                         const T& initial_residual_norm) const;
 
  private:
-  /* Holds the scratch data used in the solver to avoid unnecessary
-   reallocation. */
-  struct SolverScratchData {
-    /* Constructs a scratch data that is compatible with the given model. */
-    explicit SolverScratchData(const FemModel<T>& model) { Resize(model); }
-
-    /* Resizes scratch data to have sizes compatible with the given `model`. */
-    void Resize(const FemModel<T>& model) {
-      b.resize(model.num_dofs());
-      dz.resize(model.num_dofs());
-      tangent_matrix = model.MakePetscSymmetricBlockSparseTangentMatrix();
-    }
-
-    int num_dofs() const { return b.size(); }
-
-    std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix> tangent_matrix;
-    /* Stores the residual of the model. */
-    VectorX<T> b;
-    /* Stores the solution to A * dz = -b, where A is the tangent matrix. */
-    VectorX<T> dz;
-  };
-
   /* Uses a Newton-Raphson solver to solve for the unknown z such that the
    residual is zero, i.e. b(z) = 0, up to the specified tolerances. The input
    FEM state is non-null and is guaranteed to be compatible with the FEM model.
@@ -113,23 +132,19 @@ class FemSolver {
    the solution. As output, `state` reports the equilibrium state.
    @returns the number of iterations it takes for the solver to converge or -1
    if the solver fails to converge. */
-  int SolveWithInitialGuess(FemState<T>* state) const;
+  int SolveWithInitialGuess(FemState<T>* state,
+                            FemSolverScratchData<T>* scratch) const;
 
-  /* Updates the relative tolerance for the linear solver used in the
+  /* Returns the relative tolerance for the linear solver used in the
    Newton-Raphson iterations based on the residual norm if the linear solver
    is iterative. More specifically, it is set to
    tol = min(k * εᵣ, ‖r‖ / max(‖r₀‖, εₐ)),
    where k is a constant scaling factor < 1, εᵣ and εₐ are the relative and
    absolute tolerances for newton iterations (see set_relative_tolerance() and
    set_absolute_tolerance()), and ‖r‖ and ‖r₀‖ are `residual_norm` and
-   `initial_residual_norm`. No-op if the linear solver is direct.
-   @note This function modifies internal mutable data. */
-  void set_linear_solve_tolerance(const T& residual_norm,
-                                  const T& initial_residual_norm) const;
-
-  /* Resets the scratch data to be consistent with the model if the model has
-   been modified. */
-  void ResetScratchDataIfNecessary() const;
+   `initial_residual_norm`. */
+  double linear_solve_tolerance(const T& residual_norm,
+                                const T& initial_residual_norm) const;
 
   /* The FEM model being solved by `this` solver. */
   const FemModel<T>* model_{nullptr};
@@ -141,8 +156,6 @@ class FemSolver {
   /* Max number of Newton-Raphson iterations the solver takes before it gives
    up. */
   int kMaxIterations_{100};
-  /* Scratch data used in the solver iteration. */
-  mutable SolverScratchData scratch_data_;
 };
 
 }  // namespace internal
