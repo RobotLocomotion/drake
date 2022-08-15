@@ -68,7 +68,7 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
                  solvers::MathematicalProgram* prog,
                  Binding<solvers::LinearConstraint>* new_constraint,
                  Binding<solvers::LinearCost>* program_cost_binding) {
-  // Ensures that prog is an LPs
+  // Ensures that prog is an LP.
   DRAKE_DEMAND(prog->GetAllConstraints().size() ==
                prog->GetAllLinearConstraints().size());
   DRAKE_DEMAND(prog->GetAllCosts().size() == 1 &&
