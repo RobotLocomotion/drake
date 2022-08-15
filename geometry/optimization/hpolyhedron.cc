@@ -549,7 +549,6 @@ HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
   DRAKE_DEMAND(this->ambient_dimension() == other.ambient_dimension());
   DRAKE_DEMAND(this->IsBounded());
   DRAKE_DEMAND(other.IsBounded());
-  const double kInf = std::numeric_limits<double>::infinity();
 
   VectorXd b_diff(b_.rows());
   MathematicalProgram prog;
