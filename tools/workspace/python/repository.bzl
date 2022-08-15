@@ -50,8 +50,8 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 _VERSION_SUPPORT_MATRIX = {
     "ubuntu:20.04": ["3.8"],
     "ubuntu:22.04": ["3.10"],
-    "macos": ["3.9"],
-    "macos_wheel": ["3.9"],
+    "macos": ["3.10"],
+    "macos_wheel": ["3.10"],
     "manylinux": ["3.8", "3.9"],
 }
 
@@ -193,7 +193,7 @@ def _impl(repository_ctx):
 
     linkopts_direct_link = list(linkopts)
 
-    # python3.9-config --libs is missing the python3.9 library.
+    # python3.10-config --libs is missing the python3.10 library.
     has_direct_link = False
     libpy = "python" + py_info.version
     for i in reversed(range(len(linkopts))):
