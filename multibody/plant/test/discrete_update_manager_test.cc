@@ -162,7 +162,9 @@ namespace {
 class DiscreteUpdateManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    plant_.AddRigidBody("rigid body", SpatialInertia<double>());
+    // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+    plant_.AddRigidBody("rigid body",
+        SpatialInertia<double>::MakeUnitary());
     auto dummy_model = std::make_unique<DummyModel<double>>();
     dummy_model_ = dummy_model.get();
     plant_.AddPhysicalModel(std::move(dummy_model));

@@ -1,11 +1,13 @@
 #include <unistd.h>
 
+#include <iostream>
+
 #include "fmt/format.h"
 #include <benchmark/benchmark.h>
 #include <gflags/gflags.h>
 
 #include "drake/common/filesystem.h"
-#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
+#include "drake/geometry/render_gl/factory.h"
 #include "drake/geometry/render_vtk/factory.h"
 #include "drake/systems/sensors/image_writer.h"
 
@@ -26,13 +28,21 @@ class RenderEngineTester {
   }
 };
 
-namespace render_benchmark {
-namespace internal {
+}  // namespace render
+
 namespace {
 
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using render::ColorRenderCamera;
+using render::DepthRange;
+using render::DepthRenderCamera;
+using render::RenderCameraCore;
+using render::RenderEngine;
+using render::RenderEngineGlParams;
+using render::RenderEngineTester;
+using render::RenderLabel;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -55,12 +65,18 @@ const double kFovY = M_PI_4;
  renderers are supported by all operating systems.  */
 enum class EngineType { Vtk, Gl };
 
-/* Creates a render engine of the given type with the given background color.
- For each supported render engine type, this must be specialized. (See below.
- */
+/* Creates a render engine of the given type with the given background color. */
 template <EngineType engine_type>
 std::unique_ptr<RenderEngine> MakeEngine(const Vector3d& bg_rgb) {
-  throw std::runtime_error("Not implemented!");
+  if constexpr (engine_type == EngineType::Vtk) {
+    RenderEngineVtkParams params{{}, {}, bg_rgb};
+    return MakeRenderEngineVtk(params);
+  }
+  if constexpr (engine_type == EngineType::Gl) {
+    RenderEngineGlParams params;
+    params.default_clear_color.set(bg_rgb[0], bg_rgb[1], bg_rgb[2], 1.0);
+    return MakeRenderEngineGl(params);
+  }
 }
 
 class RenderBenchmark : public benchmark::Fixture {
@@ -103,7 +119,6 @@ class RenderBenchmark : public benchmark::Fixture {
     if (!FLAGS_save_image_path.empty()) {
       const std::string path_name = image_path_name(name, state, "png");
       SaveToPng(color_image, path_name);
-      saved_image_paths.insert(path_name);
     }
   }
 
@@ -133,7 +148,6 @@ class RenderBenchmark : public benchmark::Fixture {
     if (!FLAGS_save_image_path.empty()) {
       const std::string path_name = image_path_name(name, state, "tiff");
       SaveToTiff(depth_image, path_name);
-      saved_image_paths.insert(path_name);
     }
   }
 
@@ -167,7 +181,6 @@ class RenderBenchmark : public benchmark::Fixture {
     if (!FLAGS_save_image_path.empty()) {
       const std::string path_name = image_path_name(name, state, "png");
       SaveToPng(label_image, path_name);
-      saved_image_paths.insert(path_name);
     }
   }
 
@@ -308,18 +321,12 @@ class RenderBenchmark : public benchmark::Fixture {
                                                 engine);
   }
 
-  // Keep track of the paths to the saved images. We use a static set because
-  // Google Benchmark runs these benchmarks multiple times with unique instances
-  // of the fixture, and we want to avoid duplicate path names.
-  static std::set<std::string> saved_image_paths;
-
   std::vector<DepthRenderCamera> depth_cameras_;
   PerceptionProperties material_;
   const Vector3d bg_rgb_{200 / 255., 0, 250 / 255.};
   const Rgba sphere_rgba_{0, 0.8, 0.5, 1};
   std::unordered_map<GeometryId, RigidTransformd> poses_;
 };
-std::set<std::string> RenderBenchmark::saved_image_paths;
 
 /* These macros serve the purpose of allowing compact and *consistent*
  declarations of benchmarks. The goal is to create a benchmark for each
@@ -333,9 +340,8 @@ std::set<std::string> RenderBenchmark::saved_image_paths;
 
    MAKE_BENCHMARK(Foo, ImageType)
 
- such that there must be a `RenderEngineFoo` type (e.g., RenderEngineVtk) and
- ImageType must be one of (Color, Depth, or Label). Capitalization matters.
- There must also be a specialization of MakeEngine<EngineType::Foo> (see below).
+ such that there must be a `EngineType::Foo` enum and mageType must be one of
+ (Color, Depth, or Label). Capitalization matters.
 
  N.B. The macro STR converts a single macro parameter into a string and we use
  it to make a string out of the concatenation of two macro parameters (i.e., we
@@ -366,51 +372,16 @@ BENCHMARK_REGISTER_F(RenderBenchmark, Renderer##ImageT) \
     ->Args({1200, 1, 1280, 960}) \
     ->Args({1200, 1, 2560, 1920})
 
-
-template <>
-std::unique_ptr<RenderEngine> MakeEngine<EngineType::Vtk>(
-    const Vector3d& bg_rgb) {
-  geometry::RenderEngineVtkParams params{{}, {}, bg_rgb};
-  return geometry::MakeRenderEngineVtk(params);
-}
-
 MAKE_BENCHMARK(Vtk, Color);
 MAKE_BENCHMARK(Vtk, Depth);
 MAKE_BENCHMARK(Vtk, Label);
 
-#ifdef RENDER_ENGINE_GL_SUPPORTED
-template <>
-std::unique_ptr<RenderEngine> MakeEngine<EngineType::Gl>(
-    const Vector3d& bg_rgb) {
-  RenderEngineGlParams params;
-  params.default_clear_color.set(bg_rgb[0], bg_rgb[1], bg_rgb[2], 1.0);
-  return MakeRenderEngineGl(params);
-}
-
+#ifndef __APPLE__
 MAKE_BENCHMARK(Gl, Color);
 MAKE_BENCHMARK(Gl, Depth);
 MAKE_BENCHMARK(Gl, Label);
 #endif
 
-void Cleanup() {
-  if (!RenderBenchmark::saved_image_paths.empty()) {
-    std::cout << "Saved rendered images to:" << std::endl;
-    for (const auto& path : RenderBenchmark::saved_image_paths) {
-      std::cout << fmt::format(" - {}", path) << std::endl;
-    }
-  }
-}
-
 }  // namespace
-}  // namespace internal
-}  // namespace render_benchmark
-}  // namespace render
 }  // namespace geometry
 }  // namespace drake
-
-int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  benchmark::Initialize(&argc, argv);
-  benchmark::RunSpecifiedBenchmarks();
-  drake::geometry::render::render_benchmark::internal::Cleanup();
-}

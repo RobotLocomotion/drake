@@ -24,7 +24,7 @@ def _impl(repository_ctx):
             "/usr/include/double-conversion",
             "include/double-conversion",
         )
-    elif os_result.is_manylinux:
+    elif os_result.is_manylinux or os_result.is_macos_wheel:
         libdir = "/opt/drake-dependencies/lib"
         repository_ctx.symlink(
             "/opt/drake-dependencies/include/double-conversion",

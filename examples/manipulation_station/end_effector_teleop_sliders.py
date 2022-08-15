@@ -1,5 +1,7 @@
 import argparse
+from dataclasses import dataclass
 import sys
+import webbrowser
 
 if sys.platform == "darwin":
     # TODO(jamiesnape): Fix this example on macOS Big Sur. Skipping on all
@@ -10,17 +12,12 @@ if sys.platform == "darwin":
     print("ERROR: Skipping this example on macOS because it fails on Big Sur")
     sys.exit(0)
 
-try:
-    import tkinter as tk
-except ImportError:
-    import Tkinter as tk
 import numpy as np
 
-from pydrake.examples.manipulation_station import (
+from pydrake.examples import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
-from pydrake.geometry import DrakeVisualizer
-from pydrake.manipulation.simple_ui import SchunkWsgButtons
+from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizer
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
@@ -28,117 +25,67 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (DiagramBuilder, LeafSystem,
                                        PublishEvent)
 from pydrake.systems.lcm import LcmPublisherSystem
-from pydrake.systems.meshcat_visualizer import (
-    ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.primitives import FirstOrderLowPassFilter, VectorLogSink
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
-from pydrake.systems.planar_scenegraph_visualizer import \
-    ConnectPlanarSceneGraphVisualizer
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
+from drake.examples.manipulation_station.schunk_wsg_buttons import \
+    SchunkWsgButtons
 
 from drake import lcmt_image_array
 
 
-# TODO(russt): Generalize this and move it to pydrake.manipulation.simple_ui.
 class EndEffectorTeleop(LeafSystem):
-    def __init__(self, planar=False):
+    @dataclass
+    class SliderDefault:
+        """Default values for the meshcat sliders."""
+        name: str
+        """The name that is used to add / query values from."""
+        default: float
+        """The initial value of the slider."""
+
+    _ROLL = SliderDefault("Roll", 0.0)
+    _PITCH = SliderDefault("Pitch", 0.0)
+    _YAW = SliderDefault("Yaw", 1.57)
+    _X = SliderDefault("X", 0.0)
+    _Y = SliderDefault("Y", 0.0)
+    _Z = SliderDefault("Z", 0.0)
+
+    def __init__(self, meshcat, planar=False):
         """
-        @param planar if True, restricts the GUI and the output to have y=0,
-                      roll=0, yaw=0.
+        @param meshcat The already created pydrake.geometry.Meshcat instance.
+        @param planar if True, the GUI will not have Pitch, Yaw, or Y-axis
+                      sliders and default values will be returned.
         """
 
         LeafSystem.__init__(self)
-        self.DeclareVectorOutputPort("rpy_xyz", 6,
-                                     self.DoCalcOutput)
-
-        # Note: This timing affects the keyboard teleop performance. A larger
-        #       time step causes more lag in the response.
-        self.DeclarePeriodicEvent(0.01, 0.0, PublishEvent(self._update_window))
+        self.DeclareVectorOutputPort("rpy_xyz", 6, self.DoCalcOutput)
+        self.meshcat = meshcat
         self.planar = planar
 
-        self.window = tk.Tk()
-        self.window.title("End-Effector TeleOp")
+        # Rotation control sliders.
+        self.meshcat.AddSlider(
+            name=self._ROLL.name, min=-2.0 * np.pi, max=2.0 * np.pi, step=0.01,
+            value=self._ROLL.default)
+        if not self.planar:
+            self.meshcat.AddSlider(
+                name=self._PITCH.name, min=-2.0 * np.pi, max=2.0 * np.pi,
+                step=0.01, value=self._PITCH.default)
+            self.meshcat.AddSlider(
+                name=self._YAW.name, min=-2.0 * np.pi, max=2.0 * np.pi,
+                step=0.01, value=self._YAW.default)
 
-        self.roll = tk.Scale(self.window, from_=-2 * np.pi, to=2 * np.pi,
-                             resolution=-1,
-                             label="roll (keys: ctrl-right, ctrl-left)",
-                             length=800,
-                             orient=tk.HORIZONTAL)
-        self.roll.pack()
-        self.roll.set(0)
-        self.pitch = tk.Scale(self.window, from_=-2 * np.pi, to=2 * np.pi,
-                              resolution=-1,
-                              label="pitch (keys: ctrl-d, ctrl-a)",
-                              length=800,
-                              orient=tk.HORIZONTAL)
-        if not planar:
-            self.pitch.pack()
-        self.pitch.set(0)
-        self.yaw = tk.Scale(self.window, from_=-2 * np.pi, to=2 * np.pi,
-                            resolution=-1,
-                            label="yaw (keys: ctrl-up, ctrl-down)",
-                            length=800,
-                            orient=tk.HORIZONTAL)
-        if not planar:
-            self.yaw.pack()
-        self.yaw.set(1.57)
-        self.x = tk.Scale(self.window, from_=-0.6, to=0.8,
-                          resolution=-1,
-                          label="x (keys: right, left)",
-                          length=800,
-                          orient=tk.HORIZONTAL)
-        self.x.pack()
-        self.x.set(0)
-        self.y = tk.Scale(self.window, from_=-0.8, to=0.3,
-                          resolution=-1,
-                          label="y (keys: d, a)",
-                          length=800,
-                          orient=tk.HORIZONTAL)
-        if not planar:
-            self.y.pack()
-        self.y.set(0)
-        self.z = tk.Scale(self.window, from_=0, to=1.1,
-                          resolution=-1,
-                          label="z (keys: up, down)",
-                          length=800,
-                          orient=tk.HORIZONTAL)
-        self.z.pack()
-        self.z.set(0)
-
-        # The key bindings below provide teleop functionality via the
-        # keyboard, and are somewhat arbitrary (inspired by gaming
-        # conventions). Note that in order for the keyboard bindings to
-        # be active, the teleop slider window must be the active window.
-
-        def update(scale, value):
-            return lambda event: scale.set(scale.get() + value)
-
-        # Delta displacements for motion via keyboard teleop.
-        rotation_delta = 0.05  # rad
-        position_delta = 0.01  # m
-
-        # Linear motion key bindings.
-        self.window.bind("<Up>", update(self.z, +position_delta))
-        self.window.bind("<Down>", update(self.z, -position_delta))
-        if (not planar):
-            self.window.bind("<d>", update(self.y, +position_delta))
-            self.window.bind("<a>", update(self.y, -position_delta))
-        self.window.bind("<Right>", update(self.x, +position_delta))
-        self.window.bind("<Left>", update(self.x, -position_delta))
-
-        # Rotational motion key bindings.
-        self.window.bind("<Control-Right>", update(self.roll, +rotation_delta))
-        self.window.bind("<Control-Left>", update(self.roll, -rotation_delta))
-        if (not planar):
-            self.window.bind("<Control-d>",
-                             update(self.pitch, +rotation_delta))
-            self.window.bind("<Control-a>",
-                             update(self.pitch, -rotation_delta))
-            self.window.bind("<Control-Up>",
-                             update(self.yaw, +rotation_delta))
-            self.window.bind("<Control-Down>",
-                             update(self.yaw, -rotation_delta))
+        # Position control sliders.
+        self.meshcat.AddSlider(
+            name=self._X.name, min=-0.6, max=0.8, step=0.01,
+            value=self._X.default)
+        if not self.planar:
+            self.meshcat.AddSlider(
+                name=self._Y.name, min=-0.8, max=0.3, step=0.01,
+                value=self._Y.default)
+        self.meshcat.AddSlider(
+            name=self._Z.name, min=0.0, max=1.1, step=0.01,
+            value=self._Z.default)
 
     def SetPose(self, pose):
         """
@@ -153,31 +100,41 @@ class EndEffectorTeleop(LeafSystem):
         """
         @param rpy is a RollPitchYaw object
         """
-        self.roll.set(rpy.roll_angle())
+        self.meshcat.SetSliderValue(self._ROLL.name, rpy.roll_angle())
         if not self.planar:
-            self.pitch.set(rpy.pitch_angle())
-            self.yaw.set(rpy.yaw_angle())
+            self.meshcat.SetSliderValue(self._PITCH.name, rpy.pitch_angle())
+            self.meshcat.SetSliderValue(self._YAW.name, rpy.yaw_angle())
 
     def SetXYZ(self, xyz):
         """
         @param xyz is a 3 element vector of x, y, z.
         """
-        self.x.set(xyz[0])
+        self.meshcat.SetSliderValue(self._X.name, xyz[0])
         if not self.planar:
-            self.y.set(xyz[1])
-        self.z.set(xyz[2])
-
-    def _update_window(self, context, event):
-        self.window.update_idletasks()
-        self.window.update()
+            self.meshcat.SetSliderValue(self._Y.name, xyz[1])
+        self.meshcat.SetSliderValue(self._Z.name, xyz[2])
 
     def DoCalcOutput(self, context, output):
-        output.SetAtIndex(0, self.roll.get())
-        output.SetAtIndex(1, self.pitch.get())
-        output.SetAtIndex(2, self.yaw.get())
-        output.SetAtIndex(3, self.x.get())
-        output.SetAtIndex(4, self.y.get())
-        output.SetAtIndex(5, self.z.get())
+        roll = self.meshcat.GetSliderValue(self._ROLL.name)
+        if not self.planar:
+            pitch = self.meshcat.GetSliderValue(self._PITCH.name)
+            yaw = self.meshcat.GetSliderValue(self._YAW.name)
+        else:
+            pitch = self._PITCH.default
+            yaw = self._YAW.default
+        x = self.meshcat.GetSliderValue(self._X.name)
+        if not self.planar:
+            y = self.meshcat.GetSliderValue(self._Y.name)
+        else:
+            y = self._Y.default
+        z = self.meshcat.GetSliderValue(self._Z.name)
+
+        output.SetAtIndex(0, roll)
+        output.SetAtIndex(1, pitch)
+        output.SetAtIndex(2, yaw)
+        output.SetAtIndex(3, x)
+        output.SetAtIndex(4, y)
+        output.SetAtIndex(5, z)
 
 
 def main():
@@ -215,10 +172,23 @@ def main():
         '--schunk_collision_model', type=str, default='box',
         help="The Schunk collision model to use for simulation. ",
         choices=['box', 'box_plus_fingertip_spheres'])
-    MeshcatVisualizer.add_argparse_argument(parser)
+    parser.add_argument(
+        "-w", "--open-window", dest="browser_new",
+        action="store_const", const=1, default=None,
+        help=(
+            "Open the MeshCat display in a new browser window.  NOTE: the "
+            "slider controls are available in the meshcat viewer by clicking "
+            "'Open Controls' in the top-right corner."))
     args = parser.parse_args()
 
     builder = DiagramBuilder()
+
+    # NOTE: the meshcat instance is always created in order to create the
+    # teleop controls (orientation sliders and open/close gripper button). When
+    # args.hardware is True, the meshcat server will *not* display robot
+    # geometry, but it will contain the joint sliders and open/close gripper
+    # button in the "Open Controls" tab in the top-right of the viewing server.
+    meshcat = Meshcat()
 
     if args.hardware:
         station = builder.AddSystem(ManipulationStationHardwareInterface())
@@ -259,42 +229,46 @@ def main():
         # rendering only works with drake-visualizer. Without this check,
         # running this code in a docker container produces libGL errors.
         geometry_query_port = station.GetOutputPort("geometry_query")
-        if args.meshcat:
-            meshcat = ConnectMeshcatVisualizer(
-                builder, output_port=geometry_query_port,
-                zmq_url=args.meshcat, open_browser=args.open_browser)
-            if args.setup == 'planar':
-                meshcat.set_planar_viewpoint()
 
-        elif args.setup == 'planar':
-            ConnectPlanarSceneGraphVisualizer(
-                builder, station.get_scene_graph(), geometry_query_port)
+        # Connect the meshcat visualizer.
+        meshcat_visualizer = MeshcatVisualizer.AddToBuilder(
+            builder=builder,
+            query_object_port=geometry_query_port,
+            meshcat=meshcat)
 
-        else:
-            DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
-            image_to_lcm_image_array = builder.AddSystem(
-                ImageToLcmImageArrayT())
-            image_to_lcm_image_array.set_name("converter")
-            for name in station.get_camera_names():
-                cam_port = (
-                    image_to_lcm_image_array
-                    .DeclareImageInputPort[PixelType.kRgba8U](
-                        "camera_" + name))
-                builder.Connect(
-                    station.GetOutputPort("camera_" + name + "_rgb_image"),
-                    cam_port)
+        # Configure the planar visualization.
+        if args.setup == 'planar':
+            meshcat.Set2dRenderMode()
 
-            image_array_lcm_publisher = builder.AddSystem(
-                LcmPublisherSystem.Make(
-                    channel="DRAKE_RGBD_CAMERA_IMAGES",
-                    lcm_type=lcmt_image_array,
-                    lcm=None,
-                    publish_period=0.1,
-                    use_cpp_serializer=True))
-            image_array_lcm_publisher.set_name("rgbd_publisher")
+        # Connect and publish to drake visualizer.
+        DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
+        image_to_lcm_image_array = builder.AddSystem(
+            ImageToLcmImageArrayT())
+        image_to_lcm_image_array.set_name("converter")
+        for name in station.get_camera_names():
+            cam_port = (
+                image_to_lcm_image_array
+                .DeclareImageInputPort[PixelType.kRgba8U](
+                    "camera_" + name))
             builder.Connect(
-                image_to_lcm_image_array.image_array_t_msg_output_port(),
-                image_array_lcm_publisher.get_input_port(0))
+                station.GetOutputPort("camera_" + name + "_rgb_image"),
+                cam_port)
+
+        image_array_lcm_publisher = builder.AddSystem(
+            LcmPublisherSystem.Make(
+                channel="DRAKE_RGBD_CAMERA_IMAGES",
+                lcm_type=lcmt_image_array,
+                lcm=None,
+                publish_period=0.1,
+                use_cpp_serializer=True))
+        image_array_lcm_publisher.set_name("rgbd_publisher")
+        builder.Connect(
+            image_to_lcm_image_array.image_array_t_msg_output_port(),
+            image_array_lcm_publisher.get_input_port(0))
+
+    if args.browser_new is not None:
+        url = meshcat.web_url()
+        webbrowser.open(url=url, new=args.browser_new)
 
     robot = station.get_controller_plant()
     params = DifferentialInverseKinematicsParameters(robot.num_positions(),
@@ -320,9 +294,8 @@ def main():
     builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
                     station.GetInputPort("iiwa_position"))
 
-    teleop = builder.AddSystem(EndEffectorTeleop(args.setup == 'planar'))
-    if args.test:
-        teleop.window.withdraw()  # Don't display the window when testing.
+    teleop = builder.AddSystem(EndEffectorTeleop(
+        meshcat, args.setup == 'planar'))
     filter = builder.AddSystem(
         FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
 
@@ -330,7 +303,7 @@ def main():
     builder.Connect(filter.get_output_port(0),
                     differential_ik.GetInputPort("rpy_xyz_desired"))
 
-    wsg_buttons = builder.AddSystem(SchunkWsgButtons(teleop.window))
+    wsg_buttons = builder.AddSystem(SchunkWsgButtons(meshcat=meshcat))
     builder.Connect(wsg_buttons.GetOutputPort("position"),
                     station.GetInputPort("wsg_position"))
     builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
@@ -348,7 +321,6 @@ def main():
 
     diagram = builder.Build()
     simulator = Simulator(diagram)
-    iiwa_velocities_log = iiwa_velocities.FindLog(simulator.get_context())
 
     # This is important to avoid duplicate publishes to the hardware interface:
     simulator.set_publish_every_time_step(False)
@@ -386,6 +358,7 @@ def main():
     # Ensure that our initialization logic was correct, by inspecting our
     # logged joint velocities.
     if args.test:
+        iiwa_velocities_log = iiwa_velocities.FindLog(simulator.get_context())
         for time, qdot in zip(iiwa_velocities_log.sample_times(),
                               iiwa_velocities_log.data().transpose()):
             # TODO(jwnimmer-tri) We should be able to do better than a 40

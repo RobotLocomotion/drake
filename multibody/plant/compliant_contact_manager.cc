@@ -16,6 +16,7 @@
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
@@ -32,6 +33,7 @@ using drake::multibody::contact_solvers::internal::ExtractTangent;
 using drake::multibody::contact_solvers::internal::SapConstraint;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
+using drake::multibody::contact_solvers::internal::SapHolonomicConstraint;
 using drake::multibody::contact_solvers::internal::SapLimitConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
@@ -72,22 +74,6 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
-
-  // Due to issue #12786, we cannot mark
-  // CacheIndexes::non_contact_forces_accelerations dependent on the
-  // MultibodyPlant's inputs, as it should. However if we remove this
-  // dependency, we run the risk of having an undetected algebraic loop. We use
-  // this cache entry to signal when the computation of non-contact forces is in
-  // progress so that we can detect an algebraic loop.
-  const auto& non_contact_forces_evaluation_in_progress =
-      this->DeclareCacheEntry(
-          "Evaluation of non-contact forces and accelerations is in progress.",
-          // N.B. This flag is set to true only when the computation is in
-          // progress. Therefore its default value is `false`.
-          systems::ValueProducer(false, &systems::ValueProducer::NoopCalc),
-          {systems::System<T>::nothing_ticket()});
-  cache_indexes_.non_contact_forces_evaluation_in_progress =
-      non_contact_forces_evaluation_in_progress.cache_index();
 
   // Accelerations due to non-contact forces.
   // We cache non-contact forces, ABA forces and accelerations into a
@@ -232,12 +218,29 @@ T CompliantContactManager<T>::GetDissipationTimeConstant(
   const geometry::ProximityProperties* prop =
       inspector.GetProximityProperties(id);
   DRAKE_DEMAND(prop != nullptr);
+
+  auto provide_context_string =
+      [this, &inspector](geometry::GeometryId geometry_id) -> std::string {
+    const BodyIndex body_index =
+        this->geometry_id_to_body_index().at(geometry_id);
+    const Body<T>& body = plant().get_body(body_index);
+    return fmt::format("For geometry {} on body {}.",
+                       inspector.GetName(geometry_id), body.name());
+  };
+
   // N.B. Here we rely on the resolution of #13289 and #5454 to get properties
   // with the proper scalar type T. This will not work on scalar converted
   // models until those issues are resolved.
-  return prop->template GetPropertyOrDefault<T>(
-      geometry::internal::kMaterialGroup, "dissipation_time_constant",
-      plant().time_step());
+  const T relaxation_time = prop->template GetPropertyOrDefault<double>(
+      geometry::internal::kMaterialGroup, "relaxation_time", 0.1);
+  if (relaxation_time < 0.0) {
+    const std::string message = fmt::format(
+        "Relaxation time must be non-negative and relaxation_time "
+        "= {} was provided. {}",
+        relaxation_time, provide_context_string(id));
+    throw std::runtime_error(message);
+  }
+  return relaxation_time;
 }
 
 template <typename T>
@@ -514,38 +517,8 @@ void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
     const systems::Context<T>& context,
     AccelerationsDueToExternalForcesCache<T>* forward_dynamics_cache)
     const {
-  // To overcame issue #12786, we use this additional cache entry
-  // to detect algebraic loops.
-  systems::CacheEntryValue& value =
-      plant()
-          .get_cache_entry(
-              cache_indexes_.non_contact_forces_evaluation_in_progress)
-          .get_mutable_cache_entry_value(context);
-  bool& evaluation_in_progress = value.GetMutableValueOrThrow<bool>();
-  if (evaluation_in_progress) {
-    const char* error_message =
-        "Algebraic loop detected. This situation is caused when connecting the "
-        "input of your MultibodyPlant to the output of a feedback system which "
-        "is an algebraic function of a feedthrough output of the plant. Ways "
-        "to remedy this: 1. Revisit the model for your feedback system. "
-        "Consider if its output can be written in terms of other inputs. 2. "
-        "Break the algebraic loop by adding state to the controller, typically "
-        "to 'remember' a previous input. 3. Break the algebraic loop by adding "
-        "a zero-order hold system between the output of the plant and your "
-        "feedback system. This effectively delays the input signal to the "
-        "controller.";
-    throw std::runtime_error(error_message);
-  }
-  // Mark the start of the computation. If within an algebraic
-  // loop, pulling from the plant's input ports during the
-  // computation will trigger the recursive evaluation of this
-  // method and the exception above will be thrown.
-  evaluation_in_progress = true;
-  // If the exception above is triggered, we will leave this method and the
-  // computation will no longer be "in progress". We use a scoped guard so that
-  // we have a chance to mark it as such when we leave this scope.
-  ScopeExit guard(
-      [&evaluation_in_progress]() { evaluation_in_progress = false; });
+  DRAKE_DEMAND(forward_dynamics_cache != nullptr);
+  ScopeExit guard = this->ThrowIfNonContactForceInProgress(context);
 
   // N.B. Joint limits are modeled as constraints. Therefore here we only add
   // all other external forces.
@@ -596,9 +569,6 @@ void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
   this->internal_tree().CalcArticulatedBodyAccelerations(
       context, forward_dynamics_cache->abic, forward_dynamics_cache->aba_forces,
       &forward_dynamics_cache->ac);
-
-  // Mark the end of the computation.
-  evaluation_in_progress = false;
 }
 
 template <typename T>
@@ -834,7 +804,7 @@ void CompliantContactManager<T>::AddLimitConstraints(
   // these forces implicitly and therefore these parameters can be tighten for
   // stiffer limits. Here we set the stiffness parameter to a very high value so
   // that SAP works in the "near-rigid" regime as described in the SAP paper,
-  // [Castro et al., 2021]. As shown in the SAP paper, a dissipation time scale
+  // [Castro et al., 2021]. As shown in the SAP paper, a dissipation timescale
   // of the order of the time step leads to a critically damped constraint.
   // TODO(amcastro-tri): allow users to specify joint limits stiffness and
   // damping.
@@ -909,6 +879,73 @@ void CompliantContactManager<T>::AddLimitConstraints(
 }
 
 template <typename T>
+void CompliantContactManager<T>::AddCouplerConstraints(
+    const systems::Context<T>& context, SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  // Previous time step positions.
+  const VectorX<T> q0 = plant().GetPositions(context);
+
+  // Couplers do not have impulse limits, they are bi-lateral constraints. Each
+  // coupler constraint introduces a single constraint equation.
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
+  const Vector1<T> gamma_lower(-kInfinity);
+  const Vector1<T> gamma_upper(kInfinity);
+
+  // Stiffness and dissipation are set so that the constraint is in the
+  // "near-rigid" regime, [Castro et al., 2022].
+  const Vector1<T> stiffness(kInfinity);
+  const Vector1<T> relaxation_time(plant().time_step());
+
+  for (const CouplerConstraintSpecs<T>& info :
+       this->coupler_constraints_specs()) {
+    const Joint<T>& joint0 = plant().get_joint(info.joint0_index);
+    const Joint<T>& joint1 = plant().get_joint(info.joint1_index);
+    const int dof0 = joint0.velocity_start();
+    const int dof1 = joint1.velocity_start();
+    const TreeIndex tree0 = tree_topology().velocity_to_tree_index(dof0);
+    const TreeIndex tree1 = tree_topology().velocity_to_tree_index(dof1);
+
+    // Sanity check.
+    DRAKE_DEMAND(tree0.is_valid() && tree1.is_valid());
+
+    // DOFs local to their tree.
+    const int tree_dof0 = dof0 - tree_topology().tree_velocities_start(tree0);
+    const int tree_dof1 = dof1 - tree_topology().tree_velocities_start(tree1);
+
+    // Constraint function defined as g = q₀ - ρ⋅q₁ - Δq, with ρ the gear ratio
+    // and Δq a fixed position offset.
+    const Vector1<T> g0(q0[dof0] - info.gear_ratio * q0[dof1] - info.offset);
+
+    // TODO(amcastro-tri): consider exposing this parameter.
+    const double beta = 0.1;
+
+    const typename SapHolonomicConstraint<T>::Parameters parameters{
+        gamma_lower, gamma_upper, stiffness, relaxation_time, beta};
+
+    if (tree0 == tree1) {
+      const int nv = tree_topology().num_tree_velocities(tree0);
+      MatrixX<T> J = MatrixX<T>::Zero(1, nv);
+      // J = dg/dv
+      J(0, tree_dof0) = 1.0;
+      J(0, tree_dof1) = -info.gear_ratio;
+
+      problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
+          tree0, g0, J, parameters));
+    } else {
+      const int nv0 = tree_topology().num_tree_velocities(tree0);
+      const int nv1 = tree_topology().num_tree_velocities(tree1);
+      MatrixX<T> J0 = MatrixX<T>::Zero(1, nv0);
+      MatrixX<T> J1 = MatrixX<T>::Zero(1, nv1);
+      J0(0, tree_dof0) = 1.0;
+      J1(0, tree_dof1) = -info.gear_ratio;
+      problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
+          tree0, tree1, g0, J0, J1, parameters));
+    }
+  }
+}
+
+template <typename T>
 void CompliantContactManager<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   SapContactProblem<T>& problem = *cache->sap_problem;
@@ -923,6 +960,7 @@ void CompliantContactManager<T>::CalcContactProblemCache(
   // Do not change this order here!
   cache->R_WC = AddContactConstraints(context, &problem);
   AddLimitConstraints(context, problem.v_star(), &problem);
+  AddCouplerConstraints(context, &problem);
 }
 
 template <typename T>
@@ -960,6 +998,28 @@ void CompliantContactManager<T>::DoCalcDiscreteValues(
   updates->set_value(this->multibody_state_index(), x_next);
 }
 
+// TODO(xuchenhan-tri): Consider a scalar converting constructor to cut down
+// repeated code in CloneToDouble() and CloneToAutoDiffXd().
+template <typename T>
+std::unique_ptr<DiscreteUpdateManager<double>>
+CompliantContactManager<T>::CloneToDouble() const {
+  auto clone = std::make_unique<CompliantContactManager<double>>();
+  // N.B. we should copy all members except for those overwritten in
+  // ExtractModelInfo and DeclareCacheEntries.
+  clone->sap_parameters_ = this->sap_parameters_;
+  return clone;
+}
+
+template <typename T>
+std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>>
+CompliantContactManager<T>::CloneToAutoDiffXd() const {
+  auto clone = std::make_unique<CompliantContactManager<AutoDiffXd>>();
+  // N.B. we should copy all members except for those overwritten in
+  // ExtractModelInfo and DeclareCacheEntries.
+  clone->sap_parameters_ = this->sap_parameters_;
+  return clone;
+}
+
 template <typename T>
 void CompliantContactManager<T>::ExtractModelInfo() {
   // Collect joint damping coefficients into a vector.
@@ -970,6 +1030,28 @@ void CompliantContactManager<T>::ExtractModelInfo() {
     const int nv = joint.num_velocities();
     joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
   }
+}
+
+template <typename T>
+void CompliantContactManager<T>::DoCalcAccelerationKinematicsCache(
+    const systems::Context<T>& context0,
+    multibody::internal::AccelerationKinematicsCache<T>* ac) const {
+  // Current state.
+  const VectorX<T>& x0 =
+      context0.get_discrete_state(this->multibody_state_index()).value();
+  const auto v0 = x0.bottomRows(plant().num_velocities());
+
+  // Next state.
+  const ContactSolverResults<T>& results =
+      this->EvalContactSolverResults(context0);
+  const VectorX<T>& v_next = results.v_next;
+
+  ac->get_mutable_vdot() = (v_next - v0) / plant().time_step();
+
+  this->internal_tree().CalcSpatialAccelerationsFromVdot(
+      context0, plant().EvalPositionKinematics(context0),
+      plant().EvalVelocityKinematics(context0), ac->get_vdot(),
+      &ac->get_mutable_A_WB_pool());
 }
 
 }  // namespace internal

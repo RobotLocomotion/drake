@@ -1,0 +1,50 @@
+diff --git src/data/ibex_CovIBUList.cpp src/data/ibex_CovIBUList.cpp
+index 28e7fbef..3a7ce3ab 100644
+--- src/data/ibex_CovIBUList.cpp
++++ src/data/ibex_CovIBUList.cpp
+@@ -12,6 +12,7 @@
+ 
+ #include <sstream>
+ #include <algorithm>
++#include <limits>
+ 
+ using namespace std;
+ 
+diff --git src/data/ibex_CovIUList.cpp src/data/ibex_CovIUList.cpp
+index a15bd1a4..46e2f292 100644
+--- src/data/ibex_CovIUList.cpp
++++ src/data/ibex_CovIUList.cpp
+@@ -13,6 +13,7 @@
+ #include <sstream>
+ #include <cassert>
+ #include <algorithm>
++#include <limits>
+ 
+ using namespace std;
+ 
+diff --git src/operators/ibex_atanhc.h src/operators/ibex_atanhc.h
+index 741c1b1f..44f0eab3 100644
+--- src/operators/ibex_atanhc.h
++++ src/operators/ibex_atanhc.h
+@@ -13,6 +13,8 @@
+ 
+ #include "ibex_ExprOperators.h"
+ 
++#include <limits>
++
+ namespace ibex {
+ 
+ extern const char ATANHC[];
+diff --git src/operators/ibex_atanhccc.h src/operators/ibex_atanhccc.h
+index 0d04f5f5..c7814713 100644
+--- src/operators/ibex_atanhccc.h
++++ src/operators/ibex_atanhccc.h
+@@ -12,6 +12,8 @@
+ 
+ #include "ibex_ExprOperators.h"
+ 
++#include <limits>
++
+ namespace ibex {
+ 
+ extern const char ATANHCCC[];

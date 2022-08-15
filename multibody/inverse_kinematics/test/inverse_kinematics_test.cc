@@ -5,6 +5,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/wrap_to.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 #include "drake/solvers/create_constraint.h"
 #include "drake/solvers/solve.h"
@@ -32,12 +33,17 @@ class TwoFreeBodiesTest : public ::testing::Test {
 
   ~TwoFreeBodiesTest() override {}
 
-  void RetrieveSolution(const solvers::MathematicalProgramResult& result) {
+  std::unique_ptr<systems::Context<double>> RetrieveSolution(
+      const solvers::MathematicalProgramResult& result) {
     const auto q_sol = result.GetSolution(ik_.q());
     body1_quaternion_sol_ = Vector4ToQuaternion(q_sol.head<4>());
     body1_position_sol_ = q_sol.segment<3>(4);
     body2_quaternion_sol_ = Vector4ToQuaternion(q_sol.segment<4>(7));
     body2_position_sol_ = q_sol.tail<3>();
+
+    auto context = two_bodies_plant_->CreateDefaultContext();
+    two_bodies_plant_->SetPositions(context.get(), q_sol);
+    return context;
   }
 
  protected:
@@ -109,6 +115,31 @@ GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
   }
 }
 
+TEST_F(TwoFreeBodiesTest, ConstructorAddsUnitQuaterionConstraints) {
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
+                                          Eigen::Vector4d(1, 2, 3, 4));
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
+                                          Eigen::Vector4d(.1, .2, .3, .4));
+  const auto result = Solve(ik_.prog());
+  EXPECT_TRUE(result.is_success());
+  Eigen::VectorXd q = result.GetSolution(ik_.q());
+  EXPECT_NEAR(q.head<4>().squaredNorm(), 1.0, 1e-6);
+  EXPECT_NEAR(q.segment<4>(7).squaredNorm(), 1.0, 1e-6);
+
+  // Test the constructor which takes a Context.
+  auto context = two_bodies_plant_->CreateDefaultContext();
+  InverseKinematics ik2(*two_bodies_plant_, context.get());
+  ik2.get_mutable_prog()->SetInitialGuess(ik2.q().head<4>(),
+                                          Eigen::Vector4d(1, 2, 3, 4));
+  ik2.get_mutable_prog()->SetInitialGuess(
+      ik2.q().segment<4>(7), Eigen::Vector4d(.1, .2, .3, .4));
+  const auto result2 = Solve(ik2.prog());
+  EXPECT_TRUE(result2.is_success());
+  q = result2.GetSolution(ik2.q());
+  EXPECT_NEAR(q.head<4>().squaredNorm(), 1.0, 1e-6);
+  EXPECT_NEAR(q.segment<4>(7).squaredNorm(), 1.0, 1e-6);
+}
+
 TEST_F(TwoFreeBodiesTest, PositionConstraint) {
   const Eigen::Vector3d p_BQ(0.2, 0.3, 0.5);
   const Eigen::Vector3d p_AQ_lower(-0.1, -0.2, -0.3);
@@ -133,6 +164,36 @@ TEST_F(TwoFreeBodiesTest, PositionConstraint) {
   EXPECT_TRUE(
       (p_AQ.array() >= p_AQ_lower.array() - Eigen::Array3d::Constant(tol))
           .all());
+}
+
+TEST_F(TwoFreeBodiesTest, PositionCost) {
+  const Eigen::Vector3d p_AP(-0.1, -0.2, -0.3);
+  const Eigen::Vector3d p_BQ(0.2, 0.3, 0.5);
+  auto binding = ik_.AddPositionCost(body1_frame_, p_AP, body2_frame_, p_BQ,
+                                     Eigen::Matrix3d::Identity());
+
+  // We don't need to test the cost implementation, only that the arguments are
+  // passed correctly.  Just set an arbitrary (but valid) q and evaluate the
+  // cost.
+  math::RigidTransform<double> X_WA(
+      math::RollPitchYaw<double>(0.32, -0.24, -0.51),
+      Eigen::Vector3d(0.1, 0.3, 0.72));
+  math::RigidTransform<double> X_WB(math::RollPitchYaw<double>(8.1, 0.42, -0.2),
+                                    Eigen::Vector3d(-0.84, 0.2, 1.4));
+  auto context = two_bodies_plant_->CreateDefaultContext();
+  two_bodies_plant_->SetFreeBodyPose(
+      context.get(), two_bodies_plant_->GetBodyByName("body1"), X_WA);
+  two_bodies_plant_->SetFreeBodyPose(
+      context.get(), two_bodies_plant_->GetBodyByName("body2"), X_WB);
+  ik_.get_mutable_prog()->SetInitialGuess(
+      ik_.q(), two_bodies_plant_->GetPositions(*context));
+
+  const Eigen::Vector3d p_AQ = X_WA.inverse() * X_WB * p_BQ;
+  const Eigen::Vector3d err = p_AQ - p_AP;
+  const double expected_cost = err.dot(err);
+
+  EXPECT_NEAR(ik_.prog().EvalBindingAtInitialGuess(binding)[0], expected_cost,
+              1e-12);
 }
 
 TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
@@ -160,6 +221,40 @@ TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
       R_AbarA.transpose() * R_AbarBbar * R_BbarB;
   const double angle = R_AB.ToAngleAxis().angle();
   EXPECT_LE(angle, angle_bound + 1E-6);
+}
+
+TEST_F(TwoFreeBodiesTest, OrientationCost) {
+  const math::RotationMatrix<double> R_AbarA(
+      math::RollPitchYaw<double>(1, 2, 3));
+  const math::RotationMatrix<double> R_BbarB(
+      math::RollPitchYaw<double>(4, 5, 6));
+  const double c{2.4};
+  auto binding =
+      ik_.AddOrientationCost(body1_frame_, R_AbarA, body2_frame_, R_BbarB, c);
+
+  // We don't need to test the cost implementation, only that the arguments are
+  // passed correctly.  Just set an arbitrary (but valid) q and evaluate the
+  // cost.
+  math::RigidTransform<double> X_WAbar(
+      math::RollPitchYaw<double>(0.32, -0.24, -0.51),
+      Eigen::Vector3d(0.1, 0.3, 0.72));
+  math::RigidTransform<double> X_WBbar(
+      math::RollPitchYaw<double>(8.1, 0.42, -0.2),
+      Eigen::Vector3d(-0.84, 0.2, 1.4));
+  auto context = two_bodies_plant_->CreateDefaultContext();
+  two_bodies_plant_->SetFreeBodyPose(
+      context.get(), two_bodies_plant_->GetBodyByName("body1"), X_WAbar);
+  two_bodies_plant_->SetFreeBodyPose(
+      context.get(), two_bodies_plant_->GetBodyByName("body2"), X_WBbar);
+  ik_.get_mutable_prog()->SetInitialGuess(
+      ik_.q(), two_bodies_plant_->GetPositions(*context));
+
+  const math::RotationMatrix<double> R_AB =
+      (X_WAbar.rotation() * R_AbarA).inverse() * X_WBbar.rotation() * R_BbarB;
+  const double theta =
+      math::wrap_to(R_AB.ToAngleAxis().angle(), -M_PI / 2.0, M_PI / 2.0);
+  EXPECT_NEAR(ik_.prog().EvalBindingAtInitialGuess(binding)[0],
+              c * (1.0 - cos(theta)), 1e-12);
 }
 
 TEST_F(TwoFreeBodiesTest, GazeTargetConstraint) {
@@ -240,6 +335,36 @@ TEST_F(TwoFreeBodiesTest, PointToPointDistanceConstraint) {
   const double distance_sol = (p_WP1 - p_WP2).norm();
   EXPECT_GE(distance_sol, distance_lower - 1e-6);
   EXPECT_LE(distance_sol, distance_upper + 1e-6);
+}
+
+TEST_F(TwoFreeBodiesTest, PolyhedronConstraint) {
+  const Frame<double>& frameF = body1_frame_;
+  const Frame<double>& frameG = body2_frame_;
+  Eigen::Matrix<double, 3, 2> p_GP;
+  p_GP.col(0) << 0.1, 0.2, 0.3;
+  p_GP.col(1) << 0.4, 0.5, 0.6;
+  Eigen::Matrix<double, 1, 6> A;
+  A << 1, 2, 3, 4, 5, 6;
+  Vector1d b(10);
+
+  ik_.AddPolyhedronConstraint(frameF, frameG, p_GP, A, b);
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  const auto result = Solve(ik_.prog());
+  EXPECT_TRUE(result.is_success());
+
+  auto context = RetrieveSolution(result);
+
+  Eigen::Matrix3Xd p_FP(3, p_GP.cols());
+  two_bodies_plant_->CalcPointsPositions(*context, frameG, p_GP, frameF, &p_FP);
+  Eigen::Map<Eigen::VectorXd> p_FP_stack(p_FP.data(), 3 * p_FP.cols());
+  const Eigen::VectorXd y_expected = A * p_FP_stack;
+  EXPECT_EQ(y_expected.rows(), b.rows());
+  for (int i = 0; i < b.rows(); ++i) {
+    EXPECT_LE(y_expected(i), b(i) + 1E-5);
+  }
 }
 
 TEST_F(TwoFreeSpheresTest, MinimumDistanceConstraintTest) {

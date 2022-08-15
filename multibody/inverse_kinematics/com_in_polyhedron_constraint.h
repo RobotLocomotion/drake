@@ -30,9 +30,7 @@ class ComInPolyhedronConstraint : public solvers::Constraint {
    * must be alive during the lifetime of this constraint.
    * @param model_instances The CoM of these model instances are computed. If
    * model_instances = std::nullopt, then we compute the CoM of all model
-   * instances (except the world). Currently if model_instances is not
-   * std::nullopt, we will throw an error. After github issue #14916 is
-   * resolved, we will accept model_instances not equal to std::nullopt.
+   * instances (except the world).
    * @param expressed_frame The frame in which the CoM is expressed.
    * @param A The CoM position p_EC satisfies lb <= A * p_EC <= ub
    * @param lb The CoM position p_EC satisfies lb <= A * p_EC <= ub
@@ -40,6 +38,7 @@ class ComInPolyhedronConstraint : public solvers::Constraint {
    * @param plant_context The Context that has been allocated for this
    * `plant`. We will update the context when evaluating the constraint.
    * `plant_context` must be alive during the lifetime of this constraint.
+   * @pydrake_mkdoc_identifier{double}
    */
   ComInPolyhedronConstraint(
       const MultibodyPlant<double>* plant,
@@ -56,8 +55,7 @@ class ComInPolyhedronConstraint : public solvers::Constraint {
    * the constraint is computed from autodiff.
    * @pre if model_instances is not std::nullopt, then all indices in
    * `model_instances` refer to valid model instances in `plant`.
-   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-   * Documentation string is manually recreated in Python.}
+   * @pydrake_mkdoc_identifier{autodiff}
    */
   ComInPolyhedronConstraint(
       const MultibodyPlant<AutoDiffXd>* plant,

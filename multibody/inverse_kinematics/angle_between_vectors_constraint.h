@@ -44,6 +44,7 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
    * @throws std::exception if `angle_lower` is negative.
    * @throws std::exception if `angle_upper` ∉ [`angle_lower`, π].
    * @throws std::exception if `plant_context` is nullptr.
+   * @pydrake_mkdoc_identifier{double}
    */
   AngleBetweenVectorsConstraint(const MultibodyPlant<double>* plant,
                                 const Frame<double>& frameA,
@@ -56,8 +57,7 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
   /**
    * Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
    * MultibodyPlant<double>.
-   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-   * Documentation string is manually recreated in Python.}
+   * @pydrake_mkdoc_identifier{autodiff}
    */
   AngleBetweenVectorsConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                                 const Frame<AutoDiffXd>& frameA,

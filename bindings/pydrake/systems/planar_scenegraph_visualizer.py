@@ -4,7 +4,7 @@ import warnings
 import errno
 import glob
 import matplotlib
-import matplotlib.pyplot as plt
+import matplotlib.cm as plt_cm
 import numpy as np
 import os
 
@@ -317,7 +317,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         # color when using this random generator, with each visual element of
         # the body colored the same.
         if use_random_colors:
-            color = iter(plt.cm.rainbow(
+            color = iter(plt_cm.rainbow(
                 np.linspace(0, 1, len(self._patch_Blist_colors))))
             for name in self._patch_Blist_colors.keys():
                 this_color = next(color)

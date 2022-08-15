@@ -15,7 +15,6 @@
 #include "drake/common/sorted_pair.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/unused.h"
 
 namespace drake {
 namespace common {
@@ -46,8 +45,7 @@ GTEST_TEST(TypeSafeIndex, Constructor) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       AIndex(-1),
       "Explicitly constructing an invalid index.+");
-  DRAKE_EXPECT_NO_THROW(
-      unused(AIndex(invalid)));  // Copy construct invalid index.
+  DRAKE_EXPECT_NO_THROW(AIndex{invalid});  // Copy construct invalid index.
 }
 
 // Verifies the constructor behavior -- in debug and release modes.
@@ -114,7 +112,7 @@ GTEST_TEST(TypeSafeIndex, ConversionToInt) {
   EXPECT_EQ(four, index);
 
   AIndex invalid;
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(static_cast<int>(invalid)),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(static_cast<int>(invalid),
                                       "Converting to an int.+");
 }
 
@@ -146,29 +144,29 @@ GTEST_TEST(TypeSafeIndex, InvalidIndexComparisonOperators) {
   AIndex invalid;
 
   // Comparison operators.
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid == valid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid == valid,
                                       "Testing == with invalid LHS.+");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid == invalid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid == invalid,
                                       "Testing == with invalid RHS.+");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid != valid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid != valid,
                                       "Testing != with invalid LHS.+");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid != invalid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid != invalid,
                                       "Testing != with invalid RHS.+");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid < valid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid < valid,
                                       "Testing < with invalid LHS.+");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid < invalid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid < invalid,
                                       "Testing < with invalid RHS.+");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid <= valid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid <= valid,
                                       "Testing <= with invalid LHS.+");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid <= invalid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid <= invalid,
                                       "Testing <= with invalid RHS.+");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid > valid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid > valid,
                                       "Testing > with invalid LHS.+");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid > invalid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid > invalid,
                                       "Testing > with invalid RHS.+");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid >= valid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid >= valid,
                                       "Testing >= with invalid LHS.+");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid >= invalid),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(valid >= invalid,
                                       "Testing >= with invalid RHS.+");
 }
 
@@ -478,7 +476,7 @@ GTEST_TEST(IntegralComparisons, CompareSizeT) {
   const size_t small_overflow_value = 2300000000;
   EXPECT_LT(static_cast<int>(small_overflow_value), 0);
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      AIndex junk(small_overflow_value),
+      AIndex(small_overflow_value),
       "Explicitly constructing an invalid index. Type .* has an invalid "
           "value; it must lie in the range .*");
 
@@ -487,7 +485,7 @@ GTEST_TEST(IntegralComparisons, CompareSizeT) {
   const size_t big_overflow_value = (1L << 48) | 0x1;
   EXPECT_GT(static_cast<int>(big_overflow_value), 0);
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      AIndex junk(big_overflow_value),
+      AIndex(big_overflow_value),
       "Explicitly constructing an invalid index. Type .* has an invalid "
           "value; it must lie in the range .*");
 

@@ -55,7 +55,7 @@ class HPolyhedron final : public ConvexSet {
   /** Returns true iff this HPolyhedron is entirely contained in the HPolyhedron
   other. This is done by checking whether every inequality in @p other is
   redundant when added to this. */
-  bool Contains(const HPolyhedron& other) const;
+  bool ContainedIn(const HPolyhedron& other) const;
 
   /** Constructs the intersection of two HPolyhedron by adding the rows of
   inequalities from @p other. If @p check_for_redundancy is true
@@ -125,6 +125,26 @@ class HPolyhedron final : public ConvexSet {
   runtime error if `this` or `other` are ill-conditioned. */
   HPolyhedron PontryaginDifference(const HPolyhedron& other) const;
 
+  /** Draw an (approximately) uniform sample from the set using the hit and run
+  Markov-chain Monte-Carlo strategy described at
+  https://mathoverflow.net/a/162327 and the cited paper.
+
+  To generate many samples, pass the output of one iteration in as the @p
+  previous_sample to the next; in this case the distribution of samples will
+  converge to the true uniform distribution in total variation at a geometric
+  rate.  If @p previous_sample is not set, then the ChebyshevCenter() will be
+  used to seed the algorithm.
+
+  @throws std::exception if previous_sample is not in the set.
+  */
+  Eigen::VectorXd UniformSample(
+      RandomGenerator* generator,
+      const Eigen::Ref<Eigen::VectorXd>& previous_sample) const;
+
+  /** Variant of UniformSample that uses the ChebyshevCenter() as the
+  previous_sample as a feasible point to start the Markov chain sampling. */
+  Eigen::VectorXd UniformSample(RandomGenerator* generator) const;
+
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
   corners. */
   static HPolyhedron MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,
@@ -133,6 +153,11 @@ class HPolyhedron final : public ConvexSet {
   /** Constructs the L∞-norm unit box in @p dim dimensions, {x | |x|∞ <= 1 }.
   This is an axis-aligned box, centered at the origin, with edge length 2. */
   static HPolyhedron MakeUnitBox(int dim);
+
+  /** Constructs the L1-norm unit ball in @p dim dimensions, {x | |x|₁ <= 1 }.
+  This set is also known as the crosspolytope and is described by the 2ᵈⁱᵐ
+  signed unit vectors. */
+  static HPolyhedron MakeL1Ball(int dim);
 
  private:
   HPolyhedron DoIntersectionNoChecks(const HPolyhedron& other) const;

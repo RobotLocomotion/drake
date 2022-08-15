@@ -21,6 +21,7 @@ CXX_FLAGS = [
 # below).
 CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=absolute-value",
+    "-Werror=c99-designator",
     "-Werror=inconsistent-missing-override",
     "-Werror=final-dtor-non-final-class",
     "-Werror=literal-conversion",
@@ -28,6 +29,15 @@ CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=range-loop-analysis",
     "-Werror=return-stack-address",
     "-Werror=sign-compare",
+    # This was turned on via "-Wc99-designator", but is not an an error.
+    # Our conventions permit using this language extension even in C++17 mode.
+    "-Wno-c++20-designator",
+    # As a kind of portability hint, by default Clang will warn about the use
+    # of C++20 features when compiling in -std=c++17 mode (i.e., the warning
+    # flag "-Wc++-20-extensions" is enabled by default). For Drake, we are
+    # content to use any C++20 extensions that pass our CI, so the warning is
+    # always a false positive. We'll turn it off via the "-Wno..." syntax.
+    "-Wno-c++20-extensions",
 ]
 
 # The CLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the
@@ -364,7 +374,8 @@ def _raw_drake_cc_library(
         testonly = None,
         visibility = None,
         declare_installed_headers = None,
-        install_hdrs_exclude = None):
+        install_hdrs_exclude = None,
+        deprecation = None):
     """Creates a rule to declare a C++ library.  Uses Drake's include_prefix
     and checks the deps blacklist.  If declare_installed_headers is true, also
     adds a drake_installed_headers() target.  (This should be set if and only
@@ -401,6 +412,7 @@ def _raw_drake_cc_library(
     # that implementation instead of making our own sandwich.
     compiled_name = name
     compiled_visibility = visibility
+    compiled_deprecation = deprecation
     if implementation_deps:
         if not linkstatic:
             fail("implementation_deps are only supported for static libraries")
@@ -422,6 +434,7 @@ def _raw_drake_cc_library(
         tags = tags,
         testonly = testonly,
         visibility = compiled_visibility,
+        deprecation = compiled_deprecation,
     )
 
     # If we're using implementation_deps, then make me an "implementation
@@ -458,6 +471,7 @@ def _raw_drake_cc_library(
             tags = tags,
             testonly = testonly,
             visibility = visibility,
+            deprecation = deprecation,
         )
 
 def _maybe_add_pruned_private_hdrs_dep(
@@ -504,6 +518,7 @@ def drake_cc_library(
         clang_copts = [],
         gcc_copts = [],
         linkstatic = 1,
+        internal = False,
         declare_installed_headers = 1,
         install_hdrs_exclude = [],
         **kwargs):
@@ -535,6 +550,21 @@ def drake_cc_library(
     else be named like "@something//etc..." (i.e., come from the workspace, not
     part of Drake).  In other words, all of Drake's C++ libraries must be
     declared using the drake_cc_library macro.
+
+    Setting `internal = True` is convenient sugar to flag code that is never
+    used by Drake's installed headers. This is especially helpful when the
+    header_lint tool is complaining about third-party dependency pollution.
+    Flagging a library as `internal = True` means that the library is internal
+    from the point of view of the the build system, which is an even stronger
+    promise that merely placing code inside `namespace internal {}`.
+    Code that is build-system internal should always be namespace-internal,
+    but not all namespace-internal code is build-system internal. For example,
+    drake/common/diagnostic_policy.h is namespace-internal, but cannot be
+    build-internal because other Drake headers (multibody/parsing/parser.h)
+    refer to the diagnostic policy header, for use by their private fields.
+    Libraries marked with `internal = True` should generally be listed only as
+    deps of _other_ libraries marked as internal, or as "implementation deps"
+    (see paragraphs above) of non-internal libraries.
     """
     new_copts = _platform_copts(copts, gcc_copts, clang_copts)
     if interface_deps != None:
@@ -542,6 +572,24 @@ def drake_cc_library(
     else:
         interface_deps = deps
         implementation_deps = []
+    new_tags = kwargs.pop("tags", None) or []
+    if internal:
+        if install_hdrs_exclude != []:
+            fail("When using internal = True, hdrs are automatically excluded")
+        if kwargs.get("testonly", False):
+            fail("Using internal = True is already implied under testonly = 1")
+        if len(kwargs.get("visibility") or []) == 0:
+            fail("When using internal = True, you must set visiblity. " +
+                 "In most cases, visibility = [\"//visibility:private\"] " +
+                 "or visibility = [\"//:__subpackages__\"] are suitable.")
+        for item in kwargs["visibility"]:
+            if item == "//visibility:public":
+                fail("When using internal = True, visiblity can't be public")
+        install_hdrs_exclude = hdrs
+        new_tags = new_tags + [
+            "exclude_from_libdrake",
+            "exclude_from_package",
+        ]
 
     # We install private_hdrs by default, because Bazel's visibility denotes
     # whether headers can be *directly* included when using cc_library; it does
@@ -555,6 +603,7 @@ def drake_cc_library(
         deps = interface_deps + implementation_deps,
         copts = new_copts,
         declare_installed_headers = declare_installed_headers,
+        tags = new_tags,
         **kwargs
     )
     _raw_drake_cc_library(
@@ -567,6 +616,7 @@ def drake_cc_library(
         linkstatic = linkstatic,
         declare_installed_headers = declare_installed_headers,
         install_hdrs_exclude = install_hdrs_exclude,
+        tags = new_tags,
         **kwargs
     )
 

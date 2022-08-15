@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="homecart_collision_walls">
+    <link name="homecart_collision_walls">
+      <pose>0 0 0 0 0 0</pose>
+      <!-- Computed assuming uniform density box -->
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx> 0.00004166666 </ixx>
+          <ixy> 0 </ixy>
+          <ixz> 0 </ixz>
+          <iyy> 0.00004166666 </iyy>
+          <iyz> 0 </iyz>
+          <izz> 0.00004166666 </izz>
+        </inertia>
+      </inertial>
+
+      <visual name="right_visual">
+        <pose>1.0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 2.0 2.0</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 0 0 0</diffuse>
+        </material>
+      </visual>
+
+      <collision name="right_collision">
+        <pose>1.0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 2.0 2.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <visual name="left_visual">
+        <pose>-1.0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 2.0 2.0</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 0 0 0</diffuse>
+        </material>
+      </visual>
+
+      <collision name="left_collision">
+        <pose>-1.0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 2.0 2.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <visual name="front_visual">
+        <pose>0 1.0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>2.0 0.5 2.0</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 0 0 0</diffuse>
+        </material>
+      </visual>
+
+      <collision name="front_collision">
+        <pose>0 1.0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>2.0 0.5 2.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <visual name="back_visual">
+        <pose>0 -1.0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>2.0 0.5 2.0</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 0 0 0</diffuse>
+        </material>
+      </visual>
+
+      <collision name="back_collision">
+        <pose>0 -1.0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>2.0 0.5 2.0</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

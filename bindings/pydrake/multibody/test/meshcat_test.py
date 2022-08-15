@@ -6,6 +6,7 @@ from pydrake.multibody.meshcat import (
     _PointContactVisualizer,
 )
 
+import copy
 import os
 import unittest
 
@@ -45,7 +46,8 @@ class TestMeshcat(unittest.TestCase):
         params.force_threshold = 0.2
         params.newtons_per_meter = 5
         params.radius = 0.1
-        self.assertNotIn("object at 0x", repr(params))
+        self.assertIn("publish_period", repr(params))
+        copy.copy(params)
         params2 = ContactVisualizerParams(publish_period=0.4)
         self.assertEqual(params2.publish_period, 0.4)
         vis = ContactVisualizer_[T](meshcat=meshcat, params=params)
@@ -125,6 +127,9 @@ class TestMeshcat(unittest.TestCase):
         builder.AddSystem(dut)
         diagram = builder.Build()
         dut.Run(diagram=diagram, timeout=1.0)
+
+        # The SetPositions function doesn't crash (Acrobot has two positions).
+        dut.SetPositions(q=[1, 2])
 
     def test_internal_point_contact_visualizer(self):
         """A very basic existance test, since this class is internal use only.

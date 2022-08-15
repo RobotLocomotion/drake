@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib as mpl
 
 from pydrake.symbolic import Evaluate, Jacobian, Polynomial
-from pydrake.solvers.mathematicalprogram import MathematicalProgram, Solve
+from pydrake.solvers import MathematicalProgram, Solve
 
 
 def plot_sublevelset_quadratic(ax, A, b=[0, 0], c=0, vertices=51, **kwargs):

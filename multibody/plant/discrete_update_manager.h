@@ -6,10 +6,12 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/scope_exit.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
+#include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
@@ -199,6 +201,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcNonContactForces(const drake::systems::Context<T>& context,
                             MultibodyForces<T>* forces) const;
 
+  [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
+      const systems::Context<T>& context) const;
+
   void CalcForceElementsContribution(const drake::systems::Context<T>& context,
                                      MultibodyForces<T>* forces) const;
 
@@ -212,6 +217,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   const std::unordered_map<geometry::GeometryId, BodyIndex>&
   geometry_id_to_body_index() const;
+
+  const std::vector<internal::CouplerConstraintSpecs<T>>&
+  coupler_constraints_specs() const;
   /* @} */
 
   /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to

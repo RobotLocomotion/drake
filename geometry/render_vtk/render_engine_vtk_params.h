@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/name_value.h"
 #include "drake/geometry/render/render_label.h"
 
 namespace drake {
@@ -11,6 +12,15 @@ namespace geometry {
 
 /** Construction parameters for the RenderEngineVtk.  */
 struct RenderEngineVtkParams  {
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(default_label));
+    a->Visit(DRAKE_NVP(default_diffuse));
+    a->Visit(DRAKE_NVP(default_clear_color));
+  }
+
   /** The (optional) label to apply when none is otherwise specified.  */
   std::optional<render::RenderLabel> default_label{};
 

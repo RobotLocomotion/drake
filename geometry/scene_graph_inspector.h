@@ -130,12 +130,13 @@ class SceneGraphInspector {
    indicated role.  */
   int NumGeometriesWithRole(Role role) const;
 
-  /** Reports the total number of _dynamic_ geometries in the scene graph.  */
+  /** Reports the total number of _dynamic_ geometries in the scene graph. This
+   include all deformable geometries.  */
   int NumDynamicGeometries() const;
 
-  /** Reports the total number of _anchored_ geometries. This should provide
-   the same answer as calling NumGeometriesForFrame() with the world frame id.
-   */
+  /** Reports the total number of _anchored_ non-deformable geometries. This
+   should provide the same answer as calling NumGeometriesForFrame() with the
+   world frame id.  */
   int NumAnchoredGeometries() const;
 
   /** Returns all pairs of geometries that are candidates for collision (in no
@@ -299,7 +300,7 @@ class SceneGraphInspector {
    then `X_PG = X_FG`.
    @sa GetPoseInFrame()
    @throws std::exception if `geometry_id` does not map to a registered
-   geometry.  */
+   geometry or if it maps to a deformable geometry.  */
   const math::RigidTransform<double>& GetPoseInParent(
       GeometryId geometry_id) const;
 
@@ -309,7 +310,7 @@ class SceneGraphInspector {
    then `X_PG = X_FG`.
    @sa GetPoseInParent()
    @throws std::exception if `geometry_id` does not map to a registered
-   geometry.  */
+   geometry or if it maps to a deformable geometry.  */
   const math::RigidTransform<double>& GetPoseInFrame(
       GeometryId geometry_id) const;
 
@@ -381,6 +382,23 @@ class SceneGraphInspector {
            geometry.  */
   const PerceptionProperties* GetPerceptionProperties(
       GeometryId geometry_id) const;
+
+  /** Returns the reference mesh of the geometry with the given `geometry_id`.
+   @param geometry_id   The identifier for the queried geometry.
+   @return A pointer to the reference mesh of the geometry if the geometry is
+           deformable, or `nullptr` if the geometry is rigid.
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
+  const VolumeMesh<double>* GetReferenceMesh(GeometryId geometry_id) const;
+
+  /** Returns true if the geometry with the given `geometry_id` is deformable.
+   @param geometry_id   The identifier for the queried geometry.
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
+  bool IsDeformableGeometry(GeometryId geometry_id) const;
+
+  /** Returns all geometry ids that correspond to deformable geometries. */
+  std::vector<GeometryId> GetAllDeformableGeometryIds() const;
 
   /** Reports true if the two geometries with given ids `geometry_id1` and
    `geometry_id2`, define a collision pair that has been filtered out.

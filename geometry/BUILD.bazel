@@ -35,6 +35,7 @@ drake_cc_package_library(
         ":geometry_version",
         ":internal_frame",
         ":internal_geometry",
+        ":kinematics_vector",
         ":make_mesh_for_deformable",
         ":meshcat",
         ":meshcat_animation",
@@ -61,18 +62,31 @@ drake_cc_library(
     hdrs = [
         "proximity_engine.h",
     ],
-    deps = [
-        ":geometry_ids",
-        ":geometry_roles",
-        ":internal_geometry",
-        ":read_obj",
-        ":shape_specification",
-        ":utilities",
-        "//common",
+    interface_deps = [
         "//common:default_scalars",
-        "//geometry/proximity",
+        "//common:sorted_pair",
+        "//geometry/proximity:collision_filter",
+        "//geometry/proximity:deformable_contact_internal",
+        "//geometry/proximity:hydroelastic_internal",
         "//geometry/query_results",
         "//math",
+        ":geometry_ids",
+        ":geometry_roles",
+        ":shape_specification",
+        ":internal_geometry",
+    ],
+    deps = [
+        ":read_obj",
+        ":utilities",
+        "//geometry/proximity",
+        "//geometry/proximity:collisions_exist_callback",
+        "//geometry/proximity:deformable_contact_geometries",
+        "//geometry/proximity:distance_to_point_callback",
+        "//geometry/proximity:distance_to_shape_callback",
+        "//geometry/proximity:find_collision_candidates_callback",
+        "//geometry/proximity:hydroelastic_callback",
+        "//geometry/proximity:obj_to_surface_mesh",
+        "//geometry/proximity:penetration_as_point_pair_callback",
         "@fcl",
         "@fmt",
     ],
@@ -123,23 +137,37 @@ drake_cc_library(
     deps = [
         ":geometry_roles",
         ":rgba",
+        "//common:name_value",
     ],
 )
 
+# Remove on 2022-10-01.
 drake_cc_library(
     name = "frame_kinematics",
-    srcs = [
-        "frame_kinematics_vector.cc",
-    ],
     hdrs = [
         "frame_kinematics_vector.h",
     ],
     deps = [
+        ":kinematics_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "kinematics_vector",
+    srcs = [
+        "kinematics_vector.cc",
+    ],
+    hdrs = [
+        "kinematics_vector.h",
+    ],
+    interface_deps = [
         ":geometry_ids",
-        ":utilities",
-        "//common:autodiff",
         "//common:essential",
-        "//common:symbolic",
+        "//math:geometric_transform",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:nice_type_name",
     ],
 )
 
@@ -171,6 +199,7 @@ drake_cc_library(
         ":utilities",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -219,7 +248,6 @@ drake_cc_library(
     hdrs = ["geometry_state.h"],
     deps = [
         ":collision_filter_manager",
-        ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
         ":geometry_instance",
@@ -227,9 +255,12 @@ drake_cc_library(
         ":geometry_version",
         ":internal_frame",
         ":internal_geometry",
+        ":kinematics_vector",
         ":proximity_engine",
         ":utilities",
         "//geometry/render:render_engine",
+        # Add an unused dependency to help smooth out the deprecation.
+        ":frame_kinematics",
     ],
 )
 
@@ -305,6 +336,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//geometry/proximity:volume_mesh",
         "//math:geometric_transform",
     ],
 )
@@ -364,6 +396,22 @@ drake_cc_library(
 )
 
 genrule(
+    name = "stats_js_genrule",
+    srcs = ["@statsjs//:build/stats.min.js"],
+    outs = ["stats.min.js"],
+    cmd = "cp $< $@",
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "msgpack_lite_js_genrule",
+    srcs = ["@msgpack_lite_js//:dist/msgpack.min.js"],
+    outs = ["msgpack.min.js"],
+    cmd = "cp $< $@",
+    visibility = ["//visibility:private"],
+)
+
+genrule(
     name = "meshcat_ico_genrule",
     srcs = ["//doc:favicon.ico"],
     outs = ["meshcat.ico"],
@@ -385,6 +433,8 @@ filegroup(
         "meshcat.html",
         ":meshcat.ico",
         ":meshcat.js",
+        ":msgpack.min.js",
+        ":stats.min.js",
     ],
     visibility = ["//visibility:private"],
 )
@@ -427,6 +477,7 @@ drake_cc_library(
         ":rgba",
         ":shape_specification",
         "//common:essential",
+        "//common:name_value",
         "//geometry/proximity:triangle_surface_mesh",
         "//math:geometric_transform",
         "//perception:point_cloud",
@@ -452,6 +503,7 @@ drake_cc_binary(
         "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/ycb:models",
+        "//multibody/meshcat:models",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -518,6 +570,7 @@ drake_cc_library(
     deps = [
         ":geometry_roles",
         ":rgba",
+        "//common:name_value",
     ],
 )
 
@@ -533,6 +586,7 @@ drake_cc_library(
         ":scene_graph",
         "//common:essential",
         "//math:geometric_transform",
+        "//systems/analysis:instantaneous_realtime_rate_calculator",
         "//systems/framework:context",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
@@ -608,14 +662,17 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:hydroelastic_callback",
+        "//geometry/proximity:make_sphere_mesh",
         "//math",
+        "@fcl",
     ],
 )
 
 drake_cc_googletest(
-    name = "frame_kinematics_vector_test",
+    name = "kinematics_vector_test",
     deps = [
-        ":frame_kinematics",
+        ":kinematics_vector",
         "//common/test_utilities",
         "//common/test_utilities:limit_malloc",
         "//math:geometric_transform",
@@ -669,6 +726,7 @@ drake_cc_googletest(
     deps = [
         ":geometry_state",
         "//common/test_utilities",
+        "//geometry/proximity:make_sphere_mesh",
         "//geometry/test_utilities:dummy_render_engine",
     ],
 )
@@ -694,9 +752,9 @@ drake_cc_googletest(
     name = "internal_geometry_test",
     deps = [
         ":internal_geometry",
-        ":make_mesh_for_deformable",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:make_sphere_mesh",
     ],
 )
 

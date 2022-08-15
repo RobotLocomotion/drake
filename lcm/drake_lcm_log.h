@@ -1,14 +1,9 @@
 #pragma once
 
-#include <atomic>
-#include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
-#include <vector>
-
-#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -45,6 +40,8 @@ class DrakeLcmLog : public DrakeLcmInterface {
    */
   DrakeLcmLog(const std::string& file_name, bool is_write,
               bool overwrite_publish_time_with_system_clock = false);
+
+  ~DrakeLcmLog() override;
 
   /**
    * Writes an entry occurred at @p timestamp with content @p data to the log
@@ -149,13 +146,10 @@ class DrakeLcmLog : public DrakeLcmInterface {
   // (i.e., where multiple threads are coming from).  That factor needs to be
   // re-discovered and then documented somewhere.
 
-  // This mutes guards access to all of the below member fields.
+  // This mutex guards access to the Impl object.
   mutable std::mutex mutex_;
-  std::multimap<std::string, DrakeLcmInterface::HandlerFunction> subscriptions_;
-  std::vector<DrakeLcmInterface::MultichannelHandlerFunction>
-    multichannel_subscriptions_;
-  std::unique_ptr<::lcm::LogFile> log_;
-  const ::lcm::LogEvent* next_event_{nullptr};
+  class Impl;
+  const std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace lcm

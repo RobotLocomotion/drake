@@ -16,19 +16,6 @@ _ALLOWED_EXTERNALS = [
     "spdlog",
 
     # The entries that follow are defects; we should work to remove them.
-    "ccd",
-    "double_conversion",
-    "fcl",
-    "glew",
-    "glib",
-    "glx",
-    "libjpeg",
-    "liblz4",
-    "liblzma",
-    "libpng",
-    "libtiff",
-    "opengl",
-    "vtk",
     "zlib",
 ]
 
@@ -42,15 +29,6 @@ _ALLOWED_DEFINES = [
     "SPDLOG_COMPILED_LIB",
     "SPDLOG_FMT_EXTERNAL",
     "SPDLOG_SHARED_LIB",
-
-    # The entries that follow are defects; we should work to remove them.
-    "CCD_STATIC_DEFINE",
-    "FCL_STATIC_DEFINE",
-    "HAVE_CSTDDEF",
-    "SDFORMAT_DISABLE_CONSOLE_LOGFILE",
-    "SDFORMAT_STATIC_DEFINE",
-    "USE_LAPACK=1",
-    "_DARWIN_C_SOURCE",
 ]
 
 def _cc_check_allowed_headers_impl(ctx):
@@ -83,8 +61,14 @@ def _cc_check_allowed_headers_impl(ctx):
         error_messages = [
             "Dependency pollution has leaked into Drake's public headers:",
         ] + [
-            "{} is not allowed in interface_deps".format(item)
+            " {} is not allowed in interface_deps".format(item)
             for item in depset(failures).to_list()
+        ] + [
+            "To resolve this problem, alter your drake_cc_library to either:",
+            " split up 'interface_deps = [...]' vs 'deps = [...]', or",
+            " use 'internal = True'.",
+            "Check the drake_cc_library documentation for details, or",
+            " ask for help on drakedevelopers#build slack.",
         ]
         content = "echo 'ERROR: The header_lint test has failed!'\n"
         content += "cat <<EOF\n" + "\n".join(error_messages) + "\nEOF\n"

@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -48,7 +47,7 @@ class PrismaticJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add a body so we can add joint to it.
-    body1_ = &model->AddBody<RigidBody>(M_B);
+    body1_ = &model->AddBody<RigidBody>("Body", M_B);
 
     // Add a prismatic joint between the world and body1:
     joint1_ = &model->AddJoint<PrismaticJoint>(
@@ -190,6 +189,11 @@ TEST_F(PrismaticJointTest, Clone) {
   EXPECT_EQ(joint1_clone.damping(), joint1_->damping());
   EXPECT_EQ(joint1_clone.get_default_translation(),
             joint1_->get_default_translation());
+}
+
+TEST_F(PrismaticJointTest, CanRotateOrTranslate) {
+  EXPECT_FALSE(joint1_->can_rotate());
+  EXPECT_TRUE(joint1_->can_translate());
 }
 
 TEST_F(PrismaticJointTest, NameSuffix) {

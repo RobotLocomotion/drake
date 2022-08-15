@@ -81,6 +81,9 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
+  bool can_rotate() const final    { return true; }
+  bool can_translate() const final { return false; }
+
   // Retrieves from `context` the three space x-y-z angles θ₁, θ₂, θ₃ which
   // describe the state for `this` mobilizer as documented in this class's
   // documentation.

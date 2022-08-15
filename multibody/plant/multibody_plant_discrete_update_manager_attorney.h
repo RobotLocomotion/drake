@@ -82,6 +82,12 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.CalcNonContactForces(context, true /* is discrete */, forces);
   }
 
+  [[nodiscard]] static ScopeExit ThrowIfNonContactForceInProgress(
+      const MultibodyPlant<T>& plant,
+      const drake::systems::Context<T>& context) {
+    return plant.ThrowIfNonContactForceInProgress(context);
+  }
+
   static void CalcForceElementsContribution(
       const MultibodyPlant<T>& plant, const drake::systems::Context<T>& context,
       MultibodyForces<T>* forces) {
@@ -108,6 +114,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
   static const std::unordered_map<geometry::GeometryId, BodyIndex>&
   geometry_id_to_body_index(const MultibodyPlant<T>& plant) {
     return plant.geometry_id_to_body_index_;
+  }
+
+  static const std::vector<internal::CouplerConstraintSpecs<T>>&
+  coupler_constraints_specs(const MultibodyPlant<T>& plant) {
+    return plant.coupler_constraints_specs_;
   }
 };
 }  // namespace internal

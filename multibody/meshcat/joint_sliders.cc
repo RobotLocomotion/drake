@@ -252,7 +252,6 @@ void JointSliders<T>::Run(
   while (meshcat_->GetButtonClicks(kButtonName) < 1) {
     if (timeout.has_value()) {
       const auto elapsed = Duration(Clock::now() - start_time).count();
-      log()->error("elapsed = {}", elapsed);
       if (elapsed >= timeout.value()) {
         break;
       }
@@ -269,6 +268,27 @@ void JointSliders<T>::Run(
     // Publish the new positions.
     plant_->SetPositions(&plant_context, new_positions);
     diagram.Publish(diagram_context);
+  }
+}
+
+template <typename T>
+void JointSliders<T>::SetPositions(const Eigen::VectorXd& q) {
+  const int nq = plant_->num_positions();
+  if (q.size() != nq) {
+    throw std::logic_error(fmt::format(
+        "Expected q of size {}, but got size {} instead",
+        nq, q.size()));
+  }
+  /* For all positions provided in q, update their value in initial_value_
+    including items without an associated slider (e.g., a floating base). */
+  initial_value_ = q;
+  if (is_registered_) {
+    // For items with an associated slider, update the meshcat UI.
+    // TODO(jwnimmer-tri) If SetPositions is in flight concurrently with a
+    // call to Delete, we might race and ask for a deleted slider value.
+    for (const auto& [position_index, slider_name] : position_names_) {
+      meshcat_->SetSliderValue(slider_name, q[position_index]);
+    }
   }
 }
 

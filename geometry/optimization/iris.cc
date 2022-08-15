@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
@@ -32,6 +33,9 @@ using multibody::Body;
 using multibody::Frame;
 using multibody::JacobianWrtVariable;
 using multibody::MultibodyPlant;
+using solvers::MathematicalProgram;
+using solvers::Binding;
+using solvers::Constraint;
 using symbolic::Expression;
 using systems::Context;
 
@@ -207,13 +211,13 @@ ConvexSets MakeIrisObstacles(const QueryObject<double>& query_object,
 namespace {
 
 // Takes q, p_AA, and p_BB and enforces that p_WA == p_WB.
-class SamePointConstraint : public solvers::Constraint {
+class SamePointConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraint)
 
   SamePointConstraint(const MultibodyPlant<double>* plant,
                       const Context<double>& context)
-      : solvers::Constraint(3, plant->num_positions() + 6, Vector3d::Zero(),
+      : Constraint(3, plant->num_positions() + 6, Vector3d::Zero(),
                             Vector3d::Zero()),
         plant_(plant),
         context_(plant->CreateDefaultContext()) {
@@ -332,7 +336,7 @@ bool FindClosestCollision(
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const solvers::SolverInterface& solver,
     const Eigen::Ref<const Eigen::VectorXd>& q_guess, VectorXd* closest) {
-  solvers::MathematicalProgram prog;
+  MathematicalProgram prog;
   auto q = prog.NewContinuousVariables(A.cols(), "q");
 
   prog.AddLinearConstraint(
@@ -364,7 +368,7 @@ bool FindClosestCollision(
   if (solver.solver_id() == solvers::IbexSolver::id()) {
     prog.SetSolverOption(solvers::IbexSolver::id(), "rigor", true);
     // Use kNonconvex instead of the default kConvexSmooth.
-    std::vector<solvers::Binding<solvers::LorentzConeConstraint>> to_replace =
+    std::vector<Binding<solvers::LorentzConeConstraint>> to_replace =
         prog.lorentz_cone_constraints();
     for (const auto& binding : to_replace) {
       const auto c = binding.evaluator();
@@ -388,14 +392,138 @@ bool FindClosestCollision(
   return false;
 }
 
+// Takes a constraint bound to another mathematical program and defines a new
+// constraint that is the negation of one index and one (lower/upper) bound.
+class CounterExampleConstraint : public Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CounterExampleConstraint)
+
+  explicit CounterExampleConstraint(const MathematicalProgram* prog)
+      : Constraint(1, prog->num_vars(),
+                   Vector1d(-std::numeric_limits<double>::infinity()),
+                   Vector1d::Constant(-kSolverConstraintTolerance - 1e-14)),
+        prog_{prog} {
+    DRAKE_DEMAND(prog != nullptr);
+  }
+
+  ~CounterExampleConstraint() = default;
+
+  // Sets the actual constraint to be falsified, overwriting any previously set
+  // constraints. The Binding<Constraint> must remain valid for the lifetime of
+  // this object (or until a new Binding<Constraint> is set).
+  void set(const Binding<Constraint>*
+               binding_with_constraint_to_be_falsified,
+           int index, bool falsify_lower_bound) {
+    DRAKE_DEMAND(binding_with_constraint_to_be_falsified != nullptr);
+    const int N =
+        binding_with_constraint_to_be_falsified->evaluator()->num_constraints();
+    DRAKE_DEMAND(index >= 0 && index < N);
+    binding_  = binding_with_constraint_to_be_falsified;
+    index_ = index;
+    falsify_lower_bound_ = falsify_lower_bound;
+  }
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override {
+    DRAKE_DEMAND(binding_ != nullptr);
+    const double val = prog_->EvalBinding(*binding_, x)[index_];
+    if (falsify_lower_bound_) {
+      // val - lb <= -kSolverConstraintTolerance < 0.
+      (*y)[0] = val - binding_->evaluator()->lower_bound()[index_];
+    } else {
+      // ub - val <= -kSolverConstraintTolerance < 0.
+      (*y)[0] = binding_->evaluator()->upper_bound()[index_] - val;
+    }
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override {
+    DRAKE_DEMAND(binding_ != nullptr);
+    const AutoDiffXd val = prog_->EvalBinding(*binding_, x)[index_];
+    if (falsify_lower_bound_) {
+      // val - lb <= -kSolverConstraintTolerance < 0.
+      (*y)[0] = val - binding_->evaluator()->lower_bound()[index_];
+    } else {
+      // ub - val <= -kSolverConstraintTolerance < 0.
+      (*y)[0] = binding_->evaluator()->upper_bound()[index_] - val;
+    }
+  }
+
+  void DoEval(const Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>*) const override {
+    // MathematicalProgram::EvalBinding doesn't support symbolic, and we
+    // shouldn't get here.
+    throw std::logic_error(
+        "CounterExampleConstraint doesn't support DoEval for symbolic.");
+  }
+
+  const MathematicalProgram* prog_{};
+  const Binding<Constraint>* binding_{};
+  int index_{0};
+  bool falsify_lower_bound_{true};
+
+  // To find a counter-example for a constraints,
+  //  g(x) ≤ ub,
+  // we need to ask the solver to find
+  //  g(x) + kSolverConstraintTolerance > ub,
+  // which we implement as
+  //  g(x) + kSolverConstraintTolerance ≥ ub + eps.
+  // The variable is static so that it is initialized by the time it is accessed
+  // in the initializer list of the constructor.
+  // TODO(russt): We need a more robust way to get this from the solver. This
+  // value works for SNOPT and is reasonable for most solvers.
+  static constexpr double kSolverConstraintTolerance{1e-6};
+};
+
+// Solves the optimization
+// min_q (q-d)*CᵀC(q-d)
+// s.t. counter-example-constraint
+//      Aq ≤ b.
+// where C, d are the matrix and center from the hyperellipsoid E.
+// Returns true iff a counter-example is found.
+// Sets `closest` to an optimizing solution q*, if a solution is found.
+bool FindCounterExample(
+    std::shared_ptr<CounterExampleConstraint> counter_example_constraint,
+    const Hyperellipsoid& E, const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const solvers::SolverInterface& solver,
+    const Eigen::Ref<const Eigen::VectorXd>& q_guess, VectorXd* closest) {
+  MathematicalProgram prog;
+  auto q = prog.NewContinuousVariables(A.cols(), "q");
+
+  prog.AddLinearConstraint(
+      A, VectorXd::Constant(b.size(), -std::numeric_limits<double>::infinity()),
+      b, q);
+  // Scale the objective so the eigenvalues are close to 1, using
+  // scale*lambda_min = 1/scale*lambda_max.
+  const MatrixXd Asq = E.A().transpose() * E.A();
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Asq);
+  const double scale = 1.0 / std::sqrt(es.eigenvalues().maxCoeff() *
+                                       es.eigenvalues().minCoeff());
+  prog.AddQuadraticErrorCost(scale * Asq, E.center(), q);
+
+  prog.AddConstraint(counter_example_constraint, q);
+
+  prog.SetInitialGuess(q, q_guess);
+
+  solvers::MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  if (result.is_success()) {
+    *closest = result.GetSolution(q);
+    return true;
+  }
+  return false;
+}
+
 // Add the tangent to the (scaled) ellipsoid at @p point as a
 // constraint.
 void AddTangentToPolytope(
     const Hyperellipsoid& E, const Eigen::Ref<const Eigen::VectorXd>& point,
-    const IrisOptions& options,
+    double configuration_space_margin,
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
     Eigen::VectorXd* b, int* num_constraints) {
-  if (*num_constraints >= A->rows()) {
+  while (*num_constraints >= A->rows()) {
     // Increase pre-allocated polytope size.
     A->conservativeResize(A->rows() * 2, A->cols());
     b->conservativeResize(b->rows() * 2);
@@ -404,7 +532,15 @@ void AddTangentToPolytope(
   A->row(*num_constraints) =
       (E.A().transpose() * E.A() * (point - E.center())).normalized();
   (*b)[*num_constraints] =
-      A->row(*num_constraints) * point - options.configuration_space_margin;
+      A->row(*num_constraints) * point - configuration_space_margin;
+  if (A->row(*num_constraints)*E.center() > (*b)[*num_constraints]) {
+    throw std::logic_error(
+        "The current center of the IRIS region is within "
+        "options.configuration_space_margin of being infeasible.  Check your "
+        "sample point and/or any additional constraints you've passed in via "
+        "the options. The configuration space surrounding the sample point "
+        "must have an interior.");
+  }
   *num_constraints += 1;
 }
 
@@ -434,6 +570,16 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   // IRIS algorithm.
   DRAKE_DEMAND(plant.GetPositionLowerLimits().array().isFinite().all());
   DRAKE_DEMAND(plant.GetPositionUpperLimits().array().isFinite().all());
+
+  // We don't yet support Ibex when the user has defined additional constraints.
+  // It wouldn't be hard to support this, but it would require that all
+  // constraints passed in support symbolic, and most kinematic constraints do
+  // not (yet).
+  DRAKE_DEMAND(options.prog_with_additional_constraints == nullptr ||
+               options.enable_ibex == false);
+  if (options.prog_with_additional_constraints) {
+    DRAKE_DEMAND(options.prog_with_additional_constraints->num_vars() == nq);
+  }
 
   // Make the polytope and ellipsoid.
   HPolyhedron P = HPolyhedron::MakeBox(plant.GetPositionLowerLimits(),
@@ -488,10 +634,62 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   VectorXd b(P.A().rows() + 2 * N);
   A.topRows(P.A().rows()) = P.A();
   b.head(P.A().rows()) = P.b();
+  int num_initial_constraints = P.A().rows();
+
+  std::shared_ptr<CounterExampleConstraint> counter_example_constraint{};
+  std::vector<Binding<Constraint>> additional_constraint_bindings{};
+  if (options.prog_with_additional_constraints) {
+    counter_example_constraint = std::make_shared<CounterExampleConstraint>(
+                options.prog_with_additional_constraints);
+    additional_constraint_bindings =
+        options.prog_with_additional_constraints->GetAllConstraints();
+    // Handle bounding box and linear constraints as a special case (extracting
+    // them from the additional_constraint_bindings).
+    auto AddConstraint = [&](const Eigen::MatrixXd& new_A,
+                             const Eigen::VectorXd& new_b,
+                             const solvers::VectorXDecisionVariable& vars) {
+      while (num_initial_constraints + new_A.rows() >= A.rows()) {
+        // Increase pre-allocated polytope size.
+        A.conservativeResize(A.rows() * 2, A.cols());
+        b.conservativeResize(b.rows() * 2);
+      }
+      for (int i = 0; i < new_b.rows(); ++i) {
+        if (!std::isinf(new_b[i])) {
+          A.row(num_initial_constraints).setZero();
+          for (int j = 0; j < vars.rows(); ++j) {
+            const int index = options.prog_with_additional_constraints
+                                  ->FindDecisionVariableIndex(vars[j]);
+            A(num_initial_constraints, index) = new_A(i, j);
+          }
+          b[num_initial_constraints++] = new_b[i];
+        }
+      }
+    };
+    auto HandleLinearConstraints =
+        [&](const auto& bindings) {
+          for (const auto& binding : bindings) {
+            AddConstraint(binding.evaluator()->GetDenseA(),
+                          binding.evaluator()->upper_bound(),
+                          binding.variables());
+            AddConstraint(-binding.evaluator()->GetDenseA(),
+                          -binding.evaluator()->lower_bound(),
+                          binding.variables());
+            auto pos = std::find(additional_constraint_bindings.begin(),
+                                 additional_constraint_bindings.end(), binding);
+            DRAKE_ASSERT(pos != additional_constraint_bindings.end());
+            additional_constraint_bindings.erase(pos);
+          }
+        };
+    HandleLinearConstraints(
+        options.prog_with_additional_constraints->bounding_box_constraints());
+    HandleLinearConstraints(
+        options.prog_with_additional_constraints->linear_constraints());
+  }
 
   double best_volume = E.Volume();
   int iteration = 0;
   VectorXd closest(nq);
+  RandomGenerator generator(options.random_seed);
 
   auto solver = solvers::MakeFirstAvailableSolver(
       {solvers::SnoptSolver::id(), solvers::IpoptSolver::id()});
@@ -503,13 +701,15 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   }
 
   while (true) {
-    int num_constraints = 2 * nq;  // Start with just the joint limits.
+    int num_constraints = num_initial_constraints;
     bool sample_point_requirement = true;
     DRAKE_ASSERT(best_volume > 0);
     // Find separating hyperplanes
 
-    // First use a fast nonlinear optimizer to add as many constraint as it
-    // can find.
+    // Always use the fast nonlinear optimizer to add as many constraints as it
+    // can find.  We always pass `sample` in as the initial guess for all
+    // iterations (not E.center()), because with the nonlinear optimizer, it's
+    // possible the E.center() could become infeasible.
     for (const auto& pair : sorted_pairs) {
       while (sample_point_requirement &&
              FindClosestCollision(
@@ -517,7 +717,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                  *frames.at(pair.geomB), *sets.at(pair.geomA),
                  *sets.at(pair.geomB), E, A.topRows(num_constraints),
                  b.head(num_constraints), *solver, sample, &closest)) {
-        AddTangentToPolytope(E, closest, options, &A, &b, &num_constraints);
+        AddTangentToPolytope(E, closest, options.configuration_space_margin, &A,
+                             &b, &num_constraints);
         if (options.require_sample_point_is_contained) {
           sample_point_requirement =
               A.row(num_constraints - 1) * sample <= b(num_constraints - 1);
@@ -525,8 +726,53 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
       }
     }
 
+    if (options.prog_with_additional_constraints) {
+      VectorXd guess = P.UniformSample(&generator);
+      for (const auto& binding : additional_constraint_bindings) {
+        for (int index = 0; index < binding.evaluator()->num_constraints();
+             ++index) {
+          int consecutive_failures = 0;
+          for (bool falsify_lower_bound : {true, false}) {
+            if (falsify_lower_bound &&
+                std::isinf(binding.evaluator()->lower_bound()[index])) {
+              continue;
+            }
+            if (!falsify_lower_bound &&
+                std::isinf(binding.evaluator()->upper_bound()[index])) {
+              continue;
+            }
+            counter_example_constraint->set(&binding, index,
+                                            falsify_lower_bound);
+            P = HPolyhedron(A.topRows(num_constraints),
+                            b.head(num_constraints));
+            while (consecutive_failures <
+                   options.num_additional_constraint_infeasible_samples) {
+              if (FindCounterExample(
+                      counter_example_constraint, E, A.topRows(num_constraints),
+                      b.head(num_constraints), *solver, guess, &closest)) {
+                AddTangentToPolytope(E, closest,
+                                     options.configuration_space_margin, &A, &b,
+                                     &num_constraints);
+                if (options.require_sample_point_is_contained) {
+                  sample_point_requirement =
+                      A.row(num_constraints - 1) * sample <=
+                      b(num_constraints - 1);
+                  if (!sample_point_requirement) break;
+                }
+                consecutive_failures = 0;
+              } else {
+                ++consecutive_failures;
+              }
+              guess = P.UniformSample(&generator, guess);
+            }
+          }
+        }
+      }
+    }
+
     if (options.enable_ibex) {
-      // Now loop back through and use Ibex for rigorous certification.
+      // Now loop back through and use Ibex for rigorous certification if
+      // requested.
       // TODO(russt): Consider (re-)implementing a "feasibility only" version of
       // the IRIS check + nonlinear optimization to improve.
       for (const auto& pair : sorted_pairs) {
@@ -536,7 +782,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                    *frames.at(pair.geomB), *sets.at(pair.geomA),
                    *sets.at(pair.geomB), E, A.topRows(num_constraints),
                    b.head(num_constraints), *ibex, sample, &closest)) {
-          AddTangentToPolytope(E, closest, options, &A, &b, &num_constraints);
+          AddTangentToPolytope(E, closest, options.configuration_space_margin,
+                               &A, &b, &num_constraints);
           if (options.require_sample_point_is_contained) {
             sample_point_requirement =
                 A.row(num_constraints - 1) * sample <= b(num_constraints - 1);

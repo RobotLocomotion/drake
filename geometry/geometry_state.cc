@@ -24,6 +24,7 @@ namespace drake {
 namespace geometry {
 
 using internal::convert_to_double;
+using internal::FrameNameSet;
 using internal::HydroelasticType;
 using internal::InternalFrame;
 using internal::InternalGeometry;
@@ -127,10 +128,12 @@ GeometryState<T>::GeometryState()
                                  InternalFrame::world_frame_group(),
                                  0, world);
   frame_index_to_id_map_.push_back(world);
-  X_WF_.push_back(RigidTransform<T>::Identity());
-  X_PF_.push_back(RigidTransform<T>::Identity());
+  kinematics_data_.X_WFs.push_back(RigidTransform<T>::Identity());
+  kinematics_data_.X_PFs.push_back(RigidTransform<T>::Identity());
 
   source_frame_id_map_[self_source_] = {world};
+  source_deformable_geometry_id_map_[self_source_] = {};
+  source_frame_name_map_[self_source_] = {"world"};
   source_root_frame_map_[self_source_] = {world};
 }
 
@@ -151,11 +154,28 @@ int GeometryState<T>::NumGeometriesWithRole(Role role) const {
 
 template <typename T>
 int GeometryState<T>::NumDynamicGeometries() const {
+  return NumDeformableGeometries() + NumDynamicNonDeformableGeometries();
+}
+
+template <typename T>
+int GeometryState<T>::NumDynamicNonDeformableGeometries() const {
   int count = 0;
   for (const auto& pair : frames_) {
     const InternalFrame& frame = pair.second;
-    if (frame.id() == InternalFrame::world_frame_id()) continue;
-    count += frame.num_child_geometries();
+    if (frame.id() != InternalFrame::world_frame_id()) {
+      count += frame.num_child_geometries();
+    }
+  }
+  return count;
+}
+
+template <typename T>
+int GeometryState<T>::NumDeformableGeometries() const {
+  int count = 0;
+  for (const auto& [source_id, deformable_geometry_ids] :
+       source_deformable_geometry_id_map_) {
+    unused(source_id);
+    count += deformable_geometry_ids.size();
   }
   return count;
 }
@@ -163,7 +183,15 @@ int GeometryState<T>::NumDynamicGeometries() const {
 template <typename T>
 int GeometryState<T>::NumAnchoredGeometries() const {
   const InternalFrame& frame = frames_.at(InternalFrame::world_frame_id());
-  return frame.num_child_geometries();
+  int count = 0;
+  const std::unordered_set<GeometryId>& child_geometries =
+      frame.child_geometries();
+  for (auto geometry_id : child_geometries) {
+    if (!geometries_.at(geometry_id).is_deformable()) {
+      ++count;
+    }
+  }
+  return count;
 }
 
 template <typename T>
@@ -395,6 +423,7 @@ template <typename T>
 const math::RigidTransform<double>& GeometryState<T>::GetPoseInFrame(
     GeometryId geometry_id) const {
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  DRAKE_THROW_UNLESS(!geometry.is_deformable());
   return geometry.X_FG();
 }
 
@@ -402,6 +431,7 @@ template <typename T>
 const math::RigidTransform<double>& GeometryState<T>::GetPoseInParent(
     GeometryId geometry_id) const {
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  DRAKE_THROW_UNLESS(!geometry.is_deformable());
   return geometry.X_PG();
 }
 
@@ -459,6 +489,33 @@ const PerceptionProperties* GeometryState<T>::GetPerceptionProperties(
 }
 
 template <typename T>
+const VolumeMesh<double>* GeometryState<T>::GetReferenceMesh(
+    GeometryId id) const {
+  const InternalGeometry* geometry = GetGeometry(id);
+  if (geometry == nullptr) {
+    throw std::logic_error(
+        fmt::format("Referenced geometry {} has not been registered", id));
+  }
+  return geometry->reference_mesh();
+}
+
+template <typename T>
+bool GeometryState<T>::IsDeformableGeometry(GeometryId id) const {
+  const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
+  return geometry.is_deformable();
+}
+
+template <typename T>
+std::vector<GeometryId> GeometryState<T>::GetAllDeformableGeometryIds() const {
+  std::vector<GeometryId> deformable_geometries;
+  for (const auto& it : source_deformable_geometry_id_map_) {
+    deformable_geometries.insert(
+        deformable_geometries.end(), it.second.begin(), it.second.end());
+  }
+  return deformable_geometries;
+}
+
+template <typename T>
 bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
   std::string base_message =
       "Can't report collision filter status between geometries " +
@@ -498,7 +555,7 @@ const math::RigidTransform<T>& GeometryState<T>::get_pose_in_world(
     return "No world pose available for invalid frame id: " +
            to_string(frame_id);
   });
-  return X_WF_[frames_.at(frame_id).index()];
+  return kinematics_data_.X_WFs[frames_.at(frame_id).index()];
 }
 
 template <typename T>
@@ -508,7 +565,13 @@ const math::RigidTransform<T>& GeometryState<T>::get_pose_in_world(
     return "No world pose available for invalid geometry id: " +
            to_string(geometry_id);
   });
-  return X_WGs_.at(geometry_id);
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  if (geometry.is_deformable()) {
+    throw std::logic_error(
+        "Deformable geometries are characterized by vertex positions. Use "
+        "get_configurations_in_world() instead.");
+  }
+  return kinematics_data_.X_WGs.at(geometry_id);
 }
 
 template <typename T>
@@ -517,7 +580,23 @@ const math::RigidTransform<T>& GeometryState<T>::get_pose_in_parent(
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No pose available for invalid frame id: " + to_string(frame_id);
   });
-  return X_PF_[frames_.at(frame_id).index()];
+  return kinematics_data_.X_PFs[frames_.at(frame_id).index()];
+}
+
+template <typename T>
+const VectorX<T>& GeometryState<T>::get_configurations_in_world(
+    GeometryId geometry_id) const {
+  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
+    return "No world configurations available for invalid geometry id: " +
+           to_string(geometry_id);
+  });
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  if (!geometry.is_deformable()) {
+    throw std::logic_error(
+        "Non-deformable geometries are characterized by poses. Use "
+        "get_pose_in_world() instead.");
+  }
+  return kinematics_data_.q_WGs.at(geometry_id);
 }
 
 template <typename T>
@@ -535,6 +614,8 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
   }
 
   source_frame_id_map_[source_id];
+  source_deformable_geometry_id_map_[source_id];
+  source_frame_name_map_[source_id];
   source_root_frame_map_[source_id];
   source_anchored_geometry_map_[source_id];
   source_names_[source_id] = final_name;
@@ -569,11 +650,19 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
     // The parent is the world frame; register it as a root frame.
     source_root_frame_map_[source_id].insert(frame_id);
   }
+  FrameNameSet& f_name_set = source_frame_name_map_[source_id];
+  const auto& [iterator, was_inserted] = f_name_set.insert(frame.name());
+  if (!was_inserted) {
+    throw std::logic_error(
+        fmt::format("Registering frame for source '{}'"
+                    " with a duplicate name '{}'",
+                    source_names_[source_id], frame.name()));
+  }
 
-  DRAKE_ASSERT(X_PF_.size() == frame_index_to_id_map_.size());
-  int index(static_cast<int>(X_PF_.size()));
-  X_PF_.emplace_back(RigidTransform<T>::Identity());
-  X_WF_.emplace_back(RigidTransform<T>::Identity());
+  DRAKE_ASSERT(kinematics_data_.X_PFs.size() == frame_index_to_id_map_.size());
+  int index(static_cast<int>(kinematics_data_.X_PFs.size()));
+  kinematics_data_.X_PFs.emplace_back(RigidTransform<T>::Identity());
+  kinematics_data_.X_WFs.emplace_back(RigidTransform<T>::Identity());
   frame_index_to_id_map_.push_back(frame_id);
   f_set.insert(frame_id);
   frames_.emplace(frame_id, InternalFrame(source_id, frame_id, frame.name(),
@@ -591,63 +680,61 @@ GeometryId GeometryState<T>::RegisterGeometry(
         "Registering null geometry to frame " + to_string(frame_id) +
             ", on source " + to_string(source_id) + ".");
   }
-
-  GeometryId geometry_id = geometry->id();
-  if (geometries_.count(geometry_id) > 0) {
-    throw std::logic_error(
-        "Registering geometry with an id that has already been registered: " +
-            to_string(geometry_id));
-  }
-
-  SourceId frame_source_id = source_id;
-  if (frame_id == InternalFrame::world_frame_id()) {
-    // Explicitly validate the source id because it won't happen in acquiring
-    // the world frame.
-    FindOrThrow(source_id, source_frame_id_map_, [source_id]() {
-      return get_missing_id_message(source_id);
-    });
-    frame_source_id = self_source_;
-  }
-  FrameIdSet& set = GetMutableValueOrThrow(frame_source_id,
-                                           &source_frame_id_map_);
-
-  FindOrThrow(frame_id, set, [frame_id, frame_source_id]() {
-    return "Referenced frame " + to_string(frame_id) + " for source " +
-        to_string(frame_source_id) +
-        ", but the frame doesn't belong to the source.";
-  });
-
-  // Configure topology.
-  // NOTE: Names are not validated here -- there are no roles. The names are
-  // validated when roles are assigned.
-
-  InternalFrame& frame = frames_[frame_id];
-  frame.add_child(geometry_id);
+  const GeometryId geometry_id = geometry->id();
+  ValidateRegistrationAndSetTopology(source_id, frame_id, geometry_id);
 
   // pose() is always RigidTransform<double>. To account for
   // GeometryState<AutoDiff>, we need to cast it to the common type T.
-  X_WGs_[geometry_id] = X_WF_[frame.index()] * geometry->pose().cast<T>();
-
+  const InternalFrame& frame = frames_[frame_id];
+  kinematics_data_.X_WGs[geometry_id] =
+      kinematics_data_.X_WFs[frame.index()] * geometry->pose().cast<T>();
   geometries_.emplace(
       geometry_id,
       InternalGeometry(source_id, geometry->release_shape(), frame_id,
                        geometry_id, geometry->name(), geometry->pose()));
 
-  // Any roles defined on the geometry instance propagate through automatically.
-  if (geometry->illustration_properties()) {
-    AssignRole(source_id, geometry_id,
-               std::move(*geometry->mutable_illustration_properties()));
+  AssignAllRoles(source_id, geometry_id, std::move(geometry));
+
+  return geometry_id;
+}
+
+template <typename T>
+GeometryId GeometryState<T>::RegisterDeformableGeometry(
+    SourceId source_id, FrameId frame_id,
+    std::unique_ptr<GeometryInstance> geometry, double resolution_hint) {
+  if (geometry == nullptr) {
+    throw std::logic_error("Registering null geometry to frame " +
+                           to_string(frame_id) + ", on source " +
+                           to_string(source_id) + ".");
   }
 
-  if (geometry->proximity_properties()) {
-    AssignRole(source_id, geometry_id,
-               std::move(*geometry->mutable_proximity_properties()));
+  const GeometryId geometry_id = geometry->id();
+  if (frame_id != InternalFrame::world_frame_id()) {
+    throw std::logic_error("Registering deformable geometry with id " +
+                           to_string(geometry_id) + " to a non-world frame");
   }
 
-  if (geometry->perception_properties()) {
-    AssignRole(source_id, geometry_id,
-               std::move(*geometry->mutable_perception_properties()));
+  ValidateRegistrationAndSetTopology(source_id, frame_id, geometry_id);
+  source_deformable_geometry_id_map_[source_id].insert(geometry_id);
+
+  InternalGeometry internal_geometry(source_id, geometry->release_shape(),
+                                     frame_id, geometry_id, geometry->name(),
+                                     resolution_hint);
+  // The reference mesh defined in the geometry's frame.
+  const VolumeMesh<double>* reference_mesh = internal_geometry.reference_mesh();
+  DRAKE_DEMAND(reference_mesh != nullptr);
+  const InternalFrame& frame = frames_[frame_id];
+  const RigidTransform<T> X_WG =
+      kinematics_data_.X_WFs[frame.index()] * geometry->pose().cast<T>();
+  VectorX<T> q_WG(reference_mesh->num_vertices() * 3);
+  for (int v = 0; v < reference_mesh->num_vertices(); ++v) {
+    q_WG.template segment<3>(3 * v) =
+        X_WG * Vector3<T>(reference_mesh->vertex(v));
   }
+  kinematics_data_.q_WGs[geometry_id] = std::move(q_WG);
+  geometries_.emplace(geometry_id, std::move(internal_geometry));
+
+  AssignAllRoles(source_id, geometry_id, std::move(geometry));
 
   return geometry_id;
 }
@@ -656,7 +743,7 @@ template <typename T>
 GeometryId GeometryState<T>::RegisterGeometryWithParent(
     SourceId source_id, GeometryId parent_id,
     std::unique_ptr<GeometryInstance> geometry) {
-  // There are three error conditions in the doxygen:.
+  // There are three error conditions in the doxygen:
   //    1. geometry == nullptr,
   //    2. source_id is not a registered source, and
   //    3. parent_id doesn't belong to source_id.
@@ -738,6 +825,23 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   geometry_version_.modify_proximity();
   switch (assign) {
     case RoleAssign::kNew: {
+      geometry.SetRole(std::move(properties));
+      if (geometry.is_deformable()) {
+        DRAKE_DEMAND(geometry.reference_mesh() != nullptr);
+        geometry_engine_->AddDeformableGeometry(*geometry.reference_mesh(),
+                                                geometry_id);
+      } else if (geometry.is_dynamic()) {
+        // Pass the geometry to the engine.
+        const RigidTransformd& X_WG =
+            convert_to_double(kinematics_data_.X_WGs.at(geometry_id));
+        geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG,
+                                             geometry_id,
+                                             *geometry.proximity_properties());
+      } else {
+        geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
+                                              geometry_id,
+                                              *geometry.proximity_properties());
+      }
       // The set of geometries G such that I need to introduce filtered pairs
       // (geometry_id, gᵢ) ∀ gᵢ ∈ G. Generally, it consists of those proximity
       // geometries affixed to the same frame as geometry_id (that frame would
@@ -746,22 +850,7 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       // no other geometries affixed to that frame -- attempting to apply
       // filters in that case would be a harmless act.
       GeometrySet ids_for_filtering;
-      geometry.SetRole(std::move(properties));
-      if (geometry.is_dynamic()) {
-        // Pass the geometry to the engine.
-        const RigidTransformd& X_WG = convert_to_double(X_WGs_.at(geometry_id));
-        geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG,
-                                             geometry_id,
-                                             *geometry.proximity_properties());
-
-        ids_for_filtering.Add(geometry.frame_id());
-      } else {
-        geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
-                                              geometry_id,
-                                              *geometry.proximity_properties());
-        ids_for_filtering.Add(InternalFrame::world_frame_id());
-      }
-
+      ids_for_filtering.Add(geometry.frame_id());
       // Apply collision filter between geometry id and any geometries that have
       // been identified. If none have been identified, this makes no changes.
       geometry_engine_->collision_filter().Apply(
@@ -804,7 +893,8 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
 
   geometry.SetRole(std::move(properties));
 
-  const RigidTransformd& X_WG = convert_to_double(X_WGs_.at(geometry_id));
+  const RigidTransformd& X_WG =
+      convert_to_double(kinematics_data_.X_WGs.at(geometry_id));
   bool added_to_renderer{false};
   for (auto& [name, engine] : render_engines_) {
     if (accepting_renderers.empty() || accepting_renderers.count(name) > 0) {
@@ -1064,13 +1154,26 @@ unordered_set<GeometryId> GeometryState<T>::CollectIds(
 
 template <typename T>
 void GeometryState<T>::SetFramePoses(
-    const SourceId source_id, const FramePoseVector<T>& poses) {
+    const SourceId source_id, const FramePoseVector<T>& poses,
+    internal::KinematicsData<T>* kinematics_data) const {
   // TODO(SeanCurtis-TRI): Down the road, make this validation depend on
   // ASSERT_ARMED.
   ValidateFrameIds(source_id, poses);
   const RigidTransform<T> world_pose = RigidTransform<T>::Identity();
-  for (auto frame_id : source_root_frame_map_[source_id]) {
-    UpdatePosesRecursively(frames_[frame_id], world_pose, poses);
+  for (auto frame_id : source_root_frame_map_.at(source_id)) {
+    UpdatePosesRecursively(frames_.at(frame_id), world_pose, poses,
+        kinematics_data);
+  }
+}
+
+template <typename T>
+void GeometryState<T>::SetGeometryConfiguration(
+    SourceId source_id, const GeometryConfigurationVector<T>& configurations,
+    internal::KinematicsData<T>* kinematics_data) const {
+  const GeometryIdSet& g_ids =
+      GetValueOrThrow(source_id, source_deformable_geometry_id_map_);
+  for (const auto g_id : g_ids) {
+    kinematics_data->q_WGs[g_id] = configurations.value(g_id);
   }
 }
 
@@ -1078,7 +1181,7 @@ template <typename T>
 template <typename ValueType>
 void GeometryState<T>::ValidateFrameIds(
     const SourceId source_id,
-    const FrameKinematicsVector<ValueType>& kinematics_data) const {
+    const KinematicsVector<FrameId, ValueType>& kinematics_data) const {
   auto& frames = FramesForSource(source_id);
   const int ref_frame_count = static_cast<int>(frames.size());
   if (ref_frame_count != kinematics_data.size()) {
@@ -1100,11 +1203,57 @@ void GeometryState<T>::ValidateFrameIds(
 }
 
 template <typename T>
-void GeometryState<T>::FinalizePoseUpdate() {
-  geometry_engine_->UpdateWorldPoses(X_WGs_);
-  for (auto& pair : render_engines_) {
-    pair.second->UpdatePoses(X_WGs_);
+void GeometryState<T>::ValidateRegistrationAndSetTopology(
+    SourceId source_id, FrameId frame_id, GeometryId geometry_id) {
+  if (geometries_.count(geometry_id) > 0) {
+    throw std::logic_error(
+        "Registering geometry with an id that has already been registered: " +
+        to_string(geometry_id));
   }
+
+  SourceId frame_source_id = source_id;
+  if (frame_id == InternalFrame::world_frame_id()) {
+    // Explicitly validate the source id because it won't happen in acquiring
+    // the world frame.
+    FindOrThrow(source_id, source_frame_id_map_,
+                [source_id]() { return get_missing_id_message(source_id); });
+    frame_source_id = self_source_;
+  }
+
+  FrameIdSet& set =
+      GetMutableValueOrThrow(frame_source_id, &source_frame_id_map_);
+
+  FindOrThrow(frame_id, set, [frame_id, frame_source_id]() {
+    return "Referenced frame " + to_string(frame_id) + " for source " +
+           to_string(frame_source_id) +
+           ", but the frame doesn't belong to the source.";
+  });
+
+  // Configure topology.
+  // NOTE: Names are not validated here -- there are no roles. The names are
+  // validated when roles are assigned.
+  InternalFrame& frame = frames_[frame_id];
+  frame.add_child(geometry_id);
+}
+
+template <typename T>
+void GeometryState<T>::FinalizePoseUpdate(
+      const internal::KinematicsData<T>& kinematics_data,
+      internal::ProximityEngine<T>* proximity_engine,
+      std::vector<render::RenderEngine*> render_engines) const {
+  proximity_engine->UpdateWorldPoses(kinematics_data.X_WGs);
+  for (auto* render_engine : render_engines) {
+    render_engine->UpdatePoses(kinematics_data.X_WGs);
+  }
+}
+
+template <typename T>
+void GeometryState<T>::FinalizeConfigurationUpdate(
+    const internal::KinematicsData<T>& kinematics_data,
+    internal::ProximityEngine<T>* proximity_engine,
+    std::vector<render::RenderEngine*>) const {
+  proximity_engine->UpdateDeformableVertexPositions(kinematics_data.q_WGs);
+  // TODO(xuchenhan-tri): Update render engine as necessary.
 }
 
 template <typename T>
@@ -1159,7 +1308,8 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
   }
 
   // Clean up state collections.
-  X_WGs_.erase(geometry_id);
+  kinematics_data_.X_WGs.erase(geometry_id);
+  kinematics_data_.q_WGs.erase(geometry_id);
 
   // Remove from the geometries.
   geometries_.erase(geometry_id);
@@ -1168,26 +1318,27 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
 template <typename T>
 void GeometryState<T>::UpdatePosesRecursively(
     const internal::InternalFrame& frame, const RigidTransform<T>& X_WP,
-    const FramePoseVector<T>& poses) {
+    const FramePoseVector<T>& poses,
+    internal::KinematicsData<T>* kinematics_data) const {
   const auto frame_id = frame.id();
   const auto& X_PF = poses.value(frame_id);
   // Cache this transform for later use.
-  X_PF_[frame.index()] = X_PF;
+  kinematics_data->X_PFs[frame.index()] = X_PF;
   RigidTransform<T> X_WF = X_WP * X_PF;
-  X_WF_[frame.index()] = X_WF;
+  kinematics_data->X_WFs[frame.index()] = X_WF;
   // Update the geometry which belong to *this* frame.
   for (auto child_id : frame.child_geometries()) {
-    auto& child_geometry = geometries_[child_id];
+    const auto& child_geometry = geometries_.at(child_id);
     // X_FG() is always RigidTransform<double>, to account for
     // GeometryState<AutoDiff>, we need to cast it to the common type T.
     RigidTransform<double> X_FG(child_geometry.X_FG());
-    X_WGs_[child_id] = X_WF * X_FG.cast<T>();
+    kinematics_data->X_WGs[child_id] = X_WF * X_FG.cast<T>();
   }
 
   // Update each child frame.
   for (auto child_id : frame.child_frames()) {
-    auto& child_frame = frames_[child_id];
-    UpdatePosesRecursively(child_frame, X_WF, poses);
+    const auto& child_frame = frames_.at(child_id);
+    UpdatePosesRecursively(child_frame, X_WF, poses, kinematics_data);
   }
 }
 
@@ -1227,6 +1378,28 @@ void GeometryState<T>::ThrowIfNameExistsInRole(FrameId id, Role role,
   if (!NameIsUnique(id, role, name)) {
     throw std::logic_error("The name '" + name + "' has already been used by "
         "a geometry with the '" + to_string(role) + "' role.");
+  }
+}
+
+template <typename T>
+void GeometryState<T>::AssignAllRoles(
+    SourceId source_id, GeometryId geometry_id,
+    std::unique_ptr<GeometryInstance> geometry) {
+  // Any roles defined on the geometry instance propagate through
+  // automatically.
+  if (geometry->illustration_properties()) {
+    AssignRole(source_id, geometry_id,
+               std::move(*geometry->mutable_illustration_properties()));
+  }
+
+  if (geometry->proximity_properties()) {
+    AssignRole(source_id, geometry_id,
+               std::move(*geometry->mutable_proximity_properties()));
+  }
+
+  if (geometry->perception_properties()) {
+    AssignRole(source_id, geometry_id,
+               std::move(*geometry->mutable_perception_properties()));
   }
 }
 
@@ -1390,7 +1563,7 @@ RigidTransformd GeometryState<T>::GetDoubleWorldPose(FrameId frame_id) const {
     return RigidTransformd::Identity();
   }
   const internal::InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
-  return internal::convert_to_double(X_WF_[frame.index()]);
+  return internal::convert_to_double(kinematics_data_.X_WFs[frame.index()]);
 }
 
 // Explicit instantiations.

@@ -107,6 +107,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
@@ -188,7 +189,7 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":module_py",
-        "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake/solvers",
         "//bindings/pydrake:trajectories_py",
     ],
 )
@@ -257,8 +258,7 @@ drake_py_library(
         "//bindings/pydrake:lcm_py",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common:eigen_geometry_py",
-        "@meshcat_python//:meshcat",
-        "@meshcat_python//:meshcat-server",
+        "@meshcat_python//:meshcat_sans_deprecation_warning",
     ],
 )
 
@@ -318,13 +318,6 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
 )
 
-drake_py_library(
-    name = "system_sliders_py",
-    srcs = ["system_sliders.py"],
-    imports = PACKAGE_INFO.py_imports,
-    deps = [":module_py"],
-)
-
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":controllers_py",
@@ -346,7 +339,6 @@ PY_LIBRARIES = [
     ":perception_py",
     ":planar_scenegraph_visualizer_py",
     ":pyplot_visualizer_py",
-    ":system_sliders_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -376,8 +368,7 @@ drake_py_unittest(
         ":framework_py",
         ":primitives_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/examples:pendulum_py",
-        "//bindings/pydrake/examples:rimless_wheel_py",
+        "//bindings/pydrake/examples",
     ],
 )
 
@@ -492,7 +483,7 @@ drake_py_unittest(
     ],
     deps = [
         ":controllers_py",
-        "//bindings/pydrake/examples:pendulum_py",
+        "//bindings/pydrake/examples",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/multibody:tree_py",
@@ -618,19 +609,10 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "system_sliders_test",
-    deps = [
-        ":primitives_py",
-        ":system_sliders_py",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
-    ],
-)
-
-drake_py_unittest(
     name = "trajectory_optimization_test",
     deps = [
         ":trajectory_optimization_py",
-        "//bindings/pydrake/examples:pendulum_py",
+        "//bindings/pydrake/examples",
     ],
 )
 

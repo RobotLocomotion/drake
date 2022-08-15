@@ -14,140 +14,7 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:private"])
 
-drake_cc_library(
-    name = "internal_http_service_curl",
-    srcs = ["internal_http_service_curl.cc"],
-    hdrs = ["internal_http_service_curl.h"],
-    deps = [
-        "//common:filesystem",
-        "//common:unused",
-        "//geometry/render_gltf_client:internal_http_service",
-        "@fmt",
-        "@libcurl",
-    ],
-)
-
-drake_cc_library(
-    name = "internal_render_client",
-    srcs = [
-        "internal_render_client.cc",
-        "render_gltf_client_params.cc",
-    ],
-    hdrs = [
-        "internal_render_client.h",
-        "render_gltf_client_params.h",
-    ],
-    deps = [
-        ":internal_http_service_curl",
-        "//common:filesystem",
-        "//common:nice_type_name",
-        "//common:temp_directory",
-        "//geometry/render:render_camera",
-        "//geometry/render:render_engine",
-        "//geometry/render_gltf_client:internal_http_service",
-        "//systems/sensors:image",
-        "@picosha2",
-        "@vtk//:vtkIOImage",
-    ],
-)
-
-drake_cc_library(
-    name = "internal_render_engine_gltf_client",
-    srcs = [
-        "factory.cc",
-        "internal_render_engine_gltf_client.cc",
-    ],
-    hdrs = [
-        "factory.h",
-        "internal_render_engine_gltf_client.h",
-    ],
-    # internal_render_engine_gltf_client.h directly pulls in VTK headers; leave
-    # it out of the install.
-    install_hdrs_exclude = ["internal_render_engine_gltf_client.h"],
-    deps = [
-        ":internal_render_client",
-        "//common:filesystem",
-        "//geometry/render:render_camera",
-        "//geometry/render_vtk:internal_render_engine_vtk",
-        "//systems/sensors:image",
-        "@vtk//:vtkIOExport",
-    ],
-)
-
 # === test/ ===
-
-drake_cc_googletest(
-    name = "internal_http_service_curl_test",
-    deps = [
-        ":internal_http_service_curl",
-        "//common:temp_directory",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_library(
-    name = "internal_test_png",
-    testonly = 1,
-    srcs = ["test/internal_test_png.cc"],
-    hdrs = ["test/internal_test_png.h"],
-    deps = [
-        "//common:unused",
-        "//systems/sensors:image",
-        "@gtest//:without_main",
-        "@libpng",
-    ],
-)
-
-drake_cc_library(
-    name = "internal_test_tiff",
-    testonly = 1,
-    srcs = ["test/internal_test_tiff.cc"],
-    hdrs = ["test/internal_test_tiff.h"],
-    deps = [
-        "//systems/sensors:image",
-        "@gtest//:without_main",
-        "@libtiff",
-    ],
-)
-
-drake_cc_googletest(
-    name = "internal_render_client_test",
-    data = ["//geometry/render:test_models"],
-    deps = [
-        ":internal_render_client",
-        ":internal_test_png",
-        ":internal_test_tiff",
-        "//common:find_resource",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "internal_render_engine_gltf_client_test",
-    # TODO(svenevs): Found leakage isolated to
-    # RenderEngineGltfClient::DoRender*Image calls indirectly calling
-    # RenderEngineVtk::PerformUpdate().  Mark it as skipped now, and will
-    # revisit during the platform review.  Example log from LeakSanitizer:
-    #
-    # ==20==ERROR: LeakSanitizer: detected memory leaks
-    #
-    # Direct leak of 6280 byte(s) in 3 object(s) allocated from:
-    # 0 0x55af7105e440 in calloc
-    #         (/path/to/render_engine_gltf_client_test+0x51a440)
-    # 1 0x151167cd814f
-    #         (/lib/x86_64-linux-gnu/libnvidia-glcore.so.510.47.03+0xe6614f)
-    # ...
-    tags = vtk_test_tags(),
-    deps = [
-        ":internal_render_engine_gltf_client",
-        ":internal_test_png",
-        ":internal_test_tiff",
-        "//common:filesystem",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
 
 # - Server integration test targets. ------------------------------------------
 
@@ -206,10 +73,10 @@ drake_cc_binary(
     ],
     test_rule_tags = vtk_test_tags(),
     deps = [
-        ":internal_render_engine_gltf_client",
         "//common:filesystem",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
+        "//geometry/render_gltf_client:factory",
         "//geometry/render_vtk",
         "//multibody/parsing",
         "//multibody/plant",

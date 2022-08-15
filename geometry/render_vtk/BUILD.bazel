@@ -27,6 +27,7 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//common:essential",
+        "//common:name_value",
         "//geometry/render:render_label",
     ],
 )
@@ -49,11 +50,9 @@ drake_cc_library(
     name = "internal_render_engine_vtk",
     srcs = ["internal_render_engine_vtk.cc"],
     hdrs = ["internal_render_engine_vtk.h"],
-    # Since we directly use VTK headers, leave us out of the install.
-    install_hdrs_exclude = ["internal_render_engine_vtk.h"],
-    tags = ["exclude_from_package"],
+    internal = True,
     visibility = [
-        "//geometry/render_client_gltf:__pkg__",
+        "//geometry/render_gltf_client:__pkg__",
         # TODO(jwnimmer-tri) Remove this once the dev package is gone.
         "//geometry/render/dev/render_gltf_client:__pkg__",
         # TODO(jwnimmer-tri) Remove this after deprecation 2022-09-01.
@@ -82,11 +81,9 @@ drake_cc_library(
     name = "internal_render_engine_vtk_base",
     srcs = ["internal_render_engine_vtk_base.cc"],
     hdrs = ["internal_render_engine_vtk_base.h"],
-    # Since we directly use VTK headers, leave us out of the install.
-    install_hdrs_exclude = ["internal_render_engine_vtk_base.h"],
-    tags = ["exclude_from_package"],
+    internal = True,
     visibility = [
-        # TODO(jwnimmer-tri) Remove this after deprecation 2022-09-01.
+        # TODO(jwnimmer-tri) Switch to private after deprecation 2022-09-01.
         "//geometry/render:__pkg__",
     ],
     deps = [
@@ -102,11 +99,9 @@ drake_cc_library(
     name = "internal_vtk_util",
     srcs = ["internal_vtk_util.cc"],
     hdrs = ["internal_vtk_util.h"],
-    # Since we directly use VTK headers, leave us out of the install.
-    install_hdrs_exclude = ["internal_vtk_util.h"],
-    tags = ["exclude_from_package"],
+    internal = True,
     visibility = [
-        # TODO(jwnimmer-tri) Remove this after deprecation 2022-09-01.
+        # TODO(jwnimmer-tri) Switch to private after deprecation 2022-09-01.
         "//geometry/render:__pkg__",
     ],
     deps = [
@@ -121,6 +116,12 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
+    args = select({
+        # Disable all test cases on Mac M1 CI.
+        # TODO(17566) Re-enable this when possible.
+        "@platforms//cpu:arm64": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
     data = [
         "//geometry/render:test_models",
     ],

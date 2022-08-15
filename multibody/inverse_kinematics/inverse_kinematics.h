@@ -10,8 +10,6 @@
 
 namespace drake {
 namespace multibody {
-// TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
-// limits) should be imposed automatically.
 /**
  * Solves an inverse kinematics (IK) problem on a MultibodyPlant, to find the
  * postures of the robot satisfying certain constraints.
@@ -110,7 +108,7 @@ class InverseKinematics {
    * measured and expressed in frame B.
    * @param frameAbar We will compute frame A from frame Abar. The bounding box
    * p_AQ_lower <= p_AQ <= p_AQ_upper is expressed in frame A.
-   * @param X_AbarAThe relative transform between frame Abar and A. If empty,
+   * @param X_AbarA The relative transform between frame Abar and A. If empty,
    * then we use the identity transform.
    * @param p_AQ_lower The lower bound on the position of point Q, measured and
    * expressed in frame A.
@@ -124,6 +122,22 @@ class InverseKinematics {
       const std::optional<math::RigidTransformd>& X_AbarA,
       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper);
+
+  /** Adds a cost of the form (p_AP - p_AQ)ᵀ C (p_AP - p_AQ), where point P is
+   * specified relative to frame A and point Q is specified relative to frame
+   * B, and the cost is evaluated in frame A.
+   * @param frameA The frame in which point P's position is measured.
+   * @param p_AP The point P.
+   * @param frameB The frame in which point Q's position is measured.
+   * @param p_BQ The point Q.
+   * @param C A 3x3 matrix representing the cost in quadratic form.
+   */
+  solvers::Binding<solvers::Cost> AddPositionCost(
+      const Frame<double>& frameA,
+      const Eigen::Ref<const Eigen::Vector3d>& p_AP,
+      const Frame<double>& frameB,
+      const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+      const Eigen::Ref<const Eigen::Matrix3d>& C);
 
   /**
    * Constrains that the angle difference θ between the orientation of frame A
@@ -159,6 +173,24 @@ class InverseKinematics {
       const math::RotationMatrix<double>& R_AbarA,
       const Frame<double>& frameBbar,
       const math::RotationMatrix<double>& R_BbarB, double theta_bound);
+
+  /** Adds a cost of the form `c * (1 - cos(θ))`, where θ is the angle between
+   * the orientation of frame A and the orientation of frame B, and @p c is a
+   * cost scaling.
+   * @param frameAbar A frame on the MultibodyPlant.
+   * @param R_AbarA The rotation matrix describing the orientation of frame A
+   * relative to Abar.
+   * @param frameBbar A frame on the MultibodyPlant.
+   * @param R_BbarB The rotation matrix describing the orientation of frame B
+   * relative to Bbar.
+   * @param c A scalar cost weight.
+   */
+  solvers::Binding<solvers::Cost> AddOrientationCost(
+      const Frame<double>& frameAbar,
+      const math::RotationMatrix<double>& R_AbarA,
+      const Frame<double>& frameBbar,
+      const math::RotationMatrix<double>& R_BbarB,
+      double c);
 
   /**
    * Constrains a target point T to be within a cone K. The point T ("T" stands
@@ -280,6 +312,23 @@ class InverseKinematics {
       const Frame<double>& frame2,
       const Eigen::Ref<const Eigen::Vector3d>& p_B2P2, double distance_lower,
       double distance_upper);
+
+  /**
+   * Adds the constraint that the position of P1, ..., Pn satisfy A *
+   * [p_FP1; p_FP2; ...; p_FPn] <= b.
+   * @param frameF The frame in which the position P is measured and expressed
+   * @param frameG The frame in which the point P is rigidly attached.
+   * @param p_GP p_GP.col(i) is the position of the i'th point Pi measured and
+   * expressed in frame G.
+   * @param A We impose the constraint A * [p_FP1; p_FP2; ...; p_FPn] <= b. @pre
+   * A.cols() = 3 * p_GP.cols();
+   * @param b We impose the constraint A * [p_FP1; p_FP2; ...; p_FPn] <= b
+   */
+  solvers::Binding<solvers::Constraint> AddPolyhedronConstraint(
+      const Frame<double>& frameF, const Frame<double>& frameG,
+      const Eigen::Ref<const Eigen::Matrix3Xd>& p_GP,
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b);
 
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */

@@ -8,21 +8,26 @@ The following table shows the configurations and platforms that Drake
 officially supports. Supported configurations are tested in continuous
 integration. Any other configurations are provided on a best-effort basis.
 
+<!-- The operating system requirements should match those listed in both the
+     root CMakeLists.txt and tools/workspace/os.bzl. -->
 <!-- The minimum compiler versions should match those listed in both the root
      CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
 
-| Operating System ⁽⁴⁾             | Architecture | Python  | Bazel | CMake | C/C++ Compiler ⁽⁵⁾                 | Java                          |
-|----------------------------------|--------------|---------|-------|-------|------------------------------------|-------------------------------|
-| Ubuntu 20.04 LTS (Focal Fossa)   | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾ | 5.1   | 3.16  | GCC 9.3 (default) or Clang 12  | OpenJDK 11                    |
-| macOS Big Sur (11)               | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
-| macOS Monterey (12)              | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
+| Operating System ⁽⁴⁾               | Architecture | Python   | Bazel | CMake | C/C++ Compiler ⁽⁵⁾             | Java                          |
+|------------------------------------|--------------|----------|-------|-------|--------------------------------|-------------------------------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾  | 5.1   | 3.16  | GCC 9.3 (default) or Clang 12  | OpenJDK 11                    |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64 ⁽¹⁾   | 3.10 ⁽³⁾ | 5.1   | 3.22  | GCC 11.2 (default) or Clang 12 | OpenJDK 11                    |
+| macOS Big Sur (11)                 | x86_64 ⁽²⁾   | 3.10 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
+| macOS Monterey (12)                | x86_64 ⁽²⁾   | 3.10 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
 
 ⁽¹⁾ Drake Ubuntu builds assume support for Intel's AVX2 and FMA instructions,
 introduced with the Haswell architecture in 2013 with substantial performance
 improvements in the Broadwell architecture in 2014. Drake is compiled with
 `-march=broadwell` to exploit these instructions (that also works for Haswell
 machines). Drake can be used on older machines if necessary by building from
-source with that flag removed.
+source with that
+[flag](https://github.com/RobotLocomotion/drake/blob/77642cc9/math/BUILD.bazel#L288)
+removed.
 
 ⁽²⁾ For users running on Apple's newer arm64 hardware, refer to
 [Running under Rosetta 2](/rosetta2.html)

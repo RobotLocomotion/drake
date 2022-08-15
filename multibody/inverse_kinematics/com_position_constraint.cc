@@ -3,7 +3,7 @@
 #include <utility>
 
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
+#include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
 
 using drake::multibody::internal::RefFromPtrOrThrow;
 using drake::multibody::internal::UpdateContextConfiguration;

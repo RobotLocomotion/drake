@@ -9,7 +9,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

@@ -40,7 +40,7 @@ class PlanarJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add a body so we can add a joint between it and the world:
-    body_ = &model->AddBody<RigidBody>(M_B);
+    body_ = &model->AddBody<RigidBody>("Body", M_B);
 
     // Add a planar joint between the world and body1:
     joint_ = &model->AddJoint<PlanarJoint>("Joint", model->world_body(),
@@ -198,6 +198,11 @@ TEST_F(PlanarJointTest, Clone) {
   EXPECT_EQ(joint_clone.get_default_rotation(), joint_->get_default_rotation());
   EXPECT_EQ(joint_clone.get_default_translation(),
             joint_->get_default_translation());
+}
+
+TEST_F(PlanarJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint_->can_rotate());
+  EXPECT_TRUE(joint_->can_translate());
 }
 
 TEST_F(PlanarJointTest, NameSuffix) {

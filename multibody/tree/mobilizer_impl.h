@@ -4,11 +4,11 @@
 #include <optional>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/random.h"
-#include "drake/common/symbolic.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_element.h"

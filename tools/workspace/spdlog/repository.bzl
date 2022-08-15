@@ -17,7 +17,7 @@ def _impl(repo_ctx):
     if os_result.is_macos:
         # On macOS, we use spdlog from homebrew via pkg-config.
         error = setup_pkg_config_repository(repo_ctx).error
-    elif os_result.is_manylinux:
+    elif os_result.is_manylinux or os_result.is_macos_wheel:
         # Compile it from downloaded github sources.
         error = setup_github_repository(repo_ctx).error
     else:
@@ -28,7 +28,7 @@ def _impl(repo_ctx):
 
 spdlog_repository = repository_rule(
     attrs = {
-        # The next two attributes are used only when we take the branch for
+        # The next several attributes are used only when we take the branch for
         # setup_pkg_config_repository in the above logic.
         "modname": attr.string(
             default = "spdlog",
@@ -55,10 +55,6 @@ install(name = "install")
             # Here, we elect to use the same version as Ubuntu 20.04, even
             # though it is not the newest revision.  Sticking with a single,
             # older revision helps reduce spurious CI failures.
-            #
-            # In the unlikely event that you update the version here, fix up
-            # the two spdlog-*.cmake files in this directory, and revisit all
-            # of the version compatibility matrix in spdlog/repository.bzl.
             default = "v1.5.0",
         ),
         "commit_pin": attr.int(

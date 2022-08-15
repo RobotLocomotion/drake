@@ -18,9 +18,8 @@
 #include <fmt/ostream.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
-#include "drake/common/symbolic_decompose.h"
-#include "drake/common/symbolic_monomial_util.h"
+#include "drake/common/symbolic/decompose.h"
+#include "drake/common/symbolic/monomial_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/decision_variable.h"
@@ -1285,6 +1284,7 @@ std::vector<Binding<Constraint>> MathematicalProgram::GetAllConstraints()
   extend(lorentz_cone_constraint_);
   extend(rotated_lorentz_cone_constraint_);
   extend(linear_matrix_inequality_constraint_);
+  extend(positive_semidefinite_constraint_);
   extend(linear_complementarity_constraints_);
   extend(exponential_cone_constraints_);
   return conlist;
@@ -1375,9 +1375,10 @@ pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> DoAddSosConstraint(
     MathematicalProgram* const prog, const symbolic::Polynomial& p,
     MathematicalProgram::NonnegativePolynomial type,
     const std::string& gram_name) {
-  const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p);
+  const symbolic::Polynomial p_expanded = p.Expand();
+  const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p_expanded);
   const MatrixXDecisionVariable Q =
-      prog->AddSosConstraint(p, m, type, gram_name);
+      prog->AddSosConstraint(p_expanded, m, type, gram_name);
   return std::make_pair(Q, m);
 }
 

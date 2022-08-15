@@ -8,8 +8,7 @@ To build all necessary targets and see available command-line options:
 
     cd drake
     bazel build \
-        //tools:drake_visualizer @meshcat_python//:meshcat-server \
-        //manipulation/util:show_model
+        //tools:drake_visualizer //manipulation/util:show_model
 
     ./bazel-bin/manipulation/util/show_model --help
 
@@ -17,11 +16,10 @@ Example usage:
 
     # Terminal 1
     ./bazel-bin/tools/drake_visualizer
-    # Terminal 2
-    ./bazel-bin/external/meshcat_python/meshcat-server
-    # Terminal 3 (wait for visualizers to start)
+    # Terminal 2 (wait for visualizers to start)
     ./bazel-bin/manipulation/util/show_model \
-        --meshcat default \
+        --meshcat \
+        --open-window \
         --find_resource \
         drake/manipulation/models/iiwa_description/iiwa7/iiwa7_no_collision.sdf
 
@@ -29,7 +27,8 @@ If your model has all of its data available in your source tree, then you can
 remove the need for `--find_resource`:
 
     ./bazel-bin/manipulation/util/show_model \
-        --meshcat default \
+        --meshcat \
+        --open-window \
         ${PWD}/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
 If the model uses package path (e.g. "package://package_name/model_sdf.obj") to
@@ -51,26 +50,34 @@ binary.
 
 import argparse
 import os
+import time
+import warnings
+import webbrowser
+
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import (
     Cylinder,
-    DrakeVisualizer,
     GeometryInstance,
     MakePhongIllustrationProperties,
+    Meshcat,
+    MeshcatVisualizer,
+    MeshcatVisualizerParams,
+    Rgba,
+    Role,
 )
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.systems.meshcat_visualizer import (
-    ConnectMeshcatVisualizer,
-    MeshcatVisualizer,
-)
 from pydrake.systems.planar_scenegraph_visualizer import (
     ConnectPlanarSceneGraphVisualizer,
+)
+from pydrake.visualization import (
+    VisualizationConfig,
+    ApplyVisualizationConfig,
 )
 
 
@@ -85,7 +92,7 @@ def add_filename_and_parser_argparse_arguments(args_parser):
         "--find_resource", action="store_true",
         help="Use FindResourceOrThrow to resolve the filename to a Drake "
              "resource. Use this if the supporting data files are a generated "
-             "by Bazel (e.g. the OBJs or PNGs are in @models).")
+             "by Bazel (e.g. the OBJs or PNGs are in @models_internal).")
     args_parser.add_argument(
         "--package_path", type=str, default=None,
         help="Full path to the root package for reading in SDF resources.")
@@ -125,22 +132,50 @@ def parse_filename_and_parser(args_parser, args):
     return filename, make_parser
 
 
+class _StringToRoleAction(argparse.Action):
+    """
+    Action that converts the string 'proximity' or 'illustration' to the
+    corresponding Role enumeration value.
+    """
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        if nargs is not None:
+            raise ValueError("nargs not allowed")
+        super().__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        assert isinstance(values, str)
+
+        if values == 'proximity':
+            mapped_value = Role.kProximity
+        elif values == 'illustration':
+            mapped_value = Role.kIllustration
+        else:
+            raise ValueError(f"Role parameter got invalid value {values}")
+
+        setattr(namespace, self.dest, mapped_value)
+
+
 def add_visualizers_argparse_arguments(args_parser):
     """
     Adds argparse arguments for visualizers.
     """
-    MeshcatVisualizer.add_argparse_argument(args_parser)
+    args_parser.add_argument(
+        "--meshcat", action="store_true",
+        help="Enable the MeshCat display.")
+    args_parser.add_argument(
+        "-w", "--open-window", dest="browser_new",
+        action="store_const", const=1, default=None,
+        help="Open the MeshCat display in a new browser window.")
+    args_parser.add_argument(
+        "--meshcat_role", action=_StringToRoleAction,
+        default=Role.kIllustration, choices=['illustration', 'proximity'],
+        help="Defines the role of the geometry to visualize")
     args_parser.add_argument(
         "--pyplot", action="store_true",
         help="Opens a pyplot figure for rendering using "
              "PlanarSceneGraphVisualizer.")
     # TODO(russt): Consider supporting the PlanarSceneGraphVisualizer
     #  options as additional arguments.
-    args_parser.add_argument(
-        "--visualize_collisions", action="store_true",
-        help="Visualize the collision geometry in the visualizer. The "
-        "collision geometries will be shown in red to differentiate "
-        "them from the visual geometries.")
     args_parser.add_argument(
         "--visualize_frames",
         action="store_true",
@@ -236,22 +271,11 @@ def parse_visualizers(args_parser, args):
     """
     Parses argparse arguments for visualizers, returning update_visualization,
     and connect_visualizers.
+
+    When ``args.meshcat`` is ``True``, ``connect_visualizers`` will return the
+    underlying ``Meshcat`` instance.  Otherwise, it returns ``None``.
     """
     def update_visualization(plant, scene_graph):
-        if args.visualize_collisions:
-            # Find all the geometries that have not already been marked as
-            # 'illustration' (visual) and assume they are collision geometries.
-            # Then add illustration properties to them that will draw them in
-            # red and fifty percent translucent.
-            source_id = plant.get_source_id()
-            inspector = scene_graph.model_inspector()
-            diffuse_rgba = [1, 0, 0, 0.5]
-            red_illustration = MakePhongIllustrationProperties(diffuse_rgba)
-            for geometry_id in inspector.GetAllGeometryIds():
-                if inspector.GetIllustrationProperties(geometry_id) is None:
-                    scene_graph.AssignRole(
-                        source_id, geometry_id, red_illustration)
-
         if args.visualize_frames:
             # Visualize frames
             # Find all the frames and draw them using add_triad().
@@ -271,20 +295,38 @@ def parse_visualizers(args_parser, args):
                     opacity=args.triad_opacity,
                 )
 
-    def connect_visualizers(builder, plant, scene_graph):
-        # Connect this to drake_visualizer.
-        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
+    def connect_visualizers(builder, plant, scene_graph,
+                            publish_contacts=True):
+        # Connect this to drake_visualizer or meldis. Meldis provides
+        # simultaneous visualization of illustration and proximity geometry.
+        ApplyVisualizationConfig(
+            config=VisualizationConfig(publish_contacts=publish_contacts),
+            plant=plant,
+            scene_graph=scene_graph,
+            builder=builder)
 
-        # Connect to Meshcat.
-        if args.meshcat is not None:
-            meshcat_viz = ConnectMeshcatVisualizer(
-                builder, scene_graph, zmq_url=args.meshcat,
-                role=args.meshcat_role,
-                prefer_hydro=args.meshcat_hydroelastic)
+        # Connect to Meshcat.  If the consuming application needs to connect,
+        # e.g., JointSliders, the meshcat instance is required.
+        meshcat = None
+        if args.meshcat:
+            meshcat = Meshcat()
+            meshcat_vis_params = MeshcatVisualizerParams()
+            meshcat_vis_params.role = args.meshcat_role
+            MeshcatVisualizer.AddToBuilder(
+                builder=builder, scene_graph=scene_graph, meshcat=meshcat,
+                params=meshcat_vis_params)
+            if args.browser_new is not None:
+                url = meshcat.web_url()
+                webbrowser.open(url=url, new=args.browser_new)
+        else:
+            if args.browser_new is not None:
+                args_parser.error("-w / --open-window require --meshcat")
 
         # Connect to PyPlot.
         if args.pyplot:
             pyplot = ConnectPlanarSceneGraphVisualizer(builder, scene_graph)
+
+        return meshcat
 
     return update_visualization, connect_visualizers
 
@@ -317,6 +359,14 @@ def main():
     Simulator(diagram).Initialize()
     # Publish draw messages with current state.
     diagram.Publish(context)
+
+    # Wait for the user to cancel us.
+    if args.meshcat:
+        print("Use Ctrl-C to quit")
+        try:
+            time.sleep(1e3)
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == '__main__':

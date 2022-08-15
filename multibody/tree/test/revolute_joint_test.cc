@@ -49,7 +49,7 @@ class RevoluteJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add some bodies so we can add joints between them:
-    body1_ = &model->AddBody<RigidBody>(M_B);
+    body1_ = &model->AddBody<RigidBody>("Body1", M_B);
 
     // Add a revolute joint between the world and body1:
     joint1_ = &model->AddJoint<RevoluteJoint>(
@@ -226,6 +226,11 @@ TEST_F(RevoluteJointTest, SetVelocityAndAccelerationLimits) {
   EXPECT_THROW(mutable_joint1_->set_acceleration_limits(Vector1<double>(2),
                                                         Vector1<double>(0)),
                std::runtime_error);
+}
+
+TEST_F(RevoluteJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint1_->can_rotate());
+  EXPECT_FALSE(joint1_->can_translate());
 }
 
 TEST_F(RevoluteJointTest, NameSuffix) {

@@ -1,0 +1,23 @@
+# This demo simulation shows an IIWA arm with an attached WSG gripper.
+Demo:
+  directives:
+  - add_model:
+      name: amazon_table
+      file: package://drake/examples/manipulation_station/models/amazon_table_simplified.sdf
+  - add_weld:
+      parent: world
+      child: amazon_table::amazon_table
+  - add_directives:
+      file: package://drake/examples/hardware_sim/example_iiwa_wsg.yaml
+  - add_frame:
+      name: iiwa_on_world
+      X_PF:
+        base_frame: world
+        translation: [0, -0.7, 0]
+        rotation: !Rpy { deg: [0, 0, 90] }
+  - add_weld:
+      parent: iiwa_on_world
+      child: iiwa::base
+  model_drivers:
+    iiwa: !ZeroForceDriver {}
+    wsg: !ZeroForceDriver {}

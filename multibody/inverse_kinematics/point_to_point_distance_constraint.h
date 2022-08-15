@@ -41,6 +41,7 @@ class PointToPointDistanceConstraint : public solvers::Constraint {
    * @param plant_context The Context that has been allocated for this
    *   `plant`. We will update the context when evaluating the constraint.
    *   `plant_context` should be alive during the lifetime of this constraint.
+   * @pydrake_mkdoc_identifier{double}
    */
   PointToPointDistanceConstraint(
       const MultibodyPlant<double>* plant, const Frame<double>& frame1,
@@ -53,8 +54,7 @@ class PointToPointDistanceConstraint : public solvers::Constraint {
    * Overloaded constructor. Same as the constructor with the double version
    * (using MultibodyPlant<double> and Context<double>), except the gradient of
    * the constraint is computed from autodiff.
-   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-   * Documentation string is manually recreated in Python.}
+   * @pydrake_mkdoc_identifier{autodiff}
    */
   PointToPointDistanceConstraint(
       const MultibodyPlant<AutoDiffXd>* plant, const Frame<AutoDiffXd>& frame1,

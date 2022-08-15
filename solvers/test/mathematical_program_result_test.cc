@@ -233,17 +233,6 @@ GTEST_TEST(TestMathematicalProgramResult, InfeasibleProblem) {
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Remove on 2022-07-01
-TEST_F(MathematicalProgramResultTest, InfeasibleOrUnboundedDeprecation) {
-  MathematicalProgramResult result;
-  result.set_solution_result(SolutionResult::kInfeasible_Or_Unbounded);
-  EXPECT_EQ(result.get_solution_result(),
-            SolutionResult::kInfeasibleOrUnbounded);
-}
-#pragma GCC diagnostic pop
-
 GTEST_TEST(TestMathematicalProgramResult, GetInfeasibleConstraintNames) {
   if (SnoptSolver::is_available()) {
     MathematicalProgram prog;

@@ -13,13 +13,13 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/collision_filter_manager.h"
-#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_engine.h"
@@ -32,6 +32,55 @@ namespace geometry {
 namespace internal {
 
 class GeometryVisualizationImpl;
+using FrameNameSet = std::unordered_set<std::string>;
+
+// TODO(xuchenhan-tri): These data should live in cache entries. Furthermore,
+//  they should be broken up by source so that inputs can be pulled
+//  independently. For now, they are big blobs of memory. Correct operation of
+//  this ad hoc cache memory requires that we have a real cache entry that can
+//  serve as a proxy and maintain appropriate dependencies on the pose &
+//  configuration input ports. The Calc() method for the proxy entry then
+//  handles calculation of the data here, followed by propagation to the
+//  proximity and render engines. The values here should never be accessed
+//  without a preceding call to the Eval() method of the proxy cache entry.
+//
+// Kinematics data that depend on time-dependent input values (e.g., current
+// frame poses).
+// @tparam_default_scalar
+template <typename T>
+struct KinematicsData {
+  int num_frames() const { return X_WFs.size(); }
+
+  int num_deformable_geometries() const { return q_WGs.size(); }
+
+  // Map from a frame's index to the _current_ pose of the frame F it identifies
+  // relative to its parent frame P, i.e., X_PF.
+  std::vector<math::RigidTransform<T>> X_PFs;
+
+  // The pose of every geometry relative to the _world_ frame (regardless of
+  // roles) keyed by the corresponding geometry's id. After a complete state
+  // update from input poses,
+  //   X_WGs[i] == X_WFₙ · X_FₙFₙ₋₁ · ... · X_F₁F · G_i.X_FG()
+  // Where F is the parent frame of geometry G_i, Fₖ₊₁ is the parent frame of
+  // frame Fₖ, and the world frame W is the parent of frame Fₙ.
+  // In other words, it is the full evaluation of the kinematic chain from the
+  // geometry to the world frame.
+  std::unordered_map<GeometryId, math::RigidTransform<T>> X_WGs;
+
+  // The configuration of every deformable geometry relative to the _world_
+  // frame (regardless of roles) keyed by the corresponding geometry's id.
+  std::unordered_map<GeometryId, VectorX<T>> q_WGs;
+
+  // The pose of each frame relative to the _world_ frame.
+  // Furthermore, after a
+  // complete state update from input poses,
+  //   X_WFs[i] == X_WFₙ X_FₙFₙ₋₁ ... X_Fᵢ₊₂Fᵢ₊₁ X_PF[i]
+  // Where Fᵢ₊₁ is the parent frame of frame i, Fₖ₊₁ is the parent frame of
+  // frame Fₖ, and the world frame W is the parent of frame Fₙ.
+  // In other words, it is the full evaluation of the kinematic chain from
+  // frame i to the world frame.
+  std::vector<math::RigidTransform<T>> X_WFs;
+};
 
 }  // namespace internal
 #endif
@@ -48,6 +97,8 @@ class SceneGraph;
 
 /** Collection of unique frame ids.  */
 using FrameIdSet = std::unordered_set<FrameId>;
+/** Collection of unique geometry ids.  */
+using GeometryIdSet = std::unordered_set<GeometryId>;
 
 //@}
 
@@ -58,8 +109,8 @@ using FrameIdSet = std::unordered_set<FrameId>;
  The context-dependent state of SceneGraph. This serves as an AbstractValue
  in the context. SceneGraph's time-dependent state includes more than just
  values; objects can be added to or removed from the world over time. Therefore,
- SceneGraph's context-dependent state includes values (the poses) and
- structure (the topology of the world).
+ SceneGraph's context-dependent state includes values (the poses/configurations)
+ and structure (the topology of the world).
 
  @note This is intended as an internal class only.
 
@@ -129,6 +180,14 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::NumDynamicGeometries().  */
   int NumDynamicGeometries() const;
 
+  /** Returns the total number of registered dynamic non-deformable geometries.
+   */
+  int NumDynamicNonDeformableGeometries() const;
+
+  /** Returns the total number of registered deformable geometries. All
+   deformable geometries are dynamic and _not_ anchored.  */
+  int NumDeformableGeometries() const;
+
   /** Implementation of SceneGraphInspector::NumAnchoredGeometries().  */
   int NumAnchoredGeometries() const;
 
@@ -136,9 +195,7 @@ class GeometryState {
   std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
 
   /** Implementation of SceneGraphInspector::GetGeometryVersion().  */
-  const GeometryVersion& geometry_version() const {
-      return geometry_version_;
-  }
+  const GeometryVersion& geometry_version() const { return geometry_version_; }
 
   //@}
 
@@ -246,15 +303,25 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetPerceptionProperties().  */
   const PerceptionProperties* GetPerceptionProperties(GeometryId id) const;
 
+  /** Implementation of SceneGraphInspector::GetReferenceMesh().  */
+  const VolumeMesh<double>* GetReferenceMesh(GeometryId id) const;
+
+  /** Implementation of SceneGraphInspector::IsDeformableGeometry(). */
+  bool IsDeformableGeometry(GeometryId id) const;
+
+  /** Implementation of SceneGraphInspector::GetAllDeformableGeometryIds(). */
+  std::vector<GeometryId> GetAllDeformableGeometryIds() const;
+
   /** Implementation of SceneGraphInspector::CollisionFiltered().  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
 
   //@}
 
-  /** @name                Pose-dependent queries
+  /** @name                Configuration-dependent queries
 
    These quantities all depend on the most recent pose values assigned to the
-   registered frames.  */
+   registered frames and configuration values assigned to deformable geometries.
+  */
   //@{
 
   /** Implementation of QueryObject::GetPoseInWorld(FrameId).  */
@@ -267,6 +334,8 @@ class GeometryState {
   /** Implementation of QueryObject::GetPoseInParent().  */
   const math::RigidTransform<T>& get_pose_in_parent(FrameId frame_id) const;
 
+  /** Implementation of QueryObject::GetConfigurationsInWorld().  */
+  const VectorX<T>& get_configurations_in_world(GeometryId geometry_id) const;
   //@}
 
   /** @name        State management
@@ -309,6 +378,11 @@ class GeometryState {
   /** Implementation of SceneGraph::RegisterAnchoredGeometry().  */
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
+
+  /** Implementation of @ref SceneGraph::RegisterDeformableGeometry() */
+  GeometryId RegisterDeformableGeometry(
+      SourceId source_id, FrameId frame_id,
+      std::unique_ptr<GeometryInstance> geometry, double resolution_hint);
 
   /** Implementation of SceneGraph::RemoveGeometry().  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
@@ -399,7 +473,8 @@ class GeometryState {
 
   /** Implementation of QueryObject::ComputePointPairPenetration().  */
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const {
-    return geometry_engine_->ComputePointPairPenetration(X_WGs_);
+    return geometry_engine_->ComputePointPairPenetration(
+        kinematics_data_.X_WGs);
   }
 
   /** Implementation of QueryObject::ComputeContactSurfaces().  */
@@ -408,7 +483,8 @@ class GeometryState {
                             std::vector<ContactSurface<T>>>
   ComputeContactSurfaces(
       HydroelasticContactRepresentation representation) const {
-    return geometry_engine_->ComputeContactSurfaces(representation, X_WGs_);
+    return geometry_engine_->ComputeContactSurfaces(representation,
+                                                    kinematics_data_.X_WGs);
   }
 
   /** Implementation of QueryObject::ComputeContactSurfacesWithFallback().  */
@@ -421,7 +497,17 @@ class GeometryState {
     DRAKE_DEMAND(surfaces != nullptr);
     DRAKE_DEMAND(point_pairs != nullptr);
     return geometry_engine_->ComputeContactSurfacesWithFallback(
-        representation, X_WGs_, surfaces, point_pairs);
+        representation, kinematics_data_.X_WGs, surfaces, point_pairs);
+  }
+
+  /** Implementation of QueryObject::ComputeDeformableRigidContact().  */
+  template <typename T1 = T>
+  typename std::enable_if_t<std::is_same_v<T1, double>, void>
+  ComputeDeformableRigidContact(
+      std::vector<internal::DeformableRigidContact<T>>*
+          deformable_rigid_contact) const {
+    return geometry_engine_->ComputeDeformableRigidContact(
+        deformable_rigid_contact);
   }
 
   /** Implementation of QueryObject::FindCollisionCandidates().  */
@@ -430,9 +516,7 @@ class GeometryState {
   }
 
   /** Implementation of QueryObject::HasCollisions().  */
-  bool HasCollisions() const {
-    return geometry_engine_->HasCollisions();
-  }
+  bool HasCollisions() const { return geometry_engine_->HasCollisions(); }
 
   //@}
 
@@ -459,22 +543,22 @@ class GeometryState {
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       double max_distance) const {
     return geometry_engine_->ComputeSignedDistancePairwiseClosestPoints(
-        X_WGs_, max_distance);
+        kinematics_data_.X_WGs, max_distance);
   }
 
   /** Implementation of
    QueryObject::ComputeSignedDistancePairClosestPoints().  */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
       GeometryId id_A, GeometryId id_B) const {
-    return geometry_engine_->ComputeSignedDistancePairClosestPoints(id_A, id_B,
-                                                                    X_WGs_);
+    return geometry_engine_->ComputeSignedDistancePairClosestPoints(
+        id_A, id_B, kinematics_data_.X_WGs);
   }
 
   /** Implementation of QueryObject::ComputeSignedDistanceToPoint().  */
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ, double threshold) const {
-    return geometry_engine_->ComputeSignedDistanceToPoint(p_WQ, X_WGs_,
-                                                          threshold);
+    return geometry_engine_->ComputeSignedDistanceToPoint(
+        p_WQ, kinematics_data_.X_WGs, threshold);
   }
 
   //@}
@@ -559,6 +643,9 @@ class GeometryState {
   explicit GeometryState(const GeometryState<U>& source)
       : self_source_(source.self_source_),
         source_frame_id_map_(source.source_frame_id_map_),
+        source_deformable_geometry_id_map_(
+            source.source_deformable_geometry_id_map_),
+        source_frame_name_map_(source.source_frame_name_map_),
         source_root_frame_map_(source.source_root_frame_map_),
         source_names_(source.source_names_),
         source_anchored_geometry_map_(source.source_anchored_geometry_map_),
@@ -577,17 +664,34 @@ class GeometryState {
         dest[i] = s[i].template cast<T>();
       }
     };
-    convert_pose_vector(source.X_PF_, &X_PF_);
-    convert_pose_vector(source.X_WF_, &X_WF_);
+    // TODO(xuchenhan-tri): The scalar conversion of KinematicsData should be
+    // handled by the KinematicsData class.
+    convert_pose_vector(source.kinematics_data_.X_PFs, &kinematics_data_.X_PFs);
+    convert_pose_vector(source.kinematics_data_.X_WFs, &kinematics_data_.X_WFs);
 
     // Now convert the id -> pose map.
-    std::unordered_map<GeometryId, math::RigidTransform<T>>& dest = X_WGs_;
-    const std::unordered_map<GeometryId, math::RigidTransform<U>>& s =
-        source.X_WGs_;
-    for (const auto& id_pose_pair : s) {
-      const GeometryId id = id_pose_pair.first;
-      const math::RigidTransform<U>& X_WG_source = id_pose_pair.second;
-      dest.insert({id, X_WG_source.template cast<T>()});
+    {
+      std::unordered_map<GeometryId, math::RigidTransform<T>>& dest =
+          kinematics_data_.X_WGs;
+      const std::unordered_map<GeometryId, math::RigidTransform<U>>& s =
+          source.kinematics_data_.X_WGs;
+      for (const auto& id_pose_pair : s) {
+        const GeometryId id = id_pose_pair.first;
+        const math::RigidTransform<U>& X_WG_source = id_pose_pair.second;
+        dest.insert({id, X_WG_source.template cast<T>()});
+      }
+    }
+
+    // Now convert the id -> configuration map.
+    {
+      std::unordered_map<GeometryId, VectorX<T>>& dest = kinematics_data_.q_WGs;
+      const std::unordered_map<GeometryId, VectorX<U>>& s =
+          source.kinematics_data_.q_WGs;
+      for (const auto& id_configuration_pair : s) {
+        const GeometryId id = id_configuration_pair.first;
+        const VectorX<U>& q_WG_source = id_configuration_pair.second;
+        dest.insert({id, q_WG_source.template cast<T>()});
+      }
     }
   }
 
@@ -606,15 +710,28 @@ class GeometryState {
   // exception to be thrown. The ids can be optionally filtered based on role.
   // If `role` is nullopt, no filtering takes place. Otherwise, just those
   // geometries with the given role will be returned.
-  std::unordered_set<GeometryId> CollectIds(
-      const GeometrySet& geometry_set, std::optional<Role> role) const;
+  std::unordered_set<GeometryId> CollectIds(const GeometrySet& geometry_set,
+                                            std::optional<Role> role) const;
 
   // Sets the kinematic poses for the frames indicated by the given ids.
-  // @param poses The frame id and pose values.
+  // @param[in]  poses           The frame id and pose values.
+  // @param[out] kinematics_data The updated kinematics data that contains the
+  //                             frame poses.
   // @pre source_id is a registered source.
   // @throws std::exception  If the ids are invalid as defined by
   // ValidateFrameIds().
-  void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses);
+  void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses,
+                     internal::KinematicsData<T>* kinematics_data) const;
+
+  // Sets the kinematic configurations for the deformable geometries associated
+  // with the given source.
+  // @param[in]  configurations  The geometry id and configuration values.
+  // @param[out] kinematics_data The updated kinematics data that contains the
+  //                             deformable geometry configurations.
+  // @pre source_id is a registered source.
+  void SetGeometryConfiguration(
+      SourceId source_id, const GeometryConfigurationVector<T>& configurations,
+      internal::KinematicsData<T>* kinematics_data) const;
 
   // Confirms that the set of ids provided include _all_ of the frames
   // registered to the set's source id and that no extra frames are included.
@@ -622,12 +739,31 @@ class GeometryState {
   // @pre source_id is a registered source.
   // @throws std::exception if the set is inconsistent with known topology.
   template <typename ValueType>
-  void ValidateFrameIds(SourceId source_id,
-                        const FrameKinematicsVector<ValueType>& values) const;
+  void ValidateFrameIds(
+      SourceId source_id,
+      const KinematicsVector<FrameId, ValueType>& values) const;
 
-  // Method that performs any final book-keeping/updating on the state after
-  // _all_ of the state's frames have had their poses updated.
-  void FinalizePoseUpdate();
+  // Helper for RegisterGeometry() and RegisterDeformableGeometry() that
+  // validates the the source and frame ids (that they are registered) and
+  // geometry id (that there are no duplicates), and configures the topology of
+  // the geometry "tree".
+  void ValidateRegistrationAndSetTopology(SourceId source_id, FrameId frame_id,
+                                          GeometryId geometry_id);
+
+  // Method that updates the proximity engine and the render engines with the
+  // up-to-date _pose_ data in `kinematics_data`.
+  void FinalizePoseUpdate(
+      const internal::KinematicsData<T>& kinematics_data,
+      internal::ProximityEngine<T>* proximity_engine,
+      std::vector<render::RenderEngine*> render_engines) const;
+
+  // Method that updates the proximity engine and the render engines with the
+  // up-to-date _configuration_ data in `kinematics_data`. Currently, nothing is
+  // propagated to the render engines yet.
+  void FinalizeConfigurationUpdate(
+      const internal::KinematicsData<T>& kinematics_data,
+      internal::ProximityEngine<T>* proximity_engine,
+      std::vector<render::RenderEngine*> render_engines) const;
 
   // Gets the source id for the given frame id. Throws std::exception if the
   // frame belongs to no registered source.
@@ -663,9 +799,10 @@ class GeometryState {
   // Recursively updates the frame and geometry _pose_ information for the tree
   // rooted at the given frame, whose parent's pose in the world frame is given
   // as `X_WP`.
-  void UpdatePosesRecursively(const internal::InternalFrame& frame,
-                              const math::RigidTransform<T>& X_WP,
-                              const FramePoseVector<T>& poses);
+  void UpdatePosesRecursively(
+      const internal::InternalFrame& frame, const math::RigidTransform<T>& X_WP,
+      const FramePoseVector<T>& poses,
+      internal::KinematicsData<T>* kinematics_data) const;
 
   // Reports true if the given id refers to a _dynamic_ geometry. Assumes the
   // precondition that id refers to a valid geometry in the state.
@@ -686,6 +823,10 @@ class GeometryState {
   // for the given role, throws an exception.
   void ThrowIfNameExistsInRole(FrameId id, Role role,
                                const std::string& name) const;
+
+  // Propagate all roles defined in geometry instance to `this` geometry state.
+  void AssignAllRoles(SourceId source_id, GeometryId geometry_id,
+                      std::unique_ptr<GeometryInstance> geometry);
 
   // Confirms that the given role assignment is valid and return the geometry
   // if valid. Throws if not.
@@ -735,6 +876,44 @@ class GeometryState {
   // regardless of T's actual type.
   math::RigidTransformd GetDoubleWorldPose(FrameId frame_id) const;
 
+  /* TODO(xuchenhan-tri) Dangerous mutable getters using const_cast.
+   These data live in GeometryState (which is a Parameter in the system
+   framework sense), but they are (or depend on) time-dependent position data
+   which in turn depends on Scene Graph's input ports. These data should be
+   separate cache entries in SceneGraph that get updated when an Eval notes that
+   the input ports have changed. Instead, SceneGraph uses proxy `int` cache
+   entries whose evaluation trigger the filling-in of these position data
+   and subsequently update the proximity engine and the render engines that
+   depend on these position data. As long as every reference to position data
+   (and the proximity engine/render engines that depend on the position
+   data) is preceded to an Eval of the proxy cache entry, these time-dependent
+   members are just acting as awkwardly-placed cache memory. */
+  //@{
+  // Returns a mutable reference to the kinematics data in this GeometryState.
+  internal::KinematicsData<T>& mutable_kinematics_data() const {
+    GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
+    return mutable_state->kinematics_data_;
+  }
+
+  // Returns a mutable reference to the proximity engine in this GeometryState.
+  internal::ProximityEngine<T>& mutable_proximity_engine() const {
+    GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
+    return *mutable_state->geometry_engine_;
+  }
+
+  // Returns a vector of mutable pointers to all render engines in this
+  // GeometryState.
+  std::vector<render::RenderEngine*> GetMutableRenderEngines() const {
+    std::vector<render::RenderEngine*> results;
+    for (auto& [name, render_engine] : render_engines_) {
+      unused(name);
+      results.emplace_back(
+          const_cast<render::RenderEngine*>(render_engine.get()));
+    }
+    return results;
+  }
+  //@}
+
   // NOTE: If adding a member it is important that it be _explicitly_ copied
   // in the converting copy constructor and likewise tested in the unit test
   // for that constructor.
@@ -752,6 +931,15 @@ class GeometryState {
   // The registered geometry sources and the frame ids that have been registered
   // on them.
   std::unordered_map<SourceId, FrameIdSet> source_frame_id_map_;
+
+  // The registered geometry sources and the deformable geometry ids that have
+  // been registered on them.
+  std::unordered_map<SourceId, GeometryIdSet>
+      source_deformable_geometry_id_map_;
+
+  // The registered geometry sources and the frame names that have been
+  // registered on them. Only used to reject duplicate names.
+  std::unordered_map<SourceId, internal::FrameNameSet> source_frame_name_map_;
 
   // The registered geometry sources and the frame ids that have the world frame
   // as the parent frame. For a completely flat hierarchy, this contains the
@@ -785,40 +973,11 @@ class GeometryState {
   //      index of this vector.
   std::vector<FrameId> frame_index_to_id_map_;
 
-  // ---------------------------------------------------------------------
-  // These values depend on time-dependent input values (e.g., current frame
-  // poses).
-
-  // TODO(SeanCurtis-TRI): These values are place holders. Ultimately, they
-  // will live in the cache. Furthermore, they will be broken up by source
-  // so that inputs can be pulled independently. This work will be done when
-  // the cache PR lands. For now, they are big blobs of memory.
-
-  // Map from a frame's index to the _current_ pose of the frame F it identifies
-  // relative to its parent frame P, i.e., X_PF.
-  // TODO(SeanCurtis-TRI): Rename this to X_PFs_ to reflect multiplicity.
-  std::vector<math::RigidTransform<T>> X_PF_;
-
-  // The pose of every geometry relative to the _world_ frame (regardless of
-  // roles) keyed by the corresponding geometry's id. After a complete state
-  // update from input poses,
-  //   X_WGs_[i] == X_WFₙ · X_FₙFₙ₋₁ · ... · X_F₁F · G_i.X_FG()
-  // Where F is the parent frame of geometry G_i, Fₖ₊₁ is the parent frame of
-  // frame Fₖ, and the world frame W is the parent of frame Fₙ.
-  // In other words, it is the full evaluation of the kinematic chain from the
-  // geometry to the world frame.
-  std::unordered_map<GeometryId, math::RigidTransform<T>> X_WGs_;
-
-  // The pose of each frame relative to the _world_ frame.
-  // frames_.size() == X_WF_.size() is an invariant. Furthermore, after a
-  // complete state update from input poses,
-  //   X_WF_[i] == X_WFₙ X_FₙFₙ₋₁ ... X_Fᵢ₊₂Fᵢ₊₁ X_PF_[i]
-  // Where Fᵢ₊₁ is the parent frame of frame i, Fₖ₊₁ is the parent frame of
-  // frame Fₖ, and the world frame W is the parent of frame Fₙ.
-  // In other words, it is the full evaluation of the kinematic chain from
-  // frame i to the world frame.
-  // TODO(SeanCurtis-TRI): Rename this to X_WFs_ to reflect multiplicity.
-  std::vector<math::RigidTransform<T>> X_WF_;
+  // Kinematics data for all frames and all deformable geometries.
+  // frames_.size() == kinematics_data_.num_frames() and
+  // NumDeformableGeometries() == kinematics_data_.num_deformable_geometries()
+  // are two invariants.
+  internal::KinematicsData<T> kinematics_data_;
 
   // The underlying geometry engine. The topology of the engine does _not_
   // change with respect to time. But its values do. This straddles the two

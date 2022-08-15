@@ -356,6 +356,12 @@ TEST_F(ThreePoints, LinearCost1) {
   ASSERT_TRUE(result4.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result4), 1.0, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result4), 0.0, 1e-6);
+
+  EXPECT_TRUE(
+      CompareMatrices(source_->GetSolution(result4), p_source_.x(), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(target_->GetSolution(result4), p_target_.x(), 1e-6));
+  EXPECT_TRUE(sink_->GetSolution(result4).hasNaN());
 }
 
 TEST_F(ThreePoints, ConvexRelaxation) {
@@ -695,7 +701,7 @@ TEST_F(ThreeBoxes, LinearEqualityConstraint) {
   auto result = g_.SolveShortestPath(*source_, *target_, true);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(target_->GetSolution(result), b, 1e-6));
-  EXPECT_TRUE(CompareMatrices(sink_->GetSolution(result), 0 * b, 1e-6));
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
 }
 
 TEST_F(ThreeBoxes, LinearEqualityConstraint2) {
@@ -717,8 +723,7 @@ TEST_F(ThreeBoxes, LinearEqualityConstraint2) {
       CompareMatrices(Aeq.leftCols(2) * source_->GetSolution(result) +
                           Aeq.rightCols(2) * target_->GetSolution(result),
                       beq, 1e-6));
-  EXPECT_TRUE(
-      CompareMatrices(sink_->GetSolution(result), Vector2d::Zero(), 1e-6));
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
 }
 
 TEST_F(ThreeBoxes, LinearConstraint) {
@@ -728,8 +733,7 @@ TEST_F(ThreeBoxes, LinearConstraint) {
   auto result = g_.SolveShortestPath(*source_, *target_, true);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE((target_->GetSolution(result).array() >= b.array() - 1e-6).all());
-  EXPECT_TRUE(
-      CompareMatrices(sink_->GetSolution(result), Vector2d::Zero(), 1e-6));
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
 }
 
 TEST_F(ThreeBoxes, LinearConstraint2) {
@@ -754,8 +758,7 @@ TEST_F(ThreeBoxes, LinearConstraint2) {
                 A.rightCols(2) * target_->GetSolution(result))
                    .array() >= lb.array() - 1e-6)
                   .all());
-  EXPECT_TRUE(
-      CompareMatrices(sink_->GetSolution(result), Vector2d::Zero(), 1e-6));
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
 
   // Confirm that my linear constraint resulted in a non-trivial solution.
   EXPECT_FALSE(
@@ -905,6 +908,8 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
                                 0.5 * Vector2d(2, 0), 1e-6));
     EXPECT_NEAR(edge_13->GetSolutionCost(result), 0.5 * 1, 1e-6);
     EXPECT_NEAR(result.GetSolution(edge_13->phi()), 0.5, 1e-6);
+    EXPECT_TRUE(
+        CompareMatrices(v[1]->GetSolution(result), Vector2d(1, -1), 1e-6));
   }
 
   // Confirm that variables for edges that are turned off are properly set.
@@ -1075,6 +1080,52 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
     }
     EXPECT_GT(new_result.get_optimal_cost(), result.get_optimal_cost());
   }
+}
+
+// Section 11.4.1 (and the corresponding Figure 9) from the original Graph Of
+// Convex Sets paper (https://arxiv.org/abs/2101.11565) gives an instance where
+// the convex relaxation is loose.
+GTEST_TEST(ShortestPathTest, Figure9) {
+  GraphOfConvexSets spp;
+
+  const Vertex* source = spp.AddVertex(Point(Vector2d::Zero()), "source");
+  const Vertex* v1 = spp.AddVertex(Point(Vector2d(0, 2)));
+  const Vertex* v2 = spp.AddVertex(Point(Vector2d(0, -2)));
+  const Vertex* v3 =
+      spp.AddVertex(HPolyhedron::MakeBox(Vector2d(2, -2), Vector2d(4, 2)));
+  const Vertex* target = spp.AddVertex(Point(Vector2d(5, 0)), "target");
+
+  const Edge* e01 = spp.AddEdge(*source, *v1);
+  const Edge* e02 = spp.AddEdge(*source, *v2);
+  const Edge* e13 = spp.AddEdge(*v1, *v3);
+  const Edge* e23 = spp.AddEdge(*v2, *v3);
+  const Edge* e34 = spp.AddEdge(*v3, *target);
+
+  // Edge length is distance for all edges.
+  Matrix<double, 2, 4> A;
+  A.leftCols(2) = Matrix2d::Identity();
+  A.rightCols(2) = -Matrix2d::Identity();
+  auto cost = std::make_shared<solvers::L2NormCost>(A, Vector2d::Zero());
+
+  for (const auto& e : spp.Edges()) {
+    e->AddCost(solvers::Binding(cost, {e->xu(), e->xv()}));
+  }
+
+  auto result = spp.SolveShortestPath(source->id(), target->id(), true);
+  ASSERT_TRUE(result.is_success());
+
+  const double kTol = 2e-4;  // Gurobi required this large tolerance.
+  EXPECT_NEAR(result.GetSolution(e01->phi()), 0.5, kTol);
+  EXPECT_NEAR(result.GetSolution(e02->phi()), 0.5, kTol);
+  EXPECT_NEAR(result.GetSolution(e13->phi()), 0.5, kTol);
+  EXPECT_NEAR(result.GetSolution(e23->phi()), 0.5, kTol);
+  EXPECT_NEAR(result.GetSolution(e34->phi()), 1.0, kTol);
+
+  EXPECT_TRUE(CompareMatrices(v1->GetSolution(result), Vector2d(0, 2), kTol));
+  EXPECT_TRUE(CompareMatrices(v2->GetSolution(result), Vector2d(0, -2), kTol));
+  EXPECT_TRUE(v3->GetSolution(result)[0] > 2.0 - kTol);
+  EXPECT_TRUE(v3->GetSolution(result)[0] < 4.0 - kTol);
+  EXPECT_NEAR(v3->GetSolution(result)[1], 0, kTol);
 }
 
 GTEST_TEST(ShortestPathTest, Graphviz) {

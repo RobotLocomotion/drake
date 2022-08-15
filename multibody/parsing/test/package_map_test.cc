@@ -66,12 +66,16 @@ void VerifyMatchWithTestDataRoot(const PackageMap& package_map) {
   map<string, string> expected_packages = {
     {"package_map_test_package_a", root_path +
         "package_map_test_package_a/"},
+    {"package_map_test_package_aa", root_path +
+        "package_map_test_package_a/package_map_test_package_aa/"},
     {"package_map_test_package_b", root_path +
         "package_map_test_package_b/"},
     {"package_map_test_package_c", root_path +
         "package_map_test_package_set/package_map_test_package_c/"},
     {"package_map_test_package_d", root_path +
         "package_map_test_package_set/package_map_test_package_d/"},
+    {"package_map_test_package_e", root_path +
+        "package_map_test_package_e/"},
   };
   VerifyMatch(package_map, expected_packages);
 }
@@ -245,6 +249,41 @@ GTEST_TEST(PackageMapTest, TestPopulateFromEnvironment) {
   ::setenv("FOOBAR", value.c_str(), 1);
   package_map.PopulateFromEnvironment("FOOBAR");
   VerifyMatchWithTestDataRoot(package_map);
+}
+
+// Tests that PackageMap can be populated from the
+// ROS_PACKAGE_PATH env var.
+GTEST_TEST(PackageMapTest, TestPopulateFromRosPackagePath) {
+  PackageMap package_map = PackageMap::MakeEmpty();
+
+  // Test a null environment.
+  package_map.PopulateFromRosPackagePath();
+  EXPECT_EQ(package_map.size(), 0);
+
+  // Test an empty environment.
+  ::setenv("ROS_PACKAGE_PATH", "", 1);
+  package_map.PopulateFromRosPackagePath();
+  EXPECT_EQ(package_map.size(), 0);
+
+  // Test three environment entries, concatenated:
+  // - one bad path
+  // - one good path
+  // - one empty path
+  const std::string root_path = GetTestDataRoot();
+  const std::string value = "/does/not/exist:" + root_path + ":";
+  ::setenv("ROS_PACKAGE_PATH", value.c_str(), 1);
+  package_map.PopulateFromRosPackagePath();
+  map<string, string> expected_packages = {
+    {"package_map_test_package_a", root_path +
+        "package_map_test_package_a/"},
+    {"package_map_test_package_b", root_path +
+        "package_map_test_package_b/"},
+    {"package_map_test_package_c", root_path +
+        "package_map_test_package_set/package_map_test_package_c/"},
+    {"package_map_test_package_d", root_path +
+        "package_map_test_package_set/package_map_test_package_d/"},
+  };
+  VerifyMatch(package_map, expected_packages);
 }
 
 // Tests that PackageMap's streaming to-string operator works.

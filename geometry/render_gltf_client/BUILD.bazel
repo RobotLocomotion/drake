@@ -7,14 +7,44 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
-package(default_visibility = ["//visibility:public"])
+# TODO(jwnimmer-tri) Replace with "//visibility:private" once dev code is gone.
+_VISIBILITY = [
+    "//geometry/render/dev/render_gltf_client:__pkg__",
+]
+
+package(default_visibility = _VISIBILITY)
 
 drake_cc_package_library(
     name = "render_gltf_client",
-    visibility = ["//visibility:public"],
+    # TODO(jwnimmer-tri) Make public once we add libcurl to the wheel builds.
+    visibility = ["//visibility:private"],
     deps = [
-        ":internal_http_service",
+        ":factory",
+        ":render_engine_gltf_client_params",
+    ],
+)
+
+drake_cc_library(
+    name = "factory",
+    srcs = ["factory.cc"],
+    hdrs = ["factory.h"],
+    interface_deps = [
+        ":render_engine_gltf_client_params",
+        "//geometry/render:render_camera",
+    ],
+    deps = [
+        ":internal_render_engine_gltf_client",
+    ],
+)
+
+drake_cc_library(
+    name = "render_engine_gltf_client_params",
+    srcs = ["render_engine_gltf_client_params.cc"],
+    hdrs = ["render_engine_gltf_client_params.h"],
+    deps = [
+        "//geometry/render:render_label",
     ],
 )
 
@@ -22,6 +52,8 @@ drake_cc_library(
     name = "internal_http_service",
     srcs = ["internal_http_service.cc"],
     hdrs = ["internal_http_service.h"],
+    internal = True,
+    visibility = _VISIBILITY,
     interface_deps = [
         "//common:essential",
     ],
@@ -31,7 +63,83 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "internal_http_service_curl",
+    srcs = ["internal_http_service_curl.cc"],
+    hdrs = ["internal_http_service_curl.h"],
+    internal = True,
+    visibility = _VISIBILITY,
+    deps = [
+        ":internal_http_service",
+        "//common:filesystem",
+        "//common:unused",
+        "@fmt",
+        "@libcurl",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_render_client",
+    srcs = [
+        "internal_render_client.cc",
+    ],
+    hdrs = [
+        "internal_render_client.h",
+    ],
+    internal = True,
+    visibility = _VISIBILITY,
+    deps = [
+        ":internal_http_service",
+        ":internal_http_service_curl",
+        ":render_engine_gltf_client_params",
+        "//common:filesystem",
+        "//common:temp_directory",
+        "//geometry/render:render_camera",
+        "//geometry/render:render_engine",
+        "//systems/sensors:image",
+        "@picosha2",
+        "@vtk//:vtkIOImage",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_render_engine_gltf_client",
+    srcs = [
+        "internal_render_engine_gltf_client.cc",
+    ],
+    hdrs = [
+        "internal_render_engine_gltf_client.h",
+    ],
+    internal = True,
+    visibility = _VISIBILITY,
+    deps = [
+        ":internal_render_client",
+        "//common:filesystem",
+        "//geometry/render:render_camera",
+        "//geometry/render_vtk:internal_render_engine_vtk",
+        "//systems/sensors:image",
+        "@vtk//:vtkIOExport",
+    ],
+)
+
 # === test/ ===
+
+drake_cc_googletest(
+    name = "factory_test",
+    deps = [
+        ":factory",
+        ":internal_render_engine_gltf_client",
+        ":render_engine_gltf_client_params",
+        "//geometry/render:render_camera",
+    ],
+)
+
+drake_cc_googletest(
+    name = "render_engine_gltf_client_params_test",
+    deps = [
+        ":render_engine_gltf_client_params",
+    ],
+)
 
 drake_cc_googletest(
     name = "internal_http_service_test",
@@ -39,6 +147,65 @@ drake_cc_googletest(
         ":internal_http_service",
         "//common:filesystem",
         "//common:temp_directory",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_http_service_curl_test",
+    deps = [
+        ":internal_http_service_curl",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+filegroup(
+    name = "test_resources",
+    srcs = [
+        "test/test_depth_32F.tiff",
+        "test/test_label_16I.png",
+        "test/test_rgb_8U.png",
+        "test/test_rgba_8U.png",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_sample_image_data",
+    testonly = True,
+    srcs = ["test/internal_sample_image_data.cc"],
+    hdrs = ["test/internal_sample_image_data.h"],
+    visibility = _VISIBILITY,
+    deps = [
+        "//systems/sensors:image",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_render_client_test",
+    data = [
+        ":test_resources",
+    ],
+    deps = [
+        ":internal_render_client",
+        ":internal_sample_image_data",
+        "//common:find_resource",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_render_engine_gltf_client_test",
+    data = [
+        ":test_resources",
+    ],
+    tags = vtk_test_tags(),
+    deps = [
+        ":internal_render_engine_gltf_client",
+        ":internal_sample_image_data",
+        "//common:filesystem",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],

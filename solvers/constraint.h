@@ -15,10 +15,9 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
 #include "drake/solvers/function.h"
@@ -575,14 +574,6 @@ class LinearConstraint : public Constraint {
 
   ~LinearConstraint() override {}
 
-  DRAKE_DEPRECATED("2022-08-01",
-                   "Use get_sparse_A() instead of GetSparseMatrix()")
-  virtual Eigen::SparseMatrix<double> GetSparseMatrix() const {
-    // TODO(eric.cousineau): Consider storing or caching sparse matrix, such
-    // that we can return a const lvalue reference.
-    return A_.get_as_sparse();
-  }
-
   const Eigen::SparseMatrix<double>& get_sparse_A() const {
     return A_.get_as_sparse();
   }
@@ -594,14 +585,6 @@ class LinearConstraint : public Constraint {
    * returns a sparse matrix.
    */
   const Eigen::MatrixXd& GetDenseA() const;
-
-  /**
-   * Gets the coefficient matrix A as a dense matrix.
-   * @note This function will allocate new memory on the heap. For better
-   * performance you should call get_sparse_A() which returns a sparse matrix.
-   */
-  DRAKE_DEPRECATED("2022-08-01", "Use GetDenseA() instead of A()")
-  virtual const Eigen::MatrixXd& A() const { return A_.GetAsDense(); }
 
   /**
    * Updates the linear term, upper and lower bounds in the linear constraint.
@@ -625,6 +608,17 @@ class LinearConstraint : public Constraint {
   void UpdateCoefficients(const Eigen::SparseMatrix<double>& new_A,
                           const Eigen::Ref<const Eigen::VectorXd>& new_lb,
                           const Eigen::Ref<const Eigen::VectorXd>& new_ub);
+
+  /**
+   * Sets A(i, j) to zero if abs(A(i, j)) <= tol.
+   * Oftentimes the coefficient A is computed numerically with round-off errors.
+   * Such small round-off errors can cause numerical issues for certain
+   * optimization solvers. Hence it is recommended to remove the tiny
+   * coefficients to achieve numerical robustness.
+   * @param tol The entries in A with absolute value <= tol will be set to 0.
+   * @note tol>= 0.
+   */
+  void RemoveTinyCoefficient(double tol);
 
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
@@ -760,6 +754,12 @@ class BoundingBoxConstraint : public LinearConstraint {
 
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  // This function (inheried from the base LinearConstraint class) should not be
+  // called by BoundingBoxConstraint, so we hide it as a private function.
+  // TODO(hongkai.dai): BoundingBoxConstraint should derive from Constraint, not
+  // from LinearConstraint.
+  void RemoveTinyCoefficient(double tol);
 };
 
 /**
@@ -906,8 +906,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
 
   /**
    * @param x The stacked columns of the symmetric matrix. This function is not
-   * supported yet, since Eigen's eigen value solver does not accept
-   * AutoDiffScalar.
+   * supported yet, since Eigen's eigen value solver does not accept AutoDiffXd.
    */
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override;
@@ -969,7 +968,7 @@ class LinearMatrixInequalityConstraint : public Constraint {
 
   /**
    * This function is not supported, since Eigen's eigen value solver does not
-   * accept AutoDiffScalar type.
+   * accept AutoDiffXd.
    */
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override;

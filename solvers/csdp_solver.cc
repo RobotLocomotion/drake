@@ -19,6 +19,7 @@
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/csdp_solver_internal.h"
+#include "drake/solvers/sdpa_free_format.h"
 
 // Note that in the below, the first argument to csdp::cpp_easy_sdp is a params
 // filename, but that feature is a Drake-specific patch added to the CSDP
@@ -471,7 +472,19 @@ void CsdpSolver::DoSolve(const MathematicalProgram& prog,
     internal::SolveProgramWithNoFreeVariables(
         prog, sdpa_free_format, csdp_params_pathname, result);
   } else {
-    switch (method_) {
+    const auto int_options = merged_options.GetOptionsInt(CsdpSolver::id());
+    const auto it_method = int_options.find("drake::RemoveFreeVariableMethod");
+    RemoveFreeVariableMethod method = method_;
+    if (it_method != int_options.end()) {
+      if (it_method->second >= 1 && it_method->second <= 3) {
+        method = static_cast<RemoveFreeVariableMethod>(it_method->second);
+      } else {
+        throw std::runtime_error(
+            "CsdpSolver::sol(), unknown value for "
+            "drake::RemoveFreeVariableMethod");
+      }
+    }
+    switch (method) {
       case RemoveFreeVariableMethod::kNullspace: {
         internal::SolveProgramThroughNullspaceApproach(
             prog, sdpa_free_format, csdp_params_pathname, result);

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_config.h"
@@ -43,17 +44,36 @@ ResetIntegratorFromFlags() and SimulatorConfig::integration_scheme.
 @ingroup simulator_configuration */
 const std::vector<std::string>& GetIntegrationSchemes();
 
-/** Modifies the `simulator` to use the given config.  (Always replaces the
+/** Modifies the `simulator` based on the given `config`.  (Always replaces the
 Integrator with a new one; be careful not to keep old references around.)
 
+@param[in] config Configuration to be used. Contains values for both the
+  integrator and the simulator.
 @param[in,out] simulator On input, a valid pointer to a Simulator. On output
-  the integretor for `simulator` is reset according to the given `config`.
+  the integrator for `simulator` is reset according to the given `config`.
+@tparam_nonsymbolic_scalar
+
+@ingroup simulator_configuration
+@pydrake_mkdoc_identifier{config_sim} */
+template <typename T>
+void ApplySimulatorConfig(const SimulatorConfig& config,
+                          drake::systems::Simulator<T>* simulator);
+
+/** (Deprecated.) Modifies the `simulator` to use the given config.  (Always
+ replaces the Integrator with a new one; be careful not to keep old references
+ around.)
+
+@param[in,out] simulator On input, a valid pointer to a Simulator. On output
+  the integrator for `simulator` is reset according to the given `config`.
 @param[in] config Configuration to be used. Contains values for both the
   integrator and the simulator.
 @tparam_nonsymbolic_scalar
 
-@ingroup simulator_configuration */
+@ingroup simulator_configuration
+@pydrake_mkdoc_identifier{deprecated} */
 template <typename T>
+DRAKE_DEPRECATED("2022-11-01",
+                 "Call ApplySimulatorConfig with the config parameter first.")
 void ApplySimulatorConfig(
     drake::systems::Simulator<T>* simulator,
     const SimulatorConfig& config);

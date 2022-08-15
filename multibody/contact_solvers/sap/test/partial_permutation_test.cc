@@ -118,7 +118,7 @@ GTEST_TEST(PartialPermutation, PermutedDomainIsLargerThanOriginalDomain) {
   // The input permutation is invalid since index = 4 is out-of-bounds for a
   // domain of size 4.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PartialPermutation p({0, -1, 4, 1}),
+      PartialPermutation({0, -1, 4, 1}),
       "The size of the permuted domain must be smaller or equal than that of "
       "the original domian. Index 4, larger or equal than the domain size, "
       "appears in the input permutation.");
@@ -126,13 +126,13 @@ GTEST_TEST(PartialPermutation, PermutedDomainIsLargerThanOriginalDomain) {
 
 // Verifies the constructor throws if there are repeated indexes.
 GTEST_TEST(PartialPermutation, RepeatedIndex) {
-  DRAKE_EXPECT_THROWS_MESSAGE(PartialPermutation dut({0, -1, 2, 2}),
+  DRAKE_EXPECT_THROWS_MESSAGE(PartialPermutation({0, -1, 2, 2}),
                               "Index 2 appears at least twice in the input "
                               "permutation. At 2 and at 3.");
 }
 
 GTEST_TEST(PartialPermutation, MissingIndex) {
-  DRAKE_EXPECT_THROWS_MESSAGE(PartialPermutation dut({0, -1, -1, 4, 1}),
+  DRAKE_EXPECT_THROWS_MESSAGE(PartialPermutation({0, -1, -1, 4, 1}),
                               "Index 2 not present in the permutation. However "
                               "the maximum specified permuted index is 4.");
 }

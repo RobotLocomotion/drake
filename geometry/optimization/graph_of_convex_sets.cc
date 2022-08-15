@@ -232,9 +232,9 @@ std::string GraphOfConvexSets::GetGraphvizString(
   for (const auto& [v_id, v] : vertices_) {
     graphviz << "v" << v_id << " [label=\"" << v->name();
     if (result) {
-      graphviz << "\n x = [" << result->GetSolution(v->x()).transpose();
+      graphviz << "\n x = [" << result->GetSolution(v->x()).transpose() << "]";
     }
-    graphviz << "]\"]\n";
+    graphviz << "\"]\n";
   }
   for (const auto& [e_id, e] : edges_) {
     unused(e_id);
@@ -646,14 +646,28 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     const Vertex* v = vpair.second.get();
     const bool is_target = (target_id == v->id());
     VectorXd x_v = VectorXd::Zero(v->ambient_dimension());
+    double sum_phi = 0;
     if (is_target) {
+      sum_phi = 1.0;
       for (const auto& e : incoming_edges[v->id()]) {
         x_v += result.GetSolution(e->z_);
       }
     } else {
       for (const auto& e : outgoing_edges[v->id()]) {
         x_v += result.GetSolution(e->y_);
+        sum_phi += result.GetSolution(
+            convex_relaxation ? relaxed_phi.at(e->id()) : e->phi_);
       }
+    }
+    // In the convex relaxation, sum_relaxed_phi may not be one even for
+    // vertices in the shortest path. We undo yₑ = ϕₑ xᵤ here to ensure that
+    // xᵤ is in v->set(). If ∑ ϕₑ is small enough that numerical errors
+    // prevent the projection back into the Xᵤ, then we prefer to return NaN.
+    if (sum_phi < 100.0 * std::numeric_limits<double>::epsilon()) {
+      x_v = VectorXd::Constant(v->ambient_dimension(),
+                                std::numeric_limits<double>::quiet_NaN());
+    } else if (convex_relaxation) {
+      x_v /= sum_phi;
     }
     for (int i = 0; i < v->ambient_dimension(); ++i) {
       decision_variable_index.emplace(v->x()[i].get_id(), count);

@@ -625,21 +625,6 @@ TEST_F(ContactModelTest, HydroelasticWithFallback) {
   }
 }
 
-TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
-  this->Configure(ContactModel::kHydroelasticWithFallback, false);
-
-  // Plant was not connected to the SceneGraph in a diagram, so its input port
-  // should be invalid.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      GetContactResults(),
-      "The geometry query input port \\(see "
-      "MultibodyPlant::get_geometry_query_input_port\\(\\)\\) "
-      "of this MultibodyPlant is not connected. Please connect the"
-      "geometry query output port of a SceneGraph object "
-      "\\(see SceneGraph::get_query_output_port\\(\\)\\) to this plants input "
-      "port in a Diagram.");
-}
-
 // TODO(DamrongGuoy): Create an independent test fixture instead of using
 //  inheritance and consider using parameter-value tests.
 

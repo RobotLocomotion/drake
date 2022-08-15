@@ -134,6 +134,7 @@ drake_cc_binary(
         "//lcmtypes:robot_plan",
         "//multibody/parsing",
         "//multibody/plant",
+        "@lcm",
     ],
 )
 

@@ -99,8 +99,8 @@ TestEllipsoidsSeparation::TestEllipsoidsSeparation() {
   VectorX<symbolic::Expression> lorentz_expr2(1 + R2_.cols());
   lorentz_expr1 << t_(0), R1_.transpose() * a_;
   lorentz_expr2 << t_(1), R2_.transpose() * a_;
-  prog_.AddLorentzConeConstraint(lorentz_expr1).evaluator();
-  prog_.AddLorentzConeConstraint(lorentz_expr2).evaluator();
+  prog_.AddLorentzConeConstraint(lorentz_expr1);
+  prog_.AddLorentzConeConstraint(lorentz_expr2);
   // a'*(x2 - x1) = 1
   prog_.AddLinearEqualityConstraint((x2_ - x1_).transpose(), 1.0, a_);
 
@@ -109,8 +109,10 @@ TestEllipsoidsSeparation::TestEllipsoidsSeparation() {
 }
 
 void TestEllipsoidsSeparation::SolveAndCheckSolution(
-    const SolverInterface& solver, double tol) {
-  MathematicalProgramResult result = RunSolver(prog_, solver);
+    const SolverInterface& solver,
+    const std::optional<SolverOptions>& solver_options, double tol) {
+  MathematicalProgramResult result =
+      RunSolver(prog_, solver, {}, solver_options);
 
   // Check the solution.
   // First check if each constraint is satisfied.
@@ -351,8 +353,10 @@ TestFindSpringEquilibrium::TestFindSpringEquilibrium() {
 }
 
 void TestFindSpringEquilibrium::SolveAndCheckSolution(
-    const SolverInterface& solver, double tol) {
-  const MathematicalProgramResult result = RunSolver(prog_, solver);
+    const SolverInterface& solver,
+    const std::optional<SolverOptions>& solver_options, double tol) {
+  const MathematicalProgramResult result =
+      RunSolver(prog_, solver, {}, solver_options);
 
   const std::optional<SolverId> solver_id = result.get_solver_id();
   ASSERT_TRUE(solver_id);
@@ -499,11 +503,12 @@ void SmallestEllipsoidCoveringProblem1::CheckSolutionExtra(
 }
 
 void SolveAndCheckSmallestEllipsoidCoveringProblems(
-    const SolverInterface& solver, double tol) {
+    const SolverInterface& solver,
+    const std::optional<SolverOptions>& solver_options, double tol) {
   SmallestEllipsoidCoveringProblem1 prob1;
   if (solver.available()) {
     MathematicalProgramResult result;
-    solver.Solve(prob1.prog(), {}, {}, &result);
+    solver.Solve(prob1.prog(), {}, solver_options, &result);
     prob1.CheckSolution(result, tol);
   }
 
@@ -518,7 +523,7 @@ void SolveAndCheckSmallestEllipsoidCoveringProblems(
   SmallestEllipsoidCoveringProblem prob_3d(points_3d);
   if (solver.available()) {
     MathematicalProgramResult result;
-    solver.Solve(prob_3d.prog(), {}, {}, &result);
+    solver.Solve(prob_3d.prog(), {}, solver_options, &result);
     prob_3d.CheckSolution(result, tol);
   }
 
@@ -533,7 +538,7 @@ void SolveAndCheckSmallestEllipsoidCoveringProblems(
   SmallestEllipsoidCoveringProblem prob_4d(points_4d);
   if (solver.available()) {
     MathematicalProgramResult result;
-    solver.Solve(prob_4d.prog(), {}, {}, &result);
+    solver.Solve(prob_4d.prog(), {}, solver_options, &result);
     prob_4d.CheckSolution(result, tol);
   }
 }

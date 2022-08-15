@@ -264,9 +264,19 @@ const auto& GetElementByName(
   // If the name is non-existent, then say so, whether or not a specific model
   // instance was requested.
   if (lower == upper) {
+    std::vector<std::string_view> all_keys;
+    all_keys.reserve(name_to_index.size());
+    for (auto it = name_to_index.begin(),
+             end = name_to_index.end();
+         it != end;
+         it = name_to_index.equal_range(it->first).second) {
+      all_keys.push_back(it->first.view());
+    }
+    std::sort(all_keys.begin(), all_keys.end());
     throw std::logic_error(fmt::format(
-        "Get{}ByName(): There is no {} named '{}' anywhere in the model.",
-        element_classname, element_classname, name));
+        "Get{}ByName(): There is no {} named '{}' anywhere in the model "
+        "(valid names are: {})",
+        element_classname, element_classname, name, fmt::join(all_keys, ", ")));
   }
 
   // Filter for the requested model_instance, if one was provided.
@@ -2857,6 +2867,30 @@ void MultibodyTree<T>::ThrowIfNotFinalized(const char* source_method) const {
         "Pre-finalize calls to '" + std::string(source_method) + "()' are "
         "not allowed; you must call Finalize() first.");
   }
+}
+
+template <typename T>
+double MultibodyTree<T>::CalcTotalDefaultMass(
+    const std::set<BodyIndex>& body_indexes) const {
+  double total_mass = 0;
+  for (BodyIndex body_index : body_indexes) {
+    const Body<T>& body_B = get_body(body_index);
+    const double mass_B = body_B.default_mass();
+    if (!std::isnan(mass_B)) total_mass += mass_B;
+  }
+  return total_mass;
+}
+
+template <typename T>
+bool MultibodyTree<T>::IsAllDefaultRotationalInertiaZeroOrNaN(
+    const std::set<BodyIndex>& body_indexes) const {
+  for (BodyIndex body_index : body_indexes) {
+    const Body<T>& body_B = get_body(body_index);
+    const RotationalInertia<double> I_BBo_B =
+        body_B.default_rotational_inertia();
+    if (!I_BBo_B.IsNaN() && !I_BBo_B.IsZero()) return false;
+  }
+  return true;
 }
 
 template <typename T>

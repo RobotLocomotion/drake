@@ -65,7 +65,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:value_pybind",
     ],
@@ -85,8 +84,10 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
     ],
@@ -106,6 +107,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:serialize_pybind",
@@ -143,6 +145,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:monostate_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
     ],
     cc_srcs = ["meshcat_py.cc"],
@@ -165,7 +168,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         ":plant_py",
-        "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake/solvers",
     ],
 )
 
@@ -174,6 +177,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["optimization_py.cc"],
@@ -181,7 +185,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         ":plant_py",
-        "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake/solvers",
     ],
 )
 
@@ -283,6 +287,7 @@ drake_py_unittest(
         ":parsing_py",
         ":plant_py",
         ":tree_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
         "//bindings/pydrake/systems:analysis_py",
@@ -333,8 +338,7 @@ drake_py_unittest(
         ":parsing_py",
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/solvers:ipopt_py",
-        "//bindings/pydrake/solvers:snopt_py",
+        "//bindings/pydrake/solvers",
     ],
 )
 

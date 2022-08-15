@@ -32,7 +32,7 @@ class ScrewJointTest : public ::testing::Test {
   // screw joint.
   void SetUp() override {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
-    body_ = &model->AddBody<RigidBody>(SpatialInertia<double>{});
+    body_ = &model->AddBody<RigidBody>("Body", SpatialInertia<double>{});
 
     // Add a screw joint between the world and body1:
     joint_ = &model->AddJoint<ScrewJoint>("Joint", model->world_body(),
@@ -184,6 +184,11 @@ TEST_F(ScrewJointTest, Clone) {
   EXPECT_EQ(joint_clone.get_default_rotation(), joint_->get_default_rotation());
   EXPECT_EQ(joint_clone.get_default_translation(),
             joint_->get_default_translation());
+}
+
+TEST_F(ScrewJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint_->can_rotate());
+  EXPECT_TRUE(joint_->can_translate());
 }
 
 TEST_F(ScrewJointTest, NameSuffix) {

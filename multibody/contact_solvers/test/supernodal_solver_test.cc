@@ -213,7 +213,7 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
   // clang-format on
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+      SuperNodalSolver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
       "Invalid Jacobian triplets: no triplet provided for column 1.");
 }
 
@@ -244,7 +244,7 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
   // clang-format on
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+      SuperNodalSolver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
       "Jacobian can only be nonzero on at most two column blocks.");
 }
 

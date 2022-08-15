@@ -1,0 +1,38 @@
+directives:
+
+- add_model:
+    name: model1
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_model:
+    name: model2
+    file: package://process_model_directives_test/simple_model.sdf
+
+# Make a collision filter group across bodies from different models.
+- add_collision_filter_group:
+    name: across_models
+    members: [model1::base, model2::base]
+    ignored_collision_filter_groups: [across_models]
+
+- add_model_instance:
+    name: nested
+- add_directives:
+    file: package://process_model_directives_test/sub_collision.yaml
+    model_namespace: nested
+
+# Make a group with members from different nested directive levels.
+- add_collision_filter_group:
+    name: nested_members
+    members: [model1::base, nested::sub_model2::base]
+    ignored_collision_filter_groups: [nested_members]
+
+- add_model:
+    name: model3
+    file: package://process_model_directives_test/simple_model.sdf
+
+# Make a group with ignored groups from different nested directive levels.
+- add_collision_filter_group:
+    name: nested_group
+    members: [model3::base]
+    ignored_collision_filter_groups: [nested::across_sub_models]
+

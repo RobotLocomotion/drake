@@ -17,6 +17,7 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
+// TODO(xuchenhan-tri): Provide some details on spatial integration orders.
 /** %FemModel calculates the components of the spatially discretized FEM
  equations for dynamic elasticity problems. Typically, in dynamic elasticity
  problems, we are interested in the mapping that describes the motion of a

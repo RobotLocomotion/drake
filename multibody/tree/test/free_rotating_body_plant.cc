@@ -33,7 +33,7 @@ void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
   const double kMass = 1.0;
   SpatialInertia<double> M_Bcm(kMass, Vector3<double>::Zero(), G_Bcm);
 
-  body_ = &this->mutable_tree().template AddBody<RigidBody>(M_Bcm);
+  body_ = &this->mutable_tree().template AddBody<RigidBody>("B", M_Bcm);
   mobilizer_ = &this->mutable_tree().template AddMobilizer<
       internal::SpaceXYZMobilizer>(
           tree().world_frame(), body_->body_frame());

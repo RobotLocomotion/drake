@@ -9,7 +9,10 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
-load("//tools/workspace/dm_control:files.bzl", "dm_control_mujoco_files")
+load(
+    "//tools/workspace/dm_control_internal:files.bzl",
+    "dm_control_mujoco_files",
+)
 
 filegroup(
     name = "test_models",
@@ -18,23 +21,27 @@ filegroup(
         "test/**/*.config",
         "test/**/*.obj",
         "test/**/*.sdf",
-        "test/**/*.forced_nesting_sdf",
         "test/**/*.urdf",
         "test/**/*.xml",
         "test/**/*.png",
+        "test/**/COLCON_IGNORE",
     ]),
-    visibility = [
-        "//visibility:public",
-    ],
+    visibility = ["//visibility:public"],
+)
+
+_DM_CONTROL_MUJOCO_FILES = forward_files(
+    srcs = ["@dm_control_internal//:" + x for x in dm_control_mujoco_files()],
+    dest_prefix = "",
+    strip_prefix = "@dm_control_internal//:",
+    visibility = ["//visibility:private"],
 )
 
 drake_cc_package_library(
     name = "parsing",
-    visibility = [
-        "//visibility:public",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         ":model_directives",
+        ":model_instance_info",
         ":package_map",
         ":parser",
         ":process_model_directives",
@@ -44,18 +51,10 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "package_map",
-    srcs = [
-        "package_map.cc",
-    ],
-    hdrs = [
-        "package_map.h",
-    ],
-    data = [
-        "//:package.xml",
-    ],
-    visibility = [
-        "//visibility:public",
-    ],
+    srcs = ["package_map.cc"],
+    hdrs = ["package_map.h"],
+    data = ["//:package.xml"],
+    visibility = ["//visibility:public"],
     interface_deps = [
         "//common:essential",
     ],
@@ -67,12 +66,12 @@ drake_cc_library(
 )
 
 # For simplicity in dependency management (e.g., prevent exposing `sdformat`),
-# we make all `detail_*` headers and libraries private. For more info, see
-# #7451.
+# we make all `detail_*` libraries private. For more info, see #7451.
 
 drake_cc_library(
     name = "detail_misc",
     srcs = [
+        "detail_collision_filter_group_resolver.cc",
         "detail_common.cc",
         "detail_ignition.cc",
         "detail_path_utils.cc",
@@ -80,72 +79,47 @@ drake_cc_library(
         "detail_tinyxml2_diagnostic.cc",
     ],
     hdrs = [
+        "detail_collision_filter_group_resolver.h",
         "detail_common.h",
         "detail_ignition.h",
         "detail_path_utils.h",
         "detail_tinyxml.h",
         "detail_tinyxml2_diagnostic.h",
     ],
-    install_hdrs_exclude = [
-        "detail_common.h",
-        "detail_ignition.h",
-        "detail_path_utils.h",
-        "detail_tinyxml.h",
-        "detail_tinyxml2_diagnostic.h",
-    ],
-    tags = ["exclude_from_package"],
-    visibility = [
-        "//visibility:private",
-    ],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":package_map",
+        ":scoped_names",
         "//common:diagnostic_policy",
         "//common:essential",
         "//common:filesystem",
         "//geometry:proximity_properties",
         "//math:geometric_transform",
         "//multibody/plant",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
         "@tinyxml2",
     ],
 )
 
 drake_cc_library(
     name = "detail_sdf_diagnostic",
-    srcs = [
-        "detail_sdf_diagnostic.cc",
-    ],
-    hdrs = [
-        "detail_sdf_diagnostic.h",
-    ],
-    install_hdrs_exclude = [
-        "detail_sdf_diagnostic.h",
-    ],
-    tags = ["exclude_from_package"],
-    visibility = [
-        "//visibility:private",
-    ],
+    srcs = ["detail_sdf_diagnostic.cc"],
+    hdrs = ["detail_sdf_diagnostic.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         "//common:diagnostic_policy",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
     ],
 )
 
 drake_cc_library(
     name = "detail_sdf_geometry",
-    srcs = [
-        "detail_sdf_geometry.cc",
-    ],
-    hdrs = [
-        "detail_sdf_geometry.h",
-    ],
-    install_hdrs_exclude = [
-        "detail_sdf_geometry.h",
-    ],
-    tags = ["exclude_from_package"],
-    visibility = [
-        "//visibility:private",
-    ],
+    srcs = ["detail_sdf_geometry.cc"],
+    hdrs = ["detail_sdf_geometry.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":detail_misc",
         ":detail_sdf_diagnostic",
@@ -155,25 +129,16 @@ drake_cc_library(
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
         "//multibody/plant:coulomb_friction",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
     ],
 )
 
 drake_cc_library(
     name = "detail_sdf_parser",
-    srcs = [
-        "detail_sdf_parser.cc",
-    ],
-    hdrs = [
-        "detail_sdf_parser.h",
-    ],
-    install_hdrs_exclude = [
-        "detail_sdf_parser.h",
-    ],
-    tags = ["exclude_from_package"],
-    visibility = [
-        "//visibility:private",
-    ],
+    srcs = ["detail_sdf_parser.cc"],
+    hdrs = ["detail_sdf_parser.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":detail_misc",
         ":detail_parsing_workspace",
@@ -182,7 +147,7 @@ drake_cc_library(
         ":detail_urdf_parser",
         ":scoped_names",
         "//multibody/plant",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
     ],
 )
 
@@ -196,14 +161,8 @@ drake_cc_library(
         "detail_urdf_geometry.h",
         "detail_urdf_parser.h",
     ],
-    install_hdrs_exclude = [
-        "detail_urdf_geometry.h",
-        "detail_urdf_parser.h",
-    ],
-    tags = ["exclude_from_package"],
-    visibility = [
-        "//visibility:private",
-    ],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":detail_misc",
         ":detail_parsing_workspace",
@@ -216,19 +175,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "detail_mujoco_parser",
-    srcs = [
-        "detail_mujoco_parser.cc",
-    ],
-    hdrs = [
-        "detail_mujoco_parser.h",
-    ],
-    install_hdrs_exclude = [
-        "detail_mujoco_parser.h",
-    ],
-    tags = ["exclude_from_package"],
-    visibility = [
-        "//visibility:private",
-    ],
+    srcs = ["detail_mujoco_parser.cc"],
+    hdrs = ["detail_mujoco_parser.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":detail_misc",
         ":scoped_names",
@@ -240,16 +190,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "detail_parsing_workspace",
-    hdrs = [
-        "detail_parsing_workspace.h",
-    ],
-    install_hdrs_exclude = [
-        "detail_parsing_workspace.h",
-    ],
-    tags = ["exclude_from_package"],
-    visibility = [
-        "//visibility:private",
-    ],
+    hdrs = ["detail_parsing_workspace.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":package_map",
         "//common:diagnostic_policy",
@@ -257,23 +200,29 @@ drake_cc_library(
     ],
 )
 
+# The composite parse module and parser depend on one another, but the
+# detail_composite_parse header should remain private.
 drake_cc_library(
     name = "parser",
     srcs = [
+        "detail_composite_parse.cc",
         "parser.cc",
     ],
     hdrs = [
+        "detail_composite_parse.h",
         "parser.h",
     ],
-    visibility = [
-        "//visibility:public",
+    install_hdrs_exclude = [
+        "detail_composite_parse.h",
     ],
+    visibility = ["//visibility:public"],
     interface_deps = [
         ":package_map",
         "//common:diagnostic_policy",
         "//multibody/plant",
     ],
     deps = [
+        ":detail_mujoco_parser",
         ":detail_parsing_workspace",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
@@ -283,12 +232,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "model_directives",
-    hdrs = [
-        "model_directives.h",
-    ],
-    visibility = [
-        "//visibility:public",
-    ],
+    hdrs = ["model_directives.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//common:essential",
         "//common:name_value",
@@ -298,19 +243,30 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "model_instance_info",
+    hdrs = ["model_instance_info.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//math:geometric_transform",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
     name = "process_model_directives",
     srcs = ["process_model_directives.cc"],
     hdrs = ["process_model_directives.h"],
-    visibility = [
-        "//visibility:public",
-    ],
+    visibility = ["//visibility:public"],
     interface_deps = [
         ":model_directives",
+        ":model_instance_info",
         ":parser",
         "//multibody/plant",
     ],
     deps = [
+        ":detail_misc",
         ":scoped_names",
+        "//common:diagnostic_policy",
         "//common:filesystem",
         "//common:find_resource",
         "//common/yaml",
@@ -329,15 +285,9 @@ drake_cc_library(
 drake_cc_library(
     name = "test_loaders",
     testonly = 1,
-    srcs = [
-        "test/test_loaders.cc",
-    ],
-    hdrs = [
-        "test/test_loaders.h",
-    ],
-    visibility = [
-        "//visibility:private",
-    ],
+    srcs = ["test/test_loaders.cc"],
+    hdrs = ["test/test_loaders.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":detail_misc",
         ":parser",
@@ -348,12 +298,8 @@ drake_cc_library(
 drake_cc_library(
     name = "diagnostic_policy_test_base",
     testonly = 1,
-    hdrs = [
-        "test/diagnostic_policy_test_base.h",
-    ],
-    visibility = [
-        "//visibility:private",
-    ],
+    hdrs = ["test/diagnostic_policy_test_base.h"],
+    visibility = ["//visibility:private"],
     deps = [
         "//common:diagnostic_policy",
         "@gtest//:without_main",
@@ -406,7 +352,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//multibody/benchmarks/acrobot:models",
-    ],
+    ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":parser",
         "//common:filesystem",
@@ -419,9 +365,7 @@ filegroup(
     name = "process_model_directives_test_models",
     testonly = True,
     data = glob(["test/process_model_directives_test/**"]),
-    visibility = [
-        "//bindings/pydrake/multibody:__pkg__",
-    ],
+    visibility = ["//bindings/pydrake/multibody:__pkg__"],
 )
 
 drake_cc_googletest(
@@ -499,13 +443,6 @@ drake_cc_googletest(
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
     ],
-)
-
-_DM_CONTROL_MUJOCO_FILES = forward_files(
-    srcs = ["@dm_control//:" + x for x in dm_control_mujoco_files()],
-    dest_prefix = "",
-    strip_prefix = "@dm_control//:",
-    visibility = ["//visibility:private"],
 )
 
 drake_cc_googletest(
@@ -594,6 +531,14 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "detail_tinyxml2_diagnostic_test",
+    deps = [
+        ":detail_misc",
+        ":diagnostic_policy_test_base",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_collision_filter_group_resolver_test",
     deps = [
         ":detail_misc",
         ":diagnostic_policy_test_base",

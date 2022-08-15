@@ -7,6 +7,13 @@ licenses(["notice"])  # MIT
 
 py_library(
     name = "meshcat",
+    deprecation = "DRAKE DEPRECATED: The @meshcat_python external is deprecated and will be removed from Drake on or after 2022-10-01.",  # noqa
+    deps = [":meshcat_sans_deprecation_warning"],
+    visibility = ["//visibility:public"],
+)
+
+py_library(
+    name = "meshcat_sans_deprecation_warning",
     srcs = glob([
         "src/meshcat/*.py",
         "src/meshcat/servers/*.py",
@@ -16,16 +23,28 @@ py_library(
         "src/meshcat/viewer/dist/*.js",
     ]),
     imports = ["src"],
-    visibility = ["//visibility:public"],
+    visibility = ["@drake//:__subpackages__"],
 )
 
 py_binary(
     name = "meshcat-server",
+    deprecation = "DRAKE DEPRECATED: The @meshcat_python external is deprecated and will be removed from Drake on or after 2022-10-01.",  # noqa
     srcs = ["@drake//tools/workspace/meshcat_python:meshcat-server.py"],
     legacy_create_init = 0,
     python_version = "PY3",
     srcs_version = "PY3",
     visibility = ["//visibility:public"],
+    deps = [":meshcat"],
+)
+
+py_binary(
+    name = "meshcat-server_sans_deprecation_warning",
+    srcs = ["@drake//tools/workspace/meshcat_python:meshcat-server.py"],
+    main = "@drake//tools/workspace/meshcat_python:meshcat-server.py",
+    legacy_create_init = 0,
+    python_version = "PY3",
+    srcs_version = "PY3",
+    visibility = ["@drake//:__subpackages__"],
     deps = [":meshcat"],
 )
 
@@ -43,7 +62,7 @@ install(
     install_tests = [
         "@drake//tools/workspace/meshcat_python:test/meshcat-server-install-test.py",  # noqa
     ],
-    targets = [":meshcat"],
+    targets = [":meshcat_sans_deprecation_warning"],
     docs = ["LICENSE.txt"],
     py_strip_prefix = ["src"],
     visibility = ["//visibility:public"],

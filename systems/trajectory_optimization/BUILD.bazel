@@ -30,8 +30,8 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
-        "//common:symbolic",
         "//common:unused",
+        "//common/symbolic:expression",
     ],
 )
 
@@ -75,6 +75,7 @@ drake_cc_library(
     ],
     deps = [
         ":multiple_shooting",
+        "//common/symbolic:polynomial",
         "//common/trajectories:piecewise_polynomial",
         "//math:autodiff",
         "//math:gradient",

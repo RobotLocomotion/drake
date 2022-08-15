@@ -2,9 +2,9 @@
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -19,7 +19,6 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
-#include "drake/common/symbolic.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -299,7 +298,7 @@ class RotationalInertia {
   ///          product absolute value in `other`.  Otherwise returns `false`.
   /// @note: This method only works if all moments of inertia with scalar type T
   ///    in `this` and `other` can be converted to a double (discarding
-  ///    supplemental scalar data such as derivatives of an AutoDiffScalar).
+  ///    supplemental scalar data such as derivatives of an AutoDiffXd).
   ///    It fails at runtime if type T cannot be converted to `double`.
   boolean<T> IsNearlyEqualTo(const RotationalInertia& other,
                              double precision) const {
@@ -488,6 +487,21 @@ class RotationalInertia {
         isnan(I_SP_E_(2, 0)) || isnan(I_SP_E_(2, 1)) || isnan(I_SP_E_(2, 2));
   }
 
+  /// Returns `true` if all moments and products of inertia are exactly zero.
+  boolean<T> IsZero() const {
+    // Only check the lower-triangular part of this symmetric matrix for zero.
+    // The three upper off-diagonal products of inertia should be/remain NaN.
+    static_assert(is_lower_triangular_order(0, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(1, 1), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 2), "Invalid indices");
+    return I_SP_E_(0, 0) == T(0) &&
+    I_SP_E_(1, 0) == T(0) && I_SP_E_(1, 1) == T(0) &&
+    I_SP_E_(2, 0) == T(0) && I_SP_E_(2, 1) == T(0) && I_SP_E_(2, 2) == T(0);
+  }
+
   /// Returns a new %RotationalInertia object templated on `Scalar` initialized
   /// from the values of `this` rotational inertia's entries.
   ///
@@ -512,7 +526,7 @@ class RotationalInertia {
   ///
   /// @note: This method only works for a rotational inertia with scalar type T
   ///        that can be converted to a double (discarding any supplemental
-  ///        scalar data such as derivatives of an AutoDiffScalar).
+  ///        scalar data such as derivatives of an AutoDiffXd).
   ///
   /// @retval principal_moments The vector of principal moments of inertia
   ///                           `[Ixx Iyy Izz]` sorted in ascending order.
@@ -520,7 +534,7 @@ class RotationalInertia {
   ///         cannot be converted to a double.
   Vector3<double> CalcPrincipalMomentsOfInertia() const {
     // Notes:
-    //   1. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffScalar.
+    //   1. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffXd.
     //      Therefore, convert `this` to a local copy of type Matrix3<double>.
     //   2. Eigen's SelfAdjointEigenSolver only uses the lower-triangular part
     //      of this symmetric matrix.

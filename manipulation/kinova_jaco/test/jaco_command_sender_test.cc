@@ -49,31 +49,6 @@ const std::vector<double> ToStdVec(const Eigen::VectorXd& in) {
   return std::vector<double>{in.data(), in.data() + in.size()};
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-TEST_F(JacoCommandSenderTest, DeprecatedAcceptanceTest) {
-  constexpr int total_dof =
-      kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers;
-  const VectorXd state =
-      VectorXd::LinSpaced(total_dof * 2, 0.3, 0.4);
-
-  dut_.get_input_port().FixValue(&context_, state);
-  EXPECT_EQ(output().num_joints, kJacoDefaultArmNumJoints);
-  EXPECT_EQ(output().joint_position,
-            ToStdVec(state.head(kJacoDefaultArmNumJoints)));
-  EXPECT_EQ(output().joint_velocity,
-            ToStdVec(state.segment(total_dof, kJacoDefaultArmNumJoints)));
-  EXPECT_EQ(output().num_fingers, kJacoDefaultArmNumFingers);
-  EXPECT_EQ(output().finger_position, ToStdVec(state.segment(
-      kJacoDefaultArmNumJoints, kJacoDefaultArmNumFingers)
-                                               * kFingerUrdfToSdk));
-  EXPECT_EQ(output().finger_velocity,
-            ToStdVec(state.tail(kJacoDefaultArmNumFingers)
-                     * kFingerUrdfToSdk));
-}
-#pragma GCC diagnostic pop
-
 TEST_F(JacoCommandSenderTest, AcceptanceTestWithFingers) {
   const VectorXd q0 = VectorXd::LinSpaced(N + N_F, 0.2, 0.3);
   const VectorXd v0 = VectorXd::LinSpaced(N + N_F, 0.3, 0.4);

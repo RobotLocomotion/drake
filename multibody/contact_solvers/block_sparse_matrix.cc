@@ -3,6 +3,8 @@
 #include <tuple>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"

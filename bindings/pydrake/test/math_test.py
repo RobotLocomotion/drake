@@ -168,9 +168,6 @@ class TestMath(unittest.TestCase):
             self.assertTrue(X.IsExactlyIdentity())
             self.assertTrue(X.IsNearlyIdentity(translation_tolerance=0))
             self.assertTrue(X.IsNearlyEqualTo(other=X, tolerance=0))
-            # TODO(2022-06-01) Remove with completion of deprecation.
-            with catch_drake_warnings(expected_count=1):
-                self.assertTrue(X.IsIdentityToEpsilon(translation_tolerance=0))
         # - Test shaping (#13885).
         v = np.array([0., 0., 0.])
         vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
@@ -306,9 +303,6 @@ class TestMath(unittest.TestCase):
         numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
         numpy_compare.assert_equal(R.IsNearlyIdentity(0.0), True)
         numpy_compare.assert_equal(R.IsNearlyIdentity(tolerance=1E-15), True)
-        # TODO(2022-06-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1):
-            numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
         # - Repr.
         z = repr(T(0.0))
         i = repr(T(1.0))
@@ -477,6 +471,19 @@ class TestMath(unittest.TestCase):
         R = [0.3]
 
         mut.DiscreteAlgebraicRiccatiEquation(A=A, B=B, Q=Q, R=R)
+
+    def test_compute_numerical_gradient(self):
+        option = mut.NumericalGradientOption(
+            method=mut.NumericalGradientMethod.kCentral,
+            function_accuracy=1E-15)
+
+        def foo(x):
+            return np.array([x[0] ** 2, x[0] * x[1]])
+
+        grad = mut.ComputeNumericalGradient(
+            calc_func=foo, x=np.array([1., 2.]), option=option)
+        np.testing.assert_allclose(
+            grad, np.array([[2., 0.], [2., 1.]]), atol=1E-5)
 
     @numpy_compare.check_all_types
     def test_value_instantiations(self, T):

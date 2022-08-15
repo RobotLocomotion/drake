@@ -127,6 +127,10 @@ Defines an SDF model with various types of joints used for testing the parser.
             <damping>0.1</damping>
           </dynamics>
           <xyz expressed_in="__model__">0 0 1</xyz>
+          <limit>
+            <!-- not actuated -->
+            <effort>0</effort>
+          </limit>
         </axis>
       </joint>
       <link name="link6">
@@ -143,14 +147,31 @@ Defines an SDF model with various types of joints used for testing the parser.
         </inertial>
       </link>
       <joint name="universal_joint" type="universal">
+        <!-- This pose is relative to the parent frame (link5) which is
+             coincident with the world frame.-->
+        <pose>1 2 3 0 0 0</pose>
         <child>link6</child>
         <parent>link5</parent>
         <axis>
           <dynamics>
             <damping>0.1</damping>
           </dynamics>
+          <limit>
+            <!-- not actuated -->
+            <effort>0</effort>
+          </limit>
           <xyz expressed_in="__model__">0 0 1</xyz>
         </axis>
+        <axis2>
+          <dynamics>
+            <damping>0.1</damping>
+          </dynamics>
+          <limit>
+            <!-- not actuated -->
+            <effort>0</effort>
+          </limit>
+          <xyz expressed_in="__model__">0 1 0</xyz>
+        </axis2>
       </joint>
       <link name="link7">
         <inertial>

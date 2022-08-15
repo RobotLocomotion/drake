@@ -49,21 +49,29 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
   std::optional<ModelInstanceIndex> AddModelFromUrdfFile(
       const std::string& file_name,
       const std::string& model_name) {
-    return AddModelFromUrdf(
-        {DataSource::kFilename, &file_name}, model_name, {}, w_);
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    auto result = AddModelFromUrdf(
+        {DataSource::kFilename, &file_name}, model_name, {}, w);
+    resolver.Resolve(diagnostic_policy_);
+    return result;
   }
 
   std::optional<ModelInstanceIndex> AddModelFromUrdfString(
       const std::string& file_contents,
       const std::string& model_name) {
-    return AddModelFromUrdf(
-        {DataSource::kContents, &file_contents}, model_name, {}, w_);
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    auto result = AddModelFromUrdf(
+        {DataSource::kContents, &file_contents}, model_name, {}, w);
+    resolver.Resolve(diagnostic_policy_);
+    return result;
   }
+
  protected:
   PackageMap package_map_;
   MultibodyPlant<double> plant_{0.0};
   SceneGraph<double> scene_graph_;
-  ParsingWorkspace w_{package_map_, diagnostic_policy_, &plant_};
 };
 
 // Some tests contain deliberate typos to provoke parser errors or warnings. In
@@ -765,9 +773,7 @@ TEST_F(UrdfParserTest, AddingGeometriesToWorldLink) {
   </link>
 </robot>
 )""";
-  DataSource source{DataSource::kContents, &test_urdf};
-
-  AddModelFromUrdf(source, "urdf", {}, w_);
+  AddModelFromUrdfString(test_urdf, "urdf");
   EXPECT_THAT(TakeWarning(), MatchesRegex(
                   ".*<inertial> tag is being ignored.*"));
 
@@ -876,7 +882,7 @@ TEST_F(UrdfParserTest, EntireInertialTagOmitted) {
 
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("entire_inertial_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -894,7 +900,7 @@ TEST_F(UrdfParserTest, InertiaTagOmitted) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("inertia_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 2.);
+  EXPECT_EQ(body.default_mass(), 2.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -914,7 +920,7 @@ TEST_F(UrdfParserTest, MassTagOmitted) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("mass_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -932,7 +938,7 @@ TEST_F(UrdfParserTest, MasslessBody) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("massless_link"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -950,7 +956,7 @@ TEST_F(UrdfParserTest, PointMass) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("point_mass"));
-  EXPECT_EQ(body.get_default_mass(), 1.);
+  EXPECT_EQ(body.default_mass(), 1.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -1337,10 +1343,6 @@ TEST_F(UrdfParserTest, CollisionFilterGroupParsingTest) {
   AddModelFromUrdfFile(full_name, "model2");
 }
 
-// TODO(marcoag) We might want to add some form of feedback for:
-// - ignore_collision_filter_groups with non-existing group names.
-// - Empty collision_filter_groups.
-
 TEST_F(UrdfParserTest, CollisionFilterGroupMissingName) {
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='robot'>
@@ -1363,6 +1365,7 @@ TEST_F(UrdfParserTest, CollisionFilterGroupMissingLink) {
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*The tag <drake:member> does not specify the required "
                   "attribute \"link\"."));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'robot::group_a'.*no members"));
 }
 
 TEST_F(UrdfParserTest, IgnoredCollisionFilterGroupMissingName) {
@@ -1373,6 +1376,7 @@ TEST_F(UrdfParserTest, IgnoredCollisionFilterGroupMissingName) {
         <drake:ignored_collision_filter_group/>
       </drake:collision_filter_group>
     </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'robot::group_a'.*no members"));
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*The tag <drake:ignored_collision_filter_group> does not"
                   " specify the required attribute \"name\"."));

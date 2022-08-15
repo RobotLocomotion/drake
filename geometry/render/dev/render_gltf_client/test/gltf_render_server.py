@@ -86,7 +86,7 @@ Warning:
     :func:`root` method below.
 """
 
-NO_CLEANUP = False
+CLEANUP = True
 """Whether or not the server should cleanup its local cache.
 
 For debugging purposes, set this to ``True`` to prevent the deletion of scene
@@ -145,9 +145,9 @@ def compute_hash(path: Union[str, Path], block_size: int = 1024 * 1024) -> str:
 @atexit.register
 def delete_server_cache():
     """Delete the :data:`SERVER_CACHE` folder upon exit (e.g., ``ctrl+C``).
-    See also: :data:`NO_CLEANUP`.
+    See also: :data:`CLEANUP`.
     """
-    if not NO_CLEANUP:
+    if CLEANUP:
         if SERVER_CACHE.is_dir():
             shutil.rmtree(SERVER_CACHE, ignore_errors=True)
 
@@ -582,7 +582,7 @@ class RenderRequest:
             sha = compute_hash(temp_path)
             if sha != self.scene_sha256:
                 # Delete the file before erroring out.
-                if not NO_CLEANUP:
+                if CLEANUP:
                     try:
                         temp_path.unlink()
                     except Exception:
@@ -660,7 +660,7 @@ def render_callback(render_request: RenderRequest) -> Union[Path, str]:
     # will already live within the SERVER_CACHE, appending a file extension
     # to render to is acceptable.
     #
-    # NOTE: when NO_CLEANUP=False, this image path is deleted by the caller.
+    # NOTE: when CLEANUP=True, this image path is deleted by the caller.
     output_path = str(render_request.scene_path)
     if render_request.image_type in {"color", "label"}:
         output_path += ".png"
@@ -795,7 +795,7 @@ def render_endpoint():
                 print(f"==> Rendered image: {str(output_image)}")
 
             # Now that the image is rendered, it is safe to delete the scene.
-            if not NO_CLEANUP:
+            if CLEANUP:
                 if render_request.log_to_console:
                     scene_str = str(render_request.scene_path)
                     print(f"==> Deleting scene file {scene_str}.")
@@ -827,7 +827,7 @@ def render_endpoint():
             # order of megabytes and it is preferable to delete the image file
             # now rather than implement a cleanup scheme on the next request
             # (you cannot execute code after send_file).
-            if NO_CLEANUP:
+            if not CLEANUP:
                 return send_file(output_image, mimetype=mime_type)
             else:
                 buffer = None

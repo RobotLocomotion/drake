@@ -39,6 +39,11 @@ class PlanarMobilizerTest : public MobilizerTester {
   const PlanarMobilizer<double>* mobilizer_{nullptr};
 };
 
+TEST_F(PlanarMobilizerTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(mobilizer_->can_rotate());
+  EXPECT_TRUE(mobilizer_->can_translate());
+}
+
 // Verifies method to mutate and access the context.
 TEST_F(PlanarMobilizerTest, StateAccess) {
   const Vector2d some_values1(1.5, 2.5);

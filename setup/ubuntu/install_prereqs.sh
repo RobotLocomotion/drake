@@ -1,9 +1,20 @@
 #!/bin/bash
 #
 # Install development and runtime prerequisites for both binary and source
-# distributions of Drake on Ubuntu 20.04 (Focal).
+# distributions of Drake on Ubuntu 20.04 (Focal) or 22.04 (Jammy).
 
 set -euo pipefail
+
+# Check for existence of `SUDO_USER` so that this may be used in Docker
+# environments.
+if [[ -n "${SUDO_USER:+D}" && $(id -u ${SUDO_USER}) -eq 0 ]]; then
+  cat <<eof >&2
+It appears that this script is running under sudo, but it was the root user
+who ran sudo. That use is not supported; when already running as root, do not
+use sudo when calling this script.
+eof
+  exit 1
+fi
 
 at_exit () {
     echo "${me} has experienced an error on line ${LINENO}" \
@@ -23,10 +34,6 @@ while [ "${1:-}" != "" ]; do
     # i.e., those prerequisites that are dependencies of bazel run //doc:build.
     --with-doc-only)
       source_distribution_args+=(--with-doc-only)
-      ;;
-    # TODO(betsymcphail): Remove this deprecated option on or after 2022-08-01
-    --with-kcov)
-      source_distribution_args+=(--with-kcov)
       ;;
     # Install prerequisites that are only needed for --config clang, i.e.,
     # opts-in to the ability to compile Drake's C++ code using Clang.

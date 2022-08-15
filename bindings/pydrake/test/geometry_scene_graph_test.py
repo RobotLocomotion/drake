@@ -32,10 +32,11 @@ class TestGeometrySceneGraph(unittest.TestCase):
         scene_graph = SceneGraph()
         global_source = scene_graph.RegisterSource("anchored")
         global_frame = scene_graph.RegisterFrame(
-            source_id=global_source, frame=mut.GeometryFrame("anchored_frame"))
+            source_id=global_source,
+            frame=mut.GeometryFrame("anchored_frame1"))
         scene_graph.RegisterFrame(
             source_id=global_source, parent_id=global_frame,
-            frame=mut.GeometryFrame("anchored_frame"))
+            frame=mut.GeometryFrame("anchored_frame2"))
         global_geometry = scene_graph.RegisterGeometry(
             source_id=global_source, frame_id=global_frame,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
@@ -194,7 +195,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertEqual(inspector.GetOwningSourceName(frame_id=global_frame),
                          "anchored")
         self.assertEqual(
-            inspector.GetName(frame_id=global_frame), "anchored_frame")
+            inspector.GetName(frame_id=global_frame), "anchored_frame1")
         self.assertEqual(inspector.GetFrameGroup(frame_id=global_frame), 0)
         self.assertEqual(
             inspector.NumGeometriesForFrame(frame_id=global_frame), 2)
@@ -295,6 +296,67 @@ class TestGeometrySceneGraph(unittest.TestCase):
                 1)
 
     @numpy_compare.check_all_types
+    def test_scene_graph_register_geometry(self, T):
+        SceneGraph = mut.SceneGraph_[T]
+        scene_graph = SceneGraph()
+        global_source = scene_graph.RegisterSource("anchored")
+        global_frame = scene_graph.world_frame_id()
+        context = scene_graph.CreateDefaultContext()
+        model_inspector = scene_graph.model_inspector()
+        query_object = scene_graph.get_query_output_port().Eval(context)
+        context_inspector = query_object.inspector()
+        self.assertEqual(model_inspector.num_geometries(), 0)
+        self.assertEqual(context_inspector.num_geometries(), 0)
+
+        # Register with context
+        geometry = mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                        shape=mut.Sphere(1.),
+                                        name="sphere1")
+        global_geometry = scene_graph.RegisterGeometry(
+            context=context, source_id=global_source, frame_id=global_frame,
+            geometry=geometry)
+        self.assertEqual(model_inspector.num_geometries(), 0)
+        self.assertEqual(context_inspector.num_geometries(), 1)
+
+        # Now register the geometry in scene_graph with a new geometry
+        new_geometry = mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                            shape=mut.Sphere(1.),
+                                            name="sphere1")
+        scene_graph.RegisterGeometry(
+            source_id=global_source, frame_id=global_frame,
+            geometry=new_geometry)
+        self.assertEqual(model_inspector.num_geometries(), 1)
+        self.assertEqual(context_inspector.num_geometries(), 1)
+
+    @numpy_compare.check_all_types
+    def test_scene_graph_remove_geometry(self, T):
+        SceneGraph = mut.SceneGraph_[T]
+
+        scene_graph = SceneGraph()
+        global_source = scene_graph.RegisterSource("anchored")
+        global_frame = scene_graph.world_frame_id()
+        global_geometry = scene_graph.RegisterGeometry(
+            source_id=global_source, frame_id=global_frame,
+            geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                          shape=mut.Sphere(1.),
+                                          name="sphere1"))
+        context = scene_graph.CreateDefaultContext()
+        model_inspector = scene_graph.model_inspector()
+        query_object = scene_graph.get_query_output_port().Eval(context)
+        context_inspector = query_object.inspector()
+        # Call the version that only removes the geometry in the context.
+        scene_graph.RemoveGeometry(
+            context=context,
+            source_id=global_source,
+            geometry_id=global_geometry)
+        self.assertEqual(model_inspector.num_geometries(), 1)
+        self.assertEqual(context_inspector.num_geometries(), 0)
+        # Now remove the geometry in scene_graph
+        scene_graph.RemoveGeometry(
+            source_id=global_source, geometry_id=global_geometry)
+        self.assertEqual(model_inspector.num_geometries(), 0)
+
+    @numpy_compare.check_all_types
     def test_frame_pose_vector_api(self, T):
         FramePoseVector = mut.FramePoseVector_[T]
         RigidTransform = RigidTransform_[T]
@@ -305,8 +367,11 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertEqual(obj.size(), 1)
         self.assertIsInstance(obj.value(id=frame_id), RigidTransform)
         self.assertTrue(obj.has_id(id=frame_id))
-        self.assertIsInstance(obj.frame_ids(), list)
-        self.assertIsInstance(obj.frame_ids()[0], mut.FrameId)
+        with catch_drake_warnings(expected_count=2):
+            self.assertIsInstance(obj.frame_ids(), list)
+            self.assertIsInstance(obj.frame_ids()[0], mut.FrameId)
+        self.assertIsInstance(obj.ids(), list)
+        self.assertIsInstance(obj.ids()[0], mut.FrameId)
         obj.clear()
         self.assertEqual(obj.size(), 0)
 
@@ -442,3 +507,84 @@ class TestGeometrySceneGraph(unittest.TestCase):
     def test_value_instantiations(self, T):
         Value[mut.FramePoseVector_[T]]
         Value[mut.QueryObject_[T]]
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_contact_surface(self, T):
+        # We can't construct a ContactSurface directly. So, we need to evaluate
+        # hydroelastic contact in order to get a result that we can assess.
+        RigidTransform = RigidTransform_[T]
+        RigidTransformd = RigidTransform_[float]
+        SceneGraph = mut.SceneGraph_[T]
+        FramePoseVector = mut.FramePoseVector_[T]
+
+        scene_graph = SceneGraph()
+        s_id = scene_graph.RegisterSource("source")
+
+        # Add a compliant "moving" ball.
+        f_id = scene_graph.RegisterFrame(
+            source_id=s_id, frame=mut.GeometryFrame("frame"))
+        g_id0 = scene_graph.RegisterGeometry(
+            source_id=s_id, frame_id=f_id,
+            geometry=mut.GeometryInstance(X_PG=RigidTransformd(),
+                                          shape=mut.Sphere(1.), name="sphere"))
+        props = mut.ProximityProperties()
+        mut.AddCompliantHydroelasticProperties(
+            resolution_hint=1.0, hydroelastic_modulus=1e5, properties=props)
+        scene_graph.AssignRole(s_id, g_id0, props)
+
+        # Add a rigd half space.
+        g_id1 = scene_graph.RegisterAnchoredGeometry(
+            source_id=s_id,
+            geometry=mut.GeometryInstance(X_PG=RigidTransformd(),
+                                          shape=mut.HalfSpace(), name="plane"))
+        props = mut.ProximityProperties()
+        mut.AddRigidHydroelasticProperties(properties=props)
+        scene_graph.AssignRole(s_id, g_id1, props)
+
+        context = scene_graph.CreateDefaultContext()
+
+        # Provide poses so we can evaluate the query object. The poses should
+        # lead to a single collision.
+        poses = FramePoseVector()
+        poses.set_value(id=f_id, value=RigidTransform([0, 0, 0.5]))
+        scene_graph.get_source_pose_port(s_id).FixValue(context, poses)
+        query_object = scene_graph.get_query_output_port().Eval(context)
+
+        # Test both mesh representations.
+        for rep in (mut.HydroelasticContactRepresentation.kTriangle,
+                    mut.HydroelasticContactRepresentation.kPolygon):
+            expect_triangles = (
+                rep == mut.HydroelasticContactRepresentation.kTriangle)
+
+            results = query_object.ComputeContactSurfaces(rep)
+
+            self.assertEqual(len(results), 1)
+            contact_surface = results[0]
+            self.assertLess(g_id0, g_id1)  # confirm M = 0 and N = 1.
+            self.assertEqual(contact_surface.id_M(), g_id0)
+            self.assertEqual(contact_surface.id_N(), g_id1)
+            self.assertGreater(contact_surface.num_faces(), 0)
+            self.assertGreater(contact_surface.num_vertices(), 0)
+            self.assertGreater(contact_surface.area(face_index=0), 0)
+            self.assertGreater(contact_surface.total_area(), 0)
+            contact_surface.face_normal(face_index=0)
+            contact_surface.centroid(face_index=0)
+            contact_surface.centroid()
+
+            self.assertEqual(contact_surface.is_triangle(), expect_triangles)
+            self.assertEqual(contact_surface.representation(), rep)
+            if expect_triangles:
+                # Details of mesh are tested in geometry_hydro_test.py
+                contact_surface.tri_mesh_W()
+                field = contact_surface.tri_e_MN()
+                # Only triangle mesh fields can evaluate barycentric coords.
+                field.Evaluate(e=0, b=(0.25, 0.5, 0.25))
+            else:
+                # Details of mesh are tested in geometry_hydro_test.py
+                contact_surface.poly_mesh_W()
+                field = contact_surface.poly_e_MN()
+                # Only the Polygonal mesh has gradients pre-computed.
+                field.EvaluateGradient(e=0)
+            # APIs available to both Triangle and Polygon-based fields.
+            field.EvaluateAtVertex(v=0)
+            field.EvaluateCartesian(e=0, p_MQ=(0.25, 0.25, 0))

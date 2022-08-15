@@ -43,9 +43,9 @@ def make_ball_paddle(contact_model, contact_surface_representation,
                             "/paddle.sdf")
     paddle = parser.AddModelFromFile(paddle_sdf_file_name, model_name="paddle")
     plant.WeldFrames(
-        frame_on_parent_P=plant.world_frame(),
-        frame_on_child_C=plant.GetFrameByName("paddle", paddle),
-        X_PC=p_WPaddle_fixed
+        frame_on_parent_F=plant.world_frame(),
+        frame_on_child_M=plant.GetFrameByName("paddle", paddle),
+        X_FM=p_WPaddle_fixed
     )
     ball_sdf_file_name = \
         FindResourceOrThrow("drake/examples/hydroelastic/python_ball_paddle"
@@ -83,7 +83,7 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
                            target_realtime_rate=target_realtime_rate,
                            publish_every_time_step=True)
     simulator = Simulator(diagram)
-    ApplySimulatorConfig(simulator, simulator_config)
+    ApplySimulatorConfig(simulator_config, simulator)
 
     plant_context = diagram.GetSubsystemContext(ball_paddle_plant,
                                                 simulator.get_context())

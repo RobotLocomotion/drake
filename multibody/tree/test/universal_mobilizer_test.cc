@@ -49,6 +49,11 @@ class UniversalMobilizerTest : public MobilizerTester {
   const UniversalMobilizer<double>* mobilizer_{nullptr};
 };
 
+TEST_F(UniversalMobilizerTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(mobilizer_->can_rotate());
+  EXPECT_FALSE(mobilizer_->can_translate());
+}
+
 // Verifies method to mutate and access the context.
 TEST_F(UniversalMobilizerTest, StateAccess) {
   const Vector2d some_values1(1.5, 2.5);

@@ -7,11 +7,9 @@
 #include <Eigen/LU>
 #include <fmt/format.h>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
-#include "drake/common/symbolic_decompose.h"
+#include "drake/common/symbolic/decompose.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/framework/event.h"
@@ -117,9 +115,11 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
   // Verify that the input port is not abstract valued.
   if (input_port &&
       input_port->get_data_type() == PortDataType::kAbstractValued) {
-    throw std::logic_error(
-        "Port requested for differentiation is abstract, and differentiation "
-        "of abstract ports is not supported.");
+      throw std::logic_error(
+          "The specified input port is abstract-valued, but "
+          "FirstOrderTaylorApproximation only supports vector-valued "
+          "input ports.  Did you perhaps forget to pass a non-default "
+          "`input_port_index` argument?");
   }
 
   const int num_inputs = input_port ? input_port->size() : 0;

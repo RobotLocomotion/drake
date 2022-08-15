@@ -104,6 +104,8 @@ drake_cc_library(
         "body_node_impl.cc",
         "door_hinge.cc",
         "fixed_offset_frame.cc",
+        "frame.cc",
+        "joint.cc",
         "joint_actuator.cc",
         "linear_bushing_roll_pitch_yaw.cc",
         "linear_spring_damper.cc",
@@ -182,9 +184,9 @@ drake_cc_library(
         ":multibody_tree_indexes",
         ":spatial_inertia",
         ":string_view_map_key",
-        "//common:autodiff",
+        "//common:default_scalars",
+        "//common:name_value",
         "//common:nice_type_name",
-        "//common:symbolic",
         "//common:unused",
         "//math:geometric_transform",
         "//systems/framework:leaf_system",
@@ -241,7 +243,6 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:nice_type_name",
-        "//common:symbolic",
         "//math:linear_solve",
         "//math:vector3_util",
         "//multibody/math:spatial_algebra",
@@ -336,7 +337,7 @@ drake_cc_googletest(
     name = "multibody_tree_creation_test",
     deps = [
         ":tree",
-        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities",
     ],
 )
 
@@ -365,6 +366,7 @@ drake_cc_googletest(
     name = "spatial_inertia_test",
     deps = [
         ":spatial_inertia",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
@@ -422,6 +424,7 @@ drake_cc_googletest(
         ":mobilizer_tester",
         ":tree",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
     ],
 )

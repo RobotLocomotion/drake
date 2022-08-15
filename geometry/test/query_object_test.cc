@@ -9,6 +9,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/internal_frame.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 
@@ -163,6 +164,8 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(default_object.GetPoseInWorld(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.GetPoseInParent(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.GetPoseInWorld(GeometryId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(
+      default_object.GetConfigurationsInWorld(GeometryId::get_new_id()));
 
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());
@@ -173,6 +176,10 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   std::vector<PenetrationAsPointPair<double>> point_pairs;
   EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfacesWithFallback(
       representation, &surfaces, &point_pairs));
+  std::vector<internal::DeformableRigidContact<double>>
+      deformable_rigid_contact;
+  EXPECT_DEFAULT_ERROR(
+      default_object.ComputeDeformableRigidContact(&deformable_rigid_contact));
 
   // Signed distance queries.
   EXPECT_DEFAULT_ERROR(
@@ -229,45 +236,70 @@ TEST_F(QueryObjectTest, CreateValidInspector) {
   EXPECT_EQ(inspector.GetFrameId(geometry_id), frame_id);
 }
 
-// This test confirms that the copied (aka baked) query object has its pose
-// data properly baked. This is confirmed by a great deal of convoluted
-// trickery.
+// This test confirms that the copied (aka baked) query object has its pose and
+// configuration data properly baked. This is confirmed by a great deal of
+// convoluted trickery.
 TEST_F(QueryObjectTest, BakedCopyHasFullUpdate) {
   SourceId s_id = scene_graph_.RegisterSource("BakeTest");
   FrameId frame_id = scene_graph_.RegisterFrame(s_id, GeometryFrame("frame"));
+
+  auto deformable_geometry = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(1.0), "deformable");
+  // Make sure the resolution hint is large enough so that we know that the
+  // volume mesh is a octahedron.
+  GeometryId g_id = scene_graph_.RegisterDeformableGeometry(
+      s_id, internal::InternalFrame::world_frame_id(),
+      std::move(deformable_geometry), 10.0);
   unique_ptr<Context<double>> context = scene_graph_.CreateDefaultContext();
+
   RigidTransformd X_WF{Vector3d{1, 2, 3}};
   FramePoseVector<double> poses{{frame_id, X_WF}};
   scene_graph_.get_source_pose_port(s_id).FixValue(context.get(), poses);
+
+  const int kNumVertices = 7;
+  const int kNumDofs = kNumVertices * 3;
+  const VectorX<double> q_WG = Eigen::VectorXd::LinSpaced(0.0, 1.0, kNumDofs);
+  GeometryConfigurationVector<double> configurations{{g_id, q_WG}};
+  scene_graph_.get_source_configuration_port(s_id).FixValue(context.get(),
+                                                            configurations);
+
   const auto& query_object =
       scene_graph_.get_query_output_port().Eval<QueryObject<double>>(*context);
   EXPECT_TRUE(is_live(query_object));
 
   // Here's the convoluted trickery. We examine the state that's embedded in
-  // the context of the live query object. It *hasn't* updated poses at all.
-  // So, if we ask for the world pose of frame_id, it will *not* be at X_WF.
-  // However, when we copy the query_object, the same query on its state
-  // *will* return that value (showing that the copy has the updated poses).
-
+  // the context of the live query object. It *hasn't* updated
+  // poses/configurations at all. So, if we ask for the world pose of frame_id,
+  // it will *not* be at X_WF. Similarly, if we ask for the configuration of
+  // g_id, it will *not* be q_WG. However, when we copy the query_object, the
+  // same query on its state *will* return those values (showing that the copy
+  // has the updated poses).
   const GeometryState<double>& state = get_state(query_object);
   const auto& stale_pose = state.get_pose_in_world(frame_id);
+  const auto& stale_configuration = state.get_configurations_in_world(g_id);
   // Confirm the live state hasn't been updated yet.
   EXPECT_FALSE(
       CompareMatrices(stale_pose.GetAsMatrix34(), X_WF.GetAsMatrix34()));
+  EXPECT_FALSE(CompareMatrices(stale_configuration, q_WG));
 
   const QueryObject<double> baked(query_object);
 
   const GeometryState<double>& baked_state = get_state(baked);
   const auto& baked_pose = baked_state.get_pose_in_world(frame_id);
+  const auto& baked_configuration =
+      baked_state.get_configurations_in_world(g_id);
   EXPECT_TRUE(
       CompareMatrices(baked_pose.GetAsMatrix34(), X_WF.GetAsMatrix34()));
-  // And the previously stale pose is now updated as a pre-cursor to the baked
-  // copy.
+  EXPECT_TRUE(CompareMatrices(baked_configuration, q_WG));
+  // And the previously stale pose/configuration is now updated as a pre-cursor
+  // to the baked copy.
   EXPECT_TRUE(
       CompareMatrices(stale_pose.GetAsMatrix34(), X_WF.GetAsMatrix34()));
+  EXPECT_TRUE(CompareMatrices(stale_configuration, q_WG));
 
   // These really are different objects.
   EXPECT_NE(&stale_pose, &baked_pose);
+  EXPECT_NE(&stale_configuration, &baked_configuration);
 }
 
 // Ensure that I can construct a QueryObject with the default scalar types.

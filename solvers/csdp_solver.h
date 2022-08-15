@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/sdpa_free_format.h"
 #include "drake/solvers/solver_base.h"
 
@@ -46,12 +47,39 @@ struct CsdpSolverDetails {
   Eigen::SparseMatrix<double> Z_val;
 };
 
+/**
+ * Wrap CSDP solver such that it can solve a
+ * drake::solvers::MathematicalProgram.
+ * @note CSDP doesn't accept free variables, while
+ * drake::solvers::MathematicalProgram does. In order to convert
+ * MathematicalProgram into CSDP format, we provide several approaches to remove
+ * free variables. You can set the approach through
+ * @code{cc}
+ * SolverOptions solver_options;
+ * solver_options.SetOption(CsdpSolver::id(),
+ *    "drake::RemoveFreeVariableMethod",
+ *    static_cast<int>(RemoveFreeVariableMethod::kNullspace));
+ * CsdpSolver solver;
+ * auto result = solver.Solve(prog, std::nullopt, solver_options);
+ * @endcode
+ * For more details, check out RemoveFreeVariableMethod.
+ */
 class CsdpSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CsdpSolver)
 
-  explicit CsdpSolver(
-      RemoveFreeVariableMethod method = RemoveFreeVariableMethod::kNullspace);
+  /**
+   * Constructs CsdpSolver with a specified method to remove free variables.
+   */
+  DRAKE_DEPRECATED(
+      "2022-09-01",
+      "Use the CsdpSolver() constructor without an input argument, and set the "
+      "method through SetOption(CsdpSolver::id(), "
+      "\"drake::RemoveFreeVariableMethod\", METHOD)")
+  explicit CsdpSolver(RemoveFreeVariableMethod method);
+
+  /** Default constructor */
+  CsdpSolver();
 
   ~CsdpSolver() final;
 
@@ -72,6 +100,8 @@ class CsdpSolver final : public SolverBase {
   void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
                const SolverOptions&, MathematicalProgramResult*) const final;
 
+  // TODO(hongkai.dai): remove this field on 2022-09-01 when we deprecate the
+  // constructor with input argument `method`.
   RemoveFreeVariableMethod method_;
 };
 }  // namespace solvers

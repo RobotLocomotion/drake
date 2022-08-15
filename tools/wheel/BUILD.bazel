@@ -13,10 +13,23 @@ drake_py_binary(
     srcs = [
         "wheel_builder/common.py",
         "wheel_builder/linux.py",
+        "wheel_builder/macos.py",
         "wheel_builder/main.py",
     ],
     main = "wheel_builder/main.py",
     deps = [":module_py"],
+)
+
+drake_py_binary(
+    name = "strip_rpath",
+    srcs = ["macos/strip_rpath.py"],
+    deps = ["//tools/install:otool"],
+)
+
+drake_py_binary(
+    name = "change_lpath",
+    srcs = ["macos/change_lpath.py"],
+    deps = ["//tools/install:otool"],
 )
 
 add_lint_tests()

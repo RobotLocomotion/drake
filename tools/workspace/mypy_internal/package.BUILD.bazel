@@ -1,0 +1,17 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+
+licenses(["notice"])  # Python-2.0
+
+py_library(
+    name = "mypy",
+    srcs = glob(["mypy/**/*.py"]),
+    data = glob(["mypy/typeshed/**"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "@mypy_extensions_internal//:mypy_extensions",
+        "@tomli_internal//:tomli",
+        "@typing_extensions_internal//:typing_extensions",
+    ],
+)

@@ -110,7 +110,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:reset_after_move",
-        "//common:symbolic",
+        "//common/symbolic:expression",
     ],
 )
 
@@ -230,7 +230,7 @@ drake_cc_library(
     srcs = ["optitrack_sender.cc"],
     hdrs = ["optitrack_sender.h"],
     deps = [
-        "//geometry:frame_kinematics",
+        "//geometry:kinematics_vector",
         "//systems/framework:leaf_system",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],

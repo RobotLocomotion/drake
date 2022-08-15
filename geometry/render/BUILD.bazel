@@ -11,8 +11,22 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_package_library(
+# TODO(jwnimmer-tri) Along with deprecation removals on 2022-09-01, switch
+# this back to drake_cc_package_library and just use `name = "render"`.
+drake_cc_library(
+    name = "render_unpolluted",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":render_camera",
+        ":render_engine",
+        ":render_label",
+    ],
+)
+
+# TODO(jwnimmer-tri) Remove this along with deprecation on 2022-09-01.
+drake_cc_library(
     name = "render",
+    tags = ["nolint"],
     visibility = ["//visibility:public"],
     deps = [
         ":render_camera",
@@ -91,6 +105,18 @@ drake_cc_library(
         "//geometry/render_vtk:internal_render_engine_vtk",
         "//geometry/render_vtk:internal_render_engine_vtk_base",
         "//geometry/render_vtk:internal_vtk_util",
+        "//geometry/render_vtk:render_engine_vtk_params",
+    ],
+)
+
+# TODO(jwnimmer-tri) Remove this along with deprecation on 2022-09-01.
+drake_cc_library(
+    name = "render_engine_vtk_factory",
+    hdrs = ["render_engine_vtk_factory.h"],
+    tags = ["nolint"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//geometry/render_vtk:factory",
         "//geometry/render_vtk:render_engine_vtk_params",
     ],
 )

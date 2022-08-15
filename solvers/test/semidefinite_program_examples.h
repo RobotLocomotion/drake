@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_interface.h"
 
@@ -24,6 +26,7 @@ void TestTrivialSDP(const SolverInterface& solver,
 // s.t P is positive definite
 //     - (Ai'*P + P*Ai) is positive definite
 void FindCommonLyapunov(const SolverInterface& solver,
+                        const std::optional<SolverOptions>& solver_options,
                         double tol);
 
 /*
@@ -52,6 +55,7 @@ void FindCommonLyapunov(const SolverInterface& solver,
  * P is p.s.d
  */
 void FindOuterEllipsoid(const SolverInterface& solver,
+                        const std::optional<SolverOptions>& solver_options,
                         double tol);
 
 // Solve an eigen value problem through a semidefinite programming.
@@ -62,10 +66,11 @@ void FindOuterEllipsoid(const SolverInterface& solver,
 //     A * x <= b
 //     C * x = d
 void SolveEigenvalueProblem(const SolverInterface& solver,
+                            const std::optional<SolverOptions>& solver_options,
                             double tol);
 
 /// Solve an SDP with a second order cone constraint. This example is taken from
-/// https://docs.mosek.com/9.2/capi/tutorial-sdo-shared.html
+/// https://docs.mosek.com/9.3/capi/tutorial-sdo-shared.html
 void SolveSDPwithSecondOrderConeExample1(const SolverInterface& solver,
                                          double tol);
 

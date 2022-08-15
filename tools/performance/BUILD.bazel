@@ -10,13 +10,29 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = [
+    # All benchmarks should be in folders named "benchmarking".
+    "//common/benchmarking:__pkg__",
+    "//geometry/benchmarking:__pkg__",
+    "//multibody/benchmarking:__pkg__",
+    "//solvers/benchmarking:__pkg__",
+    "//systems/benchmarking:__pkg__",
+])
 
 drake_cc_library(
     name = "fixture_common",
     srcs = ["fixture_common.cc"],
     hdrs = ["fixture_common.h"],
     deps = [
+        "@googlebenchmark//:benchmark",
+    ],
+)
+
+drake_cc_library(
+    name = "gflags_main",
+    srcs = ["gflags_main.cc"],
+    deps = [
+        "@gflags",
         "@googlebenchmark//:benchmark",
     ],
 )

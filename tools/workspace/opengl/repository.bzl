@@ -8,7 +8,7 @@ def _impl(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
-    if os_result.is_macos:
+    if os_result.is_macos or os_result.is_macos_wheel:
         repository_ctx.symlink(
             Label("@drake//tools/workspace/opengl:package-macos.BUILD.bazel"),
             "BUILD.bazel",

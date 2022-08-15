@@ -2,14 +2,19 @@
 
 #include <memory>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/schema/transform.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
+#include "drake/multibody/parsing/detail_composite_parse.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/scoped_names.h"
 
@@ -24,6 +29,8 @@ using drake::FindResourceOrThrow;
 using drake::math::RigidTransformd;
 using drake::multibody::FixedOffsetFrame;
 using drake::multibody::Frame;
+using drake::multibody::internal::CollisionFilterGroupResolver;
+using drake::multibody::internal::CompositeParse;
 using drake::multibody::ModelInstanceIndex;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::PackageMap;
@@ -75,6 +82,7 @@ void AddWeld(
 void ProcessModelDirectivesImpl(
     const ModelDirectives& directives, MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models, Parser* parser,
+    CompositeParse* composite,
     const std::string& model_namespace) {
   drake::log()->debug("ProcessModelDirectives(MultibodyPlant)");
   DRAKE_DEMAND(plant != nullptr);
@@ -99,7 +107,7 @@ void ProcessModelDirectivesImpl(
       const std::string file =
           ResolveModelDirectiveUri(model.file, parser->package_map());
       drake::multibody::ModelInstanceIndex child_model_instance_id =
-          parser->AddModelFromFile(file, name);
+          composite->AddModelFromFile(file, name);
       info.model_instance = child_model_instance_id;
       info.model_name = name;
       info.model_path = file;
@@ -140,6 +148,27 @@ void ProcessModelDirectivesImpl(
           get_scoped_frame(directive.add_weld->child),
           plant, added_models);
 
+    } else if (directive.add_collision_filter_group) {
+      // Find the model instance index that corresponds to model_namespace, if
+      // the name is non-empty.
+      std::optional<ModelInstanceIndex> model_instance;
+      if (!model_namespace.empty()) {
+        DRAKE_DEMAND(plant->HasModelInstanceNamed(model_namespace));
+        model_instance = plant->GetModelInstanceByName(model_namespace);
+      }
+
+      auto& resolver = composite->collision_resolver();
+      auto& group = *directive.add_collision_filter_group;
+      drake::log()->debug("  add_collision_filter_group: {}", group.name);
+      std::set<std::string> member_set(group.members.begin(),
+                                       group.members.end());
+      // TODO(rpoyner-tri) obey parser policy? Improve error location clues?
+      drake::internal::DiagnosticPolicy d;
+      resolver.AddGroup(d, group.name, member_set, model_instance);
+      for (const auto& ignored_group : group.ignored_collision_filter_groups) {
+        resolver.AddPair(d, group.name, ignored_group, model_instance);
+      }
+
     } else {
       // Recurse.
       auto& sub = *directive.add_directives;
@@ -157,8 +186,8 @@ void ProcessModelDirectivesImpl(
       auto sub_directives =
           LoadModelDirectives(
               ResolveModelDirectiveUri(sub.file, parser->package_map()));
-      ProcessModelDirectivesImpl(
-          sub_directives, plant, added_models, parser, new_model_namespace);
+      ProcessModelDirectivesImpl(sub_directives, plant, added_models, parser,
+                                 composite, new_model_namespace);
     }
   }
 }
@@ -167,35 +196,8 @@ void ProcessModelDirectivesImpl(
 
 std::string ResolveModelDirectiveUri(const std::string& uri,
                                      const PackageMap& package_map) {
-  const std::string scheme_separator = "://";
-  const size_t scheme_end = uri.find(scheme_separator);
-  if (scheme_end == std::string::npos) {
-    drake::log()->error("Model resource '{}' is not a valid URI.",
-                        uri);
-    std::abort();
-  }
-
-  const std::string scheme = uri.substr(0, scheme_end);
-  const size_t package_end = uri.find("/", scheme_end + 3);
-  if (package_end == std::string::npos) {
-    drake::log()->error("Model resource '{}' has no path in package.",
-                        uri);
-    std::abort();
-  }
-
-  const std::string package_name =
-      uri.substr(scheme_end + scheme_separator.size(),
-                 package_end - scheme_end - scheme_separator.size());
-  const std::string path_in_package = uri.substr(package_end + 1);
-
-  DRAKE_DEMAND(scheme == "package");  // No other schemes supported for now.
-  if (!package_map.Contains(package_name)) {
-    drake::log()->error(
-        "Unable to resolve package '{}' for URI '{}' using package map: '{}'",
-        package_name, uri, package_map);
-    std::abort();
-  }
-  return package_map.GetPath(package_name) + "/" + path_in_package;
+  ::drake::internal::DiagnosticPolicy policy;
+  return ::drake::multibody::internal::ResolveUri(policy, uri, package_map, "");
 }
 
 void ProcessModelDirectives(
@@ -204,11 +206,21 @@ void ProcessModelDirectives(
     std::vector<ModelInstanceInfo>* added_models,
     drake::multibody::Parser* parser) {
   auto tmp_parser = ConstructIfNullAndReassign<Parser>(&parser, plant);
+  auto composite = CompositeParse::MakeCompositeParse(parser);
   auto tmp_added_model =
       ConstructIfNullAndReassign<std::vector<ModelInstanceInfo>>(&added_models);
   const std::string model_namespace = "";
-  ProcessModelDirectivesImpl(
-      directives, plant, added_models, parser, model_namespace);
+  ProcessModelDirectivesImpl(directives, plant, added_models, parser,
+                             composite.get(), model_namespace);
+}
+
+std::vector<ModelInstanceInfo> ProcessModelDirectives(
+    const ModelDirectives& directives,
+    drake::multibody::Parser* parser) {
+  DRAKE_THROW_UNLESS(parser != nullptr);
+  std::vector<ModelInstanceInfo> added_models;
+  ProcessModelDirectives(directives, &parser->plant(), &added_models, parser);
+  return added_models;
 }
 
 ModelDirectives LoadModelDirectives(const std::string& filename) {

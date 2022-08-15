@@ -118,8 +118,8 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
         .def("A", &HPolyhedron::A, cls_doc.A.doc)
         .def("b", &HPolyhedron::b, cls_doc.b.doc)
-        .def("Contains", &HPolyhedron::Contains, py::arg("other"),
-            cls_doc.Contains.doc)
+        .def("ContainedIn", &HPolyhedron::ContainedIn, py::arg("other"),
+            cls_doc.ContainedIn.doc)
         .def("Intersection", &HPolyhedron::Intersection, py::arg("other"),
             py::arg("check_for_redundancy") = false, cls_doc.Intersection.doc)
         .def("ReduceInequalities", &HPolyhedron::ReduceInequalities,
@@ -135,10 +135,22 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.CartesianPower.doc)
         .def("PontryaginDifference", &HPolyhedron::PontryaginDifference,
             py::arg("other"), cls_doc.PontryaginDifference.doc)
+        .def("UniformSample",
+            overload_cast_explicit<Eigen::VectorXd, RandomGenerator*,
+                const Eigen::Ref<Eigen::VectorXd>&>(
+                &HPolyhedron::UniformSample),
+            py::arg("generator"), py::arg("previous_sample"),
+            cls_doc.UniformSample.doc_2args)
+        .def("UniformSample",
+            overload_cast_explicit<Eigen::VectorXd, RandomGenerator*>(
+                &HPolyhedron::UniformSample),
+            py::arg("generator"), cls_doc.UniformSample.doc_1args)
         .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc)
+        .def_static("MakeL1Ball", &HPolyhedron::MakeL1Ball, py::arg("dim"),
+            cls_doc.MakeL1Ball.doc)
         .def(py::pickle(
             [](const HPolyhedron& self) {
               return std::make_pair(self.A(), self.b());
@@ -278,6 +290,14 @@ void DefineGeometryOptimization(py::module m) {
           doc.IrisOptions.configuration_space_margin.doc)
       .def_readwrite("enable_ibex", &IrisOptions::enable_ibex,
           doc.IrisOptions.enable_ibex.doc)
+      .def_readwrite("prog_with_additional_constraints",
+          &IrisOptions::prog_with_additional_constraints,
+          doc.IrisOptions.prog_with_additional_constraints.doc)
+      .def_readwrite("num_additional_constraint_infeasible_samples",
+          &IrisOptions::num_additional_constraint_infeasible_samples,
+          doc.IrisOptions.num_additional_constraint_infeasible_samples.doc)
+      .def_readwrite("random_seed", &IrisOptions::random_seed,
+          doc.IrisOptions.random_seed.doc)
       .def("__repr__", [](const IrisOptions& self) {
         return py::str(
             "IrisOptions("
@@ -286,12 +306,18 @@ void DefineGeometryOptimization(py::module m) {
             "termination_threshold={}, "
             "relative_termination_threshold={}, "
             "configuration_space_margin={}, "
-            "enable_ibex={}"
+            "enable_ibex={}, "
+            "prog_with_additional_constraints {}, "
+            "num_additional_constraint_infeasible_samples={}, "
+            "random_seed={}"
             ")")
             .format(self.require_sample_point_is_contained,
                 self.iteration_limit, self.termination_threshold,
                 self.relative_termination_threshold,
-                self.configuration_space_margin, self.enable_ibex);
+                self.configuration_space_margin, self.enable_ibex,
+                self.prog_with_additional_constraints ? "is set" : "is not set",
+                self.num_additional_constraint_infeasible_samples,
+                self.random_seed);
       });
 
   m.def("Iris", &Iris, py::arg("obstacles"), py::arg("sample"),
@@ -373,7 +399,7 @@ void DefineGeometryOptimization(py::module m) {
                 },
                 cls_doc.Edges.doc)
             .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
-                py::arg("result"), py::arg("show_slacks") = true,
+                py::arg("result") = std::nullopt, py::arg("show_slacks") = true,
                 py::arg("precision") = 3, py::arg("scientific") = false,
                 cls_doc.GetGraphvizString.doc)
             .def("SolveShortestPath",

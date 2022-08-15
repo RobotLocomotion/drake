@@ -26,7 +26,10 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/generic_polynomial.h"
+#include "drake/common/symbolic/polynomial.h"
+#include "drake/common/symbolic/rational_function.h"
 
 namespace drake {
 namespace symbolic {
@@ -115,12 +118,12 @@ template <typename BasisElement>
 
 [[nodiscard]] inline bool PolyEqualAfterExpansion(const Polynomial& p1,
                                                     const Polynomial& p2) {
-  return p1.EqualToAfterExpansion(p2);
+  return p1.Expand().EqualTo(p2.Expand());
 }
 
 [[nodiscard]] inline bool PolyNotEqualAfterExpansion(const Polynomial& p1,
                                                        const Polynomial& p2) {
-  return !p1.EqualToAfterExpansion(p2);
+  return !p1.Expand().EqualTo(p2.Expand());
 }
 
 [[nodiscard]] inline bool RationalFunctionEqual(const RationalFunction& f1,

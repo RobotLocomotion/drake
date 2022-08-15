@@ -12,11 +12,15 @@ namespace systems {
 namespace lcm {
 
 using drake::lcm::DrakeLcm;
+using drake::lcm::DrakeLcmParams;
 using drake::lcm::DrakeLcmInterface;
 using drake::lcm::DrakeSubscriptionInterface;
 
 LcmInterfaceSystem::LcmInterfaceSystem(std::string lcm_url)
-    : LcmInterfaceSystem(std::make_unique<DrakeLcm>(lcm_url)) {}
+    : LcmInterfaceSystem(DrakeLcmParams{.lcm_url = std::move(lcm_url)}) {}
+
+LcmInterfaceSystem::LcmInterfaceSystem(const DrakeLcmParams& params)
+    : LcmInterfaceSystem(std::make_unique<DrakeLcm>(params)) {}
 
 LcmInterfaceSystem::LcmInterfaceSystem(std::unique_ptr<DrakeLcmInterface> owned)
     : LcmInterfaceSystem(owned.get()) {

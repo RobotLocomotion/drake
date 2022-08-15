@@ -1,26 +1,28 @@
 """
-Runs the manipulation_station example with a simple tcl/tk joint slider ui for
-directly tele-operating the joints.
+Runs the manipulation_station example with a meshcat joint slider ui for
+directly tele-operating the joints.  To have the meshcat server automatically
+open in your browser, supply the --open-window flag; the joint sliders will be
+accessible by clicking on "Open Controls" in the top right corner.
 """
 
 import argparse
 import sys
+import webbrowser
 
 import numpy as np
 
-from pydrake.examples.manipulation_station import (
-    ManipulationStation, ManipulationStationHardwareInterface,
-    CreateClutterClearingYcbObjectList)
+from drake.examples.manipulation_station.schunk_wsg_buttons import \
+    SchunkWsgButtons
+from pydrake.examples import (
+    CreateClutterClearingYcbObjectList, ManipulationStation,
+    ManipulationStationHardwareInterface)
 from pydrake.geometry import DrakeVisualizer
-from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
+from pydrake.multibody.meshcat import JointSliders
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.meshcat_visualizer import \
-    ConnectMeshcatVisualizer, MeshcatVisualizer
+from pydrake.geometry import Meshcat, MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter, VectorLogSink
-from pydrake.systems.planar_scenegraph_visualizer import \
-    ConnectPlanarSceneGraphVisualizer
 
 
 def main():
@@ -43,10 +45,20 @@ def main():
         '--setup', type=str, default='manipulation_class',
         help="The manipulation station setup to simulate. ",
         choices=['manipulation_class', 'clutter_clearing', 'planar'])
-    MeshcatVisualizer.add_argparse_argument(parser)
+    parser.add_argument(
+        "-w", "--open-window", dest="browser_new",
+        action="store_const", const=1, default=None,
+        help="Open the MeshCat display in a new browser window.")
     args = parser.parse_args()
 
     builder = DiagramBuilder()
+
+    # NOTE: the meshcat instance is always created in order to create the
+    # teleop controls (joint sliders and open/close gripper button).  When
+    # args.hardware is True, the meshcat server will *not* display robot
+    # geometry, but it will contain the joint sliders and open/close gripper
+    # button in the "Open Controls" tab in the top-right of the viewing server.
+    meshcat = Meshcat()
 
     if args.hardware:
         # TODO(russt): Replace this hard-coded camera serial number with a
@@ -81,20 +93,20 @@ def main():
 
         geometry_query_port = station.GetOutputPort("geometry_query")
         DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
-        if args.meshcat:
-            meshcat = ConnectMeshcatVisualizer(
-                builder, output_port=geometry_query_port,
-                zmq_url=args.meshcat, open_browser=args.open_browser)
-            if args.setup == 'planar':
-                meshcat.set_planar_viewpoint()
-        if args.setup == 'planar':
-            pyplot_visualizer = ConnectPlanarSceneGraphVisualizer(
-                builder, station.get_scene_graph(), geometry_query_port)
+        meshcat_visualizer = MeshcatVisualizer.AddToBuilder(
+            builder=builder,
+            query_object_port=geometry_query_port,
+            meshcat=meshcat)
 
-    teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
-                                            length=800))
-    if args.test:
-        teleop.window.withdraw()  # Don't display the window when testing.
+        if args.setup == 'planar':
+            meshcat.Set2dRenderMode()
+
+    if args.browser_new is not None:
+        url = meshcat.web_url()
+        webbrowser.open(url=url, new=args.browser_new)
+
+    teleop = builder.AddSystem(JointSliders(
+        meshcat=meshcat, plant=station.get_controller_plant()))
 
     num_iiwa_joints = station.num_iiwa_joints()
     filter = builder.AddSystem(FirstOrderLowPassFilter(
@@ -103,7 +115,7 @@ def main():
     builder.Connect(filter.get_output_port(0),
                     station.GetInputPort("iiwa_position"))
 
-    wsg_buttons = builder.AddSystem(SchunkWsgButtons(teleop.window))
+    wsg_buttons = builder.AddSystem(SchunkWsgButtons(meshcat=meshcat))
     builder.Connect(wsg_buttons.GetOutputPort("position"),
                     station.GetInputPort("wsg_position"))
     builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
@@ -120,7 +132,6 @@ def main():
 
     diagram = builder.Build()
     simulator = Simulator(diagram)
-    iiwa_velocities_log = iiwa_velocities.FindLog(simulator.get_context())
 
     # This is important to avoid duplicate publishes to the hardware interface:
     simulator.set_publish_every_time_step(False)
@@ -142,7 +153,7 @@ def main():
     # Eval the output port once to read the initial positions of the IIWA.
     q0 = station.GetOutputPort("iiwa_position_measured").Eval(
         station_context)
-    teleop.set_position(q0)
+    teleop.SetPositions(q0)
     filter.set_initial_output_value(diagram.GetMutableSubsystemContext(
         filter, simulator.get_mutable_context()), q0)
 
@@ -152,6 +163,7 @@ def main():
     # Ensure that our initialization logic was correct, by inspecting our
     # logged joint velocities.
     if args.test:
+        iiwa_velocities_log = iiwa_velocities.FindLog(simulator.get_context())
         for time, qdot in zip(iiwa_velocities_log.sample_times(),
                               iiwa_velocities_log.data().transpose()):
             # TODO(jwnimmer-tri) We should be able to do better than a 40

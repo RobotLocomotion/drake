@@ -11,7 +11,7 @@ load(
 )
 load(
     "@drake_detected_os//:os.bzl",
-    "DISTRIBUTION",
+    "UBUNTU_RELEASE",
 )
 
 def drake_py_binary_ubuntu_only(
@@ -24,7 +24,7 @@ def drake_py_binary_ubuntu_only(
     The visibility defaults to private because this binary is not
     cross-platform.
     """
-    if DISTRIBUTION == "ubuntu":
+    if UBUNTU_RELEASE != None:
         drake_py_binary(
             name = name,
             visibility = visibility,
@@ -41,7 +41,7 @@ def drake_py_unittest_ubuntu_only(
     The visibility defaults to private because this binary is not
     cross-platform.
     """
-    if DISTRIBUTION == "ubuntu":
+    if UBUNTU_RELEASE != None:
         drake_py_unittest(
             name = name,
             visibility = visibility,

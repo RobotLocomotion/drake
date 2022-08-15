@@ -38,7 +38,7 @@ class UniversalJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add some bodies so we can add joints between them:
-    body_ = &model->AddBody<RigidBody>(M_B);
+    body_ = &model->AddBody<RigidBody>("Body", M_B);
 
     // Add a universal joint between the world and body1:
     joint_ = &model->AddJoint<UniversalJoint>("Joint", model->world_body(),
@@ -226,6 +226,11 @@ TEST_F(UniversalJointTest, SetVelocityAndAccelerationLimits) {
                                   Vector2d::Constant(2), Vector2d::Constant(0)),
                               ".* '\\(lower_limits.array\\(\\) <= "
                               "upper_limits.array\\(\\)\\).all\\(\\)' failed.");
+}
+
+TEST_F(UniversalJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint_->can_rotate());
+  EXPECT_FALSE(joint_->can_translate());
 }
 
 TEST_F(UniversalJointTest, NameSuffix) {

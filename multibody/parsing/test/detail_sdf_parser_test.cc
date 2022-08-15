@@ -5,9 +5,9 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <drake_vendor/sdf/parser.hh>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <sdf/parser.hh>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
@@ -53,6 +53,8 @@ using math::RollPitchYaw;
 using math::RollPitchYawd;
 using systems::Context;
 
+using CollisionPair = SortedPair<std::string>;
+
 const double kEps = std::numeric_limits<double>::epsilon();
 
 class SdfParserTest : public test::DiagnosticPolicyTestBase{
@@ -65,28 +67,35 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
 
   ModelInstanceIndex AddModelFromSdfFile(
       const std::string& file_name,
-      const std::string& model_name,
-      bool test_sdf_forced_nesting = false) {
+      const std::string& model_name) {
     const DataSource data_source{DataSource::kFilename, &file_name};
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
     std::optional<ModelInstanceIndex> result = AddModelFromSdf(
-        data_source, model_name, w_, test_sdf_forced_nesting);
+        data_source, model_name, w);
     EXPECT_TRUE(result.has_value());
+    resolver.Resolve(diagnostic_policy_);
     return result.value_or(ModelInstanceIndex{});
   }
 
   std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
-      const std::string& file_name,
-      bool test_sdf_forced_nesting = false) {
+      const std::string& file_name) {
     const DataSource data_source{DataSource::kFilename, &file_name};
-    return AddModelsFromSdf(
-        data_source, w_, test_sdf_forced_nesting);
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    auto result = AddModelsFromSdf(data_source, w);
+    resolver.Resolve(diagnostic_policy_);
+    return result;
   }
 
   std::vector<ModelInstanceIndex> AddModelsFromSdfString(
-      const std::string& file_contents,
-      bool test_sdf_forced_nesting = false) {
+      const std::string& file_contents) {
     const DataSource data_source{DataSource::kContents, &file_contents};
-    return AddModelsFromSdf(data_source, w_, test_sdf_forced_nesting);
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    auto result = AddModelsFromSdf(data_source, w);
+    resolver.Resolve(diagnostic_policy_);
+    return result;
   }
 
   void ParseTestString(const std::string& inner,
@@ -127,12 +136,32 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
     return warning_records_[0].FormatWarning();
   }
 
+  void VerifyCollisionFilters(
+      const std::vector<GeometryId>& ids,
+      const std::set<CollisionPair>& expected_filters) {
+    const int num_links = ids.size();
+    const auto& inspector = scene_graph_.model_inspector();
+    for (int m = 0; m < num_links; ++m) {
+      const std::string& m_name = inspector.GetName(ids[m]);
+      for (int n = m + 1; n < num_links; ++n) {
+        const std::string& n_name = inspector.GetName(ids[n]);
+        SCOPED_TRACE(fmt::format("{}[{}] vs {}[{}]", m_name, m, n_name, n));
+        CollisionPair names{m_name, n_name};
+        auto contains =
+            [&expected_filters](const CollisionPair& key) {
+              return expected_filters.count(key) > 0;
+            };
+        EXPECT_EQ(inspector.CollisionFiltered(ids[m], ids[n]),
+                  contains(names));
+      }
+    }
+  }
+
  protected:
   PackageMap package_map_;
   DiagnosticPolicy diagnostic_;
   MultibodyPlant<double> plant_{0.0};
   SceneGraph<double> scene_graph_;
-  ParsingWorkspace w_{package_map_, diagnostic_policy_, &plant_};
 };
 
 const Frame<double>& GetModelFrameByName(const MultibodyPlant<double>& plant,
@@ -327,7 +356,7 @@ TEST_F(SdfParserTest, EntireInertialTagOmitted) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("entire_inertial_tag_omitted"));
-  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_EQ(body->default_mass(), 1.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -348,7 +377,7 @@ TEST_F(SdfParserTest, InertiaTagOmitted) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("inertia_tag_omitted"));
-  EXPECT_EQ(body->get_default_mass(), 2.);
+  EXPECT_EQ(body->default_mass(), 2.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -376,7 +405,7 @@ TEST_F(SdfParserTest, MassTagOmitted) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("mass_tag_omitted"));
-  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_EQ(body->default_mass(), 1.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
   EXPECT_EQ(body->default_rotational_inertia().get_products(),
             Vector3d::Constant(0.1));
@@ -403,7 +432,7 @@ TEST_F(SdfParserTest, MasslessBody) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("massless_link"));
-  EXPECT_EQ(body->get_default_mass(), 0.);
+  EXPECT_EQ(body->default_mass(), 0.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -429,7 +458,7 @@ TEST_F(SdfParserTest, PointMass) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("point_mass"));
-  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_EQ(body->default_mass(), 1.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -662,11 +691,10 @@ TEST_F(SdfParserTest, ThrowsWhenJointDampingIsNegative) {
   const std::string sdf_file_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
       "negative_damping_joint.sdf");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromSdfFile(sdf_file_path, ""),
-      /* Verify this method is throwing for the right reasons. */
-      "Joint damping is negative for joint '.*'. "
-          "Joint damping must be a non-negative number.");
+  AddModelFromSdfFile(sdf_file_path, "");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*damping is negative.*"));
+  ClearDiagnostics();
 }
 
 TEST_F(SdfParserTest, IncludeTags) {
@@ -867,6 +895,31 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_lower_limits(),
                               neg_inf2));
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
+  // axis = (0, 0, 1) and axis2 = (0, 1, 0) in the model frame (aka the world
+  // frame in this case). So Ix, Iy, Iz are (0, 0, 1), (0, 1, 0), and (-1, 0, 0)
+  // respectively when expressed in the world frame. Since M = F = I and C = P =
+  // W, We have R_PF = R_CM = R_WI, and R_WI has column vectors Ix_W, Iy_W, and
+  // Iz_W.
+  Matrix3<double> R_WI;
+  // clang-format off
+  R_WI << 0, 0, -1,
+          0, 1, 0,
+          1, 0, 0;
+  // clang-format on
+  // The intermediate frame I and the joint frame J are off by a rotation and
+  // p_WI = p_WJ.
+  const Vector3d p_WI(
+      1.0, 2.0, 3.0); /* To be kept in sync with the testing SDFormat file. */
+  const RigidTransform<double> X_WI =
+      RigidTransform<double>(math::RotationMatrix<double>(R_WI), p_WI);
+  // In the SDFormat file, the frames on all links are coincident with the
+  // world frame. So p_PJ = p_CJ = p_WJ = p_WI. Therefore, X_PJ = X_CJ = X_WJ.
+  EXPECT_TRUE(universal_joint.frame_on_parent()
+                  .GetFixedPoseInBodyFrame()
+                  .IsExactlyEqualTo(X_WI));
+  EXPECT_TRUE(universal_joint.frame_on_child()
+                  .GetFixedPoseInBodyFrame()
+                  .IsExactlyEqualTo(X_WI));
 
   // Planar joint
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<PlanarJoint>("planar_joint",
@@ -900,6 +953,134 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(planar_joint2.position_upper_limits(), inf3));
   EXPECT_TRUE(CompareMatrices(planar_joint2.velocity_lower_limits(), neg_inf3));
   EXPECT_TRUE(CompareMatrices(planar_joint2.velocity_upper_limits(), inf3));
+}
+
+// Tests the error handling for an unsupported joint type (when actuated).
+TEST_F(SdfParserTest, ActuatedUniversalJointParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+      <limit>
+        <effort>100</effort>
+      </limit>
+    </axis>
+    <axis2>
+      <xyz>0 1 0</xyz>
+      <limit>
+        <effort>100</effort>
+      </limit>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*effort limits.*universal joint.*not implemented.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling when axis2 isn't specified for universal joints.
+TEST_F(SdfParserTest, UniversalJointAxisParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz> 0 0 1</xyz>
+    </axis>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstError(),
+              ::testing::MatchesRegex(
+                  ".*Both axis and axis2 must be specified.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for an non-orthogonal axis and axis2 in universal
+// joints.
+TEST_F(SdfParserTest, UniversalJointNonOrthogonalAxisParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+    </axis>
+    <axis2>
+      <xyz>0 0 1</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(
+      FormatFirstError(),
+      ::testing::MatchesRegex(".*axis and axis2 must be orthogonal.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for axis and axis2 with incompatible damping
+// coefficients in universal joints.
+TEST_F(SdfParserTest, UniversalJointDampingCoeffParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <limit>
+        <effort>0</effort>
+      </limit>
+      <dynamics>
+        <damping>0.1</damping>
+      </dynamics>
+      <xyz>0 0 1</xyz>
+    </axis>
+    <axis2>
+      <limit>
+        <effort>0</effort>
+      </limit>
+      <dynamics>
+        <damping>0.2</damping>
+      </dynamics>
+      <xyz>0 1 0</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(
+      FormatFirstWarning(),
+      ::testing::MatchesRegex(
+          ".*damping must be equal.*jerry.*damping coefficient.*0.1.*is "
+          "used.*0.2.*is ignored.*should be explicitly defined as 0.1 to "
+          "match.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for an unsupported joint type (when actuated).
+TEST_F(SdfParserTest, ActuatedBallJointParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="ball">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+      <limit>
+        <effort>100</effort>
+      </limit>
+    </axis>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*effort limits.*ball joint.*not implemented.*"));
+  ClearDiagnostics();
 }
 
 // Tests the error handling for an unsupported joint type.
@@ -2082,6 +2263,7 @@ TEST_F(SdfParserTest, FramesAsJointParentOrChild) {
 // SDFormat files can be forced to be loaded via the Interface API by changing
 // their file extension and registering the appropriate custom parser.
 TEST_F(SdfParserTest, InterfaceAPI) {
+  AddSceneGraph();
   const std::string sdf_file_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
       "top.sdf");
@@ -2089,7 +2271,33 @@ TEST_F(SdfParserTest, InterfaceAPI) {
       "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
       "package.xml"));
 
-  DRAKE_ASSERT_NO_THROW(AddModelFromSdfFile(sdf_file_path, "", true));
+  DRAKE_ASSERT_NO_THROW(AddModelFromSdfFile(sdf_file_path, ""));
+
+  // Test collision filtering across models. Done before Finalize() to exclude
+  // default filters.
+  {
+    const auto& inspector = scene_graph_.model_inspector();
+    static constexpr int kNumLinks = 4;
+    // Verify the number we expect and that they are all in proximity role.
+    ASSERT_EQ(kNumLinks, inspector.num_geometries());
+    ASSERT_EQ(kNumLinks,
+              inspector.NumGeometriesWithRole(geometry::Role::kProximity));
+    std::vector<GeometryId> ids = inspector.GetAllGeometryIds();
+    ASSERT_EQ(ids.size(), kNumLinks);
+
+    // Make sure the plant is not finalized such that the Finalize() default
+    // filtering has not taken into effect yet. This guarantees that the
+    // collision filtering is applied due to the collision filter group parsing.
+    ASSERT_FALSE(plant_.is_finalized());
+
+    // Verify filtering among all links.
+    std::set<CollisionPair> expected_filters = {
+      {"top::arm::L1", "top::gripper::gripper_link"},
+      {"top::arm::L1", "top::torso"},
+      {"top::gripper::gripper_link", "top::torso"},
+    };
+    VerifyCollisionFilters(ids, expected_filters);
+  }
 
   plant_.Finalize();
   auto context = plant_.CreateDefaultContext();
@@ -2110,69 +2318,13 @@ TEST_F(SdfParserTest, InterfaceAPI) {
                                 X_WL1.GetAsMatrix4(), kEps));
   }
 
-  {
-    // Frame E represents the model frame of model top::extra_arm
-    const RigidTransformd X_WE_expected(RollPitchYawd(0.0, 0.0, 0.0),
-                                        Vector3d(1, 2, 0));
-    const auto extra_arm_model_instance =
-        plant_.GetModelInstanceByName("top::extra_arm");
-    const auto& extra_arm_model_frame =
-        plant_.GetFrameByName("__model__", extra_arm_model_instance);
-    const RigidTransformd X_WE =
-        extra_arm_model_frame.CalcPoseInWorld(*context);
-    EXPECT_TRUE(CompareMatrices(X_WE_expected.GetAsMatrix4(),
-                                X_WE.GetAsMatrix4(), kEps));
-
-    const RigidTransformd X_WL2_expected(RollPitchYawd(0.1, 0.2, 0.3),
-                                        Vector3d(2, 4, 3));
-    const auto& arm_L2 = plant_.GetFrameByName("L2", extra_arm_model_instance);
-    const RigidTransformd X_WL2 = arm_L2.CalcPoseInWorld(*context);
-    EXPECT_TRUE(CompareMatrices(X_WL2_expected.GetAsMatrix4(),
-                                X_WL2.GetAsMatrix4(), kEps));
-  }
-  {
-    // Frame F represents the model frame of model top::arm::flange
-    const RigidTransformd X_WF_expected(RollPitchYawd(0.0, 0.0, 0.0),
-                                        Vector3d(1, 2, 1));
-    const auto flange_model_instance =
-        plant_.GetModelInstanceByName("top::arm::flange");
-    const auto& flange_model_frame =
-        plant_.GetFrameByName("__model__", flange_model_instance);
-    const RigidTransformd X_WF =
-        flange_model_frame.CalcPoseInWorld(*context);
-    EXPECT_TRUE(CompareMatrices(X_WF_expected.GetAsMatrix4(),
-                                X_WF.GetAsMatrix4(), kEps));
-
-    // Frame M represents the frame of model top::arm::flange::gripper_mount
-    const RigidTransformd X_WM_expected(RollPitchYawd(0.1, 0.2, 0.3),
-                                        Vector3d(1, 2, 3));
-    const auto& gripper_mount_frame =
-        plant_.GetFrameByName("gripper_mount", flange_model_instance);
-    const RigidTransformd X_WM = gripper_mount_frame .CalcPoseInWorld(*context);
-    EXPECT_TRUE(CompareMatrices(X_WM_expected.GetAsMatrix4(),
-                                X_WM.GetAsMatrix4(), kEps));
-
-    // Frame G represents the frame of model top::arm::flange::gripper
-    const RigidTransformd X_WG_expected(RollPitchYawd(0.1, 0.2, 0.3),
-                                        Vector3d(1, 2, 3));
-    const auto gripper_model_instance =
-        plant_.GetModelInstanceByName("top::arm::gripper");
-    const auto& gripper_model_frame =
-        plant_.GetFrameByName("__model__", gripper_model_instance);
-    const RigidTransformd X_WG = gripper_model_frame.CalcPoseInWorld(*context);
-    // TODO(azeey) There is a precision loss that occurs in libsdformat when
-    // resolving poses. Use just kEps when the following ign-math issue is
-    // resolved: https://github.com/ignitionrobotics/ign-math/issues/212.
-    EXPECT_TRUE(CompareMatrices(X_WG_expected.GetAsMatrix4(),
-                                X_WG.GetAsMatrix4(), 10 * kEps));
-  }
   // Test placement_frame using a table and a mug flipped upside down
   {
     // Frame T represents the frame top::table_and_mug::mug::top
     const RigidTransformd X_WT_expected(RollPitchYawd(M_PI_2, 0.0, 0.0),
                                         Vector3d(3, 0, 0.5));
     const auto mug_model_instance =
-        plant_.GetModelInstanceByName("top::table_and_mug::mug");
+        plant_.GetModelInstanceByName("top::mug");
     const auto& mug_top_frame =
         plant_.GetFrameByName("top", mug_model_instance);
     const RigidTransformd X_WT =
@@ -2200,122 +2352,98 @@ TEST_F(SdfParserTest, ErrorsFromIncludedUrdf) {
   ClearDiagnostics();
 }
 
-// Verifies that parser diagnostics from SDFormat files included by SDFormat
-// files make it through the entire call stack.
-TEST_F(SdfParserTest, ErrorsFromIncludedNestingSdf) {
-  const std::string file_contents = R"""(
-<sdf version='1.8'>
-  <model name="top">
-    <link name="torso"/>
-    <include>
-      <pose relative_to="torso">1 0 0 0 0 0</pose>
-      <uri>package://drake/multibody/parsing/test/sdf_parser_test/bad.forced_nesting_sdf</uri>
-      <name>arm</name>
-    </include>
-  </model>
-</sdf>)""";
-  const DataSource data_source{DataSource::kContents, &file_contents};
-  AddModelFromSdf(data_source, "", w_, true);
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
-      ".*Unable to read.*bad.forced_nesting.*"));
-  ClearDiagnostics();
-}
-
 // TODO(SeanCurtis-TRI) The logic testing for collision filter group parsing
 // belongs in detail_common_test.cc. Urdf and Sdf parsing just need enough
 // testing to indicate that the method is being invoked correctly.
 TEST_F(SdfParserTest, CollisionFilterGroupParsingTest) {
   const std::string full_sdf_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/"
-      "sdf_parser_test/collision_filter_group_parsing_test.sdf");
+      "sdf_parser_test/collision_filter_group_parsing_test/test.sdf");
   AddSceneGraph();
 
   // Read in the SDF file.
+  package_map_.PopulateFromFolder(
+      filesystem::path(full_sdf_filename).parent_path());
   AddModelFromSdfFile(full_sdf_filename, "");
 
   // Get geometry ids for all the bodies.
-  const geometry::SceneGraphInspector<double>& inspector =
-      scene_graph_.model_inspector();
-  static constexpr int kNumLinks = 6;
-  std::vector<GeometryId> ids(1 + kNumLinks);  // allow 1-based indices.
-  for (int k = 1; k <= 6; ++k) {
-    const auto geometry_id = inspector.GetGeometryIdByName(
-        plant_.GetBodyFrameIdOrThrow(
-            plant_.GetBodyByName(fmt::format("link{}", k)).index()),
-        geometry::Role::kProximity,
-        fmt::format("collision_filter_group_parsing_test::link{}_sphere", k));
-    ids[k] = geometry_id;
-  }
+  const auto& inspector = scene_graph_.model_inspector();
+  static constexpr int kNumRobots = 2;
+  static constexpr int kNumLinksPerRobot = 6;
+  static constexpr int kNumLinks = kNumLinksPerRobot * kNumRobots;
+  // Verify the number we expect and that they are all in proximity role.
+  ASSERT_EQ(kNumLinks, inspector.num_geometries());
+  ASSERT_EQ(kNumLinks,
+            inspector.NumGeometriesWithRole(geometry::Role::kProximity));
+  std::vector<GeometryId> ids = inspector.GetAllGeometryIds();
+  ASSERT_EQ(ids.size(), kNumLinks);
 
-  // Make sure the plant is not finalized such that the adjacent joint filter
-  // has not taken into effect yet. This guarantees that the collision filtering
-  // is applied due to the collision filter group parsing.
+  // Make sure the plant is not finalized such that the Finalize() default
+  // filtering has not taken into effect yet. This guarantees that the
+  // collision filtering is applied due to the collision filter group parsing.
   ASSERT_FALSE(plant_.is_finalized());
 
-  // We have six geometries and 15 possible pairs, each with a particular
-  // disposition.
-  // (1, 2) - unfiltered
-  EXPECT_FALSE(inspector.CollisionFiltered(ids[1], ids[2]));
-  // (1, 3) - filtered by group_link3 ignores group_link14
-  EXPECT_TRUE(inspector.CollisionFiltered(ids[1], ids[3]));
-  // (1, 4) - filtered by group_link14 ignores itself
-  EXPECT_TRUE(inspector.CollisionFiltered(ids[1], ids[4]));
-  // (1, 5) - unfiltered
-  EXPECT_FALSE(inspector.CollisionFiltered(ids[1], ids[5]));
-  // (1, 6) - unfiltered
-  EXPECT_FALSE(inspector.CollisionFiltered(ids[1], ids[6]));
-  // (2, 3) - filtered by group_link2 ignores group_link3
-  EXPECT_TRUE(inspector.CollisionFiltered(ids[2], ids[3]));
-  // (2, 4) - unfiltered (although declared in an *ignored* self-filtering
-  // group_link24).
-  EXPECT_FALSE(inspector.CollisionFiltered(ids[2], ids[4]));
-  // (2, 5) - filtered by group_link56 ignored group_link2
-  EXPECT_TRUE(inspector.CollisionFiltered(ids[2], ids[5]));
-  // (2, 6) - filtered by group_link56 ignored group_link2
-  EXPECT_TRUE(inspector.CollisionFiltered(ids[2], ids[6]));
-  // (3, 4) - filtered by group_link3 ignores group_link14
-  EXPECT_TRUE(inspector.CollisionFiltered(ids[3], ids[4]));
-  // (3, 5) - filtered by group_link56 ignored group_link3
-  EXPECT_TRUE(inspector.CollisionFiltered(ids[3], ids[5]));
-  // (3, 6) - filtered by group_link56 ignored group_link3
-  EXPECT_TRUE(inspector.CollisionFiltered(ids[3], ids[6]));
-  // (4, 5) - unfiltered
-  EXPECT_FALSE(inspector.CollisionFiltered(ids[4], ids[5]));
-  // (4, 6) - unfiltered
-  EXPECT_FALSE(inspector.CollisionFiltered(ids[4], ids[6]));
-  // (5, 6) - filtered by group_link56 ignores itself
-  EXPECT_TRUE(inspector.CollisionFiltered(ids[5], ids[6]));
+  // Verify filtering among all links.
+  std::set<CollisionPair> expected_filters = {
+    // Filtered within robot1.
+    {"test::robot1::link1_sphere", "test::robot1::link3_sphere"},
+    {"test::robot1::link1_sphere", "test::robot1::link4_sphere"},
+    {"test::robot1::link2_sphere", "test::robot1::link3_sphere"},
+    {"test::robot1::link2_sphere", "test::robot1::link5_sphere"},
+    {"test::robot1::link2_sphere", "test::robot1::link6_sphere"},
+    {"test::robot1::link3_sphere", "test::robot1::link4_sphere"},
+    {"test::robot1::link3_sphere", "test::robot1::link5_sphere"},
+    {"test::robot1::link3_sphere", "test::robot1::link6_sphere"},
+    {"test::robot1::link5_sphere", "test::robot1::link6_sphere"},
+
+    // Filtered across both robots.
+    {"test::robot1::link3_sphere", "test::robot2::link3_sphere"},
+    {"test::robot1::link6_sphere", "test::robot2::link6_sphere"},
+
+    // Filtered within robot2.
+    {"test::robot2::link1_sphere", "test::robot2::link3_sphere"},
+    {"test::robot2::link1_sphere", "test::robot2::link4_sphere"},
+    {"test::robot2::link2_sphere", "test::robot2::link3_sphere"},
+    {"test::robot2::link2_sphere", "test::robot2::link5_sphere"},
+    {"test::robot2::link2_sphere", "test::robot2::link6_sphere"},
+    {"test::robot2::link3_sphere", "test::robot2::link4_sphere"},
+    {"test::robot2::link3_sphere", "test::robot2::link5_sphere"},
+    {"test::robot2::link3_sphere", "test::robot2::link6_sphere"},
+    {"test::robot2::link5_sphere", "test::robot2::link6_sphere"},
+  };
+  VerifyCollisionFilters(ids, expected_filters);
 
   // Make sure we can add the model a second time.
   AddModelFromSdfFile(full_sdf_filename, "model2");
 }
 
-// TODO(marcoag) We might want to add some form of feedback for:
-// - ignore_collision_filter_groups with non-existing group names.
-// - Empty collision_filter_groups.
 TEST_F(SdfParserTest, CollisionFilterGroupParsingErrorsTest) {
   AddSceneGraph();
-  DRAKE_EXPECT_THROWS_MESSAGE(
+  DRAKE_EXPECT_NO_THROW(
       ParseTestString(R"""(
 <model name='error1'>
   <link name='a'/>
   <drake:collision_filter_group/>
-</model>)"""),
-      ".*The tag <drake:collision_filter_group> is "
-      "missing the required attribute "
-      "\"name\".*");
+</model>)"""));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+                  ".*The tag <drake:collision_filter_group> is "
+                  "missing the required attribute \"name\".*"));
+  FlushDiagnostics();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
+  DRAKE_EXPECT_NO_THROW(
       ParseTestString(R"""(
 <model name='error2'>
   <link name='a'/>
   <drake:collision_filter_group name="group_a">
     <drake:member></drake:member>
   </drake:collision_filter_group>
-</model>)"""),
-      ".*The tag <drake:member> is missing a required string value.*");
+</model>)"""));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*The tag <drake:member> is missing"
+                                        " a required string value.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'error2::group_a'.*no members"));
+  FlushDiagnostics();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
+  DRAKE_EXPECT_NO_THROW(
       ParseTestString(R"""(
 <model name='error3'>
   <link name='a'/>
@@ -2323,9 +2451,11 @@ TEST_F(SdfParserTest, CollisionFilterGroupParsingErrorsTest) {
     <drake:ignored_collision_filter_group>
     </drake:ignored_collision_filter_group>
   </drake:collision_filter_group>
-</model>)"""),
-      ".*The tag <drake:ignored_collision_filter_group> is missing a "
-      "required string value.*");
+</model>)"""));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'error3::group_a'.*no members"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+                  ".*The tag <drake:ignored_collision_filter_group> is missing"
+                  " a required string value.*"));
 }
 
 TEST_F(SdfParserTest, PoseWithRotationInDegreesOrQuaternions) {
@@ -2425,6 +2555,7 @@ TEST_F(SdfParserTest, UnsupportedElements) {
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*lighting"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*script"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*shader"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*drake:QQQ_dynamic"));
 }
 
 }  // namespace

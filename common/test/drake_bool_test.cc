@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
 namespace drake {

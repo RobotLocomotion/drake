@@ -7,8 +7,11 @@
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
+#include "drake/multibody/inverse_kinematics/orientation_cost.h"
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
+#include "drake/multibody/inverse_kinematics/polyhedron_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
+#include "drake/multibody/inverse_kinematics/position_cost.h"
 #include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
 
 namespace drake {
@@ -40,8 +43,7 @@ InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
     prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
                                     plant.GetPositionUpperLimits(), q_);
   }
-  // TODO(hongkai.dai) Add other position constraints, such as unit length
-  // quaternion constraint here.
+  AddUnitQuaternionConstraintOnPlant(plant, q_, prog_.get());
 }
 
 solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
@@ -67,6 +69,15 @@ solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
   return prog_->AddConstraint(constraint, q_);
 }
 
+solvers::Binding<solvers::Cost> InverseKinematics::AddPositionCost(
+    const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& p_AP,
+    const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+    const Eigen::Ref<const Eigen::Matrix3d>& C) {
+  auto cost = std::make_shared<PositionCost>(&plant_, frameA, p_AP, frameB,
+                                             p_BQ, C, get_mutable_context());
+  return prog_->AddCost(cost, q_);
+}
+
 solvers::Binding<solvers::Constraint>
 InverseKinematics::AddOrientationConstraint(
     const Frame<double>& frameAbar, const math::RotationMatrix<double>& R_AbarA,
@@ -76,6 +87,16 @@ InverseKinematics::AddOrientationConstraint(
       &plant_, frameAbar, R_AbarA, frameBbar, R_BbarB, angle_bound,
       get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
+}
+
+solvers::Binding<solvers::Cost> InverseKinematics::AddOrientationCost(
+    const Frame<double>& frameAbar, const math::RotationMatrix<double>& R_AbarA,
+    const Frame<double>& frameBbar, const math::RotationMatrix<double>& R_BbarB,
+    double c) {
+  auto cost =
+      std::make_shared<OrientationCost>(&plant_, frameAbar, R_AbarA, frameBbar,
+                                        R_BbarB, c, get_mutable_context());
+  return prog_->AddCost(cost, q_);
 }
 
 solvers::Binding<solvers::Constraint>
@@ -129,6 +150,17 @@ InverseKinematics::AddPointToPointDistanceConstraint(
   auto constraint = std::make_shared<PointToPointDistanceConstraint>(
       &plant_, frame1, p_B1P1, frame2, p_B2P2, distance_lower, distance_upper,
       get_mutable_context());
+  return prog_->AddConstraint(constraint, q_);
+}
+
+solvers::Binding<solvers::Constraint>
+InverseKinematics::AddPolyhedronConstraint(
+    const Frame<double>& frameF, const Frame<double>& frameG,
+    const Eigen::Ref<const Eigen::Matrix3Xd>& p_GP,
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b) {
+  auto constraint = std::make_shared<PolyhedronConstraint>(
+      &plant_, frameF, frameG, p_GP, A, b, get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 }  // namespace multibody

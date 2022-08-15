@@ -71,8 +71,9 @@ DirectCollocationConstraint::DirectCollocationConstraint(
     // Verify that the input port is not abstract valued.
     if (input_port_->get_data_type() == PortDataType::kAbstractValued) {
       throw std::logic_error(
-          "Port requested for differentiation is abstract, and differentiation "
-          "of abstract ports is not supported.");
+          "The specified input port is abstract-valued, and this constraint "
+          "only supports vector-valued input ports.  Did you perhaps forget to "
+          "pass a non-default `input_port_index` argument?");
     }
 
     // Provide a fixed value for the input port and keep an alias around.
@@ -96,7 +97,7 @@ void DirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
 void DirectCollocationConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   AutoDiffVecXd y_t;
-  Eval(math::InitializeAutoDiff(x), &y_t);
+  Eval(x.cast<AutoDiffXd>(), &y_t);
   *y = math::ExtractValue(y_t);
 }
 
@@ -179,6 +180,14 @@ DirectCollocation::DirectCollocation(
   }
 
   if (input_port_) {
+    // Verify that the input port is not abstract valued.
+    if (input_port_->get_data_type() == PortDataType::kAbstractValued) {
+      throw std::logic_error(
+          "The specified input port is abstract-valued, but DirectCollocation "
+          "only supports vector-valued input ports.  Did you perhaps forget to "
+          "pass a non-default `input_port_index` argument?");
+    }
+
     // Allocate the input port and keep an alias around.
     input_port_value_ = &input_port_->FixValue(
         context_.get(),

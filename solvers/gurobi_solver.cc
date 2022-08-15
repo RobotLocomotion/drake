@@ -332,15 +332,14 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
                         const Eigen::MatrixBase<DerivedLB>& lb,
                         const Eigen::MatrixBase<DerivedUB>& ub,
                         const Eigen::Ref<const VectorXDecisionVariable>& vars,
-                        bool is_equality, double sparseness_threshold,
-                        int* num_gurobi_linear_constraints) {
+                        bool is_equality, int* num_gurobi_linear_constraints) {
   for (int i = 0; i < A.rows(); i++) {
     int nonzero_coeff_count = 0;
     std::vector<int> nonzero_var_index(A.cols(), 0);
     std::vector<double> nonzero_coeff(A.cols(), 0.0);
 
     for (int j = 0; j < A.cols(); j++) {
-      if (std::abs(A(i, j)) > sparseness_threshold) {
+      if (A(i, j) != 0) {
         nonzero_coeff[nonzero_coeff_count] = A(i, j);
         nonzero_var_index[nonzero_coeff_count++] =
             prog.FindDecisionVariableIndex(vars(j));
@@ -394,9 +393,6 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
  * RotatedLorentzConeConstraint.
  * @param second_order_cone_constraints  A vector of Binding objects, containing
  * either Lorentz cone constraints, or rotated Lorentz cone constraints.
- * @param sparseness_threshold. If the absolute value of an entry in A, b
- * matrices inside (rotated) Lorentz cone constraint is smaller than
- * \p sparseness_threshold, that entry is ignored.
  * @param second_order_cone_new_variable_indices. The indices of variable z in
  * the Gurobi model.
  * @param model The Gurobi model.
@@ -407,7 +403,6 @@ template <typename C>
 int AddSecondOrderConeConstraints(
     const MathematicalProgram& prog,
     const std::vector<Binding<C>>& second_order_cone_constraints,
-    double sparseness_threshold,
     const std::vector<std::vector<int>>& second_order_cone_new_variable_indices,
     GRBmodel* model, int* num_gurobi_linear_constraints) {
   static_assert(
@@ -549,7 +544,7 @@ int AddSecondOrderConeConstraints(
  * Add quadratic or linear costs to the optimization problem.
  */
 int AddCosts(GRBmodel* model, double* pconstant_cost,
-             const MathematicalProgram& prog, double sparseness_threshold) {
+             const MathematicalProgram& prog) {
   // Aggregates the quadratic costs and linear costs in the form
   // 0.5 * x' * Q_all * x + linear_term' * x.
   using std::abs;
@@ -578,13 +573,13 @@ int AddCosts(GRBmodel* model, double* pconstant_cost,
 
     for (int i = 0; i < Q.rows(); i++) {
       const double Qii = 0.5 * Q(i, i);
-      if (abs(Qii) > sparseness_threshold) {
+      if (Qii != 0) {
         Q_nonzero_coefs.push_back(Eigen::Triplet<double>(
             constraint_variable_index[i], constraint_variable_index[i], Qii));
       }
       for (int j = i + 1; j < Q.cols(); j++) {
         const double Qij = 0.5 * (Q(i, j) + Q(j, i));
-        if (abs(Qij) > sparseness_threshold) {
+        if (Qij != 0) {
           Q_nonzero_coefs.push_back(Eigen::Triplet<double>(
               constraint_variable_index[i], constraint_variable_index[j], Qij));
         }
@@ -592,7 +587,7 @@ int AddCosts(GRBmodel* model, double* pconstant_cost,
     }
 
     for (int i = 0; i < b.size(); i++) {
-      if (abs(b(i)) > sparseness_threshold) {
+      if (b(i) != 0) {
         b_nonzero_coefs.push_back(
             Eigen::Triplet<double>(constraint_variable_index[i], 0, b(i)));
       }
@@ -661,7 +656,7 @@ int AddCosts(GRBmodel* model, double* pconstant_cost,
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 int ProcessLinearConstraints(
     GRBmodel* model, const MathematicalProgram& prog,
-    double sparseness_threshold, int* num_gurobi_linear_constraints,
+    int* num_gurobi_linear_constraints,
     std::unordered_map<Binding<Constraint>, int>* constraint_dual_start_row) {
   for (const auto& binding : prog.linear_equality_constraints()) {
     const auto& constraint = binding.evaluator();
@@ -671,7 +666,7 @@ int ProcessLinearConstraints(
     const int error = AddLinearConstraint(
         prog, model, constraint->GetDenseA(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), true,
-        sparseness_threshold, num_gurobi_linear_constraints);
+        num_gurobi_linear_constraints);
     if (error) {
       return error;
     }
@@ -685,7 +680,7 @@ int ProcessLinearConstraints(
     const int error = AddLinearConstraint(
         prog, model, constraint->GetDenseA(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), false,
-        sparseness_threshold, num_gurobi_linear_constraints);
+        num_gurobi_linear_constraints);
     if (error) {
       return error;
     }
@@ -997,32 +992,30 @@ void GurobiSolver::DoSolve(
   });
 
   int error = 0;
-  // TODO(naveenoid) : This needs access externally.
-  double sparseness_threshold = 1e-14;
   double constant_cost = 0;
   if (!error) {
-    error = AddCosts(model, &constant_cost, prog, sparseness_threshold);
+    error = AddCosts(model, &constant_cost, prog);
   }
 
   int num_gurobi_linear_constraints = 0;
   if (!error) {
-    error = ProcessLinearConstraints(model, prog, sparseness_threshold,
-                                     &num_gurobi_linear_constraints,
-                                     &constraint_dual_start_row);
+    error =
+        ProcessLinearConstraints(model, prog, &num_gurobi_linear_constraints,
+                                 &constraint_dual_start_row);
   }
 
   // Add Lorentz cone constraints.
   if (!error) {
-    error = AddSecondOrderConeConstraints(
-        prog, prog.lorentz_cone_constraints(), sparseness_threshold,
-        lorentz_cone_new_variable_indices, model,
-        &num_gurobi_linear_constraints);
+    error =
+        AddSecondOrderConeConstraints(prog, prog.lorentz_cone_constraints(),
+                                      lorentz_cone_new_variable_indices, model,
+                                      &num_gurobi_linear_constraints);
   }
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
     error = AddSecondOrderConeConstraints(
-        prog, prog.rotated_lorentz_cone_constraints(), sparseness_threshold,
+        prog, prog.rotated_lorentz_cone_constraints(),
         rotated_lorentz_cone_new_variable_indices, model,
         &num_gurobi_linear_constraints);
   }

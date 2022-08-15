@@ -129,11 +129,6 @@ SKIP_ACCESS = [
 ]
 
 
-def utf8(s):
-    # Decodes a string to utf8.
-    return s.decode('utf8')
-
-
 class Symbol:
     """
     Contains a cursor and additional processed metadata.
@@ -159,7 +154,7 @@ def is_accepted_cursor(cursor, name_chain):
     Determines if a symbol should be visited or not, given the cursor and the
     name chain.
     """
-    name = utf8(cursor.spelling)
+    name = cursor.spelling
     # N.B. See TODO in `get_name_chain`.
     for piece in name_chain + (name,):
         if piece in SKIP_RECURSE_NAMES:
@@ -198,7 +193,7 @@ def extract_comment(cursor, deprecations):
     # Start with the cursor's docstring.
     result = ''
     if cursor.raw_comment is not None:
-        result = utf8(cursor.raw_comment)
+        result = cursor.raw_comment
 
     # Look for a DRAKE_DEPRECATED macro.
     c = cursor  # The cursor whose deprecation macro we want to find.
@@ -237,15 +232,12 @@ def extract_comment(cursor, deprecations):
     # Extract the DRAKE_DEPRECATED macro arguments.
     tokens = [x.spelling for x in found.get_tokens()]
     assert len(tokens) >= 6, tokens
-    assert tokens[0] == b'DRAKE_DEPRECATED', tokens
-    assert tokens[1] == b'(', tokens
-    assert tokens[3] == b',', tokens
-    assert tokens[-1] == b')', tokens
-    removal_date = utf8(tokens[2])[1:-1]  # 1:-1 to strip quotes.
-    message = "".join([
-        utf8(x)[1:-1]
-        for x in tokens[4:-1]
-    ])
+    assert tokens[0] == 'DRAKE_DEPRECATED', tokens
+    assert tokens[1] == '(', tokens
+    assert tokens[3] == ',', tokens
+    assert tokens[-1] == ')', tokens
+    removal_date = tokens[2][1:-1]  # 1:-1 to strip quotes.
+    message = "".join([x[1:-1] for x in tokens[4:-1]])
 
     # Append the deprecation text.
     result += (
@@ -263,11 +255,11 @@ def get_name_chain(cursor):
     # TODO(eric.cousineau): Try to restrict the name_chain to end with name. I
     # briefly tried this once by culling based on accepted cursors, but lost
     # needed symbols because of it.
-    name = utf8(cursor.spelling)
+    name = cursor.spelling
     name_chain = [name]
     p = cursor.semantic_parent
     while p and p.kind != CursorKind.TRANSLATION_UNIT:
-        piece = utf8(p.spelling)
+        piece = p.spelling
         name_chain.insert(0, piece)
         p = p.semantic_parent
     # Do not try to specify names for anonymous structs.
@@ -322,13 +314,13 @@ def extract(include_file_map, cursor, symbol_tree, deprecations=None):
             if i.kind == CursorKind.MACRO_DEFINITION:
                 continue
             if i.kind == CursorKind.MACRO_INSTANTIATION:
-                if i.spelling == b'DRAKE_DEPRECATED':
+                if i.spelling == 'DRAKE_DEPRECATED':
                     deprecations.append(i)
                 continue
             extract(include_file_map, i, symbol_tree, deprecations)
         return
     assert cursor.location.file is not None, cursor.kind
-    filename = utf8(cursor.location.file.name)
+    filename = cursor.location.file.name
     include = include_file_map.get(filename)
     line = cursor.location.line
     if include is None:
@@ -451,7 +443,7 @@ def choose_doc_var_names(symbols):
                 cursor.kind == CursorKind.FUNCTION_TEMPLATE
                 and cursor.semantic_parent.kind == CursorKind.CLASS_TEMPLATE
                 and re.search(r"^(.*)<T>\(const \1<U> *&\)$",
-                              utf8(cursor.displayname))):
+                              cursor.displayname)):
                 # Special case for scalar conversion constructors; we want to
                 # have a nice short name for these, that doesn't necessarily
                 # conflte with any *other* 1-argument constructor.
@@ -494,11 +486,11 @@ def choose_doc_var_names(symbols):
     #
     # These list-of-lists are indexed by [#overload][#argument].
     overload_arg_types = [
-        [utf8(t.spelling) for t in s.cursor.type.argument_types()]
+        [t.spelling for t in s.cursor.type.argument_types()]
         for s in symbols
     ]
     overload_arg_names = [
-        [utf8(a.spelling) for a in s.cursor.get_arguments()]
+        [a.spelling for a in s.cursor.get_arguments()]
         for s in symbols
     ]
 

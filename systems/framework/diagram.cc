@@ -1337,7 +1337,7 @@ Diagram<T>::ConvertScalarType() const {
   // Make all the inputs, preserving index assignments.
   for (int k = 0; k < this->num_input_ports(); k++) {
     const auto name = this->get_input_port(k).get_name();
-    for (const auto id : GetInputPortLocators(InputPortIndex(k))) {
+    for (const auto& id : GetInputPortLocators(InputPortIndex(k))) {
       const System<NewType>* new_system = old_to_new_map[id.first];
       const InputPortIndex port = id.second;
       blueprint->input_port_ids.emplace_back(new_system, port);

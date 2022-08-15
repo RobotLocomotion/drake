@@ -2,7 +2,6 @@ from .analysis import *
 from .controllers import *
 from .framework import *
 from .lcm import *
-from .meshcat_visualizer import *
 from .perception import *
 from .planar_scenegraph_visualizer import *
 from .primitives import *

@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/systems/primitives/vector_log.h"
 

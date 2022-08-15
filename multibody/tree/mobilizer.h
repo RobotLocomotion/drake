@@ -292,6 +292,12 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
     return "v";
   }
 
+  // Returns true if this mobilizer can rotate.
+  virtual bool can_rotate() const = 0;
+
+  // Returns true if this mobilizer can translate.
+  virtual bool can_translate() const = 0;
+
   // Returns a constant reference to the inboard frame.
   const Frame<T>& inboard_frame() const {
     return inboard_frame_;

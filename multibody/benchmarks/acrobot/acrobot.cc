@@ -8,7 +8,6 @@ namespace drake {
 namespace multibody {
 namespace benchmarks {
 
-using Eigen::AutoDiffScalar;
 using math::RigidTransform;
 
 template <typename T>

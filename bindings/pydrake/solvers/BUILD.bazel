@@ -38,19 +38,8 @@ package(default_visibility = [
 # https://github.com/RobotLocomotion/drake/issues/12055
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
-drake_py_library(
-    name = "module_py",
-    srcs = ["__init__.py"],
-    imports = PACKAGE_INFO.py_imports,
-    deps = [
-        "//bindings/pydrake:module_py",
-    ],
-)
-
-# TODO(eric.cousineau): Rename `mathematicalprogram` to
-# `mathematical_program` when `pydrake` is renamed to `drake`.
 drake_pybind_library(
-    name = "mathematicalprogram_py",
+    name = "solvers",
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
@@ -59,298 +48,73 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
-    cc_so_name = "mathematicalprogram",
-    cc_srcs = ["mathematicalprogram_py.cc"],
+    cc_so_name = "__init__",
+    cc_srcs = [
+        "solvers_pybind.h",
+        "solvers_py.h",
+        "solvers_py.cc",
+        "solvers_py_augmented_lagrangian.cc",
+        "solvers_py_branch_and_bound.cc",
+        "solvers_py_clp.cc",
+        "solvers_py_csdp.cc",
+        "solvers_py_dreal.cc",
+        "solvers_py_gurobi.cc",
+        "solvers_py_ibex.cc",
+        "solvers_py_ipopt.cc",
+        "solvers_py_mathematicalprogram.cc",
+        "solvers_py_mixed_integer_optimization_util.cc",
+        "solvers_py_mixed_integer_rotation_constraint.cc",
+        "solvers_py_mosek.cc",
+        "solvers_py_nlopt.cc",
+        "solvers_py_osqp.cc",
+        "solvers_py_scs.cc",
+        "solvers_py_sdpa_free_format.cc",
+        "solvers_py_snopt.cc",
+    ],
     package_info = PACKAGE_INFO,
     py_deps = [
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/common:cpp_param_py",
         "//bindings/pydrake/common:cpp_template_py",
-    ],
-    py_srcs = ["_mathematicalprogram_extra.py"],
-)
-
-drake_pybind_library(
-    name = "augmented_lagrangian_py",
-    cc_deps = [
-        "//bindings/pydrake:autodiff_types_pybind",
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
-    ],
-    cc_srcs = ["augmented_lagrangian_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-        "//bindings/pydrake:autodiffutils_py",
-    ],
-    py_srcs = ["_augmented_lagrangian_extra.py"],
-)
-
-drake_pybind_library(
-    name = "branch_and_bound_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake:symbolic_types_pybind",
-    ],
-    cc_srcs = ["branch_and_bound_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "mixed_integer_optimization_util_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake:symbolic_types_pybind",
-    ],
-    cc_srcs = ["mixed_integer_optimization_util_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "mixed_integer_rotation_constraint_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake:symbolic_types_pybind",
-    ],
-    cc_srcs = [
-        "mixed_integer_optimization_util_py.cc",
-        "mixed_integer_rotation_constraint_py.cc",
-    ],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-    ],
-)
-
-drake_cc_library(
-    name = "solvers_pybind",
-    hdrs = ["solvers_pybind.h"],
-    declare_installed_headers = 0,
-    visibility = ["//visibility:public"],
-)
-
-drake_pybind_library(
-    name = "clp_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:value_pybind",
-    ],
-    cc_srcs = ["clp_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
         "//bindings/pydrake/common:value_py",
     ],
-)
-
-drake_pybind_library(
-    name = "csdp_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:value_pybind",
+    py_srcs = [
+        "_extra.py",
+        "all.py",
+        "augmented_lagrangian.py",
+        "branch_and_bound.py",
+        "clp.py",
+        "csdp.py",
+        "dreal.py",
+        "gurobi.py",
+        "ibex.py",
+        "ipopt.py",
+        "mathematicalprogram.py",
+        "mixed_integer_optimization_util.py",
+        "mixed_integer_rotation_constraint.py",
+        "mosek.py",
+        "nlopt.py",
+        "osqp.py",
+        "scs.py",
+        "sdpa_free_format.py",
+        "snopt.py",
     ],
-    cc_srcs = ["csdp_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-        ":sdpa_free_format_py",
-        "//bindings/pydrake/common:value_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "dreal_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-    ],
-    cc_srcs = ["dreal_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "gurobi_py",
-    cc_deps = [
-        ":solvers_pybind",
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:value_pybind",
-    ],
-    cc_srcs = ["gurobi_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-        "//bindings/pydrake/common:value_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "ibex_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-    ],
-    cc_srcs = ["ibex_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "ipopt_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:value_pybind",
-    ],
-    cc_srcs = ["ipopt_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-        "//bindings/pydrake/common:value_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "nlopt_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:value_pybind",
-    ],
-    cc_srcs = ["nlopt_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-        "//bindings/pydrake/common:value_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "mosek_py",
-    cc_deps = [
-        ":solvers_pybind",
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:value_pybind",
-    ],
-    cc_srcs = ["mosek_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-        "//bindings/pydrake/common:value_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "osqp_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:value_pybind",
-    ],
-    cc_srcs = ["osqp_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-        "//bindings/pydrake/common:value_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "scs_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:value_pybind",
-    ],
-    cc_srcs = ["scs_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-        "//bindings/pydrake/common:value_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "sdpa_free_format_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-    ],
-    cc_srcs = ["sdpa_free_format_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "snopt_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:value_pybind",
-    ],
-    cc_srcs = ["snopt_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":mathematicalprogram_py",
-        "//bindings/pydrake/common:value_py",
-    ],
-)
-
-PY_LIBRARIES_WITH_INSTALL = [
-    ":augmented_lagrangian_py",
-    ":branch_and_bound_py",
-    ":clp_py",
-    ":csdp_py",
-    ":dreal_py",
-    ":gurobi_py",
-    ":ibex_py",
-    ":ipopt_py",
-    ":mathematicalprogram_py",
-    ":mixed_integer_optimization_util_py",
-    ":mixed_integer_rotation_constraint_py",
-    ":mosek_py",
-    ":nlopt_py",
-    ":osqp_py",
-    ":scs_py",
-    ":sdpa_free_format_py",
-    ":snopt_py",
-]
-
-PY_LIBRARIES = [
-    ":module_py",
-]
-
-# Symbol roll-up (for user ease).
-drake_py_library(
-    name = "all_py",
-    srcs = ["all.py"],
-    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
-)
-
-# Package roll-up (for Bazel dependencies).
-drake_py_library(
-    name = "solvers",
-    deps = [":all_py"],
 )
 
 install(
     name = "install",
-    targets = PY_LIBRARIES + [":all_py"],
+    targets = [":solvers"],
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
+    deps = get_drake_py_installs([":solvers"]),
 )
 
 drake_py_unittest(
     name = "augmented_lagrangian_test",
     deps = [
-        ":augmented_lagrangian_py",
+        ":solvers",
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake/common/test_utilities",
     ],
@@ -363,7 +127,7 @@ drake_py_unittest(
         "//conditions:default": [],
     }),
     deps = [
-        ":clp_py",
+        ":solvers",
         "//bindings/pydrake/common/test_utilities",
     ],
 )
@@ -375,7 +139,7 @@ drake_py_unittest(
         "//conditions:default": [],
     }),
     deps = [
-        ":csdp_py",
+        ":solvers",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:scipy_stub_py",
     ],
@@ -388,7 +152,7 @@ drake_py_unittest(
         "//conditions:default": [],
     }),
     deps = [
-        ":dreal_py",
+        ":solvers",
         "//bindings/pydrake/common:containers_py",
         "//bindings/pydrake/common/test_utilities",
     ],
@@ -397,7 +161,9 @@ drake_py_unittest(
 drake_py_unittest(
     name = "gurobi_solver_test",
     tags = gurobi_test_tags(),
-    deps = [":gurobi_py"],
+    deps = [
+        ":solvers",
+    ],
 )
 
 drake_py_unittest(
@@ -407,7 +173,7 @@ drake_py_unittest(
         "//conditions:default": [],
     }),
     deps = [
-        ":ibex_py",
+        ":solvers",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
@@ -419,7 +185,7 @@ drake_py_unittest(
         "//conditions:default": [],
     }),
     deps = [
-        ":ipopt_py",
+        ":solvers",
         "//bindings/pydrake/common/test_utilities",
     ],
 )
@@ -427,7 +193,17 @@ drake_py_unittest(
 drake_py_unittest(
     name = "mosek_solver_test",
     tags = mosek_test_tags(),
-    deps = [":mosek_py"],
+    deps = [
+        ":solvers",
+    ],
+)
+
+drake_py_unittest(
+    name = "noscipy_test",
+    deps = [
+        ":solvers",
+        "//bindings/pydrake/common/test_utilities:scipy_none_py",
+    ],
 )
 
 drake_py_unittest(
@@ -437,7 +213,7 @@ drake_py_unittest(
         "//conditions:default": [],
     }),
     deps = [
-        ":nlopt_py",
+        ":solvers",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
@@ -448,7 +224,9 @@ drake_py_unittest(
         "//tools:no_osqp": ["TestOsqpSolver.unavailable"],
         "//conditions:default": [],
     }),
-    deps = [":osqp_py"],
+    deps = [
+        ":solvers",
+    ],
 )
 
 drake_py_unittest(
@@ -458,7 +236,7 @@ drake_py_unittest(
         "//conditions:default": [],
     }),
     deps = [
-        ":scs_py",
+        ":solvers",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
@@ -467,7 +245,7 @@ drake_py_unittest(
     name = "snopt_solver_test",
     tags = ["snopt"],
     deps = [
-        ":snopt_py",
+        ":solvers",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
@@ -476,11 +254,7 @@ drake_py_unittest(
     name = "mathematicalprogram_test",
     tags = gurobi_test_tags(gurobi_required = False),
     deps = [
-        ":gurobi_py",
-        ":mathematicalprogram_py",
-        ":osqp_py",
-        ":scs_py",
-        ":snopt_py",
+        ":solvers",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:scipy_stub_py",
@@ -490,8 +264,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "branch_and_bound_test",
     deps = [
-        ":branch_and_bound_py",
-        ":osqp_py",
+        ":solvers",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
     ],
@@ -500,9 +273,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "mixed_integer_optimization_util_test",
     deps = [
-        ":branch_and_bound_py",
-        ":clp_py",
-        ":mixed_integer_optimization_util_py",
+        ":solvers",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
     ],
@@ -511,8 +282,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "mixed_integer_rotation_constraint_test",
     deps = [
-        ":mixed_integer_optimization_util_py",
-        ":mixed_integer_rotation_constraint_py",
+        ":solvers",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
     ],
@@ -521,7 +291,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "sdpa_free_format_test",
     deps = [
-        ":sdpa_free_format_py",
+        ":solvers",
         "//bindings/pydrake/common/test_utilities",
     ],
 )

@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<!-- This sdf file is based on schunk_wsg_50.sdf -->
+<sdf version="1.7">
+  <model name="Schunk_Gripper">
+    <link name="body">
+      <pose>0 -0.049133 0 0 0 0</pose>
+      <inertial>
+        <mass>0.988882</mass>
+        <inertia>
+          <ixx>0.162992</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.162992</iyy>
+          <iyz>0</iyz>
+          <izz>0.164814</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>package://drake/manipulation/models/wsg_50_description/meshes/wsg_body.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.146 0.0725 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <frame name="body_frame">
+      <pose relative_to="body"/>
+    </frame>
+    <link name="left_finger">
+      <pose>-0.06 0.028 0 0 3.141592 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.16</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.16</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>package://drake/manipulation/models/wsg_50_description/meshes/finger_without_tip.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.012 0.082 0.02</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <link name="right_finger">
+      <pose>0.06 0.028 0 0 0 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.16</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.16</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>package://drake/manipulation/models/wsg_50_description/meshes/finger_without_tip.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.012 0.082 0.02</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="left_finger_sliding_joint" type="fixed">
+      <parent>body</parent>
+      <child>left_finger</child>
+    </joint>
+    <joint name="right_finger_sliding_joint" type="fixed">
+      <parent>body</parent>
+      <child>right_finger</child>
+    </joint>
+  </model>
+</sdf>

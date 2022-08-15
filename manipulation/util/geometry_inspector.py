@@ -1,18 +1,16 @@
 r"""
 Simple tool that parses an SDFormat or URDF file from the command line and runs
-a simple system which takes joint positions from a JointSlider gui and
-publishes the resulting geometry poses to available visualizers.
-
-If you wish to simply load a model and show it in multiple visualizers, see
-`show_model`.
+a simple system which takes joint positions from a meshcat JointSlider gui and
+publishes the resulting geometry poses to available visualizers.  To have the
+meshcat server automatically open in your browser, supply the --open-window
+flag; the joint sliders will be accessible by clicking on "Open Controls" in
+top right corner.
 
 To build all necessary targets and see available command-line options:
 
     cd drake
     bazel build \
-        //tools:drake_visualizer @meshcat_python//:meshcat-server \
-        //manipulation/util:geometry_inspector
-
+        //tools:drake_visualizer //manipulation/util:geometry_inspector
     ./bazel-bin/manipulation/util/geometry_inspector --help
 
 Example usage (drake visualizer):
@@ -32,11 +30,8 @@ remove the need for `--find_resource`:
 
 Example usage (meshcat):
 
-    # Terminal 1
-    ./bazel-bin/external/meshcat_python/meshcat-server
-    # Terminal 2
     ./bazel-bin/manipulation/util/geometry_inspector \
-        --meshcat default \
+        --open-window \
         --find_resource \
         drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
@@ -48,17 +43,20 @@ Example usage (pyplot):
         drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
 Optional argument examples:
+
     ./bazel-bin/manipulation/util/geometry_inspector \
         --position 0.1 0.2 \
         --find_resource drake/multibody/benchmarks/acrobot/acrobot.sdf
-
 Note:
     ``geometry_inspector`` will always send the lcm draw messages to
 drake_visualizer (they have no effect unless you open the visualizer).
 
 Note:
-    If ``--meshcat`` is not specified, no meshcat visualization will take
-place.
+    If ``--open-window`` is not specified, in the output of running
+``geometry_inspector`` the URL of the meshcat server is printed.  In order to
+perform any manipulations of the robot joints, you must open the meshcat server
+in a browser window and click on "Open Controls" in the top right corner in
+order to have access to the JointSliders controls.
 
 Note:
     If you use `bazel run` without `--find_resource`, it is highly encouraged
@@ -71,7 +69,7 @@ import argparse
 import numpy as np
 
 from pydrake.geometry import SceneGraph
-from pydrake.manipulation.simple_ui import JointSliders
+from pydrake.multibody.meshcat import JointSliders
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
@@ -91,20 +89,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     add_filename_and_parser_argparse_arguments(args_parser)
     add_visualizers_argparse_arguments(args_parser)
-    position_group = args_parser.add_mutually_exclusive_group()
-    position_group.add_argument(
+    args_parser.add_argument(
         "--position", type=float, nargs="+", default=[],
         help="A list of positions which must be the same length as the number "
              "of positions in the sdf model.  Note that most models have a "
              "floating-base joint by default (unless the sdf explicitly welds "
              "the base to the world, and so have 7 positions corresponding to "
              "the quaternion representation of that floating-base position.")
-    position_group.add_argument(
-        "--joint_position", type=float, nargs="+", default=[],
-        help="A list of positions which must be the same length as the number "
-             "of positions ASSOCIATED WITH JOINTS in the sdf model.  This "
-             "does not include, e.g., floating-base coordinates, which will "
-             "be assigned a default value.")
     # TODO(eric.cousineau): Support sliders (or widgets) for floating body
     # poses.
     # TODO(russt): Once floating body sliders are supported, add an option to
@@ -114,6 +105,8 @@ def main():
         "--test", action='store_true',
         help="Disable opening the slider gui window for testing.")
     args = args_parser.parse_args()
+    # NOTE: meshcat is required to create the JointSliders.
+    args.meshcat = True
     filename, make_parser = parse_filename_and_parser(args_parser, args)
     update_visualization, connect_visualizers = parse_visualizers(
         args_parser, args)
@@ -132,27 +125,26 @@ def main():
     update_visualization(plant, scene_graph)
     plant.Finalize()
 
+    meshcat = connect_visualizers(builder, plant, scene_graph,
+                                  publish_contacts=False)
+    assert meshcat is not None, "Meshcat visualizer not created but required."
+
     # Add sliders to set positions of the joints.
-    sliders = builder.AddSystem(JointSliders(robot=plant))
+    sliders = builder.AddSystem(JointSliders(meshcat=meshcat, plant=plant))
     to_pose = builder.AddSystem(MultibodyPositionToGeometryPose(plant))
     builder.Connect(sliders.get_output_port(0), to_pose.get_input_port())
     builder.Connect(
         to_pose.get_output_port(),
         scene_graph.get_source_pose_port(plant.get_source_id()))
 
-    connect_visualizers(builder, plant, scene_graph)
-
     if len(args.position):
-        sliders.set_position(args.position)
-    elif len(args.joint_position):
-        sliders.set_joint_position(args.joint_position)
+        sliders.SetPositions(args.position)
 
     # Make the diagram and run it.
     diagram = builder.Build()
     simulator = Simulator(diagram)
 
     if args.test:
-        sliders.window.withdraw()
         simulator.AdvanceTo(0.1)
     else:
         simulator.set_target_realtime_rate(1.0)

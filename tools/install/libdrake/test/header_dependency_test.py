@@ -24,7 +24,6 @@ class HeaderDependencyTest(unittest.TestCase):
         re_thirds = [
             re.compile(r'^(Eigen|unsupported/Eigen)/.*$'),
             re.compile(r'^(fmt|spdlog)/.*$'),
-            re.compile(r'^lcm/.*$'),
             re.compile(r'^optitrack/.*$'),
         ]
 
@@ -39,6 +38,11 @@ class HeaderDependencyTest(unittest.TestCase):
         if not match:
             return True
         (target,) = match.groups()
+
+        # We specifically disallow this header. It pollutes downstream
+        # translation units with global initializers.
+        if target == 'iostream':
+            return False
 
         # Check for allowed patterns.
         for matcher in self._valid_filenames:

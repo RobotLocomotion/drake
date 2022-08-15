@@ -182,6 +182,7 @@ std::optional<geometry::GeometryInstance> ParseVisual(
  | drake:mesh_resolution_hint       | hydroelastic | resolution_hint           | Required for shapes that require tessellation to support hydroelastic contact.                                                   |
  | drake:hydroelastic_modulus       | hydroelastic | hydroelastic_modulus      | Finite positive value. Required for compliant hydroelastic representations.                                                      |
  | drake:hunt_crossley_dissipation  | material     | hunt_crossley_dissipation |                                                                                                                                  |
+ | drake:relaxation_time            | material     | relaxation_time           | Required when using a linear model of dissipation, for instance with the SAP solver.                                             |
  | drake:mu_dynamic                 | material     | coulomb_friction          | See note below on friction.                                                                                                      |
  | drake:mu_static                  | material     | coulomb_friction          | See note below on friction.                                                                                                      |
  | drake:rigid_hydroelastic         | hydroelastic | compliance_type           | Requests a rigid hydroelastic representation. Cannot be combined *with* soft_hydroelastic.                                       |

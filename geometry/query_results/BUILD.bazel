@@ -15,6 +15,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":contact_surface",
+        ":deformable_rigid_contact",
         ":penetration_as_point_pair",
         ":signed_distance_pair",
         ":signed_distance_to_point",
@@ -64,6 +65,26 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry/proximity:mesh_field",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_rigid_contact",
+    srcs = ["deformable_rigid_contact.cc"],
+    hdrs = ["deformable_rigid_contact.h"],
+    deps = [
+        "//geometry:geometry_ids",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//multibody/contact_solvers/sap:partial_permutation",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_rigid_contact_test",
+    deps = [
+        ":deformable_rigid_contact",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
     ],
 )
 

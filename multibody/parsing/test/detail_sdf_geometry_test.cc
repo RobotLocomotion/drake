@@ -7,10 +7,10 @@
 #include <vector>
 
 #include "fmt/ostream.h"
+#include <drake_vendor/sdf/Root.hh>
+#include <drake_vendor/sdf/parser.hh>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <sdf/Root.hh>
-#include <sdf/parser.hh>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
@@ -67,8 +67,9 @@ sdf::ParserConfig MakeStrictConfig() {
 
 sdf::SDFPtr ReadString(const std::string& input) {
   sdf::SDFPtr result(new sdf::SDF());
-  sdf::init(result);
-
+  // TODO(azeey): Use newer DOM API (eg sdf::Root::LoadString) instead of
+  // sdf::init and sdf::readString.
+  sdf::init(result, sdf::ParserConfig{});
   sdf::ParserConfig config = MakeStrictConfig();
   sdf::Errors errors;
   const bool success = sdf::readString(input, config, result, errors);
@@ -429,6 +430,22 @@ TEST_F(SceneGraphParserDetail, MakeHeightmapFromSdfGeometry) {
       "<heightmap>"
       "  <uri>/path/to/some/heightmap.png</uri>"
       "</heightmap>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_EQ(shape, nullptr);
+}
+
+// Verify that MakeShapeFromSdfGeometry does nothing with a polyline.
+TEST_F(SceneGraphParserDetail, MakePolylineFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<polyline>"
+      "  <polyline>"
+      "    <point>0 0</point>"
+      "    <point>0 1</point>"
+      "    <point>1 1</point>"
+      "    <point>1 0</point>"
+      "    <height>1</height>"
+      "  </polyline>"
+      "</polyline>");
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   EXPECT_EQ(shape, nullptr);
 }
@@ -1119,6 +1136,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:mesh_resolution_hint>2.5</drake:mesh_resolution_hint>
     <drake:hydroelastic_modulus>3.5</drake:hydroelastic_modulus>
     <drake:hunt_crossley_dissipation>4.5</drake:hunt_crossley_dissipation>
+    <drake:relaxation_time>3.1</drake:relaxation_time>
     <drake:mu_dynamic>4.5</drake:mu_dynamic>
     <drake:mu_static>4.75</drake:mu_static>
   </drake:proximity_properties>)""");
@@ -1130,6 +1148,8 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
                            geometry::internal::kElastic, 3.5);
     assert_single_property(properties, geometry::internal::kMaterialGroup,
                            geometry::internal::kHcDissipation, 4.5);
+    assert_single_property(properties, geometry::internal::kMaterialGroup,
+                           geometry::internal::kRelaxationTime, 3.1);
     assert_friction(properties, {4.75, 4.5});
   }
 

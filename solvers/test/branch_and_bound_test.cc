@@ -11,6 +11,9 @@
 
 namespace drake {
 namespace solvers {
+template <typename Scalar>
+using VectorUpTo4 = Eigen::Matrix<Scalar, Eigen::Dynamic, 1, 0, 4, 1>;
+
 // This class exposes the protected and private members of
 //  MixedIntegerBranchAndBound, so that we can test its internal implementation.
 class MixedIntegerBranchAndBoundTester {
@@ -448,8 +451,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestNewVariable) {
                                VectorDecisionVariable<2>>,
                 "Should return VectorDecisionVariable<2> object.\n");
   static_assert(std::is_same_v<decltype(bnb.GetNewVariables(prog_x.head(2))),
-                               VectorXDecisionVariable>,
-                "Should return VectorXDecisionVariable object.\n");
+                               VectorUpTo4<symbolic::Variable>>,
+                "Should return VectorUpTo4<Variable> object.\n");
   MatrixDecisionVariable<2, 2> X;
   X << prog_x(0), prog_x(1), prog_x(2), prog_x(3);
   static_assert(std::is_same_v<decltype(bnb.GetNewVariables(X)),
@@ -532,7 +535,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
   // The root node is not a leaf node. Expect a runtime error.
-  EXPECT_THROW(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())),
+  EXPECT_THROW(unused(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()))),
                std::runtime_error);
 }
 

@@ -1,9 +1,13 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 
+#include <algorithm>
+#include <bitset>
 #include <limits>
 #include <memory>
 #include <set>
 #include <stdexcept>
+#include <string>
+#include <tuple>
 
 #include <Eigen/Eigenvalues>
 #include <fmt/format.h>
@@ -32,15 +36,17 @@ using symbolic::Variable;
 namespace {
 const double kInf = std::numeric_limits<double>::infinity();
 
-bool IsInfeasible(const MathematicalProgram& prog) {
+std::tuple<bool, solvers::MathematicalProgramResult> IsInfeasible(
+    const MathematicalProgram& prog) {
   // Turn off Gurobi DualReduction to ensure that infeasible problems always
   // return solvers::SolutionResult::kInfeasibleConstraints rather than
   // SolutionResult::kInfeasibleOrUnbounded.
   solvers::SolverOptions solver_options;
   solver_options.SetOption(solvers::GurobiSolver::id(), "DualReductions", 0);
   auto result = solvers::Solve(prog, std::nullopt, solver_options);
-  return result.get_solution_result() ==
-         solvers::SolutionResult::kInfeasibleConstraints;
+  return {result.get_solution_result() ==
+              solvers::SolutionResult::kInfeasibleConstraints,
+          result};
 }
 
 // Checks if Ax ≤ b defines an empty set.
@@ -50,9 +56,8 @@ bool IsEmpty(const Eigen::Ref<const MatrixXd>& A,
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(A.cols(), "x");
   prog.AddLinearConstraint(A, VectorXd::Constant(b.rows(), -kInf), b, x);
-  return IsInfeasible(prog);
+  return std::get<0>(IsInfeasible(prog));
 }
-
 
 /* Checks whether the constraint cᵀ x ≤ d is already implied by the linear
  constraints in prog. This is done by solving a small linear program
@@ -62,9 +67,8 @@ bool IsEmpty(const Eigen::Ref<const MatrixXd>& A,
 bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
                  solvers::MathematicalProgram* prog,
                  Binding<solvers::LinearConstraint>* new_constraint,
-                 Binding<solvers::LinearCost>* program_cost_binding,
-                 bool already_checked_feasibility) {
-  // Ensures that prog is an LP
+                 Binding<solvers::LinearCost>* program_cost_binding) {
+  // Ensures that prog is an LPs
   DRAKE_DEMAND(prog->GetAllConstraints().size() ==
                prog->GetAllLinearConstraints().size());
   DRAKE_DEMAND(prog->GetAllCosts().size() == 1 &&
@@ -75,30 +79,17 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
   // SolutionResult::kInfeasibleOrUnbounded.
   prog->SetSolverOption(solvers::GurobiSolver::id(), "DualReductions", 0);
 
-  if (!already_checked_feasibility) {
-    // Constraints of prog define an empty set therefore any constraint is
-    // redundant.
-    if (IsInfeasible(*prog)) {
-      return true;
-    }
-  }
-
   // This inequality ensures a bounded objective since the left hand side of
   // the inequality is the same as the cost function on the next line.
   new_constraint->evaluator()->UpdateCoefficients(
-      c, VectorXd::Constant(1, -kInf),
-      VectorXd::Constant(1, d + 1));
+      c, VectorXd::Constant(1, -kInf), VectorXd::Constant(1, d + 1));
 
   program_cost_binding->evaluator()->UpdateCoefficients(-c.transpose(), 0);
-
-  auto result = solvers::Solve(*prog);
-
   // Constraints define an empty set or the current inequality of other is not
   // redundant. Since we tested whether this polyhedron is empty earlier, the
   // function would already have exited so this is proof that this inequality
   // is irredundant.
-  bool PolyhedronIsEmpty = result.get_solution_result() ==
-                           solvers::SolutionResult::kInfeasibleConstraints;
+  auto [PolyhedronIsEmpty, result] = IsInfeasible(*prog);
 
   if (!PolyhedronIsEmpty && !result.is_success()) {
     throw std::runtime_error(fmt::format(
@@ -189,7 +180,7 @@ VectorXd HPolyhedron::ChebyshevCenter() const {
 
   // aᵢᵀ x + |aᵢ| r ≤ bᵢ.
   RowVectorXd a(A_.cols() + 1);
-  for (int i = 0; i < A_.rows(); i++) {
+  for (int i = 0; i < A_.rows(); ++i) {
     a[0] = A_.row(i).norm();
     a.tail(A_.cols()) = A_.row(i);
     prog.AddLinearConstraint(a, -inf, b_[i], {r, x});
@@ -233,6 +224,48 @@ HPolyhedron HPolyhedron::Intersection(const HPolyhedron& other,
   return this->DoIntersectionNoChecks(other);
 }
 
+VectorXd HPolyhedron::UniformSample(
+    RandomGenerator* generator,
+    const Eigen::Ref<Eigen::VectorXd>& previous_sample) const {
+  std::normal_distribution<double> gaussian;
+  // Choose a random direction.
+  VectorXd direction(ambient_dimension());
+  for (int i = 0; i < direction.size(); ++i) {
+    direction[i] = gaussian(*generator);
+  }
+  // Find max and min θ subject to
+  //   A(previous_sample + θ*direction) ≤ b.
+  VectorXd line_b = b_ - A_ * previous_sample;
+  VectorXd line_a = A_ * direction;
+  double theta_max = std::numeric_limits<double>::infinity();
+  double theta_min = -theta_max;
+  for (int i = 0; i < line_a.size(); ++i) {
+    if (line_a[i] < 0.0) {
+      theta_min = std::max(theta_min, line_b[i] / line_a[i]);
+    } else if (line_a[i] > 0.0) {
+      theta_max = std::min(theta_max, line_b[i] / line_a[i]);
+    }
+  }
+  if (std::isinf(theta_max) || std::isinf(theta_min)) {
+    throw std::invalid_argument(
+        "The Hit and Run algorithm failed to find a feasible point in the set. "
+        "The `previous_sample` must be in the set.");
+  }
+  // Now pick θ uniformly from [θ_min, θ_max].
+  std::uniform_real_distribution<double> uniform_theta(theta_min, theta_max);
+  const double theta = uniform_theta(*generator);
+  // The new sample is previous_sample + θ * direction.
+  return previous_sample + theta * direction;
+}
+
+// Note: This method only exists to effectively provide ChebyshevCenter(),
+// which is a non-static class method, as a default argument for
+// previous_sample in the UniformSample method above.
+VectorXd HPolyhedron::UniformSample(RandomGenerator* generator) const {
+  VectorXd center = ChebyshevCenter();
+  return UniformSample(generator, center);
+}
+
 HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,
                                  const Eigen::Ref<const VectorXd>& ub) {
   DRAKE_DEMAND(lb.size() == ub.size());
@@ -247,6 +280,21 @@ HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,
 
 HPolyhedron HPolyhedron::MakeUnitBox(int dim) {
   return MakeBox(VectorXd::Constant(dim, -1.0), VectorXd::Constant(dim, 1.0));
+}
+
+HPolyhedron HPolyhedron::MakeL1Ball(const int dim) {
+  const int size{static_cast<int>(std::pow(2, dim))};
+  MatrixXd A = MatrixXd::Ones(size, dim);
+  VectorXd b = VectorXd::Ones(size);
+  // L1Ball is constructed by iterating over all permutations of {± 1}ᵈⁱᵐ.
+  constexpr int bit_set_size = 8 * sizeof(INT_MAX);
+  for (int row = 0; row < A.rows(); ++row) {
+    std::string cur_exponent_set = std::bitset<bit_set_size>(row).to_string();
+    for (int col = 0; col < A.cols(); ++col) {
+      A(row, col) = std::pow(-1, cur_exponent_set[bit_set_size - col - 1]);
+    }
+  }
+  return {A, b};
 }
 
 bool HPolyhedron::DoIsBounded() const {
@@ -274,7 +322,7 @@ bool HPolyhedron::DoIsBounded() const {
   return result.is_success();
 }
 
-bool HPolyhedron::Contains(const HPolyhedron& other) const {
+bool HPolyhedron::ContainedIn(const HPolyhedron& other) const {
   DRAKE_DEMAND(other.A().cols() == A_.cols());
   // `this` defines an empty set and therefore is contained in any `other`
   // HPolyhedron.
@@ -285,22 +333,19 @@ bool HPolyhedron::Contains(const HPolyhedron& other) const {
   solvers::MathematicalProgram prog;
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(A_.cols(), "x");
-  prog.AddLinearConstraint(A_, VectorXd::Constant(b_.rows(), -kInf), b_,
-                           x);
+  prog.AddLinearConstraint(A_, VectorXd::Constant(b_.rows(), -kInf), b_, x);
 
   Binding<solvers::LinearConstraint> redundant_constraint_binding =
-      prog.AddLinearConstraint(other.A().row(0),
-                               VectorXd::Constant(1, -kInf),
+      prog.AddLinearConstraint(other.A().row(0), VectorXd::Constant(1, -kInf),
                                other.b().row(0), x);
   Binding<solvers::LinearCost> program_cost_binding =
       prog.AddLinearCost(-other.A().row(0), 0, x);
 
-  for (int i = 0; i < other.A().rows(); i++) {
+  for (int i = 0; i < other.A().rows(); ++i) {
     // If any of the constraints of `other` are irredundant then `this` is
     // not contained in `other`.
     if (!IsRedundant(other.A().row(i), other.b()(i), &prog,
-                     &redundant_constraint_binding, &program_cost_binding,
-                     true)) {
+                     &redundant_constraint_binding, &program_cost_binding)) {
       return false;
     }
   }
@@ -332,28 +377,25 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(
   solvers::MathematicalProgram prog;
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(A_.cols(), "x");
-  prog.AddLinearConstraint(A_, VectorXd::Constant(b_.rows(), -kInf), b_,
-                           x);
-  auto result = solvers::Solve(prog);
+  prog.AddLinearConstraint(A_, VectorXd::Constant(b_.rows(), -kInf), b_, x);
+  auto [infeasible, result] = IsInfeasible(prog);
+
   // `this` defines an empty set therefore any additional constraint is
   // redundant.
-  if (result.get_solution_result() ==
-      solvers::SolutionResult::kInfeasibleConstraints) {
+  if (infeasible) {
     return {A_, b_};
   }
 
   Binding<solvers::LinearConstraint> redundant_constraint_binding =
-      prog.AddLinearConstraint(other.A().row(0),
-                               VectorXd::Constant(1, -kInf),
+      prog.AddLinearConstraint(other.A().row(0), VectorXd::Constant(1, -kInf),
                                other.b().row(0), x);
   Binding<solvers::LinearCost> program_cost_binding =
       prog.AddLinearCost(-other.A().row(0), 0, x);
 
   int num_kept = A_.rows();
-  for (int i = 0; i < other.A().rows(); i++) {
+  for (int i = 0; i < other.A().rows(); ++i) {
     if (!IsRedundant(other.A().row(i), other.b()(i), &prog,
-                     &redundant_constraint_binding, &program_cost_binding,
-                     true)) {
+                     &redundant_constraint_binding, &program_cost_binding)) {
       A.row(num_kept) = other.A().row(i);
       b.row(num_kept) = other.b().row(i);
       ++num_kept;
@@ -370,10 +412,11 @@ HPolyhedron HPolyhedron::ReduceInequalities() const {
   const int num_vars = A_.cols();
 
   std::set<int> kept_indices;
-  for (int i = 0; i < num_inequalities; i++) {
+  for (int i = 0; i < num_inequalities; ++i) {
     kept_indices.emplace(i);
   }
-
+  // TODO(hongkai.dai): create just one program and remove the redundant
+  // constraint
   for (int excluded_index = 0; excluded_index < num_inequalities;
        ++excluded_index) {
     solvers::MathematicalProgram prog;
@@ -391,20 +434,20 @@ HPolyhedron HPolyhedron::ReduceInequalities() const {
 
     // Constraint to check redundant.
     Binding<solvers::LinearConstraint> redundant_constraint_binding =
-        prog.AddLinearConstraint(
-            A_.row(excluded_index), VectorXd::Constant(1, -kInf),
-            b_.row(excluded_index) + VectorXd::Ones(1), x);
+        prog.AddLinearConstraint(A_.row(excluded_index),
+                                 VectorXd::Constant(1, -kInf),
+                                 b_.row(excluded_index) + VectorXd::Ones(1), x);
 
     // Construct cost binding for prog.
     Binding<solvers::LinearCost> program_cost_binding =
         prog.AddLinearCost(-A_.row(excluded_index), 0, x);
 
-    auto result = solvers::Solve(prog);
-
     // The current inequality is redundant.
-    if (IsRedundant(A_.row(excluded_index), b_(excluded_index), &prog,
-                    &redundant_constraint_binding, &program_cost_binding,
-                    false)) {
+    if (std::get<0>(IsInfeasible(prog))) {
+      kept_indices.erase(excluded_index);
+    } else if (IsRedundant(A_.row(excluded_index), b_(excluded_index), &prog,
+                           &redundant_constraint_binding,
+                           &program_cost_binding)) {
       kept_indices.erase(excluded_index);
     }
   }
@@ -518,9 +561,8 @@ HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(ambient_dimension_, "x");
   // -inf <= Ax <= b
-  prog.AddLinearConstraint(other.A(),
-                           VectorXd::Constant(other.b().rows(), -kInf),
-                           other.b(), x);
+  prog.AddLinearConstraint(
+      other.A(), VectorXd::Constant(other.b().rows(), -kInf), other.b(), x);
 
   auto result = solvers::Solve(prog);
   // other is an empty polyhedron and so Pontryagin difference does nothing

@@ -163,6 +163,15 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "schunk_wsg_buttons",
+    srcs = ["schunk_wsg_buttons.py"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 drake_py_binary(
     name = "joint_teleop",
     srcs = ["joint_teleop.py"],
@@ -175,6 +184,7 @@ drake_py_binary(
     test_rule_tags = vtk_test_tags(),
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
+        ":schunk_wsg_buttons",
         "//bindings/pydrake",
     ],
 )
@@ -228,6 +238,7 @@ drake_py_binary(
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         ":differential_ik",
+        ":schunk_wsg_buttons",
         "//bindings/pydrake",
     ],
 )

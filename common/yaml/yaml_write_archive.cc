@@ -4,8 +4,8 @@
 #include <utility>
 #include <vector>
 
-#include <drake-yaml-cpp/emitfromevents.h>
-#include <drake-yaml-cpp/yaml.h>
+#include <drake_vendor/yaml-cpp/emitfromevents.h>
+#include <drake_vendor/yaml-cpp/yaml.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/unused.h"

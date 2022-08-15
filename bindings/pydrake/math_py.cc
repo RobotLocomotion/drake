@@ -18,6 +18,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/bspline_basis.h"
+#include "drake/math/compute_numerical_gradient.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
 #include "drake/math/continuous_lyapunov_equation.h"
 #include "drake/math/discrete_algebraic_riccati_equation.h"
@@ -104,17 +105,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
             cls_doc.IsExactlyIdentity.doc)
         .def("IsNearlyIdentity", &Class::IsNearlyIdentity,
-            py::arg("translation_tolerance"), cls_doc.IsNearlyIdentity.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("IsIdentityToEpsilon",
-            WrapDeprecated(cls_doc.IsIdentityToEpsilon.doc_deprecated,
-                &Class::IsIdentityToEpsilon),
-            py::arg("translation_tolerance"),
-            cls_doc.IsIdentityToEpsilon.doc_deprecated);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-    cls                     // BR
+            py::arg("translation_tolerance"), cls_doc.IsNearlyIdentity.doc)
         .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
             py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
@@ -208,17 +199,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("IsNearlyIdentity", &Class::IsNearlyIdentity,
             py::arg("tolerance") =
                 Class::get_internal_tolerance_for_orthonormality(),
-            cls_doc.IsNearlyIdentity.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("IsIdentityToInternalTolerance",
-            WrapDeprecated(cls_doc.IsIdentityToInternalTolerance.doc_deprecated,
-                &Class::IsIdentityToInternalTolerance),
-            cls_doc.IsIdentityToInternalTolerance.doc_deprecated);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-    cls                     // BR
-                            // Does not return the quality_factor
+            cls_doc.IsNearlyIdentity.doc)
+        // Does not return the quality_factor
         .def_static(
             "ProjectToRotationMatrix",
             [](const Matrix3<T>& M) {
@@ -536,6 +518,42 @@ void DoScalarIndependentDefinitions(py::module m) {
       .def("inv", [](const Eigen::MatrixXd& X) -> Eigen::MatrixXd {
         return X.inverse();
       });
+
+  {
+    using Class = NumericalGradientMethod;
+    constexpr auto& cls_doc = doc.NumericalGradientMethod;
+    py::enum_<Class>(m, "NumericalGradientMethod", cls_doc.doc)
+        .value("kForward", Class::kForward, cls_doc.kForward.doc)
+        .value("kBackward", Class::kBackward, cls_doc.kBackward.doc)
+        .value("kCentral", Class::kCentral, cls_doc.kCentral.doc);
+  }
+
+  {
+    using Class = NumericalGradientOption;
+    constexpr auto& cls_doc = doc.NumericalGradientOption;
+    py::class_<Class>(m, "NumericalGradientOption", cls_doc.doc)
+        .def(py::init<NumericalGradientMethod, double>(), py::arg("method"),
+            py::arg("function_accuracy") = 1E-15, cls_doc.ctor.doc)
+        .def("NumericalGradientMethod", &Class::method, cls_doc.method.doc)
+        .def("perturbation_size", &Class::perturbation_size,
+            cls_doc.perturbation_size.doc);
+  }
+
+  m.def(
+      "ComputeNumericalGradient",
+      [](std::function<Eigen::VectorXd(const Eigen::VectorXd&)> calc_func,
+          const Eigen::VectorXd& x, const NumericalGradientOption& option) {
+        std::function<void(const Eigen::VectorXd&, Eigen::VectorXd*)>
+            calc_func_no_return =
+                [&calc_func](const Eigen::VectorXd& x_val, Eigen::VectorXd* y) {
+                  *y = calc_func(x_val);
+                };
+        return ComputeNumericalGradient(calc_func_no_return, x, option);
+      },
+      py::arg("calc_func"), py::arg("x"),
+      py::arg("option") =
+          NumericalGradientOption(NumericalGradientMethod::kForward),
+      doc.ComputeNumericalGradient.doc);
 
   // See TODO in corresponding header file - these should be removed soon!
   pydrake::internal::BindAutoDiffMathOverloads(&m);

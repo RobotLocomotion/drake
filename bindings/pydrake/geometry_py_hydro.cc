@@ -9,7 +9,9 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh_field.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_properties.h"
@@ -68,21 +70,125 @@ void DoScalarDependentDefinitions(py::module m, T) {
     DefCopyAndDeepCopy(&cls);
   }
 
+  /* A note on the bindings of ***SurfaceMeshFieldLinear.
+
+   The current binding's purpose is to allow the user to view the fields
+   associated with a ContactSurface. As such:
+
+     - We don't bind the constructors.
+     - We are only binding *scalar* fields (where the `FieldType` is the same
+       scalar type as the vertex position scalar type). This is sufficient for
+       what ContactSurface uses.
+     - We only bind the Evaluate*** methods.
+       - This leaves out
+         - Transform() (already marked "Advanced" in documentation)
+         - CloneAndSetMesh()
+         - mesh() and values() accessors
+         - Equal()
+     - We steal the documentation from MeshFieldLinear.
+
+   If we need to support vector fields of arbitrary higher dimension in the
+   future, we can revisit these bindings.
+
+   Because we can't construct them, we test them in conjunction with testing
+   ContactSurface in geometry_scene_graph_test.py.
+
+   Differences between the SurfaceMeshFields for Triangle and Polygon:
+     Polygon:
+       - Always has gradients, so EvalauteGradient() is bound.
+       - Has no barycentric coordinates, so Evaluate() is not bound (it would
+         only throw).
+     Triangle:
+       - Has no gradients computed in the creation of a ContactSurface, so
+         EvaluateGradient() is not bound (it would only throw).
+       - Has barycentric coordinates, so Evaluate() is bound.
+   */
+
+  // PolygonSurfaceMeshFieldLinear
+  {
+    using Class = PolygonSurfaceMeshFieldLinear<T, T>;
+    constexpr auto& cls_doc = doc.MeshFieldLinear;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "PolygonSurfaceMeshFieldLinear", GetPyParam<T, T>(), cls_doc.doc);
+    cls  // BR
+        .def("EvaluateAtVertex", &Class::EvaluateAtVertex, py::arg("v"),
+            cls_doc.EvaluateAtVertex.doc)
+        .def("EvaluateGradient", &Class::EvaluateGradient, py::arg("e"),
+            cls_doc.EvaluateGradient.doc)
+        .def(
+            "EvaluateCartesian",
+            [](const Class* self, int e, const Vector3<T>& p_MQ) {
+              return self->EvaluateCartesian(e, p_MQ);
+            },
+            py::arg("e"), py::arg("p_MQ"), cls_doc.EvaluateCartesian.doc);
+  }
+
   // TriangleSurfaceMesh
   {
     using Class = TriangleSurfaceMesh<T>;
+    constexpr auto& cls_doc = doc.TriangleSurfaceMesh;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "TriangleSurfaceMesh", param, doc.TriangleSurfaceMesh.doc);
+        m, "TriangleSurfaceMesh", param, cls_doc.doc);
     cls  // BR
+        .def("element", &Class::element, py::arg("e"), cls_doc.element.doc)
+        .def("vertex", &Class::vertex, py::arg("v"), cls_doc.vertex.doc)
+        .def("num_vertices", &Class::num_vertices, cls_doc.num_vertices.doc)
+        .def("num_elements", &Class::num_elements, cls_doc.num_elements.doc)
         .def(py::init<std::vector<SurfaceTriangle>, std::vector<Vector3<T>>>(),
-            py::arg("triangles"), py::arg("vertices"),
-            doc.TriangleSurfaceMesh.ctor.doc)
-        .def("triangles", &Class::triangles,
-            doc.TriangleSurfaceMesh.triangles.doc)
-        .def("vertices", &Class::vertices, doc.TriangleSurfaceMesh.vertices.doc)
-        .def("centroid", &Class::centroid, doc.TriangleSurfaceMesh.centroid.doc)
+            py::arg("triangles"), py::arg("vertices"), cls_doc.ctor.doc)
+        .def("num_triangles", &Class::num_triangles, cls_doc.num_triangles.doc)
+        .def("area", &Class::area, py::arg("t"), cls_doc.area.doc)
+        .def("total_area", &Class::total_area, cls_doc.total_area.doc)
+        .def("face_normal", &Class::face_normal, py::arg("t"),
+            cls_doc.face_normal.doc)
+        .def("triangles", &Class::triangles, cls_doc.triangles.doc)
+        .def("vertices", &Class::vertices, cls_doc.vertices.doc)
+        .def("centroid", &Class::centroid, cls_doc.centroid.doc)
         .def("element_centroid", &Class::element_centroid, py::arg("t"),
-            doc.TriangleSurfaceMesh.element_centroid.doc);
+            cls_doc.element_centroid.doc)
+        .def("CalcBoundingBox", &Class::CalcBoundingBox,
+            cls_doc.CalcBoundingBox.doc)
+        .def("Equal", &Class::Equal, py::arg("mesh"), cls_doc.Equal.doc)
+        .def(
+            "CalcCartesianFromBarycentric",
+            [](const Class* self, int element_index, const Vector3<T>& b_Q) {
+              return self->template CalcCartesianFromBarycentric(
+                  element_index, b_Q);
+            },
+            py::arg("element_index"), py::arg("b_Q"),
+            cls_doc.CalcCartesianFromBarycentric.doc)
+        .def(
+            "CalcBarycentric",
+            [](const Class* self, const Vector3<T>& p_MQ, int t) {
+              return self->template CalcBarycentric(p_MQ, t);
+            },
+            py::arg("p_MQ"), py::arg("t"), cls_doc.CalcBarycentric.doc);
+  }
+
+  // TriangleSurfaceMeshFieldLinear
+  // See notes with PolygonSurfaceMeshFieldLinear for binding discussion.
+  {
+    using Class = TriangleSurfaceMeshFieldLinear<T, T>;
+    constexpr auto& cls_doc = doc.MeshFieldLinear;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "TriangleSurfaceMeshFieldLinear", GetPyParam<T, T>(), cls_doc.doc);
+    using Barycentric =
+        typename TriangleSurfaceMesh<T>::template Barycentric<T>;
+    cls  // BR
+        .def("EvaluateAtVertex", &Class::EvaluateAtVertex, py::arg("v"),
+            cls_doc.EvaluateAtVertex.doc)
+        .def(
+            "Evaluate",
+            [](const Class* self, int e, const Barycentric& b) {
+              return self->Evaluate(e, b);
+            },
+            py::arg("e"), py::arg("b"), cls_doc.Evaluate.doc)
+        .def(
+            "EvaluateCartesian",
+            [](const Class* self, int e, const Vector3<T>& p_MQ) {
+              return self->EvaluateCartesian(e, p_MQ);
+            },
+            py::arg("e"), py::arg("p_MQ"), cls_doc.EvaluateCartesian.doc);
   }
 
   // VolumeMesh
@@ -129,6 +235,7 @@ void DoScalarIndependentDefinitions(py::module m) {
     cls  // BR
         .def(py::init<int, int, int>(), py::arg("v0"), py::arg("v1"),
             py::arg("v2"), cls_doc.ctor.doc_3args)
+        .def("num_vertices", &Class::num_vertices, cls_doc.num_vertices.doc)
         // TODO(SeanCurtis-TRI): Bind constructor that takes array of ints.
         .def("vertex", &Class::vertex, py::arg("i"), cls_doc.vertex.doc);
     DefCopyAndDeepCopy(&cls);

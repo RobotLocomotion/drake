@@ -49,22 +49,22 @@ class NumericalGradientOption {
 
 /**
  * Compute the gradient of a function f(x) through numerical difference.
- * @param calc_fun calc_fun(x, &y) computes the value of f(x), and stores the
- * value in y. `calc_fun` is responsible for properly resizing the output `y`
+ * @param calc_func calc_func(x, &y) computes the value of f(x), and stores the
+ * value in y. `calc_func` is responsible for properly resizing the output `y`
  * when it consists of an Eigen vector of Eigen::Dynamic size.
  *
  * @param x The point at which the numerical gradient is computed.
  * @param option The options for computing numerical gradient.
  * @tparam DerivedX an Eigen column vector.
  * @tparam DerivedY an Eigen column vector.
- * @tparam DerivedCalcX The type of x in the calc_fun. Must be an Eigen column
+ * @tparam DerivedCalcX The type of x in the calc_func. Must be an Eigen column
  * vector. It is possible to have DerivedCalcX being different from
- * DerivedX, for example, `calc_fun` could be solvers::EvaluatorBase(const
+ * DerivedX, for example, `calc_func` could be solvers::EvaluatorBase(const
  * Eigen::Ref<const Eigen::VectorXd>&, Eigen::VectorXd*), but `x` could be of
  * type Eigen::VectorXd.
  * TODO(hongkai.dai): understand why the default template DerivedCalcX =
  * DerivedX doesn't compile when I instantiate
- * ComputeNumericalGradient<DerivedX, DerivedY>(calc_fun, x);
+ * ComputeNumericalGradient<DerivedX, DerivedY>(calc_func, x);
  * @retval gradient a matrix of size x.rows() x y.rows(). gradient(i, j) is
  * ∂f(i) / ∂x(j)
  *
@@ -92,7 +92,7 @@ template <typename DerivedX, typename DerivedY, typename DerivedCalcX>
 Eigen::Matrix<typename DerivedX::Scalar, DerivedY::RowsAtCompileTime,
               DerivedX::RowsAtCompileTime>
 ComputeNumericalGradient(
-    std::function<void(const DerivedCalcX&, DerivedY* y)> calc_fun,
+    std::function<void(const DerivedCalcX&, DerivedY* y)> calc_func,
     const DerivedX& x,
     const NumericalGradientOption& option = NumericalGradientOption{
         NumericalGradientMethod::kForward}) {
@@ -126,9 +126,9 @@ ComputeNumericalGradient(
 
   // We need to evaluate f(x), only for the forward and backward schemes.
   if (option.method() == NumericalGradientMethod::kBackward) {
-    calc_fun(x, &y_plus);
+    calc_func(x, &y_plus);
   } else if (option.method() == NumericalGradientMethod::kForward) {
-    calc_fun(x, &y_minus);
+    calc_func(x, &y_minus);
   }
 
   // Now evaluate f(x + Δx) and f(x - Δx) along each dimension.
@@ -143,13 +143,13 @@ ComputeNumericalGradient(
     if (option.method() == NumericalGradientMethod::kForward ||
         option.method() == NumericalGradientMethod::kCentral) {
       x_plus(i) += h;
-      calc_fun(x_plus, &y_plus);
+      calc_func(x_plus, &y_plus);
     }
 
     if (option.method() == NumericalGradientMethod::kBackward ||
         option.method() == NumericalGradientMethod::kCentral) {
       x_minus(i) -= h;
-      calc_fun(x_minus, &y_minus);
+      calc_func(x_minus, &y_minus);
     }
 
     // Update dxi, minimizing the effect of roundoff error by ensuring that

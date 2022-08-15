@@ -8,11 +8,24 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
+  const T mass = 1;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();  // Position from Bo to Bcm.
+  const UnitInertia<T> G_BBo_B(/* Ixx = */ 1, /* Iyy = */ 1, /* Izz = */ 1);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+}
+
+template <typename T>
 void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
   std::string error_message = fmt::format(
-      "Spatial inertia fails SpatialInertia::IsPhysicallyValid()."
-      "{}", *this);
-  WriteExtraCentralInertiaProperties(&error_message);
+          "Spatial inertia fails SpatialInertia::IsPhysicallyValid().");
+  const T& mass = get_mass();
+  if (mass < T(0)) {
+      error_message += fmt::format("\nmass = {} is negative.\n", mass);
+  } else {
+    error_message += fmt::format("{}", *this);
+    WriteExtraCentralInertiaProperties(&error_message);
+  }
   throw std::runtime_error(error_message);
 }
 

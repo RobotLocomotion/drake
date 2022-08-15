@@ -50,8 +50,9 @@ As a comparison, you can also render with the normal VTK by setting
 $ bazel run //geometry/render/dev/render_gltf_client:run_simulation_and_render -- --render_engine vtk
 ```
 
-Note that if you ran your server on an alternate `--port`, you will need to
-provide this `--port` to the `run_simulation_and_render` executable as well.
+Note that if you ran your server on an alternate `--host` or `--port`, you will
+need to specify that in `--server_base_url` when running
+`run_simulation_and_render` executable as well.
 
 ### (Optional) Run Drake Visualizer
 

@@ -42,6 +42,11 @@ class SpaceXYZMobilizerTest :  public MobilizerTester {
   const SpaceXYZMobilizer<double>* mobilizer_{nullptr};
 };
 
+TEST_F(SpaceXYZMobilizerTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(mobilizer_->can_rotate());
+  EXPECT_FALSE(mobilizer_->can_translate());
+}
+
 // Verifies methods to mutate and access the context.
 TEST_F(SpaceXYZMobilizerTest, StateAccess) {
   const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);

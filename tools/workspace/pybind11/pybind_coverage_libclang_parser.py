@@ -102,7 +102,7 @@ def get_var_value(re_search, tokens, i):
     """
     li = []
     i = i + len(re_search["start_tokens"])
-    while(i < len(tokens) and tokens[i] != re_search["end_token"]):
+    while i < len(tokens) and tokens[i] != re_search["end_token"]:
         li.append(tokens[i])
         i = i + 1
     return li
@@ -133,7 +133,7 @@ def replace_tokens(tokens, var_name):
         if tokens[i:(i + num_tokens)] == st_tokens:
             value_li = get_var_value(re_search, tokens, i)
             st = "".join(value_li)
-            assert(re.match(re_search["value_regex"], st))
+            assert re.match(re_search["value_regex"], st)
 
         elif value_li:
             check_substitution_regex(tokens, i, value_li, var_name)
@@ -172,8 +172,8 @@ def get_tokens(filename):
     en = cindex.SourceLocation.from_position(tu, FILE, lines, cols)
     extent = cindex.SourceRange.from_locations(st, en)
     tokens = tu.get_tokens(extent=extent)
-    token_spellings = [t.spelling.decode('utf-8') for t in tokens if t.kind is
-                       not cindex.TokenKind.COMMENT]
+    token_spellings = [t.spelling for t in tokens
+                       if t.kind is not cindex.TokenKind.COMMENT]
 
     return token_spellings
 

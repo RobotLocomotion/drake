@@ -434,22 +434,22 @@ Eigen::VectorXd GetDeterministicValue(
   return ToDistributionVector(vec)->Mean();
 }
 
-#define DRAKE_INSTANTIATE_ALL_SIZES(Clazz) \
-  template Clazz<Eigen::Dynamic>; \
-  template Clazz<1>; \
-  template Clazz<2>; \
-  template Clazz<3>; \
-  template Clazz<4>; \
-  template Clazz<5>; \
-  template Clazz<6>;
+#define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(Clazz) \
+  template class Clazz<Eigen::Dynamic>; \
+  template class Clazz<1>; \
+  template class Clazz<2>; \
+  template class Clazz<3>; \
+  template class Clazz<4>; \
+  template class Clazz<5>; \
+  template class Clazz<6>;
 
-DRAKE_INSTANTIATE_ALL_SIZES(class DeterministicVector)
-DRAKE_INSTANTIATE_ALL_SIZES(class GaussianVector)
-DRAKE_INSTANTIATE_ALL_SIZES(class UniformVector)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(DeterministicVector)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(GaussianVector)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(UniformVector)
 
-#undef DRAKE_INSTANTIATE_ALL_SIZES
+#undef DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES
 
-#define DRAKE_INSTANTIATE_ALL_SIZES(Func) \
+#define DRAKE_DEFINE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(Func) \
   template Func(const DistributionVectorVariantX&); \
   template Func(const DistributionVectorVariant<1>&); \
   template Func(const DistributionVectorVariant<2>&); \
@@ -458,11 +458,14 @@ DRAKE_INSTANTIATE_ALL_SIZES(class UniformVector)
   template Func(const DistributionVectorVariant<5>&); \
   template Func(const DistributionVectorVariant<6>&);
 
-DRAKE_INSTANTIATE_ALL_SIZES(unique_ptr<DistributionVector> ToDistributionVector)
-DRAKE_INSTANTIATE_ALL_SIZES(bool IsDeterministic)
-DRAKE_INSTANTIATE_ALL_SIZES(Eigen::VectorXd GetDeterministicValue)
+DRAKE_DEFINE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
+    unique_ptr<DistributionVector> ToDistributionVector)
+DRAKE_DEFINE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
+    bool IsDeterministic)
+DRAKE_DEFINE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
+    Eigen::VectorXd GetDeterministicValue)
 
-#undef DRAKE_INSTANTIATE_ALL_SIZES
+#undef DRAKE_DEFINE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES
 
 }  // namespace schema
 }  // namespace drake

@@ -306,6 +306,25 @@ class LadderTest : public ::testing::Test {
     VerifyJointReactionForces(
         &simulator_prototype->get_mutable_context(), locked_joint);
 
+    // TODO(#17720): As articulated in the issue, baking a query object when
+    // cloning scene graph context is thread-unsafe. In particular, updating the
+    // proxy cache entry for pose/configuration (instead of simply grabing the
+    // up-to-date cache value) is a race condition. Therefore, we call
+    // `ComputeDeformableRigidContact` below to explicitly bring the
+    // pose/configuration proxy cache entries up-to-date to circumvent the race
+    // condition when we clone the contexts over multiple threads later on. This
+    // is a hack by taking advantage of the side effects of the caching
+    // mechanism in SceneGraph and should be removed when the referenced issue
+    // is fixed.
+    const Context<double>& sg_context = diagram_->GetSubsystemContext(
+        *scene_graph_, simulator_prototype->get_context());
+    const auto& query_object =
+        scene_graph_->get_query_output_port()
+            .Eval<geometry::QueryObject<double>>(sg_context);
+    std::vector<geometry::internal::DeformableRigidContact<double>>
+        deformable_rigid_contact;
+    query_object.ComputeDeformableRigidContact(&deformable_rigid_contact);
+
     // Running the simulation in multiple threads here gives us a chance to
     // check readiness for context-per-thread usage. Even though all threads
     // are doing the same thing, ThreadSanitizer will be able to detect
@@ -428,7 +447,7 @@ class SpinningRodTest : public ::testing::Test {
   }
 
   void VerifyJointReactionForces() {
-    const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
+    const double kTolerance = 40 * std::numeric_limits<double>::epsilon();
 
     // Evaluate the spatial acceleration of the rod.
     const auto& A_WB_all =

@@ -54,14 +54,16 @@ drake_py_unittest(
     legacy_create_init = 0,
     # Conflicting access defects related to ZMQ when run under DRD.
     tags = ["no_drd"],
-    deps = ["@meshcat_python//:meshcat"],
+    deps = ["@meshcat_python//:meshcat_sans_deprecation_warning"],
 )
+
+_SERVER = "@meshcat_python//:meshcat-server_sans_deprecation_warning"
 
 drake_py_unittest(
     name = "meshcat_server_test",
-    args = ["$(location @meshcat_python//:meshcat-server)"],
+    args = ["$(location {})".format(_SERVER)],
     legacy_create_init = 0,
-    deps = ["@meshcat_python//:meshcat-server"],
+    deps = [_SERVER],
 )
 
 add_lint_tests(

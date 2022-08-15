@@ -6,12 +6,13 @@
 #include <string>
 #include <variant>
 
-#include <sdf/Element.hh>
+#include <drake_vendor/sdf/Element.hh>
 #include <tinyxml2.h>
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
@@ -168,10 +169,14 @@ const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
 // tag in both SDF and URDF can be controlled/modified in a single function.
 // Functors are allowed to throw an exception when the requested quantities
 // are not available.
+// @param diagnostic            The error-reporting channel.
 // @param model_instance        Model Instance that contains the bodies involved
 //                              in the collision filter groups.
 // @param model_node            Node used to parse for the
 //                              collision_gilter_group tag.
+// @param plant                 MultibodyPlant used to register the collision
+//                              filter groups.
+// @param resolver              Collects the collision filter group data.
 // @param next_child_element    Function that returns the next child element
 //                              with the specified tag in the ElementNode
 //                              provided.
@@ -188,11 +193,11 @@ const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
 //                              name provided in the ElementNoded provided.
 // @param read_bool_attribute   Function that reads a boolean attribute with
 //                              the name provided in the ElementNode provided.
-// @param plant                 MultibodyPlant used to register the collision
-//                              filter groups.
 void ParseCollisionFilterGroupCommon(
+    const drake::internal::DiagnosticPolicy& diagnostic,
     ModelInstanceIndex model_instance, const ElementNode& model_node,
     MultibodyPlant<double>* plant,
+    internal::CollisionFilterGroupResolver* resolver,
     const std::function<ElementNode(const ElementNode&, const char*)>&
         next_child_element,
     const std::function<ElementNode(const ElementNode&, const char*)>&

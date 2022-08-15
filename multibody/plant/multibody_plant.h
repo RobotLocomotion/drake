@@ -16,10 +16,12 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
+#include "drake/common/scope_exit.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
+#include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -97,6 +99,30 @@ enum class ContactModel {
   kHydroelasticsOnly = kHydroelastic,
   /// Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
   kPointContactOnly = kPoint,
+};
+
+/// The type of the contact solver used for a discrete MultibodyPlant model.
+///
+/// Note: the SAP solver only fully supports scalar type `double`. For
+/// scalar type `AutoDiffXd`, the SAP solver throws if any constraint (including
+/// contact) is detected. As a consequence, one can only run dynamic simulations
+/// without any constraints under the combination of SAP and `AutoDiffXd`. The
+/// SAP solver does not support symbolic calculations.
+///
+/// <h2>References</h2>
+///
+/// - [Castro et al., 2019] Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A.,
+///   Sherman, M.A., 2019. A Transition-Aware Method for the Simulation of
+///   Compliant Contact with Regularized Friction. Available online at
+///   https://arxiv.org/abs/1909.05700.
+/// - [Castro et al., 2022] Castro A., Permenter F. and Han X., 2022. An
+///   Unconstrained Convex Formulation of Compliant Contact. Available online at
+///   https://arxiv.org/abs/2110.10107.
+enum class DiscreteContactSolver {
+  /// TAMSI solver, see [Castro et al., 2019].
+  kTamsi,
+  /// SAP solver, see [Castro et al., 2022].
+  kSap,
 };
 
 /// @cond
@@ -338,17 +364,20 @@ pre-finalize.
 %Multibodyplant declares an input port for geometric queries, see
 get_geometry_query_input_port(). If %MultibodyPlant registers geometry with
 a SceneGraph via calls to RegisterCollisionGeometry(), users may use this
-port for geometric queries. Users must connect this input port to the output
-port for geometric queries of the SceneGraph used for registration, which
-can be obtained with SceneGraph::get_query_output_port(). In summary, if
-%MultibodyPlant registers collision geometry, the setup process will
-include:
+port for geometric queries. The port must be connected to the same SceneGraph
+used for registration. The preferred mechanism is to use
+AddMultibodyPlantSceneGraph() as documented above.
+
+In extraordinary circumstances, this can be done by hand and the setup process
+will include:
 
 1. Call to RegisterAsSourceForSceneGraph().
 2. Calls to RegisterCollisionGeometry(), as many as needed.
 3. Call to Finalize(), user is done specifying the model.
-4. Connect SceneGraph::get_query_output_port() to
+4. Connect geometry::SceneGraph::get_query_output_port() to
    get_geometry_query_input_port().
+5. Connect get_geometry_poses_output_port() to
+   geometry::SceneGraph::get_source_pose_port()
 
 Refer to the documentation provided in each of the methods above for further
 details.
@@ -365,7 +394,9 @@ the following properties for point contact modeling:
 | :--------: | :--------------: | :------: | :----------------: | :------------------- |
 |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
 |  material  | point_contact_stiffness |  no²  | T | Penalty method stiffness. |
-|  material  | hunt_crossley_dissipation |  no²  | T | Penalty method dissipation. |
+|  material  | hunt_crossley_dissipation |  no²⁴  | T | Penalty method dissipation. |
+|  material  | relaxation_time |  yes³⁴  | T | Parameter for a linear Kelvin–Voigt model of dissipation. |
+
 
 ¹ Collision geometry is required to be registered with a
   geometry::ProximityProperties object that contains the
@@ -376,6 +407,22 @@ the following properties for point contact modeling:
   a heuristic value as the default. Refer to the
   section @ref mbp_penalty_method "Penalty method point contact" for further
   details.
+
+³ When using a linear Kelvin–Voigt model of dissipation (for instance when
+  selecting the SAP solver), collision geometry is required to be registered
+  with a geometry::ProximityProperties object that contains the ("material",
+  "relaxation_time") property. If the property is missing, an exception will be
+  thrown.
+
+⁴ We allow to specify both hunt_crossley_dissipation and relaxation_time for a
+  given geometry. However only one of these will get used, depending on the
+  configuration of the %MultibodyPlant. As an example, if the SAP solver is
+  specified (see set_discrete_contact_solver()) only the relaxation_time is used
+  while hunt_crossley_dissipation is ignored. Conversely, if the TAMSI solver is
+  used (see set_discrete_contact_solver()) only hunt_crossley_dissipation is
+  used while relaxation_time is ignored. Currently, a continuous %MultibodyPlant
+  model will always use the Hunt & Crossley model and relaxation_time will be
+  ignored.
 
 Accessing and modifying contact properties requires interfacing with
 geometry::SceneGraph's model inspector. Interfacing with a model inspector
@@ -778,67 +825,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
-  explicit MultibodyPlant(const MultibodyPlant<U>& other)
-      : internal::MultibodyTreeSystem<T>(
-            systems::SystemTypeTag<MultibodyPlant>{},
-            other.internal_tree().template CloneToScalar<T>(),
-            other.is_discrete()) {
-    DRAKE_THROW_UNLESS(other.is_finalized());
-    time_step_ = other.time_step_;
-    // Copy of all members related with geometry registration.
-    source_id_ = other.source_id_;
-    body_index_to_frame_id_ = other.body_index_to_frame_id_;
-    frame_id_to_body_index_ = other.frame_id_to_body_index_;
-    geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
-    visual_geometries_ = other.visual_geometries_;
-    num_visual_geometries_ = other.num_visual_geometries_;
-    collision_geometries_ = other.collision_geometries_;
-    num_collision_geometries_ = other.num_collision_geometries_;
-    X_WB_default_list_ = other.X_WB_default_list_;
-    contact_model_ = other.contact_model_;
-    contact_surface_representation_ =
-        other.contact_surface_representation_;
-    penetration_allowance_ = other.penetration_allowance_;
-    // Note: The physical models must be cloned before `FinalizePlantOnly()` is
-    // called because `FinalizePlantOnly()` has to allocate system resources
-    // requested by physical models.
-    for (auto& model : other.physical_models_) {
-      auto cloned_model = model->template CloneToScalar<T>();
-      // TODO(xuchenhan-tri): Rework physical model and discrete update manager
-      //  to eliminate the requirement on the order that they are called with
-      //  respect to Finalize().
-
-      // AddPhysicalModel can't be called here because it's post-finalize. We
-      // have to manually disable scalars that the cloned physical model do not
-      // support.
-      RemoveUnsupportedScalars(*cloned_model);
-      physical_models_.emplace_back(std::move(cloned_model));
-    }
-
-    DeclareSceneGraphPorts();
-
-    // Do accounting for MultibodyGraph
-    for (BodyIndex index(0); index < num_bodies(); ++index) {
-      const Body<T>& body = get_body(index);
-      multibody_graph_.AddBody(body.name(), body.model_instance());
-    }
-
-    for (JointIndex index(0); index < num_joints(); ++index) {
-      RegisterJointInGraph(get_joint(index));
-    }
-
-    // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
-    // on the new MultibodyTree on U. Therefore we only Finalize the plant's
-    // internals (and not the MultibodyTree).
-    FinalizePlantOnly();
-
-    // Note: The discrete update manager needs to be copied *after* the plant is
-    // finalized.
-    if (other.discrete_update_manager_ != nullptr) {
-      SetDiscreteUpdateManager(
-          other.discrete_update_manager_->template CloneToScalar<T>());
-    }
-  }
+  explicit MultibodyPlant(const MultibodyPlant<U>& other);
 
   /// Creates a rigid body with the provided name and spatial inertia.  This
   /// method returns a constant reference to the body just added, which will
@@ -977,7 +964,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   braces `{}` imply that frame F **is** the same body frame P. If instead
   ///   your intention is to make a frame F with pose `X_PF` equal to the
   ///   identity pose, provide `RigidTransform<double>::Identity()` as your
-  ///   input.
+  ///   input. When non-nullopt, adds a FixedOffsetFrame named `{name}_parent`.
   /// @param[in] child
   ///   The child body connected by the new joint.
   /// @param[in] X_BM
@@ -986,7 +973,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   braces `{}` imply that frame M **is** the same body frame B. If instead
   ///   your intention is to make a frame M with pose `X_BM` equal to the
   ///   identity pose, provide `RigidTransform<double>::Identity()` as your
-  ///   input.
+  ///   input.  When non-nullopt, adds a FixedOffsetFrame named `{name}_child`.
   /// @param[in] args
   ///   Zero or more parameters provided to the constructor of the new joint. It
   ///   must be the case that
@@ -1038,7 +1025,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     const Frame<T>* frame_on_parent{nullptr};
     if (X_PF) {
       frame_on_parent = &this->AddFrame(
-          std::make_unique<FixedOffsetFrame<T>>(parent, *X_PF));
+          std::make_unique<FixedOffsetFrame<T>>(
+              name + "_parent", parent, *X_PF));
     } else {
       frame_on_parent = &parent.body_frame();
     }
@@ -1046,7 +1034,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     const Frame<T>* frame_on_child{nullptr};
     if (X_BM) {
       frame_on_child = &this->AddFrame(
-          std::make_unique<FixedOffsetFrame<T>>(child, *X_BM));
+          std::make_unique<FixedOffsetFrame<T>>(
+              name + "_child", child, *X_BM));
     } else {
       frame_on_child = &child.body_frame();
     }
@@ -1059,17 +1048,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return joint;
   }
 
-  /// Welds `frame_on_parent_P` and `frame_on_child_C` with relative pose
-  /// `X_PC`. That is, the pose of frame C in frame P is fixed, with value
-  /// `X_PC`.  If `X_PC` is omitted, the identity transform will be used. The
+  /// Welds `frame_on_parent_F` and `frame_on_child_M` with relative pose
+  /// `X_FM`. That is, the pose of frame M in frame F is fixed, with value
+  /// `X_FM`.  If `X_FM` is omitted, the identity transform will be used. The
   /// call to this method creates and adds a new WeldJoint to the model.  The
-  /// new WeldJoint is named as: P.name() + "_welds_to_" + C.name().
+  /// new WeldJoint is named as:
+  ///     frame_on_parent_F.name() + "_welds_to_" + frame_on_child_M.name().
   /// @returns a constant reference to the WeldJoint welding frames
-  /// P and C.
+  /// F and M.
   /// @throws std::exception if the weld produces a duplicate joint name.
-  const WeldJoint<T>& WeldFrames(const Frame<T>& frame_on_parent_P,
-                                 const Frame<T>& frame_on_child_C,
-                                 const math::RigidTransform<double>& X_PC =
+  const WeldJoint<T>& WeldFrames(const Frame<T>& frame_on_parent_F,
+                                 const Frame<T>& frame_on_child_M,
+                                 const math::RigidTransform<double>& X_FM =
                                      math::RigidTransform<double>::Identity());
 
   /// Adds a new force element model of type `ForceElementType` to `this`
@@ -1165,6 +1155,51 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if the %MultibodyPlant has already been
   /// finalized.
   void Finalize();
+  /// @}
+
+  /// @anchor mbp_constraints
+  /// @name                      Constraints
+  ///
+  /// Set of APIs to define constraints. To mention a few important examples,
+  /// constraints can be used to couple the motion of joints, to create
+  /// kinematic loops, or to weld bodies together.
+  ///
+  /// Currently constraints are only supported for discrete %MultibodyPlant
+  /// models and not for all discrete solvers, see
+  /// set_discrete_contact_solver(). If the model contains constraints not
+  /// supported by the discrete solver, the plant will throw an exception at
+  /// Finalize() time. At this point the user has the option to either change
+  /// the contact solver with set_discrete_contact_solver() or in the
+  /// MultibodyPlantConfig, or to re-define the model so that such a constraint
+  /// is not needed.
+  /// @{
+
+  /// Returns the total number of constraints specified by the user.
+  int num_constraints() const { return coupler_constraints_specs_.size(); }
+
+  /// Defines a holonomic constraint between two single-dof joints `joint0`
+  /// and `joint1` with positions q₀ and q₁, respectively, such that q₀ = ρ⋅q₁ +
+  /// Δq, where ρ is the gear ratio and Δq is a fixed offset. The gear ratio
+  /// can have units if the units of q₀ and q₁ are different. For instance,
+  /// between a prismatic and a revolute joint the gear ratio will specify the
+  /// "pitch" of the resulting mechanism. As defined, `offset` has units of
+  /// `q₀`.
+  ///
+  /// @note joint0 and/or joint1 can still be actuated, regardless of whether we
+  /// have coupler constraint among them. That is, one or both of these joints
+  /// can have external actuation applied to them.
+  ///
+  /// @note Generally, to couple (q0, q1, q2), the user would define a coupler
+  /// between (q0, q1) and a second coupler between (q1, q2), or any
+  /// combination therein.
+  ///
+  /// @throws if joint0 and joint1 are not both single-dof joints.
+  /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  ConstraintIndex AddCouplerConstraint(const Joint<T>& joint0,
+                                       const Joint<T>& joint1,
+                                       const T& gear_ratio,
+                                       const T& offset = 0.0);
+
   /// @}
 
   /// @anchor mbp_geometry
@@ -1375,14 +1410,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @note There is a *very* specific order of operations:
   ///
   /// 1. Bodies and geometries must be added to the %MultibodyPlant.
-  /// 2. The %MultibodyPlant must be finalized (via Finalize()).
-  /// 3. Create GeometrySet instances from bodies (via this method).
-  /// 4. Invoke SceneGraph::ExcludeCollisions*() to filter collisions.
-  /// 5. Allocate context.
+  /// 2. Create GeometrySet instances from bodies (via this method).
+  /// 3. Invoke SceneGraph::ExcludeCollisions*() to filter collisions.
+  /// 4. Allocate context.
   ///
   /// Changing the order will cause exceptions to be thrown.
   ///
-  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `this` %MultibodyPlant was not
+  /// registered with a SceneGraph.
   geometry::GeometrySet CollectRegisteredGeometries(
       const std::vector<const Body<T>*>& bodies) const;
 
@@ -1645,6 +1680,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception iff called post-finalize.
   void set_contact_model(ContactModel model);
 
+  /// Sets the contact solver type used for discrete %MultibodyPlant models.
+  /// @throws std::exception iff called post-finalize.
+  void set_discrete_contact_solver(DiscreteContactSolver contact_solver);
+
+  /// Returns the contact solver type used for discrete %MultibodyPlant models.
+  DiscreteContactSolver get_discrete_contact_solver() const;
 
   /// Return the default value for contact representation, given the desired
   /// time step. Discrete systems default to use polygons; continuous systems
@@ -1708,6 +1749,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @param manager
   ///   After this call the new manager is used to advance discrete states.
+  /// @pre this %MultibodyPlant is discrete.
   /// @pre manager != nullptr.
   /// @throws std::exception if called pre-finalize. See Finalize().
   /// @note `this` MultibodyPlant will no longer support scalar conversion to or
@@ -3864,6 +3906,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the total number of actuated degrees of freedom for a specific
   /// model instance.  That is, the vector of actuation values u has this size.
   /// See AddJointActuator().
+  /// @throws std::exception if called pre-finalize.
   int num_actuated_dofs(ModelInstanceIndex model_instance) const {
     return internal_tree().num_actuated_dofs(model_instance);
   }
@@ -4003,19 +4046,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::string GetTopologyGraphvizString() const;
 
   /// Returns the size of the generalized position vector q for this model.
+  /// @warning The intent of this function is only to be used after Finalize().
+  /// Calling it prior to Finalize() will return inaccurate results. On or after
+  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// exception.
   int num_positions() const { return internal_tree().num_positions(); }
 
   /// Returns the size of the generalized position vector qᵢ for model
   /// instance i.
+  /// @throws std::exception if called pre-finalize.
   int num_positions(ModelInstanceIndex model_instance) const {
     return internal_tree().num_positions(model_instance);
   }
 
   /// Returns the size of the generalized velocity vector v for this model.
+  /// @warning The intent of this function is only to be used after Finalize().
+  /// Calling it prior to Finalize() will return inaccurate results. On or after
+  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// exception.
   int num_velocities() const { return internal_tree().num_velocities(); }
 
   /// Returns the size of the generalized velocity vector vᵢ for model
   /// instance i.
+  /// @throws std::exception if called pre-finalize.
   int num_velocities(ModelInstanceIndex model_instance) const {
     return internal_tree().num_velocities(model_instance);
   }
@@ -4024,12 +4077,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // integrated power and other discrete states, hence the specific name.
   /// Returns the size of the multibody system state vector x = [q v]. This
   /// will be `num_positions()` plus `num_velocities()`.
+  /// @warning The intent of this function is only to be used after Finalize().
+  /// Calling it prior to Finalize() will return inaccurate results. On or after
+  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// exception.
   int num_multibody_states() const { return internal_tree().num_states(); }
 
   /// Returns the size of the multibody system state vector xᵢ = [qᵢ vᵢ] for
   /// model instance i. (Here qᵢ ⊆ q and vᵢ ⊆ v.)
   /// will be `num_positions(model_instance)` plus
   /// `num_velocities(model_instance)`.
+  /// @throws std::exception if called pre-finalize.
   int num_multibody_states(ModelInstanceIndex model_instance) const {
     return internal_tree().num_states(model_instance);
   }
@@ -4183,6 +4241,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_solver_scratch;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
+    systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -4210,8 +4269,37 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Consolidates calls to Eval on the geometry query input port to have a
   // consistent and helpful error message in the situation where the
   // geometry_query_input_port is not connected, but is expected to be.
+  //
+  // Public APIs that ultimately depend on the query object input port should
+  // invoke ValidateGeometryInput() to guard against failed access in the depths
+  // of the code. As a safety net, all invocations of *this* method should
+  // pass the function that invoked it (via __func__), so that if any usage
+  // slips through the curated net, some insight will be provided as to what was
+  // attempting to access the disconnected port.
   const geometry::QueryObject<T>& EvalGeometryQueryInput(
-      const systems::Context<T>& context) const;
+      const systems::Context<T>& context,
+      std::string_view caller) const;
+
+  // These functions provide a mechanism to provide early warning when a
+  // calculation depends on the QueryObject input port. The goal is to provide
+  // as much feedback to the caller as to *why* the input port is required.
+  // Therefore, it should be called as "high" in the callstack as possible with
+  // an explanation of the need (e.g., computing forward dynamics).
+  //
+  // Note: the connection is only tested if MbP knows about collision
+  // geometries. This is correlated with the fact that the operations that
+  // depend on the geometry input port only do so based on that same condition.
+  void ValidateGeometryInput(const systems::Context<T>& context,
+                             std::string_view explanation) const;
+
+  // A validation overload that automatically constructs an explanation when
+  // the reason is due to evaluating an output port.
+  void ValidateGeometryInput(const systems::Context<T>& context,
+                             const systems::OutputPort<T>& output_port) const;
+
+  // Reports if the geometry input is "valid", i.e., either unnecessary or
+  // connected.
+  bool IsValidGeometryInput(const systems::Context<T>& context) const;
 
   // Helper to acquire per-geometry contact parameters from SG.
   // Returns the pair (stiffness, dissipation)
@@ -4292,6 +4380,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                             bool discrete,
                             MultibodyForces<T>* forces) const;
 
+  // Due to issue #12786, we cannot mark the calculation of non-contact forces
+  // (and the acceleration it induces) dependent on the MultibodyPlant's inputs,
+  // as it should. However, by removing this dependency, we run the risk of an
+  // undetected algebraic loop. We use this function to guard against such
+  // algebraic loop. In particular, calling this function immediately upon
+  // entering the calculation of non-contact forces sets a flag indicating the
+  // calculation of non-contact forces is in progress. Then, this function
+  // returns a ScopeExit which turns off the flag when going out of scope at the
+  // end of the non-contact forces calculation. If this function is called again
+  // while the flag is on, it means that an algebraic loop exists and an
+  // exception is thrown.
+  [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
+      const systems::Context<T>& context) const;
+
   // Collects up forces from input ports (actuator, generalized, and spatial
   // forces) and contact forces (from compliant contact models). Does not
   // include ForceElement forces which are accounted for elsewhere.
@@ -4353,7 +4455,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
             context);
   }
-
 
   // Computes the array of indices of velocities that are not locked in the
   // current configuration. The resulting index values in @p
@@ -4899,6 +5000,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // assertions in the cc file that enforce this.
   ContactModel contact_model_{ContactModel::kHydroelasticWithFallback};
 
+  // The solver type used by a discrete plant. Keep this in sync
+  // with the default value in multibody_plant_config.h; there are already
+  // assertions in the cc file that enforce this.
+  DiscreteContactSolver contact_solver_enum_{DiscreteContactSolver::kTamsi};
+
   // User's choice of the representation of contact surfaces in discrete
   // systems. The default value is dependent on whether the system is
   // continuous or discrete, so the constructor will set it. See
@@ -4988,6 +5094,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // (Experimental) The vector of physical models owned by MultibodyPlant.
   std::vector<std::unique_ptr<internal::PhysicalModel<T>>> physical_models_;
+
+  // Vector of coupler constraints specifications.
+  std::vector<internal::CouplerConstraintSpecs<T>> coupler_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

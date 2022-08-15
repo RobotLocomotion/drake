@@ -6,9 +6,9 @@
 #include <memory>
 #include <numeric>
 
+#include <drake_vendor/libqhullcpp/Qhull.h>
+#include <drake_vendor/libqhullcpp/QhullVertexSet.h>
 #include <fmt/format.h>
-#include <libqhullcpp/Qhull.h>
-#include <libqhullcpp/QhullVertexSet.h>
 
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/geometry/read_obj.h"

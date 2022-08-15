@@ -219,6 +219,11 @@ server with the following field entries:
   </tr>
 </table>
 
+Note: {focal_x, focal_y} contains duplicated information as {fov_x, fov_y} given
+an image size.  Nonetheless, both pieces of information are sent to the server
+so that the server can choose its preferred representation.  The server can
+expect them to be consistent.
+
 [gltf_mimetypes]: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#_media_type_registrations
 
 <h3 id="allowed-image-response-types">Allowed Image Response Types</h3>

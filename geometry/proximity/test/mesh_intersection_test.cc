@@ -31,10 +31,10 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-template<typename MeshType>
+template<typename MeshBuilder>
 class SurfaceVolumeIntersectorTester {
  public:
-  using T = typename MeshType::ScalarType;
+  using T = typename MeshBuilder::ScalarType;
 
   const std::vector<Vector3<T>>& ClipTriangleByTetrahedron(
       int element, const VolumeMesh<double>& volume_M, int face,
@@ -52,7 +52,7 @@ class SurfaceVolumeIntersectorTester {
   }
 
  private:
-  SurfaceVolumeIntersector<MeshType> intersect_;
+  SurfaceVolumeIntersector<MeshBuilder, Obb> intersect_;
 };
 
 namespace {
@@ -503,9 +503,9 @@ bool CompareConvexPolygon(const std::vector<Vector3<T>>& polygon0,
 }
 
 /* This test is independent of ContactSurface mesh representation; so we'll
- simply use TriangleSurfaceMesh. */
+ simply use TriangleMeshBuilder. */
 GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
-  using MeshType = TriangleSurfaceMesh<double>;
+  using MeshBuilder = TriMeshBuilder<double>;
 
   auto volume_M = TrivialVolumeMesh<double>();
   auto surface_N = TrivialSurfaceMesh<double>();
@@ -525,7 +525,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   {
     const auto X_MN = RigidTransformd(Vector3d::UnitX());
     const std::vector<Vector3d> polygon =
-        SurfaceVolumeIntersectorTester<MeshType>().ClipTriangleByTetrahedron(
+        SurfaceVolumeIntersectorTester<MeshBuilder>().ClipTriangleByTetrahedron(
             element0, *volume_M, face, *surface_N, X_MN);
     const std::vector<Vector3d> expect_empty_polygon;
     EXPECT_TRUE(CompareConvexPolygon(expect_empty_polygon, polygon));
@@ -537,7 +537,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
     const auto X_MN = RigidTransformd(RollPitchYawd(0, 0, M_PI_2),
                                              Vector3d::Zero());
     const std::vector<Vector3d> polygon =
-        SurfaceVolumeIntersectorTester<MeshType>().ClipTriangleByTetrahedron(
+        SurfaceVolumeIntersectorTester<MeshBuilder>().ClipTriangleByTetrahedron(
             element0, *volume_M, face, *surface_N, X_MN);
     EXPECT_TRUE(CompareConvexPolygon(empty_polygon, polygon));
   }
@@ -550,10 +550,10 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   {
     const auto X_MN = RigidTransformd::Identity();
     const std::vector<Vector3d> polygon0_M =
-        SurfaceVolumeIntersectorTester<MeshType>().ClipTriangleByTetrahedron(
+        SurfaceVolumeIntersectorTester<MeshBuilder>().ClipTriangleByTetrahedron(
             element0, *volume_M, face, *surface_N, X_MN);
     const std::vector<Vector3d> polygon1_M =
-        SurfaceVolumeIntersectorTester<MeshType>().ClipTriangleByTetrahedron(
+        SurfaceVolumeIntersectorTester<MeshBuilder>().ClipTriangleByTetrahedron(
             element1, *volume_M, face, *surface_N, X_MN);
     // clang-format off
     const std::vector<Vector3d> expect_triangle_M{
@@ -570,7 +570,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   {
     const auto X_MN = RigidTransformd(Vector3d(0, 0, 0.5));
     const std::vector<Vector3d> polygon0_M =
-        SurfaceVolumeIntersectorTester<MeshType>().ClipTriangleByTetrahedron(
+        SurfaceVolumeIntersectorTester<MeshBuilder>().ClipTriangleByTetrahedron(
             element0, *volume_M, face, *surface_N, X_MN);
     // clang-format off
     const std::vector<Vector3d> expect_triangle_M{
@@ -586,7 +586,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   {
     const auto X_MN = RigidTransformd(Vector3d(0, 0, 0.5));
     const std::vector<Vector3d> polygon1_M =
-        SurfaceVolumeIntersectorTester<MeshType>().ClipTriangleByTetrahedron(
+        SurfaceVolumeIntersectorTester<MeshBuilder>().ClipTriangleByTetrahedron(
             element1, *volume_M, face, *surface_N, X_MN);
     EXPECT_TRUE(CompareConvexPolygon(empty_polygon, polygon1_M));
   }
@@ -597,7 +597,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
     const auto X_MN = RigidTransformd(RollPitchYawd(0, 0, M_PI),
                                              Vector3d(0.5, 0.5, 0));
     const std::vector<Vector3d> polygon0_M =
-        SurfaceVolumeIntersectorTester<MeshType>().ClipTriangleByTetrahedron(
+        SurfaceVolumeIntersectorTester<MeshBuilder>().ClipTriangleByTetrahedron(
             element0, *volume_M, face, *surface_N, X_MN);
     // clang-format off
     const std::vector<Vector3d> expect_square_M{
@@ -661,9 +661,9 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
 //    t2(0,-1.5,0) will do. See the above picture.
 //
 // This test is independent of ContactSurface mesh representation; so we'll
-// simply use TriangleSurfaceMesh.
+// simply use TriMeshBuilder.
 GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
-  using MeshType = TriangleSurfaceMesh<double>;
+  using MeshBuilder = TriMeshBuilder<double>;
 
   unique_ptr<VolumeMesh<double>> volume_M;
   {
@@ -697,7 +697,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
   const int triangle = 0;
   const auto X_MN = RigidTransformd::Identity();
   const std::vector<Vector3d> polygon_M =
-      SurfaceVolumeIntersectorTester<MeshType>().ClipTriangleByTetrahedron(
+      SurfaceVolumeIntersectorTester<MeshBuilder>().ClipTriangleByTetrahedron(
           tetrahedron, *volume_M, triangle, *surface_N, X_MN);
   // clang-format off
   const std::vector<Vector3d> expect_heptagon_M{
@@ -714,9 +714,9 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
 }
 
 /* This test is independent of ContactSurface mesh representation; so we'll
- simply use TriangleSurfaceMesh. */
+ simply use TriMeshBuilder. */
 GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
-  using MeshType = TriangleSurfaceMesh<double>;
+  using MeshBuilder = TriMeshBuilder<double>;
 
   // It is ok to use the trivial mesh and trivial mesh field in this test.
   // The function under test asks for the gradient values and operates on it.
@@ -762,7 +762,7 @@ GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
     // general X_MN as an argument to the tested function
     // IsFaceNormalAlongPressureGradient().
     const auto X_MN = X_MF * X_FN;
-    EXPECT_EQ(t.expect_result, SurfaceVolumeIntersectorTester<MeshType>()
+    EXPECT_EQ(t.expect_result, SurfaceVolumeIntersectorTester<MeshBuilder>()
                                    .IsFaceNormalAlongPressureGradient(
                                        *volume_field_M, *rigid_N, X_MN,
                                        0 /*tet_index*/, 0 /*tri_index*/));
@@ -800,19 +800,12 @@ int GetTetForFace(
       f));
 }
 
-template <typename MeshType>
-using MeshBuilderForMesh = std::conditional_t<
-    std::is_same_v<MeshType,
-                   TriangleSurfaceMesh<typename MeshType::ScalarType>>,
-    TriMeshBuilder<typename MeshType::ScalarType>,
-    PolyMeshBuilder<typename MeshType::ScalarType>>;
-
 // This fixture will test SampleVolumeFieldOnSurface() and
 // ComputeContactSurfaceFromSoftVolumeRigidSurface(). The latter is the main API
 // of this module and calls the former. They share many parameters. This
 // fixture uses `double` for checking the algorithm. There is another fixture
 // that uses `AutoDiffXd` for checking derivatives.
-template <typename MeshType>
+template <typename MeshBuilder>
 class MeshIntersectionFixture : public testing::Test {
  protected:
   void SetUp() override {
@@ -835,8 +828,8 @@ class MeshIntersectionFixture : public testing::Test {
   // This helper function verifies the output (surface_S, e_field, and
   // grad_eS_S) of SampleVolumeFieldOnSurface().
   void VerifySampleVolumeFieldOnSurface(
-      const MeshType& surface_S,
-      const typename SurfaceVolumeIntersector<MeshType>::FieldType& e_field,
+      const typename MeshBuilder::MeshType& surface_S,
+      const typename MeshBuilder::FieldType& e_field,
       const vector<Vector3<double>>& grad_eS_S) {
     // The two geometries intersect such that both tets get sliced into
     // identical right, isosceles triangles (with a leg length of 0.25m). The
@@ -914,14 +907,14 @@ class MeshIntersectionFixture : public testing::Test {
       const ContactSurface<double>& contact_SR,
       const ContactSurface<double>& contact_RS,
       const RigidTransformd& X_WS) {
-    using FieldType = typename SurfaceVolumeIntersector<MeshType>::FieldType;
-    const MeshType* mesh_SR_raw{};
+    using FieldType = typename MeshBuilder::FieldType;
+    const typename MeshBuilder::MeshType* mesh_SR_raw{};
     const FieldType* field_SR_raw{};
-    const MeshType* mesh_RS_raw{};
+    const typename MeshBuilder::MeshType* mesh_RS_raw{};
     const FieldType* field_RS_raw{};
-    if constexpr (std::is_same_v<
-                      MeshType,
-                      TriangleSurfaceMesh<typename MeshType::ScalarType>>) {
+    if constexpr (std::is_same_v<typename MeshBuilder::MeshType,
+                                 TriangleSurfaceMesh<
+                                     typename MeshBuilder::ScalarType>>) {
       mesh_SR_raw = &contact_SR.tri_mesh_W();
       field_SR_raw = &contact_SR.tri_e_MN();
       mesh_RS_raw = &contact_RS.tri_mesh_W();
@@ -932,9 +925,9 @@ class MeshIntersectionFixture : public testing::Test {
       mesh_RS_raw = &contact_RS.poly_mesh_W();
       field_RS_raw = &contact_RS.poly_e_MN();
     }
-    const MeshType& mesh_SR_W = *mesh_SR_raw;
+    const typename MeshBuilder::MeshType& mesh_SR_W = *mesh_SR_raw;
     const FieldType& field_SR_W = *field_SR_raw;
-    const MeshType& mesh_RS_W = *mesh_RS_raw;
+    const typename MeshBuilder::MeshType& mesh_RS_W = *mesh_RS_raw;
     const FieldType& field_RS_W = *field_RS_raw;
 
     // Mesh invariants:
@@ -985,26 +978,27 @@ class MeshIntersectionFixture : public testing::Test {
   static constexpr double kEps = std::numeric_limits<double>::epsilon();
 };
 
-using MeshTypes =
-    ::testing::Types<TriangleSurfaceMesh<double>, PolygonSurfaceMesh<double>>;
-TYPED_TEST_SUITE(MeshIntersectionFixture, MeshTypes);
+using MeshBuilders =
+    ::testing::Types<TriMeshBuilder<double>, PolyMeshBuilder<double>>;
+TYPED_TEST_SUITE(MeshIntersectionFixture, MeshBuilders);
 
 // A simple smoke test. We perform the collision, confirm the face count of the
 // contact surface's mesh, and then confirm that the we've sampled the compliant
 // mesh's pressure field.
 TYPED_TEST(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
-  using MeshType = TypeParam;
-  using T = typename MeshType::ScalarType;
+  using MeshBuilder = TypeParam;
 
-  SurfaceVolumeIntersector<MeshType> intersector;
+  SurfaceVolumeIntersector<MeshBuilder, Obb> intersector;
   intersector.SampleVolumeFieldOnSurface(
       *this->field_S_, *this->bvh_mesh_S_, *this->surface_R_,
-      *this->bvh_surface_R_, this->X_SR_, MeshBuilderForMesh<MeshType>());
+      *this->bvh_surface_R_, this->X_SR_);
 
   const auto& surface_S = intersector.mutable_mesh();
   // The two meshes intersected forming two triangles. Each mesh type responds
   // slightly differently.
-  if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+  if constexpr (std::is_same_v<
+                    typename MeshBuilder::MeshType,
+                    TriangleSurfaceMesh<typename MeshBuilder::ScalarType>>) {
     // Two triangles tesselate around centroids into six in TriangleSurfaceMesh.
     EXPECT_EQ(6, surface_S.num_elements());
   } else {
@@ -1033,12 +1027,11 @@ TYPED_TEST(MeshIntersectionFixture, TestComputeContactSurfaceSoftRigid) {
   const RigidTransformd X_WS = RigidTransformd::Identity();
   const RigidTransformd X_WR = X_WS * this->X_SR_;
 
-  using MeshType = TypeParam;
-  using T = typename MeshType::ScalarType;
-
+  using MeshBuilder = TypeParam;
   HydroelasticContactRepresentation representation =
       HydroelasticContactRepresentation::kTriangle;
-  if (!std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+  if (!std::is_same_v<typename MeshBuilder::MeshType,
+                      TriangleSurfaceMesh<typename MeshBuilder::ScalarType>>) {
     representation = HydroelasticContactRepresentation::kPolygon;
   }
 

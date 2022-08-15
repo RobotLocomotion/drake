@@ -20,7 +20,7 @@ def _impl(repo_ctx):
         libdir = "{}/opt/suite-sparse/lib".format(
             os_result.homebrew_prefix,
         )
-    elif os_result.is_manylinux:
+    elif os_result.is_manylinux or os_result.is_macos_wheel:
         # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
         # using manylinux.
         include = "/opt/drake-dependencies/include"

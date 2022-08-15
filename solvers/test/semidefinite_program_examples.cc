@@ -43,6 +43,7 @@ void TestTrivialSDP(const SolverInterface& solver,
 }
 
 void FindCommonLyapunov(const SolverInterface& solver,
+                        const std::optional<SolverOptions>& solver_options,
                         double tol) {
   MathematicalProgram prog;
   auto P = prog.NewSymmetricContinuousVariables<3>("P");
@@ -52,8 +53,8 @@ void FindCommonLyapunov(const SolverInterface& solver,
   Eigen::Matrix3d A1;
   // clang-format off
   A1 << -1, -1, -2,
-      0, -1, -3,
-      0, 0, -1;
+         0, -1, -3,
+         0, 0, -1;
   // clang-format on
   auto binding1 = prog.AddPositiveSemidefiniteConstraint(
       -A1.transpose() * P - P * A1 - psd_epsilon * Matrix3d::Identity());
@@ -67,7 +68,8 @@ void FindCommonLyapunov(const SolverInterface& solver,
   auto binding2 = prog.AddPositiveSemidefiniteConstraint(
       -A2.transpose() * P - P * A2 - psd_epsilon * Matrix3d::Identity());
 
-  const MathematicalProgramResult result = RunSolver(prog, solver);
+  const MathematicalProgramResult result =
+      RunSolver(prog, solver, {}, solver_options);
 
   const Matrix3d P_value = result.GetSolution(P);
   const auto Q1_flat_value = result.GetSolution(binding1.variables());
@@ -95,6 +97,7 @@ void FindCommonLyapunov(const SolverInterface& solver,
 }
 
 void FindOuterEllipsoid(const SolverInterface& solver,
+                        const std::optional<SolverOptions>& solver_options,
                         double tol) {
   std::array<Matrix3d, 3> Q;
   std::array<Vector3d, 3> b;
@@ -128,7 +131,8 @@ void FindOuterEllipsoid(const SolverInterface& solver,
 
   prog.AddLinearCost(-P.cast<symbolic::Expression>().trace());
 
-  const MathematicalProgramResult result = RunSolver(prog, solver);
+  const MathematicalProgramResult result =
+      RunSolver(prog, solver, {}, solver_options);
 
   const auto P_value = result.GetSolution(P);
   const auto s_value = result.GetSolution(s);
@@ -156,6 +160,7 @@ void FindOuterEllipsoid(const SolverInterface& solver,
 }
 
 void SolveEigenvalueProblem(const SolverInterface& solver,
+                            const std::optional<SolverOptions>& solver_options,
                             double tol) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -179,7 +184,8 @@ void SolveEigenvalueProblem(const SolverInterface& solver,
 
   prog.AddLinearCost(z(0));
 
-  const MathematicalProgramResult result = RunSolver(prog, solver);
+  const MathematicalProgramResult result =
+      RunSolver(prog, solver, {}, solver_options);
 
   const double z_value = result.GetSolution(z(0));
   const auto x_value = result.GetSolution(x);

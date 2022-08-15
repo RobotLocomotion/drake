@@ -10,11 +10,6 @@ load(
 )
 load("@drake//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "@drake//tools/performance:defs.bzl",
-    "drake_cc_googlebench_binary",
-    "drake_py_experiment_binary",
-)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,12 +19,23 @@ drake_cc_package_library(
     deps = [
         ":global_inverse_kinematics",
         ":inverse_kinematics_core",
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
     ],
 )
 
+# A deprecation shim library, to be removed on or after 2022-11-01.
 drake_cc_library(
     name = "kinematic_constraint",
+    deprecation = "The new name is 'kinematic_evaluators' instead of 'kinematic_constraint'.",  # noqa
+    tags = [
+        "exclude_from_package",
+        "manual",
+    ],
+    deps = [":kinematic_evaluators"],
+)
+
+drake_cc_library(
+    name = "kinematic_evaluators",
     srcs = [
         "angle_between_vectors_constraint.cc",
         "com_in_polyhedron_constraint.cc",
@@ -37,11 +43,14 @@ drake_cc_library(
         "distance_constraint.cc",
         "distance_constraint_utilities.cc",
         "gaze_target_constraint.cc",
-        "kinematic_constraint_utilities.cc",
+        "kinematic_evaluator_utilities.cc",
         "minimum_distance_constraint.cc",
         "orientation_constraint.cc",
+        "orientation_cost.cc",
         "point_to_point_distance_constraint.cc",
+        "polyhedron_constraint.cc",
         "position_constraint.cc",
+        "position_cost.cc",
         "unit_quaternion_constraint.cc",
     ],
     hdrs = [
@@ -51,11 +60,14 @@ drake_cc_library(
         "distance_constraint.h",
         "distance_constraint_utilities.h",
         "gaze_target_constraint.h",
-        "kinematic_constraint_utilities.h",
+        "kinematic_evaluator_utilities.h",
         "minimum_distance_constraint.h",
         "orientation_constraint.h",
+        "orientation_cost.h",
         "point_to_point_distance_constraint.h",
+        "polyhedron_constraint.h",
         "position_constraint.h",
+        "position_cost.h",
         "unit_quaternion_constraint.h",
     ],
     deps = [
@@ -79,7 +91,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
         "//multibody/plant",
         "//solvers:mathematical_program",
     ],
@@ -94,11 +106,13 @@ drake_cc_library(
         "global_inverse_kinematics.h",
     ],
     deps = [
+        "//common:scope_exit",
         "//multibody/plant",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
         "//solvers:mixed_integer_rotation_constraint",
         "//solvers:rotation_constraint",
+        "//solvers:solve",
     ],
 )
 
@@ -130,35 +144,23 @@ drake_cc_googletest(
     name = "position_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
     ],
 )
 
-drake_cc_googlebench_binary(
-    name = "position_constraint_benchmark",
-    srcs = ["position_constraint_benchmark.cc"],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
+drake_cc_googletest(
+    name = "position_cost_test",
     deps = [
-        ":kinematic_constraint",
-        "//common:find_resource",
-        "//multibody/parsing",
-        "//multibody/plant",
-        "//tools/performance:fixture_common",
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_evaluators",
     ],
-)
-
-drake_py_experiment_binary(
-    name = "position_constraint_experiment",
-    googlebench_binary = ":position_constraint_benchmark",
 )
 
 drake_cc_googletest(
     name = "com_position_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
     ],
 )
 
@@ -166,7 +168,7 @@ drake_cc_googletest(
     name = "com_in_polyhedron_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -175,8 +177,16 @@ drake_cc_googletest(
     name = "orientation_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "orientation_cost_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_evaluators",
     ],
 )
 
@@ -184,7 +194,7 @@ drake_cc_googletest(
     name = "gaze_target_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
     ],
 )
 
@@ -192,7 +202,7 @@ drake_cc_googletest(
     name = "angle_between_vectors_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
     ],
 )
 
@@ -200,7 +210,7 @@ drake_cc_googletest(
     name = "minimum_distance_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
         "//common/test_utilities:expect_throws_message",
         "//solvers/test_utilities",
     ],
@@ -210,7 +220,7 @@ drake_cc_googletest(
     name = "distance_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
         "//solvers/test_utilities",
     ],
 )
@@ -219,7 +229,16 @@ drake_cc_googletest(
     name = "point_to_point_distance_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
+        "//solvers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "polyhedron_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_evaluators",
         "//solvers/test_utilities",
     ],
 )
@@ -228,7 +247,7 @@ drake_cc_googletest(
     name = "unit_quaternion_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
-        ":kinematic_constraint",
+        ":kinematic_evaluators",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
         "//solvers:solve",

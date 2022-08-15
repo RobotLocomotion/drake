@@ -79,25 +79,24 @@ GTEST_TEST(AreQuaternionsApproximatlyEqualInCanonicalFormTest, testA) {
 
 // This function tests CalculateQuaternionDtFromAngularVelocityExpressedInB.
 GTEST_TEST(CalculateQuaternionDtFromAngularVelocityExpressedInBTest, testA) {
-  // For convenience, locally typedef Vector7d and AutoDiff7d.
+  // For convenience, locally typedef Vector7d.
   using Vector7d = Eigen::Matrix<double, 7, 1>;
-  using AutoDiff7d = Eigen::AutoDiffScalar<Vector7d>;
 
   // Initialize each variable that is to be regarded as an independent variable
   // (for purposes of partial differentiation) with its numerical value (i.e.,
   // where the function and its derivative is to be evaluated) and the
   // appropriate entry for it in the 7d array.
   const Eigen::Quaterniond a = GetGenericArbitraryQuaternion(M_PI/6, true);
-  const AutoDiff7d e0(a.w(),   7, 0);
-  const AutoDiff7d e1(a.x(),   7, 1);
-  const AutoDiff7d e2(a.y(),   7, 2);
-  const AutoDiff7d e3(a.z(),   7, 3);
-  const AutoDiff7d wx(2.1,     7, 4);
-  const AutoDiff7d wy(-3.4,    7, 5);
-  const AutoDiff7d wz(5.3,     7, 6);
-  const Eigen::Quaternion<AutoDiff7d> quat(e0,  e1,  e2,  e3);
-  const drake::Vector3<AutoDiff7d> w_B(wx, wy, wz);
-  const drake::Vector4<AutoDiff7d> quatDt =
+  const AutoDiffXd e0(a.w(),   7, 0);
+  const AutoDiffXd e1(a.x(),   7, 1);
+  const AutoDiffXd e2(a.y(),   7, 2);
+  const AutoDiffXd e3(a.z(),   7, 3);
+  const AutoDiffXd wx(2.1,     7, 4);
+  const AutoDiffXd wy(-3.4,    7, 5);
+  const AutoDiffXd wz(5.3,     7, 6);
+  const Eigen::Quaternion<AutoDiffXd> quat(e0,  e1,  e2,  e3);
+  const drake::Vector3<AutoDiffXd> w_B(wx, wy, wz);
+  const drake::Vector4<AutoDiffXd> quatDt =
       CalculateQuaternionDtFromAngularVelocityExpressedInB(quat, w_B);
 
   // Verify Drake's quatDt versus MotionGenesis (MG) results.
@@ -136,9 +135,8 @@ GTEST_TEST(CalculateQuaternionDtFromAngularVelocityExpressedInBTest, testA) {
 
 // This function tests CalculateQuaternionDtFromAngularVelocityExpressedInB.
 GTEST_TEST(CalculateAngularVelocityExpressedInBFromQuaternionDtTest, testA) {
-  // For convenience, locally typedef Vector8d and AutoDiff8d.
+  // For convenience, locally typedef Vector8d.
   using Vector8d = Eigen::Matrix<double, 8, 1>;
-  using AutoDiff8d = Eigen::AutoDiffScalar<Vector8d>;
 
   // Initialize each variable that is to be regarded as an independent variable
   // (for purposes of partial differentiation) with its numerical value (i.e.,
@@ -147,17 +145,17 @@ GTEST_TEST(CalculateAngularVelocityExpressedInBFromQuaternionDtTest, testA) {
   // e0Dt, e1Dt, e2Dt are initialized with arbitrary values of 0, 1, 2, and
   // e3Dt is initialized so it satisfies: e0*ė0 + e1*ė1 + e2*ė2 + e3*ė3 = 0.
   const Eigen::Quaterniond a = GetGenericArbitraryQuaternion(M_PI/6, true);
-  const AutoDiff8d e0(a.w(),                 8, 0);
-  const AutoDiff8d e1(a.x(),                 8, 1);
-  const AutoDiff8d e2(a.y(),                 8, 2);
-  const AutoDiff8d e3(a.z(),                 8, 3);
-  const AutoDiff8d e0Dt(0.0,                 8, 4);
-  const AutoDiff8d e1Dt(1.0,                 8, 5);
-  const AutoDiff8d e2Dt(2.0,                 8, 6);
-  const AutoDiff8d e3Dt(-2.623156949355562,  8, 7);
-  const Eigen::Quaternion<AutoDiff8d> quat(e0,  e1,  e2,  e3);
-  const drake::Vector4<AutoDiff8d> quatDt(e0Dt, e1Dt, e2Dt, e3Dt);
-  const drake::Vector3<AutoDiff8d> w =
+  const AutoDiffXd e0(a.w(),                 8, 0);
+  const AutoDiffXd e1(a.x(),                 8, 1);
+  const AutoDiffXd e2(a.y(),                 8, 2);
+  const AutoDiffXd e3(a.z(),                 8, 3);
+  const AutoDiffXd e0Dt(0.0,                 8, 4);
+  const AutoDiffXd e1Dt(1.0,                 8, 5);
+  const AutoDiffXd e2Dt(2.0,                 8, 6);
+  const AutoDiffXd e3Dt(-2.623156949355562,  8, 7);
+  const Eigen::Quaternion<AutoDiffXd> quat(e0,  e1,  e2,  e3);
+  const drake::Vector4<AutoDiffXd> quatDt(e0Dt, e1Dt, e2Dt, e3Dt);
+  const drake::Vector3<AutoDiffXd> w =
              CalculateAngularVelocityExpressedInBFromQuaternionDt(quat, quatDt);
 
   // Verify Drake's angular velocity vs near-exact MotionGenesis (MG) results.

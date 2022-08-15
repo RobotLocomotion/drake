@@ -18,11 +18,11 @@
       <child>bob</child>
       <parent>world</parent>
       <axis>
-        <dynamics>
-          <damping>0.1</damping>
-        </dynamics>
-        <xyz expressed_in="__model__">0 0 1</xyz>
+        <xyz>0 1 0</xyz>
       </axis>
+      <axis2>
+        <xyz>0 0 1</xyz>
+      </axis2>
     </joint>
   </model>
 </sdf>

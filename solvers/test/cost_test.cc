@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -394,7 +394,7 @@ GTEST_TEST(TestL1NormCost, Eval) {
     const Vector4<AutoDiffXd> x = math::InitializeAutoDiff(x0);
     VectorX<AutoDiffXd> y;
     cost.Eval(x, &y);
-    EXPECT_NEAR(z.cwiseAbs().sum(), math::ExtractValue(y)[0], 1e-16);
+    EXPECT_NEAR(z.cwiseAbs().sum(), math::ExtractValue(y)[0], 1e-15);
     const Matrix<double, 1, 4> grad_expected =
         z.cwiseQuotient(z.cwiseAbs()).transpose() * A;
     EXPECT_TRUE(
@@ -408,7 +408,7 @@ GTEST_TEST(TestL1NormCost, Eval) {
     cost.Eval(x, &y);
     symbolic::Environment env;
     env.insert(x, x0);
-    EXPECT_NEAR(z.cwiseAbs().sum(), y[0].Evaluate(env), 1e-15);
+    EXPECT_NEAR(z.cwiseAbs().sum(), y[0].Evaluate(env), 1e-14);
   }
 }
 
@@ -463,7 +463,7 @@ GTEST_TEST(TestL2NormCost, Eval) {
     const Vector4<AutoDiffXd> x = math::InitializeAutoDiff(x0);
     VectorX<AutoDiffXd> y;
     cost.Eval(x, &y);
-    EXPECT_NEAR(z.norm(), math::ExtractValue(y)[0], 1e-16);
+    EXPECT_NEAR(z.norm(), math::ExtractValue(y)[0], 1e-15);
     const Matrix<double, 1, 4> grad_expected =
         (x0.transpose() * A.transpose() * A + b.transpose() * A) / (z.norm());
     EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y),
@@ -477,7 +477,7 @@ GTEST_TEST(TestL2NormCost, Eval) {
     cost.Eval(x, &y);
     symbolic::Environment env;
     env.insert(x, x0);
-    EXPECT_NEAR(z.norm(), y[0].Evaluate(env), 1e-15);
+    EXPECT_NEAR(z.norm(), y[0].Evaluate(env), 1e-14);
   }
 }
 
@@ -536,7 +536,7 @@ GTEST_TEST(TestLInfNormCost, Eval) {
     cost.Eval(x, &y);
     int max_row;
     EXPECT_NEAR(z.cwiseAbs().maxCoeff(&max_row), math::ExtractValue(y)[0],
-                1e-16);
+                1e-15);
     const Matrix<double, 1, 4> grad_expected =
         (z.cwiseQuotient(z.cwiseAbs()))(max_row)*A.row(max_row);
     EXPECT_TRUE(
@@ -550,7 +550,7 @@ GTEST_TEST(TestLInfNormCost, Eval) {
     cost.Eval(x, &y);
     symbolic::Environment env;
     env.insert(x, x0);
-    EXPECT_NEAR(z.cwiseAbs().maxCoeff(), y[0].Evaluate(env), 1e-15);
+    EXPECT_NEAR(z.cwiseAbs().maxCoeff(), y[0].Evaluate(env), 1e-14);
   }
 }
 
@@ -609,7 +609,7 @@ GTEST_TEST(TestPerspectiveQuadraticCost, Eval) {
     const Matrix<double, 1, 4> grad_expected =
         RowVector2d(-(z(1) * z(1)) / (z(0) * z(0)), 2 * z(1) / z(0)) * A;
     EXPECT_TRUE(
-        CompareMatrices(math::ExtractGradient(y), grad_expected, 1e-14));
+        CompareMatrices(math::ExtractGradient(y), grad_expected, 1e-13));
   }
 
   // Test Symbolic.

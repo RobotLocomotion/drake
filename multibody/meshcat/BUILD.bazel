@@ -49,6 +49,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "contact_visualizer_test",
+    timeout = "moderate",
     data = [
         ":models",
         "//examples/manipulation_station:models",
@@ -65,6 +66,7 @@ drake_cc_library(
     name = "contact_visualizer_params",
     hdrs = ["contact_visualizer_params.h"],
     deps = [
+        "//common:name_value",
         "//geometry:rgba",
     ],
 )
@@ -84,11 +86,13 @@ drake_cc_googletest(
     name = "joint_sliders_test",
     data = [
         ":test/universal_joint.sdf",
+        "//manipulation/models/iiwa_description:models",
         "//multibody:models",
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
         ":joint_sliders",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//geometry:meshcat_visualizer",
         "//geometry/test_utilities:meshcat_environment",

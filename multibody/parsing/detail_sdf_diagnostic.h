@@ -3,7 +3,7 @@
 #include <set>
 #include <string>
 
-#include <sdf/Element.hh>
+#include <drake_vendor/sdf/Element.hh>
 
 #include "drake/common/diagnostic_policy.h"
 

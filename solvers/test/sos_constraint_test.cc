@@ -1,11 +1,11 @@
-#include "drake/common/test_utilities/expect_no_throw.h"
 /* clang-format off to disable clang-format-includes */
 #include "drake/solvers/mathematical_program.h"
 /* clang-format on */
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/solvers/solve.h"
 
@@ -58,7 +58,7 @@ class SosConstraintTest : public ::testing::Test {
       // This decision_variable_i in the polynomial should be a decision
       // variable in the MathematicalProgram.
       DRAKE_EXPECT_NO_THROW(
-          prog_.FindDecisionVariableIndex(decision_variable_i));
+          unused(prog_.FindDecisionVariableIndex(decision_variable_i)));
       switch (degree_type) {
         case DegreeType::kAny: {
           break;

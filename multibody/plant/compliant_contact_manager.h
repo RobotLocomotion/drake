@@ -114,7 +114,7 @@ struct ContactProblemCache {
 // (in Newtons) is modeled as:
 //   fₙ = k⋅(x + τ⋅ẋ)₊
 // where k is the point contact stiffness, see GetPointContactStiffness(), τ is
-// the dissipation time scale, and ()₊ corresponds to the "positive part"
+// the dissipation timescale, and ()₊ corresponds to the "positive part"
 // operator.
 // Similarly, for hydroelastic contact the normal traction p (in Pascals) is:
 //   p = (p₀+τ⋅dp₀/dn⋅ẋ)₊
@@ -143,6 +143,9 @@ class CompliantContactManager final
     sap_parameters_ = parameters;
   }
 
+  bool is_cloneable_to_double() const final { return true; }
+  bool is_cloneable_to_autodiff() const final { return true; }
+
  private:
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
@@ -150,8 +153,12 @@ class CompliantContactManager final
     systems::CacheIndex contact_problem;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex non_contact_forces_accelerations;
-    systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
+
+  // Allow different specializations to access each other's private data for
+  // scalar conversion.
+  template <typename U>
+  friend class CompliantContactManager;
 
   // Provide private access for unit testing only.
   friend class CompliantContactManagerTest;
@@ -160,25 +167,26 @@ class CompliantContactManager final
     return internal::GetInternalTree(this->plant()).get_topology();
   }
 
+  std::unique_ptr<DiscreteUpdateManager<double>> CloneToDouble()
+      const final;
+  std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>> CloneToAutoDiffXd()
+      const final;
+
   // Extracts non state dependent model information from MultibodyPlant. See
   // DiscreteUpdateManager for details.
   void ExtractModelInfo() final;
 
-  // TODO(amcastro-tri): Either implement in future PR or resolve with 16955.
-  void DoCalcAccelerationKinematicsCache(
-      const systems::Context<T>&,
-      multibody::internal::AccelerationKinematicsCache<T>*) const final {
-    throw std::runtime_error(
-        "CompliantContactManager::DoCalcAccelerationKinematicsCache() must be "
-        "implemented.");
-  }
-
   void DeclareCacheEntries() final;
+
+  // TODO(amcastro-tri): implement these APIs according to #16955.
   void DoCalcContactSolverResults(
       const systems::Context<T>&,
       contact_solvers::internal::ContactSolverResults<T>*) const final;
   void DoCalcDiscreteValues(const systems::Context<T>&,
                             systems::DiscreteValues<T>*) const final;
+  void DoCalcAccelerationKinematicsCache(
+      const systems::Context<T>&,
+      multibody::internal::AccelerationKinematicsCache<T>*) const final;
 
   // Returns the point contact stiffness stored in group
   // geometry::internal::kMaterialGroup with property
@@ -215,7 +223,7 @@ class CompliantContactManager final
   static T CombineStiffnesses(const T& k1, const T& k2);
 
   // Utility to combine linear dissipation time constants. Consider two
-  // spring-dampers with stiffnesses k₁ and k₂, and dissipation time scales τ₁
+  // spring-dampers with stiffnesses k₁ and k₂, and dissipation timescales τ₁
   // and τ₂, respectively. When these spring-dampers are connected in series,
   // they result in an equivalent spring-damper with stiffness k  =
   // k₁⋅k₂/(k₁+k₂) and dissipation τ = τ₁ + τ₂.
@@ -327,6 +335,12 @@ class CompliantContactManager final
   // @pre problem must not be nullptr.
   void AddLimitConstraints(
       const systems::Context<T>& context, const VectorX<T>& v_star,
+      contact_solvers::internal::SapContactProblem<T>* problem) const;
+
+  // Adds holonomic constraints to model couplers specified in the
+  // MultibodyPlant.
+  void AddCouplerConstraints(
+      const systems::Context<T>& context,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
   // This method takes SAP results for a given `problem` and loads forces due to

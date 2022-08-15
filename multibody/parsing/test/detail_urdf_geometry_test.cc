@@ -675,6 +675,7 @@ TEST_F(UrdfGeometryTest, CollisionSmokeTest) {
     <drake:mesh_resolution_hint value="2.5"/>
     <drake:hydroelastic_modulus value="3.5" />
     <drake:hunt_crossley_dissipation value="3.5" />
+    <drake:relaxation_time value="3.1" />
     <drake:mu_dynamic value="3.25" />
     <drake:mu_static value="3.5" />
   </drake:proximity_properties>)""");
@@ -684,6 +685,8 @@ TEST_F(UrdfGeometryTest, CollisionSmokeTest) {
                          geometry::internal::kElastic, 3.5);
   VerifySingleProperty(properties, geometry::internal::kMaterialGroup,
                        geometry::internal::kHcDissipation, 3.5);
+  VerifySingleProperty(properties, geometry::internal::kMaterialGroup,
+                       geometry::internal::kRelaxationTime, 3.1);
   VerifyFriction(properties, {3.5, 3.25});
 }
 

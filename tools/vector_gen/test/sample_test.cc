@@ -6,8 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
@@ -169,14 +168,14 @@ GTEST_TEST(SampleTest, IsValid) {
 
 // Cover Simple<AutoDiffXd>::IsValid.
 GTEST_TEST(SampleTest, AutoDiffXdIsValid) {
-  // A NaN in the AutoDiffScalar::value() makes us invalid.
+  // A NaN in the AutoDiffXd::value() makes us invalid.
   Sample<AutoDiffXd> dut;
   dut.set_unset(0.0);  // N.B. Sample<T>.unset is an invalid value by default.
   EXPECT_TRUE(dut.IsValid());
   dut.set_x(std::numeric_limits<double>::quiet_NaN());
   EXPECT_FALSE(dut.IsValid());
 
-  // A NaN in the AutoDiffScalar::derivatives() is still valid.
+  // A NaN in the AutoDiffXd::derivatives() is still valid.
   AutoDiffXd zero_with_nan_derivatives{0};
   zero_with_nan_derivatives.derivatives() =
       Vector1d(std::numeric_limits<double>::quiet_NaN());

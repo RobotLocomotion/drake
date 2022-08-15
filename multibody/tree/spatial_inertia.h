@@ -2,8 +2,8 @@
 
 #include <algorithm>
 #include <exception>
-#include <iostream>
 #include <limits>
+#include <ostream>
 #include <string>
 
 #include "drake/common/default_scalars.h"
@@ -118,6 +118,11 @@ class SpatialInertia {
     G_SP_E.SetFromRotationalInertia(I_SP_E, mass);
     return SpatialInertia(mass, p_PScm_E, G_SP_E);
   }
+
+  /// (Internal use only) Creates a spatial inertia whose mass is 1, position
+  /// vector to center of mass is zero, and whose rotational inertia has
+  /// moments of inertia of 1 and products of inertia of 0.
+  static SpatialInertia<T> MakeUnitary();
 
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of

@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_jaco_command.hpp"
 #include "drake/manipulation/kinova_jaco/jaco_constants.h"
@@ -80,26 +79,7 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   }
 //@}
 
-  DRAKE_DEPRECATED("2022-06-01",
-     "To provide position commands prior to receiving the first message, "
-     "connect the position_measured ports instead of setting this "
-     "parameter")
-  void set_initial_position(
-      systems::Context<double>* context,
-      const Eigen::Ref<const Eigen::VectorXd>& q) const;
-
-  DRAKE_DEPRECATED("2022-06-01", "Use get_message_input_port() instead.")
-  const systems::InputPort<double>& get_input_port() const {
-    return get_message_input_port();
-  }
-
-  DRAKE_DEPRECATED("2022-08-01", "Use the other output ports instead.")
-  const systems::OutputPort<double>& get_output_port() const {
-    return *state_output_;
-  }
-
  private:
-  Eigen::VectorXd input_state(const systems::Context<double>&) const;
   void CalcInput(const systems::Context<double>&, lcmt_jaco_command*) const;
 
   void DoCalcNextUpdateTime(
@@ -126,7 +106,6 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   systems::DiscreteStateIndex latched_position_measured_is_set_;
   systems::DiscreteStateIndex latched_position_measured_;
   const systems::CacheEntry* groomed_input_{};
-  const systems::OutputPort<double>* state_output_{};
   const systems::OutputPort<double>* commanded_position_output_{};
   const systems::OutputPort<double>* commanded_velocity_output_{};
 };

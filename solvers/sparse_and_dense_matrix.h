@@ -29,16 +29,18 @@ class SparseAndDenseMatrix {
 
   ~SparseAndDenseMatrix();
 
-  const Eigen::SparseMatrix<double>& get_as_sparse() const { return sparse_; }
+  [[nodiscard]] const Eigen::SparseMatrix<double>& get_as_sparse() const {
+    return sparse_;
+  }
 
   // Getter for the dense matrix. If the class is constructed from a dense
   // matrix, or GetAsDense() function has been called before, then this is a
   // quick operation. Otherwise this function will internally create a dense
   // matrix.
-  const Eigen::MatrixXd& GetAsDense() const;
+  [[nodiscard]] const Eigen::MatrixXd& GetAsDense() const;
 
   // Returns true if all element in the matrix is finite. False otherwise.
-  bool IsFinite() const;
+  [[nodiscard]] bool IsFinite() const;
 
  private:
   Eigen::SparseMatrix<double> sparse_;

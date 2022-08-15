@@ -122,8 +122,10 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:identifier_pybind",
         "//bindings/pydrake/common:monostate_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
@@ -155,6 +157,8 @@ drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_srcs = ["lcm_py.cc"],
     package_info = PACKAGE_INFO,
@@ -245,6 +249,8 @@ drake_pybind_library(
     cc_deps = [
         ":symbolic_types_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:eigen_pybind",
     ],
     cc_srcs = [
         "symbolic_py.cc",
@@ -291,11 +297,11 @@ drake_py_library(
 
 PYBIND_SUBPACKAGES_FOR_COVERAGE = [
     "//bindings/pydrake/common",
-    "//bindings/pydrake/examples",
     "//bindings/pydrake/manipulation",
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/solvers",
     "//bindings/pydrake/systems",
+    "//bindings/pydrake/visualization",
 ]
 
 PY_LIBRARIES_WITH_INSTALL = [
@@ -307,7 +313,8 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":polynomial_py",
     ":symbolic_py",
     ":trajectories_py",
-    "//bindings/pydrake/visualization",
+    "//bindings/pydrake/examples",
+    "//bindings/pydrake/examples/multibody",
 ] + PYBIND_SUBPACKAGES_FOR_COVERAGE
 
 add_pybind_coverage_data(
@@ -517,10 +524,10 @@ drake_py_unittest(
         ":math_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
+        "//bindings/pydrake/multibody:inverse_kinematics_py",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
-        "//bindings/pydrake/solvers:clp_py",
-        "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake/solvers",
     ],
 )
 
@@ -577,6 +584,7 @@ drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//lcmtypes:lcmtypes_drake_py",
     ],
 )
@@ -627,6 +635,7 @@ drake_py_unittest(
         ":algebra_test_util_py",
         ":symbolic_py",
         "//bindings/pydrake/common:containers_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
@@ -672,6 +681,27 @@ generate_pybind_coverage(
     file_coverage = ":file_coverage.csv",
     pybind_coverage_data = [":pybind_coverage_data"],
     xml_docstrings = ":documentation_pybind.xml",
+)
+
+drake_py_binary(
+    name = "stubgen",
+    srcs = ["stubgen.py"],
+    args = ["--package=pydrake"],
+    deps = [
+        ":all_py",
+        "@mypy_internal//:mypy",
+    ],
+)
+
+# TODO(mwoehlke-kitware): actually install the .pyi's.
+
+drake_py_unittest(
+    name = "stubgen_test",
+    timeout = "moderate",
+    deps = [
+        ":all_py",
+        "@mypy_internal//:mypy",
+    ],
 )
 
 add_lint_tests_pydrake(

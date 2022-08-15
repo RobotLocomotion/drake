@@ -147,7 +147,7 @@ def cc_vector_gen(
             "//common:dummy_value",
             "//common:essential",
             "//common:name_value",
-            "//common:symbolic",
+            "//common/symbolic:expression",
         ]],
     )
 

@@ -75,6 +75,9 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const final;
 
+  bool can_rotate() const final    { return false; }
+  bool can_translate() const final { return false; }
+
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;

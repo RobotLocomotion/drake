@@ -14,6 +14,8 @@ drake_cc_package_library(
     name = "lcm",
     visibility = ["//visibility:public"],
     deps = [
+        ":lcm_buses",
+        ":lcm_config_functions",
         ":lcm_interface_system",
         ":lcm_log_playback_system",
         ":lcm_publisher_system",
@@ -73,9 +75,12 @@ drake_cc_library(
     name = "lcm_interface_system",
     srcs = ["lcm_interface_system.cc"],
     hdrs = ["lcm_interface_system.h"],
+    interface_deps = [
+        "//lcm:drake_lcm_params",
+        "//systems/framework:leaf_system",
+    ],
     deps = [
         "//lcm:drake_lcm",
-        "//systems/framework:leaf_system",
     ],
 )
 
@@ -103,7 +108,47 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "lcm_buses",
+    srcs = ["lcm_buses.cc"],
+    hdrs = ["lcm_buses.h"],
+    deps = [
+        "//lcm:interface",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_config_functions",
+    srcs = ["lcm_config_functions.cc"],
+    hdrs = ["lcm_config_functions.h"],
+    interface_deps = [
+        ":lcm_buses",
+        ":lcm_interface_system",
+        "//lcm:drake_lcm_params",
+        "//systems/framework:diagram_builder",
+    ],
+    deps = [
+        "//lcm:drake_lcm",
+        "//systems/primitives:shared_pointer_system",
+    ],
+)
+
 # === test ===
+
+drake_cc_googletest(
+    name = "lcm_buses_test",
+    deps = [
+        ":lcm_buses",
+        "//lcm",
+    ],
+)
+
+drake_cc_googletest(
+    name = "lcm_config_functions_test",
+    deps = [
+        ":lcm_config_functions",
+    ],
+)
 
 drake_cc_googletest(
     name = "lcm_interface_system_test",

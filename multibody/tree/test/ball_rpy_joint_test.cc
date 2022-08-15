@@ -38,7 +38,7 @@ class BallRpyJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add some bodies so we can add joints between them:
-    body_ = &model->AddBody<RigidBody>(M_B);
+    body_ = &model->AddBody<RigidBody>("Body", M_B);
 
     // Add a ball rpy joint between the world and body:
     joint_ = &model->AddJoint<BallRpyJoint>("Joint", model->world_body(),
@@ -207,6 +207,11 @@ TEST_F(BallRpyJointTest, SetVelocityAndAccelerationLimits) {
   EXPECT_THROW(mutable_joint_->set_acceleration_limits(Vector3d::Constant(2),
                                                        Vector3d::Constant(0)),
                std::runtime_error);
+}
+
+TEST_F(BallRpyJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint_->can_rotate());
+  EXPECT_FALSE(joint_->can_translate());
 }
 
 TEST_F(BallRpyJointTest, NameSuffix) {
