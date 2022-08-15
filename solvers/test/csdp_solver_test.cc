@@ -12,6 +12,27 @@
 namespace drake {
 namespace solvers {
 namespace {
+GTEST_TEST(CsdpTest, TestNoLinearConstraintOnFreeVariable) {
+  // Solve a program with no linear constraint on the free variables.
+  // This program is reported in
+  // https://github.com/RobotLocomotion/drake/issues/16732#issuecomment-1214176554
+  MathematicalProgram prog;
+  const auto x = prog.NewIndeterminates<2>("x");
+  Eigen::Matrix2d P;
+  P << 1.5, -0.5, -0.5, 1;
+  const int l_degree = 4;
+  symbolic::Polynomial l;
+  std::tie(l, std::ignore) =
+      prog.NewSosPolynomial(symbolic::Variables(x), l_degree);
+  const auto rho = prog.NewContinuousVariables(1, "rho")(0);
+
+  CsdpSolver solver;
+  if (solver.available()) {
+    auto result = solver.Solve(prog);
+    EXPECT_TRUE(result.is_success());
+  }
+}
+
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
   CsdpSolver solver;
   if (solver.available()) {

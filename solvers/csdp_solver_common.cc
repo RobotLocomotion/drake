@@ -17,7 +17,7 @@ CsdpSolver::CsdpSolver(RemoveFreeVariableMethod method)
 
 CsdpSolver::CsdpSolver()
     : SolverBase(&id, &is_available, &is_enabled, &ProgramAttributesSatisfied),
-      method_{RemoveFreeVariableMethod::kNullspace} {}
+      method_{RemoveFreeVariableMethod::kLorentzConeSlack} {}
 
 CsdpSolver::~CsdpSolver() = default;
 
