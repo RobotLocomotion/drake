@@ -74,11 +74,6 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
   DRAKE_DEMAND(prog->GetAllCosts().size() == 1 &&
                prog->linear_costs()[0] == *program_cost_binding);
 
-  // Turn off Gurobi DualReduction to ensure that infeasible problems always
-  // return solvers::SolutionResult::kInfeasibleConstraints rather than
-  // SolutionResult::kInfeasibleOrUnbounded.
-  prog->SetSolverOption(solvers::GurobiSolver::id(), "DualReductions", 0);
-
   // This inequality ensures a bounded objective since the left hand side of
   // the inequality is the same as the cost function on the next line.
   new_constraint->evaluator()->UpdateCoefficients(
