@@ -118,6 +118,12 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
         .def("A", &HPolyhedron::A, cls_doc.A.doc)
         .def("b", &HPolyhedron::b, cls_doc.b.doc)
+        .def("ContainedIn", &HPolyhedron::ContainedIn, py::arg("other"),
+            cls_doc.ContainedIn.doc)
+        .def("Intersection", &HPolyhedron::Intersection, py::arg("other"),
+            py::arg("check_for_redundancy") = false, cls_doc.Intersection.doc)
+        .def("ReduceInequalities", &HPolyhedron::ReduceInequalities,
+            cls_doc.ReduceInequalities.doc)
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)
@@ -127,8 +133,6 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("other"), cls_doc.CartesianProduct.doc)
         .def("CartesianPower", &HPolyhedron::CartesianPower, py::arg("n"),
             cls_doc.CartesianPower.doc)
-        .def("Intersection", &HPolyhedron::Intersection, py::arg("other"),
-            cls_doc.Intersection.doc)
         .def("PontryaginDifference", &HPolyhedron::PontryaginDifference,
             py::arg("other"), cls_doc.PontryaginDifference.doc)
         .def("UniformSample",
@@ -145,6 +149,8 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc)
+        .def_static("MakeL1Ball", &HPolyhedron::MakeL1Ball, py::arg("dim"),
+            cls_doc.MakeL1Ball.doc)
         .def(py::pickle(
             [](const HPolyhedron& self) {
               return std::make_pair(self.A(), self.b());

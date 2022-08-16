@@ -52,6 +52,24 @@ class HPolyhedron final : public ConvexSet {
   alternatives). */
   using ConvexSet::IsBounded;
 
+  /** Returns true iff this HPolyhedron is entirely contained in the HPolyhedron
+  other. This is done by checking whether every inequality in @p other is
+  redundant when added to this. */
+  bool ContainedIn(const HPolyhedron& other) const;
+
+  /** Constructs the intersection of two HPolyhedron by adding the rows of
+  inequalities from @p other. If @p check_for_redundancy is true
+  then only adds the rows of @p other to this HPolyhedron if the inequality
+  is not implied by the inequalities from this HPolyhedron. */
+  HPolyhedron Intersection(const HPolyhedron& other,
+                           bool check_for_redundancy = false) const;
+
+  /** Reduces some (not necessarily all) redundant inequalities in the
+  HPolyhedron.  This is not guaranteed to give the minimal representation of
+  the polyhedron but is a relatively fast way to reduce the number of
+  inequalities. */
+  HPolyhedron ReduceInequalities() const;
+
   /** Solves a semi-definite program to compute the inscribed ellipsoid.
   From Section 8.4.2 in Boyd and Vandenberghe, 2004, we solve
   @verbatim
@@ -100,14 +118,11 @@ class HPolyhedron final : public ConvexSet {
   repeated n times. */
   HPolyhedron CartesianPower(int n) const;
 
-  /** Returns the intersection of `this` and `other`. */
-  HPolyhedron Intersection(const HPolyhedron& other) const;
-
   /** Returns the Pontryagin (Minkowski) Difference of `this` and `other`.
-   This is the set A ⊖ B = { a|a+ B ⊆ A }. The result is an HPolyhedron with the
-   same number of inequalities as A. Requires that `this` and `other` both
-   be bounded and have the same ambient dimension. This method may throw a
-   runtime error if `this` or `other` are ill-conditioned.*/
+  This is the set A ⊖ B = { a|a+ B ⊆ A }. The result is an HPolyhedron with the
+  same number of inequalities as A. Requires that `this` and `other` both
+  be bounded and have the same ambient dimension. This method may throw a
+  runtime error if `this` or `other` are ill-conditioned. */
   HPolyhedron PontryaginDifference(const HPolyhedron& other) const;
 
   /** Draw an (approximately) uniform sample from the set using the hit and run
@@ -139,7 +154,16 @@ class HPolyhedron final : public ConvexSet {
   This is an axis-aligned box, centered at the origin, with edge length 2. */
   static HPolyhedron MakeUnitBox(int dim);
 
+  /** Constructs the L1-norm unit ball in @p dim dimensions, {x | |x|₁ <= 1 }.
+  This set is also known as the crosspolytope and is described by the 2ᵈⁱᵐ
+  signed unit vectors. */
+  static HPolyhedron MakeL1Ball(int dim);
+
  private:
+  HPolyhedron DoIntersectionNoChecks(const HPolyhedron& other) const;
+
+  HPolyhedron DoIntersectionWithChecks(const HPolyhedron& other) const;
+
   bool DoIsBounded() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
