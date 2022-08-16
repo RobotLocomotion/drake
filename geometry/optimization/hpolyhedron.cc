@@ -84,9 +84,9 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
   // redundant. Since we tested whether this polyhedron is empty earlier, the
   // function would already have exited so this is proof that this inequality
   // is irredundant.
-  auto [PolyhedronIsEmpty, result] = IsInfeasible(*prog);
+  auto [polyhedron_is_empty, result] = IsInfeasible(*prog);
 
-  if (!PolyhedronIsEmpty && !result.is_success()) {
+  if (!polyhedron_is_empty && !result.is_success()) {
     throw std::runtime_error(fmt::format(
         "Solver {} failed to compute the set difference; it "
         "terminated with SolutionResult {}). This should only happen"
@@ -97,7 +97,7 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
   // If -result.get_optimal_cost() > other.b()(i) then the inequality is
   // irredundant. Without this constant
   // IrredundantBallIntersectionContainsBothOriginal fails.
-  return !(PolyhedronIsEmpty || -result.get_optimal_cost() > d + 1E-9);
+  return !(polyhedron_is_empty || -result.get_optimal_cost() > d + 1E-9);
 }
 
 }  // namespace
@@ -278,6 +278,7 @@ HPolyhedron HPolyhedron::MakeUnitBox(int dim) {
 }
 
 HPolyhedron HPolyhedron::MakeL1Ball(const int dim) {
+  DRAKE_THROW_UNLESS(dim > 0);
   const int size{static_cast<int>(std::pow(2, dim))};
   MatrixXd A = MatrixXd::Ones(size, dim);
   VectorXd b = VectorXd::Ones(size);

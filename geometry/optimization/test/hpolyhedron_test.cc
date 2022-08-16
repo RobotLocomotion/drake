@@ -91,7 +91,6 @@ GTEST_TEST(HPolyhedronTest, L1BallTest) {
 
   // Test MakeL1Ball method.
   HPolyhedron H_L1_box = HPolyhedron::MakeL1Ball(3);
-  std::cout << H_L1_box.A() << std::endl << std::endl;
   EXPECT_EQ(H_L1_box.ambient_dimension(), 3);
   EXPECT_TRUE(CompareMatrices(A, H_L1_box.A()));
   EXPECT_TRUE(CompareMatrices(b, H_L1_box.b()));
@@ -540,23 +539,8 @@ GTEST_TEST(HPolyhedronTest, OffsetIrredundantBoxes) {
 
 GTEST_TEST(HPolyhedronTest,
            IrredundantBallIntersectionContainsBothOriginal) {
-  MatrixXd A_L1(8, 3);
-  VectorXd b_L1 = VectorXd::Ones(8);
-  // clang-format off
-  A_L1 <<  1,  1,  1,
-           1,  1, -1,
-           1, -1,  1,
-           1, -1, -1,
-          -1,  1,  1,
-          -1,  1, -1,
-          -1, -1,  1,
-          -1, -1, -1;
-  // clang-format on
-  HPolyhedron L1_ball = HPolyhedron(A_L1, b_L1);
-
-  Vector3d lower_limit = -Vector3d::Ones();
-  Vector3d upper_limit = Vector3d::Ones();
-  HPolyhedron Linfty_ball = HPolyhedron::MakeBox(lower_limit, upper_limit);
+  HPolyhedron L1_ball = HPolyhedron::MakeL1Ball(3);
+  HPolyhedron Linfty_ball = HPolyhedron::MakeUnitBox(3);
 
   // clang-format on
   HPolyhedron IrredL1intoLinf = Linfty_ball.Intersection(L1_ball, true);
@@ -569,35 +553,20 @@ GTEST_TEST(HPolyhedronTest,
 }
 
 GTEST_TEST(HPolyhedronTest, ReduceL1LInfBallIntersection) {
-  MatrixXd A_L1(8, 3);
-  VectorXd b_L1 = VectorXd::Ones(8);
-  // clang-format off
-  A_L1 <<  1,  1,  1,
-           1,  1, -1,
-           1, -1,  1,
-           1, -1, -1,
-          -1,  1,  1,
-          -1,  1, -1,
-          -1, -1,  1,
-          -1, -1, -1;
-  // clang-format on
-  HPolyhedron L1_ball = HPolyhedron(A_L1, b_L1);
+  HPolyhedron L1_ball = HPolyhedron::MakeL1Ball(3);
+  HPolyhedron Linfty_ball = HPolyhedron::MakeUnitBox(3);
 
-  Vector3d lower_limit = -Vector3d::Ones();
-  Vector3d upper_limit = Vector3d::Ones();
-  HPolyhedron Linfty_ball = HPolyhedron::MakeBox(lower_limit, upper_limit);
-
-  MatrixXd A_int(A_L1.rows() + Linfty_ball.A().rows(), 3);
+  MatrixXd A_int(L1_ball.A().rows() + Linfty_ball.A().rows(), 3);
   MatrixXd b_int(A_int.rows(), 1);
-  A_int.topRows(A_L1.rows()) = A_L1;
-  b_int.topRows(b_L1.rows()) = b_L1;
+  A_int.topRows(L1_ball.A().rows()) = L1_ball.A();
+  b_int.topRows(L1_ball.b().rows()) = L1_ball.b();
   A_int.bottomRows(Linfty_ball.A().rows()) = Linfty_ball.A();
   b_int.bottomRows(Linfty_ball.b().rows()) = Linfty_ball.b();
   HPolyhedron polyhedron_to_reduce(A_int, b_int);
   HPolyhedron reduced_polyhedron = polyhedron_to_reduce.ReduceInequalities();
 
-  EXPECT_TRUE(CompareMatrices(reduced_polyhedron.A(), A_L1));
-  EXPECT_TRUE(CompareMatrices(reduced_polyhedron.b(), b_L1));
+  EXPECT_TRUE(CompareMatrices(reduced_polyhedron.A(), L1_ball.A()));
+  EXPECT_TRUE(CompareMatrices(reduced_polyhedron.b(), L1_ball.b()));
 }
 
 GTEST_TEST(HPolyhedronTest, IntersectionTest) {
@@ -656,24 +625,12 @@ GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestSquareTriangle) {
 }
 
 GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestNonAxisAligned) {
-  MatrixXd A(8, 3);
-
   // L1 box scaled to have corners at 0.5 instead of 1; it is intentionally not
   // axis aligned in this test
-  VectorXd b = VectorXd::Constant(8, 0.5);
-  // clang-format off
-  A <<  1,  1,  1,
-        1,  1, -1,
-        1, -1,  1,
-        1, -1, -1,
-       -1,  1,  1,
-       -1,  1, -1,
-       -1, -1,  1,
-       -1, -1, -1;
-  // clang-format on
+  HPolyhedron L1_ball = HPolyhedron::MakeL1Ball(3);
   const HPolyhedron H_A = HPolyhedron::MakeUnitBox(3);
 
-  const HPolyhedron H_B{A, b};
+  const HPolyhedron H_B{L1_ball.A(), 0.5*L1_ball.b()};
 
   const HPolyhedron H_C = H_A.PontryaginDifference(H_B);
 
