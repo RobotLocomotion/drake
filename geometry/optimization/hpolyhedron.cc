@@ -283,11 +283,11 @@ HPolyhedron HPolyhedron::MakeL1Ball(const int dim) {
   MatrixXd A = MatrixXd::Ones(size, dim);
   VectorXd b = VectorXd::Ones(size);
   // L1Ball is constructed by iterating over all permutations of {± 1}ᵈⁱᵐ.
-  constexpr int bit_set_size = 8 * sizeof(INT_MAX);
+  constexpr int bit_set_size = 8 * sizeof(int);
   for (int row = 0; row < A.rows(); ++row) {
-    std::string cur_exponent_set = std::bitset<bit_set_size>(row).to_string();
+    const std::bitset<bit_set_size> row_bits(row);
     for (int col = 0; col < A.cols(); ++col) {
-      A(row, col) = std::pow(-1, cur_exponent_set[bit_set_size - col - 1]);
+      A(row, col) = row_bits[col] ? -1 : 1;
     }
   }
   return {A, b};
