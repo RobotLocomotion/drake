@@ -14,8 +14,12 @@ apt-get -y install --no-install-recommends \
 
 ${PYTHON} -m venv /usr/local
 
+# TODO(jwnimmer-tri): Should these be version-pinned? What's the process for
+# keeping them up to date if they are?
 pip install \
     lxml \
+    matplotlib \
+    numpy \
     pyyaml \
     semantic-version \
     setuptools \
