@@ -34,6 +34,32 @@ using AutoDiff3 = Eigen::AutoDiffScalar<Eigen::Matrix<double, 3, 1>>;
 
 class StandardOperationsTest : public ::testing::Test {
  protected:
+  ::testing::AssertionResult CheckAdsEqual(
+      const AutoDiffDut& actual,
+      const AutoDiff3& expected) {
+    // Pack the results into a 4-vector (for easier comparison and reporting).
+    Eigen::Vector4d actual4;
+    actual4.setZero();
+    actual4(0) = actual.value();
+    // When an AutoDiff derivatives vector is empty, the implication is that
+    // that all derivatives are zero.
+    if (actual.derivatives().size() > 0) {
+       actual4.tail(3) = actual.derivatives();
+    }
+
+    Eigen::Vector4d expected4;
+    expected4.setZero();
+    expected4(0) = expected.value();
+    expected4.tail(3) = expected.derivatives();
+
+    return CompareMatrices(
+        actual4, expected4,
+        10 * std::numeric_limits<double>::epsilon(),
+        MatrixCompareType::relative)
+      << "\n(where actual.derivatives()size() = "
+      << actual.derivatives().size() << ")";
+  }
+
   // Evaluates a given function f with values of AutoDiffXd and values with
   // AutoDiffd<3>. It checks if the values and the derivatives of those
   // evaluation results are matched.
@@ -51,37 +77,19 @@ class StandardOperationsTest : public ::testing::Test {
     y_xd.derivatives() = Eigen::VectorXd::Ones(3);
     y_3d.derivatives() = Eigen::Vector3d::Ones();
 
-    // Compute the expression results.
-    const AutoDiffDut e_xd{f(x_xd, y_xd)};
-    const AutoDiff3 e_3d{f(x_3d, y_3d)};
+    // Compute the autodiff results.
+    AutoDiffDut e_xd{f(x_xd, y_xd)};
+    AutoDiff3 e_3d{f(x_3d, y_3d)};
 
-    // Pack the results into a 4-vector (for easier comparison and reporting).
-    Eigen::Vector4d value_and_der_x;
-    Eigen::Vector4d value_and_der_3;
-    value_and_der_x.setZero();
-    value_and_der_3.setZero();
-    value_and_der_x(0) = e_xd.value();
-    value_and_der_3(0) = e_3d.value();
-
-    // When the values are finite, compare the derivatives.  When the value are
-    // not finite, then derivatives are allowed to be nonsense.
-    if (std::isfinite(e_xd.value()) && std::isfinite(e_3d.value())) {
-      value_and_der_3.tail(3) = e_3d.derivatives();
-      // When an AutoDiffXd derivatives vector is empty, the implication is
-      // that all derivatives are zero.
-      if (e_xd.derivatives().size() > 0) {
-        value_and_der_x.tail(3) = e_xd.derivatives();
-      }
-    } else {
-      value_and_der_3.tail(3) = Eigen::Vector3d::Constant(NAN);
-      value_and_der_x.tail(3) = Eigen::Vector3d::Constant(NAN);
+    // When either value is not finite, the derivatives are allowed to be
+    // nonsense.
+    if (!std::isfinite(e_xd.value()) || !std::isfinite(e_3d.value())) {
+      e_xd.derivatives() = Eigen::Vector3d::Constant(NAN);
+      e_3d.derivatives() = Eigen::Vector3d::Constant(NAN);
     }
 
-    return CompareMatrices(
-        value_and_der_x, value_and_der_3,
-        10 * std::numeric_limits<double>::epsilon(),
-        MatrixCompareType::relative)
-      << "\n(where xd.size() = " << e_xd.derivatives().size() << ")";
+    // Compare the results.
+    return CheckAdsEqual(e_xd, e_3d);
   }
 };
 
