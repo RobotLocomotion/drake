@@ -190,18 +190,30 @@ class TestGeometryHydro(unittest.TestCase):
 
         self.assertListEqual(list(v0), [1, 0, 0])
 
-        mesh = mut.VolumeMesh(elements=(t_left, t_right),
-                              vertices=(v0, v1, v2, v3, v4))
+        dut = mut.VolumeMesh(elements=(t_left, t_right),
+                             vertices=(v0, v1, v2, v3, v4))
 
-        self.assertEqual(len(mesh.tetrahedra()), 2)
-        self.assertIsInstance(mesh.tetrahedra()[0], mut.VolumeElement)
-        self.assertEqual(len(mesh.vertices()), 5)
+        # Sanity check every accessor.
+        self.assertIsInstance(dut.element(e=0), mut.VolumeElement)
+        self.assertIsInstance(dut.vertex(v=0), np.ndarray)
+        self.assertIsInstance(dut.num_elements(), int)
+        self.assertIsInstance(dut.num_vertices(), int)
 
-        self.assertAlmostEqual(
-            mesh.CalcTetrahedronVolume(e=1),
-            1/6.0,
-            delta=1e-15)
-        self.assertAlmostEqual(mesh.CalcVolume(), 1/3.0, delta=1e-15)
+        # Sanity check some calculations
+        self.assertAlmostEqual(dut.CalcTetrahedronVolume(e=1), 1/6.0,
+                               delta=1e-15)
+        self.assertAlmostEqual(dut.CalcVolume(), 1/3.0, delta=1e-15)
+        self.assertIsInstance(
+            dut.CalcBarycentric(p_MQ=[-0.25, 0.25, 0.25], e=0), np.ndarray)
+        self.assertTrue(dut.Equal(mesh=dut))
+
+        self.assertEqual(len(dut.tetrahedra()), 2)
+        self.assertIsInstance(dut.tetrahedra()[0], mut.VolumeElement)
+        self.assertEqual(len(dut.vertices()), 5)
+
+        # Now check the VolumeElement bindings.
+        tetrahedron0 = dut.element(e=0)
+        self.assertEqual(tetrahedron0.vertex(i=0), 2)
 
     def test_convert_volume_to_surface_mesh(self):
         # Use the volume mesh from `test_volume_mesh()`.

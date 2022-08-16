@@ -194,18 +194,31 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // VolumeMesh
   {
     using Class = VolumeMesh<T>;
+    constexpr auto& cls_doc = doc.VolumeMesh;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "VolumeMesh", param, doc.VolumeMesh.doc);
     cls  // BR
         .def(py::init<std::vector<VolumeElement>, std::vector<Vector3<T>>>(),
-            py::arg("elements"), py::arg("vertices"), doc.VolumeMesh.ctor.doc)
+            py::arg("elements"), py::arg("vertices"), cls_doc.ctor.doc)
+        .def("element", &Class::element, py::arg("e"), cls_doc.element.doc)
+        .def("vertex", &Class::vertex, py::arg("v"), cls_doc.vertex.doc)
         .def("vertices", &Class::vertices, py_rvp::reference_internal,
-            doc.VolumeMesh.vertices.doc)
+            cls_doc.vertices.doc)
         .def("tetrahedra", &Class::tetrahedra, py_rvp::reference_internal,
-            doc.VolumeMesh.tetrahedra.doc)
+            cls_doc.tetrahedra.doc)
+        .def("num_elements", &Class::num_elements, cls_doc.num_elements.doc)
+        .def("num_vertices", &Class::num_vertices, cls_doc.num_vertices.doc)
         .def("CalcTetrahedronVolume", &Class::CalcTetrahedronVolume,
-            py::arg("e"), doc.VolumeMesh.CalcTetrahedronVolume.doc)
-        .def("CalcVolume", &Class::CalcVolume, doc.VolumeMesh.CalcVolume.doc);
+            py::arg("e"), cls_doc.CalcTetrahedronVolume.doc)
+        .def("CalcVolume", &Class::CalcVolume, cls_doc.CalcVolume.doc)
+        .def(
+            "CalcBarycentric",
+            [](const Class* self, const Vector3<T>& p_MQ, int e) {
+              return self->template CalcBarycentric(p_MQ, e);
+            },
+            py::arg("p_MQ"), py::arg("e"), cls_doc.CalcBarycentric.doc)
+        .def("Equal", &Class::Equal, py::arg("mesh"),
+            py::arg("vertex_tolerance") = 0, cls_doc.Equal.doc);
   }
 
   m.def("ConvertVolumeToSurfaceMesh", &ConvertVolumeToSurfaceMesh<T>,
