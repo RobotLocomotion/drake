@@ -9,19 +9,20 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/scene_graph_inspector.h"
-#include "drake/math/rotation_matrix.h"
-// TODO: these SAP includes should go away.
-#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+// TODO: these SAP includes should go away."
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
-#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
-// TODO: remove sap_driver.h. Place in the source only.
+// TODO: can we move this sap_driver.h include into the source?
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
+
+// Forward declaration.
+template <typename>
+class SapDriver;
 
 // To compute accelerations due to external forces (in particular non-contact
 // forces), we pack forces, ABA cache and accelerations into a single struct
@@ -109,8 +110,7 @@ class CompliantContactManager final
     return internal::GetInternalTree(this->plant()).get_topology();
   }
 
-  std::unique_ptr<DiscreteUpdateManager<double>> CloneToDouble()
-      const final;
+  std::unique_ptr<DiscreteUpdateManager<double>> CloneToDouble() const final;
   std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>> CloneToAutoDiffXd()
       const final;
 
@@ -198,17 +198,6 @@ class CompliantContactManager final
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const;
 
-  // Given the previous state x0 stored in `context`, this method computes the
-  // "free motion" velocities, denoted v*.
-  void CalcFreeMotionVelocities(const systems::Context<T>& context,
-                                VectorX<T>* v_star) const;
-
-  // Computes the linearized momentum equation matrix A to build the SAP
-  // contact problem. Refer to SapContactProblem's class documentation for
-  // details.
-  void CalcLinearDynamicsMatrix(const systems::Context<T>& context,
-                                std::vector<MatrixX<T>>* A) const;
-
   // Computes all continuous forces in the MultibodyPlant model. Joint limits
   // are not included as continuous compliant forces but rather as constraints
   // in the solver, and therefore must be excluded.
@@ -227,91 +216,6 @@ class CompliantContactManager final
   const multibody::internal::AccelerationKinematicsCache<T>&
   EvalAccelerationsDueToNonContactForcesCache(
       const systems::Context<T>& context) const;
-
-  // METHODS TO WORK WITH SAP (or rather with SapContactProblem?)
-
-  // This method computes the kinematics information for each contact pair at
-  // the given configuration stored in `context`.
-  std::vector<ContactPairKinematics<T>> CalcContactKinematics(
-      const systems::Context<T>& context) const;
-
-  // Computes the necessary data to describe the SAP contact problem. Additional
-  // information such as the orientation of each contact frame in the world is
-  // also computed here so that it can be used at a later stage to compute
-  // contact results.
-  // All contact constraints are added before any other constraint types. This
-  // manager assumes this ordering of the constraints in order to extract
-  // contact impulses for reporting contact results.
-  void CalcContactProblemCache(const systems::Context<T>& context,
-                               ContactProblemCache<T>* cache) const;
-
-  // Eval version of CalcContactProblemCache().
-  const ContactProblemCache<T>& EvalContactProblemCache(
-      const systems::Context<T>& context) const;
-
-  // Add contact constraints for the configuration stored in `context` into
-  // `problem`. This method returns the orientation of the contact frame in the
-  // world frame for each contact constraint added to `problem`. That is, the
-  // i-th entry in the return vector corresponds to the orientation R_WC contact
-  // frame in the world frame for the i-th contact constraint added to
-  // `problem`.
-  std::vector<math::RotationMatrix<T>> AddContactConstraints(
-      const systems::Context<T>& context,
-      contact_solvers::internal::SapContactProblem<T>* problem) const;
-
-  // Add limit constraints for the configuration stored in `context` into
-  // `problem`. Limit constraints are only added when the state q₀ for a
-  // particular joint is "close" to the joint's limits (qₗ,qᵤ). To decide when
-  // the state q₀ is close to the joint's limits, this method estimates a window
-  // (wₗ,wᵤ) for the expected value of the configuration q at the next time
-  // step. Lower constraints are considered whenever qₗ > wₗ and upper
-  // constraints are considered whenever qᵤ < wᵤ. This window (wₗ,wᵤ) is
-  // estimated based on the current velocity v₀ and the free motion velocities
-  // v*, provided with `v_star`.
-  // Since the implementation uses the current velocity v₀ to estimate whether
-  // the constraint should be enabled, it is at least as good as a typical
-  // continuous collision detection method. It could mispredict under conditions
-  // of strong acceleration (it is assuming constant velocity across a step).
-  // Still, at typical robotics step sizes and rates it would be surprising to
-  // see that happen, and if it did the limit would come on in the next step.
-  // TODO(amcastro-tri): Consider using the acceleration at t₀ to get a second
-  // order prediction for the configuration at the next time step.
-  // @pre problem must not be nullptr.
-  void AddLimitConstraints(
-      const systems::Context<T>& context, const VectorX<T>& v_star,
-      contact_solvers::internal::SapContactProblem<T>* problem) const;
-
-  // Adds holonomic constraints to model couplers specified in the
-  // MultibodyPlant.
-  void AddCouplerConstraints(
-      const systems::Context<T>& context,
-      contact_solvers::internal::SapContactProblem<T>* problem) const;
-
-  // This method takes SAP results for a given `problem` and loads forces due to
-  // contact only into `contact_results`. `contact_results` is properly resized
-  // on output.
-  // @pre contact_results is not nullptr.
-  // @pre All `num_contacts` contact constraints in `problem` were added before
-  // any other SAP constraint. This requirement is imposed by this manager which
-  // adds constraints (with AddContactConstraints()) to the contact problem
-  // before any other constraints are added. See the implementation of
-  // CalcContactProblemCache(), who is responsible for adding constraints in
-  // this particular order.
-  void PackContactSolverResults(
-      const contact_solvers::internal::SapContactProblem<T>& problem,
-      int num_contacts,
-      const contact_solvers::internal::SapSolverResults<T>& sap_results,
-      contact_solvers::internal::ContactSolverResults<T>* contact_results)
-      const;
-
-  void CalcContactSolverResultsWithSap(
-      const systems::Context<T>&,
-      contact_solvers::internal::ContactSolverResults<T>*) const;
-
-  // METHODS TO WORK WITH TAMSI
-  void CalcContactSolverResultsWithTamsi(
-      const systems::Context<T>&,
-      contact_solvers::internal::ContactSolverResults<T>*) const;
 
   CacheIndexes cache_indexes_;
   contact_solvers::internal::SapSolverParameters sap_parameters_;

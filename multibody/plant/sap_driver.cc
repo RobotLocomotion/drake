@@ -111,8 +111,7 @@ void SapDriver<T>::CalcFreeMotionVelocities(const systems::Context<T>& context,
 }
 
 template <typename T>
-std::vector<ContactPairKinematics<T>>
-SapDriver<T>::CalcContactKinematics(
+std::vector<ContactPairKinematics<T>> SapDriver<T>::CalcContactKinematics(
     const systems::Context<T>& context) const {
   const std::vector<DiscreteContactPair<T>>& contact_pairs =
       manager().EvalDiscreteContactPairs(context);
@@ -136,9 +135,11 @@ SapDriver<T>::CalcContactKinematics(
     const GeometryId geometryA_id = point_pair.id_A;
     const GeometryId geometryB_id = point_pair.id_B;
 
-    BodyIndex bodyA_index = manager().geometry_id_to_body_index().at(geometryA_id);
+    BodyIndex bodyA_index =
+        manager().geometry_id_to_body_index().at(geometryA_id);
     const Body<T>& bodyA = plant().get_body(bodyA_index);
-    BodyIndex bodyB_index = manager().geometry_id_to_body_index().at(geometryB_id);
+    BodyIndex bodyB_index =
+        manager().geometry_id_to_body_index().at(geometryB_id);
     const Body<T>& bodyB = plant().get_body(bodyB_index);
 
     // Contact normal from point A into B.
@@ -523,8 +524,7 @@ void SapDriver<T>::CalcContactSolverResults(
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = discrete_pairs.size();
 
-  PackContactSolverResults(sap_problem, num_contacts, sap_results,
-                           results);
+  PackContactSolverResults(sap_problem, num_contacts, sap_results, results);
 }
 
 }  // namespace internal

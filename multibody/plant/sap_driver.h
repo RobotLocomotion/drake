@@ -7,11 +7,9 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
-#include "drake/multibody/contact_solvers/sap/sap_solver.h"
-#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
-#include "drake/multibody/contact_solvers/contact_solver_results.h"
 
 namespace drake {
 namespace multibody {
@@ -91,7 +89,8 @@ struct ContactProblemCache {
   std::vector<math::RotationMatrix<T>> R_WC;
 };
 
-// Naming: SapBridge?  other?
+// Performs the computations need by CompliantContactManager using the SAP
+// solver.
 template <typename T>
 class SapDriver {
  public:
@@ -106,10 +105,6 @@ class SapDriver {
   void CalcContactSolverResults(
       const systems::Context<T>&,
       contact_solvers::internal::ContactSolverResults<T>*) const;
-
-  // TODO: make private? only needed by the driver?
-  const ContactProblemCache<T>& EvalContactProblemCache(
-      const systems::Context<T>& context) const;
 
  private:
   const MultibodyTreeTopology& tree_topology() const {
@@ -130,7 +125,7 @@ class SapDriver {
   // This method computes the kinematics information for each contact pair at
   // the given configuration stored in `context`.
   std::vector<ContactPairKinematics<T>> CalcContactKinematics(
-      const systems::Context<T>& context) const;                                
+      const systems::Context<T>& context) const;
 
   // Add contact constraints for the configuration stored in `context` into
   // `problem`. This method returns the orientation of the contact frame in the
@@ -196,6 +191,10 @@ class SapDriver {
   // contact impulses for reporting contact results.
   void CalcContactProblemCache(const systems::Context<T>& context,
                                ContactProblemCache<T>* cache) const;
+
+  // Eval version of CalcContactProblemCache()
+  const ContactProblemCache<T>& EvalContactProblemCache(
+      const systems::Context<T>& context) const;
 
   // The driver only has mutable access at construction time, when it can
   // declare additional state, cache entries, ports, etc. After construction,
