@@ -9,6 +9,9 @@
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
+#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/contact_solver_results.h"
 
 namespace drake {
 namespace multibody {
@@ -167,6 +170,23 @@ class SapDriver {
       const systems::Context<T>& context,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
+  // This method takes SAP results for a given `problem` and loads forces due to
+  // contact only into `contact_results`. `contact_results` is properly resized
+  // on output.
+  // @pre contact_results is not nullptr.
+  // @pre All `num_contacts` contact constraints in `problem` were added before
+  // any other SAP constraint. This requirement is imposed by this manager which
+  // adds constraints (with AddContactConstraints()) to the contact problem
+  // before any other constraints are added. See the implementation of
+  // CalcContactProblemCache(), who is responsible for adding constraints in
+  // this particular order.
+  void PackContactSolverResults(
+      const contact_solvers::internal::SapContactProblem<T>& problem,
+      int num_contacts,
+      const contact_solvers::internal::SapSolverResults<T>& sap_results,
+      contact_solvers::internal::ContactSolverResults<T>* contact_results)
+      const;
+
   // Computes the necessary data to describe the SAP contact problem. Additional
   // information such as the orientation of each contact frame in the world is
   // also computed here so that it can be used at a later stage to compute
@@ -185,6 +205,9 @@ class SapDriver {
   // Vector of joint damping coefficients, of size plant().num_velocities().
   // This information is extracted during the call to ExtractModelInfo().
   VectorX<T> joint_damping_;
+
+  // TODO: setter/getter from CCM.
+  contact_solvers::internal::SapSolverParameters sap_parameters_;
 };
 
 }  // namespace internal

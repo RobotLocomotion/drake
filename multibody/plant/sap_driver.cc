@@ -1,5 +1,6 @@
 #include "drake/multibody/plant/sap_driver.h"
 
+#include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
@@ -11,6 +12,9 @@
 
 using drake::geometry::GeometryId;
 using drake::math::RotationMatrix;
+using drake::multibody::contact_solvers::internal::ContactSolverResults;
+using drake::multibody::contact_solvers::internal::ExtractNormal;
+using drake::multibody::contact_solvers::internal::ExtractTangent;
 using drake::multibody::contact_solvers::internal::SapConstraint;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
@@ -416,9 +420,6 @@ template <typename T>
 void SapDriver<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   SapContactProblem<T>& problem = *cache->sap_problem;
-  (void)problem;
-  (void)context;
-#if 0  
   std::vector<MatrixX<T>> A;
   CalcLinearDynamicsMatrix(context, &A);
   VectorX<T> v_star;
@@ -431,18 +432,59 @@ void SapDriver<T>::CalcContactProblemCache(
   cache->R_WC = AddContactConstraints(context, &problem);
   AddLimitConstraints(context, problem.v_star(), &problem);
   AddCouplerConstraints(context, &problem);
-#endif
+}
+
+template <typename T>
+void SapDriver<T>::PackContactSolverResults(
+    const SapContactProblem<T>& problem, int num_contacts,
+    const SapSolverResults<T>& sap_results,
+    ContactSolverResults<T>* contact_results) const {
+  DRAKE_DEMAND(contact_results != nullptr);
+  contact_results->Resize(plant().num_velocities(), num_contacts);
+  contact_results->v_next = sap_results.v;
+  // The manager adds all contact constraints first and therefore we know the
+  // head of the impulses corresponds to contact impulses.
+  const Eigen::VectorBlock<const VectorX<T>> contact_impulses =
+      sap_results.gamma.head(3 * num_contacts);
+  const Eigen::VectorBlock<const VectorX<T>> contact_velocities =
+      sap_results.vc.head(3 * num_contacts);
+  const double time_step = plant().time_step();
+  ExtractNormal(contact_impulses, &contact_results->fn);
+  ExtractTangent(contact_impulses, &contact_results->ft);
+  contact_results->fn /= time_step;
+  contact_results->ft /= time_step;
+  ExtractNormal(contact_velocities, &contact_results->vn);
+  ExtractTangent(contact_velocities, &contact_results->vt);
+
+  auto& tau_contact = contact_results->tau_contact;
+  tau_contact.setZero();
+  for (int i = 0; i < num_contacts; ++i) {
+    const SapConstraint<T>& c = problem.get_constraint(i);
+    {
+      const TreeIndex t(c.first_clique());
+      const MatrixX<T>& Jic = c.first_clique_jacobian();
+      const int v_start = tree_topology().tree_velocities_start(t);
+      const int nv = tree_topology().num_tree_velocities(t);
+      const auto impulse = contact_impulses.template segment<3>(3 * i);
+      tau_contact.segment(v_start, nv) += Jic.transpose() * impulse;
+    }
+
+    if (c.num_cliques() == 2) {
+      const TreeIndex t(c.second_clique());
+      const MatrixX<T>& Jic = c.second_clique_jacobian();
+      const int v_start = tree_topology().tree_velocities_start(t);
+      const int nv = tree_topology().num_tree_velocities(t);
+      const auto impulse = contact_impulses.template segment<3>(3 * i);
+      tau_contact.segment(v_start, nv) += Jic.transpose() * impulse;
+    }
+  }
+  tau_contact /= time_step;
 }
 
 template <typename T>
 void SapDriver<T>::CalcContactSolverResults(
     const systems::Context<T>& context,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
-  (void)context;
-  (void)results;
-#if 0        
-  const MultibodyPlant<T>& plant = manager().plant();
-
   const ContactProblemCache<T>& contact_problem_cache =
       EvalContactProblemCache(context);
   const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
@@ -482,8 +524,7 @@ void SapDriver<T>::CalcContactSolverResults(
   const int num_contacts = discrete_pairs.size();
 
   PackContactSolverResults(sap_problem, num_contacts, sap_results,
-                           contact_results);
-#endif
+                           results);
 }
 
 }  // namespace internal

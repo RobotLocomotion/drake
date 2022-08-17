@@ -10,10 +10,12 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/math/rotation_matrix.h"
+// TODO: these SAP includes should go away.
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
+// TODO: remove sap_driver.h. Place in the source only.
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/systems/framework/context.h"
 
