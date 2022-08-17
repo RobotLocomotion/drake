@@ -72,7 +72,7 @@ void VerifyCollisionFilters(
 // Simple smoke test of the most basic model directives.
 GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
   ModelDirectives station_directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.dmd.yaml"));
   const MultibodyPlant<double> empty_plant(0.0);
 
   MultibodyPlant<double> plant(0.0);
@@ -95,7 +95,7 @@ GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
 // Simple smoke test of the simpler function signature.
 GTEST_TEST(ProcessModelDirectivesTest, SugarSmokeTest) {
   const ModelDirectives station_directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.dmd.yaml"));
 
   MultibodyPlant<double> plant(0.0);
   std::vector<ModelInstanceInfo> added_models =
@@ -115,7 +115,7 @@ GTEST_TEST(ProcessModelDirectivesTest, SugarSmokeTest) {
 // testing its interaction with SceneGraph.
 GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
   ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_top.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_top.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
@@ -159,8 +159,8 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
 // Tests for frames added without a model name, but different base_frame.
 GTEST_TEST(ProcessModelDirectivesTest, AddFrameWithoutScope) {
   ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(
-          std::string(kTestDir) + "/add_frame_without_model_namespace.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/add_frame_without_model_namespace.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
@@ -187,7 +187,8 @@ GTEST_TEST(ProcessModelDirectivesTest, AddFrameWithoutScope) {
 // Test backreference behavior in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, TestBackreferences) {
   ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) + "/test_backreferences.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/test_backreferences.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
@@ -213,7 +214,7 @@ GTEST_TEST(ProcessModelDirectivesTest, TestBackreferences) {
 // Test frame injection in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
   ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) + "/inject_frames.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) + "/inject_frames.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
@@ -249,7 +250,7 @@ GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
 GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
   ModelDirectives directives = LoadModelDirectives(
       FindResourceOrThrow(std::string(kTestDir) +
-                          "/collision_filter_group.yaml"));
+                          "/collision_filter_group.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
@@ -289,7 +290,8 @@ GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
   {
     MultibodyPlant<double> plant(0.0);
     ModelDirectives directives = LoadModelDirectives(
-        FindResourceOrThrow(std::string(kTestDir) + "/bad_package_uri.yaml"));
+        FindResourceOrThrow(std::string(kTestDir) +
+                            "/bad_package_uri.dmd.yaml"));
     DRAKE_EXPECT_THROWS_MESSAGE(
         ProcessModelDirectives(directives, &plant, nullptr,
                                make_parser(&plant).get()),
