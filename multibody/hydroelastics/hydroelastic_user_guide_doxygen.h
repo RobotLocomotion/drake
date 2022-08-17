@@ -618,6 +618,8 @@ indicate what can and cannot be done with hydroelastic contact.
   and Systems(IROS) (pp. 8238-8245). IEEE. https://arxiv.org/abs/1904.11433 .
 
 - @anchor Masterjohn2022 [Masterjohn 2022] Masterjohn, J., Guoy, D., Shepherd,
-  J., & Castro, A. (2022). Velocity Level Approximation of Pressure Field Contact Patches. In 2022 IEEE/RSJ International Conference on Intelligent Robots and Systems(IROS). https://arxiv.org/abs/2110.04157 .
+  J., & Castro, A. (2022). Velocity Level Approximation of Pressure Field
+  Contact Patches. In 2022 IEEE/RSJ International Conference on Intelligent
+  Robots and Systems(IROS). https://arxiv.org/abs/2110.04157 .
 
  */
