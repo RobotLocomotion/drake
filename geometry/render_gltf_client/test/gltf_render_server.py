@@ -671,9 +671,9 @@ def render_callback(render_request: RenderRequest) -> Union[Path, str]:
     # NOTE: make sure you convert entries in the list to `str`.
     proc_args = [
         backend,
-        "--input",
+        "--input_path",
         str(render_request.scene_path),
-        "--output",
+        "--output_path",
         output_path,
         "--image_type",
         str(render_request.image_type),
