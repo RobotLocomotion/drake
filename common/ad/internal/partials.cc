@@ -41,6 +41,17 @@ Partials::Partials(Eigen::Index size, Eigen::Index offset, double coeff)
 Partials::Partials(const Eigen::Ref<const Eigen::VectorXd>& value)
     : derivatives_{value} {}
 
+void Partials::MatchSizeOf(const Partials& other) {
+  if (other.size() == 0) {
+    return;
+  }
+  if (size() == 0) {
+    derivatives_ = Eigen::VectorXd::Zero(other.size());
+    return;
+  }
+  ThrowIfDifferentSize(other);
+}
+
 void Partials::Add(const Partials& other) {
   AddScaled(1.0, other);
 }
@@ -53,15 +64,18 @@ void Partials::AddScaled(double scale, const Partials& other) {
     derivatives_ = scale * other.derivatives_;
     return;
   }
+  ThrowIfDifferentSize(other);
+  derivatives_ += scale * other.derivatives_;
+}
+
+void Partials::ThrowIfDifferentSize(const Partials& other) {
   if (size() != other.size()) {
     throw std::logic_error(fmt::format(
         "The size of AutoDiff partial derivative vectors must be uniform"
         " throughout the computation, but two different sizes ({} and {})"
-        " were encountered at runtime. The derivatives were {} and {}.",
-        size(), other.size(), derivatives_.transpose(),
-        other.derivatives_.transpose()));
+        " were encountered at runtime.",
+        size(), other.size()));
   }
-  derivatives_ += scale * other.derivatives_;
 }
 
 }  // namespace internal
