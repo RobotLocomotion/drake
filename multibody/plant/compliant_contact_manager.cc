@@ -96,13 +96,7 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
   cache_indexes_.non_contact_forces_accelerations =
       non_contact_forces_accelerations_cache_entry.cache_index();
 
-  const auto& contact_problem_cache_entry = this->DeclareCacheEntry(
-      "Contact Problem.",
-      systems::ValueProducer(
-          this, ContactProblemCache<T>(plant().time_step()),
-          &CompliantContactManager<T>::CalcContactProblemCache),
-      {plant().cache_entry_ticket(cache_indexes_.discrete_contact_pairs)});
-  cache_indexes_.contact_problem = contact_problem_cache_entry.cache_index();
+  sap_driver_->DeclareCacheEntries(this);
 }
 
 template <typename T>
@@ -640,46 +634,15 @@ template <typename T>
 void CompliantContactManager<T>::DoCalcContactSolverResults(
     const systems::Context<T>& context,
     ContactSolverResults<T>* contact_results) const {
-  const ContactProblemCache<T>& contact_problem_cache =
-      EvalContactProblemCache(context);
-  const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
-
-  // We use the velocity stored in the current context as initial guess.
-  const VectorX<T>& x0 =
-      context.get_discrete_state(this->multibody_state_index()).value();
-  const auto v0 = x0.bottomRows(this->plant().num_velocities());
-
-  // Solve contact problem.
-  SapSolver<T> sap;
-  sap.set_parameters(sap_parameters_);
-  SapSolverResults<T> sap_results;
-  const SapSolverStatus status =
-      sap.SolveWithGuess(sap_problem, v0, &sap_results);
-  if (status != SapSolverStatus::kSuccess) {
-    const std::string msg = fmt::format(
-        "The SAP solver failed to converge at simulation time = {:7.3g}. "
-        "Reasons for divergence and possible solutions include:\n"
-        "  1. Externally applied actuation values diverged due to external "
-        "     reasons to the solver. Revise your control logic.\n"
-        "  2. External force elements such as spring or bushing elements can "
-        "     lead to unstable temporal dynamics if too stiff. Revise your "
-        "     model and consider whether these forces can be better modeled "
-        "     using one of SAP's compliant constraints. E.g., use a distance "
-        "     constraint instead of a spring element.\n"
-        "  3. Numerical ill conditioning of the model caused by, for instance, "
-        "     extremely large mass ratios. Revise your model and consider "
-        "     whether very small objects can be removed or welded to larger "
-        "     objects in the model.",
-        context.get_time());
-    throw std::runtime_error(msg);
+  switch (plant().get_discrete_contact_solver()) {
+    case DiscreteContactSolver::kTamsi:
+      throw std::runtime_error(
+          "CompliantContactManager does not support TAMSI");
+      break;
+    case DiscreteContactSolver::kSap:
+      sap_driver_->CalcContactSolverResults(context, contact_results);
+      break;
   }
-
-  const std::vector<DiscreteContactPair<T>>& discrete_pairs =
-      EvalDiscreteContactPairs(context);
-  const int num_contacts = discrete_pairs.size();
-
-  PackContactSolverResults(sap_problem, num_contacts, sap_results,
-                           contact_results);
 }
 
 template <typename T>
@@ -963,13 +926,12 @@ void CompliantContactManager<T>::CalcContactProblemCache(
   AddCouplerConstraints(context, &problem);
 }
 
+// TODO: remove this. Only needed by the driver?
 template <typename T>
 const ContactProblemCache<T>&
 CompliantContactManager<T>::EvalContactProblemCache(
     const systems::Context<T>& context) const {
-  return plant()
-      .get_cache_entry(cache_indexes_.contact_problem)
-      .template Eval<ContactProblemCache<T>>(context);
+  return sap_driver_->EvalContactProblemCache(context);
 }
 
 template <typename T>
@@ -1029,6 +991,16 @@ void CompliantContactManager<T>::ExtractModelInfo() {
     const int velocity_start = joint.velocity_start();
     const int nv = joint.num_velocities();
     joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
+  }
+
+  switch (plant().get_discrete_contact_solver()) {
+    case DiscreteContactSolver::kTamsi:
+      throw std::runtime_error(
+          "CompliantContactManager dos not support the TAMSI solver.");
+      break;
+    case DiscreteContactSolver::kSap:
+      sap_driver_ = std::make_unique<SapDriver<T>>(this);
+      break;
   }
 }
 

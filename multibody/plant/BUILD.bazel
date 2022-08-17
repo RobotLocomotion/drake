@@ -116,6 +116,7 @@ drake_cc_library(
         "make_discrete_update_manager.cc",
         "multibody_plant.cc",
         "physical_model.cc",
+        "sap_driver.cc",
     ],
     hdrs = [
         "compliant_contact_manager.h",
@@ -125,6 +126,7 @@ drake_cc_library(
         "multibody_plant_discrete_update_manager_attorney.h",
         "multibody_plant_model_attorney.h",
         "physical_model.h",
+        "sap_driver.h",
         "scalar_convertible_component.h",
     ],
     visibility = ["//visibility:private"],

@@ -14,6 +14,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
+#include "drake/multibody/plant/sap_driver.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -87,19 +88,6 @@ struct AccelerationsDueToExternalForcesCache {
   multibody::internal::AccelerationKinematicsCache<T> ac;  // Accelerations.
 };
 
-template <typename T>
-struct ContactProblemCache {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactProblemCache);
-  explicit ContactProblemCache(double time_step) {
-    sap_problem =
-        std::make_unique<contact_solvers::internal::SapContactProblem<T>>(
-            time_step);
-  }
-  copyable_unique_ptr<contact_solvers::internal::SapContactProblem<T>>
-      sap_problem;
-  std::vector<math::RotationMatrix<T>> R_WC;
-};
-
 // This class implements the interface given by DiscreteUpdateManager so that
 // contact computations can be consumed by MultibodyPlant.
 //
@@ -147,10 +135,14 @@ class CompliantContactManager final
   bool is_cloneable_to_autodiff() const final { return true; }
 
  private:
+  // TODO(amcastro-tri): Instead of frienship consider another set of class(es)
+  // with tighter functionality. For instance, a class that takes care of
+  // getting proximity properties and creating DiscreteContactPairs.
+  friend class SapDriver<T>;
+
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
-    systems::CacheIndex contact_problem;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex non_contact_forces_accelerations;
   };
@@ -256,11 +248,6 @@ class CompliantContactManager final
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const;
 
-  // This method computes the kinematics information for each contact pair at
-  // the given configuration stored in `context`.
-  std::vector<ContactPairKinematics<T>> CalcContactKinematics(
-      const systems::Context<T>& context) const;
-
   // Given the previous state x0 stored in `context`, this method computes the
   // "free motion" velocities, denoted v*.
   void CalcFreeMotionVelocities(const systems::Context<T>& context,
@@ -289,6 +276,13 @@ class CompliantContactManager final
   // Eval version of CalcAccelerationsDueToNonContactForcesCache().
   const multibody::internal::AccelerationKinematicsCache<T>&
   EvalAccelerationsDueToNonContactForcesCache(
+      const systems::Context<T>& context) const;
+
+  // METHODS TO WORK WITH SAP (or rather with SapContactProblem?)
+
+  // This method computes the kinematics information for each contact pair at
+  // the given configuration stored in `context`.
+  std::vector<ContactPairKinematics<T>> CalcContactKinematics(
       const systems::Context<T>& context) const;
 
   // Computes the necessary data to describe the SAP contact problem. Additional
@@ -360,11 +354,22 @@ class CompliantContactManager final
       contact_solvers::internal::ContactSolverResults<T>* contact_results)
       const;
 
+  void CalcContactSolverResultsWithSap(
+      const systems::Context<T>&,
+      contact_solvers::internal::ContactSolverResults<T>*) const;
+
+  // METHODS TO WORK WITH TAMSI
+  void CalcContactSolverResultsWithTamsi(
+      const systems::Context<T>&,
+      contact_solvers::internal::ContactSolverResults<T>*) const;
+
   CacheIndexes cache_indexes_;
   contact_solvers::internal::SapSolverParameters sap_parameters_;
   // Vector of joint damping coefficients, of size plant().num_velocities().
   // This information is extracted during the call to ExtractModelInfo().
   VectorX<T> joint_damping_;
+
+  std::unique_ptr<SapDriver<T>> sap_driver_;
 };
 
 }  // namespace internal
