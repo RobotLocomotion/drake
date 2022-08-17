@@ -21,58 +21,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-template <typename T>
-struct ContactPairKinematics {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactPairKinematics);
-
-  // Struct to store the block contribution from a given tree to the contact
-  // Jacobian for a contact pair.
-  struct JacobianTreeBlock {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(JacobianTreeBlock);
-
-    JacobianTreeBlock(TreeIndex tree_in, Matrix3X<T> J_in)
-        : tree(tree_in), J(std::move(J_in)) {}
-
-    // Index of the tree for this block.
-    TreeIndex tree;
-
-    // J.cols() must equal the number of generalized velocities for
-    // the corresponding tree.
-    Matrix3X<T> J;
-  };
-
-  ContactPairKinematics(T phi_in, std::vector<JacobianTreeBlock> jacobian_in,
-                        math::RotationMatrix<T> R_WC_in)
-      : phi(std::move(phi_in)),
-        jacobian(std::move(jacobian_in)),
-        R_WC(std::move(R_WC_in)) {}
-
-  // Signed distance for the given pair. Defined negative for overlapping
-  // bodies.
-  T phi{};
-
-  // TODO(amcastro-tri): consider using absl::InlinedVector since here we know
-  // this has a size of at most 2.
-  // Jacobian for a discrete contact pair stored as individual blocks for each
-  // of the trees participating in the contact. Only one or two trees can
-  // participate in a given contact.
-  std::vector<JacobianTreeBlock> jacobian;
-
-  // Rotation matrix to re-express between contact frame C and world frame W.
-  math::RotationMatrix<T> R_WC;
-};
-
-// CompliantContactManager computes the contact Jacobian J_AcBc_C for the
-// relative velocity at a contact point Co between two geometries A and B,
-// expressed in a contact frame C with Cz coincident with the contact normal.
-// This structure is used to cache the kinematics associated with the contact
-// pairs for a given configuration.
-template <typename T>
-struct ContactJacobianCache {
-  // Vector to store the kinematics for each of the discrete contact pairs.
-  std::vector<ContactPairKinematics<T>> contact_kinematics;
-};
-
 // To compute accelerations due to external forces (in particular non-contact
 // forces), we pack forces, ABA cache and accelerations into a single struct
 // to confine memory allocations into a single cache entry.
