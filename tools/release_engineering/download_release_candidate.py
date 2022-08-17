@@ -85,6 +85,7 @@ def main():
 
     tar_file_list = [
         f"drake-{timestamp}-focal.tar.gz",
+        f"drake-{timestamp}-jammy.tar.gz",
         f"drake-{timestamp}-mac.tar.gz",
     ]
 
