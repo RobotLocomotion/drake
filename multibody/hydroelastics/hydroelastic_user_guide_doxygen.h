@@ -481,7 +481,7 @@ and closer to hydroelastic contact.
 Hydroelastic Contact is another compliant contact formulation. It was
 originally introduced by @ref Elandt2019 "[Elandt 2019]". Modifications and
 further development of the model can be found in
-@ref Masterjohn2021 "[Masterjohn 2021]". In Drake, we refer to this model as
+@ref Masterjohn2022 "[Masterjohn 2022]". In Drake, we refer to this model as
 the “hydroelastic” model. It differs from point contact in how it characterizes
 the contact. Rather than a single point, it imagines an entire contact
 surface. This surface is an approximation of the contact surface as visualized
@@ -617,8 +617,7 @@ indicate what can and cannot be done with hydroelastic contact.
   objects. In 2019 IEEE/RSJ International Conference on Intelligent Robots
   and Systems(IROS) (pp. 8238-8245). IEEE. https://arxiv.org/abs/1904.11433 .
 
-- @anchor Masterjohn2021 [Masterjohn 2021] Masterjohn, J., Guoy, D., Shepherd,
-  J., & Castro, A. (2021). Discrete Approximation of Pressure Field Contact
-  Patches. arXiv preprint arXiv:2110.04157. https://arxiv.org/abs/2110.04157 .
+- @anchor Masterjohn2022 [Masterjohn 2022] Masterjohn, J., Guoy, D., Shepherd,
+  J., & Castro, A. (2022). Velocity Level Approximation of Pressure Field Contact Patches. In 2022 IEEE/RSJ International Conference on Intelligent Robots and Systems(IROS). https://arxiv.org/abs/2110.04157 .
 
  */
