@@ -482,9 +482,9 @@ void CompliantContactManager<T>::
 
         // Effective compliance in the normal direction for the given
         // discrete patch, refer to [Masterjohn et al., 2022] for details.
-        // [Masterjohn, 2022] Masterjohn J., Guoy D., Shepherd J. and Castro
-        // A., 2022. Velocity Level Approximation of Pressure Field Contact
-        // Patches. Available at https://arxiv.org/abs/2110.04157.
+        // [Masterjohn et al., 2022] Masterjohn J., Guoy D., Shepherd J. and
+        // Castro A., 2022. Velocity Level Approximation of Pressure Field
+        // Contact Patches. Available at https://arxiv.org/abs/2110.04157.
         const T k = Ae * g;
 
         // phi < 0 when in penetration.
