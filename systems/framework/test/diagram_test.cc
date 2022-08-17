@@ -817,6 +817,11 @@ TEST_F(DiagramTest, ValidateContext) {
       integrator1()->ValidateContext(integrator0_context),
       "A function call on .+ system named '.+' was passed the Context of a "
       "system named '.+'[^]*troubleshooting.html.+");
+
+  // The system is part of a diagram, but it is passed a context it owns that is
+  // not part of a diagram context.
+  auto dead_context = integrator0()->AllocateContext();
+  EXPECT_THROW(integrator0()->ValidateContext(*dead_context), std::logic_error);
 }
 
 TEST_F(DiagramTest, Graphviz) {
