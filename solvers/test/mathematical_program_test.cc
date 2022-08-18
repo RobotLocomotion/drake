@@ -647,9 +647,8 @@ void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
   // Use minimal call site (directly on adding Binding<C>).
   // TODO(eric.cousineau): Check if there is a way to parse the error text to
   // ensure that we are capturing the correct error.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddItem(prog, CreateBinding(c, x)),
-      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(AddItem(prog, CreateBinding(c, x)),
+                              ".*is not a decision variable.*");
 }
 
 }  // namespace
@@ -2920,12 +2919,10 @@ GTEST_TEST(TestMathematicalProgram, TestAddCostThrowError) {
 
   // Add a cost containing variable not included in the mathematical program.
   Variable y("y");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddCost(x(0) + y),
-      ".*is not a decision variable.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddCost(x(0) * x(0) + y),
-      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddCost(x(0) + y),
+                              ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddCost(x(0) * x(0) + y),
+                              ".*is not a decision variable.*");
 }
 
 GTEST_TEST(TestMathematicalProgram, TestAddGenericCost) {
@@ -3139,7 +3136,7 @@ GTEST_TEST(TestMathematicalProgram, TestCheckSatisfied) {
 
   Vector3d x_guess = Vector3d::Constant(.39);
   Vector2d y_guess = Vector2d::Constant(4.99);
-  y_guess[0] = 3*x_guess[0] + 2*x_guess[1];
+  y_guess[0] = 3 * x_guess[0] + 2 * x_guess[1];
   prog.SetInitialGuess(x, x_guess);
   prog.SetInitialGuess(y, y_guess);
   EXPECT_TRUE(prog.CheckSatisfied(bindings[0], prog.initial_guess(), 0));
@@ -3162,7 +3159,7 @@ GTEST_TEST(TestMathematicalProgram, TestCheckSatisfied) {
   EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[1], 0));
 
   x_guess[2] = .39;
-  y_guess[0] = 3*x_guess[0] + 2*x_guess[1] + 0.2;
+  y_guess[0] = 3 * x_guess[0] + 2 * x_guess[1] + 0.2;
   prog.SetInitialGuess(x, x_guess);
   prog.SetInitialGuess(y, y_guess);
   EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[0], 0));
@@ -3333,6 +3330,12 @@ GTEST_TEST(TestMathematicalProgram, NewSosPolynomial) {
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kSdsos);
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kDsos);
 
+  // Check NewSosPolynomial with unitialized type throws error.
+  MathematicalProgram::NonnegativePolynomial*
+      uninitialized_nonnegative_polynomial_type;
+  EXPECT_ANY_THROW(
+      CheckNewSosPolynomial(*uninitialized_nonnegative_polynomial_type));
+
   // Check NewSosPolynomial with degree = 0
   for (const auto type : {MathematicalProgram::NonnegativePolynomial::kSos,
                           MathematicalProgram::NonnegativePolynomial::kSdsos,
@@ -3443,10 +3446,9 @@ GTEST_TEST(TestMathematicalProgram, AddEqualityConstraintBetweenPolynomials) {
   // Test with a polynomial whose coefficients depend on variables that are not
   // decision variables of prog.
   symbolic::Variable b("b");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddEqualityConstraintBetweenPolynomials(
-          p1, symbolic::Polynomial(b * x, {x})),
-      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddEqualityConstraintBetweenPolynomials(
+                                  p1, symbolic::Polynomial(b * x, {x})),
+                              ".*is not a decision variable.*");
   // If we add `b` to prog as decision variable, then the code throws no
   // exceptions.
   prog.AddDecisionVariables(Vector1<symbolic::Variable>(b));
@@ -3752,9 +3754,9 @@ GTEST_TEST(TestMathematicalProgram, TestToString) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewIndeterminates<1>("y");
-  prog.AddLinearCost(2*x[0] + 3*x[1]);
-  prog.AddLinearConstraint(x[0]+x[1] <= 2.0);
-  prog.AddSosConstraint(x[0]*y[0]*y[0]);
+  prog.AddLinearCost(2 * x[0] + 3 * x[1]);
+  prog.AddLinearConstraint(x[0] + x[1] <= 2.0);
+  prog.AddSosConstraint(x[0] * y[0] * y[0]);
 
   std::string s = prog.to_string();
   EXPECT_THAT(s, testing::HasSubstr("Decision variables"));
