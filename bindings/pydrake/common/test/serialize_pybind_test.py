@@ -36,14 +36,16 @@ class TestSerializePybind(unittest.TestCase):
         """Sanity checks the DefAttributesUsingSerialize overload that does not
         use docstrings.
         """
-        dut = MyData2(quux=1.0)
+        dut = MyData2(quux=1.0, bang={"bar": True})
         self.assertEqual(dut.quux, 1.0)
         dut.quux = -1.0
         self.assertEqual(dut.quux, -1.0)
+        dut.bang["bar"] = False
+        self.assertFalse(dut.bang["bar"])
         self.assertEqual(inspect.getdoc(MyData2.quux), "")
 
     def test_repr_using_serialize(self):
         self.assertEqual(repr(MyData(foo=1.0, bar=[2.0, 3.0])),
                          "MyData(foo=1.0, bar=[2.0, 3.0])")
         self.assertEqual(repr(MyData2(quux=1.0)),
-                         "MyData2(quux=1.0)")
+                         "MyData2(quux=1.0, bang={})")

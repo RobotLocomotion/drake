@@ -39,8 +39,10 @@ struct MyData2 {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(quux));
+    a->Visit(DRAKE_NVP(bang));
   }
   double quux{0.0};
+  std::map<std::string, bool> bang;
 };
 
 }  // namespace
