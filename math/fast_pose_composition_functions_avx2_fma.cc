@@ -1,13 +1,12 @@
 #include "drake/math/fast_pose_composition_functions_avx2_fma.h"
 
-#include <algorithm>
-#include <cassert>
-
 #ifdef DRAKE_ENABLE_AVX2_FMA
 #include <cstdint>
 
 #include <cpuid.h>
 #include <immintrin.h>
+#else
+#include <iostream>
 #endif
 
 /* Note that we do not include code from drake/common here so that we don't
@@ -413,30 +412,37 @@ void ComposeXinvXAvx(const RigidTransform<double>& X_BA,
                   GetMutableRawMatrixStart(X_AC));
 }
 #else
+namespace {
+void AbortNotEnabledInBuild(const char* func) {
+  std::cerr << "abort: " << func << " is not enabled in build" << std::endl;
+  std::abort();
+}
+}  // namespace
+
 bool AvxSupported() { return false; }
 
 void ComposeRRAvx(const RotationMatrix<double>&,
                   const RotationMatrix<double>&,
                   RotationMatrix<double>*) {
-  assert(false);
+  AbortNotEnabledInBuild(__func__);
 }
 
 void ComposeRinvRAvx(const RotationMatrix<double>&,
                      const RotationMatrix<double>&,
                      RotationMatrix<double>*) {
-  assert(false);
+  AbortNotEnabledInBuild(__func__);
 }
 
 void ComposeXXAvx(const RigidTransform<double>&,
                   const RigidTransform<double>&,
                   RigidTransform<double>*) {
-  assert(false);
+  AbortNotEnabledInBuild(__func__);
 }
 
 void ComposeXinvXAvx(const RigidTransform<double>&,
                      const RigidTransform<double>&,
                      RigidTransform<double>*) {
-  assert(false);
+  AbortNotEnabledInBuild(__func__);
 }
 #endif
 
