@@ -268,12 +268,41 @@ void SystemBase::ThrowValidateContextMismatch(
       "https://drake.mit.edu/"
       "troubleshooting.html#framework-context-system-mismatch";
 
-  // Check if we are a subsystem within a Diagram and the user passed us the
-  // root context instead of our subsystem context. In that case, we can provide
-  // a more specific error message.
+  // N.B. This is subtle logic that relies on what can/can't be true by the
+  // time we evaluate each test. Here's the explanation of the logic.
+  //
+  // We're given the context C and `this` system S. We define R and D as the
+  // root ancestor context of C and the root diagram D of system S,
+  // respectively. It is perfectly possible for C = R and S = D. We define X.id
+  // as the system id associated with X (either context or system). Finally, we
+  // use the notation X.id ∈ D to indicate the system named by X.id is a
+  // *descendant* of the diagram rooted at D.
+  //
+  // The default disposition is to throw the "generic" message: "some system was
+  // called with some other system's context". We throw special messages iff
+  // one of two conditions is satisfied.
+  //
+  //    1. C.id = D.id and S ≠ D: Root context passed to subsystem.
+  //    2. C.id ∈ D and S = D: Subsystem context passed to root diagram.
+  //
+  // So, we have the following possible relationships and results between C, S,
+  // R, and D.
+  //
+  //     State of C  |  State of S |  Outcome
+  //    -------------|-------------|-----------
+  //  1  C.id = D.id |  S = D      | ValidateContext() already approved this.
+  //  2  C.id = D.id |  S ≠ D      | Root context passed to subsystem message.
+  //  3  C.id ∈ D    |  S = D      | C != R, R.id = D.id. Leaf context passed to
+  //                 |             | root diagram.
+  //  4  C.id ∈ D    |  S ≠ D      | C != R, R.id != S.id. Present "generic"
+  //                 |             | contact message.
+  //  5  C.id ∉ D    |  all cases  | C.id and R.id cannot match D.id or S.id.
+  //                 |             | Present "generic" context message.
+
+  // The row 2 condition. get_parent_service() is only non-null for subsystems
+  // in Diagrams. I.e., S ≠ D. We then throw iff C.id = D.id.
   if (get_parent_service() != nullptr) {
-    // N.B. get_parent_service() is only non-null for subsystems in Diagrams.
-    const internal::SystemId root_id =
+    const internal::SystemId root_id =  // D.id
         get_parent_service()->GetRootSystemBase().get_system_id();
     if (context.get_system_id() == root_id) {
       throw std::logic_error(fmt::format(
@@ -285,8 +314,7 @@ void SystemBase::ThrowValidateContextMismatch(
     }
   }
 
-  // Check if the context is a sub-context whose root context was created by
-  // this Diagram. In that case, we can provide a more specific error message.
+  // Given C, find R. Note: R = C is a possible return value.
   const ContextBase& root_context = [&context]() -> const ContextBase& {
     const ContextBase* iterator = &context;
     while (true)  {
@@ -298,6 +326,16 @@ void SystemBase::ThrowValidateContextMismatch(
       iterator = parent;
     }
   }();
+  // The row 3 condition. It's not a literal translation of the condition. If
+  // C.id ∈ D, then R.id = D.id *must* be true. Therefore, if R.id = S.id is
+  // true, then, by transitivity, D.id = S.id → S = D. The condition is met.
+  //
+  // There is no risk of false positives. Consider the following cases:
+  //
+  //   - C = R (C has no ancestor context). Then C.id ∈ D cannot be true (as
+  //     C.id doesn't refer to a subsystem). (See below for C.id ∉ D.)
+  //   - S ≠ D. C.id ∈ D → R.id = D.id. Therefore S.id ≠ R.id. (Row 4)
+  //   - C.id ∉ D, neither C.id or R.id can match S.id. (row 5)
   if (root_context.get_system_id() == get_system_id()) {
     throw std::logic_error(fmt::format(
         "A function call on the root Diagram was passed a subcontext "
