@@ -1,5 +1,6 @@
 #include "drake/geometry/render/render_camera.h"
 
+#include <limits>
 #include <stdexcept>
 
 #include <fmt/format.h>
@@ -18,6 +19,9 @@ using Eigen::Vector3d;
 using math::RigidTransformd;
 using systems::sensors::CameraInfo;
 
+constexpr double kInf = std::numeric_limits<double>::infinity();
+constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+
 GTEST_TEST(ClippingRangeTest, Constructor) {
   {
     // Case: Valid values.
@@ -29,14 +33,22 @@ GTEST_TEST(ClippingRangeTest, Constructor) {
   {
     // Case: Bad values.
     const char* error_message =
-        "The clipping range values must both be positive and far must be "
-        "greater than near. Instantiated with near = {} and far = {}";
+        "The clipping range values must both be positive and finite and far "
+        "must be greater than near. Instantiated with near = {} and far = {}";
     DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(-0.1, 10),
                                 fmt::format(error_message, -0.1, 10.));
     DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(0.1, -10),
                                 fmt::format(error_message, 0.1, -10.0));
     DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(1.5, 1.0),
                                 fmt::format(error_message, 1.5, 1.0));
+    DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(kInf, 1.0),
+                                fmt::format(error_message, kInf, 1.0));
+    DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(kNaN, 1.0),
+                                fmt::format(error_message, kNaN, 1.0));
+    DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(1.0, kInf),
+                                fmt::format(error_message, 1.0, kInf));
+    DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(1.0, kNaN),
+                                fmt::format(error_message, 1.0, kNaN));
   }
 }
 
@@ -219,15 +231,23 @@ GTEST_TEST(DepthRangeTest, Constructor) {
   {
     // Case: Bad values.
     const char* error_message =
-        "The depth range values must both be positive and the maximum depth "
-        "must be greater than the minimum depth. Instantiated with min = {} "
-        "and max = {}";
+        "The depth range values must both be positive and finite and the "
+        "maximum depth must be greater than the minimum depth. Instantiated "
+        "with min = {} and max = {}";
     DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(-0.1, 10),
                                 fmt::format(error_message, -0.1, 10.));
     DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(0.1, -10),
                                 fmt::format(error_message, 0.1, -10.0));
     DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(1.5, 1.0),
                                 fmt::format(error_message, 1.5, 1.0));
+    DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(kInf, 1.0),
+                                fmt::format(error_message, kInf, 1.0));
+    DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(kNaN, 1.0),
+                                fmt::format(error_message, kNaN, 1.0));
+    DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(1.0, kInf),
+                                fmt::format(error_message, 1.0, kInf));
+    DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(1.0, kNaN),
+                                fmt::format(error_message, 1.0, kNaN));
   }
 }
 
