@@ -67,7 +67,7 @@ class ClippingRange {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ClippingRange);
 
   /** Constructs the %ClippingRange.
-   @throws std::exception if either value isn't positive, or if
+   @throws std::exception if either value isn't finite and positive, or if
                           `near >= far`.  */
   ClippingRange(double near, double far);
 
@@ -182,7 +182,7 @@ class DepthRange {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthRange);
 
   /** Constructs the %DepthRange.
-   @throws std::exception if either value isn't positive, or if
+   @throws std::exception if either value isn't finite and positive, or if
                           `min_in >= max_in`.  */
   DepthRange(double min_in, double max_in);
 
