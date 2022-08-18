@@ -2347,12 +2347,11 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
             // guaranteed to point "out of" N and "into" M.
             const Vector3<T>& nhat_W = s.face_normal(face);
 
-            // One dimensional pressure gradient (in Pa/m). Unlike [Masterjohn
-            // et al. 2021], for convenience we define both pressure gradients
-            // to be positive in the direction "into" the bodies. Therefore,
-            // we use the minus sign for gN.
-            // [Masterjohn et al., 2021] Discrete Approximation of Pressure
-            // Field Contact Patches.
+            // One dimensional pressure gradient (in Pa/m). Unlike
+            // [Masterjohn 2022], for convenience we define both pressure
+            // gradients to be positive in the direction "into" the bodies.
+            // Therefore, we use the minus sign for gN. [Masterjohn 2022]
+            // Velocity Level Approximation of Pressure Field Contact Patches.
             const T gM = M_is_compliant
                              ? s.EvaluateGradE_M_W(face).dot(nhat_W)
                              : T(std::numeric_limits<double>::infinity());
@@ -2370,7 +2369,7 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
             }
 
             // Effective hydroelastic pressure gradient g result of
-            // compliant-compliant interaction, see [Masterjohn et al., 2021].
+            // compliant-compliant interaction, see [Masterjohn 2022].
             // The expression below is mathematically equivalent to g =
             // gN*gM/(gN+gM) but it has the advantage of also being valid if
             // one of the gradients is infinity.
@@ -2397,9 +2396,9 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
             const T fn0 = Ae * p0;
 
             // Effective compliance in the normal direction for the given
-            // discrete patch, refer to [Masterjohn et al., 2021] for details.
-            // [Masterjohn, 2021] Masterjohn J., Guoy D., Shepherd J. and
-            // Castro A., 2021. Discrete Approximation of Pressure Field
+            // discrete patch, refer to [Masterjohn 2022] for details.
+            // [Masterjohn 2022] Masterjohn J., Guoy D., Shepherd J. and
+            // Castro A., 2022. Velocity Level Approximation of Pressure Field
             // Contact Patches. Available at https://arxiv.org/abs/2110.04157.
             const T k = Ae * g;
 
