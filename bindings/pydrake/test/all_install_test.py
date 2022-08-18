@@ -25,17 +25,6 @@ class TestAllInstall(unittest.TestCase):
             env=tool_env
         )
 
-    def test_type_stubs(self):
-        # Get pydrake directory.
-        install_dir = install_test_helper.get_install_dir()
-        site_packages = \
-            install_test_helper.get_python_site_packages_dir(install_dir)
-        # Ensure some files are present.
-        self.assertTrue(
-            os.path.exists(os.path.join(site_packages, 'pydrake', 'py.typed')))
-        self.assertTrue(
-            os.path.exists(os.path.join(site_packages, 'pydrake', 'all.pyi')))
-
 
 if __name__ == '__main__':
     unittest.main()
