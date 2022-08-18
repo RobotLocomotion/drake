@@ -134,7 +134,7 @@ std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
 /// num_inputs.
 /// @param N A cost matrix of size num_states x num_inputs.  If the matrix is
 /// zero-sized, N will be treated as a num_states x num_inputs zero matrix.
-/// @param int_port_index The index of the input port to linearize around.
+/// @param input_port_index The index of the input port to linearize around.
 /// @returns A system implementing the optimal controller in the original system
 /// coordinates.
 ///
