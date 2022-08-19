@@ -3331,10 +3331,20 @@ GTEST_TEST(TestMathematicalProgram, NewSosPolynomial) {
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kDsos);
 
   // Check NewSosPolynomial with unitialized type throws error.
-  MathematicalProgram::NonnegativePolynomial*
-      uninitialized_nonnegative_polynomial_type;
+  // This code is a way to pass an uninitialized type without the compiler complaining
+struct StructWithUnitializedNonnegativePolnomialType {
+    MathematicalProgram::NonnegativePolynomial
+        uninitialized_nonnegative_polynomial_type;
+  };
+
+  StructWithUnitializedNonnegativePolnomialType
+      struct_with_unitialized_nonnegative_polnomial_type;
+  auto CheckNewSosPolynomialUnitializedType = [](StructWithUnitializedNonnegativePolnomialType& the_struct) {
+    CheckNewSosPolynomial(the_struct
+                                .uninitialized_nonnegative_polynomial_type);
+  };
   EXPECT_ANY_THROW(
-      CheckNewSosPolynomial(*uninitialized_nonnegative_polynomial_type));
+      CheckNewSosPolynomialUnitializedType(struct_with_unitialized_nonnegative_polnomial_type));
 
   // Check NewSosPolynomial with degree = 0
   for (const auto type : {MathematicalProgram::NonnegativePolynomial::kSos,

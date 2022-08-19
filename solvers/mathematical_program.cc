@@ -266,7 +266,7 @@ symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
     }
     default: {
       throw std::runtime_error(
-          "Passed NonnegativePolynomial type is either unsupported or "
+          "Passed NonnegativePolynomial type that is either unsupported or "
           "unitialized");
       break;
     }
