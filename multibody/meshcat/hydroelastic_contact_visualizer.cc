@@ -67,7 +67,7 @@ void HydroelasticContactVisualizer::Update(
     meshcat_->SetTransform(path, RigidTransformd(item.centroid_W));
 
     // Force vector.
-    {
+    if (force_norm >= params_.force_threshold) {
       meshcat_->SetTransform(path + "/force_C_W",
                              RigidTransformd(RotationMatrixd::MakeFromOneVector(
                                  item.force_C_W, 2)));
@@ -89,7 +89,7 @@ void HydroelasticContactVisualizer::Update(
                           Vector3d{0, 0, height + arrowhead_height}));
     }
     // Moment vector.
-    {
+    if (moment_norm >= params_.moment_threshold) {
       meshcat_->SetTransform(path + "/moment_C_W",
                              RigidTransformd(RotationMatrixd::MakeFromOneVector(
                                  item.moment_C_W, 2)));
