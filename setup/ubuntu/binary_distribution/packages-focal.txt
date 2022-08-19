@@ -6,7 +6,6 @@ jupyter-notebook
 libamd2
 libblas3
 libbz2-1.0
-libcurl3-gnutls
 libdouble-conversion3
 libeigen3-dev
 libexpat1
