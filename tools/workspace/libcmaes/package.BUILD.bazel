@@ -23,7 +23,6 @@ cmake_configure_file(
     src = "include/libcmaes/libcmaes_config.h.cmake.in",
     out = "include/libcmaes/libcmaes_config.h",
     defines = [
-        "HAVE_CXX11",
         "HAVE_INTTYPES_H",
         "HAVE_MEMORY_H",
         "HAVE_STDINT_H",

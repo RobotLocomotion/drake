@@ -35,7 +35,6 @@ cmake_configure_file(
         "HAVE_FPCLASSIFY=1",
         "HAVE_ISINF=1",
         "HAVE_ISNAN=1",
-        "HAVE_LIBM=1",
         "HAVE_QSORT_R=1",
         "HAVE_STDINT_H=1",
         "HAVE_UINT32_T=1",
