@@ -1,6 +1,6 @@
 #include "drake/systems/analysis/monte_carlo.h"
 
-#include <future>
+#include <atomic>
 #include <list>
 #include <mutex>
 #include <thread>
@@ -45,81 +45,121 @@ std::vector<RandomSimulationResult> MonteCarloSimulationSerial(
   return simulation_results;
 }
 
-// Checks if a future has completed execution.
-template <typename T>
-bool IsFutureReady(const std::future<T>& future) {
-  // future.wait_for() is the only method to check the status of a future
-  // without waiting for it to complete.
-  const std::future_status status =
-      future.wait_for(std::chrono::milliseconds(1));
-  return (status == std::future_status::ready);
-}
+// Encapsulation for a simulator and simulation thread.
+class SimulationWorker {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimulationWorker);
+
+  SimulationWorker(std::unique_ptr<Simulator<double>> simulator, int sample_num)
+      : simulator_(std::move(simulator)), sample_num_(sample_num) {
+    DRAKE_THROW_UNLESS(simulator_ != nullptr);
+    DRAKE_THROW_UNLESS(sample_num >= 0);
+  }
+
+  ~SimulationWorker() {
+    if (simulation_thread_.joinable()) {
+      simulation_thread_.join();
+    }
+  }
+
+  bool simulation_complete() const { return simulation_complete_.load(); }
+
+  int sample_num() const { return sample_num_; }
+
+  // Start simulation thread. Simulation cannot already have been started.
+  void DispatchSimulation(double final_time) {
+    DRAKE_THROW_UNLESS(!simulation_thread_.joinable());
+    simulation_thread_ =
+        std::thread([this, final_time]() { SimulateTo(final_time); });
+  }
+
+  // Evaluate the scalar system output function on the final state of
+  // simulation. Simulation must have completed. If an exeception was thrown
+  // during simulation, it will be rethrown here.
+  double EvaluateScalarSystemFunction(
+      const ScalarSystemFunction& output) const {
+    DRAKE_THROW_UNLESS(simulation_complete());
+    if (simulator_exception_) {
+      std::rethrow_exception(simulator_exception_);
+    }
+    return output(simulator_->get_system(), simulator_->get_context());
+  }
+
+ private:
+  void SimulateTo(double final_time) {
+    try {
+      simulator_->AdvanceTo(final_time);
+    } catch (...) {
+      simulator_exception_ = std::current_exception();
+    }
+    simulation_complete_.store(true);
+  }
+
+  std::unique_ptr<Simulator<double>> simulator_;
+  std::thread simulation_thread_;
+  std::exception_ptr simulator_exception_{nullptr};
+  std::atomic<bool> simulation_complete_{false};
+  int sample_num_{0};
+};
 
 // Parallel (multi-threaded) implementation of MonteCarloSimulation.
 std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     const double final_time, const int num_samples,
     RandomGenerator* const generator, const int num_threads) {
-  // Initialize storage for all simulation results. The full vector must be
-  // constructed up front (i.e. we can't use reserve()) to avoid a race
-  // condition on checking the size of the vector when the worker threads write
-  // simulation results.
-  std::vector<RandomSimulationResult> simulation_results(
-      num_samples, RandomSimulationResult(RandomGenerator()));
+  std::vector<RandomSimulationResult> simulation_results;
+  simulation_results.reserve(num_samples);
 
-  // Storage for active parallel simulation operations.
-  std::list<std::future<int>> active_operations;
+  // Storage for active parallel simulation workers.
+  std::list<SimulationWorker> active_workers;
   // Keep track of how many simulations have been dispatched already.
   int simulations_dispatched = 0;
 
-  while (active_operations.size() > 0 ||
+  while (active_workers.size() > 0 ||
          simulations_dispatched < num_samples) {
-    // Check for completed operations.
-    for (auto operation = active_operations.begin();
-         operation != active_operations.end();) {
-      if (IsFutureReady(*operation)) {
-        // This call to future.get() is necessary to propagate any exception
-        // thrown during simulation execution.
-        const int sample_num = operation->get();
-        drake::log()->debug("Simulation {} completed", sample_num);
+    // Check for completed workers.
+    for (auto worker = active_workers.begin();
+         worker != active_workers.end();) {
+      if (worker->simulation_complete()) {
+        const int sample_num = worker->sample_num();
+        // This output function evaluation also propagates any exception thrown
+        // during simulation execution.
+        const double sample_output =
+            worker->EvaluateScalarSystemFunction(output);
+        simulation_results.at(sample_num).output = sample_output;
+        drake::log()->debug(
+            "Simulation {} completed with output {}",
+            sample_num, sample_output);
         // Erase returns iterator to the next node in the list.
-        operation = active_operations.erase(operation);
+        worker = active_workers.erase(worker);
       } else {
         // Advance to next node in the list.
-        ++operation;
+        ++worker;
       }
     }
 
-    // Dispatch new operations.
-    while (static_cast<int>(active_operations.size()) < num_threads
+    // Dispatch new workers.
+    while (static_cast<int>(active_workers.size()) < num_threads
            && simulations_dispatched < num_samples) {
       // Create the simulation result using the current generator state.
-      simulation_results.at(simulations_dispatched) =
-          RandomSimulationResult(*generator);
+      simulation_results.emplace_back(RandomSimulationResult(*generator));
 
       // Make the simulator.
       auto simulator = make_simulator(generator);
       const auto& system = simulator->get_system();
       system.SetRandomContext(&simulator->get_mutable_context(), generator);
 
-      auto perform_simulation =
-          [simulator = std::move(simulator), &simulation_results, &output,
-           final_time, sample_num = simulations_dispatched] () {
-        simulator->AdvanceTo(final_time);
-        simulation_results.at(sample_num).output =
-            output(simulator->get_system(), simulator->get_context());
-        return sample_num;
-      };
+      // Create the worker.
+      active_workers.emplace_back(std::move(simulator), simulations_dispatched);
 
-      active_operations.emplace_back(
-          std::async(std::launch::async, std::move(perform_simulation)));
+      // Start worker simulation.
+      active_workers.back().DispatchSimulation(final_time);
+
       drake::log()->debug("Simulation {} dispatched", simulations_dispatched);
       ++simulations_dispatched;
     }
 
     // Wait a bit before checking for completion.
-    // TODO(calderpg-tri) When std::when_any([std::future,...]) or equivalent is
-    // available, this can be replaced.
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
