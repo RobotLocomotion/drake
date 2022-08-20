@@ -69,20 +69,24 @@ class SimulationWorker {
 
   // Start simulation thread. Simulation cannot already have been started.
   void DispatchSimulation(
-      double final_time, std::atomic<size_t>* num_live_workers,
+      double final_time, size_t* num_live_workers, std::mutex* cv_mutex,
       std::condition_variable* cv) {
     DRAKE_THROW_UNLESS(num_live_workers != nullptr);
+    DRAKE_THROW_UNLESS(cv_mutex != nullptr);
     DRAKE_THROW_UNLESS(cv != nullptr);
     DRAKE_THROW_UNLESS(!simulation_thread_.joinable());
-    num_live_workers->fetch_add(1);
+    {
+      std::lock_guard<std::mutex> lock(*cv_mutex);
+      (*num_live_workers)++;
+    }
     simulation_thread_ = std::thread(
-        [this, final_time, num_live_workers, cv]() {
-          SimulateTo(final_time, num_live_workers, cv);
+        [this, final_time, num_live_workers, cv_mutex, cv]() {
+          SimulateTo(final_time, num_live_workers, cv_mutex, cv);
         });
   }
 
   // Evaluate the scalar system output function on the final state of
-  // simulation. Simulation must have completed. If an exeception was thrown
+  // simulation. Simulation must have completed. If an exception was thrown
   // during simulation, it will be rethrown here.
   double EvaluateScalarSystemFunction(
       const ScalarSystemFunction& output) const {
@@ -95,7 +99,7 @@ class SimulationWorker {
 
  private:
   void SimulateTo(
-      double final_time, std::atomic<size_t>* num_live_workers,
+      double final_time, size_t* num_live_workers, std::mutex* cv_mutex,
       std::condition_variable* cv) {
     try {
       simulator_->AdvanceTo(final_time);
@@ -103,7 +107,10 @@ class SimulationWorker {
       simulator_exception_ = std::current_exception();
     }
     simulation_complete_.store(true);
-    num_live_workers->fetch_sub(1);
+    {
+      std::lock_guard<std::mutex> lock(*cv_mutex);
+      (*num_live_workers)--;
+    }
     cv->notify_all();
   }
 
@@ -124,7 +131,7 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
 
   std::mutex cv_mutex;
   std::condition_variable cv;
-  std::atomic<size_t> num_live_workers{0};
+  size_t num_live_workers = 0;
 
   // Storage for active parallel simulation workers.
   std::list<SimulationWorker> active_workers;
@@ -170,7 +177,7 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
 
       // Start worker simulation.
       active_workers.back().DispatchSimulation(
-          final_time, &num_live_workers, &cv);
+          final_time, &num_live_workers, &cv_mutex, &cv);
 
       drake::log()->debug("Simulation {} dispatched", simulations_dispatched);
       ++simulations_dispatched;
@@ -181,11 +188,9 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     cv.wait(
         wait_lock,
         [&num_live_workers, &active_workers]() {
-          const size_t current_num_live_workers = num_live_workers.load();
-          const size_t current_num_active_workers = active_workers.size();
           return
-              (current_num_live_workers == 0) ||
-              (current_num_live_workers < current_num_active_workers);
+              (num_live_workers == 0) ||
+              (num_live_workers < active_workers.size());
         });
   }
 
