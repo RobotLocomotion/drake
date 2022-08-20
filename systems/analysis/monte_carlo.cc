@@ -1,6 +1,7 @@
 #include "drake/systems/analysis/monte_carlo.h"
 
 #include <atomic>
+#include <condition_variable>
 #include <list>
 #include <mutex>
 #include <thread>
@@ -67,10 +68,17 @@ class SimulationWorker {
   int sample_num() const { return sample_num_; }
 
   // Start simulation thread. Simulation cannot already have been started.
-  void DispatchSimulation(double final_time) {
+  void DispatchSimulation(
+      double final_time, std::atomic<size_t>* num_live_workers,
+      std::condition_variable* cv) {
+    DRAKE_THROW_UNLESS(num_live_workers != nullptr);
+    DRAKE_THROW_UNLESS(cv != nullptr);
     DRAKE_THROW_UNLESS(!simulation_thread_.joinable());
-    simulation_thread_ =
-        std::thread([this, final_time]() { SimulateTo(final_time); });
+    num_live_workers->fetch_add(1);
+    simulation_thread_ = std::thread(
+        [this, final_time, num_live_workers, cv]() {
+          SimulateTo(final_time, num_live_workers, cv);
+        });
   }
 
   // Evaluate the scalar system output function on the final state of
@@ -86,13 +94,17 @@ class SimulationWorker {
   }
 
  private:
-  void SimulateTo(double final_time) {
+  void SimulateTo(
+      double final_time, std::atomic<size_t>* num_live_workers,
+      std::condition_variable* cv) {
     try {
       simulator_->AdvanceTo(final_time);
     } catch (...) {
       simulator_exception_ = std::current_exception();
     }
     simulation_complete_.store(true);
+    num_live_workers->fetch_sub(1);
+    cv->notify_all();
   }
 
   std::unique_ptr<Simulator<double>> simulator_;
@@ -109,6 +121,10 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     RandomGenerator* const generator, const int num_threads) {
   std::vector<RandomSimulationResult> simulation_results;
   simulation_results.reserve(num_samples);
+
+  std::mutex cv_mutex;
+  std::condition_variable cv;
+  std::atomic<size_t> num_live_workers{0};
 
   // Storage for active parallel simulation workers.
   std::list<SimulationWorker> active_workers;
@@ -153,14 +169,24 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
       active_workers.emplace_back(std::move(simulator), simulations_dispatched);
 
       // Start worker simulation.
-      active_workers.back().DispatchSimulation(final_time);
+      active_workers.back().DispatchSimulation(
+          final_time, &num_live_workers, &cv);
 
       drake::log()->debug("Simulation {} dispatched", simulations_dispatched);
       ++simulations_dispatched;
     }
 
-    // Wait a bit before checking for completion.
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // Wait until a worker completes.
+    std::unique_lock<std::mutex> wait_lock(cv_mutex);
+    cv.wait(
+        wait_lock,
+        [&num_live_workers, &active_workers]() {
+          const size_t current_num_live_workers = num_live_workers.load();
+          const size_t current_num_active_workers = active_workers.size();
+          return
+              (current_num_live_workers == 0) ||
+              (current_num_live_workers < current_num_active_workers);
+        });
   }
 
   return simulation_results;
