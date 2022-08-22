@@ -289,9 +289,9 @@ TEST_F(SystemTest, ContextBelongsWithSystem) {
   // These just uses a couple of arbitrary methods to test that a Context not
   // created by a System throws the appropriate exception.
   DRAKE_EXPECT_THROWS_MESSAGE(system2.Publish(*context_),
-                              "Context was not created for.*");
+                              "[^]*#framework-context-system-mismatch.*");
   DRAKE_EXPECT_THROWS_MESSAGE(system2.SetDefaultContext(context_.get()),
-                              "Context was not created for.*");
+                              "[^]*#framework-context-system-mismatch.*");
 }
 
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
