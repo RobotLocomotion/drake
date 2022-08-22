@@ -30,11 +30,11 @@ Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.6.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.6.0):
+[v1.7.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.7.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.6.0/drake-20220816-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.6.0/drake-20220816-focal.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.6.0/drake-20220816-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.6.0/drake-20220816-jammy.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.6.0/drake-20220816-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.6.0/drake-20220816-mac.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.7.0/drake-20220822-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.7.0/drake-20220822-focal.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.7.0/drake-20220822-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.7.0/drake-20220822-jammy.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.7.0/drake-20220822-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.7.0/drake-20220822-mac.tar.gz)
 
 ### Use as a C++ library
 
