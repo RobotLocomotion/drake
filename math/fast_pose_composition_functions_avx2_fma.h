@@ -29,6 +29,9 @@ class RigidTransform;
 
 namespace internal {
 
+/* Detects if the AVX2 implementations below are supported. */
+bool AvxSupported();
+
 /* Composes two drake::math::RotationMatrix<double> objects as quickly as
 possible, resulting in a new RotationMatrix.
 

@@ -1,8 +1,9 @@
 #include "drake/math/fast_pose_composition_functions_avx2_fma.h"
 
-#ifdef DRAKE_ENABLE_AVX2_FMA
+#if defined(__AVX2__) && defined(__FMA__)
 #include <cstdint>
 
+#include <cpuid.h>
 #include <immintrin.h>
 #else
 #include <iostream>
@@ -16,7 +17,7 @@ namespace drake {
 namespace math {
 namespace internal {
 
-#ifdef DRAKE_ENABLE_AVX2_FMA
+#if defined(__AVX2__) && defined(__FMA__)
 namespace {
 /* Reinterpret user-friendly class names to raw arrays of double.
 
@@ -46,6 +47,13 @@ const double* GetRawMatrixStart(const RigidTransform<double>& X) {
 
 double* GetMutableRawMatrixStart(RigidTransform<double>* X) {
   return reinterpret_cast<double*>(X);
+}
+
+// Check if AVX2 is supported by the CPU. We can assume that OS support for AVX2
+// is available if AVX2 is supported by hardware, and do not need to test if it
+// is enabled in software as well.
+bool CheckCpuForAvxSupport() {
+  return __builtin_cpu_supports("avx2");
 }
 
 // Turn d into d d d d.
@@ -383,6 +391,11 @@ void ComposeXinvXAvx(const double* X_BA, const double* X_BC, double* X_AC) {
 
 // See note above as to why these reinterpret_casts are safe.
 
+bool AvxSupported() {
+  static const bool avx_supported = CheckCpuForAvxSupport();
+  return avx_supported;
+}
+
 void ComposeRRAvx(const RotationMatrix<double>& R_AB,
                   const RotationMatrix<double>& R_BC,
                   RotationMatrix<double>* R_AC) {
@@ -417,6 +430,8 @@ void AbortNotEnabledInBuild(const char* func) {
   std::abort();
 }
 }  // namespace
+
+bool AvxSupported() { return false; }
 
 void ComposeRRAvx(const RotationMatrix<double>&,
                   const RotationMatrix<double>&,
