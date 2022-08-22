@@ -149,8 +149,8 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Into the box labeled "Attach binaries by dropping them here or selecting
-      them.", drag and drop the 6 release binary artifacts from above (the 2
-      tarballs, and their 4 checksums).
+      them.", drag and drop the 9 release binary artifacts from above (the 3
+      tarballs, and their 6 checksums).
    6. Choose "Save draft" and take a deep breath.
 6. Once the documentation build finishes, release!
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
