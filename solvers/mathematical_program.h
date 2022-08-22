@@ -465,9 +465,9 @@ class MathematicalProgram {
    * https://arxiv.org/abs/1706.02586
    */
   enum class NonnegativePolynomial {
-    kSos,    ///< A sum-of-squares polynomial.
-    kSdsos,  ///< A scaled-diagonally dominant sum-of-squares polynomial.
-    kDsos,   ///< A diagonally dominant sum-of-squares polynomial.
+    kSos = 1,    ///< A sum-of-squares polynomial.
+    kSdsos = 2,  ///< A scaled-diagonally dominant sum-of-squares polynomial.
+    kDsos = 3,   ///< A diagonally dominant sum-of-squares polynomial.
   };
 
   /** Returns a pair of a SOS polynomial p = mᵀQm and the Gramian matrix Q,

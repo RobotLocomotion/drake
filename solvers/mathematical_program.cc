@@ -254,25 +254,21 @@ symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
   switch (type) {
     case MathematicalProgram::NonnegativePolynomial::kSos: {
       AddPositiveSemidefiniteConstraint(gramian);
-      break;
+      return p;
     }
     case MathematicalProgram::NonnegativePolynomial::kSdsos: {
       AddScaledDiagonallyDominantMatrixConstraint(gramian);
-      break;
+      return p;
     }
     case MathematicalProgram::NonnegativePolynomial::kDsos: {
       AddPositiveDiagonallyDominantMatrixConstraint(
           gramian.cast<symbolic::Expression>());
-      break;
-    }
-    default: {
-      throw std::runtime_error(
-          "Passed NonnegativePolynomial type that is either unsupported or "
-          "unitialized");
-      break;
+      return p;
     }
   }
-  return p;
+  throw std::runtime_error(
+          "Passed NonnegativePolynomial type that is either unsupported or "
+          "uninitialized");
 }
 
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
