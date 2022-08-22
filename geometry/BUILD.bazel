@@ -391,7 +391,10 @@ drake_cc_library(
     srcs = ["rgba.cc"],
     hdrs = ["rgba.h"],
     deps = [
-        "//common",
+        "//common:essential",
+        "//common:name_value",
+        "//common/yaml:yaml_io",
+        "@fmt",
     ],
 )
 
