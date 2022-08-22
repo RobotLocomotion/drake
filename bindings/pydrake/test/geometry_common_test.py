@@ -297,6 +297,8 @@ class TestGeometryCore(unittest.TestCase):
                                            "hydroelastic_modulus"), E)
 
     def test_rgba_api(self):
+        default_white = mut.Rgba()
+        self.assertEqual(default_white, mut.Rgba(1, 1, 1, 1))
         r, g, b, a = 0.75, 0.5, 0.25, 1.
         color = mut.Rgba(r=r, g=g, b=b)
         self.assertEqual(color.r(), r)

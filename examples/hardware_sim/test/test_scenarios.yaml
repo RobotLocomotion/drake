@@ -22,3 +22,5 @@ OneOfEverything:
   visualization:
     lcm_bus: extra_bus
     publish_period: 0.125
+    default_illustration_color:
+      rgba: [0.8, 0.8, 0.8]
