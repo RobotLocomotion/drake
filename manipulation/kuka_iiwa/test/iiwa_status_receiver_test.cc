@@ -40,23 +40,29 @@ class IiwaStatusReceiverTest : public testing::Test {
 TEST_F(IiwaStatusReceiverTest, AcceptanceTest) {
   // Confirm that output is zero for uninitialized lcm input.
   const int num_output_ports = dut_.num_output_ports();
-  EXPECT_EQ(num_output_ports, 6);
+  EXPECT_EQ(num_output_ports, 7);
   for (int i = 0; i < num_output_ports; ++i) {
     const systems::LeafSystem<double>& leaf = dut_;
     const auto& port = leaf.get_output_port(i);
-    EXPECT_TRUE(CompareMatrices(
+    if (i > 0) {
+      EXPECT_TRUE(CompareMatrices(
         port.Eval(context_),
         VectorXd::Zero(N)));
+    } else {
+      EXPECT_TRUE(CompareMatrices(port.Eval(context_),
+      VectorXd::Zero(1)));
+    }
   }
 
   // Populate the status message with distinct values.
+  const VectorXd utime = Vector1d(1661199485);
   const VectorXd position_commanded = VectorXd::LinSpaced(N, 0.0, 1.0);
   const VectorXd position_measured = VectorXd::LinSpaced(N, 2.0, 3.0);
   const VectorXd velocity_estimated = VectorXd::LinSpaced(N, 4.0, 5.0);
   const VectorXd torque_commanded = VectorXd::LinSpaced(N, 6.0, 7.0);
   const VectorXd torque_measured = VectorXd::LinSpaced(N, 8.0, 9.0);
   const VectorXd torque_external = VectorXd::LinSpaced(N, 10.0, 11.0);
-  status_.utime = 1;
+  status_.utime = utime(0);
   status_.num_joints = N;
   Copy(position_commanded, &status_.joint_position_commanded);
   Copy(position_measured, &status_.joint_position_measured);
@@ -69,6 +75,9 @@ TEST_F(IiwaStatusReceiverTest, AcceptanceTest) {
       template get_mutable_value<lcmt_iiwa_status>() = status_;
 
   // Confirm that real message values are output correctly.
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_utime_output_port().Eval(context_),
+      utime));
   EXPECT_TRUE(CompareMatrices(
       dut_.get_position_commanded_output_port().Eval(context_),
       position_commanded));
