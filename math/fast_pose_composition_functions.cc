@@ -15,8 +15,8 @@ namespace internal {
 /* The portable versions are always defined. They should be written
 to maximize the chance that a dumb compiler can generate fast code.
 
-The AVX functions are optionally defined depending on the compiler flags used
-for this compilation unit. If defined, the no-suffix, publicly-visible functions
+The AVX functions are optionally enabled depending on the definitions used for
+this compilation unit. If enabled, the no-suffix, publicly-visible functions
 like ComposeRR() are implemented with the "...Avx" methods, otherwise with the
 "...Portable" methods.
 

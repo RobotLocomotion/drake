@@ -18,8 +18,19 @@ namespace internal {
 
 #ifdef DRAKE_ENABLE_AVX2_FMA
 namespace {
-/* Reinterpret user-friendly class names to raw arrays of double. See note above
-as to why these reinterpret_casts are safe. */
+/* Reinterpret user-friendly class names to raw arrays of double.
+
+We make judicious use below of potentially-dangerous reinterpret_casts to
+convert from user-friendly APIs written in terms of RotationMatrix& and
+RigidTransform& (whose declarations are necessarily unknown here) to
+implementation-friendly double* types. Why this is safe here:
+  - our implementations of these classes guarantee a particular memory
+    layout on which we can depend,
+  - the address of a class is the address of its first member (mandated by
+    the standard), and
+  - reinterpret_cast of a pointer to another pointer type and back yields the
+    same pointer, i.e. the bit pattern does not change.
+*/
 
 const double* GetRawMatrixStart(const RotationMatrix<double>& R) {
   return reinterpret_cast<const double*>(&R);
