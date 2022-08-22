@@ -47,9 +47,8 @@ reported `which -a python python3` refer to conda.
 require a working display server.  Most personal computers will have this
 already built in, but some cloud or docker environments may not.
 
-⁽⁵⁾ Ubuntu 22.04 (Jammy Jellyfish) builds are only supported from source or
-as nightly binaries. Drake does not yet publish stable binaries for this
-platform.
+⁽⁵⁾ Ubuntu 22.04 (Jammy Jellyfish) pre-built binaries are not yet available
+for pip.
 
 Additionally, if you are compiling your own C++ code against Drake's C++ code
 and are using Drake's pre-compiled binaries, then you must use the same
