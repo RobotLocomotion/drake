@@ -8,8 +8,9 @@
 #include <iostream>
 #endif
 
-/* Note that we do not include code from drake/common here so that we don't
-have to fight with Eigen regarding the enabling of AVX instructions. */
+/* N.B. Do not include any other drake headers here because this file will be
+part of a compilation unit that may have a different opinion about whether SIMD
+instructions are enabled than Eigen does in the rest of Drake. */
 
 namespace drake {
 namespace math {

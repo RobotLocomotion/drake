@@ -6,7 +6,7 @@ matrices with known memory layouts. Ideally these are implemented using
 platform-specific SIMD instructions for speed; however, we always provide a
 straightforward portable fallback. */
 
-/* N.B. Do not include code from drake/common here because this file will be
+/* N.B. Do not include any other drake headers here because this file will be
 included by a compilation unit that may have a different opinion about whether
 SIMD instructions are enabled than Eigen does in the rest of Drake. */
 
