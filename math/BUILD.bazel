@@ -25,6 +25,7 @@ drake_cc_package_library(
         ":eigen_sparse_triplet",
         ":evenly_distributed_pts_on_sphere",
         ":fast_pose_composition_functions",
+        ":fast_pose_composition_functions_avx2_fma",
         ":geometric_transform",
         ":gradient",
         ":gray_code",
@@ -280,16 +281,30 @@ drake_cc_library(
 # due to our old Mac CI machines. Compiling for Broadwell (or later) gets
 # those instructions.
 drake_cc_library(
+    name = "fast_pose_composition_functions_avx2_fma",
+    srcs = ["fast_pose_composition_functions_avx2_fma.cc"],
+    hdrs = ["fast_pose_composition_functions_avx2_fma.h"],
+    copts = select({
+        "//tools/cc_toolchain:apple": [],
+        "//conditions:default": [
+            "-DDRAKE_ENABLE_AVX2_FMA",
+            "-march=broadwell",
+        ],
+    }),
+    deps = [],
+)
+
+drake_cc_library(
     name = "fast_pose_composition_functions",
     srcs = ["fast_pose_composition_functions.cc"],
     hdrs = ["fast_pose_composition_functions.h"],
     copts = select({
         "//tools/cc_toolchain:apple": [],
         "//conditions:default": [
-            "-march=broadwell",
+            "-DDRAKE_ENABLE_AVX2_FMA",
         ],
     }),
-    deps = [],
+    deps = [":fast_pose_composition_functions_avx2_fma"],
 )
 
 # === test/ ===
