@@ -318,7 +318,8 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Class> cls(m, "Rgba", cls_doc.doc);
     cls  // BR
         .def(py::init<double, double, double, double>(), py::arg("r"),
-            py::arg("g"), py::arg("b"), py::arg("a") = 1., cls_doc.ctor.doc)
+            py::arg("g"), py::arg("b"), py::arg("a") = 1.,
+            cls_doc.ctor.doc_4args)
         .def("r", &Class::r, cls_doc.r.doc)
         .def("g", &Class::g, cls_doc.g.doc)
         .def("b", &Class::b, cls_doc.b.doc)
