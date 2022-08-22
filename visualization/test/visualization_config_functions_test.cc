@@ -31,13 +31,7 @@ GTEST_TEST(VisualizationConfigTest, Defaults) {
   const VisualizationConfig config;
   const DrakeVisualizerParams params;
   EXPECT_EQ(config.publish_period, params.publish_period);
-  ASSERT_EQ(config.default_illustration_color_rgba.size(), 3);
-  EXPECT_EQ(config.default_illustration_color_rgba[0],
-            params.default_color.r());
-  EXPECT_EQ(config.default_illustration_color_rgba[1],
-            params.default_color.g());
-  EXPECT_EQ(config.default_illustration_color_rgba[2],
-            params.default_color.b());
+  EXPECT_EQ(config.default_illustration_color, params.default_color);
 }
 
 // Tests the mapping from default schema data to geometry params.
@@ -46,13 +40,18 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
   const std::vector<DrakeVisualizerParams> params =
       ConvertVisualizationConfigToParams(config);
   ASSERT_EQ(params.size(), 2);
+
   EXPECT_EQ(params.at(0).role, Role::kIllustration);
+  EXPECT_EQ(params.at(0).default_color, config.default_illustration_color);
   EXPECT_FALSE(params.at(0).show_hydroelastic);
+  EXPECT_FALSE(params.at(0).use_role_channel_suffix);
+  EXPECT_EQ(params.at(0).publish_period, config.publish_period);
+
   EXPECT_EQ(params.at(1).role, Role::kProximity);
+  EXPECT_EQ(params.at(1).default_color, config.default_proximity_color);
   EXPECT_TRUE(params.at(1).show_hydroelastic);
   EXPECT_TRUE(params.at(1).use_role_channel_suffix);
-  EXPECT_EQ(params.at(0).publish_period, params.at(1).publish_period);
-  EXPECT_NE(params.at(0).default_color, params.at(1).default_color);
+  EXPECT_EQ(params.at(1).publish_period, config.publish_period);
 }
 
 // Tests the mapping from non-default schema data to geometry params.
@@ -60,7 +59,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionSpecial) {
   VisualizationConfig config;
   config.publish_period = 0.5;
   config.publish_proximity = false;
-  config.default_illustration_color_rgba = Eigen::Vector4d::Constant(0.25);
+  config.default_illustration_color = Rgba(0.25, 0.25, 0.25, 0.25);
   const std::vector<DrakeVisualizerParams> params =
       ConvertVisualizationConfigToParams(config);
   ASSERT_EQ(params.size(), 1);
@@ -78,22 +77,6 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionAllDisabled) {
   const std::vector<DrakeVisualizerParams> params =
       ConvertVisualizationConfigToParams(config);
   EXPECT_EQ(params.size(), 0);
-}
-
-// Tests that bad values cause an exception, not a segfault.
-// We check too-short and too-long values, and both geometry types.
-GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionValidation) {
-  VisualizationConfig bad_illus_color;
-  bad_illus_color.default_illustration_color_rgba = {};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ConvertVisualizationConfigToParams(bad_illus_color),
-      "Rgba must .*");
-
-  VisualizationConfig bad_prox_color;
-  bad_prox_color.default_proximity_color_rgba = Eigen::VectorXd::Zero(6);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ConvertVisualizationConfigToParams(bad_prox_color),
-      "Rgba must .*");
 }
 
 // Overall acceptance test with everything enabled.

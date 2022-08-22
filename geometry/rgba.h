@@ -3,8 +3,11 @@
 #include <stdexcept>
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
+#include "drake/common/name_value.h"
 
 namespace drake {
 namespace geometry {
@@ -13,6 +16,9 @@ namespace geometry {
 class Rgba {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rgba);
+
+  /** Default constructor produces fully opaque white. */
+  Rgba() = default;
 
   /** Constructs with given (r, g, b, a) values.
    @pre All values are within the range of [0, 1].  */
@@ -41,7 +47,7 @@ class Rgba {
         (b < 0 || b > 1) ||
         (a < 0 || a > 1)) {
       throw std::runtime_error(fmt::format(
-          "All values must be within the range [0, 1]. Values provided: "
+          "Rgba values must be within the range [0, 1]. Values provided: "
           "(r={}, g={}, b={}, a={})", r, g, b, a));
     }
     r_ = r;
@@ -69,11 +75,49 @@ class Rgba {
     return !(*this == other);
   }
 
+  /** Passes this object to an Archive.
+
+   In YAML, an %Rgba is represented by an array-like list of three or four
+   numbers. E.g.,
+
+        rgba: [0.5, 0.5, 1.0]
+
+   or
+
+        rgba: [0.5, 0.5, 1.0, 0.5]
+
+   such that the first three values are red, green, and blue, respectively. If
+   no fourth value is provided, alpha is defined a 1.0.
+
+   Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    /* N.B. This "strange" spelling is to enable the following in YAML:
+        - rgba: [r, g, b]
+      or
+        - rgba: [r, g, b, a]
+     Rather than enumerating the fields, we treat the Rgba like an array-like
+     construct. Validation is done *explicitly* here on the *size* of the array;
+     the validity of the individual values is handled by Rgba::set(). */
+    Eigen::VectorXd rgba = Eigen::Vector4d{r_, g_, b_, a_};
+    a->Visit(MakeNameValue("rgba", &rgba));
+    if (rgba.size() == 3) {
+      set(rgba[0], rgba[1], rgba[2]);
+    } else if (rgba.size() == 4) {
+      set(rgba[0], rgba[1], rgba[2], rgba[3]);
+    } else {
+      throw std::runtime_error(fmt::format(
+          "Rgba must contain either 3 or 4 elements (given [{}])",
+          rgba.transpose()));
+    }
+  }
+
  private:
-  double r_{};
-  double g_{};
-  double b_{};
-  double a_{};
+  // As documented above, default-constructed Rgba is opaque white.
+  double r_{1};
+  double g_{1};
+  double b_{1};
+  double a_{1};
 };
 
 }  // namespace geometry
