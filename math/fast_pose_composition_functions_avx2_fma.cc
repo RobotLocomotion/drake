@@ -53,6 +53,7 @@ double* GetMutableRawMatrixStart(RigidTransform<double>* X) {
 // is available if AVX2 is supported by hardware, and do not need to test if it
 // is enabled in software as well.
 bool CheckCpuForAvxSupport() {
+  __builtin_cpu_init();
   return __builtin_cpu_supports("avx2");
 }
 
