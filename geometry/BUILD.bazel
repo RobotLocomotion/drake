@@ -392,6 +392,7 @@ drake_cc_library(
     hdrs = ["rgba.h"],
     deps = [
         "//common",
+        "@fmt",
     ],
 )
 
@@ -814,6 +815,7 @@ drake_cc_googletest(
     deps = [
         ":rgba",
         "//common/test_utilities",
+        "//common/yaml:yaml_io",
     ],
 )
 
