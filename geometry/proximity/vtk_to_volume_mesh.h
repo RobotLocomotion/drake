@@ -49,7 +49,7 @@ namespace internal {
                     file has no tetrahedron.
  @return tetrahedral volume mesh
 
- @warn It has limited error checking and support only a subset of VTK files.
+ @warn It has limited error checking and supports only a subset of VTK files.
  */
 VolumeMesh<double> ReadVtkToVolumeMesh(
     const std::string& filename,

@@ -14,9 +14,22 @@ namespace internal {
 
 namespace {
 
+bool CheckHeader(std::istream* input_stream) {
+  std::string line;
+  std::getline(*input_stream, line);
+  return line.substr(0, 14) == "# vtk DataFile";
+}
+
 VolumeMesh<double> DoReadVtkToVolumeMesh(
     std::istream* input_stream,
     const std::function<void(std::string_view)> on_warning) {
+  if (!CheckHeader(input_stream)) {
+    throw std::runtime_error(
+        "DoReadVtkToVolumeMesh: the first line does not start with "
+        "'# vtk DataFile'");
+  }
+  // TODO(DamrongGuoy): More error checking or use the VTK library to read
+  //  the file instead of this code.
   std::string warn;
   std::string line;
   bool reading_points = false;

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace geometry {
@@ -87,6 +88,18 @@ GTEST_TEST(VtkToVolumeMeshTest, KeepMeshIgnoreFieldVariables) {
       {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
        Vector3d::UnitZ(), -Vector3d::UnitZ()}};
   EXPECT_TRUE(volume_mesh.Equal(expected_mesh));
+}
+
+// A simple test that a non-VTK file gets a throw. The code only performs a
+// simple check.
+GTEST_TEST(VtkToVolumeMeshTest, CheckHeader) {
+  std::istringstream test_non_VTK_stream{
+      "non-VTK file"
+  };
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ReadVtkToVolumeMesh(&test_non_VTK_stream),
+      "DoReadVtkToVolumeMesh: the first line does not start with "
+      "'# vtk DataFile'");
 }
 
 }  // namespace
