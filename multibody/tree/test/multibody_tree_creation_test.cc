@@ -916,10 +916,10 @@ GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
   EXPECT_EQ(mass_ABC, mA + mB + mC);
 
   // Verify whether all default rotational inertia in these sets are zero.
-  EXPECT_TRUE(model.IsDefaultRotationalInertiaZero(bodies_AA));
-  EXPECT_FALSE(model.IsDefaultRotationalInertiaZero(bodies_AB));
-  EXPECT_FALSE(model.IsDefaultRotationalInertiaZero(bodies_BC));
-  EXPECT_FALSE(model.IsDefaultRotationalInertiaZero(bodies_ABC));
+  EXPECT_TRUE(model.IsAllDefaultRotationalInertiaZero(bodies_AA));
+  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZero(bodies_AB));
+  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZero(bodies_BC));
+  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZero(bodies_ABC));
 }
 
 // Helper function to add a x-axis prismatic joint between two bodies.

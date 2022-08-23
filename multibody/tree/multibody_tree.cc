@@ -2892,8 +2892,8 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
   for (size_t i = 1;  i < number_of_sets;  ++i) {
     // Get the next set of welded bodies. The first entry in the set is the
     // parent body and the remaining entries (if any) are children bodies.
-    const std::set<BodyIndex>& welded_parent_children_bodies = welded_bodies[i];
-    const BodyIndex parent_body_index = *welded_parent_children_bodies.begin();
+    const std::set<BodyIndex>& welded_body = welded_bodies[i];
+    const BodyIndex parent_body_index = *welded_body.begin();
     const BodyTopology& parent_body_topology =
         multibodyTreeTopology.get_body(parent_body_index);
     const MobilizerIndex& parent_mobilizer_index =
@@ -2903,8 +2903,8 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
 
     // Check previous assumptions.
     const Body<T>& parent_body = get_body(parent_body_index);
-    DRAKE_DEMAND(parent_body_index == parent_body.index());
-    DRAKE_DEMAND(parent_body_index != world_index());
+    DRAKE_ASSERT(parent_body_index == parent_body.index());
+    DRAKE_ASSERT(parent_body_index != world_index());
 
     // Determine whether this set of welded bodies is the most distal leaf in
     // a multibody tree.
@@ -2918,8 +2918,7 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
     if (is_composite_body_distal_leaf_in_tree) {
       // Determine if this distal-leaf composite body can translate relative to
       // its inboard object but has no mass.
-      const bool has_no_mass =
-          CalcTotalDefaultMass(welded_parent_children_bodies) == 0;
+      const bool has_no_mass = CalcTotalDefaultMass(welded_body) == 0;
       if (parent_mobilizer.can_translate() && has_no_mass) {
         const std::string msg = fmt::format(
             "It seems that body {} is massless, yet it is attached "
@@ -2928,23 +2927,20 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
         throw std::logic_error(msg);
       }
 
-      // Issue error if distal composite body can rotate and has no inertia.
-      // TODO(Mitiguy) For now, the algorithm below issues a message only if
-      //  there is no default rotational inertia associated with the distal
-      //  composite body and the distal body has no mass that could be shifted
-      //  to create a non-zero moment of inertia. So instead, consider forming
-      //  the actual rotational inertia about the relevant inboard mobilizer's
-      //  axis (or axes if the mobilizer has more than one degree-of-freedom).
+      // Issue an error if the distal composite body can rotate and
+      // it contains a body with a NaN default rotational inertia
       if (parent_mobilizer.can_rotate()) {
-        if (IsAnyDefaultRotationalInertiaNaN(welded_parent_children_bodies)) {
+        if (IsAnyDefaultRotationalInertiaNaN(welded_body)) {
           const std::string msg = fmt::format(
             "Body {} has a NaN rotational inertia, yet it "
             "is attached by a joint that has a rotational degree of freedom.",
             parent_body.name());
           throw std::logic_error(msg);
         }
-        if (has_no_mass &&
-        IsDefaultRotationalInertiaZero(welded_parent_children_bodies)) {
+
+        // Issue an error if the distal composite body can rotate and all the
+        // bodies in the composite body have zero default rotational inertia.
+        if (has_no_mass && IsAllDefaultRotationalInertiaZero(welded_body)) {
           const std::string msg = fmt::format(
             "Body {} has a zero rotational inertia, yet it "
             "is attached by a joint that has a rotational degree of freedom.",
@@ -2981,13 +2977,13 @@ bool MultibodyTree<T>::IsAnyDefaultRotationalInertiaNaN(
 }
 
 template <typename T>
-bool MultibodyTree<T>::IsDefaultRotationalInertiaZero(
+bool MultibodyTree<T>::IsAllDefaultRotationalInertiaZero(
     const std::set<BodyIndex>& body_indexes) const {
   for (BodyIndex body_index : body_indexes) {
     const Body<T>& body_B = get_body(body_index);
     const RotationalInertia<double> I_BBo_B =
         body_B.default_rotational_inertia();
-    if (I_BBo_B.IsNaN() || !I_BBo_B.IsZero()) return false;
+    if (!I_BBo_B.IsZero()) return false;
   }
   return true;
 }
