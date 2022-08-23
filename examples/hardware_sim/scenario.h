@@ -9,6 +9,7 @@
 
 #include "drake/common/name_value.h"
 #include "drake/lcm/drake_lcm_params.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_driver.h"
 #include "drake/manipulation/util/zero_force_driver.h"
 #include "drake/multibody/parsing/model_directives.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
@@ -62,6 +63,7 @@ struct Scenario {
   from, keyed on the ModelInstance name. */
   using DriverVariant = std::variant<
       // TODO(jwnimmer-tri) Add more types of robot drivers here.
+      manipulation::schunk_wsg::SchunkWsgDriver,
       manipulation::ZeroForceDriver>;
   std::map<std::string, DriverVariant> model_drivers;
 

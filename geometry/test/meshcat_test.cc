@@ -900,13 +900,18 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
                          RigidTransformd(RotationMatrixd::MakeZRotation(M_PI)));
 
   const std::string html = meshcat.StaticHtml();
-  // Confirm that I have some base64 content.
-  EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
 
   // Confirm that the js source links were replaced.
   EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
   EXPECT_THAT(html, ::testing::Not(HasSubstr("stats.min.js")));
   EXPECT_THAT(html, ::testing::Not(HasSubstr("msgpack.min.js")));
+  // The static html replaces the javascript web socket connection code with
+  // direct invocation of MeshCat with all of the data. We'll confirm that
+  // this appears to have happened by testing for the presence of the injected
+  // tree (base64 content) and the absence of what is *believed* to be the
+  // delimiting text of the connection block.
+  EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
+  EXPECT_THAT(html, ::testing::Not(HasSubstr("CONNECTION BLOCK")));
 }
 
 // Check MeshcatParams.hide_stats_plot sends a hide_realtime_rate message

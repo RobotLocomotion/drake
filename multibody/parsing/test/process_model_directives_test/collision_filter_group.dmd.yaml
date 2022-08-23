@@ -17,7 +17,7 @@ directives:
 - add_model_instance:
     name: nested
 - add_directives:
-    file: package://process_model_directives_test/sub_collision.yaml
+    file: package://process_model_directives_test/sub_collision.dmd.yaml
     model_namespace: nested
 
 # Make a group with members from different nested directive levels.

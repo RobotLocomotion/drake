@@ -27,7 +27,18 @@ class FemSolverTest : public ::testing::Test {
   FemSolver<double> solver_{&model_, &integrator_};
 };
 
-TEST_F(FemSolverTest, Tolerancse) {
+TEST_F(FemSolverTest, CloneScratchData) {
+  FemSolverScratchData<double> scratch(model_);
+  std::unique_ptr<FemSolverScratchData<double>> clone = scratch.Clone();
+  EXPECT_EQ(clone->b(), scratch.b());
+  EXPECT_EQ(clone->dz(), scratch.dz());
+  const MatrixXd tangent_matrix = scratch.tangent_matrix().MakeDenseMatrix();
+  const MatrixXd tangent_matrix_clone =
+      clone->tangent_matrix().MakeDenseMatrix();
+  EXPECT_EQ(tangent_matrix, tangent_matrix_clone);
+}
+
+TEST_F(FemSolverTest, Tolerance) {
   /* Default values. */
   EXPECT_EQ(solver_.relative_tolerance(), 1e-4);
   EXPECT_EQ(solver_.absolute_tolerance(), 1e-6);
@@ -53,7 +64,9 @@ TEST_F(FemSolverTest, AdvanceOneTimeStep) {
   builder.Build();
   std::unique_ptr<FemState<double>> state0 = model_.MakeFemState();
   std::unique_ptr<FemState<double>> state = model_.MakeFemState();
-  const int num_iterations = solver_.AdvanceOneTimeStep(*state0, state.get());
+  FemSolverScratchData<double> scratch(model_);
+  const int num_iterations =
+      solver_.AdvanceOneTimeStep(*state0, state.get(), &scratch);
   EXPECT_EQ(num_iterations, 1);
 
   /* Compute the expected result from AdvanceOneTimeStep(). */

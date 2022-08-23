@@ -20,6 +20,7 @@ drake_cc_library(
     interface_deps = [
         "//common:name_value",
         "//lcm:drake_lcm_params",
+        "//manipulation/schunk_wsg:schunk_wsg_driver",
         "//manipulation/util:zero_force_driver",
         "//multibody/plant:multibody_plant_config",
         "//multibody/parsing:model_directives",
@@ -38,6 +39,7 @@ drake_cc_binary(
     deps = [
         ":scenario",
         "//common:add_text_logging_gflags",
+        "//manipulation/schunk_wsg:schunk_wsg_driver_functions",
         "//manipulation/util:apply_driver_configs",
         "//manipulation/util:zero_force_driver_functions",
         "//multibody/parsing",
@@ -72,7 +74,7 @@ sh_binary(
         "--scenario_name=Demo",
     ],
     data = [
-        ":example_iiwa_wsg.yaml",
+        ":example_iiwa_wsg.dmd.yaml",
         ":example_scenarios.yaml",
         "//examples/manipulation_station:prod_models",
         "//manipulation/models/iiwa_description:prod_models",

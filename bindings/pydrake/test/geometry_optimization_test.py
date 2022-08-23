@@ -12,6 +12,7 @@ from pydrake.geometry import (
     GeometryInstance, SceneGraph, Sphere,
 )
 from pydrake.math import RigidTransform
+from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.framework import DiagramBuilder
@@ -79,6 +80,18 @@ class TestGeometryOptimization(unittest.TestCase):
         h_unit_box = mut.HPolyhedron.MakeUnitBox(dim=3)
         np.testing.assert_array_equal(h_box.A(), h_unit_box.A())
         np.testing.assert_array_equal(h_box.b(), h_unit_box.b())
+        A_l1 = np.array([[1, 1, 1],
+                         [-1, 1, 1],
+                         [1, -1, 1],
+                         [-1, -1, 1],
+                         [1, 1, -1],
+                         [-1, 1, -1],
+                         [1, -1, -1],
+                         [-1, -1, -1]])
+        b_l1 = np.ones(8)
+        h_l1_ball = mut.HPolyhedron.MakeL1Ball(dim=3)
+        np.testing.assert_array_equal(A_l1, h_l1_ball.A())
+        np.testing.assert_array_equal(b_l1, h_l1_ball.b())
         self.assertIsInstance(
             h_box.MaximumVolumeInscribedEllipsoid(),
             mut.Hyperellipsoid)
@@ -104,6 +117,27 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(
             h_box.UniformSample(generator=generator,
                                 previous_sample=sample).shape, (3, ))
+
+        h_half_box = mut.HPolyhedron.MakeBox(
+            lb=[-0.5, -0.5, -0.5], ub=[0.5, 0.5, 0.5])
+        self.assertTrue(h_half_box.ContainedIn
+                        (other=h_unit_box))
+        h_half_box2 = h_half_box.Intersection(other=h_unit_box,
+                                              check_for_redundancy=True)
+        self.assertIsInstance(h_half_box2, mut.HPolyhedron)
+        self.assertEqual(h_half_box2.ambient_dimension(), 3)
+        np.testing.assert_array_almost_equal(
+            h_half_box2.A(), h_half_box.A())
+        np.testing.assert_array_almost_equal(
+            h_half_box2.b(), h_half_box.b())
+
+        # Intersection of 1/2*unit_box and unit_box and reducing the redundant
+        # inequalities should result in the 1/2*unit_box.
+        h_half_box_intersect_unit_box = h_half_box.Intersection(
+            other=h_unit_box,
+            check_for_redundancy=False)
+        # Check that the ReduceInequalities binding works.
+        h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities()
 
     def test_hyper_ellipsoid(self):
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)
@@ -322,6 +356,7 @@ class TestGeometryOptimization(unittest.TestCase):
         options.iteration_limit = 1
         options.termination_threshold = 0.1
         options.relative_termination_threshold = 0.01
+        options.random_seed = 1314
         self.assertNotIn("object at 0x", repr(options))
         region = mut.Iris(
             obstacles=obstacles, sample=[2, 3.4, 5],
@@ -362,6 +397,9 @@ class TestGeometryOptimization(unittest.TestCase):
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
         options = mut.IrisOptions()
+        ik = InverseKinematics(plant)
+        options.prog_with_additional_constraints = ik.prog()
+        options.num_additional_constraint_infeasible_samples = 2
         plant.SetPositions(plant.GetMyMutableContextFromRoot(context), [0])
         region = mut.IrisInConfigurationSpace(
             plant=plant, context=plant.GetMyContextFromRoot(context),

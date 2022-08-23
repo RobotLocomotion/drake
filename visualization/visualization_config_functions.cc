@@ -105,26 +105,6 @@ void AddDefaultVisualization(DiagramBuilder<double>* builder) {
   ApplyVisualizationConfig(VisualizationConfig{}, builder);
 }
 
-namespace {
-
-// TODO(jeremy.nimmer) Add a `Serialize()` function to `class Rgba` so that it
-// can be serialized directly, without this helper function.
-Rgba VectorToRgba(const Eigen::VectorXd& input) {
-  if (input.size() < 3) {
-    throw std::runtime_error("Rgba must have >= 3 values");
-  }
-  if (input.size() > 4) {
-    throw std::runtime_error("Rgba must have <= 4 values");
-  }
-  const double r = input(0);
-  const double g = input(1);
-  const double b = input(2);
-  const double a = (input.size() == 4) ? input(3) : 1.0;
-  return Rgba(r, g, b, a);
-}
-
-}  // namespace
-
 namespace internal {
 
 std::vector<DrakeVisualizerParams>
@@ -136,8 +116,7 @@ ConvertVisualizationConfigToParams(
     DrakeVisualizerParams illustration;
     illustration.role = Role::kIllustration;
     illustration.publish_period = config.publish_period;
-    illustration.default_color =
-        VectorToRgba(config.default_illustration_color_rgba);
+    illustration.default_color = config.default_illustration_color;
     result.push_back(illustration);
   }
 
@@ -145,8 +124,7 @@ ConvertVisualizationConfigToParams(
     DrakeVisualizerParams proximity;
     proximity.role = Role::kProximity;
     proximity.publish_period = config.publish_period;
-    proximity.default_color =
-        VectorToRgba(config.default_proximity_color_rgba);
+    proximity.default_color = config.default_proximity_color;
     proximity.show_hydroelastic = true;
     proximity.use_role_channel_suffix = true;
     result.push_back(proximity);

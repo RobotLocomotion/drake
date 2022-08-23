@@ -698,6 +698,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "constraint_specs_test",
+    deps = [
+        ":constraint_specs",
+    ],
+)
+
+drake_cc_googletest(
     name = "contact_results_to_lcm_test",
     deps = [
         ":contact_results_to_lcm",

@@ -23,6 +23,7 @@ _ALLOWED_EXTERNALS = [
 # permitted here are definitions required by the _ALLOWED_EXTERNALS, above.
 _ALLOWED_DEFINES = [
     "EIGEN_MPL2_ONLY",
+    "FMT_DEPRECATED_OSTREAM=1",
     "FMT_HEADER_ONLY=1",
     "FMT_NO_FMT_STRING_ALIAS=1",
     "HAVE_SPDLOG",

@@ -36,7 +36,8 @@ BENCHMARK_F(HomecartGlobalIkBenchmark, PostureCost)(benchmark::State& state) {  
   multibody::Parser parser(&plant);
   multibody::parsing::ModelDirectives directives =
       multibody::parsing::LoadModelDirectives(FindResourceOrThrow(
-          "drake/manipulation/models/tri_homecart/homecart_no_grippers.yaml"));
+          "drake/manipulation/models/tri_homecart/"
+          "homecart_no_grippers.dmd.yaml"));
   multibody::parsing::ProcessModelDirectives(directives, &plant, nullptr,
                                              &parser);
   plant.Finalize();

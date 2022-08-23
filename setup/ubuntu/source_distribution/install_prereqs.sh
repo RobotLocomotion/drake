@@ -174,6 +174,7 @@ zlib1g-dev
 EOF
 )
 
+# Keep this version number in sync with the drake/.bazeliskrc version number.
 dpkg_install_from_wget \
   bazel 5.1.0 \
   https://releases.bazel.build/5.1.0/release/bazel_5.1.0-linux-x86_64.deb \

@@ -13,9 +13,9 @@ LINUX_DBG_INTERPRETER_PATH = "/usr/bin/python3-dbg"
 # Default value of interpreter_path used by the py_runtime in the default
 # Python toolchain registered on the @platforms//os:osx platform when
 # running i386 (i.e., x86_64) builds.
-MACOS_I386_INTERPRETER_PATH = "/usr/local/bin/python3.9"
+MACOS_I386_INTERPRETER_PATH = "/usr/local/bin/python3.10"
 
 # Default value of interpreter_path used by the py_runtime in the default
 # Python toolchain registered on the @platforms//os:osx platform when
 # running arm64 builds.
-MACOS_ARM64_INTERPRETER_PATH = "/opt/homebrew/bin/python3.9"
+MACOS_ARM64_INTERPRETER_PATH = "/opt/homebrew/bin/python3.10"

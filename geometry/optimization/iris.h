@@ -53,6 +53,40 @@ struct IrisOptions {
   computationally demanding, so we disable it by default for a faster
   algorithm for obtaining regions without the rigorous guarantee. */
   bool enable_ibex = false;
+
+  /** By default, IRIS in configuration space certifies regions for collision
+  avoidance constraints and joint limits. This option can be used to pass
+  additional constraints that should be satisfied by the IRIS region. We accept
+  these in the form of a MathematicalProgram:
+
+    find q subject to g(q) ≤ 0.
+
+  The decision_variables() for the program are taken to define `q`. IRIS will
+  silently ignore any costs in `prog_with_additional_constraints`, and will
+  throw std::runtime_error if it contains any unsupported constraints.
+
+  For example, one could create an InverseKinematics problem with rich
+  kinematic constraints, and then pass `InverseKinematics::prog()` into this
+  option.
+
+  @note Currently, when prog_with_additional_constraints is set, the enable_ibex
+  option must be `false`.
+  */
+  const solvers::MathematicalProgram* prog_with_additional_constraints{};
+
+  /** For each constraint in `prog_with_additional_constraints`, IRIS will
+  search for a counter-example by formulating a (likely nonconvex) optimization
+  problem. The initial guess for this optimization is taken by sampling
+  uniformly inside the current IRIS region. This option controls the
+  termination condition for that counter-example search, defining the number of
+  consecutive failures to find a counter-example requested before moving on to
+  the next constraint. */
+  int num_additional_constraint_infeasible_samples{10};
+
+  /** The only randomization in IRIS is the random sampling done to find
+  counter-examples for the additional constraints using in
+  IrisInConfigurationSpace. Use this option to set the initial seed. */
+  int random_seed{1234};
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
@@ -92,13 +126,14 @@ HPolyhedron Iris(const ConvexSets& obstacles,
 
 /** Constructs ConvexSet representations of obstacles for IRIS in 3D using the
 geometry from a SceneGraph QueryObject. All geometry in the scene with a
-proximity role, both anchored and dynamic, are consider to be *fixed* obstacles
-frozen in the poses captured in the context used to create the QueryObject.
+proximity role, both anchored and dynamic, are consider to be *fixed*
+obstacles frozen in the poses captured in the context used to create the
+QueryObject.
 
 When multiple representations are available for a particular geometry (e.g. a
 Box can be represented as either an HPolyhedron or a VPolytope), then this
-method will prioritize the representation that we expect is most performant for
-the current implementation of the IRIS algorithm.
+method will prioritize the representation that we expect is most performant
+for the current implementation of the IRIS algorithm.
 
 @ingroup geometry_optimization
 */
@@ -107,17 +142,17 @@ ConvexSets MakeIrisObstacles(
     std::optional<FrameId> reference_frame = std::nullopt);
 
 /** A variation of the Iris (Iterative Region Inflation by Semidefinite
-programming) algorithm which finds collision-free regions in the *configuration
-space* of @p plant.  @see Iris for details on the original algorithm.
-The possibility of this configuration-space variant was suggested in the
-original IRIS paper, but substantial new ideas have been employed here to
-address the non-convexity of configuration-space obstacles; these will be
+programming) algorithm which finds collision-free regions in the
+*configuration space* of @p plant.  @see Iris for details on the original
+algorithm. The possibility of this configuration-space variant was suggested
+in the original IRIS paper, but substantial new ideas have been employed here
+to address the non-convexity of configuration-space obstacles; these will be
 documented in a forth-coming publication.
 
 @param plant describes the kinematics of configuration space.  It must be
 connected to a SceneGraph in a systems::Diagram.
-@param context is a context of the @p plant. The context must have the positions
-of the plant set to the initialIRIS seed configuration.
+@param context is a context of the @p plant. The context must have the
+positions of the plant set to the initialIRIS seed configuration.
 @param options provides additional configuration options.  In particular,
 `options.enabled_ibex` may have a significant impact on the runtime of the
 algorithm.

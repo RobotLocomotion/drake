@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/fast_pose_composition_functions_avx2_fma.h"
 
 namespace drake {
 namespace math {
@@ -16,13 +17,9 @@ using Eigen::Matrix4d;
 using Matrix34d = Eigen::Matrix<double, 3, 4>;
 
 GTEST_TEST(TestFastPoseCompositionFunctions, UsingAVX) {
-#ifdef __APPLE__
-  constexpr bool kApple = true;
-#else
-  constexpr bool kApple = false;
-#endif
-
-  EXPECT_EQ(internal::IsUsingPortableCompositionFunctions(), kApple);
+  EXPECT_NE(
+      internal::IsUsingPortableCompositionFunctions(),
+      internal::AvxSupported());
 }
 
 // Test the given RotationMatrix composition function for correct functionality

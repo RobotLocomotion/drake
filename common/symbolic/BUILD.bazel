@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":polynomial",
         ":polynomial_basis",
         ":rational_function",
+        ":replace_bilinear_terms",
         ":simplification",
         ":trigonometric_polynomial",
     ],
@@ -249,6 +250,27 @@ drake_cc_googletest(
     name = "rational_function_matrix_test",
     deps = [
         ":rational_function",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_library(
+    name = "replace_bilinear_terms",
+    srcs = ["replace_bilinear_terms.cc"],
+    hdrs = ["replace_bilinear_terms.h"],
+    interface_deps = [
+        "//common:essential",
+        "//common/symbolic:expression",
+    ],
+    deps = [
+        "//common/symbolic:polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "replace_bilinear_terms_test",
+    deps = [
+        ":replace_bilinear_terms",
         "//common/test_utilities:symbolic_test_util",
     ],
 )

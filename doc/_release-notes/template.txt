@@ -56,6 +56,19 @@ Fixes
 
 * TBD
 
+## Planning
+
+<!-- <relnotes for planning go here> -->
+
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
 ## Tutorials and examples
 
 <!-- <relnotes for examples,tutorials go here> -->
@@ -64,7 +77,7 @@ Fixes
 
 ## Miscellaneous features and fixes
 
-<!-- <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here> -->
+<!-- <relnotes for common,math,lcm,lcmtypes,manipulation,perception,visualization go here> -->
 
 * TBD
 

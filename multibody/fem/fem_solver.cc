@@ -10,23 +10,43 @@ namespace fem {
 namespace internal {
 
 template <typename T>
+void FemSolverScratchData<T>::Resize(const FemModel<T>& model) {
+  b_.resize(model.num_dofs());
+  dz_.resize(model.num_dofs());
+  tangent_matrix_ = model.MakePetscSymmetricBlockSparseTangentMatrix();
+}
+
+template <typename T>
+std::unique_ptr<FemSolverScratchData<T>> FemSolverScratchData<T>::Clone()
+    const {
+  std::unique_ptr<FemSolverScratchData<T>> clone(new FemSolverScratchData<T>());
+  clone->b_ = this->b_;
+  clone->dz_ = this->dz_;
+  DRAKE_DEMAND(tangent_matrix_ != nullptr);
+  tangent_matrix_->AssembleIfNecessary();
+  clone->tangent_matrix_ = this->tangent_matrix_->Clone();
+  return clone;
+}
+
+template <typename T>
 FemSolver<T>::FemSolver(const FemModel<T>* model,
                         const DiscreteTimeIntegrator<T>* integrator)
-    : model_(model), integrator_(integrator), scratch_data_(*model_) {
+    : model_(model), integrator_(integrator) {
   DRAKE_DEMAND(model_ != nullptr);
   DRAKE_DEMAND(integrator_ != nullptr);
 }
 
 template <typename T>
 int FemSolver<T>::AdvanceOneTimeStep(const FemState<T>& prev_state,
-                                     FemState<T>* next_state) const {
+                                     FemState<T>* next_state,
+                                     FemSolverScratchData<T>* scratch) const {
   DRAKE_DEMAND(next_state != nullptr);
   model_->ThrowIfModelStateIncompatible(__func__, prev_state);
   model_->ThrowIfModelStateIncompatible(__func__, *next_state);
   const VectorX<T>& unknown_variable = integrator_->GetUnknowns(prev_state);
   integrator_->AdvanceOneTimeStep(prev_state, unknown_variable, next_state);
   /* Run Newton-Raphson iterations. */
-  return SolveWithInitialGuess(next_state);
+  return SolveWithInitialGuess(next_state, scratch);
 }
 
 template <typename T>
@@ -37,7 +57,7 @@ bool FemSolver<T>::solver_converged(const T& residual_norm,
 }
 
 template <typename T>
-void FemSolver<T>::set_linear_solve_tolerance(
+double FemSolver<T>::linear_solve_tolerance(
     const T& residual_norm, const T& initial_residual_norm) const {
   /* The relative tolerance when solving for A * dz = -b, where A is the tangent
    matrix. We set it to be on the order of the residual norm to achieve local
@@ -48,22 +68,28 @@ void FemSolver<T>::set_linear_solve_tolerance(
    [Nocedal and Wright] Nocedal, J., & Wright, S. (2006). Numerical
    optimization. Springer Science & Business Media. */
   constexpr double kLinearToleranceFactor = 0.2;
-  const double linear_solve_tolerance =
+  double linear_solve_tolerance =
       std::min(kLinearToleranceFactor * relative_tolerance_,
                ExtractDoubleOrThrow(residual_norm) /
                    std::max(ExtractDoubleOrThrow(initial_residual_norm),
                             absolute_tolerance_));
-  DRAKE_DEMAND(scratch_data_.tangent_matrix != nullptr);
-  scratch_data_.tangent_matrix->set_relative_tolerance(linear_solve_tolerance);
+  return linear_solve_tolerance;
 }
 
 template <typename T>
-int FemSolver<T>::SolveWithInitialGuess(FemState<T>* state) const {
+int FemSolver<T>::SolveWithInitialGuess(
+    FemState<T>* state, FemSolverScratchData<T>* scratch) const {
   /* Make sure the scratch quantities are of the correct sizes. */
-  ResetScratchDataIfNecessary();
+  scratch->Resize(*model_);
+
+  VectorX<T>& b = scratch->mutable_b();
+  VectorX<T>& dz = scratch->mutable_dz();
+  internal::PetscSymmetricBlockSparseMatrix& tangent_matrix =
+      scratch->mutable_tangent_matrix();
+
   model_->ApplyBoundaryCondition(state);
-  model_->CalcResidual(*state, &scratch_data_.b);
-  T residual_norm = scratch_data_.b.norm();
+  model_->CalcResidual(*state, &b);
+  T residual_norm = b.norm();
   const T initial_residual_norm = residual_norm;
   int iter = 0;
   /* Newton-Raphson iterations. We iterate until any of the following is true:
@@ -75,27 +101,26 @@ int FemSolver<T>::SolveWithInitialGuess(FemState<T>* state) const {
          /* Equivalent to residual_norm < absolute_tolerance_ on first
             iteration. */
          !solver_converged(residual_norm, initial_residual_norm)) {
-    set_linear_solve_tolerance(residual_norm, initial_residual_norm);
     model_->CalcTangentMatrix(*state, integrator_->GetWeights(),
-                              scratch_data_.tangent_matrix.get());
-    scratch_data_.tangent_matrix->AssembleIfNecessary();
+                              &tangent_matrix);
+    tangent_matrix.AssembleIfNecessary();
     /* Solve for A * dz = -b, where A is the tangent matrix. */
-    // TODO(xuchenhan-tri): PetscSymmetricBlockSparseMatrix should have a way of
-    // communicating solver failure.
-    const auto linear_solve_status = scratch_data_.tangent_matrix->Solve(
-        internal::PetscSymmetricBlockSparseMatrix::SolverType::
-            kConjugateGradient,
-        internal::PetscSymmetricBlockSparseMatrix::PreconditionerType::
-            kIncompleteCholesky,
-        -scratch_data_.b, &scratch_data_.dz);
+    tangent_matrix.set_relative_tolerance(
+        linear_solve_tolerance(residual_norm, initial_residual_norm));
+    const auto linear_solve_status =
+        tangent_matrix.Solve(internal::PetscSymmetricBlockSparseMatrix::
+                                 SolverType::kConjugateGradient,
+                             internal::PetscSymmetricBlockSparseMatrix::
+                                 PreconditionerType::kIncompleteCholesky,
+                             -b, &dz);
     if (linear_solve_status == PetscSolverStatus::kFailure) {
       drake::log()->warn(
           "Linear solve did not converge in Newton iterations in FemSolver.");
       return -1;
     }
-    integrator_->UpdateStateFromChangeInUnknowns(scratch_data_.dz, state);
-    model_->CalcResidual(*state, &scratch_data_.b);
-    residual_norm = scratch_data_.b.norm();
+    integrator_->UpdateStateFromChangeInUnknowns(dz, state);
+    model_->CalcResidual(*state, &b);
+    residual_norm = b.norm();
     ++iter;
   }
   if (!solver_converged(residual_norm, initial_residual_norm)) {
@@ -104,16 +129,10 @@ int FemSolver<T>::SolveWithInitialGuess(FemState<T>* state) const {
   return iter;
 }
 
-template <typename T>
-void FemSolver<T>::ResetScratchDataIfNecessary() const {
-  DRAKE_DEMAND(model_ != nullptr);
-  if (scratch_data_.num_dofs() != model_->num_dofs())
-    scratch_data_.Resize(*model_);
-}
-
 }  // namespace internal
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 
+template class drake::multibody::fem::internal::FemSolverScratchData<double>;
 template class drake::multibody::fem::internal::FemSolver<double>;

@@ -1284,6 +1284,7 @@ std::vector<Binding<Constraint>> MathematicalProgram::GetAllConstraints()
   extend(lorentz_cone_constraint_);
   extend(rotated_lorentz_cone_constraint_);
   extend(linear_matrix_inequality_constraint_);
+  extend(positive_semidefinite_constraint_);
   extend(linear_complementarity_constraints_);
   extend(exponential_cone_constraints_);
   return conlist;

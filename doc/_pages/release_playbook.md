@@ -111,6 +111,7 @@ the main body of the document:
    3. Open the latest builds from the following builds:
       1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-big-sur-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
       2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-mosek-packaging/>
+      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-bazel-nightly-snopt-mosek-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
       ``drake/nightly/drake-20``), and find the date.  It will be ``YYYYMMDD``
@@ -148,8 +149,8 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Into the box labeled "Attach binaries by dropping them here or selecting
-      them.", drag and drop the 6 release binary artifacts from above (the 2
-      tarballs, and their 4 checksums).
+      them.", drag and drop the 9 release binary artifacts from above (the 3
+      tarballs, and their 6 checksums).
    6. Choose "Save draft" and take a deep breath.
 6. Once the documentation build finishes, release!
    1. Check that the link to drake.mit.edu docs from the GitHub release draft

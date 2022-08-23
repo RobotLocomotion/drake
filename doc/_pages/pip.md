@@ -27,6 +27,11 @@ Gurobi, you will need to [build Drake from source](/from_source.html).
 ## Stable Releases
 
 <div class="warning" markdown="1">
+Drake does not yet publish a wheel for CPython 3.10 running on Linux. See
+[#17483](https://github.com/RobotLocomotion/drake/issues/17483) for updates.
+</div>
+
+<div class="warning" markdown="1">
 Drake does not support the Python environment supplied by Anaconda. Before
 installing or using Drake, please `conda deactivate` (repeatedly, until even
 the conda base environment has been deactivated) such that none of the paths

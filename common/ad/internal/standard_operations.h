@@ -426,6 +426,50 @@ inline AutoDiff abs2(AutoDiff x) {
 
 //@}
 
+/// @name Math functions: Exponential and Power functions
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Exponential_functions
+///
+/// https://en.cppreference.com/w/cpp/numeric/math#Power_functions
+//@{
+
+/** ADL overload to mimic std::exp from <cmath>. */
+AutoDiff exp(AutoDiff x);
+
+/** ADL overload to mimic std::log from <cmath>. */
+AutoDiff log(AutoDiff x);
+
+/** ADL overload to mimic std::pow from <cmath>.
+
+The resulting partial derivative ∂/∂vᵢ is undefined (i.e., NaN) for all of the
+following cases:
+- base is NaN
+- exp is NaN
+- pow(base, exp) is NaN
+- ∂base/∂vᵢ is non-zero and either:
+  - base is zero or not finite, or
+  - exp is not finite
+- ∂exp/∂vᵢ is non-zero and either:
+  - base is not positive-finite, or
+  - exp is not finite
+
+In all other cases, if the base and exp partial derivatives were well-defined
+then the resulting partial derivatives will also be well-defined. */
+AutoDiff pow(AutoDiff base, const AutoDiff& exp);
+
+/** ADL overload to mimic std::pow from <cmath>.
+Refer to pow(AutoDiff,const AutoDiff&) for an explanation of special cases. */
+AutoDiff pow(double base, const AutoDiff& exp);
+
+/** ADL overload to mimic std::pow from <cmath>.
+Refer to pow(AutoDiff,const AutoDiff&) for an explanation of special cases. */
+AutoDiff pow(AutoDiff base, double exp);
+
+/** ADL overload to mimic std::sqrt from <cmath>. */
+AutoDiff sqrt(AutoDiff x);
+
+//@}
+
 /// @name Math functions: Trigonometric functions
 ///
 /// https://en.cppreference.com/w/cpp/numeric/math#Trigonometric_functions

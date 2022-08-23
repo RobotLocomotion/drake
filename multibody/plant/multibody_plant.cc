@@ -397,44 +397,119 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
           other.internal_tree().template CloneToScalar<T>(),
           other.is_discrete()) {
   DRAKE_THROW_UNLESS(other.is_finalized());
-  time_step_ = other.time_step_;
-  // Copy of all members related with geometry registration.
-  source_id_ = other.source_id_;
-  body_index_to_frame_id_ = other.body_index_to_frame_id_;
-  frame_id_to_body_index_ = other.frame_id_to_body_index_;
-  geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
-  visual_geometries_ = other.visual_geometries_;
-  num_visual_geometries_ = other.num_visual_geometries_;
-  collision_geometries_ = other.collision_geometries_;
-  num_collision_geometries_ = other.num_collision_geometries_;
-  X_WB_default_list_ = other.X_WB_default_list_;
-  contact_model_ = other.contact_model_;
-  contact_surface_representation_ =
-      other.contact_surface_representation_;
-  penetration_allowance_ = other.penetration_allowance_;
-  // Note: The physical models must be cloned before `FinalizePlantOnly()` is
-  // called because `FinalizePlantOnly()` has to allocate system resources
-  // requested by physical models.
-  for (auto& model : other.physical_models_) {
-    auto cloned_model = model->template CloneToScalar<T>();
-    // TODO(xuchenhan-tri): Rework physical model and discrete update manager
-    //  to eliminate the requirement on the order that they are called with
-    //  respect to Finalize().
 
-    // AddPhysicalModel can't be called here because it's post-finalize. We
-    // have to manually disable scalars that the cloned physical model do not
-    // support.
-    RemoveUnsupportedScalars(*cloned_model);
-    physical_models_.emplace_back(std::move(cloned_model));
+  // Here we step through every member field one by one, in the exact order
+  // they are declared in the header, so that a reader could mindlessly compare
+  // this function to the private fields, and check that every single field got
+  // a mention.
+  // For each field, this function will either:
+  // (1) Copy the field directly.
+  // (2) Place a forward-reference comment like "We initialize
+  //     geometry_query_port_ during DeclareSceneGraphPorts, below."
+  // (3) Place a disclaimer comment why that field does not need to be copied
+  {
+    source_id_ = other.source_id_;
+    penalty_method_contact_parameters_ =
+        other.penalty_method_contact_parameters_;
+    penetration_allowance_ = other.penetration_allowance_;
+    // Copy over the friction model if it is initialized. Otherwise, a default
+    // value will be set in FinalizePlantOnly().
+    // Note that stiction_tolerance is the only real data field in
+    // `friction_model_`, so setting the stiction tolerance is equivalent to
+    // copying `friction_model_`.
+    if (other.friction_model_.stiction_tolerance() > 0) {
+      friction_model_.set_stiction_tolerance(
+          other.friction_model_.stiction_tolerance());
+    }
+    // joint_limit_parameters_ is set in SetUpJointLimitsParameters() in
+    // FinalizePlantOnly().
+    body_index_to_frame_id_ = other.body_index_to_frame_id_;
+    frame_id_to_body_index_ = other.frame_id_to_body_index_;
+    geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
+    visual_geometries_ = other.visual_geometries_;
+    num_visual_geometries_ = other.num_visual_geometries_;
+    collision_geometries_ = other.collision_geometries_;
+    num_collision_geometries_ = other.num_collision_geometries_;
+    contact_model_ = other.contact_model_;
+    contact_solver_enum_ = other.contact_solver_enum_;
+    contact_surface_representation_ = other.contact_surface_representation_;
+    // geometry_query_port_ is set during DeclareSceneGraphPorts() below.
+    // geometry_pose_port_ is set during DeclareSceneGraphPorts() below.
+    // scene_graph_ is set to nullptr in FinalizePlantOnly() below.
+
+    // The following data member are set in DeclareStateCacheAndPorts()
+    // in FinalizePlantOnly():
+    //   -instance_actuation_ports_
+    //   -actuation_port_
+    //   -applied_generalized_force_input_port_
+    //   -applied_spatial_force_input_port_
+    //   -body_poses_port_
+    //   -body_spatial_velocities_port_
+    //   -body_spatial_acclerations_port_
+    //   -state_output_port_
+    //   -instance_state_output_ports_
+    //   -generalized_acceleration_output_port_
+    //   -instance_generalized_acceleration_output_ports_
+    //   -contact_results_port_
+    //   -reaction_forces_port_
+    //   -instance_generalized_contact_forces_output_ports_
+
+    // Partially copy multibody_graph_. The looped calls to RegisterJointInGraph
+    // below copy the second half.
+    // TODO(xuchenhan-tri) MultibodyGraph should offer a public function (or
+    // constructor) for scalar conversion, so that MbP can just delegate the
+    // copying to MbG, instead of leaking knowledge of what kind of data MbG
+    // holds into MbP's converting constructor here.
+    for (BodyIndex index(0); index < num_bodies(); ++index) {
+      const Body<T>& body = get_body(index);
+      multibody_graph_.AddBody(body.name(), body.model_instance());
+    }
+
+    time_step_ = other.time_step_;
+    // TODO(xuchenhan-tri): Remove contact_solver_ all together.
+    contact_solver_ = nullptr;
+    // discrete_update_manager_ is copied below after FinalizePlantOnly().
+
+    // Copy over physical_models_.
+    // Note: The physical models must be cloned before `FinalizePlantOnly()` is
+    // called because `FinalizePlantOnly()` has to allocate system resources
+    // requested by physical models.
+    for (auto& model : other.physical_models_) {
+      auto cloned_model = model->template CloneToScalar<T>();
+      // TODO(xuchenhan-tri): Rework physical model and discrete update manager
+      //  to eliminate the requirement on the order that they are called with
+      //  respect to Finalize().
+
+      // AddPhysicalModel can't be called here because it's post-finalize. We
+      // have to manually disable scalars that the cloned physical model do not
+      // support.
+      RemoveUnsupportedScalars(*cloned_model);
+      physical_models_.emplace_back(std::move(cloned_model));
+    }
+
+    // Copy over coupler_constraints_specs_;
+    DRAKE_DEMAND(coupler_constraints_specs_.empty());
+    // symbolic::Expression doesn't support constraints. If the source is
+    // symbolic, the coupler constraints specs are necessarily empty. If the
+    // source has non-empty coupler constraints specs, then it necessarily has
+    // the compliant contact manager, which would preclude scalar conversion to
+    // symbolic. Thus we don't need to worry about the destination being
+    // symbolic either.
+    if constexpr (!std::is_same_v<T, symbolic::Expression> &&
+                  !std::is_same_v<U, symbolic::Expression>) {
+      for (const internal::CouplerConstraintSpecs<U>& spec :
+           other.coupler_constraints_specs_) {
+        coupler_constraints_specs_.push_back(spec);
+      }
+    } else {
+      DRAKE_DEMAND(other.coupler_constraints_specs_.empty());
+    }
+    // cache_indexes_ is set in DeclareCacheEntries() in
+    // DeclareStateCacheAndPorts() in FinalizePlantOnly().
+    X_WB_default_list_ = other.X_WB_default_list_;
   }
 
   DeclareSceneGraphPorts();
-
-  // Do accounting for MultibodyGraph
-  for (BodyIndex index(0); index < num_bodies(); ++index) {
-    const Body<T>& body = get_body(index);
-    multibody_graph_.AddBody(body.name(), body.model_instance());
-  }
 
   for (JointIndex index(0); index < num_joints(); ++index) {
     RegisterJointInGraph(get_joint(index));
@@ -2347,12 +2422,11 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
             // guaranteed to point "out of" N and "into" M.
             const Vector3<T>& nhat_W = s.face_normal(face);
 
-            // One dimensional pressure gradient (in Pa/m). Unlike [Masterjohn
-            // et al. 2021], for convenience we define both pressure gradients
-            // to be positive in the direction "into" the bodies. Therefore,
-            // we use the minus sign for gN.
-            // [Masterjohn et al., 2021] Discrete Approximation of Pressure
-            // Field Contact Patches.
+            // One dimensional pressure gradient (in Pa/m). Unlike
+            // [Masterjohn 2022], for convenience we define both pressure
+            // gradients to be positive in the direction "into" the bodies.
+            // Therefore, we use the minus sign for gN. [Masterjohn 2022]
+            // Velocity Level Approximation of Pressure Field Contact Patches.
             const T gM = M_is_compliant
                              ? s.EvaluateGradE_M_W(face).dot(nhat_W)
                              : T(std::numeric_limits<double>::infinity());
@@ -2370,7 +2444,7 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
             }
 
             // Effective hydroelastic pressure gradient g result of
-            // compliant-compliant interaction, see [Masterjohn et al., 2021].
+            // compliant-compliant interaction, see [Masterjohn 2022].
             // The expression below is mathematically equivalent to g =
             // gN*gM/(gN+gM) but it has the advantage of also being valid if
             // one of the gradients is infinity.
@@ -2397,9 +2471,9 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
             const T fn0 = Ae * p0;
 
             // Effective compliance in the normal direction for the given
-            // discrete patch, refer to [Masterjohn et al., 2021] for details.
-            // [Masterjohn, 2021] Masterjohn J., Guoy D., Shepherd J. and
-            // Castro A., 2021. Discrete Approximation of Pressure Field
+            // discrete patch, refer to [Masterjohn 2022] for details.
+            // [Masterjohn 2022] Masterjohn J., Guoy D., Shepherd J. and
+            // Castro A., 2022. Velocity Level Approximation of Pressure Field
             // Contact Patches. Available at https://arxiv.org/abs/2110.04157.
             const T k = Ae * g;
 
