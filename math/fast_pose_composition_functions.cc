@@ -272,6 +272,7 @@ void ComposeRR(const RotationMatrix<double>& R_AB,
                RotationMatrix<double>* R_AC) {
   g_pose_composition_functions_helper.ComposeRR(R_AB, R_BC, R_AC);
 }
+
 void ComposeRinvR(const RotationMatrix<double>& R_BA,
                   const RotationMatrix<double>& R_BC,
                   RotationMatrix<double>* R_AC) {
@@ -283,6 +284,7 @@ void ComposeXX(const RigidTransform<double>& X_AB,
                RigidTransform<double>* X_AC) {
   g_pose_composition_functions_helper.ComposeXX(X_AB, X_BC, X_AC);
 }
+
 void ComposeXinvX(const RigidTransform<double>& X_BA,
                   const RigidTransform<double>& X_BC,
                   RigidTransform<double>* X_AC) {
