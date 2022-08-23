@@ -5,27 +5,32 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <string>
 
+#include "drake/geometry/scene_graph_inspector.h"
 #include "drake/traj_opt/penta_diagonal_solver.h"
 
 namespace drake {
 namespace traj_opt {
 
+using geometry::GeometryId;
+using geometry::SignedDistancePair;
 using internal::PentaDiagonalFactorization;
 using internal::PentaDiagonalFactorizationStatus;
+using multibody::Body;
+using multibody::BodyIndex;
 using multibody::Joint;
 using multibody::JointIndex;
 using multibody::MultibodyPlant;
+using multibody::SpatialForce;
 using systems::System;
 
 template <typename T>
 TrajectoryOptimizer<T>::TrajectoryOptimizer(const MultibodyPlant<T>* plant,
+                                            Context<T>* context,
                                             const ProblemDefinition& prob,
                                             const SolverParameters& params)
-    : plant_(plant), prob_(prob), params_(params) {
-  // Create a context for dynamics computations
-  context_ = plant_->CreateDefaultContext();
-
+    : plant_(plant), context_(context), prob_(prob), params_(params) {
   // Define joint damping coefficients.
   joint_damping_ = VectorX<T>::Zero(plant_->num_velocities());
 
@@ -52,7 +57,22 @@ T TrajectoryOptimizer<T>::CalcCost(
     const TrajectoryOptimizerState<T>& state) const {
   const std::vector<VectorX<T>>& v = EvalV(state);
   const std::vector<VectorX<T>>& tau = EvalTau(state);
-  return CalcCost(state.q(), v, tau, &state.workspace);
+  T cost = CalcCost(state.q(), v, tau, &state.workspace);
+
+  // Add a proximal operator term to the cost, if requested
+  if (params_.proximal_operator) {
+    const std::vector<VectorX<T>>& q = state.q();
+    const std::vector<VectorX<T>>& q_last =
+        state.proximal_operator_data().q_last;
+    const std::vector<VectorX<T>>& H_diag =
+        state.proximal_operator_data().H_diag;
+    for (int t = 0; t <= num_steps(); ++t) {
+      cost += T(0.5 * params_.rho_proximal * (q[t] - q_last[t]).transpose() *
+                H_diag[t].asDiagonal() * (q[t] - q_last[t]));
+    }
+  }
+
+  return cost;
 }
 
 template <typename T>
@@ -61,7 +81,7 @@ T TrajectoryOptimizer<T>::CalcCost(
     const std::vector<VectorX<T>>& tau,
     TrajectoryOptimizerWorkspace<T>* workspace) const {
   T cost = 0;
-  VectorX<T>& q_err = workspace->q_size_tmp;
+  VectorX<T>& q_err = workspace->q_size_tmp1;
   VectorX<T>& v_err = workspace->v_size_tmp1;
 
   // Running cost
@@ -136,13 +156,98 @@ template <typename T>
 void TrajectoryOptimizer<T>::CalcInverseDynamicsSingleTimeStep(
     const VectorX<T>& q, const VectorX<T>& v, const VectorX<T>& a,
     TrajectoryOptimizerWorkspace<T>* workspace, VectorX<T>* tau) const {
-  plant().SetPositions(context_.get(), q);
-  plant().SetVelocities(context_.get(), v);
+  plant().SetPositions(context_, q);
+  plant().SetVelocities(context_, v);
   plant().CalcForceElementsContribution(*context_, &workspace->f_ext);
+
+  // Add in contact force contribution to f_ext
+  if (plant().geometry_source_is_registered()) {
+    // Only compute contact forces if the plant is connected to a scene graph
+    // TODO(vincekurtz): perform this check earlier, and maybe print some
+    // warnings to stdout if we're not connected (we do want to be able to run
+    // problems w/o contact sometimes)
+    CalcContactForceContribution(&workspace->f_ext);
+  }
+
   // Inverse dynamics computes tau = M*a - k(q,v) - f_ext
   *tau = plant().CalcInverseDynamics(*context_, a, workspace->f_ext);
+}
 
-  // TODO(vincekurtz) add in contact/constriant contribution
+template <typename T>
+void TrajectoryOptimizer<T>::CalcContactForceContribution(
+    MultibodyForces<T>* forces) const {
+  using std::pow;
+
+  // Parameters for our soft contact model
+  const double F = params_.F;
+  const double delta = params_.delta;
+  const double n = params_.n;
+
+  // Get signed distance pairs
+  const geometry::QueryObject<T>& query_object =
+      plant()
+          .get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(*context_);
+  const std::vector<SignedDistancePair<T>>& signed_distance_pairs =
+      query_object.ComputeSignedDistancePairwiseClosestPoints();
+  const drake::geometry::SceneGraphInspector<T>& inspector =
+      query_object.inspector();
+
+  for (const SignedDistancePair<T>& pair : signed_distance_pairs) {
+    // Don't do any contact force computations if we're not in contact
+    if (pair.distance < 0) {
+      // Compute normal forces at the witness points (expressed in the world
+      // frame) according to our contact model.
+      const T fn = F * pow(-pair.distance / delta, n);
+
+      // TODO(vincekurtz): include friction
+      const Vector3<T> f_ACa_W = pair.nhat_BA_W * fn;
+      const Vector3<T> f_BCb_W = -pair.nhat_BA_W * fn;
+
+      // Get geometry and transformation data for the witness points
+      const GeometryId geometryA_id = pair.id_A;
+      const GeometryId geometryB_id = pair.id_B;
+
+      const BodyIndex bodyA_index =
+          plant().geometry_id_to_body_index().at(geometryA_id);
+      const Body<T>& bodyA = plant().get_body(bodyA_index);
+      const BodyIndex bodyB_index =
+          plant().geometry_id_to_body_index().at(geometryB_id);
+      const Body<T>& bodyB = plant().get_body(bodyB_index);
+
+      // Body poses in world.
+      const math::RigidTransform<T>& X_WBa =
+          plant().EvalBodyPoseInWorld(*context_, bodyA);
+      const math::RotationMatrix<T>& R_WBa = X_WBa.rotation();
+      const math::RigidTransform<T>& X_WBb =
+          plant().EvalBodyPoseInWorld(*context_, bodyB);
+      const math::RotationMatrix<T>& R_WBb = X_WBb.rotation();
+
+      // Geometry poses in body frames.
+      const math::RigidTransform<T> X_BaGa =
+          inspector.GetPoseInParent(geometryA_id).template cast<T>();
+      const math::RigidTransform<T> X_BbGb =
+          inspector.GetPoseInParent(geometryB_id).template cast<T>();
+
+      // Force on A, about Ao, expressed in W.
+      const SpatialForce<T> F_ACa_W(Vector3<T>::Zero(), f_ACa_W);
+      const auto& p_GaCa_Ga = pair.p_ACa;
+      const Vector3<T> p_AoCa_Ba = X_BaGa * p_GaCa_Ga;
+      const Vector3<T> p_CaAo_W = -(R_WBa * p_AoCa_Ba);
+      const SpatialForce<T> F_AAo_W = F_ACa_W.Shift(p_CaAo_W);
+
+      // Force on B, about Bo, expressed in W.
+      const SpatialForce<T> F_BCb_W(Vector3<T>::Zero(), f_BCb_W);
+      const auto& p_GbCb_Gb = pair.p_BCb;
+      const Vector3<T> p_BoCb_Bb = X_BbGb * p_GbCb_Gb;
+      const Vector3<T> p_CbBo_W = -(R_WBb * p_BoCb_Bb);
+      const SpatialForce<T> F_BBo_W = F_BCb_W.Shift(p_CbBo_W);
+
+      // Add the forces into the given MultibodyForces
+      forces->mutable_body_forces()[bodyA.node_index()] += F_AAo_W;
+      forces->mutable_body_forces()[bodyB.node_index()] += F_BBo_W;
+    }
+  }
 }
 
 template <typename T>
@@ -174,7 +279,7 @@ void TrajectoryOptimizer<T>::CalcInverseDynamicsPartialsFiniteDiff(
 
   // Get references to perturbed versions of q, v, tau, and a, at (t-1, t, t).
   // These are all of the quantities that change when we perturb q_t.
-  VectorX<T>& q_eps_t = workspace->q_size_tmp;
+  VectorX<T>& q_eps_t = workspace->q_size_tmp1;
   VectorX<T>& v_eps_t = workspace->v_size_tmp1;
   VectorX<T>& v_eps_tp = workspace->v_size_tmp2;
   VectorX<T>& a_eps_tm = workspace->a_size_tmp1;
@@ -217,6 +322,11 @@ void TrajectoryOptimizer<T>::CalcInverseDynamicsPartialsFiniteDiff(
       // Determine perturbation sizes to avoid losing precision to floating
       // point error
       dq_i = eps * max(1.0, abs(q_eps_t(i)));
+
+      // Make dqt_i exactly representable to minimize floating point error
+      const T temp = q_eps_t(i) + dq_i;
+      dq_i = temp - q_eps_t(i);
+
       dv_i = dq_i / time_step();
       da_i = dv_i / time_step();
 
@@ -359,7 +469,7 @@ void TrajectoryOptimizer<T>::CalcGradient(
   g->topRows(plant().num_positions()).setZero();
 
   // Scratch variables for storing intermediate cost terms
-  VectorX<T>& qt_term = workspace->q_size_tmp;
+  VectorX<T>& qt_term = workspace->q_size_tmp1;
   VectorX<T>& vt_term = workspace->v_size_tmp1;
   VectorX<T>& vp_term = workspace->v_size_tmp2;
   VectorX<T>& taum_term = workspace->tau_size_tmp1;
@@ -404,6 +514,18 @@ void TrajectoryOptimizer<T>::CalcGradient(
   vt_term = (v[num_steps()] - prob_.v_nom).transpose() * 2 * prob_.Qf_v *
             dvt_dqt[num_steps()];
   g->tail(nq) = qt_term + vt_term + taum_term;
+
+  // Add proximal operator term to the gradient, if requested
+  if (params_.proximal_operator) {
+    const std::vector<VectorX<T>>& q_last =
+        state.proximal_operator_data().q_last;
+    const std::vector<VectorX<T>>& H_diag =
+        state.proximal_operator_data().H_diag;
+    for (int t = 0; t <= num_steps(); ++t) {
+      g->segment(t * nq, nq) +=
+          params_.rho_proximal * H_diag[t].asDiagonal() * (q[t] - q_last[t]);
+    }
+  }
 }
 
 template <typename T>
@@ -484,6 +606,14 @@ void TrajectoryOptimizer<T>::CalcHessian(
   dgT_dqT +=
       dtau_dqp[num_steps() - 1].transpose() * R * dtau_dqp[num_steps() - 1];
 
+  // Add proximal operator terms to the Hessian, if requested
+  if (params_.proximal_operator) {
+    for (int t = 0; t <= num_steps(); ++t) {
+      C[t] += params_.rho_proximal *
+              state.proximal_operator_data().H_diag[t].asDiagonal();
+    }
+  }
+
   // Copy lower triangular part to upper triangular part
   H->MakeSymmetric();
 }
@@ -527,24 +657,21 @@ void TrajectoryOptimizer<T>::CalcCacheTrajectoryData(
 template <typename T>
 const std::vector<VectorX<T>>& TrajectoryOptimizer<T>::EvalV(
     const TrajectoryOptimizerState<T>& state) const {
-  if (!state.cache().trajectory_data.up_to_date)
-    CalcCacheTrajectoryData(state);
+  if (!state.cache().trajectory_data.up_to_date) CalcCacheTrajectoryData(state);
   return state.cache().trajectory_data.v;
 }
 
 template <typename T>
 const std::vector<VectorX<T>>& TrajectoryOptimizer<T>::EvalA(
     const TrajectoryOptimizerState<T>& state) const {
-  if (!state.cache().trajectory_data.up_to_date)
-    CalcCacheTrajectoryData(state);
+  if (!state.cache().trajectory_data.up_to_date) CalcCacheTrajectoryData(state);
   return state.cache().trajectory_data.a;
 }
 
 template <typename T>
 const std::vector<VectorX<T>>& TrajectoryOptimizer<T>::EvalTau(
     const TrajectoryOptimizerState<T>& state) const {
-  if (!state.cache().trajectory_data.up_to_date)
-    CalcCacheTrajectoryData(state);
+  if (!state.cache().trajectory_data.up_to_date) CalcCacheTrajectoryData(state);
   return state.cache().trajectory_data.tau;
 }
 
@@ -594,14 +721,15 @@ TrajectoryOptimizer<T>::EvalInverseDynamicsPartials(
 template <typename T>
 void TrajectoryOptimizer<T>::SaveLinesearchResidual(
     const TrajectoryOptimizerState<T>& state, const VectorX<T>& dq,
-    TrajectoryOptimizerState<T>* scratch_state) const {
+    TrajectoryOptimizerState<T>* scratch_state,
+    const std::string filename) const {
   double alpha_min = -0.2;
   double alpha_max = 1.2;
-  double dalpha = 0.01;
+  double dalpha = 0.001;
 
   std::ofstream data_file;
-  data_file.open("linesearch_data.csv");
-  data_file << "alpha, residual\n";  // header
+  data_file.open(filename);
+  data_file << "alpha, cost, gradient, dq, L_prime \n";  // header
 
   double alpha = alpha_min;
   while (alpha <= alpha_max) {
@@ -612,7 +740,17 @@ void TrajectoryOptimizer<T>::SaveLinesearchResidual(
     // phi(alpha) = L(q + alpha * dq) - L
     scratch_state->set_q(state.q());
     scratch_state->AddToQ(alpha * dq);
-    data_file << EvalCost(*scratch_state) - EvalCost(state) << "\n";
+    data_file << EvalCost(*scratch_state) - EvalCost(state) << ", ";
+
+    // Record the norm of the gradient
+    const VectorX<T>& g = EvalGradient(*scratch_state);
+    data_file << g.norm() << ", ";
+
+    // Record the norm of the search direction
+    data_file << dq.norm() << ", ";
+
+    // Record the derivative of the linesearch residual w.r.t alpha
+    data_file << g.dot(dq) << "\n";
 
     alpha += dalpha;
   }
@@ -645,9 +783,8 @@ std::tuple<double, int> TrajectoryOptimizer<T>::BacktrackingLinesearch(
   const VectorX<T>& g = EvalGradient(state);
 
   // Linesearch parameters
-  // TODO(vincekurtz): set these in SolverOptions
   const double c = 1e-4;
-  const double rho = 0.9;
+  const double rho = 0.8;
 
   double alpha = 1.0;
   T L_prime = g.transpose() * dq;  // gradient of L w.r.t. alpha
@@ -656,10 +793,8 @@ std::tuple<double, int> TrajectoryOptimizer<T>::BacktrackingLinesearch(
   DRAKE_DEMAND(L_prime <= 0);
 
   // Exit early with alpha = 1 when we are close to convergence
-  // N.B. |g|/L converges to only around 1e-8 (due to finite differences), but
-  // L'/L appears to converge to something considerably smaller.
   const double convergence_threshold =
-      100 * std::numeric_limits<double>::epsilon();
+      sqrt(std::numeric_limits<double>::epsilon());
   if (abs(L_prime) / abs(L) <= convergence_threshold) {
     return {1.0, 0};
   }
@@ -678,7 +813,7 @@ std::tuple<double, int> TrajectoryOptimizer<T>::BacktrackingLinesearch(
   // minimum.
   int i = 0;
   bool armijo_met = false;
-  while (!armijo_met || (L_new < L_old)) {
+  while (!(armijo_met && (L_new > L_old))) {
     // Save L_old = L(q + alpha_{i-1} * dq)
     L_old = L_new;
 
@@ -712,7 +847,6 @@ std::tuple<double, int> TrajectoryOptimizer<T>::ArmijoLinesearch(
   const VectorX<T>& g = EvalGradient(state);
 
   // Linesearch parameters
-  // TODO(vincekurtz): set these in SolverOptions
   const double c = 1e-4;
   const double rho = 0.8;
 
@@ -725,7 +859,7 @@ std::tuple<double, int> TrajectoryOptimizer<T>::ArmijoLinesearch(
 
   // Exit early with alpha = 1 when we are close to convergence
   const double convergence_threshold =
-      100 * std::numeric_limits<double>::epsilon();
+      sqrt(std::numeric_limits<double>::epsilon());
   if (abs(L_prime) / abs(L) <= convergence_threshold) {
     return {1.0, 0};
   }
@@ -750,6 +884,134 @@ std::tuple<double, int> TrajectoryOptimizer<T>::ArmijoLinesearch(
 }
 
 template <typename T>
+T TrajectoryOptimizer<T>::CalcTrustRatio(
+    const TrajectoryOptimizerState<T>& state, const VectorX<T>& dq,
+    TrajectoryOptimizerState<T>* scratch_state) const {
+  // Compute predicted reduction in cost
+  const VectorX<T>& g = EvalGradient(state);
+  const PentaDiagonalMatrix<T>& H = EvalHessian(state);
+  const T gradient_term = g.dot(dq);
+  VectorX<T>& Hdq = state.workspace.q_times_num_steps_size_tmp;
+  H.MultiplyBy(dq, &Hdq);
+  const T hessian_term = 0.5 * dq.transpose() * Hdq;
+  const T predicted_reduction = -gradient_term - hessian_term;
+
+  // Compute actual reduction in cost
+  scratch_state->set_q(state.q());
+  scratch_state->AddToQ(dq);
+  const T L_old = EvalCost(state);           // L(q)
+  const T L_new = EvalCost(*scratch_state);  // L(q + dq)
+  const T actual_reduction = L_old - L_new;
+
+  const double eps = std::numeric_limits<T>::epsilon();
+  if ((predicted_reduction < eps) && (actual_reduction < eps)) {
+    // Predicted and actual reduction are essentially zero
+    return 1.0;
+  }
+
+  return actual_reduction / predicted_reduction;
+}
+
+template <typename T>
+T TrajectoryOptimizer<T>::SolveDoglegQuadratic(const T& a, const T& b,
+                                               const T& c) const {
+  using std::sqrt;
+  // Check that a is positive
+  DRAKE_DEMAND(a > 0);
+
+  T s;
+  if (a < std::numeric_limits<double>::epsilon()) {
+    // If a is essentially zero, just solve bx + c = 0
+    s = -c / b;
+  } else {
+    // Normalize everything by a
+    const T b_tilde = b / a;
+    const T c_tilde = c / a;
+
+    const T determinant = b_tilde * b_tilde - 4 * c_tilde;
+    DRAKE_DEMAND(determinant > 0);  // We know a real root exists
+
+    // We know that there is only one positive root, so we just take the big
+    // root
+    s = (-b_tilde + sqrt(determinant)) / 2;
+  }
+
+  // We know the solution is between zero and one
+  DRAKE_DEMAND(0 < s);
+  DRAKE_DEMAND(s < 1);
+
+  return s;
+}
+
+template <typename T>
+bool TrajectoryOptimizer<T>::CalcDoglegPoint(const TrajectoryOptimizerState<T>&,
+                                             const double, VectorX<T>*) const {
+  // Only T=double is supported here, since pentadigonal matrix factorization is
+  // (sometimes) required to compute the dogleg point.
+  throw std::runtime_error(
+      "TrajectoryOptimizer::CalcDoglegPoint only supports T=double");
+}
+
+template <>
+bool TrajectoryOptimizer<double>::CalcDoglegPoint(
+    const TrajectoryOptimizerState<double>& state, const double Delta,
+    VectorXd* dq) const {
+  // N.B. We'll rescale pU and pH by Δ to avoid roundoff error
+  const VectorXd& g = EvalGradient(state);
+  const PentaDiagonalMatrix<double>& H = EvalHessian(state);
+  VectorXd& Hg = state.workspace.q_times_num_steps_size_tmp;
+  H.MultiplyBy(g, &Hg);
+  const double gHg = g.transpose() * Hg;
+
+  // Compute the unconstrained minimizer of m(δq) = L(q) + g(q)'*δq + 1/2
+  // δq'*H(q)*δq along -g
+  VectorXd& pU = state.workspace.q_size_tmp1;
+  pU = -(g.dot(g) / gHg) * g / Delta;  // normalize by Δ
+
+  // Check if the trust region is smaller than this unconstrained minimizer
+  if (1.0 <= pU.norm()) {
+    // If so, δq is where the first leg of the dogleg path intersects the trust
+    // region.
+    *dq = (Delta / pU.norm()) * pU;
+    return true;  // the trust region constraint is active
+  }
+
+  // Compute the full Gauss-Newton step
+  VectorXd& pH = state.workspace.q_size_tmp2;
+  pH = -g / Delta;  // normalize by Δ
+  PentaDiagonalFactorization Hchol(H);
+  DRAKE_DEMAND(Hchol.status() == PentaDiagonalFactorizationStatus::kSuccess);
+  Hchol.SolveInPlace(&pH);
+
+  // Check if the trust region is large enough to just take the full Newton step
+  if (1.0 >= pH.norm()) {
+    *dq = pH * Delta;
+    return false;  // the trust region constraint is not active
+  }
+
+  // Compute the intersection between the second leg of the dogleg path and the
+  // trust region. We'll do this by solving the (scalar) quadratic
+  //
+  //    ‖ pU + s( pH − pU ) ‖² = y²
+  //
+  // for s ∈ (0,1),
+  //
+  // and setting
+  //
+  //    δq = pU + s( pH − pU ).
+  //
+  // Note that we normalize by Δ to minimize roundoff error.
+  const double a = (pH - pU).dot(pH - pU);
+  const double b = 2 * pU.dot(pH - pU);
+  const double c = pU.dot(pU) - 1.0;
+  const double s = SolveDoglegQuadratic(a, b, c);
+
+  *dq = (pU + s * (pH - pU)) * Delta;
+
+  return true;  // the trust region constraint is active
+}
+
+template <typename T>
 SolverFlag TrajectoryOptimizer<T>::Solve(const std::vector<VectorX<T>>&,
                                          TrajectoryOptimizerSolution<T>*,
                                          TrajectoryOptimizerStats<T>*) const {
@@ -769,6 +1031,28 @@ SolverFlag TrajectoryOptimizer<double>::Solve(
   // stats must be empty
   DRAKE_DEMAND(stats->is_empty());
 
+  if (params_.method == SolverMethod::kLinesearch) {
+    return SolveWithLinesearch(q_guess, solution, stats);
+  } else if (params_.method == SolverMethod::kTrustRegion) {
+    return SolveWithTrustRegion(q_guess, solution, stats);
+  } else {
+    throw std::runtime_error("Unsupported solver strategy!");
+  }
+}
+
+template <typename T>
+SolverFlag TrajectoryOptimizer<T>::SolveWithLinesearch(
+    const std::vector<VectorX<T>>&, TrajectoryOptimizerSolution<T>*,
+    TrajectoryOptimizerStats<T>*) const {
+  throw std::runtime_error(
+      "TrajectoryOptimizer::SolveWithLinesearch only supports T=double.");
+}
+
+template <>
+SolverFlag TrajectoryOptimizer<double>::SolveWithLinesearch(
+    const std::vector<VectorXd>& q_guess,
+    TrajectoryOptimizerSolution<double>* solution,
+    TrajectoryOptimizerStats<double>* stats) const {
   // Allocate a state variable
   TrajectoryOptimizerState<double> state = CreateState();
   state.set_q(q_guess);
@@ -779,6 +1063,15 @@ SolverFlag TrajectoryOptimizer<double>::Solve(
   // Allocate cost and search direction
   double cost;
   VectorXd dq((num_steps() + 1) * plant().num_positions());
+
+  // Set proximal operator data for the first iteration
+  // N.B. since state.proximal_operator_data.H_diag is initialized to zero, this
+  // first computation of the Hessian, which is for scaling purposes only, will
+  // not include the proximal operator term.
+  if (params_.proximal_operator) {
+    state.set_proximal_operator_data(q_guess, EvalHessian(state));
+    scratch_state.set_proximal_operator_data(q_guess, EvalHessian(state));
+  }
 
   if (params_.verbose) {
     // Define printout data
@@ -800,7 +1093,8 @@ SolverFlag TrajectoryOptimizer<double>::Solve(
   std::chrono::duration<double> solve_time;
 
   // Gauss-Newton iterations
-  int k = 0;  // iteration counter
+  int k = 0;                       // iteration counter
+  bool linesearch_failed = false;  // linesearch success flag
   do {
     iter_start_time = std::chrono::high_resolution_clock::now();
 
@@ -824,8 +1118,15 @@ SolverFlag TrajectoryOptimizer<double>::Solve(
     // L(q+alpha*dq) (at the very least), and we don't want to change state.q
     auto [alpha, ls_iters] = Linesearch(state, dq, &scratch_state);
 
+    // Record linesearch data, if requested
+    if (params_.linesearch_plot_every_iteration) {
+      SaveLinesearchResidual(state, dq, &scratch_state,
+                             fmt::format("linesearch_data_{}.csv", k));
+    }
+
     if (ls_iters >= params_.max_linesearch_iterations) {
-      // Early termination if linesearch is taking too long
+      linesearch_failed = true;
+
       if (params_.verbose) {
         std::cout << "LINESEARCH FAILED" << std::endl;
         std::cout << "Reached maximum linesearch iterations ("
@@ -834,18 +1135,19 @@ SolverFlag TrajectoryOptimizer<double>::Solve(
 
       // Save the linesearch residual to a csv file so we can plot in python
       SaveLinesearchResidual(state, dq, &scratch_state);
-
-      // We'll still record iteration data for playback later
-      iter_time = std::chrono::high_resolution_clock::now() - iter_start_time;
-      solve_time = std::chrono::high_resolution_clock::now() - start_time;
-      stats->solve_time = solve_time.count();
-      stats->push_data(iter_time.count(), cost, ls_iters, alpha, g.norm());
-
-      return SolverFlag::kLinesearchMaxIters;
     }
+
+    // Compute the trust ratio (actual cost reduction / model cost reduction)
+    double trust_ratio = CalcTrustRatio(state, alpha * dq, &scratch_state);
 
     // Update the decision variables
     state.AddToQ(alpha * dq);
+
+    // Update the stored decision variables for the proximal operator cost
+    if (params_.proximal_operator) {
+      state.set_proximal_operator_data(state.q(), H);
+      scratch_state.set_proximal_operator_data(state.q(), H);
+    }
 
     iter_time = std::chrono::high_resolution_clock::now() - iter_start_time;
 
@@ -859,11 +1161,36 @@ SolverFlag TrajectoryOptimizer<double>::Solve(
       printf("| %10.3e |\n", g.norm() / cost);
     }
 
+    // Print additional debuging information
+    if (params_.print_debug_data) {
+      double condition_number = 1 / H.MakeDense().ldlt().rcond();
+      double L_prime = g.transpose() * dq;
+      std::cout << "Condition #: " << condition_number << std::endl;
+      std::cout << "|| dq ||   : " << dq.norm() << std::endl;
+      std::cout << "||  g ||   : " << g.norm() << std::endl;
+      std::cout << "L'         : " << L_prime << std::endl;
+      std::cout << "L          : " << cost << std::endl;
+      std::cout << "L' / L     : " << L_prime / cost << std::endl;
+      std::cout << "||diag(H)||: " << H.MakeDense().diagonal().norm()
+                << std::endl;
+      if (k > 0) {
+        std::cout << "L[k] - L[k-1]: " << cost - stats->iteration_costs[k - 1]
+                  << std::endl;
+      }
+    }
+
     // Record iteration data
-    stats->push_data(iter_time.count(), cost, ls_iters, alpha, g.norm());
+    stats->push_data(iter_time.count(),  // iteration time
+                     cost,               // cost
+                     ls_iters,           // sub-problem iterations
+                     alpha,              // linesearch parameter
+                     NAN,                // trust region size
+                     dq.norm(),          // step size
+                     trust_ratio,        // trust ratio
+                     g.norm());          // gradient size
 
     ++k;
-  } while (k < params_.max_iterations);
+  } while (k < params_.max_iterations && !linesearch_failed);
 
   // End the problem data printout
   if (params_.verbose) {
@@ -873,6 +1200,149 @@ SolverFlag TrajectoryOptimizer<double>::Solve(
   }
 
   // Record the total solve time
+  solve_time = std::chrono::high_resolution_clock::now() - start_time;
+  stats->solve_time = solve_time.count();
+
+  // Record the solution
+  solution->q = state.q();
+  solution->v = EvalV(state);
+  solution->tau = EvalTau(state);
+
+  if (linesearch_failed) {
+    return SolverFlag::kLinesearchMaxIters;
+  } else {
+    return SolverFlag::kSuccess;
+  }
+}
+
+template <typename T>
+SolverFlag TrajectoryOptimizer<T>::SolveWithTrustRegion(
+    const std::vector<VectorX<T>>&, TrajectoryOptimizerSolution<T>*,
+    TrajectoryOptimizerStats<T>*) const {
+  throw std::runtime_error(
+      "TrajectoryOptimizer::SolveWithTrustRegion only supports T=double.");
+}
+
+template <>
+SolverFlag TrajectoryOptimizer<double>::SolveWithTrustRegion(
+    const std::vector<VectorXd>& q_guess,
+    TrajectoryOptimizerSolution<double>* solution,
+    TrajectoryOptimizerStats<double>* stats) const {
+  using std::min;
+  // Allocate a state variable to store q and everything that is computed from q
+  TrajectoryOptimizerState<double> state = CreateState();
+  state.set_q(q_guess);
+
+  // Allocate a separate state variable for computations like L(q + dq)
+  TrajectoryOptimizerState<double> scratch_state(state);
+
+  // Allocate the update vector q_{k+1} = q_k + dq
+  VectorXd dq(plant().num_positions() * (num_steps() + 1));
+
+  // Allocate timing variables
+  auto start_time = std::chrono::high_resolution_clock::now();
+  auto iter_start_time = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> iter_time;
+  std::chrono::duration<double> solve_time;
+
+  // Trust region parameters
+  const double Delta_max = 1.0;   // Maximum trust region size
+  const double Delta0 = 1e0;      // Initial trust region size
+  const double eta = 0.0;         // Trust ratio threshold - we accept steps if
+                                  // the trust ratio is above this threshold
+
+  // Variables that we'll update throughout the main loop
+  int k = 0;                  // iteration counter
+  double Delta = Delta0;      // trust region size
+  double rho;                 // trust region ratio
+  bool tr_constraint_active;  // flag for whether the trust region constraint is
+                              // active
+
+  // Define printout data
+  const std::string separator_bar =
+      "-----------------------------------------------------------------------"
+      "-";
+  const std::string printout_labels =
+      "|  iter  |   cost   |    Δ    |    ρ    |  time (s)  |  |g|/cost  |";
+
+  while (k < params_.max_iterations) {
+    // Obtain the candiate update dq
+    tr_constraint_active = CalcDoglegPoint(state, Delta, &dq);
+
+    // Compute the trust region ratio
+    rho = CalcTrustRatio(state, dq, &scratch_state);
+
+    // If the ratio is large enough, accept the change
+    if (rho > eta) {
+      // Update the coefficients for the proximal operator cost
+      if (params_.proximal_operator) {
+        state.set_proximal_operator_data(state.q(), EvalHessian(state));
+        scratch_state.set_proximal_operator_data(state.q(), EvalHessian(state));
+      }
+
+      state.AddToQ(dq);  // q += dq
+    }
+    // Else (rho <= eta), the trust region ratio is too small to accept dq, so
+    // we'll need to so keep reducing the trust region. Note that the trust
+    // region will be reduced in this case, since eta < 0.25.
+
+    // N.B. if this is the case (q_{k+1} = q_k), we haven't touched state, so we
+    // should be reusing the cached gradient and Hessian in the next iteration.
+    // TODO(vincekurtz): should we be caching the factorization of the Hessian,
+    // as well as the Hessian itself?
+
+    // Compute iteration timing
+    // N.B. this is in kind of a weird place because we want to record
+    // statistics before updating the trust-region size. That ensures that
+    // ‖ δq ‖ ≤ Δ in our logs.
+    iter_time = std::chrono::high_resolution_clock::now() - iter_start_time;
+    iter_start_time = std::chrono::high_resolution_clock::now();
+
+    // Printout statistics from this iteration
+    if (params_.verbose) {
+      if ((k % 50) == 0) {
+        // Refresh the labels for easy reading
+        std::cout << separator_bar << std::endl;
+        std::cout << printout_labels << std::endl;
+        std::cout << separator_bar << std::endl;
+      }
+      printf("| %6d ", k);
+      printf("| %8.3f ", EvalCost(state));
+      printf("| %7.1e ", Delta);
+      printf("| %7.4f ", rho);
+      printf("| %8.8f ", iter_time.count());
+      printf("| %10.3e |\n", EvalGradient(state).norm() / EvalCost(state));
+    }
+
+    // Record statistics from this iteration
+    stats->push_data(iter_time.count(),            // iteration time
+                     EvalCost(state),              // cost
+                     0,                            // linesearch iterations
+                     NAN,                          // linesearch parameter
+                     Delta,                        // trust region size
+                     dq.norm(),                    // step size
+                     rho,                          // trust region ratio
+                     EvalGradient(state).norm());  // gradient size
+
+    // Update the size of the trust-region, if necessary
+    if (rho < 0.25) {
+      // If the ratio is small, our quadratic approximation is bad, so reduce
+      // the trust region
+      Delta *= 0.25;
+    } else if ((rho > 0.75) && tr_constraint_active) {
+      // If the ratio is large and we're at the boundary of the trust
+      // region, increase the size of the trust region.
+      Delta = min(2 * Delta, Delta_max);
+    }
+
+    ++k;
+  }
+
+  // Finish our printout
+  if (params_.verbose) {
+    std::cout << separator_bar << std::endl;
+  }
+
   solve_time = std::chrono::high_resolution_clock::now() - start_time;
   stats->solve_time = solve_time.count();
 

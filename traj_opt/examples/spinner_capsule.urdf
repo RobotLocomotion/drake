@@ -1,0 +1,219 @@
+<?xml version="1.0"?>
+<robot name="spinner">
+  <material name="green">
+    <color rgba=".3 .6 .4 1"/>
+  </material>
+  <material name="red">
+    <color rgba=".9 .1 0 1"/>
+  </material>
+  <material name="blue">
+    <color rgba="0.1 0.3 0.5 1"/>
+  </material>
+
+  <!-- Fixed base for the finger, welded to the world -->
+  <link name="base">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <sphere radius=".07"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+  </link>
+  <joint name="base_weld" type="fixed">
+    <parent link="world"/>
+    <child link="base"/>
+    <origin xyz="0 0 0" rpy="1.57079632679 0 0 "/>
+  </joint>
+
+  <!-- First finger link -->
+  <link name="finger_one">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.5"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.0839" ixy="0" ixz="0" iyy="0.0839" iyz="0" izz="0.00125"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.5"/>
+      <geometry>
+        <capsule length="0.9" radius="0.05"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <!-- 
+      There is no collision geometry for the first link, since it can't reach
+      the spinner.
+     -->
+  </link>
+  <joint name="theta_one" type="continuous">
+    <parent link="base"/>
+    <child link="finger_one"/>
+    <origin xyz="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.1"/>
+  </joint>
+
+  <!-- Second finger link -->
+  <link name="finger_two">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.5"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.0839" ixy="0" ixz="0" iyy="0.0839" iyz="0" izz="0.00125"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.05"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.5"/>
+      <geometry>
+        <cylinder length="0.9" radius=".05"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.95"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <!--
+    Capsule collision geometry introduces significant error in signed
+    distances, which is a big problem for finite-differences. For this
+    reason, we use a bunch of spheres instead.
+
+    See https://drake.mit.edu/doxygen_cxx/classdrake_1_1geometry_1_1_query_object.html#a0918d61334404a7680145cb882a18d52
+    for details.
+    -->
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.95"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.90"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.80"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.70"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.60"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.50"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.40"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.30"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.20"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.10"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.05"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="theta_two" type="continuous">
+    <parent link="finger_one"/>
+    <child link="finger_two"/>
+    <origin xyz="0 0 1"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.1"/>
+  </joint>
+
+  <!-- The spinner itself -->
+  <link name="spinner">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.054" ixy="0" ixz="0" iyy="0.074" iyz="0" izz="0.022"/>
+    </inertial>
+    <visual>
+      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.6" radius=".04"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <capsule radius="0.25" length="0.8"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <capsule radius="0.25" length="0.8"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="theta_three" type="continuous">
+    <parent link="base"/>
+    <child link="spinner"/>
+    <origin xyz="1.5 0 1.0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.0"/>
+  </joint>
+
+  <!-- Actuators for the fingers-->
+  <transmission type="SimpleTransmission" name="theta_one_trans">
+    <actuator name="theta_one"/>
+    <joint name="theta_one"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <transmission type="SimpleTransmission" name="theta_two_trans">
+    <actuator name="theta_two"/>
+    <joint name="theta_two"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+</robot>

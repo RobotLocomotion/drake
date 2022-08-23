@@ -177,6 +177,35 @@ bool PentaDiagonalMatrix<T>::VerifyAllBlocksOfSameSize(
   return true;
 }
 
+template <typename T>
+void PentaDiagonalMatrix<T>::MultiplyBy(const VectorX<T>& v,
+                                              VectorX<T>* result) const {
+  DRAKE_DEMAND(v.size() == rows());
+  DRAKE_DEMAND(result->size() == cols());
+  const int bs = block_size();
+
+  for (int i = 0; i < block_rows(); ++i) {
+    auto result_block = result->segment(i * bs, bs);
+
+    // Diagonal blocks are always present
+    result_block = C_[i] * v.segment(i * bs, bs);
+
+    // Off-diagonal blocks existence depends on which row we're looking at
+    if (i >= 1) {
+      result_block += B_[i] * v.segment((i - 1) * bs, bs);
+    }
+    if (i >= 2) {
+      result_block += A_[i] * v.segment((i - 2) * bs, bs);
+    }
+    if (i < block_rows() - 1) {
+      result_block += D_[i] * v.segment((i + 1) * bs, bs);
+    }
+    if (i < block_rows() - 2) {
+      result_block += E_[i] * v.segment((i + 2) * bs, bs);
+    }
+  }
+}
+
 }  // namespace internal
 }  // namespace traj_opt
 }  // namespace drake

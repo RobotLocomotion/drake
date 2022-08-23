@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -31,12 +32,15 @@ class TrajectoryOptimizer {
    *
    * @param plant A model of the system that we're trying to find an optimal
    *              trajectory for.
+   * @param context A context for the plant, used to perform various multibody
+   *                dynamics computations. Should be part of a larger Diagram
+   *                context, and be connected to a scene graph.
    * @param prob Problem definition, including cost, initial and target states,
    *             etc.
    * @param params solver parameters, including max iterations, linesearch
    *               method, etc.
    */
-  TrajectoryOptimizer(const MultibodyPlant<T>* plant,
+  TrajectoryOptimizer(const MultibodyPlant<T>* plant, Context<T>* context,
                       const ProblemDefinition& prob,
                       const SolverParameters& params = SolverParameters{});
 
@@ -138,14 +142,45 @@ class TrajectoryOptimizer {
   friend class TrajectoryOptimizerTester;
 
   /**
+   * Solve the optimization problem from the given initial guess using a
+   * linesearch strategy.
+   *
+   * @param q_guess a sequence of generalized positions corresponding to the
+   * initial guess
+   * @param solution a container for the optimal solution, including velocities
+   * and torques
+   * @param stats a container for other timing and iteration-specific
+   * data regarding the solve process.
+   * @return SolverFlag
+   */
+  SolverFlag SolveWithLinesearch(const std::vector<VectorX<T>>& q_guess,
+                                 TrajectoryOptimizerSolution<T>* solution,
+                                 TrajectoryOptimizerStats<T>* stats) const;
+
+  /**
+   * Solve the optimization problem from the given initial guess using a trust
+   * region strategy.
+   *
+   * @param q_guess a sequence of generalized positions corresponding to the
+   * initial guess
+   * @param solution a container for the optimal solution, including velocities
+   * and torques
+   * @param stats a container for other timing and iteration-specific
+   * data regarding the solve process.
+   * @return SolverFlag
+   */
+  SolverFlag SolveWithTrustRegion(const std::vector<VectorX<T>>& q_guess,
+                                  TrajectoryOptimizerSolution<T>* solution,
+                                  TrajectoryOptimizerStats<T>* stats) const;
+
+  /**
    * Compute all of the "trajectory data" (velocities v, accelerations a,
    * torques tau) in the state's cache to correspond to the state's generalized
    * positions q.
    *
    * @param state optimizer state to update.
    */
-  void CalcCacheTrajectoryData(
-      const TrajectoryOptimizerState<T>& state) const;
+  void CalcCacheTrajectoryData(const TrajectoryOptimizerState<T>& state) const;
 
   /**
    * Compute all of the "derivatives data" (dv/dq, dtau/dq) stored in the
@@ -153,8 +188,7 @@ class TrajectoryOptimizer {
    *
    * @param state optimizer state to update.
    */
-  void CalcCacheDerivativesData(
-      const TrajectoryOptimizerState<T>& state) const;
+  void CalcCacheDerivativesData(const TrajectoryOptimizerState<T>& state) const;
 
   /**
    * Return the total (unconstrained) cost of the optimization problem,
@@ -279,6 +313,16 @@ class TrajectoryOptimizer {
       TrajectoryOptimizerWorkspace<T>* workspace, VectorX<T>* tau) const;
 
   /**
+   * Calculate the force contribution from contacts for each body, and add them
+   * into the given MultibodyForces object.
+   *
+   * @param forces total forces applied to the plant, which we will add into.
+   * @pre generalized positions (q) and velocities (v) have been properly set in
+   *      context_
+   */
+  void CalcContactForceContribution(MultibodyForces<T>* forces) const;
+
+  /**
    * Compute partial derivatives of the inverse dynamics
    *
    *    tau_t = ID(q_{t-1}, q_t, q_{t+1})
@@ -376,9 +420,10 @@ class TrajectoryOptimizer {
    *
    * This allows us to make a nice plot in python after the fact
    */
-  void SaveLinesearchResidual(const TrajectoryOptimizerState<T>& state,
-                              const VectorX<T>& dq,
-                              TrajectoryOptimizerState<T>* scratch_state) const;
+  void SaveLinesearchResidual(
+      const TrajectoryOptimizerState<T>& state, const VectorX<T>& dq,
+      TrajectoryOptimizerState<T>* scratch_state,
+      const std::string filename = "linesearch_data.csv") const;
 
   /**
    * Simple backtracking linesearch strategy to find alpha that satisfies
@@ -400,11 +445,71 @@ class TrajectoryOptimizer {
       const TrajectoryOptimizerState<T>& state, const VectorX<T>& dq,
       TrajectoryOptimizerState<T>* scratch_state) const;
 
+  /**
+   * Compute the trust ratio
+   *
+   *           L(q) - L(q + dq)
+   *    rho =  ----------------
+   *             m(0) - m(dq)
+   *
+   * which compares the actual reduction in cost to the reduction in cost
+   * predicted by the quadratic model
+   *
+   *    m(dq) = L + g'*dq + 1/2 dq'*H*dq
+   *
+   * @param state optimizer state containing q and everything computed from q
+   * @param dq change in q, stacked in one large vector
+   * @param scratch_state scratch state variable used to compute L(q+dq)
+   * @return T, the trust region ratio
+   */
+  T CalcTrustRatio(const TrajectoryOptimizerState<T>& state,
+                   const VectorX<T>& dq,
+                   TrajectoryOptimizerState<T>* scratch_state) const;
+
+  /**
+   * Compute the dogleg step δq, which approximates the solution to the
+   * trust-region sub-problem
+   *
+   *   min_{δq} L(q) + g(q)'*δq + 1/2 δq'*H(q)*δq
+   *   s.t.     ‖ δq ‖ <= Δ
+   *
+   * @param state the optimizer state, containing q and the ability to compute
+   * g(q) and H(q)
+   * @param Delta the trust region size
+   * @param dq  the dogleg step (change in decision variables)
+   * @return true if the step intersects the trust region
+   * @return false if the step is in the interior of the trust region
+   */
+  bool CalcDoglegPoint(const TrajectoryOptimizerState<T>& state,
+                       const double Delta, VectorX<T>* dq) const;
+
+  /**
+   * Solve the scalar quadratic equation
+   *
+   *    a x² + b x + c = 0
+   *
+   * for the positive root. This problem arises from finding the intersection
+   * between the trust region and the second leg of the dogleg path. Provided we
+   * have properly checked that the trust region does intersect this seconds
+   * leg, this quadratic equation has some special properties:
+   *
+   *     - a is strictly positive
+   *     - there is exactly one positive root
+   *     - this positive root is in (0,1)
+   *
+   * @param a the first coefficient
+   * @param b the second coefficient
+   * @param c the third coefficient
+   * @return T the positive root
+   */
+  T SolveDoglegQuadratic(const T& a, const T& b, const T& c) const;
+
   // A model of the system that we are trying to find an optimal trajectory for.
   const MultibodyPlant<T>* plant_;
 
-  // A context corresponding to plant_, to enable dynamics computations.
-  std::unique_ptr<Context<T>> context_;
+  // A context corresponding to plant_, to enable dynamics computations. Must be
+  // connected to a larger Diagram with a SceneGraph for systems with contact.
+  Context<T>* context_;
 
   // Stores the problem definition, including cost, time horizon, initial state,
   // target state, etc.
@@ -414,8 +519,19 @@ class TrajectoryOptimizer {
   VectorX<T> joint_damping_;
 
   // Various parameters
-  SolverParameters params_;
+  const SolverParameters params_;
 };
+
+// Declare template specializations
+template <>
+SolverFlag TrajectoryOptimizer<double>::SolveWithLinesearch(
+    const std::vector<VectorXd>&, TrajectoryOptimizerSolution<double>*,
+    TrajectoryOptimizerStats<double>*) const;
+
+template <>
+SolverFlag TrajectoryOptimizer<double>::SolveWithTrustRegion(
+    const std::vector<VectorXd>&, TrajectoryOptimizerSolution<double>*,
+    TrajectoryOptimizerStats<double>*) const;
 
 }  // namespace traj_opt
 }  // namespace drake

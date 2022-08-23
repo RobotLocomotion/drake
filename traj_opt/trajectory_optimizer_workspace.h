@@ -25,7 +25,8 @@ struct TrajectoryOptimizerWorkspace {
     const int nv = plant.num_velocities();
 
     // Set vector sizes
-    q_size_tmp.resize(nq);
+    q_size_tmp1.resize(nq);
+    q_size_tmp2.resize(nq);
 
     v_size_tmp1.resize(nv);
     v_size_tmp2.resize(nv);
@@ -38,6 +39,8 @@ struct TrajectoryOptimizerWorkspace {
     a_size_tmp2.resize(nq);
     a_size_tmp3.resize(nq);
 
+    q_times_num_steps_size_tmp.resize(nq * (num_steps + 1));
+
     // Allocate sequences
     q_sequence_tmp1.assign(num_steps, VectorX<T>(nq));
     q_sequence_tmp2.assign(num_steps, VectorX<T>(nq));
@@ -47,7 +50,8 @@ struct TrajectoryOptimizerWorkspace {
   MultibodyForces<T> f_ext;
 
   // Storage of size nq
-  VectorX<T> q_size_tmp;
+  VectorX<T> q_size_tmp1;
+  VectorX<T> q_size_tmp2;
 
   // Storage of size nv
   // These are named v, tau, and a, but this distinction is just for
@@ -66,6 +70,9 @@ struct TrajectoryOptimizerWorkspace {
   // Storage of sequence of q
   std::vector<VectorX<T>> q_sequence_tmp1;
   std::vector<VectorX<T>> q_sequence_tmp2;
+
+  // Vector of all decision variables
+  VectorX<T> q_times_num_steps_size_tmp;
 };
 
 }  // namespace traj_opt

@@ -4,6 +4,7 @@
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
+    "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -14,22 +15,14 @@ drake_cc_binary(
     srcs = ["acrobot.cc"],
     add_test_rule = 1,
     data = [
+        ":acrobot.yaml",
         "//examples/acrobot:prod_models",
     ],
-    test_rule_args = [
-        "-max_iters=20",
-        "-visualize=false",
-    ],
     deps = [
+        ":example_base",
         "//common:find_resource",
-        "//geometry:drake_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
-        "//systems/analysis:simulator",
-        "//systems/framework:diagram",
-        "//traj_opt:problem_definition",
-        "//traj_opt:trajectory_optimizer",
-        "@gflags",
     ],
 )
 
@@ -37,21 +30,60 @@ drake_cc_binary(
     name = "pendulum",
     srcs = ["pendulum.cc"],
     add_test_rule = 1,
-    data = ["//examples/pendulum:prod_models"],
-    test_rule_args = [
-        "-num_steps=100",
-        "-visualize=false",
+    data = [
+        ":pendulum.yaml",
+        "//examples/pendulum:prod_models",
     ],
     deps = [
+        ":example_base",
         "//common:find_resource",
-        "//geometry:drake_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
-        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_binary(
+    name = "spinner",
+    srcs = ["spinner.cc"],
+    add_test_rule = 1,
+    data = [
+        ":spinner.yaml",
+        ":spinner_capsule.urdf",
+        ":spinner_rectangle.urdf",
+        ":spinner_sphere.urdf",
+        ":spinner_square.urdf",
+    ],
+    test_rule_args = [],
+    deps = [
+        ":example_base",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "@gflags",
+    ],
+)
+
+drake_cc_library(
+    name = "example_base",
+    srcs = [],
+    hdrs = ["example_base.h"],
+    deps = [
+        ":yaml_config",
+        "//common:find_resource",
+        "//geometry:drake_visualizer",
+        "//multibody/plant",
         "//systems/framework:diagram",
         "//traj_opt:problem_definition",
         "//traj_opt:trajectory_optimizer",
-        "@gflags",
+    ],
+)
+
+drake_cc_library(
+    name = "yaml_config",
+    srcs = [],
+    hdrs = ["yaml_config.h"],
+    deps = [
+        "//common/yaml",
     ],
 )
 

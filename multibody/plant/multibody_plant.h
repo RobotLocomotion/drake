@@ -4176,6 +4176,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return num_collision_geometries_;
   }
 
+  const std::unordered_map<geometry::GeometryId, BodyIndex>&
+  geometry_id_to_body_index() const {
+    return geometry_id_to_body_index_;
+  }
+
   /// Returns the unique id identifying `this` plant as a source for a
   /// SceneGraph.
   /// Returns `nullopt` if `this` plant did not register any geometry.
