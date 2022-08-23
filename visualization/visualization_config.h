@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/name_value.h"
+#include "drake/geometry/rgba.h"
 
 namespace drake {
 namespace visualization {
@@ -25,9 +26,9 @@ struct VisualizationConfig {
     a->Visit(DRAKE_NVP(lcm_bus));
     a->Visit(DRAKE_NVP(publish_period));
     a->Visit(DRAKE_NVP(publish_illustration));
-    a->Visit(DRAKE_NVP(default_illustration_color_rgba));
+    a->Visit(DRAKE_NVP(default_illustration_color));
     a->Visit(DRAKE_NVP(publish_proximity));
-    a->Visit(DRAKE_NVP(default_proximity_color_rgba));
+    a->Visit(DRAKE_NVP(default_proximity_color));
     a->Visit(DRAKE_NVP(publish_contacts));
   }
 
@@ -45,16 +46,14 @@ struct VisualizationConfig {
 
   /** The color to apply to any illustration geometry that hasn't defined one.
   The vector must be of size three (rgb) or four (rgba). */
-  Eigen::VectorXd default_illustration_color_rgba{
-      Eigen::Vector3d{0.9, 0.9, 0.9}};
+  geometry::Rgba default_illustration_color{0.9, 0.9, 0.9};
 
   /** Whether to show proximity geometry. */
   bool publish_proximity{true};
 
   /** The color to apply to any proximity geometry that hasn't defined one.
   The vector must be of size three (rgb) or four (rgba). */
-  Eigen::VectorXd default_proximity_color_rgba{
-      Eigen::Vector4d{1, 0, 0, 0.5}};
+  geometry::Rgba default_proximity_color{1, 0, 0, 0.5};
 
   /** Whether to show contact forces. */
   bool publish_contacts{true};

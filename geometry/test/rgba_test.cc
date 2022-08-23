@@ -3,9 +3,17 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
 namespace geometry {
+namespace {
+
+GTEST_TEST(RgbaTest, Default) {
+  Rgba defaulted;
+  Rgba opaque_white(1, 1, 1, 1);
+  EXPECT_EQ(defaulted, opaque_white);
+}
 
 GTEST_TEST(RgbaTest, Basic) {
   const double r = 0.75;
@@ -33,7 +41,7 @@ GTEST_TEST(RgbaTest, Errors) {
 
   auto expect_error = [original](double ri, double gi, double bi, double ai) {
     const std::string expected_message = fmt::format(
-        "All values must be within the range \\[0, 1\\]. Values provided: "
+        "Rgba values must be within the range \\[0, 1\\]. Values provided: "
         "\\(r={}, g={}, b={}, a={}\\)", ri, gi, bi, ai);
     DRAKE_EXPECT_THROWS_MESSAGE(
         Rgba(ri, gi, bi, ai),
@@ -63,5 +71,39 @@ GTEST_TEST(RgbaTest, Errors) {
   expect_error(r, g, b, bad_high);
 }
 
+/** Confirm that this can be serialized appropriately. */
+GTEST_TEST(RgbaTest, Serialization) {
+  {
+    // Serializing.
+    const Rgba rgba(0.75, 0.25, 1.0, 0.5);
+    const std::string y = yaml::SaveYamlString(rgba);
+    EXPECT_EQ(y, "rgba: [0.75, 0.25, 1.0, 0.5]\n");
+  }
+
+  {
+    // Deserialize: full specification.
+    const Rgba rgba = yaml::LoadYamlString<Rgba>("rgba: [0.1, 0.2, 0.3, 0.4]");
+    EXPECT_EQ(rgba, Rgba(0.1, 0.2, 0.3, 0.4));
+  }
+
+  {
+    // Deserialize: alpha isn't necessary; alpha = 1 is provided.
+    const Rgba rgba = yaml::LoadYamlString<Rgba>("rgba: [0.1, 0.2, 0.3]");
+    EXPECT_EQ(rgba, Rgba(0.1, 0.2, 0.3, 1));
+  }
+
+  // Wrong size array throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(yaml::LoadYamlString<Rgba>("rgba: [1, 1]"),
+                              "Rgba must contain either 3 or 4.+");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      yaml::LoadYamlString<Rgba>("rgba: [1, 1, 1, 1, 1]"),
+      "Rgba must contain either 3 or 4.+");
+
+  // Values out of range likewise throw.
+  DRAKE_EXPECT_THROWS_MESSAGE(yaml::LoadYamlString<Rgba>("rgba: [1, 1, 2]"),
+                              ".*must be within the range.+");
+}
+
+}  // namespace
 }  // namespace geometry
 }  // namespace drake
