@@ -1,3 +1,5 @@
+#include <cstdint>
+#include <map>
 #include <string>
 
 #include <gflags/gflags.h>

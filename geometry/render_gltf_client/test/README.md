@@ -8,7 +8,7 @@ development.
 
 ## Install Dependencies
 
-The test server uses `flask`, so be sure that you've run
+The test server uses `flask(>=1.1)`, so be sure that you've run
 `setup/ubuntu/install_prereqs.sh` (or `setup/mac/install_prereqs.sh`) to install
 it before proceeding.
 
