@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.math import RigidTransform
 
 
@@ -94,8 +95,9 @@ class TestGeometryHydro(unittest.TestCase):
         copy.copy(dut)
 
         # Sanity check the mutators.
-        dut.TransformVertices(X_NM=RigidTransform())
-        dut.ReverseFaceWinding()
+        with catch_drake_warnings(expected_count=2):
+            dut.TransformVertices(X_NM=RigidTransform())
+            dut.ReverseFaceWinding()
 
         # Now check the SurfacePolygon bindings.
         polygon = dut.element(e=0)
