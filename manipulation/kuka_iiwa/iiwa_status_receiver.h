@@ -28,6 +28,7 @@ namespace kuka_iiwa {
 /// input_ports:
 /// - lcmt_iiwa_status
 /// output_ports:
+/// - utime
 /// - position_commanded
 /// - position_measured
 /// - velocity_estimated
@@ -46,6 +47,7 @@ class IiwaStatusReceiver final : public systems::LeafSystem<double> {
 
   /// @name Named accessors for this System's input and output ports.
   //@{
+  const systems::OutputPort<double>& get_utime_output_port() const;
   const systems::OutputPort<double>& get_position_commanded_output_port() const;
   const systems::OutputPort<double>& get_position_measured_output_port() const;
   const systems::OutputPort<double>& get_velocity_estimated_output_port() const;
@@ -58,6 +60,10 @@ class IiwaStatusReceiver final : public systems::LeafSystem<double> {
   template <std::vector<double> drake::lcmt_iiwa_status::*>
   void CalcLcmOutput(const systems::Context<double>&,
                      systems::BasicVector<double>*) const;
+
+  void CalcTimeOutput(const systems::Context<double>&,
+                     systems::BasicVector<double>*) const;
+
 
   const int num_joints_;
 };
