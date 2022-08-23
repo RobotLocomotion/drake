@@ -287,7 +287,6 @@ drake_cc_library(
     copts = select({
         "//tools/cc_toolchain:apple": [],
         "//conditions:default": [
-            "-DDRAKE_ENABLE_AVX2_FMA",
             "-march=broadwell",
         ],
     }),
@@ -298,12 +297,6 @@ drake_cc_library(
     name = "fast_pose_composition_functions",
     srcs = ["fast_pose_composition_functions.cc"],
     hdrs = ["fast_pose_composition_functions.h"],
-    copts = select({
-        "//tools/cc_toolchain:apple": [],
-        "//conditions:default": [
-            "-DDRAKE_ENABLE_AVX2_FMA",
-        ],
-    }),
     deps = [":fast_pose_composition_functions_avx2_fma"],
 )
 
