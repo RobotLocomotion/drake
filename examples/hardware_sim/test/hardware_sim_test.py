@@ -25,9 +25,9 @@ class HardwareSimTest(unittest.TestCase):
         self._simulator = self._find_resource(
             "drake/examples/hardware_sim/hardware_sim")
         self._example_scenarios = self._find_resource(
-            "drake/examples/hardware_sim/example_scenarios.dmd.yaml")
+            "drake/examples/hardware_sim/example_scenarios.yaml")
         self._test_scenarios = self._find_resource(
-            "drake/examples/hardware_sim/test/test_scenarios.dmd.yaml")
+            "drake/examples/hardware_sim/test/test_scenarios.yaml")
         self._default_extra = {
             # For our smoke test, exit fairly quickly.
             "simulation_duration": 0.25,
