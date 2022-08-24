@@ -367,6 +367,14 @@ double ExpressionVar::Evaluate(const Environment& env) const {
 
 Expression ExpressionVar::Expand() const { return Expression{var_}; }
 
+Expression ExpressionVar::EvaluatePartial(const Environment& env) const {
+  const Environment::const_iterator it{env.find(var_)};
+  if (it != env.end()) {
+    return it->second;
+  }
+  return Expression{var_};
+}
+
 Expression ExpressionVar::Substitute(const Substitution& s) const {
   const Substitution::const_iterator it{s.find(var_)};
   if (it != s.end()) {
@@ -409,6 +417,10 @@ double ExpressionNaN::Evaluate(const Environment&) const {
 
 Expression ExpressionNaN::Expand() const {
   throw runtime_error("NaN is detected during expansion.");
+}
+
+Expression ExpressionNaN::EvaluatePartial(const Environment&) const {
+  throw runtime_error("NaN is detected during environment substitution.");
 }
 
 Expression ExpressionNaN::Substitute(const Substitution&) const {
@@ -511,6 +523,15 @@ Expression ExpressionAdd::Expand() const {
         ExpandMultiplication(e_i.is_expanded() ? e_i : e_i.Expand(), c_i));
   }
   return fac.GetExpression();
+}
+
+Expression ExpressionAdd::EvaluatePartial(const Environment& env) const {
+  return accumulate(
+      expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(),
+      Expression{constant_},
+      [&env](const Expression& init, const pair<const Expression, double>& p) {
+        return init + p.first.EvaluatePartial(env) * p.second;
+      });
 }
 
 Expression ExpressionAdd::Substitute(const Substitution& s) const {
@@ -787,6 +808,16 @@ Expression ExpressionMul::Expand() const {
                           init,
                           ExpandPow(b_i.is_expanded() ? b_i : b_i.Expand(),
                                     e_i.is_expanded() ? e_i : e_i.Expand()));
+                    });
+}
+
+Expression ExpressionMul::EvaluatePartial(const Environment& env) const {
+  return accumulate(base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
+                    Expression{constant_},
+                    [&env](const Expression& init,
+                         const pair<const Expression, Expression>& p) {
+                      return init * pow(p.first.EvaluatePartial(env),
+                                        p.second.EvaluatePartial(env));
                     });
 }
 
@@ -1204,6 +1235,11 @@ Expression ExpressionDiv::Expand() const {
   }
 }
 
+Expression ExpressionDiv::EvaluatePartial(const Environment& env) const {
+  return get_first_argument().EvaluatePartial(env) /
+         get_second_argument().EvaluatePartial(env);
+}
+
 Expression ExpressionDiv::Substitute(const Substitution& s) const {
   return get_first_argument().Substitute(s) /
          get_second_argument().Substitute(s);
@@ -1248,6 +1284,10 @@ Expression ExpressionLog::Expand() const {
   return log(arg.is_expanded() ? arg : arg.Expand());
 }
 
+Expression ExpressionLog::EvaluatePartial(const Environment& env) const {
+  return log(get_argument().EvaluatePartial(env));
+}
+
 Expression ExpressionLog::Substitute(const Substitution& s) const {
   return log(get_argument().Substitute(s));
 }
@@ -1273,6 +1313,10 @@ ExpressionAbs::ExpressionAbs(const Expression& e)
 Expression ExpressionAbs::Expand() const {
   const Expression& arg{get_argument()};
   return abs(arg.is_expanded() ? arg : arg.Expand());
+}
+
+Expression ExpressionAbs::EvaluatePartial(const Environment& env) const {
+  return abs(get_argument().EvaluatePartial(env));
 }
 
 Expression ExpressionAbs::Substitute(const Substitution& s) const {
@@ -1302,6 +1346,10 @@ ExpressionExp::ExpressionExp(const Expression& e)
 Expression ExpressionExp::Expand() const {
   const Expression& arg{get_argument()};
   return exp(arg.is_expanded() ? arg : arg.Expand());
+}
+
+Expression ExpressionExp::EvaluatePartial(const Environment& env) const {
+  return exp(get_argument().EvaluatePartial(env));
 }
 
 Expression ExpressionExp::Substitute(const Substitution& s) const {
@@ -1335,6 +1383,10 @@ void ExpressionSqrt::check_domain(const double v) {
 Expression ExpressionSqrt::Expand() const {
   const Expression& arg{get_argument()};
   return sqrt(arg.is_expanded() ? arg : arg.Expand());
+}
+
+Expression ExpressionSqrt::EvaluatePartial(const Environment& env) const {
+  return sqrt(get_argument().EvaluatePartial(env));
 }
 
 Expression ExpressionSqrt::Substitute(const Substitution& s) const {
@@ -1379,6 +1431,11 @@ Expression ExpressionPow::Expand() const {
                    e2.is_expanded() ? e2 : e2.Expand());
 }
 
+Expression ExpressionPow::EvaluatePartial(const Environment& env) const {
+  return pow(get_first_argument().EvaluatePartial(env),
+             get_second_argument().EvaluatePartial(env));
+}
+
 Expression ExpressionPow::Substitute(const Substitution& s) const {
   return pow(get_first_argument().Substitute(s),
              get_second_argument().Substitute(s));
@@ -1406,6 +1463,10 @@ Expression ExpressionSin::Expand() const {
   return sin(arg.is_expanded() ? arg : arg.Expand());
 }
 
+Expression ExpressionSin::EvaluatePartial(const Environment& env) const {
+  return sin(get_argument().EvaluatePartial(env));
+}
+
 Expression ExpressionSin::Substitute(const Substitution& s) const {
   return sin(get_argument().Substitute(s));
 }
@@ -1430,6 +1491,10 @@ Expression ExpressionCos::Expand() const {
   return cos(arg.is_expanded() ? arg : arg.Expand());
 }
 
+Expression ExpressionCos::EvaluatePartial(const Environment& env) const {
+  return cos(get_argument().EvaluatePartial(env));
+}
+
 Expression ExpressionCos::Substitute(const Substitution& s) const {
   return cos(get_argument().Substitute(s));
 }
@@ -1452,6 +1517,10 @@ ExpressionTan::ExpressionTan(const Expression& e)
 Expression ExpressionTan::Expand() const {
   const Expression& arg{get_argument()};
   return tan(arg.is_expanded() ? arg : arg.Expand());
+}
+
+Expression ExpressionTan::EvaluatePartial(const Environment& env) const {
+  return tan(get_argument().EvaluatePartial(env));
 }
 
 Expression ExpressionTan::Substitute(const Substitution& s) const {
@@ -1485,6 +1554,10 @@ void ExpressionAsin::check_domain(const double v) {
 Expression ExpressionAsin::Expand() const {
   const Expression& arg{get_argument()};
   return asin(arg.is_expanded() ? arg : arg.Expand());
+}
+
+Expression ExpressionAsin::EvaluatePartial(const Environment& env) const {
+  return asin(get_argument().EvaluatePartial(env));
 }
 
 Expression ExpressionAsin::Substitute(const Substitution& s) const {
@@ -1523,6 +1596,10 @@ Expression ExpressionAcos::Expand() const {
   return acos(arg.is_expanded() ? arg : arg.Expand());
 }
 
+Expression ExpressionAcos::EvaluatePartial(const Environment& env) const {
+  return acos(get_argument().EvaluatePartial(env));
+}
+
 Expression ExpressionAcos::Substitute(const Substitution& s) const {
   return acos(get_argument().Substitute(s));
 }
@@ -1550,6 +1627,10 @@ Expression ExpressionAtan::Expand() const {
   return atan(arg.is_expanded() ? arg : arg.Expand());
 }
 
+Expression ExpressionAtan::EvaluatePartial(const Environment& env) const {
+  return atan(get_argument().EvaluatePartial(env));
+}
+
 Expression ExpressionAtan::Substitute(const Substitution& s) const {
   return atan(get_argument().Substitute(s));
 }
@@ -1575,6 +1656,11 @@ Expression ExpressionAtan2::Expand() const {
   const Expression& e2{get_second_argument()};
   return atan2(e1.is_expanded() ? e1 : e1.Expand(),
                e2.is_expanded() ? e2 : e2.Expand());
+}
+
+Expression ExpressionAtan2::EvaluatePartial(const Environment& env) const {
+  return atan2(get_first_argument().EvaluatePartial(env),
+               get_second_argument().EvaluatePartial(env));
 }
 
 Expression ExpressionAtan2::Substitute(const Substitution& s) const {
@@ -1607,6 +1693,10 @@ Expression ExpressionSinh::Expand() const {
   return sinh(arg.is_expanded() ? arg : arg.Expand());
 }
 
+Expression ExpressionSinh::EvaluatePartial(const Environment& env) const {
+  return sinh(get_argument().EvaluatePartial(env));
+}
+
 Expression ExpressionSinh::Substitute(const Substitution& s) const {
   return sinh(get_argument().Substitute(s));
 }
@@ -1631,6 +1721,10 @@ Expression ExpressionCosh::Expand() const {
   return cosh(arg.is_expanded() ? arg : arg.Expand());
 }
 
+Expression ExpressionCosh::EvaluatePartial(const Environment& env) const {
+  return cosh(get_argument().EvaluatePartial(env));
+}
+
 Expression ExpressionCosh::Substitute(const Substitution& s) const {
   return cosh(get_argument().Substitute(s));
 }
@@ -1653,6 +1747,10 @@ ExpressionTanh::ExpressionTanh(const Expression& e)
 Expression ExpressionTanh::Expand() const {
   const Expression& arg{get_argument()};
   return tanh(arg.is_expanded() ? arg : arg.Expand());
+}
+
+Expression ExpressionTanh::EvaluatePartial(const Environment& env) const {
+  return tanh(get_argument().EvaluatePartial(env));
 }
 
 Expression ExpressionTanh::Substitute(const Substitution& s) const {
@@ -1680,6 +1778,11 @@ Expression ExpressionMin::Expand() const {
   const Expression& e2{get_second_argument()};
   return min(e1.is_expanded() ? e1 : e1.Expand(),
              e2.is_expanded() ? e2 : e2.Expand());
+}
+
+Expression ExpressionMin::EvaluatePartial(const Environment& env) const {
+  return min(get_first_argument().EvaluatePartial(env),
+             get_second_argument().EvaluatePartial(env));
 }
 
 Expression ExpressionMin::Substitute(const Substitution& s) const {
@@ -1720,6 +1823,11 @@ Expression ExpressionMax::Expand() const {
              e2.is_expanded() ? e2 : e2.Expand());
 }
 
+Expression ExpressionMax::EvaluatePartial(const Environment& env) const {
+  return max(get_first_argument().EvaluatePartial(env),
+             get_second_argument().EvaluatePartial(env));
+}
+
 Expression ExpressionMax::Substitute(const Substitution& s) const {
   return max(get_first_argument().Substitute(s),
              get_second_argument().Substitute(s));
@@ -1754,6 +1862,10 @@ Expression ExpressionCeiling::Expand() const {
   return ceil(arg.is_expanded() ? arg : arg.Expand());
 }
 
+Expression ExpressionCeiling::EvaluatePartial(const Environment& env) const {
+  return ceil(get_argument().EvaluatePartial(env));
+}
+
 Expression ExpressionCeiling::Substitute(const Substitution& s) const {
   return ceil(get_argument().Substitute(s));
 }
@@ -1784,6 +1896,10 @@ ExpressionFloor::ExpressionFloor(const Expression& e)
 Expression ExpressionFloor::Expand() const {
   const Expression& arg{get_argument()};
   return floor(arg.is_expanded() ? arg : arg.Expand());
+}
+
+Expression ExpressionFloor::EvaluatePartial(const Environment& env) const {
+  return floor(get_argument().EvaluatePartial(env));
 }
 
 Expression ExpressionFloor::Substitute(const Substitution& s) const {
@@ -1873,6 +1989,18 @@ Expression ExpressionIfThenElse::Expand() const {
   // TODO(soonho): use the following line when Formula::Expand() is implemented.
   // return if_then_else(f_cond_.Expand(), e_then_.Expand(), e_else_.Expand());
   throw runtime_error("Not yet implemented.");
+}
+
+Expression ExpressionIfThenElse::EvaluatePartial(const Environment& env) const {
+  // TODO(jwnimmer-tri) We could define a Formula::EvaluatePartial for improved
+  // performance, if necessary.
+  Substitution subst;
+  for (const pair<const Variable, double>& p : env) {
+    subst.emplace(p.first, p.second);
+  }
+  return if_then_else(f_cond_.Substitute(subst),
+                      e_then_.EvaluatePartial(env),
+                      e_else_.EvaluatePartial(env));
 }
 
 Expression ExpressionIfThenElse::Substitute(const Substitution& s) const {
@@ -1980,6 +2108,16 @@ Expression ExpressionUninterpretedFunction::Expand() const {
   new_arguments.reserve(arguments_.size());
   for (const Expression& arg : arguments_) {
     new_arguments.push_back(arg.is_expanded() ? arg : arg.Expand());
+  }
+  return uninterpreted_function(name_, std::move(new_arguments));
+}
+
+Expression ExpressionUninterpretedFunction::EvaluatePartial(
+    const Environment& env) const {
+  vector<Expression> new_arguments;
+  new_arguments.reserve(arguments_.size());
+  for (const Expression& arg : arguments_) {
+    new_arguments.push_back(arg.EvaluatePartial(env));
   }
   return uninterpreted_function(name_, std::move(new_arguments));
 }

@@ -87,6 +87,14 @@ class ExpressionCell {
   [[nodiscard]] virtual Expression Expand() const = 0;
 
   /** Returns an Expression obtained by replacing all occurrences of the
+   * variables in @p env in the current expression cell with the corresponding
+   * values in @p env.
+   * @throws std::exception if NaN is detected during substitution.
+   */
+  [[nodiscard]] virtual Expression EvaluatePartial(
+      const Environment& env) const = 0;
+
+  /** Returns an Expression obtained by replacing all occurrences of the
    * variables in @p s in the current expression cell with the corresponding
    * expressions in @p s.
    * @throws std::exception if NaN is detected during substitution.
@@ -179,6 +187,8 @@ class ExpressionVar : public ExpressionCell {
   [[nodiscard]] bool Less(const ExpressionCell& e) const override;
   [[nodiscard]] double Evaluate(const Environment& env) const override;
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -197,6 +207,8 @@ class ExpressionNaN : public ExpressionCell {
   [[nodiscard]] bool Less(const ExpressionCell& e) const override;
   [[nodiscard]] double Evaluate(const Environment& env) const override;
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -227,6 +239,8 @@ class ExpressionAdd : public ExpressionCell {
   [[nodiscard]] bool Less(const ExpressionCell& e) const override;
   [[nodiscard]] double Evaluate(const Environment& env) const override;
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -329,6 +343,8 @@ class ExpressionMul : public ExpressionCell {
   [[nodiscard]] bool Less(const ExpressionCell& e) const override;
   [[nodiscard]] double Evaluate(const Environment& env) const override;
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -420,6 +436,8 @@ class ExpressionDiv : public BinaryExpressionCell {
  public:
   ExpressionDiv(const Expression& e1, const Expression& e2);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -433,6 +451,8 @@ class ExpressionLog : public UnaryExpressionCell {
  public:
   explicit ExpressionLog(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -450,6 +470,8 @@ class ExpressionAbs : public UnaryExpressionCell {
  public:
   explicit ExpressionAbs(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -466,6 +488,8 @@ class ExpressionExp : public UnaryExpressionCell {
  public:
   explicit ExpressionExp(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -479,6 +503,8 @@ class ExpressionSqrt : public UnaryExpressionCell {
  public:
   explicit ExpressionSqrt(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -496,6 +522,8 @@ class ExpressionPow : public BinaryExpressionCell {
  public:
   ExpressionPow(const Expression& e1, const Expression& e2);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -514,6 +542,8 @@ class ExpressionSin : public UnaryExpressionCell {
  public:
   explicit ExpressionSin(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -527,6 +557,8 @@ class ExpressionCos : public UnaryExpressionCell {
  public:
   explicit ExpressionCos(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -540,6 +572,8 @@ class ExpressionTan : public UnaryExpressionCell {
  public:
   explicit ExpressionTan(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -553,6 +587,8 @@ class ExpressionAsin : public UnaryExpressionCell {
  public:
   explicit ExpressionAsin(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -570,6 +606,8 @@ class ExpressionAcos : public UnaryExpressionCell {
  public:
   explicit ExpressionAcos(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -587,6 +625,8 @@ class ExpressionAtan : public UnaryExpressionCell {
  public:
   explicit ExpressionAtan(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -601,6 +641,8 @@ class ExpressionAtan2 : public BinaryExpressionCell {
  public:
   ExpressionAtan2(const Expression& e1, const Expression& e2);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -614,6 +656,8 @@ class ExpressionSinh : public UnaryExpressionCell {
  public:
   explicit ExpressionSinh(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -627,6 +671,8 @@ class ExpressionCosh : public UnaryExpressionCell {
  public:
   explicit ExpressionCosh(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -640,6 +686,8 @@ class ExpressionTanh : public UnaryExpressionCell {
  public:
   explicit ExpressionTanh(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -653,6 +701,8 @@ class ExpressionMin : public BinaryExpressionCell {
  public:
   ExpressionMin(const Expression& e1, const Expression& e2);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -666,6 +716,8 @@ class ExpressionMax : public BinaryExpressionCell {
  public:
   ExpressionMax(const Expression& e1, const Expression& e2);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -679,6 +731,8 @@ class ExpressionCeiling : public UnaryExpressionCell {
  public:
   explicit ExpressionCeiling(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -692,6 +746,8 @@ class ExpressionFloor : public UnaryExpressionCell {
  public:
   explicit ExpressionFloor(const Expression& e);
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -712,6 +768,8 @@ class ExpressionIfThenElse : public ExpressionCell {
   [[nodiscard]] bool Less(const ExpressionCell& e) const override;
   [[nodiscard]] double Evaluate(const Environment& env) const override;
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;
@@ -749,6 +807,8 @@ class ExpressionUninterpretedFunction : public ExpressionCell {
   [[nodiscard]] bool Less(const ExpressionCell& e) const override;
   [[nodiscard]] double Evaluate(const Environment& env) const override;
   [[nodiscard]] Expression Expand() const override;
+  [[nodiscard]] Expression EvaluatePartial(
+      const Environment& env) const override;
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::ostream& Display(std::ostream& os) const override;

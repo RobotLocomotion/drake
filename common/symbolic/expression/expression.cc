@@ -177,14 +177,10 @@ Eigen::SparseMatrix<double> Evaluate(
 }
 
 Expression Expression::EvaluatePartial(const Environment& env) const {
-  if (env.empty()) {
+  if (is_constant(*this) || env.empty()) {
     return *this;
   }
-  Substitution subst;
-  for (const pair<const Variable, double>& p : env) {
-    subst.emplace(p.first, p.second);
-  }
-  return Substitute(subst);
+  return cell().EvaluatePartial(env);
 }
 
 Expression Expression::Expand() const {
@@ -213,13 +209,10 @@ Expression Expression::Substitute(const Variable& var,
 }
 
 Expression Expression::Substitute(const Substitution& s) const {
-  if (is_constant(*this)) {
+  if (is_constant(*this) || s.empty()) {
     return *this;
   }
-  if (!s.empty()) {
-    return cell().Substitute(s);
-  }
-  return *this;
+  return cell().Substitute(s);
 }
 
 Expression Expression::Differentiate(const Variable& x) const {

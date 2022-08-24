@@ -45,6 +45,16 @@ void CheckHomomorphism(const function<Expression(const Expression&)>& f,
   // Otherwise, we check if we have apply_subst = subst_apply.
   const Expression subst_apply{f(expr)};
   EXPECT_PRED2(ExprEqual, apply_subst, subst_apply);
+
+  // If the expression was a constant then the substitution is a partial
+  // evaluation, so this is a convenient place to add unit tests for the
+  // EvaluatePartial function as well.
+  if (is_constant(expr)) {
+    const Expression apply{f(Expression{expr})};
+    const double value = get_constant_value(expr);
+    const Expression eval_partial{apply.EvaluatePartial({{var, value}})};
+    EXPECT_PRED2(ExprEqual, eval_partial, f(expr));
+  }
 }
 
 // Checks if 'Expression::Substitute(const Substitution&)' is a homomorphism.
@@ -74,6 +84,20 @@ void CheckHomomorphism(const function<Expression(const vector<Expression>&)>& f,
   // Otherwise, we check if we have apply_subst = subst_apply.
   const Expression subst_apply{f(args2)};
   EXPECT_PRED2(ExprEqual, apply_subst, subst_apply);
+
+  // If every expression was a constant then the substitution is a partial
+  // evaluation, so this is a convenient place to add unit tests for the
+  // EvaluatePartial function as well.
+  if (std::all_of(args2.begin(), args2.end(),
+                  [](const Expression& e) { return is_constant(e); })) {
+    const Expression apply{f(args1)};
+    Environment env;
+    for (const auto& [subst_var, subst_expr] : s) {
+      env.insert(subst_var, get_constant_value(subst_expr));
+    }
+    const Expression eval_partial{apply.EvaluatePartial(env)};
+    EXPECT_PRED2(ExprEqual, eval_partial, f(args2));
+  }
 }
 
 // Checks if 'Formula::Substitute(const Variable&, const Expression&)' is
@@ -421,6 +445,11 @@ TEST_F(SymbolicSubstitutionTest, UninterpretedFunction) {
   // = uf2(3.0, 4.0)
   EXPECT_PRED2(ExprEqual, uf2.Substitute(s3),
                uninterpreted_function("uf2", {3.0, 4.0}));
+
+  //   (uf2(x, y)).EvaluatePartial(x ↦ 5.0)
+  // = uf2(5.0, y)
+  EXPECT_PRED2(ExprEqual, uf2.EvaluatePartial({{var_x_, 5.0}}),
+               uninterpreted_function("uf2", {5.0, var_y_}));
 }
 
 TEST_F(SymbolicSubstitutionTest, MatrixWithSubstitution) {
