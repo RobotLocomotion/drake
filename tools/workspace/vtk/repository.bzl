@@ -378,6 +378,8 @@ licenses([
             "vtkExecutive.h",
             "vtkImageAlgorithm.h",
             "vtkPolyDataAlgorithm.h",
+            "vtkReaderAlgorithm.h",
+            "vtkSimpleReader.h",
             "vtkStreamingDemandDrivenPipeline.h",
         ],
         deps = [
@@ -712,10 +714,17 @@ licenses([
         ],
     )
 
-    # Indirect dependency: omit headers.
     file_content += _vtk_cc_library(
         os_result,
         "vtkIOLegacy",
+        hdrs = [
+            "vtkCellIterator.h",
+            "vtkDataReader.h",
+            "vtkIOLegacyModule.h",
+            "vtkUnstructuredGrid.h",
+            "vtkUnstructuredGridBase.h",
+            "vtkUnstructuredGridReader.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
