@@ -626,6 +626,15 @@ filegroup(
     ],
 )
 
+filegroup(
+    name = "test_vtk_files",
+    testonly = 1,
+    srcs = [
+        "test/one_tetrahedron.vtk",
+        "test/two_tetrahedra_with_field_variable.vtk",
+    ],
+)
+
 drake_cc_googletest(
     name = "collision_filter_declaration_test",
     deps = [

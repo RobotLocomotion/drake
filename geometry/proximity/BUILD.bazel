@@ -54,6 +54,7 @@ drake_cc_package_library(
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
+        ":vtk_to_volume_mesh",
     ],
 )
 
@@ -770,6 +771,23 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "vtk_to_volume_mesh",
+    srcs = [
+        "vtk_to_volume_mesh.cc",
+    ],
+    hdrs = [
+        "vtk_to_volume_mesh.h",
+    ],
+    interface_deps = [
+        ":volume_mesh",
+        "//common:essential",
+    ],
+    deps = [
+        "@vtk//:vtkIOGeometry",
+    ],
+)
+
 drake_cc_googletest(
     name = "aabb_test",
     deps = [
@@ -1318,6 +1336,17 @@ drake_cc_googletest(
     deps = [
         ":make_box_mesh",
         ":volume_to_surface_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "vtk_to_volume_mesh_test",
+    data = [
+        "//geometry:test_vtk_files",
+    ],
+    deps = [
+        ":vtk_to_volume_mesh",
+        "//common:find_resource",
     ],
 )
 
