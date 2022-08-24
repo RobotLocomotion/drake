@@ -20,7 +20,7 @@ q_guess : [0.0]
 # [finger 1, finger 2, spinner]
 Qq : [0.0]  # Running cost
 Qv : [0.1]
-R : [1.0]  
+R : [1.0]
 
 Qfq : [100]  # Terminal cost
 Qfv : [1.0]

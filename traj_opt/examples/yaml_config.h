@@ -44,7 +44,11 @@ struct TrajOptExampleParams {
     a->Visit(DRAKE_NVP(save_solver_stats_csv));
     a->Visit(DRAKE_NVP(F));
     a->Visit(DRAKE_NVP(delta));
-    a->Visit(DRAKE_NVP(n));
+    a->Visit(DRAKE_NVP(stiffness_exponent));
+    a->Visit(DRAKE_NVP(dissipation_velocity));
+    a->Visit(DRAKE_NVP(dissipation_exponent));
+    a->Visit(DRAKE_NVP(stiction_velocity));
+    a->Visit(DRAKE_NVP(friction_coefficient));
     a->Visit(DRAKE_NVP(save_contour_data));
     a->Visit(DRAKE_NVP(contour_q1_min));
     a->Visit(DRAKE_NVP(contour_q1_max));
@@ -78,7 +82,11 @@ struct TrajOptExampleParams {
   bool save_solver_stats_csv = true;
   double F = 1.0;
   double delta = 0.01;
-  double n = 2;
+  double stiffness_exponent = 2;
+  double dissipation_velocity = 0.1;
+  double dissipation_exponent = 1.0;
+  double stiction_velocity = 0.05;
+  double friction_coefficient = 0.0;
   bool save_contour_data = false;
   double contour_q1_min = 0;
   double contour_q1_max = 1;

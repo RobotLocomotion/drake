@@ -56,7 +56,11 @@ struct SolverParameters {
   // model - figure out the right place and put these parameters there
   double F = 1.0;       // force (in Newtons) at delta meters of penetration
   double delta = 0.01;  // penetration distance at which we apply F newtons
-  double n = 2;         // polynomial scaling factor
+  double stiffness_exponent{2};  // Exponent in the compliant force law.
+  double dissipation_exponent{1};  // Exponent in the dissipation force law.
+  double dissipation_velocity{0.1};  // Hunt-Crossley velocity, in m/s.
+  double stiction_velocity{1.0e-2};  // Regularization of stiction, in m/s.
+  double friction_coefficient{1.0};  // Coefficient of friction.
 
   // Flags for making a contour plot with the first two decision variables.
   bool save_contour_data = false;

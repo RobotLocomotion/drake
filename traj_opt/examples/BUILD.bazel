@@ -77,11 +77,11 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
-    name = "spinner",
-    srcs = ["spinner.cc"],
+    name = "frictionless_spinner",
+    srcs = ["frictionless_spinner.cc"],
     add_test_rule = 1,
     data = [
-        ":spinner.yaml",
+        ":frictionless_spinner.yaml",
         ":spinner_capsule.urdf",
         ":spinner_rectangle.urdf",
         ":spinner_sphere.urdf",
@@ -94,6 +94,23 @@ drake_cc_binary(
         "//multibody/parsing",
         "//multibody/plant",
         "@gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "spinner",
+    srcs = ["spinner.cc"],
+    add_test_rule = 1,
+    data = [
+        ":spinner.yaml",
+        ":spinner_friction.urdf",
+    ],
+    test_rule_args = [],
+    deps = [
+        ":example_base",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//multibody/plant",
     ],
 )
 

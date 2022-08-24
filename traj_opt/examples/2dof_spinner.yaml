@@ -47,8 +47,14 @@ save_solver_stats_csv : true
 
 # Contact model parameters
 F : 1.0         # force at delta meters of penetration
-delta : 0.03  # penetration distance with F newtons of normal force
-n : 2         # polynomial smoothing factor
+delta : 0.01  # penetration distance with F newtons of normal force
+stiffness_exponent : 2      # Compliant law exponent.
+dissipation_exponent : 1.0  # Hunt & Crossley-like model. Law exponent.
+dissipation_velocity : 0.1  # Hunt & Crossley-like model parameter, in m/s.
+
+# Friction
+friction_coefficient : 0.0  # Coefficient of friction.
+stiction_velocity: 0.05     # Regularization velocity, in m/s.
 
 # Contour plot parameters
 save_contour_data : true
