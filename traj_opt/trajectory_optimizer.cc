@@ -10,6 +10,7 @@
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/traj_opt/penta_diagonal_solver.h"
+#include "drake/systems/framework/diagram.h"
 
 namespace drake {
 namespace traj_opt {
@@ -34,6 +35,23 @@ TrajectoryOptimizer<T>::TrajectoryOptimizer(const MultibodyPlant<T>* plant,
                                             const ProblemDefinition& prob,
                                             const SolverParameters& params)
     : plant_(plant), context_(context), prob_(prob), params_(params) {
+  // Define joint damping coefficients.
+  joint_damping_ = VectorX<T>::Zero(plant_->num_velocities());
+
+  for (JointIndex j(0); j < plant_->num_joints(); ++j) {
+    const Joint<T>& joint = plant_->get_joint(j);
+    const int velocity_start = joint.velocity_start();
+    const int nv = joint.num_velocities();
+    joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
+  }
+}
+
+template <typename T>
+TrajectoryOptimizer<T>::TrajectoryOptimizer(
+    const Diagram<T>* diagram, const MultibodyPlant<T>* plant,
+    const ProblemDefinition& prob,
+    const SolverParameters& params)
+    : diagram_{diagram}, plant_(plant), prob_(prob), params_(params) {
   // Define joint damping coefficients.
   joint_damping_ = VectorX<T>::Zero(plant_->num_velocities());
 
@@ -468,7 +486,7 @@ void TrajectoryOptimizer<T>::CalcGradientFiniteDiff(
   q_minus = state.q();
 
   // non-constant copy of state that we can perturb
-  TrajectoryOptimizerState<T> state_eps(state);
+  TrajectoryOptimizerState<T> state_eps = CreateState();
 
   // Set first block of g (derivatives w.r.t. q_0) to zero, since q0 = q_init
   // are constant.
@@ -708,6 +726,35 @@ void TrajectoryOptimizer<T>::CalcCacheTrajectoryData(
 
   // Set cache invalidation flag
   cache.trajectory_data.up_to_date = true;
+}
+
+template <typename T>
+void TrajectoryOptimizer<T>::CalcContextCache(
+    const TrajectoryOptimizerState<T>& state,
+    typename TrajectoryOptimizerCache<T>::ContextCache* cache) const {
+  if (diagram_ == nullptr) {
+    throw std::runtime_error(
+        "No Diagram was provided at construction of the TrajectoryOptimizer. "
+        "Use the constructor that takes a Diagram to enable the caching of "
+        "contexts.");
+  }
+  const std::vector<VectorX<T>>& q = state.q();
+  const std::vector<VectorX<T>>& v = EvalV(state);
+  auto& plant_contexts = cache->plant_contexts;
+  for (int t = 0; t <= num_steps(); ++t) {
+    plant().SetPositions(plant_contexts[t], q[t]);
+    plant().SetVelocities(plant_contexts[t], v[t]);
+  }
+  cache->up_to_date = true;
+}
+
+template <typename T>
+const Context<T>& TrajectoryOptimizer<T>::EvalPlantContext(
+    const TrajectoryOptimizerState<T>& state, int t) const {
+  if (!state.cache().context_cache->up_to_date) {
+    CalcContextCache(state, state.mutable_cache().context_cache.get());
+  }
+  return *state.cache().context_cache->plant_contexts[t];
 }
 
 template <typename T>
@@ -1262,7 +1309,7 @@ SolverFlag TrajectoryOptimizer<double>::SolveWithLinesearch(
   state.set_q(q_guess);
 
   // Allocate a separate state variable for linesearch
-  TrajectoryOptimizerState<double> scratch_state(state);
+  TrajectoryOptimizerState<double> scratch_state = CreateState();
 
   // Allocate cost and search direction
   double cost;
@@ -1438,7 +1485,7 @@ SolverFlag TrajectoryOptimizer<double>::SolveWithTrustRegion(
   state.set_q(q_guess);
 
   // Allocate a separate state variable for computations like L(q + dq)
-  TrajectoryOptimizerState<double> scratch_state(state);
+  TrajectoryOptimizerState<double> scratch_state = CreateState();
 
   // Allocate the update vector q_{k+1} = q_k + dq
   VectorXd dq(plant().num_positions() * (num_steps() + 1));
