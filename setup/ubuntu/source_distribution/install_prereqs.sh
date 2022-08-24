@@ -86,12 +86,6 @@ codename=$(lsb_release -sc)
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}
 
-
-# TODO(svenevs): Ideally we would have `packages-${codename}-satisfy.txt`,
-# an example workflow is in #16233 but xargs needs work (see #16280).
-apt-get satisfy  ${maybe_yes} --no-install-recommends \
-  'libcurl4-gnutls-dev | libcurl4-dev'
-
 # Ensure that we have available a locale that supports UTF-8 for generating a
 # C++ header containing Python API documentation during the build.
 apt-get install ${maybe_yes} --no-install-recommends locales

@@ -129,7 +129,7 @@ def _setup_definitions(args):
             key, value = item.split('=', 1)
             result[key] = value
         else:
-            result[item] = 1
+            result[item] = '1'
 
     for item in args.undefines:
         result[item] = None
