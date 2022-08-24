@@ -180,7 +180,7 @@ void Node::Add(std::string key, Node value) {
         // for the error message we need to dig the existing key out of the map.
         const std::string& old_key = result.first->first;
         throw std::logic_error(fmt::format(
-            "Cannot Node::Add(key, value) usign duplicate key '{}'", old_key));
+            "Cannot Node::Add(key, value) using duplicate key '{}'", old_key));
       }
     },
     [](auto&& data) -> void {
