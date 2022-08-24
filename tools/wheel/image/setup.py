@@ -3,7 +3,6 @@
 import os
 import setuptools
 from setuptools import setup, find_packages, glob
-from setuptools.dist import Distribution
 
 DRAKE_VERSION = os.environ.get('DRAKE_VERSION', '0.0.0')
 
@@ -16,26 +15,6 @@ python_required = [
     'pydot',
     'PyYAML',
 ]
-
-if os.uname()[0].lower() == 'linux':
-    # This is intended to help force a binary, rather than platform-agnostic,
-    # wheel, but only works on Ubuntu; clang is not happy about being asked to
-    # make a library with no sources.
-    ext_modules = [
-        setuptools.Extension(name='drake',
-                             sources=[]),
-    ]
-else:
-    ext_modules = []
-
-
-# Distribution which always forces a binary package with platform name.
-class BinaryDistribution(Distribution):
-    def is_pure(self):
-        return False
-
-    def has_ext_modules(self):
-        return True
 
 
 def find_data_files(*patterns):
@@ -55,6 +34,13 @@ def _actually_find_packages():
     ])
     print(f"Using packages={result}")
     return result
+
+
+# Generate a source file we can use to produce an extension library (which we
+# do to force the wheel to not be platform-agnostic. We need this because
+# trying to build an extension module with no sources is not reliable.
+with open('dummy.c', 'wt') as f:
+    f.write('void not_used() {}')
 
 
 setup(name='drake',
@@ -85,7 +71,6 @@ design/analysis.'''.strip(),
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Scientific/Engineering',
         'Topic :: Software Development :: Libraries :: Python Modules'],
-      distclass=BinaryDistribution,
       # TODO Check this: do we need to add third-party licenses?
       license='BSD 3-Clause License',
       platforms=['linux_x86_64', 'macosx_x86_64'],
@@ -102,6 +87,10 @@ design/analysis.'''.strip(),
       },
       python_requires='>=3.8',
       install_requires=python_required,
-      ext_modules=ext_modules,
+      # Ensure the wheel is not platform-agnostic.
+      ext_modules=[
+        setuptools.Extension(name='drake',
+                             sources=['dummy.c']),
+      ],
       zip_safe=False
       )
