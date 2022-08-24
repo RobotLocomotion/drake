@@ -60,10 +60,6 @@ class TrajOptExample {
     const int nv = plant.num_positions();
 
     auto diagram = builder.Build();
-    std::unique_ptr<systems::Context<double>> diagram_context =
-        diagram->CreateDefaultContext();
-    systems::Context<double>& plant_context =
-        diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
     // Set up an optimization problem
     ProblemDefinition opt_prob;
@@ -145,7 +141,7 @@ class TrajOptExample {
     }
 
     // Solve the optimzation problem
-    TrajectoryOptimizer<double> optimizer(&plant, &plant_context, opt_prob,
+    TrajectoryOptimizer<double> optimizer(diagram.get(), &plant, opt_prob,
                                           solver_params);
 
     TrajectoryOptimizerSolution<double> solution;

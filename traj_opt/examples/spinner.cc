@@ -12,7 +12,7 @@ using multibody::MultibodyPlant;
 using multibody::Parser;
 
 class SpinnerExample : public TrajOptExample {
-  void CreatePlantModel(MultibodyPlant<double>* plant) const {
+  void CreatePlantModel(MultibodyPlant<double>* plant) const final {
     // N.B. geometry of the spinner is chosen via gflags rather than yaml so
     // that we can use the same yaml format for all of the examples, without
     // cluttering it with spinner-specific options.

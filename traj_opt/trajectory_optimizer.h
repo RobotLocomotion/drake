@@ -18,11 +18,18 @@
 #include "drake/traj_opt/velocity_partials.h"
 
 namespace drake {
+namespace systems {
+// Forward declaration to avoid polluting this namespace with systems:: stuff.
+template <typename>
+class Diagram;
+}  // namespace systems
+
 namespace traj_opt {
 
 using internal::PentaDiagonalMatrix;
 using multibody::MultibodyPlant;
 using systems::Context;
+using systems::Diagram;
 
 template <typename T>
 class TrajectoryOptimizer {
@@ -40,7 +47,25 @@ class TrajectoryOptimizer {
    * @param params solver parameters, including max iterations, linesearch
    *               method, etc.
    */
+  // TODO(amcastro-tri): Get rid of this constructor. Favor the new construction
+  // below so that we can cache the context at each time step in the state.
   TrajectoryOptimizer(const MultibodyPlant<T>* plant, Context<T>* context,
+                      const ProblemDefinition& prob,
+                      const SolverParameters& params = SolverParameters{});
+
+  /**
+   * Construct a new Trajectory Optimizer object.
+   *
+   * @param diagram Diagram for the entire model that will include the plant and
+   * SceneGraph for geometric queries. Used to allocate context resources.
+   * @param plant A model of the system that we're trying to find an optimal
+   *              trajectory for.
+   * @param prob Problem definition, including cost, initial and target states,
+   *             etc.
+   * @param params solver parameters, including max iterations, linesearch
+   *               method, etc.
+   */
+  TrajectoryOptimizer(const Diagram<T>* diagram, const MultibodyPlant<T>* plant,
                       const ProblemDefinition& prob,
                       const SolverParameters& params = SolverParameters{});
 
@@ -76,6 +101,9 @@ class TrajectoryOptimizer {
    * @return TrajectoryOptimizerState
    */
   TrajectoryOptimizerState<T> CreateState() const {
+    if (diagram_ != nullptr) {
+      return TrajectoryOptimizerState<T>(num_steps(), *diagram_, plant());
+    }
     return TrajectoryOptimizerState<T>(num_steps(), plant());
   }
 
@@ -116,6 +144,10 @@ class TrajectoryOptimizer {
   SolverFlag Solve(const std::vector<VectorX<T>>& q_guess,
                    TrajectoryOptimizerSolution<T>* solution,
                    TrajectoryOptimizerStats<T>* stats) const;
+
+  // Evaluates the MultibodyPlant context at the t-th time.
+  const Context<T>& EvalPlantContext(const TrajectoryOptimizerState<T>& state,
+                                     int t) const;
 
   // Evaluator functions to get data from the state's cache, and update it if
   // necessary.
@@ -172,6 +204,11 @@ class TrajectoryOptimizer {
   SolverFlag SolveWithTrustRegion(const std::vector<VectorX<T>>& q_guess,
                                   TrajectoryOptimizerSolution<T>* solution,
                                   TrajectoryOptimizerStats<T>* stats) const;
+
+  // Updates `cache` to store q and v from `state`.
+  void CalcContextCache(
+      const TrajectoryOptimizerState<T>& state,
+      typename TrajectoryOptimizerCache<T>::ContextCache* cache) const;
 
   /**
    * Compute all of the "trajectory data" (velocities v, accelerations a,
@@ -571,12 +608,20 @@ class TrajectoryOptimizer {
       const int iter_num, const double Delta, const VectorX<T>& dq,
       const TrajectoryOptimizerState<T>& state) const;
 
+  // Diagram of containing the plant_ model and scene graph. Needed to allocate
+  // context resources.
+  const Diagram<T>* diagram_{nullptr};
+
   // A model of the system that we are trying to find an optimal trajectory for.
-  const MultibodyPlant<T>* plant_;
+  const MultibodyPlant<T>* plant_{nullptr};
 
   // A context corresponding to plant_, to enable dynamics computations. Must be
   // connected to a larger Diagram with a SceneGraph for systems with contact.
-  Context<T>* context_;
+  Context<T>* context_{nullptr};
+
+  // Temporary workaround for when context_ is not provided at construction.
+  // TODO(amcastro-tri): Get rid of context_ and owned_context_.
+  std::unique_ptr<Context<T>> owned_context_;
 
   // Stores the problem definition, including cost, time horizon, initial state,
   // target state, etc.

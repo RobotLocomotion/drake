@@ -3,17 +3,21 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/traj_opt/inverse_dynamics_partials.h"
 #include "drake/traj_opt/penta_diagonal_matrix.h"
 #include "drake/traj_opt/trajectory_optimizer_workspace.h"
 #include "drake/traj_opt/velocity_partials.h"
+#include "drake/systems/framework/diagram.h"
 
 namespace drake {
 namespace traj_opt {
 
 using internal::PentaDiagonalMatrix;
 using multibody::MultibodyPlant;
+using systems::Context;
+using systems::Diagram;
 
 /**
  * Struct for holding quantities that are computed from the optimizer state (q),
@@ -27,6 +31,8 @@ using multibody::MultibodyPlant;
  */
 template <typename T>
 struct TrajectoryOptimizerCache {
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryOptimizerCache);
+
   TrajectoryOptimizerCache(const int num_steps, const int nv, const int nq)
       : derivatives_data(num_steps, nv, nq),
         gradient((num_steps + 1) * nq),
@@ -35,6 +41,44 @@ struct TrajectoryOptimizerCache {
     trajectory_data.a.assign(num_steps, VectorX<T>(nv));
     trajectory_data.tau.assign(num_steps, VectorX<T>(nv));
   }
+
+  TrajectoryOptimizerCache(const int num_steps, const Diagram<T>& diagram,
+                           const MultibodyPlant<T>& plant)
+      : TrajectoryOptimizerCache(num_steps, plant.num_velocities(),
+                                 plant.num_positions()) {
+    context_cache = std::make_unique<ContextCache>(num_steps, diagram, plant);
+  }
+
+  // Cache state at each time step t as a Context so that multibody quantities
+  // that the plant caches can be reused.
+  struct ContextCache {
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContextCache);
+
+    // Creates a ContextCache for a problem with num_steps, compatible with
+    // diagram and plant.
+    ContextCache(int num_steps, const Diagram<T>& diagram,
+                 const MultibodyPlant<T>& plant) {
+      diagram_contexts.reserve(num_steps + 1);
+      plant_contexts.reserve(num_steps + 1);
+      for (int t = 0; t <= num_steps; ++t) {
+        auto context_t = diagram.CreateDefaultContext();
+        plant_contexts.push_back(
+            &diagram.GetMutableSubsystemContext(plant, context_t.get()));
+        diagram_contexts.push_back(std::move(context_t));
+      }
+      up_to_date = false;
+    }
+
+    // std::vector of size num_steps+1, each storing the t-th context.
+    std::vector<std::unique_ptr<Context<T>>> diagram_contexts;
+
+    // std::vector of references to the MultibodyPlant contexts in
+    // digram_contexts, of size num_steps+1.
+    std::vector<Context<T>*> plant_contexts;
+
+    bool up_to_date{false};
+  };
+  std::unique_ptr<ContextCache> context_cache;
 
   // Data used to compute the cost L(q)
   struct TrajectoryData {
@@ -110,6 +154,7 @@ struct ProximalOperatorData {
 template <typename T>
 class TrajectoryOptimizerState {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryOptimizerState);
   /**
    * Constructor which allocates things of the proper sizes.
    *
@@ -122,6 +167,19 @@ class TrajectoryOptimizerState {
         num_steps_(num_steps),
         nq_(plant.num_positions()),
         cache_(num_steps, plant.num_velocities(), plant.num_positions()) {
+    const int nq = plant.num_positions();
+    q_.assign(num_steps + 1, VectorX<T>(nq));
+    proximal_operator_data_.q_last.assign(num_steps + 1, VectorX<T>(nq));
+    proximal_operator_data_.H_diag.assign(num_steps + 1, VectorX<T>::Zero(nq));
+  }
+
+  // TrajectoryOptimizer state for a `plant` model within `diagram`.
+  TrajectoryOptimizerState(const int num_steps, const Diagram<T>& diagram,
+                           const MultibodyPlant<T>& plant)
+      : workspace(num_steps, plant),
+        num_steps_(num_steps),
+        nq_(plant.num_positions()),
+        cache_(num_steps, diagram, plant) {
     const int nq = plant.num_positions();
     q_.assign(num_steps + 1, VectorX<T>(nq));
     proximal_operator_data_.q_last.assign(num_steps + 1, VectorX<T>(nq));
