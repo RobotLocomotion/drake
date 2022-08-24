@@ -64,6 +64,9 @@ PYBIND11_MODULE(kuka_iiwa, m) {
     py::class_<Class, LeafSystem<double>>(m, "IiwaStatusReceiver", cls_doc.doc)
         .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
             cls_doc.ctor.doc)
+        .def("get_time_measured_output_port",
+            &Class::get_time_measured_output_port, py_rvp::reference_internal,
+            cls_doc.get_time_measured_output_port.doc)
         .def("get_position_commanded_output_port",
             &Class::get_position_commanded_output_port,
             py_rvp::reference_internal,

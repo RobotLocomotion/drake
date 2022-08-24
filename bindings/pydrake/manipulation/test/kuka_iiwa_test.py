@@ -28,6 +28,8 @@ class TestKukaIiwa(unittest.TestCase):
 
         status_rec = mut.IiwaStatusReceiver()
         self.assertIsInstance(
+            status_rec.get_time_measured_output_port(), OutputPort)
+        self.assertIsInstance(
             status_rec.get_position_commanded_output_port(), OutputPort)
         self.assertIsInstance(
             status_rec.get_position_measured_output_port(), OutputPort)
