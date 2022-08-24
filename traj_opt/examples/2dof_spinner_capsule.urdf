@@ -50,10 +50,10 @@
       the spinner.
      -->
   </link>
-  <joint name="theta_one" type="continuous">
+  <joint name="theta_one" type="fixed">
     <parent link="base"/>
     <child link="finger_one"/>
-    <origin xyz="0 0 0"/>
+    <origin xyz="0 0 0" rpy="0 0.3 0"/>
     <axis xyz="0 1 0"/>
     <dynamics damping="0.1"/>
   </joint>
@@ -66,96 +66,16 @@
       <inertia ixx="0.0839" ixy="0" ixz="0" iyy="0.0839" iyz="0" izz="0.00125"/>
     </inertial>
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.05"/>
-      <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-      <material name="red"/>
-    </visual>
-    <visual>
       <origin rpy="0 0 0" xyz="0 0 0.5"/>
       <geometry>
-        <cylinder length="0.9" radius=".05"/>
-      </geometry>
-      <material name="red"/>
-    </visual>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.95"/>
-      <geometry>
-        <sphere radius=".05"/>
+        <capsule length="0.9" radius="0.05"/>
       </geometry>
       <material name="red"/>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.05"/>
+      <origin rpy="0 0 0" xyz="0 0 0.5"/>
       <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.90"/>
-      <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.80"/>
-      <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.70"/>
-      <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.60"/>
-      <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.50"/>
-      <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.40"/>
-      <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.30"/>
-      <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.20"/>
-      <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.10"/>
-      <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.05"/>
-      <geometry>
-        <sphere radius=".05"/>
-      </geometry>
-    </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.95"/>
-      <geometry>
-        <sphere radius=".05"/>
+        <capsule length="0.9" radius="0.05"/>
       </geometry>
     </collision>
   </link>
@@ -182,16 +102,16 @@
       <material name="green"/>
     </visual>
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 -0.25"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <sphere radius="0.25"/>
+        <capsule radius="0.25" length="0.8"/>
       </geometry>
       <material name="blue"/>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 -0.25"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <sphere radius="0.25"/>
+        <capsule radius="0.25" length="0.8"/>
       </geometry>
     </collision>
   </link>
@@ -203,12 +123,7 @@
     <dynamics damping="0.0"/>
   </joint>
 
-  <!-- Actuators for the fingers-->
-  <transmission type="SimpleTransmission" name="theta_one_trans">
-    <actuator name="theta_one"/>
-    <joint name="theta_one"/>
-    <mechanicalReduction>1</mechanicalReduction>
-  </transmission>
+  <!-- Actuator for the one moveable finger-->
   <transmission type="SimpleTransmission" name="theta_two_trans">
     <actuator name="theta_two"/>
     <joint name="theta_two"/>

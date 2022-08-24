@@ -43,6 +43,40 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
+    name = "2dof_spinner",
+    srcs = ["2dof_spinner.cc"],
+    add_test_rule = 1,
+    data = [
+        ":2dof_spinner.urdf",
+        ":2dof_spinner.yaml",
+    ],
+    test_rule_args = [],
+    deps = [
+        ":example_base",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_binary(
+    name = "wall_ball",
+    srcs = ["wall_ball.cc"],
+    add_test_rule = 1,
+    data = [
+        ":wall_ball.urdf",
+        ":wall_ball.yaml",
+    ],
+    test_rule_args = [],
+    deps = [
+        ":example_base",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_binary(
     name = "spinner",
     srcs = ["spinner.cc"],
     add_test_rule = 1,

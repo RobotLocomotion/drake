@@ -504,6 +504,73 @@ class TrajectoryOptimizer {
    */
   T SolveDoglegQuadratic(const T& a, const T& b, const T& c) const;
 
+  /**
+   * Save the cost L(q) for a variety of values of q so that we can make a
+   * contour plot (later) in python.
+   *
+   * Only changes the first two values of q(t) at t=1, so we can plot in 2d.
+   *
+   * @param scratch_state State variable used to compute L(q) for a variety of
+   * values of q.
+   */
+  void SaveContourPlotDataFirstTwoVariables(
+      TrajectoryOptimizerState<T>* scratch_state) const;
+
+  /**
+   * Save the cost, gradient, and Hessian accross a range of values of q(1)[0],
+   * where q(1)[0] is the first state variable at timestep t=1.
+   *
+   * This data will be used later to make debugging plots of L, g, and H.
+   *
+   * @param scratch_state State variable used to compute L(q), g(q), and H(q).
+   */
+  void SaveLinePlotDataFirstVariable(
+      TrajectoryOptimizerState<T>* scratch_state) const;
+
+  /**
+   * Clear the file `iteration_data.csv` and write a csv header so we can later
+   * record iteration data with SaveIterationData().
+   */
+  void SetupIterationDataFile() const;
+
+  /**
+   * Save iteration-specific data (like cost, q, etc) to a file.
+   *
+   * @param iter_num iteration number
+   * @param Delta trust region radius
+   * @param dq change in first decision variable
+   * @param rho trust ratio
+   * @param state state variable used to store q and compute L(q), g(q), H(q),
+   * etc
+   */
+  void SaveIterationData(const int iter_num, const double Delta,
+                         const double dq, const double rho,
+                         const TrajectoryOptimizerState<T>& state) const;
+
+  /**
+   * Clear the file `quadratic_data.csv` and write a csv header so we can later
+   * record iteration data with SaveQuadraticDataFirstTwoVariables().
+   */
+  void SetupQuadraticDataFile() const;
+
+  /**
+   * Save the cost L(q), gradient g(q), and Hessian approximation H(q) for the
+   * first two variables of the optimization problem at the given iteration.
+   *
+   * @warning this appends a row to `quadratic_data.csv`, without
+   * establishing any csv header or clearning the file. Make sure to call
+   * SetupQuadraticDataFile() first.
+   *
+   * @param iter_num iteration number that we're on
+   * @param Delta trust region radius
+   * @param dq variable step for this iteration.
+   * @param state optimizer state containing q, from which we can compute L, g,
+   * and H
+   */
+  void SaveQuadraticDataFirstTwoVariables(
+      const int iter_num, const double Delta, const VectorX<T>& dq,
+      const TrajectoryOptimizerState<T>& state) const;
+
   // A model of the system that we are trying to find an optimal trajectory for.
   const MultibodyPlant<T>* plant_;
 

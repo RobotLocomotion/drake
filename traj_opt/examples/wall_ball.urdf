@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<robot name="wall_ball">
+  <material name="green">
+    <color rgba=".3 .6 .4 1"/>
+  </material>
+  <material name="red">
+    <color rgba=".9 .1 0 1"/>
+  </material>
+  <material name="blue">
+    <color rgba="0.1 0.3 0.5 1"/>
+  </material>
+
+  <!-- Fixed Wall -->
+  <link name="wall">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <box size="0.1 1.0 1.0"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <box size="0.1 1.0 1.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="base_weld" type="fixed">
+    <parent link="world"/>
+    <child link="wall"/>
+    <origin xyz="0 0 0" rpy="0 0 0 "/>
+  </joint>
+
+  <!-- Ball on a prismatic joint -->
+  <link name="ball">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+      <material name="blue"/>
+    </collision>
+  </link>
+  <joint name="ball_joint" type="prismatic">
+    <parent link="world"/>
+    <child link="ball"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.1"/>
+  </joint>
+
+  <!-- Actuator for the ball -->
+  <transmission type="SimpleTransmission" name="ball_trans">
+    <actuator name="ball"/>
+    <joint name="ball_joint"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+</robot>

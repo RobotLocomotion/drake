@@ -45,6 +45,14 @@ struct TrajOptExampleParams {
     a->Visit(DRAKE_NVP(F));
     a->Visit(DRAKE_NVP(delta));
     a->Visit(DRAKE_NVP(n));
+    a->Visit(DRAKE_NVP(save_contour_data));
+    a->Visit(DRAKE_NVP(contour_q1_min));
+    a->Visit(DRAKE_NVP(contour_q1_max));
+    a->Visit(DRAKE_NVP(contour_q2_min));
+    a->Visit(DRAKE_NVP(contour_q2_max));
+    a->Visit(DRAKE_NVP(save_lineplot_data));
+    a->Visit(DRAKE_NVP(lineplot_q_min));
+    a->Visit(DRAKE_NVP(lineplot_q_max));
   }
   std::vector<double> q_init;
   std::vector<double> v_init;
@@ -71,6 +79,14 @@ struct TrajOptExampleParams {
   double F;
   double delta;
   double n;
+  bool save_contour_data;
+  double contour_q1_min;
+  double contour_q1_max;
+  double contour_q2_min;
+  double contour_q2_max;
+  bool save_lineplot_data;
+  double lineplot_q_min;
+  double lineplot_q_max;
 };
 
 }  // namespace examples
