@@ -47,21 +47,14 @@ save_solver_stats_csv : true
 
 # Contact model parameters
 F : 1.0       # force at delta meters of penetration
-delta : 0.001  # penetration distance with F newtons of normal force
+delta : 0.05  # penetration distance with F newtons of normal force
 n : 2         # polynomial smoothing factor
-
-# Contour plot parameters
-save_contour_data : false 
-contour_q1_min : 0
-contour_q1_max : 0
-contour_q2_min : 0
-contour_q2_max : 0
 
 # Line plot parameters
 save_lineplot_data : true
-lineplot_q_min : 0.09999503   # close to optimizality with delta = 0.001
-lineplot_q_max : 0.09999507
-#lineplot_q_min : 0.09073557  # close to optimality with delta = 0.05
-#lineplot_q_max : 0.09073559
+#lineplot_q_min : 0.09999503   # close to optimizality with delta = 0.001
+#lineplot_q_max : 0.09999507
+lineplot_q_min : 0.09073557  # close to optimality with delta = 0.05
+lineplot_q_max : 0.09073559
 #lineplot_q_min : 0.0         # whole range of interesting values
 #lineplot_q_max : 0.3

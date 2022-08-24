@@ -44,8 +44,9 @@ class TrajOptExample {
    */
   void SolveTrajectoryOptimization(const std::string options_file) const {
     // Load parameters from file
+    TrajOptExampleParams default_options;
     TrajOptExampleParams options = yaml::LoadYamlFile<TrajOptExampleParams>(
-        FindResourceOrThrow(options_file));
+        FindResourceOrThrow(options_file), {}, default_options);
 
     // Create a system model
     // N.B. we need a whole diagram, including scene_graph, to handle contact

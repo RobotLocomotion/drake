@@ -44,20 +44,3 @@ play_initial_guess : false
 linesearch_plot_every_iteration : false
 print_debug_data : false
 save_solver_stats_csv : true
-
-# Contact model parameters (not relevant to acrobot)
-F : 0.5       # force at delta meters of penetration
-delta : 0.01  # penetration distance with F newtons of normal force
-n : 2         # polynomial smoothing factor
-
-# Contour plot parameters
-save_contour_data : false
-contour_q1_min : 0.0
-contour_q1_max : 1.0
-contour_q2_min : 0.0
-contour_q2_max : 1.0
-
-# Line plot parameters
-save_lineplot_data : false
-lineplot_q_min : 0.0
-lineplot_q_max : 1.0
