@@ -324,7 +324,7 @@ void YamlReadArchive::CheckAllAccepted() const {
     unused(value);
     if (visited_names_.count(key) == 0) {
       ReportError(fmt::format(
-          "key {} did not match any visited value", key));
+          "key '{}' did not match any visited value", key));
     }
   }
 }
