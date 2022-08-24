@@ -1,6 +1,8 @@
 """The acceptance test for //tools/install/bazel:install.
 """
 
+import copy
+import os
 from os.path import join
 import subprocess
 import sys
@@ -102,10 +104,12 @@ import pydrake.all
 
     # Check that a full `bazel test` passes.
     command = "test"
+    env = copy.copy(os.environ)
+    env["BAZELISK_HOME"] = env["TEST_TMPDIR"]
     if sys.platform.startswith("darwin"):
         # TODO(jwnimmer-tri) A `test //...` doesn't pass yet on macOS.
         command = "build"
-    subprocess.check_call(cwd=scratch_dir, args=[
+    subprocess.check_call(cwd=scratch_dir, env=env, args=[
         "bazel",
         # Use "release engineering" options for hermeticity.
         # https://docs.bazel.build/versions/master/user-manual.html#bazel-releng
