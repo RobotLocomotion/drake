@@ -29,14 +29,14 @@ def _impl(repository_ctx):
     # need updating.
     mosek_major_version = 10
     mosek_minor_version = 0
-    mosek_patch_version = 16
+    mosek_patch_version = 18
 
     if repository_ctx.os.name == "mac os x":
         mosek_platform = "osx64x86"
-        sha256 = "FIXME"  # noqa
+        sha256 = "e3de2b99e5ab27a7c37356a7fe88f0a42c53ec04aeaba70abe8b5971fbcfc150"  # noqa
     elif repository_ctx.os.name == "linux":
         mosek_platform = "linux64x86"
-        sha256 = "05081e5fab3cbc6694e1d108e0e0340c9de55328aeca35c3fb8ae49fd74d15a1"  # noqa
+        sha256 = "f778f6e5560cdb8a3b5001cb51f40ccba9b3ef73da09406dcd3c1a870433eb34"  # noqa
     else:
         fail(
             "Operating system is NOT supported",
@@ -112,7 +112,7 @@ def _impl(repository_ctx):
             # We use the the MOSEK™ copy of libtbb. The version of libtbb
             # available in Ubuntu is too old.
             "bin/libtbb.so.12",
-            "bin/libtbb.so.12.4",
+            "bin/libtbb.so.12.6",
             "bin/libmosek64.so.{}.{}".format(
                 mosek_major_version,
                 mosek_minor_version,
