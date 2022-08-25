@@ -631,7 +631,7 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/one_tetrahedron.vtk",
-        "test/two_tetrahedra_with_field_variable.vtk"
+        "test/two_tetrahedra_with_field_variable.vtk",
     ],
 )
 
