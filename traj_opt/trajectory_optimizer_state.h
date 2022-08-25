@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/traj_opt/inverse_dynamics_partials.h"
 #include "drake/traj_opt/penta_diagonal_matrix.h"
@@ -15,6 +16,7 @@ namespace drake {
 namespace traj_opt {
 
 using internal::PentaDiagonalMatrix;
+using multibody::BodyIndex;
 using multibody::MultibodyPlant;
 using systems::Context;
 using systems::Diagram;
@@ -40,6 +42,9 @@ struct TrajectoryOptimizerCache {
     trajectory_data.v.assign(num_steps + 1, VectorX<T>(nv));
     trajectory_data.a.assign(num_steps, VectorX<T>(nv));
     trajectory_data.tau.assign(num_steps, VectorX<T>(nv));
+    // TODO(amcastro-tri): We could allocate contact_jacobian_data here if we
+    // knew the number of contacts. For now, we'll defer the allocation to a
+    // later stage when the number of contacts is available.
   }
 
   TrajectoryOptimizerCache(const int num_steps, const Diagram<T>& diagram,
@@ -96,6 +101,27 @@ struct TrajectoryOptimizerCache {
 
     bool up_to_date{false};
   } trajectory_data;
+
+  struct SdfData {
+    // sdf_pairs[t], with t=0 to num_steps-1, stores the contact pairs for the
+    // t-th step.
+    std::vector<std::vector<geometry::SignedDistancePair<T>>> sdf_pairs;
+    bool up_to_date{false};
+  } sdf_data;
+
+  struct ContactJacobianData {
+    // body_pairs[t] stores body pairs for all contacts at time t.
+    std::vector<std::vector<std::pair<BodyIndex, BodyIndex>>> body_pairs;
+
+    // R_WC[t] is a std::vector storing R_WC for all contact pairs at time t.
+    std::vector<std::vector<math::RotationMatrix<T>>> R_WC;
+
+    // Contact Jacobian, std::vector of size num_steps.
+    // Each Jacobian matrix has 3*num_contacts rows and num_velocities columns.
+    // J[t] stores the contact Jacobian for the t-th step.
+    std::vector<MatrixX<T>> J;
+    bool up_to_date{false};
+  } contact_jacobian_data;
 
   // Data used to construct the gradient ∇L and Hessian ∇²L approximation
   struct DerivativesData {
@@ -299,6 +325,7 @@ class TrajectoryOptimizerState {
     cache_.cost_up_to_date = false;
     cache_.gradient_up_to_date = false;
     cache_.hessian_up_to_date = false;
+    cache_.contact_jacobian_data.up_to_date = false;
   }
 };
 

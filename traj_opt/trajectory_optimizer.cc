@@ -22,6 +22,7 @@ using internal::PentaDiagonalFactorizationStatus;
 using math::RigidTransform;
 using multibody::Body;
 using multibody::BodyIndex;
+using multibody::Frame;
 using multibody::Joint;
 using multibody::JointIndex;
 using multibody::MultibodyPlant;
@@ -328,6 +329,161 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
       forces->mutable_body_forces()[bodyB.node_index()] += F_BBo_W;
     }
   }
+}
+
+template <typename T>
+void TrajectoryOptimizer<T>::CalcSdfData(
+    const TrajectoryOptimizerState<T>& state,
+    typename TrajectoryOptimizerCache<T>::SdfData* sdf_data) const {
+  sdf_data->sdf_pairs.resize(num_steps());
+  for (int t = 0; t < num_steps(); ++t) {
+    const Context<T>& context = EvalPlantContext(state, t);
+    const geometry::QueryObject<T>& query_object =
+        plant()
+            .get_geometry_query_input_port()
+            .template Eval<geometry::QueryObject<T>>(context);
+    sdf_data->sdf_pairs[t] =
+        query_object.ComputeSignedDistancePairwiseClosestPoints();
+  }
+  sdf_data->up_to_date = true;
+}
+
+template <typename T>
+const std::vector<geometry::SignedDistancePair<T>>&
+TrajectoryOptimizer<T>::EvalSignedDistancePairs(
+    const TrajectoryOptimizerState<T>& state, int t) const {
+  DRAKE_DEMAND(0 <= t && t < num_steps());
+  if (!state.cache().sdf_data.up_to_date) {
+    CalcSdfData(state, &state.mutable_cache().sdf_data);
+  }
+  return state.cache().sdf_data.sdf_pairs[t];
+}
+
+template <typename T>
+void TrajectoryOptimizer<T>::CalcContactJacobian(
+    const Context<T>& context,
+    const std::vector<geometry::SignedDistancePair<T>>& sdf_pairs,
+    MatrixX<T>* J, std::vector<math::RotationMatrix<T>>* R_WC,
+    std::vector<std::pair<BodyIndex, BodyIndex>>* body_pairs) const {
+  const geometry::QueryObject<T>& query_object =
+      plant()
+          .get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
+  const drake::geometry::SceneGraphInspector<T>& inspector =
+      query_object.inspector();
+
+  // TODO(amcastro-tri): consider moving into workspace to avoid heap
+  // allocating.
+  const int nv = plant().num_velocities();
+  Matrix3X<T> Jv_WAc_W(3, nv);
+  Matrix3X<T> Jv_WBc_W(3, nv);
+  const int nc = sdf_pairs.size();
+  J->resize(3 * nc, nv);
+  R_WC->resize(nc);
+  body_pairs->resize(nc);
+
+  int ic = 0;
+  const Frame<T>& frame_W = plant().world_frame();
+  for (const SignedDistancePair<T>& pair : sdf_pairs) {
+    // Normal outwards from A.
+    const Vector3<T> nhat_W = -pair.nhat_BA_W;
+
+    // Get geometry and transformation data for the witness points
+    const GeometryId geometryA_id = pair.id_A;
+    const GeometryId geometryB_id = pair.id_B;
+
+    const BodyIndex bodyA_index =
+        plant().geometry_id_to_body_index().at(geometryA_id);
+    const Body<T>& bodyA = plant().get_body(bodyA_index);
+    const BodyIndex bodyB_index =
+        plant().geometry_id_to_body_index().at(geometryB_id);
+    const Body<T>& bodyB = plant().get_body(bodyB_index);
+
+    body_pairs->at(ic) = std::make_pair(bodyA_index, bodyB_index);
+
+    // Body poses in world.
+    const math::RigidTransform<T>& X_WA =
+        plant().EvalBodyPoseInWorld(context, bodyA);
+    const math::RigidTransform<T>& X_WB =
+        plant().EvalBodyPoseInWorld(context, bodyB);
+
+    // Geometry poses in body frames.
+    const math::RigidTransform<T> X_AGa =
+        inspector.GetPoseInParent(geometryA_id).template cast<T>();
+    const math::RigidTransform<T> X_BGb =
+        inspector.GetPoseInParent(geometryB_id).template cast<T>();
+
+    // Position of the witness points in the world frame.
+    const auto& p_GaCa_Ga = pair.p_ACa;
+    const RigidTransform<T> X_WGa = X_WA * X_AGa;
+    const Vector3<T> p_WCa_W = X_WGa * p_GaCa_Ga;
+    const auto& p_GbCb_Gb = pair.p_BCb;
+    const RigidTransform<T> X_WGb = X_WB * X_BGb;
+    const Vector3<T> p_WCb_W = X_WGb * p_GbCb_Gb;
+
+    // We define the (common, unique) contact point C as the midpoint between
+    // witness points Ca and Cb.
+    const Vector3<T> p_WC = 0.5 * (p_WCa_W + p_WCb_W);
+
+    // Since v_AcBc_W = v_WBc - v_WAc the relative velocity Jacobian will be:
+    //   J_AcBc_W = Jv_WBc_W - Jv_WAc_W.
+    // That is the relative velocity at C is v_AcBc_W = J_AcBc_W * v.
+    const Vector3<T> p_AoC_A = X_WA.inverse() * p_WC;
+    plant().CalcJacobianTranslationalVelocity(
+        context, multibody::JacobianWrtVariable::kV, bodyA.body_frame(),
+        p_AoC_A, frame_W, frame_W, &Jv_WAc_W);
+    const Vector3<T> p_BoC_B = X_WB.inverse() * p_WC;
+    plant().CalcJacobianTranslationalVelocity(
+        context, multibody::JacobianWrtVariable::kV, bodyB.body_frame(),
+        p_BoC_B, frame_W, frame_W, &Jv_WBc_W);
+
+    // Define a contact frame C at the contact point such that the z-axis Cz
+    // equals nhat_W. The tangent vectors are arbitrary, with the only
+    // requirement being that they form a valid right handed basis with nhat_W.
+    R_WC->at(ic) = math::RotationMatrix<T>::MakeFromOneVector(nhat_W, 2);
+
+    // Contact Jacobian J_AcBc_C, expressed in the contact frame C.
+    // That is, vc = J * v stores the contact velocities expressed in the
+    // contact frame C. Similarly for contact forces, they are expressed in this
+    // same frame C.
+    J->middleRows(3 * ic, 3) =
+        R_WC->at(ic).matrix().transpose() * (Jv_WBc_W - Jv_WAc_W);
+
+    ++ic;
+  }
+}
+
+template <typename T>
+void TrajectoryOptimizer<T>::CalcContactJacobianData(
+    const TrajectoryOptimizerState<T>& state,
+    typename TrajectoryOptimizerCache<T>::ContactJacobianData*
+        contact_jacobian_data) const {
+  // Resize contact data accordingly.
+  // We resize to include all pairs, even for positive distances for which the
+  // contact forces will be zero.
+  contact_jacobian_data->J.resize(num_steps());
+  contact_jacobian_data->R_WC.resize(num_steps());
+  contact_jacobian_data->body_pairs.resize(num_steps());
+
+  for (int t = 0; t < num_steps(); ++t) {
+    const Context<T>& context = EvalPlantContext(state, t);
+    const std::vector<geometry::SignedDistancePair<T>>& sdf_pairs =
+        EvalSignedDistancePairs(state, t);
+    CalcContactJacobian(context, sdf_pairs, &contact_jacobian_data->J[t],
+                        &contact_jacobian_data->R_WC[t],
+                        &contact_jacobian_data->body_pairs[t]);
+  }
+}
+
+template <typename T>
+const typename TrajectoryOptimizerCache<T>::ContactJacobianData&
+TrajectoryOptimizer<T>::EvalContactJacobianData(
+    const TrajectoryOptimizerState<T>& state) const {
+  if (!state.cache().contact_jacobian_data.up_to_date) {
+    CalcContactJacobianData(state,
+                            &state.mutable_cache().contact_jacobian_data);
+  }
+  return state.cache().contact_jacobian_data;
 }
 
 template <typename T>
