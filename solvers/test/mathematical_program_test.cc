@@ -3333,6 +3333,11 @@ GTEST_TEST(TestMathematicalProgram, NewSosPolynomial) {
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kSdsos);
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kDsos);
 
+  // Pass an uninitialized type to NewSosPolynomial method.
+  EXPECT_THROW(CheckNewSosPolynomial(
+                   static_cast<MathematicalProgram::NonnegativePolynomial>(0)),
+               std::runtime_error);
+
   // Check NewSosPolynomial with degree = 0
   for (const auto type : {MathematicalProgram::NonnegativePolynomial::kSos,
                           MathematicalProgram::NonnegativePolynomial::kSdsos,
