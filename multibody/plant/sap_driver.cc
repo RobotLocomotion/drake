@@ -1,5 +1,12 @@
 #include "drake/multibody/plant/sap_driver.h"
 
+#include <algorithm>
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
@@ -50,9 +57,8 @@ void SapDriver<T>::set_sap_solver_parameters(
 template <typename T>
 void SapDriver<T>::DeclareCacheEntries(
     CompliantContactManager<T>* mutable_manager) {
-  // TODO: consider a public accessor for cache entries instead of friendship?
-  // Though I imagine I'll need to call methods now private.... Maybe those
-  // belong to an even tighter class?
+  // TODO(amcastro-tri): Consider alternative to provide cache declaration
+  // access. Either from the manager or directly on the plant.
   const auto& contact_problem_cache_entry = mutable_manager->DeclareCacheEntry(
       "Contact Problem.",
       systems::ValueProducer(this, ContactProblemCache<T>(plant().time_step()),

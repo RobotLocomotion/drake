@@ -19,7 +19,7 @@ namespace internal {
 // Forward declaration.
 struct SapSolverParameters;
 }  // namespace internal
-}  // namespace contact_solvers    
+}  // namespace contact_solvers
 namespace internal {
 
 // Forward declaration.
@@ -217,7 +217,7 @@ class CompliantContactManager final
   EvalAccelerationsDueToNonContactForcesCache(
       const systems::Context<T>& context) const;
 
-  CacheIndexes cache_indexes_;  
+  CacheIndexes cache_indexes_;
   // Vector of joint damping coefficients, of size plant().num_velocities().
   // This information is extracted during the call to ExtractModelInfo().
   VectorX<T> joint_damping_;

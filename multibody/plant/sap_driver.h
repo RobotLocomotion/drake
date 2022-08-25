@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -94,20 +98,20 @@ struct ContactProblemCache {
 template <typename T>
 class SapDriver {
  public:
-  SapDriver(CompliantContactManager<T>* manager);
+  explicit SapDriver(CompliantContactManager<T>* manager);
 
   void set_sap_solver_parameters(
       const contact_solvers::internal::SapSolverParameters& parameters);
 
   const CompliantContactManager<T>& manager() const { return *manager_; }
 
-  const MultibodyPlant<T>& plant() const { return manager().plant(); }    
+  const MultibodyPlant<T>& plant() const { return manager().plant(); }
 
   void DeclareCacheEntries(CompliantContactManager<T>* manager);
 
   void CalcContactSolverResults(
       const systems::Context<T>&,
-      contact_solvers::internal::ContactSolverResults<T>*) const;  
+      contact_solvers::internal::ContactSolverResults<T>*) const;
 
  private:
   // Provide private access for unit testing only.

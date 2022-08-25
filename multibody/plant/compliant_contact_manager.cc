@@ -38,7 +38,7 @@ AccelerationsDueToExternalForcesCache<T>::AccelerationsDueToExternalForcesCache(
       ac(topology) {}
 
 template <typename T>
-CompliantContactManager<T>::CompliantContactManager() {};
+CompliantContactManager<T>::CompliantContactManager() {}
 
 template <typename T>
 CompliantContactManager<T>::~CompliantContactManager() {}
