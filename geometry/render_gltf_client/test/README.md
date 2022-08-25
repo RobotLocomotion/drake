@@ -41,18 +41,18 @@ information on flask debug targets.
 In another terminal, run the test simulation and the client.
 
 ```
-$ bazel run //geometry/render/dev/render_gltf_client:run_simulation_and_render -- --render_engine client
+$ bazel run //geometry/render_gltf_client:gltf_render_client_example -- --render_engine client
 ```
 As a comparison, you can also render with the normal VTK by setting
 --render_engine to vtk instead.
 
 ```
-$ bazel run //geometry/render/dev/render_gltf_client:run_simulation_and_render -- --render_engine vtk
+$ bazel run //geometry/render_gltf_client:gltf_render_client_example -- --render_engine vtk
 ```
 
 Note that if you ran your server on an alternate `--host` or `--port`, you will
 need to specify that in `--server_base_url` when running
-`run_simulation_and_render` executable as well.
+`gltf_render_client_example` executable as well.
 
 ### (Optional) Run Drake Visualizer
 
