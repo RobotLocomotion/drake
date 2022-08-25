@@ -1,3 +1,9 @@
+/* This file implements a bare-bone VTK renderer to demonstrate the glTF Render
+Client-Server pipeline and help its unit testing.  The sample code is kept
+straightforward deliberately without too much optimization.  It also serves as
+a benchmark to RenderEngineVtk, so some functions are ported directly to match
+the default RenderEngineVtk setting. */
+
 #include <cstdint>
 #include <map>
 #include <string>
@@ -27,12 +33,6 @@
 #include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
-
-/* This file implements a bare-bone VTK renderer to help demonstrate the glTF
-Render Client-Server pipeline and its unit testing.  The sample code is kept
-straightforward deliberately without too much optimization.  It also serves as
-a benchmark to RenderEngineVtk, so some functions are ported directly to match
-the default RenderEngineVtk setting. */
 
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
 
@@ -105,7 +105,7 @@ using drake::systems::sensors::ImageRgba8U;
 using drake::systems::sensors::ImageTraits;
 using drake::systems::sensors::PixelType;
 
-// Imported from render_engine_vtk.cc, for converting the depth image.
+// Imported from internal_render_engine_vtk.cc, for converting the depth image.
 float CheckRangeAndConvertToMeters(float z_buffer_value, double z_near,
                                    double z_far) {
   // This assumes the values have already been encoded to the range [0, 1]
@@ -214,7 +214,7 @@ int DoMain() {
   window_to_image_filter->SetScale(1);
   window_to_image_filter->SetInputBufferTypeToRGBA();
   window_to_image_filter->ReadFrontBufferOff();
-  // See notes in render_engine_vtk.cc.
+  // See notes in internal_render_engine_vtk.cc.
   window_to_image_filter->SetShouldRerender(false);
 
   /* Import the glTF scene and pose the camera.  `camera 0` is assumed to be
@@ -229,8 +229,8 @@ int DoMain() {
   CalcProjectionMatrix(renderer);
   SetDefaultLighting(renderer);
 
-  /* Set render-specific settings, such as the background color and texture
-   propert, based on the type of the render image. */
+  /* Apply render-specific settings, such as the background color and texture
+   property based on the type of the rendered image. */
   if (FLAGS_image_type == "color") {
     renderer->SetUseDepthPeeling(1);
     renderer->UseFXAAOn();

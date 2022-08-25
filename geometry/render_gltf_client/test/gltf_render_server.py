@@ -1,7 +1,7 @@
 """
-A prototype glTF render server that receives HTTP requests and invokes a server
-backend to render images.  Users seeking to replace the sample VTK-based
-backend can simply change the implementation in `render_callback()`.
+A prototype glTF render server that receives HTTP requests and dispatches to a
+renderer backend to render images.  Users seeking to replace the sample
+VTK-based backend can simply change the implementation in `render_callback()`.
 
 Check the README page for more details:
 https://github.com/RobotLocomotion/drake/blob/master/geometry/render_gltf_client/test/README.md
@@ -30,12 +30,12 @@ from flask import Flask, request, send_file
 app = Flask(__name__)
 
 
-"""Where the client will upload files to / wait for an image response from. If
-the drake client transmits files to an alternative endpoint, make sure to
+"""Where the client will upload files to and wait for an image response from.
+If the drake client transmits files to an alternative endpoint, make sure to
 update this value accordingly.
 
 Warning:
-    If you change this value to ``/``, then you must delete or comment out the
+    If you change this value to `/`, then you must delete or comment out the
     `root()` function below.
 """
 RENDER_ENDPOINT = "/render"
@@ -72,8 +72,7 @@ def compute_hash(path: Path) -> str:
 
 @atexit.register
 def delete_server_cache():
-    """Deletes `TMP_DIR` folder upon exit, e.g., `ctrl+C`, when CLEANUP is
-    True."""
+    """Deletes `TMP_DIR` upon exit, e.g., `ctrl+C`, when CLEANUP is True."""
     if CLEANUP:
         if TMP_DIR.is_dir():
             shutil.rmtree(TMP_DIR, ignore_errors=True)
@@ -130,7 +129,7 @@ class FieldType(Enum):
 
 class RenderRequest:
     """A `RenderRequest` wrapped around a `flask.request` that validates the
-    entries in the client's `<form>`.  Users of this class can assume all the
+    entries in a client's `<form>`.  Users of this class can assume all the
     fields are sensible, and should only access those fields through
     `get_field()` function.
 
@@ -268,6 +267,9 @@ class RenderRequest:
     def _parse_numeric(
         self, field_name: str, field_type: FieldType
     ) -> Union[int, float]:
+        """Checks if the raw string value can be converted to the expected type
+        and the numeric value is greater than 0 (as an indicatin of being
+        sensible)."""
         try:
             value = self.request.form[field_name]
             if field_type == FieldType.Int:
