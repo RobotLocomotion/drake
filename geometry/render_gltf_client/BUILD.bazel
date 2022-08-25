@@ -15,12 +15,7 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
-# TODO(jwnimmer-tri) Replace with "//visibility:private" once dev code is gone.
-_VISIBILITY = [
-    "//geometry/render/dev/render_gltf_client:__pkg__",
-]
-
-package(default_visibility = _VISIBILITY)
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library(
     name = "render_gltf_client",
@@ -59,7 +54,7 @@ drake_cc_library(
     srcs = ["internal_http_service.cc"],
     hdrs = ["internal_http_service.h"],
     internal = True,
-    visibility = _VISIBILITY,
+    visibility = ["//visibility:private"],
     interface_deps = [
         "//common:essential",
     ],
@@ -74,7 +69,7 @@ drake_cc_library(
     srcs = ["internal_http_service_curl.cc"],
     hdrs = ["internal_http_service_curl.h"],
     internal = True,
-    visibility = _VISIBILITY,
+    visibility = ["//visibility:private"],
     interface_deps = [
         ":internal_http_service",
     ],
@@ -95,7 +90,7 @@ drake_cc_library(
         "internal_render_client.h",
     ],
     internal = True,
-    visibility = _VISIBILITY,
+    visibility = ["//visibility:private"],
     deps = [
         ":internal_http_service",
         ":internal_http_service_curl",
@@ -119,7 +114,7 @@ drake_cc_library(
         "internal_render_engine_gltf_client.h",
     ],
     internal = True,
-    visibility = _VISIBILITY,
+    visibility = ["//visibility:private"],
     deps = [
         ":internal_render_client",
         "//common:filesystem",
@@ -185,7 +180,6 @@ drake_cc_library(
     testonly = True,
     srcs = ["test/internal_sample_image_data.cc"],
     hdrs = ["test/internal_sample_image_data.h"],
-    visibility = _VISIBILITY,
     deps = [
         "//systems/sensors:image",
     ],
@@ -221,17 +215,19 @@ drake_cc_googletest(
 )
 
 drake_py_binary(
-    name = "gltf_render_server",
-    srcs = ["test/gltf_render_server.py"],
-    data = [":gltf_render_server_backend"],
+    name = "server_demo",
+    testonly = True,
+    srcs = ["test/server_demo.py"],
+    data = [":server_vtk_backend"],
     deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
 )
 
 drake_cc_binary(
-    name = "gltf_render_server_backend",
-    srcs = ["test/gltf_render_server_backend.cc"],
+    name = "server_vtk_backend",
+    testonly = True,
+    srcs = ["test/server_vtk_backend.cc"],
     deps = [
         "//common:filesystem",
         "//geometry/render:render_label",
@@ -249,10 +245,43 @@ drake_cc_binary(
     ],
 )
 
-drake_py_unittest(
-    name = "gltf_render_server_test",
+drake_cc_binary(
+    name = "client_demo",
+    testonly = True,
+    srcs = ["test/client_demo.cc"],
+    data = [
+        ":test/4_color_texture.png",
+        ":test/example_scene.sdf",
+        "//manipulation/models/ycb:models",
+    ],
     deps = [
-        ":gltf_render_server",
+        ":factory",
+        "//common:filesystem",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//geometry/render_vtk",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/primitives:constant_vector_source",
+        "//systems/sensors:image_to_lcm_image_array_t",
+        "//systems/sensors:image_writer",
+        "//systems/sensors:rgbd_sensor",
+        "@fmt",
+        "@gflags",
+    ],
+)
+
+drake_py_unittest(
+    name = "acceptance_test",
+    data = [
+        ":client_demo",
+        ":server_demo",
+        ":server_vtk_backend",
+    ],
+    deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
 )
