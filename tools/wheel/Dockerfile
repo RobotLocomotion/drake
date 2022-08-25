@@ -37,10 +37,11 @@ RUN /image/build-vtk.sh
 FROM incubator AS clean
 
 ARG PYTHON=3
+ARG PYTHON_SHA=
 
-ADD image/provision-python.sh /image/
+ADD image/provision-python.sh image/build-python.sh /image/
 
-RUN /image/provision-python.sh ${PYTHON}
+RUN /image/provision-python.sh ${PYTHON} ${PYTHON_SHA}
 
 # -----------------------------------------------------------------------------
 # Inject the primary build scripts.
