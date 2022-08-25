@@ -53,8 +53,6 @@ drake_cc_library(
     internal = True,
     visibility = [
         "//geometry/render_gltf_client:__pkg__",
-        # TODO(jwnimmer-tri) Remove this once the dev package is gone.
-        "//geometry/render/dev/render_gltf_client:__pkg__",
         # TODO(jwnimmer-tri) Remove this after deprecation 2022-09-01.
         "//geometry/render:__pkg__",
     ],
