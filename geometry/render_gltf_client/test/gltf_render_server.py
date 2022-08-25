@@ -22,6 +22,7 @@ import tempfile
 from textwrap import dedent
 from typing import Dict, TYPE_CHECKING, Tuple, Union
 
+from bazel_tools.tools.python.runfiles.runfiles import Create as CreateRunfiles
 from flask import Flask, send_file
 
 if TYPE_CHECKING:
@@ -133,6 +134,7 @@ class RenderError(Exception):
 
 class FieldType(Enum):
     """Describes the type expected in a given `<form>` field entry."""
+
     File = 0
     String = 1
     Int = 2
@@ -296,7 +298,7 @@ class RenderRequest:
         except Exception as e:
             raise RenderError(
                 f"Internal server error processing field '{field_name}': {e}",
-                code=500,
+                error_code=500,
             )
 
     def _parse_scene(self, field_name: str) -> Path:
@@ -333,7 +335,7 @@ class RenderRequest:
                 raise RenderError(
                     f"Provided scene_sha256='{expected_sha256}' does not "
                     f"match the computed sha256 of '{sha256}'.",
-                    code=500,
+                    error_code=500,
                 )
 
             # Create a timestamp for saving the file to avoid collisions.
@@ -349,7 +351,7 @@ class RenderRequest:
         except RenderError as re:
             raise re from None  # Forward the exception.
         except Exception as e:
-            raise RenderError(f"Internal server error: {e}", code=500)
+            raise RenderError(f"Internal server error: {e}", error_code=500)
 
 
 ###############################################################################
@@ -377,11 +379,12 @@ def render_callback(render_request: RenderRequest) -> str:
             exceptions raised will result in an internal server error response
             message to the client.
     """
-    # NOTE: The path to `gltf_render_server_backend` is only valid from bazel.
-    # The path to the renderer executable to call.
-    backend = str(
-        (THIS_FILE_DIR / ".." / "gltf_render_server_backend").resolve()
+    # Locate the binary of the renderer.
+    runfiles = CreateRunfiles()
+    backend_bin = runfiles.Rlocation(
+        "drake/geometry/render_gltf_client/gltf_render_server_backend"
     )
+
     # Determine the extension and the file path of the rendering.
     # NOTE: When CLEANUP=True, this image path is deleted by the caller.
     output_path = str(render_request.get_field("scene"))
@@ -394,7 +397,7 @@ def render_callback(render_request: RenderRequest) -> str:
     # Create the command-line arguments to pass to the render backend.
     # NOTE: Make sure you convert entries in the list to `str`.
     proc_args = [
-        backend,
+        backend_bin,
         "--input_path",
         str(render_request.get_field("scene")),
         "--output_path",
@@ -452,7 +455,7 @@ def render_callback(render_request: RenderRequest) -> str:
         # Inform the caller where the final rendering resides.
         return output_path
     except Exception as e:
-        raise RenderError(f"Failed render invocation: {e}", code=500)
+        raise RenderError(f"Failed render invocation: {e}", error_code=500)
 
 
 ###############################################################################

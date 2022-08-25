@@ -7,6 +7,10 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:py.bzl", "py_binary")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
@@ -215,11 +219,13 @@ drake_cc_googletest(
 
 # Runs a flask server on 127.0.0.1:8000.  --host and --port are enabled as
 # command line overrides (e.g., if port 8000 is occupied).
-py_binary(
+drake_py_binary(
     name = "gltf_render_server",
     srcs = ["test/gltf_render_server.py"],
     data = [":gltf_render_server_backend"],
-    main = "test/gltf_render_server.py",
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
 )
 
 drake_cc_binary(
