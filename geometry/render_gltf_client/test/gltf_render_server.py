@@ -1,7 +1,7 @@
 """
 A prototype glTF render server that receives HTTP requests and invokes a server
-backend to render images.  Users seeking to replace the sample VTK-based backend
-can simply change the implementation in `render_callback()`.
+backend to render images.  Users seeking to replace the sample VTK-based
+backend can simply change the implementation in `render_callback()`.
 
 Check the README page for more details:
 https://github.com/RobotLocomotion/drake/blob/master/geometry/render_gltf_client/test/README.md
@@ -12,15 +12,15 @@ import atexit
 import datetime
 from enum import Enum
 from hashlib import sha256
-from pathlib import Path
 from io import BytesIO
 import itertools
+from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
 from textwrap import dedent
-from typing import Dict, Union, Tuple, TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING, Tuple, Union
 
 from flask import Flask, send_file
 
@@ -64,6 +64,7 @@ except Exception as e:
     )
     sys.exit(1)
 
+
 ###############################################################################
 # Helper classes and functions.
 ###############################################################################
@@ -92,15 +93,16 @@ def delete_server_cache():
 
 class RenderError(Exception):
     """An exception class used for signaling the caller the error messages and
-    the HTTP response code.  Any exceptions raised in `render_callback()` should
-    leverage this class to populate an informative `message` and `code`.
+    the HTTP response code.  Any exceptions raised in `render_callback()`
+    should use this class to populate an informative `message` and `code`.
 
     Args:
         message (str): The exception message to communicate to the client.
         code (int): The HTTP response code to indicate the type of the failure.
-            If not provided, it will be `400`.  If a value of less than `400` is
-            provided, a `500` error code (internal server error) will be sent
-            instead.  This exception should only be used to indicate failure.
+            If not provided, it will be `400`.  If a value of less than `400`
+            is provided, a `500` error code (internal server error) will be
+            sent instead as this exception should only be used to indicate
+            failure.
     """
 
     def __init__(self, message: str, error_code: int = 400):
@@ -131,6 +133,7 @@ class RenderError(Exception):
 
 class FieldType(Enum):
     """Describes the type expected in a given `<form>` field entry."""
+
     File = 0  # For `<input type="file" ...>`.
     String = 1  # For `<input type="text" ...>`.
     Int = 2  # For `<input type="number" ...>`.
@@ -138,9 +141,9 @@ class FieldType(Enum):
 
 
 class RenderRequest:
-    """A `RenderRequest` wrapped around a `flask.request` that validates all
-    entries on the client's `<form>`.  The user of this class can assume all the
-    fields are sensible, and should only access those fields through
+    """A `RenderRequest` wrapped around a `flask.request` that validates the
+    entries in the client's `<form>`.  The user of this class can assume all
+    the fields are sensible, and should only access those fields through
     `get_field()` function.
 
     Note:
@@ -156,8 +159,8 @@ class RenderRequest:
     # A class constant listing all the expected fields and their types from a
     # request <form>. It's used for validation and should be kept consistent
     # with Drake's documentation.
-    # See also: https://drake.mit.edu/doxygen_cxx/group__render__engine__gltf__client__server__api.html
-    EXPECTED_FORM_FIELDS : Dict[str, FieldType] = {
+    # See also: https://drake.mit.edu/doxygen_cxx/group__render__engine__gltf__client__server__api.html  # noqa
+    EXPECTED_FORM_FIELDS: Dict[str, FieldType] = {
         "scene": FieldType.File,
         "scene_sha256": FieldType.String,
         "image_type": FieldType.String,
@@ -167,7 +170,7 @@ class RenderRequest:
         "height": FieldType.Int,
         "near": FieldType.Float,
         "far": FieldType.Float,
-        "focal_x": FieldType.Float, 
+        "focal_x": FieldType.Float,
         "focal_y": FieldType.Float,
         "fov_x": FieldType.Float,
         "fov_y": FieldType.Float,
@@ -180,8 +183,8 @@ class RenderRequest:
     def __init__(self, flask_request: request, verbose: bool = True):
         """
         Args:
-            flask_request (`flask.request`): The flask request instance provided
-                to `render_endpoint()`.
+            flask_request (`flask.request`): The flask request instance
+                provided to `render_endpoint()`.
             verbose (bool): Whether to log messages.  Default: True.
         """
         self.request = flask_request
@@ -197,21 +200,25 @@ class RenderRequest:
         # `flask.request.files`.
         for field_name in self.request.form:
             if field_name == "scene":
-                raise RenderError("Form field 'scene' should be in the files section.")
+                raise RenderError(
+                    "Form field 'scene' should be in the files section."
+                )
             field_type = self.EXPECTED_FORM_FIELDS[field_name]
 
             if field_type in [FieldType.Int, FieldType.Float]:
-                self._fields_map[field_name] = self._parse_numeric(field_name, field_type)
-            else: #field_type == FieldType.String:
+                self._fields_map[field_name] = self._parse_numeric(
+                    field_name, field_type
+                )
+            else:  # field_type == FieldType.String:
                 self._fields_map[field_name] = self.request.form[field_name]
 
         # Validate `image_type` field.
         image_type = self._fields_map["image_type"]
         if image_type not in ["color", "depth", "label"]:
             raise RenderError(
-                 f"Field image_type='{image_type}' is not valid, must be either"
-                 " 'color', 'depth', or 'label'."
-                 )
+                f"Field image_type='{image_type}' is not valid, must be either"
+                " 'color', 'depth', or 'label'."
+            )
 
         # Validate `min_depth` and `max_depth` fields.
         if image_type == "depth":
@@ -247,18 +254,19 @@ class RenderRequest:
 
         # Validate field(s) in `flask.request.files`.
         if "scene" not in self.request.files and self.request.files.len() != 1:
-            raise RenderError(
-                "Should contain one and only 'scene' field.")
+            raise RenderError("Should contain one and only 'scene' field.")
         self._fields_map["scene"] = self._parse_scene("scene")
 
     def get_field(self, field_name: str) -> Union[int, float, str]:
-        """Queries the value of a field in the form. This function should be the
-        ONLY public function of the class.""" 
+        """Queries the value of a field in the form. This function should be
+        the **only** public function of the class."""
         return self._fields_map[field_name]
 
     def _check_form_entries(self):
         expected_fields = set(self.EXPECTED_FORM_FIELDS.keys())
-        provided_fields = set(itertools.chain(self.request.files, self.request.form))
+        provided_fields = set(
+            itertools.chain(self.request.files, self.request.form)
+        )
 
         # All the fields provided should be a subset of `expected_fields`. Some
         # of the fields are optional, i.e., min_depth and max_depth, and thus
@@ -269,7 +277,9 @@ class RenderRequest:
                 f"Extra field(s) {extras} in the request <form>."
             )
 
-    def _parse_numeric(self, field_name: str, field_type: FieldType) -> Union[int, float]:
+    def _parse_numeric(
+        self, field_name: str, field_type: FieldType
+    ) -> Union[int, float]:
         try:
             value = self.request.form[field_name]
             if field_type == FieldType.Int:
@@ -300,8 +310,8 @@ class RenderRequest:
 
         Raises:
             RenderError: In the event that the provided sha256 hash is not the
-            same as what is computed from the uploaded file, or any other errors
-            that occur in trying to move the file to the `SERVER_CACHE`.
+            same as what is computed from the uploaded file, or any other
+            errors that occur in trying to move the file to the `SERVER_CACHE`.
         """
         try:
             # This will be a werkzeug.datastructures.FileStorage, see
@@ -322,13 +332,15 @@ class RenderRequest:
                     except Exception:
                         pass
                 raise RenderError(
-                    f"Provided scene_sha256='{expected_sha256}' does not match "
-                    f"the computed sha256 of '{sha256}'.",
+                    f"Provided scene_sha256='{expected_sha256}' does not "
+                    f"match the computed sha256 of '{sha256}'.",
                     code=500,
                 )
 
             # Create a timestamp for saving the file to avoid collisions.
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
+            timestamp = datetime.datetime.now().strftime(
+                "%Y-%m-%d_%H-%M-%S-%f"
+            )
             scene_path = SERVER_CACHE / f"{timestamp}.gltf"
             temp_path.rename(scene_path)
 
@@ -455,8 +467,9 @@ def render_callback(render_request: RenderRequest) -> str:
 @app.route("/")
 def root():
     """The main listing page, renders a simple redirect page including where
-    the server cache lives for development.  This endpoint (`/`) is not required
-    by the drake server-client relationship and only serves to aid development.
+    the server cache lives for development.  This endpoint (`/`) is not
+    required by the drake server-client relationship and only serves to aid
+    development.
     """
     html_prefix = dedent(
         f"""\
@@ -606,7 +619,9 @@ def render_endpoint():
     for field_name, field_type in RenderRequest.EXPECTED_FORM_FIELDS.items():
         row = f"{tr_indent}<tr>\n"
         input_type = html_input_type(field_type)
-        row += f'{td_indent}<td><input type="{input_type}" name="{field_name}">\n'
+        row += (
+            f'{td_indent}<td><input type="{input_type}" name="{field_name}">\n'
+        )
         row += f"{tr_indent}</tr>\n"
         table_rows.append(row)
 
@@ -614,9 +629,7 @@ def render_endpoint():
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-    )
+    parser = argparse.ArgumentParser(description=__doc__,)
     parser.add_argument(
         "--host",
         type=str,
@@ -636,7 +649,7 @@ def main():
         action="store_true",
         default=False,
         help="Whether to run in debug mode in which flask reloads the server "
-             "automatically when file changes.",
+        "automatically when file changes.",
     )
 
     args = parser.parse_args()
