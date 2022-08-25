@@ -222,7 +222,7 @@ GTEST_TEST(TrajectoryOptimizerTest, TrustRatio) {
   // Create state, scratch state, and an initial guess
   std::vector<VectorXd> q_guess;
   for (int t = 0; t <= num_steps; ++t) {
-    q_guess.push_back(opt_prob.q_init + 0.01 * t * MatrixXd::Identity(1, 1));
+    q_guess.push_back(opt_prob.q_init + 0.01 * t * VectorXd::Ones(1));
   }
   TrajectoryOptimizerState<double> state = optimizer.CreateState();
   TrajectoryOptimizerState<double> scratch_state = optimizer.CreateState();
@@ -474,7 +474,7 @@ GTEST_TEST(TrajectoryOptimizerTest, HessianPendulum) {
   std::vector<VectorXd> q(num_steps + 1);
   q[0] = opt_prob.q_init;
   for (int t = 1; t <= num_steps; ++t) {
-    q[t] = q[t - 1] + 0.1 * dt * MatrixXd::Identity(1, 1);
+    q[t] = q[t - 1] + 0.1 * dt * VectorXd::Ones(1);
   }
   state.set_q(q);
 
@@ -548,7 +548,7 @@ GTEST_TEST(TrajectoryOptimizerTest, AutodiffGradient) {
   std::vector<VectorXd> q(num_steps + 1);
   q[0] = opt_prob.q_init;
   for (int t = 1; t <= num_steps; ++t) {
-    q[t] = q[t - 1] + 0.1 * dt * MatrixXd::Identity(1, 1);
+    q[t] = q[t - 1] + 0.1 * dt * VectorXd::Ones(1);
   }
   state.set_q(q);
 
@@ -623,7 +623,7 @@ GTEST_TEST(TrajectoryOptimizerTest, CalcGradientKuka) {
   std::vector<VectorXd> q(num_steps + 1);
   q[0] = opt_prob.q_init;
   for (int t = 1; t <= num_steps; ++t) {
-    q[t] = q[t - 1] + 0.1 * dt * MatrixXd::Identity(7, 7);
+    q[t] = q[t - 1] + 0.1 * dt * VectorXd::Ones(7);
   }
   state.set_q(q);
 
@@ -826,7 +826,7 @@ GTEST_TEST(TrajectoryOptimizerTest, CalcGradientPendulum) {
   std::vector<VectorXd> q(num_steps + 1);
   q[0] = opt_prob.q_init;
   for (int t = 1; t <= num_steps; ++t) {
-    q[t] = q[t - 1] + 0.1 * dt * MatrixXd::Identity(1, 1);
+    q[t] = q[t - 1] + 0.1 * dt * VectorXd::Ones(1);
   }
   state.set_q(q);
 
