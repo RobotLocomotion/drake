@@ -1,8 +1,8 @@
 # Developing your own Server
 A [testing suite](../../render_gltf_client/test), including a sample
 [flask](https://flask.palletsprojects.com/en/2.0.x/)
-[server](../../render_gltf_client/test/gltf_render_server.py) and a
-[VTK server backend](../../render_gltf_client/test/gltf_render_server_backend.cc),
+[server](../../render_gltf_client/test/server_demo.py) and a
+[VTK server backend](../../render_gltf_client/test/server_vtk_backend.cc),
 is provided as a working example that can be used with minimal change for your
 development.
 
@@ -24,35 +24,34 @@ A single threaded / single worker flask development server on host `127.0.0.1`
 and port `8000` can be launched by:
 
 ```
-$ bazel run //geometry/render_gltf_client:gltf_render_server
+$ bazel run //geometry/render_gltf_client:server_demo
 ```
 
 You may specify host and port by supplying extra arguments.
 
 ```
-$ bazel run //geometry/render_gltf_client:gltf_render_server -- --host 0.0.0.0 --port 8192
+$ bazel run //geometry/render_gltf_client:server_demo -- --host 0.0.0.0 --port 8192
 ```
 
 There is also a `--debug` option available to support reloading the server
-automatically, see the documentation in `gltf_render_server.py` for more
-information on flask debug targets.
+automatically, see a dedicated section below for more information.
 
 ### Run the Client
 In another terminal, run the test simulation and the client.
 
 ```
-$ bazel run //geometry/render/dev/render_gltf_client:run_simulation_and_render -- --render_engine client
+$ bazel run //geometry/render_gltf_client:client_demo
 ```
 As a comparison, you can also render with the normal VTK by setting
 --render_engine to vtk instead.
 
 ```
-$ bazel run //geometry/render/dev/render_gltf_client:run_simulation_and_render -- --render_engine vtk
+$ bazel run //geometry/render_gltf_client:client_demo -- --render_engine vtk
 ```
 
 Note that if you ran your server on an alternate `--host` or `--port`, you will
-need to specify that in `--server_base_url` when running
-`run_simulation_and_render` executable as well.
+need to specify that in `--server_base_url` when running `client_demo`
+executable as well.
 
 ### (Optional) Run Drake Visualizer
 
@@ -64,16 +63,16 @@ $ bazel run //tools:drake_visualizer
 
 ## Prototyping your own Server
 If everything is running as expected, then you can begin changing the
-implementation of `render_callback` in `gltf_render_server.py` to invoke the
-renderer you desire.
+implementation of `render_callback` in `server_demo.py` to invoke the renderer
+you desire.
 
 ### Notes on Developing with a `flask` Server
-`gltf_render_server.py` leverages `flask` to host a server.  During the
-development phase, it can be helpful to add the `--debug` flag to trigger
-automatic server reloading any time a file changes.
+`server_demo.py` leverages `flask` to host a server.  During the development
+phase, it can be helpful to add the `--debug` flag to trigger automatic server
+reloading any time a file changes.
 
 ```
-$ bazel run //geometry/render_gltf_client:gltf_render_server -- --debug
+$ bazel run //geometry/render_gltf_client:server_demo -- --debug
 ```
 
 See also the documentation on the `FLASK_ENV` environment variable.  Its default
