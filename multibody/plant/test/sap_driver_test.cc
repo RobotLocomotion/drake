@@ -20,7 +20,6 @@
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/tree/joint_actuator.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -69,58 +68,6 @@ static constexpr double nan() {
 }
 
 // Friend class used to provide access to a selection of private functions in
-// SapDriver for testing purposes.
-// TODO(amcastro-tri): Consider how to split SapDriver tests from
-// CompliantContactManager tests.
-class SapDriverTest {
- public:
-  static std::vector<ContactPairKinematics<double>> CalcContactKinematics(
-      const SapDriver<double>& driver, const Context<double>& context) {
-    return driver.CalcContactKinematics(context);
-  }
-
-  static const ContactProblemCache<double>& EvalContactProblemCache(
-      const SapDriver<double>& driver,
-      const Context<double>& context) {
-    return driver.EvalContactProblemCache(context);
-  }
-
-  static VectorXd CalcFreeMotionVelocities(
-      const SapDriver<double>& driver,
-      const Context<double>& context) {
-    VectorXd v_star(driver.plant().num_velocities());
-    driver.CalcFreeMotionVelocities(context, &v_star);
-    return v_star;
-  }
-
-  static std::vector<MatrixXd> CalcLinearDynamicsMatrix(
-      const SapDriver<double>& driver,
-      const Context<double>& context) {
-    std::vector<MatrixXd> A;
-    driver.CalcLinearDynamicsMatrix(context, &A);
-    return A;
-  }
-
-  static void PackContactSolverResults(
-      const SapDriver<double>& driver,
-      const contact_solvers::internal::SapContactProblem<double>& problem,
-      int num_contacts,
-      const contact_solvers::internal::SapSolverResults<double>& sap_results,
-      contact_solvers::internal::ContactSolverResults<double>*
-          contact_results) {
-    driver.PackContactSolverResults(problem, num_contacts, sap_results,
-                                     contact_results);
-  }
-
-  static void AddLimitConstraints(
-      const SapDriver<double>& driver,
-      const Context<double>& context, const VectorXd& v_star,
-      SapContactProblem<double>* problem) {
-    driver.AddLimitConstraints(context, v_star, problem);
-  }
-};
-
-// Friend class used to provide access to a selection of private functions in
 // CompliantContactManager for testing purposes.
 class CompliantContactManagerTest {
  public:
@@ -144,29 +91,29 @@ class CompliantContactManagerTest {
   static std::vector<ContactPairKinematics<double>> CalcContactKinematics(
       const CompliantContactManager<double>& manager,
       const Context<double>& context) {
-    return SapDriverTest::CalcContactKinematics(*manager.sap_driver_, context);
+    return manager.CalcContactKinematics(context);
   }
 
   static const ContactProblemCache<double>& EvalContactProblemCache(
       const CompliantContactManager<double>& manager,
       const Context<double>& context) {
-    return SapDriverTest::EvalContactProblemCache(*manager.sap_driver_,
-                                                  context);
+    return manager.EvalContactProblemCache(context);
   }
 
   static VectorXd CalcFreeMotionVelocities(
       const CompliantContactManager<double>& manager,
       const Context<double>& context) {
     VectorXd v_star(manager.plant().num_velocities());
-    return SapDriverTest::CalcFreeMotionVelocities(*manager.sap_driver_,
-                                                   context);
+    manager.CalcFreeMotionVelocities(context, &v_star);
+    return v_star;
   }
 
   static std::vector<MatrixXd> CalcLinearDynamicsMatrix(
       const CompliantContactManager<double>& manager,
       const Context<double>& context) {
-    return SapDriverTest::CalcLinearDynamicsMatrix(*manager.sap_driver_,
-                                                   context);
+    std::vector<MatrixXd> A;
+    manager.CalcLinearDynamicsMatrix(context, &A);
+    return A;
   }
 
   static void PackContactSolverResults(
@@ -176,9 +123,8 @@ class CompliantContactManagerTest {
       const contact_solvers::internal::SapSolverResults<double>& sap_results,
       contact_solvers::internal::ContactSolverResults<double>*
           contact_results) {
-    SapDriverTest::PackContactSolverResults(*manager.sap_driver_, problem,
-                                            num_contacts, sap_results,
-                                            contact_results);
+    manager.PackContactSolverResults(problem, num_contacts, sap_results,
+                                     contact_results);
   }
 
   static void CalcNonContactForces(
@@ -191,8 +137,7 @@ class CompliantContactManagerTest {
       const CompliantContactManager<double>& manager,
       const Context<double>& context, const VectorXd& v_star,
       SapContactProblem<double>* problem) {
-    SapDriverTest::AddLimitConstraints(*manager.sap_driver_, context, v_star,
-                                       problem);
+    manager.AddLimitConstraints(context, v_star, problem);
   }
 };
 
@@ -282,8 +227,6 @@ class SpheresStack : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, time_step_);
-    // N.B. Currently only SAP goes through the manager.
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
 
     // Add model of the ground.
     if (ground_params) {
@@ -1108,8 +1051,6 @@ class AlgebraicLoopDetection : public ::testing::Test {
   void MakeDiagram(bool with_algebraic_loop) {
     systems::DiagramBuilder<double> builder;
     plant_ = builder.AddSystem<MultibodyPlant>(1.0e-3);
-    // N.B. Currently only SAP goes through the manager.
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
     plant_->Finalize();
     auto owned_contact_manager =
         std::make_unique<CompliantContactManager<double>>();
@@ -1782,8 +1723,6 @@ class MultiDofJointWithLimits final : public Joint<T> {
 // joints with finite limits.
 GTEST_TEST(CompliantContactManager, ThrowForUnsupportedJoints) {
   MultibodyPlant<double> plant(1.0e-3);
-  // N.B. Currently only SAP goes through the manager.
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& body =
       plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeUnitary());
@@ -1813,8 +1752,6 @@ GTEST_TEST(CompliantContactManager, ThrowForUnsupportedJoints) {
 GTEST_TEST(CompliantContactManager,
            VerifyMultiDofJointsWithoutLimitsAreSupported) {
   MultibodyPlant<double> plant(1.0e-3);
-  // N.B. Currently only SAP goes through the manager.
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& body =
       plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeUnitary());

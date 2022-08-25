@@ -110,6 +110,9 @@ class SapDriver {
       contact_solvers::internal::ContactSolverResults<T>*) const;  
 
  private:
+  // Provide private access for unit testing only.
+  friend class SapDriverTest;
+
   const MultibodyTreeTopology& tree_topology() const {
     return GetInternalTree(this->plant()).get_topology();
   }
