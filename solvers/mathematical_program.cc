@@ -267,8 +267,7 @@ symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
     }
   }
   throw std::runtime_error(
-          "Passed NonnegativePolynomial type that is either unsupported or "
-          "uninitialized");
+      "NewSosPolynomial() was passed an invalid NonnegativePolynomial type");
 }
 
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
