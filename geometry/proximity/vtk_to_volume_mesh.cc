@@ -42,6 +42,7 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename) {
                           vtk_vertex_ids->GetId(2),
                           vtk_vertex_ids->GetId(3));
   }
+  iter->Delete();
 
   return {std::move(elements), std::move(vertices)};
 }
