@@ -35,7 +35,7 @@ MINIMAL_GLTF = """\
 """
 
 
-class TestGltfRenderServer(unittest.TestCase):
+class TestGltfRenderBinary(unittest.TestCase):
     def setUp(self):
         self.runfiles = CreateRunfiles()
 
@@ -103,3 +103,20 @@ class TestGltfRenderServer(unittest.TestCase):
 
             proc = subprocess.run(proc_args, capture_output=True)
             self.assertTrue(proc.returncode == 0)
+
+    def test_gltf_render_client_example(self):
+        """A minimal smoke test to run the binary that launches a Drake
+        simulation and a RenderEngineGltfClient for a short period of time."""
+        client_example_binary = self.runfiles.Rlocation(
+            "drake/geometry/render_gltf_client/gltf_render_client_example"
+        )
+
+        for render_engine in ["vtk", "client"]:
+            proc_args = [
+              client_example_binary,
+              "--render_engine",
+              render_engine,
+              "--simulation_time",
+              "0.1",
+            ]
+            subprocess.run(proc_args)
