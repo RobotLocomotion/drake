@@ -183,6 +183,35 @@ void CheckDensity(RandomDistribution distribution,
   }
 }
 
+GTEST_TEST(LinearTransformDensityTest, NoninvertibleTransform) {
+  // Test with A being non-invertible.
+  for (RandomDistribution distribution :
+       {RandomDistribution::kUniform, RandomDistribution::kGaussian,
+        RandomDistribution::kExponential}) {
+    // Test with input_size != output_size.
+    LinearTransformDensity<double> dut1(distribution, 2, 3);
+    auto context1 = dut1.CreateDefaultContext();
+    Eigen::Matrix<double, 3, 2> A1;
+    A1 << 1, 2, 3, 4, 5, 6;
+    dut1.FixConstantA(context1.get(), A1);
+    dut1.get_input_port_w_in().FixValue(context1.get(),
+                                        Eigen::Vector2d(0.5, 0.6));
+    DRAKE_EXPECT_THROWS_MESSAGE(dut1.CalcDensity(*context1),
+                                ".* to compute the density.*");
+
+    // Test with input_size == output_size but A being non-invertible.
+    LinearTransformDensity<double> dut2(distribution, 2, 2);
+    auto context2 = dut2.CreateDefaultContext();
+    Eigen::Matrix2d A2;
+    A2 << 1, 2, 2, 4;
+    dut2.FixConstantA(context2.get(), A2);
+    dut2.get_input_port_w_in().FixValue(context2.get(),
+                                        Eigen::Vector2d(0.5, 0.6));
+    DRAKE_EXPECT_THROWS_MESSAGE(dut2.CalcDensity(*context2),
+                                ".* to compute the density.*");
+  }
+}
+
 template <typename T>
 void CheckGaussianDensity() {
   CheckDensity<T>(RandomDistribution::kGaussian,
@@ -245,35 +274,6 @@ GTEST_TEST(LinearTransformDensityTest, CalcDensityExponential) {
                        zero_prob_inputs);
   CheckDensity<AutoDiffXd>(RandomDistribution::kExponential,
                            nonzero_prob_inputs, zero_prob_inputs);
-}
-
-GTEST_TEST(LinearTransformDensityTest, NoninvertibleTransform) {
-  // Test with A being non-invertible.
-  for (RandomDistribution distribution :
-       {RandomDistribution::kUniform, RandomDistribution::kGaussian,
-        RandomDistribution::kExponential}) {
-    // Test with input_size != output_size.
-    LinearTransformDensity<double> dut1(distribution, 2, 3);
-    auto context1 = dut1.CreateDefaultContext();
-    Eigen::Matrix<double, 3, 2> A1;
-    A1 << 1, 2, 3, 4, 5, 6;
-    dut1.FixConstantA(context1.get(), A1);
-    dut1.get_input_port_w_in().FixValue(context1.get(),
-                                        Eigen::Vector2d(0.5, 0.6));
-    DRAKE_EXPECT_THROWS_MESSAGE(dut1.CalcDensity(*context1),
-                                ".* to compute the density.*");
-
-    // Test with input_size == output_size but A being non-invertible.
-    LinearTransformDensity<double> dut2(distribution, 2, 2);
-    auto context2 = dut2.CreateDefaultContext();
-    Eigen::Matrix2d A2;
-    A2 << 1, 2, 2, 4;
-    dut2.FixConstantA(context2.get(), A2);
-    dut2.get_input_port_w_in().FixValue(context2.get(),
-                                        Eigen::Vector2d(0.5, 0.6));
-    DRAKE_EXPECT_THROWS_MESSAGE(dut2.CalcDensity(*context2),
-                                ".* to compute the density.*");
-  }
 }
 
 // Compute the gradient ∂pr(x)/∂x where x is the sample, pr(x) is the
