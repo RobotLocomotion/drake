@@ -119,7 +119,7 @@ def _extract_definition(line, prior_definitions):
 
 
 # Load our definitions dict, given the command-line args:
-# - A command-line '-Dfoo' will add ('foo', 1) to the result.
+# - A command-line '-Dfoo' will add ('foo', '1') to the result.
 # - A command-line '-Dfoo=bar' will add ('foo', 'bar') to the result.
 # - A command-line '-Ufoo' will add ('foo', None) to the result.
 def _setup_definitions(args):
@@ -129,7 +129,7 @@ def _setup_definitions(args):
             key, value = item.split('=', 1)
             result[key] = value
         else:
-            result[item] = 1
+            result[item] = '1'
 
     for item in args.undefines:
         result[item] = None

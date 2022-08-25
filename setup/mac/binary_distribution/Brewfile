@@ -7,7 +7,6 @@ cask 'adoptopenjdk' unless system '/usr/libexec/java_home --version 1.8+ --failf
 
 brew 'clp'
 brew 'cmake'
-brew 'curl'
 brew 'double-conversion'
 brew 'eigen'
 brew 'gcc'
