@@ -32,22 +32,6 @@ GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, CalcCenterOfMassPosition) {
       "only contains the world_body\\(\\) so its center of mass is undefined.");
   }
 
-GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, CalcBodiesSpatialInertia) {
-  MultibodyPlant<double> plant(0.0);
-  plant.Finalize();
-  auto context = plant.CreateDefaultContext();
-  const Body<double>& body_W = plant.world_body();
-  std::vector<BodyIndex> body_indexes;
-  body_indexes.push_back(body_W.index());  // Only includes the world body.
-  const Frame<double>& frame_W = plant.world_frame();
-  const SpatialInertia<double> M_SWo_W =
-    plant.CalcBodiesSpatialInertiaAboutPoint(*context.get(),
-        frame_W, body_indexes);
-  const double kTolerance = 2 * std::numeric_limits<double>::epsilon();
-  const Matrix6<double> Mmatrix = M_SWo_W.CopyToFullMatrix6();
-  EXPECT_TRUE(CompareMatrices(Mmatrix, Matrix6<double>::Zero(), kTolerance));
-  }
-
 class MultibodyPlantCenterOfMassTest : public ::testing::Test {
  public:
   void SetUp() override {

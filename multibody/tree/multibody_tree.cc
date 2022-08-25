@@ -1781,7 +1781,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
 }
 
 template <typename T>
-SpatialInertia<T> MultibodyTree<T>::CalcBodiesSpatialInertiaAboutPoint(
+SpatialInertia<T> MultibodyTree<T>::CalcBodiesSpatialInertia(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
     const std::vector<BodyIndex>& body_indexes) const {

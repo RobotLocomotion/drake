@@ -263,6 +263,71 @@ TEST_F(TwoDofPlanarPendulumTest, CalcSystemSpatialMomentumInWorldAboutPoint) {
                               L_WScm_W_expected.get_coeffs(), kTolerance_));
 }
 
+TEST_F(TwoDofPlanarPendulumTest, CalcBodiesSpatialInertia) {
+  const double kEpsilon = std::numeric_limits<double>::epsilon();
+  const Body<double>& world_body = plant_.world_body();
+  const Frame<double>& frame_W = plant_.world_frame();
+  std::vector<BodyIndex> body_indexes;
+
+  // Verify spatial inertia is zero if body_indexes only has the world body.
+  body_indexes.push_back(world_body.index());
+  const SpatialInertia<double> M_SWo_W =
+      plant_.CalcBodiesSpatialInertia(*context_, frame_W, body_indexes);
+  Matrix6<double> M6_expected = Matrix6<double>::Zero();
+  EXPECT_TRUE(CompareMatrices(M_SWo_W.CopyToFullMatrix6(), M6_expected,
+      kEpsilon));
+
+  // Verify spatial inertia for body_indexes is the spatial inertia of just
+  // body A if body_indexes contains the world body and body A.
+  const Body<double>& body_A = plant_.GetBodyByName("BodyA");
+  const Frame<double>& frame_A = body_A.body_frame();
+  body_indexes.push_back(body_A.index());
+  SpatialInertia<double> M_SAo_A =
+      plant_.CalcBodiesSpatialInertia(*context_, frame_A, body_indexes);
+  const SpatialInertia<double> M_AAo_A =
+      body_A.CalcSpatialInertiaInBodyFrame(*context_);
+  M6_expected = M_AAo_A.CopyToFullMatrix6();
+  EXPECT_TRUE(
+      CompareMatrices(M_SAo_A.CopyToFullMatrix6(), M6_expected, 16 * kEpsilon));
+
+  // Verify spatial inertia for body_indexes is the spatial inertia of twice
+  // body A if body_indexes contains the world body and two instances of body A.
+  body_indexes.push_back(body_A.index());
+  M_SAo_A = plant_.CalcBodiesSpatialInertia(*context_, frame_A, body_indexes);
+  EXPECT_TRUE(CompareMatrices(M_SAo_A.CopyToFullMatrix6(), M6_expected *= 2,
+                              16 * kEpsilon));
+
+  // Verify spatial inertia for body_indexes when body_indexes contains the
+  // world body, two instances of body A, and body B.
+  const Body<double>& body_B = plant_.GetBodyByName("BodyB");
+  const Frame<double>& frame_B = body_B.body_frame();
+  body_indexes.push_back(body_B.index());
+  M_SAo_A = plant_.CalcBodiesSpatialInertia(*context_, frame_B, body_indexes);
+  const SpatialInertia<double> M_BBo_B =
+      body_B.CalcSpatialInertiaInBodyFrame(*context_);
+  math::RigidTransform<double> X_AB = frame_B.CalcPose(*context_, frame_A);
+  math::RotationMatrix<double> R_AB = X_AB.rotation();
+  Vector3<double> p_AoBo_A = X_AB.translation();
+  SpatialInertia<double> M_ABo_A = M_AAo_A.Shift(p_AoBo_A);
+  SpatialInertia<double> M_ABo_B = M_ABo_A.ReExpress(R_AB.inverse());
+  M6_expected = 2 * M_ABo_B.CopyToFullMatrix6() + M_BBo_B.CopyToFullMatrix6();
+  EXPECT_TRUE(CompareMatrices(M_SAo_A.CopyToFullMatrix6(), M6_expected,
+                              256 * kEpsilon));
+
+  // Reverify previous calculation for qA != 0 and qB != 0.
+  joint1_->set_angle(context_.get(), /* qA = */ M_PI / 3.0);
+  joint2_->set_angle(context_.get(), /* qB = */ M_PI / 4.0);
+  M_SAo_A = plant_.CalcBodiesSpatialInertia(*context_, frame_B, body_indexes);
+  X_AB = frame_B.CalcPose(*context_, frame_A);
+  R_AB = X_AB.rotation();
+  p_AoBo_A = X_AB.translation();
+  M_ABo_A = M_AAo_A.Shift(p_AoBo_A);
+  M_ABo_B = M_ABo_A.ReExpress(R_AB.inverse());
+  M6_expected = 2 * M_ABo_B.CopyToFullMatrix6() + M_BBo_B.CopyToFullMatrix6();
+  EXPECT_TRUE(CompareMatrices(M_SAo_A.CopyToFullMatrix6(), M6_expected,
+                              256 * kEpsilon));
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

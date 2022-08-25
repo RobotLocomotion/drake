@@ -1139,7 +1139,7 @@ class MultibodyTree {
       const std::vector<ModelInstanceIndex>& model_instances) const;
 
   // See MultibodyPlant method.
-  SpatialInertia<T> CalcBodiesSpatialInertiaAboutPoint(
+  SpatialInertia<T> CalcBodiesSpatialInertia(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const std::vector<BodyIndex>& body_indexes) const;

@@ -2801,13 +2801,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if body_indexes contains an invalid BodyIndex.
   /// @note The mass and inertia of the world_body() does not contribute to the
   ///  the returned spatial inertia.
-  SpatialInertia<T> CalcBodiesSpatialInertiaAboutPoint(
+  SpatialInertia<T> CalcBodiesSpatialInertia(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const std::vector<BodyIndex>& body_indexes) const {
     this->ValidateContext(context);
-    return internal_tree().CalcBodiesSpatialInertiaAboutPoint(context,
-        frame_F, body_indexes);
+    return internal_tree().CalcBodiesSpatialInertia(context, frame_F,
+        body_indexes);
   }
 
   /// Calculates system center of mass translational velocity in world frame W.
