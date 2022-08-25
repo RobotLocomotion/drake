@@ -1799,12 +1799,24 @@ SpatialInertia<T> MultibodyTree<T>::CalcBodiesSpatialInertia(
   SpatialInertia<T> M_SWo_W(0., Vector3<T>::Zero(),
       UnitInertia<T>::TriaxiallySymmetric(0));
 
-  // Add contributions from each body Bi.
-  for (BodyIndex body_index : body_indexes) {
+  for (std::vector<BodyIndex>::size_type i = 0; i < body_indexes.size(); ++i) {
+    const BodyIndex body_index = body_indexes[i];
     if (body_index == 0) continue;  // No contribution from the world body.
 
     // Ensure MultibodyPlant method contains a valid body_index.
-    DRAKE_DEMAND(body_index < num_bodies());
+    if (body_index >= num_bodies()) {
+      throw std::logic_error(
+          "CalcBodiesSpatialInertia() contains an invalid BodyIndex.");
+    }
+
+    // Ensure there are no repeated BodyIndex.
+    for (std::vector<BodyIndex>::size_type j = i + 1; j < body_indexes.size();
+         ++j) {
+      if (body_index == body_indexes[j]) {
+        throw std::logic_error(
+            "CalcBodiesSpatialInertia() contains a repeated BodyIndex.");
+      }
+    }
 
     // Get the current body B's spatial inertia about Bo (body B's origin),
     // expressed in the world frame W.
