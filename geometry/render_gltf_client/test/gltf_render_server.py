@@ -92,17 +92,17 @@ def delete_server_cache():
 
 
 class RenderError(Exception):
-    """An exception class used for signaling the caller the error messages and
+    """An exception class used for signaling the caller the error message and
     the HTTP response code.  Any exceptions raised in `render_callback()`
-    should use this class to populate an informative `message` and `code`.
+    should use this class to populate informative `message` and `error_code`.
 
     Args:
         message (str): The exception message to communicate to the client.
-        code (int): The HTTP response code to indicate the type of the failure.
-            If not provided, it will be `400`.  If a value of less than `400`
-            is provided, a `500` error code (internal server error) will be
-            sent instead as this exception should only be used to indicate
-            failure.
+        error_code (int): The HTTP response code to indicate the type of the
+            failure. If not provided, it will be `400`.  If a value of less
+            than `400` is provided, a `500` error code (internal server error)
+            will be sent instead as this exception should only be used to
+            indicate failure.
     """
 
     def __init__(self, message: str, error_code: int = 400):
@@ -115,10 +115,10 @@ class RenderError(Exception):
 
     def flask_json_code_response(self, **kwargs):
         """Returns a formatted response consistent with what Flask supports,
-        i.e., (dict, error_code).  Users may provide additional ``**kwargs`` if
-        needed. However, generally speaking, the relevant information to
-        communicate to the client should be provided in `self.message` when an
-        exception is raised.
+        i.e., (json_dict, http_return_code).  Users may provide additional
+        `**kwargs` if needed. However, generally speaking, the relevant
+        information to communicate to the client should be provided in
+        `message` when an exception is raised.
         """
         return (
             {
@@ -133,17 +133,16 @@ class RenderError(Exception):
 
 class FieldType(Enum):
     """Describes the type expected in a given `<form>` field entry."""
-
-    File = 0  # For `<input type="file" ...>`.
-    String = 1  # For `<input type="text" ...>`.
-    Int = 2  # For `<input type="number" ...>`.
-    Float = 3  # For `<input type="number" ...>`.
+    File = 0
+    String = 1
+    Int = 2
+    Float = 3
 
 
 class RenderRequest:
     """A `RenderRequest` wrapped around a `flask.request` that validates the
-    entries in the client's `<form>`.  The user of this class can assume all
-    the fields are sensible, and should only access those fields through
+    entries in the client's `<form>`.  Users of this class can assume all the
+    fields are sensible, and should only access those fields through
     `get_field()` function.
 
     Note:
@@ -158,7 +157,7 @@ class RenderRequest:
 
     # A class constant listing all the expected fields and their types from a
     # request <form>. It's used for validation and should be kept consistent
-    # with Drake's documentation.
+    # with Drake's documentation on `Render Endpoint <form> Data` section.
     # See also: https://drake.mit.edu/doxygen_cxx/group__render__engine__gltf__client__server__api.html  # noqa
     EXPECTED_FORM_FIELDS: Dict[str, FieldType] = {
         "scene": FieldType.File,
@@ -193,11 +192,10 @@ class RenderRequest:
         # Validate the fields from the request match `EXPECTED_FORM_FIELDS`.
         self._check_form_entries()
 
-        # An internal data structure to store validated form fields.
+        # An internal dictionary to store validated form fields.
         self._fields_map = {}
 
-        # Validate fields in `flask.request.form` before validating
-        # `flask.request.files`.
+        # Validate fields in `flask.request.form` first.
         for field_name in self.request.form:
             if field_name == "scene":
                 raise RenderError(
@@ -216,8 +214,8 @@ class RenderRequest:
         image_type = self._fields_map["image_type"]
         if image_type not in ["color", "depth", "label"]:
             raise RenderError(
-                f"Field image_type='{image_type}' is not valid, must be either"
-                " 'color', 'depth', or 'label'."
+                f"Field image_type='{image_type}' is not valid, must be "
+                "either 'color', 'depth', or 'label'."
             )
 
         # Validate `min_depth` and `max_depth` fields.
@@ -252,17 +250,18 @@ class RenderRequest:
                 f"and center_y must be less than the height='{height}'."
             )
 
-        # Validate field(s) in `flask.request.files`.
+        # Validate the only field, i.e., `scene``, in `flask.request.files`.
         if "scene" not in self.request.files and self.request.files.len() != 1:
             raise RenderError("Should contain one and only 'scene' field.")
         self._fields_map["scene"] = self._parse_scene("scene")
 
     def get_field(self, field_name: str) -> Union[int, float, str]:
         """Queries the value of a field in the form. This function should be
-        the **only** public function of the class."""
+        the **only** function called outside this class."""
         return self._fields_map[field_name]
 
     def _check_form_entries(self):
+        """Checks if there are any extra fields from the request."""
         expected_fields = set(self.EXPECTED_FORM_FIELDS.keys())
         provided_fields = set(
             itertools.chain(self.request.files, self.request.form)
@@ -270,7 +269,7 @@ class RenderRequest:
 
         # All the fields provided should be a subset of `expected_fields`. Some
         # of the fields are optional, i.e., min_depth and max_depth, and thus
-        # the two sets might not match exactly.
+        # the two sets may not match exactly.
         extras = provided_fields.difference(expected_fields)
         if extras:
             raise RenderError(
@@ -372,25 +371,22 @@ def render_callback(render_request: RenderRequest) -> str:
 
     Raises:
         RenderError: In the event that anything goes wrong during the call to
-            the renderer, a :class:`RenderError` should be raised.  The method
-            calling this render callback will look for this specific kind of
-            exception first, and forward the corresponding error response to
-            the client.  Any other exceptions raised will result in an internal
-            server error response message to the client.
+            the renderer, a `RenderError` should be raised.  The caller of this
+            function should look for this specific kind of exception first, and
+            forward the corresponding error response to the client.  Any other
+            exceptions raised will result in an internal server error response
+            message to the client.
     """
     # NOTE: The path to `gltf_render_server_backend` is only valid from bazel.
     # The path to the renderer executable to call.
     backend = str(
         (THIS_FILE_DIR / ".." / "gltf_render_server_backend").resolve()
     )
-    # Determine where to store this rendering.  The render_request.scene_path
-    # will already live within the SERVER_CACHE, appending a file extension
-    # to render to is acceptable.
-    #
+    # Determine the extension and the file path of the rendering.
     # NOTE: When CLEANUP=True, this image path is deleted by the caller.
     output_path = str(render_request.get_field("scene"))
     image_type = render_request.get_field("image_type")
-    if image_type in {"color", "label"}:
+    if image_type in ["color", "label"]:
         output_path += ".png"
     else:  # image_type == "depth"
         output_path += ".tiff"
@@ -443,8 +439,6 @@ def render_callback(render_request: RenderRequest) -> str:
     # Call the render backend, including capturing any errors.
     try:
         proc = subprocess.run(proc_args, capture_output=True)
-        # Using subprocess.check_call will not provide any additional
-        # information if the renderer produces output on stdout or stderr.
         if proc.returncode != 0:
             message = f"backend exited with code {proc.returncode}."
             stdout = proc.stdout.decode("utf-8")
@@ -466,7 +460,7 @@ def render_callback(render_request: RenderRequest) -> str:
 ###############################################################################
 @app.route("/")
 def root():
-    """The main listing page, renders a simple redirect page including where
+    """The main listing page renders a simple redirect page including where
     the server cache lives for development.  This endpoint (`/`) is not
     required by the drake server-client relationship and only serves to aid
     development.
@@ -524,9 +518,9 @@ def render_endpoint():
             # Now that the image is rendered, it is safe to delete the scene.
             if CLEANUP:
                 if render_request.verbose:
-                    scene_str = str(render_request._fields_map["scene"])
+                    scene_str = str(render_request.get_field("scene"))
                     print(f"==> Deleting scene file {scene_str}.")
-                render_request._fields_map["scene"].unlink(missing_ok=True)
+                render_request.get_field("scene").unlink(missing_ok=True)
 
             # The mime type response is only populated based off the file
             # extension, implementation of render_callback is responsible for
