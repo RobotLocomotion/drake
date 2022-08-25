@@ -28,6 +28,8 @@
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 
+// TODO(zachfang): Add a high-level comment for this file.
+
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
 
 // Note: All arguments are required to be supplied on the command line.
@@ -82,33 +84,6 @@ static bool ValidateOutputPath(const char*, const std::string& path) {
 }
 DEFINE_validator(output_path, &ValidateOutputPath);
 
-// Requires that image_type is within {color, depth, label}.
-static bool ValidateImageType(const char*, const std::string& image_type) {
-  if (image_type == "color" || image_type == "depth" || image_type == "label") {
-    return true;
-  }
-  return false;
-}
-DEFINE_validator(image_type, &ValidateImageType);
-
-// Requires that other numeric arguments are set and thus greater than 0.
-template <typename T>
-static bool ValidateNumericValue(const char* flagname, T val) {
-  if (val > static_cast<T>(0)) return true;
-  drake::log()->debug("The required arg {} is not specified.", flagname);
-  return false;
-}
-DEFINE_validator(width, &ValidateNumericValue);
-DEFINE_validator(height, &ValidateNumericValue);
-DEFINE_validator(near, &ValidateNumericValue);
-DEFINE_validator(far, &ValidateNumericValue);
-DEFINE_validator(focal_x, &ValidateNumericValue);
-DEFINE_validator(focal_y, &ValidateNumericValue);
-DEFINE_validator(fov_x, &ValidateNumericValue);
-DEFINE_validator(fov_y, &ValidateNumericValue);
-DEFINE_validator(center_x, &ValidateNumericValue);
-DEFINE_validator(center_y, &ValidateNumericValue);
-
 namespace drake {
 namespace geometry {
 namespace render_gltf_client {
@@ -152,16 +127,6 @@ ColorD GetColorDFromLabel(const RenderLabel& label) {
 // Validates the flags with joint conditions.
 bool ValidateFlags() {
   if (FLAGS_image_type == "depth") {
-    if (FLAGS_min_depth < 0.0 || FLAGS_max_depth < 0.0) {
-      drake::log()->debug(
-          "min_depth and max_depth must be specified when rendering depth "
-          "images, and must be positive.");
-      return false;
-    }
-    if (FLAGS_max_depth <= FLAGS_min_depth) {
-      drake::log()->debug("max_depth should be greater than min_depth.");
-      return false;
-    }
     // TODO(svenevs): Add support for 16U PNG depth images.
     if (drake::filesystem::path(FLAGS_output_path).extension() == ".png") {
       drake::log()->debug("PNG extension is not supported for depth images.");
@@ -173,10 +138,6 @@ bool ValidateFlags() {
       drake::log()->debug("Color and label images must have a PNG extension.");
       return false;
     }
-  }
-  if (FLAGS_near >= FLAGS_far) {
-    drake::log()->debug("Camera far plane must be greater than near plane.");
-    return false;
   }
   return true;
 }
