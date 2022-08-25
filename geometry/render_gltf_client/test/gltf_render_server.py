@@ -14,56 +14,43 @@ from enum import Enum
 from hashlib import sha256
 from io import BytesIO
 import itertools
+import os
 from pathlib import Path
 import shutil
 import subprocess
-import sys
 import tempfile
 from textwrap import dedent
-from typing import Dict, TYPE_CHECKING, Tuple, Union
+from typing import Dict, Union
 
 from bazel_tools.tools.python.runfiles.runfiles import Create as CreateRunfiles
-from flask import Flask, send_file
+from flask import Flask, request, send_file
 
-if TYPE_CHECKING:
-    from flask import Request as request
-else:
-    from flask import request
 
 """The main flask application."""
 app = Flask(__name__)
 
-"""Where the client will upload files to / wait for an image response from.
 
-If on the drake side of your application you seek to transmit files to an
-alternative location, make sure to update this value accordingly.
+"""Where the client will upload files to / wait for an image response from. If
+the drake client transmits files to an alternative endpoint, make sure to
+update this value accordingly.
 
 Warning:
     If you change this value to ``/``, then you must delete or comment out the
-    :func:`root` method below.
+    `root()` function below.
 """
 RENDER_ENDPOINT = "/render"
 
-"""Whether or not the server should cleanup its local cache.
 
-For debugging purposes, set this to ``True`` to prevent the deletion of scene
-files / rendered images.  See also: :func:`delete_server_cache`.
+"""Whether or not the server should cleanup its local cache. For debugging
+purposes, set this to `True` to prevent the deletion of scene files / rendered
+images.  See also: `delete_server_cache()`.
 """
 CLEANUP = True
 
-"""The directory containing this file."""
-THIS_FILE_DIR = Path(__file__).parent.absolute()
 
 """Where to store data files during the execution of the program."""
-SERVER_CACHE = THIS_FILE_DIR / "cache"
-
-try:
-    SERVER_CACHE.mkdir(exist_ok=True)
-except Exception as e:
-    sys.stderr.write(
-        f"Unable to create cache directory '{str(SERVER_CACHE)}': {e}\n"
-    )
-    sys.exit(1)
+TMP_DIR = Path(os.environ.get("TEST_TMPDIR", "/tmp")) / "gltf_render_server"
+TMP_DIR.mkdir(exist_ok=True)
 
 
 ###############################################################################
@@ -85,11 +72,11 @@ def compute_hash(path: Path) -> str:
 
 @atexit.register
 def delete_server_cache():
-    """Deletes `SERVER_CACHE` folder upon exit, e.g., `ctrl+C`, when CLEANUP is
+    """Deletes `TMP_DIR` folder upon exit, e.g., `ctrl+C`, when CLEANUP is
     True."""
     if CLEANUP:
-        if SERVER_CACHE.is_dir():
-            shutil.rmtree(SERVER_CACHE, ignore_errors=True)
+        if TMP_DIR.is_dir():
+            shutil.rmtree(TMP_DIR, ignore_errors=True)
 
 
 class RenderError(Exception):
@@ -303,7 +290,7 @@ class RenderRequest:
 
     def _parse_scene(self, field_name: str) -> Path:
         """Validates the uploaded scene file and returns the path to where it
-        was saved in the `SERVER_CACHE`.
+        was saved in the `TMP_DIR`.
 
         Warning:
             It is assumed that both fields `scene_sha256` and `image_type` have
@@ -312,13 +299,13 @@ class RenderRequest:
         Raises:
             RenderError: In the event that the provided sha256 hash is not the
             same as what is computed from the uploaded file, or any other
-            errors that occur in trying to move the file to the `SERVER_CACHE`.
+            errors that occur in trying to move the file to the `TMP_DIR`.
         """
         try:
             # This will be a werkzeug.datastructures.FileStorage, see
             # https://werkzeug.palletsprojects.com/en/2.0.x/datastructures/
             scene_data = self.request.files[field_name]
-            _, temp_path_str = tempfile.mkstemp(dir=SERVER_CACHE)
+            _, temp_path_str = tempfile.mkstemp(dir=TMP_DIR)
             scene_data.save(temp_path_str)
 
             # Compute and validate the sha256 hash of the uploaded scene.
@@ -342,11 +329,11 @@ class RenderRequest:
             timestamp = datetime.datetime.now().strftime(
                 "%Y-%m-%d_%H-%M-%S-%f"
             )
-            scene_path = SERVER_CACHE / f"{timestamp}.gltf"
+            scene_path = TMP_DIR / f"{timestamp}.gltf"
             temp_path.rename(scene_path)
 
             if self.verbose:
-                print(f"Scene file saved to '{str(scene_path)}'")
+                print(f"Saving scene file: {str(scene_path)}")
             return scene_path
         except RenderError as re:
             raise re from None  # Forward the exception.
@@ -435,10 +422,6 @@ def render_callback(render_request: RenderRequest) -> str:
             ]
         )
 
-    # Log to the console what command is about to be run for debugging.
-    if render_request.verbose:
-        print(f"$ {' '.join(proc_args)}")
-
     # Call the render backend, including capturing any errors.
     try:
         proc = subprocess.run(proc_args, capture_output=True)
@@ -494,7 +477,7 @@ def root():
             f"{indent}<hr>\n"
             f"{indent}<p>\n"
             f"{indent}  This is a development server.  The server cache\n"
-            f"{indent}  lives here: <tt>{str(SERVER_CACHE)}</tt>\n"
+            f"{indent}  lives here: <tt>{str(TMP_DIR)}</tt>\n"
             f"{indent}</p>\n"
         )
     else:
@@ -516,13 +499,13 @@ def render_endpoint():
             render_request = RenderRequest(request)
             output_image = Path(render_callback(render_request))
             if render_request.verbose:
-                print(f"==> Rendered image: {str(output_image)}")
+                print(f"Rendering image: {str(output_image)}")
 
             # Now that the image is rendered, it is safe to delete the scene.
             if CLEANUP:
                 if render_request.verbose:
                     scene_str = str(render_request.get_field("scene"))
-                    print(f"==> Deleting scene file {scene_str}.")
+                    print(f"Deleting scene file: {scene_str}")
                 render_request.get_field("scene").unlink(missing_ok=True)
 
             # The mime type response is only populated based off the file
@@ -558,7 +541,7 @@ def render_endpoint():
                 with open(output_image, "rb") as f:
                     buffer = BytesIO(f.read())
                 if render_request.verbose:
-                    print(f"==> Deleting rendering {str(output_image)}.")
+                    print(f"Deleting rendered image: {str(output_image)}")
                 output_image.unlink(missing_ok=True)
                 return send_file(
                     buffer,
