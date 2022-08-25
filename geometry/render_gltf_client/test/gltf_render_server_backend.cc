@@ -28,11 +28,17 @@
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 
-// TODO(zachfang): Add a high-level comment for this file.
+/* This file implements a bare-bone VTK renderer to help demonstrate the glTF
+Render Client-Server pipeline and its unit testing.  The sample code is kept
+straightforward deliberately without too much optimization.  It also serves as
+a benchmark to RenderEngineVtk, so some functions are ported directly to match
+the default RenderEngineVtk setting. */
 
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
 
-// Note: All arguments are required to be supplied on the command line.
+// Note: All arguments are required to be supplied on the command line. Other
+// than `input_path` and `output_path`, this porgram assumes the rest of the
+// inputs are validated beforehand.
 DEFINE_string(input_path, "", "The input glTF scene to render.");
 DEFINE_string(output_path, "",
               "The path to save the rendered image. Only `.png` and `.tiff` "
@@ -145,8 +151,7 @@ bool ValidateFlags() {
 /* Constructs and sets the explicit projection matrix rather than using the one
  from glTF which only supports limited intrinsic specification.  The
  implementation is imported from RenderCameraCore::CalcProjectionMatrix().
- @sa
- https://github.com/RobotLocomotion/drake/blob/master/geometry/render/render_camera.cc
+ @sa https://github.com/RobotLocomotion/drake/blob/master/geometry/render/render_camera.cc
  */
 void CalcProjectionMatrix(vtkRenderer* renderer) {
   vtkCamera* camera = renderer->GetActiveCamera();
