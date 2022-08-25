@@ -12,8 +12,6 @@
 // TODO: these SAP includes should go away."
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
-// TODO: can we move this sap_driver.h include into the source?
-#include "drake/multibody/plant/sap_driver.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -72,7 +70,7 @@ class CompliantContactManager final
 
   using internal::DiscreteUpdateManager<T>::plant;
 
-  CompliantContactManager() = default;
+  CompliantContactManager();
 
   ~CompliantContactManager() final;
 

@@ -13,6 +13,7 @@
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 #include "drake/systems/framework/context.h"
 
@@ -35,6 +36,9 @@ AccelerationsDueToExternalForcesCache<T>::AccelerationsDueToExternalForcesCache(
       Zb_Bo_W(topology.num_bodies()),
       aba_forces(topology),
       ac(topology) {}
+
+template <typename T>
+CompliantContactManager<T>::CompliantContactManager() {};
 
 template <typename T>
 CompliantContactManager<T>::~CompliantContactManager() {}
