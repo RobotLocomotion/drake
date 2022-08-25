@@ -9,13 +9,17 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/scene_graph_inspector.h"
-// TODO: these SAP includes should go away."
-#include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
+namespace contact_solvers {
+namespace internal {
+// Forward declaration.
+struct SapSolverParameters;
+}  // namespace internal
+}  // namespace contact_solvers    
 namespace internal {
 
 // Forward declaration.
@@ -76,9 +80,7 @@ class CompliantContactManager final
 
   // Sets the parameters to be used by the SAP solver.
   void set_sap_solver_parameters(
-      const contact_solvers::internal::SapSolverParameters& parameters) {
-    sap_parameters_ = parameters;
-  }
+      const contact_solvers::internal::SapSolverParameters& parameters);
 
   bool is_cloneable_to_double() const final { return true; }
   bool is_cloneable_to_autodiff() const final { return true; }
@@ -215,12 +217,13 @@ class CompliantContactManager final
   EvalAccelerationsDueToNonContactForcesCache(
       const systems::Context<T>& context) const;
 
-  CacheIndexes cache_indexes_;
-  contact_solvers::internal::SapSolverParameters sap_parameters_;
+  CacheIndexes cache_indexes_;  
   // Vector of joint damping coefficients, of size plant().num_velocities().
   // This information is extracted during the call to ExtractModelInfo().
   VectorX<T> joint_damping_;
 
+  // Specific contact solver drivers are created at ExtractModelInfo() time,
+  // when the manager retrieves modeling information from MultibodyPlant.
   std::unique_ptr<SapDriver<T>> sap_driver_;
 };
 

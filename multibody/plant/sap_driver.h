@@ -96,15 +96,18 @@ class SapDriver {
  public:
   SapDriver(CompliantContactManager<T>* manager);
 
+  void set_sap_solver_parameters(
+      const contact_solvers::internal::SapSolverParameters& parameters);
+
   const CompliantContactManager<T>& manager() const { return *manager_; }
 
-  const MultibodyPlant<T>& plant() const { return manager().plant(); }
+  const MultibodyPlant<T>& plant() const { return manager().plant(); }    
 
   void DeclareCacheEntries(CompliantContactManager<T>* manager);
 
   void CalcContactSolverResults(
       const systems::Context<T>&,
-      contact_solvers::internal::ContactSolverResults<T>*) const;
+      contact_solvers::internal::ContactSolverResults<T>*) const;  
 
  private:
   const MultibodyTreeTopology& tree_topology() const {
@@ -204,8 +207,7 @@ class SapDriver {
   // Vector of joint damping coefficients, of size plant().num_velocities().
   // This information is extracted during the call to ExtractModelInfo().
   VectorX<T> joint_damping_;
-
-  // TODO: setter/getter from CCM.
+  // Parameters for SAP.
   contact_solvers::internal::SapSolverParameters sap_parameters_;
 };
 

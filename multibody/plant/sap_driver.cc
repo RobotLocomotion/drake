@@ -42,6 +42,12 @@ SapDriver<T>::SapDriver(CompliantContactManager<T>* manager)
 }
 
 template <typename T>
+void SapDriver<T>::set_sap_solver_parameters(
+    const contact_solvers::internal::SapSolverParameters& parameters) {
+  sap_parameters_ = parameters;
+}
+
+template <typename T>
 void SapDriver<T>::DeclareCacheEntries(
     CompliantContactManager<T>* mutable_manager) {
   // TODO: consider a public accessor for cache entries instead of friendship?

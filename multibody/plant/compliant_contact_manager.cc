@@ -44,6 +44,12 @@ template <typename T>
 CompliantContactManager<T>::~CompliantContactManager() {}
 
 template <typename T>
+void CompliantContactManager<T>::set_sap_solver_parameters(
+    const contact_solvers::internal::SapSolverParameters& parameters) {
+  sap_driver_->set_sap_solver_parameters(parameters);
+}
+
+template <typename T>
 void CompliantContactManager<T>::DeclareCacheEntries() {
   // N.B. We use xd_ticket() instead of q_ticket() since discrete
   // multibody plant does not have q's, but rather discrete state.
@@ -524,9 +530,8 @@ template <typename T>
 std::unique_ptr<DiscreteUpdateManager<double>>
 CompliantContactManager<T>::CloneToDouble() const {
   auto clone = std::make_unique<CompliantContactManager<double>>();
-  // N.B. we should copy all members except for those overwritten in
+  // N.B. we should copy/clone all members except for those overwritten in
   // ExtractModelInfo and DeclareCacheEntries.
-  clone->sap_parameters_ = this->sap_parameters_;
   return clone;
 }
 
@@ -534,9 +539,8 @@ template <typename T>
 std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>>
 CompliantContactManager<T>::CloneToAutoDiffXd() const {
   auto clone = std::make_unique<CompliantContactManager<AutoDiffXd>>();
-  // N.B. we should copy all members except for those overwritten in
+  // N.B. we should copy/clone all members except for those overwritten in
   // ExtractModelInfo and DeclareCacheEntries.
-  clone->sap_parameters_ = this->sap_parameters_;
   return clone;
 }
 
