@@ -47,10 +47,10 @@ def make_ball_paddle(contact_model, contact_surface_representation,
         frame_on_child_M=plant.GetFrameByName("paddle", paddle),
         X_FM=p_WPaddle_fixed
     )
-    ball_sdf_file_name = \
+    pepper_sdf_file_name = \
         FindResourceOrThrow("drake/examples/hydroelastic/python_ball_paddle"
-                            "/ball.sdf")
-    parser.AddModelFromFile(ball_sdf_file_name)
+                            "/pepper.sdf")
+    parser.AddModelFromFile(pepper_sdf_file_name)
     # TODO(DamrongGuoy): Let users override hydroelastic modulus, dissipation,
     #  and resolution hint from the two SDF files above.
 
