@@ -321,6 +321,7 @@ drake_cc_library(
     hdrs = ["hydroelastic_internal.h"],
     deps = [
         ":bvh",
+        ":calc_distance_to_surface_mesh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_capsule_field",
@@ -333,10 +334,12 @@ drake_cc_library(
         ":make_ellipsoid_mesh",
         ":make_sphere_field",
         ":make_sphere_mesh",
+        ":mesh_to_vtk",
         ":obj_to_surface_mesh",
         ":tessellation_strategy",
         ":triangle_surface_mesh",
         ":volume_mesh",
+        ":vtk_to_volume_mesh",
         "//common:copyable_unique_ptr",
         "//common:essential",
         "//geometry:geometry_ids",
@@ -1009,6 +1012,7 @@ drake_cc_googletest(
     name = "hydroelastic_internal_test",
     data = [
         "//geometry:test_obj_files",
+        "//geometry:test_vtk_files",
     ],
     deps = [
         ":hydroelastic_internal",

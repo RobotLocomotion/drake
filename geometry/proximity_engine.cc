@@ -25,6 +25,8 @@
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
+#include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 #include "drake/geometry/read_obj.h"
 #include "drake/geometry/utilities.h"
 
@@ -485,11 +487,26 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     ProcessGeometriesForDeformableContact(capsule, user_data);
   }
 
+  bool is_obj_file_name(const std::string& filename) {
+    return filename.substr(filename.find_last_of(".") + 1) == "obj";
+  }
+
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
-    // Don't bother triangulating; we're going to throw the faces out.
-    const auto [vertices, face_ptr, num_faces] =
-        ReadObjFile(mesh.filename(), mesh.scale(), false /* triangulate */);
-    unused(face_ptr, num_faces);
+    std::shared_ptr<std::vector<Eigen::Vector3d>> vertices;
+    if (is_obj_file_name(mesh.filename())) {
+      // Don't bother triangulating; we're going to throw the faces out.
+      const auto[v, face_ptr, num_faces] =
+      ReadObjFile(mesh.filename(), mesh.scale(), false /* triangulate */);
+      unused(face_ptr, num_faces);
+      vertices = v;
+    } else {
+      const VolumeMesh<double> volume_mesh =
+          ReadVtkToVolumeMesh(mesh.filename());
+      const TriangleSurfaceMesh<double> surface_mesh =
+          ConvertVolumeToSurfaceMesh(volume_mesh);
+      vertices = std::make_shared<std::vector<Eigen::Vector3d>>(
+          surface_mesh.vertices());
+    }
 
     // Note: the strategy here is to use an *invalid* fcl::Convex shape for the
     // mesh. A minimum condition for "invalid" is that the convex specification
