@@ -71,16 +71,13 @@ def _impl(repository_ctx):
     if repository_ctx.os.name == "mac os x":
         install_name_tool = which(repository_ctx, "install_name_tool")
 
-        # Note that libmosek64.dylib is (erroneously) a copy of
-        # libmosek64.10.0.dylib instead of a symlink. Otherwise, the list of
-        # files should include the following in place of bin/libmosek64.dylib:
-        #
-        # "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,
-        #                                     mosek_minor_version)
         files = [
-            # TODO(jwnimmer-tri) libcilk is no longer correct as of Mosek 10.
-            # "bin/libcilkrts.5.dylib",  FIXME
-            "bin/libmosek64.dylib",
+            "bin/libtbb.12.dylib",
+            "bin/libtbb.12.5.dylib",
+            "bin/libmosek64.dylib.{}.{}".format(
+                mosek_major_version,
+                mosek_minor_version,
+            ),
         ]
 
         for file in files:
