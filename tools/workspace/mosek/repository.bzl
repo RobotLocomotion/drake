@@ -25,8 +25,10 @@ Argument:
 load("@drake//tools/workspace:execute.bzl", "which")
 
 def _impl(repository_ctx):
-    # When these values are updated, tools/dynamic_analysis/tsan.supp may also
-    # need updating.
+    # When these values are updated:
+    # - tools/dynamic_analysis/tsan.supp may also need updating
+    # - LICENSE.third_party may also need updating to match
+    #     https://docs.mosek.com/latest/licensing/license-agreement-info.html
     mosek_major_version = 10
     mosek_minor_version = 0
     mosek_patch_version = 18
