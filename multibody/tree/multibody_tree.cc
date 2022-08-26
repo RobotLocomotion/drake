@@ -2888,14 +2888,14 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
 
   // Investigate mass/inertia properties for all non-world welded bodies.
   // The for-loop below starts with i = 1 to skip over the world body.
-  const MultibodyTreeTopology& multibodyTreeTopology = get_topology();
+  const MultibodyTreeTopology& tree_topology = get_topology();
   for (size_t i = 1;  i < number_of_sets;  ++i) {
     // Get the next set of welded bodies. The first entry in the set is the
     // parent body and the remaining entries (if any) are children bodies.
     const std::set<BodyIndex>& welded_body = welded_bodies[i];
     const BodyIndex parent_body_index = *welded_body.begin();
     const BodyTopology& parent_body_topology =
-        multibodyTreeTopology.get_body(parent_body_index);
+        tree_topology.get_body(parent_body_index);
     const MobilizerIndex& parent_mobilizer_index =
         parent_body_topology.inboard_mobilizer;
     const Mobilizer<T>& parent_mobilizer =
@@ -2908,12 +2908,11 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
 
     // Determine whether this set of welded bodies is the most distal leaf in
     // a multibody tree.
-    const BodyNodeIndex parent_body_node_index =
-        multibodyTreeTopology.get_body(parent_body_index).body_node;
+    const BodyNodeIndex parent_body_node_index = parent_body_topology.body_node;
     const BodyNodeTopology& parent_body_node_topology =
-        multibodyTreeTopology.get_body_node(parent_body_node_index);
+        tree_topology.get_body_node(parent_body_node_index);
     const bool is_composite_body_distal_leaf_in_tree =
-        multibodyTreeTopology.CalcNumberOfOutboardVelocitiesExcludeBase(
+        tree_topology.CalcNumberOfOutboardVelocitiesExcludeBase(
             parent_body_node_topology) == 0;
     if (is_composite_body_distal_leaf_in_tree) {
       // Determine if this distal-leaf composite body can translate relative to
@@ -2928,7 +2927,10 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
       }
 
       // Issue an error if the distal composite body can rotate and
-      // it contains a body with a NaN default rotational inertia
+      // it contains a body with a NaN default rotational inertia.
+      // Note: The default RotationalInertia constructor has all its moments and
+      // products of inertia equal to NaN. Throw a well-worded exception if a
+      // body associated with rotational dynamics has a NaN RotationalInertia.
       if (parent_mobilizer.can_rotate()) {
         if (IsAnyDefaultRotationalInertiaNaN(welded_body)) {
           const std::string msg = fmt::format(
@@ -2940,7 +2942,7 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
 
         // Issue an error if the distal composite body can rotate and all the
         // bodies in the composite body have zero default rotational inertia.
-        if (has_no_mass && IsAllDefaultRotationalInertiaZero(welded_body)) {
+        if (has_no_mass && AreAllDefaultRotationalInertiaZero(welded_body)) {
           const std::string msg = fmt::format(
             "Body {} has a zero rotational inertia, yet it "
             "is attached by a joint that has a rotational degree of freedom.",
@@ -2977,7 +2979,7 @@ bool MultibodyTree<T>::IsAnyDefaultRotationalInertiaNaN(
 }
 
 template <typename T>
-bool MultibodyTree<T>::IsAllDefaultRotationalInertiaZero(
+bool MultibodyTree<T>::AreAllDefaultRotationalInertiaZero(
     const std::set<BodyIndex>& body_indexes) const {
   for (BodyIndex body_index : body_indexes) {
     const Body<T>& body_B = get_body(body_index);
