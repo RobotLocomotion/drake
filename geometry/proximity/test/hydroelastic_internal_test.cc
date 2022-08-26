@@ -812,19 +812,6 @@ class HydroelasticSoftGeometryTest : public ::testing::Test {
   }
 };
 
-// TODO(SeanCurtis-TRI): As new shape specifications are added, they are
-//  implicitly unsupported and should be added here (and in
-//  UnsupportedRigidShapes).
-// Smoke test for shapes that are *known* to be unsupported as soft objects.
-// NOTE: This will spew warnings to the log.
-TEST_F(HydroelasticSoftGeometryTest, UnsupportedSoftShapes) {
-  ProximityProperties props = soft_properties();
-
-  // Note: the file name doesn't have to be valid for this (and the Mesh) test.
-  const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
-  EXPECT_EQ(MakeSoftRepresentation(Mesh(obj, 1.0), props), std::nullopt);
-}
-
 TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
   ProximityProperties properties = soft_properties();
 
@@ -1137,6 +1124,32 @@ TEST_F(HydroelasticSoftGeometryTest, Convex) {
       properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < convex->mesh().num_vertices(); ++v) {
     const double pressure = convex->pressure_field().EvaluateAtVertex(v);
+    EXPECT_GE(pressure, 0);
+    EXPECT_LE(pressure, E);
+  }
+}
+
+// Test construction of a compliant (non-convex) tetrahedral mesh.
+TEST_F(HydroelasticSoftGeometryTest, Mesh) {
+  // We specify non_convex_mesh.obj, but internally it also reads
+  // non_convex_mesh.vtk.
+  const std::string obj_file =
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
+  const Mesh mesh_spec(obj_file);
+
+  ProximityProperties properties = soft_properties(0.16);
+  std::optional<SoftGeometry> compliant_tetrahedral_mesh =
+      MakeSoftRepresentation(mesh_spec, properties);
+
+  // Smoke test the mesh and the pressure field. It relies on unit tests for
+  // the generators of the mesh and the pressure field.
+  const int expected_num_vertices = 6;
+  EXPECT_EQ(compliant_tetrahedral_mesh->mesh().num_vertices(),
+            expected_num_vertices);
+  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  for (int v = 0; v < compliant_tetrahedral_mesh->mesh().num_vertices(); ++v) {
+    const double pressure =
+        compliant_tetrahedral_mesh->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
   }
