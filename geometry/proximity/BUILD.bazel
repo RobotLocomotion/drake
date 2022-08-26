@@ -321,6 +321,7 @@ drake_cc_library(
     hdrs = ["hydroelastic_internal.h"],
     deps = [
         ":bvh",
+        ":calc_distance_to_surface_mesh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_capsule_field",
@@ -337,6 +338,7 @@ drake_cc_library(
         ":tessellation_strategy",
         ":triangle_surface_mesh",
         ":volume_mesh",
+        ":vtk_to_volume_mesh",
         "//common:copyable_unique_ptr",
         "//common:essential",
         "//geometry:geometry_ids",

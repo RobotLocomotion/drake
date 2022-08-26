@@ -19,6 +19,11 @@ filegroup(
     srcs = [
         "ball.sdf",
         "paddle.sdf",
+        "pepper.1.mtl",
+        "pepper.1.obj",
+        "pepper.1.png",
+        "pepper.1.vtk",
+        "pepper.sdf",
     ],
 )
 
