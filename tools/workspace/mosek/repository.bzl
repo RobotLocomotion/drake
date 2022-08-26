@@ -74,7 +74,7 @@ def _impl(repository_ctx):
         files = [
             "bin/libtbb.12.dylib",
             "bin/libtbb.12.5.dylib",
-            "bin/libmosek64.dylib.{}.{}".format(
+            "bin/libmosek64.{}.{}.dylib".format(
                 mosek_major_version,
                 mosek_minor_version,
             ),
