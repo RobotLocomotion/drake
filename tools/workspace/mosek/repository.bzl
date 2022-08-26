@@ -157,15 +157,15 @@ install_files(
 )
 
 install(
-   name = "install",
-   docs = [
-       "mosek-eula.pdf",
-       "@drake//tools/workspace/mosek:drake_mosek_redistribution.txt",
-       # TODO(jwnimmer-tri) MOSEK uses TBB now, so upstream should probably
-       # be shipping the required Apache 2.0 notice in their Downloads (but
-       # isn't yet) and Drake should propgatate the TBB license here also.
-   ],
-   deps = [":install_libraries"],
+    name = "install",
+    docs = [
+        "mosek-eula.pdf",
+        "@drake//tools/workspace/mosek:drake_mosek_redistribution.txt",
+        "@drake//tools/workspace/mosek:LICENSE.third_party",
+    ],
+    doc_strip_prefix = ["tools/workspace/mosek"],
+    allowed_externals = ["@drake//:.bazelproject"],
+    deps = [":install_libraries"],
 )
     """.format(srcs, hdrs, includes, linkopts, files, libraries_strip_prefix)
 
