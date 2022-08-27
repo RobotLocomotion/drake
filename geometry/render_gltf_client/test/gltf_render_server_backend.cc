@@ -1,8 +1,17 @@
-/* This file implements a bare-bone VTK renderer to demonstrate the glTF Render
-Client-Server pipeline and help its unit testing.  The sample code is kept
-straightforward deliberately without too much optimization.  It also serves as
-a benchmark to RenderEngineVtk, so some functions are ported directly to match
-the default RenderEngineVtk setting. */
+/* This file implements a program that can consume a glTF file and produce a
+single rendered image.  The sample code is kept straightforward deliberately
+without too much optimization.  As this program and RenderEngineVtk both use VTK
+to render images, some functions are ported directly from RenderEngineVtk.
+See also:
+https://drake.mit.edu/doxygen_cxx/classdrake_1_1geometry_1_1render_1_1_render_engine_vtk.html
+
+In the glTF Render Client-Server pipeline, the server receives HTTP requests
+from a client and invokes this program as a rendering backend to render images.
+See also:
+https://github.com/RobotLocomotion/drake/blob/master/geometry/render_gltf_client/test/README.md
+
+The program serves as a working example and is used in conjunction with other
+programs for the glTF Render Client-Server integration test. */
 
 #include <cstdint>
 #include <map>
@@ -37,7 +46,7 @@ the default RenderEngineVtk setting. */
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
 
 // Note: All arguments are required to be supplied on the command line. Other
-// than `input_path` and `output_path`, this porgram assumes the rest of the
+// than `input_path` and `output_path`, this program assumes the rest of the
 // inputs are validated beforehand.
 DEFINE_string(input_path, "", "The input glTF scene to render.");
 DEFINE_string(output_path, "",
@@ -130,18 +139,18 @@ ColorD GetColorDFromLabel(const RenderLabel& label) {
   return ColorD{i_color.r / 255., i_color.g / 255., i_color.b / 255.};
 }
 
-// Validates the flags with joint conditions.
-bool ValidateFlags() {
+// Validates the output file extension based on `image_type`.
+bool ValidateOutputExtension() {
   if (FLAGS_image_type == "depth") {
     // TODO(svenevs): Add support for 16U PNG depth images.
     if (drake::filesystem::path(FLAGS_output_path).extension() == ".png") {
-      drake::log()->debug("PNG extension is not supported for depth images.");
+      drake::log()->debug("Depth images must have a .tiff extension.");
       return false;
     }
   } else {
     const drake::filesystem::path output_path{FLAGS_output_path};
     if (output_path.extension() != ".png") {
-      drake::log()->debug("Color and label images must have a PNG extension.");
+      drake::log()->debug("Color and label images must have a .png extension.");
       return false;
     }
   }
@@ -196,7 +205,7 @@ void SetDefaultLighting(vtkRenderer* renderer) {
 
 int DoMain() {
   // All the input args should be validated past this point.
-  if (!ValidateFlags())
+  if (!ValidateOutputExtension())
     return 1;
 
   vtkNew<vtkRenderer> renderer;
@@ -246,12 +255,11 @@ int DoMain() {
      NOTE: The glTF standard requires PBR textures. */
     vtkActorCollection* actor_collection = renderer->GetActors();
     actor_collection->InitTraversal();
-    for (vtkIdType i = 0; i < actor_collection->GetNumberOfItems(); ++i) {
+    for (int i = 0; i < actor_collection->GetNumberOfItems(); ++i) {
       vtkActor* actor = actor_collection->GetNextActor();
-      const std::map<std::string, vtkTexture*>& texure_map =
+      const std::map<std::string, vtkTexture*>& texture_maps =
           actor->GetProperty()->GetAllTextures();
-      // Textured items will have an "albedoTex" in their texure_map.
-      if (texure_map.size() == 0) {
+      if (texture_maps.size() == 0) {
         actor->GetProperty()->SetInterpolationToGouraud();
       }
     }
@@ -265,7 +273,7 @@ int DoMain() {
     // Set the custom drake vertex / fragment shader for each imported actor.
     vtkActorCollection* actor_collection = renderer->GetActors();
     actor_collection->InitTraversal();
-    for (vtkIdType i = 0; i < actor_collection->GetNumberOfItems(); ++i) {
+    for (int i = 0; i < actor_collection->GetNumberOfItems(); ++i) {
       vtkActor* actor = actor_collection->GetNextActor();
       vtkOpenGLPolyDataMapper* mapper =
           vtkOpenGLPolyDataMapper::SafeDownCast(actor->GetMapper());
@@ -283,10 +291,13 @@ int DoMain() {
     const ColorD empty_color = GetColorDFromLabel(RenderLabel::kEmpty);
     renderer->SetBackground(empty_color.r, empty_color.g, empty_color.b);
 
-    // Same as RenderEngineVtk, label actors have lighting disabled.
+    // Same as RenderEngineVtk, label actors have lighting disabled.  As labels
+    // have already been encoded as geometry materials in the glTF. By disabling
+    // lighting we also don't have to worry about the same PBR issues as for
+    // color images.
     vtkActorCollection* actor_collection = renderer->GetActors();
     actor_collection->InitTraversal();
-    for (vtkIdType i = 0; i < actor_collection->GetNumberOfItems(); ++i) {
+    for (int i = 0; i < actor_collection->GetNumberOfItems(); ++i) {
       vtkActor* actor = actor_collection->GetNextActor();
       actor->GetProperty()->LightingOff();
     }
@@ -305,8 +316,7 @@ int DoMain() {
     writer->Write();
   } else if (FLAGS_image_type == "depth") {
     /* For the depth image, we need to unpack the RGB channels from the shader
-     in the same way that RenderEngineVtk does.  The conversion code is nearly
-     identical to RenderEngineVtk. */
+     in the same way that RenderEngineVtk does. */
     // First: export the image to a local buffer.
     vtkNew<vtkImageExport> image_export;
     image_export->SetInputConnection(window_to_image_filter->GetOutputPort());

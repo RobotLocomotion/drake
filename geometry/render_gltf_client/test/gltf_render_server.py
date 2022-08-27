@@ -25,12 +25,11 @@ from typing import Dict, Union
 from bazel_tools.tools.python.runfiles.runfiles import Create as CreateRunfiles
 from flask import Flask, request, send_file
 
-
 """The main flask application."""
 app = Flask(__name__)
 
 
-"""Where the client will upload files to and wait for an image response from.
+"""Where the client must upload files to and wait for an image response from.
 If the drake client transmits files to an alternative endpoint, make sure to
 update this value accordingly.
 
@@ -240,7 +239,9 @@ class RenderRequest:
 
         # Validate the only field, i.e., `scene``, in `flask.request.files`.
         if "scene" not in self.request.files and self.request.files.len() != 1:
-            raise RenderError("Should contain one and only 'scene' field.")
+            raise RenderError(
+                "The files section should contain a single field: 'scene'."
+            )
         self._fields_map["scene"] = self._parse_scene("scene")
 
     def get_field(self, field_name: str) -> Union[int, float, str]:
@@ -268,7 +269,7 @@ class RenderRequest:
         self, field_name: str, field_type: FieldType
     ) -> Union[int, float]:
         """Checks if the raw string value can be converted to the expected type
-        and the numeric value is greater than 0 (as an indicatin of being
+        and the numeric value is greater than 0 (as an indication of being
         sensible)."""
         try:
             value = self.request.form[field_name]
@@ -277,12 +278,14 @@ class RenderRequest:
             else:  # field_type == FieldType.Float
                 numeric_value = float(value)
 
-            if numeric_value <= 0:
+            # Positive and finite (and not nan).
+            if not numeric_value > 0 or numeric_value == float("inf"):
                 raise ValueError
             return numeric_value
         except ValueError:
             raise RenderError(
-                f"Form field {field_name} with value '{value}' is not valid."
+                f"Form field {field_name} with value '{value}' is not a valid "
+                "number."
             )
         except Exception as e:
             raise RenderError(
@@ -295,8 +298,8 @@ class RenderRequest:
         was saved in the `TMP_DIR`.
 
         Warning:
-            It is assumed that both fields `scene_sha256` and `image_type` have
-            already been parsed and validated.
+            It is assumed that `_fields_map` contains both `scene_sha256` and
+            `image_type` fields prior to calling this function.
 
         Raises:
             RenderError: In the event that the provided sha256 hash is not the

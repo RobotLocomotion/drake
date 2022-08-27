@@ -144,7 +144,7 @@ to `sudo apt-get install gunicorn` (not `python3-gunicorn`).  If using a virtual
 environment or `pip` directly, `pip install gunicorn` will make the `gunicorn`
 executable available.
 
-There are some global variables in the current server implemenatation, e.g.,
+There are some global variables in the current server implementation, e.g.,
 `RENDER_ENDPOINT`.  This will only work in the single threaded development
 server provided by flask, but will not be coherent when using a wsgi wrapper
 such as `gunicorn`.  If your needs require shared state between server
