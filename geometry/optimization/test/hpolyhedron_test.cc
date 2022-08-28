@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/test_utilities.h"
@@ -35,6 +36,13 @@ using math::RotationMatrixd;
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
+
+GTEST_TEST(HPolyhedronTest, DefaultConstructor) {
+  HPolyhedron H;
+  EXPECT_EQ(H.ambient_dimension(), 0);
+  EXPECT_EQ(H.A().size(), 0);
+  EXPECT_EQ(H.b().size(), 0);
+}
 
 GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   Matrix<double, 6, 3> A;
@@ -698,6 +706,15 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
                samples.row(1).array() >= -1.5 && samples.row(1).array() <= -1)
                   .count(),
               N / 10, kTol);
+}
+
+GTEST_TEST(HPolyhedronTest, Serialize) {
+  const HPolyhedron H = HPolyhedron::MakeL1Ball(3);
+  const std::string yaml = yaml::SaveYamlString(H);
+  const auto H2 = yaml::LoadYamlString<HPolyhedron>(yaml);
+  EXPECT_EQ(H.ambient_dimension(), H2.ambient_dimension());
+  EXPECT_TRUE(CompareMatrices(H.A(), H2.A()));
+  EXPECT_TRUE(CompareMatrices(H.b(), H2.b()));
 }
 
 }  // namespace optimization

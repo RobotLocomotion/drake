@@ -102,14 +102,12 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
 
 }  // namespace
 
+HPolyhedron::HPolyhedron() : ConvexSet(&ConvexSetCloner<HPolyhedron>, 0) {}
+
 HPolyhedron::HPolyhedron(const Eigen::Ref<const MatrixXd>& A,
                          const Eigen::Ref<const VectorXd>& b)
     : ConvexSet(&ConvexSetCloner<HPolyhedron>, A.cols()), A_{A}, b_{b} {
-  DRAKE_DEMAND(A.rows() == b.size());
-  // Note: If necessary, we could support infinite b, either by removing the
-  // corresponding rows of A (since the constraint is vacuous), or checking
-  // this explicitly in all relevant computations (like IsBounded).
-  DRAKE_DEMAND(b.array().isFinite().all());
+  CheckInvariants();
 }
 
 HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
@@ -583,6 +581,15 @@ HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
     b_diff(i) = b_(i) + result.get_optimal_cost();
   }
   return {A_, b_diff};
+}
+
+void HPolyhedron::CheckInvariants() const {
+  DRAKE_DEMAND(this->ambient_dimension() == A_.cols());
+  DRAKE_DEMAND(A_.rows() == b_.size());
+  // Note: If necessary, we could support infinite b, either by removing the
+  // corresponding rows of A (since the constraint is vacuous), or checking
+  // this explicitly in all relevant computations (like IsBounded).
+  DRAKE_DEMAND(b_.array().isFinite().all());
 }
 
 }  // namespace optimization

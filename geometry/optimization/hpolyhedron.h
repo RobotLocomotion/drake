@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/name_value.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 
@@ -19,6 +20,9 @@ namespace optimization {
 class HPolyhedron final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron)
+
+  /** Constructs a default (zero-dimensional) polyhedron. */
+  HPolyhedron();
 
   /** Constructs the polyhedron.
   @pre A.rows() == b.size().
@@ -155,9 +159,19 @@ class HPolyhedron final : public ConvexSet {
   static HPolyhedron MakeUnitBox(int dim);
 
   /** Constructs the L1-norm unit ball in @p dim dimensions, {x | |x|₁ <= 1 }.
-  This set is also known as the crosspolytope and is described by the 2ᵈⁱᵐ
+  This set is also known as the cross-polytope and is described by the 2ᵈⁱᵐ
   signed unit vectors. */
   static HPolyhedron MakeL1Ball(int dim);
+
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    ConvexSet::Serialize(a);
+    a->Visit(DRAKE_NVP(A_));
+    a->Visit(DRAKE_NVP(b_));
+    CheckInvariants();
+  }
 
  private:
   HPolyhedron DoIntersectionNoChecks(const HPolyhedron& other) const;
@@ -208,6 +222,8 @@ class HPolyhedron final : public ConvexSet {
   // TODO(russt): Support ImplementGeometry(const Convex& convex, ...), but
   // currently it would require e.g. digging ReadObjForConvex out of
   // proximity_engine.cc.
+
+  void CheckInvariants() const;
 
   Eigen::MatrixXd A_{};
   Eigen::VectorXd b_{};
