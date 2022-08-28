@@ -132,15 +132,18 @@ class ConvexSet : public ShapeReifier {
   c * t + d ≥ 0,
   @endverbatim
   where A is an n-by-m matrix (with n the ambient_dimension), b is a vector of
-  size n, c is a vector of size p, x is a point in ℜᵐ, and t is a point in ℜ^p.
+  size n, c is a vector of size p, x is a point in ℜᵐ, and t is a point in ℜᵖ.
 
   When S is unbounded, then the behavior is almost identical, except when c' *
-  t+d=0. In this case, the constraints imply c' * t + d ≥ 0, A * x + b ∈ (c' * t
-  + d) S ⊕ rec(S), where rec(S) is the recession cone of S (the asymptotic
-  directions in which S is not bounded) and ⊕ is the Minkowski sum.  For c' * t
-  + d > 0, this is equivalent
-  to A * x + b ∈ (c' * t + d) S, but for c' * t + d = 0, we have only A * x + b
-  ∈ rec(S). */
+  t+d=0. In this case, the constraints imply
+  @verbatim
+  A * x + b ∈ (c' * t + d) S ⊕ rec(S),
+  c' * t + d ≥ 0,
+  @endverbatim
+  where rec(S) is the recession cone of S (the asymptotic directions in which S
+  is not bounded) and ⊕ is the Minkowski sum.  For c' * t + d > 0, this is
+  equivalent to A * x + b ∈ (c' * t + d) S, but for c' * t + d = 0, we have
+  only A * x + b ∈ rec(S). */
   std::vector<solvers::Binding<solvers::Constraint>>
   AddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
