@@ -183,6 +183,12 @@ class ConvexSet : public ShapeReifier {
   ConvexSet(std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner,
             int ambient_dimension);
 
+  // Implements non-virtual base class serialization.
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(ambient_dimension_));
+  }
+
   // Non-virtual interface implementations.
   virtual bool DoIsBounded() const = 0;
 
