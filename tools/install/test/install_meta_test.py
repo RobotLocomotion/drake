@@ -43,7 +43,7 @@ class TestInstallMeta(unittest.TestCase):
         """
         # Forcibly reset globals.
         # TODO(rpoyner-tri): get rid of installer globals; see #7331.
-        installer.libraries_to_fix_rpath.clear()
+        installer.libraries_installed.clear()
 
         stream = io.StringIO()
         with redirect_stdout(stream), redirect_stderr(stream):
