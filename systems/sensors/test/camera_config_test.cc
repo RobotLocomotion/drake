@@ -1,4 +1,4 @@
-#include "sim/common/camera_config.h"
+#include "drake/systems/sensors/camera_config.h"
 
 #include <vector>
 
@@ -14,20 +14,20 @@
 #include "drake/geometry/rgba.h"
 #include "drake/systems/sensors/camera_info.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace sensors {
 namespace {
 
-using drake::geometry::render::ColorRenderCamera;
-using drake::geometry::render::DepthRenderCamera;
-using drake::geometry::render::RenderCameraCore;
-using drake::geometry::render::RenderEngineGlParams;
-using drake::geometry::Rgba;
-using drake::math::RigidTransformd;
-using drake::schema::Transform;
-using drake::systems::sensors::CameraInfo;
-using drake::yaml::LoadYamlString;
-using drake::yaml::SaveYamlString;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderCameraCore;
+using geometry::render::RenderEngineGlParams;
+using geometry::Rgba;
+using math::RigidTransformd;
+using schema::Transform;
+using yaml::LoadYamlString;
+using yaml::SaveYamlString;
 using Eigen::Vector3d;
 
 // Confirms that a default-constructed camera config has valid values.
@@ -57,7 +57,7 @@ GTEST_TEST(CameraConfigTest, PrincipalPoint) {
     {
       int w = 328, h = 488;
       CameraConfig c{.width = w, .height = h};
-      const drake::Vector2<double> center = c.principal_point();
+      const Vector2<double> center = c.principal_point();
       CameraInfo intrinsics(c.width, c.height, kFovY);
       EXPECT_EQ(center.x(), intrinsics.center_x());
       EXPECT_EQ(center.y(), intrinsics.center_y());
@@ -66,7 +66,7 @@ GTEST_TEST(CameraConfigTest, PrincipalPoint) {
     {
       int w = 207, h = 833;
       CameraConfig c{.width = w, .height = h};
-      const drake::Vector2<double> center = c.principal_point();
+      const Vector2<double> center = c.principal_point();
       CameraInfo intrinsics(c.width, c.height, kFovY);
       EXPECT_EQ(center.x(), intrinsics.center_x());
       EXPECT_EQ(center.y(), intrinsics.center_y());
@@ -80,13 +80,13 @@ GTEST_TEST(CameraConfigTest, PrincipalPoint) {
     CameraConfig c;
     c.center_x = 17;
     EXPECT_EQ(*c.center_x, 17);
-    const drake::Vector2<double> center1 = c.principal_point();
+    const Vector2<double> center1 = c.principal_point();
     EXPECT_EQ(center1.x(), 17);
     // The y-position of the principal point hasn't moved.
     EXPECT_NEAR(center1.y(), c.height / 2, 0.5);
     // Doesn't change when the width changes.
     c.width = 180;
-    const drake::Vector2<double> center2 = c.principal_point();
+    const Vector2<double> center2 = c.principal_point();
     EXPECT_EQ(center2.x(), 17);
     EXPECT_EQ(center2.y(), center1.y());
   }
@@ -96,13 +96,13 @@ GTEST_TEST(CameraConfigTest, PrincipalPoint) {
     CameraConfig c;
     c.center_y = 19;
     EXPECT_EQ(*c.center_y, 19);
-    const drake::Vector2<double> center1 = c.principal_point();
+    const Vector2<double> center1 = c.principal_point();
     // The x-position of the principal point hasn't moved.
     EXPECT_NEAR(center1.x(), c.width / 2, 0.5);
     EXPECT_EQ(center1.y(), 19);
     // Doesn't change when the height changes.
     c.height = 123;
-    const drake::Vector2<double> center2 = c.principal_point();
+    const Vector2<double> center2 = c.principal_point();
     EXPECT_EQ(center2.x(), center1.x());
     EXPECT_EQ(center2.y(), 19);
   }
@@ -337,8 +337,8 @@ GTEST_TEST(CameraConfigTest, Validation) {
   }
 
   {
-    // Indicator that drake::geometry::render is being exercised to validate
-    // other values.
+    // Indicator that geometry::render is being exercised to validate other
+    // values.
     CameraConfig config;
     config.width = -5;
     EXPECT_THROW(config.ValidateOrThrow(), std::exception);
@@ -363,5 +363,6 @@ GTEST_TEST(CameraConfigTest, Validation) {
 }
 
 }  // namespace
-}  // namespace sim
-}  // namespace anzu
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake
