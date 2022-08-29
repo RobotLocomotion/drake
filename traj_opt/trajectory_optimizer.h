@@ -403,8 +403,7 @@ class TrajectoryOptimizer {
    * @param id_partials struct for holding dtau/dq
    */
   void CalcInverseDynamicsPartials(
-      const std::vector<VectorX<T>>& q, const std::vector<VectorX<T>>& v,
-      const std::vector<VectorX<T>>& a, const std::vector<VectorX<T>>& tau,
+      const TrajectoryOptimizerState<T>& state,
       TrajectoryOptimizerWorkspace<T>* workspace,
       InverseDynamicsPartials<T>* id_partials) const;
 
@@ -438,10 +437,13 @@ class TrajectoryOptimizer {
    * @param id_partials struct for holding dtau/dq
    */
   void CalcInverseDynamicsPartialsFiniteDiff(
-      const std::vector<VectorX<T>>& q, const std::vector<VectorX<T>>& v,
-      const std::vector<VectorX<T>>& a, const std::vector<VectorX<T>>& tau,
+      const TrajectoryOptimizerState<T>& state,
       TrajectoryOptimizerWorkspace<T>* workspace,
       InverseDynamicsPartials<T>* id_partials) const;
+
+  void CalcInverseDynamicsPartialsAutoDiff(
+      const TrajectoryOptimizerState<double>& state,
+      InverseDynamicsPartials<double>* id_partials) const;
 
   /**
    * Compute the gradient of the unconstrained cost L(q) using finite
@@ -661,6 +663,11 @@ class TrajectoryOptimizer {
 
   // Various parameters
   const SolverParameters params_;
+
+  std::unique_ptr<Diagram<AutoDiffXd>> diagram_ad_;
+  const MultibodyPlant<AutoDiffXd>* plant_ad_;
+  std::unique_ptr<TrajectoryOptimizer<AutoDiffXd>> optimizer_ad_;
+  std::unique_ptr<TrajectoryOptimizerState<AutoDiffXd>> state_ad_;
 };
 
 // Declare template specializations

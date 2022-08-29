@@ -180,7 +180,14 @@ struct ProximalOperatorData {
 template <typename T>
 class TrajectoryOptimizerState {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryOptimizerState);
+  // Not copyable.
+  TrajectoryOptimizerState(const TrajectoryOptimizerState<T>&) = delete;
+  void operator=(const TrajectoryOptimizerState<T>&) = delete;
+
+  // We do allow to move it.
+  TrajectoryOptimizerState(TrajectoryOptimizerState<T>&&) = default;
+  TrajectoryOptimizerState<T>& operator=(TrajectoryOptimizerState<T>&&) = default;
+
   /**
    * Constructor which allocates things of the proper sizes.
    *

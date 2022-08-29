@@ -13,6 +13,8 @@ enum LinesearchMethod {
 
 enum SolverMethod { kLinesearch, kTrustRegion };
 
+enum GradientsMethod { kForwardDifferences, kAutoDiff };
+
 struct SolverParameters {
   // Which overall optimization strategy to use - linesearch or trust region
   // TODO(vincekurtz): better name for this?
@@ -26,6 +28,8 @@ struct SolverParameters {
 
   // Maximum number of linesearch iterations
   int max_linesearch_iterations = 50;
+
+  GradientsMethod gradients_method{kForwardDifferences};
 
   // Flag for whether to print out iteration data
   bool verbose = true;

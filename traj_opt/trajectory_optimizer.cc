@@ -45,6 +45,12 @@ TrajectoryOptimizer<T>::TrajectoryOptimizer(const MultibodyPlant<T>* plant,
     const int nv = joint.num_velocities();
     joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
   }
+
+  if (params_.gradients_method == GradientsMethod::kAutoDiff) {
+    throw std::runtime_error(
+        "It is not possible to use automatic differentiation when only the "
+        "plant is provided. Use the constructor providing the full Diagram.");
+  }
 }
 
 template <typename T>
@@ -67,6 +73,26 @@ TrajectoryOptimizer<T>::TrajectoryOptimizer(
     const int velocity_start = joint.velocity_start();
     const int nv = joint.num_velocities();
     joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
+  }
+
+  if constexpr (std::is_same_v<T, double>) {
+    if (params_.gradients_method == GradientsMethod::kAutoDiff) {
+      diagram_ad_ = systems::System<double>::ToAutoDiffXd(*diagram);
+      plant_ad_ = dynamic_cast<const MultibodyPlant<AutoDiffXd>*>(
+          &diagram_ad_->GetSubsystemByName(plant->get_name()));
+      DRAKE_DEMAND(plant_ad_ != nullptr);
+      optimizer_ad_ = std::make_unique<TrajectoryOptimizer<AutoDiffXd>>(
+          diagram_ad_.get(), plant_ad_, prob, params);
+      // TODO: move state's destructor and possible other implementation to the
+      // source?
+      state_ad_ = std::unique_ptr<TrajectoryOptimizerState<AutoDiffXd>>(
+          new TrajectoryOptimizerState<AutoDiffXd>(num_steps(), *diagram_ad_,
+                                                   *plant_ad_));
+    }
+  } else {
+    throw std::runtime_error(
+        "Analytical gradients not supported for "
+        "TrajectoryOptimizer<AutoDiffXd>.");
   }
 }
 
@@ -488,25 +514,44 @@ TrajectoryOptimizer<T>::EvalContactJacobianData(
 
 template <typename T>
 void TrajectoryOptimizer<T>::CalcInverseDynamicsPartials(
-    const std::vector<VectorX<T>>& q, const std::vector<VectorX<T>>& v,
-    const std::vector<VectorX<T>>& a, const std::vector<VectorX<T>>& tau,
+    const TrajectoryOptimizerState<T>& state,
     TrajectoryOptimizerWorkspace<T>* workspace,
     InverseDynamicsPartials<T>* id_partials) const {
   // TODO(vincekurtz): use a solver flag to choose between finite differences
   // and an analytical approximation
-  CalcInverseDynamicsPartialsFiniteDiff(q, v, a, tau, workspace, id_partials);
+  switch (params_.gradients_method) {
+    case GradientsMethod::kForwardDifferences: {
+      CalcInverseDynamicsPartialsFiniteDiff(state, workspace, id_partials);
+      break;
+    }
+    case GradientsMethod::kAutoDiff: {
+      if constexpr (std::is_same_v<T, double>) {
+        CalcInverseDynamicsPartialsAutoDiff(state, id_partials);
+      } else {
+        throw std::runtime_error(
+            "Analytical gradients not supported for "
+            "TrajectoryOptimizer<AutoDiffXd>.");
+      }
+      break;
+    }
+  }
 }
 
 template <typename T>
 void TrajectoryOptimizer<T>::CalcInverseDynamicsPartialsFiniteDiff(
-    const std::vector<VectorX<T>>& q, const std::vector<VectorX<T>>& v,
-    const std::vector<VectorX<T>>& a, const std::vector<VectorX<T>>& tau,
+    const TrajectoryOptimizerState<T>& state,
     TrajectoryOptimizerWorkspace<T>* workspace,
     InverseDynamicsPartials<T>* id_partials) const {
   using std::abs;
   using std::max;
   // Check that id_partials has been allocated correctly.
   DRAKE_DEMAND(id_partials->size() == num_steps());
+
+  // Get the trajectory data
+  const std::vector<VectorX<T>>& q = state.q();
+  const std::vector<VectorX<T>>& v = EvalV(state);
+  const std::vector<VectorX<T>>& a = EvalA(state);
+  const std::vector<VectorX<T>>& tau = EvalTau(state);
 
   // Get references to the partials that we'll be setting
   std::vector<MatrixX<T>>& dtau_dqm = id_partials->dtau_dqm;
@@ -617,6 +662,15 @@ void TrajectoryOptimizer<T>::CalcInverseDynamicsPartialsFiniteDiff(
       }
     }
   }
+}
+
+template <typename T>
+void TrajectoryOptimizer<T>::CalcInverseDynamicsPartialsAutoDiff(
+    const TrajectoryOptimizerState<double>& state,
+    InverseDynamicsPartials<double>* id_partials) const {
+  (void)state;
+  (void)id_partials;
+  throw std::runtime_error("Implement me!");
 }
 
 template <typename T>
@@ -944,22 +998,17 @@ template <typename T>
 void TrajectoryOptimizer<T>::CalcCacheDerivativesData(
     const TrajectoryOptimizerState<T>& state) const {
   TrajectoryOptimizerCache<T>& cache = state.mutable_cache();
-  TrajectoryOptimizerWorkspace<T>& workspace = state.workspace;
-
-  // Get the trajectory data
-  const std::vector<VectorX<T>>& q = state.q();
-  const std::vector<VectorX<T>>& v = EvalV(state);
-  const std::vector<VectorX<T>>& a = EvalA(state);
-  const std::vector<VectorX<T>>& tau = EvalTau(state);
+  TrajectoryOptimizerWorkspace<T>& workspace = state.workspace;    
 
   // Some aliases
   InverseDynamicsPartials<T>& id_partials = cache.derivatives_data.id_partials;
   VelocityPartials<T>& v_partials = cache.derivatives_data.v_partials;
 
   // Compute partial derivatives of inverse dynamics d(tau)/d(q)
-  CalcInverseDynamicsPartials(q, v, a, tau, &workspace, &id_partials);
+  CalcInverseDynamicsPartials(state, &workspace, &id_partials);
 
   // Compute partial derivatives of velocities d(v)/d(q)
+  const std::vector<VectorX<T>>& q = state.q();
   CalcVelocityPartials(q, &v_partials);
 
   // Set cache invalidation flag
