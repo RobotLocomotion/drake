@@ -1,4 +1,4 @@
-#include "sim/common/camera_config.h"
+#include "drake/systems/sensors/camera_config.h"
 
 #include <vector>
 
@@ -6,28 +6,28 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/schema/transform.h"
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/render_gl/render_engine_gl_params.h"
 #include "drake/geometry/rgba.h"
 #include "drake/systems/sensors/camera_info.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace sensors {
 namespace {
 
-using drake::geometry::render::ColorRenderCamera;
-using drake::geometry::render::DepthRenderCamera;
-using drake::geometry::render::RenderCameraCore;
-using drake::geometry::render::RenderEngineGlParams;
-using drake::geometry::Rgba;
-using drake::math::RigidTransformd;
-using drake::schema::Transform;
-using drake::systems::sensors::CameraInfo;
-using drake::yaml::LoadYamlString;
-using drake::yaml::SaveYamlString;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderCameraCore;
+using geometry::render::RenderEngineGlParams;
+using geometry::Rgba;
+using math::RigidTransformd;
+using schema::Transform;
+using yaml::LoadYamlString;
+using yaml::SaveYamlString;
 using Eigen::Vector3d;
 
 // Confirms that a default-constructed camera config has valid values.
@@ -57,7 +57,7 @@ GTEST_TEST(CameraConfigTest, PrincipalPoint) {
     {
       int w = 328, h = 488;
       CameraConfig c{.width = w, .height = h};
-      const drake::Vector2<double> center = c.principal_point();
+      const Vector2<double> center = c.principal_point();
       CameraInfo intrinsics(c.width, c.height, kFovY);
       EXPECT_EQ(center.x(), intrinsics.center_x());
       EXPECT_EQ(center.y(), intrinsics.center_y());
@@ -66,7 +66,7 @@ GTEST_TEST(CameraConfigTest, PrincipalPoint) {
     {
       int w = 207, h = 833;
       CameraConfig c{.width = w, .height = h};
-      const drake::Vector2<double> center = c.principal_point();
+      const Vector2<double> center = c.principal_point();
       CameraInfo intrinsics(c.width, c.height, kFovY);
       EXPECT_EQ(center.x(), intrinsics.center_x());
       EXPECT_EQ(center.y(), intrinsics.center_y());
@@ -80,13 +80,13 @@ GTEST_TEST(CameraConfigTest, PrincipalPoint) {
     CameraConfig c;
     c.center_x = 17;
     EXPECT_EQ(*c.center_x, 17);
-    const drake::Vector2<double> center1 = c.principal_point();
+    const Vector2<double> center1 = c.principal_point();
     EXPECT_EQ(center1.x(), 17);
     // The y-position of the principal point hasn't moved.
     EXPECT_NEAR(center1.y(), c.height / 2, 0.5);
     // Doesn't change when the width changes.
     c.width = 180;
-    const drake::Vector2<double> center2 = c.principal_point();
+    const Vector2<double> center2 = c.principal_point();
     EXPECT_EQ(center2.x(), 17);
     EXPECT_EQ(center2.y(), center1.y());
   }
@@ -96,19 +96,63 @@ GTEST_TEST(CameraConfigTest, PrincipalPoint) {
     CameraConfig c;
     c.center_y = 19;
     EXPECT_EQ(*c.center_y, 19);
-    const drake::Vector2<double> center1 = c.principal_point();
+    const Vector2<double> center1 = c.principal_point();
     // The x-position of the principal point hasn't moved.
     EXPECT_NEAR(center1.x(), c.width / 2, 0.5);
     EXPECT_EQ(center1.y(), 19);
     // Doesn't change when the height changes.
     c.height = 123;
-    const drake::Vector2<double> center2 = c.principal_point();
+    const Vector2<double> center2 = c.principal_point();
     EXPECT_EQ(center2.x(), center1.x());
     EXPECT_EQ(center2.y(), 19);
   }
 }
 
-GTEST_TEST(CameraConfigTest, FovDegrees) {
+// Simply confirm that the FocalLength has the appropriate semantics of defining
+// one or both values (and does proper validation).
+GTEST_TEST(CameraConfigTest, CameraConfigFocalLength) {
+  constexpr double kFocalX = 250;
+  constexpr double kFocalY = 250;
+
+  {
+    // Just specifying focal x reports that value for x and y.
+    const CameraConfig::FocalLength focal{.x = kFocalX};
+    EXPECT_EQ(focal.focal_x(), kFocalX);
+    EXPECT_EQ(focal.focal_y(), kFocalX);
+  }
+
+  {
+    // Just specifying focal y reports that value for x and y.
+    const CameraConfig::FocalLength focal{.y = kFocalX};
+    EXPECT_EQ(focal.focal_x(), kFocalX);
+    EXPECT_EQ(focal.focal_y(), kFocalX);
+  }
+
+  {
+    // Specifying both gets propagated.
+    const CameraConfig::FocalLength focal{.x = kFocalX, .y = kFocalY};
+    EXPECT_EQ(focal.focal_x(), kFocalX);
+    EXPECT_EQ(focal.focal_y(), kFocalY);
+  }
+
+  {
+    // Specifying no values throws (and both focal_x an focal_y validate).
+    const CameraConfig::FocalLength null_focal;
+    DRAKE_EXPECT_THROWS_MESSAGE(null_focal.focal_x(),
+                                ".*you must define .* for FocalLength.");
+    DRAKE_EXPECT_THROWS_MESSAGE(null_focal.focal_y(),
+                                ".*you must define .* for FocalLength.");
+  }
+
+  {
+    // An invalid configuration should throw when serializing.
+    const CameraConfig::FocalLength null_focal;
+    DRAKE_EXPECT_THROWS_MESSAGE(SaveYamlString(null_focal),
+                                ".*you must define .* for FocalLength.");
+  }
+}
+
+GTEST_TEST(CameraConfigTest, CameraConfigFovDegrees) {
   constexpr int kWidth = 640;
   constexpr int kHeight = 480;
   constexpr double kFocalX = 250;
@@ -117,34 +161,43 @@ GTEST_TEST(CameraConfigTest, FovDegrees) {
                               kHeight * 0.5);
   const double kFovXDeg = intrinsics.fov_x() * 180 / M_PI;
   const double kFovYDeg = intrinsics.fov_y() * 180 / M_PI;
+
   {
-    // Just specifying fov_x a) computes the right focal length and the same
-    // value for x and y.
-    CameraConfig::FovDegrees fov;
-    fov.x = kFovXDeg;
+    // Just specifying fov x (a) computes the right focal length and (b) the
+    // same value for x and y.
+    const CameraConfig::FovDegrees fov{.x = kFovXDeg};
     EXPECT_DOUBLE_EQ(fov.focal_x(kWidth, kHeight), kFocalX);
     EXPECT_DOUBLE_EQ(fov.focal_y(kWidth, kHeight), kFocalX);
   }
+
   {
-    // Just specifying fov_y a) computes the right focal length and the same
-    // value for x and y.
-    CameraConfig::FovDegrees fov;
-    fov.y = kFovYDeg;
+    // Just specifying fov y (a) computes the right focal length and (b) the
+    // same value for x and y.
+    const CameraConfig::FovDegrees fov{.y = kFovYDeg};
     EXPECT_DOUBLE_EQ(fov.focal_x(kWidth, kHeight), kFocalY);
     EXPECT_DOUBLE_EQ(fov.focal_y(kWidth, kHeight), kFocalY);
   }
+
   {
     // Specifying both right focal length for each direction independently.
-    const CameraConfig::FovDegrees fov{kFovXDeg, kFovYDeg};
+    const CameraConfig::FovDegrees fov{.x = kFovXDeg, .y = kFovYDeg};
     EXPECT_DOUBLE_EQ(fov.focal_x(kWidth, kHeight), kFocalX);
     EXPECT_DOUBLE_EQ(fov.focal_y(kWidth, kHeight), kFocalY);
   }
+
   {
-    // Specifying no values throws.
+    // Specifying no values throws (and both focal_x an focal_y validate).
     CameraConfig::FovDegrees null_fov;
     DRAKE_EXPECT_THROWS_MESSAGE(null_fov.focal_x(kWidth, kHeight),
                                 ".*you must define .* for FovDegrees.");
     DRAKE_EXPECT_THROWS_MESSAGE(null_fov.focal_y(kWidth, kHeight),
+                                ".*you must define .* for FovDegrees.");
+  }
+
+  {
+    // An invalid configuration should throw when serializing.
+    const CameraConfig::FovDegrees null_fov;
+    DRAKE_EXPECT_THROWS_MESSAGE(SaveYamlString(null_fov),
                                 ".*you must define .* for FovDegrees.");
   }
 }
@@ -158,22 +211,12 @@ GTEST_TEST(CameraConfigTest, FocalLength) {
   }
 
   {
-    // Both change when assigning a single value.
-    CameraConfig c;
-    const double old_focal = c.focal_x();
-    const double new_focal = old_focal * 1.3;
-    c.focal = new_focal;
-    EXPECT_EQ(c.focal_x(), new_focal);
-    EXPECT_EQ(c.focal_y(), new_focal);
-  }
-
-  {
-    // Both change independently when assigning an Anisotropic value.
+    // Both change independently when assigning an FocalLength value.
     CameraConfig c;
     const double old_focal = c.focal_x();
     const double new_focal_x = old_focal + 10;
     const double new_focal_y = old_focal - 10;
-    c.focal = CameraConfig::Anisotropic{new_focal_x, new_focal_y};
+    c.focal = CameraConfig::FocalLength{new_focal_x, new_focal_y};
     EXPECT_EQ(c.focal_x(), new_focal_x);
     EXPECT_EQ(c.focal_y(), new_focal_y);
   }
@@ -250,7 +293,7 @@ GTEST_TEST(CameraConfigTest, MakeCameras) {
   // to
   CameraConfig config{.width = 320,
                       .height = 240,
-                      .focal = CameraConfig::Anisotropic{470.0, 480.0},
+                      .focal = CameraConfig::FocalLength{470.0, 480.0},
                       .center_x = 237,
                       .center_y = 233,
                       .clipping_near = 0.075,
@@ -337,8 +380,8 @@ GTEST_TEST(CameraConfigTest, Validation) {
   }
 
   {
-    // Indicator that drake::geometry::render is being exercised to validate
-    // other values.
+    // Indicator that geometry::render is being exercised to validate other
+    // values.
     CameraConfig config;
     config.width = -5;
     EXPECT_THROW(config.ValidateOrThrow(), std::exception);
@@ -363,5 +406,6 @@ GTEST_TEST(CameraConfigTest, Validation) {
 }
 
 }  // namespace
-}  // namespace sim
-}  // namespace anzu
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake

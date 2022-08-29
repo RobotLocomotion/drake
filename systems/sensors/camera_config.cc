@@ -1,23 +1,51 @@
-#include "sim/common/camera_config.h"
+#include "drake/systems/sensors/camera_config.h"
 
 #include <cmath>
-#include <iostream>
 
 #include "drake/systems/sensors/camera_info.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace sensors {
 
-using drake::geometry::render::ClippingRange;
-using drake::geometry::render::ColorRenderCamera;
-using drake::geometry::render::DepthRange;
-using drake::geometry::render::DepthRenderCamera;
-using drake::geometry::render::RenderCameraCore;
-using drake::math::RigidTransform;
-using drake::systems::sensors::CameraInfo;
-using drake::Vector2;
+using geometry::render::ClippingRange;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRange;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderCameraCore;
+using math::RigidTransform;
+
+void CameraConfig::FocalLength::ValidateOrThrow() const {
+  // N.B. The positive, finiteness of the values is tested when we validate
+  // CameraConfig by construction render cameras.
+  if (!x.has_value() && !y.has_value()) {
+    throw std::logic_error(
+        "Invalid camera configuration; you must define at least x or y "
+        "for FocalLength.");
+  }
+}
+
+double CameraConfig::FocalLength::focal_x() const {
+  ValidateOrThrow();
+  if (x.has_value()) {
+    return *x;
+  } else {
+    return *y;
+  }
+}
+
+double CameraConfig::FocalLength::focal_y() const {
+  ValidateOrThrow();
+  if (y.has_value()) {
+    return *y;
+  } else {
+    return *x;
+  }
+}
 
 void CameraConfig::FovDegrees::ValidateOrThrow() const {
+  // N.B. The positive, finiteness of the values is tested when we validate
+  // CameraConfig by construction render cameras.
   if (!x.has_value() && !y.has_value()) {
     throw std::logic_error(
         "Invalid camera configuration; you must define at least x or y "
@@ -37,39 +65,35 @@ double CalcFocalLength(int image_dimension, double fov_degrees) {
 
 }  // namespace
 
-double CameraConfig::FovDegrees::focal_x(int width, int height) const {
+double CameraConfig::FovDegrees::focal_x(int width_in, int height_in) const {
   ValidateOrThrow();
   if (x.has_value()) {
-    return CalcFocalLength(width, *x);
+    return CalcFocalLength(width_in, *x);
   } else {
-    return focal_y(width, height);
+    return focal_y(width_in, height_in);
   }
 }
 
-double CameraConfig::FovDegrees::focal_y(int width, int height) const {
+double CameraConfig::FovDegrees::focal_y(int width_in, int height_in) const {
   ValidateOrThrow();
   if (y.has_value()) {
-    return CalcFocalLength(height, *y);
+    return CalcFocalLength(height_in, *y);
   } else {
-    return focal_x(width, height);
+    return focal_x(width_in, height_in);
   }
 }
 
 double CameraConfig::focal_x() const {
-  if (std::holds_alternative<double>(focal)) {
-    return std::get<double>(focal);
-  } else if (std::holds_alternative<Anisotropic>(focal)) {
-    return std::get<Anisotropic>(focal).x;
+  if (std::holds_alternative<FocalLength>(focal)) {
+    return std::get<FocalLength>(focal).focal_x();
   } else {
     return std::get<FovDegrees>(focal).focal_x(width, height);
   }
 }
 
 double CameraConfig::focal_y() const {
-  if (std::holds_alternative<double>(focal)) {
-    return std::get<double>(focal);
-  } else if (std::holds_alternative<Anisotropic>(focal)) {
-    return std::get<Anisotropic>(focal).y;
+  if (std::holds_alternative<FocalLength>(focal)) {
+    return std::get<FocalLength>(focal).focal_y();
   } else {
     return std::get<FovDegrees>(focal).focal_y(width, height);
   }
@@ -132,5 +156,6 @@ void CameraConfig::ValidateOrThrow() const {
                     *X_BD.base_frame));
   }
 }
-}  // namespace sim
-}  // namespace anzu
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake
