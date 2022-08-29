@@ -519,8 +519,6 @@ class RigidTransform {
   /// @retval vec_AoQ_A vector from Ao to Q, expressed in frame A.
   Vector4<T> operator*(const Vector4<T>& vec_BoQ_B) const {
     Vector4<T> vec_AoQ_A;
-    // vec_AoQ_A.head<3>() =
-    //     (p_AoBo_A_ * vec_BoQ_B(3)) + (R_AB_ * vec_BoQ_B.head<3>());
     vec_AoQ_A.head(3) =
         (p_AoBo_A_ * vec_BoQ_B(3)) + (R_AB_ * vec_BoQ_B.head(3));
     vec_AoQ_A(3) = vec_BoQ_B(3);
