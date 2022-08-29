@@ -65,6 +65,14 @@ DeformableGeometry::DeformableGeometry(VolumeMesh<double> mesh)
       signed_distance_field_(
           ApproximateSignedDistanceField(&deformable_mesh_->mesh())) {}
 
+const VolumeMeshFieldLinear<double, double>&
+DeformableGeometry::CalcSignedDistanceField() const {
+  std::vector<double> values = signed_distance_field_->values();
+  *signed_distance_field_ = VolumeMeshFieldLinear<double, double>(
+      std::move(values), &deformable_mesh_->mesh());
+  return *signed_distance_field_;
+}
+
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const HalfSpace&, const ProximityProperties&) {
   throw std::logic_error(
