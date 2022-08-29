@@ -4601,15 +4601,13 @@ TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesDeformable) {
       new_geometry.deformable_mesh().mesh()));
   EXPECT_TRUE(old_geometry.deformable_mesh().bvh().Equal(
       new_geometry.deformable_mesh().bvh()));
-  EXPECT_TRUE(old_geometry.signed_distance_field().Equal(
-      new_geometry.signed_distance_field()));
+  EXPECT_TRUE(old_geometry.CalcSignedDistanceField().Equal(
+      new_geometry.CalcSignedDistanceField()));
   // Verify that the address didn't change either; so it's indeed an no-op.
   EXPECT_EQ(&old_geometry.deformable_mesh().mesh(),
             &new_geometry.deformable_mesh().mesh());
   EXPECT_EQ(&old_geometry.deformable_mesh().bvh(),
             &new_geometry.deformable_mesh().bvh());
-  EXPECT_EQ(&old_geometry.signed_distance_field(),
-            &new_geometry.signed_distance_field());
 }
 
 TEST_F(ProximityEngineDeformableContactTest, AddAndRemoveDeformableGeometry) {

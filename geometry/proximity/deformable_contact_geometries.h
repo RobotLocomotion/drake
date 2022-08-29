@@ -56,16 +56,22 @@ class DeformableGeometry {
   }
 
   /* Returns the approximate signed distance field (sdf) for the deformable
-   geometry. More specifically, the sdf value at each vertex is equal to the
-   exact value (to the accuracy of the distance query algorithm) in their
-   reference configuration. The values in the interior of the mesh are linearly
-   interpolated from vertex values. */
-  const VolumeMeshFieldLinear<double, double>& signed_distance_field() const {
-    return *signed_distance_field_;
-  }
+   geometry evaluated with the deformable mesh at its *current* configuration.
+   More specifically, the sdf value at each vertex is equal to the exact value
+   (to the accuracy of the distance query algorithm) in their reference
+   configuration. The values in the interior of the mesh are linearly
+   interpolated from vertex values.
+   @warn The result may no longer be valid after calls to
+   UpdateVertexPositions(). Hence, the result should be used and discarded
+   instead of kept around. */
+  const VolumeMeshFieldLinear<double, double>& CalcSignedDistanceField() const;
 
  private:
   std::unique_ptr<DeformableVolumeMesh<double>> deformable_mesh_;
+  /* Note: we don't provide an accessor to `signed_distance_field_` as it may be
+   invalidated by calls to `UpdateVertexPositions()`. Instead, we provide
+   `CalcSignedDistanceField()` that guarantees to return the up-to-date mesh
+   field. */
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> signed_distance_field_;
 };
 

@@ -139,6 +139,85 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   EXPECT_EQ(contact_data.R_CWs().size(), kExpectedNumContactPoints);
 }
 
+/* Tests that the per-contact-point data depends only on the relative pose
+ between the deformable and the rigid geometry by verifying that they don't
+ change when a rigid transform is applied to both geometries.
+ In particular, this test verifies the correctness of signed distances on the
+ contact surface isn't corrupted by updating vertex positions of the deformable
+ geometry. */
+GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
+  const GeometryId deformable_id = GeometryId::get_new_id();
+  const Sphere unit_sphere(1.0);
+  deformable::DeformableGeometry deformable_W(MakeSphereVolumeMesh<double>(
+      unit_sphere, 10.0 /* very coarse resolution */,
+      TessellationStrategy::kDenseInteriorVertices));
+
+  const GeometryId rigid_id = GeometryId::get_new_id();
+  // The cube of edge length 2.0 occupies the space [-1,1]x[-1,1]x[-1,1].
+  const TriangleSurfaceMesh<double> rigid_mesh_R = MakeBoxSurfaceMesh<double>(
+      Box::MakeCube(2.0), 10.0 /* very coarse resolution */);
+  const Bvh<Obb, TriangleSurfaceMesh<double>> rigid_bvh_R(rigid_mesh_R);
+  math::RigidTransform<double> X_WR(Vector3<double>{1.5, 0.0, 0.0});
+
+  /* Projected to the xy-plane, the setup of the two geometries looks like
+
+                              ____________
+                          /|\|            |
+                        /  | |\           |
+      sphere volume   /____|_|__\         |  box surface
+      as octeherdron  \    | |  /         |
+                        \  | |/           |
+                          \|/|____________|                                 */
+
+  /* Compute the first set of contact data. */
+  const VolumeMesh<double> mesh_W = deformable_W.deformable_mesh().mesh();
+  DeformableRigidContact<double> contact_data(deformable_id,
+                                              mesh_W.num_vertices());
+  AppendDeformableRigidContact(deformable_W, rigid_id, rigid_mesh_R,
+                               rigid_bvh_R, X_WR, &contact_data);
+  EXPECT_GT(contact_data.num_contact_points(), 0);
+
+  /* We apply an arbitrary rigid transform to both the deformable and the rigid
+   geometry but keep the relative pose between the deformable and the rigid
+   geometry unchanged. */
+  VectorX<double> q_WD(3 * mesh_W.num_vertices());
+  const math::RigidTransform<double> arbitrary_transform(
+      math::RollPitchYaw<double>(0, 0, 0), Vector3<double>(1.2, 3.4, 5.6));
+  for (int v = 0; v < mesh_W.num_vertices(); ++v) {
+    q_WD.segment<3>(3 * v) = arbitrary_transform * mesh_W.vertex(v);
+  }
+  deformable_W.UpdateVertexPositions(q_WD);
+  X_WR = arbitrary_transform * X_WR;
+  /* Compute the second set of contact data. */
+  DeformableRigidContact<double> contact_data2(deformable_id,
+                                               mesh_W.num_vertices());
+  AppendDeformableRigidContact(deformable_W, rigid_id, rigid_mesh_R,
+                               rigid_bvh_R, X_WR, &contact_data2);
+
+  EXPECT_EQ(contact_data.num_contact_points(),
+            contact_data2.num_contact_points());
+  /* Verify that penetration distances are not all equal simply because they are
+   all zero -- some meaningful values do exist. */
+  const auto has_negative_distance =
+      [](const DeformableRigidContact<double>& contact) {
+        const std::vector<double>& sdf = contact.signed_distances();
+        bool negative_distance_exists = false;
+        for (const double d : sdf) {
+          EXPECT_LE(d, 0.0);
+          if (d < 0.0) {
+            negative_distance_exists = true;
+          }
+        }
+        EXPECT_TRUE(negative_distance_exists);
+      };
+  has_negative_distance(contact_data);
+  const std::vector<double>& sdf = contact_data.signed_distances();
+  const std::vector<double>& sdf2 = contact_data2.signed_distances();
+  for (int i = 0; i < contact_data.num_contact_points(); ++i) {
+    EXPECT_NEAR(sdf[i], sdf2[i], 1e-14);
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
