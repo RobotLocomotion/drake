@@ -53,6 +53,10 @@ class DummyModel final : public PhysicalModel<T> {
     return discrete_state_index_;
   }
 
+  bool is_compliant_contact_manager_set() const {
+    return compliant_contact_manager_set_;
+  }
+
  private:
   /* Allow different specializations to access each other's private data for
    cloning to a different scalar type. */
@@ -117,11 +121,16 @@ class DummyModel final : public PhysicalModel<T> {
         {systems::System<T>::xd_ticket()});
   }
 
+  void DoAddToManager(CompliantContactManager<T>*) {
+    compliant_contact_manager_set_ = true;
+  }
+
   std::vector<VectorX<T>> discrete_states_{};
   int num_dofs_{0};
   const systems::OutputPort<T>* abstract_output_port_{nullptr};
   const systems::OutputPort<T>* vector_output_port_{nullptr};
   DiscreteStateIndex discrete_state_index_;
+  bool compliant_contact_manager_set_{false};
 };
 }  // namespace test
 }  // namespace internal

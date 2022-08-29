@@ -59,6 +59,19 @@ template <typename T>
 CompliantContactManager<T>::~CompliantContactManager() {}
 
 template <typename T>
+void CompliantContactManager<T>::SetDeformableModel(
+    const DeformableModel<double>* model) {
+  if constexpr (std::is_same_v<T, double>) {
+    deformable_driver_ =
+        std::make_unique<DeformableDriver<double>>(model, this);
+  } else {
+    unused(model);
+    throw std::logic_error(
+        "T == double is the scalar type that supports deformable simulation.");
+  }
+}
+
+template <typename T>
 void CompliantContactManager<T>::DeclareCacheEntries() {
   // N.B. We use xd_ticket() instead of q_ticket() since discrete
   // multibody plant does not have q's, but rather discrete state.
@@ -103,6 +116,12 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
           &CompliantContactManager<T>::CalcContactProblemCache),
       {plant().cache_entry_ticket(cache_indexes_.discrete_contact_pairs)});
   cache_indexes_.contact_problem = contact_problem_cache_entry.cache_index();
+
+  if constexpr (std::is_same_v<T, double>) {
+    if (deformable_driver_ != nullptr) {
+      deformable_driver_->DeclareCacheEntries(this);
+    }
+  }
 }
 
 template <typename T>
@@ -1029,6 +1048,12 @@ void CompliantContactManager<T>::ExtractModelInfo() {
     const int velocity_start = joint.velocity_start();
     const int nv = joint.num_velocities();
     joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
+  }
+  // Collect information from each PhysicalModel owned by the plant.
+  const std::vector<std::unique_ptr<multibody::internal::PhysicalModel<T>>>&
+      physical_models = this->plant().physical_models();
+  for (const auto& model : physical_models) {
+    model->AddToManager(this);
   }
 }
 

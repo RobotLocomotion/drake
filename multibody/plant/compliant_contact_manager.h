@@ -13,6 +13,8 @@
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
+#include "drake/multibody/plant/deformable_driver.h"
+#include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/systems/framework/context.h"
 
@@ -142,6 +144,14 @@ class CompliantContactManager final
       const contact_solvers::internal::SapSolverParameters& parameters) {
     sap_parameters_ = parameters;
   }
+
+  // Associates the given `DeformableModel` with `this` manager. The discrete
+  // states of the deformable bodies registered in the given `model` will be
+  // advanced by this manager. This manager holds onto the given pointer and
+  // therefore the model must outlive the manager. If called repeatedly, only
+  // the last model supplied will be considered.
+  // @pre model != nullptr
+  void SetDeformableModel(const DeformableModel<double>* model);
 
   bool is_cloneable_to_double() const final { return true; }
   bool is_cloneable_to_autodiff() const final { return true; }
@@ -365,6 +375,9 @@ class CompliantContactManager final
   // Vector of joint damping coefficients, of size plant().num_velocities().
   // This information is extracted during the call to ExtractModelInfo().
   VectorX<T> joint_damping_;
+  // deformable_driver_ computes the information on all deformable bodies needed
+  // to advance the discrete states.
+  std::unique_ptr<DeformableDriver<double>> deformable_driver_;
 };
 
 }  // namespace internal
