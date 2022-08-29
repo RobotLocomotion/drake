@@ -668,9 +668,67 @@ template <typename T>
 void TrajectoryOptimizer<T>::CalcInverseDynamicsPartialsAutoDiff(
     const TrajectoryOptimizerState<double>& state,
     InverseDynamicsPartials<double>* id_partials) const {
-  (void)state;
-  (void)id_partials;
-  throw std::runtime_error("Implement me!");
+  DRAKE_DEMAND(id_partials->size() == num_steps());
+
+  // Get references to the partials that we'll be setting
+  std::vector<MatrixX<T>>& dtau_dqm = id_partials->dtau_dqm;
+  std::vector<MatrixX<T>>& dtau_dqt = id_partials->dtau_dqt;
+  std::vector<MatrixX<T>>& dtau_dqp = id_partials->dtau_dqp;  
+
+  // Heap allocations.
+  std::vector<VectorX<AutoDiffXd>> q_ad(num_steps() + 1);
+  VectorX<AutoDiffXd> tau_ad(plant().num_velocities());
+  TrajectoryOptimizerWorkspace<AutoDiffXd> workspace_ad(num_steps(),
+                                                        *plant_ad_);
+
+  // Initialize q_ad. First with no derivatives, as a constant.
+  const std::vector<VectorX<double>>& q = state.q();
+  for (int t = 0; t <= num_steps(); ++t) {
+    q_ad[t] = q[t];
+  }
+
+  for (int t = 0; t <= num_steps(); ++t) {
+    // Set derivatives with respect to q[t].
+    q_ad[t] = math::InitializeAutoDiff(q[t], q[t].size());
+    state_ad_->set_q(q_ad);
+
+    // q[t] will propagate directly to v[t], v[t+1], a[t-1], a[t] and a[t+1].
+    // Therefore we need to re-evaluate them.
+    const std::vector<VectorX<AutoDiffXd>>& v_ad =
+        optimizer_ad_->EvalV(*state_ad_);
+    const std::vector<VectorX<AutoDiffXd>>& a_ad =
+        optimizer_ad_->EvalA(*state_ad_);
+
+    // All dynamics terms are treated implicitly, i.e.,
+    // tau[t] = M(q[t+1]) * a[t] - k(q[t+1],v[t+1]) - f_ext[t+1]
+
+    // TODO: get rid of context_ in the implementation of
+    // CalcInverseDynamicsSingleTimeStep().
+
+    // dtau_dqt[t].
+    plant_ad_->SetPositions(context_ad_, q_ad[t + 1]);
+    plant_ad_->SetVelocities(context_ad_, v_ad[t + 1]);
+    CalcInverseDynamicsSingleTimeStep(*context_ad_, a_ad[t], &workspace_ad,
+                                      &tau_ad);
+    dtau_dqt[t] = math::ExtractGradient(tau_ad);
+
+    // dtau_dqt[t+1].
+    plant_ad_->SetPositions(context_ad_, q_ad[t + 2]);
+    plant_ad_->SetVelocities(context_ad_, v_ad[t + 2]);
+    CalcInverseDynamicsSingleTimeStep(*context_ad_, a_ad[t + 1], &workspace_ad,
+                                      &tau_ad);
+    dtau_dqm[t + 1] = math::ExtractGradient(tau_ad);
+
+    // dtau_dqt[t-1].
+    plant_ad_->SetPositions(context_ad_, q_ad[t]);
+    plant_ad_->SetVelocities(context_ad_, v_ad[t]);
+    CalcInverseDynamicsSingleTimeStep(*context_ad_, a_ad[t - 1], &workspace_ad,
+                                      &tau_ad);
+    dtau_dqp[t - 1] = math::ExtractGradient(tau_ad);
+
+    // Unset derivatives.
+    q_ad[t].derivatives().setZero();
+  }
 }
 
 template <typename T>
