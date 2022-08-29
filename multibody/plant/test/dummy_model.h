@@ -59,6 +59,13 @@ class DummyModel final : public PhysicalModel<T> {
   template <typename U>
   friend class DummyModel;
 
+  /* A dummy stub for ModelPointerVariant. */
+  ModelPointerVariant<T> DoToModelPointerVariant() const final {
+    throw std::logic_error(
+        "DummyModel is used for unit testing only, and is not included in "
+        "ModelPointerVariant.");
+  }
+
   std::unique_ptr<PhysicalModel<double>> CloneToDouble() const final {
     return CloneToScalar<double>();
   }
