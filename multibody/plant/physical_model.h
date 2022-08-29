@@ -15,6 +15,9 @@ class MultibodyPlant;
 
 namespace internal {
 
+template <typename T>
+class CompliantContactManager;
+
 /* PhysicalModel provides the functionalities to extend the type of
  physical model of MultibodyPlant. Developers can derive from this
  PhysicalModel to incorporate additional model elements coupled with the
@@ -80,6 +83,16 @@ class PhysicalModel : public ScalarConvertibleComponent<T> {
     system_resources_declared_ = true;
   }
 
+  /* Configures the given CompliantContactManager with `this` model. This
+   function can only be called after system resources have been declared,
+   otherwise an exception in thrown.
+   @pre manager != nullptr. */
+  void SetUpCompliantContactManager(CompliantContactManager<T>* manager) {
+    DRAKE_DEMAND(manager != nullptr);
+    ThrowIfSystemResourcesNotDeclared(__func__);
+    DoSetUpCompliantContactManager(manager);
+  }
+
  protected:
   /* Derived classes that support making a clone that uses double as a scalar
    type must implement this so that it creates a copy of the object with double
@@ -103,6 +116,10 @@ class PhysicalModel : public ScalarConvertibleComponent<T> {
   /* Derived class must override this to declare system resources for its
    specific model. */
   virtual void DoDeclareSystemResources(MultibodyPlant<T>* plant) = 0;
+
+  /* Derived class may override this to set up compliant contact manager.
+   Defaults to no-op. */
+  virtual void DoSetUpCompliantContactManager(CompliantContactManager<T>*) {}
 
   /* Helper method for throwing an exception within public methods that should
    not be called after system resources are declared. The invoking method should
