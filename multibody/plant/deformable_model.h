@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/identifier.h"
@@ -16,6 +17,7 @@ namespace multibody {
 namespace internal {
 
 using DeformableBodyId = Identifier<class DeformableBodyTag>;
+using DeformableBodyIndex = TypeSafeIndex<class DeformableBodyTag>;
 
 /* DeformableModel implements the interface in PhysicalModel and provides the
  functionalities to specify deformable bodies. Unlike rigid bodies, the shape of
@@ -91,11 +93,25 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
    registered in this model. */
   const VectorX<T>& GetReferencePositions(DeformableBodyId id) const;
 
+  /* Returns the DeformableBodyId of the body with the given body index.
+   @throws std::exception if MultibodyPlant::Finalize() has not been called yet
+   or if index is larger than or equal to the total number of registered
+   deformable bodies. */
+  DeformableBodyId GetBodyIdOrThrow(DeformableBodyIndex index) const;
+
+  /* Returns the GeometryId of the geometry associated with the body with the
+   given `id`.
+   @throws std::exception if no body with the given `id` has been registered. */
+  geometry::GeometryId GetGeometryIdOrThrow(DeformableBodyId id) const;
+
  private:
   // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd()
   // and the corresponding is_cloneable methods.
 
   void DoDeclareSystemResources(MultibodyPlant<T>* plant) final;
+
+  void DoAddToManager(
+      CompliantContactManager<T>* manager) final;
 
   /* Builds a FEM model for the body with `id` with linear tetrahedral elements
    and a single quadrature point. The reference positions as well as the
@@ -128,6 +144,7 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
       body_id_to_geometry_id_;
   std::unordered_map<DeformableBodyId, std::unique_ptr<fem::FemModel<T>>>
       fem_models_;
+  std::vector<DeformableBodyId> body_ids_;
 };
 
 }  // namespace internal

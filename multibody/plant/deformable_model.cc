@@ -9,6 +9,7 @@
 #include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fem/volumetric_model.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 
 namespace drake {
 namespace multibody {
@@ -56,6 +57,7 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   /* Do the book-keeping. */
   reference_positions_.emplace(body_id, std::move(reference_position));
   body_id_to_geometry_id_.emplace(body_id, geometry_id);
+  body_ids_.emplace_back(body_id);
   return body_id;
 }
 
@@ -79,6 +81,26 @@ const VectorX<T>& DeformableModel<T>::GetReferencePositions(
     DeformableBodyId id) const {
   ThrowUnlessRegistered(__func__, id);
   return reference_positions_.at(id);
+}
+
+template <typename T>
+DeformableBodyId DeformableModel<T>::GetBodyIdOrThrow(
+    DeformableBodyIndex index) const {
+  this->ThrowIfSystemResourcesNotDeclared(__func__);
+  DRAKE_THROW_UNLESS(index.is_valid() && index < num_bodies());
+  return body_ids_[index];
+}
+
+template <typename T>
+GeometryId DeformableModel<T>::GetGeometryIdOrThrow(DeformableBodyId id) const {
+  ThrowUnlessRegistered(__func__, id);
+  return body_id_to_geometry_id_.at(id);
+}
+
+template <typename T>
+void DeformableModel<T>::DoAddToManager(
+    CompliantContactManager<T>* manager) {
+  manager->SetDeformableModel(this);
 }
 
 template <typename T>
