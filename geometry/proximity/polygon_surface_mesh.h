@@ -183,8 +183,8 @@ class PolygonSurfaceMesh {
   PolygonSurfaceMesh(std::vector<int> face_data,
                      std::vector<Vector3<T>> vertices);
 
-  /** Transforms the vertices of this mesh from its initial frame M to the new
-   frame N. */
+  /** (Internal use only) Transforms the vertices of this mesh from its
+   initial frame M to the new frame N. */
   void TransformVertices(const math::RigidTransform<T>& X_NM);
 
   // TODO(SeanCurtis-TRI): ContactResultsToLcm and HydroelasticContactInfo
@@ -200,7 +200,7 @@ class PolygonSurfaceMesh {
   //  Alternatively, there's a question about whether ContactSurface should be
   //  calling this method *at all*. Choosing that it's not necessary would
   //  likewise enable this implementation to move to the .cc file.
-  /** Reverses the ordering of all the faces' indices. */
+  /** (Internal use only) Reverses the ordering of all the faces' indices. */
   void ReverseFaceWinding() {
     for (const int f_index : poly_indices_) {
       const int v_count = face_data_[f_index];

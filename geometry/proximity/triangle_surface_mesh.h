@@ -193,8 +193,8 @@ class TriangleSurfaceMesh {
   //  is misleading. It transforms more than just vertex positions. It should
   //  simply be called Transform and documented as "transforming the mesh's
   //  frame-dependent quantities from frame M to the new frame N".
-  /** Transforms the vertices of this mesh from its initial frame M to the new
-   frame N.
+  /** (Internal use only) Transforms the vertices of this mesh from its
+   initial frame M to the new frame N.
    */
   void TransformVertices(const math::RigidTransform<T>& X_NM) {
     for (auto& v : vertices_) {
@@ -206,8 +206,8 @@ class TriangleSurfaceMesh {
     p_MSc_ = X_NM * p_MSc_;
   }
 
-  /** Reverses the ordering of all the triangles' indices -- see
-    SurfaceTriangle::ReverseWinding().
+  /** (Internal use only) Reverses the ordering of all the triangles' indices
+   -- see SurfaceTriangle::ReverseWinding().
    */
   void ReverseFaceWinding() {
     for (auto& f : triangles_) {

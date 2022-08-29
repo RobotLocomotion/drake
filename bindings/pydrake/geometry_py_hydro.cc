@@ -3,6 +3,7 @@
  types. The can be found in the pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -50,11 +51,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_elements", &Class::num_elements, cls_doc.num_elements.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<std::vector<int>, std::vector<Vector3<T>>>(),
-            py::arg("face_data"), py::arg("vertices"), cls_doc.ctor.doc_2args)
-        .def("TransformVertices", &Class::TransformVertices, py::arg("X_NM"),
-            cls_doc.TransformVertices.doc)
-        .def("ReverseFaceWinding", &Class::ReverseFaceWinding,
-            cls_doc.ReverseFaceWinding.doc)
+            py::arg("face_data"), py::arg("vertices"), cls_doc.ctor.doc_2args);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    constexpr char kRemoved[] =
+        "Deprecated:\n    This function is strictly for internal use and will "
+        "be removed from Drake on or after 2022-12-01.";
+    cls  // BR
+        .def("TransformVertices",
+            WrapDeprecated(kRemoved, &Class::TransformVertices),
+            py::arg("X_NM"), kRemoved)
+        .def("ReverseFaceWinding",
+            WrapDeprecated(kRemoved, &Class::ReverseFaceWinding), kRemoved);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("num_faces", &Class::num_faces, cls_doc.num_faces.doc)
         .def("area", &Class::area, py::arg("f"), cls_doc.area.doc)
         .def("total_area", &Class::total_area, cls_doc.total_area.doc)
