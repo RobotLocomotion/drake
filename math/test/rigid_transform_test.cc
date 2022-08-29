@@ -693,6 +693,26 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByTranslation3AndViceVersa) {
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_CA.inverse(), 32 * kEpsilon));
 }
 
+// Test multiplying a RigidTransform by an Eigen::Vector4, representing either a
+// position vector or a pure direction vector.
+GTEST_TEST(RigidTransform, OperatorMultiplyByVector4) {
+  const RigidTransform<double> X_AB = GetRigidTransformA();
+  const Eigen::Vector4d position_vector(-12, -9, 7, 1);
+  const Eigen::Vector4d direction_vector(-11, -8, 10, 0);
+
+  // Verify that multiply-by-position-vector matches multiply-by-Vector3d.
+  const Eigen::Vector4d p_AQ = X_AB * position_vector;
+  EXPECT_TRUE(CompareMatrices(
+      p_AQ.head(3), X_AB * position_vector.head(3), kEpsilon));
+  EXPECT_EQ(p_AQ(3), 1.0);
+
+  // Verify that multiply-by-direction-vector matches a pure rotation.
+  const Eigen::Vector4d vec_AQ = X_AB * direction_vector;
+  EXPECT_TRUE(CompareMatrices(
+      vec_AQ.head(3), X_AB.rotation() * direction_vector.head(3), kEpsilon));
+  EXPECT_EQ(vec_AQ(3), 0.0);
+}
+
 // Tests RigidTransform X_AB multiplied by a 3 x n matrix whose columns are
 // regarded as position vectors from Bo (frame B's origin) to an arbitrary point
 // Qi, expressed in B.  The result is tested to be a 3 x n matrix whose columns

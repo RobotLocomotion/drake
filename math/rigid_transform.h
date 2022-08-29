@@ -513,6 +513,20 @@ class RigidTransform {
     return p_AoBo_A_ + R_AB_ * p_BoQ_B;
   }
 
+  /// Multiplies `this` %RigidTransform `X_AB` by the vector `vec_BoQ_B` which
+  /// is from Bo (B's origin) to an arbitrary point Q.
+  /// @param[in] vec_BoQ_B vector from Bo to Q, expressed in frame B.
+  /// @retval vec_AoQ_A vector from Ao to Q, expressed in frame A.
+  Vector4<T> operator*(const Vector4<T>& vec_BoQ_B) const {
+    Vector4<T> vec_AoQ_A;
+    // vec_AoQ_A.head<3>() =
+    //     (p_AoBo_A_ * vec_BoQ_B(3)) + (R_AB_ * vec_BoQ_B.head<3>());
+    vec_AoQ_A.head(3) =
+        (p_AoBo_A_ * vec_BoQ_B(3)) + (R_AB_ * vec_BoQ_B.head(3));
+    vec_AoQ_A(3) = vec_BoQ_B(3);
+    return vec_AoQ_A;
+  }
+
   /// Multiplies `this` %RigidTransform `X_AB` by the n position vectors
   /// `p_BoQ1_B` ... `p_BoQn_B`, where `p_BoQi_B` is the iᵗʰ position vector
   /// from Bo (frame B's origin) to an arbitrary point Qi, expressed in frame B.
