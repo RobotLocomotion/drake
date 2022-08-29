@@ -35,6 +35,7 @@ method : "trust_region"     # solver method, {linesearch, trust_region}
 linesearch : "armijo"       # linesearch strategy, {armino, backtracking}
 proximal_operator : false   # whether to add a proximal operator cost term
 rho_proximal : 1e-5         # the proximal cost multiplier
+gradients_method: "autodiff"
 
 # Playback/visualization parameters
 play_optimal_trajectory : true

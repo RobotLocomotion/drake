@@ -88,6 +88,15 @@ class TrajOptExample {
           fmt::format("Unknown linesearch method '{}'", options.linesearch));
     }
 
+    if (options.gradients_method == "forward_differences") {
+      solver_params.gradients_method = GradientsMethod::kForwardDifferences;
+    } else if (options.gradients_method == "autodiff") {
+      solver_params.gradients_method = GradientsMethod::kAutoDiff;
+    } else {
+      throw std::runtime_error(
+          fmt::format("Unknown gradient method '{}'", options.linesearch));
+    }
+
     if (options.method == "linesearch") {
       solver_params.method = SolverMethod::kLinesearch;
     } else if (options.method == "trust_region") {

@@ -81,8 +81,13 @@ TrajectoryOptimizer<T>::TrajectoryOptimizer(
       plant_ad_ = dynamic_cast<const MultibodyPlant<AutoDiffXd>*>(
           &diagram_ad_->GetSubsystemByName(plant->get_name()));
       DRAKE_DEMAND(plant_ad_ != nullptr);
+      SolverParameters params_ad;
+      // N.B. We'll only use optimizer_ad_ to compute inverse dynamics with
+      // AutoDiffXd, not gradients. We set this to something different from
+      // kAutoDiff so we don't get the exception below at construction.
+      params_ad.gradients_method = GradientsMethod::kForwardDifferences;
       optimizer_ad_ = std::make_unique<TrajectoryOptimizer<AutoDiffXd>>(
-          diagram_ad_.get(), plant_ad_, prob, params);
+          diagram_ad_.get(), plant_ad_, prob, params_ad);
       // TODO: move state's destructor and possible other implementation to the
       // source?
       state_ad_ = std::unique_ptr<TrajectoryOptimizerState<AutoDiffXd>>(
@@ -90,9 +95,11 @@ TrajectoryOptimizer<T>::TrajectoryOptimizer(
                                                    *plant_ad_));
     }
   } else {
-    throw std::runtime_error(
-        "Analytical gradients not supported for "
-        "TrajectoryOptimizer<AutoDiffXd>.");
+    if (params_.gradients_method == GradientsMethod::kAutoDiff) {
+      throw std::runtime_error(
+          "Analytical gradients not supported for "
+          "TrajectoryOptimizer<AutoDiffXd>.");
+    }
   }
 }
 
@@ -199,20 +206,19 @@ void TrajectoryOptimizer<T>::CalcInverseDynamics(
   DRAKE_DEMAND(static_cast<int>(tau->size()) == num_steps());
 
   for (int t = 0; t < num_steps(); ++t) {
+    plant().SetPositions(context_, q[t + 1]);
+    plant().SetVelocities(context_, v[t + 1]);
     // All dynamics terms are treated implicitly, i.e.,
     // tau[t] = M(q[t+1]) * a[t] - k(q[t+1],v[t+1]) - f_ext[t+1]
-    CalcInverseDynamicsSingleTimeStep(q[t + 1], v[t + 1], a[t], workspace,
-                                      &tau->at(t));
+    CalcInverseDynamicsSingleTimeStep(*context_, a[t], workspace, &tau->at(t));
   }
 }
 
 template <typename T>
 void TrajectoryOptimizer<T>::CalcInverseDynamicsSingleTimeStep(
-    const VectorX<T>& q, const VectorX<T>& v, const VectorX<T>& a,
-    TrajectoryOptimizerWorkspace<T>* workspace, VectorX<T>* tau) const {
-  plant().SetPositions(context_, q);
-  plant().SetVelocities(context_, v);
-  plant().CalcForceElementsContribution(*context_, &workspace->f_ext);
+    const Context<T>& context, const VectorX<T>& a,
+    TrajectoryOptimizerWorkspace<T>* workspace, VectorX<T>* tau) const {  
+  plant().CalcForceElementsContribution(context, &workspace->f_ext);
 
   // Add in contact force contribution to f_ext
   if (plant().geometry_source_is_registered()) {
@@ -220,15 +226,16 @@ void TrajectoryOptimizer<T>::CalcInverseDynamicsSingleTimeStep(
     // TODO(vincekurtz): perform this check earlier, and maybe print some
     // warnings to stdout if we're not connected (we do want to be able to run
     // problems w/o contact sometimes)
-    CalcContactForceContribution(&workspace->f_ext);
+    CalcContactForceContribution(context, &workspace->f_ext);
   }
 
   // Inverse dynamics computes tau = M*a - k(q,v) - f_ext
-  *tau = plant().CalcInverseDynamics(*context_, a, workspace->f_ext);
+  *tau = plant().CalcInverseDynamics(context, a, workspace->f_ext);
 }
 
 template <typename T>
 void TrajectoryOptimizer<T>::CalcContactForceContribution(
+    const Context<T>& context,
     MultibodyForces<T>* forces) const {
   using std::abs;
   using std::max;
@@ -255,7 +262,7 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
   const geometry::QueryObject<T>& query_object =
       plant()
           .get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(*context_);
+          .template Eval<geometry::QueryObject<T>>(context);
   const std::vector<SignedDistancePair<T>>& signed_distance_pairs =
       query_object.ComputeSignedDistancePairwiseClosestPoints();
   const drake::geometry::SceneGraphInspector<T>& inspector =
@@ -280,9 +287,9 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
 
       // Body poses in world.
       const math::RigidTransform<T>& X_WA =
-          plant().EvalBodyPoseInWorld(*context_, bodyA);
+          plant().EvalBodyPoseInWorld(context, bodyA);
       const math::RigidTransform<T>& X_WB =
-          plant().EvalBodyPoseInWorld(*context_, bodyB);
+          plant().EvalBodyPoseInWorld(context, bodyB);
 
       // Geometry poses in body frames.
       const math::RigidTransform<T> X_AGa =
@@ -308,9 +315,9 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
 
       // Velocities.
       const SpatialVelocity<T>& V_WA =
-          plant().EvalBodySpatialVelocityInWorld(*context_, bodyA);
+          plant().EvalBodySpatialVelocityInWorld(context, bodyA);
       const SpatialVelocity<T>& V_WB =
-          plant().EvalBodySpatialVelocityInWorld(*context_, bodyB);
+          plant().EvalBodySpatialVelocityInWorld(context, bodyB);
       const SpatialVelocity<T> V_WAc = V_WA.Shift(p_AC_W);
       const SpatialVelocity<T> V_WBc = V_WB.Shift(p_BC_W);
 
@@ -630,20 +637,26 @@ void TrajectoryOptimizer<T>::CalcInverseDynamicsPartialsFiniteDiff(
       // via finite differencing
       if (t > 0) {
         // tau[t-1] = ID(q[t], v[t], a[t-1])
-        CalcInverseDynamicsSingleTimeStep(q_eps_t, v_eps_t, a_eps_tm, workspace,
+        plant().SetPositions(context_, q_eps_t);
+        plant().SetVelocities(context_, v_eps_t);
+        CalcInverseDynamicsSingleTimeStep(*context_, a_eps_tm, workspace,
                                           &tau_eps_tm);
         dtau_dqp[t - 1].col(i) = (tau_eps_tm - tau[t - 1]) / dq_i;
       }
       if (t < num_steps()) {
         // tau[t] = ID(q[t+1], v[t+1], a[t])
-        CalcInverseDynamicsSingleTimeStep(q[t + 1], v_eps_tp, a_eps_t,
-                                          workspace, &tau_eps_t);
+        plant().SetPositions(context_, q[t + 1]);
+        plant().SetVelocities(context_, v_eps_tp);
+        CalcInverseDynamicsSingleTimeStep(*context_, a_eps_t, workspace,
+                                          &tau_eps_t);
         dtau_dqt[t].col(i) = (tau_eps_t - tau[t]) / dq_i;
       }
       if (t < num_steps() - 1) {
         // tau[t+1] = ID(q[t+2], v[t+2], a[t+1])
-        CalcInverseDynamicsSingleTimeStep(q[t + 2], v[t + 2], a_eps_tp,
-                                          workspace, &tau_eps_tp);
+        plant().SetPositions(context_, q[t + 2]);
+        plant().SetVelocities(context_, v[t + 2]);
+        CalcInverseDynamicsSingleTimeStep(*context_, a_eps_tp, workspace,
+                                          &tau_eps_tp);
         dtau_dqm[t + 1].col(i) = (tau_eps_tp - tau[t + 1]) / dq_i;
       }
 
@@ -664,6 +677,11 @@ void TrajectoryOptimizer<T>::CalcInverseDynamicsPartialsFiniteDiff(
   }
 }
 
+template <>
+void TrajectoryOptimizer<AutoDiffXd>::CalcInverseDynamicsPartialsAutoDiff(
+    const TrajectoryOptimizerState<double>&,
+    InverseDynamicsPartials<double>*) const {}
+
 template <typename T>
 void TrajectoryOptimizer<T>::CalcInverseDynamicsPartialsAutoDiff(
     const TrajectoryOptimizerState<double>& state,
@@ -671,9 +689,9 @@ void TrajectoryOptimizer<T>::CalcInverseDynamicsPartialsAutoDiff(
   DRAKE_DEMAND(id_partials->size() == num_steps());
 
   // Get references to the partials that we'll be setting
-  std::vector<MatrixX<T>>& dtau_dqm = id_partials->dtau_dqm;
-  std::vector<MatrixX<T>>& dtau_dqt = id_partials->dtau_dqt;
-  std::vector<MatrixX<T>>& dtau_dqp = id_partials->dtau_dqp;  
+  std::vector<MatrixX<double>>& dtau_dqm = id_partials->dtau_dqm;
+  std::vector<MatrixX<double>>& dtau_dqt = id_partials->dtau_dqt;
+  std::vector<MatrixX<double>>& dtau_dqp = id_partials->dtau_dqp;  
 
   // Heap allocations.
   std::vector<VectorX<AutoDiffXd>> q_ad(num_steps() + 1);
@@ -687,47 +705,49 @@ void TrajectoryOptimizer<T>::CalcInverseDynamicsPartialsAutoDiff(
     q_ad[t] = q[t];
   }
 
+  // At each t we will compute derivatives of tau[t-1], tau[t] and tau[t+1 with
+  // respect to q[t].
   for (int t = 0; t <= num_steps(); ++t) {
     // Set derivatives with respect to q[t].
+    // q[t] will propagate directly to v[t], v[t+1], a[t-1], a[t] and a[t+1].
     q_ad[t] = math::InitializeAutoDiff(q[t], q[t].size());
     state_ad_->set_q(q_ad);
+    
+    // N.B. All dynamics terms are treated implicitly, i.e.,
+    // tau[t] = M(q[t+1]) * a[t] - k(q[t+1],v[t+1]) - f_ext[t+1]
 
-    // q[t] will propagate directly to v[t], v[t+1], a[t-1], a[t] and a[t+1].
-    // Therefore we need to re-evaluate them.
-    const std::vector<VectorX<AutoDiffXd>>& v_ad =
-        optimizer_ad_->EvalV(*state_ad_);
     const std::vector<VectorX<AutoDiffXd>>& a_ad =
         optimizer_ad_->EvalA(*state_ad_);
 
-    // All dynamics terms are treated implicitly, i.e.,
-    // tau[t] = M(q[t+1]) * a[t] - k(q[t+1],v[t+1]) - f_ext[t+1]
-
-    // TODO: get rid of context_ in the implementation of
-    // CalcInverseDynamicsSingleTimeStep().
-
     // dtau_dqt[t].
-    plant_ad_->SetPositions(context_ad_, q_ad[t + 1]);
-    plant_ad_->SetVelocities(context_ad_, v_ad[t + 1]);
-    CalcInverseDynamicsSingleTimeStep(*context_ad_, a_ad[t], &workspace_ad,
-                                      &tau_ad);
-    dtau_dqt[t] = math::ExtractGradient(tau_ad);
+    if (t < num_steps()) {
+      const Context<AutoDiffXd>& context_ad_tp =
+          optimizer_ad_->EvalPlantContext(*state_ad_, t + 1);
+      optimizer_ad_->CalcInverseDynamicsSingleTimeStep(context_ad_tp, a_ad[t],
+                                                       &workspace_ad, &tau_ad);
+      dtau_dqt[t] = math::ExtractGradient(tau_ad);
+    }
 
     // dtau_dqt[t+1].
-    plant_ad_->SetPositions(context_ad_, q_ad[t + 2]);
-    plant_ad_->SetVelocities(context_ad_, v_ad[t + 2]);
-    CalcInverseDynamicsSingleTimeStep(*context_ad_, a_ad[t + 1], &workspace_ad,
-                                      &tau_ad);
-    dtau_dqm[t + 1] = math::ExtractGradient(tau_ad);
+    if (t < num_steps() - 1) {
+      const Context<AutoDiffXd>& context_ad_tpp =
+          optimizer_ad_->EvalPlantContext(*state_ad_, t + 2);
+      optimizer_ad_->CalcInverseDynamicsSingleTimeStep(
+          context_ad_tpp, a_ad[t + 1], &workspace_ad, &tau_ad);
+      dtau_dqm[t + 1] = math::ExtractGradient(tau_ad);
+    }
 
     // dtau_dqt[t-1].
-    plant_ad_->SetPositions(context_ad_, q_ad[t]);
-    plant_ad_->SetVelocities(context_ad_, v_ad[t]);
-    CalcInverseDynamicsSingleTimeStep(*context_ad_, a_ad[t - 1], &workspace_ad,
-                                      &tau_ad);
-    dtau_dqp[t - 1] = math::ExtractGradient(tau_ad);
+    if (t > 0) {
+      const Context<AutoDiffXd>& context_ad_t =
+          optimizer_ad_->EvalPlantContext(*state_ad_, t);
+      optimizer_ad_->CalcInverseDynamicsSingleTimeStep(
+          context_ad_t, a_ad[t - 1], &workspace_ad, &tau_ad);
+      dtau_dqp[t - 1] = math::ExtractGradient(tau_ad);
+    }
 
     // Unset derivatives.
-    q_ad[t].derivatives().setZero();
+    q_ad[t] = q[t];
   }
 }
 

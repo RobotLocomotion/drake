@@ -181,6 +181,11 @@ class TrajectoryOptimizer {
   // Friend class to facilitate testing.
   friend class TrajectoryOptimizerTester;
 
+  // Allow different specializations to access each other's private functions.
+  // In particular we want to allow TrajectoryOptimizer<double> to have access
+  // to TrajectoryOptimizer<AutoDiffXd>'s functions for computing gradients.
+  template <typename U> friend class TrajectoryOptimizer;
+
   /**
    * Solve the optimization problem from the given initial guess using a
    * linesearch strategy.
@@ -354,7 +359,7 @@ class TrajectoryOptimizer {
    * @param tau generalized forces
    */
   void CalcInverseDynamicsSingleTimeStep(
-      const VectorX<T>& q, const VectorX<T>& v, const VectorX<T>& a,
+      const Context<T>& context, const VectorX<T>& a,
       TrajectoryOptimizerWorkspace<T>* workspace, VectorX<T>* tau) const;
 
   /**
@@ -365,7 +370,8 @@ class TrajectoryOptimizer {
    * @pre generalized positions (q) and velocities (v) have been properly set in
    *      context_
    */
-  void CalcContactForceContribution(MultibodyForces<T>* forces) const;
+  void CalcContactForceContribution(const Context<T>& context,
+                                    MultibodyForces<T>* forces) const;
 
   /* Computes signed distance data for all time configurations in `state`. */
   void CalcSdfData(

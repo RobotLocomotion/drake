@@ -333,6 +333,8 @@ class TrajectoryOptimizerState {
     cache_.gradient_up_to_date = false;
     cache_.hessian_up_to_date = false;
     cache_.contact_jacobian_data.up_to_date = false;
+    if (cache_.context_cache) cache_.context_cache->up_to_date = false;
+    cache_.sdf_data.up_to_date = false;
   }
 };
 
