@@ -1,5 +1,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/test/dummy_model.h"
 
@@ -25,8 +26,9 @@ class PhysicalModelTest : public ::testing::Test {
     // An artificial scenario where the state is added in multiple passes.
     dummy_model_->AppendDiscreteState(dummy_state1());
     dummy_model_->AppendDiscreteState(dummy_state2());
-    plant_.Finalize();
   }
+
+  void FinalizePlant() { plant_.Finalize(); }
 
   static VectorXd dummy_state1() {
     return VectorXd::Ones(kState1Dofs) * kState1Value;
@@ -42,6 +44,7 @@ class PhysicalModelTest : public ::testing::Test {
 
 // Tests that the state and output ports are properly set up.
 TEST_F(PhysicalModelTest, DiscreteStateAndOutputPorts) {
+  FinalizePlant();
   auto context = plant_.CreateDefaultContext();
   const VectorXd additional_state =
       dummy_model_->get_vector_output_port().Eval(*context);
@@ -59,11 +62,25 @@ TEST_F(PhysicalModelTest, DiscreteStateAndOutputPorts) {
 
 // Tests that adding new state after Finalize is not allowed.
 TEST_F(PhysicalModelTest, PostFinalizeStateAdditionNotAllowed) {
+  FinalizePlant();
   DRAKE_EXPECT_THROWS_MESSAGE(
       dummy_model_->AppendDiscreteState(dummy_state1()),
       "Calls to 'AppendDiscreteState\\(\\)' after system resources have been "
       "declared are not allowed.");
 }
+
+TEST_F(PhysicalModelTest, AddToManager) {
+  CompliantContactManager<double> manager;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dummy_model_->AddToManager(&manager),
+      "Calls to.*AddToManager.*before system resources have "
+      "been declared are not allowed.");
+  FinalizePlant();
+  EXPECT_FALSE(dummy_model_->is_compliant_contact_manager_set());
+  dummy_model_->AddToManager(&manager);
+  EXPECT_TRUE(dummy_model_->is_compliant_contact_manager_set());
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace internal
