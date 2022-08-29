@@ -21,10 +21,12 @@
 
 namespace drake {
 namespace multibody {
+
 template <typename T>
 class MultibodyPlant;
 
 namespace internal {
+
 template <typename T>
 class AccelerationKinematicsCache;
 
@@ -132,6 +134,17 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     DoCalcDiscreteValues(context, updates);
   }
 
+  /* Publicly exposed MultibodyPlant private/protected methods.
+   @{ */
+
+  // N.B. Keep the spelling and order of declarations here identical to the
+  // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
+
+  systems::CacheEntry& DeclareCacheEntry(std::string description,
+                                         systems::ValueProducer,
+                                         std::set<systems::DependencyTicket>);
+  /* @} */
+
  protected:
   /* Derived classes that support making a clone that uses double as a scalar
    type must implement this so that it creates a copy of the object with double
@@ -174,10 +187,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
 
   const MultibodyTree<T>& internal_tree() const;
-
-  systems::CacheEntry& DeclareCacheEntry(std::string description,
-                                         systems::ValueProducer,
-                                         std::set<systems::DependencyTicket>);
 
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const;
@@ -242,6 +251,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   MultibodyPlant<T>* mutable_plant_{nullptr};
   systems::DiscreteStateIndex multibody_state_index_;
 };
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
