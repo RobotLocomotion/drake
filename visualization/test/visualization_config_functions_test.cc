@@ -178,12 +178,21 @@ GTEST_TEST(VisualizationConfigFunctionsTest, AddDefault) {
   simulator.AdvanceTo(0.25);
 }
 
-// A missing plant causes an exception.
+// A missing (or misnamed) plant causes an exception, but only if we're
+// attempting to visualize contact.
 GTEST_TEST(VisualizationConfigFunctionsTest, NoPlant) {
   DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  plant.set_name("wrong_name");
+
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddDefaultVisualization(&builder),
       ".*does not contain.*plant.*");
+
+  VisualizationConfig config;
+  config.publish_contacts = false;
+  EXPECT_NO_THROW(ApplyVisualizationConfig(config, &builder));
 }
 
 // A missing scene_graph causes an exception.

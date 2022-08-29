@@ -51,9 +51,10 @@ drake::lcm::DrakeLcm object is constructed and used internally.
 @param[in] plant (Optional) The MultibodyPlant to visualize.
 In the common case where a MultibodyPlant has already been added to `builder`
 using either AddMultibodyPlant() or AddMultibodyPlantSceneGraph(), the default
-value (nullptr) here is suitable and generally should be preferred.
-When provided, it must be a System that's been added to the the given `builder`.
-When not provided, visualizes the system named "plant" in the given `builder`.
+value (nullptr) here is suitable and generally should be preferred. When
+`config.publish_contacts` is `true, then a non-null value for `plant` must be a
+System that's been added to the the given `builder`. When not provided,
+visualizes the system named "plant" in the given `builder`.
 
 @param[in] scene_graph (Optional) The SceneGraph to visualize.
 In the common case where a SceneGraph has already been added to `builder` using
@@ -72,8 +73,8 @@ the appropriate interface from `lcm_buses`.
 @pre Either the `config.lcm_bus` is set to "default", or else `lcm_buses` is
 non-null and contains a bus named `config.lcm_bus`, or else `lcm` is non-null.
 
-@pre Either the given `builder` contains a MultibodyPlant system named "plant"
-or else the provided `plant` is non-null.
+@pre Either `config.publish_contacts` is `false, the given `builder` contains a
+MultibodyPlant system named "plant" or else the provided `plant` is non-null.
 
 @pre Either the given `builder` contains a SceneGraph system named "scene_graph"
 or else the provided `scene_graph` is non-null.

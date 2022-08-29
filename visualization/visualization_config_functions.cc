@@ -49,14 +49,14 @@ const ChildSystem<double>* DowncastSubsystem(
       " named '{}'.",  name));
 }
 
+// N.B. `scene_graph` is always required, but `plant` is only necessary if we
+// have requested contact visualization.
 void ApplyVisualizationConfigImpl(
     const VisualizationConfig& config,
     DrakeLcmInterface* lcm,
-    const MultibodyPlant<double>& plant,
+    const MultibodyPlant<double>* plant,
     const SceneGraph<double>& scene_graph,
     DiagramBuilder<double>* builder) {
-  // This is required due to ConnectContactResultsToDrakeVisualizer().
-  DRAKE_THROW_UNLESS(plant.is_finalized());
   const std::vector<DrakeVisualizerParams> all_params =
       internal::ConvertVisualizationConfigToParams(config);
   for (const DrakeVisualizerParams& params : all_params) {
@@ -67,7 +67,11 @@ void ApplyVisualizationConfigImpl(
     DrakeVisualizer<double>::AddToBuilder(builder, scene_graph, lcm, oopsie);
   }
   if (config.publish_contacts) {
-    ConnectContactResultsToDrakeVisualizer(builder, plant, scene_graph, lcm);
+    if (plant == nullptr) {
+      plant = DowncastSubsystem<MultibodyPlant>(builder, "plant");
+    }
+    DRAKE_THROW_UNLESS(plant->is_finalized());
+    ConnectContactResultsToDrakeVisualizer(builder, *plant, scene_graph, lcm);
   }
 }
 
@@ -92,13 +96,10 @@ void ApplyVisualizationConfig(
     }
   }
   DRAKE_DEMAND(lcm != nullptr);
-  if (plant == nullptr) {
-    plant = DowncastSubsystem<MultibodyPlant>(builder, "plant");
-  }
   if (scene_graph == nullptr) {
     scene_graph = DowncastSubsystem<SceneGraph>(builder, "scene_graph");
   }
-  ApplyVisualizationConfigImpl(config, lcm, *plant, *scene_graph, builder);
+  ApplyVisualizationConfigImpl(config, lcm, plant, *scene_graph, builder);
 }
 
 void AddDefaultVisualization(DiagramBuilder<double>* builder) {
