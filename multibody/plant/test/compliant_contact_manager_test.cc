@@ -139,7 +139,30 @@ class CompliantContactManagerTest {
       SapContactProblem<double>* problem) {
     manager.AddLimitConstraints(context, v_star, problem);
   }
+
+  static const DeformableDriver<double>* deformable_driver(
+      const CompliantContactManager<double>& manager) {
+    return manager.deformable_driver_.get();
+  }
 };
+
+// Tests that in SetDiscreteUpdateManager, a registered DeformableModel will
+// cause a DeformableDriver to be instantiated in the manager.
+GTEST_TEST(CompliantContactManagerTest, ExtractModelInfo) {
+  CompliantContactManager<double> manager;
+  EXPECT_EQ(CompliantContactManagerTest::deformable_driver(manager), nullptr);
+  MultibodyPlant<double> plant(0.01);
+  auto deformable_model = std::make_unique<DeformableModel<double>>(&plant);
+  plant.AddPhysicalModel(std::move(deformable_model));
+  plant.Finalize();
+  auto contact_manager = std::make_unique<CompliantContactManager<double>>();
+  const CompliantContactManager<double>* contact_manager_ptr =
+      contact_manager.get();
+  plant.SetDiscreteUpdateManager(std::move(contact_manager));
+  EXPECT_NE(
+      CompliantContactManagerTest::deformable_driver(*contact_manager_ptr),
+      nullptr);
+}
 
 // TODO(DamrongGuoy): Simplify the test fixture somehow (need discussion
 //  among the architects). Due to the existing architecture of our code,

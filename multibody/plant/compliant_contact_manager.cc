@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
@@ -20,6 +21,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
+#include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 #include "drake/systems/framework/context.h"
@@ -103,6 +105,12 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
           &CompliantContactManager<T>::CalcContactProblemCache),
       {plant().cache_entry_ticket(cache_indexes_.discrete_contact_pairs)});
   cache_indexes_.contact_problem = contact_problem_cache_entry.cache_index();
+
+  if constexpr (std::is_same_v<T, double>) {
+    if (deformable_driver_ != nullptr) {
+      deformable_driver_->DeclareCacheEntries(this);
+    }
+  }
 }
 
 template <typename T>
@@ -1029,6 +1037,38 @@ void CompliantContactManager<T>::ExtractModelInfo() {
     const int velocity_start = joint.velocity_start();
     const int nv = joint.num_velocities();
     joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
+  }
+  // Collect information from each PhysicalModel owned by the plant.
+  const std::vector<std::unique_ptr<multibody::internal::PhysicalModel<T>>>&
+      physical_models = this->plant().physical_models();
+  for (const auto& model : physical_models) {
+    std::visit(
+        [this](auto&& concrete_model) {
+          this->ExtractConcreteModel(concrete_model);
+        },
+        model->ToPhysicalModelPointerVariant());
+  }
+}
+
+template <typename T>
+void CompliantContactManager<T>::ExtractConcreteModel(
+    const DeformableModel<T>* model) {
+  if constexpr (std::is_same_v<T, double>) {
+    DRAKE_DEMAND(model != nullptr);
+    // TODO(xuchenhan-tri): Demote this to a DRAKE_DEMAND when we check for
+    //  duplicated model with MbP::AddPhysicalModel.
+    if (deformable_driver_ != nullptr) {
+      throw std::logic_error(
+          fmt::format("{}: A deformable model has already been registered. "
+                      "Repeated registration is not allowed.", __func__));
+    }
+    deformable_driver_ =
+        std::make_unique<DeformableDriver<double>>(model, this);
+  } else {
+    unused(model);
+    throw std::logic_error(
+        "Only T = double is supported for the simulation of deformable "
+        "bodies.");
   }
 }
 

@@ -56,6 +56,7 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   /* Do the book-keeping. */
   reference_positions_.emplace(body_id, std::move(reference_position));
   body_id_to_geometry_id_.emplace(body_id, geometry_id);
+  body_ids_.emplace_back(body_id);
   return body_id;
 }
 
@@ -79,6 +80,20 @@ const VectorX<T>& DeformableModel<T>::GetReferencePositions(
     DeformableBodyId id) const {
   ThrowUnlessRegistered(__func__, id);
   return reference_positions_.at(id);
+}
+
+template <typename T>
+DeformableBodyId DeformableModel<T>::GetBodyId(
+    DeformableBodyIndex index) const {
+  this->ThrowIfSystemResourcesNotDeclared(__func__);
+  DRAKE_THROW_UNLESS(index.is_valid() && index < num_bodies());
+  return body_ids_[index];
+}
+
+template <typename T>
+GeometryId DeformableModel<T>::GetGeometryId(DeformableBodyId id) const {
+  ThrowUnlessRegistered(__func__, id);
+  return body_id_to_geometry_id_.at(id);
 }
 
 template <typename T>
