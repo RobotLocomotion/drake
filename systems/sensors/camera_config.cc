@@ -1,21 +1,19 @@
-#include "sim/common/camera_config.h"
+#include "drake/systems/sensors/camera_config.h"
 
 #include <cmath>
-#include <iostream>
 
 #include "drake/systems/sensors/camera_info.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace sensors {
 
-using drake::geometry::render::ClippingRange;
-using drake::geometry::render::ColorRenderCamera;
-using drake::geometry::render::DepthRange;
-using drake::geometry::render::DepthRenderCamera;
-using drake::geometry::render::RenderCameraCore;
-using drake::math::RigidTransform;
-using drake::systems::sensors::CameraInfo;
-using drake::Vector2;
+using geometry::render::ClippingRange;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRange;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderCameraCore;
+using math::RigidTransform;
 
 void CameraConfig::FovDegrees::ValidateOrThrow() const {
   if (!x.has_value() && !y.has_value()) {
@@ -37,21 +35,21 @@ double CalcFocalLength(int image_dimension, double fov_degrees) {
 
 }  // namespace
 
-double CameraConfig::FovDegrees::focal_x(int width, int height) const {
+double CameraConfig::FovDegrees::focal_x(int width_in, int height_in) const {
   ValidateOrThrow();
   if (x.has_value()) {
-    return CalcFocalLength(width, *x);
+    return CalcFocalLength(width_in, *x);
   } else {
-    return focal_y(width, height);
+    return focal_y(width_in, height_in);
   }
 }
 
-double CameraConfig::FovDegrees::focal_y(int width, int height) const {
+double CameraConfig::FovDegrees::focal_y(int width_in, int height_in) const {
   ValidateOrThrow();
   if (y.has_value()) {
-    return CalcFocalLength(height, *y);
+    return CalcFocalLength(height_in, *y);
   } else {
-    return focal_x(width, height);
+    return focal_x(width_in, height_in);
   }
 }
 
@@ -132,5 +130,6 @@ void CameraConfig::ValidateOrThrow() const {
                     *X_BD.base_frame));
   }
 }
-}  // namespace sim
-}  // namespace anzu
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake
