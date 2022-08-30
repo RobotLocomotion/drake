@@ -115,6 +115,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
    */
 
   // PolygonSurfaceMeshFieldLinear
+  // Currently we do not bind the constructor because users do not need to
+  // construct it directly yet. We can get it from ContactSurface.
   {
     using Class = PolygonSurfaceMeshFieldLinear<T, T>;
     constexpr auto& cls_doc = doc.MeshFieldLinear;
@@ -176,7 +178,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
   }
 
   // TriangleSurfaceMeshFieldLinear
-  // See notes with PolygonSurfaceMeshFieldLinear for binding discussion.
+  // See also "A note on the bindings of ***SurfaceMeshFieldLinear" above.
+  // Currently we do not bind the constructor because users do not need to
+  // construct it directly yet. We can get it from ContactSurface.
   {
     using Class = TriangleSurfaceMeshFieldLinear<T, T>;
     constexpr auto& cls_doc = doc.MeshFieldLinear;

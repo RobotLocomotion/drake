@@ -526,6 +526,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
   }
 
   // ContactSurface
+  // Currently we do not bind the constructor because users do not need to
+  // construct it directly yet. We can get it from ComputeContactSurface*().
   if constexpr (scalar_predicate<T>::is_bool) {
     using Class = ContactSurface<T>;
     constexpr auto& cls_doc = doc.ContactSurface;
