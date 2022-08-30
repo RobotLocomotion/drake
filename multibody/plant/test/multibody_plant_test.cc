@@ -1545,6 +1545,44 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
               UnorderedElementsAre(&upper_ad, &lower_ad));
 }
 
+// Checks plumbing and top-level contract in MultibodyPlant.
+// See more complete testing of this graph query in `multibody_graph_test`.
+GTEST_TEST(MultibodyPlantTest, GetBodiesAffectedBy) {
+  // This test expects that the following model has a world body and a pair of
+  // welded-together bodies.
+  const std::string sdf_file =
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModelFromFile(sdf_file);
+  const Body<double>& upper = plant.GetBodyByName("upper_section");
+  const Body<double>& lower = plant.GetBodyByName("lower_section");
+  const JointIndex shoulder = plant.GetJointByName("pin").index();
+  const JointIndex elbow = plant.GetJointByName("weld").index();
+
+  const std::vector<JointIndex> joints1{elbow};
+  std::vector<BodyIndex> expected_bodies1;
+  expected_bodies1.push_back(lower.index());
+  const std::vector<JointIndex> joints2{shoulder, elbow};
+  std::vector<BodyIndex> expected_bodies2;
+  expected_bodies2.push_back(lower.index());
+  expected_bodies2.push_back(upper.index());
+  std::sort(expected_bodies2.begin(), expected_bodies2.end());
+
+  // Verify we can call GetBodiesAffectedBy() pre-finalize.
+  EXPECT_EQ(plant.GetBodiesAffectedBy(joints1), expected_bodies1);
+  EXPECT_EQ(plant.GetBodiesAffectedBy(joints2), expected_bodies2);
+
+  // And post-finalize.
+  plant.Finalize();
+  EXPECT_EQ(plant.GetBodiesAffectedBy(joints1), expected_bodies1);
+  EXPECT_EQ(plant.GetBodiesAffectedBy(joints2), expected_bodies2);
+
+  // Test throw condition.
+  std::vector<JointIndex> joint100{JointIndex(100)};
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesAffectedBy(joint100),
+                              "No joint with index.*registered.");
+}
+
 // Regression test for unhelpful error message -- see #14641.
 GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
   // This test expects that the following model has a world body and a pair of

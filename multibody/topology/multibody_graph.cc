@@ -1,5 +1,8 @@
 #include "drake/multibody/topology/multibody_graph.h"
 
+#include <stack>
+#include <unordered_set>
+
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
@@ -277,6 +280,36 @@ std::set<BodyIndex> MultibodyGraph::FindBodiesWeldedTo(
   DRAKE_DEMAND(subgraph_iter != subgraphs.end());
 
   return *subgraph_iter;
+}
+
+std::set<BodyIndex> MultibodyGraph::FindBodiesOutBoardOfJoints(
+    const std::vector<JointIndex>& joint_indexes) const {
+  // We maintain a stack of downstream joints to the provided `joint_indexes` to
+  // traverse their child bodies in DFS order.
+  std::stack<JointIndex> affected_joints;
+  std::unordered_set<JointIndex> visited_joints;
+  std::set<BodyIndex> affected_bodies;
+  for (JointIndex joint_index : joint_indexes) {
+    DRAKE_THROW_UNLESS(joint_index.is_valid() && joint_index < num_joints());
+    affected_joints.push(joint_index);
+  }
+  while (!affected_joints.empty()) {
+    const JointIndex joint = affected_joints.top();
+    affected_joints.pop();
+    visited_joints.insert(joint);
+    const BodyIndex child = get_joint(joint).child_body();
+    for (const JointIndex& joint_connected_to_child :
+        get_body(child).joints()) {
+      // Push unvisited joints where the `child` body is the parent body to the
+      // stack.
+      if (get_joint(joint_connected_to_child).parent_body() == child &&
+          visited_joints.count(joint_connected_to_child) == 0) {
+        affected_joints.push(joint_connected_to_child);
+      }
+    }
+    affected_bodies.insert(child);
+  }
+  return affected_bodies;
 }
 
 }  // namespace internal

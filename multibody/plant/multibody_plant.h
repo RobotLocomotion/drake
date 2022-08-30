@@ -3784,6 +3784,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `body` is not part of this plant.
   std::vector<const Body<T>*> GetBodiesWeldedTo(const Body<T>& body) const;
 
+  /// Returns all bodies whose kinematics are transitively affected by the given
+  /// vector of joints. The affected bodies are returned in increasing order of
+  /// body indexes.
+  /// This function can be called at any time during the lifetime of `this`
+  /// plant, either pre- or post-finalize, see Finalize().
+  /// @throws std::exception if any of the given joint indexes is invalid.
+  std::vector<BodyIndex> GetBodiesAffectedBy(
+      const std::vector<JointIndex>& joint_indexes) const;
+
   /// Returns the number of joints in the model.
   /// @see AddJoint().
   int num_joints() const {

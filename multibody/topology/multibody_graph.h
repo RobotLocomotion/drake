@@ -176,6 +176,12 @@ class MultibodyGraph {
   graph. */
   std::set<BodyIndex> FindBodiesWeldedTo(BodyIndex body_index) const;
 
+  /* Computes all bodies that are outboard of the joints with the given joint
+   indexes.
+   @pre Each entry in `joint_indexes` refers to a valid joint index. */
+  std::set<BodyIndex> FindBodiesOutBoardOfJoints(
+      const std::vector<JointIndex>& joint_indexes) const;
+
  private:
   // Finds the assigned index for a joint type from the type name. Returns an
   // invalid index if `joint_type_name` was not previously registered with a

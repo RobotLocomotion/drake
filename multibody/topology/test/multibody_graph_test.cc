@@ -260,6 +260,77 @@ GTEST_TEST(MultibodyGraph, Weldedsubgraphs) {
   EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(6)), expected_subgraphB);
 }
 
+/* We build a model that looks like:
+         world_body
+         ↓        ↓
+         1        4
+         ↓      ↙   ↖
+         2     5  →  6
+         ↓
+         3
+ to test FindBodiesOutBoardOfJoints(). */
+GTEST_TEST(MultibodyGraph, BodiesAffectedByJoints) {
+  MultibodyGraph graph;
+
+  // The first body added defines the world's name and model instance.
+  graph.AddBody(kWorldBodyName, world_model_instance());
+
+  // We'll add bodies and joints to this model instance.
+  const ModelInstanceIndex model_instance(7);
+
+  // Define the model.
+  for (int i = 1; i <= 6; ++i) {
+    graph.AddBody("body" + std::to_string(i), model_instance);
+  }
+
+  // Add joints.
+  graph.RegisterJointType(kRevoluteType);
+  graph.RegisterJointType(kPrismaticType);
+  int j = 0;
+
+  graph.AddJoint("joint" + std::to_string(j++), model_instance,
+                 graph.weld_type_name(), graph.world_body().index(),
+                 BodyIndex(1));
+  graph.AddJoint("joint" + std::to_string(j++), model_instance,
+                 kRevoluteType, BodyIndex(1), BodyIndex(2));
+  graph.AddJoint("joint" + std::to_string(j++), model_instance,
+                 kRevoluteType, BodyIndex(2), BodyIndex(3));
+
+  graph.AddJoint("joint" + std::to_string(j++), model_instance,
+                 graph.weld_type_name(), graph.world_body().index(),
+                 BodyIndex(4));
+  graph.AddJoint("joint" + std::to_string(j++), model_instance,
+                 kPrismaticType, BodyIndex(4), BodyIndex(5));
+  graph.AddJoint("joint" + std::to_string(j++), model_instance,
+                 kPrismaticType, BodyIndex(5), BodyIndex(6));
+  graph.AddJoint("joint" + std::to_string(j++), model_instance,
+                 kPrismaticType, BodyIndex(6), BodyIndex(4));
+
+  std::set<BodyIndex> expected_bodies;
+
+  std::vector<JointIndex> joint0{JointIndex(0)};
+  expected_bodies.insert(BodyIndex(1));
+  expected_bodies.insert(BodyIndex(2));
+  expected_bodies.insert(BodyIndex(3));
+  EXPECT_EQ(graph.FindBodiesOutBoardOfJoints(joint0), expected_bodies);
+
+  std::vector<JointIndex> joint012{JointIndex(0), JointIndex(1), JointIndex(2)};
+  EXPECT_EQ(graph.FindBodiesOutBoardOfJoints(joint0), expected_bodies);
+
+  std::vector<JointIndex> joint05{JointIndex(0), JointIndex(5)};
+  expected_bodies.insert(BodyIndex(4));
+  expected_bodies.insert(BodyIndex(5));
+  expected_bodies.insert(BodyIndex(6));
+  EXPECT_EQ(graph.FindBodiesOutBoardOfJoints(joint05), expected_bodies);
+
+  std::vector<JointIndex> joint3{JointIndex(3)};
+  expected_bodies.clear();
+  expected_bodies.insert(BodyIndex(4));
+  expected_bodies.insert(BodyIndex(5));
+  expected_bodies.insert(BodyIndex(6));
+  EXPECT_EQ(graph.FindBodiesOutBoardOfJoints(joint3), expected_bodies);
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

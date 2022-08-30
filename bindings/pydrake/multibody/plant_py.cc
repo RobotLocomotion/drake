@@ -743,6 +743,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   py::cast(welded_bodies), py::cast(&self));
             },
             py::arg("body"), cls_doc.GetBodiesWeldedTo.doc)
+        .def(
+            "GetBodiesAffectedBy",
+            [](const Class& self,
+                const std::vector<JointIndex>& joint_indexes) {
+              auto affected_bodies = self.GetBodiesAffectedBy(joint_indexes);
+              return py_keep_alive_iterable<py::list>(
+                  py::cast(affected_bodies), py::cast(&self));
+            },
+            py::arg("joint_indexes"), cls_doc.GetBodiesAffectedBy.doc)
         .def("GetTopologyGraphvizString", &Class::GetTopologyGraphvizString,
             cls_doc.GetTopologyGraphvizString.doc)
         .def("get_force_element", &Class::get_force_element,
