@@ -163,6 +163,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:value_pybind",
     ],
@@ -173,6 +174,7 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:eigen_geometry_py",
+        "//bindings/pydrake/common:schema_py",
         "//bindings/pydrake:geometry_py",
     ],
 )
@@ -561,6 +563,7 @@ drake_py_unittest(
         ":sensors_py",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 
