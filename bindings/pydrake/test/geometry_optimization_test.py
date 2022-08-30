@@ -418,26 +418,42 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(spp.Vertices()), 2)
         self.assertEqual(len(spp.Edges()), 2)
         result = spp.SolveShortestPath(
-            source_id=source.id(), target_id=target.id(),
-            convex_relaxation=True)
+            source_id=source.id(), target_id=target.id())
         self.assertIsInstance(result, MathematicalProgramResult)
+        self.assertIsInstance(
+            spp.SolveShortestPath(source=source, target=target),
+            MathematicalProgramResult)
+        options = mut.GraphOfConvexSetsOptions()
+        options.solver = ClpSolver()
         self.assertIsInstance(spp.SolveShortestPath(
-            source_id=source.id(), target_id=target.id(),
-            convex_relaxation=True, solver=ClpSolver()),
+            source_id=source.id(), target_id=target.id(), options=options),
             MathematicalProgramResult)
         self.assertIsInstance(spp.SolveShortestPath(
-            source_id=source.id(), target_id=target.id(),
-            convex_relaxation=True, solver_options=SolverOptions()),
+            source=source, target=target, options=options),
             MathematicalProgramResult)
-        self.assertIsInstance(spp.SolveShortestPath(
-            source=source, target=target, convex_relaxation=True),
-            MathematicalProgramResult)
-        self.assertIsInstance(spp.SolveShortestPath(
-            source=source, target=target, convex_relaxation=True,
-            solver=ClpSolver()), MathematicalProgramResult)
-        self.assertIsInstance(spp.SolveShortestPath(
-            source=source, target=target, convex_relaxation=True,
-            solver_options=SolverOptions()), MathematicalProgramResult)
+
+        with catch_drake_warnings(expected_count=6):
+            self.assertIsInstance(spp.SolveShortestPath(
+                source_id=source.id(), target_id=target.id(),
+                convex_relaxation=True), MathematicalProgramResult)
+            self.assertIsInstance(spp.SolveShortestPath(
+                source_id=source.id(), target_id=target.id(),
+                convex_relaxation=True, solver=ClpSolver()),
+                MathematicalProgramResult)
+            self.assertIsInstance(spp.SolveShortestPath(
+                source_id=source.id(), target_id=target.id(),
+                convex_relaxation=True, solver_options=SolverOptions()),
+                MathematicalProgramResult)
+            self.assertIsInstance(spp.SolveShortestPath(
+                source=source, target=target, convex_relaxation=True),
+                MathematicalProgramResult)
+            self.assertIsInstance(spp.SolveShortestPath(
+                source=source, target=target, convex_relaxation=True,
+                solver=ClpSolver()), MathematicalProgramResult)
+            self.assertIsInstance(spp.SolveShortestPath(
+                source=source, target=target, convex_relaxation=True,
+                solver_options=SolverOptions()), MathematicalProgramResult)
+
         self.assertIn("source", spp.GetGraphvizString(
             result=result, show_slacks=True, precision=2, scientific=False))
 
