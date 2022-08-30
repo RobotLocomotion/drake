@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -3783,6 +3784,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// bodies in any prescribed order.
   /// @throws std::exception if `body` is not part of this plant.
   std::vector<const Body<T>*> GetBodiesWeldedTo(const Body<T>& body) const;
+
+  /// Returns all bodies whose kinematics are transitively affected by the given
+  /// vector of joints.
+  /// This function can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, see Finalize().
+  /// @throws std::exception if any of the given joint index is invalid.
+  std::set<BodyIndex> GetBodiesAffectedBy(
+      const std::vector<JointIndex>& joint_indexes) const;
 
   /// Returns the number of joints in the model.
   /// @see AddJoint().
