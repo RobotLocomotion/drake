@@ -277,6 +277,7 @@ drake_cc_library(
     name = "scoped_names",
     srcs = ["scoped_names.cc"],
     hdrs = ["scoped_names.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//multibody/plant",
     ],
