@@ -84,7 +84,7 @@ void AppendDeformableRigidContact(
 
   DeformableSurfaceVolumeIntersector intersect;
   intersect.SampleVolumeFieldOnSurface(
-      deformable_D.signed_distance_field(),
+      deformable_D.CalcSignedDistanceField(),
       deformable_D.deformable_mesh().bvh(), rigid_mesh_R, rigid_bvh_R, X_DR,
       false /* don't filter face normal along field gradient */);
 

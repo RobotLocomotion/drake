@@ -55,11 +55,11 @@ GTEST_TEST(DeformableGeometryTest, Constructor) {
   ASSERT_EQ(num_vertices, 7);
   const int kCenterVertexIndex = 0;
 
-  DeformableGeometry deformable_geometry(move(mesh_W));
+  DeformableGeometry deformable_geometry(mesh_W);
 
   auto verify_sdf = [num_vertices](const DeformableGeometry& geometry) {
     const VolumeMeshFieldLinear<double, double>& sdf =
-        geometry.signed_distance_field();
+        geometry.CalcSignedDistanceField();
     EXPECT_DOUBLE_EQ(sdf.EvaluateAtVertex(kCenterVertexIndex),
                      -kRadius / std::sqrt(3));
     // Skipping center vertex = 0.
@@ -71,7 +71,11 @@ GTEST_TEST(DeformableGeometryTest, Constructor) {
   verify_sdf(deformable_geometry);
 
   // Verify that the distance field is unaffected by deformation of the mesh.
-  const VectorXd q = VectorXd::LinSpaced(3 * num_vertices, 0.0, 1.0);
+  VectorXd q(3 * num_vertices);
+  const double scale = 1.23;
+  for (int v = 0; v < num_vertices; ++v) {
+    q.segment<3>(3 * v) = scale * mesh_W.vertex(v);
+  }
   deformable_geometry.UpdateVertexPositions(q);
   verify_sdf(deformable_geometry);
 }
@@ -100,7 +104,6 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
     EXPECT_NE(&original.deformable_mesh().mesh(),
               &copy.deformable_mesh().mesh());
     EXPECT_NE(&copy.deformable_mesh().bvh(), &original.deformable_mesh().bvh());
-    EXPECT_NE(&original.signed_distance_field(), &copy.signed_distance_field());
 
     EXPECT_TRUE(
         copy.deformable_mesh().mesh().Equal(original.deformable_mesh().mesh()));
@@ -108,9 +111,9 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
         copy.deformable_mesh().bvh().Equal(original.deformable_mesh().bvh()));
 
     const VolumeMeshFieldLinear<double, double>& copy_sdf =
-        copy.signed_distance_field();
+        copy.CalcSignedDistanceField();
     const VolumeMeshFieldLinear<double, double>& original_sdf =
-        original.signed_distance_field();
+        original.CalcSignedDistanceField();
     EXPECT_TRUE(copy_sdf.Equal(original_sdf));
   }
 
@@ -123,7 +126,6 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
     EXPECT_NE(&original.deformable_mesh().mesh(),
               &copy.deformable_mesh().mesh());
     EXPECT_NE(&copy.deformable_mesh().bvh(), &original.deformable_mesh().bvh());
-    EXPECT_NE(&original.signed_distance_field(), &copy.signed_distance_field());
 
     EXPECT_TRUE(
         copy.deformable_mesh().mesh().Equal(original.deformable_mesh().mesh()));
@@ -131,9 +133,9 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
         copy.deformable_mesh().bvh().Equal(original.deformable_mesh().bvh()));
 
     const VolumeMeshFieldLinear<double, double>& copy_sdf =
-        copy.signed_distance_field();
+        copy.CalcSignedDistanceField();
     const VolumeMeshFieldLinear<double, double>& original_sdf =
-        original.signed_distance_field();
+        original.CalcSignedDistanceField();
     EXPECT_TRUE(copy_sdf.Equal(original_sdf));
   }
 
@@ -149,19 +151,15 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
     // move semantics.
     const DeformableVolumeMesh<double>* const mesh_ptr =
         &start.deformable_mesh();
-    const VolumeMeshFieldLinear<double, double>* const sdf_ptr =
-        &start.signed_distance_field();
 
     // Test move constructor.
     DeformableGeometry move_constructed(std::move(start));
     EXPECT_EQ(&move_constructed.deformable_mesh(), mesh_ptr);
-    EXPECT_EQ(&move_constructed.signed_distance_field(), sdf_ptr);
 
     // Test move-assignment operator.
     DeformableGeometry move_assigned(dummy_mesh);
     move_assigned = std::move(move_constructed);
     EXPECT_EQ(&move_assigned.deformable_mesh(), mesh_ptr);
-    EXPECT_EQ(&move_assigned.signed_distance_field(), sdf_ptr);
   }
 }
 
