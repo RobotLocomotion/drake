@@ -3921,6 +3921,67 @@ GTEST_TEST(MultibodyPlantTest, ThrowIfSpatialForcePortContainsNaN) {
       "Spatial force.*contains NaN.");
 }
 
+GTEST_TEST(MultibodyPlantTest, SetDefaultPositions) {
+  // Construct a plant with two Iiwas.
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+      "iiwa14_no_collision.sdf";
+  auto plant =
+      std::make_unique<MultibodyPlant<double>>(0 /* plant type irrelevant */);
+  Parser parser(plant.get());
+  multibody::ModelInstanceIndex iiwa0_instance =
+      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa0");
+  multibody::ModelInstanceIndex iiwa1_instance =
+      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa1");
+  // Weld iiwa0 to the world, leave iiwa1 to be floating.
+  plant->WeldFrames(plant->world_frame(),
+                    plant->GetFrameByName("iiwa_link_0", iiwa0_instance));
+
+  Eigen::VectorXd q = Eigen::VectorXd::LinSpaced(
+      7 + 7 + 7, 1.0, 2.0);  // 7 joints each + 7 floating base positions.
+  q.segment(7, 4).normalize();  // normalize the quaternion indices.
+
+  // Throws if called pre-finalize.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant->SetDefaultPositions(q),
+                              ".*you must call Finalize.* first.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->SetDefaultPositions(iiwa0_instance, q.head<7>()),
+      ".*you must call Finalize.* first.");
+  plant->Finalize();
+
+  // Throws if the q is the wrong size.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant->SetDefaultPositions(q.head<3>()),
+                              ".*num_positions.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->SetDefaultPositions(iiwa1_instance, q.head<3>()),
+      ".*q_instance.size.* == num_positions.*");
+
+  plant->SetDefaultPositions(q);
+
+  const double kTol = 1e-15;
+  auto context = plant->CreateDefaultContext();
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context), q, kTol));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa0_instance),
+                              q.head<7>()));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa1_instance),
+                              q.tail<14>(), kTol));
+
+  // Change q, and now verify the model_instance variant.
+  q = Eigen::VectorXd::LinSpaced(
+      7 + 7 + 7, 3.0, 4.0);  // 7 joints each + 7 floating base positions.
+  q.segment(7, 4).normalize();  // normalize the quaternion indices.
+
+  plant->SetDefaultPositions(iiwa0_instance, q.head<7>());
+  plant->SetDefaultPositions(iiwa1_instance, q.tail<14>());
+
+  plant->SetDefaultContext(context.get());
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context), q, kTol));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa0_instance),
+                              q.head<7>()));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa1_instance),
+                              q.tail<14>(), kTol));
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
