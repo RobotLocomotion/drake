@@ -6,7 +6,6 @@
 
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
-#include "sim/common/sim_camera_description_publisher.h"
 
 namespace anzu {
 namespace sim {
@@ -83,38 +82,6 @@ void DrakeAddSimRgbdSensorLcmPublisher(
           1. / sim_rgbd_sensor.rate_hz()));
   builder->Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
                    image_array_lcm_publisher->get_input_port());
-}
-
-void AddSimRgbdSensorDescriptionLcmPublisher(
-    const std::string serial,
-    const ColorRenderCamera& color_properties,
-    const DepthRenderCamera& depth_properties,
-    drake::systems::DiagramBuilder<double>* builder,
-    drake::lcm::DrakeLcmInterface* lcm) {
-  auto* publisher =
-      builder->AddSystem(std::make_unique<SimCameraDescriptionPublisher>(
-          serial, "DRAKE_RGBD_CAMERAS", "DRAKE_RGBD_CAMERA_IMAGES_" + serial,
-          color_properties, depth_properties, lcm));
-  publisher->set_name("camera_description_" + serial);
-}
-
-void AddSimRgbdSensorLcmPublishers(
-    const SimRgbdSensor& sim_rgbd_sensor,
-    const drake::systems::OutputPort<double>* rgb_port,
-    const drake::systems::OutputPort<double>* depth_16u_port,
-    bool do_compress,
-    drake::systems::DiagramBuilder<double>* builder,
-    drake::lcm::DrakeLcmInterface* lcm) {
-  const size_t old_system_count = builder->GetSystems().size();
-  DrakeAddSimRgbdSensorLcmPublisher(sim_rgbd_sensor, rgb_port, depth_16u_port,
-                                    do_compress, builder, lcm);
-
-  if (builder->GetSystems().size() != old_system_count) {
-    // Only add the description publisher if we've added to the builder.
-    AddSimRgbdSensorDescriptionLcmPublisher(
-        sim_rgbd_sensor.serial(), sim_rgbd_sensor.color_properties(),
-        sim_rgbd_sensor.depth_properties(), builder, lcm);
-  }
 }
 
 }  // namespace sim

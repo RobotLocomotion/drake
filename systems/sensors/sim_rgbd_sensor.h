@@ -129,53 +129,5 @@ void DrakeAddSimRgbdSensorLcmPublisher(
     drake::systems::DiagramBuilder<double>* builder,
     drake::lcm::DrakeLcmInterface* lcm);
 
-/** Adds an LCM publisher for camera description, at 2 Hz.
-
- @param serial             The identifier of the sensor.
-                           See SimRgbdSensor::serial.
- @param color_properties   The properties of the color sensor.
- @param depth_properties   The properties of the depth sensor.
- @param[in,out] builder    The publishing infrastructure will be added to this
-                           builder's diagram.
- @param[in,out] lcm        The lcm interface to use. This interface object must
-                           remain alive at least as long as the systems added
-                           to `builder`.
-
- @pre lcm != nullptr.
- @pre builder != nullptr. */
-void AddSimRgbdSensorDescriptionLcmPublisher(
-    const std::string serial,
-    const drake::geometry::render::ColorRenderCamera& color_properties,
-    const drake::geometry::render::DepthRenderCamera& depth_properties,
-    drake::systems::DiagramBuilder<double>* builder,
-    drake::lcm::DrakeLcmInterface* lcm);
-
-/** Adds LCM publishers for:
- - images (RGB and/or Depth), at the camera's specified rate.
- - description, at 2 Hz
-
- @param sim_camera       The description of the camera whose data will be
-                         published.
- @param rgb_port         The (optional) port for color images.
- @param depth_16u_port   The (optional) port for depth images.
- @param do_compress      If true, the published images will be compressed.
- @param[in,out] builder  The publishing infrastructure will be added to this
-                         builder's diagram.
- @param[in,out] lcm      The lcm interface to use. This interface object must
-                         remain alive at least as long as the systems added
-                         to `builder`.
-
- @pre lcm != nullptr.
- @pre builder != nullptr.
- @pre rgb_port is null or ImageRgba8U-valued.
- @pre depth_16u_port is null or ImageDepth16U-valued. */
-void AddSimRgbdSensorLcmPublishers(
-    const SimRgbdSensor& sim_camera,
-    const drake::systems::OutputPort<double>* rgb_port,
-    const drake::systems::OutputPort<double>* depth_16u_port,
-    bool do_compress,
-    drake::systems::DiagramBuilder<double>* builder,
-    drake::lcm::DrakeLcmInterface* lcm);
-
 }  // namespace sim
 }  // namespace anzu

@@ -15,7 +15,6 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
-#include "sim/common/sim_camera_description_publisher.h"
 
 namespace anzu {
 namespace sim {
@@ -254,10 +253,6 @@ TEST_F(SimRgbdSensorTest, AddSensorForRgbdSensorConfiguration) {
             sensor.depth_properties().core().renderer_name());
 }
 
-// TODO(SeanCurtis-TRI): When the majority of this moves into Drake, keep this
-// "no op" test to show that anzu::AddSimRgbdSensorLcmPublishers() doesn't add
-// the descriptor when no sensor gets added.
-
 /* Confirms that if no ports have been provided in the invocation, that the
  builder remains unchanged. In fact, we don't even have to have an RgbdSensor
  instantiated. */
@@ -305,43 +300,6 @@ TEST_F(SimRgbdSensorTest, AddPublisherTestProperties) {
   EXPECT_DOUBLE_EQ(publisher->get_publish_period(), 1.0 / sensor.rate_hz());
   EXPECT_THAT(publisher->get_channel_name(),
               ::testing::HasSubstr(sensor.serial()));
-}
-
-// The anzu method AddSimRgbdSensorDescriptionLcmPublisher() actually adds a
-// sensor publisher.
-TEST_F(SimRgbdSensorTest, AddDescriptionPublisher) {
-  auto [sensor, rgbd] = MakeSensorOrThrow();
-  // We know how AddSimRgbdSensorDescriptionLcmPublisher() names the system.
-  const std::string expected_name = "camera_description_" + sensor.serial();
-  auto* publisher =
-      GetSystem<SimCameraDescriptionPublisher>(builder_, expected_name);
-  ASSERT_EQ(publisher, nullptr);
-
-  AddSimRgbdSensorDescriptionLcmPublisher(
-      sensor.serial(), sensor.color_properties(), sensor.depth_properties(),
-      &builder_, &lcm_);
-
-  publisher =
-      GetSystem<SimCameraDescriptionPublisher>(builder_, expected_name);
-  EXPECT_NE(publisher, nullptr);
-}
-
-// Confirms that if a sensor gets added, that a camera desscription publisher
-// also gets added.
-TEST_F(SimRgbdSensorTest, AddPublishersAddsAllPublishers) {
-  // Make a sensor so we can access expected names.
-  auto [sensor, rgbd] = MakeSensorOrThrow();
-  // We know how AddSimRgbdSensorDescriptionLcmPublisher() names the system.
-  const std::string expected_name = "camera_description_" + sensor.serial();
-  auto* publisher =
-      GetSystem<SimCameraDescriptionPublisher>(builder_, expected_name);
-  ASSERT_EQ(publisher, nullptr);
-
-  AssertPublishedPorts(true /* rgb */, false /* depth */);
-
-  publisher =
-      GetSystem<SimCameraDescriptionPublisher>(builder_, expected_name);
-  EXPECT_NE(publisher, nullptr);
 }
 
 }  // namespace
