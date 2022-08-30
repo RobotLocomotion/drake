@@ -671,6 +671,39 @@ TEST_F(TreeTopologyTests, KinematicPathToWorld) {
   }
 }
 
+TEST_F(TreeTopologyTests, GetTransitiveOutboardBodies) {
+  FinalizeModel();
+  const MultibodyTreeTopology& topology = model_->get_topology();
+  const BodyIndex body1_index(1);
+  const BodyIndex body2_index(2);
+  const BodyIndex body4_index(4);
+  const BodyIndex body6_index(6);
+  const BodyIndex body8_index(8);
+  const BodyIndex body9_index(9);
+
+  const std::vector<BodyIndex> body4{body4_index};
+  std::vector<BodyIndex> expected_outboard_bodies{body1_index, body2_index,
+                                                  body4_index, body6_index};
+  EXPECT_EQ(topology.GetTransitiveOutboardBodies(body4),
+            expected_outboard_bodies);
+
+  const std::vector<BodyIndex> body14{body1_index, body4_index};
+  EXPECT_EQ(topology.GetTransitiveOutboardBodies(body14),
+            expected_outboard_bodies);
+
+  const std::vector<BodyIndex> body94{body9_index, body4_index};
+  expected_outboard_bodies.emplace_back(body8_index);
+  expected_outboard_bodies.emplace_back(body9_index);
+  EXPECT_EQ(topology.GetTransitiveOutboardBodies(body94),
+            expected_outboard_bodies);
+
+  const std::vector<BodyIndex> body6{body6_index};
+  expected_outboard_bodies.clear();
+  expected_outboard_bodies.emplace_back(body6_index);
+  EXPECT_EQ(topology.GetTransitiveOutboardBodies(body6),
+            expected_outboard_bodies);
+}
+
 // Unit test to verify the correctness of
 // MultibodyTreeTopology::CreateListOfWeldedBodies().
 // This test creates a tree with a topology as shown below. Single vertical

@@ -1545,6 +1545,46 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
               UnorderedElementsAre(&upper_ad, &lower_ad));
 }
 
+// Checks plumbing and top-level contract in MultibodyPlant.
+// See more complete testing of this graph query in `multibody_graph_test`.
+GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
+  // This test expects that the following model has a world body and a pair of
+  // welded-together bodies.
+  const std::string sdf_file =
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModelFromFile(sdf_file);
+  const Body<double>& upper = plant.GetBodyByName("upper_section");
+  const Body<double>& lower = plant.GetBodyByName("lower_section");
+  const JointIndex shoulder = plant.GetJointByName("pin").index();
+  const JointIndex elbow = plant.GetJointByName("weld").index();
+  // Add a new body, and weld it to the world body.
+  const Body<double>& extra = plant.AddRigidBody(
+      "extra", default_model_instance(), SpatialInertia<double>());
+  plant.WeldFrames(plant.world_frame(), extra.body_frame());
+
+  const std::vector<JointIndex> joints1{shoulder};
+  std::vector<BodyIndex> expected_bodies1{lower.index(), upper.index()};
+  std::sort(expected_bodies1.begin(), expected_bodies1.end());
+
+  // Verify we can only call GetBodiesKinematicallyAffectedBy() post-finalize.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.GetBodiesKinematicallyAffectedBy(joints1),
+      "Pre-finalize calls to .*GetBodiesKinematicallyAffectedBy.*");
+  plant.Finalize();
+  EXPECT_EQ(plant.GetBodiesKinematicallyAffectedBy(joints1), expected_bodies1);
+
+  // Test throw condition: weld joint.
+  const std::vector<JointIndex> joints2{shoulder, elbow};
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesKinematicallyAffectedBy(joints2),
+                              ".*joint with index.*welded.");
+
+  // Test throw condition: unregistered joint.
+  std::vector<JointIndex> joint100{JointIndex(100)};
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesKinematicallyAffectedBy(joint100),
+                              ".*No joint with index.*registered.");
+}
+
 // Regression test for unhelpful error message -- see #14641.
 GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
   // This test expects that the following model has a world body and a pair of

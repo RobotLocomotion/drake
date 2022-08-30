@@ -887,6 +887,10 @@ class MultibodyTree {
   // retrieve a local copy of their topology.
   const MultibodyTreeTopology& get_topology() const { return topology_; }
 
+  // See MultibodyPlant method.
+  std::vector<BodyIndex> GetBodiesKinematicallyAffectedBy(
+      const std::vector<JointIndex>& joint_indexes) const;
+
   // Returns the mobilizer model for joint with index `joint_index`. The index
   // is invalid if the joint is not modeled with a mobilizer.
   MobilizerIndex get_joint_mobilizer(JointIndex joint_index) const {
