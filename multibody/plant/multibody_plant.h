@@ -2111,6 +2111,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
 
+  /// Sets the default positions for the plant.  Calls to CreateDefaultContext
+  /// or SetDefaultContext/SetDefaultState will return a Context populated with
+  /// these position values. They have no other effects on the dynamics of the
+  /// system.
+  /// @throws std::exception if the plant is not finalized or if q is
+  /// not of size num_positions().
+  void SetDefaultPositions(const Eigen::Ref<const Eigen::VectorXd>& q);
+
+  /// Sets the default positions for the model instance.  Calls to
+  /// CreateDefaultContext or SetDefaultContext/SetDefaultState will return a
+  /// Context populated with these position values. They have no other effects
+  /// on the dynamics of the system.
+  /// @throws std::exception if the plant is not
+  /// finalized, if the model_instance is invalid, or if the length of
+  /// `q_instance` is not equal to `num_positions(model_instance)`.
+  void SetDefaultPositions(ModelInstanceIndex model_instance,
+                    const Eigen::Ref<const Eigen::VectorXd>& q_instance);
+
   /// Returns a const vector reference to the generalized velocities v in a
   /// given Context.
   /// @note This method returns a reference to existing data, exhibits constant
