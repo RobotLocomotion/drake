@@ -1,4 +1,4 @@
-#include "sim/common/camera_config_functions.h"
+#include "drake/systems/sensors/camera_config_functions.h"
 
 #include <optional>
 #include <string>
@@ -14,10 +14,11 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
-#include "sim/common/sim_rgbd_sensor.h"
+#include "drake/systems/sensors/sim_rgbd_sensor.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace sensors {
 namespace {
 
 using drake::geometry::FrameId;
@@ -44,7 +45,7 @@ CameraConfig MakeConfig() {
   // These values are *supposed* to be different from the default values.
   CameraConfig config{.width = 320,
                       .height = 240,
-                      .focal = 470.0,
+                      .focal = CameraConfig::FocalLength{.x = 470.0},
                       .center_x = 237,
                       .center_y = 233,
                       .clipping_near = 0.075,
@@ -355,5 +356,6 @@ TEST_F(CameraConfigFunctionsTest, Validation) {
 }
 
 }  // namespace
-}  // namespace sim
-}  // namespace anzu
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake
