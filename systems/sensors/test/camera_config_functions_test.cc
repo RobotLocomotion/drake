@@ -14,7 +14,6 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
-#include "sim/common/sim_camera_description_publisher.h"
 #include "sim/common/sim_rgbd_sensor.h"
 
 namespace anzu {
@@ -113,10 +112,6 @@ class CameraConfigFunctionsTest : public ::testing::Test {
   DrakeLcm lcm_;
   FrameId body_frame_id_;
 };
-
-// TODO(SeanCurtis-TRI): When this moves into Drake, we need to keep the
-// EarlyExit test to show that anzu::ApplyCameraConfig() only conditionally
-// adds systems based on drake::ApplyCameraConfig()'s behavior.
 
 /* If the CameraConfig has neither .rgb nor .depth set to true, no systems
  should be instantiated. */
@@ -300,10 +295,6 @@ TEST_F(CameraConfigFunctionsTest, AllParametersCount) {
   EXPECT_DOUBLE_EQ(publisher->get_publish_period(), 1.0 / config.fps);
 }
 
-// TODO(SeanCurtis-TRI): When the core of this goes into Drake, we need to keep
-// one of these tests just as evidence that anzu::ApplyCameraConfig() invokes
-// drake::ApplyCameraConfig().
-
 // Confirms that if only rgb is specified, only rgb is published.
 TEST_F(CameraConfigFunctionsTest, PublishingRgb) {
   CameraConfig config = MakeConfig();
@@ -363,23 +354,6 @@ TEST_F(CameraConfigFunctionsTest, Validation) {
       std::exception);
 }
 
-// ApplyCameraConfig is responsible for adding a camera description publisher
-// (by calling AddSimRgbdSensorDescriptionLcmPublisher()). We'll simply look for
-// its presence that the call has been made.
-TEST_F(CameraConfigFunctionsTest, CameraDescriptionPublished) {
-  CameraConfig config = MakeConfig();
-  // We know how AddSimRgbdSensorDescriptionLcmPublisher() names the system.
-  const std::string expected_name = "camera_description_" + config.name;
-  auto* publisher =
-      GetSystem<SimCameraDescriptionPublisher>(builder_, expected_name);
-  ASSERT_EQ(publisher, nullptr);
-
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_);
-
-  publisher =
-      GetSystem<SimCameraDescriptionPublisher>(builder_, expected_name);
-  EXPECT_NE(publisher, nullptr);
-}
 }  // namespace
 }  // namespace sim
 }  // namespace anzu

@@ -76,21 +76,5 @@ void DrakeApplyCameraConfig(const CameraConfig& camera_config,
                                     camera_config.do_compress, builder, lcm);
 }
 
-void ApplyCameraConfig(const CameraConfig& camera_config,
-                       drake::multibody::MultibodyPlant<double>* sim_plant,
-                       drake::systems::DiagramBuilder<double>* builder,
-                       drake::geometry::SceneGraph<double>* scene_graph,
-                       drake::lcm::DrakeLcmInterface* lcm) {
-  const size_t old_system_count = builder->GetSystems().size();
-  DrakeApplyCameraConfig(camera_config, sim_plant, builder, scene_graph, lcm);
-
-  if (builder->GetSystems().size() != old_system_count) {
-    // Only add the description publisher if we've added to the builder.
-    auto [color_camera, depth_camera] = camera_config.MakeCameras();
-    AddSimRgbdSensorDescriptionLcmPublisher(camera_config.name, color_camera,
-                                            depth_camera, builder, lcm);
-  }
-}
-
 }  // namespace sim
 }  // namespace anzu
