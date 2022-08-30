@@ -1,4 +1,4 @@
-#include "sim/common/sim_rgbd_sensor.h"
+#include "drake/systems/sensors/sim_rgbd_sensor.h"
 
 #include <memory>
 #include <optional>
@@ -7,19 +7,21 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace sensors {
+namespace internal {
 
-using drake::geometry::render::ColorRenderCamera;
-using drake::geometry::render::DepthRenderCamera;
-using drake::math::RigidTransformd;
-using drake::systems::sensors::RgbdSensor;
+using geometry::SceneGraph;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
+using math::RigidTransformd;
+using multibody::MultibodyPlant;
 
-RgbdSensor* AddSimRgbdSensor(
-    const drake::geometry::SceneGraph<double>& scene_graph,
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const SimRgbdSensor& sim_rgbd_sensor,
-    drake::systems::DiagramBuilder<double>* builder) {
+RgbdSensor* AddSimRgbdSensor(const SceneGraph<double>& scene_graph,
+                             const MultibodyPlant<double>& plant,
+                             const SimRgbdSensor& sim_rgbd_sensor,
+                             DiagramBuilder<double>* builder) {
   DRAKE_DEMAND(builder != nullptr);
   // TODO(eric.cousineau): Simplify this if drake#10247 is resolved.
 
@@ -29,7 +31,7 @@ RgbdSensor* AddSimRgbdSensor(
 
   const auto& frame_P = sim_rgbd_sensor.frame();
   const auto& body_A = frame_P.body();
-  const std::optional<drake::geometry::FrameId> body_A_id =
+  const std::optional<geometry::FrameId> body_A_id =
       plant.GetBodyFrameIdIfExists(body_A.index());
   DRAKE_THROW_UNLESS(body_A_id.has_value());
 
@@ -48,41 +50,41 @@ RgbdSensor* AddSimRgbdSensor(
   return rgbd_sensor_sys;
 }
 
-void DrakeAddSimRgbdSensorLcmPublisher(
-    const SimRgbdSensor& sim_rgbd_sensor,
-    const drake::systems::OutputPort<double>* rgb_port,
-    const drake::systems::OutputPort<double>* depth_16u_port,
-    bool do_compress,
-    drake::systems::DiagramBuilder<double>* builder,
-    drake::lcm::DrakeLcmInterface* lcm) {
+void AddSimRgbdSensorLcmPublisher(const SimRgbdSensor& sim_rgbd_sensor,
+                                  const OutputPort<double>* rgb_port,
+                                  const OutputPort<double>* depth_16u_port,
+                                  bool do_compress,
+                                  DiagramBuilder<double>* builder,
+                                  drake::lcm::DrakeLcmInterface* lcm) {
   DRAKE_DEMAND(builder != nullptr);
   DRAKE_DEMAND(lcm != nullptr);
   if (!rgb_port && !depth_16u_port) return;
 
   auto image_to_lcm_image_array =
-      builder->AddSystem<drake::systems::sensors::ImageToLcmImageArrayT>(
-          do_compress);
-  image_to_lcm_image_array->set_name(
-      "image_to_lcm_" + sim_rgbd_sensor.serial());
+      builder->AddSystem<ImageToLcmImageArrayT>(do_compress);
+  image_to_lcm_image_array->set_name("image_to_lcm_" +
+                                     sim_rgbd_sensor.serial());
   if (depth_16u_port) {
     const auto& lcm_depth_port =
-        image_to_lcm_image_array->DeclareImageInputPort<
-            drake::systems::sensors::PixelType::kDepth16U>("depth");
+        image_to_lcm_image_array->DeclareImageInputPort<PixelType::kDepth16U>(
+            "depth");
     builder->Connect(*depth_16u_port, lcm_depth_port);
   }
   if (rgb_port) {
-    const auto& lcm_rgb_port = image_to_lcm_image_array->DeclareImageInputPort<
-        drake::systems::sensors::PixelType::kRgba8U>("rgb");
+    const auto& lcm_rgb_port =
+        image_to_lcm_image_array->DeclareImageInputPort<PixelType::kRgba8U>(
+            "rgb");
     builder->Connect(*rgb_port, lcm_rgb_port);
   }
   auto image_array_lcm_publisher =
-      builder->AddSystem(drake::systems::lcm::LcmPublisherSystem::Make<
-                         drake::lcmt_image_array>(
+      builder->AddSystem(lcm::LcmPublisherSystem::Make<lcmt_image_array>(
           "DRAKE_RGBD_CAMERA_IMAGES_" + sim_rgbd_sensor.serial(), lcm,
           1. / sim_rgbd_sensor.rate_hz()));
   builder->Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
                    image_array_lcm_publisher->get_input_port());
 }
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace internal
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake

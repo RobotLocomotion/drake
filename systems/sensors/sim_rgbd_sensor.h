@@ -10,14 +10,17 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace sensors {
+namespace internal {
 
-/** Minimal Anzu simulation camera description, cheaply constructible. */
+/** Specification of an rgbd sensor: its sensor properties, how it connects into
+ the plant, and publication configuration. */
 class SimRgbdSensor {
  public:
   // TODO(sean-curtis): The name "serial" has some issues.
-  //  - "Serial" as a noun, doesn't mean serial number. Srictly speaking, its
+  //  - "Serial" as a noun, doesn't mean serial number. Strictly speaking, its
   //    actual meaning is inappropriate for this context.
   //  - In practice, it's merely a suffix that gets applied to LCM channels
   //    and system names. It need not be a "serial number". It could be any
@@ -46,11 +49,11 @@ class SimRgbdSensor {
     P is attached to). In this case, usages must account for X_AP when adding a
     camera. For example, see the implementation of `AddSimRgbdSensor`.
    */
-  SimRgbdSensor(
-      const std::string& serial, const drake::multibody::Frame<double>& frame_P,
-      double rate_hz, const drake::math::RigidTransformd& X_PB,
-      const drake::geometry::render::ColorRenderCamera& color_properties,
-      const drake::geometry::render::DepthRenderCamera& depth_properties)
+  SimRgbdSensor(const std::string& serial,
+                const multibody::Frame<double>& frame_P, double rate_hz,
+                const math::RigidTransformd& X_PB,
+                const geometry::render::ColorRenderCamera& color_properties,
+                const geometry::render::DepthRenderCamera& depth_properties)
       : serial_(serial),
         frame_(&frame_P),
         rate_hz_(rate_hz),
@@ -60,15 +63,15 @@ class SimRgbdSensor {
 
   const std::string& serial() const { return serial_; }
 
-  const drake::multibody::Frame<double>& frame() const { return *frame_; }
+  const multibody::Frame<double>& frame() const { return *frame_; }
 
-  const drake::math::RigidTransform<double> X_PB() const { return X_PB_; }
+  const math::RigidTransform<double> X_PB() const { return X_PB_; }
 
-  const drake::geometry::render::ColorRenderCamera& color_properties() const {
+  const geometry::render::ColorRenderCamera& color_properties() const {
     return color_properties_;
   }
 
-  const drake::geometry::render::DepthRenderCamera& depth_properties()
+  const geometry::render::DepthRenderCamera& depth_properties()
       const {
     return depth_properties_;
   }
@@ -77,11 +80,11 @@ class SimRgbdSensor {
 
  private:
   std::string serial_;
-  const drake::multibody::Frame<double>* frame_{};
+  const multibody::Frame<double>* frame_{};
   double rate_hz_{};
-  drake::math::RigidTransformd X_PB_;
-  drake::geometry::render::ColorRenderCamera color_properties_;
-  drake::geometry::render::DepthRenderCamera depth_properties_;
+  math::RigidTransformd X_PB_;
+  geometry::render::ColorRenderCamera color_properties_;
+  geometry::render::DepthRenderCamera depth_properties_;
 };
 
 // TODO(eric.cousineau): Ew... Is there a way to not need the plant?
@@ -96,11 +99,10 @@ class SimRgbdSensor {
  @pre The description in `sim_camera` is compatible with the configuration in
       SceneGraph (e.g., camera properties refer to an existing RenderEngine).
  */
-drake::systems::sensors::RgbdSensor* AddSimRgbdSensor(
-    const drake::geometry::SceneGraph<double>& scene_graph,
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const SimRgbdSensor& sim_camera,
-    drake::systems::DiagramBuilder<double>* builder);
+RgbdSensor* AddSimRgbdSensor(const geometry::SceneGraph<double>& scene_graph,
+                             const multibody::MultibodyPlant<double>& plant,
+                             const SimRgbdSensor& sim_camera,
+                             DiagramBuilder<double>* builder);
 
 // TODO(eric.cousineau): Add something for label stuff? Meh.
 /** Adds LCM publishers for images (RGB and/or Depth), at the camera's specified
@@ -121,13 +123,14 @@ drake::systems::sensors::RgbdSensor* AddSimRgbdSensor(
  @pre builder != nullptr.
  @pre rgb_port is null or ImageRgba8U-valued.
  @pre depth_16u_port is null or ImageDepth16U-valued. */
-void DrakeAddSimRgbdSensorLcmPublisher(
-    const SimRgbdSensor& sim_camera,
-    const drake::systems::OutputPort<double>* rgb_port,
-    const drake::systems::OutputPort<double>* depth_16u_port,
-    bool do_compress,
-    drake::systems::DiagramBuilder<double>* builder,
-    drake::lcm::DrakeLcmInterface* lcm);
+void AddSimRgbdSensorLcmPublisher(const SimRgbdSensor& sim_camera,
+                                  const OutputPort<double>* rgb_port,
+                                  const OutputPort<double>* depth_16u_port,
+                                  bool do_compress,
+                                  DiagramBuilder<double>* builder,
+                                  drake::lcm::DrakeLcmInterface* lcm);
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace internal
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake

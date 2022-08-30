@@ -40,6 +40,7 @@ drake_cc_package_library(
         ":optitrack_sender",
         ":rgbd_sensor",
         ":rotary_encoders",
+        ":sim_rgbd_sensor",
     ],
 )
 
@@ -265,6 +266,20 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "sim_rgbd_sensor",
+    srcs = ["sim_rgbd_sensor.cc"],
+    hdrs = ["sim_rgbd_sensor.h"],
+    deps = [
+        ":image_to_lcm_image_array_t",
+        ":rgbd_sensor",
+        "//lcm",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_publisher_system",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -398,6 +413,21 @@ drake_cc_googletest(
     deps = [
         ":optitrack_sender",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sim_rgbd_sensor_test",
+    deps = [
+        ":image_to_lcm_image_array_t",
+        ":rgbd_sensor",
+        ":sim_rgbd_sensor",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//lcm:drake_lcm",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_publisher_system",
+        "@fmt",
     ],
 )
 

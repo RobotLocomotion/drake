@@ -1,4 +1,4 @@
-#include "sim/common/sim_rgbd_sensor.h"
+#include "drake/systems/sensors/sim_rgbd_sensor.h"
 
 #include <string>
 #include <utility>
@@ -16,29 +16,27 @@
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace systems {
+namespace sensors {
+namespace internal {
 namespace {
 
-using drake::geometry::SceneGraph;
-using drake::geometry::render::ClippingRange;
-using drake::geometry::render::ColorRenderCamera;
-using drake::geometry::render::DepthRange;
-using drake::geometry::render::DepthRenderCamera;
-using drake::geometry::render::RenderCameraCore;
 using drake::lcm::DrakeLcm;
-using drake::math::RigidTransformd;
-using drake::multibody::AddMultibodyPlantSceneGraph;
-using drake::multibody::FixedOffsetFrame;
-using drake::multibody::Frame;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::RigidBody;
-using drake::multibody::SpatialInertia;
-using drake::systems::DiagramBuilder;
-using drake::systems::lcm::LcmPublisherSystem;
-using drake::systems::sensors::CameraInfo;
-using drake::systems::sensors::ImageToLcmImageArrayT;
-using drake::systems::sensors::RgbdSensor;
+using geometry::SceneGraph;
+using geometry::render::ClippingRange;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRange;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderCameraCore;
+using math::RigidTransformd;
+using multibody::AddMultibodyPlantSceneGraph;
+using multibody::FixedOffsetFrame;
+using multibody::Frame;
+using multibody::MultibodyPlant;
+using multibody::RigidBody;
+using multibody::SpatialInertia;
+using systems::lcm::LcmPublisherSystem;
 using Eigen::Vector3d;
 
 /* Returns a pointer to the named instance of TargetSystem (if it exists). */
@@ -114,7 +112,7 @@ class SimRgbdSensorTest : public ::testing::Test {
   void AssertPublishedPorts(bool rgb, bool depth) {
     auto [sensor, rgbd] = MakeSensorOrThrow();
     const size_t old_system_count = builder_.GetSystems().size();
-    AddSimRgbdSensorLcmPublishers(
+    AddSimRgbdSensorLcmPublisher(
         sensor, rgb ? &rgbd->color_image_output_port() : nullptr,
         depth ? &rgbd->depth_image_16U_output_port() : nullptr, false,
         &builder_, &lcm_);
@@ -259,7 +257,7 @@ TEST_F(SimRgbdSensorTest, AddSensorForRgbdSensorConfiguration) {
 TEST_F(SimRgbdSensorTest, AddPublisherNoPortIsNoOp) {
   const size_t old_system_count = builder_.GetSystems().size();
   SimRgbdSensor sensor = MakeSensorSpec();
-  AddSimRgbdSensorLcmPublishers(sensor, nullptr, nullptr, false, &builder_,
+  AddSimRgbdSensorLcmPublisher(sensor, nullptr, nullptr, false, &builder_,
                                 &lcm_);
   EXPECT_EQ(old_system_count, builder_.GetSystems().size());
 }
@@ -288,7 +286,7 @@ TEST_F(SimRgbdSensorTest, AddPublisherRgbAndDepth) {
 TEST_F(SimRgbdSensorTest, AddPublisherTestProperties) {
   auto [sensor, rgbd] = MakeSensorOrThrow();
   const size_t old_system_count = builder_.GetSystems().size();
-  AddSimRgbdSensorLcmPublishers(sensor, &rgbd->color_image_output_port(),
+  AddSimRgbdSensorLcmPublisher(sensor, &rgbd->color_image_output_port(),
                                 &rgbd->depth_image_16U_output_port(), false,
                                 &builder_, &lcm_);
   EXPECT_LT(old_system_count, builder_.GetSystems().size());
@@ -303,5 +301,7 @@ TEST_F(SimRgbdSensorTest, AddPublisherTestProperties) {
 }
 
 }  // namespace
-}  // namespace sim
-}  // namespace anzu
+}  // namespace internal
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake
