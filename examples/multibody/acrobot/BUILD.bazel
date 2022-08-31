@@ -43,13 +43,13 @@ drake_cc_binary(
     deps = [
         "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//geometry:drake_visualizer",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
         "//multibody/parsing",
         "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
         "//systems/framework:diagram",
         "//systems/primitives:affine_system",
+        "//visualization:visualization_config_functions",
         "@gflags",
     ],
 )

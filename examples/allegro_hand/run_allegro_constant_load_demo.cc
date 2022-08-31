@@ -9,7 +9,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
@@ -21,6 +20,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace examples {
@@ -93,7 +93,8 @@ void DoMain() {
   builder.Connect(constant_source->get_output_port(),
                   plant.get_actuation_input_port());
 
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
+  visualization::AddDefaultVisualization(&builder);
+
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   // Create a context for this system:

@@ -388,6 +388,7 @@ drake_py_binary(
         "//bindings/pydrake:lcm_py",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
+        "//bindings/pydrake/visualization",
     ],
 )
 
