@@ -11,6 +11,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/revolute_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -276,6 +277,31 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
     {"nested::sub_model1::collision", "nested::sub_model2::collision"},
   };
   VerifyCollisionFilters(scene_graph, expected_filters);
+}
+
+// Test collision filter groups in ModelDirectives.
+GTEST_TEST(ProcessModelDirectivesTest, DefaultPositions) {
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/default_positions.dmd.yaml"));
+
+  MultibodyPlant<double> plant(0);
+  ProcessModelDirectives(directives, &plant, nullptr,
+                         make_parser(&plant).get());
+  plant.Finalize();
+
+  auto context = plant.CreateDefaultContext();
+  const math::RigidTransformd X_WB(
+      math::RollPitchYawd(5 * M_PI / 180, 6 * M_PI / 180, 7 * M_PI / 180),
+      Eigen::Vector3d(1, 2, 3));
+  EXPECT_TRUE(plant.GetFreeBodyPose(*context, plant.GetBodyByName("base"))
+                  .IsNearlyEqualTo(X_WB, 1e-14));
+  EXPECT_EQ(
+      plant.GetJointByName<RevoluteJoint>("ShoulderJoint").get_angle(*context),
+      0.1);
+  EXPECT_EQ(
+      plant.GetJointByName<RevoluteJoint>("ElbowJoint").get_angle(*context),
+      0.2);
 }
 
 // Make sure we have good error messages.
