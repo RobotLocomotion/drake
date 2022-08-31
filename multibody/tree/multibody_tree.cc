@@ -1781,10 +1781,18 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
 }
 
 template <typename T>
-SpatialInertia<T> MultibodyTree<T>::CalcBodiesSpatialInertia(
+SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
     const std::vector<BodyIndex>& body_indexes) const {
+
+  // Check if there are repeated BodyIndex in body_indexes by converting the
+  // vector to a set (to eliminate duplicates) and see if their sizes differ.
+  std::set<BodyIndex> deduplicated(body_indexes.begin(), body_indexes.end());
+  if (body_indexes.size() != deduplicated.size()) {
+      throw std::logic_error(
+          "CalcSpatialInertia() contains a repeated BodyIndex.");
+  }
 
   // For the set S of bodies contained in body_indexes, return S's
   // spatial inertia about Fo (frame_F's origin), expressed in frame F.
@@ -1806,16 +1814,7 @@ SpatialInertia<T> MultibodyTree<T>::CalcBodiesSpatialInertia(
     // Ensure MultibodyPlant method contains a valid body_index.
     if (body_index >= num_bodies()) {
       throw std::logic_error(
-          "CalcBodiesSpatialInertia() contains an invalid BodyIndex.");
-    }
-
-    // Ensure there are no repeated BodyIndex.
-    for (std::vector<BodyIndex>::size_type j = i + 1; j < body_indexes.size();
-         ++j) {
-      if (body_index == body_indexes[j]) {
-        throw std::logic_error(
-            "CalcBodiesSpatialInertia() contains a repeated BodyIndex.");
-      }
+          "CalcSpatialInertia() contains an invalid BodyIndex.");
     }
 
     // Get the current body B's spatial inertia about Bo (body B's origin),
