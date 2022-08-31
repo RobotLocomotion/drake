@@ -65,8 +65,8 @@ PY_LIBRARIES = [
 
 install(
     name = "install",
-    targets = [":visualization"],
     py_dest = PACKAGE_INFO.py_dest,
+    targets = [":visualization"],
     deps = get_drake_py_installs([":visualization"]),
 )
 
@@ -77,12 +77,22 @@ drake_py_unittest(
     ],
 )
 
+filegroup(
+    name = "test_lcmlog_files",
+    testonly = 1,
+    srcs = [
+        "test/deformable_box_8_vertices_0.2seconds_lcmlog",
+    ],
+)
+
 drake_py_unittest(
     name = "meldis_test",
     data = [
+        ":test_lcmlog_files",
         "//examples/hydroelastic/spatula_slip_control:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/meshcat:models",
+        "@lcm//:lcm-logplayer",
     ],
     deps = [
         ":visualization",

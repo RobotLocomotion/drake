@@ -1,6 +1,9 @@
 import pydrake.visualization.meldis as mut
 
+import subprocess
+import sys
 import unittest
+import webbrowser
 
 from pydrake.common import (
     FindResourceOrThrow,
@@ -180,3 +183,37 @@ class TestMeldis(unittest.TestCase):
                          True)
         self.assertEqual(meshcat.HasPath(hydro_path), True)
         self.assertEqual(meshcat.HasPath(hydro_path2), True)
+
+    # Smoke test DRAKE_VIEWER_DEFORMABLE channel. We might want to
+    # replace this test when the deformable simulation is ready.
+    def test_deformable(self):
+        dut = mut.Meldis()
+        meshcat = dut.meshcat
+        lcm = dut._lcm
+
+        # This is for visually inspecting it with `bazel run`.
+        webbrowser.open(url=meshcat.web_url(), new=1)
+
+        lcm_log_file = FindResourceOrThrow(
+           "drake/bindings/pydrake/visualization/test/"
+           "deformable_box_8_vertices_0.2seconds_lcmlog")
+        # We use Popen, so that the main thread doesn't block on the
+        # logplayer thread and continue to the next block to receive
+        # and process LCM messages concurrently.
+        proc = subprocess.Popen(["../lcm/lcm-logplayer",
+                        "--lcm-url=" + lcm.get_lcm_url(),
+                        "--speed=1",
+                        lcm_log_file])
+
+        count = 0
+        printed = 0
+        while proc.poll() is None:
+            count += lcm.HandleSubscriptions(timeout_millis=1)
+            dut._invoke_subscriptions()
+            if count > printed:
+                print(count, file=sys.stderr)
+                printed = count
+        self.assertTrue(count > 0)
+
+        deformable_path = "/DRAKE_VIEWER/0/deformable_geometries"
+        self.assertEqual(meshcat.HasPath(deformable_path), True)
