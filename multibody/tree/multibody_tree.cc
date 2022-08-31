@@ -1808,7 +1808,7 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
   SpatialInertia<T> M_SWo_W(0., Vector3<T>::Zero(),
       UnitInertia<T>::TriaxiallySymmetric(0));
 
-  for (const BodyIndex body_index : body_indexes) {
+  for (BodyIndex body_index : body_indexes) {
     if (body_index == 0) continue;  // No contribution from the world body.
 
     // Ensure MultibodyPlant method contains a valid body_index.
