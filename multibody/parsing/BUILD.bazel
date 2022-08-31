@@ -373,6 +373,7 @@ drake_cc_googletest(
     name = "process_model_directives_test",
     data = [
         ":process_model_directives_test_models",
+        "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
         ":process_model_directives",

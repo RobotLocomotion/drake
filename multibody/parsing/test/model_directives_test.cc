@@ -18,6 +18,16 @@ directives:
 - add_model:
     name: new_model
     file: base.sdf
+    default_joint_positions:
+      joint1: [0.3]
+      joint2: [0.4, 0.5]
+    default_free_body_pose:
+      body1:
+        translation: [1, 2, 3]
+        rotation: !Rpy { deg: [5, 6, 7] }
+      body2:
+        translation: [-1, -2, -3]
+        rotation: !Rpy { deg: [-5, -6, -7] }
 - add_weld:
     parent: parent_frame
     child: child_frame

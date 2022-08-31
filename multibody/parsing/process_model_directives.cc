@@ -108,6 +108,21 @@ void ProcessModelDirectivesImpl(
           ResolveModelDirectiveUri(model.file, parser->package_map());
       drake::multibody::ModelInstanceIndex child_model_instance_id =
           composite->AddModelFromFile(file, name);
+      if (directive.add_model->default_joint_positions) {
+        for (const auto& [joint_name, positions] :
+             *directive.add_model->default_joint_positions) {
+          plant->GetMutableJointByName(joint_name, child_model_instance_id)
+              .set_default_positions(positions);
+        }
+      }
+      if (directive.add_model->default_free_body_pose) {
+        for (const auto& [body_name, pose] :
+             *directive.add_model->default_free_body_pose) {
+          plant->SetDefaultFreeBodyPose(
+              plant->GetBodyByName(body_name, child_model_instance_id),
+              pose.GetDeterministicValue());
+        }
+      }
       info.model_instance = child_model_instance_id;
       info.model_name = name;
       info.model_path = file;
