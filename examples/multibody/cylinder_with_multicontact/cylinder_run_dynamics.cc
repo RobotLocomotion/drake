@@ -4,13 +4,12 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/examples/multibody/cylinder_with_multicontact/populate_cylinder_plant.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace examples {
@@ -52,12 +51,10 @@ DEFINE_double(time_step, 1.0e-3,
 
 using Eigen::Vector3d;
 using geometry::SceneGraph;
-using lcm::DrakeLcm;
 
 // "multibody" namespace is ambiguous here without "drake::".
 using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::CoulombFriction;
-using drake::multibody::ConnectContactResultsToDrakeVisualizer;
 using drake::multibody::SpatialVelocity;
 
 int do_main() {
@@ -86,10 +83,7 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
 
-  DrakeLcm lcm;
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
-  // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
+  visualization::AddDefaultVisualization(&builder);
 
   auto diagram = builder.Build();
 

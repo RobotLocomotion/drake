@@ -8,12 +8,10 @@ import argparse
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import DrakeVisualizer
 from pydrake.math import RigidTransform
 from pydrake.math import RollPitchYaw
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlant
-from pydrake.multibody.plant import ConnectContactResultsToDrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlantConfig
 from pydrake.systems.analysis import ApplySimulatorConfig
 from pydrake.systems.analysis import Simulator
@@ -21,6 +19,7 @@ from pydrake.systems.analysis import SimulatorConfig
 from pydrake.systems.analysis import PrintSimulatorStatistics
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.primitives import VectorLogSink
+from pydrake.visualization import AddDefaultVisualization
 
 
 def make_ball_paddle(contact_model, contact_surface_representation,
@@ -56,9 +55,7 @@ def make_ball_paddle(contact_model, contact_surface_representation,
 
     plant.Finalize()
 
-    DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
-    ConnectContactResultsToDrakeVisualizer(builder=builder, plant=plant,
-                                           scene_graph=scene_graph)
+    AddDefaultVisualization(builder=builder)
 
     nx = plant.num_positions() + plant.num_velocities()
     state_logger = builder.AddSystem(VectorLogSink(nx))
