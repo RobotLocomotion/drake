@@ -1,6 +1,8 @@
 #include "drake/multibody/parsing/process_model_directives.h"
 
+#include <fstream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 
 #include <gtest/gtest.h>
@@ -74,6 +76,34 @@ void VerifyCollisionFilters(
 GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
   ModelDirectives station_directives = LoadModelDirectives(
       FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.dmd.yaml"));
+  const MultibodyPlant<double> empty_plant(0.0);
+
+  MultibodyPlant<double> plant(0.0);
+  ProcessModelDirectives(station_directives, &plant,
+                         nullptr, make_parser(&plant).get());
+  plant.Finalize();
+
+  // Expect the two model instances added by the directives.
+  EXPECT_EQ(plant.num_model_instances() - empty_plant.num_model_instances(), 2);
+
+  // Expect the two bodies added by the directives.
+  EXPECT_EQ(plant.num_bodies() - empty_plant.num_bodies(), 2);
+
+  // A great many frames are added in model directives processing, but we
+  // should at least expect that our named ones are present.
+  EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame"));
+  EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame_explicit"));
+}
+
+// Smoke test of the most basic model directives, now loading from string.
+GTEST_TEST(ProcessModelDirectivesTest, FromString) {
+  std::ifstream file_stream(
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.dmd.yaml"));
+  std::stringstream yaml;
+  yaml << file_stream.rdbuf();
+  ModelDirectives station_directives =
+      LoadModelDirectivesFromString(yaml.str());
+
   const MultibodyPlant<double> empty_plant(0.0);
 
   MultibodyPlant<double> plant(0.0);
