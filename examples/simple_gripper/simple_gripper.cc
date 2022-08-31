@@ -6,14 +6,11 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/contact_results.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -22,6 +19,7 @@
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/sine.h"
+#include "drake/visualization/visualization_config_functions.h"
 namespace drake {
 namespace examples {
 namespace simple_gripper {
@@ -31,11 +29,9 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using geometry::SceneGraph;
 using geometry::Sphere;
-using lcm::DrakeLcm;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using multibody::Body;
-using multibody::ConnectContactResultsToDrakeVisualizer;
 using multibody::CoulombFriction;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
@@ -263,10 +259,7 @@ int do_main() {
   DRAKE_DEMAND(plant.num_actuators() == 2);
   DRAKE_DEMAND(plant.num_actuated_dofs() == 2);
 
-  DrakeLcm lcm;
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
-  // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
+  visualization::AddDefaultVisualization(&builder);
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
   // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the

@@ -15,10 +15,8 @@ a way to model kinematic loops. It shows:
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/solvers/solve.h"
@@ -27,6 +25,7 @@ a way to model kinematic loops. It shows:
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 
@@ -139,8 +138,7 @@ int do_main() {
   strandbeest.set_penetration_allowance(FLAGS_penetration_allowance);
   strandbeest.set_stiction_tolerance(FLAGS_stiction_tolerance);
 
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
-  ConnectContactResultsToDrakeVisualizer(&builder, strandbeest, scene_graph);
+  visualization::AddDefaultVisualization(&builder);
 
   // Create a DesiredVelocityMotor where the proportional term is directly
   // proportional to the mass of the model.

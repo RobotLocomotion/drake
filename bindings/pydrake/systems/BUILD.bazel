@@ -384,10 +384,10 @@ drake_py_binary(
         ":drawing_py",
         ":framework_py",
         ":primitives_py",
-        "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:lcm_py",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
+        "//bindings/pydrake/visualization",
     ],
 )
 
