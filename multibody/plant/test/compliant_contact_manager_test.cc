@@ -640,6 +640,7 @@ class SpheresStack : public ::testing::Test {
   }
 };
 
+#if 0
 // Unit test to verify discrete contact pairs computed by the manager for
 // different combinations of compliance.
 TEST_F(SpheresStack, VerifyDiscreteContactPairs) {
@@ -705,6 +706,7 @@ TEST_F(SpheresStack,
   ASSERT_EQ(surfaces.size(), 1);
   EXPECT_EQ(pairs.size(), surfaces[0].num_faces() + num_point_pairs);
 }
+#endif
 
 // Unit test to verify the computation of the contact Jacobian.
 TEST_F(SpheresStack, CalcContactKinematics) {
