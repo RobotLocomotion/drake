@@ -2791,8 +2791,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Returns M_SFo_F, the spatial inertia of a set S of bodies about point Fo
-  /// (the origin of a frame F), expressed in frame F.
-  /// @param[in] context Contains the state of the model.
+  /// (the origin of a frame F), expressed in frame F. One may regard M_SFo_F as
+  /// measuring spatial inertia as if the set S of bodies were welded into a
+  /// single composite body at the configuration specified in the `context`.
+  /// @param[in] context Contains the configuration of the set S of bodies.
   /// @param[in] frame_F specifies the about-point Fo (frame_F's origin) and
   ///  the expressed-in frame for the returned spatial inertia.
   /// @param[in] body_indexes Array of selected bodies.  This method does not

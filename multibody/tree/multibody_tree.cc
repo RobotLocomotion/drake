@@ -1788,10 +1788,11 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
 
   // Check if there are repeated BodyIndex in body_indexes by converting the
   // vector to a set (to eliminate duplicates) and see if their sizes differ.
-  std::set<BodyIndex> deduplicated(body_indexes.begin(), body_indexes.end());
-  if (body_indexes.size() != deduplicated.size()) {
+  const std::set<BodyIndex> without_duplicate_bodies(
+      body_indexes.begin(), body_indexes.end());
+  if (body_indexes.size() != without_duplicate_bodies.size()) {
       throw std::logic_error(
-          "CalcSpatialInertia() contains a repeated BodyIndex.");
+          "CalcSpatialInertia(): contains a repeated BodyIndex.");
   }
 
   // For the set S of bodies contained in body_indexes, return S's
@@ -1807,14 +1808,13 @@ SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
   SpatialInertia<T> M_SWo_W(0., Vector3<T>::Zero(),
       UnitInertia<T>::TriaxiallySymmetric(0));
 
-  for (std::vector<BodyIndex>::size_type i = 0; i < body_indexes.size(); ++i) {
-    const BodyIndex body_index = body_indexes[i];
+  for (const BodyIndex body_index : body_indexes) {
     if (body_index == 0) continue;  // No contribution from the world body.
 
     // Ensure MultibodyPlant method contains a valid body_index.
     if (body_index >= num_bodies()) {
       throw std::logic_error(
-          "CalcSpatialInertia() contains an invalid BodyIndex.");
+          "CalcSpatialInertia(): contains an invalid BodyIndex.");
     }
 
     // Get the current body B's spatial inertia about Bo (body B's origin),
