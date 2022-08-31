@@ -91,6 +91,10 @@ PYBIND11_MODULE(parsing, m) {
   m.def("LoadModelDirectives", &parsing::LoadModelDirectives,
       py::arg("filename"), doc.parsing.LoadModelDirectives.doc);
 
+  m.def("LoadModelDirectivesFromString",
+      &parsing::LoadModelDirectivesFromString, py::arg("model_directives"),
+      doc.parsing.LoadModelDirectivesFromString.doc);
+
   // ModelInstanceInfo
   {
     using Class = parsing::ModelInstanceInfo;
