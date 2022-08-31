@@ -69,7 +69,7 @@ struct FiniteHorizonLinearQuadraticRegulatorOptions {
       systems::InputPortSelection::kUseFirstInputIfItExists};
 
   /**
-  Enables the "square-root" method solution to the Ricatti equation. This is
+  Enables the "square-root" method solution to the Riccati equation. This is
   slightly more expensive and potentially less numerically accurate (errors are
   bounded on the square root), but is more numerically robust. When `true`,
   then you must also set a (positive definite and symmetric) Qf in this options
