@@ -1,5 +1,11 @@
+#pragma once
+
 #include <algorithm>
+#include <limits>
 #include <memory>
+#include <optional>
+#include <string>
+#include <utility>
 
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -22,7 +28,7 @@ namespace internal {
 // Helper function for NaN initialization.
 static constexpr double nan() {
   return std::numeric_limits<double>::quiet_NaN();
-}  
+}
 
 // TODO(DamrongGuoy): Simplify the test fixture somehow (need discussion
 //  among the architects). Due to the existing architecture of our code,
@@ -178,6 +184,11 @@ class SpheresStack {
                                  2.0 * penetration_distance_;
     const RigidTransformd X_WB2(Vector3d(0, 0, sphere2_com_z));
     plant_->SetFreeBodyPose(plant_context_, *sphere2_, X_WB2);
+  }
+
+  const MultibodyPlant<double>& plant() const { return *plant_; }
+  const CompliantContactManager<double>& manager() const {
+    return *contact_manager_;
   }
 
  protected:

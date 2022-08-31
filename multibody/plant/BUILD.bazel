@@ -390,12 +390,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "compliant_contact_manager_test",
-    data = [
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
-    ],
     deps = [
         ":plant",
+        ":spheres_stack",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -406,7 +403,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "revised_compliant_contact_manager_test",
+    name = "sap_driver_test",
     data = [
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
