@@ -130,23 +130,21 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
       prog.NewContinuousVariables<1>("alpha");
 
   const solvers::QuadraticCost* cart_cost = nullptr;
+  const double V_mag = V.norm();
 
   if (num_cart_constraints > 0) {
-    VectorX<double> V_dir = V.normalized();
-    double V_mag = V.norm();
-
     // Constrain the end effector motion to be in the direction of V,
     // and penalize magnitude difference from V.
     MatrixX<double> A(num_cart_constraints, num_velocities + 1);
     A.leftCols(num_velocities) = J;
-    A.rightCols(1) = -V_dir;
+    A.rightCols(1) = -V;
     prog.AddLinearEqualityConstraint(
         A, VectorX<double>::Zero(num_cart_constraints), {v_next, alpha});
     // TODO(russt): This should not be hard-coded.
-    const double kCartesianTrackingWeight = 100;
+    const double kCartesianTrackingWeight = 100 * V_mag * V_mag;
     cart_cost =
         prog.AddQuadraticErrorCost(Vector1<double>(kCartesianTrackingWeight),
-                                   Vector1<double>(V_mag), alpha)
+                                   Vector1<double>(1), alpha)
             .evaluator()
             .get();
 
@@ -226,8 +224,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     cart_cost->Eval(result.GetSolution(alpha), &cost);
     const double kMaxTrackingError = 5;
     const double kMinEndEffectorVel = 1e-2;
-    if (cost(0) > kMaxTrackingError &&
-        result.GetSolution(alpha)[0] <= kMinEndEffectorVel) {
+    const double V_mag_sol = result.GetSolution(alpha)[0] * V_mag;
+    if (cost(0) > kMaxTrackingError && V_mag_sol <= kMinEndEffectorVel) {
       // Not tracking the desired vel norm (large tracking error) and the
       // computed vel is small.
       log()->info("v_next = {}", result.GetSolution(v_next).transpose());
