@@ -1408,6 +1408,63 @@ void MultibodyPlant<T>::set_penetration_allowance(
 }
 
 template <typename T>
+void MultibodyPlant<T>::SetDefaultPositions(
+    const Eigen::Ref<const Eigen::VectorXd>& q) {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(q.size() == num_positions());
+  for (int i = 0; i < num_joints(); ++i) {
+    Joint<T>& joint = get_mutable_joint(JointIndex(i));
+    joint.set_default_positions(
+        q.segment(joint.position_start(), joint.num_positions()));
+  }
+  for (BodyIndex i : GetFloatingBaseBodies()) {
+    const Body<T>& body = get_body(i);
+    RigidTransform<double> X_WB;
+    const int pos = body.floating_positions_start();
+    if (body.has_quaternion_dofs()) {
+      X_WB = RigidTransform<double>(
+          Eigen::Quaternion<double>(q[pos], q[pos + 1], q[pos + 2], q[pos + 3]),
+          q.segment(pos + 4, 3));
+    } else {
+      X_WB = RigidTransform<double>(
+          math::RollPitchYaw<double>(q.segment(pos, 3)), q.segment(pos + 3, 3));
+    }
+    SetDefaultFreeBodyPose(body, X_WB);
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::SetDefaultPositions(ModelInstanceIndex model_instance,
+                    const Eigen::Ref<const Eigen::VectorXd>& q_instance) {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
+  VectorX<T> q_T(num_positions());
+  internal_tree().SetPositionsInArray(model_instance, q_instance.cast<T>(),
+                                      &q_T);
+  Eigen::VectorXd q = ExtractDoubleOrThrow(q_T);
+  for (JointIndex i : GetJointIndices(model_instance)) {
+    Joint<T>& joint = get_mutable_joint(i);
+    joint.set_default_positions(
+        q.segment(joint.position_start(), joint.num_positions()));
+  }
+  for (BodyIndex i : GetBodyIndices(model_instance)) {
+    const Body<T>& body = get_body(i);
+    if (!body.is_floating()) continue;
+    RigidTransform<double> X_WB;
+    const int pos = body.floating_positions_start();
+    if (body.has_quaternion_dofs()) {
+      X_WB = RigidTransform<double>(
+          Eigen::Quaternion<double>(q[pos], q[pos + 1], q[pos + 2], q[pos + 3]),
+          q.segment(pos + 4, 3));
+    } else {
+      X_WB = RigidTransform<double>(
+          math::RollPitchYaw<double>(q.segment(pos, 3)), q.segment(pos + 3, 3));
+    }
+    SetDefaultFreeBodyPose(body, X_WB);
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::EstimatePointContactParameters(
     double penetration_allowance) {
   // Default to Earth's gravity for this estimation.

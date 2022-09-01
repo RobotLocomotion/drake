@@ -959,8 +959,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 const Eigen::Ref<const VectorX<T>>& q) {
               self->SetPositions(context, q);
             },
-            py_rvp::reference, py::arg("context"), py::arg("q"),
-            cls_doc.SetPositions.doc_2args)
+            py::arg("context"), py::arg("q"), cls_doc.SetPositions.doc_2args)
         .def(
             "SetPositions",
             [](const MultibodyPlant<T>* self, Context<T>* context,
@@ -968,8 +967,24 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 const Eigen::Ref<const VectorX<T>>& q) {
               self->SetPositions(context, model_instance, q);
             },
-            py_rvp::reference, py::arg("context"), py::arg("model_instance"),
-            py::arg("q"), cls_doc.SetPositions.doc_2args)
+            py::arg("context"), py::arg("model_instance"), py::arg("q"),
+            cls_doc.SetPositions.doc_2args)
+        .def(
+            "SetDefaultPositions",
+            [](MultibodyPlant<T>* self,
+                const Eigen::Ref<const VectorX<double>>& q) {
+              self->SetDefaultPositions(q);
+            },
+            py::arg("q"), cls_doc.SetDefaultPositions.doc_1args)
+        .def(
+            "SetDefaultPositions",
+            [](MultibodyPlant<T>* self,
+                multibody::ModelInstanceIndex model_instance,
+                const Eigen::Ref<const VectorX<double>>& q_instance) {
+              self->SetDefaultPositions(model_instance, q_instance);
+            },
+            py::arg("model_instance"), py::arg("q_instance"),
+            cls_doc.SetDefaultPositions.doc_2args)
         .def(
             "GetVelocities",
             [](const MultibodyPlant<T>* self, const Context<T>& context)
