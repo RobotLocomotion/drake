@@ -25,6 +25,7 @@
 #include <set>
 #include <stack>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -1049,6 +1050,37 @@ class MultibodyTreeTopology {
     return welded_bodies;
   }
 
+  // Returns all bodies that are transitively outboard of the given bodies. In
+  // other words, returns the union of all bodies in the subtrees with the given
+  // bodies as roots (excluding the given body itself). The result is sorted in
+  // increasing body index order.
+  // @pre Finalize() is called.
+  // @pre body_index is valid is less than the number of bodies.
+  std::vector<BodyIndex> GetTransitiveOutboardBodies(
+      std::vector<BodyIndex> body_indexes) const {
+    DRAKE_DEMAND(is_valid());
+    std::unordered_set<BodyIndex> outboard_bodies;
+    auto collect_outboard_bodies =
+        [&outboard_bodies](const BodyNodeTopology& node) {
+          outboard_bodies.insert(node.body);
+        };
+    for (const BodyIndex& body_index : body_indexes) {
+      DRAKE_DEMAND(body_index.is_valid() && body_index < num_bodies());
+      // Skip bodies that are already traversed because the subtree with it
+      // being the root has necessarily been traversed already.
+      if (outboard_bodies.count(body_index) == 0) {
+        const BodyNodeTopology& root =
+            get_body_node(get_body(body_index).body_node);
+        TraverseOutboardNodes(root, collect_outboard_bodies,
+                              false /* do not collect the root */);
+      }
+    }
+    std::vector<BodyIndex> results(outboard_bodies.begin(),
+                                   outboard_bodies.end());
+    std::sort(results.begin(), results.end());
+    return results;
+  }
+
  private:
   // Returns `true` if there is _any_ mobilizer in the multibody tree
   // connecting the frames with indexes `frame` and `frame2`.
@@ -1104,15 +1136,18 @@ class MultibodyTreeTopology {
   }
 
   // This traverses the tree of nodes outboard of `base` and applies `operation`
-  // on each of them, starting with `base`. The traversal is performed in depth
-  // first order.
+  // on each of them, starting with `base` if `apply_operation_on_base` is true.
+  // The traversal is performed in depth first order.
   // @pre Body nodes were already created and therefore they are indexed in
   // depth first order.
   void TraverseOutboardNodes(
       const BodyNodeTopology& base,
-      std::function<void(const BodyNodeTopology&)> operation) const {
+      std::function<void(const BodyNodeTopology&)> operation,
+      bool apply_operation_on_base = true) const {
     DRAKE_DEMAND(get_num_body_nodes() != 0);
-    operation(base);
+    if (apply_operation_on_base) {
+      operation(base);
+    }
     // We are done if the base has no more children.
     if (base.get_num_children() == 0) return;
     // Traverse outboard nodes. Since the tree is finalized, we know nodes are

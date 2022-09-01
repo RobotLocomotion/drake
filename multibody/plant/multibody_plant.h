@@ -3787,11 +3787,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns all bodies whose kinematics are transitively affected by the given
   /// vector of joints. The affected bodies are returned in increasing order of
   /// body indexes. Note that this is a kinematic relationship rather than a
-  /// dynamic one. For example, even if one of the inboard joints is a free
-  /// (6dof) joint the kinematic influence is still felt even though dynamically
+  /// dynamic one. For example, if one of the inboard joints is a free (6dof)
+  /// joint, the kinematic influence is still felt even though dynamically
   /// there would be no influence on the outboard body.
-  /// This function can be called at any time during the lifetime of `this`
-  /// plant, either pre- or post-finalize, see Finalize().
+  /// This function can be only be called post-finalize, see Finalize().
   /// @throws std::exception if any of the given joint indexes is invalid.
   std::vector<BodyIndex> GetBodiesAffectedBy(
       const std::vector<JointIndex>& joint_indexes) const;

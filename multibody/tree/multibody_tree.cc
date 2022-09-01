@@ -496,6 +496,20 @@ ModelInstanceIndex MultibodyTree<T>::GetModelInstanceByName(
 }
 
 template <typename T>
+std::vector<BodyIndex> MultibodyTree<T>::GetBodiesAffectedBy(
+    const std::vector<JointIndex>& joint_indexes) const {
+  // Collect all bodies immediately inboard and outboard of the joints.
+  std::vector<BodyIndex> bodies;
+  for (const JointIndex& joint : joint_indexes) {
+    bodies.emplace_back(get_joint(joint).child_body().index());
+    bodies.emplace_back(get_joint(joint).parent_body().index());
+  }
+  // Define T(b) as the set of bodies in the subtree of the spanning tree with
+  // body b. Collect all bodies in the set `T(b)-{b}` for each b in `bodies`.
+  return topology_.GetTransitiveOutboardBodies(bodies);
+}
+
+template <typename T>
 VectorX<T> MultibodyTree<T>::GetActuationFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& u) const {
