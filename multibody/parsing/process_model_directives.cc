@@ -61,9 +61,10 @@ namespace {
 void AddWeld(
     const Frame<double>& parent_frame,
     const Frame<double>& child_frame,
+    const math::RigidTransform<double>& X_PC,
     MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models) {
-  plant->WeldFrames(parent_frame, child_frame);
+  plant->WeldFrames(parent_frame, child_frame, X_PC);
   if (added_models) {
     // Record weld info into crappy ModelInstanceInfo struct.
     bool found = false;
@@ -158,10 +159,13 @@ void ProcessModelDirectivesImpl(
       drake::log()->debug("    resolved_name: {}", resolved_name);
 
     } else if (directive.add_weld) {
-      AddWeld(
-          get_scoped_frame(directive.add_weld->parent),
-          get_scoped_frame(directive.add_weld->child),
-          plant, added_models);
+      math::RigidTransform<double> X_PC{};
+      if (directive.add_weld->X_PC) {
+        X_PC = directive.add_weld->X_PC->GetDeterministicValue();
+      }
+      AddWeld(get_scoped_frame(directive.add_weld->parent),
+              get_scoped_frame(directive.add_weld->child), X_PC, plant,
+              added_models);
 
     } else if (directive.add_collision_filter_group) {
       // Find the model instance index that corresponds to model_namespace, if

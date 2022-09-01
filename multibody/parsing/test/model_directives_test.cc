@@ -31,6 +31,9 @@ directives:
 - add_weld:
     parent: parent_frame
     child: child_frame
+    X_PC:
+      translation: [1, 2, 3]
+      rotation: !Rpy { deg: [7, 8, 9]}
 - add_frame:
     name: new_frame_a
     X_PF:

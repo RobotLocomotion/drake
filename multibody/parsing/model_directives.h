@@ -36,6 +36,20 @@ struct AddWeld {
       drake::log()->error("add_weld: `child` must be non-empty");
       return false;
     }
+    if (X_PC) {
+      if (X_PC->base_frame) {
+        drake::log()->error(
+            "add_weld: `X_PC` must not specify a `base_frame`; the pose is "
+            "always in the parent frame.");
+        return false;
+      }
+      if (!X_PC->IsDeterministic()) {
+        drake::log()->error(
+            "add_weld: `X_PC` must specify a deterministic transform, not a "
+            "distribution.");
+        return false;
+      }
+    }
     return true;
   }
 
@@ -43,12 +57,16 @@ struct AddWeld {
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(parent));
     a->Visit(DRAKE_NVP(child));
+    a->Visit(DRAKE_NVP(X_PC));
   }
 
   /// Parent frame. Can specify scope.
   std::string parent;
   /// Child frame. Can (and should) specify scope.
   std::string child;
+  /// Relative transform between the parent frame P and the child frame C. If
+  /// unspecified, the Identity transform will be used.
+  std::optional<drake::schema::Transform> X_PC{};
 };
 
 /// Directive to add a model from a URDF or SDFormat file to a scene, using a

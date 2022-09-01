@@ -41,3 +41,5 @@ directives:
 - add_weld:
     parent: mid_injected_frame
     child: bottom_level_model::base
+    X_PC:
+      translation: [4, 5, 6]
