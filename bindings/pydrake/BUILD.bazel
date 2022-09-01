@@ -250,7 +250,6 @@ drake_pybind_library(
     cc_deps = [
         ":symbolic_types_pybind",
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
     ],
     cc_srcs = [
@@ -262,7 +261,6 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         "//bindings/pydrake/common:compatibility_py",
-        "//bindings/pydrake/common:deprecation_py",
     ],
     py_srcs = ["_symbolic_extra.py"],
 )

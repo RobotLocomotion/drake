@@ -7,8 +7,6 @@ from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers import augmented_lagrangian as al
 from pydrake.autodiffutils import InitializeAutoDiff, AutoDiffXd
 
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-
 
 class TestAugmentedLagrangian(unittest.TestCase):
     def setUp(self):

@@ -9,7 +9,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic/expression.h"
 #define DRAKE_COMMON_SYMBOLIC_POLYNOMIAL_H
 #include "drake/common/symbolic/monomial.h"
@@ -316,11 +315,6 @@ class Polynomial {
 
   /// Returns true if this polynomial and @p p are structurally equal.
   [[nodiscard]] bool EqualTo(const Polynomial& p) const;
-
-  DRAKE_DEPRECATED("2022-09-01",
-                   "Use this->Expand().EqualTo(p.Expand()) instead of "
-                   "EqualToAfterExpansion()")
-  bool EqualToAfterExpansion(const Polynomial& p) const;
 
   /// Returns true if this polynomial and @p p are almost equal (the difference
   /// in the corresponding coefficients are all less than @p tolerance), after

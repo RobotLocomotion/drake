@@ -13,7 +13,6 @@ from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
 from pydrake.common.containers import EqualToDict
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 # TODO(eric.cousineau): Replace usages of `sym` math functions with the
 # overloads from `pydrake.math`.
@@ -1338,9 +1337,6 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p_not_expand = sym.Polynomial(
             {sym.Monomial(): a ** 2 - 1 - (a-1) * (a+1)})
         p_expand = sym.Polynomial({sym.Monomial(): 0})
-        # TODO(2022-09-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1):
-            self.assertTrue(p_not_expand.EqualToAfterExpansion(p_expand))
         self.assertFalse(p_not_expand.EqualTo(p_expand))
 
     def test_repr(self):

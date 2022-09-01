@@ -1,7 +1,6 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -22,13 +21,6 @@ void DefineSolversCsdp(py::module m) {
       m, "CsdpSolver", doc.CsdpSolver.doc);
   csdp_cls.def(py::init<>(), doc.CsdpSolver.ctor.doc)
       .def_static("id", &CsdpSolver::id, doc.CsdpSolver.id.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  csdp_cls.def(py_init_deprecated<CsdpSolver, RemoveFreeVariableMethod>(
-                   doc.CsdpSolver.ctor.doc_deprecated),
-      py::arg("method"), doc.CsdpSolver.ctor.doc_deprecated);
-#pragma GCC diagnostic pop
 
   py::class_<CsdpSolverDetails>(
       m, "CsdpSolverDetails", doc.CsdpSolverDetails.doc)

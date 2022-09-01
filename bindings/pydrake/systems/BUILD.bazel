@@ -247,22 +247,6 @@ drake_py_unittest(
 )
 
 drake_py_library(
-    name = "meshcat_visualizer_py",
-    srcs = ["meshcat_visualizer.py"],
-    imports = PACKAGE_INFO.py_imports,
-    deps = [
-        ":framework_py",
-        ":module_py",
-        ":rendering_py",
-        "//bindings/pydrake:geometry_py",
-        "//bindings/pydrake:lcm_py",
-        "//bindings/pydrake:math_py",
-        "//bindings/pydrake/common:eigen_geometry_py",
-        "@meshcat_python//:meshcat_sans_deprecation_warning",
-    ],
-)
-
-drake_py_library(
     name = "jupyter_widgets_py",
     srcs = ["jupyter_widgets.py"],
     imports = PACKAGE_INFO.py_imports,
@@ -333,7 +317,6 @@ PY_LIBRARIES = [
     ":_resample_interp1d_py",
     ":drawing_py",
     ":jupyter_widgets_py",
-    ":meshcat_visualizer_py",
     ":scalar_conversion_py",
     ":module_py",
     ":perception_py",
@@ -487,33 +470,6 @@ drake_py_unittest(
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/multibody:tree_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "meshcat_visualizer_test",
-    data = [
-        "//examples/kuka_iiwa_arm:models",
-        "//examples/multibody/cart_pole:models",
-        "//examples/quadrotor:models",
-        "//geometry/render:test_models",
-        "//manipulation/models/allegro_hand_description:models",
-        "//manipulation/models/iiwa_description:models",
-    ],
-    # Defects related to ZMQ when run under DRD or Helgrind.
-    tags = [
-        "no_drd",
-        "no_helgrind",
-    ],
-    deps = [
-        ":analysis_py",
-        ":framework_py",
-        ":meshcat_visualizer_py",
-        ":test_util_py",
-        "//bindings/pydrake:geometry_py",
-        "//bindings/pydrake:perception_py",
-        "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/multibody",
     ],
 )
 

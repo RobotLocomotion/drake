@@ -6,7 +6,6 @@ import numpy as np
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.csdp import CsdpSolver
 import pydrake.solvers.sdpa_free_format as sdpa_free_format
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
 class TestCsdpSolver(unittest.TestCase):
@@ -66,10 +65,6 @@ class TestCsdpSolver(unittest.TestCase):
             sdpa_free_format.RemoveFreeVariableMethod.kLorentzConeSlack)
         result = solver.Solve(prog, None, solver_options)
         self.assertTrue(result.is_success())
-        with catch_drake_warnings(expected_count=1):
-            CsdpSolver(
-                method=sdpa_free_format.RemoveFreeVariableMethod.
-                kLorentzConeSlack)
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when CSDP is disabled."""

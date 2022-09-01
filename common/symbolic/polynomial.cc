@@ -787,10 +787,6 @@ bool Polynomial::EqualTo(const Polynomial& p) const {
   return true;
 }
 
-bool Polynomial::EqualToAfterExpansion(const Polynomial& p) const {
-  return this->Expand().EqualTo(p.Expand());
-}
-
 bool Polynomial::CoefficientsAlmostEqual(const Polynomial& p,
                                          double tolerance) const {
   return (*this - p)

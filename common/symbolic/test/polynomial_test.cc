@@ -1168,10 +1168,6 @@ TEST_F(SymbolicPolynomialTest, EqualToAfterExpansion) {
 
   // p1 * p2 is not equal to p2 * p3 after expansion.
   EXPECT_PRED2(test::PolyNotEqualAfterExpansion, p1 * p2, p2 * p3);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE((p2 * p3 * p1).EqualToAfterExpansion(p1 * p2 * p3));
-#pragma GCC diagnostic pop
 }
 
 // Checks if internal::CompareMonomial implements the lexicographical order.

@@ -17,7 +17,6 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
@@ -34,10 +33,6 @@ namespace internal {
 class YamlReadArchive final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlReadArchive)
-
-  using Options
-      DRAKE_DEPRECATED("2022-09-01", "Use drake::yaml::LoadYamlOptions instead")
-      = LoadYamlOptions;
 
   YamlReadArchive(internal::Node root, const LoadYamlOptions& options);
 
@@ -560,10 +555,5 @@ class YamlReadArchive final {
 };
 
 }  // namespace internal
-
-using YamlReadArchive
-    DRAKE_DEPRECATED("2022-09-01", "Use the yaml_io.h functions instead")
-    = internal::YamlReadArchive;
-
 }  // namespace yaml
 }  // namespace drake
