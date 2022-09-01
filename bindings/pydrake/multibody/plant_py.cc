@@ -304,6 +304,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("model_instances"),
             cls_doc.CalcCenterOfMassPositionInWorld.doc_2args)
         .def(
+            "CalcSpatialInertia",
+            [](const Class* self, const Context<T>& context,
+                const Frame<T>& frame_F,
+                const std::vector<BodyIndex>& body_indexes) {
+              return self->CalcSpatialInertia(context, frame_F, body_indexes);
+            },
+            py::arg("context"), py::arg("frame_F"), py::arg("body_indexes"),
+            cls_doc.CalcSpatialInertia.doc)
+        .def(
             "CalcSpatialMomentumInWorldAboutPoint",
             [](const Class* self, const Context<T>& context,
                 const Vector3<T>& p_WoP_W) {

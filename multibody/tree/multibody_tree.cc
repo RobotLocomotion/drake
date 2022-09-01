@@ -1781,6 +1781,67 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
 }
 
 template <typename T>
+SpatialInertia<T> MultibodyTree<T>::CalcSpatialInertia(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_F,
+    const std::vector<BodyIndex>& body_indexes) const {
+
+  // Check if there are repeated BodyIndex in body_indexes by converting the
+  // vector to a set (to eliminate duplicates) and see if their sizes differ.
+  const std::set<BodyIndex> without_duplicate_bodies(
+      body_indexes.begin(), body_indexes.end());
+  if (body_indexes.size() != without_duplicate_bodies.size()) {
+      throw std::logic_error(
+          "CalcSpatialInertia(): contains a repeated BodyIndex.");
+  }
+
+  // For the set S of bodies contained in body_indexes, return S's
+  // spatial inertia about Fo (frame_F's origin), expressed in frame F.
+  // For efficiency, evaluate all bodies' spatial inertia and pose.
+  const std::vector<SpatialInertia<T>>& M_Bi_W =
+      EvalSpatialInertiaInWorldCache(context);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+
+  // Add each body's spatial inertia in the world frame W to this system
+  // S's spatial inertia in W about Wo (the origin of W), expressed in W.
+  // TODO(Mitiguy) Create SpatialInertia<T>::Zero() and use it below.
+  SpatialInertia<T> M_SWo_W(0., Vector3<T>::Zero(),
+      UnitInertia<T>::TriaxiallySymmetric(0));
+
+  for (BodyIndex body_index : body_indexes) {
+    if (body_index == 0) continue;  // No contribution from the world body.
+
+    // Ensure MultibodyPlant method contains a valid body_index.
+    if (body_index >= num_bodies()) {
+      throw std::logic_error(
+          "CalcSpatialInertia(): contains an invalid BodyIndex.");
+    }
+
+    // Get the current body B's spatial inertia about Bo (body B's origin),
+    // expressed in the world frame W.
+    const BodyNodeIndex body_node_index = get_body(body_index).node_index();
+    const SpatialInertia<T>& M_BBo_W = M_Bi_W[body_node_index];
+
+    // Shift M_BBo_W from about-point Bo to about-point Wo and add to the sum.
+    const RigidTransform<T>& X_WB = pc.get_X_WB(body_node_index);
+    const Vector3<T>& p_WoBo_W = X_WB.translation();
+    M_SWo_W += M_BBo_W.Shift(-p_WoBo_W);  // Shift from Bo to Wo by p_BoWo_W.
+  }
+
+  // If frame_F is the world frame W, return now.
+  if (frame_F.is_world_frame()) return M_SWo_W;
+
+  // Otherwise, shift from Wo (world origin) to Fo (frame_F's origin).
+  const RigidTransform<T> X_WF = frame_F.CalcPoseInWorld(context);
+  const Vector3<T>& p_WoFo_W = X_WF.translation();
+  SpatialInertia<T> M_SFo_W = M_SWo_W.Shift(p_WoFo_W);
+
+  // Re-express spatial inertia from frame W to frame F.
+  const RotationMatrix<T> R_FW = (X_WF.rotation()).inverse();
+  return M_SFo_W.ReExpressInPlace(R_FW);  // Returns M_SFo_F.
+}
+
+template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const systems::Context<T>& context) const {
   if (num_bodies() <= 1) {

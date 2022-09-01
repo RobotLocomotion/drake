@@ -2808,6 +2808,27 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         CalcCenterOfMassPositionInWorld(context, model_instances);
   }
 
+  /// Returns M_SFo_F, the spatial inertia of a set S of bodies about point Fo
+  /// (the origin of a frame F), expressed in frame F. You may regard M_SFo_F as
+  /// measuring spatial inertia as if the set S of bodies were welded into a
+  /// single composite body at the configuration specified in the `context`.
+  /// @param[in] context Contains the configuration of the set S of bodies.
+  /// @param[in] frame_F specifies the about-point Fo (frame_F's origin) and
+  ///  the expressed-in frame for the returned spatial inertia.
+  /// @param[in] body_indexes Array of selected bodies.  This method does not
+  ///  distinguish between welded bodies, joint-connected bodies, etc.
+  /// @throws std::exception if body_indexes contains an invalid BodyIndex or
+  ///  if there is a repeated BodyIndex.
+  /// @note The mass and inertia of the world_body() does not contribute to the
+  ///  the returned spatial inertia.
+  SpatialInertia<T> CalcSpatialInertia(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_F,
+      const std::vector<BodyIndex>& body_indexes) const {
+    this->ValidateContext(context);
+    return internal_tree().CalcSpatialInertia(context, frame_F, body_indexes);
+  }
+
   /// Calculates system center of mass translational velocity in world frame W.
   /// @param[in] context The context contains the state of the model.
   /// @retval v_WScm_W Scm's translational velocity in frame W, expressed in W,

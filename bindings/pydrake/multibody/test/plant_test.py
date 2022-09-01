@@ -860,6 +860,11 @@ class TestPlant(unittest.TestCase):
             context=context, model_instances=[instance])
         self.assertTupleEqual(p_com.shape, (3, ))
 
+        M_WWo_W = plant.CalcSpatialInertia(
+            context=context, frame_F=world_frame,
+            body_indexes=[BodyIndex(0)])
+        self.assertIsInstance(M_WWo_W, SpatialInertia_[T])
+
         nq = plant.num_positions()
         nv = plant.num_velocities()
         wrt_list = [
