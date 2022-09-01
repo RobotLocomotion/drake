@@ -239,12 +239,14 @@ GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
       .CalcPoseInWorld(*context)
       .translation()
       .isApprox(Vector3d(1, 2, 3)));
+  // This transform includes the translation from the parent frame to the world
+  // and from the parent frame to the child frame (via add_weld::X_PC).
   EXPECT_TRUE(plant
       .GetFrameByName("base",
                       plant.GetModelInstanceByName("bottom_level_model"))
       .CalcPoseInWorld(*context)
       .translation()
-      .isApprox(Vector3d(2, 4, 6)));
+      .isApprox(Vector3d(6, 9, 12)));
 }
 
 // Test collision filter groups in ModelDirectives.
