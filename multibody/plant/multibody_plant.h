@@ -3791,7 +3791,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// joint, the kinematic influence is still felt even though dynamically
   /// there would be no influence on the outboard body.
   /// This function can be only be called post-finalize, see Finalize().
-  /// @throws std::exception if any of the given joint indexes is invalid.
+  /// @throws std::exception if any of the given joint indexes is invalid or
+  /// doesn't correspond to a mobilizer.
   std::vector<BodyIndex> GetBodiesAffectedBy(
       const std::vector<JointIndex>& joint_indexes) const;
 

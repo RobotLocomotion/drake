@@ -498,14 +498,15 @@ ModelInstanceIndex MultibodyTree<T>::GetModelInstanceByName(
 template <typename T>
 std::vector<BodyIndex> MultibodyTree<T>::GetBodiesAffectedBy(
     const std::vector<JointIndex>& joint_indexes) const {
-  // Collect all bodies immediately inboard and outboard of the joints.
+  // For each joint, get its mobilizer collect the corresponding outboard body.
   std::vector<BodyIndex> bodies;
   for (const JointIndex& joint : joint_indexes) {
-    bodies.emplace_back(get_joint(joint).child_body().index());
-    bodies.emplace_back(get_joint(joint).parent_body().index());
+    const MobilizerIndex mobilizer = get_joint_mobilizer(joint);
+    DRAKE_THROW_UNLESS(mobilizer.is_valid());
+    bodies.emplace_back(get_mobilizer(mobilizer).outboard_body().index());
   }
-  // Define T(b) as the set of bodies in the subtree of the spanning tree with
-  // body b. Collect all bodies in the set `T(b)-{b}` for each b in `bodies`.
+  // For all bodies b, collect bodies in the outboard subtree with b at the
+  // root.
   return topology_.GetTransitiveOutboardBodies(bodies);
 }
 

@@ -683,7 +683,7 @@ TEST_F(TreeTopologyTests, GetTransitiveOutboardBodies) {
 
   const std::vector<BodyIndex> body4{body4_index};
   std::vector<BodyIndex> expected_outboard_bodies{body1_index, body2_index,
-                                                  body6_index};
+                                                  body4_index, body6_index};
   EXPECT_EQ(topology.GetTransitiveOutboardBodies(body4),
             expected_outboard_bodies);
 
@@ -693,11 +693,15 @@ TEST_F(TreeTopologyTests, GetTransitiveOutboardBodies) {
 
   const std::vector<BodyIndex> body94{body9_index, body4_index};
   expected_outboard_bodies.emplace_back(body8_index);
+  expected_outboard_bodies.emplace_back(body9_index);
   EXPECT_EQ(topology.GetTransitiveOutboardBodies(body94),
             expected_outboard_bodies);
 
   const std::vector<BodyIndex> body6{body6_index};
-  EXPECT_TRUE(topology.GetTransitiveOutboardBodies(body6).empty());
+  expected_outboard_bodies.clear();
+  expected_outboard_bodies.emplace_back(body6_index);
+  EXPECT_EQ(topology.GetTransitiveOutboardBodies(body6),
+            expected_outboard_bodies);
 }
 
 // Unit test to verify the correctness of
