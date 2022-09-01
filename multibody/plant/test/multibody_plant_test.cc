@@ -1565,11 +1565,10 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesAffectedBy) {
   std::vector<BodyIndex> expected_bodies2{lower.index(), upper.index()};
   std::sort(expected_bodies2.begin(), expected_bodies2.end());
 
-  // Verify we can call GetBodiesAffectedBy() pre-finalize.
-  EXPECT_EQ(plant.GetBodiesAffectedBy(joints1), expected_bodies1);
-  EXPECT_EQ(plant.GetBodiesAffectedBy(joints2), expected_bodies2);
+  // Verify we can only call GetBodiesAffectedBy() post-finalize.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesAffectedBy(joints1),
+                              "Pre-finalize calls to .*GetBodiesAffectedBy.*");
 
-  // And post-finalize.
   plant.Finalize();
   EXPECT_EQ(plant.GetBodiesAffectedBy(joints1), expected_bodies1);
   EXPECT_EQ(plant.GetBodiesAffectedBy(joints2), expected_bodies2);

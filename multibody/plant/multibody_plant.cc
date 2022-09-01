@@ -807,15 +807,14 @@ std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
 template <typename T>
 std::vector<BodyIndex> MultibodyPlant<T>::GetBodiesAffectedBy(
     const std::vector<JointIndex>& joint_indexes) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   for (const JointIndex& joint : joint_indexes) {
     if (!joint.is_valid() || joint >= num_joints()) {
       throw std::logic_error(fmt::format(
           "{}: No joint with index {} has been registered.", __func__, joint));
     }
   }
-  const std::set<BodyIndex> bodies =
-      multibody_graph_.FindBodiesOutBoardOfJoints(joint_indexes);
-  return std::vector<BodyIndex>(bodies.begin(), bodies.end());
+  return internal_tree().GetBodiesAffectedBy(joint_indexes);
 }
 
 template <typename T>
