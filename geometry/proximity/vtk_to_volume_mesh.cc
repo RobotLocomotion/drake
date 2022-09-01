@@ -12,9 +12,13 @@
 
 namespace drake {
 namespace geometry {
+
+using Eigen::Vector3d;
+
 namespace internal {
 
-VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename) {
+VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
+                                       double scale) {
   vtkNew<vtkUnstructuredGridReader> reader;
   reader->SetFileName(filename.c_str());
   reader->Update();
@@ -26,7 +30,7 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename) {
   for (vtkIdType id = 0; id < num_vertices; id++) {
     double xyz[3];
     vtk_vertices->GetPoint(id, xyz);
-    vertices.emplace_back(xyz);
+    vertices.push_back(scale * Vector3d(xyz));
   }
 
   std::vector<VolumeElement> elements;

@@ -36,7 +36,33 @@ GTEST_TEST(VtkToVolumeMeshTest, KeepMeshIgnoreFieldVariables) {
   EXPECT_TRUE(volume_mesh.Equal(expected_mesh));
 }
 
-// TODO(DamrongGuoy) Add more tests like bogus file names or non-vtk files.
+GTEST_TEST(VtkToVolumeMeshTest, Scale) {
+  const std::string test_file =
+      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
+  // Scale from a one-meter object to a one-centimeter object.
+  const double kScale = 0.01;
+  VolumeMesh<double> volume_mesh = internal::ReadVtkToVolumeMesh(test_file,
+                                                                 kScale);
+
+  const VolumeMesh<double> expected_mesh{
+      {{0, 1, 2, 3}},
+      {kScale * Vector3d::Zero(), kScale * Vector3d::UnitX(),
+       kScale * Vector3d::UnitY(), kScale * Vector3d::UnitZ()}};
+  EXPECT_TRUE(volume_mesh.Equal(expected_mesh));
+}
+
+GTEST_TEST(VtkToVolumeMeshTest, BogusFileName) {
+  const std::string bogus_filename = "bogus_filename";
+  EXPECT_THROW(internal::ReadVtkToVolumeMesh(bogus_filename),
+               std::exception);
+}
+
+GTEST_TEST(VtkToVolumeMeshTest, WrongFileType) {
+  const std::string require_vtk_but_this_is_obj =
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
+  EXPECT_THROW(internal::ReadVtkToVolumeMesh(require_vtk_but_this_is_obj),
+               std::exception);
+}
 
 }  // namespace
 }  // namespace geometry

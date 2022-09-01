@@ -1342,6 +1342,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "vtk_to_volume_mesh_test",
     data = [
+        "//geometry:test_obj_files",
         "//geometry:test_vtk_files",
     ],
     deps = [
