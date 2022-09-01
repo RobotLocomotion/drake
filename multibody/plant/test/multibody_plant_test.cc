@@ -1558,6 +1558,10 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesAffectedBy) {
   const Body<double>& lower = plant.GetBodyByName("lower_section");
   const JointIndex shoulder = plant.GetJointByName("pin").index();
   const JointIndex elbow = plant.GetJointByName("weld").index();
+  // Add a new body, and weld it to the world body.
+  const Body<double>& extra = plant.AddRigidBody(
+      "extra", default_model_instance(), SpatialInertia<double>());
+  plant.WeldFrames(plant.world_frame(), extra.body_frame());
 
   const std::vector<JointIndex> joints1{elbow};
   const std::vector<BodyIndex> expected_bodies1{lower.index()};
