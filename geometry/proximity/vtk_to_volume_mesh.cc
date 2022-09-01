@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
 #include <vtkCellIterator.h>
 #include <vtkNew.h>
 #include <vtkUnstructuredGrid.h>
@@ -12,9 +13,18 @@
 
 namespace drake {
 namespace geometry {
+
+using Eigen::Vector3d;
+
 namespace internal {
 
-VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename) {
+VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
+                                       double scale) {
+  if (scale <= 0.0) {
+    throw std::runtime_error(
+        fmt::format("ReadVtkToVolumeMesh: scale={} is not a positive number",
+                    scale));
+  }
   vtkNew<vtkUnstructuredGridReader> reader;
   reader->SetFileName(filename.c_str());
   reader->Update();
@@ -26,7 +36,7 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename) {
   for (vtkIdType id = 0; id < num_vertices; id++) {
     double xyz[3];
     vtk_vertices->GetPoint(id, xyz);
-    vertices.emplace_back(xyz);
+    vertices.push_back(scale * Vector3d(xyz));
   }
 
   std::vector<VolumeElement> elements;
