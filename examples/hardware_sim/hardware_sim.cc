@@ -38,6 +38,7 @@ DEFINE_string(scenario_text, "{}",
 namespace drake {
 namespace {
 
+using internal::Scenario;
 using lcm::DrakeLcmInterface;
 using multibody::ModelInstanceIndex;
 using multibody::parsing::ModelInstanceInfo;
@@ -110,7 +111,7 @@ void Simulation::Simulate() {
 }
 
 int main() {
-  const Scenario scenario = LoadScenario(
+  const Scenario scenario = internal::LoadScenario(
       FLAGS_scenario_file, FLAGS_scenario_name, FLAGS_scenario_text);
   Simulation sim(scenario);
   sim.Setup();
