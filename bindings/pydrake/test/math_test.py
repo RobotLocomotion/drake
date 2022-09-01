@@ -174,7 +174,7 @@ class TestMath(unittest.TestCase):
         self.assertEqual((X @ v).shape, (3,))
         self.assertEqual((X @ v.reshape((3, 1))).shape, (3, 1))
         self.assertEqual((X @ vs).shape, (3, 2))
-        # - Test vector multiplication.
+        # - Test 3-element vector multiplication.
         R_AB = RotationMatrix([
             [0., 1, 0],
             [-1, 0, 0],
@@ -184,6 +184,11 @@ class TestMath(unittest.TestCase):
         p_BQ = [10, 20, 30]
         p_AQ = [21., -8, 33]
         numpy_compare.assert_float_equal(X_AB.multiply(p_BoQ_B=p_BQ), p_AQ)
+        # - Test 4-element vector multiplication.
+        p_BQ_vec4 = np.array([10, 20, 30, 1])
+        p_AQ_vec4 = np.array([21., -8, 33, 1])
+        numpy_compare.assert_float_equal(
+            X_AB.multiply(vec_B=p_BQ_vec4), p_AQ_vec4)
         # N.B. Remember that this takes ndarray[3, n], NOT ndarray[n, 3]!
         p_BQlist = np.array([p_BQ, p_BQ]).T
         p_AQlist = np.array([p_AQ, p_AQ]).T

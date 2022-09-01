@@ -123,6 +123,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("p_BoQ_B"), cls_doc.operator_mul.doc_1args_p_BoQ_B)
         .def(
             "multiply",
+            [](const Class* self, const Vector4<T>& vec_B) {
+              return *self * vec_B;
+            },
+            py::arg("vec_B"), cls_doc.operator_mul.doc_1args_vec_B)
+        .def(
+            "multiply",
             [](const Class* self, const Matrix3X<T>& p_BoQ_B) {
               return *self * p_BoQ_B;
             },

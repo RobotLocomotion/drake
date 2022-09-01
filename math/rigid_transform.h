@@ -513,16 +513,29 @@ class RigidTransform {
     return p_AoBo_A_ + R_AB_ * p_BoQ_B;
   }
 
-  /// Multiplies `this` %RigidTransform `X_AB` by the vector `vec_BoQ_B` which
-  /// is from Bo (B's origin) to an arbitrary point Q.
-  /// @param[in] vec_BoQ_B vector from Bo to Q, expressed in frame B.
-  /// @retval vec_AoQ_A vector from Ao to Q, expressed in frame A.
-  Vector4<T> operator*(const Vector4<T>& vec_BoQ_B) const {
-    Vector4<T> vec_AoQ_A;
-    vec_AoQ_A.head(3) =
-        (p_AoBo_A_ * vec_BoQ_B(3)) + (R_AB_ * vec_BoQ_B.head(3));
-    vec_AoQ_A(3) = vec_BoQ_B(3);
-    return vec_AoQ_A;
+  /// Multiplies `this` %RigidTransform `X_AB` by the 4-element vector
+  /// `vec_B`, equivalent to `X_AB.GetAsMatrix4() * vec_B`.
+  /// @param[in] vec_B 4-element vector whose first 3 elements are the position
+  /// vector p_BoQ_B from Bo (frame B's origin) to an arbitrary point Q,
+  /// expressed in frame B and whose 4ᵗʰ element is 1 𝐨𝐫 whose first 3 elements
+  /// are a vector (maybe unrelated to Bo or Q) and whose 4ᵗʰ element is 0.
+  /// @retval vec_A 4-element vector whose first 3 elements are the position
+  /// vector p_AoQ_A from Ao (frame A's origin) to Q, expressed in frame A and
+  /// whose 4ᵗʰ element is 1 𝐨𝐫 whose first 3 elements are a vector (maybe
+  /// unrelated to Bo and Q) and whose 4ᵗʰ element is 0.
+  /// @throws std::exception if the 4ᵗʰ element of vec_B is not 0 or 1.
+  Vector4<T> operator*(const Vector4<T>& vec_B) const {
+    if (vec_B(3) == 1 || vec_B(3) == 0) {
+      Vector4<T> vec_A;
+      vec_A.head(3) = (p_AoBo_A_ * vec_B(3)) + (R_AB_ * vec_B.head(3));
+      vec_A(3) = vec_B(3);
+      return vec_A;
+    } else {
+      throw std::logic_error(fmt::format(
+          "The 4th element in vector [{}, {}, {}, {}] passed to "
+          "RigidTransform::operator* is not 0 or 1.",
+          vec_B(0), vec_B(1), vec_B(2), vec_B(3)));
+    }
   }
 
   /// Multiplies `this` %RigidTransform `X_AB` by the n position vectors
