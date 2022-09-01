@@ -53,10 +53,6 @@ drake_cc_library(
     internal = True,
     visibility = [
         "//geometry/render_gltf_client:__pkg__",
-        # TODO(jwnimmer-tri) Remove this once the dev package is gone.
-        "//geometry/render/dev/render_gltf_client:__pkg__",
-        # TODO(jwnimmer-tri) Remove this after deprecation 2022-09-01.
-        "//geometry/render:__pkg__",
     ],
     deps = [
         ":internal_render_engine_vtk_base",
@@ -74,18 +70,12 @@ drake_cc_library(
     ],
 )
 
-# TODO(jwnimmer-tri) Remove this after deprecation 2022-09-01.
-exports_files(["internal_render_engine_vtk.h"])
-
 drake_cc_library(
     name = "internal_render_engine_vtk_base",
     srcs = ["internal_render_engine_vtk_base.cc"],
     hdrs = ["internal_render_engine_vtk_base.h"],
     internal = True,
-    visibility = [
-        # TODO(jwnimmer-tri) Switch to private after deprecation 2022-09-01.
-        "//geometry/render:__pkg__",
-    ],
+    visibility = ["//visibility:private"],
     deps = [
         "//common:scope_exit",
         "//geometry:geometry_roles",
@@ -100,10 +90,7 @@ drake_cc_library(
     srcs = ["internal_vtk_util.cc"],
     hdrs = ["internal_vtk_util.h"],
     internal = True,
-    visibility = [
-        # TODO(jwnimmer-tri) Switch to private after deprecation 2022-09-01.
-        "//geometry/render:__pkg__",
-    ],
+    visibility = ["//visibility:private"],
     deps = [
         "//common:essential",
         "//math:geometric_transform",
