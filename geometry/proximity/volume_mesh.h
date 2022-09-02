@@ -177,7 +177,9 @@ class VolumeMesh {
    */
   int num_vertices() const { return vertices_.size(); }
 
-  /** Calculates volume of a tetrahedral element.
+  /** Calculates volume of a tetrahedral element. It is a signed volume, i.e.,
+   it can be negative depending on the order of the four vertices of the
+   tetrahedron.
    @pre `f ∈ [0, num_elements())`.
    */
   T CalcTetrahedronVolume(int e) const {
@@ -194,7 +196,6 @@ class VolumeMesh {
     // b, c. With this convention, the computed volume will be positive,
     // otherwise negative.
     const T volume = (d - a).dot((b - a).cross(c - a)) / T(6.0);
-    DRAKE_ASSERT(volume > T(0));
     return volume;
   }
 
