@@ -48,7 +48,6 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:value_pybind",
         "//common:nice_type_name_override_header",
     ],

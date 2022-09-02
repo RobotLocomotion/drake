@@ -92,8 +92,8 @@ int main(int argc, char** argv) {
 
     with open(join(scratch_dir, "find_resource_test.py"), "w") as f:
         f.write("""
-from pydrake.common import FindResourceOrThrow, set_log_level
-set_log_level("trace")
+from pydrake.common import FindResourceOrThrow, _set_log_level
+_set_log_level("trace")
 FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf")
 """)
 

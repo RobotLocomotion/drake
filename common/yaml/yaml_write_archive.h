@@ -16,7 +16,6 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/yaml/yaml_node.h"
@@ -363,10 +362,5 @@ class YamlWriteArchive final {
 };
 
 }  // namespace internal
-
-using YamlWriteArchive
-    DRAKE_DEPRECATED("2022-09-01", "Use the yaml_io.h functions instead")
-    = internal::YamlWriteArchive;
-
 }  // namespace yaml
 }  // namespace drake

@@ -46,7 +46,6 @@ drake_pybind_library(
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:cpp_param_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:value_pybind",
     ],

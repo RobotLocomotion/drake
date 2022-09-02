@@ -91,15 +91,6 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "yaml_deprecation_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":yaml_read_archive",
-        ":yaml_write_archive",
-    ],
-)
-
-drake_cc_googletest(
     name = "yaml_doxygen_test",
     deps = [
         ":yaml_io",

@@ -8,7 +8,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -995,14 +994,6 @@ PYBIND11_MODULE(symbolic, m) {
       // Logical comparison
       .def(py::self == py::self)
       .def(py::self != py::self);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  polynomial_cls.def("EqualToAfterExpansion",
-      WrapDeprecated(doc.Polynomial.EqualToAfterExpansion.doc_deprecated,
-          &Polynomial::EqualToAfterExpansion),
-      doc.Polynomial.EqualToAfterExpansion.doc_deprecated);
-#pragma GCC diagnostic pop
 
   m.def(
       "Evaluate",
