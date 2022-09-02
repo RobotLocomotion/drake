@@ -3,6 +3,7 @@
 #include <limits>
 
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
+#include "drake/multibody/inverse_kinematics/angle_between_vectors_cost.h"
 #include "drake/multibody/inverse_kinematics/distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
@@ -119,6 +120,15 @@ InverseKinematics::AddAngleBetweenVectorsConstraint(
       &plant_, frameA, na_A, frameB, nb_B, angle_lower, angle_upper,
       get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
+}
+
+solvers::Binding<solvers::Cost> InverseKinematics::AddAngleBetweenVectorsCost(
+    const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& na_A,
+    const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& nb_B,
+    double c) {
+  auto cost = std::make_shared<AngleBetweenVectorsCost>(
+      &plant_, frameA, na_A, frameB, nb_B, c, get_mutable_context());
+  return prog_->AddCost(cost, q_);
 }
 
 solvers::Binding<solvers::Constraint>
