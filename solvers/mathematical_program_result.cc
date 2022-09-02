@@ -176,7 +176,7 @@ MathematicalProgramResult::GetInfeasibleConstraints(
           val(i) > constraint->upper_bound()(i) + *tolerance ||
           val(i) < constraint->lower_bound()(i) - *tolerance) {
         infeasible_bindings.push_back(binding);
-        continue;
+        break;
       }
     }
   }
