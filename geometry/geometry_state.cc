@@ -1027,6 +1027,33 @@ int GeometryState<T>::RemoveFromRenderer(const std::string& renderer_name,
   return RemoveFromRendererUnchecked(renderer_name, geometry_id) ? 1 : 0;
 }
 
+namespace {
+
+void ThrowForNonProximity(const internal::InternalGeometry& g,
+                          const char* purpose) {
+  if (!g.has_proximity_role()) {
+    const char* role_description =
+        g.has_illustration_role()
+            ? "the illustration role"
+            : (g.has_perception_role() ? "the perception role" : "no role");
+    throw std::logic_error(
+        fmt::format("The geometry {} cannot be used in {}; it does not have a "
+                    "proximity role. It has {}.",
+                    g.id(), purpose, role_description));
+  }
+}
+
+}  // namespace
+
+template <typename T>
+SignedDistancePair<T> GeometryState<T>::ComputeSignedDistancePairClosestPoints(
+      GeometryId id_A, GeometryId id_B) const {
+    ThrowForNonProximity(GetValueOrThrow(id_A, geometries_), __func__);
+    ThrowForNonProximity(GetValueOrThrow(id_B, geometries_), __func__);
+    return geometry_engine_->ComputeSignedDistancePairClosestPoints(
+        id_A, id_B, kinematics_data_.X_WGs);
+  }
+
 template <typename T>
 void GeometryState<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
