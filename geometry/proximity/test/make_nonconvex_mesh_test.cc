@@ -1,0 +1,58 @@
+#include "drake/geometry/proximity/make_nonconvex_mesh.h"
+
+#include <gtest/gtest.h>
+
+#include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
+
+namespace drake {
+namespace geometry {
+namespace internal {
+namespace {
+
+using Eigen::Vector3d;
+
+GTEST_TEST(MakeNonConvexVolumeMeshTest, ScaleDouble) {
+  Mesh mesh_specification(
+      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
+      0.5);
+
+  VolumeMesh<double> volume_mesh =
+      MakeNonConvexVolumeMeshFromVtk<double>(mesh_specification);
+
+  const VolumeMesh<double> expected_mesh{
+      {{0, 1, 2, 3}},
+      {0.5 * Vector3d::Zero(), 0.5 * Vector3d::UnitX(),
+       0.5 * Vector3d::UnitY(), 0.5 * Vector3d::UnitZ()}};
+  EXPECT_TRUE(volume_mesh.Equal(expected_mesh));
+}
+
+GTEST_TEST(MakeNonConvexVolumeMeshTest, AutoDiff) {
+  Mesh mesh_specification(
+      FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"));
+
+  VolumeMesh<AutoDiffXd> volume_mesh =
+      MakeNonConvexVolumeMeshFromVtk<AutoDiffXd>(mesh_specification);
+
+  const VolumeMesh<AutoDiffXd> expected_mesh{
+      {{0, 1, 2, 3}},
+      {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
+       Vector3d::UnitZ()}};
+  EXPECT_TRUE(volume_mesh.Equal(expected_mesh));
+}
+
+GTEST_TEST(MakeNonConvexVolumeMeshTest, NegativeVolumeThrow) {
+  Mesh negative_mesh_specification(
+      FindResourceOrThrow("drake/geometry/test/one_negative_tetrahedron.vtk"),
+      0.5);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeNonConvexVolumeMeshFromVtk<double>(negative_mesh_specification),
+      "MakeNonConvexVolumeMeshFromVtk: negative-volume tetrahedron.*");
+}
+
+
+}  // namespace
+}  // namespace internal
+}  // namespace geometry
+}  // namespace drake
