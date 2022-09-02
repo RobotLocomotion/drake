@@ -36,6 +36,7 @@ using drake::multibody::MultibodyPlant;
 using drake::multibody::PackageMap;
 using drake::multibody::Parser;
 using drake::yaml::LoadYamlFile;
+using drake::yaml::LoadYamlString;
 
 namespace {
 
@@ -258,6 +259,20 @@ ModelDirectives LoadModelDirectives(const std::string& filename) {
   const ModelDirectives defaults;
   const auto directives = LoadYamlFile<ModelDirectives>(
       filename, std::nullopt /* child_name */, defaults);
+  DRAKE_DEMAND(directives.IsValid());
+  return directives;
+}
+
+ModelDirectives LoadModelDirectivesFromString(
+    const std::string& model_directives) {
+  // Even though the 'defaults' we use to start parsing here are empty, by
+  // providing any defaults at all, the effect during parsing will be that
+  // any of the users' ModelDirective structs and sub-structs will _also_
+  // start from their default values and allow for overwriting only a subset
+  // of the data fields instead of requiring that the user provide them all.
+  const ModelDirectives defaults;
+  const auto directives = LoadYamlString<ModelDirectives>(
+      model_directives, std::nullopt /* child_name */, defaults);
   DRAKE_DEMAND(directives.IsValid());
   return directives;
 }

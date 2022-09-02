@@ -4,6 +4,7 @@ from pydrake.multibody.parsing import (
     Parser,
     PackageMap,
     LoadModelDirectives,
+    LoadModelDirectivesFromString,
     ProcessModelDirectives,
     ModelInstanceInfo,
     AddFrame,
@@ -147,6 +148,15 @@ class TestParsing(unittest.TestCase):
         directives_file = model_dir + "/add_scoped_top.dmd.yaml"
         directives = LoadModelDirectives(directives_file)
         return (plant, parser, directives)
+
+    def test_load_model_directives_from_string(self):
+        str = """
+directives:
+- add_model:
+    name: new_model
+    file: base.sdf
+"""
+        LoadModelDirectivesFromString(model_directives=str)
 
     def test_process_model_directives(self):
         """Check the Process... overload using a Parser."""

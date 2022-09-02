@@ -15,6 +15,9 @@ namespace parsing {
 
 ModelDirectives LoadModelDirectives(const std::string& filename);
 
+ModelDirectives LoadModelDirectivesFromString(
+    const std::string& model_directives);
+
 /// Converts URIs into filesystem absolute paths.
 ///
 /// ModelDirectives refer to their resources by URIs like
