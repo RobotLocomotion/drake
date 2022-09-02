@@ -1088,7 +1088,7 @@ GTEST_TEST(WeldedBodies, NoErrorIfBodyHasInertiaDueToWeldedBody) {
 
 // Verify MultibodyTree::ThrowDefaultMassInertiaError() does not throw an
 // exception if a zero-mass body is not the most distal body in the tree.
-GTEST_TEST(WeldedBodies, NoThrowErrorIfZeroMassBodyIsNotDistal) {
+GTEST_TEST(TestDistalBody, NoThrowErrorIfZeroMassBodyIsNotDistal) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
   const double mA = 0, mB = 0, mC = 0, mD = 1;  // Mass of links A, B, C, D.
@@ -1124,7 +1124,7 @@ GTEST_TEST(WeldedBodies, NoThrowErrorIfZeroMassBodyIsNotDistal) {
 
 // Verify MultibodyTree::ThrowDefaultMassInertiaError() does not throw an
 // exception if a zero-inertia body is not the most distal body in the tree.
-GTEST_TEST(WeldedBodies, NoThrowErrorIfZeroInertiaBodyIsNotDistal) {
+GTEST_TEST(TestDistalBody, NoThrowErrorIfZeroInertiaBodyIsNotDistal) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
   const double mA = 0, mB = 1;  // Mass of link A or B.
