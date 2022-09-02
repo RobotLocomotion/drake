@@ -2493,6 +2493,13 @@ class MultibodyTree {
 
   // Throw an exception if there are bodies whose default mass or inertia
   // properties will cause subsequent numerical problems.
+  // Note: This function is in MultibodyTree since it utilizes
+  // MultibodyTreeTopology::CreateListOfWeldedBodies(), it may be possible (and
+  // desirable) to move this function to MultibodyPlant and instead utilize
+  // MultibodyGraph::FindSubgraphsOfWeldedBodies(). The decision to put this
+  // in MultibodyTree instead of MultibodyPlant is somewhat arbitrary and due to
+  // my familiarity with a "tree" of bodies (nodes) connected by mobilizers
+  // (edges) versus a "graph" of bodies (nodes) connected by joints (edges).
   void ThrowDefaultMassInertiaError() const;
 
  private:
