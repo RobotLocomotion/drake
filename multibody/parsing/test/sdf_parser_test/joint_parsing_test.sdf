@@ -2,7 +2,7 @@
 <!--
 Defines an SDF model with various types of joints used for testing the parser.
 -->
-<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
+<sdf xmlns:drake="http://drake.mit.edu" version="1.10">
   <world name="joint_parsing_test_world">
     <model name="joint_parsing_test">
       <link name="link1">
@@ -214,6 +214,30 @@ Defines an SDF model with various types of joints used for testing the parser.
           <dynamics>
             <spring_reference>0</spring_reference>
             <spring_stiffness>0</spring_stiffness>
+          </dynamics>
+        </axis>
+      </joint>
+      <link name="link9">
+        <inertial>
+          <mass>1</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.1</iyy>
+            <iyz>0</iyz>
+            <izz>0.1</izz>
+          </inertia>
+        </inertial>
+      </link>
+      <joint name="screw_joint" type="screw">
+        <child>link9</child>
+        <parent>link8</parent>
+        <screw_thread_pitch>0.04</screw_thread_pitch>
+        <axis>
+          <xyz expressed_in="__model__">1 0 0</xyz>
+          <dynamics>
+            <damping>0.1</damping>
           </dynamics>
         </axis>
       </joint>

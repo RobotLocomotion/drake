@@ -32,6 +32,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/systems/framework/context.h"
 
@@ -986,6 +987,28 @@ TEST_F(SdfParserTest, JointParsingTest) {
       CompareMatrices(continuous_joint.acceleration_lower_limits(), neg_inf));
   EXPECT_TRUE(
       CompareMatrices(continuous_joint.acceleration_upper_limits(), inf));
+
+  // Screw joint
+  DRAKE_EXPECT_NO_THROW(
+      plant_.GetJointByName<ScrewJoint>("screw_joint", instance1));
+  const ScrewJoint<double>& screw_joint =
+      plant_.GetJointByName<ScrewJoint>("screw_joint", instance1);
+  EXPECT_EQ(screw_joint.name(), "screw_joint");
+  EXPECT_EQ(screw_joint.parent_body().name(), "link8");
+  EXPECT_EQ(screw_joint.child_body().name(), "link9");
+  EXPECT_EQ(screw_joint.screw_axis(), Vector3d::UnitX());
+  EXPECT_EQ(screw_joint.screw_pitch(), 0.04);
+  EXPECT_EQ(screw_joint.damping(), 0.1);
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.position_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(screw_joint.position_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.velocity_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(screw_joint.velocity_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.acceleration_lower_limits(), neg_inf));
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.acceleration_upper_limits(), inf));
 }
 
 // Tests the error handling for an unsupported joint type (when actuated).
@@ -1113,21 +1136,6 @@ TEST_F(SdfParserTest, ActuatedBallJointParsingTest) {
 </model>)""");
   EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
       ".*effort limits.*ball joint.*not implemented.*"));
-  ClearDiagnostics();
-}
-
-// Tests the error handling for an unsupported joint type.
-TEST_F(SdfParserTest, ScrewJointParsingTest) {
-  ParseTestString(R"""(
-<model name="molly">
-  <link name="larry" />
-  <joint name="jerry" type="screw">
-    <parent>world</parent>
-    <child>larry</child>
-  </joint>
-</model>)""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
-      ".*screw.*not supported.*jerry.*"));
   ClearDiagnostics();
 }
 

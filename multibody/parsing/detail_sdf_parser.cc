@@ -35,6 +35,7 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
+#include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/universal_joint.h"
@@ -311,6 +312,7 @@ Vector3d ExtractJointAxis(
     const sdf::Joint& joint_spec) {
   unused(model_spec);
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
+               joint_spec.Type() == sdf::JointType::SCREW ||
                joint_spec.Type() == sdf::JointType::PRISMATIC ||
                joint_spec.Type() == sdf::JointType::CONTINUOUS);
 
@@ -358,6 +360,7 @@ double ParseJointDamping(
     const sdf::Joint& joint_spec) {
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC ||
+      joint_spec.Type() == sdf::JointType::SCREW ||
       joint_spec.Type() == sdf::JointType::UNIVERSAL ||
       joint_spec.Type() == sdf::JointType::BALL ||
       joint_spec.Type() == sdf::JointType::CONTINUOUS);
@@ -425,6 +428,7 @@ void AddJointActuatorFromSpecification(
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::BALL ||
+               joint_spec.Type() == sdf::JointType::SCREW ||
                joint_spec.Type() == sdf::JointType::UNIVERSAL ||
                joint_spec.Type() == sdf::JointType::PRISMATIC ||
                joint_spec.Type() == sdf::JointType::REVOLUTE ||
@@ -463,7 +467,7 @@ void AddJointActuatorFromSpecification(
     return;
   }
 
-  // Prismatic, revolute, and continuous joints have a single axis.
+  // Prismatic, screw, revolute, and continuous joints have a single axis.
   const double effort_limit = GetEffortLimit(diagnostic, joint_spec, 0);
   if (effort_limit != 0) {
     const JointActuator<double>& actuator =
@@ -602,7 +606,8 @@ void AddJointFromSpecification(
     "drake:rotor_inertia",
     "drake:gear_ratio",
     "parent",
-    "pose"};
+    "pose",
+    "screw_thread_pitch"};
   CheckSupportedElements(diagnostic, joint_spec.Element(),
                          supported_joint_elements);
 
@@ -762,10 +767,16 @@ void AddJointFromSpecification(
       break;
     }
     case sdf::JointType::SCREW: {
-      // TODO(jwnimmer-tri) Use a multibody::ScrewJoint here.
-      diagnostic.Error(fmt::format(
-          "Joint type (screw) not supported for joint '{}'.",
-          joint_spec.Name()));
+      const double damping = ParseJointDamping(diagnostic, joint_spec);
+      // The ScrewThreadPitch() API uses the same representation as
+      // Drake's ScrewJoint class (meters / revolution, right-handed).
+      const double screw_thread_pitch = joint_spec.ScrewThreadPitch();
+      Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
+      const auto& joint = plant->AddJoint<ScrewJoint>(
+          joint_spec.Name(),
+          parent_body, X_PJ,
+          child_body, X_CJ, axis_J, screw_thread_pitch, damping);
+      AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::GEARBOX: {
