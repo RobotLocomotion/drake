@@ -1065,7 +1065,7 @@ GTEST_TEST(WeldedBodies, NoErrorIfCompositeBodyHasMassDueToWeldedBody) {
 
 // Verify MultibodyTree::ThrowDefaultMassInertiaError() does not throw exception
 // if a sole composite rigid body has non-zero inertia (due to a weld).
-GTEST_TEST(WeldedBodies, NoErrorIfBodyHasInertiaDueToWeldedBody) {
+GTEST_TEST(WeldedBodies, NoErrorIfCompositeBodyHasInertiaDueToWeldedBody) {
   // Create a model and add a few rigid bodies.
   MultibodyTree<double> model;
   const double mA = 0, mB = 1;  // Mass of link A or B.
@@ -1073,8 +1073,8 @@ GTEST_TEST(WeldedBodies, NoErrorIfBodyHasInertiaDueToWeldedBody) {
   const RigidBody<double>& body_A = AddCubicalLink(&model, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
 
-  // Add a prismatic joint from the world body to bodyA (bodyA has no inertia).
-  AddPrismaticJointX(&model, "WA_prismatic_joint", model.world_body(), body_A);
+  // Add a revolute joint between the world body and bodyA.
+  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_body(), body_A);
 
   // Add a weld joint between bodyA and bodyB (bodyB has non-zero inertia).
   AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
