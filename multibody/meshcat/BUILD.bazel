@@ -62,6 +62,14 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "hydroelastic_contact_visualizer_test",
+    deps = [
+        ":hydroelastic_contact_visualizer",
+        "//common/test_utilities:expect_no_throw",
+    ],
+)
+
 drake_cc_library(
     name = "contact_visualizer_params",
     hdrs = ["contact_visualizer_params.h"],
