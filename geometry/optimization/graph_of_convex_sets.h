@@ -456,6 +456,21 @@ class GraphOfConvexSets {
   std::set<EdgeId> PreprocessShortestPath(VertexId source_id,
                                           VertexId target_id) const;
 
+  // Adds a perspective constraint to the mathematical program to upper bound
+  // the cost below a slack variable. `vars` consists of the slack variable ℓ, ϕ
+  // and ϕ times the variables in the original cost.
+  void AddPerspectiveCost(solvers::MathematicalProgram* prog,
+                          const solvers::Binding<solvers::Cost>& binding,
+                          const solvers::VectorXDecisionVariable& vars) const;
+
+  // Adds a perspective version of the constraint to the mathematical program
+  // where `vars` consists of ϕ and ϕ times the variables in the original
+  // constraint.
+  void AddPerspectiveConstraint(
+      solvers::MathematicalProgram* prog,
+      const solvers::Binding<solvers::Constraint>& binding,
+      const solvers::VectorXDecisionVariable& vars) const;
+
   std::map<VertexId, std::unique_ptr<Vertex>> vertices_{};
   std::map<EdgeId, std::unique_ptr<Edge>> edges_{};
 };
