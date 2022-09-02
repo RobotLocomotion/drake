@@ -3907,6 +3907,63 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
                          make_unique<DummyRenderEngine>());
 }
 
+// The ComputeSignedDistancePairClosestPoints() API requires the user to provide
+// GeometryIds, increasing the odds that they pick and pass the *wrong* ids.
+// Rather than simply declaring "wrong", we attempt to give them additional
+// guidance about what way it is wrong -- users have been confused about why
+// an apparently valid GeometryId is rejected. The answer: it has the wrong
+// role. Let's confirm we're getting the messages we expect.
+TEST_F(GeometryStateTest, ComputeSignedDistancePairClosestPointsError) {
+  SetUpSingleSourceTree();
+  // GeometryIds 0 & 1 get proximity properties.
+  const GeometryId proximity1 = geometries_[0];
+  geometry_state_.AssignRole(source_id_, proximity1, ProximityProperties());
+  const GeometryId proximity2 = geometries_[1];
+  geometry_state_.AssignRole(source_id_, proximity2, ProximityProperties());
+  // GeometryId 2 gets illustration.
+  const GeometryId illus = geometries_[2];
+  geometry_state_.AssignRole(source_id_, illus, IllustrationProperties());
+  // GeometryId 3 gets perception.
+  const GeometryId percep = geometries_[3];
+  PerceptionProperties p = render_engine_->accepting_properties();
+  p.AddProperty("label", "id", RenderLabel(10));
+  geometry_state_.AssignRole(source_id_, percep, p);
+  // Geometry 4 has no role.
+  const GeometryId no_role = geometries_[4];
+  const GeometryId bad_id = GeometryId::get_new_id();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeSignedDistancePairClosestPoints(proximity1,
+                                                             bad_id),
+      ".*has not been registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeSignedDistancePairClosestPoints(bad_id,
+                                                             proximity1),
+      ".*has not been registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeSignedDistancePairClosestPoints(no_role,
+                                                             proximity1),
+      ".*has no role.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeSignedDistancePairClosestPoints(proximity1,
+                                                             no_role),
+      ".*has no role.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeSignedDistancePairClosestPoints(proximity1, illus),
+      ".*has the illustration role.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeSignedDistancePairClosestPoints(illus, proximity1),
+      ".*has the illustration role.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeSignedDistancePairClosestPoints(proximity1,
+                                                             percep),
+      ".*has the perception role.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ComputeSignedDistancePairClosestPoints(percep,
+                                                             proximity1),
+      ".*has the perception role.");
+}
+
 // Test the ability of GeometryState to successfully report geometries with
 // *mesh* hydroelastic representations. We test the following cases:
 //   Case: invalid id.
