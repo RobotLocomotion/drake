@@ -2,7 +2,6 @@
 
 #include <optional>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
 #include "drake/geometry/render/render_label.h"
@@ -35,12 +34,5 @@ struct RenderEngineVtkParams  {
   Eigen::Vector3d default_clear_color{204 / 255., 229 / 255., 255 / 255.};
 };
 
-namespace render {
-
-using RenderEngineVtkParams
-    DRAKE_DEPRECATED("2022-09-01", "Use the geometry namespace instead.")
-    = geometry::RenderEngineVtkParams;
-
-}  // namespace render
 }  // namespace geometry
 }  // namespace drake

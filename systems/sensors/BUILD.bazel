@@ -300,7 +300,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/yaml:yaml_io",
-        "//geometry/render/gl_renderer",
+        "//geometry/render_gl",
         "@fmt",
     ],
 )

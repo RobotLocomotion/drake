@@ -3,7 +3,6 @@
 #include <memory>
 #include <optional>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 
@@ -78,11 +77,5 @@ namespace geometry {
 std::unique_ptr<render::RenderEngine> MakeRenderEngineVtk(
     const RenderEngineVtkParams& params);
 
-namespace render {
-
-DRAKE_DEPRECATED("2022-09-01", "Use the geometry namespace instead.")
-constexpr auto MakeRenderEngineVtk = &geometry::MakeRenderEngineVtk;
-
-}  // namespace render
 }  // namespace geometry
 }  // namespace drake

@@ -14,17 +14,17 @@ load(
     "drake_cc_library_ubuntu_only",
 )
 
-# This gl_renderer package is only implemented on Ubuntu.  For macOS, only the
-# render_engine_gl_factory is available and it will always throw an exception.
-# For Ubuntu, the factory is the sole public entry point, even though the
-# implementation is made up of several other distinct components.
+# This render_gl package is only implemented on Ubuntu.  For macOS, only the
+# factory is available and it will always throw an exception.  For Ubuntu, the
+# factory is the sole public entry point, even though the implementation is
+# made up of several other distinct components.
 #
 # Because the components are only conditionally available, and because we do
 # not want Drake's installed headers to depend on GL headers, we only install
-# the header for render_engine_gl_factory and nothing else.
+# the header for the factory and nothing else.
 #
-# Similarly, only the package-level library //geometry/render/gl_renderer is
-# public as a Bazel target; all of the other targets are private.
+# Similarly, only the package-level library //geometry/render_gl is public as a
+# Bazel target; all of the other targets are private.
 
 package(default_visibility = ["//visibility:private"])
 
