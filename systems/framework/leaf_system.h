@@ -870,7 +870,7 @@ class LeafSystem : public System<T> {
 
   @see DeclareInitializationPublishEvent()
   @see DeclareInitializationDiscreteUpdateEvent()
-  @see DeclareInitializationUnrestrictedUpdate()
+  @see DeclareInitializationUnrestrictedUpdateEvent()
 
   See @ref declare_initialization_events "Declare initialization events" for
   more information.
