@@ -17,6 +17,7 @@
 #include "drake/visualization/visualization_config.h"
 
 namespace drake {
+namespace internal {
 
 /* Defines the YAML format for a (possibly stochastic) scenario to be
 simulated. */
@@ -86,4 +87,5 @@ std::string SaveScenario(
     const std::string& scenario_name,
     bool verbose = false);
 
+}  // namespace internal
 }  // namespace drake
