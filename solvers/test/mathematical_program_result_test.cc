@@ -268,25 +268,35 @@ GTEST_TEST(TestMathematicalProgramResult, GetInfeasibleConstraintNames) {
 
 GTEST_TEST(TestMathematicalProgramResult, GetInfeasibleConstraintBindings) {
   MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2>();
-  auto constraint1 = prog.AddBoundingBoxConstraint(0, 0, x);
-  auto constraint2 = prog.AddBoundingBoxConstraint(1, 1, x);
+  auto x = prog.NewContinuousVariables<3>();
+  auto constraint1 = prog.AddBoundingBoxConstraint(
+      Eigen::Vector2d::Zero(), Eigen::Vector2d::Zero(), x.head<2>());
+  auto constraint2 = prog.AddBoundingBoxConstraint(
+      Eigen::Vector3d::Ones(), Eigen::Vector3d::Ones(), x);
   SnoptSolver solver;
   if (solver.is_available()) {
     const auto result = solver.Solve(prog);
     EXPECT_FALSE(result.is_success());
-    const std::vector<Binding<Constraint>> infeasible_bindings =
+    using Bindings = std::vector<Binding<Constraint>>;
+    const Bindings infeasible_bindings =
         result.GetInfeasibleConstraints(prog);
-    const std::unordered_set<Binding<Constraint>> infeasible_bindings_set(
-        infeasible_bindings.begin(), infeasible_bindings.end());
     const double x_val = result.GetSolution(x)(0);
-    EXPECT_TRUE(infeasible_bindings_set.size() == 1 ||
-                infeasible_bindings.size() == 2);
-    if (std::abs(x_val) > 1e-4) {
-      EXPECT_GT(infeasible_bindings_set.count(constraint1), 0);
-    }
-    if (std::abs(x_val - 1) > 1e-4) {
-      EXPECT_GT(infeasible_bindings_set.count(constraint2), 0);
+
+    // Ensure our best-effort solution is one of two possible values.
+    const double tol = 1e-4;
+    const bool satisfies_constraint1 = std::abs(x_val) < tol;
+    const bool satisfies_constraint2 = std::abs(x_val - 1) < tol;
+    EXPECT_TRUE(satisfies_constraint1 || satisfies_constraint2);
+
+    if (satisfies_constraint1) {
+      const Bindings bindings_expected = {constraint2};
+      EXPECT_EQ(infeasible_bindings, bindings_expected);
+    } else if (satisfies_constraint2) {
+      const Bindings bindings_expected = {constraint1};
+      EXPECT_EQ(infeasible_bindings, bindings_expected);
+    } else {
+      ADD_FAILURE()
+          << "Best-effort solution should satisfy one of the constraints";
     }
     // If I relax the tolerance, then GetInfeasibleConstraintBindings returns an
     // empty vector.
