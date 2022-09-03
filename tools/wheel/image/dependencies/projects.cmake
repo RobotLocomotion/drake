@@ -56,13 +56,6 @@ set(libtiff_url "http://download.osgeo.org/libtiff/tiff-${libtiff_version}.tar.g
 set(libtiff_md5 "2165e7aba557463acc0664e71a3ed424")
 list(APPEND ALL_PROJECTS libtiff)
 
-# tinyxml2
-set(tinyxml2_version 7.0.1)
-set(tinyxml2_url "https://github.com/leethomason/tinyxml2/archive/${tinyxml2_version}.zip")
-set(tinyxml2_md5 "03ad292c4b6454702c0cc22de0d196ad")
-set(tinyxml2_dlname "tinyXML2.zip")
-list(APPEND ALL_PROJECTS tinyxml2)
-
 # msgpack
 set(msgpack_version 3.1.0)
 set(msgpack_url "https://github.com/msgpack/msgpack-c/releases/download/cpp-${msgpack_version}/msgpack-${msgpack_version}.tar.gz")
