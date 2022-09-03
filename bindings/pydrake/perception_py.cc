@@ -118,10 +118,14 @@ void init_perception(py::module m) {
             [](PointCloud* self, const PointCloud& other) {
               self->SetFrom(other);
             },
-            py::arg("other"), cls_doc.SetFrom.doc);
+            py::arg("other"), cls_doc.SetFrom.doc)
+        .def("Crop", &Class::Crop, py::arg("lower_xyz"), py::arg("upper_xyz"),
+            cls_doc.Crop.doc);
   }
 
   AddValueInstantiation<PointCloud>(m);
+
+  m.def("Concatenate", &Concatenate, py::arg("clouds"), doc.Concatenate.doc);
 
   {
     using Class = DepthImageToPointCloud;
