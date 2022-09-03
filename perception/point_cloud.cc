@@ -6,6 +6,7 @@
 #include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 
 using Eigen::Map;
 using Eigen::NoChange;
@@ -316,6 +317,65 @@ void PointCloud::RequireExactFields(
                     "\nExpected {}, got {}",
                     fields_in, fields()));
   }
+}
+
+PointCloud PointCloud::Crop(const Eigen::Ref<const Vector3<T>>& lower_xyz,
+                            const Eigen::Ref<const Vector3<T>>& upper_xyz) {
+  DRAKE_DEMAND((lower_xyz.array() <= upper_xyz.array()).all());
+  if (!has_xyzs()) {
+    throw std::runtime_error("PointCloud must have xyzs in order to Crop");
+  }
+  PointCloud crop(size_, fields(), true);
+  int index = 0;
+  for (int i = 0; i < size_; ++i) {
+    if (((xyzs().col(i).array() >= lower_xyz.array()) &&
+         (xyzs().col(i).array() <= upper_xyz.array()))
+            .all()) {
+      crop.mutable_xyzs().col(index) = xyzs().col(i);
+      if (has_normals()) {
+        crop.mutable_normals().col(index) = normals().col(i);
+      }
+      if (has_rgbs()) {
+        crop.mutable_rgbs().col(index) = rgbs().col(i);
+      }
+      if (has_descriptors()) {
+        crop.mutable_descriptors().col(index) = descriptors().col(i);
+      }
+      ++index;
+    }
+  }
+  crop.resize(index);
+  return crop;
+}
+
+PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
+  const int num_clouds = clouds.size();
+  DRAKE_DEMAND(num_clouds >= 1);
+  int count = clouds[0].size();
+  for (int i = 1; i < num_clouds; ++i) {
+    DRAKE_THROW_UNLESS(clouds[i].fields() == clouds[0].fields());
+    count += clouds[i].size();
+  }
+  PointCloud new_cloud(count, clouds[0].fields(), true);
+  int index = 0;
+  for (int i = 0; i < num_clouds; ++i) {
+    const int s = clouds[i].size();
+    if (new_cloud.has_normals()) {
+      new_cloud.mutable_xyzs().middleCols(index, s) = clouds[i].xyzs();
+    }
+    if (new_cloud.has_normals()) {
+      new_cloud.mutable_normals().middleCols(index, s) = clouds[i].normals();
+    }
+    if (new_cloud.has_rgbs()) {
+      new_cloud.mutable_rgbs().middleCols(index, s) = clouds[i].rgbs();
+    }
+    if (new_cloud.has_descriptors()) {
+      new_cloud.mutable_descriptors().middleCols(index, s) =
+          clouds[i].descriptors();
+    }
+    index += s;
+  }
+  return new_cloud;
 }
 
 }  // namespace perception

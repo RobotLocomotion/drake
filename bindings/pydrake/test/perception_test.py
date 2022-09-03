@@ -82,6 +82,15 @@ class TestPerception(unittest.TestCase):
         # Test Systems' value registration.
         self.assertIsInstance(AbstractValue.Make(pc), Value[mut.PointCloud])
 
+        pc = mut.PointCloud(new_size=2, fields=mut.Fields(mut.BaseField.kXYZs))
+        test_xyzs = [[1., 2., 3.], [4., 5., 6.]]
+        pc.mutable_xyzs().T[:] = test_xyzs
+        crop = pc.Crop(lower_xyz=[3, 4, 5], upper_xyz=[5, 6, 7])
+        self.assertEqual(crop.size(), 1)
+
+        pc_merged = mut.Concatenate(clouds=[pc, pc_new])
+        self.assertEqual(pc_merged.size(), pc.size() + pc_new.size())
+
     def test_depth_image_to_point_cloud_api(self):
         camera_info = CameraInfo(width=640, height=480, fov_y=np.pi / 4)
         dut = mut.DepthImageToPointCloud(camera_info=camera_info)
