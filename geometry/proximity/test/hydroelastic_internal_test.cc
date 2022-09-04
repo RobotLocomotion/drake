@@ -820,9 +820,7 @@ class HydroelasticSoftGeometryTest : public ::testing::Test {
 TEST_F(HydroelasticSoftGeometryTest, UnsupportedSoftShapes) {
   ProximityProperties props = soft_properties();
 
-  // Note: the file name doesn't have to be valid for this (and the Mesh) test.
-  const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
-  EXPECT_EQ(MakeSoftRepresentation(Mesh(obj, 1.0), props), std::nullopt);
+  EXPECT_EQ(MakeSoftRepresentation(MeshcatCone(2, 1, 1), props), std::nullopt);
 }
 
 TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
@@ -1137,6 +1135,28 @@ TEST_F(HydroelasticSoftGeometryTest, Convex) {
       properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < convex->mesh().num_vertices(); ++v) {
     const double pressure = convex->pressure_field().EvaluateAtVertex(v);
+    EXPECT_GE(pressure, 0);
+    EXPECT_LE(pressure, E);
+  }
+}
+
+// Test construction of a compliant (generally non-convex) tetrahedral mesh.
+TEST_F(HydroelasticSoftGeometryTest, Mesh) {
+  const Mesh mesh_specification(
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
+
+  ProximityProperties properties = soft_properties();
+  std::optional<SoftGeometry> compliant_geometry =
+      MakeSoftRepresentation(mesh_specification, properties);
+
+  // Smoke test the mesh and the pressure field. It relies on unit tests for
+  // the generators of the mesh and the pressure field.
+  const int expected_num_vertices = 6;
+  EXPECT_EQ(compliant_geometry->mesh().num_vertices(), expected_num_vertices);
+  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  for (int v = 0; v < compliant_geometry->mesh().num_vertices(); ++v) {
+    const double pressure =
+        compliant_geometry->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
   }
