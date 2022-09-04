@@ -14,6 +14,8 @@
 #include "drake/geometry/proximity/make_cylinder_mesh.h"
 #include "drake/geometry/proximity/make_ellipsoid_field.h"
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
+#include "drake/geometry/proximity/make_mesh_field.h"
+#include "drake/geometry/proximity/make_mesh_from_vtk.h"
 #include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
@@ -384,6 +386,23 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
   return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
+
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Mesh& mesh_specification, const ProximityProperties& props) {
+  PositiveDouble validator("Mesh", "soft");
+
+  auto mesh = make_unique<VolumeMesh<double>>(
+      MakeVolumeMeshFromVtk<double>(mesh_specification));
+
+  const double hydroelastic_modulus =
+      validator.Extract(props, kHydroGroup, kElastic);
+
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeVolumeMeshPressureField(mesh.get(), hydroelastic_modulus));
+
+  return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
+}
+
 
 }  // namespace hydroelastic
 }  // namespace internal
