@@ -12,6 +12,8 @@
 
 namespace drake {
 namespace systems {
+namespace {
+
 const double kEps = std::numeric_limits<double>::epsilon();
 
 template <typename T>
@@ -410,5 +412,6 @@ GTEST_TEST(LinearTransformDensityTest, CalcDensityGradient) {
                        Eigen::Vector2d(0.2, 0.5));
 }
 
+}  // namespace
 }  // namespace systems
 }  // namespace drake
