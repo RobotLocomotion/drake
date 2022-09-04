@@ -483,6 +483,12 @@ have sufficient information). Requires the
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Convex& convex_spec, const ProximityProperties& props);
 
+/* Creates a compliant (generally) non-convex mesh (assuming the proximity
+ properties have sufficient information). Requires the ('hydroelastic',
+ 'hydroelastic_modulus') properties. */
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Mesh& mesh_specification, const ProximityProperties& props);
+
 //@}
 
 }  // namespace hydroelastic
