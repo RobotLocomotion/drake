@@ -338,18 +338,12 @@ drake_cc_library(
 )
 
 # The drake::filesystem support is intended ONLY for use within Drake's *.cc
-# files -- it is not a public dependency of Drake.  As such, we compile it with
-# hidden visibility and mark it internal.
+# files -- it is not a public dependency of Drake, so we mark it internal.
 drake_cc_library(
     name = "filesystem",
-    srcs = ["filesystem.cc"],
     hdrs = ["filesystem.h"],
-    copts = ["-fvisibility=hidden"],
     internal = True,
     visibility = ["//:__subpackages__"],
-    deps = [
-        "@ghc_filesystem",
-    ],
 )
 
 drake_cc_library(

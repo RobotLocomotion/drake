@@ -13,6 +13,7 @@ cc_library(
     name = "ghc_filesystem",
     hdrs = ["include/ghc/filesystem.hpp"],
     strip_include_prefix = "include",
+    deprecation = "DRAKE DEPRECATED: The @ghc_filesystem repository is no longer used by Drake. If you still use it, you may copy the the repository rule into your own project. This target will be removed from Drake on or after 2023-01-01.",  # noqa
     linkstatic = 1,
 )
 

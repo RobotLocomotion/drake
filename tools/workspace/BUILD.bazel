@@ -82,7 +82,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "commons_io",
     "fcl",
     "fmt",
-    "ghc_filesystem",
     "gz_math_internal",
     "gz_utils_internal",
     "lcm",
