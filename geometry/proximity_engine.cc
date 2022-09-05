@@ -25,6 +25,8 @@
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
+#include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 #include "drake/geometry/read_obj.h"
 #include "drake/geometry/utilities.h"
 
@@ -486,10 +488,22 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
-    // Don't bother triangulating; we're going to throw the faces out.
-    const auto [vertices, face_ptr, num_faces] =
-        ReadObjFile(mesh.filename(), mesh.scale(), false /* triangulate */);
-    unused(face_ptr, num_faces);
+    std::shared_ptr<std::vector<Eigen::Vector3d>> vertices;
+    if (mesh.filename().substr(mesh.filename().find_last_of(".") + 1) ==
+        "obj") {
+      // Don't bother triangulating; we're going to throw the faces out.
+      std::tie(vertices, std::ignore, std::ignore) =
+          ReadObjFile(mesh.filename(), mesh.scale(), false /* triangulate */);
+    } else if (mesh.filename().substr(mesh.filename().find_last_of(".") + 1) ==
+               "vtk") {
+      vertices = std::make_shared<std::vector<Eigen::Vector3d>>(
+          ConvertVolumeToSurfaceMesh(ReadVtkToVolumeMesh(mesh.filename()))
+              .vertices());
+    } else {
+      throw(std::runtime_error(fmt::format(
+          "ProximityEngine::ImplementGeometry: unsupported mesh file: {}",
+          mesh.filename())));
+    }
 
     // Note: the strategy here is to use an *invalid* fcl::Convex shape for the
     // mesh. A minimum condition for "invalid" is that the convex specification
@@ -498,7 +512,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     auto fcl_convex =
         make_shared<fcl::Convexd>(vertices, 0, make_shared<std::vector<int>>());
     TakeShapeOwnership(fcl_convex, user_data);
-    // The actual mesh is used for hydroelastic representation.
+    // The actual mesh is used for hydroelastics and deformables.
     ProcessHydroelastic(mesh, user_data);
     ProcessGeometriesForDeformableContact(mesh, user_data);
   }
