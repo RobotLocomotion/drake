@@ -221,8 +221,9 @@ void JointSliders<T>::CalcOutput(
 
 template <typename T>
 void JointSliders<T>::Run(
-    const Diagram<T>& diagram,
-    std::optional<double> timeout) const {
+    const Diagram<T>& diagram, std::optional<double> timeout,
+    const std::function<void(const systems::Context<T>& diagram_context)>&
+        on_publish_callback) const {
   // Make a context and create reference shortcuts to some pieces of it.
   // TODO(jwnimmer-tri) If the user has forgotten to add the plant or sliders
   // to the diagram, our error message here is awful. Ideally, we should be
@@ -249,6 +250,9 @@ void JointSliders<T>::Run(
 
   // Loop until the button is clicked, or the timeout (when given) is reached.
   diagram.Publish(diagram_context);
+  if (on_publish_callback) {
+    on_publish_callback(diagram_context);
+  }
   while (meshcat_->GetButtonClicks(kButtonName) < 1) {
     if (timeout.has_value()) {
       const auto elapsed = Duration(Clock::now() - start_time).count();
@@ -268,6 +272,9 @@ void JointSliders<T>::Run(
     // Publish the new positions.
     plant_->SetPositions(&plant_context, new_positions);
     diagram.Publish(diagram_context);
+    if (on_publish_callback) {
+      on_publish_callback(diagram_context);
+    }
   }
 }
 

@@ -606,7 +606,8 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Checks whether the given context was created for this system.
   @note This method is sufficiently fast for performance sensitive code.
   @throws std::exception if the System Ids don't match.
-  @throws std::exception if `context` is null. */
+  @throws std::exception if `context` is null.
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   void ValidateContext(const ContextBase* context) const {
     DRAKE_THROW_UNLESS(context != nullptr);
     ValidateContext(*context);

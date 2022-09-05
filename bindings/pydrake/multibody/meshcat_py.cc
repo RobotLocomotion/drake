@@ -186,8 +186,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::keep_alive<1, 3>(),  // BR
             cls_doc.ctor.doc)
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
-        .def("Run", &Class::Run, py::arg("diagram"),
-            py::arg("timeout") = py::none(), cls_doc.Run.doc)
+        .def("Run",
+            WrapCallbacks(
+                [](JointSliders<T>* self, const systems::Diagram<T>& diagram,
+                    std::optional<double> timeout,
+                    const std::function<void(const systems::Context<T>&
+                            diagram_context)>& on_publish_callback) {
+                  self->Run(diagram, timeout, on_publish_callback);
+                }),
+            py::arg("diagram"), py::arg("timeout") = py::none(),
+            py::arg("on_publish_callback") = nullptr, cls_doc.Run.doc)
         .def("SetPositions", &Class::SetPositions, py::arg("q"),
             cls_doc.SetPositions.doc);
   }

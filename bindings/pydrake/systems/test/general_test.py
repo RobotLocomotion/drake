@@ -137,6 +137,7 @@ class TestGeneral(unittest.TestCase):
         system = Adder(3, 10)
         context = system.AllocateContext()
         self.assertIsInstance(context, ContextBase)
+        system.ValidateContext(context=context)
         self.assertEqual(context.num_input_ports(), 3)
         self.assertEqual(context.num_output_ports(), 1)
         context.DisableCaching()

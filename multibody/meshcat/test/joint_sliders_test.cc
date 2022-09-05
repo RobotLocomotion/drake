@@ -296,6 +296,16 @@ TEST_F(JointSlidersTest, Run) {
   const std::string updated = meshcat_->GetPackedTransform(geometry_path);
   ASSERT_FALSE(updated.empty());
   EXPECT_NE(updated, original);
+
+  int count = 0;
+  auto callback = [&diagram, &count](const systems::Context<double>& context) {
+    EXPECT_NO_THROW(diagram->ValidateContext(&context));
+    count++;
+  };
+
+  // Run for a while, with a callback.
+  dut->Run(*diagram, timeout, callback);
+  EXPECT_GE(count, 1);
 }
 
 // Tests that SetPositions diagnoses num_positions mismatches.

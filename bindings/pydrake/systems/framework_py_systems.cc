@@ -1163,6 +1163,7 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("index"), cls_doc.numeric_parameter_ticket.doc)
         .def("get_cache_entry", &Class::get_cache_entry, py::arg("index"),
             py_rvp::reference_internal, cls_doc.get_cache_entry.doc)
+        .def("ValidateContext", overload_cast_explicit<void, const ContextBase&>(&Class::ValidateContext), py::arg("context"), cls_doc.ValidateContext.doc)
         // N.B. Since this method has template overloads, we must specify the
         // types `overload_cast_explicit`; we must also specify Class.
         // We do not use `static_cast<>` to avoid accidental type mixing.

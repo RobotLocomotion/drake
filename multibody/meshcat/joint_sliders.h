@@ -102,14 +102,20 @@ class JointSliders final : public systems::LeafSystem<T> {
   will return promptly, without waiting for the timeout. When no timeout is
   given, this function will block indefinitely.
 
+  @param on_publish_callback (Optional) This function will be called immediately
+  after each Publish, with the Diagram Context passed as an argument. It can be
+  used, for instance, to implement additional visualizations.
+
   @pre `diagram` must be a top-level (i.e., "root") diagram.
   @pre `diagram` must contain this JointSliders system.
-  @pre `diagarm` must contain the `plant` that was passed into this
+  @pre `diagram` must contain the `plant` that was passed into this
   JointSliders system's constructor.
   */
   void Run(
       const systems::Diagram<T>& diagram,
-      std::optional<double> timeout = std::nullopt) const;
+      std::optional<double> timeout = std::nullopt,
+      const std::function<void(const systems::Context<T>& diagram_context)>&
+          on_publish_callback = nullptr) const;
 
   /** Sets all robot positions (corresponding to joint positions and potentially
   positions not associated with any joint) to the values in `q`.  The meshcat

@@ -126,7 +126,16 @@ class TestMeshcat(unittest.TestCase):
         # The Run function doesn't crash.
         builder.AddSystem(dut)
         diagram = builder.Build()
-        dut.Run(diagram=diagram, timeout=1.0)
+
+        count = 0
+
+        def callback(context):
+            diagram.ValidateContext(context)
+            nonlocal count
+            count += 1
+
+        dut.Run(diagram=diagram, timeout=1.0, on_publish_callback=callback)
+        self.assertGreaterEqual(count, 1)
 
         # The SetPositions function doesn't crash (Acrobot has two positions).
         dut.SetPositions(q=[1, 2])
