@@ -602,8 +602,7 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
 // origin along each axis) to confirm that the correct mesh got loaded. We also
 // confirm that the scale factor is included in the rigid representation.
 template <typename MeshType>
-void TestRigidMeshType() {
-  std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+void TestRigidMeshTypeFromObj(const std::string& file) {
   // Empty props since its contents do not matter.
   ProximityProperties props;
 
@@ -637,15 +636,45 @@ void TestRigidMeshType() {
 // Confirm support for a rigid Mesh. Tests that a hydroelastic representation
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Mesh) {
-  SCOPED_TRACE("Rigid Mesh");
-  TestRigidMeshType<Mesh>();
+  {
+    SCOPED_TRACE("Rigid Mesh, lower-case obj extension");
+    std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+    TestRigidMeshTypeFromObj<Mesh>(file);
+  }
+  {
+    SCOPED_TRACE("Rigid Mesh, upper-case OBJ extension");
+    std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.OBJ");
+    TestRigidMeshTypeFromObj<Mesh>(file);
+  }
 }
 
 // Confirm support for a rigid Convex. Tests that a hydroelastic representation
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Convex) {
   SCOPED_TRACE("Rigid Convex");
-  TestRigidMeshType<Convex>();
+  std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  TestRigidMeshTypeFromObj<Convex>(file);
+}
+
+TEST_F(HydroelasticRigidGeometryTest, MeshFromVtk) {
+  // Empty props since its contents do not matter.
+  const ProximityProperties props;
+  for (const std::string& file_name :
+       {"non_convex_mesh.vtk", "non_convex_mesh.VTK"}) {
+    SCOPED_TRACE(file_name);
+    const std::string file =
+        FindResourceOrThrow("drake/geometry/test/" + file_name);
+    std::optional<RigidGeometry> geometry =
+        MakeRigidRepresentation(Mesh(file), props);
+    ASSERT_NE(geometry, std::nullopt);
+
+    // We only check that the vtk file was read by verifying the number of
+    // vertices and triangles, which depend on the specific content of
+    // the vtk file.
+    const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
+    EXPECT_EQ(surface_mesh.num_vertices(), 5);
+    EXPECT_EQ(surface_mesh.num_triangles(), 6);
+  }
 }
 
 // Template magic to instantiate a particular kind of shape at compile time.
