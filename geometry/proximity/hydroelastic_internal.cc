@@ -250,8 +250,20 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Mesh& mesh_spec, const ProximityProperties&) {
   // Mesh does not use any properties.
-  auto mesh = make_unique<TriangleSurfaceMesh<double>>(
-      ReadObjToTriangleSurfaceMesh(mesh_spec.filename(), mesh_spec.scale()));
+  std::unique_ptr<TriangleSurfaceMesh<double>> mesh;
+  if (mesh_spec.filename().substr(mesh_spec.filename().
+        find_last_of(".") + 1) == "obj") {
+    mesh = make_unique<TriangleSurfaceMesh<double>>(
+        ReadObjToTriangleSurfaceMesh(mesh_spec.filename(), mesh_spec.scale()));
+  } else if (mesh_spec.filename().substr(mesh_spec.filename().
+               find_last_of(".") + 1) == "vtk") {
+    mesh = make_unique<TriangleSurfaceMesh<double>>(
+        ConvertVolumeToSurfaceMesh(MakeVolumeMeshFromVtk<double>(mesh_spec)));
+  } else {
+    throw(std::runtime_error(fmt::format(
+        "hydroelastic::MakeRigidRepresentation(): unsupported mesh file: {}",
+        mesh_spec.filename())));
+  }
 
   return RigidGeometry(RigidMesh(move(mesh)));
 }

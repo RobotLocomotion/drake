@@ -602,7 +602,7 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
 // origin along each axis) to confirm that the correct mesh got loaded. We also
 // confirm that the scale factor is included in the rigid representation.
 template <typename MeshType>
-void TestRigidMeshType() {
+void TestRigidMeshTypeFromObj() {
   std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   // Empty props since its contents do not matter.
   ProximityProperties props;
@@ -638,14 +638,32 @@ void TestRigidMeshType() {
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Mesh) {
   SCOPED_TRACE("Rigid Mesh");
-  TestRigidMeshType<Mesh>();
+  TestRigidMeshTypeFromObj<Mesh>();
 }
 
 // Confirm support for a rigid Convex. Tests that a hydroelastic representation
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Convex) {
   SCOPED_TRACE("Rigid Convex");
-  TestRigidMeshType<Convex>();
+  TestRigidMeshTypeFromObj<Convex>();
+}
+
+TEST_F(HydroelasticRigidGeometryTest, MeshFromVtk) {
+  std::string file = FindResourceOrThrow(
+                         "drake/geometry/test/non_convex_mesh.vtk");
+  // Empty props since its contents do not matter.
+  ProximityProperties props;
+
+  std::optional<RigidGeometry> geometry =
+      MakeRigidRepresentation(Mesh(file), props);
+  ASSERT_NE(geometry, std::nullopt);
+
+  // We only check that the obj file was read by verifying the number of
+  // vertices and triangles, which depend on the specific content of
+  // the vtk file.
+  const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
+  EXPECT_EQ(surface_mesh.num_vertices(), 5);
+  EXPECT_EQ(surface_mesh.num_triangles(), 6);
 }
 
 // Template magic to instantiate a particular kind of shape at compile time.

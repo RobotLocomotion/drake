@@ -68,6 +68,7 @@ drake_cc_library(
         "//geometry/proximity:collision_filter",
         "//geometry/proximity:deformable_contact_internal",
         "//geometry/proximity:hydroelastic_internal",
+        "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/query_results",
         "//math",
         ":geometry_ids",
@@ -667,7 +668,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "proximity_engine_test",
-    data = [":test_obj_files"],
+    data = [
+        ":test_obj_files",
+        ":test_vtk_files",
+    ],
     deps = [
         ":proximity_engine",
         ":shape_specification",
