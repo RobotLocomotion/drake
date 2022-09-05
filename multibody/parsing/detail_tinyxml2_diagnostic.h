@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include <tinyxml2.h>
+#include <drake_vendor/tinyxml2.h>
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/multibody/parsing/detail_common.h"

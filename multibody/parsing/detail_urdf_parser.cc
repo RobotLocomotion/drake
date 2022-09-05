@@ -13,8 +13,8 @@
 #include <vector>
 
 #include <Eigen/Dense>
+#include <drake_vendor/tinyxml2.h>
 #include <fmt/format.h>
-#include <tinyxml2.h>
 
 #include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"

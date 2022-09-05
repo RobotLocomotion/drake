@@ -232,7 +232,6 @@ cc_library(
         "//common:drake_marker_shared_library",
         "@lcm",
         "@spdlog",
-        "@tinyxml2",
     ],
 )
 
