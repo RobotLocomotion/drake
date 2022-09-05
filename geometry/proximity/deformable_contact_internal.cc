@@ -33,6 +33,19 @@ void Geometries::RemoveGeometry(GeometryId id) {
 void Geometries::MaybeAddRigidGeometry(
     const Shape& shape, GeometryId id, const ProximityProperties& props,
     const math::RigidTransform<double>& X_WG) {
+  // TODO(DamrongGuoy): Improve the way this function or its upstream callers
+  //  use proximity properties so that we don't need this check. Right now
+  //  this is a stop gap to skip a compliant hydroelastic geometry that
+  //  reaches here due to imperfect ways to use proximity properties.
+  //  We use proximity properties to distinguish different kinds of geometries:
+  //  for point contact, for hydroelatic contact (rigid or compliant),
+  //  or for deformable contact (rigid or deformable).
+  if (props.HasProperty(kHydroGroup, kComplianceType)) {
+    if (props.GetProperty<HydroelasticType>(kHydroGroup, kComplianceType)
+        == drake::geometry::internal::HydroelasticType::kSoft) {
+      return;
+    }
+  }
   // TODO(xuchenhan-tri): Right now, rigid geometries participating in
   // deformable contact share the property "kRezHint" with hydroelastics. It's
   // reasonable to use the contact mesh with the same resolution for both hydro
