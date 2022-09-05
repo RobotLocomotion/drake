@@ -11,6 +11,10 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:private"])
 
+# TODO(eric.cousineau): Figure out better mechanism for Anzu to consume this
+# (maybe hoist the mesh painter?).
+exports_files(["internal_render_engine_vtk.h"])
+
 drake_cc_package_library(
     name = "render_vtk",
     visibility = ["//visibility:public"],
