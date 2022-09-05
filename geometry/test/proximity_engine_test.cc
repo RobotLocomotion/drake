@@ -141,7 +141,8 @@ GTEST_TEST(ProximityEngineTests, AddDynamicGeometry) {
 // it's supported or not (note: this test doesn't depend on the choice of
 // rigid/compliant -- for each shape, we pick an arbitrary compliance type,
 // preferring one that is supported over one that is not. Otherwise, the
-// compliance choice is immaterial.)
+// compliance choice is immaterial.) One exception is that the rigid Mesh and
+// the compliant Mesh use two different kinds of files, so we test both of them.
 GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   ProximityEngine<double> engine;
   // All of the geometries will have a scale comparable to edge_length, so that
@@ -217,6 +218,17 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
     engine.AddDynamicGeometry(mesh, {}, mesh_id, rigid_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
               HydroelasticType::kRigid);
+  }
+
+  // Case: compliant mesh.
+  {
+    Mesh mesh{
+        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"),
+        1.0 /* scale */};
+    const GeometryId mesh_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(mesh, {}, mesh_id, soft_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
+              HydroelasticType::kSoft);
   }
 
   // Case: rigid convex.
@@ -452,6 +464,17 @@ GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
       EXPECT_FALSE(engine.HasCollisions());
     }
   }
+}
+
+// Tests that passing VTK file in Mesh for Point contact will throw.
+GTEST_TEST(ProximityEngineTests, VtkForPointContactThrow) {
+  ProximityEngine<double> engine;
+  const Mesh vtk_mesh{
+      drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk")};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.AddAnchoredGeometry(vtk_mesh, RigidTransformd::Identity(),
+                                 GeometryId::get_new_id()),
+      "ProximityEngine: expect an Obj file for non-hydroelastics but get.*");
 }
 
 // Tests simple addition of anchored geometry.
