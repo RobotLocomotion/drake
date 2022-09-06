@@ -10,10 +10,6 @@ namespace lcm {
 
 /** The set of parameters for configuring DrakeLcm.  */
 struct DrakeLcmParams {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DrakeLcmParams)
-  DrakeLcmParams() = default;
-  ~DrakeLcmParams();
-
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
