@@ -656,7 +656,7 @@ class RigidTransform {
     }
   }
 
-  // Throw an exception if the last element of the Vector4 provided to
+  // Throw an exception that the last element of the Vector4 provided to
   // RigidTransform * Vector4 is not 0 or 1.
   [[noreturn]] static void ThrowInvalidMultiplyVector4(const Vector4<T>& vec_B);
 
