@@ -142,6 +142,39 @@ The solution is to use either `GetMyContextFromRoot()`
 
 See the notes on [System Compatibility][m_system_compat] for further discussion.
 
+# Build problems
+
+## Out of memory {#build-oom}
+
+When compiling Drake from source, the build might run out of memory. The error
+message will include the message, "cc: fatal error: Killed signal terminated
+program cc1plus".
+
+By default, the Drake build will try use all available CPU and RAM resources on
+the machine. Sometimes, when there is not enough RAM per CPU, the build might
+crash because it tried to run a compiler process on every vCPU and together
+those compilation jobs consumed more RAM than was available.
+
+In this case, you'll need to add a bazel configuration dotfile to your home
+directory. Create a text file at `$HOME/.bazelrc` with this content:
+
+```
+build --jobs=HOST_CPUS*0.4
+```
+
+This instructs the build system to use only 40% of the available vCPUs. You may
+tune the fraction up or down to balance build speed vs resource crashes. You may
+also specify an exact number like `build --jobs=2` instead of a fraction.
+
+The dotfile will affect any Bazel builds that you run. If you prefer to change
+only the Drake build instead of all Bazel builds, you may place the dotfile in
+the Drake source tree at `drake/user.bazelrc` instead of your home directory.
+
+Note that the concurrency level passed to `make` (e.g., `make -j 2`) does not
+propagate through to affect the concurrency of most of Drake's build steps; you
+need to configure the dotfile in order to control the build concurrency.
+
+
 <!-- Links to the various Drake doxygen pages.
      Order determined by directory structure first and names second.
 -->
