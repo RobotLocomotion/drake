@@ -56,7 +56,11 @@ directives:
     members: [new_model::link, right::robot::link]
     ignored_collision_filter_groups: [group1, right::robot::group]
 )""";
-  const auto directives = LoadYamlString<ModelDirectives>(contents);
+  // Here we copy-paste the code from LoadModelDirectivesFromString so that we
+  // can check IsValid with a test assertion, instead of a DRAKE_DEMAND.
+  const ModelDirectives defaults;
+  const auto directives = LoadYamlString<ModelDirectives>(
+      contents, std::nullopt /* child_name */, defaults);
   EXPECT_TRUE(directives.IsValid());
 }
 

@@ -80,20 +80,18 @@ struct AddModel {
       drake::log()->error("add_model: `name` must be non-empty");
       return false;
     }
-    if (default_free_body_pose) {
-      for (const auto& [body_name, pose] : *default_free_body_pose) {
-        if (pose.base_frame) {
-          drake::log()->error(
-              "add_model: `default_free_body_pose` must not specify a "
-              "`base_frame`; the pose is always in the world frame.");
-          return false;
-        }
-        if (!pose.IsDeterministic()) {
-          drake::log()->error(
-              "add_model: `default_free_body_pose` must specify a "
-              "deterministic transform, not a distribution.");
-          return false;
-        }
+    for (const auto& [body_name, pose] : default_free_body_pose) {
+      if (pose.base_frame) {
+        drake::log()->error(
+            "add_model: `default_free_body_pose` must not specify a "
+            "`base_frame`; the pose is always in the world frame.");
+        return false;
+      }
+      if (!pose.IsDeterministic()) {
+        drake::log()->error(
+            "add_model: `default_free_body_pose` must specify a "
+            "deterministic transform, not a distribution.");
+        return false;
       }
     }
     return true;
@@ -112,10 +110,9 @@ struct AddModel {
   /// The model instance name.
   std::string name;
   /// Map of joint_name => default position vector.
-  std::optional<std::map<std::string, Eigen::VectorXd>> default_joint_positions;
+  std::map<std::string, Eigen::VectorXd> default_joint_positions;
   /// Map of body_name => default free body pose.
-  std::optional<std::map<std::string, drake::schema::Transform>>
-      default_free_body_pose;
+  std::map<std::string, drake::schema::Transform> default_free_body_pose;
 };
 
 /// Directive to add an empty, named model instance to a scene.
