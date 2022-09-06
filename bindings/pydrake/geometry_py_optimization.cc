@@ -345,14 +345,18 @@ void DefineGeometryOptimization(py::module m) {
         .def_readwrite("convex_relaxation",
             &GraphOfConvexSetsOptions::convex_relaxation,
             cls_doc.convex_relaxation.doc)
+        .def_readwrite("preprocessing",
+            &GraphOfConvexSetsOptions::preprocessing, cls_doc.preprocessing.doc)
         .def("__repr__", [](const GraphOfConvexSetsOptions& self) {
           return py::str(
               "GraphOfConvexSetsOptions("
               "convex_relaxation={}, "
+              "preprocessing={}, "
               "solver={}, "
               "solver_options={}, "
               ")")
-              .format(self.convex_relaxation, self.solver, self.solver_options);
+              .format(self.convex_relaxation, self.preprocessing, self.solver,
+                  self.solver_options);
         });
 
     DefReadWriteKeepAlive(&gcs_options, "solver",
@@ -426,6 +430,9 @@ void DefineGeometryOptimization(py::module m) {
                   return out;
                 },
                 cls_doc.Edges.doc)
+            .def("ClearAllPhiConstraints",
+                &GraphOfConvexSets::ClearAllPhiConstraints,
+                cls_doc.ClearAllPhiConstraints.doc)
             .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
                 py::arg("result") = std::nullopt, py::arg("show_slacks") = true,
                 py::arg("precision") = 3, py::arg("scientific") = false,

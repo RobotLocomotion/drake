@@ -42,6 +42,7 @@ using symbolic::Substitution;
 using symbolic::Variables;
 
 using Edge = GraphOfConvexSets::Edge;
+using EdgeId = GraphOfConvexSets::EdgeId;
 using Vertex = GraphOfConvexSets::Vertex;
 using VertexId = GraphOfConvexSets::VertexId;
 
@@ -305,6 +306,8 @@ class ThreePoints : public ::testing::Test {
 
     subs_on_off_.emplace(e_on_->xv()[0], e_off_->xv()[0]);
     subs_on_off_.emplace(e_on_->xv()[1], e_off_->xv()[1]);
+
+    options.preprocessing = false;
   }
 
   GraphOfConvexSets g_;
@@ -793,7 +796,10 @@ GTEST_TEST(ShortestPathTest, ClassicalShortestPath) {
   spp.AddEdge(vid[2], vid[4])->AddCost(3.0);
   spp.AddEdge(vid[0], vid[4])->AddCost(6.0);
 
-  auto result = spp.SolveShortestPath(vid[0], vid[4]);
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
+  auto result = spp.SolveShortestPath(vid[0], vid[4], options);
   ASSERT_TRUE(result.is_success());
 
   for (const auto& e : spp.Edges()) {
@@ -854,7 +860,10 @@ GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
   spp.AddEdge(*v[5], *v[4])
       ->AddCost(solvers::Binding(cost, {v[5]->x(), v[4]->x()}));
 
-  auto result = spp.SolveShortestPath(*v[0], *v[5]);
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
+  auto result = spp.SolveShortestPath(*v[0], *v[5], options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -898,10 +907,13 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
   edge_13->AddCost(solvers::Binding(cost, {v[1]->x(), v[3]->x()}));
   edge_23->AddCost(solvers::Binding(cost, {v[2]->x(), v[3]->x()}));
 
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
   // Confirm that variables for edges are set when no on/off constraint is
   // imposed.
   {
-    auto result = spp.SolveShortestPath(*v[0], *v[3]);
+    auto result = spp.SolveShortestPath(*v[0], *v[3], options);
     if (result.get_solver_id() == solvers::IpoptSolver::id()) {
       return;  // See IpoptTest for details.
     }
@@ -921,7 +933,7 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
   // optimization problem.
   edge_13->AddPhiConstraint(false);
   {
-    auto result = spp.SolveShortestPath(*v[0], *v[3]);
+    auto result = spp.SolveShortestPath(*v[0], *v[3], options);
     EXPECT_TRUE(result.is_success());
     EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXu(result),
                                 Vector2d::Zero(), 1e-6));
@@ -934,7 +946,7 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
   // Confirm that variables for edges that are turned on are properly set.
   edge_13->AddPhiConstraint(true);
   {
-    auto result = spp.SolveShortestPath(*v[0], *v[3]);
+    auto result = spp.SolveShortestPath(*v[0], *v[3], options);
     if (result.get_solver_id() == solvers::IpoptSolver::id()) {
       return;  // See IpoptTest for details.
     }
@@ -945,6 +957,82 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
                                 Vector2d(2, 0), 1e-6));
     EXPECT_NEAR(edge_13->GetSolutionCost(result), 1, 1e-6);
     EXPECT_NEAR(result.GetSolution(edge_13->phi()), 1, 1e-6);
+  }
+}
+
+// Confirms that preprocessing removes edges that cannot be on the shortest path
+// and does not change the solution to a shortest path query.
+class PreprocessShortestPathTest : public ::testing::Test {
+ protected:
+  PreprocessShortestPathTest() {
+    vid_.reserve(7);
+    for (int i = 0; i < 7; ++i) {
+      vid_[i] = g_.AddVertex(Point(Vector1d{0.0}))->id();
+    }
+
+    edges_.reserve(13);
+    edges_[0] = g_.AddEdge(vid_[0], vid_[2]);
+    edges_[1] = g_.AddEdge(vid_[2], vid_[3]);
+    edges_[2] = g_.AddEdge(vid_[2], vid_[4]);
+    edges_[3] = g_.AddEdge(vid_[3], vid_[4]);
+    edges_[4] = g_.AddEdge(vid_[4], vid_[3]);
+    edges_[5] = g_.AddEdge(vid_[3], vid_[5]);
+    edges_[6] = g_.AddEdge(vid_[4], vid_[5]);
+    // Useless backtracking edges
+    edges_[7] = g_.AddEdge(vid_[3], vid_[2]);
+    edges_[8] = g_.AddEdge(vid_[5], vid_[4]);
+    // Useless nodes off source and target
+    edges_[9] = g_.AddEdge(vid_[0], vid_[1]);
+    edges_[10] = g_.AddEdge(vid_[1], vid_[0]);
+    edges_[11] = g_.AddEdge(vid_[5], vid_[6]);
+    edges_[12] = g_.AddEdge(vid_[6], vid_[5]);
+
+    for (Edge* e : edges_) {
+      e->AddCost(1.0);
+    }
+
+    // Break symmetry of graph.
+    edges_[2]->AddCost(0.1);
+  }
+  std::set<EdgeId> PreprocessShortestPath(VertexId source_id,
+                                          VertexId target_id) {
+    return g_.PreprocessShortestPath(source_id, target_id);
+  }
+
+  GraphOfConvexSets g_;
+  std::vector<VertexId> vid_;
+  std::vector<Edge*> edges_;
+  GraphOfConvexSetsOptions options_;
+};
+
+TEST_F(PreprocessShortestPathTest, CheckEdges) {
+  std::set<EdgeId> removed_edges = PreprocessShortestPath(vid_[0], vid_[5]);
+
+  for (size_t ii = 0; ii < edges_.size(); ii++) {
+    if (ii < 7) {
+      EXPECT_FALSE(removed_edges.find(edges_[ii]->id()) != removed_edges.end());
+    } else {
+      EXPECT_TRUE(removed_edges.find(edges_[ii]->id()) != removed_edges.end());
+    }
+  }
+}
+
+TEST_F(PreprocessShortestPathTest, CheckResults) {
+  options_.preprocessing = false;
+  auto result1 = g_.SolveShortestPath(vid_[0], vid_[5], options_);
+  ASSERT_TRUE(result1.is_success());
+
+  options_.preprocessing = true;
+  auto result2 = g_.SolveShortestPath(vid_[0], vid_[5], options_);
+  ASSERT_TRUE(result2.is_success());
+
+  for (Edge* e : edges_) {
+    EXPECT_EQ(result1.GetSolution(e->phi()), result2.GetSolution(e->phi()));
+    EXPECT_TRUE(CompareMatrices(result1.GetSolution(e->xu()),
+                                result2.GetSolution(e->xu()), 1e-12));
+    EXPECT_TRUE(CompareMatrices(result1.GetSolution(e->xv()),
+                                result2.GetSolution(e->xv()), 1e-12));
+    EXPECT_EQ(e->GetSolutionCost(result1), e->GetSolutionCost(result2));
   }
 }
 
@@ -1026,6 +1114,7 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
 
   GraphOfConvexSetsOptions options;
   options.convex_relaxation = false;
+  options.preprocessing = false;
   auto result = spp.SolveShortestPath(source->id(), target->id(), options);
   ASSERT_TRUE(result.is_success());
 
@@ -1119,7 +1208,10 @@ GTEST_TEST(ShortestPathTest, Figure9) {
     e->AddCost(solvers::Binding(cost, {e->xu(), e->xv()}));
   }
 
-  auto result = spp.SolveShortestPath(source->id(), target->id());
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
+  auto result = spp.SolveShortestPath(source->id(), target->id(), options);
   ASSERT_TRUE(result.is_success());
 
   const double kTol = 2e-4;  // Gurobi required this large tolerance.
