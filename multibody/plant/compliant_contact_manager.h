@@ -145,14 +145,6 @@ class CompliantContactManager final
     sap_parameters_ = parameters;
   }
 
-  // Associates the given `DeformableModel` with `this` manager. The discrete
-  // states of the deformable bodies registered in the given `model` will be
-  // advanced by this manager. This manager holds onto the given pointer and
-  // therefore the model must outlive the manager. If called repeatedly, only
-  // the last model supplied will be considered.
-  // @pre model != nullptr.
-  void SetDeformableModel(const DeformableModel<double>* model);
-
   bool is_cloneable_to_double() const final { return true; }
   bool is_cloneable_to_autodiff() const final { return true; }
 
@@ -185,6 +177,14 @@ class CompliantContactManager final
   // Extracts non state dependent model information from MultibodyPlant. See
   // DiscreteUpdateManager for details.
   void ExtractModelInfo() final;
+
+  // Associates the given `DeformableModel` with `this` manager. The discrete
+  // states of the deformable bodies registered in the given `model` will be
+  // advanced by this manager. This manager holds onto the given pointer and
+  // therefore the model must outlive the manager. If called repeatedly, only
+  // the last model supplied will be considered.
+  // @pre model != nullptr.
+  void ExtractConcreteModel(const DeformableModel<T>* model);
 
   void DeclareCacheEntries() final;
 

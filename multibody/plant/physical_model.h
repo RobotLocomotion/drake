@@ -1,7 +1,9 @@
 #pragma once
+
 #include <memory>
 #include <set>
 #include <string>
+#include <variant>
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/scene_graph.h"
@@ -10,13 +12,18 @@
 
 namespace drake {
 namespace multibody {
+
 template <typename T>
 class MultibodyPlant;
 
 namespace internal {
 
 template <typename T>
-class CompliantContactManager;
+class DeformableModel;
+
+/* Variant over const pointers to all PhysicalModel. */
+template <typename T>
+using ModelVariant = std::variant<const DeformableModel<T>*>;
 
 /* PhysicalModel provides the functionalities to extend the type of
  physical model of MultibodyPlant. Developers can derive from this
@@ -83,18 +90,15 @@ class PhysicalModel : public ScalarConvertibleComponent<T> {
     system_resources_declared_ = true;
   }
 
-  /* Configures the given CompliantContactManager with `this` model so that the
-   physical model can be discretely advanced in time by the
-   CompliantContactManager. This function can only be called after system
-   resources have been declared, otherwise an exception in thrown.
-   @pre manager != nullptr. */
-  void AddToManager(CompliantContactManager<T>* manager) {
-    DRAKE_DEMAND(manager != nullptr);
-    ThrowIfSystemResourcesNotDeclared(__func__);
-    DoAddToManager(manager);
-  }
+  /* Returns (a const pointer to) the specific model variant of `this`
+   PhysicalModel. */
+  ModelVariant<T> ToModelVariant() const { return DoToModelVariant(); }
 
  protected:
+  /* Derived classes must override this function to return their specific model
+   variant. */
+  virtual ModelVariant<T> DoToModelVariant() const = 0;
+
   /* Derived classes that support making a clone that uses double as a scalar
    type must implement this so that it creates a copy of the object with double
    as the scalar type. It should copy all members except for those overwritten
@@ -117,10 +121,6 @@ class PhysicalModel : public ScalarConvertibleComponent<T> {
   /* Derived class must override this to declare system resources for its
    specific model. */
   virtual void DoDeclareSystemResources(MultibodyPlant<T>* plant) = 0;
-
-  /* Derived class may override this to set up compliant contact manager.
-   Defaults to no-op. */
-  virtual void DoAddToManager(CompliantContactManager<T>*) {}
 
   /* Helper method for throwing an exception within public methods that should
    not be called after system resources are declared. The invoking method should

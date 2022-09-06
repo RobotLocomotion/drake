@@ -53,15 +53,19 @@ class DummyModel final : public PhysicalModel<T> {
     return discrete_state_index_;
   }
 
-  bool is_compliant_contact_manager_set() const {
-    return compliant_contact_manager_set_;
-  }
-
  private:
   /* Allow different specializations to access each other's private data for
    cloning to a different scalar type. */
   template <typename U>
   friend class DummyModel;
+
+  /* A dummy stub for ModelVariant. */
+  ModelVariant<T> DoToModelVariant() const final {
+    throw std::logic_error(
+        "DummyModel is used for unit testing only, and is not included in "
+        "ModelVariant.");
+    DRAKE_UNREACHABLE();
+  }
 
   std::unique_ptr<PhysicalModel<double>> CloneToDouble() const final {
     return CloneToScalar<double>();
@@ -121,16 +125,11 @@ class DummyModel final : public PhysicalModel<T> {
         {systems::System<T>::xd_ticket()});
   }
 
-  void DoAddToManager(CompliantContactManager<T>*) {
-    compliant_contact_manager_set_ = true;
-  }
-
   std::vector<VectorX<T>> discrete_states_{};
   int num_dofs_{0};
   const systems::OutputPort<T>* abstract_output_port_{nullptr};
   const systems::OutputPort<T>* vector_output_port_{nullptr};
   DiscreteStateIndex discrete_state_index_;
-  bool compliant_contact_manager_set_{false};
 };
 }  // namespace test
 }  // namespace internal

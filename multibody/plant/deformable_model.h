@@ -105,13 +105,14 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   geometry::GeometryId GetGeometryIdOrThrow(DeformableBodyId id) const;
 
  private:
+  ModelVariant<T> DoToModelVariant() const final {
+    return ModelVariant<T>(this);
+  }
+
   // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd()
   // and the corresponding is_cloneable methods.
 
   void DoDeclareSystemResources(MultibodyPlant<T>* plant) final;
-
-  void DoAddToManager(
-      CompliantContactManager<T>* manager) final;
 
   /* Builds a FEM model for the body with `id` with linear tetrahedral elements
    and a single quadrature point. The reference positions as well as the

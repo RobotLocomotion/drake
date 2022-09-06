@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
@@ -57,19 +58,6 @@ AccelerationsDueToExternalForcesCache<T>::AccelerationsDueToExternalForcesCache(
 
 template <typename T>
 CompliantContactManager<T>::~CompliantContactManager() {}
-
-template <typename T>
-void CompliantContactManager<T>::SetDeformableModel(
-    const DeformableModel<double>* model) {
-  if constexpr (std::is_same_v<T, double>) {
-    deformable_driver_ =
-        std::make_unique<DeformableDriver<double>>(model, this);
-  } else {
-    unused(model);
-    throw std::logic_error(
-        "T == double is the scalar type that supports deformable simulation.");
-  }
-}
 
 template <typename T>
 void CompliantContactManager<T>::DeclareCacheEntries() {
@@ -1053,7 +1041,25 @@ void CompliantContactManager<T>::ExtractModelInfo() {
   const std::vector<std::unique_ptr<multibody::internal::PhysicalModel<T>>>&
       physical_models = this->plant().physical_models();
   for (const auto& model : physical_models) {
-    model->AddToManager(this);
+    ModelVariant<T> model_variant = model->ToModelVariant();
+    std::visit(
+        [this](auto&& concrete_model) {
+          this->ExtractConcreteModel(concrete_model);
+        },
+        model_variant);
+  }
+}
+
+template <typename T>
+void CompliantContactManager<T>::ExtractConcreteModel(
+    const DeformableModel<T>* model) {
+  if constexpr (std::is_same_v<T, double>) {
+    deformable_driver_ =
+        std::make_unique<DeformableDriver<double>>(model, this);
+  } else {
+    unused(model);
+    throw std::logic_error(
+        "T == double is the scalar type that supports deformable simulation.");
   }
 }
 
