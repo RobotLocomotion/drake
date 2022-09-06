@@ -307,12 +307,12 @@ GTEST_TEST(GeometriesTest, UpdateDeformableVertexPositions) {
   }
 }
 
-GTEST_TEST(GeometriesTest, ComputeDeformableRigidContact) {
+GTEST_TEST(GeometriesTest, ComputeDeformableContact) {
   Geometries geometries;
   /* The contact data is empty when there is no deformable geometry. */
-  std::vector<DeformableRigidContact<double>> contact_data;
-  geometries.ComputeDeformableRigidContact(&contact_data);
-  EXPECT_EQ(contact_data.size(), 0);
+  DeformableContact<double> contact_data =
+      geometries.ComputeDeformableContact();
+  EXPECT_EQ(contact_data.contact_surfaces().size(), 0);
 
   /* Add a deformable unit cube. */
   GeometryId deformable_id = GeometryId::get_new_id();
@@ -321,10 +321,9 @@ GTEST_TEST(GeometriesTest, ComputeDeformableRigidContact) {
   const int num_vertices = deformable_mesh.num_vertices();
   geometries.AddDeformableGeometry(deformable_id, std::move(deformable_mesh));
 
-  /* There is no rigid geometry to collide with the deformable geometry yet. */
-  geometries.ComputeDeformableRigidContact(&contact_data);
-  ASSERT_EQ(contact_data.size(), 1);
-  EXPECT_EQ(contact_data[0].num_rigid_geometries(), 0);
+  /* There is no geometry to collide with the deformable geometry yet. */
+  contact_data = geometries.ComputeDeformableContact();
+  ASSERT_EQ(contact_data.contact_surfaces().size(), 0);
   /* Add a rigid unit cube. */
   GeometryId rigid_id = GeometryId::get_new_id();
   ProximityProperties rigid_properties = MakeProximityPropsWithRezHint(1.0);
@@ -333,9 +332,8 @@ GTEST_TEST(GeometriesTest, ComputeDeformableRigidContact) {
                                    rigid_properties, X_WR);
 
   /* The deformable box and the rigid box are not in contact yet. */
-  geometries.ComputeDeformableRigidContact(&contact_data);
-  ASSERT_EQ(contact_data.size(), 1);
-  EXPECT_EQ(contact_data[0].num_rigid_geometries(), 0);
+  contact_data = geometries.ComputeDeformableContact();
+  ASSERT_EQ(contact_data.contact_surfaces().size(), 0);
 
   /* Now shift the rigid geometry closer to the deformable geometry.
                                   +Z
@@ -358,9 +356,8 @@ GTEST_TEST(GeometriesTest, ComputeDeformableRigidContact) {
   geometries.UpdateRigidWorldPose(rigid_id, X_WR);
 
   /* Now there should be exactly one contact data. */
-  geometries.ComputeDeformableRigidContact(&contact_data);
-  ASSERT_EQ(contact_data.size(), 1);
-  const DeformableRigidContact<double>& box_box_contact_data = contact_data[0];
+  contact_data = geometries.ComputeDeformableContact();
+  ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
 
   /* Verify that the contact surface is as expected. */
   const auto& X_DR =
@@ -369,49 +366,29 @@ GTEST_TEST(GeometriesTest, ComputeDeformableRigidContact) {
       GeometriesTester::get_deformable_geometry(geometries, deformable_id);
   const RigidGeometry& rigid_geometry =
       GeometriesTester::get_rigid_geometry(geometries, rigid_id);
-  DeformableRigidContact<double> expected_contact_data(deformable_id,
-                                                       num_vertices);
-  AppendDeformableRigidContact(
-      deformable_geometry, rigid_id, rigid_geometry.rigid_mesh().mesh(),
-      rigid_geometry.rigid_mesh().bvh(), X_DR, &expected_contact_data);
+  DeformableContact<double> expected_contact_data;
+  expected_contact_data.RegisterDeformableGeometry(deformable_id, num_vertices);
+  AddDeformableRigidContactSurface(deformable_geometry, deformable_id, rigid_id,
+                                   rigid_geometry.rigid_mesh().mesh(),
+                                   rigid_geometry.rigid_mesh().bvh(), X_DR,
+                                   &expected_contact_data);
 
   /* Verify that the contact data is the same as expected by checking a subset
    of all data fields. */
-  ASSERT_EQ(box_box_contact_data.num_rigid_geometries(), 1);
-  ASSERT_EQ(expected_contact_data.num_rigid_geometries(), 1);
-  EXPECT_EQ(box_box_contact_data.rigid_ids()[0],
-            expected_contact_data.rigid_ids()[0]);
-  EXPECT_EQ(box_box_contact_data.deformable_id(),
-            expected_contact_data.deformable_id());
-  EXPECT_EQ(box_box_contact_data.num_contact_points(),
-            expected_contact_data.num_contact_points());
-  ASSERT_EQ(box_box_contact_data.contact_meshes_W().size(), 1);
-  ASSERT_EQ(expected_contact_data.contact_meshes_W().size(), 1);
-  EXPECT_TRUE(box_box_contact_data.contact_meshes_W()[0].Equal(
-      expected_contact_data.contact_meshes_W()[0]));
-}
-
-GTEST_TEST(GeometriesTest, DeformableRigidContactOrdering) {
-  Geometries geometries;
-
-  /* Add two deformable geometries. */
-  VolumeMesh<double> mesh = MakeBoxVolumeMesh<double>(Box::MakeCube(1.0), 1.0);
-  GeometryId id0 = GeometryId::get_new_id();
-  geometries.AddDeformableGeometry(id0, mesh);
-  GeometryId id1 = GeometryId::get_new_id();
-  geometries.AddDeformableGeometry(id1, mesh);
-
-  /* Verify that the contact results are sorted according to the deformable id
-   (even though each DeformableRigidContact is empty). */
-  std::vector<DeformableRigidContact<double>> contact_data;
-  /* Populate the vector with definitely unsorted DeformableRigidContact. */
-  contact_data.emplace_back(id1, mesh.num_vertices());
-  contact_data.emplace_back(id0, mesh.num_vertices());
-
-  geometries.ComputeDeformableRigidContact(&contact_data);
-  ASSERT_EQ(contact_data.size(), 2);
-  EXPECT_TRUE(contact_data[0].deformable_id() <
-              contact_data[1].deformable_id());
+  ASSERT_EQ(contact_data.contact_surfaces().size(),
+            expected_contact_data.contact_surfaces().size());
+  const DeformableContactSurface<double>& contact_surface =
+      contact_data.contact_surfaces()[0];
+  const DeformableContactSurface<double>& expected_contact_surface =
+      expected_contact_data.contact_surfaces()[0];
+  // TODO(xuchenhan-tri): consider adding a `Equal` function for
+  // DeformableContactSurface.
+  EXPECT_EQ(contact_surface.id_A(), expected_contact_surface.id_A());
+  EXPECT_EQ(contact_surface.id_B(), expected_contact_surface.id_B());
+  EXPECT_EQ(contact_surface.num_contact_points(),
+            expected_contact_surface.num_contact_points());
+  EXPECT_TRUE(contact_surface.contact_mesh_W().Equal(
+      expected_contact_surface.contact_mesh_W()));
 }
 
 }  // namespace

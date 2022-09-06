@@ -74,13 +74,14 @@ class DeformableSurfaceVolumeIntersector
   std::vector<VolumeMesh<double>::Barycentric<double>> barycentric_centroids_{};
 };
 
-void AppendDeformableRigidContact(
+void AddDeformableRigidContactSurface(
     const deformable::DeformableGeometry& deformable_D,
-    const GeometryId rigid_id, const TriangleSurfaceMesh<double>& rigid_mesh_R,
+    const GeometryId deformable_id, const GeometryId rigid_id,
+    const TriangleSurfaceMesh<double>& rigid_mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& rigid_bvh_R,
     const math::RigidTransform<double>& X_DR,
-    DeformableRigidContact<double>* deformable_rigid_contact) {
-  DRAKE_DEMAND(deformable_rigid_contact != nullptr);
+    DeformableContact<double>* deformable_contact) {
+  DRAKE_DEMAND(deformable_contact != nullptr);
 
   DeformableSurfaceVolumeIntersector intersect;
   intersect.SampleVolumeFieldOnSurface(
@@ -98,25 +99,44 @@ void AppendDeformableRigidContact(
      using the signed distance field. */
     std::vector<double> penetration_distances(num_faces);
     for (int i = 0; i < num_faces; ++i) {
+      const Vector3<double>& contact_points_W =
+          contact_mesh_W->element_centroid(i);
       /* `signed_distance_field` has a gradient, therefore `EvaluateCartesian()`
        should be cheap. */
-      penetration_distances[i] = signed_distance_field.EvaluateCartesian(
-          i, contact_mesh_W->element_centroid(i));
+      penetration_distances[i] =
+          signed_distance_field.EvaluateCartesian(i, contact_points_W);
     }
 
     const VolumeMesh<double>& mesh = deformable_D.deformable_mesh().mesh();
-    std::vector<int>& participating_tetrahedra =
+    // Each contact polygon generates one "participating tetrahedron". Hence
+    // `participating_tetrahedra` contains duplicated entries when a tetrahedron
+    // covers multiple contact polygons.
+    const std::vector<int>& participating_tetrahedra =
         intersect.mutable_tetrahedron_index_of_polygons();
+    DRAKE_DEMAND(static_cast<int>(participating_tetrahedra.size()) ==
+                 num_faces);
+
     std::unordered_set<int> participating_vertices;
+    std::vector<Vector4<int>> contact_vertex_indexes;
+    // Each contact point generates 4 participating vertices. We overestimate by
+    // ignoring duplications caused by the possibility of one tet containing
+    // more than one contact point.
+    participating_vertices.reserve(4 * num_faces);
+    contact_vertex_indexes.reserve(num_faces);
     for (int e : participating_tetrahedra) {
+      Vector4<int> tetrahedron_vertex_indexes;
       for (int v = 0; v < VolumeMesh<double>::kVertexPerElement; ++v) {
-        participating_vertices.insert(mesh.element(e).vertex(v));
+        const int index = mesh.element(e).vertex(v);
+        tetrahedron_vertex_indexes(v) = index;
+        participating_vertices.insert(index);
       }
+      contact_vertex_indexes.push_back(tetrahedron_vertex_indexes);
     }
 
-    deformable_rigid_contact->Append(
-        rigid_id, participating_vertices, std::move(*contact_mesh_W),
-        std::move(penetration_distances), std::move(participating_tetrahedra),
+    deformable_contact->AddDeformableRigidContactSurface(
+        deformable_id, rigid_id, participating_vertices,
+        std::move(*contact_mesh_W), std::move(penetration_distances),
+        std::move(contact_vertex_indexes),
         std::move(intersect.mutable_barycentric_centroids()));
   }
 }
