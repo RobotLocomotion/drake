@@ -13,7 +13,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "render",
-    visibility = ["//:__subpackages__"],
+    visibility = ["//visibility:public"],
     deps = [
         ":render_camera",
         ":render_engine",
