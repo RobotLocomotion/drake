@@ -8,7 +8,7 @@
 #include <utility>
 
 #include <Eigen/Dense>
-#include <tinyxml2.h>
+#include <drake_vendor/tinyxml2.h>
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/geometry_instance.h"

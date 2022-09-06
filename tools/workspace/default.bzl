@@ -92,6 +92,7 @@ load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository
 load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
 load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
+load("@drake//tools/workspace/tinyxml2_internal:repository.bzl", "tinyxml2_internal_repository")  # noqa
 load("@drake//tools/workspace/tomli_internal:repository.bzl", "tomli_internal_repository")  # noqa
 load("@drake//tools/workspace/typing_extensions_internal:repository.bzl", "typing_extensions_internal_repository")  # noqa
 load("@drake//tools/workspace/uritemplate_py_internal:repository.bzl", "uritemplate_py_internal_repository")  # noqa
@@ -353,6 +354,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         tinyobjloader_repository(name = "tinyobjloader", mirrors = mirrors)
     if "tinyxml2" not in excludes:
         tinyxml2_repository(name = "tinyxml2")
+    if "tinyxml2_internal" not in excludes:
+        tinyxml2_internal_repository(name = "tinyxml2_internal", mirrors = mirrors)  # noqa
     if "tomli_internal" not in excludes:
         tomli_internal_repository(name = "tomli_internal", mirrors = mirrors)
     if "typing_extensions_internal" not in excludes:

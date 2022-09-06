@@ -61,7 +61,7 @@ drake_cc_library(
     deps = [
         "//common",
         "//common:filesystem",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 
@@ -98,7 +98,7 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody/plant",
         "@sdformat_internal//:sdformat",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 
@@ -169,7 +169,7 @@ drake_cc_library(
         ":scoped_names",
         "//common:filesystem",
         "@fmt",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 
@@ -184,7 +184,7 @@ drake_cc_library(
         ":scoped_names",
         "//multibody/plant",
         "@fmt",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 

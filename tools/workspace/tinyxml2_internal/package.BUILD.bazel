@@ -1,0 +1,25 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # zlib
+
+package(default_visibility = ["//visibility:private"])
+
+cc_library(
+    name = "tinyxml2",
+    hdrs = ["tinyxml2.h"],
+    srcs = ["tinyxml2.cpp"],
+    include_prefix = "drake_vendor",
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE.txt"],
+    visibility = ["//visibility:public"],
+)

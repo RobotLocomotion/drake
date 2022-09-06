@@ -26,7 +26,6 @@ find_dependency(fmt 6.0 CONFIG HINTS "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX
 find_dependency(lcm 1.4 CONFIG HINTS "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/cmake/lcm")
 find_dependency(optitrack CONFIG HINTS "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/cmake/optitrack")
 find_dependency(spdlog 1.5 CONFIG HINTS "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/cmake/spdlog")
-find_dependency(TinyXML2 2.2 MODULE)
 set(_expectedTargets drake::drake drake::drake-lcmtypes-cpp drake::drake-lcmtypes-java drake::drake-marker)
 
 set(_targetsDefined)
@@ -62,7 +61,7 @@ set_target_properties(drake::drake PROPERTIES
   IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/libdrake.so"
   IMPORTED_SONAME "${_apple_soname_prologue}libdrake.so"
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include"
-  INTERFACE_LINK_LIBRARIES "drake::drake-lcmtypes-cpp;drake::drake-marker;Eigen3::Eigen;fmt::fmt-header-only;lcm::lcm;optitrack::optitrack-lcmtypes-cpp;spdlog::spdlog;tinyxml2::tinyxml2"
+  INTERFACE_LINK_LIBRARIES "drake::drake-lcmtypes-cpp;drake::drake-marker;Eigen3::Eigen;fmt::fmt-header-only;lcm::lcm;optitrack::optitrack-lcmtypes-cpp;spdlog::spdlog"
   INTERFACE_COMPILE_FEATURES "cxx_std_17"
   INTERFACE_COMPILE_DEFINITIONS "HAVE_SPDLOG"
 )

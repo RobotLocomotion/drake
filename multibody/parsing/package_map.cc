@@ -9,7 +9,7 @@
 #include <tuple>
 #include <utility>
 
-#include <tinyxml2.h>
+#include <drake_vendor/tinyxml2.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"

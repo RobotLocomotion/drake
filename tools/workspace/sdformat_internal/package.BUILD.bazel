@@ -265,6 +265,7 @@ cc_library_vendored(
         "sdf/": "drake_vendor/sdf/",
         "ignition/math/": "drake_vendor/ignition/math/",
         "ignition/utils/": "drake_vendor/ignition/utils/",
+        "tinyxml2": "drake_vendor/tinyxml2",
     },
     includes = ["drake_src"],
     copts = ["-w"],
@@ -274,7 +275,7 @@ cc_library_vendored(
     deps = [
         "@gz_math_internal//:gz_math",
         "@gz_utils_internal//:gz_utils",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
         # N.B. It's very unusual to add a dependency from a third-party library
         # onto Drake, but in this case it's the simplest way to be able to send
         # error messages from sdformat parsing into Drake's logging API.
