@@ -513,6 +513,28 @@ class RigidTransform {
     return p_AoBo_A_ + R_AB_ * p_BoQ_B;
   }
 
+  /// Multiplies `this` %RigidTransform `X_AB` by the 4-element vector
+  /// `vec_B`, equivalent to `X_AB.GetAsMatrix4() * vec_B`.
+  /// @param[in] vec_B 4-element vector whose first 3 elements are the position
+  /// vector p_BoQ_B from Bo (frame B's origin) to an arbitrary point Q,
+  /// expressed in frame B and whose 4ᵗʰ element is 1 𝐨𝐫 whose first 3 elements
+  /// are a vector (maybe unrelated to Bo or Q) and whose 4ᵗʰ element is 0.
+  /// @retval vec_A 4-element vector whose first 3 elements are the position
+  /// vector p_AoQ_A from Ao (frame A's origin) to Q, expressed in frame A and
+  /// whose 4ᵗʰ element is 1 𝐨𝐫 whose first 3 elements are a vector (maybe
+  /// unrelated to Bo and Q) and whose 4ᵗʰ element is 0.
+  /// @throws std::exception if the 4ᵗʰ element of vec_B is not 0 or 1.
+  Vector4<T> operator*(const Vector4<T>& vec_B) const {
+    if (vec_B(3) == 1 || vec_B(3) == 0) {
+      Vector4<T> vec_A;
+      vec_A.head(3) = (p_AoBo_A_ * vec_B(3)) + (R_AB_ * vec_B.head(3));
+      vec_A(3) = vec_B(3);
+      return vec_A;
+    } else {
+      ThrowInvalidMultiplyVector4(vec_B);
+    }
+  }
+
   /// Multiplies `this` %RigidTransform `X_AB` by the n position vectors
   /// `p_BoQ1_B` ... `p_BoQn_B`, where `p_BoQi_B` is the iᵗʰ position vector
   /// from Bo (frame B's origin) to an arbitrary point Qi, expressed in frame B.
@@ -633,6 +655,10 @@ class RigidTransform {
           "Error: Bottom row of 4x4 matrix differs from [0, 0, 0, 1]"));
     }
   }
+
+  // Throw an exception that the last element of the Vector4 provided to
+  // RigidTransform * Vector4 is not 0 or 1.
+  [[noreturn]] static void ThrowInvalidMultiplyVector4(const Vector4<T>& vec_B);
 
   // Rotation matrix relating two frames, e.g. frame A and frame B.
   // The default constructor for R_AB_ is an identity matrix.
