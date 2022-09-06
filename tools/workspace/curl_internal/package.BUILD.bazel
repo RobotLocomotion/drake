@@ -1,0 +1,235 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/workspace:check_lists_consistency.bzl",
+    "check_lists_consistency",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
+    "@drake//tools/workspace/curl_internal:cmakedefines.bzl",
+    "CMAKE_DEFINES",
+    "CMAKE_UNDEFINES",
+    "CPP_DEFINES",
+)
+
+licenses(["notice"])  # curl
+
+package(default_visibility = ["//visibility:private"])
+
+# Glob all of the headers, even if unused. They have essentially no impact on
+# compilation time.
+_HDRS = glob([
+    "include/curl/*.h",
+    "lib/*.h",
+    "lib/vauth/*.h",
+    "lib/vssh/*.h",
+    "lib/vtls/*.h",
+])
+
+# The directories of the _HDRS.
+_INCLUDES = [
+    "include",
+    "lib",
+]
+
+# This is a subset of the full library, trimmed to be approximately only the
+# files that we actually need for Drake.
+_SRCS = [
+    "lib/altsvc.c",
+    "lib/base64.c",
+    "lib/conncache.c",
+    "lib/connect.c",
+    "lib/content_encoding.c",
+    "lib/cookie.c",
+    "lib/curl_addrinfo.c",
+    "lib/curl_ctype.c",
+    "lib/curl_get_line.c",
+    "lib/curl_memrchr.c",
+    "lib/doh.c",
+    "lib/dotdot.c",
+    "lib/dynbuf.c",
+    "lib/easy.c",
+    "lib/easygetopt.c",
+    "lib/easyoptions.c",
+    "lib/escape.c",
+    "lib/fopen.c",
+    "lib/formdata.c",
+    "lib/getenv.c",
+    "lib/getinfo.c",
+    "lib/hash.c",
+    "lib/headers.c",
+    "lib/hmac.c",
+    "lib/hostip.c",
+    "lib/hostip6.c",
+    "lib/hsts.c",
+    "lib/http.c",
+    "lib/http_aws_sigv4.c",
+    "lib/http_chunks.c",
+    "lib/http_digest.c",
+    "lib/http_negotiate.c",
+    "lib/http_proxy.c",
+    "lib/if2ip.c",
+    "lib/inet_ntop.c",
+    "lib/inet_pton.c",
+    "lib/llist.c",
+    "lib/md4.c",
+    "lib/md5.c",
+    "lib/memdebug.c",
+    "lib/mime.c",
+    "lib/mprintf.c",
+    "lib/mqtt.c",
+    "lib/multi.c",
+    "lib/netrc.c",
+    "lib/nonblock.c",
+    "lib/parsedate.c",
+    "lib/progress.c",
+    "lib/rand.c",
+    "lib/rename.c",
+    "lib/rtsp.c",
+    "lib/select.c",
+    "lib/sendf.c",
+    "lib/setopt.c",
+    "lib/sha256.c",
+    "lib/share.c",
+    "lib/slist.c",
+    "lib/socketpair.c",
+    "lib/socks.c",
+    "lib/speedcheck.c",
+    "lib/splay.c",
+    "lib/strcase.c",
+    "lib/strdup.c",
+    "lib/strerror.c",
+    "lib/strtoofft.c",
+    "lib/timeval.c",
+    "lib/transfer.c",
+    "lib/url.c",
+    "lib/urlapi.c",
+    "lib/vauth/digest.c",
+    "lib/vtls/vtls.c",
+    "lib/warnless.c",
+]
+
+# The build flags for the library only (not passed on to downstream code).
+_COPTS = [
+    # Our build of curl should be private.
+    "-fvisibility=hidden",
+    # Tell curl that we've generated the curl_config.h.
+    "-DHAVE_CONFIG_H",
+    # Send larger chunks of data, for improved performance.
+    "-DCURL_MAX_WRITE_SIZE=65536",
+] + [
+    "-D" + x
+    for x in CPP_DEFINES
+]
+
+# The link flags for the library.
+_LINKOPTS = select({
+    "@drake//tools/cc_toolchain:apple": [
+        "-Wl,-framework",
+        "-Wl,CoreFoundation",
+        "-Wl,-framework",
+        "-Wl,SystemConfiguration",
+    ],
+    "//conditions:default": [],
+})
+
+# When we upgrade curl versions, this check forces us to list newly-added
+# source files either into _SRCS or else explicitly exclude them here.
+check_lists_consistency(
+    files = _SRCS,
+    glob_include = [
+        "lib/*.c",
+    ],
+    glob_exclude = [
+        "lib/amigaos.c",
+        "lib/asyn-ares.c",
+        "lib/asyn-thread.c",
+        "lib/bufref.c",
+        "lib/c-hyper.c",
+        "lib/curl_des.c",
+        "lib/curl_endian.c",
+        "lib/curl_fnmatch.c",
+        "lib/curl_gethostname.c",
+        "lib/curl_gssapi.c",
+        "lib/curl_multibyte.c",
+        "lib/curl_ntlm_core.c",
+        "lib/curl_ntlm_wb.c",
+        "lib/curl_path.c",
+        "lib/curl_range.c",
+        "lib/curl_rtmp.c",
+        "lib/curl_sasl.c",
+        "lib/curl_sspi.c",
+        "lib/curl_threads.c",
+        "lib/dict.c",
+        "lib/file.c",
+        "lib/fileinfo.c",
+        "lib/ftp.c",
+        "lib/ftplistparser.c",
+        "lib/gopher.c",
+        "lib/h2h3.c",
+        "lib/hostasyn.c",
+        "lib/hostip4.c",
+        "lib/hostsyn.c",
+        "lib/http2.c",
+        "lib/http_ntlm.c",
+        "lib/idn_win32.c",
+        "lib/imap.c",
+        "lib/krb5.c",
+        "lib/ldap.c",
+        "lib/openldap.c",
+        "lib/pingpong.c",
+        "lib/pop3.c",
+        "lib/psl.c",
+        "lib/smb.c",
+        "lib/smtp.c",
+        "lib/socks_gssapi.c",
+        "lib/socks_sspi.c",
+        "lib/strtok.c",
+        "lib/system_win32.c",
+        "lib/telnet.c",
+        "lib/tftp.c",
+        "lib/timediff.c",
+        "lib/version.c",
+        "lib/version_win32.c",
+        "lib/wildcard.c",
+    ],
+)
+
+# Generate curl_config.h based on the hard-coded cmakedefines.bzl.
+cmake_configure_file(
+    name = "configure_file",
+    src = "lib/curl_config.h.cmake",
+    out = "lib/curl_config.h",
+    defines = CMAKE_DEFINES,
+    undefines = CMAKE_UNDEFINES,
+    strict = True,
+)
+
+# Compile the library.
+cc_library(
+    name = "libcurl",
+    hdrs = _HDRS + [":lib/curl_config.h"],
+    srcs = _SRCS,
+    includes = _INCLUDES,
+    copts = _COPTS,
+    linkopts = _LINKOPTS,
+    linkstatic = 1,
+    deps = [
+        "@zlib",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Install the license notice.
+install(
+    name = "install",
+    docs = ["COPYING"],
+    visibility = ["//visibility:public"],
+)

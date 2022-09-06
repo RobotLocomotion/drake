@@ -75,12 +75,14 @@ drake_cc_library(
     hdrs = ["internal_http_service_curl.h"],
     internal = True,
     visibility = _VISIBILITY,
-    deps = [
+    interface_deps = [
         ":internal_http_service",
+    ],
+    deps = [
         "//common:filesystem",
         "//common:unused",
+        "@curl_internal//:libcurl",
         "@fmt",
-        "@libcurl",
     ],
 )
 
@@ -162,6 +164,7 @@ drake_cc_googletest(
     name = "internal_http_service_curl_test",
     deps = [
         ":internal_http_service_curl",
+        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
     ],

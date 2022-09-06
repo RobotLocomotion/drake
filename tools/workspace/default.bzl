@@ -18,6 +18,7 @@ load("@drake//tools/workspace/common_robotics_utilities:repository.bzl", "common
 load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
 load("@drake//tools/workspace/conex:repository.bzl", "conex_repository")
 load("@drake//tools/workspace/csdp:repository.bzl", "csdp_repository")
+load("@drake//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
 load("@drake//tools/workspace/double_conversion:repository.bzl", "double_conversion_repository")  # noqa
 load("@drake//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
 load("@drake//tools/workspace/dm_control_internal:repository.bzl", "dm_control_internal_repository")  # noqa
@@ -151,6 +152,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         conex_repository(name = "conex", mirrors = mirrors)
     if "csdp" not in excludes:
         csdp_repository(name = "csdp", mirrors = mirrors)
+    if "curl_internal" not in excludes:
+        curl_internal_repository(name = "curl_internal", mirrors = mirrors)
     if "double_conversion" not in excludes:
         double_conversion_repository(name = "double_conversion")
     if "doxygen" not in excludes:
