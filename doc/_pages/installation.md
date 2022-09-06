@@ -18,8 +18,8 @@ officially supports:
 |------------------------------------|--------------|----------|
 | Ubuntu 20.04 LTS (Focal Fossa)     | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾  |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64 ⁽¹⁾   | 3.10 ⁽³⁾ |
-| macOS Big Sur (11)                 | x86_64 ⁽²⁾   | 3.9 ⁽³⁾  |
-| macOS Monterey (12)                | x86_64 ⁽²⁾   | 3.9 ⁽³⁾  |
+| macOS Big Sur (11)                 | x86_64 ⁽²⁾   | 3.10 ⁽³⁾ |
+| macOS Monterey (12)                | x86_64 ⁽²⁾   | 3.10 ⁽³⁾ |
 
 ⁽¹⁾ Drake Ubuntu builds assume support for Intel's AVX2 and FMA instructions,
 introduced with the Haswell architecture in 2013 with substantial performance
@@ -58,8 +58,9 @@ compiler as our releases:
 |------------------------------------|--------------------------------|
 | Ubuntu 20.04 LTS (Focal Fossa)     | GCC 9.3                        |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11.2                       |
-| macOS Big Sur (11)                 | Apple LLVM 12.0.0 (Xcode 12.4) |
-| macOS Monterey (12)                | Apple LLVM 12.0.0 (Xcode 12.4) |
+| macOS Big Sur (11)                 | Apple LLVM 12.0.5 (Xcode 12.5) |
+| macOS Monterey (12)                | Apple LLVM 13.0.0 (Xcode 13.1) |
+| macOS Monterey (12)                | Apple LLVM 13.1.6 (Xcode 13.4) |
 
 ## Available Versions
 

@@ -17,8 +17,9 @@ integration. Any other configurations are provided on a best-effort basis.
 |------------------------------------|--------------|----------|-------|-------|--------------------------------|-------------------------------|
 | Ubuntu 20.04 LTS (Focal Fossa)     | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾  | 5.1   | 3.16  | GCC 9.3 (default) or Clang 12  | OpenJDK 11                    |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64 ⁽¹⁾   | 3.10 ⁽³⁾ | 5.1   | 3.22  | GCC 11.2 (default) or Clang 12 | OpenJDK 11                    |
-| macOS Big Sur (11)                 | x86_64 ⁽²⁾   | 3.10 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
-| macOS Monterey (12)                | x86_64 ⁽²⁾   | 3.10 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
+| macOS Big Sur (11)                 | x86_64 ⁽²⁾   | 3.10 ⁽³⁾ | 5.1   | 3.24  | Apple LLVM 12.0.5 (Xcode 12.5) | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Monterey (12)                | x86_64 ⁽²⁾   | 3.10 ⁽³⁾ | 5.1   | 3.24  | Apple LLVM 13.0.0 (Xcode 13.1) | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Monterey (12)                | arm64 ⁽²⁾    | 3.10 ⁽³⁾ | 5.1   | 3.24  | Apple LLVM 13.1.6 (Xcode 13.4) | AdoptOpenJDK 16 (HotSpot JVM) |
 
 ⁽¹⁾ Drake Ubuntu builds assume support for Intel's AVX2 and FMA instructions,
 introduced with the Haswell architecture in 2013 with substantial performance
