@@ -463,13 +463,27 @@ class TestGeometryOptimization(unittest.TestCase):
             result=result, show_slacks=True, precision=2, scientific=False))
 
         # Vertex
+        self.assertAlmostEqual(
+            source.GetSolutionCost(result=result), 0.0, 1e-6)
+        np.testing.assert_array_almost_equal(
+            source.GetSolution(result), [0.1], 1e-6)
         self.assertIsInstance(source.id(), mut.GraphOfConvexSets.VertexId)
         self.assertEqual(source.ambient_dimension(), 1)
         self.assertEqual(source.name(), "source")
         self.assertIsInstance(source.x()[0], Variable)
         self.assertIsInstance(source.set(), mut.Point)
-        np.testing.assert_array_almost_equal(
-            source.GetSolution(result), [0.1], 1e-6)
+        var, binding = source.AddCost(e=1.0+source.x()[0])
+        self.assertIsInstance(var, Variable)
+        self.assertIsInstance(binding, Binding[Cost])
+        var, binding = source.AddCost(binding=binding)
+        self.assertIsInstance(var, Variable)
+        self.assertIsInstance(binding, Binding[Cost])
+        self.assertEqual(len(source.GetCosts()), 2)
+        binding = source.AddConstraint(f=(source.x()[0] <= 1.0))
+        self.assertIsInstance(binding, Binding[Constraint])
+        binding = source.AddConstraint(binding=binding)
+        self.assertIsInstance(binding, Binding[Constraint])
+        self.assertEqual(len(source.GetConstraints()), 2)
 
         # Edge
         self.assertAlmostEqual(edge0.GetSolutionCost(result=result), 0.0, 1e-6)
