@@ -17,7 +17,7 @@
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/query_results/contact_surface.h"
-#include "drake/geometry/query_results/deformable_rigid_contact.h"
+#include "drake/geometry/query_results/deformable_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -272,15 +272,12 @@ class ProximityEngine {
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
-  // TODO(xuchenhan-tri): Add ComputeDeformableRigidContact() to GeometryState
-  // and QueryObject.
-  /* Implementation of GeometryState::ComputeDeformableRigidContact(). Assumes
+  /* Implementation of GeometryState::ComputeDeformableContact(). Assumes
    the poses of rigid bodies and the vertex positions of the deformable bodies
    are up-to-date. */
   template <typename T1 = T>
   typename std::enable_if_t<std::is_same_v<T1, double>, void>
-  ComputeDeformableRigidContact(
-      std::vector<DeformableRigidContact<T>>* deformable_rigid_contact) const;
+  ComputeDeformableContact(DeformableContact<T>* deformable_contact) const;
 
   /* Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
