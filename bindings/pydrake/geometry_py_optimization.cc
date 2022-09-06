@@ -506,6 +506,30 @@ void DefineGeometryOptimization(py::module m) {
             vertex_doc.x.doc)
         .def("set", &GraphOfConvexSets::Vertex::set, py_rvp::reference_internal,
             vertex_doc.set.doc)
+        .def("AddCost",
+            py::overload_cast<const symbolic::Expression&>(
+                &GraphOfConvexSets::Vertex::AddCost),
+            py::arg("e"), vertex_doc.AddCost.doc_expression)
+        .def("AddCost",
+            py::overload_cast<const solvers::Binding<solvers::Cost>&>(
+                &GraphOfConvexSets::Vertex::AddCost),
+            py::arg("binding"), vertex_doc.AddCost.doc_binding)
+        .def("AddConstraint",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const symbolic::Formula&>(
+                &GraphOfConvexSets::Vertex::AddConstraint),
+            py::arg("f"), vertex_doc.AddConstraint.doc_formula)
+        .def("AddConstraint",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const solvers::Binding<solvers::Constraint>&>(
+                &GraphOfConvexSets::Vertex::AddConstraint),
+            py::arg("binding"), vertex_doc.AddCost.doc_binding)
+        .def("GetCosts", &GraphOfConvexSets::Vertex::GetCosts,
+            vertex_doc.GetCosts.doc)
+        .def("GetConstraints", &GraphOfConvexSets::Vertex::GetConstraints,
+            vertex_doc.GetConstraints.doc)
+        .def("GetSolutionCost", &GraphOfConvexSets::Vertex::GetSolutionCost,
+            py::arg("result"), vertex_doc.GetSolutionCost.doc)
         .def("GetSolution", &GraphOfConvexSets::Vertex::GetSolution,
             py::arg("result"), vertex_doc.GetSolution.doc);
 

@@ -110,6 +110,72 @@ class GraphOfConvexSets {
     /** Returns a const reference to the underlying ConvexSet. */
     const ConvexSet& set() const { return *set_; }
 
+    /** Adds a cost to this vertex, described by a symbolic::Expression @p e
+    containing *only* elements of x() as variables.  For technical reasons
+    relating to being able to "turn-off" the cost on inactive vertices, all
+    costs are eventually implemented with a slack variable and a constraint:
+    @verbatim
+    min g(x) ⇒ min ℓ, s.t. ℓ ≥ g(x)
+    @endverbatim
+    @note Linear costs lead to negative costs if decision variables are not
+    properly constrained. Users may want to check that the solution does not
+    contain negative costs.
+    @returns the pair <ℓ, Binding<Cost>>.
+    @throws std::exception if e.GetVariables() is not a subset of x().
+    @pydrake_mkdoc_identifier{expression}
+    */
+    std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
+        const symbolic::Expression& e);
+
+    /** Adds a cost to this vertex.  @p binding must contain *only* elements of
+    x() as variables. For technical reasons relating to being able to "turn-off"
+    the cost on inactive vertices, all costs are eventually implemented with a
+    slack variable and a constraint:
+    @verbatim
+    min g(x) ⇒ min ℓ, s.t. ℓ ≥ g(x)
+    @endverbatim
+    @note Linear costs lead to negative costs if decision variables are not
+    properly constrained. Users may want to check that the solution does not
+    contain negative costs.
+    @returns the pair <ℓ, Binding<Cost>>.
+    @throws std::exception if binding.variables() is not a subset of x().
+    @pydrake_mkdoc_identifier{binding}
+    */
+    std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
+        const solvers::Binding<solvers::Cost>& binding);
+
+    /** Adds a constraint to this vertex, described by a symbolic::Formula @p f
+    containing *only* elements of x() as variables.
+    @throws std::exception if f.GetFreeVariables() is not a subset of x().
+    @pydrake_mkdoc_identifier{formula}
+    */
+    solvers::Binding<solvers::Constraint> AddConstraint(
+        const symbolic::Formula& f);
+
+    /** Adds a constraint to this vertex.  @p binding must contain *only*
+    elements of x() as variables.
+    @throws std::exception if binding.variables() is not a subset of x().
+    @pydrake_mkdoc_identifier{binding}
+    */
+    solvers::Binding<solvers::Constraint> AddConstraint(
+        const solvers::Binding<solvers::Constraint>& binding);
+
+    /** Returns all costs on this vertex. */
+    const std::vector<solvers::Binding<solvers::Cost>>& GetCosts() const {
+      return costs_;
+    }
+
+    /** Returns all constraints on this vertex. */
+    const std::vector<solvers::Binding<solvers::Constraint>>& GetConstraints()
+        const {
+      return constraints_;
+    }
+
+    /** Returns the sum of the costs associated with this vertex in a
+    solvers::MathematicalProgramResult. */
+    double GetSolutionCost(
+        const solvers::MathematicalProgramResult& result) const;
+
     /** Returns the solution of x() in a MathematicalProgramResult.  This
     solution is NaN if the vertex is not in the shortest path (or if we are
     solving the the convex relaxation and the total flow through this vertex at
@@ -129,6 +195,10 @@ class GraphOfConvexSets {
     const std::unique_ptr<const ConvexSet> set_;
     const std::string name_{};
     const VectorX<symbolic::Variable> placeholder_x_{};
+    // Note: ell_[i] is associated with costs_[i].
+    solvers::VectorXDecisionVariable ell_{};
+    std::vector<solvers::Binding<solvers::Cost>> costs_{};
+    std::vector<solvers::Binding<solvers::Constraint>> constraints_{};
 
     friend class GraphOfConvexSets;
   };
@@ -209,7 +279,7 @@ class GraphOfConvexSets {
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
         const solvers::Binding<solvers::Cost>& binding);
 
-    /** Adds a cost to this edge, described by a symbolic::Formula @p f
+    /** Adds a constraint to this edge, described by a symbolic::Formula @p f
     containing *only* elements of xu() and xv() as variables.
     @throws std::exception if f.GetFreeVariables() is not a subset of xu() ∪
     xv().
