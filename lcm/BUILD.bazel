@@ -50,7 +50,6 @@ drake_cc_library(
 
 drake_cc_library(
     name = "drake_lcm_params",
-    srcs = ["drake_lcm_params.cc"],
     hdrs = ["drake_lcm_params.h"],
     deps = [
         "//common:essential",
