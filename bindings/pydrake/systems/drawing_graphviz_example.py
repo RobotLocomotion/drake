@@ -15,11 +15,11 @@ import matplotlib.pyplot as plt
 import webbrowser
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import DrakeVisualizer
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.drawing import plot_graphviz, plot_system_graphviz
 from pydrake.systems.framework import DiagramBuilder
+from pydrake.visualization import AddDefaultVisualization
 
 # If running under `bazel run`, output to cwd to the user can find it.
 # If running under `bazel test` avoid polluting the test's cwd.
@@ -42,7 +42,7 @@ assert os.path.exists('cart_pole_topology.png')
 cart_pole.Finalize()
 builder.ExportInput(cart_pole.get_actuation_input_port())
 
-DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
+AddDefaultVisualization(builder=builder)
 
 diagram = builder.Build()
 diagram.set_name("graphviz_example")

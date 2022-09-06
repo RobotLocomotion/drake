@@ -3,11 +3,11 @@
 import argparse
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import DrakeVisualizer
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
+from pydrake.visualization import AddDefaultVisualization
 
 
 def main():
@@ -34,7 +34,7 @@ def main():
     Parser(plant=cart_pole).AddModelFromFile(file_name)
     cart_pole.Finalize()
 
-    DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
+    AddDefaultVisualization(builder=builder)
     diagram = builder.Build()
 
     diagram_context = diagram.CreateDefaultContext()
