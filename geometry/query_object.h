@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/query_results/contact_surface.h"
-#include "drake/geometry/query_results/deformable_rigid_contact.h"
+#include "drake/geometry/query_results/deformable_contact.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -138,9 +138,7 @@ class QueryObject {
 
   /** Provides an inspector for the topological structure of the underlying
    scene graph data (see SceneGraphInspector for details).  */
-  const SceneGraphInspector<T>& inspector() const {
-    return inspector_;
-  }
+  const SceneGraphInspector<T>& inspector() const { return inspector_; }
 
   /** @name                Configuration-dependent Introspection
 
@@ -226,43 +224,55 @@ class QueryObject {
    pair (ShapeA, ShapeB) will be the same as (ShapeB, ShapeA), so we only fill
    in half of each table.
 
-   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
-   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   | Box       |  2e-15  |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Capsule   |  3e-5ᶜ  |   2e-5ᶜ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Convex    |  2e-15ᶜ |   3e-5ᶜ  | 2e-15ᶜ  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Cylinder  |  1e-3ᶜ  |   4e-5ᶜ  |  1e-3ᶜ  |   2e-3ᶜ   |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Ellipsoid |  4e-4ᶜ  |   2e-4ᶜ  |  4e-4ᶜ  |   2e-3ᶜ   |    5e-4ᶜ   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | HalfSpace |  6e-15  |   4e-15  | 3e-15ᶜ  |   4e-15   |   3e-15    |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
-   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
-   | Sphere    |  3e-15  |   5e-15  |  3e-5ᶜ  |   5e-15   |    2e-4ᶜ   |   3e-15    |    ᵇ    |  5e-15  |
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid |
+   %HalfSpace |  %Mesh  | %Sphere | | --------: | :-----: | :------: | :-----: |
+   :-------: | :--------: | :--------: | :-----: | :-----: | | Box       | 2e-15
+   |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░
+   | | Capsule   |  3e-5ᶜ  |   2e-5ᶜ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |
+   ░░░░░░   |  ░░░░░  |  ░░░░░  | | Convex    |  2e-15ᶜ |   3e-5ᶜ  | 2e-15ᶜ  |
+   ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  | | Cylinder  |  1e-3ᶜ
+   |   4e-5ᶜ  |  1e-3ᶜ  |   2e-3ᶜ   |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░
+   | | Ellipsoid |  4e-4ᶜ  |   2e-4ᶜ  |  4e-4ᶜ  |   2e-3ᶜ   |    5e-4ᶜ   |
+   ░░░░░░   |  ░░░░░  |  ░░░░░  | | HalfSpace |  6e-15  |   4e-15  | 3e-15ᶜ  |
+   4e-15   |   3e-15    |   throwsᵃ  |  ░░░░░  |  ░░░░░  | | Mesh      |    ᵇ |
+   ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
+   | Sphere    |  3e-15  |   5e-15  |  3e-5ᶜ  |   5e-15   |    2e-4ᶜ   |   3e-15
+   |    ᵇ    |  5e-15  |
    __*Table 1*__: Worst observed error (in m) for 2mm penetration between
    geometries approximately 20cm in size for `T` = `double`.
 
-   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
-   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   | Box       | throwsᵈ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Capsule   | throwsᵈ | throwsᵈ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Convex    | throwsᵈ | throwsᵈ  | throwsᵈ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Cylinder  | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Ellipsoid | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | HalfSpace | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
-   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
-   | Sphere    |  2e-15  |  3e-15   | throwsᵈ |   2e-15   |   throwsᵈ  |   2e-15    |    ᵇ    |  5e-15  |
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid |
+   %HalfSpace |  %Mesh  | %Sphere | | --------: | :-----: | :------: | :-----: |
+   :-------: | :--------: | :--------: | :-----: | :-----: | | Box       |
+   throwsᵈ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░
+   |  ░░░░░  | | Capsule   | throwsᵈ | throwsᵈ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░
+   |   ░░░░░░   |  ░░░░░  |  ░░░░░  | | Convex    | throwsᵈ | throwsᵈ  | throwsᵈ
+   |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  | | Cylinder  |
+   throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░
+   |  ░░░░░  | | Ellipsoid | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  | throwsᵈ
+   |   ░░░░░░   |  ░░░░░  |  ░░░░░  | | HalfSpace | throwsᵈ | throwsᵈ  | throwsᵈ
+   |  throwsᵈ  |   throwsᵈ  |   throwsᵃ  |  ░░░░░  |  ░░░░░  | | Mesh      | ᵇ
+   |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░
+   | | Sphere    |  2e-15  |  3e-15   | throwsᵈ |   2e-15   |   throwsᵈ  | 2e-15
+   |    ᵇ    |  5e-15  |
    __*Table 2*__: Worst observed error (in m) for 2mm penetration between
    geometries approximately 20cm in size for `T` = @ref drake::AutoDiffXd
    "AutoDiffXd".
 
-   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
-   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   | Box       | throwsᵉ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Capsule   | throwsᵉ | throwsᵉ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Convex    | throwsᵉ | throwsᵉ  | throwsᵉ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Cylinder  | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Ellipsoid | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | HalfSpace | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   throwsᵉ  |  ░░░░░  |  ░░░░░  |
-   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
-   | Sphere    | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |    throwsᵉ  |    ᵇ    | throwsᵉ |
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid |
+   %HalfSpace |  %Mesh  | %Sphere | | --------: | :-----: | :------: | :-----: |
+   :-------: | :--------: | :--------: | :-----: | :-----: | | Box       |
+   throwsᵉ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░
+   |  ░░░░░  | | Capsule   | throwsᵉ | throwsᵉ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░
+   |   ░░░░░░   |  ░░░░░  |  ░░░░░  | | Convex    | throwsᵉ | throwsᵉ  | throwsᵉ
+   |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  | | Cylinder  |
+   throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░
+   |  ░░░░░  | | Ellipsoid | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  | throwsᵉ
+   |   ░░░░░░   |  ░░░░░  |  ░░░░░  | | HalfSpace | throwsᵉ | throwsᵉ  | throwsᵉ
+   |  throwsᵉ  |   throwsᵉ  |   throwsᵉ  |  ░░░░░  |  ░░░░░  | | Mesh      | ᵇ
+   |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░
+   | | Sphere    | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |
+   throwsᵉ  |    ᵇ    | throwsᵉ |
    __*Table 3*__: Support for `T` = @ref drake::symbolic::Expression.
 
    - ᵃ Penetration depth between two HalfSpace instances has no meaning; either
@@ -397,18 +407,17 @@ class QueryObject {
   /** Reports contact information between all deformable geometries against all
    rigid (non-deformable) geometries. This function only supports double as the
    scalar type.
-   @param[out] deformable_rigid_contact
+   @param[out] deformable_contact
      Contains all deformable rigid contact data on output. Any data passed in is
      cleared before the computation. On output, it has size equal to the number
      of deformable geometries and sorted by their geometry ids in increasing
      order.
-   @pre deformable_rigid_contact != nullptr.
+   @pre deformable_contact != nullptr.
    @experimental */
   template <typename T1 = T>
   typename std::enable_if_t<std::is_same_v<T1, double>, void>
-  ComputeDeformableRigidContact(
-      std::vector<internal::DeformableRigidContact<T>>*
-          deformable_rigid_contact) const;
+  ComputeDeformableContact(
+      internal::DeformableContact<T>* deformable_contact) const;
 
   /** Applies a conservative culling mechanism to create a subset of all
    possible geometry pairs based on non-zero intersections. A geometry pair
@@ -521,43 +530,54 @@ class QueryObject {
    pair (ShapeA, ShapeB) will be the same as (ShapeB, ShapeA), so we only fill
    in half the table.
 
-   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
-   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   | Box       |  4e-15  |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Capsule   |  3e-6   |   2e-5   |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Convex    |  3e-15  |   2e-5   |  3e-15  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Cylinder  |  6e-6   |   1e-5   |   6e-6  |   2e-5    |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Ellipsoid |  9e-6   |   5e-6   |   9e-6  |   5e-5    |    2e-5    |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
-   | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |   throwsᵃ  |    ᶜ    |  ░░░░░  |
-   | Sphere    |  3e-15  |  6e-15   |   3e-6  |   5e-15   |    4e-5    |    3e-15   |    ᶜ    |  6e-15  |
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid |
+  %HalfSpace |  %Mesh  | %Sphere | | --------: | :-----: | :------: | :-----: |
+  :-------: | :--------: | :--------: | :-----: | :-----: | | Box       |  4e-15
+  |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░
+  | | Capsule   |  3e-6   |   2e-5   |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   | ░░░░░░
+  |  ░░░░░  |  ░░░░░  | | Convex    |  3e-15  |   2e-5   |  3e-15  |  ░░░░░░░  |
+  ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  | | Cylinder  |  6e-6   |   1e-5   |
+  6e-6  |   2e-5    |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  | | Ellipsoid
+  |  9e-6   |   5e-6   |   9e-6  |   5e-5    |    2e-5    |   ░░░░░░   |  ░░░░░
+  |  ░░░░░  | | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ
+  |   throwsᵃ  |  ░░░░░  |  ░░░░░  | | Mesh      |    ᶜ    |    ᶜ     |    ᶜ |
+  ᶜ     |      ᶜ     |   throwsᵃ  |    ᶜ    |  ░░░░░  | | Sphere    |  3e-15  |
+  6e-15   |   3e-6  |   5e-15   |    4e-5    |    3e-15   |    ᶜ    |  6e-15  |
    __*Table 4*__: Worst observed error (in m) for 2mm penetration/separation
    between geometries approximately 20cm in size for `T` = `double`.
 
-   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
-   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   | Box       | throwsᵇ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Capsule   | throwsᵇ |  throwsᵇ |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Convex    | throwsᵇ |  throwsᵇ | throwsᵇ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Cylinder  | throwsᵇ |  throwsᵇ | throwsᵇ |  throwsᵇ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Ellipsoid | throwsᵇ |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
-   | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |      ᵃ     |    ᶜ    |  ░░░░░  |
-   | Sphere    |  2e-15  |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   |    2e-15   |    ᶜ    |  5e-15  |
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid |
+  %HalfSpace |  %Mesh  | %Sphere | | --------: | :-----: | :------: | :-----: |
+  :-------: | :--------: | :--------: | :-----: | :-----: | | Box       |
+  throwsᵇ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |
+  ░░░░░  | | Capsule   | throwsᵇ |  throwsᵇ |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |
+  ░░░░░░   |  ░░░░░  |  ░░░░░  | | Convex    | throwsᵇ |  throwsᵇ | throwsᵇ |
+  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  | | Cylinder  | throwsᵇ
+  |  throwsᵇ | throwsᵇ |  throwsᵇ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░
+  | | Ellipsoid | throwsᵇ |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   | ░░░░░░
+  |  ░░░░░  |  ░░░░░  | | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |
+  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  | | Mesh      |    ᶜ    |    ᶜ | ᶜ
+  |     ᶜ     |      ᶜ     |      ᵃ     |    ᶜ    |  ░░░░░  | | Sphere    |
+  2e-15  |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   |    2e-15   |    ᶜ    |
+  5e-15  |
    __*Table 5*__: Worst observed error (in m) for 2mm penetration/separation
    between geometries approximately 20cm in size for `T` =
    @ref drake::AutoDiffXd "AutoDiffXd".
 
-   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
-   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   | Box       | throwsᵈ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Capsule   | throwsᵈ | throwsᵈ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Convex    | throwsᵈ | throwsᵈ  | throwsᵈ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Cylinder  | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | Ellipsoid | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | HalfSpace | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   throwsᵈ  |  ░░░░░  |  ░░░░░  |
-   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
-   | Sphere    | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |    throwsᵈ  |    ᵇ    | throwsᵈ |
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid |
+  %HalfSpace |  %Mesh  | %Sphere | | --------: | :-----: | :------: | :-----: |
+  :-------: | :--------: | :--------: | :-----: | :-----: | | Box       |
+  throwsᵈ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |
+  ░░░░░  | | Capsule   | throwsᵈ | throwsᵈ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |
+  ░░░░░░   |  ░░░░░  |  ░░░░░  | | Convex    | throwsᵈ | throwsᵈ  | throwsᵈ |
+  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  | | Cylinder  | throwsᵈ
+  | throwsᵈ  | throwsᵈ |  throwsᵈ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░
+  | | Ellipsoid | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  | ░░░░░░
+  |  ░░░░░  |  ░░░░░  | | HalfSpace | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |
+  throwsᵈ  |   throwsᵈ  |  ░░░░░  |  ░░░░░  | | Mesh      |    ᵇ    |    ᵇ     |
+  ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  | | Sphere    |
+  throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |    throwsᵈ  |    ᵇ |
+  throwsᵈ |
    __*Table 6*__: Support for `T` = @ref drake::symbolic::Expression.
 
    - ᵃ We don't currently support queries between HalfSpace and any other shape
@@ -652,11 +672,13 @@ class QueryObject {
    of shape pairs, but a list of shapes. Otherwise, the methodology is the same
    as described, with the point being represented as a zero-radius sphere.
 
-   |   Scalar   |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
-   | :----: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   |   double   |  2e-15  |   4e-15  |    ᵃ    |   3e-15   |    3e-5ᵇ   |    5e-15   |    ᵃ    |  4e-15  |
-   | AutoDiffXd |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
-   | Expression |   ᵃ     |    ᵃ     |    ᵃ    |     ᵃ     |      ᵃ     |      ᵃ     |    ᵃ    |    ᵃ    |
+   |   Scalar   |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid |
+   %HalfSpace |  %Mesh  | %Sphere | | :----: | :-----: | :------: | :-----: |
+   :-------: | :--------: | :--------: | :-----: | :-----: | |   double   |
+   2e-15  |   4e-15  |    ᵃ    |   3e-15   |    3e-5ᵇ   |    5e-15   |    ᵃ    |
+   4e-15  | | AutoDiffXd |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ |
+   5e-15   |    ᵃ    |  3e-15  | | Expression |   ᵃ     |    ᵃ     |    ᵃ    |
+   ᵃ     |      ᵃ     |      ᵃ     |    ᵃ    |    ᵃ    |
    __*Table 7*__: Worst observed error (in m) for 2mm penetration/separation
    between geometry approximately 20cm in size and a point.
 
@@ -707,12 +729,10 @@ class QueryObject {
                               values (and supporting data) for every supported
                               geometry as shown in the table. See
                               SignedDistanceToPoint. */
-  std::vector<SignedDistanceToPoint<T>>
-  ComputeSignedDistanceToPoint(const Vector3<T> &p_WQ,
-                               const double threshold
-                               = std::numeric_limits<double>::infinity()) const;
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
+      const Vector3<T>& p_WQ,
+      const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
-
 
   //---------------------------------------------------------------------------
   /**
@@ -767,7 +787,6 @@ class QueryObject {
   void RenderLabelImage(const render::ColorRenderCamera& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageLabel16I* label_image_out) const;
-
 
   /** Returns the named render engine, if it exists. The RenderEngine is
    guaranteed to be up to date w.r.t. the poses and data in the context. */
@@ -840,9 +859,7 @@ class QueryObject {
   }
 
   // Reports if the object can be copied; it must either be callable or default.
-  bool is_copyable() const {
-    return is_callable() || is_default();
-  }
+  bool is_copyable() const { return is_callable() || is_default(); }
 
   // Throws an exception if the QueryObject is neither "live" nor "baked" (see
   // class docs for discussion).

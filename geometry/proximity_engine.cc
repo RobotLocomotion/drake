@@ -717,11 +717,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::sort(point_pairs->begin(), point_pairs->end(), OrderPointPair<T>);
   }
 
-  void ComputeDeformableRigidContact(
-      std::vector<DeformableRigidContact<double>>* deformable_contact_data)
-      const {
-    geometries_for_deformable_contact_.ComputeDeformableRigidContact(
-        deformable_contact_data);
+  void ComputeDeformableContact(
+      DeformableContact<double>* deformable_contact) const {
+    *deformable_contact =
+        geometries_for_deformable_contact_.ComputeDeformableContact();
   }
 
   // Testing utilities
@@ -1086,9 +1085,9 @@ ProximityEngine<T>::ComputeContactSurfacesWithFallback(
 template <typename T>
 template <typename T1>
 typename std::enable_if_t<std::is_same_v<T1, double>, void>
-ProximityEngine<T>::ComputeDeformableRigidContact(
-    std::vector<DeformableRigidContact<T>>* deformable_rigid_contact) const {
-  impl_->ComputeDeformableRigidContact(deformable_rigid_contact);
+ProximityEngine<T>::ComputeDeformableContact(
+    DeformableContact<T>* deformable_contact) const {
+  impl_->ComputeDeformableContact(deformable_contact);
 }
 
 template <typename T>
@@ -1134,8 +1133,8 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&ProximityEngine<T>::template ComputeContactSurfaces<T>,
      &ProximityEngine<T>::template ComputeContactSurfacesWithFallback<T>))
 
-template void ProximityEngine<double>::ComputeDeformableRigidContact<double>(
-    std::vector<DeformableRigidContact<double>>*) const;
+template void ProximityEngine<double>::ComputeDeformableContact<double>(
+    DeformableContact<double>*) const;
 
 }  // namespace internal
 }  // namespace geometry
