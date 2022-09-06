@@ -109,6 +109,11 @@ cmake ../drake
 make -j
 ```
 
+Note that a concurrency limit passed to `make` (e.g., `make -j 2`) has almost no
+effect on the Drake build. You might need to add a bazel configuration dotfile
+to your home directory if your build is running out of memory. See the
+[troubleshooting](/troubleshooting.html#build-oom) page for details.
+
 Please note the additional CMake options which affect the Python bindings:
 
 * ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
