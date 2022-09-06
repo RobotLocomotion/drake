@@ -473,9 +473,8 @@ class TestGeometrySceneGraph(unittest.TestCase):
         # populating the SceneGraph, we look for the exception thrown in
         # response to invalid ids as evidence of correct binding.
         with self.assertRaisesRegex(
-            RuntimeError,
-            r"The geometry given by id \d+ does not reference a geometry"
-                + " that can be used in a signed distance query"):
+                RuntimeError,
+                "Referenced geometry .+ has not been registered."):
             query_object.ComputeSignedDistancePairClosestPoints(
                 geometry_id_A=mut.GeometryId.get_new_id(),
                 geometry_id_B=mut.GeometryId.get_new_id())

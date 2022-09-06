@@ -604,8 +604,10 @@ class QueryObject {
    Refer to @ref query_object_compute_pairwise_distance_table
    "the table for ComputeSignedDistancePairwiseClosestPoints()" for details.
 
-   @throws std::exception if either geometry id is invalid, the pair (A, B) has
-                          been marked as filtered, or according to the scalar
+   @throws std::exception if either geometry id is invalid (e.g., doesn't refer
+                          to an existing geometry, lacking proximity role,
+                          etc.), the pair (A, B) has been marked as filtered, or
+                          otherwise unsupported as indicated by the the scalar
                           support table.
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.  */
