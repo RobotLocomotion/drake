@@ -150,6 +150,12 @@ TEST_F(DeformableModelTest, GetGeometryId) {
       "GetGeometryIdOrThrow.*No deformable body with id.*");
 }
 
+TEST_F(DeformableModelTest, ToModelVariant) {
+  ModelVariant<double> model_variant = deformable_model_ptr_->ToModelVariant();
+  EXPECT_TRUE(
+      std::holds_alternative<const DeformableModel<double>*>(model_variant));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

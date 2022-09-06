@@ -69,18 +69,6 @@ TEST_F(PhysicalModelTest, PostFinalizeStateAdditionNotAllowed) {
       "declared are not allowed.");
 }
 
-TEST_F(PhysicalModelTest, AddToManager) {
-  CompliantContactManager<double> manager;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dummy_model_->AddToManager(&manager),
-      "Calls to.*AddToManager.*before system resources have "
-      "been declared are not allowed.");
-  FinalizePlant();
-  EXPECT_FALSE(dummy_model_->is_compliant_contact_manager_set());
-  dummy_model_->AddToManager(&manager);
-  EXPECT_TRUE(dummy_model_->is_compliant_contact_manager_set());
-}
-
 }  // namespace
 }  // namespace test
 }  // namespace internal

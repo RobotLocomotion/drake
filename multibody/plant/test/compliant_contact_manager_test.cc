@@ -144,22 +144,27 @@ class CompliantContactManagerTest {
       const CompliantContactManager<double>& manager) {
     return manager.deformable_driver_.get();
   }
+
+  static void ExtractConcreteModel(CompliantContactManager<double>* manager,
+                                   const DeformableModel<double>* model) {
+    return manager->ExtractConcreteModel(model);
+  }
 };
 
-// Tests that SetDeformableDriver creates a DeformableDriver instance owned by
+// Tests that ExtractConcreteModel creates a DeformableDriver instance owned by
 // the manager.
-GTEST_TEST(CompliantContactManagerTest, SetDeformableDriver) {
+GTEST_TEST(CompliantContactManagerTest, ExtractConcreteModel) {
   CompliantContactManager<double> manager;
   EXPECT_EQ(CompliantContactManagerTest::deformable_driver(manager), nullptr);
   MultibodyPlant<double> plant(0.01);
   const DeformableModel<double> model(&plant);
-  manager.SetDeformableModel(&model);
+  CompliantContactManagerTest::ExtractConcreteModel(&manager, &model);
   EXPECT_NE(CompliantContactManagerTest::deformable_driver(manager), nullptr);
 }
 
 // Tests that in SetDiscreteUpdateManager, a registered DeformableModel will
 // cause a DeformableDriver to be instantiated in the manager.
-GTEST_TEST(CompliantContactManagerTest, ExtractDeformableModelInfo) {
+GTEST_TEST(CompliantContactManagerTest, ExtractModelInfo) {
   CompliantContactManager<double> manager;
   EXPECT_EQ(CompliantContactManagerTest::deformable_driver(manager), nullptr);
   MultibodyPlant<double> plant(0.01);

@@ -21,10 +21,12 @@
 
 namespace drake {
 namespace multibody {
+
 template <typename T>
 class MultibodyPlant;
 
 namespace internal {
+
 template <typename T>
 class AccelerationKinematicsCache;
 
@@ -249,6 +251,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   MultibodyPlant<T>* mutable_plant_{nullptr};
   systems::DiscreteStateIndex multibody_state_index_;
 };
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

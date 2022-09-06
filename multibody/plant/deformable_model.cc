@@ -98,12 +98,6 @@ GeometryId DeformableModel<T>::GetGeometryIdOrThrow(DeformableBodyId id) const {
 }
 
 template <typename T>
-void DeformableModel<T>::DoAddToManager(
-    CompliantContactManager<T>* manager) {
-  manager->SetDeformableModel(this);
-}
-
-template <typename T>
 void DeformableModel<T>::BuildLinearVolumetricModel(
     DeformableBodyId id, const geometry::VolumeMesh<double>& mesh,
     const fem::DeformableBodyConfig<T>& config) {
