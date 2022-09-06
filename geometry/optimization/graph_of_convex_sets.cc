@@ -56,6 +56,37 @@ Vertex::Vertex(VertexId id, const ConvexSet& set, std::string name)
 
 Vertex::~Vertex() = default;
 
+std::pair<Variable, Binding<Cost>> Vertex::AddCost(
+    const symbolic::Expression& e) {
+  return AddCost(solvers::internal::ParseCost(e));
+}
+
+std::pair<Variable, Binding<Cost>> Vertex::AddCost(
+    const Binding<Cost>& binding) {
+  DRAKE_THROW_UNLESS(
+      Variables(binding.variables()).IsSubsetOf(Variables(placeholder_x_)));
+  const int n = ell_.size();
+  ell_.conservativeResize(n + 1);
+  ell_[n] = Variable(fmt::format("v_ell{}", n), Variable::Type::CONTINUOUS);
+  costs_.emplace_back(binding);
+  return std::pair<Variable, Binding<Cost>>(ell_[n], costs_.back());
+}
+
+Binding<Constraint> Vertex::AddConstraint(const symbolic::Formula& f) {
+  return AddConstraint(solvers::internal::ParseConstraint(f));
+}
+
+Binding<Constraint> Vertex::AddConstraint(const Binding<Constraint>& binding) {
+  DRAKE_THROW_UNLESS(
+      Variables(binding.variables()).IsSubsetOf(Variables(placeholder_x_)));
+  constraints_.emplace_back(binding);
+  return binding;
+}
+
+double Vertex::GetSolutionCost(const MathematicalProgramResult& result) const {
+  return result.GetSolution(ell_).sum();
+}
+
 VectorXd Vertex::GetSolution(const MathematicalProgramResult& result) const {
   return result.GetSolution(placeholder_x_);
 }
@@ -588,6 +619,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
   std::map<VertexId, std::vector<Edge*>> incoming_edges;
   std::map<VertexId, std::vector<Edge*>> outgoing_edges;
+  std::map<VertexId, VectorXDecisionVariable> vertex_edge_ell;
   std::vector<Edge*> excluded_edges;
 
   std::map<EdgeId, Variable> relaxed_phi;
@@ -766,6 +798,63 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         }
       }
     }
+
+    const std::vector<Edge*>& cost_edges = is_target ? incoming : outgoing;
+
+    // Vertex costs.
+    if (v->ell_.size() > 0) {
+      vertex_edge_ell[v->id()] =
+          prog.NewContinuousVariables(cost_edges.size(), v->ell_.size());
+      for (int ii = 0; ii < v->ell_.size(); ++ii) {
+        const Binding<Cost>& b = v->costs_[ii];
+        const VectorXDecisionVariable& old_vars = b.variables();
+
+        VectorXDecisionVariable vertex_ell =
+            vertex_edge_ell.at(v->id()).col(ii);
+        prog.AddLinearCost(VectorXd::Ones(vertex_ell.size()), vertex_ell);
+
+        for (int jj = 0; jj < static_cast<int>(cost_edges.size()); ++jj) {
+          const Edge* e = cost_edges[jj];
+          VectorXDecisionVariable vars(old_vars.size() + 2);
+          // vars = [phi; ell; yz_vars]
+          if (options.convex_relaxation) {
+            vars[0] = relaxed_phi.at(e->id());
+          } else {
+            vars[0] = e->phi_;
+          }
+          vars[1] = vertex_ell[jj];
+          for (int kk = 0; kk < old_vars.size(); ++kk) {
+            vars[kk + 2] = e->x_to_yz_.at(old_vars[kk]);
+          }
+
+          AddPerspectiveCost(&prog, b, vars);
+        }
+      }
+    }
+
+    // Vertex constraints.
+    for (const Binding<Constraint>& b : v->constraints_) {
+      const VectorXDecisionVariable& old_vars = b.variables();
+
+      for (const Edge* e : cost_edges) {
+        VectorXDecisionVariable vars(old_vars.size() + 1);
+        // vars = [phi; yz_vars]
+        if (options.convex_relaxation) {
+          vars[0] = relaxed_phi.at(e->id());
+        } else {
+          vars[0] = e->phi_;
+        }
+        for (int ii = 0; ii < old_vars.size(); ++ii) {
+          vars[ii + 1] = e->x_to_yz_.at(old_vars[ii]);
+        }
+
+        // Note: The use of perspective functions here does not check (nor
+        // assume) that the constraints describe a bounded set.  The boundedness
+        // is ensured by the intersection of these constraints with the convex
+        // sets (on the vertices).
+        AddPerspectiveConstraint(&prog, b, vars);
+      }
+    }
   }
 
   MathematicalProgramResult result;
@@ -782,6 +871,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
        vertices_) {
     num_placeholder_vars += vpair.second->ambient_dimension();
+    num_placeholder_vars += vpair.second->ell_.size();
   }
   for (const Edge* e : excluded_edges) {
     num_placeholder_vars += e->y_.size() + e->z_.size() + e->ell_.size() + 1;
@@ -843,6 +933,11 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     for (int i = 0; i < v->ambient_dimension(); ++i) {
       decision_variable_index.emplace(v->x()[i].get_id(), count);
       x_val[count++] = x_v[i];
+    }
+    for (int ii = 0; ii < v->ell_.size(); ++ii) {
+      decision_variable_index.emplace(v->ell_[ii].get_id(), count);
+      x_val[count++] =
+          result.GetSolution(vertex_edge_ell.at(v->id()).col(ii)).sum();
     }
   }
   if (options.convex_relaxation) {
