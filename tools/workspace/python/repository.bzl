@@ -51,6 +51,8 @@ _VERSION_SUPPORT_MATRIX = {
     "ubuntu:20.04": ["3.8"],
     "ubuntu:22.04": ["3.10"],
     "macos": ["3.10"],
+    # NOTE: update URLs on doc/_pages/pip.md (`cpXY-cpXY` components) when
+    # updating supported wheel python versions.
     "macos_wheel": ["3.10"],
     "manylinux": ["3.8", "3.9"],
 }
