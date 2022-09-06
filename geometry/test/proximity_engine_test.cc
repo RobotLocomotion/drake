@@ -4655,7 +4655,7 @@ TEST_F(ProximityEngineDeformableContactTest, UpdateDeformablePositions) {
 
 // Verify that ProximityEngine is properly invoking the lower-level collision
 // query code by verifying a few necessary conditions.
-TEST_F(ProximityEngineDeformableContactTest, ComputeDeformableRigidContact) {
+TEST_F(ProximityEngineDeformableContactTest, ComputeDeformableContact) {
   const GeometryId deformable_id = AddDeformableSphere();
 
   // Add a rigid sphere partially overlapping the deformable sphere.
@@ -4664,12 +4664,13 @@ TEST_F(ProximityEngineDeformableContactTest, ComputeDeformableRigidContact) {
   engine_.AddDynamicGeometry(Sphere(kSphereRadius), {}, rigid_id, props);
 
   // Verify the two spheres are in contact.
-  std::vector<DeformableRigidContact<double>> contact_data;
-  engine_.ComputeDeformableRigidContact(&contact_data);
-  ASSERT_EQ(contact_data.size(), 1);
-  EXPECT_EQ(contact_data[0].deformable_id(), deformable_id);
-  ASSERT_EQ(contact_data[0].rigid_ids().size(), 1);
-  EXPECT_EQ(contact_data[0].rigid_ids()[0], rigid_id);
+  DeformableContact<double> contact_data;
+  engine_.ComputeDeformableContact(&contact_data);
+  ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
+  DeformableContactSurface<double> contact_surface =
+      contact_data.contact_surfaces()[0];
+  EXPECT_EQ(contact_surface.id_A(), deformable_id);
+  EXPECT_EQ(contact_surface.id_B(), rigid_id);
 
   // Move the deformable geometry away so that the two geometries are no longer
   // in contact.
@@ -4681,9 +4682,8 @@ TEST_F(ProximityEngineDeformableContactTest, ComputeDeformableRigidContact) {
     q_WD.segment<3>(3 * i) = mesh.vertex(i) + offset_W;
   }
   engine_.UpdateDeformableVertexPositions({{deformable_id, q_WD}});
-  engine_.ComputeDeformableRigidContact(&contact_data);
-  ASSERT_EQ(contact_data.size(), 1);
-  EXPECT_EQ(contact_data[0].rigid_ids().size(), 0);
+  engine_.ComputeDeformableContact(&contact_data);
+  ASSERT_EQ(contact_data.contact_surfaces().size(), 0);
 
   // Shift the rigid geometry by the same offset and they are again in
   // contact.
@@ -4691,11 +4691,11 @@ TEST_F(ProximityEngineDeformableContactTest, ComputeDeformableRigidContact) {
       geometry_id_to_world_poses;
   geometry_id_to_world_poses.insert({rigid_id, RigidTransformd(offset_W)});
   engine_.UpdateWorldPoses(geometry_id_to_world_poses);
-  engine_.ComputeDeformableRigidContact(&contact_data);
-  ASSERT_EQ(contact_data.size(), 1);
-  EXPECT_EQ(contact_data[0].deformable_id(), deformable_id);
-  ASSERT_EQ(contact_data[0].rigid_ids().size(), 1);
-  EXPECT_EQ(contact_data[0].rigid_ids()[0], rigid_id);
+  engine_.ComputeDeformableContact(&contact_data);
+  ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
+  contact_surface = contact_data.contact_surfaces()[0];
+  EXPECT_EQ(contact_surface.id_A(), deformable_id);
+  EXPECT_EQ(contact_surface.id_B(), rigid_id);
 }
 
 }  // namespace

@@ -1768,17 +1768,15 @@ TEST_F(GeometryStateTest, SetGeometryConfiguration) {
 
   // Verify that the two geometries are still in contact *before"
   // FinalizeConfigurationUpdate() is called.
-  std::vector<internal::DeformableRigidContact<double>> contacts;
-  geometry_state_.ComputeDeformableRigidContact(&contacts);
-  ASSERT_EQ(contacts.size(), 1);
-  EXPECT_EQ(contacts[0].num_rigid_geometries(), 1);
+  internal::DeformableContact<double> contacts;
+  geometry_state_.ComputeDeformableContact(&contacts);
+  ASSERT_EQ(contacts.contact_surfaces().size(), 1);
 
   // Verify that the two geometries are no longer in contact *after"
   // FinalizeConfigurationUpdate() is called.
   gs_tester_.FinalizeConfigurationUpdate();
-  geometry_state_.ComputeDeformableRigidContact(&contacts);
-  ASSERT_EQ(contacts.size(), 1);
-  EXPECT_EQ(contacts[0].num_rigid_geometries(), 0);
+  geometry_state_.ComputeDeformableContact(&contacts);
+  ASSERT_EQ(contacts.contact_surfaces().size(), 0);
 }
 
 // Tests the RemoveGeometry() functionality. This action will have several

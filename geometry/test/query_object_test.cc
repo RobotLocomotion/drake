@@ -176,10 +176,9 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   std::vector<PenetrationAsPointPair<double>> point_pairs;
   EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfacesWithFallback(
       representation, &surfaces, &point_pairs));
-  std::vector<internal::DeformableRigidContact<double>>
-      deformable_rigid_contact;
+  internal::DeformableContact<double> deformable_contact;
   EXPECT_DEFAULT_ERROR(
-      default_object.ComputeDeformableRigidContact(&deformable_rigid_contact));
+      default_object.ComputeDeformableContact(&deformable_contact));
 
   // Signed distance queries.
   EXPECT_DEFAULT_ERROR(
