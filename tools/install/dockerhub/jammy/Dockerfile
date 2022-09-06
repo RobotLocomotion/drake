@@ -11,6 +11,5 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # https://docs.deepnote.com/environment/custom-environments#custom-image-requirements
     python3-pip python-is-python3 \
   && rm -rf /var/lib/apt/lists/*
-ENV LD_LIBRARY_PATH="/opt/drake/lib:${LD_LIBRARY_PATH}" \
-  PATH="/opt/drake/bin:${PATH}" \
+ENV PATH="/opt/drake/bin:${PATH}" \
   PYTHONPATH="/opt/drake/lib/python3.10/site-packages:${PYTHONPATH}"

@@ -17,6 +17,5 @@ echo "drake-visualizer is not supported on Docker containers.\n\
 Although not guaranteed to run, the executable is available to try as-is:\n\
 /opt/drake/bin/drake-visualizer.image"' > /opt/drake/bin/drake-visualizer\
   && chmod a+x /opt/drake/bin/drake-visualizer
-ENV LD_LIBRARY_PATH="/opt/drake/lib:${LD_LIBRARY_PATH}" \
-  PATH="/opt/drake/bin:${PATH}" \
+ENV PATH="/opt/drake/bin:${PATH}" \
   PYTHONPATH="/opt/drake/lib/python3.8/site-packages:${PYTHONPATH}"
