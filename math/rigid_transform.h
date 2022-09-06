@@ -531,10 +531,7 @@ class RigidTransform {
       vec_A(3) = vec_B(3);
       return vec_A;
     } else {
-      throw std::logic_error(fmt::format(
-          "The 4th element in vector [{}, {}, {}, {}] passed to "
-          "RigidTransform::operator* is not 0 or 1.",
-          vec_B(0), vec_B(1), vec_B(2), vec_B(3)));
+      ThrowInvalidMultiplyVector4(vec_B);
     }
   }
 
@@ -658,6 +655,10 @@ class RigidTransform {
           "Error: Bottom row of 4x4 matrix differs from [0, 0, 0, 1]"));
     }
   }
+
+  // Throw an exception if the last element of the Vector4 provided to
+  // RigidTransform * Vector4 is not 0 or 1.
+  [[noreturn]] static void ThrowInvalidMultiplyVector4(const Vector4<T>& vec_B);
 
   // Rotation matrix relating two frames, e.g. frame A and frame B.
   // The default constructor for R_AB_ is an identity matrix.

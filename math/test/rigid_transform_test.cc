@@ -714,10 +714,7 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByVector4) {
 
   // Verify that multiply-by-invalid-vector throws an exception.
   const Eigen::Vector4d bad_vector(1, 2, 3, 4);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      X_AB * bad_vector,
-      "The 4th element in vector \\[1\\.0, 2\\.0, 3\\.0, 4\\.0\\] passed to "
-      "RigidTransform::operator\\* is not 0 or 1\\.");
+  DRAKE_EXPECT_THROWS_MESSAGE(X_AB * bad_vector, ".*is not 0 or 1.*");
 }
 
 // Tests RigidTransform X_AB multiplied by a 3 x n matrix whose columns are
