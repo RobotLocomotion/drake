@@ -22,10 +22,15 @@ DifferentialInverseKinematicsIntegrator::
       time_step_(time_step) {
   parameters_.set_timestep(time_step);
 
+  // This is accessed as port 0 in the code below.
   this->DeclareAbstractInputPort("X_WE_desired",
                                  Value<math::RigidTransformd>{});
 
-  this->DeclarePeriodicDiscreteUpdate(time_step);
+  // This is accessed as port 1 in the code below.
+  this->DeclareVectorInputPort("robot_state", robot.num_multibody_states());
+
+  this->DeclarePeriodicDiscreteUpdateEvent(
+      time_step, 0, &DifferentialInverseKinematicsIntegrator::Integrate);
   this->DeclareDiscreteState(robot.num_positions());
   if (log_only_when_result_state_changes) {
     this->DeclareDiscreteState(Vector1d(static_cast<double>(
@@ -36,6 +41,9 @@ DifferentialInverseKinematicsIntegrator::
       "joint_positions", robot.num_positions(),
       &DifferentialInverseKinematicsIntegrator::CopyPositionsOut,
       {all_state_ticket()});
+
+  this->DeclareInitializationDiscreteUpdateEvent(
+      &DifferentialInverseKinematicsIntegrator::Initialize);
 
   // We keep a Context for the MultibodyPlant as a cache entry for use in
   // evaluating the kinematics.
@@ -84,11 +92,9 @@ void DifferentialInverseKinematicsIntegrator::UpdateRobotContext(
                       context.get_discrete_state(0).get_value());
 }
 
-void DifferentialInverseKinematicsIntegrator::DoCalcDiscreteVariableUpdates(
+systems::EventStatus DifferentialInverseKinematicsIntegrator::Integrate(
     const Context<double>& context,
-    const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
     systems::DiscreteValues<double>* discrete_state) const {
-  unused(events);
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_DEMAND(input != nullptr);
   const math::RigidTransformd& X_WE_desired =
@@ -150,12 +156,25 @@ void DifferentialInverseKinematicsIntegrator::DoCalcDiscreteVariableUpdates(
       }
     }
   }
+  return systems::EventStatus::Succeeded();
 }
 
 void DifferentialInverseKinematicsIntegrator::CopyPositionsOut(
     const Context<double>& context,
     systems::BasicVector<double>* output) const {
   output->SetFrom(context.get_discrete_state(0));
+}
+
+systems::EventStatus DifferentialInverseKinematicsIntegrator::Initialize(
+    const systems::Context<double>& context,
+    systems::DiscreteValues<double>* discrete_state) const {
+  if (this->get_input_port(1).HasValue(context)) {
+    Eigen::VectorXd state = this->get_input_port(1).Eval(context);
+    DRAKE_DEMAND(state.size() == robot_.num_multibody_states());
+    discrete_state->set_value(0, state.head(robot_.num_positions()));
+    return systems::EventStatus::Succeeded();
+  }
+  return systems::EventStatus::DidNothing();
 }
 
 }  // namespace planner

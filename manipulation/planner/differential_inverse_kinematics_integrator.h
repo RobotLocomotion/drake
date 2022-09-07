@@ -22,14 +22,21 @@ joints; we hope to resolve this and are tracking it in #9773.
 
 Note: It is highly recommended that the user calls `SetPosition()` once to
 initialize the position commands to match the initial positions of the robot.
+Alternatively, one can connect the optional `robot_state` input port -- which
+is only used at Initialization, and simply sets the positions to the positions
+on this input port (the port accepts the state vector with positions and
+velocities for easy of use with MultibodyPlant, but only the positions are
+used).
 
 @system
 name: DifferentialInverseKinematicsIntegrator
 input_ports:
 - X_WE_desired
+- robot_state (optional)
 output_ports:
 - joint_positions
 @endsystem
+
 
 @ingroup manipulation_systems */
 class DifferentialInverseKinematicsIntegrator
@@ -90,14 +97,19 @@ class DifferentialInverseKinematicsIntegrator
                           systems::Context<double>* robot_context) const;
 
   // Calls DoDifferentialInverseKinematics and performs one integration step.
-  void DoCalcDiscreteVariableUpdates(
+  systems::EventStatus Integrate(
       const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
-      systems::DiscreteValues<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const;
 
   // Outputs the current position value.
   void CopyPositionsOut(const systems::Context<double>& context,
                         systems::BasicVector<double>* output) const;
+
+  // If the state input port is connected, then this method sets the integrator
+  // state to match the positions on the input port.
+  systems::EventStatus Initialize(
+      const systems::Context<double>& context,
+      systems::DiscreteValues<double>* values) const;
 
   const multibody::MultibodyPlant<double>& robot_;
   const multibody::Frame<double>& frame_E_;
