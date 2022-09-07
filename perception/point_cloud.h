@@ -300,6 +300,19 @@ class PointCloud final {
 
   /// @}
 
+  /// @name Point Cloud Processing
+  /// @{
+
+  /// Returns a new point cloud containing only the points in `this` with xyz
+  /// values within the axis-aligned bounding box defined by `lower_xyz` and
+  /// `upper_xyz`. Requires that xyz values are defined.
+  /// @pre lower_xyz <= upper_xyz (elementwise).
+  /// @throws std::exception if has_xyzs() != true.
+  PointCloud Crop(const Eigen::Ref<const Vector3<T>>& lower_xyz,
+            const Eigen::Ref<const Vector3<T>>& upper_xyz);
+
+  /// @}
+
   // TODO(eric.cousineau): Add storage for indices, with SHOT as a motivating
   // example.
 
@@ -319,6 +332,12 @@ class PointCloud final {
   // Owns storage used for the point cloud.
   std::unique_ptr<Storage> storage_;
 };
+
+/// Returns a new point cloud that includes all of the points from the point
+/// clouds in `clouds`. All of the `clouds` must have the same fields.
+/// @pre `clouds` contains at least one point cloud.
+/// @throws std::exception if the clouds have different fields defined.
+PointCloud Concatenate(const std::vector<PointCloud>& clouds);
 
 // TODO(eric.cousineau): Consider a way of reinterpret_cast<>ing the array
 // data to permit more semantic access to members, PCL-style
