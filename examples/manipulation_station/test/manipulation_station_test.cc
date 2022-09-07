@@ -95,7 +95,9 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia(
   // With everything about the same point Go and expressed in the same frame G,
   // proceed to compose into composite body C:
   // TODO(amcastro-tri): Implement operator+() in SpatialInertia.
-  multibody::SpatialInertia<double> M_CGo_G = M_GGo_G += M_LGo_G += M_RGo_G;
+  multibody::SpatialInertia<double> M_CGo_G = M_GGo_G;
+  M_CGo_G += M_LGo_G;
+  M_CGo_G += M_RGo_G;
   return M_CGo_G;
 }
 
