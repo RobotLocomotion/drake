@@ -1,12 +1,16 @@
 #include "drake/perception/point_cloud.h"
 
+#include <functional>
 #include <utility>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/unused.h"
 
 using Eigen::Map;
 using Eigen::NoChange;
@@ -376,6 +380,95 @@ PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
     index += s;
   }
   return new_cloud;
+}
+
+namespace {
+
+// Hash function for Eigen matrix and vector from
+// https://wjngkoh.wordpress.com/2015/03/04/c-hash-function-for-eigen-matrix-and-vector/,
+// implemented as in boost::hash_combine.
+template<typename T>
+struct matrix_hash : std::unary_function<T, size_t> {
+  std::size_t operator()(T const& matrix) const {
+    size_t seed = 0;
+    for (int i = 0; i < static_cast<int>(matrix.size()); ++i) {
+      auto elem = *(matrix.data() + i);
+      seed ^= std::hash<typename T::Scalar>()(elem) + 0x9e3779b9 + (seed << 6) +
+              (seed >> 2);
+    }
+    return seed;
+  }
+};
+
+}  // namespace
+
+PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
+  // This is a simple, narrow, no-frills implementation of the
+  // voxel_down_sample algorithm in Open3d and/or the down-sampling by a
+  // VoxelGrid filter in PCL.
+  DRAKE_THROW_UNLESS(has_xyzs());
+  const Eigen::Vector3f lower_xyz = xyzs().rowwise().minCoeff();
+
+  // Create a map from voxel coordinate to a set of points.
+  absl::flat_hash_map<Eigen::Vector3i, absl::flat_hash_set<int>,
+                        matrix_hash<Eigen::Vector3i>>
+      voxel_map;
+  for (int i = 0; i < size_; ++i) {
+    const Eigen::Vector3i v =
+        ((xyzs().col(i) - lower_xyz) / voxel_size).cast<int>();
+    voxel_map[v].emplace(i);
+  }
+
+  PointCloud down_sampled(voxel_map.size(), fields());
+  down_sampled.mutable_xyzs().setZero();
+  if (has_normals()) {
+    down_sampled.mutable_normals().setZero();
+  }
+  if (has_rgbs()) {
+    down_sampled.mutable_rgbs().setZero();
+  }
+  if (has_descriptors()) {
+    down_sampled.mutable_descriptors().setZero();
+  }
+
+  // Iterate through the map populating the elements of the down_sampled cloud.
+  int index_in_down_sampled = 0;
+  for (const auto& [coordinates, indices_in_this] : voxel_map) {
+    unused(coordinates);
+    for (int index_in_this : indices_in_this) {
+      down_sampled.mutable_xyzs().col(index_in_down_sampled) +=
+          xyzs().col(index_in_this);
+      if (has_normals()) {
+        down_sampled.mutable_normals().col(index_in_down_sampled) +=
+            normals().col(index_in_this);
+      }
+      if (has_rgbs()) {
+        down_sampled.mutable_rgbs().col(index_in_down_sampled) +=
+            rgbs().col(index_in_this);
+      }
+      if (has_descriptors()) {
+        down_sampled.mutable_descriptors().col(index_in_down_sampled) +=
+            descriptors().col(index_in_this);
+      }
+    }
+    down_sampled.mutable_xyzs().col(index_in_down_sampled) /=
+        indices_in_this.size();
+    if (has_normals()) {
+      down_sampled.mutable_normals().col(index_in_down_sampled) /=
+          indices_in_this.size();
+    }
+    if (has_rgbs()) {
+      down_sampled.mutable_rgbs().col(index_in_down_sampled) /=
+          indices_in_this.size();
+    }
+    if (has_descriptors()) {
+      down_sampled.mutable_descriptors().col(index_in_down_sampled) /=
+          indices_in_this.size();
+    }
+    ++index_in_down_sampled;
+  }
+
+  return down_sampled;
 }
 
 }  // namespace perception

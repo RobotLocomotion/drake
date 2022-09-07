@@ -331,6 +331,72 @@ GTEST_TEST(PointCloud, Concatenate) {
   EXPECT_TRUE(CompareMatrices(merged.descriptors(), descriptors_expected));
 }
 
+GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
+  auto fields = pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs |
+                pc_flags::kDescriptorCurvature;
+  const int num_points{6};
+  PointCloud cloud(num_points, fields);
+  // Place points inside the cube with corners at (±1, ±1, ±1).
+  // clang-format off
+  cloud.mutable_xyzs().transpose() <<
+    -1, -1, -1,  // lower_xyz
+    0.1, 0.2, 0.3,
+    0.24, 0.1, 0.25,
+    -.63, 0.25, .64,
+    -.57, 0.73, .92,
+    -.39, 0.2, .18;
+  // clang-format on
+
+  // Populate the other fields with random values.
+  std::srand(1234);
+  cloud.mutable_normals().setRandom();
+  cloud.mutable_rgbs().setRandom();
+  cloud.mutable_descriptors().setRandom();
+
+  // Down-sample so that each occupied orthant returns one point.
+  PointCloud down_sampled = cloud.VoxelizedDownSample(1.0);
+  EXPECT_EQ(down_sampled.size(), 3);
+
+  auto CheckHasPointAveragedFrom = [&cloud, &down_sampled](
+                                       const std::vector<int>& indices) {
+    Eigen::Vector3f xyz = Eigen::Vector3f::Zero();
+    Eigen::Vector3f normal = Eigen::Vector3f::Zero();
+    Vector3<PointCloud::C> rgb = Vector3<PointCloud::C>::Zero();
+    Vector1<PointCloud::D> descriptor = Vector1<PointCloud::D>::Zero();
+    for (int i : indices) {
+      xyz += cloud.xyz(i);
+      normal += cloud.normal(i);
+      rgb += cloud.rgb(i);
+      descriptor += cloud.descriptor(i);
+    }
+    xyz /= indices.size();
+    normal /= indices.size();
+    rgb /= indices.size();
+    descriptor /= indices.size();
+
+    // Just do a linear search for the matching point.
+    // TODO(russt): Could replace this with a nearest neighbor query if/when it
+    // is provided.
+    bool found_match = false;
+    int i = 0;
+    for (; i < down_sampled.size(); ++i) {
+      if (CompareMatrices(down_sampled.xyz(i), xyz, 1e-12)) {
+        found_match = true;
+        break;
+      }
+    }
+    ASSERT_TRUE(found_match);
+
+    EXPECT_TRUE(CompareMatrices(down_sampled.normal(i), normal, 1e-12));
+    EXPECT_EQ(down_sampled.rgb(i), rgb);
+    EXPECT_TRUE(CompareMatrices(down_sampled.descriptor(i), descriptor, 1e-12));
+  };
+
+  CheckHasPointAveragedFrom({0});
+  CheckHasPointAveragedFrom({1, 2});
+  CheckHasPointAveragedFrom({3, 4, 5});
+}
+
 }  // namespace
 }  // namespace perception
 }  // namespace drake

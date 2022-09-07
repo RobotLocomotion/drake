@@ -91,6 +91,9 @@ class TestPerception(unittest.TestCase):
         pc_merged = mut.Concatenate(clouds=[pc, pc_new])
         self.assertEqual(pc_merged.size(), pc.size() + pc_new.size())
 
+        pc_downsampled = pc_merged.VoxelizedDownSample(voxel_size=2.0)
+        self.assertIsInstance(pc_downsampled, mut.PointCloud)
+
     def test_depth_image_to_point_cloud_api(self):
         camera_info = CameraInfo(width=640, height=480, fov_y=np.pi / 4)
         dut = mut.DepthImageToPointCloud(camera_info=camera_info)

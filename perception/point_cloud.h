@@ -319,6 +319,15 @@ class PointCloud final {
   // TODO(eric.cousineau): Add mechanism for handling organized / unorganized
   // point clouds.
 
+  /// Returns a down-sampled point cloud by grouping all xyzs in this cloud
+  /// into a 3D grid with cells of dimension voxel_size. Each occupied voxel
+  /// will result in one point in the downsampled cloud, with a location
+  /// corresponding to the centroid of the points in that voxel. All other
+  /// fields (e.g. rgbs, normals, and descriptors) will also beq averaged across
+  /// the points in a voxel.
+  /// @throws std::exception if has_xyzs() is false.
+  PointCloud VoxelizedDownSample(double voxel_size) const;
+
  private:
   void SetDefault(int start, int num);
 
