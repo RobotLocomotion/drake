@@ -525,14 +525,14 @@ class RigidTransform {
   /// unrelated to Bo and Q) and whose 4ᵗʰ element is 0.
   /// @throws std::exception if the 4ᵗʰ element of vec_B is not 0 or 1.
   Vector4<T> operator*(const Vector4<T>& vec_B) const {
-    if (vec_B(3) == 1 || vec_B(3) == 0) {
-      Vector4<T> vec_A;
-      vec_A.head(3) = (p_AoBo_A_ * vec_B(3)) + (R_AB_ * vec_B.head(3));
-      vec_A(3) = vec_B(3);
-      return vec_A;
-    } else {
+    Vector4<T> vec_A;
+    vec_A.head(3) = R_AB_ * vec_B.head(3);
+    if ((vec_A(3) = vec_B(3)) == 1) {
+      vec_A.head(3) += p_AoBo_A_;
+    } else if (vec_B(3) != 0) {
       ThrowInvalidMultiplyVector4(vec_B);
     }
+    return vec_A;
   }
 
   /// Multiplies `this` %RigidTransform `X_AB` by the n position vectors
