@@ -477,7 +477,7 @@ class ManipulationStation : public systems::Diagram<T> {
     iiwa_ki_ = ki;
   }
 
-  /// Returns the model path for the controller model.
+  /// Returns the path to the sdf file that contains the controller model.
   /// @throws std::exception if Finalize() has not been called.
   std::string controller_model_path() {
     DRAKE_THROW_UNLESS(wsg_model_.model_instance.is_valid());
