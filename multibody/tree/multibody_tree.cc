@@ -496,6 +496,21 @@ ModelInstanceIndex MultibodyTree<T>::GetModelInstanceByName(
 }
 
 template <typename T>
+std::vector<BodyIndex> MultibodyTree<T>::GetBodiesKinematicallyAffectedBy(
+    const std::vector<JointIndex>& joint_indexes) const {
+  // For each joint, get its mobilizer collect the corresponding outboard body.
+  std::vector<BodyIndex> bodies;
+  for (const JointIndex& joint : joint_indexes) {
+    const MobilizerIndex mobilizer = get_joint_mobilizer(joint);
+    DRAKE_THROW_UNLESS(mobilizer.is_valid());
+    bodies.emplace_back(get_mobilizer(mobilizer).outboard_body().index());
+  }
+  // For all bodies b, collect bodies in the outboard subtree with b at the
+  // root.
+  return topology_.GetTransitiveOutboardBodies(bodies);
+}
+
+template <typename T>
 VectorX<T> MultibodyTree<T>::GetActuationFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& u) const {

@@ -25,6 +25,7 @@
 #include <set>
 #include <stack>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -1047,6 +1048,34 @@ class MultibodyTreeTopology {
     CreateListOfWeldedBodiesRecurse(
         world_index(), &bodies_welded_to_world, &welded_bodies);
     return welded_bodies;
+  }
+
+  // Returns all bodies that are transitively outboard of the given bodies. In
+  // other words, returns the union of all bodies in the subtrees with the given
+  // bodies as roots. The result is sorted in increasing body index order.
+  // @pre Finalize() is called.
+  // @pre body_index is valid and is less than the number of bodies.
+  std::vector<BodyIndex> GetTransitiveOutboardBodies(
+      std::vector<BodyIndex> body_indexes) const {
+    DRAKE_DEMAND(is_valid());
+    std::unordered_set<BodyIndex> outboard_bodies;
+    auto collect_body = [&outboard_bodies](const BodyNodeTopology& node) {
+      outboard_bodies.insert(node.body);
+    };
+    for (const BodyIndex& body_index : body_indexes) {
+      DRAKE_DEMAND(body_index.is_valid() && body_index < num_bodies());
+      // Skip bodies that are already traversed because the subtree with it
+      // being the root has necessarily been traversed already.
+      if (outboard_bodies.count(body_index) == 0) {
+        const BodyNodeTopology& root =
+            get_body_node(get_body(body_index).body_node);
+        TraverseOutboardNodes(root, collect_body);
+      }
+    }
+    std::vector<BodyIndex> results(outboard_bodies.begin(),
+                                   outboard_bodies.end());
+    std::sort(results.begin(), results.end());
+    return results;
   }
 
  private:

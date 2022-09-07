@@ -752,6 +752,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   py::cast(welded_bodies), py::cast(&self));
             },
             py::arg("body"), cls_doc.GetBodiesWeldedTo.doc)
+        .def("GetBodiesKinematicallyAffectedBy",
+            &Class::GetBodiesKinematicallyAffectedBy, py::arg("joint_indexes"),
+            cls_doc.GetBodiesKinematicallyAffectedBy.doc)
         .def("GetTopologyGraphvizString", &Class::GetTopologyGraphvizString,
             cls_doc.GetTopologyGraphvizString.doc)
         .def("get_force_element", &Class::get_force_element,
