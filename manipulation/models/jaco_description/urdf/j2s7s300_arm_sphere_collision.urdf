@@ -27,8 +27,8 @@
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/base.obj"/>
       </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      <material>
+        <color rgba="0.1788232 0.1788232 0.1788232 1"/>
       </material>
     </visual>
     <collision>
@@ -80,14 +80,17 @@
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/shoulder.obj"/>
       </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      <material>
+        <color rgba="0.1788232 0.1788232 0.1788232 1"/>
       </material>
     </visual>
     <visual>
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_big.obj"/>
       </geometry>
+      <material>
+        <color rgba="0.627451 0.627451 0.627451 1"/>
+      </material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.0 -0.025 -0.14"/>
@@ -163,14 +166,17 @@
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/arm_half_1.obj"/>
       </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      <material>
+        <color rgba="0.1788232 0.1788232 0.1788232 1"/>
       </material>
     </visual>
     <visual>
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_big.obj"/>
       </geometry>
+      <material>
+        <color rgba="0.627451 0.627451 0.627451 1"/>
+      </material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.025 -0.00 -0.025"/>
@@ -260,14 +266,17 @@
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/arm_half_2.obj"/>
       </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      <material>
+        <color rgba="0.1788232 0.1788232 0.1788232 1"/>
       </material>
     </visual>
     <visual>
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_big.obj"/>
       </geometry>
+      <material>
+        <color rgba="0.627451 0.627451 0.627451 1"/>
+      </material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.0 0.028 -0.232"/>
@@ -363,14 +372,17 @@
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/forearm.obj"/>
       </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      <material>
+        <color rgba="0.1788232 0.1788232 0.1788232 1"/>
       </material>
     </visual>
     <visual>
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_small.obj"/>
       </geometry>
+      <material>
+        <color rgba="0.627451 0.627451 0.627451 1"/>
+      </material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0.0 -0.0"/>
@@ -472,14 +484,17 @@
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/wrist_spherical_1.obj"/>
       </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      <material>
+        <color rgba="0.1788232 0.1788232 0.1788232 1"/>
       </material>
     </visual>
     <visual>
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_small.obj"/>
       </geometry>
+      <material>
+        <color rgba="0.627451 0.627451 0.627451 1"/>
+      </material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0.0 -0.00"/>
@@ -527,14 +542,17 @@
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/wrist_spherical_2.obj"/>
       </geometry>
-      <material name="carbon_fiber">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
+      <material>
+        <color rgba="0.1788232 0.1788232 0.1788232 1"/>
       </material>
     </visual>
     <visual>
       <geometry>
         <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_small.obj"/>
       </geometry>
+      <material>
+        <color rgba="0.627451 0.627451 0.627451 1"/>
+      </material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0.0 -0.02"/>

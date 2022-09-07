@@ -10,5 +10,7 @@ https://github.com/Kinovarobotics/kinova-ros/blob/kinova-ros-beta/kinova_descrip
 
 Since obtaining the model files from the above source, they were modified for
 use by Drake. For example, the original DAE and STL mesh files were converted
-to OBJ files, and various collision models were modified. Our changes are
-covered by Drake's license terms (see LICENSE.TXT in Drake's root folder).
+to OBJ files, and various collision models were modified. Color values in the
+URDF were taken directly from the diffuse values in the .dae files contributed
+upstream in https://github.com/Kinovarobotics/kinova-ros/pull/222. Our changes
+are covered by Drake's license terms (see LICENSE.TXT in Drake's root folder).
