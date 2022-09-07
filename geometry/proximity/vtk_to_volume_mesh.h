@@ -36,11 +36,16 @@ namespace internal {
  or per-tetrahedron velocity field are ignored.
 
  @param filename    A file name with absolute path or relative path.
+ @param scale       An optional scale to coordinates.
  @return tetrahedral volume mesh
 
  @note Error handling from parsing the file is performed by VTK library.
+
+ @throw  std::exception if the file does not exist or unsupported.
+         std::exceptoin for non-positive scale factors.
  */
-VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename);
+VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
+                                       double scale = 1.0);
 
 //@}
 
