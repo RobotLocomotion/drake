@@ -28,6 +28,7 @@ drake_cc_package_library(
         ":beam_model",
         ":beam_model_params",
         ":camera_config",
+        ":camera_config_functions",
         ":camera_info",
         ":color_palette",
         ":gyroscope",
@@ -83,6 +84,25 @@ drake_cc_library(
         "//common/schema:transform",
         "//geometry:rgba",
         "//geometry/render:render_camera",
+    ],
+)
+
+drake_cc_library(
+    name = "camera_config_functions",
+    srcs = ["camera_config_functions.cc"],
+    hdrs = ["camera_config_functions.h"],
+    deps = [
+        ":camera_config",
+        ":camera_info",
+        ":rgbd_sensor",
+        ":sim_rgbd_sensor",
+        "//geometry:scene_graph",
+        "//geometry/render_vtk",
+        "//lcm:interface",
+        "//math:geometric_transform",
+        "//multibody/parsing:scoped_names",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
     ],
 )
 
@@ -317,6 +337,15 @@ drake_cc_googletest(
         "//common/yaml:yaml_io",
         "//geometry/render_gl",
         "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "camera_config_functions_test",
+    deps = [
+        ":camera_config_functions",
+        "//common/test_utilities:expect_throws_message",
+        "//common/yaml:yaml_io",
     ],
 )
 

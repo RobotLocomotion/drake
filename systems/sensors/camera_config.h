@@ -248,7 +248,7 @@ struct CameraConfig {
 
   /** The "background" color. This is the color drawn where there are no objects
    visible. Its default value matches the default value for
-   render::RenderEngineGlParams::default_clear_color. See the
+   render::RenderEngineVtkParams::default_clear_color. See the
    documentation for geometry::Rgba::Serialize for how to define this
    value in YAML.
 
