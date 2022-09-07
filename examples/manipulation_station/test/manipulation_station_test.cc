@@ -21,8 +21,88 @@ namespace {
 using Eigen::Vector2d;
 using Eigen::VectorXd;
 using geometry::internal::DummyRenderEngine;
+using math::RigidTransform;
 using multibody::RevoluteJoint;
 using systems::BasicVector;
+
+
+namespace internal {
+
+// TODO(amcastro-tri): Refactor this into schunk_wsg directory, and cover it
+//  with a unit test. Maybe tighten the tolerance in station_simulation_test.
+// Calculate the spatial inertia of the set S of bodies that make up the gripper
+// about Go (the gripper frame's origin), expressed in the gripper frame G.
+// The rigid bodies in the gripper consist of the gripper body G, the left
+// finger L, and the right finger R.  For this calculation, the sliding joints
+// associated with the fingers are regarded as being in a "zero" configuration.
+// @param[in] wsg_sdf_path path to sdf file that when parsed creates the model.
+// @param[in] gripper_body_frame_name Name of frame attached to the gripper's
+//            main body.
+// @note This method was originally used to calculate the composite gripper
+//   inertia and is now just used to verify CalcGripperSpatialInertia().
+//   which in an internal namespace in manipulation_station.cc.
+multibody::SpatialInertia<double> MakeCompositeGripperInertia(
+    const std::string& wsg_sdf_path,
+    const std::string& gripper_body_frame_name) {
+  // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
+  multibody::MultibodyPlant<double> plant(1.0);
+  multibody::Parser parser(&plant);
+  parser.AddModelFromFile(wsg_sdf_path);
+  plant.Finalize();
+  const auto& frame = plant.GetFrameByName(gripper_body_frame_name);
+  const auto& gripper_body = plant.GetRigidBodyByName(frame.body().name());
+  const auto& left_finger = plant.GetRigidBodyByName("left_finger");
+  const auto& right_finger = plant.GetRigidBodyByName("right_finger");
+  const auto& left_slider = plant.GetJointByName("left_finger_sliding_joint");
+  const auto& right_slider = plant.GetJointByName("right_finger_sliding_joint");
+  const multibody::SpatialInertia<double>& M_GGo_G =
+      gripper_body.default_spatial_inertia();
+  const multibody::SpatialInertia<double>& M_LLo_L =
+      left_finger.default_spatial_inertia();
+  const multibody::SpatialInertia<double>& M_RRo_R =
+      right_finger.default_spatial_inertia();
+  auto CalcFingerPoseInGripperFrame =
+      [](const multibody::Joint<double>& slider) {
+    // Pose of the joint's parent frame P (attached on gripper body G) in the
+    // frame of the gripper G.
+    const RigidTransform<double> X_GP(
+        slider.frame_on_parent().GetFixedPoseInBodyFrame());
+    // Pose of the joint's child frame C (attached on the slider's finger body)
+    // in the frame of the slider's finger F.
+    const RigidTransform<double> X_FC(
+        slider.frame_on_child().GetFixedPoseInBodyFrame());
+    // When the slider's translational dof is zero, then P coincides with C.
+    // Therefore:
+    const RigidTransform<double> X_GF = X_GP * X_FC.inverse();
+    return X_GF;
+  };
+  // Pose of left finger L in gripper frame G when the slider's dof is zero.
+  const RigidTransform<double> X_GL(CalcFingerPoseInGripperFrame(left_slider));
+  // Pose of right finger R in gripper frame G when the slider's dof is zero.
+  const RigidTransform<double> X_GR(CalcFingerPoseInGripperFrame(right_slider));
+  // Helper to compute the spatial inertia of a finger F in about the gripper's
+  // origin Go, expressed in G.
+  auto CalcFingerSpatialInertiaInGripperFrame =
+      [](const multibody::SpatialInertia<double>& M_FFo_F,
+         const RigidTransform<double>& X_GF) {
+        const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.rotation());
+        const auto p_FoGo_G = -X_GF.translation();
+        const auto M_FGo_G = M_FFo_G.Shift(p_FoGo_G);
+        return M_FGo_G;
+      };
+  // Shift and re-express in G frame the finger's spatial inertias.
+  const auto M_LGo_G = CalcFingerSpatialInertiaInGripperFrame(M_LLo_L, X_GL);
+  const auto M_RGo_G = CalcFingerSpatialInertiaInGripperFrame(M_RRo_R, X_GR);
+  // With everything about the same point Go and expressed in the same frame G,
+  // proceed to compose into composite body C:
+  // TODO(amcastro-tri): Implement operator+() in SpatialInertia.
+  multibody::SpatialInertia<double> M_CGo_G = M_GGo_G;
+  M_CGo_G += M_LGo_G;
+  M_CGo_G += M_RGo_G;
+  return M_CGo_G;
+}
+
+}  // namespace internal
 
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
@@ -120,6 +200,27 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   // Check that the additional output ports exist and are spelled correctly.
   DRAKE_EXPECT_NO_THROW(station.GetOutputPort("contact_results"));
   DRAKE_EXPECT_NO_THROW(station.GetOutputPort("plant_continuous_state"));
+
+  // The station (manipulation station) has both a plant and a controller_plant.
+  // The spatial inertia of the controller-plant's "composite" gripper (which is
+  // a rigid body) is calculated as if the gripper body G, left finger L, and
+  // right finger R were welded together in a "zero" configuration.
+  // Verify the value in the controller_plant matches its initial calculation.
+  const multibody::MultibodyPlant<double>& controller_plant =
+      station.get_controller_plant();
+  const multibody::RigidBody<double>& composite_gripper =
+      controller_plant.GetRigidBodyByName("wsg_equivalent");
+  const multibody::SpatialInertia<double> M_SGo_G_actual =
+      composite_gripper.default_spatial_inertia();
+  const multibody::SpatialInertia<double> M_SGo_G_expected =
+      internal::MakeCompositeGripperInertia(
+          station.controller_model_path(),
+          station.controller_model_child_frame_name());
+
+  const Matrix6<double> M6_actual = M_SGo_G_actual.CopyToFullMatrix6();
+  const Matrix6<double> M6_expected = M_SGo_G_expected.CopyToFullMatrix6();
+  constexpr double kEpsilon = 32 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(M6_actual, M6_expected, kEpsilon));
 }
 
 // Partially check M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external
