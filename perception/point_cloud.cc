@@ -1,12 +1,16 @@
 #include "drake/perception/point_cloud.h"
 
+#include <functional>
 #include <utility>
+#include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/unused.h"
 
 using Eigen::Map;
 using Eigen::NoChange;
@@ -376,6 +380,96 @@ PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
     index += s;
   }
   return new_cloud;
+}
+
+namespace {
+
+// Hash function for Eigen::Vector3i
+// implemented as in boost::hash_combine.
+struct Vector3iHash {
+  std::size_t operator()(const Eigen::Vector3i& index) const {
+    size_t hash = 0;
+    const auto add_to_hash = [&hash] (int value) {
+      hash ^= std::hash<int>{}(value) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+    };
+    add_to_hash(index.x());
+    add_to_hash(index.y());
+    add_to_hash(index.z());
+    return hash;
+  }
+};
+
+}  // namespace
+
+PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
+  // This is a simple, narrow, no-frills implementation of the
+  // voxel_down_sample algorithm in Open3d and/or the down-sampling by a
+  // VoxelGrid filter in PCL.
+  DRAKE_THROW_UNLESS(has_xyzs());
+  DRAKE_THROW_UNLESS(voxel_size > 0);
+  const Eigen::Vector3f lower_xyz = xyzs().rowwise().minCoeff();
+
+  // Create a map from voxel coordinate to a set of points.
+  absl::flat_hash_map<Eigen::Vector3i, std::vector<int>, Vector3iHash>
+      voxel_map;
+  for (int i = 0; i < size_; ++i) {
+    const Eigen::Vector3f xyz = xyzs().col(i) - lower_xyz;
+    if (xyz.array().isFinite().all()) {
+      voxel_map[(xyz / voxel_size).cast<int>()].emplace_back(i);
+    }
+  }
+  PointCloud down_sampled(voxel_map.size(), fields());
+
+  // Iterate through the map populating the elements of the down_sampled cloud.
+  // TODO(russt): Consider using OpenMP. Sample code from calderpg-tri provided
+  // during review of #17885.
+  int index_in_down_sampled = 0;
+  for (const auto& [coordinates, indices_in_this] : voxel_map) {
+    unused(coordinates);
+    // Use doubles instead of floats for accumulators to avoid round-off errors.
+    Eigen::Vector3d xyz{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
+    Vector3<PointCloud::C> rgb{Vector3<PointCloud::C>::Zero()};
+    Eigen::Vector3d descriptor{Eigen::Vector3d::Zero()};
+    int num_normals{0};
+    int num_rgbs{0};
+    int num_descriptors{0};
+
+    for (int index_in_this : indices_in_this) {
+      xyz += xyzs().col(index_in_this).cast<double>();
+      if (has_normals() &&
+          normals().col(index_in_this).array().isFinite().all()) {
+        normal += normals().col(index_in_this).cast<double>();
+        ++num_normals;
+      }
+      if (has_rgbs() && rgbs().col(index_in_this).array().isFinite().all()) {
+        rgb += rgbs().col(index_in_this);
+        ++num_rgbs;
+      }
+      if (has_descriptors() &&
+          descriptors().col(index_in_this).array().isFinite().all()) {
+        descriptor += descriptors().col(index_in_this).cast<double>();
+        ++num_descriptors;
+      }
+    }
+    down_sampled.mutable_xyzs().col(index_in_down_sampled) =
+        (xyz / indices_in_this.size()).cast<float>();
+    if (has_normals()) {
+      down_sampled.mutable_normals().col(index_in_down_sampled) =
+          (normal / num_normals).cast<float>();
+    }
+    if (has_rgbs()) {
+      down_sampled.mutable_rgbs().col(index_in_down_sampled) =
+          rgb / num_rgbs;
+    }
+    if (has_descriptors()) {
+      down_sampled.mutable_descriptors().col(index_in_down_sampled) =
+          (descriptor / num_descriptors).cast<float>();
+    }
+    ++index_in_down_sampled;
+  }
+
+  return down_sampled;
 }
 
 }  // namespace perception
