@@ -719,13 +719,18 @@ Note: The above is for the C++ documentation. For Python, use
         .def("DeclarePeriodicPublishEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self, double period_sec, double offset_sec,
-                    std::function<EventStatus(const Context<T>&)> publish) {
+                    // In C++ the user-provided callback function is overloaded
+                    // to return either EventStatus or void. We can't overload
+                    // based on return values in pybind11, so instead we bind
+                    // the callback function as optional<> for the same effect.
+                    std::function<std::optional<EventStatus>(const Context<T>&)>
+                        publish) {
                   self->DeclarePeriodicEvent(period_sec, offset_sec,
                       PublishEvent<T>(TriggerType::kPeriodic,
                           [publish](const System<T>&, const Context<T>& context,
                               const PublishEvent<T>&) {
-                            // TODO(sherm1) Forward the return status.
-                            publish(context);  // Ignore return status for now.
+                            return publish(context).value_or(
+                                EventStatus::Succeeded());
                           }));
                 }),
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("publish"),
