@@ -32,6 +32,12 @@ enum class SchunkCollisionModel { kBox, kBoxPlusFingertipSpheres };
 /// Determines which manipulation station is simulated.
 enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 
+enum class ControllerConstructionMethod {
+  kReparseModelFile,
+  kMBPSubgraphFilter,
+  kMBPSubgraphFreezeJoints
+};
+
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
 /// @brief Systems related to the "manipulation station" used in the <a
@@ -149,7 +155,11 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @param time_step The time step used by MultibodyPlant<T>, and by the
   ///   discrete derivative used to approximate velocity from the position
   ///   command inputs.
-  explicit ManipulationStation(double time_step = 0.002);
+  /// @param method Method
+  explicit ManipulationStation(
+      double time_step = 0.002,
+      ControllerConstructionMethod method =
+          ControllerConstructionMethod::kMBPSubgraphFilter);
 
   /// Adds a default iiwa, wsg, two bins, and a camera, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
@@ -545,6 +555,9 @@ class ManipulationStation : public systems::Diagram<T> {
   // SetupManipulationClassStation()), and informs how SetDefaultState()
   // initializes the sim.
   Setup setup_{Setup::kNone};
+
+  ControllerConstructionMethod controller_construction_method_{
+      ControllerConstructionMethod::kReparseModelFile};
 };
 
 }  // namespace manipulation_station

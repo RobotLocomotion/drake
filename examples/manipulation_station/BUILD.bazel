@@ -42,6 +42,7 @@ drake_cc_library(
         "//manipulation/schunk_wsg:schunk_wsg_position_controller",
         "//math:geometric_transform",
         "//multibody/parsing",
+        "//multibody/parsing:detail_multibody_plant_subgraph",
         "//multibody/plant",
         "//perception:depth_image_to_point_cloud",
         "//systems/controllers:inverse_dynamics_controller",

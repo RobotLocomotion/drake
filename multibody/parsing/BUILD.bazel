@@ -128,8 +128,7 @@ drake_cc_library(
     name = "detail_multibody_plant_subgraph",
     srcs = ["detail_multibody_plant_subgraph.cc"],
     hdrs = ["detail_multibody_plant_subgraph.h"],
-    internal = True,
-    visibility = ["//visibility:private"],
+    visibility = ["//visibility:public"],
     deps = [
         ":detail_misc",
         ":scoped_names",

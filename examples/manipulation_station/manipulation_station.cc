@@ -12,6 +12,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/parsing/detail_multibody_plant_subgraph.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
@@ -196,13 +197,15 @@ MakeD415CameraModel(const std::string& renderer_name) {
 }  // namespace internal
 
 template <typename T>
-ManipulationStation<T>::ManipulationStation(double time_step)
+ManipulationStation<T>::ManipulationStation(double time_step,
+                                            ControllerConstructionMethod method)
     : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
       // Given the controller does not compute accelerations, it is irrelevant
       // whether the plant is continuous or discrete. We make it
       // discrete to avoid warnings about joint limits.
-      owned_controller_plant_(std::make_unique<MultibodyPlant<T>>(1.0)) {
+      owned_controller_plant_(std::make_unique<MultibodyPlant<T>>(1.0)),
+      controller_construction_method_(method) {
   // This class holds the unique_ptrs explicitly for plant and scene_graph
   // until Finalize() is called (when they are moved into the Diagram). Grab
   // the raw pointers, which should stay valid for the lifetime of the Diagram.
@@ -437,11 +440,31 @@ void ManipulationStation<T>::SetRandomState(
 
 template <typename T>
 void ManipulationStation<T>::MakeIiwaControllerModel() {
+  multibody::ModelInstanceIndex controller_iiwa_model;
   // Build the controller's version of the plant, which only contains the
   // IIWA and the equivalent inertia of the gripper.
-  multibody::Parser parser(owned_controller_plant_.get());
-  const auto controller_iiwa_model =
-      parser.AddModelFromFile(iiwa_model_.model_path, "iiwa");
+  if (controller_construction_method_ ==
+      ControllerConstructionMethod::kReparseModelFile) {
+    multibody::Parser parser(owned_controller_plant_.get());
+    controller_iiwa_model =
+        parser.AddModelFromFile(iiwa_model_.model_path, "iiwa");
+
+  } else if (controller_construction_method_ ==
+             ControllerConstructionMethod::kMBPSubgraphFilter) {
+    auto elems = multibody::internal::MultibodyPlantElements::FromPlant(plant_);
+    multibody::internal::MultibodyPlantSubgraph control_subgraph(elems);
+    for (auto model : elems.model_instances()) {
+      if (model != iiwa_model_.model_instance) {
+        control_subgraph.RemoveModelInstance(model);
+      }
+    }
+    control_subgraph.AddTo(owned_controller_plant_.get());
+    controller_iiwa_model =
+        owned_controller_plant_->GetModelInstanceByName("iiwa");
+  } else if (controller_construction_method_ ==
+             ControllerConstructionMethod::kMBPSubgraphFreezeJoints) {
+    // TODO (azeey) Implement FreezeJointSubgraphPolicy
+  }
 
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->world_frame(),
@@ -454,17 +477,18 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   // on the hardware to be so precise, so we simply ignore the inertia
   // contribution from the fingers here.
   const multibody::RigidBody<T>& wsg_equivalent =
-      owned_controller_plant_->AddRigidBody(
-          "wsg_equivalent", controller_iiwa_model,
-          internal::MakeCompositeGripperInertia(
-              wsg_model_.model_path, wsg_model_.child_frame->name()));
+    owned_controller_plant_->AddRigidBody(
+        "wsg_equivalent", controller_iiwa_model,
+        internal::MakeCompositeGripperInertia(
+          wsg_model_.model_path, wsg_model_.child_frame->name()));
 
   // TODO(siyuan.feng@tri.global): when we handle multiple IIWA and WSG, this
   // part need to deal with the parent's (iiwa's) model instance id.
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->GetFrameByName(wsg_model_.parent_frame->name(),
-                                              controller_iiwa_model),
+        controller_iiwa_model),
       wsg_equivalent.body_frame(), wsg_model_.X_PC);
+
   owned_controller_plant_->set_name("controller_plant");
 }
 
