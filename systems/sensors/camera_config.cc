@@ -120,6 +120,14 @@ void CameraConfig::ValidateOrThrow() const {
     return;
   }
 
+  // We validate the focal length substruct here, instead of during its local
+  // Serialize. We don't want to validate anything if the cameras are disabled,
+  // and because the default focal length is a property of the CameraConfig
+  // instead of the child struct, we must not validate the child in isolation.
+  std::visit([](auto&& child) -> void {
+    child.ValidateOrThrow();
+  }, focal);
+
   // This throws for us if we have bad bad numerical camera values (or an empty
   // renderer_name).
   MakeCameras();
