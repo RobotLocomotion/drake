@@ -2,6 +2,11 @@ import pydrake.visualization.meldis as mut
 
 import unittest
 
+from drake import (
+    lcmt_viewer_geometry_data,
+    lcmt_viewer_link_data,
+)
+
 from pydrake.common import (
     FindResourceOrThrow,
 )
@@ -180,3 +185,47 @@ class TestMeldis(unittest.TestCase):
                          True)
         self.assertEqual(meshcat.HasPath(hydro_path), True)
         self.assertEqual(meshcat.HasPath(hydro_path2), True)
+
+    # Smoke test DRAKE_VIEWER_DEFORMABLE channel. It tests that the message
+    # is sent to the handler, but it does not check that the picture is drawn
+    # correctly.
+    def test_deformable(self):
+        geom0 = lcmt_viewer_geometry_data()
+        geom0.type = 4
+        geom0.position = [0.0, 0.0, 0.0]
+        geom0.quaternion = [1.0, 0.0, 0.0, 0.0]
+        geom0.color = [0.9, 0.9, 0.9, 1.0]
+        geom0.string_data = "box"
+        geom0.num_float_data = 44
+        geom0.float_data = [
+            6.0, 8.0,
+            1.000000, -1.000000,  0.000000,
+            1.000000,  1.000000,  0.000000,
+            -1.000000, -1.000000,  0.000000,
+            -1.000000,  1.000000,  0.000000,
+            0.000000,  0.000000,  1.414213562373,
+            0.000000,  0.000000, -1.414213562373,
+            0.0, 1.0, 4.0,
+            0.0, 2.0, 4.0,
+            1.0, 3.0, 4.0,
+            2.0, 3.0, 4.0,
+            0.0, 1.0, 5.0,
+            0.0, 2.0, 5.0,
+            1.0, 3.0, 5.0,
+            2.0, 3.0, 5.0]
+
+        message = lcmt_viewer_link_data()
+        message.name = "deformable_geometries"
+        message.robot_num = 0
+        message.num_geom = 1
+        message.geom = [geom0]
+
+        dut = mut.Meldis()
+        meshcat = dut.meshcat
+
+        channel = "DRAKE_VIEWER_DEFORMABLE"
+        for function in dut._message_handlers[channel]:
+            function(message=message)
+
+        deformable_path = "/DRAKE_VIEWER/0/deformable_geometries"
+        self.assertEqual(meshcat.HasPath(deformable_path), True)
