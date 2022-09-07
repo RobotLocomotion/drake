@@ -28,18 +28,17 @@ using systems::BasicVector;
 
 namespace internal {
 
-// TODO(amcastro-tri): Refactor this into schunk_wsg directory, and cover it
-//  with a unit test. Maybe tighten the tolerance in station_simulation_test.
 // Calculate the spatial inertia of the set S of bodies that make up the gripper
 // about Go (the gripper frame's origin), expressed in the gripper frame G.
-// The rigid bodies in the gripper consist of the gripper body G, the left
-// finger L, and the right finger R.  For this calculation, the sliding joints
-// associated with the fingers are regarded as being in a "zero" configuration.
+// The rigid bodies in set S consist of the gripper body G, the left finger, and
+// the right finger. For this calculation, the sliding joints associated with
+// the fingers are regarded as being in a "zero" configuration.
 // @param[in] wsg_sdf_path path to sdf file that when parsed creates the model.
-// @param[in] gripper_body_frame_name Name of frame attached to the gripper's
-//            main body.
-// @note This method was originally used to calculate the composite gripper
-//   inertia and is now just used to verify CalcGripperSpatialInertia().
+// @param[in] gripper_body_frame_name Name of the frame attached to the
+//            gripper's main body.
+// @retval M_SGo_G, spatial inertia of set S about Go, expressed in frame G.
+// @note Previously, this function was in manipulation_station.cc and calculated
+//   set S's spatial inertia. Now, it only verifies CalcGripperSpatialInertia()
 //   which in an internal namespace in manipulation_station.cc.
 multibody::SpatialInertia<double> MakeCompositeGripperInertia(
     const std::string& wsg_sdf_path,
@@ -96,9 +95,7 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia(
   // With everything about the same point Go and expressed in the same frame G,
   // proceed to compose into composite body C:
   // TODO(amcastro-tri): Implement operator+() in SpatialInertia.
-  multibody::SpatialInertia<double> M_CGo_G = M_GGo_G;
-  M_CGo_G += M_LGo_G;
-  M_CGo_G += M_RGo_G;
+  multibody::SpatialInertia<double> M_CGo_G = M_GGo_G += M_LGo_G += M_RGo_G;
   return M_CGo_G;
 }
 
@@ -202,10 +199,13 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   DRAKE_EXPECT_NO_THROW(station.GetOutputPort("plant_continuous_state"));
 
   // The station (manipulation station) has both a plant and a controller_plant.
-  // The spatial inertia of the controller-plant's "composite" gripper (which is
-  // a rigid body) is calculated as if the gripper body G, left finger L, and
-  // right finger R were welded together in a "zero" configuration.
-  // Verify the value in the controller_plant matches its initial calculation.
+  // The controller plant has a "composite" rigid body whose spatial inertia is
+  // associated with the set S of bodies consisting of the gripper body G and
+  // the left and right fingers. The spatial inertia of the composite body is
+  // equal to the set S's spatial inertia about Go (body G's origin), expressed
+  // in G, where the fingers are regarded as being in a "zero" configuration.
+  // Verify the spatial inertia stored in the controller_plant matches the
+  // calculation returned by MakeCompoiseGripperInertia().
   const multibody::MultibodyPlant<double>& controller_plant =
       station.get_controller_plant();
   const multibody::RigidBody<double>& composite_gripper =

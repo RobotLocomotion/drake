@@ -50,12 +50,13 @@ namespace internal {
 
 // Calculate the spatial inertia of the set S of bodies that make up the gripper
 // about Go (the gripper frame's origin), expressed in the gripper frame G.
-// The rigid bodies in the gripper consist of the gripper body G, the left
-// finger L, and the right finger R.  For this calculation, the sliding joints
-// associated with the fingers are regarded as being in a "zero" configuration.
+// The rigid bodies in set S consist of the gripper body G, the left finger, and
+// the right finger. For this calculation, the sliding joints associated with
+// the fingers are regarded as being in a "zero" configuration.
 // @param[in] wsg_sdf_path path to sdf file that when parsed creates the model.
-// @param[in] gripper_body_frame_name Name of frame attached to the gripper's
-//            main body.
+// @param[in] gripper_body_frame_name Name of the frame attached to the
+//            gripper's main body.
+// @retval M_SGo_G, spatial inertia of set S about Go, expressed in frame G.
 SpatialInertia<double> CalcGripperSpatialInertia(
     const std::string& wsg_sdf_path,
     const std::string& gripper_body_frame_name) {
@@ -69,6 +70,7 @@ SpatialInertia<double> CalcGripperSpatialInertia(
   auto context = plant.CreateDefaultContext();
   plant.SetDefaultState(*context, &context->get_mutable_state());
 
+  // Get references to gripper frame, gripper body, and the two fingers.
   const multibody::Frame<double>& gripper_frame =
       plant.GetFrameByName(gripper_body_frame_name);
   const multibody::RigidBody<double>& gripper_body =
@@ -78,12 +80,13 @@ SpatialInertia<double> CalcGripperSpatialInertia(
   const multibody::RigidBody<double>& right_finger =
       plant.GetRigidBodyByName("right_finger");
 
-  // Add the BodyIndex for each of the relevant rigid bodies G, L, R..
+  // Form a vector with the BodyIndex for the gripper body and the two fingers.
   std::vector<multibody::BodyIndex> body_indexes;
-  body_indexes.push_back(gripper_body.index());  // Rigid body G.
-  body_indexes.push_back(left_finger.index());   // Rigid body L.
-  body_indexes.push_back(right_finger.index());  // Rigid body R.
+  body_indexes.push_back(gripper_body.index());
+  body_indexes.push_back(left_finger.index());
+  body_indexes.push_back(right_finger.index());
 
+  // Calculate and return the spatial inertia of set S about Go, expressed in G.
   const SpatialInertia<double> M_SGo_G =
       plant.CalcSpatialInertia(*context, gripper_frame, body_indexes);
   return M_SGo_G;
