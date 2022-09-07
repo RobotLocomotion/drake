@@ -17,6 +17,5 @@ following command:
 docker run -it robotlocomotion/drake:focal
 ```
 
-The environment variables `LD_LIBRARY`, `PATH`, and `PYTHONPATH` are preset to
-suitable values for using Drake, including, in particular, its Python
-bindings.
+The environment variables `PATH` and `PYTHONPATH` are preset to suitable values
+for using Drake, including, in particular, its Python bindings.
