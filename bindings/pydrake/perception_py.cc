@@ -120,7 +120,9 @@ void init_perception(py::module m) {
             },
             py::arg("other"), cls_doc.SetFrom.doc)
         .def("Crop", &Class::Crop, py::arg("lower_xyz"), py::arg("upper_xyz"),
-            cls_doc.Crop.doc);
+            cls_doc.Crop.doc)
+        .def("VoxelizedDownSample", &Class::VoxelizedDownSample,
+            py::arg("voxel_size"), cls_doc.VoxelizedDownSample.doc);
   }
 
   AddValueInstantiation<PointCloud>(m);
