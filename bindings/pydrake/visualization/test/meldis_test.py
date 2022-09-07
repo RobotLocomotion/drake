@@ -2,6 +2,11 @@ import pydrake.visualization.meldis as mut
 
 import unittest
 
+from drake import (
+    lcmt_viewer_geometry_data,
+    lcmt_viewer_link_data,
+)
+
 from pydrake.common import (
     FindResourceOrThrow,
 )
@@ -180,3 +185,54 @@ class TestMeldis(unittest.TestCase):
                          True)
         self.assertEqual(meshcat.HasPath(hydro_path), True)
         self.assertEqual(meshcat.HasPath(hydro_path2), True)
+
+    def test_deformable(self):
+        """Check that _ViewerApplet doesn't crash for deformable geometries
+        in DRAKE_VIEWER_DEFORMABLE channel.
+        """
+
+        # Create the device under test.
+        dut = mut.Meldis()
+
+        # Prepare a deformable-geometry message. It is a triangle surface mesh
+        # of a tetrahedron.
+        geom0 = lcmt_viewer_geometry_data()
+        geom0.type = lcmt_viewer_geometry_data.MESH
+        geom0.position = [0.0, 0.0, 0.0]
+        q_wxyz = [1.0, 0.0, 0.0, 0.0]
+        geom0.quaternion = q_wxyz
+        geom0.color = [0.9, 0.9, 0.9, 1.0]
+        geom0.string_data = "tetrahedron"
+        geom0.float_data = [
+            # 4 vertices and 4 triangles
+            4.0, 4.0,
+            # 4 vertices at the origin and on the three axes.
+            0.0, 0.0, 0.0,
+            1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 0.0, 1.0,
+            # 4 triangles, use float for integer vertex indices
+            0., 2., 1.,
+            0., 1., 3.,
+            0., 3., 2.,
+            1., 2., 3.]
+        geom0.num_float_data = len(geom0.float_data)
+        message = lcmt_viewer_link_data()
+        message.name = "test_deformable_geometry"
+        message.robot_num = 0
+        message.num_geom = 1
+        message.geom = [geom0]
+
+        dut._lcm.Publish(channel="DRAKE_VIEWER_DEFORMABLE",
+                         buffer=message.encode())
+
+        meshcat_path = f"/DRAKE_VIEWER/{message.robot_num}/{message.name}"
+        # Before the subscribed handlers are called, there is no meshcat path
+        # from the published lcm message.
+        self.assertEqual(dut.meshcat.HasPath(meshcat_path), False)
+
+        dut._lcm.HandleSubscriptions(timeout_millis=1)
+        dut._invoke_subscriptions()
+
+        # After the handlers are called, we have the expected meshcat path.
+        self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
