@@ -726,6 +726,11 @@ licenses([
         ],
     )
 
+    if os_result.is_manylinux:
+        vtk_expat_libraries = []
+    else:
+        vtk_expat_libraries = ["@expat"]
+
     # Indirect dependency: omit headers.
     file_content += _vtk_cc_library(
         os_result,
@@ -735,8 +740,7 @@ licenses([
             ":vtkCommonDataModel",
             ":vtkIOCore",
             ":vtksys",
-            "@expat",
-        ],
+        ] + vtk_expat_libraries,
     )
 
     # Indirect dependency: omit headers.

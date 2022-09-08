@@ -4,7 +4,7 @@
 
 set -eu -o pipefail
 
-PYTHON=python${1:-3}
+readonly PYTHON=python${1:-3}
 
 export DEBIAN_FRONTEND=noninteractive
 

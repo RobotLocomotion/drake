@@ -52,7 +52,7 @@ _VERSION_SUPPORT_MATRIX = {
     "ubuntu:22.04": ["3.10"],
     "macos": ["3.10"],
     "macos_wheel": ["3.10"],
-    "manylinux": ["3.8", "3.9"],
+    "manylinux": ["3.8", "3.9", "3.10"],
 }
 
 def repository_python_info(repository_ctx):
