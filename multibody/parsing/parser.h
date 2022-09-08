@@ -24,6 +24,7 @@ class CompositeParse;
 /// URDF                     | ".urdf"
 /// SDFormat                 | ".sdf"
 /// MJCF (Mujoco XML)        | ".xml"
+/// Drake Model Directives   | ".dmd.yaml"
 ///
 /// The output of parsing is one or more model instances added to the
 /// MultibodyPlant provided to the parser at construction.
