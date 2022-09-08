@@ -100,6 +100,8 @@ void ProcessModelDirectivesImpl(
     return GetScopedFrameByName(*plant, PrefixName(model_namespace, name));
   };
 
+  auto& [package_map, diagnostic, plant_ignored,
+         collision_resolver, parser_selector] = composite->workspace();
   for (auto& directive : directives.directives) {
     if (directive.add_model) {
       ModelInstanceInfo info;
@@ -108,8 +110,16 @@ void ProcessModelDirectivesImpl(
       drake::log()->debug("  add_model: {}\n    {}", name, model.file);
       const std::string file =
           ResolveModelDirectiveUri(model.file, parser->package_map());
-      drake::multibody::ModelInstanceIndex child_model_instance_id =
-          composite->AddModelFromFile(file, name);
+      std::optional<ModelInstanceIndex> child_model_instance_id =
+          parser_selector(diagnostic, file).AddModel(
+              {multibody::internal::DataSource::kFilename, &file},
+              model.name, model_namespace, composite->workspace());
+      if (!child_model_instance_id.has_value()) {
+        // The AddModel() call will have emitted an error. If we got here, the
+        // error did not translate to a throw, so we struggle onward, skipping
+        // this directive.
+        continue;
+      }
       for (const auto& [joint_name, positions] :
            directive.add_model->default_joint_positions) {
         plant->GetMutableJointByName(joint_name, child_model_instance_id)
@@ -118,10 +128,10 @@ void ProcessModelDirectivesImpl(
       for (const auto& [body_name, pose] :
            directive.add_model->default_free_body_pose) {
         plant->SetDefaultFreeBodyPose(
-            plant->GetBodyByName(body_name, child_model_instance_id),
+            plant->GetBodyByName(body_name, *child_model_instance_id),
             pose.GetDeterministicValue());
       }
-      info.model_instance = child_model_instance_id;
+      info.model_instance = *child_model_instance_id;
       info.model_name = name;
       info.model_path = file;
       if (added_models) added_models->push_back(info);
@@ -173,7 +183,7 @@ void ProcessModelDirectivesImpl(
         model_instance = plant->GetModelInstanceByName(model_namespace);
       }
 
-      auto& resolver = composite->collision_resolver();
+      auto& resolver = *collision_resolver;
       auto& group = *directive.add_collision_filter_group;
       drake::log()->debug("  add_collision_filter_group: {}", group.name);
       std::set<std::string> member_set(group.members.begin(),

@@ -921,6 +921,29 @@ std::optional<ModelInstanceIndex> AddModelFromUrdf(
   return parser.Parse();
 }
 
+UrdfParserWrapper::UrdfParserWrapper() {}
+
+UrdfParserWrapper::~UrdfParserWrapper() {}
+
+std::optional<ModelInstanceIndex> UrdfParserWrapper::AddModel(
+    const DataSource& data_source, const std::string& model_name,
+    const std::optional<std::string>& parent_model_name,
+    const ParsingWorkspace& workspace) {
+  return AddModelFromUrdf(data_source, model_name, parent_model_name,
+                          workspace);
+}
+
+std::vector<ModelInstanceIndex> UrdfParserWrapper::AddAllModels(
+    const DataSource& data_source,
+    const std::optional<std::string>& parent_model_name,
+    const ParsingWorkspace& workspace) {
+  auto result = AddModel(data_source, {}, parent_model_name, workspace);
+  if (result.has_value()) {
+    return {*result};
+  }
+  return {};
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
