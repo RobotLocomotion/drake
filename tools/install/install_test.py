@@ -64,11 +64,27 @@ def main():
         lines = f.readlines()
 
     # Add them as individual tests.
+    test_case_names = []
     for one_line in lines:
         test_command = one_line.strip()
         test_case_name = _convert_test_command_to_test_case_name(test_command)
         setattr(InstallTest, test_case_name, functools.partialmethod(
             InstallTest._run_one_command, test_command=test_command))
+        test_case_names.append(test_case_name)
+
+    # Give some Drake-specific help, if requested.
+    if "--help" in new_argv:
+        try:
+            unittest.main(argv=new_argv)
+        except:  # noqa
+            print("To run just one test case, use:")
+            print(" bazel test //:py/install_test "
+                  "--test_arg=InstallTest.test_foo")
+            print()
+            print("Tests:")
+            for name in test_case_names:
+                print(f" InstallTest.{name}")
+            return 1
 
     # Delegate to unittest.
     unittest.main(argv=new_argv)
