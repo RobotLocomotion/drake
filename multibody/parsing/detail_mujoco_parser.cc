@@ -979,6 +979,30 @@ ModelInstanceIndex AddModelFromMujocoXml(
   return parser.Parse(model_name_in, parent_model_name, &xml_doc);
 }
 
+MujocoParserWrapper::MujocoParserWrapper() {}
+
+MujocoParserWrapper::~MujocoParserWrapper() {}
+
+std::optional<ModelInstanceIndex> MujocoParserWrapper::AddModel(
+    const DataSource& data_source, const std::string& model_name,
+    const std::optional<std::string>& parent_model_name,
+    const ParsingWorkspace& workspace) {
+  return AddModelFromMujocoXml(data_source, model_name, parent_model_name,
+                               workspace.plant);
+}
+
+std::vector<ModelInstanceIndex> MujocoParserWrapper::AddAllModels(
+    const DataSource& data_source,
+    const std::optional<std::string>& parent_model_name,
+    const ParsingWorkspace& workspace) {
+  auto maybe_model = AddModel(data_source, {}, parent_model_name, workspace);
+  if (maybe_model.has_value()) {
+    return {*maybe_model};
+  } else {
+    return {};
+  }
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

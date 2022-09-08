@@ -9,6 +9,12 @@ namespace internal {
 
 using drake::internal::DiagnosticPolicy;
 
+bool EndsWithCaseInsensitive(std::string_view str, std::string_view ext) {
+  if (ext.size() > str.size()) { return false; }
+  return std::equal(str.end() - ext.size(), str.end(), ext.begin(),
+                    [](char a, char b) { return tolower(a) == tolower(b); });
+}
+
 DataSource::DataSource(DataSourceType type, const std::string* data)
     : type_(type), data_(data) {
   DRAKE_DEMAND(IsFilename() != IsContents());
