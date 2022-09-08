@@ -79,7 +79,9 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
       "drake/multibody/benchmarks/acrobot/acrobot.urdf");
   const std::string xml_name = FindResourceOrThrow(
       "drake/multibody/parsing/dm_control/suite/acrobot.xml");
-
+  const std::string dmd_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/process_model_directives_test/"
+      "acrobot.dmd.yaml");
   // Load an SDF via string.
   {
     const std::string sdf_contents = ReadEntireFile(sdf_name);
@@ -104,6 +106,16 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     const ModelInstanceIndex id = dut.AddModelFromString(xml_contents, "xml");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+  }
+
+  // Load a DMD.YAML via string.
+  {
+    const std::string dmd_contents = ReadEntireFile(dmd_name);
+    MultibodyPlant<double> plant(0.0);
+    Parser dut(&plant);
+    const ModelInstanceIndex id =
+        dut.AddModelFromString(dmd_contents, "dmd.yaml");
     EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
   }
 }
