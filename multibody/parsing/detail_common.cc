@@ -9,6 +9,30 @@ namespace internal {
 
 using drake::internal::DiagnosticPolicy;
 
+
+bool EndsWith(const std::string_view str, const std::string_view ext,
+              CaseMatch case_match) {
+  const bool str_is_long_enough = (ext.size() < str.size());
+  switch (case_match) {
+    case CaseMatch::kSensitive:
+      {
+        return str_is_long_enough &&
+            std::equal(str.end() - ext.size(), str.end(), ext.begin());
+      }
+      break;
+    case CaseMatch::kInsensitive:
+      {
+        return str_is_long_enough &&
+            std::equal(str.end() - ext.size(), str.end(), ext.begin(),
+                       [](char a, char b) {
+                         return tolower(a) == tolower(b);
+                       });
+      }
+      break;
+  }
+  DRAKE_UNREACHABLE();
+}
+
 DataSource::DataSource(DataSourceType type, const std::string* data)
     : type_(type), data_(data) {
   DRAKE_DEMAND(IsFilename() != IsContents());
