@@ -231,3 +231,11 @@
    fun:_ZN19ClpSimplexNonlinear6primalEv
    fun:_ZN10ClpSimplex6primalEii
 }
+
+{
+   VTK: file reader compare header line vs garbage
+   Memcheck:Cond
+   fun:_ZN13vtkDataReader10ReadHeaderEPKc
+   ...
+   fun:_ZN5drake8geometry8internal19ReadVtkToVolumeMeshERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEd
+}
