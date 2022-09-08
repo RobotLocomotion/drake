@@ -9,6 +9,12 @@ namespace internal {
 
 using drake::internal::DiagnosticPolicy;
 
+
+bool EndsWith(const std::string_view str, const std::string_view ext) {
+  return (ext.size() < str.size()) &&
+      std::equal(str.end() - ext.size(), str.end(), ext.begin());
+}
+
 DataSource::DataSource(DataSourceType type, const std::string* data)
     : type_(type), data_(data) {
   DRAKE_DEMAND(IsFilename() != IsContents());

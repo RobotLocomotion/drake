@@ -2,8 +2,10 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "drake/multibody/parsing/detail_common.h"
+#include "drake/multibody/parsing/detail_parsing_workspace.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -40,6 +42,21 @@ ModelInstanceIndex AddModelFromMujocoXml(
     const DataSource& data_source, const std::string& model_name,
     const std::optional<std::string>& parent_model_name,
     MultibodyPlant<double>* plant);
+
+class MujocoParserWrapper : public ParserInterface {
+ public:
+  MujocoParserWrapper();
+  ~MujocoParserWrapper() override;
+  std::optional<ModelInstanceIndex> AddModel(
+      const DataSource& data_source, const std::string& model_name,
+      const std::optional<std::string>& scope_name,
+      const ParsingWorkspace& workspace) override;
+
+  std::vector<ModelInstanceIndex> AddAllModels(
+      const DataSource& data_source,
+      const std::optional<std::string>& scope_name,
+      const ParsingWorkspace& workspace) override;
+};
 
 }  // namespace internal
 }  // namespace multibody
