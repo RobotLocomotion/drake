@@ -24,6 +24,7 @@ class CompositeParse;
 /// URDF                     | ".urdf"
 /// SDFormat                 | ".sdf"
 /// MJCF (Mujoco XML)        | ".xml"
+/// Drake Model Directives   | ".dmd.yaml"
 ///
 /// The output of parsing is one or more model instances added to the
 /// MultibodyPlant provided to the parser at construction.
@@ -40,6 +41,10 @@ class CompositeParse;
 ///
 /// MJCF (MuJoCo XML) files typically contain many bodies, they will all be
 /// added as a single model instance in the @p plant.
+///
+/// Drake Model Directives are only available via AddAllModelsFromFile. The
+/// single-model methods (AddModelFromFile, AddModelFromString) cannot load
+/// model directives.
 ///
 /// For more documentation of Drake-specific treatment of these input formats,
 /// see @ref multibody_parsing.
@@ -87,8 +92,6 @@ class Parser final {
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
       const std::string& file_name);
 
-  // TODO(rpoyner-tri): add documentation of nesting in model directives in
-  // text below?
   /// Parses the input file named in @p file_name and adds one top-level model
   /// to @p plant. It is an error to call this using any file that adds more
   /// than one model instance.

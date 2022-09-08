@@ -4,7 +4,6 @@
 #include "drake/common/find_resource.h"
 #include "drake/multibody/inverse_kinematics/global_inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/parsing/process_model_directives.h"
 #include "drake/solvers/solve.h"
 #include "drake/tools/performance/fixture_common.h"
 
@@ -34,12 +33,9 @@ BENCHMARK_F(HomecartGlobalIkBenchmark, PostureCost)(benchmark::State& state) {  
   geometry::SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   multibody::Parser parser(&plant);
-  multibody::parsing::ModelDirectives directives =
-      multibody::parsing::LoadModelDirectives(FindResourceOrThrow(
-          "drake/manipulation/models/tri_homecart/"
-          "homecart_no_grippers.dmd.yaml"));
-  multibody::parsing::ProcessModelDirectives(directives, &plant, nullptr,
-                                             &parser);
+  parser.AddAllModelsFromFile(
+      FindResourceOrThrow("drake/manipulation/models/tri_homecart/"
+                          "homecart_no_grippers.dmd.yaml"));
   plant.Finalize();
 
   Eigen::VectorXd q0(plant.num_positions());
