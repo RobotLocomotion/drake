@@ -20,7 +20,7 @@ py_library(
 py_library(
     name = "otool",
     srcs = ["otool.py"],
-    visibility = ["//:__subpackages__"],
+    visibility = ["//tools:__subpackages__"],
     deps = [":module_py"],
 )
 

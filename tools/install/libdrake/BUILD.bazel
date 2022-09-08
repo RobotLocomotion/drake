@@ -99,7 +99,6 @@ install(
     install_tests = [
         "test/find_package_drake_install_test.py",
         "test/snopt_visibility_install_test.py",
-        "test/rpath_install_test.py",
     ],
     targets = ["libdrake.so"],
     hdrs = [":libdrake_headers"],
