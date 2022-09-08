@@ -143,13 +143,6 @@ GTEST_TEST(CameraConfigTest, CameraConfigFocalLength) {
     DRAKE_EXPECT_THROWS_MESSAGE(null_focal.focal_y(),
                                 ".*you must define .* for FocalLength.");
   }
-
-  {
-    // An invalid configuration should throw when serializing.
-    const CameraConfig::FocalLength null_focal;
-    DRAKE_EXPECT_THROWS_MESSAGE(SaveYamlString(null_focal),
-                                ".*you must define .* for FocalLength.");
-  }
 }
 
 GTEST_TEST(CameraConfigTest, CameraConfigFovDegrees) {
@@ -191,13 +184,6 @@ GTEST_TEST(CameraConfigTest, CameraConfigFovDegrees) {
     DRAKE_EXPECT_THROWS_MESSAGE(null_fov.focal_x(kWidth, kHeight),
                                 ".*you must define .* for FovDegrees.");
     DRAKE_EXPECT_THROWS_MESSAGE(null_fov.focal_y(kWidth, kHeight),
-                                ".*you must define .* for FovDegrees.");
-  }
-
-  {
-    // An invalid configuration should throw when serializing.
-    const CameraConfig::FovDegrees null_fov;
-    DRAKE_EXPECT_THROWS_MESSAGE(SaveYamlString(null_fov),
                                 ".*you must define .* for FovDegrees.");
   }
 }
@@ -396,12 +382,21 @@ GTEST_TEST(CameraConfigTest, Validation) {
   }
 
   {
+    // An invalid sub-struct should throw when serializing.
+    CameraConfig config;
+    config.focal = CameraConfig::FovDegrees{};
+    DRAKE_EXPECT_THROWS_MESSAGE(SaveYamlString(config),
+                                ".*must define at least x or y.*");
+  }
+
+  {
     // However, if rgb = depth = false, then the configuration is by definition
     // valid, even with otherwise bad values elsewhere.
     CameraConfig config;
     config.rgb = config.depth = false;
-    config.width = -10;
+    config.focal = CameraConfig::FovDegrees{};
     EXPECT_NO_THROW(config.ValidateOrThrow());
+    EXPECT_NO_THROW(SaveYamlString(config));
   }
 }
 

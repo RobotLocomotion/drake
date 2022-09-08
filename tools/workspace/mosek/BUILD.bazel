@@ -6,8 +6,8 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files([
-    "LICENSE_CilkPlus",
     "drake_mosek_redistribution.txt",
+    "LICENSE.third_party",
 ])
 
 add_lint_tests()

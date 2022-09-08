@@ -3823,6 +3823,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `body` is not part of this plant.
   std::vector<const Body<T>*> GetBodiesWeldedTo(const Body<T>& body) const;
 
+  /// Returns all bodies whose kinematics are transitively affected by the given
+  /// vector of joints. The affected bodies are returned in increasing order of
+  /// body indexes. Note that this is a kinematic relationship rather than a
+  /// dynamic one. For example, if one of the inboard joints is a free (6dof)
+  /// joint, the kinematic influence is still felt even though dynamically
+  /// there would be no influence on the outboard body.
+  /// This function can be only be called post-finalize, see Finalize().
+  /// @throws std::exception if any of the given joint has an invalid index,
+  /// doesn't correspond to a mobilizer, or is welded.
+  std::vector<BodyIndex> GetBodiesKinematicallyAffectedBy(
+      const std::vector<JointIndex>& joint_indexes) const;
+
   /// Returns the number of joints in the model.
   /// @see AddJoint().
   int num_joints() const {

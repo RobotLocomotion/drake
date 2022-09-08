@@ -346,6 +346,10 @@ class TestPlant(unittest.TestCase):
             model_instance, plant.GetModelInstanceByName(name="acrobot"))
         self.assertEqual(
             plant.GetBodiesWeldedTo(plant.world_body()), [plant.world_body()])
+        link2 = plant.GetBodyByName(name="Link2")
+        self.assertEqual(
+            plant.GetBodiesKinematicallyAffectedBy(
+                [shoulder.index()]), [link1.index(), link2.index()])
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(

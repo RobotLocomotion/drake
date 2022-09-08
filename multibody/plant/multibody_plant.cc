@@ -805,6 +805,23 @@ std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
 }
 
 template <typename T>
+std::vector<BodyIndex> MultibodyPlant<T>::GetBodiesKinematicallyAffectedBy(
+    const std::vector<JointIndex>& joint_indexes) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  for (const JointIndex& joint : joint_indexes) {
+    if (!joint.is_valid() || joint >= num_joints()) {
+      throw std::logic_error(fmt::format(
+          "{}: No joint with index {} has been registered.", __func__, joint));
+    }
+    if (get_joint(joint).num_velocities() == 0) {
+      throw std::logic_error(fmt::format(
+          "{}: joint with index {} is welded.", __func__, joint));
+    }
+  }
+  return internal_tree().GetBodiesKinematicallyAffectedBy(joint_indexes);
+}
+
+template <typename T>
 std::unordered_set<BodyIndex> MultibodyPlant<T>::GetFloatingBaseBodies() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   std::unordered_set<BodyIndex> floating_bodies;

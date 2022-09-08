@@ -667,6 +667,8 @@ class ThreeBoxes : public ::testing::Test {
 
     subs_on_off_.emplace(e_on_->xv()[0], e_off_->xv()[0]);
     subs_on_off_.emplace(e_on_->xv()[1], e_off_->xv()[1]);
+
+    options.preprocessing = false;
   }
 
   GraphOfConvexSets g_;
@@ -1234,12 +1236,15 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   auto target = g.AddVertex(Point(Vector1d{1e-6}), "target");
   g.AddEdge(*source, *target, "edge");
 
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
   // Note: Testing the entire string against a const string is too fragile,
   // since the VertexIds are Identifier<> and increment on a global counter.
   EXPECT_THAT(
       g.GetGraphvizString(),
       AllOf(HasSubstr("source"), HasSubstr("target"), HasSubstr("edge")));
-  auto result = g.SolveShortestPath(*source, *target);
+  auto result = g.SolveShortestPath(*source, *target, options);
   EXPECT_THAT(g.GetGraphvizString(result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
                     HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ =")));

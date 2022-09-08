@@ -272,40 +272,33 @@ If you haven't done so already, follow Drake's PyPI
 [account setup](https://docs.google.com/document/d/17D0yzyr0kGH44eWpiNY7E33A8hW1aiJRmADaoAlVISE/edit#)
 instructions to obtain a username and password.
 
-### Mac wheel builds
+To build the wheel artifacts, use the staging job for each platform:
 
-1. Open the [Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Wheel/job/mac-big-sur-unprovisioned-clang-wheel-staging-snopt-mosek-release/) page.
+- [macOS Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Wheel/job/mac-big-sur-unprovisioned-clang-wheel-staging-snopt-mosek-release/)
+- [linux Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-wheel-staging-snopt-mosek-release/)
+
+For both macOS and linux launching the job is the same.  macOS will produce
+one `.whl`, whereas linux will produce multiple (in the same build).  For both
+macOS and linux:
+
+1. Open the jenkins build page from the above list.
 2. In the upper right, click "log in" (unless you're already logged in). This
    will use your GitHub credentials.
 3. Click "Build with Parameters".
 4. Change "sha1" to the full **git sha** corresponding to ``v1.N.0`` and
    "release_version" to ``1.N.0``.
-5. Click "Build"; the build will finish after approximately 75 minutes.
+5. Click "Build"; the build will finish after approximately 45 minutes for linux
+   and 75 minutes for macOS.
 6. After it's finished, open the "Console Output" and scroll to the bottom to
    find the URL of the built wheel, which will be something like
    `https://drake-packages.csail.mit.edu/drake/staging/drake-1.N.0-cp39-cp39-macosx_11_0_x86_64.whl`.
-7. Download that wheel.
-8. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path
-   to the file you downloaded.
-    1. You will need your PyPI username and password for this. (Do not use drake-robot.)
+7. Download the wheel(s) built on Jenkins.  A ``.sha512`` file is also uploaded
+   which should be used to confirm the downloaded ``.whl`` file, once an
+   artifact is uploaded to PyPI it cannot be overwritten.
 
-### Linux wheel builds
+Finally, after you have all of the ``.whl`` files downloaded and verified, run
+``twine upload <...>``, replacing the ``<...>`` placeholder with the path to the
+files you downloaded.
 
-1. Use your Ubuntu 20.04 workstation for these steps.  (Do not use any other OS.)
-2. Create some empty scratch folder to use for these steps, and then ``cd`` into it.
-3. Run ``sudo apt install docker.io twine``
-   1. If you get an "docker.sock connect" error, you might need to give yourself Docker permissions:
-      1. Run ``sudo usermod -aG docker $USER``
-      2. Run ``newgrp docker``
-   2. If Docker still doesn't work, you might need to logout and/or reboot first.
-4. Run ``git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git``
-5. Run ``cd drake``
-6. Run ``git checkout v1.N.0``
-7. To remove any cached images:
-   1. Run ``docker rmi $(docker image ls --filter=reference='pip-drake:*' -q)``
-   1. Run ``docker builder prune -f``
-8. Run ``./setup/ubuntu/source_distribution/install_prereqs_user_environment.sh``
-9. Run ``bazel run //tools/wheel:builder -- --output-dir=${PWD} --test 1.N.0``
-10. Wait a long time for it to finish (around 30 minutes on a beefy workstation). It will take over all of your computer's resources, so don't plan to do much else concurrently.
-11. There should have been exactly two whl files created. Run ``twine upload <...> <...>``, replacing the ``<...>`` placeholders with the paths to the two wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64.whl``, etc.)
-    1. You will need your PyPI username and password for this. (Do not use drake-robot.)
+   1. You will need your PyPI username and password for this. (Do not use drake-robot.)
+   2. You may upload each individually, or do ``twine upload a.whl b.whl c.whl``.

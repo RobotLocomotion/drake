@@ -69,7 +69,6 @@ struct CameraConfig {
     void Serialize(Archive* a) {
       a->Visit(DRAKE_NVP(x));
       a->Visit(DRAKE_NVP(y));
-      ValidateOrThrow();
     }
 
     /** If specified, the focal length along this axis; otherwise, use
@@ -99,7 +98,6 @@ struct CameraConfig {
     void Serialize(Archive* a) {
       a->Visit(DRAKE_NVP(x));
       a->Visit(DRAKE_NVP(y));
-      ValidateOrThrow();
     }
 
     /** If specified, compute focal length along this axis; otherwise, use
