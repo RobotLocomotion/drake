@@ -1164,6 +1164,26 @@ class Meshcat::Impl {
         });
   }
 
+  void SetFlatBackground() {
+    // Setting the background visibility to false causes saved images to have
+    // a transparent background (which typically renders as black). This
+    // changes the background to a rgb-to-rgb gradient (as specified by the
+    // params).
+    const Rgba& bg = params_.flat_background;
+    const std::vector<double> bg_rgb{bg.r(), bg.g(), bg.b()};
+    SetProperty("/Background", "top_color", bg_rgb);
+    SetProperty("/Background", "bottom_color", bg_rgb);
+    SetProperty("/Background", "visible", true);
+  }
+
+  void SetGradientBackground() {
+    // Restore the default gradient. See meshcat.html
+    SetProperty("/Background", "top_color", std::vector<double>{.95, .95, 1.0});
+    SetProperty("/Background", "bottom_color",
+                std::vector<double>{.32, .32, .35});
+    SetProperty("/Background", "visible", true);
+  }
+
   // This function is public via the PIMPL.
   void Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,
                       double xmax, double ymin, double ymax) {
@@ -1181,7 +1201,7 @@ class Meshcat::Impl {
     SetProperty("/Cameras/default/rotated/<object>", "position",
                 std::vector<double>{0.0, 0.0, 0.0});
 
-    SetProperty("/Background", "visible", false);
+    SetFlatBackground();
     SetProperty("/Grid", "visible", false);
     SetProperty("/Axes", "visible", false);
   }
@@ -1195,7 +1215,8 @@ class Meshcat::Impl {
     // Lock orbit controls.
     SetProperty("/Cameras/default/rotated/<object>", "position",
                 std::vector<double>{0.0, 1.0, 3.0});
-    SetProperty("/Background", "visible", true);
+
+    SetGradientBackground();
     SetProperty("/Grid", "visible", true);
     SetProperty("/Axes", "visible", true);
   }
@@ -2111,6 +2132,10 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
 void Meshcat::SetAnimation(const MeshcatAnimation& animation) {
   impl().SetAnimation(animation);
 }
+
+void Meshcat::SetFlatBackground() { impl().SetFlatBackground(); }
+
+void Meshcat::SetGradientBackground() { impl().SetGradientBackground(); }
 
 void Meshcat::Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,
                               double xmax, double ymin, double ymax) {

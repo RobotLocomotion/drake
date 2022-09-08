@@ -30,6 +30,7 @@ struct MeshcatParams {
     a->Visit(DRAKE_NVP(port));
     a->Visit(DRAKE_NVP(web_url_pattern));
     a->Visit(DRAKE_NVP(show_stats_plot));
+    a->Visit(DRAKE_NVP(flat_background));
   }
 
   /** Meshcat will listen only on the given hostname (e.g., "localhost").
@@ -63,6 +64,11 @@ struct MeshcatParams {
   user interface. This plot including realtime rate and WebGL render
   statistics. */
   bool show_stats_plot{true};
+
+  /** The background color to used as a "flat" background color. This is used
+   in the 2D render mode and by invoking Meshcat::SetFlatBackground().
+   N.B. The *alpha* channel is ignored by Meshcat. */
+  Rgba flat_background{1.0, 1.0, 1.0};
 };
 
 /** Provides an interface to %Meshcat (https://github.com/rdeits/meshcat).
@@ -362,6 +368,17 @@ class Meshcat {
    */
   void SetCamera(OrthographicCamera camera,
                  std::string path = "/Cameras/default/rotated");
+
+  /** Sets the background to be the "flat background" color specified in the
+   MeshcatParams. When capturing images from meshcat, prefer using this over
+   setting the "/Background" to invisible. Setting the "/Background" invisible
+   will cause the output images to have transparent backgrounds. That's good
+   for compositing, but bad if you just want the images to reflect what you see
+   in the viewer. */
+  void SetFlatBackground();
+
+  /** Sets the background to the default gradient color. */
+  void SetGradientBackground();
 
   /** Applies a number of settings to make Meshcat act as a 2D renderer. The
    camera is set to an orthographic camera with `X_WC` specifying the pose of

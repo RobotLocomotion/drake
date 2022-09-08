@@ -350,8 +350,9 @@ class Meldis:
     Refer to the pydrake.visualization.meldis module docs for details.
     """
 
-    def __init__(self, *, meshcat_host=None, meshcat_port=None):
-        # Bookkeeping for update throtting.
+    def __init__(self, *, meshcat_host=None, meshcat_port=None,
+                 flat_background=Rgba(1, 1, 1)):
+        # Bookkeeping for update throttling.
         self._last_update_time = time.time()
 
         # Bookkeeping for subscriptions, keyed by LCM channel name.
@@ -367,7 +368,8 @@ class Meldis:
 
         params = MeshcatParams(host=meshcat_host or "localhost",
                                port=meshcat_port,
-                               show_stats_plot=False)
+                               show_stats_plot=False,
+                               flat_background=flat_background)
         self.meshcat = Meshcat(params=params)
 
         default_viewer = _ViewerApplet(meshcat=self.meshcat,
@@ -534,8 +536,16 @@ def _main():
         "--idle-timeout", metavar="TIME", type=float, default=15*60,
         help="When no web browser has been connected for this many seconds,"
         " this program will automatically exit. Set to 0 to run indefinitely.")
+    parser.add_argument(
+        "--flat_background", action="store", nargs=3, type=float,
+        default=[1, 1, 1],
+        help="An RGB triple for specifying the flat background color. Values "
+             "must be in the range [0, 1]")
     args = parser.parse_args()
-    meldis = Meldis(meshcat_host=args.host, meshcat_port=args.port)
+    bg_rgb = Rgba(args.flat_background[0], args.flat_background[1],
+                  args.flat_background[2])
+    meldis = Meldis(meshcat_host=args.host, meshcat_port=args.port,
+                    flat_background=bg_rgb)
     if args.browser_new is not None:
         url = meldis.meshcat.web_url()
         webbrowser.open(url=url, new=args.browser_new)

@@ -865,7 +865,11 @@ GTEST_TEST(MeshcatTest, Set2dRenderMode) {
   EXPECT_FALSE(
       meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "position")
           .empty());
+  // This serves as in indirect test of SetFlatBackground().
   EXPECT_FALSE(meshcat.GetPackedProperty("/Background", "visible").empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Background", "top_color").empty());
+  EXPECT_FALSE(
+      meshcat.GetPackedProperty("/Background", "bottom_color").empty());
   EXPECT_FALSE(meshcat.GetPackedProperty("/Grid", "visible").empty());
   EXPECT_FALSE(meshcat.GetPackedProperty("/Axes", "visible").empty());
 }
@@ -881,7 +885,11 @@ GTEST_TEST(MeshcatTest, ResetRenderMode) {
   EXPECT_FALSE(
       meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "position")
           .empty());
+  // This serves as in indirect test of SetGradientBackground().
   EXPECT_FALSE(meshcat.GetPackedProperty("/Background", "visible").empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Background", "top_color").empty());
+  EXPECT_FALSE(
+      meshcat.GetPackedProperty("/Background", "bottom_color").empty());
   EXPECT_FALSE(meshcat.GetPackedProperty("/Grid", "visible").empty());
   EXPECT_FALSE(meshcat.GetPackedProperty("/Axes", "visible").empty());
 }

@@ -28,7 +28,9 @@ using math::RigidTransformd;
 using math::RotationMatrixd;
 
 int do_main() {
-  auto meshcat = std::make_shared<Meshcat>();
+  // Use a non-default 2d background color to make sure it gets fed through.
+  auto meshcat = std::make_shared<Meshcat>(
+      MeshcatParams{.flat_background = Rgba(0.5, 0.7, 0.8)});
 
   meshcat->SetObject("sphere", Sphere(.25), Rgba(1.0, 0, 0, 1));
   meshcat->SetTransform("sphere", RigidTransformd(Vector3d{-3, 0, 0}));
@@ -207,13 +209,18 @@ Open up your browser to the URL above.
   std::cout
       << "- The blue box should have disappeared\n"
       << "- The lights should have dimmed.\n"
-      << "- The background should have been disabled (it will appear white)"
+      << "- The background should have been disabled (it will appear white)\n"
+      << "  If you save an image, it will have a transparent background."
       << std::endl;
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
   meshcat->Delete();
-  std::cout << "- Everything else should have disappeared." << std::endl;
+  meshcat->SetFlatBackground();
+  std::cout << "- Everything else should have disappeared\n."
+            << "- The background will now be a sky blue color\n."
+            << "  Saved images will now have an opaque, sky blue background."
+            << std::endl;
 
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
