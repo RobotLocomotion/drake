@@ -33,8 +33,10 @@ struct GraphOfConvexSetsOptions {
 
   /** Performs a preprocessing step to remove edges that cannot lie on the
   path from source to target. In most cases, preprocessing causes a net
-  reduction in computation by reducing the size of the optimization solved. */
-  bool preprocessing{true};
+  reduction in computation by reducing the size of the optimization solved.
+  Note that this preprocessing is not exact. There may be edges that cannot
+  lie on the path from source to target that this does not detect. */
+  bool preprocessing{false};
 
   /** Optimizer to be used to solve the shortest path optimization problem. If
   not set, the best solver for the given problem is selected. Note that if the
