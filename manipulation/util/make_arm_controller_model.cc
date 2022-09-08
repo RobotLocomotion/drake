@@ -1,4 +1,4 @@
-#include "sim/common/make_arm_controller_model.h"
+#include "drake/manipulation/util/make_arm_controller_model.h"
 
 #include <string>
 #include <vector>
@@ -7,23 +7,22 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/scoped_names.h"
 
-using drake::math::RigidTransform;
-using drake::multibody::Body;
-using drake::multibody::BodyIndex;
-using drake::multibody::Frame;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
-using drake::multibody::RigidBody;
-using drake::multibody::SpatialInertia;
-using drake::multibody::UnitInertia;
-using drake::multibody::parsing::GetScopedFrameName;
-using drake::systems::Context;
-using Eigen::Vector3d;
-
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
 namespace internal {
+
+using math::RigidTransform;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::Frame;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::Parser;
+using multibody::RigidBody;
+using multibody::SpatialInertia;
+using multibody::parsing::GetScopedFrameName;
+using multibody::parsing::ModelInstanceInfo;
+using systems::Context;
 
 namespace {
 
@@ -42,23 +41,17 @@ bool AreFramesWelded(const MultibodyPlant<double>& plant,
 
 std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
     const MultibodyPlant<double>& simulation_plant,
-    const drake::multibody::parsing::ModelInstanceInfo& arm_info,
-    const std::optional<drake::multibody::parsing::ModelInstanceInfo>&
-        gripper_info) {
-  drake::log()->debug("MakeArmControllerModel:");
-  drake::log()->debug("  arm:");
-  drake::log()->debug("    model: {}", arm_info.model_path);
-  drake::log()->debug("    child_frame: {}", arm_info.child_frame_name);
+    const ModelInstanceInfo& arm_info,
+    const std::optional<ModelInstanceInfo>& gripper_info) {
+  log()->debug("MakeArmControllerModel:");
+  log()->debug("  arm:");
+  log()->debug("    model: {}", arm_info.model_path);
+  log()->debug("    child_frame: {}", arm_info.child_frame_name);
 
   const ModelInstanceIndex sim_arm_model_index =
       simulation_plant.GetModelInstanceByName(arm_info.model_name);
 
-  // A large time step is used here to suppress joint limit warning spam from
-  // MbP. The same time step (=1.0) is used for plants in planning. Provided
-  // this plant is never used for simulation, this should be OK.
-  // See Drake issue #14688.
-  auto plant = std::make_unique<MultibodyPlant<double>>(1.0);
-
+  auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
   Parser parser(plant.get());
   const ModelInstanceIndex arm_model_index =
       parser.AddModelFromFile(arm_info.model_path, arm_info.model_name);
@@ -85,14 +78,13 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
   // that are part of the gripper's model instance and anything welded to the
   // gripper (for example, the calibration checkerboard).
   if (gripper_info) {
-    drake::log()->debug("  gripper:");
-    drake::log()->debug("    model: {}", gripper_info->model_path);
-    drake::log()->debug("    parent_frame: {}",
-                        gripper_info->parent_frame_name);
-    drake::log()->debug("    child_frame: {}", gripper_info->child_frame_name);
+    log()->debug("  gripper:");
+    log()->debug("    model: {}", gripper_info->model_path);
+    log()->debug("    parent_frame: {}", gripper_info->parent_frame_name);
+    log()->debug("    child_frame: {}", gripper_info->child_frame_name);
 
     DRAKE_DEMAND(gripper_info->model_instance !=
-                 drake::multibody::default_model_instance());
+                 multibody::default_model_instance());
     std::vector<BodyIndex> sim_gripper_body_indices =
         simulation_plant.GetBodyIndices(gripper_info->model_instance);
 
@@ -110,7 +102,7 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
     for (const Body<double>* welded_body : sim_gripper_welded_bodies) {
       if ((welded_body->model_instance() != gripper_info->model_instance) &&
           (welded_body->model_instance() != arm_info.model_instance)) {
-        drake::log()->info("Adding BodyIndex of Body {}", welded_body->name());
+        log()->debug("Adding BodyIndex of Body {}", welded_body->name());
         sim_gripper_body_indices.push_back(welded_body->index());
       }
     }
@@ -133,8 +125,8 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
         sim_gripper_parent_frame.body().body_frame().name();
     const Frame<double>& gripper_grand_parent_frame =
         plant->GetFrameByName(gripper_grand_parent_frame_name, arm_model_index);
-    drake::log()->trace("    gripper_grand_parent_frame: {}",
-                        GetScopedFrameName(*plant, gripper_grand_parent_frame));
+    log()->trace("    gripper_grand_parent_frame: {}",
+                 GetScopedFrameName(*plant, gripper_grand_parent_frame));
     const RigidTransform<double> gripper_X_PpP =
         sim_gripper_parent_frame.GetFixedPoseInBodyFrame();
     const RigidTransform<double> gripper_X_PpC =
@@ -154,9 +146,8 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
       // Since the body frame of C in `plant` corresponds to frame G in
       // `simulation_plant`, the relative transform X_CF' (where F' is the grasp
       // frame in `plant`) should be equal to X_GF.
-      plant->AddFrame(
-          std::make_unique<drake::multibody::FixedOffsetFrame<double>>(
-              "grasp_frame", C.body_frame(), X_GF));
+      plant->AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
+          "grasp_frame", C.body_frame(), X_GF));
     }
   }
 
@@ -165,5 +156,5 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
 }
 
 }  // namespace internal
-}  // namespace sim
-}  // namespace anzu
+}  // namespace manipulation
+}  // namespace drake
