@@ -1,3 +1,15 @@
+"""Unit tests for MeLDiS.
+
+You can also visualize the LCM test data like so:
+
+1. In a separate terminal,
+    bazel run //tools:meldis -- -w
+
+2. In another terminal, pass the name of a specific test to bazel. For example,
+    bazel run //bindings/pydrake/visualization:py/meldis_test \\
+        TestMeldis.test_contact_applet_hydroelastic
+"""
+
 import pydrake.visualization.meldis as mut
 
 import unittest
