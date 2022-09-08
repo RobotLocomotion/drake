@@ -26,6 +26,17 @@ from pydrake.systems.framework import (
 
 
 class TestMeldis(unittest.TestCase):
+    """
+You can also manually verify the result by:
+1. In a separate terminal,
+    bazel run //tools:meldis -- -w
+2. In another terminal, pass the name of a specific test to bazel. For example,
+    bazel run //bindings/pydrake/visualization:py/meldis_test \\
+        TestMeldis.test_contact_applet_hydroelastic
+    """
+
+    def test_print_help(self):
+        print(self.__doc__)
 
     def _make_diagram(self, *, sdf_filename, visualizer_params, lcm):
         builder = DiagramBuilder()
