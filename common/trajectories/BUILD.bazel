@@ -16,6 +16,7 @@ drake_cc_package_library(
     deps = [
         ":bspline_trajectory",
         ":discrete_time_trajectory",
+        ":path_parameterized_trajectory",
         ":piecewise_polynomial",
         ":piecewise_pose",
         ":piecewise_quaternion",
@@ -41,6 +42,17 @@ drake_cc_library(
     hdrs = ["discrete_time_trajectory.h"],
     deps = [
         ":piecewise_polynomial",
+        ":trajectory",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "path_parameterized_trajectory",
+    srcs = ["path_parameterized_trajectory.cc"],
+    hdrs = ["path_parameterized_trajectory.h"],
+    deps = [
         ":trajectory",
         "//common:default_scalars",
         "//common:essential",
@@ -140,6 +152,16 @@ drake_cc_googletest(
     name = "discrete_time_trajectory_test",
     deps = [
         ":discrete_time_trajectory",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "path_parameterized_trajectory_test",
+    deps = [
+        ":path_parameterized_trajectory",
+        ":piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
