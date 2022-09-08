@@ -3,19 +3,14 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <vector>
 
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/model_instance_info.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
 namespace internal {
-
-// TODO(zachfang): move this file (and the cc file) to
-// `drake/manipulation/util` and make MakeArmControllerModel() under internal
-// namespace.
 
 /// Constructs a separate plant (different from the simulated plant!) that the
 /// controller will do inverse dynamics on.  The difference between this plant
@@ -41,13 +36,12 @@ namespace internal {
 /// `grasp_frame` is welded to @p gripper_info.child_frame_name.
 // TODO(eric.cousineau): Replace this with more generic (and robust) multibody
 // plant subgraph (#7336).
-std::unique_ptr<drake::multibody::MultibodyPlant<double>>
-MakeArmControllerModel(
-    const drake::multibody::MultibodyPlant<double>& simulation_plant,
-    const drake::multibody::parsing::ModelInstanceInfo& arm_info,
-    const std::optional<drake::multibody::parsing::ModelInstanceInfo>&
-       gripper_info = {});
+std::unique_ptr<multibody::MultibodyPlant<double>> MakeArmControllerModel(
+    const multibody::MultibodyPlant<double>& simulation_plant,
+    const multibody::parsing::ModelInstanceInfo& arm_info,
+    const std::optional<multibody::parsing::ModelInstanceInfo>& gripper_info =
+        {});
 
 }  // namespace internal
-}  // namespace sim
-}  // namespace anzu
+}  // namespace manipulation
+}  // namespace drake

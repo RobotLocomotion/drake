@@ -1,4 +1,4 @@
-#include "sim/common/make_arm_controller_model.h"
+#include "drake/manipulation/util/make_arm_controller_model.h"
 
 #include <string>
 #include <vector>
@@ -7,23 +7,22 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/scoped_names.h"
 
-using drake::math::RigidTransform;
-using drake::multibody::Body;
-using drake::multibody::BodyIndex;
-using drake::multibody::Frame;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
-using drake::multibody::RigidBody;
-using drake::multibody::SpatialInertia;
-using drake::multibody::UnitInertia;
-using drake::multibody::parsing::GetScopedFrameName;
-using drake::systems::Context;
-using Eigen::Vector3d;
-
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
 namespace internal {
+
+using math::RigidTransform;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::Frame;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::Parser;
+using multibody::RigidBody;
+using multibody::SpatialInertia;
+using multibody::parsing::GetScopedFrameName;
+using multibody::parsing::ModelInstanceInfo;
+using systems::Context;
 
 namespace {
 
@@ -42,9 +41,8 @@ bool AreFramesWelded(const MultibodyPlant<double>& plant,
 
 std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
     const MultibodyPlant<double>& simulation_plant,
-    const drake::multibody::parsing::ModelInstanceInfo& arm_info,
-    const std::optional<drake::multibody::parsing::ModelInstanceInfo>&
-        gripper_info) {
+    const ModelInstanceInfo& arm_info,
+    const std::optional<ModelInstanceInfo>& gripper_info) {
   drake::log()->debug("MakeArmControllerModel:");
   drake::log()->debug("  arm:");
   drake::log()->debug("    model: {}", arm_info.model_path);
@@ -165,5 +163,5 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
 }
 
 }  // namespace internal
-}  // namespace sim
-}  // namespace anzu
+}  // namespace manipulation
+}  // namespace drake
