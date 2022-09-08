@@ -1,4 +1,4 @@
-#include "sim/common/make_arm_controller_model.h"
+#include "drake/manipulation/util/make_arm_controller_model.h"
 
 #include <memory>
 #include <numeric>
@@ -13,31 +13,29 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/shared_pointer_system.h"
-#include "common/find_resource.h"
 
-using drake::math::RigidTransform;
-using drake::math::RollPitchYaw;
-using drake::multibody::Body;
-using drake::multibody::BodyIndex;
-using drake::multibody::Frame;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
-using drake::multibody::RigidBody;
-using drake::multibody::SpatialInertia;
-using drake::multibody::UnitInertia;
-using drake::multibody::parsing::LoadModelDirectives;
-using drake::multibody::parsing::ModelDirectives;
-using drake::multibody::parsing::ModelInstanceInfo;
-using drake::systems::Context;
-using drake::systems::DiagramBuilder;
-using drake::systems::SharedPointerSystem;
-using Eigen::Vector3d;
-
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
 namespace internal {
 namespace {
+
+using Eigen::Vector3d;
+using math::RigidTransform;
+using math::RollPitchYaw;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::Frame;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::Parser;
+using multibody::RigidBody;
+using multibody::SpatialInertia;
+using multibody::parsing::LoadModelDirectives;
+using multibody::parsing::ModelDirectives;
+using multibody::parsing::ModelInstanceInfo;
+using systems::Context;
+using systems::DiagramBuilder;
+using systems::SharedPointerSystem;
 
 constexpr double kTolerance = 1e-9;
 
@@ -46,10 +44,10 @@ class MakeArmControllerModelTest : public ::testing::Test {
   MakeArmControllerModelTest()
       : builder_{},
         sim_plant_{builder_.AddSystem<MultibodyPlant<double>>(0.001)},
-        iiwa7_model_path_(drake::FindResourceOrThrow(
+        iiwa7_model_path_(FindResourceOrThrow(
             "drake/manipulation/models/iiwa_description/iiwa7"
             "/iiwa7_no_collision.sdf")),
-        wsg_model_path_(drake::FindResourceOrThrow(
+        wsg_model_path_(FindResourceOrThrow(
             "drake/manipulation/models/wsg_50_description/sdf/"
             "schunk_wsg_50.sdf")) {}
 
@@ -87,7 +85,7 @@ std::vector<BodyIndex> GetBodyIndices(
     const MultibodyPlant<double>& plant,
     const std::vector<ModelInstanceIndex>& models) {
   std::vector<BodyIndex> body_indices;
-  for (const auto model : models) {
+  for (const auto& model : models) {
     const std::vector<BodyIndex> indices = plant.GetBodyIndices(model);
     body_indices.insert(body_indices.end(), indices.begin(), indices.end());
   }
@@ -184,10 +182,10 @@ TEST_F(MakeArmControllerModelTest, SingleIiwaWithoutWsg) {
  not. */
 TEST_F(MakeArmControllerModelTest, LoadIiwaWsgFromDirectives) {
   const ModelDirectives directives = LoadModelDirectives(
-      FindAnzuResourceOrThrow("sim/common/test/iiwa7_wsg.dmd.yaml"));
+      FindResourceOrThrow("drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"));
   Parser parser{sim_plant_};
   std::vector<ModelInstanceInfo> models_from_directives =
-      drake::multibody::parsing::ProcessModelDirectives(directives, &parser);
+      multibody::parsing::ProcessModelDirectives(directives, &parser);
 
   sim_plant_->Finalize();
   ASSERT_GT(sim_plant_->num_multibody_states(), 0);
@@ -262,9 +260,8 @@ TEST_F(MakeArmControllerModelTest, LoadIiwaWsgFromDirectives) {
       control_plant->CalcSpatialInertia(*control_plant_context,
                                         control_iiwa7_child_frame,
                                         GetAllBodyIndices(*control_plant));
-  EXPECT_TRUE(drake::CompareMatrices(M_CIo_I_sim.CopyToFullMatrix6(),
-                                     M_CIo_I_control.CopyToFullMatrix6(),
-                                     kTolerance));
+  EXPECT_TRUE(CompareMatrices(M_CIo_I_sim.CopyToFullMatrix6(),
+                              M_CIo_I_control.CopyToFullMatrix6(), kTolerance));
 
   // Check `grasp_frame` is added at the same pose as `sim_plant_`.
   EXPECT_TRUE(control_plant->HasFrameNamed("grasp_frame"));
@@ -286,5 +283,5 @@ TEST_F(MakeArmControllerModelTest, LoadIiwaWsgFromDirectives) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace sim
-}  // namespace anzu
+}  // namespace manipulation
+}  // namespace drake
