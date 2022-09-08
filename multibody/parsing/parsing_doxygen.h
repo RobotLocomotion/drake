@@ -19,6 +19,13 @@ In the reference sections below, when discussing XML formats, the relevant
 usage paths for various tags are indicated using
 [XPath](https://www.w3.org/TR/xpath-31/) notation.
 
+@section multibody_parsing_dmd Drake Model Directives Support
+
+Drake Model Directives is a Drake-native model description format, primarily
+intended for combining models written in other formats into complex scenes. It
+is YAML based, and follows a limited data schema.  See
+`multibody/parsing/README_model_directives.md` for more detail.
+
 @section multibody_parsing_mjcf MJCF (Mujoco XML) Support
 
 There is limited, undocumented support for parsing MJCF (Mujoco XML) files. The
