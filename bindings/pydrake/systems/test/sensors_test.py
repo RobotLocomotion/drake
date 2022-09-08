@@ -1,5 +1,6 @@
 import pydrake.systems.sensors as mut
 
+import copy
 import gc
 import unittest
 
@@ -17,11 +18,16 @@ from pydrake.geometry.render import (
     DepthRenderCamera,
     RenderCameraCore,
 )
+from pydrake.lcm import DrakeLcm
 from pydrake.math import (
     RigidTransform,
     RollPitchYaw,
-    )
+)
+from pydrake.multibody.plant import (
+    AddMultibodyPlantSceneGraph,
+)
 from pydrake.systems.framework import (
+    DiagramBuilder,
     InputPort,
     OutputPort,
     )
@@ -172,6 +178,34 @@ class TestSensors(unittest.TestCase):
             gc.collect()
             np.testing.assert_array_equal(data, channel_default)
             np.testing.assert_array_equal(mutable_data, channel_default)
+
+    def test_camera_config(self):
+        mut.CameraConfig()
+        config = mut.CameraConfig(
+            width=124, focal=mut.CameraConfig.FocalLength(x=10, y=20))
+        self.assertEqual(config.width, 124)
+        self.assertIn("width", repr(config))
+        copy.copy(config)
+        self.assertEqual(config.focal_x(), 10)
+        self.assertEqual(config.focal_y(), 20)
+        config.principal_point()
+
+        fov = mut.CameraConfig.FovDegrees(x=10, y=20)
+        self.assertIn("x=10", repr(fov))
+        copy.copy(fov)
+
+        focal = mut.CameraConfig.FocalLength(x=10, y=20)
+        self.assertIn("x=10", repr(focal))
+        copy.copy(focal)
+
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        system_count = len(builder.GetSystems())
+        lcm = DrakeLcm()
+        mut.ApplyCameraConfig(config=config, plant=plant, builder=builder,
+                              scene_graph=scene_graph, lcm=lcm)
+        # Systems have been added.
+        self.assertGreater(len(builder.GetSystems()), system_count)
 
     def test_camera_info(self):
         width = 640
