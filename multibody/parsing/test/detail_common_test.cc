@@ -24,6 +24,17 @@ using geometry::internal::kMaterialGroup;
 using geometry::internal::kRezHint;
 using std::optional;
 
+GTEST_TEST(EndsWithCaseInsensitiveTest, BasicTests) {
+  EXPECT_TRUE(EndsWithCaseInsensitive("something", "thing"));
+  EXPECT_TRUE(EndsWithCaseInsensitive("something", "THING"));
+  EXPECT_TRUE(EndsWithCaseInsensitive("something", "Thing"));
+  EXPECT_TRUE(EndsWithCaseInsensitive("thing", "thing"));
+  EXPECT_TRUE(EndsWithCaseInsensitive("thing", "THING"));
+  EXPECT_TRUE(EndsWithCaseInsensitive("thing", "Thing"));
+  EXPECT_FALSE(EndsWithCaseInsensitive("something", "some"));
+  EXPECT_FALSE(EndsWithCaseInsensitive("thing", "something"));
+}
+
 class DataSourceTest : public ::testing::Test {
  protected:
   const std::string relative_path_{"relative.txt"};
