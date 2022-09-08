@@ -25,9 +25,6 @@ using math::RigidTransform;
 using multibody::RevoluteJoint;
 using systems::BasicVector;
 
-
-namespace internal {
-
 // Calculate the spatial inertia of the set S of bodies that make up the gripper
 // about Go (the gripper frame's origin), expressed in the gripper frame G.
 // The rigid bodies in set S consist of the gripper body G, the left finger, and
@@ -36,18 +33,17 @@ namespace internal {
 // @param[in] wsg_sdf_path path to sdf file that when parsed creates the model.
 // @param[in] gripper_body_frame_name Name of the frame attached to the
 //            gripper's main body.
-// @retval M_SGo_G, spatial inertia of set S about Go, expressed in frame G.
-// @note Previously, this function was in manipulation_station.cc and calculated
-//   set S's spatial inertia. Now, it only verifies CalcGripperSpatialInertia()
-//   which in an internal namespace in manipulation_station.cc.
+// @retval M_SGo_G spatial inertia of set S about Go, expressed in frame G.
+// @note This function helps unit test the calculation of the gripper's spatial
+//   inertia done in CalcGripperSpatialInertia() in manipulation_station.cc.
 multibody::SpatialInertia<double> MakeCompositeGripperInertia(
-    const std::string& wsg_sdf_path,
-    const std::string& gripper_body_frame_name) {
+    const std::string& wsg_sdf_path) {
   // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
   multibody::MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
   parser.AddModelFromFile(wsg_sdf_path);
   plant.Finalize();
+  const std::string gripper_body_frame_name = "body";
   const auto& frame = plant.GetFrameByName(gripper_body_frame_name);
   const auto& gripper_body = plant.GetRigidBodyByName(frame.body().name());
   const auto& left_finger = plant.GetRigidBodyByName("left_finger");
@@ -60,7 +56,7 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia(
       left_finger.default_spatial_inertia();
   const multibody::SpatialInertia<double>& M_RRo_R =
       right_finger.default_spatial_inertia();
-  auto CalcFingerPoseInGripperFrame =
+  auto calc_finger_pose_in_gripper_frame =
       [](const multibody::Joint<double>& slider) {
     // Pose of the joint's parent frame P (attached on gripper body G) in the
     // frame of the gripper G.
@@ -76,12 +72,14 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia(
     return X_GF;
   };
   // Pose of left finger L in gripper frame G when the slider's dof is zero.
-  const RigidTransform<double> X_GL(CalcFingerPoseInGripperFrame(left_slider));
+  const RigidTransform<double> X_GL(
+      calc_finger_pose_in_gripper_frame(left_slider));
   // Pose of right finger R in gripper frame G when the slider's dof is zero.
-  const RigidTransform<double> X_GR(CalcFingerPoseInGripperFrame(right_slider));
-  // Helper to compute the spatial inertia of a finger F in about the gripper's
+  const RigidTransform<double> X_GR(
+      calc_finger_pose_in_gripper_frame(right_slider));
+  // Helper to compute the spatial inertia of a finger F about the gripper's
   // origin Go, expressed in G.
-  auto CalcFingerSpatialInertiaInGripperFrame =
+  auto calc_finger_spatial_inertia_in_gripper_frame =
       [](const multibody::SpatialInertia<double>& M_FFo_F,
          const RigidTransform<double>& X_GF) {
         const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.rotation());
@@ -90,8 +88,10 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia(
         return M_FGo_G;
       };
   // Shift and re-express in G frame the finger's spatial inertias.
-  const auto M_LGo_G = CalcFingerSpatialInertiaInGripperFrame(M_LLo_L, X_GL);
-  const auto M_RGo_G = CalcFingerSpatialInertiaInGripperFrame(M_RRo_R, X_GR);
+  const auto M_LGo_G =
+      calc_finger_spatial_inertia_in_gripper_frame(M_LLo_L, X_GL);
+  const auto M_RGo_G =
+      calc_finger_spatial_inertia_in_gripper_frame(M_RRo_R, X_GR);
   // With everything about the same point Go and expressed in the same frame G,
   // proceed to compose into composite body C:
   // TODO(amcastro-tri): Implement operator+() in SpatialInertia.
@@ -100,8 +100,6 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia(
   M_CGo_G += M_RGo_G;
   return M_CGo_G;
 }
-
-}  // namespace internal
 
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
@@ -207,7 +205,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   // equal to the set S's spatial inertia about Go (body G's origin), expressed
   // in G, where the fingers are regarded as being in a "zero" configuration.
   // Verify the spatial inertia stored in the controller_plant matches the
-  // calculation returned by MakeCompoiseGripperInertia().
+  // calculation returned by MakeCompositeGripperInertia().
   const multibody::MultibodyPlant<double>& controller_plant =
       station.get_controller_plant();
   const multibody::RigidBody<double>& composite_gripper =
@@ -215,14 +213,12 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   const multibody::SpatialInertia<double> M_SGo_G_actual =
       composite_gripper.default_spatial_inertia();
   const multibody::SpatialInertia<double> M_SGo_G_expected =
-      internal::MakeCompositeGripperInertia(
-          station.controller_model_path(),
-          station.controller_model_child_frame_name());
+      MakeCompositeGripperInertia(station.controller_model_path());
 
   const Matrix6<double> M6_actual = M_SGo_G_actual.CopyToFullMatrix6();
   const Matrix6<double> M6_expected = M_SGo_G_expected.CopyToFullMatrix6();
-  constexpr double kEpsilon = 32 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(M6_actual, M6_expected, kEpsilon));
+  constexpr double ktol = 32 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(M6_actual, M6_expected, ktol));
 }
 
 // Partially check M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external

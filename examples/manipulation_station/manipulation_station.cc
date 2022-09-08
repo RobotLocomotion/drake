@@ -56,23 +56,22 @@ namespace internal {
 // @param[in] wsg_sdf_path path to sdf file that when parsed creates the model.
 // @param[in] gripper_body_frame_name Name of the frame attached to the
 //            gripper's main body.
-// @retval M_SGo_G, spatial inertia of set S about Go, expressed in frame G.
+// @retval M_SGo_G spatial inertia of set S about Go, expressed in frame G.
 SpatialInertia<double> CalcGripperSpatialInertia(
-    const std::string& wsg_sdf_path,
-    const std::string& gripper_body_frame_name) {
+    const std::string& wsg_sdf_path) {
   // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
   MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
   parser.AddModelFromFile(wsg_sdf_path);
   plant.Finalize();
 
-  // Set bodies to have zero translation, zero rotation, zero velocity, etc.
+  // Create a default context which should contain a default state in which all
+  // joints/mobilizers have zero translation, zero rotation, zero velocity, etc.
   auto context = plant.CreateDefaultContext();
-  plant.SetDefaultState(*context, &context->get_mutable_state());
 
   // Get references to gripper frame, gripper body, and the two fingers.
   const multibody::Frame<double>& gripper_frame =
-      plant.GetFrameByName(gripper_body_frame_name);
+      plant.GetFrameByName("body");  // The gripper body's frame name is "body".
   const multibody::RigidBody<double>& gripper_body =
       plant.GetRigidBodyByName(gripper_frame.body().name());
   const multibody::RigidBody<double>& left_finger =
@@ -434,8 +433,7 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   // on the hardware to be so precise, so we simply ignore the inertia
   // contribution from the fingers here.
   const multibody::SpatialInertia<double> wsg_spatial_inertial =
-    internal::CalcGripperSpatialInertia(controller_model_path(),
-                                        controller_model_child_frame_name());
+    internal::CalcGripperSpatialInertia(controller_model_path());
   const multibody::RigidBody<T>& wsg_equivalent =
       owned_controller_plant_->AddRigidBody(
           "wsg_equivalent", controller_iiwa_model, wsg_spatial_inertial);

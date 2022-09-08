@@ -477,19 +477,15 @@ class ManipulationStation : public systems::Diagram<T> {
     iiwa_ki_ = ki;
   }
 
-  /// Returns the path to the sdf file that contains the controller model.
+#ifndef DRAKE_DOXYGEN_CXX
+  /// (Internal use only) Returns the path to the sdf file that contains the
+  /// controller model.
   /// @throws std::exception if Finalize() has not been called.
-  std::string controller_model_path() {
+  const std::string& controller_model_path() {
     DRAKE_THROW_UNLESS(wsg_model_.model_instance.is_valid());
     return wsg_model_.model_path;
   }
-
-  /// Returns the child frame name for the controller model.
-  /// @throws std::exception if Finalize() has not been called.
-  std::string controller_model_child_frame_name() {
-    DRAKE_THROW_UNLESS(wsg_model_.model_instance.is_valid());
-    return wsg_model_.child_frame->name();
-  }
+#endif
 
  private:
   // Struct defined to store information about the how to parse and add a model.
