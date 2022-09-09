@@ -7,7 +7,7 @@ set -eu -o pipefail
 
 readonly resource_root="$(cd "$(dirname "${BASH_SOURCE}")" && realpath ..)"
 
-if [ $# -lt 1 ]; then
+if [[ $# -lt 1 ]]; then
     echo "Usage: $0 <wheel>" >&2
     exit 1
 fi

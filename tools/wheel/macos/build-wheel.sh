@@ -20,12 +20,12 @@ readonly git_root="$(
 )"
 
 build_deps=1
-if [ "$1" == "--no-deps" ]; then
+if [[ "$1" == "--no-deps" ]]; then
     build_deps=
     shift 1
 fi
 
-if [ $# -lt 1 ]; then
+if [[ $# -lt 1 ]]; then
     echo "Usage: $0 <drake-version>" >&2
     exit 1
 fi
@@ -59,7 +59,7 @@ export SDKROOT="$(xcrun --show-sdk-path)"
 # Build Drake's dependencies.
 # -----------------------------------------------------------------------------
 
-if [ -n "$build_deps" ]; then
+if [[ -n "$build_deps" ]]; then
     rm -rf /opt/drake-dependencies
 
     rm -rf "/opt/drake-wheel-build/dependencies"
