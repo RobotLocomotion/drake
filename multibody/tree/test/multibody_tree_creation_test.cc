@@ -857,17 +857,17 @@ UnitInertia<double> MakeTestCubeUnitInertia(const double length = 1.0) {
 }
 
 // Helper function to create a cube-shaped rigid body B and add it to a model.
-// @param[in] model the MultibodyTree to which body B is added.
-// @param[in] name of the body that is being added to the model.
-// @param[in] link_length the length, width, and depth of the cube-shaped body.
-// @param[in] skip_validity_check is passed in as `true` to skip the validity
+// @param[in] model MultibodyTree to which body B is added.
+// @param[in] body_name name of the body that is being added to the model.
+// @param[in] link_length length, width, and depth of the cube-shaped body.
+// @param[in] skip_validity_check setting which is `true` to skip the validity
 //  check on the new body B's spatial inertia, which ensures an exception is not
 //  thrown when setting body B's spatial inertia (which would otherwise occur if
 //  mass or link_length is NaN). Avoiding this early exception allows for a
 //  later exception to be thrown in a subsequent function and tested below.
 const RigidBody<double>& AddCubicalLink(
     MultibodyTree<double>* model,
-    const std::string& name,
+    const std::string& body_name,
     const double mass,
     const double link_length = 1.0,
     const bool skip_validity_check = false) {
@@ -876,12 +876,12 @@ const RigidBody<double>& AddCubicalLink(
   const UnitInertia<double> G_BBo_B = MakeTestCubeUnitInertia(link_length);
   const SpatialInertia<double> M_BBo_B(mass, p_BoBcm_B, G_BBo_B,
                                        skip_validity_check);
-  return model->AddRigidBody(name, M_BBo_B);
+  return model->AddRigidBody(body_name, M_BBo_B);
 }
 
 // Verify Body::default_rotational_inertia() and related MultibodyTree methods.
 GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
-  // Create a model and add trhee rigid bodies, namely A, B, C.
+  // Create a model and add three rigid bodies, namely A, B, C.
   MultibodyTree<double> model;
   const double mA = 0, mB = 1, mC = 3;  // Mass of links A, B, C.
   const double length = 3;         // Length of each thin uniform-density link.
@@ -962,8 +962,8 @@ void AddWeldJoint(MultibodyTree<double>* model, const std::string& name,
 GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithZeroMass) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
-  const double mA = 0, mB = 0;  // Mass of link A or B.
-  const double length = 3;  // Length of thin uniform-density link.
+  const double mA = 0, mB = 0;  // Mass of link A or B (both zero).
+  const double length = 3;  // Length of uniform-density link (arbitrary ≥ 0).
   const RigidBody<double>& body_A = AddCubicalLink(&model, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
 
@@ -988,8 +988,8 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithZeroMass) {
 GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithZeroInertia) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
-  const double mA = 0, mB = 0;  // Mass of link A or B.
-  const double length = 0;  // Length of thin uniform-density link.
+  const double mA = 0, mB = 0;  // Mass of link A or B (both zero).
+  const double length = 3;  // Length of uniform-density link (arbitrary ≥ 0).
   const RigidBody<double>& body_A = AddCubicalLink(&model, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
 
@@ -1016,7 +1016,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithNaNInertia) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
   const double mass = std::numeric_limits<double>::quiet_NaN();
-  const double length = 3;  // Length of thin uniform-density link.
+  const double length = 3;  // Length of uniform-density link (arbitrary ≥ 0).
   const bool skip_validity_check = true;
   const RigidBody<double>& body_A =
       AddCubicalLink(&model, "bodyA", mass, length, skip_validity_check);
@@ -1045,8 +1045,8 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithNaNInertia) {
 GTEST_TEST(WeldedBodies, NoErrorIfCompositeBodyHasMassDueToWeldedBody) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
-  const double mA = 0, mB = 1;  // Mass of link A or B.
-  const double length = 3;  // Length of thin uniform-density link.
+  const double mA = 0, mB = 1;  // Mass of link A (zero) and B (arbitrary > 0).
+  const double length = 3;  // Length of uniform-density link (arbitrary > 0).
   const RigidBody<double>& body_A = AddCubicalLink(&model, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
 
@@ -1068,8 +1068,8 @@ GTEST_TEST(WeldedBodies, NoErrorIfCompositeBodyHasMassDueToWeldedBody) {
 GTEST_TEST(WeldedBodies, NoErrorIfCompositeBodyHasInertiaDueToWeldedBody) {
   // Create a model and add a few rigid bodies.
   MultibodyTree<double> model;
-  const double mA = 0, mB = 1;  // Mass of link A or B.
-  const double length = 3;  // Length of thin uniform-density link.
+  const double mA = 0, mB = 1;  // Mass of link A (zero) or B (arbitrary > 0).
+  const double length = 3;  // Length of uniform-density link (arbitrary > 0).
   const RigidBody<double>& body_A = AddCubicalLink(&model, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
 
@@ -1092,7 +1092,7 @@ GTEST_TEST(TestDistalBody, NoThrowErrorIfZeroMassBodyIsNotDistal) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
   const double mA = 0, mB = 0, mC = 0, mD = 1;  // Mass of links A, B, C, D.
-  const double length = 3;  // Length of thin uniform-density link.
+  const double length = 3;  // Length of uniform-density link (arbitrary > 0).
   const RigidBody<double>& body_A = AddCubicalLink(&model, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
   const RigidBody<double>& body_C = AddCubicalLink(&model, "bodyC", mC, length);
@@ -1127,8 +1127,8 @@ GTEST_TEST(TestDistalBody, NoThrowErrorIfZeroMassBodyIsNotDistal) {
 GTEST_TEST(TestDistalBody, NoThrowErrorIfZeroInertiaBodyIsNotDistal) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
-  const double mA = 0, mB = 1;  // Mass of link A or B.
-  const double length = 3;  // Length of thin uniform-density link.
+  const double mA = 0, mB = 1;  // Mass of link A (zero) or B (arbitrary > 0).
+  const double length = 3;  // Length of uniform-density link (arbitrary > 0).
   const RigidBody<double>& body_A = AddCubicalLink(&model, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddCubicalLink(&model, "bodyB", mB, length);
 

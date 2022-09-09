@@ -2878,21 +2878,21 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
   // consists of a parent body (the first entry in the set) and thereafter
   // children bodies that are welded to the parent body.
   const MultibodyTreeTopology& topology = get_topology();
-  std::vector<std::set<BodyIndex>> welded_bodies =
+  std::vector<std::set<BodyIndex>> welded_bodies_list =
       topology.CreateListOfWeldedBodies();
 
-  // There should be at least 1 set of welded_bodies since the first set should
+  // There is at least 1 set of welded_bodies_list since the first set should
   // be the world body (if it has children bodies, they are anchored to it).
-  const size_t number_of_sets = welded_bodies.size();
+  const size_t number_of_sets = welded_bodies_list.size();
   DRAKE_ASSERT(number_of_sets > 0);
 
   // Investigate mass/inertia properties for all non-world welded bodies.
   // The for-loop below starts with i = 1 to skip over the world body.
   const MultibodyTreeTopology& tree_topology = get_topology();
   for (size_t i = 1;  i < number_of_sets;  ++i) {
-    // Get the next set of welded bodies. The first entry in the set is the
-    // parent body and the remaining entries (if any) are children bodies.
-    const std::set<BodyIndex>& welded_body = welded_bodies[i];
+    // The first entry in the set is the parent body and the remaining entries
+    // (if any) are children bodies.
+    const std::set<BodyIndex>& welded_body = welded_bodies_list[i];
     const BodyIndex parent_body_index = *welded_body.begin();
     const BodyTopology& parent_body_topology =
         tree_topology.get_body(parent_body_index);
@@ -2906,13 +2906,14 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
     DRAKE_ASSERT(parent_body_index == parent_body.index());
     DRAKE_ASSERT(parent_body_index != world_index());
 
-    // Determine whether this set of welded bodies is the most distal leaf in
-    // a multibody tree.
+    // Determine whether this set of welded bodies is a most distal leaf in
+    // a multibody tree. Reminder, there can be more than one distal leaf as a
+    // robot may two or more arms, each with grippers that are distal leafs.
     const BodyNodeIndex parent_body_node_index = parent_body_topology.body_node;
     const BodyNodeTopology& parent_body_node_topology =
         tree_topology.get_body_node(parent_body_node_index);
     const bool is_composite_body_distal_leaf_in_tree =
-        tree_topology.CalcNumberOfOutboardVelocitiesExcludeBase(
+        tree_topology.CalcNumberOfOutboardVelocitiesExcludingBase(
             parent_body_node_topology) == 0;
     if (is_composite_body_distal_leaf_in_tree) {
       // Determine if this distal-leaf composite body can translate relative to
