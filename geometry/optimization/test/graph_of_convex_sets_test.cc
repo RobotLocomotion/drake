@@ -578,7 +578,7 @@ TEST_F(ThreePoints, QuadraticCost4) {
   ASSERT_TRUE(result.is_success());
   Vector4d x;
   x << p_source_.x(), p_target_.x();
-  EXPECT_NEAR(e_on_->GetSolutionCost(result), (R * x + d).squaredNorm(), 1e-5);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result), (R * x + d).squaredNorm(), 2e-5);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(source_->GetSolutionCost(result),
               (R_v * p_source_.x() + d_v).squaredNorm(), 1e-5);
