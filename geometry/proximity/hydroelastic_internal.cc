@@ -1,9 +1,9 @@
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 
 #include <string>
+#include <vector>
 
-#include <fmt/format.h>
-
+#include "drake/geometry/proximity/calc_distance_to_surface_mesh.h"
 #include "drake/geometry/proximity/make_box_field.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_capsule_field.h"
@@ -16,9 +16,11 @@
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
 #include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/mesh_to_vtk.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/tessellation_strategy.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
+#include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -384,6 +386,52 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
   return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
+
+VolumeMesh<double> MakeMeshVolumeMesh(const Mesh& mesh_spec) {
+  const std::string& vtk_file_name = mesh_spec.filename();
+  return ReadVtkToVolumeMesh(vtk_file_name, mesh_spec.scale());
+}
+
+VolumeMeshFieldLinear<double, double> MakeMeshPressureField(
+    VolumeMesh<double>* volume_mesh, double hydroelastic_modulus) {
+  TriangleSurfaceMesh<double> surface =
+      ConvertVolumeToSurfaceMesh(*volume_mesh);
+
+  std::vector<double> pressure_values;
+  // First round, it's actually unsigned distance, not pressure values yet.
+  for (const Vector3<double>& p_MV : volume_mesh->vertices()) {
+    pressure_values.push_back(
+        std::abs(internal::CalcDistanceToSurfaceMesh(p_MV, surface)));
+  }
+  const double max_value =
+      *std::max_element(pressure_values.begin(), pressure_values.end());
+  for (double& p : pressure_values) {
+    p = hydroelastic_modulus * p / max_value;
+  }
+
+  return {std::move(pressure_values), volume_mesh, true};
+}
+
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Mesh& mesh_spec, const ProximityProperties& props) {
+  PositiveDouble validator("Mesh", "soft");
+
+  auto mesh = make_unique<VolumeMesh<double>>(
+      MakeMeshVolumeMesh(mesh_spec));
+
+  const double hydroelastic_modulus =
+      validator.Extract(props, kHydroGroup, kElastic);
+
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeMeshPressureField(mesh.get(), hydroelastic_modulus));
+
+  // For debugging
+  // WriteVolumeMeshFieldLinearToVtk("softrep.vtk", "pressure(Pa)", *pressure,
+  //                                 "softrep.vtk");
+
+  return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
+}
+
 
 }  // namespace hydroelastic
 }  // namespace internal

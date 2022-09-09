@@ -441,6 +441,9 @@ std::optional<SoftGeometry> MakeSoftRepresentation(const Shape& shape,
   return {};
 }
 
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Mesh& sphere, const ProximityProperties& props);
+
 /* Creates a soft sphere (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
  ('hydroelastic', 'hydroelastic_modulus') properties.  */

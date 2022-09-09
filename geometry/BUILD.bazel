@@ -87,6 +87,8 @@ drake_cc_library(
         "//geometry/proximity:hydroelastic_callback",
         "//geometry/proximity:obj_to_surface_mesh",
         "//geometry/proximity:penetration_as_point_pair_callback",
+        "//geometry/proximity:volume_to_surface_mesh",
+        "//geometry/proximity:vtk_to_volume_mesh",
         "@fcl",
         "@fmt",
     ],
@@ -630,6 +632,7 @@ filegroup(
     name = "test_vtk_files",
     testonly = 1,
     srcs = [
+        "test/non_convex_mesh.vtk",
         "test/one_tetrahedron.vtk",
         "test/two_tetrahedra_with_field_variable.vtk",
     ],

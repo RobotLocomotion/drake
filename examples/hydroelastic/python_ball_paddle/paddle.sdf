@@ -40,7 +40,7 @@
         </geometry>
         <drake:proximity_properties>
           <drake:compliant_hydroelastic/>
-          <drake:hydroelastic_modulus>2.5e6</drake:hydroelastic_modulus>
+          <drake:hydroelastic_modulus>2.5e4</drake:hydroelastic_modulus>
           <!-- geometry/box does not take mesh_resolution_hint into account
             because it always uses the coarsest mesh. We place it here in
             case you want to change the box to something else like capsules,
