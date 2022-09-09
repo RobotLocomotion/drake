@@ -36,11 +36,13 @@ using systems::BasicVector;
 // @retval M_SGo_G spatial inertia of set S about Go, expressed in frame G.
 // @note This function helps unit test the calculation of the gripper's spatial
 //   inertia done in CalcGripperSpatialInertia() in manipulation_station.cc.
-multibody::SpatialInertia<double> MakeCompositeGripperInertia(
-    const std::string& wsg_sdf_path) {
+multibody::SpatialInertia<double> MakeCompositeGripperInertia() {
   // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
   multibody::MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
+  const std::string& wsg_sdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/wsg_50_description/sdf/"
+      "schunk_wsg_50_no_tip.sdf");
   parser.AddModelFromFile(wsg_sdf_path);
   plant.Finalize();
   const std::string gripper_body_frame_name = "body";
@@ -213,7 +215,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   const multibody::SpatialInertia<double> M_SGo_G_actual =
       composite_gripper.default_spatial_inertia();
   const multibody::SpatialInertia<double> M_SGo_G_expected =
-      MakeCompositeGripperInertia(station.controller_model_path());
+      MakeCompositeGripperInertia();
 
   const Matrix6<double> M6_actual = M_SGo_G_actual.CopyToFullMatrix6();
   const Matrix6<double> M6_expected = M_SGo_G_expected.CopyToFullMatrix6();

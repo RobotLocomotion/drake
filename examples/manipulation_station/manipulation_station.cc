@@ -433,7 +433,7 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   // on the hardware to be so precise, so we simply ignore the inertia
   // contribution from the fingers here.
   const multibody::SpatialInertia<double> wsg_spatial_inertial =
-    internal::CalcGripperSpatialInertia(controller_model_path());
+    internal::CalcGripperSpatialInertia(wsg_model_.model_path);
   const multibody::RigidBody<T>& wsg_equivalent =
       owned_controller_plant_->AddRigidBody(
           "wsg_equivalent", controller_iiwa_model, wsg_spatial_inertial);
