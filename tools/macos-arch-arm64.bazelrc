@@ -7,6 +7,3 @@ build --action_env=PATH=/opt/homebrew/bin:/usr/bin:/bin
 # to use x86 assembly code. Ideally, we should find a way to build it on ARM64
 # at which point we can re-enable IBEX and dReal.
 build --define NO_DREAL=ON
-
-# TODO(#17026) Mosek 10 is required for arm64.
-build:everything --define WITH_MOSEK=OFF

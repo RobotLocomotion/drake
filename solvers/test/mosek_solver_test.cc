@@ -131,9 +131,9 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   MosekSolver solver;
-  // Mosek 10 returns a solution that is accurate up to 1.2E-5 for this specific
+  // Mosek 10 returns a solution that is accurate up to 1.3E-5 for this specific
   // problem. Might need to change the tolerance when we upgrade Mosek.
-  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1.2E-5);
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1.3E-5);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
