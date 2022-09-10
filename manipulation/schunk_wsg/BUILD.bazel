@@ -118,10 +118,10 @@ drake_cc_library(
     srcs = ["build_schunk_wsg_control.cc"],
     hdrs = ["build_schunk_wsg_control.h"],
     deps = [
+        ":schunk_wsg_constants",
+        ":schunk_wsg_controller",
+        ":schunk_wsg_lcm",
         "//common:essential",
-        "//manipulation/schunk_wsg:schunk_wsg_constants",
-        "//manipulation/schunk_wsg:schunk_wsg_controller",
-        "//manipulation/schunk_wsg:schunk_wsg_lcm",
         "//multibody/plant",
         "//systems/framework:diagram_builder",
         "//systems/lcm",
