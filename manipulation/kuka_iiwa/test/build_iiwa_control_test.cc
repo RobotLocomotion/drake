@@ -1,4 +1,4 @@
-#include "sim/common/build_iiwa_control.h"
+#include "drake/manipulation/kuka_iiwa/build_iiwa_control.h"
 
 #include <cmath>
 #include <memory>
@@ -11,30 +11,31 @@
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
+#include "drake/manipulation/util/make_arm_controller_model.h"
+#include "drake/multibody/parsing/model_instance_info.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/parsing/process_model_directives.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/shared_pointer_system.h"
-#include "sim/common/make_arm_controller_model.h"
 
-using drake::math::RigidTransformd;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
-using drake::multibody::parsing::ModelInstanceInfo;
-using drake::systems::ConstantVectorSource;
-using drake::systems::DiagramBuilder;
-using drake::systems::SharedPointerSystem;
-using Eigen::VectorXd;
-
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
+namespace kuka_iiwa {
 namespace {
 
-constexpr int N = drake::manipulation::kuka_iiwa::kIiwaArmNumJoints;
+using Eigen::VectorXd;
+using math::RigidTransformd;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::Parser;
+using multibody::parsing::ModelInstanceInfo;
+using systems::ConstantVectorSource;
+using systems::DiagramBuilder;
+using systems::SharedPointerSystem;
+
+constexpr int N = manipulation::kuka_iiwa::kIiwaArmNumJoints;
 constexpr double kTolerance = 1e-3;
 
 class BuildIiwaControlTest : public ::testing::Test {
@@ -46,7 +47,7 @@ class BuildIiwaControlTest : public ::testing::Test {
     sim_plant_ = builder_.AddSystem<MultibodyPlant<double>>(0.001);
     Parser parser{sim_plant_};
     const std::string iiwa7_model_name = "iiwa7_model";
-    const std::string iiwa7_model_path = drake::FindResourceOrThrow(
+    const std::string iiwa7_model_path = FindResourceOrThrow(
         "drake/manipulation/models/iiwa_description/iiwa7"
         "/iiwa7_no_collision.sdf");
     const ModelInstanceIndex iiwa7_instance =
@@ -68,10 +69,10 @@ class BuildIiwaControlTest : public ::testing::Test {
         &builder_, internal::MakeArmControllerModel(*sim_plant_, iiwa7_info_));
   }
 
-  drake::systems::DiagramBuilder<double> builder_;
+  DiagramBuilder<double> builder_;
   MultibodyPlant<double>* sim_plant_{nullptr};
   MultibodyPlant<double>* controller_plant_{nullptr};
-  drake::lcm::DrakeLcm lcm_;
+  lcm::DrakeLcm lcm_;
   ModelInstanceInfo iiwa7_info_;
 };
 
@@ -79,12 +80,12 @@ TEST_F(BuildIiwaControlTest, BuildIiwaControl) {
   BuildIiwaControl(*sim_plant_, iiwa7_info_.model_instance, *controller_plant_,
                    &lcm_, &builder_);
   const auto diagram = builder_.Build();
-  drake::systems::Simulator<double> simulator(*diagram);
+  systems::Simulator<double> simulator(*diagram);
 
-  drake::lcm::Subscriber<drake::lcmt_iiwa_status> sub{&lcm_, "IIWA_STATUS"};
+  lcm::Subscriber<lcmt_iiwa_status> sub{&lcm_, "IIWA_STATUS"};
 
   // Publish commands and check whether the Iiwa arm moves to the correct poses.
-  drake::lcmt_iiwa_command command{};
+  lcmt_iiwa_command command{};
   const std::vector<double> q1{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7};
   command.num_joints = N;
   command.joint_position = q1;
@@ -159,7 +160,7 @@ TEST_F(BuildIiwaControlTest, FeedforwardEnabled) {
   EXPECT_NE(control_ports.external_torque, nullptr);
   EXPECT_EQ(control_ports.external_torque->size(), N);
 
-  drake::systems::Simulator<double> simulator(*diagram);
+  systems::Simulator<double> simulator(*diagram);
   auto& diagram_context = simulator.get_mutable_context();
 
   simulator.AdvanceTo(1.0);
@@ -175,8 +176,8 @@ TEST_F(BuildIiwaControlTest, FeedforwardEnabled) {
    should take effect and move the Iiwa arm from its commanded position. */
   VectorXd nonzero_feedforward_command = VectorXd::Constant(N, 5.0);
   torque_input_source
-      ->get_mutable_source_value(&diagram->GetMutableSubsystemContext(
-          *torque_input_source, &diagram_context))
+      ->get_mutable_source_value(
+          &torque_input_source->GetMyMutableContextFromRoot(&diagram_context))
       .set_value(nonzero_feedforward_command);
   simulator.AdvanceTo(2.0);
   iiwa_positions = sim_plant_->GetPositions(
@@ -188,5 +189,6 @@ TEST_F(BuildIiwaControlTest, FeedforwardEnabled) {
 }
 
 }  // namespace
-}  // namespace sim
-}  // namespace anzu
+}  // namespace kuka_iiwa
+}  // namespace manipulation
+}  // namespace drake

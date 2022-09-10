@@ -19,5 +19,6 @@ Demo:
       parent: iiwa_on_world
       child: iiwa::base
   model_drivers:
-    iiwa: !ZeroForceDriver {}
+    iiwa: !IiwaDriver
+      hand_model_name: wsg
     wsg: !SchunkWsgDriver {}

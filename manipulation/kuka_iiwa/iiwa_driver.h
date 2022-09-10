@@ -5,8 +5,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
+namespace kuka_iiwa {
 
 /** This config struct specifies how to wire up Drake systems between an LCM
 interface and the actuation input ports of a MultibodyPlant. This simulates the
@@ -18,12 +19,12 @@ struct IiwaDriver {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IiwaDriver)
   IiwaDriver() = default;
 
-  /// The name of the model (`name` element of the `add_model` directive) in
-  /// the simulation that the driver will analyze to compute end effector
-  /// inertia for its copy of the arm in inverse dynamics.
+  /** The name of the model (`name` element of the `add_model` directive) in
+  the simulation that the driver will analyze to compute end effector inertia
+  for its copy of the arm in inverse dynamics. */
   std::string hand_model_name;
 
-  /// Per BuildIiwaControl.
+  /** Per BuildIiwaControl. */
   double ext_joint_filter_tau{0.01};
 
   std::string lcm_bus{"default"};
@@ -36,5 +37,6 @@ struct IiwaDriver {
   }
 };
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace kuka_iiwa
+}  // namespace manipulation
+}  // namespace drake
