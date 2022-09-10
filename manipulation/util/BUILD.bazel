@@ -125,6 +125,20 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "make_arm_controller_model",
+    srcs = ["make_arm_controller_model.cc"],
+    hdrs = ["make_arm_controller_model.h"],
+    internal = True,
+    # TODO(zachfang): Change the visibility setting when migrating iiwa driver.
+    visibility = ["//visibility:private"],
+    deps = [
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
 drake_py_binary(
     name = "show_model",
     srcs = ["show_model.py"],
@@ -196,6 +210,26 @@ drake_cc_googletest(
         ":zero_force_driver_functions",
         "//multibody/parsing",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_arm_controller_model_test",
+    data = [
+        ":test/iiwa7_wsg.dmd.yaml",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":make_arm_controller_model",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//multibody/parsing:parser",
+        "//multibody/parsing:process_model_directives",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:shared_pointer_system",
     ],
 )
 

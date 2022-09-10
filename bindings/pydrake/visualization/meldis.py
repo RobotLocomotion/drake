@@ -32,6 +32,7 @@ from drake import (
     lcmt_contact_results_for_viz,
     lcmt_viewer_draw,
     lcmt_viewer_geometry_data,
+    lcmt_viewer_link_data,
     lcmt_viewer_load_robot,
 )
 from pydrake.common import (
@@ -176,12 +177,49 @@ class _ViewerApplet:
                 new_rgba = [color.r(), color.g(), color.b(), value * color.a()]
                 self._meshcat.SetProperty(path, "color", new_rgba)
 
+    def on_viewer_draw_deformable(self, message):
+        """Handler for lcmt_viewer_link_data."""
+        link_name = message.name
+        robot = message.robot_num
+        link_path = f"{self._path}/{robot}/{link_name}"
+        for i, geom in enumerate(message.geom):
+            geom_name = geom.string_data
+            geom_path = f"{link_path}/{geom_name}"
+            vertices, faces, rgba, pose = self._convert_deformable_geom(geom)
+            self._meshcat.SetTriangleMesh(
+                path=geom_path, vertices=vertices, faces=faces, rgba=rgba)
+            self._meshcat.SetTransform(path=link_path, X_ParentPath=pose)
+        if self._waiting_for_first_draw_message:
+            self._waiting_for_first_draw_message = False
+            self._set_visible(True)
+
     def _set_visible(self, value):
         self._meshcat.SetProperty(self._path, property="visible", value=value)
 
+    def _convert_deformable_geom(self, geom):
+        """Given an lcmt_viewer_geometry_data, parse it into a tuple of
+        (vertices, faces, Rgba, RigidTransform) if the geometry type is a
+        MESH.
+        """
+        assert geom.type == lcmt_viewer_geometry_data.MESH
+        num_verts = int(geom.float_data[0])
+        num_faces = int(geom.float_data[1])
+        # The first two floats encode the number of vertices and number of
+        # triangles.
+        v_start_index = 2
+        f_start_index = v_start_index + 3 * num_verts
+        vertices = np.array(geom.float_data[v_start_index:f_start_index])
+        faces = np.array(geom.float_data[f_start_index:]).astype(int)
+        vertices = np.reshape(vertices, (3, num_verts), order='F')
+        faces = np.reshape(faces, (3, num_faces), order='F')
+        rgba = Rgba(*geom.color)
+        pose = self._to_pose(geom.position, geom.quaternion)
+        return (vertices, faces, rgba, pose)
+
     def _convert_geom(self, geom):
         """Given an lcmt_viewer_geometry_data, parse it into a tuple of (Shape,
-        Rgba, RigidTransform)."""
+        Rgba, RigidTransform).
+        """
         shape = None
         if geom.type == lcmt_viewer_geometry_data.BOX:
             (width, depth, height) = geom.float_data
@@ -225,7 +263,8 @@ class _ViewerApplet:
     @staticmethod
     def _to_pose(position, quaternion):
         """Given pose parts of an lcmt_viewer_geometry_data, parse it into a
-        RigidTransform."""
+        RigidTransform.
+        """
         (p_x, p_y, p_z) = position
         (q_w, q_x, q_y, q_z) = quaternion
         return RigidTransform(
@@ -309,7 +348,8 @@ class _ContactApplet:
     def on_contact_results(self, message):
         """Handler for lcmt_contact_results_for_viz. Note that only point
            hydroelastic contact force and moment vectors are shown; contact
-           surface and pressure are not shown."""
+           surface and pressure are not shown.
+        """
 
         # Handle point contact pairs
         viz_items = []
@@ -379,6 +419,9 @@ class Meldis:
         self._subscribe(channel="DRAKE_VIEWER_DRAW",
                         message_type=lcmt_viewer_draw,
                         handler=default_viewer.on_viewer_draw)
+        self._subscribe(channel="DRAKE_VIEWER_DEFORMABLE",
+                        message_type=lcmt_viewer_link_data,
+                        handler=default_viewer.on_viewer_draw_deformable)
         self._poll(handler=default_viewer.on_poll)
 
         illustration_viewer = _ViewerApplet(meshcat=self.meshcat,

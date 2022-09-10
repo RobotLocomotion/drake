@@ -14,40 +14,29 @@ notebooks. See the [Tutorials](/index.html#tutorials) page for details.
 The following table shows the configurations and platforms that Drake
 officially supports:
 
-| Operating System ⁽⁴⁾⁽⁵⁾            | Architecture | Python   |
-|------------------------------------|--------------|----------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾  |
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64 ⁽¹⁾   | 3.10 ⁽³⁾ |
-| macOS Big Sur (11)                 | x86_64 ⁽²⁾   | 3.10 ⁽³⁾ |
-| macOS Monterey (12)                | x86_64 ⁽²⁾   | 3.10 ⁽³⁾ |
+| Operating System ⁽³⁾⁽⁴⁾            | Architecture          | Python   |
+|------------------------------------|-----------------------|----------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64                | 3.8 ⁽²⁾  |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64                | 3.10 ⁽²⁾ |
+| macOS Big Sur (11)                 | x86_64                | 3.10 ⁽²⁾ |
+| macOS Monterey (12)                | x86_64 or arm64 ⁽¹⁾   | 3.10 ⁽²⁾ |
 
-⁽¹⁾ Drake Ubuntu builds assume support for Intel's AVX2 and FMA instructions,
-introduced with the Haswell architecture in 2013 with substantial performance
-improvements in the Broadwell architecture in 2014. Drake is compiled with
-`-march=broadwell` to exploit these instructions (that also works for Haswell
-machines). Drake can be used on older machines if necessary by building from
-source with that
-[flag](https://github.com/RobotLocomotion/drake/blob/77642cc9/math/BUILD.bazel#L288)
-removed.
+⁽¹⁾ For users running on Apple's newer arm64 hardware, to use Drake's
+pre-compiled releases refer to [Running under Rosetta 2](/rosetta2.html) for
+instructions on running using x86_64 emulation. Running natively on arm64 is
+currently only supported by [building Drake from source](/from_source.html).
 
-⁽²⁾ For users running on Apple's newer arm64 hardware, refer to
-[Running under Rosetta 2](/rosetta2.html)
-for instructions on running using x86_64 emulation.
-Building and running directly on arm64 is not yet supported; plans
-for any future arm64 support on macOS and/or Ubuntu are discussed in
-[issue #13514](https://github.com/RobotLocomotion/drake/issues/13514).
-
-⁽³⁾ CPython is the only Python implementation supported.
+⁽²⁾ CPython is the only Python implementation supported.
 Drake does not support the Python environment supplied by Anaconda. Before
 installing or using Drake, please `conda deactivate` (repeatedly, until even
 the conda base environment has been deactivated) such that none of the paths
 reported `which -a python python3` refer to conda.
 
-⁽⁴⁾ Drake features that perform image rendering (e.g., camera simulation)
+⁽³⁾ Drake features that perform image rendering (e.g., camera simulation)
 require a working display server.  Most personal computers will have this
 already built in, but some cloud or docker environments may not.
 
-⁽⁵⁾ Ubuntu 22.04 (Jammy Jellyfish) pre-built binaries are not yet available
+⁽⁴⁾ Ubuntu 22.04 (Jammy Jellyfish) pre-built binaries are not yet available
 for pip.
 
 Additionally, if you are compiling your own C++ code against Drake's C++ code
@@ -59,8 +48,7 @@ compiler as our releases:
 | Ubuntu 20.04 LTS (Focal Fossa)     | GCC 9.3                        |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11.2                       |
 | macOS Big Sur (11)                 | Apple LLVM 12.0.5 (Xcode 12.5) |
-| macOS Monterey (12)                | Apple LLVM 13.0.0 (Xcode 13.1) |
-| macOS Monterey (12)                | Apple LLVM 13.1.6 (Xcode 13.4) |
+| macOS Monterey (12) on x86_64      | Apple LLVM 13.0.0 (Xcode 13.1) |
 
 ## Available Versions
 

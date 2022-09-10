@@ -19,7 +19,8 @@ over a contact patch with an uneven pressure distribution over that patch. It
 is common in robotics to model that as a single point contact or a set of point
 contacts. Hydroelastic contact instead attempts to approximate the patch and
 pressure distribution to provide much richer and more realistic contact
-behavior.
+behavior. For a high-level overview, see [this blog post]
+(https://medium.com/toyotaresearch/rethinking-contact-simulation-for-robot-manipulation-434a56b5ec88).
 
 Drake implements two models for resolving contact to forces: point contact and
 hydroelastic contact. See @ref hydro_appendix_a for a fuller discussion of the
@@ -621,5 +622,9 @@ indicate what can and cannot be done with hydroelastic contact.
   J., & Castro, A. (2022). Velocity Level Approximation of Pressure Field
   Contact Patches. In 2022 IEEE/RSJ International Conference on Intelligent
   Robots and Systems(IROS). https://arxiv.org/abs/2110.04157 .
+
+- @anchor Sherman2022 [Sherman 2022] Sherman, M. (2022, June). Rethinking
+  Contact Simulation for Robot Manipulation. Blog post in Medium.
+  https://medium.com/toyotaresearch/rethinking-contact-simulation-for-robot-manipulation-434a56b5ec88 .
 
  */
