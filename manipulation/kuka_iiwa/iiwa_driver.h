@@ -5,8 +5,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
+namespace kuka_iiwa {
 
 /** This config struct specifies how to wire up Drake systems between an LCM
 interface and the actuation input ports of a MultibodyPlant. This simulates the
@@ -36,5 +37,6 @@ struct IiwaDriver {
   }
 };
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace kuka_iiwa
+}  // namespace manipulation
+}  // namespace drake

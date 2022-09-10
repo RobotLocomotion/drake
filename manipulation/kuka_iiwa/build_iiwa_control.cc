@@ -1,4 +1,4 @@
-#include "sim/common/build_iiwa_control.h"
+#include "drake/manipulation/kuka_iiwa/build_iiwa_control.h"
 
 #include <limits>
 
@@ -14,32 +14,33 @@
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
 #include "drake/systems/primitives/gain.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
+namespace kuka_iiwa {
 
 using drake::lcm::DrakeLcmInterface;
-using drake::manipulation::kuka_iiwa::kIiwaLcmStatusPeriod;
-using drake::manipulation::kuka_iiwa::IiwaCommandReceiver;
-using drake::manipulation::kuka_iiwa::IiwaStatusSender;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::systems::Adder;
-using drake::systems::Context;
-using drake::systems::Demultiplexer;
-using drake::systems::Gain;
-using drake::systems::StateInterpolatorWithDiscreteDerivative;
-using drake::systems::System;
-using drake::systems::controllers::InverseDynamicsController;
-using drake::systems::lcm::LcmPublisherSystem;
-using drake::systems::lcm::LcmSubscriberSystem;
+using manipulation::kuka_iiwa::IiwaCommandReceiver;
+using manipulation::kuka_iiwa::IiwaStatusSender;
+using manipulation::kuka_iiwa::kIiwaLcmStatusPeriod;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using systems::Adder;
+using systems::Context;
+using systems::Demultiplexer;
+using systems::Gain;
+using systems::StateInterpolatorWithDiscreteDerivative;
+using systems::System;
+using systems::controllers::InverseDynamicsController;
+using systems::lcm::LcmPublisherSystem;
+using systems::lcm::LcmSubscriberSystem;
 
-void BuildIiwaControl(
-    const MultibodyPlant<double>& plant,
-    const drake::multibody::ModelInstanceIndex iiwa_instance,
-    const MultibodyPlant<double>& controller_plant,
-    DrakeLcmInterface* lcm, drake::systems::DiagramBuilder<double>* builder,
-    double ext_joint_filter_tau,
-    const std::optional<Eigen::VectorXd>& desired_kp_gains) {
+void BuildIiwaControl(const MultibodyPlant<double>& plant,
+                      const multibody::ModelInstanceIndex iiwa_instance,
+                      const MultibodyPlant<double>& controller_plant,
+                      DrakeLcmInterface* lcm,
+                      systems::DiagramBuilder<double>* builder,
+                      double ext_joint_filter_tau,
+                      const std::optional<Eigen::VectorXd>& desired_kp_gains) {
   const IiwaControlPorts iiwa_control_ports = BuildSimplifiedIiwaControl(
       plant, iiwa_instance, controller_plant, builder, ext_joint_filter_tau,
       desired_kp_gains, true /* enable_feedforward_torque*/);
@@ -48,8 +49,7 @@ void BuildIiwaControl(
 
   // Create the iiwa command subscriber to receive desired state commands.
   auto iiwa_command_sub = builder->AddSystem(
-      LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
-          "IIWA_COMMAND", lcm));
+      LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND", lcm));
   iiwa_command_sub->set_name(
       plant.GetModelInstanceName(iiwa_instance) + "_iiwa_command_subscriber");
   auto iiwa_command_receiver =
@@ -68,7 +68,7 @@ void BuildIiwaControl(
       builder->AddSystem<Demultiplexer>(
           2 * num_iiwa_positions, num_iiwa_positions);
   auto iiwa_status_pub =
-      builder->AddSystem(LcmPublisherSystem::Make<drake::lcmt_iiwa_status>(
+      builder->AddSystem(LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", lcm, kIiwaLcmStatusPeriod));
   iiwa_status_pub->set_name(
       plant.GetModelInstanceName(iiwa_instance) + "_iiwa_status_publisher");
@@ -107,18 +107,17 @@ void BuildIiwaControl(
 
 IiwaControlPorts BuildSimplifiedIiwaControl(
     const MultibodyPlant<double>& plant,
-    const drake::multibody::ModelInstanceIndex iiwa_instance,
+    const multibody::ModelInstanceIndex iiwa_instance,
     const MultibodyPlant<double>& controller_plant,
-    drake::systems::DiagramBuilder<double>* builder,
-    double ext_joint_filter_tau,
+    systems::DiagramBuilder<double>* builder, double ext_joint_filter_tau,
     const std::optional<Eigen::VectorXd>& desired_kp_gains,
     bool enable_feedforward_torque) {
   IiwaControlPorts ports{};
   const int num_iiwa_positions = controller_plant.num_positions();
   DRAKE_DEMAND(num_iiwa_positions == 7);
 
-  drake::VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
-  iiwa_kp = drake::VectorX<double>::Constant(num_iiwa_positions, 100);
+  VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
+  iiwa_kp = VectorX<double>::Constant(num_iiwa_positions, 100);
   if (!desired_kp_gains) {
     // These are taken from the current FRI driver values.
     // TODO(eric.cousineau): These seem like *very* high values for inverse
@@ -134,7 +133,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     // Critical damping gains.
     iiwa_kd[i] = 2 * std::sqrt(iiwa_kp[i]);
   }
-  iiwa_ki = drake::VectorX<double>::Constant(num_iiwa_positions, 1);
+  iiwa_ki = VectorX<double>::Constant(num_iiwa_positions, 1);
 
   auto iiwa_controller = builder->AddSystem<InverseDynamicsController>(
       controller_plant, iiwa_kp, iiwa_ki, iiwa_kd,
@@ -171,7 +170,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
   // external wrench).
   const double kFirstOrderTimeConstant = ext_joint_filter_tau;
   auto external_torque_filter =
-      builder->AddSystem<drake::systems::FirstOrderLowPassFilter<double>>(
+      builder->AddSystem<systems::FirstOrderLowPassFilter<double>>(
           kFirstOrderTimeConstant, num_iiwa_positions);
   builder->Connect(
       plant.get_generalized_contact_forces_output_port(iiwa_instance),
@@ -183,12 +182,11 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
   external_torque_limit.fill(std::numeric_limits<double>::infinity());
   external_torque_limit << 100, 100, 100, 100, 50, 30, 30;
   external_torque_filter->AddExternalConstraint(
-      drake::systems::ExternalSystemConstraint(
+      systems::ExternalSystemConstraint(
           "external torque limit",
-          drake::systems::SystemConstraintBounds(
-              external_torque_limit * -1, external_torque_limit),
-          [](const System<double>& system,
-             const Context<double>& context,
+          systems::SystemConstraintBounds(external_torque_limit * -1,
+                                          external_torque_limit),
+          [](const System<double>& system, const Context<double>& context,
              Eigen::VectorXd* value) {
             *value = system.get_output_port(0).Eval(context);
           }));
@@ -200,5 +198,6 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
   return ports;
 }
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace kuka_iiwa
+}  // namespace manipulation
+}  // namespace drake

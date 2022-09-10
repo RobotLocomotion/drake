@@ -16,9 +16,12 @@ drake_cc_package_library(
     name = "kuka_iiwa",
     visibility = ["//visibility:public"],
     deps = [
+        ":build_iiwa_control",
         ":iiwa_command_receiver",
         ":iiwa_command_sender",
         ":iiwa_constants",
+        ":iiwa_driver",
+        ":iiwa_driver_functions",
         ":iiwa_status_receiver",
         ":iiwa_status_sender",
     ],
@@ -82,6 +85,49 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "iiwa_driver",
+    hdrs = ["iiwa_driver.h"],
+    deps = [
+        "//common:essential",
+        "//common:name_value",
+    ],
+)
+
+drake_cc_library(
+    name = "iiwa_driver_functions",
+    srcs = ["iiwa_driver_functions.cc"],
+    hdrs = ["iiwa_driver_functions.h"],
+    deps = [
+        ":build_iiwa_control",
+        ":iiwa_driver",
+        "//common:essential",
+        "//manipulation/util:make_arm_controller_model",
+        "//multibody/parsing:model_instance_info",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_buses",
+        "//systems/primitives:shared_pointer_system",
+    ],
+)
+
+drake_cc_library(
+    name = "build_iiwa_control",
+    srcs = ["build_iiwa_control.cc"],
+    hdrs = ["build_iiwa_control.h"],
+    deps = [
+        ":iiwa_command_receiver",
+        ":iiwa_constants",
+        ":iiwa_status_sender",
+        "//multibody/plant",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm",
+        "//systems/primitives",
+        "@eigen",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -115,6 +161,27 @@ drake_cc_googletest(
     deps = [
         ":iiwa_status_sender",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "build_iiwa_control_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":build_iiwa_control",
+        ":iiwa_constants",
+        "//common:find_resource",
+        "//manipulation/util:make_arm_controller_model",
+        "//multibody/parsing:model_instance_info",
+        "//multibody/parsing:parser",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:shared_pointer_system",
     ],
 )
 
