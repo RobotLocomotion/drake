@@ -25,5 +25,6 @@ Demo:
         translation: [1.5, 0.8, 1.25]
         rotation: !Rpy { deg: [-120, 5, 125] }
   model_drivers:
-    iiwa: !ZeroForceDriver {}
+    iiwa: !IiwaDriver
+      hand_model_name: wsg
     wsg: !SchunkWsgDriver {}

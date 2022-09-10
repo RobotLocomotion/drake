@@ -1,18 +1,19 @@
-#include "sim/common/iiwa_driver_functions.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_driver_functions.h"
 
+#include "drake/manipulation/kuka_iiwa/build_iiwa_control.h"
+#include "drake/manipulation/util/make_arm_controller_model.h"
 #include "drake/systems/primitives/shared_pointer_system.h"
-#include "sim/common/build_iiwa_control.h"
-#include "sim/common/make_arm_controller_model.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
+namespace kuka_iiwa {
 
-using drake::lcm::DrakeLcmInterface;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::parsing::ModelInstanceInfo;
-using drake::systems::DiagramBuilder;
-using drake::systems::SharedPointerSystem;
-using drake::systems::lcm::LcmBuses;
+using lcm::DrakeLcmInterface;
+using multibody::MultibodyPlant;
+using multibody::parsing::ModelInstanceInfo;
+using systems::DiagramBuilder;
+using systems::SharedPointerSystem;
+using systems::lcm::LcmBuses;
 
 void ApplyDriverConfig(
     const IiwaDriver& driver_config,
@@ -34,7 +35,7 @@ void ApplyDriverConfig(
         "IiwaDriver could not find hand model directive '{}' to actuate",
         hand_name));
   }
-  drake::lcm::DrakeLcmInterface* lcm =
+  DrakeLcmInterface* lcm =
       lcms.Find("Driver for " + arm_name, driver_config.lcm_bus);
   const ModelInstanceInfo& arm_model = models_from_directives.at(arm_name);
   const ModelInstanceInfo& hand_model = models_from_directives.at(hand_name);
@@ -42,11 +43,12 @@ void ApplyDriverConfig(
       SharedPointerSystem<double>::AddToBuilder(
           builder, internal::MakeArmControllerModel(
               sim_plant, arm_model, hand_model));
-  // TODO(jeremy.nimmer) Make desired_iiwa_kp_gains configurable.
+  // TODO(jwnimmer-tri) Make desired_iiwa_kp_gains configurable.
   BuildIiwaControl(
       sim_plant, arm_model.model_instance, *controller_plant, lcm, builder,
       driver_config.ext_joint_filter_tau);
 }
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace kuka_iiwa
+}  // namespace manipulation
+}  // namespace drake
