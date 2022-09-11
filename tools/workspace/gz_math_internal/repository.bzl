@@ -8,8 +8,8 @@ def gz_math_internal_repository(
     github_archive(
         name = name,
         repository = "gazebosim/gz-math",
-        commit = "ignition-math6_6.12.0",
-        sha256 = "4a5da88a45da7763d4551866d0007d270a8ab5ae5bf67ea3f891fc6799c6d84f",  # noqa
+        commit = "gz-math7_7.0.0-pre1",
+        sha256 = "5155c89930d436442774b49c1ad364d4f8465696939ceed13de5f973e095cc10",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

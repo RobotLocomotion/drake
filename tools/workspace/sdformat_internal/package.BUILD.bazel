@@ -263,7 +263,7 @@ cc_library_vendored(
     ],
     edit_include = {
         "sdf/": "drake_vendor/sdf/",
-        "ignition/math/": "drake_vendor/ignition/math/",
+        "gz/math/": "drake_vendor/gz/math/",
         "gz/utils/": "drake_vendor/gz/utils/",
         "tinyxml2": "drake_vendor/tinyxml2",
     },
@@ -297,7 +297,7 @@ cc_library_vendored(
     ],
     edit_include = {
         "sdf/": "drake_vendor/sdf/",
-        "ignition/math/": "drake_vendor/ignition/math/",
+        "gz/math/": "drake_vendor/gz/math/",
     },
     copts = ["-w"],
     linkstatic = 1,
