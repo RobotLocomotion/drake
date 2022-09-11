@@ -27,7 +27,7 @@ filenames = sorted(sys.argv[1:])
 print("""
 #include "EmbeddedSdf.hh"
 #include <array>
-#include "drake_vendor/ignition/utils/NeverDestroyed.hh"
+#include "drake_vendor/gz/utils/NeverDestroyed.hh"
 namespace sdf { inline namespace SDF_VERSION_NAMESPACE {
 const std::map<std::string, std::string>& GetEmbeddedSdf() {
   using Result = std::map<std::string, std::string>;
@@ -45,7 +45,7 @@ for filename in filenames:
     print('},')
 print("""
   };
-  static const ignition::utils::NeverDestroyed<Result> result{
+  static const gz::utils::NeverDestroyed<Result> result{
       pairs.begin(), pairs.end()};
   return result.Access();
 }}}
