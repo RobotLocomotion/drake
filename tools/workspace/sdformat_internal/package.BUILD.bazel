@@ -264,7 +264,7 @@ cc_library_vendored(
     edit_include = {
         "sdf/": "drake_vendor/sdf/",
         "ignition/math/": "drake_vendor/ignition/math/",
-        "ignition/utils/": "drake_vendor/ignition/utils/",
+        "gz/utils/": "drake_vendor/gz/utils/",
         "tinyxml2": "drake_vendor/tinyxml2",
     },
     includes = ["drake_src"],
