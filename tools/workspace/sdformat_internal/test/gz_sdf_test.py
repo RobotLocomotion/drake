@@ -1,4 +1,4 @@
-"""Naively checks that `ign_sdf` works as intended."""
+"""Naively checks that `gz_sdf` works as intended."""
 
 import os
 from subprocess import run, PIPE
@@ -32,7 +32,7 @@ EXAMPLE_INPUT = """\
 # accepted.
 
 EXPECTED_OUTPUT = """\
-<sdf version='1.9'>
+<sdf version='1.10'>
   <model name='simple_test'>
     <link name='L1'/>
     <joint name='J1' type='revolute'>
@@ -41,8 +41,8 @@ EXPECTED_OUTPUT = """\
       <axis>
         <xyz expressed_in='__model__'>1 0 0</xyz>
         <limit>
-          <lower>-10000000000000000</lower>
-          <upper>10000000000000000</upper>
+          <lower>-inf</lower>
+          <upper>inf</upper>
         </limit>
       </axis>
     </joint>
@@ -57,14 +57,14 @@ EXPECTED_OUTPUT = """\
 class TestIgnSdf(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
-        self.bin = "tools/workspace/sdformat_internal/ign_sdf"
+        self.bin = "tools/workspace/sdformat_internal/gz_sdf"
         self.input_file = os.path.join(
             os.environ["TEST_TMPDIR"], "example.sdf"
         )
         with open(self.input_file, "w", encoding="utf8") as f:
             f.write(EXAMPLE_INPUT)
 
-    def ign_sdf(self, argv):
+    def gz_sdf(self, argv):
         return run(
             [self.bin] + argv,
             stdout=PIPE,
@@ -73,13 +73,13 @@ class TestIgnSdf(unittest.TestCase):
         ).stdout
 
     def test_check(self):
-        stdout = self.ign_sdf(["--check", self.input_file])
+        stdout = self.gz_sdf(["--check", self.input_file])
         self.assertEqual(stdout.strip(), "Valid.")
 
     def test_describe(self):
-        stdout = self.ign_sdf(["--describe", "1.7"])
+        stdout = self.gz_sdf(["--describe", "1.7"])
         self.assertIn("<element name ='model'", stdout)
 
     def test_print(self):
-        stdout = self.ign_sdf(["--print", self.input_file])
+        stdout = self.gz_sdf(["--print", self.input_file])
         self.assertEqual(EXPECTED_OUTPUT, stdout)

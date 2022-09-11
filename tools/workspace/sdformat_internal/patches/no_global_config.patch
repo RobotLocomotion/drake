@@ -1,7 +1,7 @@
 Change the global singleton into a bomb.
 
 Use the default config when parsing the built-in root.sdf, and
-in the ign_sdf command-line tool.
+in the gz_sdf command-line tool.
 
 --- src/ParserConfig.cc
 +++ src/ParserConfig.cc
@@ -26,8 +26,8 @@ in the ign_sdf command-line tool.
  
    // Read an SDF string, and store the result in sdfParsed.
    if (!readString(_sdf, _config, sdfParsed, errors))
---- src/ign.cc
-+++ src/ign.cc
+--- src/gz.cc
++++ src/gz.cc
 @@ -43,7 +43,7 @@
    int result = 0;
  
