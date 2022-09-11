@@ -141,20 +141,20 @@ std::string GetRelativeBodyName(
   }
 }
 
-// Given an ignition::math::Inertial object, extract a RotationalInertia object
+// Given an gz::math::Inertial object, extract a RotationalInertia object
 // for the rotational inertia of body B, about its center of mass Bcm and,
 // expressed in the inertial frame Bi (as specified in <inertial> in the SDF
 // file.)
 RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
-    const ignition::math::Inertiald &inertial) {
-  // TODO(amcastro-tri): Verify that ignition::math::Inertial::MOI() ALWAYS is
+    const gz::math::Inertiald &inertial) {
+  // TODO(amcastro-tri): Verify that gz::math::Inertial::MOI() ALWAYS is
   // expresed in the body frame B, regardless of how a user might have
   // specified frames in the sdf file. That is, that it always returns R_BBcm_B.
-  // TODO(amcastro-tri): Verify that ignition::math::Inertial::MassMatrix()
+  // TODO(amcastro-tri): Verify that gz::math::Inertial::MassMatrix()
   // ALWAYS is in the inertial frame Bi, regardless of how a user might have
   // specified frames in the sdf file. That is, that it always returns
   // M_BBcm_Bi.
-  const ignition::math::Matrix3d I = inertial.MassMatrix().Moi();
+  const gz::math::Matrix3d I = inertial.MassMatrix().Moi();
   return RotationalInertia<double>(I(0, 0), I(1, 1), I(2, 2),
                                    I(1, 0), I(2, 0), I(2, 1));
 }
@@ -220,7 +220,7 @@ math::RigidTransformd ResolveRigidTransform(
     const DiagnosticPolicy& diagnostic,
     const sdf::SemanticPose& semantic_pose,
     const std::string& relative_to = "") {
-  ignition::math::Pose3d pose;
+  gz::math::Pose3d pose;
   sdf::Errors errors = semantic_pose.Resolve(pose, relative_to);
   PropagateErrors(errors, diagnostic);
   return ToRigidTransform(pose);
@@ -229,7 +229,7 @@ math::RigidTransformd ResolveRigidTransform(
 Eigen::Vector3d ResolveAxisXyz(
     const DiagnosticPolicy& diagnostic,
     const sdf::JointAxis& axis) {
-  ignition::math::Vector3d xyz;
+  gz::math::Vector3d xyz;
   sdf::Errors errors = axis.ResolveXyz(xyz);
   PropagateErrors(errors, diagnostic);
   return ToVector3(xyz);
@@ -254,10 +254,10 @@ std::string ResolveJointChildLinkName(
 }
 
 // Helper method to extract the SpatialInertia M_BBo_B of body B, about its body
-// frame origin Bo and, expressed in body frame B, from an ignition::Inertial
+// frame origin Bo and, expressed in body frame B, from an gz::Inertial
 // object.
 SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
-    const ignition::math::Inertiald& Inertial_BBcm_Bi) {
+    const gz::math::Inertiald& Inertial_BBcm_Bi) {
   double mass = Inertial_BBcm_Bi.MassMatrix().Mass();
 
   const RotationalInertia<double> I_BBcm_Bi =
@@ -894,7 +894,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
     // inertial frame Bi as defined in <inertial> <pose></pose> </inertial>.
     // Per SDF specification, Bi's origin is at the COM Bcm, but Bi is not
     // necessarily aligned with B.
-    const ignition::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
+    const gz::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
 
     const SpatialInertia<double> M_BBo_B =
         ExtractSpatialInertiaAboutBoExpressedInB(Inertial_Bcm_Bi);
@@ -1038,7 +1038,7 @@ Eigen::Vector3d ParseVector3(const sdf::ElementPtr node,
                     element_name));
   }
 
-  auto value = node->Get<ignition::math::Vector3d>(element_name);
+  auto value = node->Get<gz::math::Vector3d>(element_name);
 
   return ToVector3(value);
 }
@@ -1563,7 +1563,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
       for (auto interface_link_ind : plant->GetBodyIndices(model_instance)) {
         const auto& interface_link = plant->get_body(interface_link_ind);
 
-        ignition::math::Pose3d X_WL;
+        gz::math::Pose3d X_WL;
         sdf::Errors inner_errors = graph.ResolveNestedFramePose(
             X_WL, interface_link.name());
         PropagateErrors(std::move(inner_errors), errors);
