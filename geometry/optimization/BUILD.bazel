@@ -142,6 +142,7 @@ drake_cc_googletest(
         "//common/yaml",
         "//geometry:meshcat",
         "//geometry/test_utilities:meshcat_environment",
+        "//solvers:mosek_solver",
     ],
 )
 

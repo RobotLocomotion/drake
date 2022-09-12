@@ -16,6 +16,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/perception/point_cloud.h"
+#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -545,6 +546,15 @@ GTEST_TEST(HPolyhedronTest, OffsetIrredundantBoxes) {
                               intersection_left_into_right.b()));
 }
 
+GTEST_TEST(HPolyhedronTest, ContainedIn) {
+  // Checks Contained in with tolerance.
+  const HPolyhedron small_polyhedron(Eigen::RowVector2d(1, 1), Vector1d(2));
+  const HPolyhedron large_polyhedron(Eigen::RowVector2d(1, 1), Vector1d(3));
+  EXPECT_FALSE(large_polyhedron.ContainedIn(small_polyhedron, 0));
+  // We think the containment is true if we relax the tolerance.
+  EXPECT_TRUE(large_polyhedron.ContainedIn(small_polyhedron, 1.1));
+}
+
 GTEST_TEST(HPolyhedronTest,
            IrredundantBallIntersectionContainsBothOriginal) {
   HPolyhedron L1_ball = HPolyhedron::MakeL1Ball(3);
@@ -554,7 +564,7 @@ GTEST_TEST(HPolyhedronTest,
   HPolyhedron IrredL1intoLinf = Linfty_ball.Intersection(L1_ball, true);
   HPolyhedron IrredLinfintoL1 = L1_ball.Intersection(Linfty_ball, true);
 
-  EXPECT_TRUE(IrredL1intoLinf.ContainedIn(L1_ball));
+  EXPECT_TRUE(IrredL1intoLinf.ContainedIn(L1_ball, 3E-7));
   EXPECT_TRUE(IrredL1intoLinf.ContainedIn(Linfty_ball));
   EXPECT_TRUE(IrredLinfintoL1.ContainedIn(L1_ball));
   EXPECT_TRUE(IrredLinfintoL1.ContainedIn(Linfty_ball));
@@ -720,3 +730,12 @@ GTEST_TEST(HPolyhedronTest, Serialize) {
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
+
+int main(int argc, char** argv) {
+  // Ensure that we have the MOSEK license for the entire duration of this test,
+  // so that we do not have to release and re-acquire the license for every
+  // test.
+  auto mosek_license = drake::solvers::MosekSolver::AcquireLicense();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
