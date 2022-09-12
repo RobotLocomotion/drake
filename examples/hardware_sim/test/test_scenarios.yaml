@@ -11,14 +11,13 @@ OneOfEverything:
   plant_config:
     stiction_tolerance: 1e-2
   directives:
-  - add_frame:
-      name: bonus_frame
-      X_PF:
-        base_frame: world
-        translation: [0.1, 0.2, 0.3]
-        rotation: !Rpy { deg: [10.0, 20.0, 30.0] }
+  - add_model:
+      name: alice
+      file: package://drake/examples/pendulum/Pendulum.urdf
   lcm_buses:
     extra_bus: {}
+  model_drivers:
+    alice: !ZeroForceDriver {}
   visualization:
     lcm_bus: extra_bus
     publish_period: 0.125
