@@ -606,6 +606,32 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_reset)
         self.assertTrue(system.called_system_reset)
 
+    def test_event_handler_returns_none(self):
+        """Checks that a Python event handler callback function is allowed to
+        (implicitly) return None, instead of an EventStatus. Because of all the
+        setup boilerplate, we only test one specific event type and assume that
+        the other event types (which are implemented similarly) will likewise
+        behave the same.
+        """
+
+        class PublishReturnsNoneSystem(LeafSystem):
+            def __init__(self):
+                LeafSystem.__init__(self)
+                self.called_periodic_publish = False
+                self.DeclarePeriodicPublishEvent(
+                    period_sec=1.0, offset_sec=0.0,
+                    publish=self._on_periodic_publish)
+
+            def _on_periodic_publish(self, context):
+                self.called_periodic_publish = True
+                # There is no `return` statement here; Python implicitly treats
+                # this like a `return None`.
+
+        system = PublishReturnsNoneSystem()
+        simulator = Simulator(system)
+        simulator.AdvanceTo(0.25)
+        self.assertTrue(system.called_periodic_publish)
+
     def test_state_output_port_declarations(self):
         """Checks that DeclareStateOutputPort is bound."""
         dut = LeafSystem()

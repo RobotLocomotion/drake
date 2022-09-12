@@ -660,45 +660,60 @@ Note: The above is for the C++ documentation. For Python, use
         .def("DeclareInitializationPublishEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self,
-                    std::function<EventStatus(const Context<T>&)> publish) {
+                    // Because Python doesn't offer static type checking to
+                    // help remind the user to return an EventStatus, we'll
+                    // bind the callback as optional<EventStatus> to allow the
+                    // user to omit a return statement.
+                    std::function<std::optional<EventStatus>(const Context<T>&)>
+                        publish) {
                   self->DeclareInitializationEvent(
                       PublishEvent<T>(TriggerType::kInitialization,
                           [publish](const System<T>&, const Context<T>& context,
                               const PublishEvent<T>&) {
-                            // TODO(sherm1) Forward the return status.
-                            publish(context);  // Ignore return status for now.
+                            return publish(context).value_or(
+                                EventStatus::Succeeded());
                           }));
                 }),
             py::arg("publish"),
             doc.LeafSystem.DeclareInitializationPublishEvent.doc)
         .def("DeclareInitializationDiscreteUpdateEvent",
-            WrapCallbacks([](PyLeafSystem* self,
-                              std::function<EventStatus(
-                                  const Context<T>&, DiscreteValues<T>*)>
-                                  update) {
-              self->DeclareInitializationEvent(DiscreteUpdateEvent<T>(
-                  TriggerType::kInitialization,
-                  [update](const System<T>&, const Context<T>& context,
-                      const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
-                    // TODO(sherm1) Forward the return status.
-                    update(context,
-                        &*xd);  // Ignore return status for now.
-                  }));
-            }),
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    // Because Python doesn't offer static type checking to
+                    // help remind the user to return an EventStatus, we'll
+                    // bind the callback as optional<EventStatus> to allow the
+                    // user to omit a return statement.
+                    std::function<std::optional<EventStatus>(
+                        const Context<T>&, DiscreteValues<T>*)>
+                        update) {
+                  self->DeclareInitializationEvent(
+                      DiscreteUpdateEvent<T>(TriggerType::kInitialization,
+                          [update](const System<T>&, const Context<T>& context,
+                              const DiscreteUpdateEvent<T>&,
+                              DiscreteValues<T>* xd) {
+                            return update(context, &*xd)
+                                .value_or(EventStatus::Succeeded());
+                          }));
+                }),
             py::arg("update"),
             doc.LeafSystem.DeclareInitializationDiscreteUpdateEvent.doc)
         .def("DeclareInitializationUnrestrictedUpdateEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self,
-                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                    // Because Python doesn't offer static type checking to
+                    // help remind the user to return an EventStatus, we'll
+                    // bind the callback as optional<EventStatus> to allow the
+                    // user to omit a return statement.
+                    std::function<std::optional<EventStatus>(
+                        const Context<T>&, State<T>*)>
                         update) {
-                  self->DeclareInitializationEvent(UnrestrictedUpdateEvent<T>(
-                      TriggerType::kInitialization,
-                      [update](const System<T>&, const Context<T>& context,
-                          const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                        // TODO(sherm1) Forward the return status.
-                        update(context, &*x);  // Ignore return status for now.
-                      }));
+                  self->DeclareInitializationEvent(
+                      UnrestrictedUpdateEvent<T>(TriggerType::kInitialization,
+                          [update](const System<T>&, const Context<T>& context,
+                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+                            return update(context, &*x)
+                                .value_or(EventStatus::Succeeded());
+                          }));
                 }),
             py::arg("update"),
             doc.LeafSystem.DeclareInitializationUnrestrictedUpdateEvent.doc)
@@ -719,47 +734,59 @@ Note: The above is for the C++ documentation. For Python, use
         .def("DeclarePeriodicPublishEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self, double period_sec, double offset_sec,
-                    std::function<EventStatus(const Context<T>&)> publish) {
+                    // In C++ the user-provided callback function is overloaded
+                    // to return either EventStatus or void. We can't overload
+                    // based on return values in pybind11, so instead we bind
+                    // the callback function as optional<> for the same effect.
+                    std::function<std::optional<EventStatus>(const Context<T>&)>
+                        publish) {
                   self->DeclarePeriodicEvent(period_sec, offset_sec,
                       PublishEvent<T>(TriggerType::kPeriodic,
                           [publish](const System<T>&, const Context<T>& context,
                               const PublishEvent<T>&) {
-                            // TODO(sherm1) Forward the return status.
-                            publish(context);  // Ignore return status for now.
+                            return publish(context).value_or(
+                                EventStatus::Succeeded());
                           }));
                 }),
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("publish"),
             doc.LeafSystem.DeclarePeriodicPublishEvent.doc)
         .def("DeclarePeriodicDiscreteUpdateEvent",
-            WrapCallbacks([](PyLeafSystem* self, double period_sec,
-                              double offset_sec,
-                              std::function<EventStatus(
-                                  const Context<T>&, DiscreteValues<T>*)>
-                                  update) {
-              self->DeclarePeriodicEvent(period_sec, offset_sec,
-                  DiscreteUpdateEvent<T>(TriggerType::kPeriodic,
-                      [update](const System<T>&, const Context<T>& context,
-                          const DiscreteUpdateEvent<T>&,
-                          DiscreteValues<T>* xd) {
-                        // TODO(sherm1) Forward the return status.
-                        update(context,
-                            &*xd);  // Ignore return status for now.
-                      }));
-            }),
+            WrapCallbacks(
+                [](PyLeafSystem* self, double period_sec, double offset_sec,
+                    // In C++ the user-provided callback function is overloaded
+                    // to return either EventStatus or void. We can't overload
+                    // based on return values in pybind11, so instead we bind
+                    // the callback function as optional<> for the same effect.
+                    std::function<std::optional<EventStatus>(
+                        const Context<T>&, DiscreteValues<T>*)>
+                        update) {
+                  self->DeclarePeriodicEvent(period_sec, offset_sec,
+                      DiscreteUpdateEvent<T>(TriggerType::kPeriodic,
+                          [update](const System<T>&, const Context<T>& context,
+                              const DiscreteUpdateEvent<T>&,
+                              DiscreteValues<T>* xd) {
+                            return update(context, &*xd)
+                                .value_or(EventStatus::Succeeded());
+                          }));
+                }),
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("update"),
             doc.LeafSystem.DeclarePeriodicDiscreteUpdateEvent.doc)
         .def("DeclarePeriodicUnrestrictedUpdateEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self, double period_sec, double offset_sec,
-                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                    // In C++ the user-provided callback function is overloaded
+                    // to return either EventStatus or void. We can't overload
+                    // based on return values in pybind11, so instead we bind
+                    // the callback function as optional<> for the same effect.
+                    std::function<std::optional<EventStatus>(
+                        const Context<T>&, State<T>*)>
                         update) {
                   self->DeclarePeriodicEvent(period_sec, offset_sec,
                       UnrestrictedUpdateEvent<T>(TriggerType::kPeriodic,
                           [update](const System<T>&, const Context<T>& context,
                               const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                            // TODO(sherm1) Forward the return status.
-                            update(
-                                context, &*x);  // Ignore return status for now.
+                            return update(context, &*x)
+                                .value_or(EventStatus::Succeeded());
                           }));
                 }),
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("update"),
@@ -775,45 +802,59 @@ Note: The above is for the C++ documentation. For Python, use
         .def("DeclarePerStepPublishEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self,
-                    std::function<EventStatus(const Context<T>&)> publish) {
+                    // Because Python doesn't offer static type checking to
+                    // help remind the user to return an EventStatus, we'll
+                    // bind the callback as optional<EventStatus> to allow the
+                    // user to omit a return statement.
+                    std::function<std::optional<EventStatus>(const Context<T>&)>
+                        publish) {
                   self->DeclarePerStepEvent(
                       PublishEvent<T>(TriggerType::kPerStep,
                           [publish](const System<T>&, const Context<T>& context,
                               const PublishEvent<T>&) {
-                            // TODO(sherm1) Forward the return status.
-                            publish(context);  // Ignore return status for now.
+                            return publish(context).value_or(
+                                EventStatus::Succeeded());
                           }));
                 }),
             py::arg("publish"), doc.LeafSystem.DeclarePerStepPublishEvent.doc)
         .def("DeclarePerStepDiscreteUpdateEvent",
-            WrapCallbacks([](PyLeafSystem* self,
-                              std::function<EventStatus(
-                                  const Context<T>&, DiscreteValues<T>*)>
-                                  update) {
-              self->DeclarePerStepEvent(DiscreteUpdateEvent<T>(
-                  TriggerType::kPerStep,
-                  [update](const System<T>&, const Context<T>& context,
-                      const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
-                    // TODO(sherm1) Forward the return status.
-                    update(context,
-                        &*xd);  // Ignore return status for now.
-                  }));
-            }),
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    // Because Python doesn't offer static type checking to
+                    // help remind the user to return an EventStatus, we'll
+                    // bind the callback as optional<EventStatus> to allow the
+                    // user to omit a return statement.
+                    std::function<std::optional<EventStatus>(
+                        const Context<T>&, DiscreteValues<T>*)>
+                        update) {
+                  self->DeclarePerStepEvent(
+                      DiscreteUpdateEvent<T>(TriggerType::kPerStep,
+                          [update](const System<T>&, const Context<T>& context,
+                              const DiscreteUpdateEvent<T>&,
+                              DiscreteValues<T>* xd) {
+                            return update(context, &*xd)
+                                .value_or(EventStatus::Succeeded());
+                          }));
+                }),
             py::arg("update"),
             doc.LeafSystem.DeclarePerStepDiscreteUpdateEvent.doc)
         .def("DeclarePerStepUnrestrictedUpdateEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self,
-                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                    // Because Python doesn't offer static type checking to
+                    // help remind the user to return an EventStatus, we'll
+                    // bind the callback as optional<EventStatus> to allow the
+                    // user to omit a return statement.
+                    std::function<std::optional<EventStatus>(
+                        const Context<T>&, State<T>*)>
                         update) {
-                  self->DeclarePerStepEvent(UnrestrictedUpdateEvent<T>(
-                      TriggerType::kPerStep,
-                      [update](const System<T>&, const Context<T>& context,
-                          const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                        // TODO(sherm1) Forward the return status.
-                        update(context,
-                            &*x);  // Ignore return status for now.
-                      }));
+                  self->DeclarePerStepEvent(
+                      UnrestrictedUpdateEvent<T>(TriggerType::kPerStep,
+                          [update](const System<T>&, const Context<T>& context,
+                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+                            return update(context, &*x)
+                                .value_or(EventStatus::Succeeded());
+                          }));
                 }),
             py::arg("update"),
             doc.LeafSystem.DeclarePerStepUnrestrictedUpdateEvent.doc)
@@ -826,45 +867,58 @@ Note: The above is for the C++ documentation. For Python, use
         .def("DeclareForcedPublishEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self,
-                    std::function<EventStatus(const Context<T>&)> publish) {
+                    // Because Python doesn't offer static type checking to
+                    // help remind the user to return an EventStatus, we'll
+                    // bind the callback as optional<EventStatus> to allow the
+                    // user to omit a return statement.
+                    std::function<std::optional<EventStatus>(const Context<T>&)>
+                        publish) {
                   self->get_mutable_forced_publish_events().AddEvent(
                       PublishEvent<T>(TriggerType::kForced,
                           [publish](const System<T>&, const Context<T>& context,
                               const PublishEvent<T>&) {
-                            // TODO(sherm1) Forward the return status.
-                            publish(context);  // Ignore return status for now.
+                            return publish(context).value_or(
+                                EventStatus::Succeeded());
                           }));
                 }),
             py::arg("publish"), doc.LeafSystem.DeclareForcedPublishEvent.doc)
         .def("DeclareForcedDiscreteUpdateEvent",
-            WrapCallbacks([](PyLeafSystem* self,
-                              std::function<EventStatus(
-                                  const Context<T>&, DiscreteValues<T>*)>
-                                  update) {
-              self->get_mutable_forced_discrete_update_events().AddEvent(
-                  DiscreteUpdateEvent<T>(TriggerType::kForced,
-                      [update](const System<T>&, const Context<T>& context,
-                          const DiscreteUpdateEvent<T>&,
-                          DiscreteValues<T>* xd) {
-                        // TODO(sherm1) Forward the return status.
-                        update(context,
-                            &*xd);  // Ignore return status for now.
-                      }));
-            }),
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    // Because Python doesn't offer static type checking to
+                    // help remind the user to return an EventStatus, we'll
+                    // bind the callback as optional<EventStatus> to allow the
+                    // user to omit a return statement.
+                    std::function<std::optional<EventStatus>(
+                        const Context<T>&, DiscreteValues<T>*)>
+                        update) {
+                  self->get_mutable_forced_discrete_update_events().AddEvent(
+                      DiscreteUpdateEvent<T>(TriggerType::kForced,
+                          [update](const System<T>&, const Context<T>& context,
+                              const DiscreteUpdateEvent<T>&,
+                              DiscreteValues<T>* xd) {
+                            return update(context, &*xd)
+                                .value_or(EventStatus::Succeeded());
+                          }));
+                }),
             py::arg("update"),
             doc.LeafSystem.DeclareForcedDiscreteUpdateEvent.doc)
         .def("DeclareForcedUnrestrictedUpdateEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self,
-                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                    // Because Python doesn't offer static type checking to
+                    // help remind the user to return an EventStatus, we'll
+                    // bind the callback as optional<EventStatus> to allow the
+                    // user to omit a return statement.
+                    std::function<std::optional<EventStatus>(
+                        const Context<T>&, State<T>*)>
                         update) {
                   self->get_mutable_forced_unrestricted_update_events()
                       .AddEvent(UnrestrictedUpdateEvent<T>(TriggerType::kForced,
                           [update](const System<T>&, const Context<T>& context,
                               const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-                            // TODO(sherm1) Forward the return status.
-                            update(
-                                context, &*x);  // Ignore return status for now.
+                            return update(context, &*x)
+                                .value_or(EventStatus::Succeeded());
                           }));
                 }),
             py::arg("update"),
