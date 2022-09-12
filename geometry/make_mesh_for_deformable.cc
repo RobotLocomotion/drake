@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/geometry/proximity/make_mesh_from_vtk.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 
 namespace drake {
@@ -25,6 +26,13 @@ void MeshBuilderForDeformable::ImplementGeometry(const Sphere& sphere,
   data.mesh = std::make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
       sphere, data.resolution_hint,
       TessellationStrategy::kDenseInteriorVertices));
+}
+
+void MeshBuilderForDeformable::ImplementGeometry(const Mesh& mesh_spec,
+                                                 void* user_data) {
+  ReifyData& data = *static_cast<ReifyData*>(user_data);
+  data.mesh = std::make_unique<VolumeMesh<double>>(
+      MakeVolumeMeshFromVtk<double>(mesh_spec));
 }
 
 void MeshBuilderForDeformable::ThrowUnsupportedGeometry(
