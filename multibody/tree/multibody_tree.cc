@@ -2945,6 +2945,93 @@ void MultibodyTree<T>::ThrowIfNotFinalized(const char* source_method) const {
   }
 }
 
+template<typename T>
+void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
+  ThrowIfNotFinalized(__func__);
+
+  // Get `this` multibody tree's topology and use one of its functions to build
+  // multiple sets of bodies that are welded to each other. Each set of bodies
+  // consists of a parent body (the first entry in the set) and thereafter
+  // children bodies that are welded to the parent body.
+  const MultibodyTreeTopology& topology = get_topology();
+  std::vector<std::set<BodyIndex>> welded_bodies_list =
+      topology.CreateListOfWeldedBodies();
+
+  // There is at least 1 set of welded_bodies_list since the first set should
+  // be the world body (if it has children bodies, they are anchored to it).
+  const size_t number_of_sets = welded_bodies_list.size();
+  DRAKE_ASSERT(number_of_sets > 0);
+
+  // Investigate mass/inertia properties for all non-world welded bodies.
+  // The for-loop below starts with i = 1 to skip over the world body.
+  const MultibodyTreeTopology& tree_topology = get_topology();
+  for (size_t i = 1;  i < number_of_sets;  ++i) {
+    // The first entry in the set is the parent body and the remaining entries
+    // (if any) are children bodies.
+    const std::set<BodyIndex>& welded_body = welded_bodies_list[i];
+    const BodyIndex parent_body_index = *welded_body.begin();
+    const BodyTopology& parent_body_topology =
+        tree_topology.get_body(parent_body_index);
+    const MobilizerIndex& parent_mobilizer_index =
+        parent_body_topology.inboard_mobilizer;
+    const Mobilizer<T>& parent_mobilizer =
+        get_mobilizer(parent_mobilizer_index);
+
+    // Check previous assumptions.
+    const Body<T>& parent_body = get_body(parent_body_index);
+    DRAKE_ASSERT(parent_body_index == parent_body.index());
+    DRAKE_ASSERT(parent_body_index != world_index());
+
+    // Determine whether this set of welded bodies is a most distal leaf in
+    // a multibody tree. Reminder, there can be more than one distal leaf as a
+    // robot may two or more arms, each with grippers that are distal leafs.
+    const BodyNodeIndex parent_body_node_index = parent_body_topology.body_node;
+    const BodyNodeTopology& parent_body_node_topology =
+        tree_topology.get_body_node(parent_body_node_index);
+    const bool is_composite_body_distal_leaf_in_tree =
+        tree_topology.CalcNumberOfOutboardVelocitiesExcludingBase(
+            parent_body_node_topology) == 0;
+    if (is_composite_body_distal_leaf_in_tree) {
+      // Determine if this distal-leaf composite body can translate relative to
+      // its inboard object but has no mass.
+      const bool has_no_mass = CalcTotalDefaultMass(welded_body) == 0;
+      if (parent_mobilizer.can_translate() && has_no_mass) {
+        const std::string msg = fmt::format(
+            "It seems that body {} is massless, yet it is attached "
+            "by a joint that has a translational degree of freedom.",
+            parent_body.name());
+        throw std::logic_error(msg);
+      }
+
+      // Issue an error if the distal composite body can rotate and it contains
+      // a body with a NaN default rotational inertia or if all the bodies in
+      // the composite body have zero default rotational inertia.
+      if (parent_mobilizer.can_rotate()) {
+        // Throw an exception if distal composite body has a body with a NaN
+        // default rotational inertia. Reminder: The default RotationalInertia
+        // constructor has all its moments and products of inertia set to NaN.
+        if (IsAnyDefaultRotationalInertiaNaN(welded_body)) {
+          const std::string msg = fmt::format(
+            "Body {} has a NaN rotational inertia, yet it "
+            "is attached by a joint that has a rotational degree of freedom.",
+            parent_body.name());
+          throw std::logic_error(msg);
+        }
+
+        // Issue an error if the distal composite body can rotate and all the
+        // bodies in the composite body have zero default rotational inertia.
+        if (has_no_mass && AreAllDefaultRotationalInertiaZero(welded_body)) {
+          const std::string msg = fmt::format(
+            "Body {} has a zero rotational inertia, yet it "
+            "is attached by a joint that has a rotational degree of freedom.",
+            parent_body.name());
+          throw std::logic_error(msg);
+        }
+      }
+    }
+  }
+}
+
 template <typename T>
 double MultibodyTree<T>::CalcTotalDefaultMass(
     const std::set<BodyIndex>& body_indexes) const {
@@ -2958,13 +3045,25 @@ double MultibodyTree<T>::CalcTotalDefaultMass(
 }
 
 template <typename T>
-bool MultibodyTree<T>::IsAllDefaultRotationalInertiaZeroOrNaN(
+bool MultibodyTree<T>::IsAnyDefaultRotationalInertiaNaN(
     const std::set<BodyIndex>& body_indexes) const {
   for (BodyIndex body_index : body_indexes) {
     const Body<T>& body_B = get_body(body_index);
     const RotationalInertia<double> I_BBo_B =
         body_B.default_rotational_inertia();
-    if (!I_BBo_B.IsNaN() && !I_BBo_B.IsZero()) return false;
+    if (I_BBo_B.IsNaN()) return true;
+  }
+  return false;
+}
+
+template <typename T>
+bool MultibodyTree<T>::AreAllDefaultRotationalInertiaZero(
+    const std::set<BodyIndex>& body_indexes) const {
+  for (BodyIndex body_index : body_indexes) {
+    const Body<T>& body_B = get_body(body_index);
+    const RotationalInertia<double> I_BBo_B =
+        body_B.default_rotational_inertia();
+    if (!I_BBo_B.IsZero()) return false;
   }
   return true;
 }

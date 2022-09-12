@@ -1035,19 +1035,30 @@ class MultibodyTreeTopology {
   // - The minimum size of the list is one. This corresponds to a topology with
   //   all bodies welded to the world.
   std::vector<std::set<BodyIndex>> CreateListOfWeldedBodies() const   {
-    std::vector<std::set<BodyIndex>> welded_bodies;
+    std::vector<std::set<BodyIndex>> welded_bodies_list;
     // Reserve the maximum possible of welded bodies (that is, when each body
     // forms its own welded body) in advance in order to avoid reallocation in
-    // welded_bodies which would cause the invalidation of references as we
-    // recursively fill it in.
-    welded_bodies.reserve(num_bodies());
-    welded_bodies.push_back(std::set<BodyIndex>{world_index()});
+    // welded_bodies_list which would cause the invalidation of references as
+    // we recursively fill it in.
+    welded_bodies_list.reserve(num_bodies());
+    welded_bodies_list.push_back(std::set<BodyIndex>{world_index()});
     // We build the list of welded bodies recursively, starting with the world
     // body added to the very first welded body in the list.
-    std::set<BodyIndex>& bodies_welded_to_world = welded_bodies.back();
+    std::set<BodyIndex>& bodies_welded_to_world = welded_bodies_list.back();
     CreateListOfWeldedBodiesRecurse(
-        world_index(), &bodies_welded_to_world, &welded_bodies);
-    return welded_bodies;
+        world_index(), &bodies_welded_to_world, &welded_bodies_list);
+    return welded_bodies_list;
+  }
+
+  // Computes the number of generalized velocities in the tree composed of the
+  // nodes outboard of `base`, excluding the generalized velocities of `base`.
+  // Note: This method returns 0 if base is the most distal body in a multibody
+  // tree or if base's children are all welded to it and they are the most
+  // distal bodies in the tree.
+  // @pre Body nodes were already created.
+  int CalcNumberOfOutboardVelocitiesExcludingBase(
+      const BodyNodeTopology& base) const {
+    return CalcNumberOfOutboardVelocities(base) - base.num_mobilizer_velocities;
   }
 
   // Returns all bodies that are transitively outboard of the given bodies. In
@@ -1160,7 +1171,7 @@ class MultibodyTreeTopology {
   // Computes the number of generalized velocities in the tree composed of the
   // nodes outboard of `base`, including the generalized velocities of `base`.
   // @pre Body nodes were already created.
-  int CalcNumberOfOutboardVelocities(const BodyNodeTopology& base) {
+  int CalcNumberOfOutboardVelocities(const BodyNodeTopology& base) const {
     DRAKE_DEMAND(get_num_body_nodes() != 0);
     int nv = 0;
     TraverseOutboardNodes(base, [&nv](const BodyNodeTopology& node) {
