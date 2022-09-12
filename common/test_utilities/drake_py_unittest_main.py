@@ -126,6 +126,9 @@ def main():
         x for x in dir(module)
         if x.startswith("Test")
     ]
+    if module.__doc__:
+        print(module.__doc__)
+        print()
     index = 1
     while index < len(sys.argv):
         arg = sys.argv[index]
