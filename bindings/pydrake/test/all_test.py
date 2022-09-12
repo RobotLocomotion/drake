@@ -193,6 +193,7 @@ class TestAll(unittest.TestCase):
             # - sensors
             "Image",
             # visualization
+            "AddDefaultVisualization",
             # - meldis
             "Meldis",
             # - plotting
