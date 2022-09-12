@@ -57,6 +57,7 @@ drake_py_unittest(
         "test/test_scenarios.yaml",
         ":demo",
         ":hardware_sim",
+        "//examples/pendulum:prod_models",
     ],
     shard_count = 3,
     deps = [
