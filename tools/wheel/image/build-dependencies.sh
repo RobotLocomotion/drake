@@ -13,7 +13,7 @@ cmake -G Ninja \
 
 ninja
 
-if [ "$(uname)" == "Linux" ]; then
+if [[ "$(uname)" == "Linux" ]]; then
     ln -s /opt/drake-dependencies/bin/patchelf /usr/local/bin/patchelf
 
     # Libraries we get from the distro that get bundled into the wheel need to

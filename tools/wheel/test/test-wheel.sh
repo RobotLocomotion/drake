@@ -14,7 +14,7 @@
 
 set -eu -o pipefail
 
-if [ -z "$1" ]; then
+if [[ -z "$1" ]]; then
     echo "Usage: $0 <wheel>" >&2
     exit 1
 fi
