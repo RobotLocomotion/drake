@@ -2927,12 +2927,13 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
         throw std::logic_error(msg);
       }
 
-      // Issue an error if the distal composite body can rotate and
-      // it contains a body with a NaN default rotational inertia.
-      // Note: The default RotationalInertia constructor has all its moments and
-      // products of inertia equal to NaN. Throw a well-worded exception if a
-      // body associated with rotational dynamics has a NaN RotationalInertia.
+      // Issue an error if the distal composite body can rotate and it contains
+      // a body with a NaN default rotational inertia or if all the bodies in
+      // the composite body have zero default rotational inertia.
       if (parent_mobilizer.can_rotate()) {
+        // Throw an exception if distal composite body has a body with a NaN
+        // default rotational inertia. Reminder: The default RotationalInertia
+        // constructor has all its moments and products of inertia set to NaN.
         if (IsAnyDefaultRotationalInertiaNaN(welded_body)) {
           const std::string msg = fmt::format(
             "Body {} has a NaN rotational inertia, yet it "
