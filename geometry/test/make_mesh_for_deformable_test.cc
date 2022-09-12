@@ -2,7 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/make_mesh_from_vtk.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 
 namespace drake {
@@ -53,9 +55,11 @@ TEST_F(MeshBuilderForDeformableTest, Capsule) {
 }
 
 TEST_F(MeshBuilderForDeformableTest, Mesh) {
-  const Mesh m("path/to/file", 1.5);
-  DRAKE_EXPECT_THROWS_MESSAGE(builder_.Build(m, kRezHint),
-                              ".*don't yet generate deformable meshes.+ Mesh.");
+  const Mesh m(FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
+               1.5);
+  std::unique_ptr<VolumeMesh<double>> mesh = builder_.Build(m, kRezHint);
+  const VolumeMesh<double> expected_mesh = MakeVolumeMeshFromVtk<double>(m);
+  EXPECT_TRUE(mesh->Equal(expected_mesh));
 }
 
 TEST_F(MeshBuilderForDeformableTest, Convex) {
