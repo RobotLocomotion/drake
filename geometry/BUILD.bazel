@@ -270,6 +270,7 @@ drake_cc_library(
     hdrs = ["make_mesh_for_deformable.h"],
     deps = [
         ":shape_specification",
+        "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/proximity:make_sphere_mesh",
         "//geometry/proximity:volume_mesh",
     ],
@@ -745,8 +746,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "make_mesh_for_deformable_test",
+    data = [
+        ":test_vtk_files",
+    ],
     deps = [
         ":make_mesh_for_deformable",
+        "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
     ],
 )
