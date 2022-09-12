@@ -22,6 +22,7 @@ while some (separate) controller operates the robot, without extra hassle. */
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
+#include "drake/systems/sensors/camera_config_functions.h"
 #include "drake/visualization/visualization_config_functions.h"
 
 DEFINE_string(scenario_file, "",
@@ -49,6 +50,7 @@ using systems::DiagramBuilder;
 using systems::Simulator;
 using systems::lcm::ApplyLcmBusConfig;
 using systems::lcm::LcmBuses;
+using systems::sensors::ApplyCameraConfig;
 using visualization::ApplyVisualizationConfig;
 
 /* Class that holds the configuration and data of a simulation. */
@@ -92,6 +94,13 @@ void Simulation::Setup() {
   // Add actuation inputs.
   ApplyDriverConfigs(scenario_.model_drivers, sim_plant, added_models,
                      lcm_buses, &builder);
+
+  // Add scene cameras.
+  DrakeLcmInterface* camera_lcm =
+      lcm_buses.Find("Cameras", scenario_.camera_lcm_bus);
+  for (const auto& camera : scenario_.cameras) {
+    ApplyCameraConfig(camera, &sim_plant, &builder, &scene_graph, camera_lcm);
+  }
 
   // Add visualization.
   ApplyVisualizationConfig(scenario_.visualization, &builder, &lcm_buses);

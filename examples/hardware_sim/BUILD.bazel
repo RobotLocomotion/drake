@@ -25,6 +25,7 @@ drake_cc_library(
         "//multibody/plant:multibody_plant_config",
         "//multibody/parsing:model_directives",
         "//systems/analysis:simulator_config",
+        "//systems/sensors:camera_config",
         "//visualization:visualization_config",
     ],
     deps = [
@@ -47,6 +48,7 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_config_functions",
         "//systems/lcm:lcm_config_functions",
+        "//systems/sensors:camera_config_functions",
         "//visualization:visualization_config_functions",
     ],
 )

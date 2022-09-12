@@ -18,6 +18,10 @@ OneOfEverything:
     extra_bus: {}
   model_drivers:
     alice: !ZeroForceDriver {}
+  camera_lcm_bus: "default"
+  cameras:
+  -
+    name: camera_0
   visualization:
     lcm_bus: extra_bus
     publish_period: 0.125

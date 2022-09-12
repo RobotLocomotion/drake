@@ -14,6 +14,7 @@
 #include "drake/multibody/parsing/model_directives.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/systems/analysis/simulator_config.h"
+#include "drake/systems/sensors/camera_config.h"
 #include "drake/visualization/visualization_config.h"
 
 namespace drake {
@@ -32,6 +33,8 @@ struct Scenario {
     a->Visit(DRAKE_NVP(lcm_buses));
     a->Visit(DRAKE_NVP(model_drivers));
     a->Visit(DRAKE_NVP(visualization));
+    a->Visit(DRAKE_NVP(camera_lcm_bus));
+    a->Visit(DRAKE_NVP(cameras));
   }
 
   /* Random seed for any random elements in the scenario.
@@ -69,6 +72,14 @@ struct Scenario {
   std::map<std::string, DriverVariant> model_drivers;
 
   visualization::VisualizationConfig visualization;
+
+  /// The LCM bus to use for all cameras. This references a bus_name within
+  /// the lcm_buses immediately above; it does not add a new bus.
+  /// TODO(jeremy.nimmer) The lcm_bus should probably be per-CameraConfig?
+  std::string camera_lcm_bus{"default"};
+
+  /// Cameras to add to the scene (and broadcast over LCM).
+  std::vector<systems::sensors::CameraConfig> cameras;
 };
 
 /* Returns a C++ representation of the given YAML scenario.

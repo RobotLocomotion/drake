@@ -18,6 +18,10 @@ Demo:
   - add_weld:
       parent: iiwa_on_world
       child: iiwa::base
+  camera_lcm_bus: "default"
+  cameras:
+  -
+    name: camera_0
   model_drivers:
     iiwa: !ZeroForceDriver {}
     wsg: !SchunkWsgDriver {}
