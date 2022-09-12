@@ -402,7 +402,8 @@ double ParseJointDamping(
 
 // We interpret a value of exactly zero to specify un-actuated joints. Thus, the
 // user would say <effort>0</effort>. The effort_limit should be non-negative.
-// Negative effort will be treated as infinity as specified by SDFormat.
+// SDFormat internally interprets a negative effort limit as infinite and only
+// returns non-negative values.
 double GetEffortLimit(
     const DiagnosticPolicy& diagnostic,
     const sdf::Joint& joint_spec, int axis_index) {
@@ -415,9 +416,7 @@ double GetEffortLimit(
         joint_spec.Name()));
     return 0.0;
   }
-  return axis->Effort() < 0
-      ? std::numeric_limits<double>::infinity()
-      : axis->Effort();
+  return axis->Effort();
 }
 
 // Extracts the effort limit from a joint specification and adds an actuator if
@@ -545,29 +544,17 @@ std::tuple<double, double, double, double> ParseJointLimits(
         "An axis must be specified for joint '" + joint_spec.Name() + "'");
   }
 
-  // SDF defaults to ±1.0e16 for joints with no limits, see
-  // http://sdformat.org/spec?ver=1.6&elem=joint#axis_limit.
-  // Drake marks joints with no limits with ±numeric_limits<double>::infinity()
-  // and therefore we make the change here.
-  const double lower_limit =
-      axis->Lower() == -1.0e16 ?
-      -std::numeric_limits<double>::infinity() : axis->Lower();
-  const double upper_limit =
-      axis->Upper() == 1.0e16 ?
-      std::numeric_limits<double>::infinity() : axis->Upper();
+  const double lower_limit = axis->Lower();
+  const double upper_limit = axis->Upper();
   if (lower_limit > upper_limit) {
     throw std::runtime_error(
         "The lower limit must be lower (or equal) than the upper limit for "
         "joint '" + joint_spec.Name() + "'.");
   }
 
-  // SDF defaults to -1.0 for joints with no limits, see
-  // http://sdformat.org/spec?ver=1.6&elem=joint#limit_velocity
-  // Drake marks joints with no limits with ±numeric_limits<double>::infinity()
-  // and therefore we make the change here.
-  const double velocity_limit =
-      axis->MaxVelocity() == -1.0 ?
-      std::numeric_limits<double>::infinity() : axis->MaxVelocity();
+  // SDFormat internally interprets a negative velocity limit as infinite and
+  // only returns non-negative values.
+  const double velocity_limit = axis->MaxVelocity();
   if (velocity_limit < 0) {
     throw std::runtime_error(
         "Velocity limit is negative for joint '" + joint_spec.Name() + "'. "
