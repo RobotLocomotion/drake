@@ -79,7 +79,8 @@ def repository_python_info(repository_ctx):
         # @drake//tools/py_toolchain:macos_py3_runtime
         python = repository_ctx.attr.macos_interpreter_path
         if not python:
-            if os_result.macos_arch_result == "arm64":
+            arch_result = execute_or_fail(repository_ctx, ["/usr/bin/arch"])
+            if arch_result.stdout.strip() == "arm64":
                 python = MACOS_ARM64_INTERPRETER_PATH
             else:
                 python = MACOS_I386_INTERPRETER_PATH
