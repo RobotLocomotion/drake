@@ -23,6 +23,7 @@ Argument:
 """
 
 load("@drake//tools/workspace:execute.bzl", "which")
+load("@drake//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):
     # When these values are updated:
@@ -33,10 +34,15 @@ def _impl(repository_ctx):
     mosek_minor_version = 0
     mosek_patch_version = 18
 
-    if repository_ctx.os.name == "mac os x":
-        mosek_platform = "osx64x86"
-        sha256 = "e3de2b99e5ab27a7c37356a7fe88f0a42c53ec04aeaba70abe8b5971fbcfc150"  # noqa
-    elif repository_ctx.os.name == "linux":
+    os_result = determine_os(repository_ctx)
+    if os_result.is_macos:
+        if os_result.macos_arch_result == "arm64":
+            mosek_platform = "osxaarch64"
+            sha256 = "99518b88c3bfc27edc92775eada349f7dd232c7bf7aa1cb7a8620603e05a6a6d"  # noqa
+        else:
+            mosek_platform = "osx64x86"
+            sha256 = "e3de2b99e5ab27a7c37356a7fe88f0a42c53ec04aeaba70abe8b5971fbcfc150"  # noqa
+    elif os_result.is_ubuntu:
         mosek_platform = "linux64x86"
         sha256 = "f778f6e5560cdb8a3b5001cb51f40ccba9b3ef73da09406dcd3c1a870433eb34"  # noqa
     else:

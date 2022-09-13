@@ -4,7 +4,7 @@
 
 set -eu -o pipefail
 
-if [ "$(uname)" == "Darwin" ]; then
+if [[ "$(uname)" == "Darwin" ]]; then
     HOMEBREW="$(brew config | \grep -E '^HOMEBREW_PREFIX' | cut -c18-)"
 
     # Use GNU 'cp' on macOS so we have a consistent CLI.
@@ -24,7 +24,7 @@ chrpath()
     shift 1
 
     for lib in "$@"; do
-        if [ "$(uname)" == "Linux" ]; then
+        if [[ "$(uname)" == "Linux" ]]; then
             patchelf --remove-rpath "$lib"
             patchelf --set-rpath "\$ORIGIN/$rpath" "$lib"
         else
@@ -64,7 +64,7 @@ cp -r -t ${WHEEL_DIR}/pydrake/doc \
 
 # MOSEK is "sort of" third party, but is procured as part of Drake's build and
 # ends up in /opt/drake.
-if [ "$(uname)" == "Darwin" ]; then
+if [[ "$(uname)" == "Darwin" ]]; then
     # On macOS, it is explicitly referenced by @loader_path, and thus must be
     # copied to the same place as libdrake.so.
     cp -r -t ${WHEEL_DIR}/pydrake/lib \
@@ -87,7 +87,7 @@ cp -r -t ${WHEEL_DATA_DIR} \
     /opt/drake/share/drake/manipulation \
     /opt/drake/share/drake/tutorials
 
-if [ "$(uname)" == "Linux" ]; then
+if [[ "$(uname)" == "Linux" ]]; then
     mkdir -p ${WHEEL_DATA_DIR}/setup
     cp -r -t ${WHEEL_DATA_DIR}/setup \
         /opt/drake/share/drake/setup/deepnote
@@ -106,14 +106,14 @@ rm -rf \
     ${WHEEL_DATA_DIR}/examples/atlas \
     ${WHEEL_DATA_DIR}/examples/hydroelastic/spatula_slip_control
 
-if [ "$(uname)" == "Linux" ]; then
+if [[ "$(uname)" == "Linux" ]]; then
     export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib:/opt/drake-dependencies/lib
 fi
 
 chrpath lib pydrake/*.so
 chrpath ../lib pydrake/*/*.so
 
-if [ "$(uname)" == "Darwin" ]; then
+if [[ "$(uname)" == "Darwin" ]]; then
     change_lpath \
         --old='@loader_path/../../../' \
         --new='@rpath/' \
@@ -126,7 +126,7 @@ fi
 
 python setup.py bdist_wheel
 
-if [ "$(uname)" == "Darwin" ]; then
+if [[ "$(uname)" == "Darwin" ]]; then
     delocate-wheel -w wheelhouse -v dist/drake*.whl
 else
     GLIBC_VERSION=$(ldd --version | sed -n '1{s/.* //;s/[.]/_/p}')
