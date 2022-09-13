@@ -23,6 +23,7 @@
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_callback.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
+#include "drake/geometry/proximity/make_mesh_from_vtk.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
@@ -497,7 +498,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     } else if (mesh.filename().substr(mesh.filename().find_last_of(".") + 1) ==
                "vtk") {
       vertices = std::make_shared<std::vector<Eigen::Vector3d>>(
-          ConvertVolumeToSurfaceMesh(ReadVtkToVolumeMesh(mesh.filename()))
+          ConvertVolumeToSurfaceMesh(MakeVolumeMeshFromVtk<double>(mesh))
               .vertices());
     } else {
       throw(std::runtime_error(fmt::format(
