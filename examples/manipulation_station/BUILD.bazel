@@ -155,15 +155,6 @@ drake_cc_googletest(
 # Python examples
 
 drake_py_library(
-    name = "differential_ik",
-    srcs = ["differential_ik.py"],
-    visibility = ["//visibility:private"],
-    deps = [
-        "//bindings/pydrake",
-    ],
-)
-
-drake_py_library(
     name = "schunk_wsg_buttons",
     srcs = ["schunk_wsg_buttons.py"],
     visibility = ["//visibility:private"],
@@ -203,7 +194,6 @@ drake_py_binary(
     test_rule_tags = vtk_test_tags() + ["manual"],
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
-        ":differential_ik",
         "//bindings/pydrake",
     ],
 )
@@ -220,7 +210,6 @@ drake_py_binary(
     test_rule_tags = vtk_test_tags(),
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
-        ":differential_ik",
         "//bindings/pydrake",
     ],
 )
@@ -237,7 +226,6 @@ drake_py_binary(
     test_rule_tags = vtk_test_tags(),
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
-        ":differential_ik",
         ":schunk_wsg_buttons",
         "//bindings/pydrake",
     ],
