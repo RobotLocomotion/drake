@@ -256,6 +256,26 @@ class InverseKinematics {
       const Eigen::Ref<const Eigen::Vector3d>& nb_B, double angle_lower,
       double angle_upper);
 
+  /**
+   * Add a cost c * (1-cosθ) where θ is the angle between the vector `na` and
+   * `nb`. na is fixed to a frame A, while nb is fixed to a frame B.
+   * @param frameA The frame to which na is fixed.
+   * @param na_A The vector na fixed to frame A, expressed in frame A.
+   * @pre na_A should be a non-zero vector.
+   * @throws std::exception if na_A is close to zero.
+   * @param frameB The frame to which nb is fixed.
+   * @param nb_B The vector nb fixed to frame B, expressed in frame B.
+   * @pre nb_B should be a non-zero vector.
+   * @throws std::exception if nb_B is close to zero.
+   * @param c The cost is c * (1-cosθ).
+   */
+  solvers::Binding<solvers::Cost> AddAngleBetweenVectorsCost(
+      const Frame<double>& frameA,
+      const Eigen::Ref<const Eigen::Vector3d>& na_A,
+      const Frame<double>& frameB,
+      const Eigen::Ref<const Eigen::Vector3d>& nb_B,
+      double c);
+
   // TODO(hongkai.dai): remove this documentation.
   /**
    * Adds the constraint that the pairwise distance between objects should be no
