@@ -823,7 +823,7 @@ class ThreeBoxes : public ::testing::Test {
     subs_on_off_.emplace(e_on_->xv()[0], e_off_->xv()[0]);
     subs_on_off_.emplace(e_on_->xv()[1], e_off_->xv()[1]);
 
-    options.preprocessing = true;
+    options.preprocessing = false;
   }
 
   GraphOfConvexSets g_;
@@ -1149,21 +1149,21 @@ class PreprocessShortestPathTest : public ::testing::Test {
     }
 
     edges_.reserve(13);
-    edges_.push_back(g_.AddEdge(vid_[0], vid_[2]));
-    edges_.push_back(g_.AddEdge(vid_[2], vid_[3]));
-    edges_.push_back(g_.AddEdge(vid_[2], vid_[4]));
-    edges_.push_back(g_.AddEdge(vid_[3], vid_[4]));
-    edges_.push_back(g_.AddEdge(vid_[4], vid_[3]));
-    edges_.push_back(g_.AddEdge(vid_[3], vid_[5]));
-    edges_.push_back(g_.AddEdge(vid_[4], vid_[5]));
+    edges_[0] = g_.AddEdge(vid_[0], vid_[2]);
+    edges_[1] = g_.AddEdge(vid_[2], vid_[3]);
+    edges_[2] = g_.AddEdge(vid_[2], vid_[4]);
+    edges_[3] = g_.AddEdge(vid_[3], vid_[4]);
+    edges_[4] = g_.AddEdge(vid_[4], vid_[3]);
+    edges_[5] = g_.AddEdge(vid_[3], vid_[5]);
+    edges_[6] = g_.AddEdge(vid_[4], vid_[5]);
     // Useless backtracking edges
-    edges_.push_back(g_.AddEdge(vid_[3], vid_[2]));
-    edges_.push_back(g_.AddEdge(vid_[5], vid_[4]));
+    edges_[7] = g_.AddEdge(vid_[3], vid_[2]);
+    edges_[8] = g_.AddEdge(vid_[5], vid_[4]);
     // Useless nodes off source and target
-    edges_.push_back(g_.AddEdge(vid_[0], vid_[1]));
-    edges_.push_back(g_.AddEdge(vid_[1], vid_[0]));
-    edges_.push_back(g_.AddEdge(vid_[5], vid_[6]));
-    edges_.push_back(g_.AddEdge(vid_[6], vid_[5]));
+    edges_[9] = g_.AddEdge(vid_[0], vid_[1]);
+    edges_[10] = g_.AddEdge(vid_[1], vid_[0]);
+    edges_[11] = g_.AddEdge(vid_[5], vid_[6]);
+    edges_[12] = g_.AddEdge(vid_[6], vid_[5]);
 
     for (Edge* e : edges_) {
       e->AddCost(1.0);
@@ -1210,8 +1210,7 @@ TEST_F(PreprocessShortestPathTest, CheckResults) {
                                 result2.GetSolution(e->xu()), 1e-12));
     EXPECT_TRUE(CompareMatrices(result1.GetSolution(e->xv()),
                                 result2.GetSolution(e->xv()), 1e-12));
-    EXPECT_NEAR(e->GetSolutionCost(result1), e->GetSolutionCost(result2),
-                1e-12);
+    EXPECT_EQ(e->GetSolutionCost(result1), e->GetSolutionCost(result2));
   }
 }
 
@@ -1387,7 +1386,10 @@ GTEST_TEST(ShortestPathTest, Figure9) {
     e->AddCost(solvers::Binding(cost, {e->xu(), e->xv()}));
   }
 
-  auto result = spp.SolveShortestPath(source->id(), target->id());
+  GraphOfConvexSetsOptions options;
+  options.preprocessing = false;
+
+  auto result = spp.SolveShortestPath(source->id(), target->id(), options);
   ASSERT_TRUE(result.is_success());
 
   const double kTol = 2e-4;  // Gurobi required this large tolerance.
@@ -1411,7 +1413,7 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   g.AddEdge(*source, *target, "edge");
 
   GraphOfConvexSetsOptions options;
-  options.preprocessing = true;
+  options.preprocessing = false;
 
   // Note: Testing the entire string against a const string is too fragile,
   // since the VertexIds are Identifier<> and increment on a global counter.

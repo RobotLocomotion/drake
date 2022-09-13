@@ -308,14 +308,13 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
 
   int edge_count = 0;
   for (const auto& [edge_id, e] : edges_) {
+    outgoing_edges[e->u().id()].push_back(edge_count);
+    incoming_edges[e->v().id()].push_back(edge_count);
+
     // Turn off edges into source or out of target
     if (e->v().id() == source_id || e->u().id() == target_id) {
       unusable_edges.insert(edge_id);
-    } else {
-      outgoing_edges[e->u().id()].push_back(edge_count);
-      incoming_edges[e->v().id()].push_back(edge_count);
     }
-
     edge_count++;
   }
 
@@ -342,55 +341,46 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     std::vector<int> Ev = Ev_in;
     Ev.insert(Ev.end(), Ev_out.begin(), Ev_out.end());
 
-    if (Ev.size() > 0) {
-      RowVectorXd A_flow(Ev.size());
-      A_flow << RowVectorXd::Ones(Ev_in.size()),
-          -1 * RowVectorXd::Ones(Ev_out.size());
-      VectorXDecisionVariable fv(Ev.size());
-      VectorXDecisionVariable gv(Ev.size());
-      for (size_t ii = 0; ii < Ev.size(); ++ii) {
-        fv(ii) = f(Ev[ii]);
-        gv(ii) = g(Ev[ii]);
-      }
+    RowVectorXd A_flow(Ev.size());
+    A_flow << RowVectorXd::Ones(Ev_in.size()),
+        -1 * RowVectorXd::Ones(Ev_out.size());
+    VectorXDecisionVariable fv(Ev.size());
+    VectorXDecisionVariable gv(Ev.size());
+    for (size_t ii = 0; ii < Ev.size(); ++ii) {
+      fv(ii) = f(Ev[ii]);
+      gv(ii) = g(Ev[ii]);
+    }
 
-      // Conservation of flow for f: ∑ f_in - ∑ f_out = -δ(is_source).
-      if (vertex_id == source_id) {
-        conservation_f.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, -1, fv)});
-      } else {
-        conservation_f.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 0, fv)});
-      }
+    // Conservation of flow for f: ∑ f_in - ∑ f_out = -δ(is_source).
+    if (vertex_id == source_id) {
+      conservation_f.insert(
+          {vertex_id, prog.AddLinearEqualityConstraint(A_flow, -1, fv)});
+    } else {
+      conservation_f.insert(
+          {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 0, fv)});
+    }
 
-      // Conservation of flow for g: ∑ g_in - ∑ g_out = δ(is_target).
-      if (vertex_id == target_id) {
-        conservation_g.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 1, gv)});
-      } else {
-        conservation_g.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 0, gv)});
-      }
+    // Conservation of flow for g: ∑ g_in - ∑ g_out = δ(is_target).
+    if (vertex_id == target_id) {
+      conservation_g.insert(
+          {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 1, gv)});
+    } else {
+      conservation_g.insert(
+          {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 0, gv)});
     }
 
     // Degree constraints (redundant if indegree of w is 0):
     // 0 <= ∑ f_in + ∑ g_in <= 1
-    if (Ev_in.size() > 0) {
-      RowVectorXd A_degree = RowVectorXd::Ones(2 * Ev_in.size());
-      VectorXDecisionVariable fgin(2 * Ev_in.size());
-      for (size_t ii = 0; ii < Ev_in.size(); ++ii) {
-        fgin(ii) = f(Ev_in[ii]);
-        fgin(Ev_in.size() + ii) = g(Ev_in[ii]);
-      }
-      degree.insert(
-          {vertex_id, prog.AddLinearConstraint(A_degree, 0, 1, fgin)});
+    RowVectorXd A_degree = RowVectorXd::Ones(2 * Ev_in.size());
+    VectorXDecisionVariable fgin(2 * Ev_in.size());
+    for (size_t ii = 0; ii < Ev_in.size(); ++ii) {
+      fgin(ii) = f(Ev_in[ii]);
+      fgin(Ev_in.size() + ii) = g(Ev_in[ii]);
     }
+    degree.insert({vertex_id, prog.AddLinearConstraint(A_degree, 0, 1, fgin)});
   }
 
   for (const auto& [edge_id, e] : edges_) {
-    if (unusable_edges.count(edge_id)) {
-      continue;
-    }
-
     // Update bounds of conservation of flow:
     // ∑ f_in,u - ∑ f_out,u = 1 - δ(is_source).
     if (e->u().id() == source_id) {
@@ -638,7 +628,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   for (const auto& [edge_id, e] : edges_) {
     // If an edge is turned off (ϕ = 0) or excluded by preprocessing, don't
     // include it in the optimization.
-    if (!e->phi_value_.value_or(true) || unusable_edges.count(edge_id)) {
+    if (!e->phi_value_.value_or(true) ||
+        unusable_edges.find(edge_id) != unusable_edges.end()) {
       // Track excluded edges (ϕ = 0 and preprocessed) so that their variables
       // can be set in the optimization result.
       excluded_edges.emplace_back(e.get());
