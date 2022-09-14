@@ -2,7 +2,7 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-def nanoflann_repository(
+def nanoflann_internal_repository(
         name,
         mirrors = None):
     github_archive(
