@@ -333,6 +333,8 @@ drake_cc_library(
         ":make_cylinder_mesh",
         ":make_ellipsoid_field",
         ":make_ellipsoid_mesh",
+        ":make_mesh_field",
+        ":make_mesh_from_vtk",
         ":make_sphere_field",
         ":make_sphere_mesh",
         ":obj_to_surface_mesh",
@@ -1035,6 +1037,7 @@ drake_cc_googletest(
     name = "hydroelastic_internal_test",
     data = [
         "//geometry:test_obj_files",
+        "//geometry:test_vtk_files",
     ],
     deps = [
         ":hydroelastic_internal",
