@@ -331,6 +331,87 @@ GTEST_TEST(PointCloud, Concatenate) {
   EXPECT_TRUE(CompareMatrices(merged.descriptors(), descriptors_expected));
 }
 
+GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
+  const auto fields = pc_flags::kXYZs | pc_flags::kNormals |
+                          pc_flags::kRGBs | pc_flags::kDescriptorCurvature;
+  constexpr int num_points{6};
+  PointCloud cloud(num_points, fields);
+  // Place points inside the cube with corners at (±1, ±1, ±1).
+  // clang-format off
+  cloud.mutable_xyzs().transpose() <<
+    -1, -1, -1,  // lower_xyz
+    0.1, 0.2, 0.3,
+    0.24, 0.1, 0.25,
+    -.63, 0.25, .64,
+    -.57, 0.73, .92,
+    -.39, 0.2, .18;
+  // clang-format on
+
+  // Populate the other fields with random values.
+  std::srand(1234);
+  cloud.mutable_normals().setRandom();
+  cloud.mutable_rgbs().setRandom();
+  cloud.mutable_descriptors().setRandom();
+
+  // Down-sample so that each occupied octant returns one point.
+  PointCloud down_sampled = cloud.VoxelizedDownSample(1.0);
+  EXPECT_EQ(down_sampled.size(), 3);
+
+  auto CheckHasPointAveragedFrom =
+      [&cloud, &down_sampled](const std::vector<int>& indices) {
+        // Use doubles for accumulators.
+        Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+        Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+        Eigen::Vector3d rgb = Eigen::Vector3d::Zero();
+        Vector1<double> descriptor = Vector1<double>::Zero();
+        for (int i : indices) {
+          xyz += cloud.xyz(i).cast<double>();
+          normal += cloud.normal(i).cast<double>();
+          rgb += cloud.rgb(i).cast<double>();
+          descriptor += cloud.descriptor(i).cast<double>();
+        }
+        xyz /= indices.size();
+        normal /= indices.size();
+        rgb /= indices.size();
+        descriptor /= indices.size();
+
+        // Just do a linear search for the matching point.
+        // TODO(russt): Could replace this with a nearest neighbor query if/when
+        // it is provided.
+        double kTol = 1e-8;
+        bool found_match = false;
+        int i = 0;
+        std::cout << xyz.transpose() << std::endl;
+        for (; i < down_sampled.size(); ++i) {
+          std::cout << i << ": " << down_sampled.xyz(i).transpose()
+                    << std::endl;
+          if (CompareMatrices(down_sampled.xyz(i), xyz.cast<float>(), kTol)) {
+            found_match = true;
+            break;
+          }
+        }
+        ASSERT_TRUE(found_match);
+
+        EXPECT_TRUE(CompareMatrices(down_sampled.normal(i),
+                                    normal.cast<float>(), kTol));
+        EXPECT_EQ(down_sampled.rgb(i), rgb.cast<u_int8_t>());
+        EXPECT_TRUE(CompareMatrices(down_sampled.descriptor(i),
+                                    descriptor.cast<float>(), kTol));
+      };
+
+  CheckHasPointAveragedFrom({0});
+  CheckHasPointAveragedFrom({1, 2});
+  CheckHasPointAveragedFrom({3, 4, 5});
+
+  // Check that Infs/NaNs are ignored.
+  cloud.mutable_xyz(3)[0] = std::numeric_limits<float>::quiet_NaN();
+  cloud.mutable_xyz(4)[1] = std::numeric_limits<float>::infinity();
+
+  down_sampled = cloud.VoxelizedDownSample(1.0);
+  EXPECT_EQ(down_sampled.size(), 3);
+  CheckHasPointAveragedFrom({5});
+}
+
 }  // namespace
 }  // namespace perception
 }  // namespace drake

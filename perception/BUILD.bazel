@@ -35,9 +35,13 @@ drake_cc_library(
     name = "point_cloud",
     srcs = ["point_cloud.cc"],
     hdrs = ["point_cloud.h"],
-    deps = [
+    interface_deps = [
         ":point_cloud_flags",
         "//common:essential",
+    ],
+    deps = [
+        "//common:unused",
+        "@abseil_cpp_internal//absl/container:flat_hash_map",
     ],
 )
 
