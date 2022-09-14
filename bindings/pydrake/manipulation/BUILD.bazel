@@ -50,6 +50,7 @@ drake_pybind_library(
     name = "planner_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
     ],
     cc_srcs = ["planner_py.cc"],
@@ -118,6 +119,7 @@ drake_py_unittest(
     ],
     deps = [
         ":planner_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody",
     ],
 )
