@@ -11,6 +11,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_algebra.h"
@@ -57,16 +58,32 @@ class DifferentialInverseKinematicsParameters {
 
   /**
    * Constructor. Initializes the nominal joint position to zeros of size
-   * @p num_positions. Timestep is initialized to 1. The end effector gains are
-   * initialized to ones. All constraints are initialized to nullopt.
+   * @p num_positions. The time step is initialized to 1. The end effector
+   * gains are initialized to ones. The joint centering gains are initialized
+   * to zero. All constraints are initialized to nullopt.
    * @param num_positions Number of generalized positions.
-   * @param num_velocities Number of generalized velocities.
+   * @param num_velocities Number of generalized velocities (by default it will
+   * be set to num_positions).
+   *
+   * @note Currently DoDifferentialInverseKinematics requires that
+   * num_positions == num_velocities.
    */
-  DifferentialInverseKinematicsParameters(int num_positions = 0,
-                                          int num_velocities = 0);
+  DifferentialInverseKinematicsParameters(
+      int num_positions, std::optional<int> num_velocities = std::nullopt);
+
+  DRAKE_DEPRECATED(
+      "2023-01-01",
+      "num_positions is now a mandatory argument for the constructor. This "
+      "default constructor sets num_positions = 1.")
+  DifferentialInverseKinematicsParameters();
+
   /// @name Getters.
   /// @{
+  DRAKE_DEPRECATED("2023-01-01",
+                   "Use get_time_step() instead of get_timestep().")
   double get_timestep() const { return dt_; }
+
+  double get_time_step() const { return dt_; }
 
   int get_num_positions() const { return num_positions_; }
 
@@ -76,10 +93,25 @@ class DifferentialInverseKinematicsParameters {
     return nominal_joint_position_;
   }
 
-  const Vector6<double>& get_end_effector_velocity_gain() const {
-    return gain_E_;
+  const MatrixX<double>& get_joint_centering_gain() const {
+    return joint_centering_gain_;
   }
 
+  DRAKE_DEPRECATED("2023-01-01",
+                    "Use get_end_effector_velocity_flag instead. (The gains "
+                    "before were actually only acting as a flag).")
+  Vector6<double> get_end_effector_velocity_gain() const {
+    return flag_E_.cast<double>();
+  }
+
+  const Vector6<bool>& get_end_effector_velocity_flag() const {
+    return flag_E_;
+  }
+
+  DRAKE_DEPRECATED("2023-01-01",
+                   "The unconstrained_degrees_of_freedom_velocity_limit is no "
+                   "longer used in the differential IK formulation and will be "
+                   "removed from this parameters class.")
   const std::optional<double>&
       get_unconstrained_degrees_of_freedom_velocity_limit() const {
     return unconstrained_degrees_of_freedom_velocity_limit_;
@@ -100,6 +132,10 @@ class DifferentialInverseKinematicsParameters {
     return vd_bounds_;
   }
 
+  double get_maximum_scaling_to_report_stuck() const {
+    return max_scaling_to_report_stuck_;
+  }
+
   const std::vector<std::shared_ptr<solvers::LinearConstraint>>&
   get_linear_velocity_constraints() const;
   /// @}
@@ -107,9 +143,16 @@ class DifferentialInverseKinematicsParameters {
   /// @name Setters.
   /// @{
   /**
-   * Sets timestep to @p dt.
+   * Sets time step to @p dt.
    * @throws std::exception if dt <= 0.
    */
+  void set_time_step(double dt) {
+    DRAKE_THROW_UNLESS(dt > 0);
+    dt_ = dt;
+  }
+
+  DRAKE_DEPRECATED("2023-01-01",
+                   "Use set_time_step() instead of set_timestep().")
   void set_timestep(double dt) {
     DRAKE_THROW_UNLESS(dt > 0);
     dt_ = dt;
@@ -120,6 +163,10 @@ class DifferentialInverseKinematicsParameters {
    * freedom to @p limit.
    * @throws std::exception if limit < 0.
    */
+  DRAKE_DEPRECATED("2023-01-01",
+                   "The unconstrained_degrees_of_freedom_velocity_limit is no "
+                   "longer used in the differential IK formulation and will be "
+                   "removed from this parameters class.")
   void set_unconstrained_degrees_of_freedom_velocity_limit(double limit) {
     DRAKE_THROW_UNLESS(limit >= 0);
     unconstrained_degrees_of_freedom_velocity_limit_ = limit;
@@ -135,16 +182,33 @@ class DifferentialInverseKinematicsParameters {
     nominal_joint_position_ = nominal_joint_position;
   }
 
-  /**
-   * Sets the end effector gains in the body frame. Gains can be used to
-   * specify relative importance among different dimensions.
-   * @throws std::exception if any element of @p gain_E is larger than 1 or
-   * smaller than 0.
-   */
+  DRAKE_DEPRECATED("2023-01-01",
+                    "Use set_end_effector_velocity_flag instead. (The gains "
+                    "before were actually only acting as a flag).")
   void set_end_effector_velocity_gain(const Vector6<double>& gain_E) {
     DRAKE_THROW_UNLESS((gain_E.array() >= 0).all() &&
                        (gain_E.array() <= 1).all());
-    gain_E_ = gain_E;
+    flag_E_ = gain_E.cast<bool>();
+  }
+
+  /**
+   * Sets the end effector flags in the body frame. If a spatial velocity flag
+   * is set to false, it will not be included in the differential IK
+   * formulation.
+   */
+  void set_end_effector_velocity_flag(const Vector6<bool>& flag_E) {
+    flag_E_ = flag_E;
+  }
+
+  /**
+   * Sets the joint centering gain, K, so that the joint centering command is
+   * v_next = K * (q_nominal - q_current).
+   * @pre K must be num_velocities x num_positions.
+   */
+  void set_joint_centering_gain(const MatrixX<double>& K) {
+    DRAKE_DEMAND(K.rows() == num_velocities_);
+    DRAKE_DEMAND(K.cols() == num_positions_);
+    joint_centering_gain_ = K;
   }
 
   /**
@@ -197,6 +261,16 @@ class DifferentialInverseKinematicsParameters {
         (vd_bounds.second.array() >= vd_bounds.first.array()).all());
     vd_bounds_ = vd_bounds;
   }
+
+  /** Sets the threshold for α below which the status returned is
+  DifferentialInverseKinematicsStatus::kStuck. α is the scaling of the
+  commanded spatial velocity, so when α is small, it means that the actual
+  spatial velocity magnitude will be small proportional to the commanded.
+  @default 0.01. */
+  void set_maximum_scaling_to_report_stuck(double scaling) {
+    max_scaling_to_report_stuck_ = scaling;
+  }
+
   /// @}
 
   /**
@@ -221,8 +295,10 @@ class DifferentialInverseKinematicsParameters {
   std::optional<std::pair<VectorX<double>, VectorX<double>>> v_bounds_{};
   std::optional<std::pair<VectorX<double>, VectorX<double>>> vd_bounds_{};
   std::optional<double> unconstrained_degrees_of_freedom_velocity_limit_{};
-  Vector6<double> gain_E_{Vector6<double>::Ones()};
+  MatrixX<double> joint_centering_gain_;
+  Vector6<bool> flag_E_{Vector6<bool>::Ones()};
   double dt_{1};
+  double max_scaling_to_report_stuck_{1e-2};
   std::vector<std::shared_ptr<solvers::LinearConstraint>>
       linear_velocity_constraints_;
 };
@@ -232,49 +308,51 @@ class DifferentialInverseKinematicsParameters {
  * MathematicalProgram:
  *
  * ```
- *   min_{v_next,alpha}   100 * | alpha - |V| |^2
- *                        // iff J.rows() < J.cols(), then
- *                          + | q_current + v_next*dt - q_nominal |^2
+ *   min_{v_next,alpha}  -100 * alpha
+ *                         + | P * (v_next - K * (q_nominal - q_current)) |^2
  *
- *   s.t. J*v_next = alpha * V / |V|  // J*v_next has the same direction as V
- *        joint_lim_min <= q_current + v_next*dt <= joint_lim_max
- *        joint_vel_lim_min <= v_next <= joint_vel_lim_max
- *        joint_accel_lim_min <= (v_next - v_current)/dt <=
- *          joint_accel_lim_max
- *        for all i > J.rows(),
- *          -unconstrained_vel_lim <= S.col(i)' v_next <= unconstrained_vel_lim
- *          where J = UΣS' is the SVD, with the singular values in decreasing
- *          order.  Note that the constraint is imposed on each column
- *          independently.
- *
- *        and any additional linear constraints added via
- *          AddLinearVelocityConstraint() in the
- *          DifferentialInverseKinematicsParameters.
- *   where J.rows() == V.size() and
- *   J.cols() == v_current.size() == q_current.size() == v_next.size().  V
- *   can have any size, with each element representing a constraint on the
- *   solution (6 constraints specifying an end-effector pose is typical, but
- *   not required).
+ *   s.t.
+ *     J * v_next = alpha * V, // J * v_next has the same direction as V
+ *     0 <= alpha <= 1,        // Never go faster than V
+ *     joint_lim_min <= q_current + v_next*dt <= joint_lim_max,
+ *     joint_vel_lim_min <= v_next <= joint_vel_lim_max,
+ *     joint_accel_lim_min <= (v_next - v_current)/dt <= joint_accel_lim_max,
+ *     and additional linear velocity constraints,
  * ```
+ * where:
+ *   - The rows of P form an orthonormal basis for the nullspace of J,
+ *   - J.rows() == V.size(),
+ *   - J.cols() == v_current.size() == q_current.size() == v_next.size(),
+ *   - V can have any size, with each element representing a constraint on the
+ *     solution (6 constraints specifying an end-effector spatial velocity is
+ *     typical, but not required),
+ *   - K is the joint_centering_gain,
+ *   - the "additional linear velocity constraints" are added via
+ *     DifferentialInverseKinematicsParameters::AddLinearVelocityConstraint().
  *
  * Intuitively, this finds a v_next such that J*v_next is in the same direction
  * as V, and the difference between |V| and |J * v_next| is minimized while all
- * constraints in @p parameters are satisfied as well. If the problem is
- * redundant, a secondary objective to minimize
- *   |q_current + v_next * dt - q_nominal|
- * is added to the problem.
+ * constraints in @p parameters are satisfied as well. In the nullspace of this
+ * objective, we have a secondary objective to minimize |v_next - K *
+ * (q_nominal - q_current)|.
  *
- * It is possible that the solver is unable to find
- * such a generalized velocity while not violating the constraints, in which
- * case, status will be set to kStuck in the returned
- * DifferentialInverseKinematicsResult.
+ * For more details, see
+ * https://manipulation.csail.mit.edu/pick.html#diff_ik_w_constraints .
+ *
+ * If q_current is a feasible point, then v_next = 0 should always be a
+ * feasible solution. If the problem data is bad (q_current is infeasible, and
+ * no feasible velocities can restore feasibility in one step), then it is
+ * possible that the solver cannot find a solution, in which case, status will
+ * be set to kNoSolution in the returned DifferentialInverseKinematicsResult.
+ * If the velocity scaling, alpha, is very small, then the status will be set
+ * to kStuck.
  * @param q_current The current generalized position.
  * @param v_current The current generalized position.
  * @param V Desired spatial velocity. It must have the same number of rows as
  * @p J.
- * @param J Jacobian with respect to generalized velocities v.
- * It must have the same number of rows as @p V.
- * J * v need to represent the same spatial velocity as @p V.
+ * @param J Jacobian with respect to generalized velocities v. It must have the
+ * same number of rows as @p V. J * v need to represent the same spatial
+ * velocity as @p V.
  * @param parameters Collection of various problem specific constraints and
  * constants.
  * @return If the solver successfully finds a solution, joint_velocities will
@@ -290,13 +368,11 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const DifferentialInverseKinematicsParameters& parameters);
 
 /**
- * A wrapper over
- * DoDifferentialInverseKinematics(q_current, v_current, V, J, params)
- * that tracks frame E's spatial velocity.
- * q_current and v_current are taken from @p context. V is computed by first
- * transforming @p V_WE to V_WE_E, then taking the element-wise product between
- * V_WE_E and the gains (specified in frame E) in @p parameters, and only
- * selecting the non zero elements. J is computed similarly.
+ * A wrapper over DoDifferentialInverseKinematics(q_current, v_current, V, J,
+ * params) that tracks frame E's spatial velocity. q_current and v_current are
+ * taken from @p context. V and J are expressed in E, and only the elements
+ * with non-zero gains in @p parameters get_end_effector_velocity_gains() are
+ * used in the program.
  * @param robot A MultibodyPlant model.
  * @param context Must be the Context of the MultibodyPlant. Contains the
  * current generalized position and velocity.
@@ -317,12 +393,11 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const DifferentialInverseKinematicsParameters& parameters);
 
 /**
- * A wrapper over
- * DoDifferentialInverseKinematics(robot, context, V_WE_desired, frame_E,
- * params) that tracks frame E's pose in the world frame.
- * q_current and v_current are taken from @p cache. V_WE is computed by
- * ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) / dt, where X_WE is computed
- * from @p context, and dt is taken from @p parameters.
+ * A wrapper over DoDifferentialInverseKinematics(robot, context, V_WE_desired,
+ * frame_E, params) that tracks frame E's pose in the world frame. q_current
+ * and v_current are taken from @p cache. V_WE is computed by
+ * ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) / dt, where X_WE is
+ * computed from @p context, and dt is taken from @p parameters.
  * @param robot A MultibodyPlant model.
  * @param context Must be the Context of the MultibodyPlant. Contains the
  * current generalized position and velocity.

@@ -426,7 +426,7 @@ double GetEffortLimit(
 // the value is non-zero. In SDFormat, effort limits are specified in
 // <joint><axis><limit><effort>. In Drake, we understand that joints with an
 // effort limit of zero are not actuated. For joint types that do not have an
-// actuator implementation available in Drake, produces a dianostic warning.
+// actuator implementation available in Drake, produces a diagnostic warning.
 void AddJointActuatorFromSpecification(
     const DiagnosticPolicy& diagnostic,
     const sdf::Joint& joint_spec, const Joint<double>& joint,

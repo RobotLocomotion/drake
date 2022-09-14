@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/manipulation/planner/differential_inverse_kinematics.h"
@@ -55,10 +56,11 @@ PYBIND11_MODULE(planner, m) {
     cls.def(py::init([](int num_positions, int num_velocities) {
          return Class{num_positions, num_velocities};
        }),
-           py::arg("num_positions") = 0, py::arg("num_velocities") = 0,
+           py::arg("num_positions"), py::arg("num_velocities") = std::nullopt,
            cls_doc.ctor.doc)
-        .def("get_timestep", &Class::get_timestep, cls_doc.get_timestep.doc)
-        .def("set_timestep", &Class::set_timestep, cls_doc.set_timestep.doc)
+        .def("get_time_step", &Class::get_time_step, cls_doc.get_time_step.doc)
+        .def("set_time_step", &Class::set_time_step, py::arg("dt"),
+            cls_doc.set_time_step.doc)
         .def("get_num_positions", &Class::get_num_positions,
             cls_doc.get_num_positions.doc)
         .def("get_num_velocities", &Class::get_num_velocities,
@@ -67,18 +69,16 @@ PYBIND11_MODULE(planner, m) {
             cls_doc.get_nominal_joint_position.doc)
         .def("set_nominal_joint_position", &Class::set_nominal_joint_position,
             cls_doc.set_nominal_joint_position.doc)
-        .def("get_end_effector_velocity_gain",
-            &Class::get_end_effector_velocity_gain,
-            cls_doc.get_end_effector_velocity_gain.doc)
-        .def("set_end_effector_velocity_gain",
-            &Class::set_end_effector_velocity_gain,
-            cls_doc.set_end_effector_velocity_gain.doc)
-        .def("get_unconstrained_degrees_of_freedom_velocity_limit",
-            &Class::get_unconstrained_degrees_of_freedom_velocity_limit,
-            cls_doc.get_unconstrained_degrees_of_freedom_velocity_limit.doc)
-        .def("set_unconstrained_degrees_of_freedom_velocity_limit",
-            &Class::set_unconstrained_degrees_of_freedom_velocity_limit,
-            cls_doc.set_unconstrained_degrees_of_freedom_velocity_limit.doc)
+        .def("get_joint_centering_gain", &Class::get_joint_centering_gain,
+            cls_doc.get_joint_centering_gain.doc)
+        .def("set_joint_centering_gain", &Class::set_joint_centering_gain,
+            py::arg("K"), cls_doc.set_joint_centering_gain.doc)
+        .def("get_end_effector_velocity_flag",
+            &Class::get_end_effector_velocity_flag,
+            cls_doc.get_end_effector_velocity_flag.doc)
+        .def("set_end_effector_velocity_flag",
+            &Class::set_end_effector_velocity_flag, py::arg("flag_E"),
+            cls_doc.set_end_effector_velocity_flag.doc)
         .def("get_joint_position_limits", &Class::get_joint_position_limits,
             cls_doc.get_joint_position_limits.doc)
         .def("set_joint_position_limits", &Class::set_joint_position_limits,
@@ -92,7 +92,51 @@ PYBIND11_MODULE(planner, m) {
             cls_doc.get_joint_acceleration_limits.doc)
         .def("set_joint_acceleration_limits",
             &Class::set_joint_acceleration_limits,
-            cls_doc.set_joint_acceleration_limits.doc);
+            cls_doc.set_joint_acceleration_limits.doc)
+        .def("get_maximum_scaling_to_report_stuck",
+            &Class::get_maximum_scaling_to_report_stuck,
+            cls_doc.get_maximum_scaling_to_report_stuck.doc)
+        .def("set_maximum_scaling_to_report_stuck",
+            &Class::set_maximum_scaling_to_report_stuck, py::arg("scaling"),
+            cls_doc.set_maximum_scaling_to_report_stuck.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def(py_init_deprecated<Class>(cls_doc.ctor.doc_deprecated),
+           cls_doc.ctor.doc_deprecated)
+        .def("get_timestep",
+            WrapDeprecated(
+                cls_doc.get_timestep.doc_deprecated, &Class::get_timestep),
+            cls_doc.get_timestep.doc_deprecated)
+        .def("set_timestep",
+            WrapDeprecated(
+                cls_doc.set_timestep.doc_deprecated, &Class::set_timestep),
+            cls_doc.set_timestep.doc_deprecated)
+        .def("get_end_effector_velocity_gain",
+            WrapDeprecated(
+                cls_doc.get_end_effector_velocity_gain.doc_deprecated,
+                &Class::get_end_effector_velocity_gain),
+            cls_doc.get_end_effector_velocity_gain.doc_deprecated)
+        .def("set_end_effector_velocity_gain",
+            WrapDeprecated(
+                cls_doc.set_end_effector_velocity_gain.doc_deprecated,
+                &Class::set_end_effector_velocity_gain),
+            cls_doc.set_end_effector_velocity_gain.doc_deprecated)
+        .def("get_unconstrained_degrees_of_freedom_velocity_limit",
+            WrapDeprecated(
+                cls_doc.get_unconstrained_degrees_of_freedom_velocity_limit
+                    .doc_deprecated,
+                &Class::get_unconstrained_degrees_of_freedom_velocity_limit),
+            cls_doc.get_unconstrained_degrees_of_freedom_velocity_limit
+                .doc_deprecated)
+        .def("set_unconstrained_degrees_of_freedom_velocity_limit",
+            WrapDeprecated(
+                cls_doc.set_unconstrained_degrees_of_freedom_velocity_limit
+                    .doc_deprecated,
+                &Class::set_unconstrained_degrees_of_freedom_velocity_limit),
+            cls_doc.set_unconstrained_degrees_of_freedom_velocity_limit
+                .doc_deprecated);
+#pragma GCC diagnostic pop
   }
 
   m.def(
