@@ -1,0 +1,8 @@
+Through special arrangement with the authors, Drake binary releases incorporate
+a pre-compiled version of SNOPT[1] as part of the Mathematical Program toolbox.
+Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
+
+[1] https://ccom.ucsd.edu/~optimizers/solvers/snopt/
+
+Drake users who would like to compile Drake from source with SNOPT will need to
+purchase their own SNOPT source license from the website above.
