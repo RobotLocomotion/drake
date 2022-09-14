@@ -330,6 +330,23 @@ class PointCloud final {
   /// @throws std::exception if voxel_size <= 0.
   PointCloud VoxelizedDownSample(double voxel_size) const;
 
+  /// Estimates the normal vectors in `this` by fitting a plane at each point
+  /// in the cloud using up to `num_closest` points within Euclidean distance
+  /// `radius` from the point. If has_normals() is false, then new normals will
+  /// be allocated (and has_normals() will become true). Points for which the
+  /// normals cannot be estimated (because the `this` has less than two closest
+  /// points within the @p radius), will receive normal [NaN, NaN, NaN].
+  /// Normals estimated from two closest points will be orthogonal to the
+  /// vector between those points, but can be arbitrary in the last
+  /// dimension.
+  ///
+  /// @returns true iff all points were assigned normals by having at least
+  /// *three* closest points within @p radius.
+  ///
+  /// @pre @p radius > 0 and @p num_closest >= 3.
+  /// @throws std::exception if has_xyzs() is false.
+  bool EstimateNormals(double radius, int num_closest);
+
  private:
   void SetDefault(int start, int num);
 
@@ -339,7 +356,7 @@ class PointCloud final {
   // Represents the size of the point cloud.
   int size_{};
   // Represents which fields are enabled for this point cloud.
-  const pc_flags::Fields fields_{pc_flags::kXYZs};
+  pc_flags::Fields fields_{pc_flags::kXYZs};
   // Owns storage used for the point cloud.
   std::unique_ptr<Storage> storage_;
 };
