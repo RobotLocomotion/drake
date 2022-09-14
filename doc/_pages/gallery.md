@@ -11,7 +11,7 @@ aspect ratio.
 
 # Underactuated Robotics
 
-Drake is being used to teach [Underactuated Robotics](http://underactuated.csail.mit.edu/)
+Drake is being used to teach [Underactuated Robotics](https://underactuated.csail.mit.edu/)
 at MIT.  The course textbook has
 numerous examples of modeling, controlling, and analyzing many of the canonical
 problems in dynamics and control for robotics.
@@ -41,7 +41,7 @@ rigid-body contact.
 
 # Manipulation class at MIT
 
-Drake is being used to teach a new [course on manipulation at MIT](http://manipulation.csail.mit.edu/).
+Drake is being used to teach a new [course on manipulation at MIT](https://manipulation.csail.mit.edu/).
 The course software and materials give
 a complete autonomous manipulation pipeline, including deep and geometric
 perception, planning, and control.  Here is a highlight video of the class

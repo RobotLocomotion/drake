@@ -122,20 +122,6 @@ for instructions.
 
 
 <article markdown="1">
-## Citing Drake
-
-```
-@misc{drake,
- author = "Russ Tedrake and the Drake Development Team",
- title = "Drake: Model-based design and verification for robotics",
- year = 2019,
- url = "https://drake.mit.edu"
-}
-```
-</article>
-
-
-<article markdown="1">
 ## Examples
 
 We have a number of use cases demonstrated under drake/examples in the
@@ -147,6 +133,34 @@ We also have a number of [examples of using Drake as a external library](
 https://github.com/RobotLocomotion/drake-external-examples) in your own
 projects, including examples with various build systems and examples of how you
 might set up continuous integration.
+</article>
+
+
+<article markdown="1">
+## Articles
+
+[Drake: Model-based design in the age of robotics and machine learning](https://medium.com/toyotaresearch/drake-model-based-design-in-the-age-of-robotics-and-machine-learning-59938c985515)
+
+[Rethinking Contact Simulation for Robot Manipulation](https://medium.com/toyotaresearch/rethinking-contact-simulation-for-robot-manipulation-434a56b5ec88)
+
+[MIT Underactuated Robotics: Algorithms for Walking, Running, Swimming, Flying, and Manipulation](https://underactuated.csail.mit.edu/)
+
+[MIT Robotic Manipulation: Perception, Planning, and Control](https://manipulation.csail.mit.edu/)
+
+</article>
+
+
+<article markdown="1">
+## Citing Drake
+
+```
+@misc{drake,
+ author = "Russ Tedrake and the Drake Development Team",
+ title = "Drake: Model-based design and verification for robotics",
+ year = 2019,
+ url = "https://drake.mit.edu"
+}
+```
 </article>
 
 
