@@ -8,6 +8,7 @@
 #include "absl/container/flat_hash_map.h"
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <nanoflann.hpp>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
@@ -62,6 +63,17 @@ class PointCloud::Storage {
     CheckInvariants();
   }
 
+  // Update fields, allocating (but not initializing) new fields when needed.
+  void UpdateFields(pc_flags::Fields f) {
+    xyzs_.conservativeResize(NoChange, f.contains(pc_flags::kXYZs) ? size_ : 0);
+    normals_.conservativeResize(NoChange,
+                                f.contains(pc_flags::kNormals) ? size_ : 0);
+    rgbs_.conservativeResize(NoChange, f.contains(pc_flags::kRGBs) ? size_ : 0);
+    descriptors_.conservativeResize(NoChange, f.has_descriptor() ? size_ : 0);
+    fields_ = f;
+    CheckInvariants();
+  }
+
   Eigen::Ref<Matrix3X<T>> xyzs() { return xyzs_; }
   Eigen::Ref<Matrix3X<T>> normals() { return normals_; }
   Eigen::Ref<Matrix3X<C>> rgbs() { return rgbs_; }
@@ -87,7 +99,7 @@ class PointCloud::Storage {
     }
   }
 
-  const pc_flags::Fields fields_;
+  pc_flags::Fields fields_;
   int size_{};
   Matrix3X<T> xyzs_;
   Matrix3X<T> normals_;
@@ -478,6 +490,82 @@ PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
   }
 
   return down_sampled;
+}
+
+void PointCloud::EstimateNormals(double radius, int max_nearest_neighbors) {
+  DRAKE_DEMAND(radius > 0);
+  DRAKE_DEMAND(max_nearest_neighbors > 0);
+  DRAKE_THROW_UNLESS(size() >= 3);
+  DRAKE_THROW_UNLESS(has_xyzs());
+
+  if (!has_normals()) {
+    fields_ |= pc_flags::kNormals;
+    storage_->UpdateFields(fields_);
+  }
+
+  const Eigen::MatrixX3f data = xyzs().transpose();
+  nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixX3f, 3> kd_tree(3, data);
+
+  // Iterate through all points and compute their normals.
+  // TODO(russt): Make an OpenMP implementation of this.
+  VectorX<Eigen::Index> indices(max_nearest_neighbors);
+  Eigen::VectorXf distances(max_nearest_neighbors);
+  Eigen::Matrix3d covariance;
+  Eigen::Matrix<double, 9, 1> cumulants;
+
+  for (int i = 0; i < size_; ++i) {
+    // With nanoflann, I can either search for the max_nearest_neighbors and
+    // take the ones closer than radius, or search for all points closer than
+    // radius and keep the max_nearest_neighbors.
+    const int num_neighbors = kd_tree.index->knnSearch(
+        xyz(i).data(), max_nearest_neighbors, indices.data(), distances.data());
+
+    if (num_neighbors < 2) {
+      mutable_normal(i) = Eigen::Vector3f{0, 0, 1};
+      continue;
+    }
+
+    // Compute the covariance matrix.
+    {
+      cumulants.setZero();
+      int count = 0;
+      for (int j = 0; j < num_neighbors; ++j) {
+        if (distances[j] <= radius) {
+          ++count;
+          const Eigen::Vector3f& point = xyz(indices[j]);
+          cumulants(0) += point(0);
+          cumulants(1) += point(1);
+          cumulants(2) += point(2);
+          cumulants(3) += point(0) * point(0);
+          cumulants(4) += point(0) * point(1);
+          cumulants(5) += point(0) * point(2);
+          cumulants(6) += point(1) * point(1);
+          cumulants(7) += point(1) * point(2);
+          cumulants(8) += point(2) * point(2);
+        }
+      }
+      if (count < 2) {
+        mutable_normal(i) = Eigen::Vector3f{0, 0, 1};
+        continue;
+      }
+      cumulants /= count;
+      covariance(0, 0) = cumulants(3) - cumulants(0) * cumulants(0);
+      covariance(1, 1) = cumulants(6) - cumulants(1) * cumulants(1);
+      covariance(2, 2) = cumulants(8) - cumulants(2) * cumulants(2);
+      covariance(0, 1) = cumulants(4) - cumulants(0) * cumulants(1);
+      covariance(1, 0) = covariance(0, 1);
+      covariance(0, 2) = cumulants(5) - cumulants(0) * cumulants(2);
+      covariance(2, 0) = covariance(0, 2);
+      covariance(1, 2) = cumulants(7) - cumulants(1) * cumulants(2);
+      covariance(2, 1) = covariance(1, 2);
+    }
+
+    // TODO(russt): Open3d implements a "FastEigen3x3" for an optimized version
+    // of this. We probably should, too.
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver;
+    solver.compute(covariance, Eigen::ComputeEigenvectors);
+    mutable_normal(i) = solver.eigenvectors().col(0).cast<float>();
+  }
 }
 
 }  // namespace perception

@@ -1,0 +1,24 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # BSD
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "nanoflann",
+    hdrs = ["include/nanoflann.hpp"],
+    includes = ["include"],
+    deps = [],
+    linkstatic = 1,
+)
+
+# Install the license file.
+install(
+    name = "install",
+    docs = ["COPYING"],
+)

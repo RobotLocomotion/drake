@@ -63,6 +63,7 @@ load("@drake//tools/workspace/msgpack:repository.bzl", "msgpack_repository")
 load("@drake//tools/workspace/msgpack_lite_js:repository.bzl", "msgpack_lite_js_repository")  # noqa
 load("@drake//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
 load("@drake//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
+load("@drake//tools/workspace/nanoflann:repository.bzl", "nanoflann_repository")  # noqa
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
 load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
@@ -277,6 +278,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         mypy_extensions_internal_repository(name = "mypy_extensions_internal", mirrors = mirrors)  # noqa
     if "mypy_internal" not in excludes:
         mypy_internal_repository(name = "mypy_internal", mirrors = mirrors)
+    if "nanoflann" not in excludes:
+        nanoflann_repository(name = "nanoflann", mirrors = mirrors)
     if "net_sf_jchart2d" not in excludes:
         net_sf_jchart2d_repository(name = "net_sf_jchart2d", mirrors = mirrors)
     if "nlopt" not in excludes:

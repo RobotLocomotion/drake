@@ -42,6 +42,7 @@ drake_cc_library(
     deps = [
         "//common:unused",
         "@abseil_cpp_internal//absl/container:flat_hash_map",
+        "@nanoflann",
     ],
 )
 
@@ -91,6 +92,7 @@ drake_cc_googletest(
     name = "point_cloud_test",
     deps = [
         ":point_cloud",
+        "//common:random",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
     ],

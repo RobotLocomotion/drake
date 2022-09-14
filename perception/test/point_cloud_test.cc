@@ -5,11 +5,13 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/random.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 
 using Eigen::Matrix3Xf;
 using Eigen::Matrix4Xf;
+using Eigen::Vector3f;
 
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
@@ -381,10 +383,7 @@ GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
         double kTol = 1e-8;
         bool found_match = false;
         int i = 0;
-        std::cout << xyz.transpose() << std::endl;
         for (; i < down_sampled.size(); ++i) {
-          std::cout << i << ": " << down_sampled.xyz(i).transpose()
-                    << std::endl;
           if (CompareMatrices(down_sampled.xyz(i), xyz.cast<float>(), kTol)) {
             found_match = true;
             break;
@@ -410,6 +409,72 @@ GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
   down_sampled = cloud.VoxelizedDownSample(1.0);
   EXPECT_EQ(down_sampled.size(), 3);
   CheckHasPointAveragedFrom({5});
+}
+
+// Checks that normal has unit magnitude and that normal == expected up to a
+// sign flip.
+void CheckNormal(const Eigen::Ref<const Eigen::Vector3f>& normal,
+                 const Eigen::Ref<const Eigen::Vector3f>& expected,
+                 double kTolerance) {
+  EXPECT_NEAR(normal.norm(), 1.0, kTolerance)
+      << "Normal " << normal << " does not have unit length.";
+  EXPECT_NEAR(std::abs(normal.dot(expected)), 1.0, kTolerance)
+      << "normal.dot(expected) = " << normal.dot(expected);
+}
+
+// Test that point clouds that consistent of three points (defining a plane)
+// get estimated normals that match their closed-form solution.
+GTEST_TEST(PointCloudTest, EstimateNormalsPlane) {
+  PointCloud cloud(3);
+
+  cloud.mutable_xyzs().transpose() << 0, 0, 0, 0, 0, 1, 0, 1, 1;
+
+  EXPECT_FALSE(cloud.has_normals());
+  cloud.EstimateNormals(10, 3);
+  EXPECT_TRUE(cloud.has_normals());
+
+  double kTol = 1e-6;
+  for (int i = 0; i < 3; ++i) {
+    CheckNormal(cloud.normal(i), Vector3f{1, 0, 0}, kTol);
+  }
+
+  cloud.mutable_xyzs().transpose() << 0, 0, 0, 1, 0, 0, 1, 0, 1;
+
+  cloud.EstimateNormals(10, 3);
+  for (int i = 0; i < 3; ++i) {
+    CheckNormal(cloud.normal(i), Vector3f{0, 1, 0}, kTol);
+  }
+
+  cloud.mutable_xyzs().transpose() << 0, 0, 0, 1, 0, 0, 0, 1, 1;
+  cloud.EstimateNormals(10, 3);
+  for (int i = 0; i < 3; ++i) {
+    CheckNormal(cloud.normal(i),
+                Vector3f{0, 1.0 / std::sqrt(2.0), -1.0 / std::sqrt(2.0)}, kTol);
+  }
+}
+
+// Test that points uniformly randomly distributed on the surface of the sphere
+// get normals close to the true normal of the sphere.
+GTEST_TEST(PointCloudTest, EstimateNormalsSphere) {
+  const int kSize{10000};
+  PointCloud cloud(kSize);
+
+  // Sample from a Gaussian and project it onto the sphere.
+  RandomGenerator generator(1234);
+  std::normal_distribution<double> distribution(0, 1.0);
+  for (int i = 0; i < 3 * kSize; ++i) {
+    cloud.mutable_xyzs().data()[i] = distribution(generator);
+  }
+  for (int i = 0; i < kSize; ++i) {
+    cloud.mutable_xyz(i).normalize();
+  }
+
+  cloud.EstimateNormals(0.1, 30);
+
+  double kTol = 1e-3;  // This will be loose unless kSize gets very large.
+  for (int i = 0; i < kSize; ++i) {
+    CheckNormal(cloud.normal(i), cloud.xyz(i), kTol);
+  }
 }
 
 }  // namespace
