@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
+#include "drake/multibody/inverse_kinematics/angle_between_vectors_cost.h"
 #include "drake/multibody/inverse_kinematics/com_in_polyhedron_constraint.h"
 #include "drake/multibody/inverse_kinematics/com_position_constraint.h"
 #include "drake/multibody/inverse_kinematics/distance_constraint.h"
@@ -103,6 +104,10 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::arg("na_A"), py::arg("frameB"), py::arg("nb_B"),
             py::arg("angle_lower"), py::arg("angle_upper"),
             cls_doc.AddAngleBetweenVectorsConstraint.doc)
+        .def("AddAngleBetweenVectorsCost", &Class::AddAngleBetweenVectorsCost,
+            py::arg("frameA"), py::arg("na_A"), py::arg("frameB"),
+            py::arg("nb_B"), py::arg("c"),
+            cls_doc.AddAngleBetweenVectorsCost.doc)
         .def("AddMinimumDistanceConstraint",
             &Class::AddMinimumDistanceConstraint, py::arg("minimum_distance"),
             py::arg("threshold_distance") = 1.0,
@@ -167,6 +172,46 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 9>(), cls_doc.ctor.doc_autodiff);
+  }
+  {
+    using Class = AngleBetweenVectorsCost;
+    constexpr auto& cls_doc = doc.AngleBetweenVectorsCost;
+    using Ptr = std::shared_ptr<Class>;
+    py::class_<Class, solvers::Cost, Ptr>(
+        m, "AngleBetweenVectorsCost", cls_doc.doc)
+        .def(py::init([](const MultibodyPlant<double>* plant,
+                          const Frame<double>& frameA,
+                          const Eigen::Ref<const Eigen::Vector3d>& a_A,
+                          const Frame<double>& frameB,
+                          const Eigen::Ref<const Eigen::Vector3d>& b_B,
+                          double c, systems::Context<double>* plant_context) {
+          return std::make_unique<Class>(
+              plant, frameA, a_A, frameB, b_B, c, plant_context);
+        }),
+            py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
+            py::arg("frameB"), py::arg("b_B"), py::arg("c"),
+            py::arg("plant_context"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 8>(), cls_doc.ctor.doc_double)
+        .def(
+            py::init([](const MultibodyPlant<AutoDiffXd>* plant,
+                         const Frame<AutoDiffXd>& frameA,
+                         const Eigen::Ref<const Eigen::Vector3d>& a_A,
+                         const Frame<AutoDiffXd>& frameB,
+                         const Eigen::Ref<const Eigen::Vector3d>& b_B, double c,
+                         systems::Context<AutoDiffXd>* plant_context) {
+              return std::make_unique<Class>(
+                  plant, frameA, a_A, frameB, b_B, c, plant_context);
+            }),
+            py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
+            py::arg("frameB"), py::arg("b_B"), py::arg("c"),
+            py::arg("plant_context"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 8>(), cls_doc.ctor.doc_autodiff);
   }
   {
     using Class = PointToPointDistanceConstraint;

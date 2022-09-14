@@ -14,6 +14,7 @@
 #include "drake/multibody/parsing/model_directives.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/systems/analysis/simulator_config.h"
+#include "drake/systems/sensors/camera_config.h"
 #include "drake/visualization/visualization_config.h"
 
 namespace drake {
@@ -31,6 +32,7 @@ struct Scenario {
     a->Visit(DRAKE_NVP(directives));
     a->Visit(DRAKE_NVP(lcm_buses));
     a->Visit(DRAKE_NVP(model_drivers));
+    a->Visit(DRAKE_NVP(cameras));
     a->Visit(DRAKE_NVP(visualization));
   }
 
@@ -67,6 +69,12 @@ struct Scenario {
       manipulation::schunk_wsg::SchunkWsgDriver,
       manipulation::ZeroForceDriver>;
   std::map<std::string, DriverVariant> model_drivers;
+
+  /* Cameras to add to the scene (and broadcast over LCM). The key for each
+   camera is a helpful mnemonic, but does not serve a technical role. The
+   CameraConfig::name field is still the name that will appear in the Diagram
+   artifacts. */
+  std::map<std::string, systems::sensors::CameraConfig> cameras;
 
   visualization::VisualizationConfig visualization;
 };

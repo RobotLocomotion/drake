@@ -63,11 +63,15 @@ bool IsEmpty(const Eigen::Ref<const MatrixXd>& A,
  constraints in prog. This is done by solving a small linear program
  and modifying the coefficients of  `new_constraint` binding. This method may
  throw a runtime error if the constraints are ill-conditioned.
+ @param tol. We check if the prog already implies cᵀ x ≤ d + tol. If yes then we
+ think this constraint cᵀ x ≤ d is redundant. Larger tol means that we are less
+ strict on the containment.
  */
 bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
                  solvers::MathematicalProgram* prog,
                  Binding<solvers::LinearConstraint>* new_constraint,
-                 Binding<solvers::LinearCost>* program_cost_binding) {
+                 Binding<solvers::LinearCost>* program_cost_binding,
+                 double tol) {
   // Ensures that prog is an LP.
   DRAKE_DEMAND(prog->GetAllConstraints().size() ==
                prog->GetAllLinearConstraints().size());
@@ -97,7 +101,7 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
   // If -result.get_optimal_cost() > other.b()(i) then the inequality is
   // irredundant. Without this constant
   // IrredundantBallIntersectionContainsBothOriginal fails.
-  return !(polyhedron_is_empty || -result.get_optimal_cost() > d + 1E-9);
+  return !(polyhedron_is_empty || -result.get_optimal_cost() > d + tol);
 }
 
 }  // namespace
@@ -210,9 +214,10 @@ HPolyhedron HPolyhedron::CartesianPower(int n) const {
 }
 
 HPolyhedron HPolyhedron::Intersection(const HPolyhedron& other,
-                                      bool check_for_redundancy) const {
+                                      bool check_for_redundancy,
+                                      double tol) const {
   if (check_for_redundancy) {
-    return this->DoIntersectionWithChecks(other);
+    return this->DoIntersectionWithChecks(other, tol);
   }
   return this->DoIntersectionNoChecks(other);
 }
@@ -316,7 +321,7 @@ bool HPolyhedron::DoIsBounded() const {
   return result.is_success();
 }
 
-bool HPolyhedron::ContainedIn(const HPolyhedron& other) const {
+bool HPolyhedron::ContainedIn(const HPolyhedron& other, double tol) const {
   DRAKE_DEMAND(other.A().cols() == A_.cols());
   // `this` defines an empty set and therefore is contained in any `other`
   // HPolyhedron.
@@ -339,7 +344,8 @@ bool HPolyhedron::ContainedIn(const HPolyhedron& other) const {
     // If any of the constraints of `other` are irredundant then `this` is
     // not contained in `other`.
     if (!IsRedundant(other.A().row(i), other.b()(i), &prog,
-                     &redundant_constraint_binding, &program_cost_binding)) {
+                     &redundant_constraint_binding, &program_cost_binding,
+                     tol)) {
       return false;
     }
   }
@@ -358,8 +364,8 @@ HPolyhedron HPolyhedron::DoIntersectionNoChecks(
   return {A_intersect, b_intersect};
 }
 
-HPolyhedron HPolyhedron::DoIntersectionWithChecks(
-    const HPolyhedron& other) const {
+HPolyhedron HPolyhedron::DoIntersectionWithChecks(const HPolyhedron& other,
+                                                  double tol) const {
   DRAKE_DEMAND(other.A().cols() == A_.cols());
 
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
@@ -389,7 +395,8 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(
   int num_kept = A_.rows();
   for (int i = 0; i < other.A().rows(); ++i) {
     if (!IsRedundant(other.A().row(i), other.b()(i), &prog,
-                     &redundant_constraint_binding, &program_cost_binding)) {
+                     &redundant_constraint_binding, &program_cost_binding,
+                     tol)) {
       A.row(num_kept) = other.A().row(i);
       b.row(num_kept) = other.b().row(i);
       ++num_kept;
@@ -401,7 +408,7 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(
   return {A.topRows(num_kept), b.topRows(num_kept)};
 }
 
-HPolyhedron HPolyhedron::ReduceInequalities() const {
+HPolyhedron HPolyhedron::ReduceInequalities(double tol) const {
   const int num_inequalities = A_.rows();
   const int num_vars = A_.cols();
 
@@ -440,8 +447,8 @@ HPolyhedron HPolyhedron::ReduceInequalities() const {
     if (std::get<0>(IsInfeasible(prog))) {
       kept_indices.erase(excluded_index);
     } else if (IsRedundant(A_.row(excluded_index), b_(excluded_index), &prog,
-                           &redundant_constraint_binding,
-                           &program_cost_binding)) {
+                           &redundant_constraint_binding, &program_cost_binding,
+                           tol)) {
       kept_indices.erase(excluded_index);
     }
   }

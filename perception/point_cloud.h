@@ -238,11 +238,11 @@ class PointCloud final {
 
   /// Returns access to a descriptor value.
   /// @pre `has_descriptors()` must be true.
-  VectorX<T> descriptor(int i) const { return descriptors().col(i); }
+  VectorX<D> descriptor(int i) const { return descriptors().col(i); }
 
   /// Returns mutable access to a descriptor value.
   /// @pre `has_descriptors()` must be true.
-  Eigen::Ref<VectorX<T>> mutable_descriptor(int i) {
+  Eigen::Ref<VectorX<D>> mutable_descriptor(int i) {
     return mutable_descriptors().col(i);
   }
 
@@ -318,6 +318,17 @@ class PointCloud final {
 
   // TODO(eric.cousineau): Add mechanism for handling organized / unorganized
   // point clouds.
+
+  /// Returns a down-sampled point cloud by grouping all xyzs in this cloud
+  /// into a 3D grid with cells of dimension voxel_size. Each occupied voxel
+  /// will result in one point in the downsampled cloud, with a location
+  /// corresponding to the centroid of the points in that voxel. Points with
+  /// non-finite xyz values are ignored. All other fields (e.g. rgbs, normals,
+  /// and descriptors) with finite values will also be averaged across the
+  /// points in a voxel.
+  /// @throws std::exception if has_xyzs() is false.
+  /// @throws std::exception if voxel_size <= 0.
+  PointCloud VoxelizedDownSample(double voxel_size) const;
 
  private:
   void SetDefault(int start, int num);

@@ -38,6 +38,7 @@ drake_cc_library(
     name = "kinematic_evaluators",
     srcs = [
         "angle_between_vectors_constraint.cc",
+        "angle_between_vectors_cost.cc",
         "com_in_polyhedron_constraint.cc",
         "com_position_constraint.cc",
         "distance_constraint.cc",
@@ -55,6 +56,7 @@ drake_cc_library(
     ],
     hdrs = [
         "angle_between_vectors_constraint.h",
+        "angle_between_vectors_cost.h",
         "com_in_polyhedron_constraint.h",
         "com_position_constraint.h",
         "distance_constraint.h",
@@ -200,6 +202,14 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "angle_between_vectors_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_evaluators",
+    ],
+)
+
+drake_cc_googletest(
+    name = "angle_between_vectors_cost_test",
     deps = [
         ":inverse_kinematics_test_utilities",
         ":kinematic_evaluators",

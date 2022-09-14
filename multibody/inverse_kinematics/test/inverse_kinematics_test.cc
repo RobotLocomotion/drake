@@ -310,6 +310,38 @@ TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsConstraint) {
   EXPECT_NEAR(angle, angle_lower, 1E-6);
 }
 
+TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsCost) {
+  const Eigen::Vector3d na_A(-0.1, -0.2, -0.3);
+  const Eigen::Vector3d nb_B(0.2, 0.3, 0.5);
+  const double c = 10;
+  auto binding =
+      ik_.AddAngleBetweenVectorsCost(body1_frame_, na_A, body2_frame_, nb_B, c);
+
+  // We don't need to test the cost implementation, only that the arguments are
+  // passed correctly.  Just set an arbitrary (but valid) q and evaluate the
+  // cost.
+  math::RigidTransform<double> X_WA(
+      math::RollPitchYaw<double>(0.32, -0.24, -0.51),
+      Eigen::Vector3d(0.1, 0.3, 0.72));
+  math::RigidTransform<double> X_WB(math::RollPitchYaw<double>(8.1, 0.42, -0.2),
+                                    Eigen::Vector3d(-0.84, 0.2, 1.4));
+  auto context = two_bodies_plant_->CreateDefaultContext();
+  two_bodies_plant_->SetFreeBodyPose(
+      context.get(), two_bodies_plant_->GetBodyByName("body1"), X_WA);
+  two_bodies_plant_->SetFreeBodyPose(
+      context.get(), two_bodies_plant_->GetBodyByName("body2"), X_WB);
+  ik_.get_mutable_prog()->SetInitialGuess(
+      ik_.q(), two_bodies_plant_->GetPositions(*context));
+
+  const Eigen::Vector3d na_W = X_WA.rotation() * na_A;
+  const Eigen::Vector3d nb_W = X_WB.rotation() * nb_B;
+  const double cos_theta = na_W.dot(nb_W) / (na_W.norm() * nb_W.norm());
+  const double expected_cost = c * (1 - cos_theta);
+
+  EXPECT_NEAR(ik_.prog().EvalBindingAtInitialGuess(binding)[0], expected_cost,
+              1e-12);
+}
+
 TEST_F(TwoFreeBodiesTest, PointToPointDistanceConstraint) {
   const Eigen::Vector3d p_B1P1(0.2, -0.4, 0.9);
   const Eigen::Vector3d p_B2P2(1.4, -0.1, 1.8);

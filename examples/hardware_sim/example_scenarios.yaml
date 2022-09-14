@@ -18,6 +18,12 @@ Demo:
   - add_weld:
       parent: iiwa_on_world
       child: iiwa::base
+  cameras:
+    oracular_view:
+      name: camera_0
+      X_PB:
+        translation: [1.5, 0.8, 1.25]
+        rotation: !Rpy { deg: [-120, 5, 125] }
   model_drivers:
     iiwa: !ZeroForceDriver {}
     wsg: !SchunkWsgDriver {}

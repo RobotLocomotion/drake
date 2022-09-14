@@ -11,6 +11,7 @@ while some (separate) controller operates the robot, without extra hassle. */
 
 #include <gflags/gflags.h>
 
+#include "drake/common/unused.h"
 #include "drake/examples/hardware_sim/scenario.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver_functions.h"
 #include "drake/manipulation/util/apply_driver_configs.h"
@@ -22,6 +23,7 @@ while some (separate) controller operates the robot, without extra hassle. */
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
+#include "drake/systems/sensors/camera_config_functions.h"
 #include "drake/visualization/visualization_config_functions.h"
 
 DEFINE_string(scenario_file, "",
@@ -49,6 +51,7 @@ using systems::DiagramBuilder;
 using systems::Simulator;
 using systems::lcm::ApplyLcmBusConfig;
 using systems::lcm::LcmBuses;
+using systems::sensors::ApplyCameraConfig;
 using visualization::ApplyVisualizationConfig;
 
 /* Class that holds the configuration and data of a simulation. */
@@ -92,6 +95,13 @@ void Simulation::Setup() {
   // Add actuation inputs.
   ApplyDriverConfigs(scenario_.model_drivers, sim_plant, added_models,
                      lcm_buses, &builder);
+
+  // Add scene cameras.
+  DrakeLcmInterface* camera_lcm = lcm_buses.Find("Cameras", "default");
+  for (const auto& [yaml_name, camera] : scenario_.cameras) {
+    unused(yaml_name);
+    ApplyCameraConfig(camera, &sim_plant, &builder, &scene_graph, camera_lcm);
+  }
 
   // Add visualization.
   ApplyVisualizationConfig(scenario_.visualization, &builder, &lcm_buses);

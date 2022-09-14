@@ -121,9 +121,9 @@ class TestGeometryOptimization(unittest.TestCase):
         h_half_box = mut.HPolyhedron.MakeBox(
             lb=[-0.5, -0.5, -0.5], ub=[0.5, 0.5, 0.5])
         self.assertTrue(h_half_box.ContainedIn
-                        (other=h_unit_box))
-        h_half_box2 = h_half_box.Intersection(other=h_unit_box,
-                                              check_for_redundancy=True)
+                        (other=h_unit_box, tol=1E-9))
+        h_half_box2 = h_half_box.Intersection(
+            other=h_unit_box, check_for_redundancy=True, tol=1E-9)
         self.assertIsInstance(h_half_box2, mut.HPolyhedron)
         self.assertEqual(h_half_box2.ambient_dimension(), 3)
         np.testing.assert_array_almost_equal(
@@ -137,7 +137,8 @@ class TestGeometryOptimization(unittest.TestCase):
             other=h_unit_box,
             check_for_redundancy=False)
         # Check that the ReduceInequalities binding works.
-        h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities()
+        h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities(
+            tol=1E-9)
 
     def test_hyper_ellipsoid(self):
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)

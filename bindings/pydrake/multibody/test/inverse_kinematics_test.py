@@ -291,6 +291,15 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(self.q), q_val))
 
+    def test_AddAngleBetweenVectorsCost(self):
+        na_A = np.array([0.2, -0.4, 0.9])
+        nb_B = np.array([1.4, -0.1, 1.8])
+
+        self.ik_two_bodies.AddAngleBetweenVectorsCost(
+            frameA=self.body1_frame, na_A=na_A,
+            frameB=self.body2_frame, nb_B=nb_B,
+            c=10.)
+
     def test_AddPointToPointDistanceConstraint(self):
         p_B1P1 = np.array([0.2, -0.4, 0.9])
         p_B2P2 = np.array([1.4, -0.1, 1.8])
@@ -481,6 +490,18 @@ class TestConstraints(unittest.TestCase):
             angle_upper=0.2 * math.pi,
             plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
+
+    @check_type_variables
+    def test_angle_between_vectors_cost(self, variables):
+        cost = ik.AngleBetweenVectorsCost(
+            plant=variables.plant,
+            frameA=variables.body1_frame,
+            a_A=[0.2, -0.4, 0.9],
+            frameB=variables.body2_frame,
+            b_B=[1.4, -0.1, 1.8],
+            c=10.,
+            plant_context=variables.plant_context)
+        self.assertIsInstance(cost, mp.Cost)
 
     @check_type_variables
     def test_distance_constraint(self, variables):
