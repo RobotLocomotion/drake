@@ -12,8 +12,8 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "nanoflann",
     hdrs = ["include/nanoflann.hpp"],
-    includes = ["include"],
-    deps = [],
+    include_prefix = "drake_vendor",
+    strip_include_prefix = "include",
     linkstatic = 1,
 )
 
