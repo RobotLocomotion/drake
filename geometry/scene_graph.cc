@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/systems/framework/context.h"
@@ -255,6 +256,44 @@ void SceneGraph<T>::AddRenderer(
 template <typename T>
 bool SceneGraph<T>::HasRenderer(const std::string& name) const {
   return model_.HasRenderer(name);
+}
+
+template <typename T>
+bool SceneGraph<T>::HasRendererOrThrow(const std::string& name,
+                                       const std::string& type_name) const {
+  const render::RenderEngine* engine = model_.GetRenderEngineByName(name);
+  if (engine == nullptr) {
+    return false;
+  }
+
+  // This implementation is trying to accomplish three things:
+  //   1. An API that doesn't depend on knowing about RenderEngine
+  //      implementations (so don't template on engine type).
+  //   2. A *compact* way to declare expected type (e.g., "RenderEngineVtk"
+  //      instead of drake::geometry::render::internal::RenderEngineVtk").
+  //   3. Compact implementation of the test.
+  //
+  // The use of nice type name accomplishes all three goals, however it means
+  // we lose the ability to distinguish RenderEngine implementations with the
+  // same names but different namespaces. That inability doesn't seem overly
+  // dangerous. But if push comes to shove, we should rethink how we want to
+  // do this. Some alternative method to map instance to string? Some alternate
+  // way to specify type? Instead of removing *all* namespaces, we can just
+  // see if the NiceTypeName ends with the given type_name, so that if we need
+  // to distinguish between bob::MyRenderEngine and alice::MyRenderEngine we
+  // can.
+
+  const std::string actual_type_name =
+      NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*engine));
+
+  if (actual_type_name == type_name) {
+    return true;
+  }
+
+  throw std::logic_error(fmt::format(
+      "SceneGraph::HasRendererOrThrow(): SceneGraph has a renderer named "
+      "'{}' but it is not of type '{}'.",
+      name, type_name));
 }
 
 template <typename T>

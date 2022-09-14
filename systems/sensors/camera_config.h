@@ -50,6 +50,7 @@ struct CameraConfig {
     a->Visit(DRAKE_NVP(X_BD));
     a->Visit(DRAKE_NVP(renderer_name));
     a->Visit(DRAKE_NVP(background));
+    a->Visit(DRAKE_NVP(renderer_class));
     a->Visit(DRAKE_NVP(name));
     a->Visit(DRAKE_NVP(fps));
     a->Visit(DRAKE_NVP(rgb));
@@ -256,6 +257,17 @@ struct CameraConfig {
    set of values. Which one is undefined. */
   geometry::Rgba background{204 / 255.0, 229 / 255.0, 255 / 255.0, 1.0};
 
+  /** The choice of render engine implementation to use. The value should be
+   one of empty, 'RenderEngineVtk', or 'RenderEngineGl'. If nothing is
+   specified, the slower, more portable, more robust RenderEngineVtk will be
+   instantiated. RenderEngineGl can be selected if you are on Ubuntu and need
+   the improved performance (at the *possible* cost of lesser image fidelity).
+
+   @pre `renderer_class` is one of 'RenderEngineVtk' or 'RenderEngineGl'.
+   @pre For two cameras with the same `renderer_name` value, they must also
+        specify the same `renderer_class` (either implicitly or explicitly).
+   @sa drake::geometry::SceneGraph::HasRendererOrThrow(). */
+  std::string renderer_class;
   //@}
 
   /** @name Publishing properties */

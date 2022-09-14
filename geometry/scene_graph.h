@@ -652,9 +652,22 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void AddRenderer(std::string name,
                    std::unique_ptr<render::RenderEngine> renderer);
 
-  /** Reports if this %SceneGraph has a renderer registered to the given name.
-   */
+  /** Reports true if this %SceneGraph has a renderer registered with the given
+   name. */
   bool HasRenderer(const std::string& name) const;
+
+  /** Reports true if this %SceneGraph has a renderer registered to the given
+   `name` of the type indicated by `type_name`. Reports `false` if no render
+   engine has the `name`.
+
+   @pre `type_name` is the name of a render::RenderEngine implementation without
+         qualifying namespaces (e.g., `RenderEngineVtk` or `MyRenderEngine`).
+   @note This function cannot distinguish between two render::RenderEngine
+         implementations that use the same name but in different namespaces.
+   @throws std::exception if a renderer with the given `name` exists but is of
+                          a different type. */
+  bool HasRendererOrThrow(const std::string& name,
+                          const std::string& type_name) const;
 
   /** Reports the number of renderers registered to this %SceneGraph.  */
   int RendererCount() const;

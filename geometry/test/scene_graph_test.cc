@@ -499,6 +499,28 @@ TEST_F(SceneGraphTest, RendererSmokeTest) {
   EXPECT_TRUE(scene_graph_.HasRenderer(kRendererName));
 }
 
+// Querying the existence of a render engine *by type* is SceneGraph logic so
+// we test it here.
+TEST_F(SceneGraphTest, HasRendererOfType) {
+  const std::string kRendererName = "bob";
+
+  DRAKE_EXPECT_NO_THROW(scene_graph_.AddRenderer(
+      kRendererName, make_unique<DummyRenderEngine>()));
+
+  // If no renderer has the name, the type doesn't matter.
+  EXPECT_FALSE(
+      scene_graph_.HasRendererOrThrow("non-existent", "BadRenderType"));
+
+  // Name and type match.
+  EXPECT_TRUE(
+      scene_graph_.HasRendererOrThrow(kRendererName, "DummyRenderEngine"));
+
+  // Name maps to different kind of render engine.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      scene_graph_.HasRendererOrThrow(kRendererName, "RenderEngineVtk"),
+      ".*not of type 'RenderEngineVtk'.");
+}
+
 // SceneGraph provides a thin wrapper on the GeometryState role manipulation
 // code. These tests are just smoke tests that the functions work. It relies on
 // GeometryState to properly unit test the full behavior.
