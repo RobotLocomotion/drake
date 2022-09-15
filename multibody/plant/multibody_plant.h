@@ -3466,6 +3466,53 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         Js_v_ABi_E);
   }
 
+  /// For each point Bi affixed/welded to a frame B, calculates Jq_p_AoBi, Bi's
+  /// position vector Jacobian in frame A with respect to the generalized
+  /// positions q ≜ [q₁ ... qₙ]ᵀ as
+  /// <pre>
+  ///      Jq_p_AoBi ≜ [ ᴬ∂(p_AoBi)/∂q₁,  ...  ᴬ∂(p_AoBi)/∂qₙ ]
+  /// </pre>
+  /// where p_AoBi is Bi's position vector from point Ao (frame A's origin) and
+  /// ᴬ∂(p_AoBi)/∂qᵣ denotes the partial derivative in frame A of p_AoBi with
+  /// respect to the generalized position qᵣ, where qᵣ is one of q₁ ... qₙ.
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] frame_B The frame on which point Bi is affixed/welded.
+  /// @param[in] p_BoBi_B A position vector or list of k position vectors from
+  /// Bo (frame_B's origin) to points Bi (Bi is regarded as affixed to B), where
+  /// each position vector is expressed in frame_B.
+  /// @param[in] frame_A The frame in which partial derivatives are calculated
+  /// and the frame in which point Ao is affixed.
+  /// @param[in] frame_E The frame in which the Jacobian Jq_p_AoBi is expressed
+  /// on output.
+  /// @param[out] Jq_p_AoBi_E Point Bi's position vector Jacobian in frame A
+  /// with generalized positions q, expressed in frame E. Jq_p_AoBi_E is a
+  /// `3*k x n` matrix, where k is the number of points Bi and n is the number
+  /// of elements in q.  The Jacobian is a function of only generalized
+  /// positions q (which are pulled from the context).
+  /// @throws std::exception if Jq_p_AoBi_E is nullptr or not sized `3*k x n`.
+  /// @note Jq̇_v_ABi = Jq_p_AoBi.  In other words, point Bi's velocity Jacobian
+  /// in frame A with respect to q̇ is equal to point Bi's position vector
+  /// Jacobian in frame A with respect to q.
+  /// <pre>
+  /// [∂(v_ABi)/∂q̇₁, ... ∂(v_ABi)/∂q̇ₙ] = [ᴬ∂(p_AoBi)/∂q₁, ... ᴬ∂(p_AoBi)/∂qₙ]
+  /// </pre>
+  /// Note: Jq_p_AaBi = Jq_p_AoBi, where point Aa is 𝑎𝑛𝑦 point fixed/welded to
+  /// frame A, i.e., this calculation's result is the same if point Ao is
+  /// replaced with any point fixed on frame A.
+  void CalcJacobianPositionVector(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
+      const Frame<T>& frame_A, const Frame<T>& frame_E,
+      EigenPtr<MatrixX<T>> Jq_p_AoBi_E) const {
+    // TODO(mitiguy) Consider providing the Jacobian-times-vector operation.
+    //  Sometimes it is all that is needed and more efficient to compute.
+    this->ValidateContext(context);
+    DRAKE_DEMAND(Jq_p_AoBi_E != nullptr);
+    internal_tree().CalcJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kQDot, frame_B, frame_B, p_BoBi_B,
+        frame_A, frame_E, Jq_p_AoBi_E);
+  }
+
   /// Calculates J𝑠_v_ACcm_E, point Ccm's translational velocity Jacobian in
   /// frame A with respect to "speeds" 𝑠, expressed in frame E, where point CCm
   /// is the center of mass of the system of all non-world bodies contained in

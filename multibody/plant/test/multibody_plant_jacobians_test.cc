@@ -108,6 +108,20 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityNonUnitQuaternion) {
                                             frame_W,
                                             &Jq_v_WEi_W);
 
+  // Verify Jq_p_WoEi_W = Jq̇_v_WEi_W, i.e., ensure point Ei's position vector
+  // Jacobian in frame W with respect to q (expressed in W) is equal to point
+  // Ei's velocity Jacobian in frame W with respect to q̇ (expressed in W).
+  MatrixX<double> Jq_p_WoEi_W(3 * kNumPoints, num_positions);
+  plant_->CalcJacobianPositionVector(*context_,
+                                      frame_E,
+                                      p_EoEi_E,
+                                      frame_W,
+                                      frame_W,
+                                      &Jq_p_WoEi_W);
+  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(Jq_p_WoEi_W, Jq_v_WEi_W,
+                              kTolerance, MatrixCompareType::relative));
+
   // Create shortcuts to end-effector link frame E and world frame W.
   const Body<AutoDiffXd>& end_effector_autodiff =
       plant_autodiff_->get_body(end_effector_link_->index());
@@ -123,7 +137,6 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityNonUnitQuaternion) {
       p_EoEi_E, &p_WoEi_W_deriv_wrt_q);
 
   // Verify the Jacobian Jq_v_WEi_W matches the one from auto-differentiation.
-  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(Jq_v_WEi_W, p_WoEi_W_deriv_wrt_q,
                               kTolerance, MatrixCompareType::relative));
 }
@@ -226,6 +239,19 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   bottom_three_rows = Jq_V_WEp.template bottomRows<3>();
   EXPECT_TRUE(CompareMatrices(Jq_v_WEp, bottom_three_rows, kTolerance,
                               MatrixCompareType::relative));
+
+  // Verify Jq_p_WoEp_W = Jq̇_v_WEp_W, i.e., ensure point Ep's position vector
+  // Jacobian in frame W with respect to q (expressed in W) is equal to point
+  // Ep's velocity Jacobian in frame W with respect to q̇ (expressed in W).
+  MatrixX<double> Jq_p_WoEp_W(3, num_generalized_positions);
+  plant_->CalcJacobianPositionVector(*context_,
+                                      end_effector_frame,
+                                      p_EoEp_E,
+                                      world_frame,
+                                      world_frame,
+                                      &Jq_p_WoEp_W);
+  EXPECT_TRUE(CompareMatrices(Jq_p_WoEp_W, Jq_v_WEp,
+                              kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
@@ -256,6 +282,20 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
                                             frame_W,
                                             &Jq_v_WEi_W);
 
+  // Verify Jq_p_WoEi_W = Jq̇_v_WEi_W, i.e., ensure point Ei's position vector
+  // Jacobian in frame W with respect to q (expressed in W) is equal to point
+  // Ei's velocity Jacobian in frame W with respect to q̇ (expressed in W).
+  MatrixX<double> Jq_p_WoEi_W(3 * kNumPoints, num_positions);
+  plant_->CalcJacobianPositionVector(*context_,
+                                      frame_E,
+                                      p_EoEi_E,
+                                      frame_W,
+                                      frame_W,
+                                      &Jq_p_WoEi_W);
+  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(Jq_p_WoEi_W, Jq_v_WEi_W,
+                              kTolerance, MatrixCompareType::relative));
+
   // Create shortcuts to end-effector link frame E and world frame W.
   const Body<AutoDiffXd>& end_effector_autodiff =
       plant_autodiff_->get_body(end_effector_link_->index());
@@ -275,7 +315,6 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   EXPECT_EQ(p_WoEi_W_deriv_wrt_q.cols(), num_positions);
 
   // Verify the Jacobian Jq_v_WEi_W matches the one from auto-differentiation.
-  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(Jq_v_WEi_W, p_WoEi_W_deriv_wrt_q,
                               kTolerance, MatrixCompareType::relative));
 }
