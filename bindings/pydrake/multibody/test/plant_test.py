@@ -899,18 +899,29 @@ class TestPlant(unittest.TestCase):
                 frame_A=world_frame, frame_E=world_frame)
             self.assert_sane(Js_w_AB_E)
             self.assertEqual(Js_w_AB_E.shape, (3, nw))
+
             Js_v_AB_E = plant.CalcJacobianTranslationalVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
                 p_BoBi_B=np.zeros(3), frame_A=world_frame, frame_E=world_frame)
             self.assert_sane(Js_v_AB_E)
             self.assertEqual(Js_v_AB_E.shape, (3, nw))
-
             Js_v_AB_E = plant.CalcJacobianTranslationalVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
                 p_BoBi_B=np.zeros((3, 3)), frame_A=world_frame,
                 frame_E=world_frame)
             self.assert_sane(Js_v_AB_E)
             self.assertEqual(Js_v_AB_E.shape, (9, nw))
+
+            Jq_p_AoBi_E = plant.CalcJacobianPositionVector(
+                context=context, frame_B=base_frame, p_BoBi_B=np.zeros(3),
+                frame_A=world_frame, frame_E=world_frame)
+            self.assert_sane(Jq_p_AoBi_E)
+            self.assertEqual(Jq_p_AoBi_E.shape, (3, nq))
+            Jq_p_AoBi_E = plant.CalcJacobianPositionVector(
+                context=context, frame_B=base_frame, p_BoBi_B=np.zeros((3, 3)),
+                frame_A=world_frame, frame_E=world_frame)
+            self.assert_sane(Jq_p_AoBi_E)
+            self.assertEqual(Jq_p_AoBi_E.shape, (9, nq))
 
         L_WSP_W = plant.CalcSpatialMomentumInWorldAboutPoint(
             context=context, p_WoP_W=np.zeros(3))
