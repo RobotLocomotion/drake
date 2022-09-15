@@ -214,18 +214,20 @@ drake_cc_googletest(
     ],
 )
 
+# The targets below are for acceptance tests and an integration test.
+
 drake_py_binary(
-    name = "gltf_render_server",
-    srcs = ["test/gltf_render_server.py"],
-    data = [":gltf_render_server_backend"],
+    name = "server_demo",
+    srcs = ["test/server_demo.py"],
+    data = [":server_vtk_backend"],
     deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
 )
 
 drake_cc_binary(
-    name = "gltf_render_server_backend",
-    srcs = ["test/gltf_render_server_backend.cc"],
+    name = "server_vtk_backend",
+    srcs = ["test/server_vtk_backend.cc"],
     deps = [
         "//common:filesystem",
         "//geometry/render:render_label",
@@ -244,8 +246,8 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
-    name = "gltf_render_client_example",
-    srcs = ["test/gltf_render_client_example.cc"],
+    name = "client_demo",
+    srcs = ["test/client_demo.cc"],
     data = [
         ":test/4_color_texture.png",
         ":test/example_scene.sdf",
@@ -272,11 +274,11 @@ drake_cc_binary(
 )
 
 drake_py_unittest(
-    name = "gltf_render_binary_test",
+    name = "acceptance_test",
     data = [
-        ":gltf_render_client_example",
-        ":gltf_render_server",
-        ":gltf_render_server_backend",
+        ":client_demo",
+        ":server_demo",
+        ":server_vtk_backend",
     ],
     deps = [
         "@bazel_tools//tools/python/runfiles",

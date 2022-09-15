@@ -160,13 +160,14 @@ RigidTransformd ParseCameraPose(const std::string& input_str) {
 }
 
 // Validates `save_dir` and determines whether image saving will be enabled.
+// Throws if an non-empty but invalid directory is supplied.
 bool IsValidSaveDirectory(const std::string& save_dir) {
   if (save_dir.empty())
     return false;
 
   if (!filesystem::exists(save_dir) || !filesystem::is_directory(save_dir)) {
     throw std::logic_error(fmt::format(
-        "Provided save_dir {} is invalid. Disabling image saving", save_dir));
+        "Provided save_dir {} is invalid", save_dir));
   }
   return true;
 }

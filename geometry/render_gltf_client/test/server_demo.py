@@ -49,7 +49,7 @@ CLEANUP = True
 
 
 """Where to store data files during the execution of the program."""
-TMP_DIR = Path(os.environ.get("TEST_TMPDIR", "/tmp")) / "gltf_render_server"
+TMP_DIR = Path(os.environ.get("TEST_TMPDIR", "/tmp")) / "server_demo"
 TMP_DIR.mkdir(exist_ok=True)
 
 
@@ -377,7 +377,7 @@ def render_callback(render_request: RenderRequest) -> str:
     # Locate the binary of the renderer.
     runfiles = CreateRunfiles()
     backend_bin = runfiles.Rlocation(
-        "drake/geometry/render_gltf_client/gltf_render_server_backend"
+        "drake/geometry/render_gltf_client/server_vtk_backend"
     )
 
     # Determine the extension and the file path of the rendering.
