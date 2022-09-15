@@ -72,6 +72,7 @@ class TestPerception(unittest.TestCase):
         pc.normals()
         pc.mutable_normal(i=0)
         pc.normal(i=0)
+        pc.FlipNormalsTowardPoint(p_CP=[0, 0, 1])
         self.check_array(pc.mutable_rgbs(), np.uint8, (3, count))
         pc.rgbs()
         pc.mutable_rgb(i=0)
