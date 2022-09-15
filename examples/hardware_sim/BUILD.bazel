@@ -20,7 +20,6 @@ drake_cc_library(
     interface_deps = [
         "//common:name_value",
         "//lcm:drake_lcm_params",
-        "//manipulation/kuka_iiwa:iiwa_driver",
         "//manipulation/schunk_wsg:schunk_wsg_driver",
         "//manipulation/util:zero_force_driver",
         "//multibody/plant:multibody_plant_config",
@@ -41,7 +40,6 @@ drake_cc_binary(
     deps = [
         ":scenario",
         "//common:add_text_logging_gflags",
-        "//manipulation/kuka_iiwa:iiwa_driver_functions",
         "//manipulation/schunk_wsg:schunk_wsg_driver_functions",
         "//manipulation/util:apply_driver_configs",
         "//manipulation/util:zero_force_driver_functions",

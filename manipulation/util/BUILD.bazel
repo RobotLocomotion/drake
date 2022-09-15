@@ -130,9 +130,8 @@ drake_cc_library(
     srcs = ["make_arm_controller_model.cc"],
     hdrs = ["make_arm_controller_model.h"],
     internal = True,
-    visibility = [
-        "//manipulation/kuka_iiwa:__pkg__",
-    ],
+    # TODO(zachfang): Change the visibility setting when migrating iiwa driver.
+    visibility = ["//visibility:private"],
     deps = [
         "//math:geometric_transform",
         "//multibody/parsing",
@@ -231,14 +230,6 @@ drake_cc_googletest(
         "//multibody/plant",
         "//systems/framework:diagram_builder",
         "//systems/primitives:shared_pointer_system",
-    ],
-)
-
-filegroup(
-    name = "test_directives",
-    testonly = True,
-    srcs = [
-        ":test/iiwa7_wsg.dmd.yaml",
     ],
 )
 

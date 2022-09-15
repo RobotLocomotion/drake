@@ -118,10 +118,10 @@ drake_cc_library(
     srcs = ["build_schunk_wsg_control.cc"],
     hdrs = ["build_schunk_wsg_control.h"],
     deps = [
-        ":schunk_wsg_constants",
-        ":schunk_wsg_controller",
-        ":schunk_wsg_lcm",
         "//common:essential",
+        "//manipulation/schunk_wsg:schunk_wsg_constants",
+        "//manipulation/schunk_wsg:schunk_wsg_controller",
+        "//manipulation/schunk_wsg:schunk_wsg_lcm",
         "//multibody/plant",
         "//systems/framework:diagram_builder",
         "//systems/lcm",
@@ -227,23 +227,6 @@ drake_cc_googletest(
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
         "//systems/lcm",
-    ],
-)
-
-drake_cc_googletest(
-    name = "schunk_wsg_driver_functions_test",
-    data = [
-        "//manipulation/models/wsg_50_description:models",
-    ],
-    deps = [
-        ":schunk_wsg_driver_functions",
-        "//common:find_resource",
-        "//lcm:drake_lcm_params",
-        "//multibody/parsing:parser",
-        "//multibody/plant",
-        "//systems/analysis:simulator",
-        "//systems/framework:diagram_builder",
-        "//systems/lcm:lcm_config_functions",
     ],
 )
 

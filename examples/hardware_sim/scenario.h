@@ -9,7 +9,6 @@
 
 #include "drake/common/name_value.h"
 #include "drake/lcm/drake_lcm_params.h"
-#include "drake/manipulation/kuka_iiwa/iiwa_driver.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver.h"
 #include "drake/manipulation/util/zero_force_driver.h"
 #include "drake/multibody/parsing/model_directives.h"
@@ -66,7 +65,7 @@ struct Scenario {
   /* For actuated models, specifies where each model's actuation inputs come
   from, keyed on the ModelInstance name. */
   using DriverVariant = std::variant<
-      manipulation::kuka_iiwa::IiwaDriver,
+      // TODO(jwnimmer-tri) Add more types of robot drivers here.
       manipulation::schunk_wsg::SchunkWsgDriver,
       manipulation::ZeroForceDriver>;
   std::map<std::string, DriverVariant> model_drivers;

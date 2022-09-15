@@ -16,12 +16,9 @@ drake_cc_package_library(
     name = "kuka_iiwa",
     visibility = ["//visibility:public"],
     deps = [
-        ":build_iiwa_control",
         ":iiwa_command_receiver",
         ":iiwa_command_sender",
         ":iiwa_constants",
-        ":iiwa_driver",
-        ":iiwa_driver_functions",
         ":iiwa_status_receiver",
         ":iiwa_status_sender",
     ],
@@ -85,55 +82,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "iiwa_driver",
-    hdrs = ["iiwa_driver.h"],
-    deps = [
-        "//common:essential",
-        "//common:name_value",
-    ],
-)
-
-drake_cc_library(
-    name = "iiwa_driver_functions",
-    srcs = ["iiwa_driver_functions.cc"],
-    hdrs = ["iiwa_driver_functions.h"],
-    interface_deps = [
-        ":iiwa_driver",
-        "//common:essential",
-        "//multibody/parsing:model_instance_info",
-        "//multibody/plant",
-        "//systems/framework:diagram_builder",
-        "//systems/lcm:lcm_buses",
-    ],
-    deps = [
-        ":build_iiwa_control",
-        "//manipulation/util:make_arm_controller_model",
-        "//systems/primitives:shared_pointer_system",
-    ],
-)
-
-drake_cc_library(
-    name = "build_iiwa_control",
-    srcs = ["build_iiwa_control.cc"],
-    hdrs = ["build_iiwa_control.h"],
-    deps = [
-        ":iiwa_command_receiver",
-        ":iiwa_constants",
-        ":iiwa_status_sender",
-        "//multibody/plant",
-        "//systems/controllers:inverse_dynamics_controller",
-        "//systems/framework:diagram_builder",
-        "//systems/lcm",
-        "//systems/primitives:adder",
-        "//systems/primitives:demultiplexer",
-        "//systems/primitives:discrete_derivative",
-        "//systems/primitives:first_order_low_pass_filter",
-        "//systems/primitives:gain",
-        "@eigen",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(
@@ -167,49 +115,6 @@ drake_cc_googletest(
     deps = [
         ":iiwa_status_sender",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "build_iiwa_control_test",
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":build_iiwa_control",
-        ":iiwa_constants",
-        "//common:find_resource",
-        "//manipulation/util:make_arm_controller_model",
-        "//multibody/parsing:model_instance_info",
-        "//multibody/parsing:parser",
-        "//multibody/plant",
-        "//systems/analysis:simulator",
-        "//systems/framework:diagram_builder",
-        "//systems/lcm",
-        "//systems/primitives:constant_vector_source",
-        "//systems/primitives:shared_pointer_system",
-    ],
-)
-
-drake_cc_googletest(
-    name = "iiwa_driver_functions_test",
-    data = [
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
-        "//manipulation/util:test_directives",
-    ],
-    deps = [
-        ":iiwa_driver_functions",
-        "//common:find_resource",
-        "//common/test_utilities:expect_throws_message",
-        "//lcm:drake_lcm_params",
-        "//manipulation/util:zero_force_driver_functions",
-        "//multibody/parsing:parser",
-        "//multibody/parsing:process_model_directives",
-        "//multibody/plant",
-        "//systems/analysis:simulator",
-        "//systems/framework:diagram_builder",
-        "//systems/lcm:lcm_config_functions",
     ],
 )
 
