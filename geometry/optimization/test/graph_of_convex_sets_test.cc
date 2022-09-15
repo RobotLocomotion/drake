@@ -1145,7 +1145,7 @@ class PreprocessShortestPathTest : public ::testing::Test {
   PreprocessShortestPathTest() {
     vid_.reserve(7);
     for (int i = 0; i < 7; ++i) {
-      vid_[i] = g_.AddVertex(Point(Vector1d{0.0}))->id();
+      vid_[i] = g_.AddVertex(Point(Vector1d{1.0}))->id();
     }
 
     edges_.reserve(13);
@@ -1205,13 +1205,14 @@ TEST_F(PreprocessShortestPathTest, CheckResults) {
   ASSERT_TRUE(result2.is_success());
 
   for (Edge* e : edges_) {
-    EXPECT_EQ(result1.GetSolution(e->phi()), result2.GetSolution(e->phi()));
+    EXPECT_NEAR(result1.GetSolution(e->phi()), result2.GetSolution(e->phi()),
+                1e-10);
     EXPECT_TRUE(CompareMatrices(result1.GetSolution(e->xu()),
                                 result2.GetSolution(e->xu()), 1e-12));
     EXPECT_TRUE(CompareMatrices(result1.GetSolution(e->xv()),
                                 result2.GetSolution(e->xv()), 1e-12));
     EXPECT_NEAR(e->GetSolutionCost(result1), e->GetSolutionCost(result2),
-                1e-12);
+                1e-10);
   }
 }
 
