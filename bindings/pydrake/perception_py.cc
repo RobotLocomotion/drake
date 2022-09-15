@@ -121,6 +121,8 @@ void init_perception(py::module m) {
             py::arg("other"), cls_doc.SetFrom.doc)
         .def("Crop", &Class::Crop, py::arg("lower_xyz"), py::arg("upper_xyz"),
             cls_doc.Crop.doc)
+        .def("FlipNormalsTowardPoint", &Class::FlipNormalsTowardPoint,
+            py::arg("p_CP"), cls_doc.FlipNormalsTowardPoint.doc)
         .def("VoxelizedDownSample", &Class::VoxelizedDownSample,
             py::arg("voxel_size"), cls_doc.VoxelizedDownSample.doc)
         .def("EstimateNormals", &Class::EstimateNormals, py::arg("radius"),

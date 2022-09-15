@@ -311,6 +311,13 @@ class PointCloud final {
   PointCloud Crop(const Eigen::Ref<const Vector3<T>>& lower_xyz,
             const Eigen::Ref<const Vector3<T>>& upper_xyz);
 
+  /// Changes the sign of the normals in `this`, if necessary, so that each
+  /// normal points toward the point `P` in the frame `C` in which the xyzs of
+  /// `this` cloud are represented.  This can be useful, for instance, when `P`
+  /// is the position of the camera used to generate the cloud.
+  /// @throws std::exception if has_xyzs() != true or has_normals() != true.
+  void FlipNormalsTowardPoint(const Eigen::Ref<const Vector3<T>>& p_CP);
+
   /// @}
 
   // TODO(eric.cousineau): Add storage for indices, with SHOT as a motivating
