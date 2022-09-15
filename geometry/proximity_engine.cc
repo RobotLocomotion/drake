@@ -489,32 +489,35 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
-    std::shared_ptr<std::vector<Eigen::Vector3d>> vertices;
-    if (mesh.filename().substr(mesh.filename().find_last_of(".") + 1) ==
-        "obj") {
-      // Don't bother triangulating; we're going to throw the faces out.
-      std::tie(vertices, std::ignore, std::ignore) =
-          ReadObjFile(mesh.filename(), mesh.scale(), false /* triangulate */);
-    } else if (mesh.filename().substr(mesh.filename().find_last_of(".") + 1) ==
-               "vtk") {
-      vertices = std::make_shared<std::vector<Eigen::Vector3d>>(
-          ConvertVolumeToSurfaceMesh(MakeVolumeMeshFromVtk<double>(mesh))
-              .vertices());
-    } else {
-      throw(std::runtime_error(fmt::format(
-          "ProximityEngine::ImplementGeometry: unsupported mesh file: {}",
-          mesh.filename())));
-    }
+    // The actual mesh is used for hydroelastic representation.
+    ProcessHydroelastic(mesh, user_data);
 
     // Note: the strategy here is to use an *invalid* fcl::Convex shape for the
     // mesh. A minimum condition for "invalid" is that the convex specification
     // contains vertices that are not referenced by a face. Passing zero faces
     // will accomplish that.
-    auto fcl_convex =
-        make_shared<fcl::Convexd>(vertices, 0, make_shared<std::vector<int>>());
+    const ReifyData& data = *static_cast<ReifyData*>(user_data);
+
+    const HydroelasticType type = data.properties.GetPropertyOrDefault(
+        kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
+
+    shared_ptr<const std::vector<Vector3d>> shared_verts;
+
+    if (type == HydroelasticType::kSoft) {
+      shared_verts = make_shared<const std::vector<Vector3d>>(
+          hydroelastic_geometries_.soft_geometry(data.id).mesh().vertices());
+    } else if (type == HydroelasticType::kRigid) {
+      shared_verts = make_shared<const std::vector<Vector3d>>(
+          hydroelastic_geometries_.rigid_geometry(data.id).mesh().vertices());
+    } else {
+      // Don't bother triangulating; we're going to throw the faces out.
+      std::tie(shared_verts, std::ignore, std::ignore) =
+          ReadObjFile(mesh.filename(), mesh.scale(), false /* triangulate */);
+    }
+
+    auto fcl_convex = make_shared<fcl::Convexd>(
+        shared_verts, 0, make_shared<std::vector<int>>());
     TakeShapeOwnership(fcl_convex, user_data);
-    // The actual mesh is used for hydroelastics and deformables.
-    ProcessHydroelastic(mesh, user_data);
     ProcessGeometriesForDeformableContact(mesh, user_data);
   }
 
