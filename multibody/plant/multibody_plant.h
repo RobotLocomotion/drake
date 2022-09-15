@@ -3496,7 +3496,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// <pre>
   /// [∂(v_ABi)/∂q̇₁, ... ∂(v_ABi)/∂q̇ₙ] = [ᴬ∂(p_AoBi)/∂q₁, ... ᴬ∂(p_AoBi)/∂qₙ]
   /// </pre>
-  /// Note: Jq_p_AaBi = Jq_p_AoBi, where point Aa is 𝑎𝑛𝑦 point fixed/welded to
+  /// Note: Jq_p_AaBi = Jq_p_AoBi, where point Aa is _any_ point fixed/welded to
   /// frame A, i.e., this calculation's result is the same if point Ao is
   /// replaced with any point fixed on frame A.
   void CalcJacobianPositionVector(
