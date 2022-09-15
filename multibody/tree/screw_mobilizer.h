@@ -17,19 +17,20 @@ namespace multibody {
 namespace internal {
 
 /* This mobilizer models a screw joint between an inboard frame F and an
- outboard frame M that enables translation along F's z axis while
- rotating about it.
+ outboard frame M that enables translation along an axis while
+ rotating about it, such that the axis is constant when measured
+ in either this mobilizer's inboard or outboard frames.
 
  The generalized coordinate for this mobilizer, θ corresponds to
- rotation about the z-axis of frame F.
+ rotation about axis â of frame F.
  Zero θ defines the "zero configuration", which corresponds to frames F and
  M being coincident (axes are aligned and origins are co-located),
- see set_zero_state(). The translation (z) depends on and is proportional to
- the rotation θ. Their relation is defined by a screw pitch.
- The translation (z) is defined to be positive in the direction of
- frame F's z-axis and the rotation θ is defined to be positive according
+ see set_zero_state(). The translation along â depends on and is proportional
+ to the rotation θ. Their relation is defined by a screw pitch.
+ The translation is defined to be positive in the direction of
+ frame F's axis â and the rotation θ is defined to be positive according
  to the right-hand-rule with the thumb aligned in the direction of
- frame F's z-axis. The frame F's z-axis and the frame M's z-axis are aligned
+ frame F's axis â. The axis â in frame F and in frame M are aligned
  at all times for this mobilizer. The generalized velocity for this mobilizer
  is the rate of change of the coordinate, ω =˙θ (θ_dot).
 
@@ -48,8 +49,10 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
                           revolute joint, i.e. producing zero translation for
                           any value of the generalized coordinate. */
   ScrewMobilizer(const Frame<T>& inboard_frame_F,
-                 const Frame<T>& outboard_frame_M, double screw_pitch)
+                 const Frame<T>& outboard_frame_M,
+                 const Vector3<double>& axis_F, double screw_pitch)
       : MobilizerBase(inboard_frame_F, outboard_frame_M),
+        axis_F_(axis_F),
         screw_pitch_(screw_pitch) {}
 
   // Overloads to define the suffix names for the position and velocity
@@ -59,6 +62,10 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   bool can_rotate() const final { return true; }
   bool can_translate() const final { return true; }
+
+  // @retval axis_F The screw axis as a unit vector expressed in the inboard
+  //                frame F.
+  const Vector3<double>& screw_axis() const { return axis_F_; }
 
   /* @returns the screw pitch, which is used to relate rotational
    to translational motion for `this` mobilizer as documented
@@ -220,6 +227,9 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    quantities. */
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
+
+  // Default joint axis expressed in the inboard frame F.
+  Vector3<double> axis_F_;
 
   const double screw_pitch_;
 };

@@ -35,7 +35,7 @@ class ScrewMobilizerTest : public MobilizerTester {
     mobilizer_ =
         &AddMobilizerAndFinalize(std::make_unique<ScrewMobilizer<double>>(
             tree().world_body().body_frame(),
-            body_->body_frame(), kScrewPitch));
+            body_->body_frame(), Vector3<double>::UnitZ(), kScrewPitch));
   }
 
  protected:
@@ -54,7 +54,8 @@ TEST_F(ScrewMobilizerTest, ScrewPitchAccess) {
 TEST_F(ScrewMobilizerTest, ExceptionRaisingWhenZeroPitch) {
   const double zero_screw_pitch{0};
   ScrewMobilizer<double> zero_pitch_screw_mobilizer(
-      tree().world_body().body_frame(), body_->body_frame(), zero_screw_pitch);
+      tree().world_body().body_frame(), body_->body_frame(),
+      Vector3<double>::UnitZ(), zero_screw_pitch);
 
   const double translation_z{1.};
   const double velocity_z{2.};

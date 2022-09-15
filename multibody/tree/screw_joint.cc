@@ -19,6 +19,7 @@ std::unique_ptr<Joint<ToScalar>> ScrewJoint<T>::TemplatedDoCloneToScalar(
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<ScrewJoint<ToScalar>>(
       this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,
+      this->screw_axis(),
       this->screw_pitch(),
       this->damping());
   joint_clone->set_position_limits(this->position_lower_limits(),
@@ -58,7 +59,8 @@ std::unique_ptr<typename Joint<T>::BluePrint>
 ScrewJoint<T>::MakeImplementationBlueprint() const {
   auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
   auto screw_mobilizer = std::make_unique<internal::ScrewMobilizer<T>>(
-      this->frame_on_parent(), this->frame_on_child(), screw_pitch_);
+      this->frame_on_parent(), this->frame_on_child(), this->screw_axis(),
+      screw_pitch_);
   screw_mobilizer->set_default_position(this->default_positions());
   blue_print->mobilizers_.push_back(std::move(screw_mobilizer));
   return blue_print;

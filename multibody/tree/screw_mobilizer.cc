@@ -192,6 +192,7 @@ ScrewMobilizer<T>::TemplatedDoCloneToScalar(
       tree_clone.get_variant(this->outboard_frame());
   return std::make_unique<ScrewMobilizer<ToScalar>>(inboard_frame_clone,
                                                     outboard_frame_clone,
+                                                    this->screw_axis(),
                                                     this->screw_pitch());
 }
 
