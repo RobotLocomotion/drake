@@ -42,7 +42,7 @@ drake_cc_library(
     deps = [
         "//common:unused",
         "@abseil_cpp_internal//absl/container:flat_hash_map",
-        "@nanoflann",
+        "@nanoflann_internal//:nanoflann",
     ],
 )
 
