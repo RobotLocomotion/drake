@@ -19,15 +19,15 @@ namespace multibody {
 ///  freedom.
 /// That is, given a frame F attached to the parent body P and a frame M
 /// attached to the child body B (see the Joint class's documentation), this
-/// joint allows frame M to translate (while rotating) along the z axis
-/// of frame F, with M's z-axis Mz and F's z-axis Fz coincident at
-/// all times. The rotation about z-axis of F  and their rate
+/// joint allows frame M to translate (while rotating) along an axis â.
+/// Axis â is constant and has the same measures in both frames F and M, that
+/// is, `â_F = â_M`. The rotation about the `â_F` axis and its rate
 /// specify the state of the joint.
 /// Zero (θ) corresponds to frames F and M being coincident and aligned.
-/// Translation z is defined to be positive in the direction of the
-/// respective axis and the rotation θ is defined to be positive according to
-/// the right-hand-rule with the thumb aligned in the direction of frame F's
-/// z-axis.
+/// The translation distance is defined positive when child body B translates
+/// along the direction of â, and the rotation θ is defined to be positive
+/// according to the right-hand-rule with the thumb aligned in the direction
+/// of the `â_F` axis.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -44,17 +44,18 @@ class ScrewJoint final : public Joint<T> {
   /// Constructor to create a screw joint between two bodies so that frame F
   /// attached to the parent body P and frame M attached to the child body B
   /// translate and rotate as described in the class's documentation.
-  /// This constructor signature creates a joint with no joint limits, i.e. the
+  /// This constructor signature creates a joint with the axis â set to the
+  /// z-axis and no joint limits, i.e. the
   /// joint angular position, angular velocity and angular acceleration limits
   /// are the pair `(-∞, ∞)`.
   /// These can be set using the Joint methods set_position_limits(),
   /// set_velocity_limits() and set_acceleration_limits() in radians,
-  /// radians/sec, radians/sec^2 units.
+  /// radians/s, radians/s² units.
   /// The first three arguments to this constructor are those of the Joint class
   /// constructor. See the Joint class's documentation for details.
   /// The additional parameters are:
   /// @param[in] screw_pitch
-  ///   Amount of translation in meters occuring over a one full
+  ///   Amount of translation in meters occurring over a one full
   ///   screw revolution. It's domain is (-∞, ∞). When the screw pitch is
   ///   negative, positive rotation will result in translating towards the
   ///   negative direction of z-axis. When the screw pitch is zero, this joint
@@ -67,39 +68,70 @@ class ScrewJoint final : public Joint<T> {
   ScrewJoint(const std::string& name, const Frame<T>& frame_on_parent,
               const Frame<T>& frame_on_child,
               double screw_pitch,
-              double damping)
-      : Joint<T>(name, frame_on_parent, frame_on_child,
-                 VectorX<double>::Constant(1, damping),
-                 VectorX<double>::Constant(
-                     1, -std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     1, std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     1, -std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     1, std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     1, -std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     1, std::numeric_limits<double>::infinity()))
-      , screw_pitch_{screw_pitch} {
-    DRAKE_THROW_UNLESS(damping >= 0);
-  }
+              double damping) :
+      ScrewJoint<T>(name, frame_on_parent, frame_on_child,
+                    Vector3<double>::UnitZ(), screw_pitch, damping) {}
+
+  /// Constructor to create a screw joint between two bodies so that frame F
+  /// attached to the parent body P and frame M attached to the child body B
+  /// translate and rotate as described in the class's documentation.
+  /// This constructor signature creates a joint with no joint limits, i.e. the
+  /// joint angular position, angular velocity and angular acceleration limits
+  /// are the pair `(-∞, ∞)`.
+  /// These can be set using the Joint methods set_position_limits(),
+  /// set_velocity_limits() and set_acceleration_limits() in radians,
+  /// radians/s, radians/s² units.
+  /// The first three arguments to this constructor are those of the Joint class
+  /// constructor. See the Joint class's documentation for details.
+  /// The additional parameters are:
+  /// @param[in] axis
+  ///   A vector in ℝ³ specifying the axis of motion for this joint. The
+  ///   coordinates of `axis` expressed in frames F and M are the same at all
+  ///   times, that is, `axis_F = axis_M`. In other words,
+  ///   `axis_F` (or `axis_M`) is the eigenvector of `R_FM` with eigenvalue
+  ///   equal to one.
+  ///   This vector can have any length, only the direction is used.
+  /// @param[in] screw_pitch
+  ///   Amount of translation in meters occurring over a one full
+  ///   screw revolution. It's domain is (-∞, ∞). When the screw pitch is
+  ///   negative, positive rotation will result in translating towards the
+  ///   negative direction of â-axis. When the screw pitch is zero, this joint
+  ///   will behave like a revolute joint.
+  /// @param[in] damping
+  ///   Viscous damping coefficient, N⋅m⋅s/rad for
+  ///   rotation, used to model losses within the joint. See documentation of
+  ///   damping() for details on modelling of the damping torque.
+  /// @throws std::exception if the L2 norm of `axis` is less than the square
+  /// root of machine epsilon.
+  /// @throws std::exception if damping is negative.
+  ScrewJoint(const std::string& name, const Frame<T>& frame_on_parent,
+              const Frame<T>& frame_on_child,
+              const Vector3<double>& axis,
+              double screw_pitch,
+              double damping);
 
   const std::string& type_name() const final {
     static const never_destroyed<std::string> name{kTypeName};
     return name.access();
   }
 
+  /// Returns the normalized axis of motion of `this` joint as a unit vector.
+  /// Since the measures of this axis in either frame F or M are the same (see
+  /// this class's documentation for frame definitions) then,
+  /// `axis = axis_F = axis_M`.
+  const Vector3<double>& screw_axis() const {
+    return axis_;
+  }
+
   /// Returns `this` joint's amount of translation in meters
-  /// occuring over a one full revolution.
+  /// occurring over a one full revolution.
   double screw_pitch() const { return screw_pitch_; }
 
   /// Returns `this` joint's damping constant N⋅m⋅s for the rotational degree.
   /// The damping torque (in N⋅m) is modeled as `τ = -damping⋅ω` i.e.
   ///  opposing motion, with ω the angular rate for `this` joint
   ///  (see get_angular_velocity()) and τ the torque on
-  /// child body B expressed in frame F as t_B_F = τ⋅Fz_F.
+  /// child body B expressed in frame F as t_B_F = τ⋅Fâ_F.
   double damping() const { return this->damping_vector()[0]; }
 
   /// @name Context-dependent value access
@@ -157,11 +189,11 @@ class ScrewJoint final : public Joint<T> {
   }
 
   /// Sets the translational velocity, in meters per second, of this `this`
-  /// joint's Mo along frame F's Z-axis to `vz`. The new
+  /// joint's Mo along frame F's â-axis to `vz`. The new
   /// translational velocity gets stored in `context`.
   /// @param[in] context The context of the model this joint belongs to.
   /// @param[in] vz The desired translational velocity of `this` joint in meters
-  ///               per second along F frame's Z-axis.
+  ///               per second along F frame's â-axis.
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_translational_velocity(
       systems::Context<T>* context, const T& vz) const {
@@ -238,7 +270,7 @@ class ScrewJoint final : public Joint<T> {
    Therefore arguments were already checked to be valid.
    For a ScrewJoint, we must always have `joint_dof = 0` since there is
    one degree of freedom (num_velocities() == 1). `joint_tau` is the torque
-   about the z-axis of the parent frame F if `joint_dof = 0`.
+   about the â-axis of the parent frame F if `joint_dof = 0`.
    The force is applied to the body declared as child (according to the
    screw joint's constructor) at the origin of the child frame M. The force
    is defined to be positive in the direction of the selected axis and the
@@ -350,7 +382,10 @@ class ScrewJoint final : public Joint<T> {
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 
-  // The amount of translation in meters occuring over a one full revolution.
+  // This is the joint's axis expressed in either M or F since axis_M = axis_F.
+  Vector3<double> axis_;
+
+  // The amount of translation in meters occurring over a one full revolution.
   double screw_pitch_;
 };
 
