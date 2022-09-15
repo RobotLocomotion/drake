@@ -2,10 +2,10 @@
 
 #include <algorithm>
 #include <functional>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
@@ -419,7 +419,7 @@ PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
   }
 
   // Create a map from voxel coordinate to a set of points.
-  absl::flat_hash_map<Eigen::Vector3i, std::vector<int>, Vector3iHash>
+  std::unordered_map<Eigen::Vector3i, std::vector<int>, Vector3iHash>
       voxel_map;
   for (int i = 0; i < size_; ++i) {
     if (xyz(i).array().isFinite().all()) {
