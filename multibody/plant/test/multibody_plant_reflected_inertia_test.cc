@@ -428,8 +428,8 @@ TEST_F(MultibodyPlantReflectedInertiaTests, CalcForwardAndInverseDynamics) {
   // Compare tau_inverse_dynamics to tau_expected. Since these elements
   // have a magnitude near 1 and since the calculation involved in generating
   // these values is fairly involved (many additions, multiplications, etc.), we
-  // allow 6 bits of error (2^6 = 64) in the difference between these values.
-  const double kTolerance = 64.0 * std::numeric_limits<double>::epsilon();
+  // allow 8 bits of error (2^8 = 256) in the difference between these values.
+  const double kTolerance = 256.0 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(tau_inverse_dynamics, tau_expected, kTolerance,
                               MatrixCompareType::relative));
 }

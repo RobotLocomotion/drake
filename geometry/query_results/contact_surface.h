@@ -28,7 +28,7 @@ enum class HydroelasticContactRepresentation { kTriangle, kPolygon };
   purpose is to support the hydroelastic pressure field contact model as
   described in:
 
-      R. Elandt, E. Drumwright, M. Sherman, and Andy Ruina. A pressure
+      R. Elandt, E. Drumwright, M. Sherman, and A. Ruina. A pressure
       field model for fast, robust approximation of net contact force
       and moment between nominally rigid objects. IROS 2019: 8238-8245.
 
