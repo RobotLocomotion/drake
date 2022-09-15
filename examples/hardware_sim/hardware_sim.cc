@@ -13,6 +13,7 @@ while some (separate) controller operates the robot, without extra hassle. */
 
 #include "drake/common/unused.h"
 #include "drake/examples/hardware_sim/scenario.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_driver_functions.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver_functions.h"
 #include "drake/manipulation/util/apply_driver_configs.h"
 #include "drake/manipulation/util/zero_force_driver_functions.h"
