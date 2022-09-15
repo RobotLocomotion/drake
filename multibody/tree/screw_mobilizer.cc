@@ -112,10 +112,9 @@ math::RigidTransform<T> ScrewMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  const Vector3<T> X_FM_translation(0.0, 0.0,
+  const Vector3<T> p_FM(axis_ *
       get_screw_translation_from_rotation(q[0], screw_pitch_));
-  return math::RigidTransform<T>(math::RotationMatrix<T>::MakeZRotation(q[0]),
-                                 X_FM_translation);
+  return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_), p_FM);
 }
 
 template <typename T>
@@ -124,8 +123,8 @@ SpatialVelocity<T> ScrewMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
   DRAKE_ASSERT(v.size() == kNv);
   Vector6<T> V_FM_vector;
   V_FM_vector <<
-    0.0, 0.0, get_screw_rotation_from_translation(v[0], screw_pitch_),
-    0.0, 0.0, v[0];
+    (axis_ * v[0]),
+    (axis_ * get_screw_translation_from_rotation(v[0], screw_pitch_));
   return SpatialVelocity<T>(V_FM_vector);
 }
 
@@ -136,8 +135,9 @@ ScrewMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
   Vector6<T> A_FM_vector;
-  A_FM_vector << 0.0, 0.0, vdot[0], 0.0, 0.0,
-                 get_screw_translation_from_rotation(vdot[0], screw_pitch_);
+  A_FM_vector <<
+    (axis_ * vdot[0]),
+    (axis_ * get_screw_translation_from_rotation(vdot[0], screw_pitch_));
   return SpatialAcceleration<T>(A_FM_vector);
 }
 
@@ -146,7 +146,8 @@ void ScrewMobilizer<T>::ProjectSpatialForce(const systems::Context<T>&,
                                              const SpatialForce<T>& F_Mo_F,
                                              Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  tau[0] = F_Mo_F.rotational()[2] + screw_pitch() * F_Mo_F.translational()[2];
+  tau[0] = F_Mo_F.rotational().dot(axis_) +
+           F_Mo_F.translational().dot(axis_) / (2 * M_PI) * screw_pitch_;
 }
 
 template <typename T>
@@ -192,6 +193,7 @@ ScrewMobilizer<T>::TemplatedDoCloneToScalar(
       tree_clone.get_variant(this->outboard_frame());
   return std::make_unique<ScrewMobilizer<ToScalar>>(inboard_frame_clone,
                                                     outboard_frame_clone,
+                                                    this->screw_axis(),
                                                     this->screw_pitch());
 }
 
