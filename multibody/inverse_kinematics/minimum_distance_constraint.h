@@ -62,8 +62,8 @@ allowable distance, d_influence is the "influence distance" (the distance below
 which a pair of geometries influences the constraint), φ is a
 multibody::MinimumDistancePenaltyFunction, and SmoothMax(d) is smooth
 approximation of max(d). We require that dₘᵢₙ < d_influence. The input scaling
-(dᵢ(q) - d_influence)/(d_influence - dₘᵢₙ) ensures that at the boundary of the
-feasible set (when dᵢ(q) == dₘᵢₙ), we evaluate the penalty function at -1,
+(dᵢ(q) - d_influence)/(d_influence - dₘᵢₙ) ensures that at the boundary of the
+feasible set (when dᵢ(q) == dₘᵢₙ), we evaluate the penalty function at -1,
 where it is required to have a non-zero gradient.
 
 @ingroup solver_evaluators

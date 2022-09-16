@@ -3327,7 +3327,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
   ///      J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is j or k)
-  ///      V_ABp = J𝑠_V_ABp ⋅ 𝑠          V_ABp is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
+  ///      V_ABp = J𝑠_V_ABp ⋅ 𝑠          V_ABp is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
   /// `V_ABp` is Bp's spatial velocity in frame A and "speeds" 𝑠 is either
   /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
@@ -3381,7 +3381,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// with respect to "speeds" 𝑠.
   /// <pre>
   ///      J𝑠_w_AB ≜ [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is j or k)
-  ///      w_AB = J𝑠_w_AB ⋅ 𝑠          w_AB is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
+  ///      w_AB = J𝑠_w_AB ⋅ 𝑠          w_AB is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
   /// `w_AB` is B's angular velocity in frame A and "speeds" 𝑠 is either
   /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
@@ -3418,7 +3418,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// translational velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
   ///      J𝑠_v_ABi ≜ [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
-  ///      v_ABi = J𝑠_v_ABi ⋅ 𝑠          v_ABi is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
+  ///      v_ABi = J𝑠_v_ABi ⋅ 𝑠          v_ABi is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
   /// `v_ABi` is Bi's translational velocity in frame A and "speeds" 𝑠 is either
   /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or

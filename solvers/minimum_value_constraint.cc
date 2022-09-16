@@ -29,7 +29,7 @@ template <typename T>
 T SmoothMax(const std::vector<T>& x) {
   // We compute the smooth max of x as smoothmax(x) = log(∑ᵢ exp(αxᵢ)) / α.
   // This smooth max approaches max(x) as α increases. We choose α = 100, as
-  // that gives a qualitatively good fit for xᵢ ∈ [0, 1], which is the range of
+  // that gives a qualitatively good fit for xᵢ ∈ [0, 1], which is the range of
   // potential penalty values when the MinimumValueConstraint is feasible.
   DRAKE_ASSERT(x.size() > 0);
   const double alpha{100};
