@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<sdf version="1.7" xmlns:drake="drake.mit.edu">
+  <model name="yellow_bell_pepper_no_stem">
+    <link name="yellow_bell_pepper_no_stem">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0.000537 -0.00272 0.0384 0 0 0</pose>
+        <mass>0.159</mass>
+        <inertia>
+          <ixx> 0.000101</ixx>
+          <ixy>-0.000001</ixy>
+          <ixz>-0.000004</ixz>
+          <iyy> 0.000105</iyy>
+          <iyz> 0.000007</iyz>
+          <izz> 0.000107</izz>
+        </inertia>
+      </inertial>
+      <visual name="yellow_bell_pepper_no_stem">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>yellow_bell_pepper_no_stem_low.obj</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>yellow_bell_pepper_no_stem_low.vtk</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>5.0e4</drake:hydroelastic_modulus>
+          <!-- Most shapes (capsule, cylinder, ellipsoid, sphere) need
+            drake:mesh_resolution_hint, but the resolution hint is no-op
+            for the mesh geometry. That's why we do not set it here. -->
+          <drake:hunt_crossley_dissipation>10</drake:hunt_crossley_dissipation>
+          <!-- Both mu_dynamic and mu_static are used in Continuous system.
+            Only mu_dynamic is used in Discrete system.  -->
+          <drake:mu_dynamic> 1 </drake:mu_dynamic>
+          <drake:mu_static> 1 </drake:mu_static>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+    <frame name="origin">
+      <pose relative_to="yellow_bell_pepper_no_stem">0 0 0 0 0 0</pose>
+    </frame>
+    <frame name="flush_bottom_center__z_up">
+      <pose relative_to="yellow_bell_pepper_no_stem">0 0 0 0 0 0</pose>
+    </frame>
+  </model>
+</sdf>
