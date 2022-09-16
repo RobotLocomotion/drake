@@ -18,6 +18,15 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
 
+Obb::Obb(const RigidTransformd& X_HB, const Vector3<double>& half_width)
+    : pose_(X_HB), half_width_(half_width) {
+  DRAKE_DEMAND(half_width.x() >= 0.0);
+  DRAKE_DEMAND(half_width.y() >= 0.0);
+  DRAKE_DEMAND(half_width.z() >= 0.0);
+
+  PadBoundary();
+}
+
 bool Obb::HasOverlap(const Obb& a, const Obb& b,
                      const RigidTransformd& X_GH) {
   // The canonical frame A of box `a` is posed in the hierarchy frame G, and
@@ -328,16 +337,26 @@ Obb ObbMaker<MeshType>::OptimizeObbVolume(const Obb& box0) const {
   // gradient is fixed, the step size is adjusted iteratively up or down
   // according to the new samplings.
 
+  const Vector3d dV_dRPY = CalcVolumeGradient(box0);
+
+  // If the gradient doesn't have an appreciable effect, skip the work to
+  // optimize it further. The threshold given is based on the idea that we'd
+  // like the box to change at least 1 mm in measure for a 1 radian change
+  // in orientation. Since the volume is a function of the box measure cubed,
+  // any change to volume less than 1e-3^3 isn't worth processing.
+  const double dV_dRPY_len = dV_dRPY.norm();
+  if (dV_dRPY_len <= 1e-9) return box0;
+
   // The box0's frame B0 is posed in the mesh frame M.
   const RotationMatrixd& R_MB0 = box0.pose().rotation();
   const double volume0 = box0.CalcVolume();
 
   double volume = volume0;
   Obb box = box0;
-  const Vector3d dV_dRPY = CalcVolumeGradient(box0);
+
   const double kMinVolumeImprovement = 0.001;
   // Set initial step to attempt 0.1 volume reduction.
-  double increment = 0.1 * volume0 / dV_dRPY.norm();
+  double increment = 0.1 * volume0 / dV_dRPY_len;
   // This threshold allows shrinking the initial step size by 1/10 for 6 times.
   const double min_increment = increment / 1000000.;
   double step = 0.;
