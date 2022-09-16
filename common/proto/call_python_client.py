@@ -224,8 +224,7 @@ def default_globals():
 
     def box(bmin, bmax, rstride=1, cstride=1, **kwargs):
         """Plots a box bmin[i] <= x[i] <= bmax[i] for i < 3."""
-        fig = plt.gcf()
-        ax = fig.gca(projection='3d')
+        ax = plt.subplot(projection='3d')
         u = np.linspace(1, 9, 5) * np.pi / 4
         U, V = np.meshgrid(u, u)
         cx, cy, cz = (bmax + bmin) / 2
@@ -237,14 +236,12 @@ def default_globals():
 
     def plot3(x, y, z, **kwargs):
         """Plots a 3d line plot."""
-        fig = plt.gcf()
-        ax = fig.gca(projection='3d')
+        ax = plt.subplot(projection='3d')
         ax.plot(x, y, z, **kwargs)
 
     def sphere(n, rstride=1, cstride=1, **kwargs):
         """Plots a sphere."""
-        fig = plt.gcf()
-        ax = fig.gca(projection='3d')
+        ax = plt.subplot(projection='3d')
         u = np.linspace(0, np.pi, n)
         v = np.linspace(0, 2 * np.pi, n)
         X = np.outer(np.sin(u), np.sin(v))
@@ -254,8 +251,7 @@ def default_globals():
 
     def surf(x, y, Z, rstride=1, cstride=1, **kwargs):
         """Plots a 3d surface."""
-        fig = plt.gcf()
-        ax = fig.gca(projection='3d')
+        ax = plt.subplot(projection='3d')
         X, Y = np.meshgrid(x, y)
         ax.plot_surface(X, Y, Z, rstride=rstride, cstride=cstride, **kwargs)
 
