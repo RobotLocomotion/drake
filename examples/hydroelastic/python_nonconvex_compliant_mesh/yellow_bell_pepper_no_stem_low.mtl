@@ -1,0 +1,16 @@
+# File produced by Open Asset Import Library (http://www.assimp.sf.net)
+# (assimp v5.0.0)
+
+newmtl bell_pepper_no_stem_material
+Kd 1 1 1
+Ke 0 0 0
+illum 1
+map_Kd bell_pepper_no_stem_color.png
+bump bell_pepper_no_stem_normal.png
+map_bump bell_pepper_no_stem_normal.png
+
+newmtl $Material_1
+Kd 1 1 1
+Ke 0 0 0
+illum 1
+

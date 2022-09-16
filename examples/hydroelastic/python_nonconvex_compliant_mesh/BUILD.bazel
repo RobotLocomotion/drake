@@ -1,0 +1,31 @@
+# -*- python -*-
+
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+drake_py_binary(
+    name = "drop_pepper_py",
+    srcs = ["drop_pepper.py"],
+    data = [":input_files"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+filegroup(
+    name = "input_files",
+    srcs = [
+        "bell_pepper_no_stem_color.png",
+        "bell_pepper_no_stem_normal.png",
+        "bell_pepper_no_stem_occlusion_roughness_metallic.png",
+        "pepper.sdf",
+        "table.sdf",
+        "yellow_bell_pepper_no_stem_low.mtl",
+        "yellow_bell_pepper_no_stem_low.obj",
+        "yellow_bell_pepper_no_stem_low.vtk",
+    ],
+)
+
+add_lint_tests()
