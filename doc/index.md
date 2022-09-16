@@ -192,6 +192,19 @@ The Drake developers would like to acknowledge significant support from the
 
 </article>
 
+<article markdown="1">
+## Middleware Integration
+
+### LCM
+
+Native to Drake.
+
+<h3>ROS 2 <img src="/third_party/images/ros.svg" height="15em"/></h3>
+
+[`drake-ros`](https://github.com/RobotLocomotion/drake-ros) (experimental)
+
+</article>
+
 <!-- End main content. -->
 
 </div>

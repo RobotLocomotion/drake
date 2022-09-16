@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+	<circle cx="120" cy="120" r="116" style="fill: #304060;"/>
+	<circle cx="512" cy="120" r="116" style="fill: #304060;"/>
+	<circle cx="904" cy="120" r="116" style="fill: #304060;"/>
+	<circle cx="120" cy="512" r="116" style="fill: #304060;"/>
+	<circle cx="512" cy="512" r="116" style="fill: #304060;"/>
+	<circle cx="904" cy="512" r="116" style="fill: #304060;"/>
+	<circle cx="120" cy="904" r="116" style="fill: #304060;"/>
+	<circle cx="512" cy="904" r="116" style="fill: #304060;"/>
+	<circle cx="904" cy="904" r="116" style="fill: #304060;"/>
+</svg>
