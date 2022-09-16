@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="bowl">
+    <link name="bowl">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 -0.00613 0 0 0</pose>
+        <mass>0.5</mass>
+        <inertia>
+          <ixx> 0.00389</ixx>
+          <ixy> 0.00000</ixy>
+          <ixz> 0.00000</ixz>
+          <iyy> 0.00392</iyy>
+          <iyz> 0.00000</iyz>
+          <izz> 0.00637</izz>
+        </inertia>
+      </inertial>
+      <visual name="bowl">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>evo_bowl_no_mtl.obj</uri>
+            <scale>2.0 2.0 2.0</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.7 0.7 0.7 0.5</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>evo_bowl_no_mtl.obj</uri>
+            <scale>2.0 2.0 2.0</scale>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <!-- Both mu_dynamic and mu_static are used in Continuous system.
+               Only mu_dynamic is used in Discrete system. -->
+          <drake:mu_dynamic>1.0</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
