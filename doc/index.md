@@ -192,6 +192,15 @@ The Drake developers would like to acknowledge significant support from the
 
 </article>
 
+<article markdown="1">
+## Middleware
+
+### ROS 2
+
+[drake-ros](https://github.com/RobotLocomotion/drake-ros)
+
+</article>
+
 <!-- End main content. -->
 
 </div>
