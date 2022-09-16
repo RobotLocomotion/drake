@@ -8,8 +8,8 @@ def models_internal_repository(
     github_archive(
         name = name,
         repository = "RobotLocomotion/models",
-        commit = "e6bb254c786ef4d67aea7e88d141b3bb2618e964",
-        sha256 = "e246342c6d4e895dbc9d4d7206889114e6a6c99857987708f01066d839978beb",  # noqa
+        commit = "0fd6eb4b3bba6dd044ef43367cba38675483678f",
+        sha256 = "c0dcc94996da39d212cdaa7763130954551c6e9f86e73ff7751232b836c05875",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

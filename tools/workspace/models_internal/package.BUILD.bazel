@@ -11,6 +11,7 @@ exports_files(
         "skydio_2/**",
         "tri_homecart/**",
         "ur3e/**",
+        "veggies/**",
         "wsg_50_description/**",
         "wsg_50_hydro_bubble/**",
         "ycb/meshes/**",
