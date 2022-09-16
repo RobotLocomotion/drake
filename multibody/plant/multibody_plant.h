@@ -3501,7 +3501,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Note: Jq_p_AaBi = Jq_p_AoBi, where point Aa is _any_ point fixed/welded to
   /// frame A, i.e., this calculation's result is the same if point Ao is
   /// replaced with any point fixed on frame A.
-  /// where J𝑠_v_ABi is Bi's translational velocity Jacobian in frame A for s
   void CalcJacobianPositionVector(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
