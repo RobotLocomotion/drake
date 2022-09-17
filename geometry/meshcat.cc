@@ -1201,7 +1201,7 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void AddButton(std::string name) {
+  void AddButton(std::string name, std::string keycode) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetButtonControl data;
@@ -1211,6 +1211,7 @@ class Meshcat::Impl {
   'type': 'button',
   'name': '{}'
 }})))""", data.name);
+    data.keycode1 = std::move(keycode);
 
     {
       std::lock_guard<std::mutex> lock(controls_mutex_);
@@ -1278,8 +1279,9 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void AddSlider(std::string name, double min, double max,
-                               double step, double value) {
+  void AddSlider(std::string name, double min, double max, double step,
+                 double value, std::string decrement_keycode,
+                 std::string increment_keycode) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetSliderControl data;
@@ -1289,7 +1291,8 @@ class Meshcat::Impl {
   'type': 'slider',
   'name': '{}',
   'value': value
-}})))""", data.name);
+}})))""",
+                                data.name);
     data.min = min;
     data.max = max;
     data.step = step;
@@ -1297,8 +1300,10 @@ class Meshcat::Impl {
     // https://github.com/dataarts/dat.gui/blob/f720c729deca5d5c79da8464f8a05500d38b140c/src/dat/controllers/NumberController.js#L62
     value = std::max(value, min);
     value = std::min(value, max);
-    value = std::round(value/step)*step;
+    value = std::round(value / step) * step;
     data.value = value;
+    data.keycode1 = std::move(decrement_keycode);
+    data.keycode2 = std::move(increment_keycode);
 
     {
       std::lock_guard<std::mutex> lock(controls_mutex_);
@@ -2121,8 +2126,8 @@ void Meshcat::ResetRenderMode() {
   impl().ResetRenderMode();
 }
 
-void Meshcat::AddButton(std::string name) {
-  impl().AddButton(std::move(name));
+void Meshcat::AddButton(std::string name, std::string keycode) {
+  impl().AddButton(std::move(name), std::move(keycode));
 }
 
 int Meshcat::GetButtonClicks(std::string_view name) {
@@ -2133,9 +2138,11 @@ void Meshcat::DeleteButton(std::string name) {
   impl().DeleteButton(std::move(name));
 }
 
-void Meshcat::AddSlider(std::string name, double min, double max,
-                               double step, double value) {
-  impl().AddSlider(std::move(name), min, max, step, value);
+void Meshcat::AddSlider(std::string name, double min, double max, double step,
+                        double value, std::string decrement_keycode,
+                        std::string increment_keycode) {
+  impl().AddSlider(std::move(name), min, max, step, value,
+                   std::move(decrement_keycode), std::move(increment_keycode));
 }
 
 void Meshcat::SetSliderValue(std::string name, double value) {
