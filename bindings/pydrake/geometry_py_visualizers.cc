@@ -273,14 +273,15 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("SetAnimation", &Class::SetAnimation, py::arg("animation"),
             +cls_doc.SetAnimation.doc)
         .def("AddButton", &Class::AddButton, py::arg("name"),
-            cls_doc.AddButton.doc)
+            py::arg("keycode") = "", cls_doc.AddButton.doc)
         .def("GetButtonClicks", &Class::GetButtonClicks, py::arg("name"),
             cls_doc.GetButtonClicks.doc)
         .def("DeleteButton", &Class::DeleteButton, py::arg("name"),
             cls_doc.DeleteButton.doc)
         .def("AddSlider", &Class::AddSlider, py::arg("name"), py::arg("min"),
             py::arg("max"), py::arg("step"), py::arg("value"),
-            cls_doc.AddSlider.doc)
+            py::arg("decrement_keycode") = "",
+            py::arg("increment_keycode") = "", cls_doc.AddSlider.doc)
         .def("SetSliderValue", &Class::SetSliderValue, py::arg("name"),
             py::arg("value"), cls_doc.SetSliderValue.doc)
         .def("GetSliderValue", &Class::GetSliderValue, py::arg("name"),

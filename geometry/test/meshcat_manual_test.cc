@@ -350,11 +350,19 @@ Open up your browser to the URL above.
       << "Note: I've deleted the temporary HTML file (it's several Mb).\n\n";
 
   meshcat->AddButton("ButtonTest");
-  meshcat->AddSlider("SliderTest", 0, 1, 0.01, 0.5);
+  meshcat->AddButton("Press t Key");
+  meshcat->AddButton("Press t Key", "KeyT");  // Now the keycode is assigned.
+  meshcat->AddSlider("SliderTest", 0, 1, 0.01, 0.5, "ArrowLeft", "ArrowRight");
 
-  std::cout << "I've added a button and a slider to the controls menu.\n";
+  std::cout << "I've added two buttons and a slider to the controls menu.\n";
   std::cout << "- Click the ButtonTest button a few times.\n";
+  std::cout << "- Press the 't' key in the meshcat window, which "
+               "should be equivalent to pressing the second button.\n";
+  std::cout << "The buttons do nothing, but the total number of clicks for "
+               "each button will be reported after you press RETURN.\n";
   std::cout << "- Move SliderTest slider.\n";
+  std::cout << "- Confirm that the ArrowLeft and ArrowRight keys also move the "
+               "slider.\n";
   std::cout << "- Open a second browser (" << meshcat->web_url()
             << ") and confirm that moving the slider in one updates the slider "
                "in the other.\n";
@@ -364,6 +372,8 @@ Open up your browser to the URL above.
 
   std::cout << "Got " << meshcat->GetButtonClicks("ButtonTest")
             << " clicks on ButtonTest.\n"
+            << "Got " << meshcat->GetButtonClicks("Press t Key")
+            << " clicks on \"Press t Key\".\n"
             << "Got " << meshcat->GetSliderValue("SliderTest")
             << " value for SliderTest." << std::endl;
 
