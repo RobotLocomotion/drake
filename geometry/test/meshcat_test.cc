@@ -613,6 +613,39 @@ GTEST_TEST(MeshcatTest, Buttons) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetButtonClicks("bob"),
       "Meshcat does not have any button named bob.");
+
+  // Adding a button with the keycode.
+  meshcat.AddButton("alice", "KeyT");
+  CheckWebsocketCommand(meshcat, R"""({
+      "type": "button",
+      "name": "alice"
+    })""", {}, {});
+  EXPECT_EQ(meshcat.GetButtonClicks("alice"), 1);
+  // Adding with the same keycode still resets.
+  meshcat.AddButton("alice", "KeyT");
+  EXPECT_EQ(meshcat.GetButtonClicks("alice"), 0);
+  // Adding the same button with an empty keycode throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("alice"),
+      ".*does not match the current keycode.*");
+  // Adding the same button with a different keycode throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("alice", "KeyR"),
+      ".*does not match the current keycode.*");
+  meshcat.DeleteButton("alice");
+
+  // Adding a button with the keycode empty, then populated works.
+  meshcat.AddButton("alice");
+  meshcat.AddButton("alice", "KeyT");
+
+  // Adding a button named the same as a slider throws.
+  meshcat.AddSlider("slider", 0.2, 1.5, 0.1, 0.5);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("slider"),
+      "Meshcat already has a slider named slider.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("slider", "KeyR"),
+      "Meshcat already has a slider named slider.");
 }
 
 GTEST_TEST(MeshcatTest, Sliders) {
