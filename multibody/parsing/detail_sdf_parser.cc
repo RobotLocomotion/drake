@@ -555,11 +555,6 @@ std::tuple<double, double, double, double> ParseJointLimits(
   // SDFormat internally interprets a negative velocity limit as infinite and
   // only returns non-negative values.
   const double velocity_limit = axis->MaxVelocity();
-  if (velocity_limit < 0) {
-    throw std::runtime_error(
-        "Velocity limit is negative for joint '" + joint_spec.Name() + "'. "
-            "Velocity limit must be a non-negative number.");
-  }
 
   // Read Drake-namespaced acceleration limit if present. If not, default to
   // ±numeric_limits<double>::infinity().
