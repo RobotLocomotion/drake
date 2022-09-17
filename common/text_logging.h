@@ -195,7 +195,13 @@ sink* get_dist_sink();
 struct Warn {
   template <typename... Args>
   Warn(const char* a, const Args&... b) {
-    drake::log()->warn(a, b...);
+    drake::log()->warn(
+#if FMT_VERSION >= 80000
+        fmt::runtime(a),
+#else
+        a,
+#endif
+        b...);
   }
 };
 

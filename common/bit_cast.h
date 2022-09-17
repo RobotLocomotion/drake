@@ -1,5 +1,19 @@
 #pragma once
 
+#if defined(__has_include) && __has_include(<bit>)
+
+#include <bit>
+
+namespace drake {
+namespace internal {
+
+using std::bit_cast;
+
+}  // namespace internal
+}  // namespace drake
+
+#else  // __has_include
+
 #include <cstring>
 #include <type_traits>
 
@@ -23,3 +37,5 @@ To bit_cast(const From& from) noexcept {
 
 }  // namespace internal
 }  // namespace drake
+
+#endif  // __has_include

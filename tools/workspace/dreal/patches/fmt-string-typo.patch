@@ -1,0 +1,13 @@
+Fix a typo (lack of escaping) in a format string
+
+--- dreal/smt2/sort.cc.orig
++++ dreal/smt2/sort.cc
+@@ -20,7 +20,7 @@
+   if (s == "Binary") {
+     return Sort::Binary;
+   }
+-  throw DREAL_RUNTIME_ERROR("{} is not one of {Real, Int, Bool}.", s);
++  throw DREAL_RUNTIME_ERROR("{} is not one of {{Real, Int, Bool}}.", s);
+ }
+ 
+ ostream& operator<<(ostream& os, const Sort& sort) {

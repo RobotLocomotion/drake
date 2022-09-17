@@ -60,11 +60,10 @@ bool AreRequiredAttributesSupported(const ProgramAttributes& required,
     }
     noun_phrase += to_string(unsupported_enums[i]);
   }
-  *unsupported_message = fmt::format(
+  *unsupported_message =
       (size == 1) ?
-          "a {} was declared but is not supported" :
-          "a {} were declared but are not supported",
-      noun_phrase);
+          fmt::format("a {} was declared but is not supported", noun_phrase) :
+          fmt::format("a {} were declared but are not supported", noun_phrase);
   return false;
 }
 

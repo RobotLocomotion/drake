@@ -1,0 +1,13 @@
+Exception messages must always use a format pattern
+
+--- dreal/util/ibex_converter.cc.orig
++++ dreal/util/ibex_converter.cc
+@@ -123,7 +123,7 @@
+       oss << v << " ";
+     }
+     oss << ".";
+-    throw DREAL_RUNTIME_ERROR(oss.str());
++    throw DREAL_RUNTIME_ERROR("{}", oss.str());
+   }
+   return it->second;
+ }
