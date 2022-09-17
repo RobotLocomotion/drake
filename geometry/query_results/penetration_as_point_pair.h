@@ -2,7 +2,6 @@
 
 #include <utility>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 
@@ -23,9 +22,6 @@ namespace geometry {
  @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
 template <typename T>
 struct PenetrationAsPointPair {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PenetrationAsPointPair)
-  PenetrationAsPointPair() = default;
-
   /** Swaps the interpretation of geometries A and B. */
   void SwapAAndB() {
     // Leave depth unchanged.

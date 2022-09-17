@@ -18,9 +18,6 @@ role that driver software and control cabinets would take in real life.
 It creates an LCM publisher on the `SCHUNK_WSG_STATUS` channel and an LCM
 subscriber on the `SCHUNK_WSG_COMMAND` channel. */
 struct SchunkWsgDriver {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SchunkWsgDriver)
-  SchunkWsgDriver() = default;
-
   /** Gains to apply to the the WSG fingers.  The p term corresponds
   approximately to the elastic modulus of the belt, the d term to the viscous
   friction of the geartrain.  The i term is nonphysical. */
