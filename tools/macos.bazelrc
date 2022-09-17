@@ -1,5 +1,9 @@
 # Common options for macOS, no matter the arch (x86 or arm).
 
+# Use C++20 by default.
+build --cxxopt=-std=c++20
+build --host_cxxopt=-std=c++20
+
 # Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
 # sanitizers.
 build:asan --copt=-Wno-macro-redefined

@@ -510,7 +510,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "PenetrationAsPointPair", param, doc.PenetrationAsPointPair.doc);
     cls  // BR
-        .def(ParamInit<Class>(), doc.PenetrationAsPointPair.ctor.doc)
+        .def(ParamInit<Class>())
         .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A,
             doc.PenetrationAsPointPair.id_A.doc)
         .def_readwrite("id_B", &PenetrationAsPointPair<T>::id_B,
