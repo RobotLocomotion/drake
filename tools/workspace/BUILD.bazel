@@ -90,6 +90,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "meshcat_python",
     "msgpack_lite_js",
     "net_sf_jchart2d",
+    "nanoflann_internal",
     "nlopt_internal",
     "org_apache_xmlgraphics_commons",
     "petsc",

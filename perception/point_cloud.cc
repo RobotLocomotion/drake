@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include <drake_vendor/nanoflann.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
@@ -62,6 +63,17 @@ class PointCloud::Storage {
     CheckInvariants();
   }
 
+  // Update fields, allocating (but not initializing) new fields when needed.
+  void UpdateFields(pc_flags::Fields f) {
+    xyzs_.conservativeResize(NoChange, f.contains(pc_flags::kXYZs) ? size_ : 0);
+    normals_.conservativeResize(NoChange,
+                                f.contains(pc_flags::kNormals) ? size_ : 0);
+    rgbs_.conservativeResize(NoChange, f.contains(pc_flags::kRGBs) ? size_ : 0);
+    descriptors_.conservativeResize(NoChange, f.has_descriptor() ? size_ : 0);
+    fields_ = f;
+    CheckInvariants();
+  }
+
   Eigen::Ref<Matrix3X<T>> xyzs() { return xyzs_; }
   Eigen::Ref<Matrix3X<T>> normals() { return normals_; }
   Eigen::Ref<Matrix3X<C>> rgbs() { return rgbs_; }
@@ -87,7 +99,7 @@ class PointCloud::Storage {
     }
   }
 
-  const pc_flags::Fields fields_;
+  pc_flags::Fields fields_;
   int size_{};
   Matrix3X<T> xyzs_;
   Matrix3X<T> normals_;
@@ -478,6 +490,85 @@ PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
   }
 
   return down_sampled;
+}
+
+bool PointCloud::EstimateNormals(double radius, int num_closest) {
+  DRAKE_DEMAND(radius > 0);
+  DRAKE_DEMAND(num_closest >= 3);
+  DRAKE_THROW_UNLESS(has_xyzs());
+  constexpr float kNaN = std::numeric_limits<float>::quiet_NaN();
+  const double squared_radius = radius * radius;
+
+  if (!has_normals()) {
+    fields_ |= pc_flags::kNormals;
+    storage_->UpdateFields(fields_);
+  }
+
+  const Eigen::MatrixX3f data = xyzs().transpose();
+  nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixX3f, 3,
+                                      nanoflann::metric_L2_Simple>
+      kd_tree(3, data);
+
+  // Iterate through all points and compute their normals.
+  // TODO(russt): Make an OpenMP implementation of this.
+  VectorX<Eigen::Index> indices(num_closest);
+  Eigen::VectorXf distances(num_closest);
+  Eigen::Vector3d mean;
+  Eigen::Matrix3d covariance;
+
+  bool all_points_have_at_least_three_neighbors = true;
+  for (int i = 0; i < size_; ++i) {
+    // With nanoflann, I can either search for the num_closest and
+    // take the ones closer than radius, or search for all points closer than
+    // radius and keep the num_closest.
+    const int num_neighbors = kd_tree.index->knnSearch(
+        xyz(i).data(), num_closest, indices.data(), distances.data());
+
+    if (num_neighbors < 3) {
+      all_points_have_at_least_three_neighbors = false;
+    }
+
+    if (num_neighbors < 2) {
+      mutable_normal(i) = Eigen::Vector3f::Constant(kNaN);
+      continue;
+    }
+
+    // Compute the covariance matrix.
+    {
+      int count = 0;
+      mean.setZero();
+      for (int j = 0; j < num_neighbors; ++j) {
+        if (distances[j] <= squared_radius) {
+          ++count;
+          mean += xyz(indices[j]).cast<double>();
+        }
+      }
+      if (count < 3) {
+        all_points_have_at_least_three_neighbors = false;
+      }
+      if (count < 2) {
+        mutable_normal(i) = Eigen::Vector3f::Constant(kNaN);
+        continue;
+      }
+
+      mean /= count;
+      covariance.setZero();
+      for (int j = 0; j < num_neighbors; ++j) {
+        if (distances[j] <= squared_radius) {
+          const Eigen::VectorXd x_minus_mean =
+              xyz(indices[j]).cast<double>() - mean;
+          covariance += x_minus_mean * x_minus_mean.transpose();
+        }
+      }
+    }
+
+    // TODO(russt): Open3d implements a "FastEigen3x3" for an optimized version
+    // of this. We probably should, too.
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver;
+    solver.computeDirect(covariance, Eigen::ComputeEigenvectors);
+    mutable_normal(i) = solver.eigenvectors().col(0).cast<float>();
+  }
+  return all_points_have_at_least_three_neighbors;
 }
 
 }  // namespace perception
