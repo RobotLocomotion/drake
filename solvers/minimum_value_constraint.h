@@ -60,8 +60,8 @@ which an element influences the constraint or, conversely, the value above which
 an element is ignored), φ is a solvers::MinimumValuePenaltyFunction, and
 SmoothMax(v) is a smooth, conservative approximation of max(v) (i.e.
 SmoothMax(v) >= max(v), for all v). We require that vₘᵢₙ < v_influence. The
-input scaling (vᵢ - v_influence)/(v_influence - vₘᵢₙ) ensures that at the
-boundary of the feasible set (when vᵢ == vₘᵢₙ), we evaluate the penalty function
+input scaling (vᵢ - v_influence)/(v_influence - vₘᵢₙ) ensures that at the
+boundary of the feasible set (when vᵢ == vₘᵢₙ), we evaluate the penalty function
 at -1, where it is required to have a non-zero gradient. The user-provided
 function may return a vector with up to `max_num_values` elements. If it returns
 a vector with fewer than `max_num_values` elements, the remaining elements are
@@ -147,8 +147,8 @@ class MinimumValueConstraint final : public solvers::Constraint {
   const double minimum_value_;
   const double influence_value_;
   /** Stores the value of
-  1 / φ((vₘᵢₙ - v_influence)/(v_influence - vₘᵢₙ)) = 1 / φ(-1). This is
-  used to scale the output of the penalty function to be 1 when v == vₘᵢₙ. */
+  1 / φ((vₘᵢₙ - v_influence)/(v_influence - vₘᵢₙ)) = 1 / φ(-1). This is
+  used to scale the output of the penalty function to be 1 when v == vₘᵢₙ. */
   double penalty_output_scaling_;
   int max_num_values_{};
   MinimumValuePenaltyFunction penalty_function_{};
