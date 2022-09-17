@@ -55,17 +55,6 @@ _MOST_PUBLIC_HDRS = [
     "include/gz/utils/detail/DefaultOps.hh",
     "include/gz/utils/detail/ImplPtr.hh",
     "include/gz/utils/detail/SuppressWarning.hh",
-    "include/ignition/utils/Environment.hh",
-    "include/ignition/utils/Export.hh",
-    "include/ignition/utils/ImplPtr.hh",
-    "include/ignition/utils/NeverDestroyed.hh",
-    "include/ignition/utils/SuppressWarning.hh",
-    "include/ignition/utils/config.hh",
-    "include/ignition/utils/detail/DefaultOps.hh",
-    "include/ignition/utils/detail/Export.hh",
-    "include/ignition/utils/detail/ImplPtr.hh",
-    "include/ignition/utils/detail/SuppressWarning.hh",
-    "include/ignition/utils.hh",
 ]
 
 _SRCS = [
@@ -82,8 +71,20 @@ check_lists_consistency(
         # These are test utilities, not for use by library code.
         "include/gz/utils/ExtraTestMacros.hh",
         "include/gz/utils/detail/ExtraTestMacros.hh",
+        # These headers are deprecated.
+        "include/ignition/utils/Environment.hh",
         "include/ignition/utils/ExtraTestMacros.hh",
+        "include/ignition/utils/Export.hh",
+        "include/ignition/utils/ImplPtr.hh",
+        "include/ignition/utils/NeverDestroyed.hh",
+        "include/ignition/utils/SuppressWarning.hh",
+        "include/ignition/utils/config.hh",
+        "include/ignition/utils/detail/DefaultOps.hh",
+        "include/ignition/utils/detail/Export.hh",
         "include/ignition/utils/detail/ExtraTestMacros.hh",
+        "include/ignition/utils/detail/ImplPtr.hh",
+        "include/ignition/utils/detail/SuppressWarning.hh",
+        "include/ignition/utils.hh",
         # These are test code, not library code.
         "**/*TEST*",
     ],
@@ -98,10 +99,7 @@ cc_library_vendored(
     name = "gz_utils",
     hdrs = _HDRS,
     hdrs_vendored = [
-        x.replace("include/gz/", "drake_src/drake_vendor/gz/").replace(
-            "include/ignition/",
-            "drake_src/drake_vendor/ignition/",
-        )
+        x.replace("include/gz/", "drake_src/drake_vendor/gz/")
         for x in _HDRS
     ],
     srcs = _SRCS,
