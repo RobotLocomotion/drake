@@ -21,7 +21,7 @@ gz::math::Pose3d ToIgnitionPose3d(const RigidTransformd& pose) {
   const auto& quat = pose.rotation().ToQuaternion();
   return gz::math::Pose3d(
       gz::math::Vector3d(pose.translation().x(), pose.translation().y(),
-                               pose.translation().z()),
+                         pose.translation().z()),
       gz::math::Quaterniond(quat.w(), quat.x(), quat.y(), quat.z()));
 }
 }  // namespace internal
