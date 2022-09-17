@@ -1650,7 +1650,7 @@ TEST_F(SdfParserTest, BushingParsingBad3) {
 TEST_F(SdfParserTest, ReflectedInertiaParametersParsing) {
   AddSceneGraph();
   // Common SDF string with format options for the two custom tags.
-  const std::string test_string = R"""(
+  constexpr const char* test_string = R"""(
     <model name='ReflectedInertiaModel_{2}'>
       <link name='A'/>
       <link name='B'/>

@@ -499,7 +499,7 @@ TEST_F(SceneGraphParserDetail, VisualGeometryNameRequirements) {
 
   // A fmt::format-compatible string for testing various permutations of visual
   // names.
-  const std::string visual_tag =
+  constexpr const char* visual_tag =
       "<visual name='{}'>"
       "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
       "  <geometry>"
@@ -1090,7 +1090,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   // It contains a `{}` place holder such that child tags of <collision> can be
   // injected to test various expressions of collision properties --
   // substitution via fmt::format.
-  const std::string collision_xml = R"""(
+  constexpr const char* collision_xml = R"""(
 <collision name="some_geo">
   <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
   <geometry>

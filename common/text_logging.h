@@ -92,6 +92,14 @@ used by Drake might be older.)
 
 namespace drake {
 
+#if FMT_VERSION >= 80000 || defined(DRAKE_DOXYGEN_CXX)
+/// When using fmt >= 8, this is an alias for fmt::runtime.
+/// When using fmt < 8, this is a no-op.
+using fmt_runtime = fmt::runtime;
+#else
+inline std::string_view fmt_runtime(std::string_view s) { return s; }
+#endif
+
 #ifdef HAVE_SPDLOG
 namespace logging {
 
@@ -195,7 +203,7 @@ sink* get_dist_sink();
 struct Warn {
   template <typename... Args>
   Warn(const char* a, const Args&... b) {
-    drake::log()->warn(a, b...);
+    drake::log()->warn(fmt_runtime(a), b...);
   }
 };
 
