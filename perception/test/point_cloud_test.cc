@@ -373,6 +373,7 @@ GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
         }
         xyz /= indices.size();
         normal /= indices.size();
+        normal.normalize();
         rgb /= indices.size();
         descriptor /= indices.size();
 
@@ -392,6 +393,7 @@ GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
 
         EXPECT_TRUE(CompareMatrices(down_sampled.normal(i),
                                     normal.cast<float>(), kTol));
+        EXPECT_NEAR(down_sampled.normal(i).norm(), 1.0, 1e-6);
         EXPECT_EQ(down_sampled.rgb(i), rgb.cast<u_int8_t>());
         EXPECT_TRUE(CompareMatrices(down_sampled.descriptor(i),
                                     descriptor.cast<float>(), kTol));

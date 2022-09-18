@@ -476,7 +476,7 @@ PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
         (xyz / indices_in_this.size()).cast<T>();
     if (has_normals()) {
       down_sampled.mutable_normals().col(index_in_down_sampled) =
-          (normal / num_normals).cast<T>();
+          (normal / num_normals).normalized().cast<T>();
     }
     if (has_rgbs()) {
       down_sampled.mutable_rgbs().col(index_in_down_sampled) =
