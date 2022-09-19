@@ -53,7 +53,7 @@ GLXContext glXCreateContextAttribsARB(
 
 void GlDebugCallback(GLenum, GLenum type, GLuint, GLenum severity, GLsizei,
                      const GLchar* message, const void*) {
-  const char* output =
+  constexpr const char* output =
       "GL CALLBACK: {:s} type = 0x{:x}, severity = 0x{:x}, message = {:s}";
   if (type == GL_DEBUG_TYPE_ERROR) {
     drake::log()->error(output, "** GL_ERROR **", type, severity, message);

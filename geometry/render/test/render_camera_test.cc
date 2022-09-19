@@ -32,7 +32,7 @@ GTEST_TEST(ClippingRangeTest, Constructor) {
 
   {
     // Case: Bad values.
-    const char* error_message =
+    constexpr const char* error_message =
         "The clipping range values must both be positive and finite and far "
         "must be greater than near. Instantiated with near = {} and far = {}";
     DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(-0.1, 10),
@@ -230,7 +230,7 @@ GTEST_TEST(DepthRangeTest, Constructor) {
 
   {
     // Case: Bad values.
-    const char* error_message =
+    constexpr const char* error_message =
         "The depth range values must both be positive and finite and the "
         "maximum depth must be greater than the minimum depth. Instantiated "
         "with min = {} and max = {}";
