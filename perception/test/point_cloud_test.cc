@@ -286,50 +286,75 @@ GTEST_TEST(PointCloudTest, Fields) {
 }
 
 GTEST_TEST(PointCloud, Concatenate) {
-  auto fields = pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs |
-                pc_flags::kDescriptorCurvature;
+  // Run with a few subsets of the possible fields.
+  std::vector<pc_flags::Fields> fields;
+  fields.push_back(pc_flags::kXYZs);
+  fields.push_back(pc_flags::kRGBs);
+  fields.push_back(pc_flags::kNormals);
+  fields.push_back(pc_flags::kDescriptorCurvature);
+  fields.push_back(pc_flags::kXYZs | pc_flags::kRGBs | pc_flags::kNormals |
+                   pc_flags::kDescriptorCurvature);
 
-  std::vector<PointCloud> clouds;
-  // Populate three point clouds with arbitrary values.
-  clouds.push_back(PointCloud(2, fields, true));
-  clouds.push_back(PointCloud(3, fields, true));
-  clouds.push_back(PointCloud(1, fields, true));
+  for (const auto& f : fields) {
+    std::vector<PointCloud> clouds;
+    // Populate three point clouds with arbitrary values.
+    clouds.push_back(PointCloud(2, f, true));
+    clouds.push_back(PointCloud(3, f, true));
+    clouds.push_back(PointCloud(1, f, true));
 
-  clouds[0].mutable_xyzs() << 1, 2, 3, 4, 5, 6;
-  clouds[0].mutable_rgbs() << 10, 20, 30, 40, 50, 60;
-  clouds[0].mutable_normals() << 3, 4, -1, 12, 4, 32;
-  clouds[0].mutable_descriptors() << 8, 2;
+    if (f.contains(pc_flags::kXYZs)) {
+      clouds[0].mutable_xyzs() << 1, 2, 3, 4, 5, 6;
+      clouds[1].mutable_xyzs() << 421, 1, 1, 4, 4, 2, 141, 1, 63;
+      clouds[2].mutable_xyzs() << 71, 2, 1;
+    }
 
-  clouds[1].mutable_xyzs() << 421, 1, 1, 4, 4, 2, 141, 1, 63;
-  clouds[1].mutable_rgbs() << 57, 1, 42, 25, 25, 10, 12, 63, 192;
-  clouds[1].mutable_normals() << -2, 1, 532, 7, 2, 6, 36, 84, 42;
-  clouds[1].mutable_descriptors() << 10, 52, 1;
+    if (f.contains(pc_flags::kRGBs)) {
+      clouds[0].mutable_rgbs() << 10, 20, 30, 40, 50, 60;
+      clouds[1].mutable_rgbs() << 57, 1, 42, 25, 25, 10, 12, 63, 192;
+      clouds[2].mutable_rgbs() << 53, 24, 172;
+    }
 
-  clouds[2].mutable_xyzs() << 71, 2, 1;
-  clouds[2].mutable_rgbs() << 53, 24, 172;
-  clouds[2].mutable_normals() << 91, 4, 44;
-  clouds[2].mutable_descriptors() << 91;
+    if (f.contains(pc_flags::kNormals)) {
+      clouds[0].mutable_normals() << 3, 4, -1, 12, 4, 32;
+      clouds[1].mutable_normals() << -2, 1, 532, 7, 2, 6, 36, 84, 42;
+      clouds[2].mutable_normals() << 91, 4, 44;
+    }
 
-  PointCloud merged = Concatenate(clouds);
-  EXPECT_EQ(merged.size(), 6);
+    if (f.has_descriptor()) {
+      clouds[0].mutable_descriptors() << 8, 2;
+      clouds[1].mutable_descriptors() << 10, 52, 1;
+      clouds[2].mutable_descriptors() << 91;
+    }
 
-  Eigen::Matrix3Xf xyzs_expected(3, 6);
-  xyzs_expected << clouds[0].xyzs(), clouds[1].xyzs(), clouds[2].xyzs();
-  EXPECT_TRUE(CompareMatrices(merged.xyzs(), xyzs_expected));
+    PointCloud merged = Concatenate(clouds);
+    EXPECT_EQ(merged.size(), 6);
 
-  Matrix3X<uint8_t> rgbs_expected(3, 6);
-  rgbs_expected << clouds[0].rgbs(), clouds[1].rgbs(), clouds[2].rgbs();
-  EXPECT_TRUE((merged.rgbs().array() == rgbs_expected.array()).all());
+    if (f.contains(pc_flags::kXYZs)) {
+      Eigen::Matrix3Xf xyzs_expected(3, 6);
+      xyzs_expected << clouds[0].xyzs(), clouds[1].xyzs(), clouds[2].xyzs();
+      EXPECT_TRUE(CompareMatrices(merged.xyzs(), xyzs_expected));
+    }
 
-  Eigen::Matrix3Xf normals_expected(3, 6);
-  normals_expected << clouds[0].normals(), clouds[1].normals(),
-      clouds[2].normals();
-  EXPECT_TRUE(CompareMatrices(merged.normals(), normals_expected));
+    if (f.contains(pc_flags::kRGBs)) {
+      Matrix3X<uint8_t> rgbs_expected(3, 6);
+      rgbs_expected << clouds[0].rgbs(), clouds[1].rgbs(), clouds[2].rgbs();
+      EXPECT_TRUE((merged.rgbs().array() == rgbs_expected.array()).all());
+    }
 
-  Eigen::RowVectorXf descriptors_expected(6);
-  descriptors_expected << clouds[0].descriptors(), clouds[1].descriptors(),
-      clouds[2].descriptors();
-  EXPECT_TRUE(CompareMatrices(merged.descriptors(), descriptors_expected));
+    if (f.contains(pc_flags::kNormals)) {
+      Eigen::Matrix3Xf normals_expected(3, 6);
+      normals_expected << clouds[0].normals(), clouds[1].normals(),
+          clouds[2].normals();
+      EXPECT_TRUE(CompareMatrices(merged.normals(), normals_expected));
+    }
+
+    if (f.has_descriptor()) {
+      Eigen::RowVectorXf descriptors_expected(6);
+      descriptors_expected << clouds[0].descriptors(), clouds[1].descriptors(),
+          clouds[2].descriptors();
+      EXPECT_TRUE(CompareMatrices(merged.descriptors(), descriptors_expected));
+    }
+  }
 }
 
 GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
