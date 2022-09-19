@@ -1,5 +1,7 @@
 #include "drake/common/trajectories/path_parameterized_trajectory.h"
 
+#include <algorithm>
+
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
@@ -7,9 +9,6 @@
 namespace drake {
 namespace trajectories {
 namespace {
-
-using std::max;
-using std::min;
 
 class PathParameterizedTrajectoryTest : public ::testing::Test {
  protected:
@@ -43,7 +42,7 @@ TEST_F(PathParameterizedTrajectoryTest, TestConstructor) {
 TEST_F(PathParameterizedTrajectoryTest, TestValue) {
   for (double t = 0.88; t < 2.2; t += 0.12) {
     const double time =
-        min(max(t, time_scaling_.start_time()), time_scaling_.end_time());
+        std::clamp(t, time_scaling_.start_time(), time_scaling_.end_time());
     EXPECT_TRUE(CompareMatrices(
         dut_->value(t), path_.value(time_scaling_.scalarValue(time)), 1e-14));
   }
@@ -52,7 +51,7 @@ TEST_F(PathParameterizedTrajectoryTest, TestValue) {
 TEST_F(PathParameterizedTrajectoryTest, TestDerivatives) {
   for (double t = 0.88; t < 2.2; t += 0.12) {
     const double time =
-        min(max(t, time_scaling_.start_time()), time_scaling_.end_time());
+        std::clamp(t, time_scaling_.start_time(), time_scaling_.end_time());
 
     EXPECT_TRUE(
         CompareMatrices(dut_->EvalDerivative(t, 0), dut_->value(t), 1e-14));

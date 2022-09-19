@@ -81,10 +81,8 @@ int PiecewiseTrajectory<T>::GetSegmentIndexRecursive(const T& time, int start,
 template <typename T>
 int PiecewiseTrajectory<T>::get_segment_index(const T& t) const {
   if (breaks_.empty()) return 0;
-  // clip to min/max times
-  using std::min;
-  using std::max;
-  T time = min(max(t, start_time()), end_time());
+  using std::clamp;
+  const T time = clamp(t, start_time(), end_time());
   return GetSegmentIndexRecursive(time, 0,
                                   static_cast<int>(breaks_.size() - 1));
 }

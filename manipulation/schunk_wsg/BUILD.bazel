@@ -92,7 +92,6 @@ drake_cc_library(
     srcs = ["schunk_wsg_position_controller.cc"],
     hdrs = ["schunk_wsg_position_controller.h"],
     deps = [
-        "//math:saturate",
         "//systems/framework:leaf_system",
         "//systems/primitives:discrete_derivative",
     ],

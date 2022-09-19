@@ -1,6 +1,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 
-#include "drake/math/saturate.h"
+#include <algorithm>
+
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -65,10 +66,11 @@ Vector2d SchunkWsgPdController::CalcGeneralizedForce(
                             kd_constraint_ * (state[2] + state[3]);
 
   // -f₀+f₁ = sat(kp_command*(q_d + q₀ - q₁) + kd_command*(v_d + v₀ - v₁)).
+  using std::clamp;
   const double neg_f0_plus_f1 =
-      math::saturate(kp_command_ * (desired_state[0] + state[0] - state[1]) +
-                         kd_command_ * (desired_state[1] + state[2] - state[3]),
-                     -force_limit, force_limit);
+      clamp(kp_command_ * (desired_state[0] + state[0] - state[1]) +
+                kd_command_ * (desired_state[1] + state[2] - state[3]),
+            -force_limit, force_limit);
 
   // f₀ = (f₀+f₁)/2 - (-f₀+f₁)/2,
   // f₁ = (f₀+f₁)/2 + (-f₀+f₁)/2.
