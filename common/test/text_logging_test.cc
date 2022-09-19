@@ -74,6 +74,21 @@ GTEST_TEST(TextLoggingTest, ConstantTest) {
   #endif
 }
 
+namespace {
+void* SanityCheck(void* data) {
+  if (data == nullptr) {
+    static const drake::logging::Warn log_once(
+        "The log_once happened as expected.");
+  }
+  return data;
+}
+}  // namespace
+
+// Check that the "warn once" idiom compiles and doesn't crash at runtime.
+GTEST_TEST(TextLoggingTest, WarnOnceTest) {
+  EXPECT_NO_THROW(SanityCheck(nullptr));
+}
+
 // Abuse gtest internals to verify that logging actually prints when enabled,
 // and that the default level is INFO.
 GTEST_TEST(TextLoggingTest, CaptureOutputTest) {
