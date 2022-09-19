@@ -729,6 +729,15 @@ Expression max(const Expression& e1, const Expression& e2) {
   return Expression{make_unique<ExpressionMax>(e1, e2)};
 }
 
+Expression clamp(const Expression& v, const Expression& lo,
+                 const Expression& hi) {
+  // TODO(jwnimmer-tri) In case lo and hi are constants and lo <= hi, we could
+  // write this in terms of `min` and `max` instead of `cond`; the simpler `min`
+  // and `max` terms might be easier for symbolic processing engines to consume
+  // then the `if_then_else` terms created by `cond`.
+  return cond(v < lo, lo, v > hi, hi, v);
+}
+
 Expression ceil(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {

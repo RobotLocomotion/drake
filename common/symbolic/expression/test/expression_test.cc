@@ -1726,6 +1726,30 @@ TEST_F(SymbolicExpressionTest, Max2) {
   EXPECT_EQ((max(x_, y_)).to_string(), "max(x, y)");
 }
 
+TEST_F(SymbolicExpressionTest, Clamp1) {
+  Expression result;
+  result = clamp(Expression{1.5}, one_, pi_);
+  EXPECT_EQ(result.to_string(), "1.5");
+  result = clamp(Expression::Zero(), one_, pi_);
+  EXPECT_EQ(result.to_string(), "1");
+  result = clamp(Expression{5.6}, one_, pi_);
+  const std::string kPi{"3.14"};
+  EXPECT_EQ(result.to_string().compare(0, kPi.length(), kPi), 0);
+}
+
+TEST_F(SymbolicExpressionTest, Clamp2) {
+  const Variable var_lo{"lo"};
+  const Variable var_hi{"hi"};
+  auto e = clamp(x_, var_lo, var_hi);
+  EXPECT_EQ(e.Evaluate({{var_x_, 0}, {var_lo, 3}, {var_hi, 10}}), 3);
+  EXPECT_EQ(e.Evaluate({{var_x_, 5}, {var_lo, 3}, {var_hi, 10}}), 5);
+  EXPECT_EQ(e.Evaluate({{var_x_, 12.3}, {var_lo, 3}, {var_hi, 10}}), 10);
+
+  // The contract of std::clamp is very particular. When we have the absurd
+  // case of lo > hi, the lo needs to win.
+  EXPECT_EQ(e.Evaluate({{var_x_, 0}, {var_lo, 10}, {var_hi, 3}}), 10);
+}
+
 TEST_F(SymbolicExpressionTest, Ceil) {
   EXPECT_DOUBLE_EQ(ceil(pi_).Evaluate(), std::ceil(M_PI));
   EXPECT_DOUBLE_EQ(ceil(one_).Evaluate(), std::ceil(1));

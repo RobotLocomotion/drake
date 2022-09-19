@@ -14,7 +14,6 @@
 using std::runtime_error;
 using std::vector;
 using std::abs;
-using std::min;
 using std::max;
 
 namespace drake {
@@ -118,8 +117,9 @@ T PiecewisePolynomial<T>::scalarValue(const T& t, Eigen::Index row,
 template <typename T>
 MatrixX<T> PiecewisePolynomial<T>::DoEvalDerivative(
     const T& t, int derivative_order) const {
+  using std::clamp;
   const int segment_index = this->get_segment_index(t);
-  const T time = min(max(t, this->start_time()), this->end_time());
+  const T time = clamp(t, this->start_time(), this->end_time());
   Eigen::Matrix<T, PolynomialMatrix::RowsAtCompileTime,
                 PolynomialMatrix::ColsAtCompileTime>
       ret(rows(), cols());
