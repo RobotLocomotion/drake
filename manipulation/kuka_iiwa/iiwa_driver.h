@@ -16,9 +16,6 @@ role that driver software and control cabinets would take in real life.
 It creates an LCM publisher on the `IIWA_STATUS` channel and an LCM subscriber
 on the `IIWA_COMMAND` channel. */
 struct IiwaDriver {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IiwaDriver)
-  IiwaDriver() = default;
-
   /** The name of the model (`name` element of the `add_model` directive) in
   the simulation that the driver will analyze to compute end effector inertia
   for its copy of the arm in inverse dynamics. */
