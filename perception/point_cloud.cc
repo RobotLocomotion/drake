@@ -365,6 +365,20 @@ PointCloud PointCloud::Crop(const Eigen::Ref<const Vector3<T>>& lower_xyz,
   return crop;
 }
 
+void PointCloud::FlipNormalsTowardPoint(
+    const Eigen::Ref<const Vector3<T>>& p_CP) {
+  DRAKE_THROW_UNLESS(has_xyzs());
+  DRAKE_THROW_UNLESS(has_normals());
+
+  for (int i = 0; i < size_; ++i) {
+    // Note: p_CP - xyz could be arbitrarily close to zero; but this behavior
+    // is still reasonable.
+    if ((p_CP - xyz(i)).dot(normal(i)) < 0.0) {
+      mutable_normal(i) *= T(-1.0);
+    }
+  }
+}
+
 PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
   const int num_clouds = clouds.size();
   DRAKE_DEMAND(num_clouds >= 1);

@@ -357,6 +357,76 @@ GTEST_TEST(PointCloud, Concatenate) {
   }
 }
 
+GTEST_TEST(PointCloudTest, FlipNormals) {
+  const auto fields = pc_flags::kXYZs | pc_flags::kNormals;
+  constexpr int num_points{7};
+  PointCloud cloud(num_points, fields);
+
+  constexpr float kNan = std::numeric_limits<float>::quiet_NaN();
+  // Place the xyzs in a square on the xy axis, plus a test for nan and inf.
+  // clang-format off
+  cloud.mutable_xyzs().transpose() <<
+    0,    0,    0,
+    0.1,  0,    0,
+    0,    0.1,  0,
+    0.1,  0.1,  0,
+    0,    kNan, 0,
+    0,    0.1,  0,  // will have a kNan in the normal
+    0,    0,    0;  // will have an orthogonal normal
+  // clang-format on
+
+  // Original normals have (almost) arbitrary xy values, but an intentional mix
+  // of positive and negative z values.  The z values are taken to be larger
+  // than the x,y values so that the normals are vertical enough that the z
+  // component determines if they should flip.
+  Eigen::Matrix3Xf original_normals(3, num_points);
+  // clang-format off
+  original_normals.transpose() <<
+    0.12, 0.32,  1.0,
+    -0.2, 0.24,  2.3,
+    -3,   0.24, -2.5,
+    .25,  0.47, -2.4,
+    0.12, 0.32,  1.0,
+    kNan, 0.47, -2.4,
+    1,    1,     0;
+  // clang-format on
+
+  auto CheckNormal = [&cloud, &original_normals](int index,
+                                                 bool expect_flipped) {
+    if (expect_flipped) {
+      EXPECT_TRUE(
+          CompareMatrices(cloud.normal(index), -original_normals.col(index)));
+    } else {
+      EXPECT_TRUE(
+          CompareMatrices(cloud.normal(index), original_normals.col(index)));
+    }
+  };
+
+  // Orient toward positive z.
+  cloud.mutable_normals() = original_normals;
+  cloud.FlipNormalsTowardPoint(Eigen::Vector3f{0, 0, 1});
+
+  CheckNormal(0, false);
+  CheckNormal(1, false);
+  CheckNormal(2, true);
+  CheckNormal(3, true);
+  CheckNormal(4, false);  // NaN xyz doesn't explode.
+  CheckNormal(5, false);  // NaN normal doesn't explode.
+  CheckNormal(6, false);  // orthogonal normals don't flip.
+
+  // Orient toward negative z.
+  cloud.mutable_normals() = original_normals;
+  cloud.FlipNormalsTowardPoint(Eigen::Vector3f{0, 0, -1});
+
+  CheckNormal(0, true);
+  CheckNormal(1, true);
+  CheckNormal(2, false);
+  CheckNormal(3, false);
+  CheckNormal(4, false);  // NaN xyz doesn't explode.
+  CheckNormal(5, false);  // NaN normal doesn't explode.
+  CheckNormal(6, false);  // orthogonal normals don't flip.
+}
+
 GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
   const auto fields = pc_flags::kXYZs | pc_flags::kNormals |
                           pc_flags::kRGBs | pc_flags::kDescriptorCurvature;
