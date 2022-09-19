@@ -98,5 +98,5 @@ directly:
 
   ```bash
   wget https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-focal.deb
-  sudo apt-get install --no-install-recommends ./drake-latest-focal.deb
+  sudo apt-get install --no-install-recommends ./drake-dev_latest-1_amd64-focal.deb
   ```

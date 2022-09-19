@@ -14,7 +14,7 @@ notebooks. See the [Tutorials](/index.html#tutorials) page for details.
 The following table shows the configurations and platforms that Drake
 officially supports:
 
-| Operating System ⁽³⁾⁽⁴⁾            | Architecture          | Python   |
+| Operating System ⁽³⁾               | Architecture          | Python   |
 |------------------------------------|-----------------------|----------|
 | Ubuntu 20.04 LTS (Focal Fossa)     | x86_64                | 3.8 ⁽²⁾  |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64                | 3.10 ⁽²⁾ |
@@ -35,9 +35,6 @@ reported `which -a python python3` refer to conda.
 ⁽³⁾ Drake features that perform image rendering (e.g., camera simulation)
 require a working display server.  Most personal computers will have this
 already built in, but some cloud or docker environments may not.
-
-⁽⁴⁾ Ubuntu 22.04 (Jammy Jellyfish) pre-built binaries are not yet available
-for pip.
 
 Additionally, if you are compiling your own C++ code against Drake's C++ code
 and are using Drake's pre-compiled binaries, then you must use the same
