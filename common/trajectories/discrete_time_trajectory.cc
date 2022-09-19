@@ -86,7 +86,7 @@ template <typename T>
 MatrixX<T> DiscreteTimeTrajectory<T>::value(const T& t) const {
   using std::abs;
   const double time = ExtractDoubleOrThrow(t);
-  static const char* kNoMatchingTimeStr =
+  static constexpr const char* kNoMatchingTimeStr =
       "Value requested at time {} does not match any of the trajectory times "
       "within tolerance {}.";
   for (int i = 0; i < static_cast<int>(times_.size()); ++i) {

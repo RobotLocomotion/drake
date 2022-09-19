@@ -239,7 +239,7 @@ class UrdfGeometryTest : public test::DiagnosticPolicyTestBase {
   // <collision> tag.
   void MakeCollisionDocFromString(
       const std::string& collision_spec) {
-    const std::string urdf_harness = R"""(
+    constexpr const char* urdf_harness = R"""(
 <?xml version="1.0"?>
   <collision>
     <geometry>
@@ -749,7 +749,7 @@ TEST_F(UrdfGeometryTest, TestBadBox) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadSphere) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -766,7 +766,7 @@ TEST_F(UrdfGeometryTest, TestBadSphere) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadCylinder) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -791,7 +791,7 @@ TEST_F(UrdfGeometryTest, TestBadCylinder) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadCapsule) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -821,7 +821,7 @@ TEST_F(UrdfGeometryTest, TestBadCapsule) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadEllipsoid) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -854,7 +854,7 @@ TEST_F(UrdfGeometryTest, TestBadEllipsoid) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadMesh) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -889,7 +889,7 @@ TEST_F(UrdfGeometryTest, TestBadShapeCollision) {
 }
 
 TEST_F(UrdfGeometryTest, TestLegacyDrakeCompliance) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -938,7 +938,7 @@ TEST_F(UrdfGeometryTest, TestBadShapeVisual) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadProperty) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
   <drake:proximity_properties>
     <drake:mu_dynamic {}/>
   </drake:proximity_properties>)""";
