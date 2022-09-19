@@ -377,7 +377,7 @@ PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
   int index = 0;
   for (int i = 0; i < num_clouds; ++i) {
     const int s = clouds[i].size();
-    if (new_cloud.has_normals()) {
+    if (new_cloud.has_xyzs()) {
       new_cloud.mutable_xyzs().middleCols(index, s) = clouds[i].xyzs();
     }
     if (new_cloud.has_normals()) {
