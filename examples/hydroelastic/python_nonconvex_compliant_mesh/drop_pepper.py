@@ -102,7 +102,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--simulation_time", type=float, default=1.0,
         help="Desired duration of the simulation in seconds. "
-             "Default 0.5.")
+             "Default 1.0.")
     parser.add_argument(
         "--contact_model", type=str, default="hydroelastic_with_fallback",
         help="Contact model. Options are: 'point', 'hydroelastic', "
@@ -125,7 +125,7 @@ if __name__ == "__main__":
              "Default: 0 0 0.1")
     parser.add_argument(
         "--target_realtime_rate", type=float, default=0.1,
-        help="Target realtime rate. Default 1.0.")
+        help="Target realtime rate. Default 0.1.")
     args = parser.parse_args()
 
     diagram, pepper_table_plant, state_logger = make_pepper_table(
