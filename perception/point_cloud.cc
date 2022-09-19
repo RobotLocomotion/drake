@@ -365,6 +365,20 @@ PointCloud PointCloud::Crop(const Eigen::Ref<const Vector3<T>>& lower_xyz,
   return crop;
 }
 
+void PointCloud::FlipNormalsTowardPoint(
+    const Eigen::Ref<const Vector3<T>>& p_CP) {
+  DRAKE_THROW_UNLESS(has_xyzs());
+  DRAKE_THROW_UNLESS(has_normals());
+
+  for (int i = 0; i < size_; ++i) {
+    // Note: p_CP - xyz could be arbitrarily close to zero; but this behavior
+    // is still reasonable.
+    if ((p_CP - xyz(i)).dot(normal(i)) < 0.0) {
+      mutable_normal(i) *= T(-1.0);
+    }
+  }
+}
+
 PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
   const int num_clouds = clouds.size();
   DRAKE_DEMAND(num_clouds >= 1);
@@ -377,7 +391,7 @@ PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
   int index = 0;
   for (int i = 0; i < num_clouds; ++i) {
     const int s = clouds[i].size();
-    if (new_cloud.has_normals()) {
+    if (new_cloud.has_xyzs()) {
       new_cloud.mutable_xyzs().middleCols(index, s) = clouds[i].xyzs();
     }
     if (new_cloud.has_normals()) {
@@ -476,7 +490,7 @@ PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
         (xyz / indices_in_this.size()).cast<T>();
     if (has_normals()) {
       down_sampled.mutable_normals().col(index_in_down_sampled) =
-          (normal / num_normals).cast<T>();
+          (normal / num_normals).normalized().cast<T>();
     }
     if (has_rgbs()) {
       down_sampled.mutable_rgbs().col(index_in_down_sampled) =

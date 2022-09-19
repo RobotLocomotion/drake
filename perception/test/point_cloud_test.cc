@@ -286,50 +286,145 @@ GTEST_TEST(PointCloudTest, Fields) {
 }
 
 GTEST_TEST(PointCloud, Concatenate) {
-  auto fields = pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs |
-                pc_flags::kDescriptorCurvature;
+  // Run with a few subsets of the possible fields.
+  std::vector<pc_flags::Fields> fields;
+  fields.push_back(pc_flags::kXYZs);
+  fields.push_back(pc_flags::kRGBs);
+  fields.push_back(pc_flags::kNormals);
+  fields.push_back(pc_flags::kDescriptorCurvature);
+  fields.push_back(pc_flags::kXYZs | pc_flags::kRGBs | pc_flags::kNormals |
+                   pc_flags::kDescriptorCurvature);
 
-  std::vector<PointCloud> clouds;
-  // Populate three point clouds with arbitrary values.
-  clouds.push_back(PointCloud(2, fields, true));
-  clouds.push_back(PointCloud(3, fields, true));
-  clouds.push_back(PointCloud(1, fields, true));
+  for (const auto& f : fields) {
+    std::vector<PointCloud> clouds;
+    // Populate three point clouds with arbitrary values.
+    clouds.push_back(PointCloud(2, f, true));
+    clouds.push_back(PointCloud(3, f, true));
+    clouds.push_back(PointCloud(1, f, true));
 
-  clouds[0].mutable_xyzs() << 1, 2, 3, 4, 5, 6;
-  clouds[0].mutable_rgbs() << 10, 20, 30, 40, 50, 60;
-  clouds[0].mutable_normals() << 3, 4, -1, 12, 4, 32;
-  clouds[0].mutable_descriptors() << 8, 2;
+    if (f.contains(pc_flags::kXYZs)) {
+      clouds[0].mutable_xyzs() << 1, 2, 3, 4, 5, 6;
+      clouds[1].mutable_xyzs() << 421, 1, 1, 4, 4, 2, 141, 1, 63;
+      clouds[2].mutable_xyzs() << 71, 2, 1;
+    }
 
-  clouds[1].mutable_xyzs() << 421, 1, 1, 4, 4, 2, 141, 1, 63;
-  clouds[1].mutable_rgbs() << 57, 1, 42, 25, 25, 10, 12, 63, 192;
-  clouds[1].mutable_normals() << -2, 1, 532, 7, 2, 6, 36, 84, 42;
-  clouds[1].mutable_descriptors() << 10, 52, 1;
+    if (f.contains(pc_flags::kRGBs)) {
+      clouds[0].mutable_rgbs() << 10, 20, 30, 40, 50, 60;
+      clouds[1].mutable_rgbs() << 57, 1, 42, 25, 25, 10, 12, 63, 192;
+      clouds[2].mutable_rgbs() << 53, 24, 172;
+    }
 
-  clouds[2].mutable_xyzs() << 71, 2, 1;
-  clouds[2].mutable_rgbs() << 53, 24, 172;
-  clouds[2].mutable_normals() << 91, 4, 44;
-  clouds[2].mutable_descriptors() << 91;
+    if (f.contains(pc_flags::kNormals)) {
+      clouds[0].mutable_normals() << 3, 4, -1, 12, 4, 32;
+      clouds[1].mutable_normals() << -2, 1, 532, 7, 2, 6, 36, 84, 42;
+      clouds[2].mutable_normals() << 91, 4, 44;
+    }
 
-  PointCloud merged = Concatenate(clouds);
-  EXPECT_EQ(merged.size(), 6);
+    if (f.has_descriptor()) {
+      clouds[0].mutable_descriptors() << 8, 2;
+      clouds[1].mutable_descriptors() << 10, 52, 1;
+      clouds[2].mutable_descriptors() << 91;
+    }
 
-  Eigen::Matrix3Xf xyzs_expected(3, 6);
-  xyzs_expected << clouds[0].xyzs(), clouds[1].xyzs(), clouds[2].xyzs();
-  EXPECT_TRUE(CompareMatrices(merged.xyzs(), xyzs_expected));
+    PointCloud merged = Concatenate(clouds);
+    EXPECT_EQ(merged.size(), 6);
 
-  Matrix3X<uint8_t> rgbs_expected(3, 6);
-  rgbs_expected << clouds[0].rgbs(), clouds[1].rgbs(), clouds[2].rgbs();
-  EXPECT_TRUE((merged.rgbs().array() == rgbs_expected.array()).all());
+    if (f.contains(pc_flags::kXYZs)) {
+      Eigen::Matrix3Xf xyzs_expected(3, 6);
+      xyzs_expected << clouds[0].xyzs(), clouds[1].xyzs(), clouds[2].xyzs();
+      EXPECT_TRUE(CompareMatrices(merged.xyzs(), xyzs_expected));
+    }
 
-  Eigen::Matrix3Xf normals_expected(3, 6);
-  normals_expected << clouds[0].normals(), clouds[1].normals(),
-      clouds[2].normals();
-  EXPECT_TRUE(CompareMatrices(merged.normals(), normals_expected));
+    if (f.contains(pc_flags::kRGBs)) {
+      Matrix3X<uint8_t> rgbs_expected(3, 6);
+      rgbs_expected << clouds[0].rgbs(), clouds[1].rgbs(), clouds[2].rgbs();
+      EXPECT_TRUE((merged.rgbs().array() == rgbs_expected.array()).all());
+    }
 
-  Eigen::RowVectorXf descriptors_expected(6);
-  descriptors_expected << clouds[0].descriptors(), clouds[1].descriptors(),
-      clouds[2].descriptors();
-  EXPECT_TRUE(CompareMatrices(merged.descriptors(), descriptors_expected));
+    if (f.contains(pc_flags::kNormals)) {
+      Eigen::Matrix3Xf normals_expected(3, 6);
+      normals_expected << clouds[0].normals(), clouds[1].normals(),
+          clouds[2].normals();
+      EXPECT_TRUE(CompareMatrices(merged.normals(), normals_expected));
+    }
+
+    if (f.has_descriptor()) {
+      Eigen::RowVectorXf descriptors_expected(6);
+      descriptors_expected << clouds[0].descriptors(), clouds[1].descriptors(),
+          clouds[2].descriptors();
+      EXPECT_TRUE(CompareMatrices(merged.descriptors(), descriptors_expected));
+    }
+  }
+}
+
+GTEST_TEST(PointCloudTest, FlipNormals) {
+  const auto fields = pc_flags::kXYZs | pc_flags::kNormals;
+  constexpr int num_points{7};
+  PointCloud cloud(num_points, fields);
+
+  constexpr float kNan = std::numeric_limits<float>::quiet_NaN();
+  // Place the xyzs in a square on the xy axis, plus a test for nan and inf.
+  // clang-format off
+  cloud.mutable_xyzs().transpose() <<
+    0,    0,    0,
+    0.1,  0,    0,
+    0,    0.1,  0,
+    0.1,  0.1,  0,
+    0,    kNan, 0,
+    0,    0.1,  0,  // will have a kNan in the normal
+    0,    0,    0;  // will have an orthogonal normal
+  // clang-format on
+
+  // Original normals have (almost) arbitrary xy values, but an intentional mix
+  // of positive and negative z values.  The z values are taken to be larger
+  // than the x,y values so that the normals are vertical enough that the z
+  // component determines if they should flip.
+  Eigen::Matrix3Xf original_normals(3, num_points);
+  // clang-format off
+  original_normals.transpose() <<
+    0.12, 0.32,  1.0,
+    -0.2, 0.24,  2.3,
+    -3,   0.24, -2.5,
+    .25,  0.47, -2.4,
+    0.12, 0.32,  1.0,
+    kNan, 0.47, -2.4,
+    1,    1,     0;
+  // clang-format on
+
+  auto CheckNormal = [&cloud, &original_normals](int index,
+                                                 bool expect_flipped) {
+    if (expect_flipped) {
+      EXPECT_TRUE(
+          CompareMatrices(cloud.normal(index), -original_normals.col(index)));
+    } else {
+      EXPECT_TRUE(
+          CompareMatrices(cloud.normal(index), original_normals.col(index)));
+    }
+  };
+
+  // Orient toward positive z.
+  cloud.mutable_normals() = original_normals;
+  cloud.FlipNormalsTowardPoint(Eigen::Vector3f{0, 0, 1});
+
+  CheckNormal(0, false);
+  CheckNormal(1, false);
+  CheckNormal(2, true);
+  CheckNormal(3, true);
+  CheckNormal(4, false);  // NaN xyz doesn't explode.
+  CheckNormal(5, false);  // NaN normal doesn't explode.
+  CheckNormal(6, false);  // orthogonal normals don't flip.
+
+  // Orient toward negative z.
+  cloud.mutable_normals() = original_normals;
+  cloud.FlipNormalsTowardPoint(Eigen::Vector3f{0, 0, -1});
+
+  CheckNormal(0, true);
+  CheckNormal(1, true);
+  CheckNormal(2, false);
+  CheckNormal(3, false);
+  CheckNormal(4, false);  // NaN xyz doesn't explode.
+  CheckNormal(5, false);  // NaN normal doesn't explode.
+  CheckNormal(6, false);  // orthogonal normals don't flip.
 }
 
 GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
@@ -373,6 +468,7 @@ GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
         }
         xyz /= indices.size();
         normal /= indices.size();
+        normal.normalize();
         rgb /= indices.size();
         descriptor /= indices.size();
 
@@ -392,6 +488,7 @@ GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
 
         EXPECT_TRUE(CompareMatrices(down_sampled.normal(i),
                                     normal.cast<float>(), kTol));
+        EXPECT_NEAR(down_sampled.normal(i).norm(), 1.0, 1e-6);
         EXPECT_EQ(down_sampled.rgb(i), rgb.cast<u_int8_t>());
         EXPECT_TRUE(CompareMatrices(down_sampled.descriptor(i),
                                     descriptor.cast<float>(), kTol));
