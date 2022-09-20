@@ -729,6 +729,12 @@ Expression max(const Expression& e1, const Expression& e2) {
   return Expression{make_unique<ExpressionMax>(e1, e2)};
 }
 
+Expression clamp(const Expression& v, const Expression& lo,
+                 const Expression& hi) {
+  DRAKE_ASSERT(!is_constant(lo) || !is_constant(hi) || (lo <= hi));
+  return min(hi, max(lo, v));
+}
+
 Expression ceil(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {

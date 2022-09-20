@@ -253,7 +253,6 @@ drake_cc_library(
     srcs = ["saturation.cc"],
     hdrs = ["saturation.h"],
     deps = [
-        "//math:saturate",
         "//systems/framework",
     ],
 )

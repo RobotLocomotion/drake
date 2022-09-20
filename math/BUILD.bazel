@@ -528,6 +528,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "saturate_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":saturate",
         "//common:default_scalars",

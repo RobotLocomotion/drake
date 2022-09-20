@@ -33,10 +33,9 @@ std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::Clone() const {
 
 template <typename T>
 MatrixX<T> BsplineTrajectory<T>::value(const T& time) const {
-  using std::max;
-  using std::min;
+  using std::clamp;
   return basis().EvaluateCurve(control_points(),
-                               min(max(time, start_time()), end_time()));
+                               clamp(time, start_time(), end_time()));
 }
 
 template <typename T>
