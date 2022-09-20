@@ -1,0 +1,427 @@
+See https://github.com/qhull/qhull/pull/119
+
+From d827074c8f82ff0a03fa935c783da5a7c24e0959 Mon Sep 17 00:00:00 2001
+From: Pei Jia <jiapei@longervision.com>
+Date: Sat, 6 Aug 2022 17:55:52 -0700
+Subject: [PATCH] =?UTF-8?q?Remove=20bugs=20like=20expected=20unqualified-i?=
+ =?UTF-8?q?d=20before=20=E2=80=98const=E2=80=99?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ src/libqhullcpp/QhullLinkedList.h | 58 +++++++++++---------
+ src/libqhullcpp/QhullSet.h        | 91 +++++++++++++++++--------------
+ 2 files changed, 80 insertions(+), 69 deletions(-)
+
+diff --git a/src/libqhullcpp/QhullLinkedList.h b/src/libqhullcpp/QhullLinkedList.h
+index 9f145ee9..17e453d7 100644
+--- src/libqhullcpp/QhullLinkedList.h
++++ src/libqhullcpp/QhullLinkedList.h
+@@ -26,7 +26,7 @@
+ 
+ namespace orgQhull {
+ 
+-#//!\name Defined here
++//#!\name Defined here
+     //! QhullLinkedList<T> -- A linked list modeled on QLinkedList.
+     //!   T is an opaque type with T(B *b), b=t.getBaseT(), t=t.next(), and t=t.prev().  The end node is a sentinel.
+     //!   QhullQh/qhT owns the contents.
+@@ -41,7 +41,7 @@ namespace orgQhull {
+ template <typename T>
+ class QhullLinkedList
+ {
+-#//!\name Defined here
++//#!\name Defined here
+ public:
+     class const_iterator;
+     class iterator;
+@@ -55,27 +55,29 @@ class QhullLinkedList
+     typedef value_type *pointer;
+     typedef value_type &reference;
+ 
+-#//!\name Fields
++//#!\name Fields
+ private:
+     T                   begin_node;
+     T                   end_node;     //! Sentinel node at end of list
+ 
+-#//!\name Constructors
++//#!\name Constructors
+ public:
+-                        QhullLinkedList<T>(T b, T e) : begin_node(b), end_node(e) {}
++
++                        QhullLinkedList(T b, T e) : begin_node(b), end_node(e) {}
+                         //! Copy constructor copies begin_node and end_node, but not the list elements.  Needed for return by value and parameter passing.
+-                        QhullLinkedList<T>(const QhullLinkedList<T> &other) : begin_node(other.begin_node), end_node(other.end_node) {}
++
++                        QhullLinkedList(const QhullLinkedList<T> &other) : begin_node(other.begin_node), end_node(other.end_node) {}
+                         //! Copy assignment copies begin_node and end_node, but not the list elements.
+-                        QhullLinkedList<T> & operator=(const QhullLinkedList<T> &other) { begin_node= other.begin_node; end_node= other.end_node; return *this; }
+-                        ~QhullLinkedList<T>() {}
++                        QhullLinkedList & operator=(const QhullLinkedList &other) { begin_node= other.begin_node; end_node= other.end_node; return *this; }
++                        ~QhullLinkedList() {}
+ 
+ private:
+                         //!disabled since a sentinel must be allocated as the private type
+-                        QhullLinkedList<T>() {}
++                        QhullLinkedList() {}
+ 
+ public:
+ 
+-#//!\name Conversions
++//#!\name Conversions
+ #ifndef QHULL_NO_STL
+     std::vector<T>      toStdVector() const;
+ #endif
+@@ -83,15 +85,15 @@ class QhullLinkedList
+     QList<T>            toQList() const;
+ #endif
+ 
+-#//!\name GetSet
++//#!\name GetSet
+     countT              count() const;
+-                        //count(t) under #//!\name Search
++                        //count(t) under //#!\name Search
+     bool                isEmpty() const { return (begin_node==end_node); }
+-    bool                operator==(const QhullLinkedList<T> &o) const;
+-    bool                operator!=(const QhullLinkedList<T> &o) const { return !operator==(o); }
++    bool                operator==(const QhullLinkedList<T> &o) const;
++    bool                operator!=(const QhullLinkedList<T> &o) const { return !operator==(o); }
+     size_t              size() const { return count(); }
+ 
+-#//!\name Element access
++//#!\name Element access
+     //! For back() and last(), return T instead of T& (T is computed)
+     const T             back() const { return last(); }
+     T                   back() { return last(); }
+@@ -102,13 +104,15 @@ class QhullLinkedList
+     const T             last() const { QHULL_ASSERT(!isEmpty()); return *--end(); }
+     T                   last() { QHULL_ASSERT(!isEmpty()); return *--end(); }
+ 
+-#//!\name Modify -- Allocation of opaque types not implemented.
++//#!\name Modify -- Allocation of opaque types not implemented.
+ 
+-#//!\name Search
++//#!\name Search
++
+     bool                contains(const T &t) const;
++
+     countT              count(const T &t) const;
+ 
+-#//!\name Iterator
++//#!\name Iterator
+     iterator            begin() { return begin_node; }
+     const_iterator      begin() const { return begin_node; }
+     const_iterator      constBegin() const { return begin_node; }
+@@ -196,8 +200,8 @@ class QhullLinkedListIterator // QH11016 FIX: define QhullMutableLinkedListItera
+     const_iterator      i;
+ 
+ public:
+-                        QhullLinkedListIterator(const QhullLinkedList<T> &container) : c(container), i(c.constBegin()) {}
+-    QhullLinkedListIterator & operator=(const QhullLinkedList<T> &container) { c= container; i= c.constBegin(); return *this; }
++    QhullLinkedListIterator(const QhullLinkedList<T> &container) : c(container), i(c.constBegin()) {}
++    QhullLinkedListIterator & operator=(const QhullLinkedList<T> &container) { c= container; i= c.constBegin(); return *this; }
+     bool                findNext(const T &t);
+     bool                findPrevious(const T &t);
+     bool                hasNext() const { return i != c.constEnd(); }
+@@ -210,9 +214,9 @@ class QhullLinkedListIterator // QH11016 FIX: define QhullMutableLinkedListItera
+     void                toBack() { i= c.constEnd(); }
+ };//QhullLinkedListIterator
+ 
+-#//!\name == Definitions =========================================
++//#!\name == Definitions =========================================
+ 
+-#//!\name Conversion
++//#!\name Conversion
+ 
+ #ifndef QHULL_NO_STL
+ template <typename T>
+@@ -239,7 +243,7 @@ toQList() const
+ }//toQList
+ #endif
+ 
+-#//!\name GetSet
++//#!\name GetSet
+ 
+ template <typename T>
+ countT QhullLinkedList<T>::
+@@ -254,7 +258,7 @@ count() const
+     return c;
+ }//count
+ 
+-#//!\name Search
++//#!\name Search
+ 
+ template <typename T>
+ bool QhullLinkedList<T>::
+@@ -307,7 +311,7 @@ operator==(const QhullLinkedList<T> &l) const
+     return true;
+ }//operator==
+ 
+-#//!\name Iterator
++//#!\name Iterator
+ 
+ template <typename T>
+ typename QhullLinkedList<T>::iterator  QhullLinkedList<T>::iterator::
+@@ -343,7 +347,7 @@ operator+(int j) const
+     return const_iterator(n);
+ }//operator+
+ 
+-#//!\name QhullLinkedListIterator
++//#!\name QhullLinkedListIterator
+ 
+ template <typename T>
+ bool QhullLinkedListIterator<T>::
+@@ -371,7 +375,7 @@ findPrevious(const T &t)
+ 
+ }//namespace orgQhull
+ 
+-#//!\name Global
++//#!\name Global
+ 
+ template <typename T>
+ std::ostream &
+diff --git a/src/libqhullcpp/QhullSet.h b/src/libqhullcpp/QhullSet.h
+index f6b248a2..2f23ec9c 100644
+--- src/libqhullcpp/QhullSet.h
++++ src/libqhullcpp/QhullSet.h
+@@ -25,10 +25,10 @@
+ 
+ namespace orgQhull {
+ 
+-#//!\name Used here
++//#!\name Used here
+     class Qhull;
+ 
+-#//!\name Defined here
++//#!\name Defined here
+     class QhullSetBase;  //! Base class for QhullSet<T>
+     //! QhullSet<T> defined below
+     //! QhullSetIterator<T> defined below
+@@ -39,15 +39,15 @@ namespace orgQhull {
+ class QhullSetBase {
+ 
+ private:
+-#//!\name Fields --
++//#!\name Fields --
+     setT *              qh_set;
+     QhullQh *           qh_qh;             //! Provides access to setT memory allocator
+ 
+-#//!\name Class objects
++//#!\name Class objects
+     static setT         s_empty_set;  //! Used if setT* is NULL
+ 
+ public:
+-#//!\name Constructors
++//#!\name Constructors
+                         QhullSetBase(const Qhull &q, setT *s);
+                         QhullSetBase(QhullQh *qqh, setT *s) : qh_set(s ? s : &s_empty_set), qh_qh(qqh) {}
+                         //! Copy constructor copies the pointer but not the set.  Needed for return by value and parameter passing.
+@@ -60,7 +60,7 @@ class QhullSetBase {
+                         QhullSetBase()  : qh_set(NULL), qh_qh(NULL) {}
+ public:
+ 
+-#//!\name GetSet
++//#!\name GetSet
+     countT              count() const { return QhullSetBase::count(qh_set); }
+     void                defineAs(setT *s) { qh_set= s ? s : &s_empty_set; } //!< Not type-safe since setT may contain any type
+     void                forceEmpty() { qh_set= &s_empty_set; }
+@@ -70,14 +70,14 @@ class QhullSetBase {
+     setT **             referenceSetT() { return &qh_set; }
+     size_t              size() const { return QhullSetBase::count(qh_set); }
+ 
+-#//!\name Element
++//#!\name Element
+ protected:
+     void **             beginPointer() const { return &qh_set->e[0].p; }
+     void **             elementPointer(countT idx) const { QHULL_ASSERT(idx>=0 && idx<qh_set->maxsize); return &SETelem_(qh_set, idx); }
+                         //! Always points to 0
+     void **             endPointer() const { return qh_setendpointer(qh_set); }
+ 
+-#//!\name Class methods
++//#!\name Class methods
+ public:
+     static countT       count(const setT *set);
+     //s may be null
+@@ -97,33 +97,35 @@ template <typename T>
+ class QhullSet : public QhullSetBase {
+ 
+ private:
+-#//!\name Fields -- see QhullSetBase
++//#!\name Fields -- see QhullSetBase
+ 
+-#//!\name Class objects
++//#!\name Class objects
+     static setT         s_empty_set;  //! Workaround for no setT allocator.  Used if setT* is NULL
+ 
+ public:
+-#//!\name Defined here
++//#!\name Defined here
+     class iterator;
+     class const_iterator;
+     typedef typename QhullSet<T>::iterator Iterator;
+     typedef typename QhullSet<T>::const_iterator ConstIterator;
+ 
+-#//!\name Constructors
+-                        QhullSet<T>(const Qhull &q, setT *s) : QhullSetBase(q, s) { }
+-                        QhullSet<T>(QhullQh *qqh, setT *s) : QhullSetBase(qqh, s) { }
++//#!\name Constructors
++                        QhullSet(const Qhull &q, setT *s) : QhullSetBase(q, s) { }
++                        QhullSet(QhullQh *qqh, setT *s) : QhullSetBase(qqh, s) { }
+                         //Conversion from setT* is not type-safe.  Implicit conversion for void* to T
+                         //Copy constructor copies pointer but not contents.  Needed for return by value.
+-                        QhullSet<T>(const QhullSet<T> &other) : QhullSetBase(other) {}
+-    QhullSet<T> &       operator=(const QhullSet<T> &other) { QhullSetBase::operator=(other); return *this; }
+-                        ~QhullSet<T>() {}
++                        template<typename T2>
++                        QhullSet(const QhullSet<T2> &other) : QhullSetBase(other) {}
++                        template<typename T2>
++    QhullSet<T> &       operator=(const QhullSet<T2> &other) { QhullSetBase::operator=(other); return *this; }
++                        ~QhullSet() {}
+ 
+ private:
+                         //!Disable default constructor.  See QhullSetBase
+-                        QhullSet<T>();
++                        QhullSet();
+ public:
+ 
+-#//!\name Conversion
++//#!\name Conversion
+ 
+ #ifndef QHULL_NO_STL
+     std::vector<T> toStdVector() const;
+@@ -132,14 +134,16 @@ class QhullSet : public QhullSetBase {
+     QList<T>            toQList() const;
+ #endif
+ 
+-#//!\name GetSet -- see QhullSetBase for count(), empty(), isEmpty(), size()
++//#!\name GetSet -- see QhullSetBase for count(), empty(), isEmpty(), size()
+     using QhullSetBase::count;
+     using QhullSetBase::isEmpty;
+     // operator== defined for QhullSets of the same type
+-    bool                operator==(const QhullSet<T> &other) const { return qh_setequal(getSetT(), other.getSetT()); }
+-    bool                operator!=(const QhullSet<T> &other) const { return !operator==(other); }
++    template<typename T2>
++    bool                operator==(const QhullSet<T2> &other) const { return qh_setequal(getSetT(), other.getSetT()); }
++    template<typename T2>
++    bool                operator!=(const QhullSet<T2> &other) const { return !operator==(other); }
+ 
+-#//!\name Element access
++//#!\name Element access
+     // Constructs T.  Cannot return reference.
+     const T             at(countT idx) const { return operator[](idx); }
+     // Constructs T.  Cannot return reference.
+@@ -169,9 +173,9 @@ class QhullSet : public QhullSetBase {
+     T                   value(countT idx) const;
+     T                   value(countT idx, const T &defaultValue) const;
+ 
+-#//!\name Read-write -- Not available, no setT constructor
++//#!\name Read-write -- Not available, no setT constructor
+ 
+-#//!\name iterator
++//#!\name iterator
+     iterator            begin() { return iterator(qh(), reinterpret_cast<typename T::base_type *>(beginPointer())); }
+     const_iterator      begin() const { return const_iterator(qh(), data()); }
+     const_iterator      constBegin() const { return const_iterator(qh(), data()); }
+@@ -179,7 +183,7 @@ class QhullSet : public QhullSetBase {
+     iterator            end() { return iterator(qh(), endData()); }
+     const_iterator      end() const { return const_iterator(qh(), endData()); }
+ 
+-#//!\name Search
++//#!\name Search
+     bool                contains(const T &t) const;
+     countT              count(const T &t) const;
+     countT              indexOf(const T &t) const { /* no qh_qh */ return qh_setindex(getSetT(), t.getBaseT()); }
+@@ -282,30 +286,33 @@ class QhullSet : public QhullSetBase {
+ template <typename T>
+ class QhullSetIterator {
+ 
+-#//!\name Subtypes
++//#!\name Subtypes
+     typedef typename QhullSet<T>::const_iterator const_iterator;
+ 
+ private:
+-#//!\name Fields
++//#!\name Fields
+     const typename T::base_type *  i;        // e.g., facetT**, first for debugger
+     const typename T::base_type *  begin_i;  // must be initialized after i
+     const typename T::base_type *  end_i;
+     QhullQh *                qh_qh;
+ 
+ public:
+-#//!\name Constructors
+-                        QhullSetIterator<T>(const QhullSet<T> &s) : i(s.data()), begin_i(i), end_i(s.endData()), qh_qh(s.qh()) {}
+-                        QhullSetIterator<T>(const QhullSetIterator<T> &o) : i(o.i), begin_i(o.begin_i), end_i(o.end_i), qh_qh(o.qh_qh) {}
+-    QhullSetIterator<T> &operator=(const QhullSetIterator<T> &o) { i= o.i; begin_i= o.begin_i; end_i= o.end_i; qh_qh= o.qh_qh; return *this; }
+-
+-#//!\name ReadOnly
++//#!\name Constructors
++                        template<typename T2>
++                        QhullSetIterator(const QhullSet<T2> &s) : i(s.data()), begin_i(i), end_i(s.endData()), qh_qh(s.qh()) {}
++                        template<typename T2>
++                        QhullSetIterator(const QhullSetIterator<T2> &o) : i(o.i), begin_i(o.begin_i), end_i(o.end_i), qh_qh(o.qh_qh) {}
++                        template<typename T2>
++    QhullSetIterator<T> &operator=(const QhullSetIterator<T2> &o) { i= o.i; begin_i= o.begin_i; end_i= o.end_i; qh_qh= o.qh_qh; return *this; }
++
++//#!\name ReadOnly
+     countT              countRemaining() { return static_cast<countT>(end_i-i); } // WARN64
+ 
+-#//!\name Search
++//#!\name Search
+     bool                findNext(const T &t);
+     bool                findPrevious(const T &t);
+ 
+-#//!\name Foreach
++//#!\name Foreach
+     bool                hasNext() const { return i != end_i; }
+     bool                hasPrevious() const { return i != begin_i; }
+     T                   next() { return T(qh_qh, *i++); }
+@@ -316,9 +323,9 @@ class QhullSetIterator {
+     void                toFront() { i= begin_i; }
+ };//class QhullSetIterator
+ 
+-#//!\name == Definitions =========================================
++//#!\name == Definitions =========================================
+ 
+-#//!\name Conversions
++//#!\name Conversions
+ 
+ // See qt-qhull.cpp for QList conversion
+ 
+@@ -352,7 +359,7 @@ toQList() const
+ }//toQList
+ #endif
+ 
+-#//!\name Element
++//#!\name Element
+ 
+ template <typename T>
+ T QhullSet<T>::
+@@ -372,7 +379,7 @@ value(countT idx, const T &defaultValue) const
+     return (idx>=0 && p<endData() ? T(qh(), *p) : defaultValue);
+ }//value
+ 
+-#//!\name Search
++//#!\name Search
+ 
+ template <typename T>
+ bool QhullSet<T>::
+@@ -416,7 +423,7 @@ lastIndexOf(const T &t) const
+     return static_cast<countT>(i-b); // WARN64
+ }//lastIndexOf
+ 
+-#//!\name QhullSetIterator
++//#!\name QhullSetIterator
+ 
+ template <typename T>
+ bool QhullSetIterator<T>::
+@@ -447,7 +454,7 @@ findPrevious(const T &t)
+ }//namespace orgQhull
+ 
+ 
+-#//!\name == Global namespace =========================================
++//#!\name == Global namespace =========================================
+ 
+ template <typename T>
+ std::ostream &
