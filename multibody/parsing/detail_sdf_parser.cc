@@ -318,7 +318,8 @@ Vector3d ExtractJointAxis(
     const sdf::Joint& joint_spec) {
   unused(model_spec);
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
-      joint_spec.Type() == sdf::JointType::PRISMATIC);
+               joint_spec.Type() == sdf::JointType::PRISMATIC ||
+               joint_spec.Type() == sdf::JointType::CONTINUOUS);
 
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
@@ -365,7 +366,8 @@ double ParseJointDamping(
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC ||
       joint_spec.Type() == sdf::JointType::UNIVERSAL ||
-      joint_spec.Type() == sdf::JointType::BALL);
+      joint_spec.Type() == sdf::JointType::BALL ||
+      joint_spec.Type() == sdf::JointType::CONTINUOUS);
 
   // If the axis is missing, we'll rely on ExtractJointAxis to tell the user.
   // For our purposes in this function, it's OK to just bail and return zero.
@@ -430,11 +432,11 @@ void AddJointActuatorFromSpecification(
     const sdf::Joint& joint_spec, const Joint<double>& joint,
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_DEMAND(
-      joint_spec.Type() == sdf::JointType::BALL ||
-      joint_spec.Type() == sdf::JointType::UNIVERSAL ||
-      joint_spec.Type() == sdf::JointType::PRISMATIC ||
-      joint_spec.Type() == sdf::JointType::REVOLUTE);
+  DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::BALL ||
+               joint_spec.Type() == sdf::JointType::UNIVERSAL ||
+               joint_spec.Type() == sdf::JointType::PRISMATIC ||
+               joint_spec.Type() == sdf::JointType::REVOLUTE ||
+               joint_spec.Type() == sdf::JointType::CONTINUOUS);
 
   // Ball joints cannot specify an axis (nor actuation) per SDFormat. However,
   // Drake still permits the first axis in order to specify damping, but it
@@ -469,7 +471,7 @@ void AddJointActuatorFromSpecification(
     return;
   }
 
-  // Prismatic and revolute joints have a single axis.
+  // Prismatic, revolute, and continuous joints have a single axis.
   const double effort_limit = GetEffortLimit(diagnostic, joint_spec, 0);
   if (effort_limit != 0) {
     const JointActuator<double>& actuator =
@@ -499,13 +501,14 @@ void AddJointActuatorFromSpecification(
 // Extracts the spring stiffness and the spring reference from a joint
 // specification and adds a revolute spring force element with the
 // corresponding spring reference if the spring stiffness is nonzero.
-// Only available for "revolute" joints. The units for spring
+// Only available for "revolute" and "continuous" joints. The units for spring
 // reference is radians and the units for spring stiffness is N⋅m/rad.
 void AddRevoluteSpringFromSpecification(
     const sdf::Joint &joint_spec, const RevoluteJoint<double>& joint,
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE);
+  DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
+                     joint_spec.Type() == sdf::JointType::CONTINUOUS);
 
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
@@ -529,15 +532,18 @@ void AddRevoluteSpringFromSpecification(
 // Returns joint limits as the tuple (lower_limit, upper_limit,
 // velocity_limit, acceleration_limit).  The units of the limits depend on the
 // particular joint type.  For prismatic joints, units are meters for the
-// position limits and m/s for the velocity limit.  For revolute joints, units
-// are radians for the position limits and rad/s for the velocity limit.
-// Velocity and acceleration limits are always >= 0.  This method throws an
-// exception if the joint type is not one of revolute or prismatic.
+// position limits and m/s for the velocity limit.  For revolute, units
+// are radians for the position limits and rad/s for the velocity limit. For
+// continuous, positions limits are infinities and velocity limits have units
+// rad/s. Velocity and acceleration limits are always >= 0.  This method throws
+// an exception if the joint type is not one of revolute, prismatic, or
+// continuous.
 std::tuple<double, double, double, double> ParseJointLimits(
     const DiagnosticPolicy& diagnostic,
     const sdf::Joint& joint_spec) {
   DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
-      joint_spec.Type() == sdf::JointType::PRISMATIC);
+                     joint_spec.Type() == sdf::JointType::PRISMATIC ||
+                     joint_spec.Type() == sdf::JointType::CONTINUOUS);
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
   if (axis == nullptr) {
@@ -549,16 +555,24 @@ std::tuple<double, double, double, double> ParseJointLimits(
   // http://sdformat.org/spec?ver=1.6&elem=joint#axis_limit.
   // Drake marks joints with no limits with ±numeric_limits<double>::infinity()
   // and therefore we make the change here.
-  const double lower_limit =
-      axis->Lower() == -1.0e16 ?
-      -std::numeric_limits<double>::infinity() : axis->Lower();
-  const double upper_limit =
-      axis->Upper() == 1.0e16 ?
-      std::numeric_limits<double>::infinity() : axis->Upper();
-  if (lower_limit > upper_limit) {
-    throw std::runtime_error(
-        "The lower limit must be lower (or equal) than the upper limit for "
-        "joint '" + joint_spec.Name() + "'.");
+  // Default position limits to infinities which is the case for continuous
+  // joints.
+  double lower_limit = -std::numeric_limits<double>::infinity();
+  double upper_limit = std::numeric_limits<double>::infinity();
+  if (joint_spec.Type() == sdf::JointType::REVOLUTE ||
+      joint_spec.Type() == sdf::JointType::PRISMATIC) {
+    lower_limit = axis->Lower() == -1.0e16
+                      ? -std::numeric_limits<double>::infinity()
+                      : axis->Lower();
+    upper_limit = axis->Upper() == 1.0e16
+                      ? std::numeric_limits<double>::infinity()
+                      : axis->Upper();
+    if (lower_limit > upper_limit) {
+      throw std::runtime_error(
+          "The lower limit must be lower (or equal) than the upper limit for "
+          "joint '" +
+          joint_spec.Name() + "'.");
+    }
   }
 
   // SDF defaults to -1.0 for joints with no limits, see
@@ -761,10 +775,21 @@ void AddJointFromSpecification(
       break;
     }
     case sdf::JointType::CONTINUOUS: {
-      // TODO(#14747) Use an unlimited multibody::RevoluteJoint here.
-      diagnostic.Error(fmt::format(
-          "Joint type (continuous) not supported for joint '{}'.",
-          joint_spec.Name()));
+      const double damping = ParseJointDamping(diagnostic, joint_spec);
+      Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
+      std::tie(std::ignore, std::ignore, velocity_limit, acceleration_limit) =
+          ParseJointLimits(diagnostic, joint_spec);
+      const auto& joint =
+          plant->AddJoint<RevoluteJoint>(joint_spec.Name(), parent_body, X_PJ,
+                                         child_body, X_CJ, axis_J, damping);
+      plant->get_mutable_joint(joint.index())
+          .set_velocity_limits(Vector1d(-velocity_limit),
+                               Vector1d(velocity_limit));
+      plant->get_mutable_joint(joint.index())
+          .set_acceleration_limits(Vector1d(-acceleration_limit),
+                                   Vector1d(acceleration_limit));
+      AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
+      AddRevoluteSpringFromSpecification(joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::SCREW: {
