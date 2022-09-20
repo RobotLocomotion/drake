@@ -183,6 +183,7 @@ class CompliantContactManager final
   // therefore the model must outlive the manager.
   // @throws std::exception if a deformable model has already been registered.
   // @pre model != nullptr.
+  // @note This function should only be called as a part of ExtractModelInfo().
   void ExtractConcreteModel(const DeformableModel<T>* model);
 
   void DeclareCacheEntries() final;
