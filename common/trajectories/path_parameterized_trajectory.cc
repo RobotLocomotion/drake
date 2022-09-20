@@ -24,10 +24,9 @@ std::unique_ptr<Trajectory<T>> PathParameterizedTrajectory<T>::Clone() const {
 
 template <typename T>
 MatrixX<T> PathParameterizedTrajectory<T>::value(const T& t) const {
-  using std::max;
-  using std::min;
+  using std::clamp;
   const T time =
-      min(max(t, time_scaling_->start_time()), time_scaling_->end_time());
+      clamp(t, time_scaling_->start_time(), time_scaling_->end_time());
   return path_->value(time_scaling_->value(time)(0, 0));
 }
 
@@ -51,10 +50,9 @@ T PathParameterizedTrajectory<T>::BellPolynomial(int n, int k,
 template <typename T>
 MatrixX<T> PathParameterizedTrajectory<T>::DoEvalDerivative(
     const T& t, int derivative_order) const {
-  using std::max;
-  using std::min;
+  using std::clamp;
   const T time =
-      min(max(t, time_scaling_->start_time()), time_scaling_->end_time());
+      clamp(t, time_scaling_->start_time(), time_scaling_->end_time());
   if (derivative_order == 0) {
     return value(time);
   } else if (derivative_order > 0) {

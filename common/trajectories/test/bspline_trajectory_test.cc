@@ -118,10 +118,9 @@ TYPED_TEST(BsplineTrajectoryTests, ValueTest) {
                                        trajectory.end_time() + 0.1);
   for (int k = 0; k < num_times; ++k) {
     MatrixX<T> value = trajectory.value(t(k));
-    using std::max;
-    using std::min;
-    T t_clamped = min(max(t(k), trajectory.start_time()),
-                      trajectory.end_time());
+    using std::clamp;
+    const T t_clamped = clamp(
+        t(k), trajectory.start_time(), trajectory.end_time());
     MatrixX<T> expected_value = trajectory.basis().EvaluateCurve(
         trajectory.control_points(), t_clamped);
     EXPECT_TRUE(CompareMatrices(value, expected_value,
