@@ -95,7 +95,7 @@ Defines an SDF model with various types of joints used for testing the parser.
           </inertia>
         </inertial>
       </link>
-      <joint name="revolute_joint_no_limits" type="revolute">
+      <joint name="continuous_joint" type="continuous">
         <child>link4</child>
         <parent>link3</parent>
         <axis>

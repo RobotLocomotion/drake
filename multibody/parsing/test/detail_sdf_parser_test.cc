@@ -835,26 +835,27 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(
       prismatic_joint.acceleration_upper_limits(), Vector1d(10)));
 
-  // Limitless revolute joint
+  // Continuous joint
   DRAKE_EXPECT_NO_THROW(
-      plant_.GetJointByName<RevoluteJoint>("revolute_joint_no_limits",
-                                           instance1));
-  const RevoluteJoint<double>& no_limit_joint =
-      plant_.GetJointByName<RevoluteJoint>("revolute_joint_no_limits",
-                                           instance1);
-  EXPECT_EQ(no_limit_joint.name(), "revolute_joint_no_limits");
-  EXPECT_EQ(no_limit_joint.parent_body().name(), "link3");
-  EXPECT_EQ(no_limit_joint.child_body().name(), "link4");
-  EXPECT_EQ(no_limit_joint.revolute_axis(), Vector3d::UnitZ());
+      plant_.GetJointByName<RevoluteJoint>("continuous_joint", instance1));
+  const RevoluteJoint<double>& continuous_joint =
+      plant_.GetJointByName<RevoluteJoint>("continuous_joint", instance1);
+  EXPECT_EQ(continuous_joint.name(), "continuous_joint");
+  EXPECT_EQ(continuous_joint.parent_body().name(), "link3");
+  EXPECT_EQ(continuous_joint.child_body().name(), "link4");
+  EXPECT_EQ(continuous_joint.revolute_axis(), Vector3d::UnitZ());
   const Vector1d inf(std::numeric_limits<double>::infinity());
   const Vector1d neg_inf(-std::numeric_limits<double>::infinity());
-  EXPECT_TRUE(CompareMatrices(no_limit_joint.position_lower_limits(), neg_inf));
-  EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
-  EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
-  EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
-  EXPECT_TRUE(CompareMatrices(
-      no_limit_joint.acceleration_lower_limits(), neg_inf));
-  EXPECT_TRUE(CompareMatrices(no_limit_joint.acceleration_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.position_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(continuous_joint.position_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.velocity_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(continuous_joint.velocity_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.acceleration_lower_limits(), neg_inf));
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.acceleration_upper_limits(), inf));
 
   // Ball joint
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<BallRpyJoint>("ball_joint",
@@ -1080,21 +1081,6 @@ TEST_F(SdfParserTest, ActuatedBallJointParsingTest) {
 </model>)""");
   EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
       ".*effort limits.*ball joint.*not implemented.*"));
-  ClearDiagnostics();
-}
-
-// Tests the error handling for an unsupported joint type.
-TEST_F(SdfParserTest, ContinuousJointParsingTest) {
-  ParseTestString(R"""(
-<model name="molly">
-  <link name="larry" />
-  <joint name="jerry" type="continuous">
-    <parent>world</parent>
-    <child>larry</child>
-  </joint>
-</model>)""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
-      ".*continuous.*not supported.*jerry.*"));
   ClearDiagnostics();
 }
 
