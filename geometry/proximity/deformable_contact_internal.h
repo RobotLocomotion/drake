@@ -8,7 +8,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/deformable_contact_geometries.h"
 #include "drake/geometry/proximity/volume_mesh.h"
-#include "drake/geometry/query_results/deformable_rigid_contact.h"
+#include "drake/geometry/query_results/deformable_contact.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -102,11 +102,8 @@ class Geometries final : public ShapeReifier {
   /* For each registered deformable geometry, computes the contact data of it
    with respect to all registered rigid geometries. Assumes the vertex positions
    and poses of all registered deformable and rigid geometries are up to date.
-   The results are sorted according to deformable id.
-   @pre deformable_rigid_contact != nullptr. */
-  void ComputeDeformableRigidContact(
-      std::vector<DeformableRigidContact<double>>* deformable_rigid_contact)
-      const;
+  */
+  DeformableContact<double> ComputeDeformableContact() const;
 
  private:
   friend class GeometriesTester;

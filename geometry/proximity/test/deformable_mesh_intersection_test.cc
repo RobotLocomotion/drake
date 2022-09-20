@@ -45,9 +45,9 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
                           \|/
    This setup helps us verify that when `CalcContactPolygon()` is called, but
    there is no new intersection polygon, the code does the right thing. */
-  const double kEps = 1e-10;
+  const double kTol = 1e-10;
   math::RigidTransform<double> X_WR(
-      Vector3<double>{4.0 / 3 + kEps, 4.0 / 3 + kEps, 4.0 / 3 + kEps});
+      Vector3<double>{4.0 / 3 + kTol, 4.0 / 3 + kTol, 4.0 / 3 + kTol});
 
   // Verify that the two BVHs have indeed collided.
   bool bvhs_collide = false;
@@ -58,22 +58,23 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
       });
   ASSERT_TRUE(bvhs_collide);
 
-  DeformableRigidContact<double> contact_data(
+  DeformableContact<double> contact_data;
+  contact_data.RegisterDeformableGeometry(
       deformable_id, deformable_W.deformable_mesh().mesh().num_vertices());
-  AppendDeformableRigidContact(deformable_W, rigid_id, rigid_mesh_R,
-                               rigid_bvh_R, X_WR, &contact_data);
+  AddDeformableRigidContactSurface(deformable_W, deformable_id, rigid_id,
+                                   rigid_mesh_R, rigid_bvh_R, X_WR,
+                                   &contact_data);
 
   // Zero contact points and no vertices in contact are good enough indication
   // that the contact data is empty.
-  EXPECT_EQ(contact_data.num_contact_points(), 0);
-  EXPECT_EQ(contact_data.num_vertices_in_contact(), 0);
+  EXPECT_TRUE(contact_data.contact_surfaces().empty());
 }
 
 // Note that the deformable rigid contact computation largely utilizes
 // previously tested code in mesh_intersection.cc. On top of that, it evaluates
-// signed distances, reports deformable vertices and tets participating in
-// contact, and contact point barycentric coordinates. We test the correctness
-// of these newly added operations here in this test.
+// signed distances, reports deformable vertices participating in contact, and
+// contact point barycentric coordinates. We test the correctness of these newly
+// added operations here in this test.
 GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   const GeometryId deformable_id = GeometryId::get_new_id();
   const VolumeMesh<double> single_tetrahedron_mesh_W(
@@ -95,48 +96,51 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   // xy-plane).
   const math::RigidTransform<double> X_WR(Vector3<double>{0, 0, 0.5});
 
-  DeformableRigidContact<double> contact_data(deformable_id, 4);
-  AppendDeformableRigidContact(deformable_W, rigid_id, rigid_mesh_R,
-                               rigid_bvh_R, X_WR, &contact_data);
-  constexpr int kExpectedNumRigidGeometries = 1;
+  DeformableContact<double> contact_data;
+  contact_data.RegisterDeformableGeometry(deformable_id, 4);
+  AddDeformableRigidContactSurface(deformable_W, deformable_id, rigid_id,
+                                   rigid_mesh_R, rigid_bvh_R, X_WR,
+                                   &contact_data);
   constexpr int kExpectedNumContactPoints = 1;
 
-  EXPECT_EQ(contact_data.contact_meshes_W().size(),
-            kExpectedNumRigidGeometries);
-  EXPECT_EQ(contact_data.contact_meshes_W()[0].num_faces(),
-            kExpectedNumContactPoints);
+  ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
+  const DeformableContactSurface<double>& contact_surface =
+      contact_data.contact_surfaces()[0];
 
+  ASSERT_EQ(contact_surface.num_contact_points(), kExpectedNumContactPoints);
   // The approximated signed distance function is zero because all vertices of
   // the tet mesh are on the boundary.
-  ASSERT_EQ(contact_data.signed_distances().size(), kExpectedNumContactPoints);
+  ASSERT_EQ(contact_surface.signed_distances().size(),
+            kExpectedNumContactPoints);
   const double signed_distance_at_contact_point =
-      contact_data.signed_distances()[0];
+      contact_surface.signed_distances()[0];
   EXPECT_NEAR(signed_distance_at_contact_point, 0.0,
               std::numeric_limits<double>::epsilon());
-
-  ASSERT_EQ(contact_data.tetrahedra_indexes().size(),
-            kExpectedNumContactPoints);
-  constexpr int kTetIndex = 0;
-  EXPECT_EQ(contact_data.tetrahedra_indexes()[0], kTetIndex);
-
-  // Only on tetrahedron is participating in contact and there are 4 vertices
-  // incident to a tetrahedron.
-  EXPECT_EQ(contact_data.num_contact_points(), 1);
-  EXPECT_EQ(contact_data.num_vertices_in_contact(), 4);
-
+  // The centroid is (1/6, 1/6, 1/2).
+  const Vector3<double> contact_point_W = contact_surface.contact_points_W()[0];
+  constexpr double kTol = 1e-14;
+  EXPECT_TRUE(CompareMatrices(
+      contact_point_W, Vector3<double>(1.0 / 6, 1.0 / 6, 1.0 / 2), kTol));
+  // The indexes of vertices incident to the only tetrahedron containing the
+  // only contact point.
+  const Vector4<int> vertex_indexes =
+      contact_surface.contact_vertex_indexes_A()[0];
+  const Vector4<int> expected_vertex_indexes{0, 1, 2, 3};
+  EXPECT_EQ(vertex_indexes, expected_vertex_indexes);
   // The centroid is (1/6, 1/6, 1/2), and the vertex positions are (0, 0, 0),
   // (1, 0, 0), (0, 1, 0), (0, 0, 1). The the barycentric weights is (1/6, 1/6,
   // 1/6, 1/2).
-  ASSERT_EQ(contact_data.barycentric_coordinates().size(),
+  ASSERT_EQ(contact_surface.barycentric_coordinates_A().size(),
             kExpectedNumContactPoints);
-  constexpr double kEps = 1e-14;
   EXPECT_TRUE(CompareMatrices(
-      contact_data.barycentric_coordinates()[0],
-      Vector4<double>(1.0 / 6, 1.0 / 6, 1.0 / 6, 1.0 / 2), kEps));
+      contact_surface.barycentric_coordinates_A()[0],
+      Vector4<double>(1.0 / 6, 1.0 / 6, 1.0 / 6, 1.0 / 2), kTol));
 
-  // The correctnes of R_CWs are tested in the unit tests for
-  // DeformableRigidContact. Here we only verify the correctness of the size.
-  EXPECT_EQ(contact_data.R_CWs().size(), kExpectedNumContactPoints);
+  // Only on tetrahedron is participating in contact and there are 4 vertices
+  // incident to a tetrahedron.
+  const ContactParticipation& contact_participation =
+      contact_data.contact_participation(deformable_id);
+  EXPECT_EQ(contact_participation.num_vertices_in_contact(), 4);
 }
 
 /* Tests that the per-contact-point data depends only on the relative pose
@@ -171,11 +175,15 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
 
   /* Compute the first set of contact data. */
   const VolumeMesh<double> mesh_W = deformable_W.deformable_mesh().mesh();
-  DeformableRigidContact<double> contact_data(deformable_id,
-                                              mesh_W.num_vertices());
-  AppendDeformableRigidContact(deformable_W, rigid_id, rigid_mesh_R,
-                               rigid_bvh_R, X_WR, &contact_data);
-  EXPECT_GT(contact_data.num_contact_points(), 0);
+  DeformableContact<double> contact_data;
+  contact_data.RegisterDeformableGeometry(deformable_id, mesh_W.num_vertices());
+  AddDeformableRigidContactSurface(deformable_W, deformable_id, rigid_id,
+                                   rigid_mesh_R, rigid_bvh_R, X_WR,
+                                   &contact_data);
+  ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
+  const DeformableContactSurface<double>& contact_surface =
+      contact_data.contact_surfaces()[0];
+  EXPECT_GT(contact_surface.num_contact_points(), 0);
 
   /* We apply an arbitrary rigid transform to both the deformable and the rigid
    geometry but keep the relative pose between the deformable and the rigid
@@ -189,18 +197,23 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
   deformable_W.UpdateVertexPositions(q_WD);
   X_WR = arbitrary_transform * X_WR;
   /* Compute the second set of contact data. */
-  DeformableRigidContact<double> contact_data2(deformable_id,
-                                               mesh_W.num_vertices());
-  AppendDeformableRigidContact(deformable_W, rigid_id, rigid_mesh_R,
-                               rigid_bvh_R, X_WR, &contact_data2);
+  DeformableContact<double> contact_data2;
+  contact_data2.RegisterDeformableGeometry(deformable_id,
+                                           mesh_W.num_vertices());
+  AddDeformableRigidContactSurface(deformable_W, deformable_id, rigid_id,
+                                   rigid_mesh_R, rigid_bvh_R, X_WR,
+                                   &contact_data2);
+  ASSERT_EQ(contact_data2.contact_surfaces().size(), 1);
+  const DeformableContactSurface<double>& contact_surface2 =
+      contact_data2.contact_surfaces()[0];
 
-  EXPECT_EQ(contact_data.num_contact_points(),
-            contact_data2.num_contact_points());
+  EXPECT_EQ(contact_surface.num_contact_points(),
+            contact_surface2.num_contact_points());
   /* Verify that penetration distances are not all equal simply because they are
    all zero -- some meaningful values do exist. */
   const auto has_negative_distance =
-      [](const DeformableRigidContact<double>& contact) {
-        const std::vector<double>& sdf = contact.signed_distances();
+      [](const DeformableContactSurface<double>& surface) {
+        const std::vector<double>& sdf = surface.signed_distances();
         bool negative_distance_exists = false;
         for (const double d : sdf) {
           EXPECT_LE(d, 0.0);
@@ -210,10 +223,10 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
         }
         EXPECT_TRUE(negative_distance_exists);
       };
-  has_negative_distance(contact_data);
-  const std::vector<double>& sdf = contact_data.signed_distances();
-  const std::vector<double>& sdf2 = contact_data2.signed_distances();
-  for (int i = 0; i < contact_data.num_contact_points(); ++i) {
+  has_negative_distance(contact_surface);
+  const std::vector<double>& sdf = contact_surface.signed_distances();
+  const std::vector<double>& sdf2 = contact_surface2.signed_distances();
+  for (int i = 0; i < contact_surface.num_contact_points(); ++i) {
     EXPECT_NEAR(sdf[i], sdf2[i], 1e-14);
   }
 }

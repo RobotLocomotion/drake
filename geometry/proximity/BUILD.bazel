@@ -188,7 +188,7 @@ drake_cc_library(
         "//common:essential",
         "//geometry:geometry_ids",
         "//geometry:shape_specification",
-        "//geometry/query_results:deformable_rigid_contact",
+        "//geometry/query_results:deformable_contact",
     ],
 )
 
@@ -202,7 +202,7 @@ drake_cc_library(
         ":deformable_volume_mesh",
         ":mesh_intersection",
         ":triangle_surface_mesh",
-        "//geometry/query_results:deformable_rigid_contact",
+        "//geometry/query_results:deformable_contact",
         "//math:geometric_transform",
     ],
 )

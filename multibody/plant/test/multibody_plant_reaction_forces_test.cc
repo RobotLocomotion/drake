@@ -310,7 +310,7 @@ class LadderTest : public ::testing::Test {
     // cloning scene graph context is thread-unsafe. In particular, updating the
     // proxy cache entry for pose/configuration (instead of simply grabing the
     // up-to-date cache value) is a race condition. Therefore, we call
-    // `ComputeDeformableRigidContact` below to explicitly bring the
+    // `ComputeDeformableContact` below to explicitly bring the
     // pose/configuration proxy cache entries up-to-date to circumvent the race
     // condition when we clone the contexts over multiple threads later on. This
     // is a hack by taking advantage of the side effects of the caching
@@ -321,9 +321,8 @@ class LadderTest : public ::testing::Test {
     const auto& query_object =
         scene_graph_->get_query_output_port()
             .Eval<geometry::QueryObject<double>>(sg_context);
-    std::vector<geometry::internal::DeformableRigidContact<double>>
-        deformable_rigid_contact;
-    query_object.ComputeDeformableRigidContact(&deformable_rigid_contact);
+    geometry::internal::DeformableContact<double> deformable_contact;
+    query_object.ComputeDeformableContact(&deformable_contact);
 
     // Running the simulation in multiple threads here gives us a chance to
     // check readiness for context-per-thread usage. Even though all threads
