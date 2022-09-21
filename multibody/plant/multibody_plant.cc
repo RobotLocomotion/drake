@@ -698,10 +698,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id =
-      RegisterGeometry(body, X_BG, shape,
-                       GetScopedName(*this, body.model_instance(), name));
-  scene_graph_->AssignRole(*source_id_, id, properties);
+  std::unique_ptr<geometry::GeometryInstance> geometry_instance =
+      std::make_unique<GeometryInstance>(
+          X_BG, shape.Clone(),
+          GetScopedName(*this, body.model_instance(), name));
+  geometry_instance->set_illustration_properties(properties);
 
   // TODO(SeanCurtis-TRI): Eliminate the automatic assignment of perception
   //  and illustration in favor of a protocol that allows definition.
@@ -721,12 +722,8 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
       "renderer", "accepting",
       properties.GetProperty<std::set<std::string>>("renderer", "accepting"));
   }
-  scene_graph_->AssignRole(*source_id_, id, perception_props);
-
-  DRAKE_ASSERT(static_cast<int>(visual_geometries_.size()) == num_bodies());
-  visual_geometries_[body.index()].push_back(id);
-  ++num_visual_geometries_;
-  return id;
+  geometry_instance->set_perception_properties(perception_props);
+  return RegisterGeometry(body, std::move(geometry_instance));
 }
 
 template <typename T>
@@ -748,14 +745,12 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
-
-  scene_graph_->AssignRole(*source_id_, id, std::move(properties));
-  DRAKE_ASSERT(static_cast<int>(collision_geometries_.size()) == num_bodies());
-  collision_geometries_[body.index()].push_back(id);
-  ++num_collision_geometries_;
-  return id;
+  std::unique_ptr<geometry::GeometryInstance> geometry_instance =
+      std::make_unique<GeometryInstance>(
+          X_BG, shape.Clone(),
+          GetScopedName(*this, body.model_instance(), name));
+  geometry_instance->set_proximity_properties(std::move(properties));
+  return RegisterGeometry(body, std::move(geometry_instance));
 }
 
 template <typename T>
@@ -789,6 +784,34 @@ geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
     }
   }
   return geometry_set;
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
+    const Body<T>& body,
+    std::unique_ptr<geometry::GeometryInstance> geometry_instance) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  DRAKE_THROW_UNLESS(body_has_registered_frame(body));
+  bool is_collision = (geometry_instance->proximity_properties() != nullptr);
+  bool is_visual = (geometry_instance->illustration_properties() != nullptr);
+
+  GeometryId geometry_id = scene_graph_->RegisterGeometry(
+      source_id_.value(), body_index_to_frame_id_[body.index()],
+      std::move(geometry_instance));
+  geometry_id_to_body_index_[geometry_id] = body.index();
+  if (is_collision) {
+    DRAKE_ASSERT(static_cast<int>(collision_geometries_.size()) ==
+                 num_bodies());
+    collision_geometries_[body.index()].push_back(geometry_id);
+    ++num_collision_geometries_;
+  }
+  if (is_visual) {
+    DRAKE_ASSERT(static_cast<int>(visual_geometries_.size()) == num_bodies());
+    visual_geometries_[body.index()].push_back(geometry_id);
+    ++num_visual_geometries_;
+  }
+  return geometry_id;
 }
 
 template <typename T>
@@ -830,25 +853,6 @@ std::unordered_set<BodyIndex> MultibodyPlant<T>::GetFloatingBaseBodies() const {
     if (body.is_floating()) floating_bodies.insert(body.index());
   }
   return floating_bodies;
-}
-
-template <typename T>
-geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
-    const Body<T>& body, const math::RigidTransform<double>& X_BG,
-    const geometry::Shape& shape,
-    const std::string& name) {
-  DRAKE_ASSERT(!is_finalized());
-  DRAKE_ASSERT(geometry_source_is_registered());
-  DRAKE_ASSERT(body_has_registered_frame(body));
-
-  // Register geometry in the body frame.
-  std::unique_ptr<geometry::GeometryInstance> geometry_instance =
-      std::make_unique<GeometryInstance>(X_BG, shape.Clone(), name);
-  GeometryId geometry_id = scene_graph_->RegisterGeometry(
-      source_id_.value(), body_index_to_frame_id_[body.index()],
-      std::move(geometry_instance));
-  geometry_id_to_body_index_[geometry_id] = body.index();
-  return geometry_id;
 }
 
 template <typename T>

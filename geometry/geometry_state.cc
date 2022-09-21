@@ -218,6 +218,29 @@ GeometryState<T>::GetCollisionCandidates() const {
 }
 
 template <typename T>
+std::set<std::pair<GeometryId, GeometryId>>
+GeometryState<T>::GetCollisionFilteredPairs() const {
+  std::set<std::pair<GeometryId, GeometryId>> pairs;
+  for (const auto& pairA : geometries_) {
+    const GeometryId idA = pairA.first;
+    const InternalGeometry& geometryA = pairA.second;
+    if (!geometryA.has_proximity_role()) continue;
+    for (const auto& pairB : geometries_) {
+      const GeometryId idB = pairB.first;
+      if (idB < idA) continue;  // Only consider the pair (A, B) and not (B, A).
+      const InternalGeometry& geometryB = pairB.second;
+      if (!geometryB.has_proximity_role()) continue;
+      // This relies on CollisionFiltered() to handle if A == B, if they
+      // are both anchored, etc.
+      if (CollisionFiltered(idA, idB)) {
+        pairs.insert({idA, idB});
+      }
+    }
+  }
+  return pairs;
+}
+
+template <typename T>
 bool GeometryState<T>::SourceIsRegistered(SourceId source_id) const {
   return source_frame_id_map_.find(source_id) != source_frame_id_map_.end();
 }

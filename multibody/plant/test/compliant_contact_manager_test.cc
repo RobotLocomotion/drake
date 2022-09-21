@@ -1717,6 +1717,11 @@ class MultiDofJointWithLimits final : public Joint<T> {
       const internal::MultibodyTree<symbolic::Expression>&) const override {
     DRAKE_UNREACHABLE();
   }
+  const Joint<T>& DoCloneTo(
+      internal::MultibodyTree<T>* tree, const Frame<T>& dest_frame_on_parent,
+      const Frame<T>& dest_frame_on_child) const override {
+    DRAKE_UNREACHABLE();
+  }
 };
 
 // Verify that CompliantContactManager throws when the model contains multi-DOF

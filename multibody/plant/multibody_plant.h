@@ -1444,6 +1444,36 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   geometry::GeometrySet CollectRegisteredGeometries(
       const std::vector<const Body<T>*>& bodies) const;
 
+  /// (Advanced) Registers geometry in a SceneGraph with a given
+  /// geometry::GeometryInstance. The Properties associated with the role of the
+  /// geometry must be set by the user in the geometry::GeometryInstance.
+  ///
+  /// The registration includes:
+  /// 1. Register geometry for the corresponding FrameId associated with `body`.
+  /// 2. Update the geometry_id_to_body_index_ map associating the new
+  ///    GeometryId to the BodyIndex of `body`.
+  /// 3. Update collision_geometries_ and num_collision_geometries_ if the
+  ///    geometry_instance has proximity properties
+  /// 3. Update visual_geometries_ and num_visual_geometries_ if the
+  ///    geometry_instance has illustration properties
+  /// This assumes:
+  /// 1. Finalize() was not called on `this` plant.
+  /// 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
+  /// 3. `scene_graph` points to the same SceneGraph instance previously
+  ///    passed to RegisterAsSourceForSceneGraph().
+  ///
+  /// @param[in] body
+  ///   The body for which geometry is being registered.
+  /// @param[in] geometry_instance
+  ///   The geometry::GeometryInstance used for visualization or contact
+  ///   modeling.
+  /// @throws std::exception if called post-finalize.
+  /// @throws std::exception if `scene_graph` does not correspond to the same
+  /// instance with which RegisterAsSourceForSceneGraph() was called.
+  /// @returns the id for the registered geometry.
+  geometry::GeometryId RegisterGeometry(const Body<T>& body,
+      std::unique_ptr<geometry::GeometryInstance> geometry_instance);
+
   /// Given a geometry frame identifier, returns a pointer to the body
   /// associated with that id (nullptr if there is no such body).
   const Body<T>* GetBodyFromFrameId(geometry::FrameId frame_id) const {
@@ -4327,6 +4357,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       return false;
     }
   }
+
+  template <typename U, typename... Args>
+  const U& CloneTo(MultibodyPlant<T>* dest, const U& element, Args&&... args) const {
+    return element.CloneTo(&dest->mutable_tree(), args...);
+  }
+
   /// @} <!-- Introspection -->
 
   using internal::MultibodyTreeSystem<T>::is_discrete;
@@ -4714,21 +4750,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // actuation input ports (there is a separate port for each model instance).
   void AddJointActuationForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
-
-  // Helper method to register geometry for a given body, either visual or
-  // collision. The registration includes:
-  // 1. Register geometry for the corresponding FrameId associated with `body`.
-  // 2. Update the geometry_id_to_body_index_ map associating the new GeometryId
-  //    to the BodyIndex of `body`.
-  // This assumes:
-  // 1. Finalize() was not called on `this` plant.
-  // 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
-  // 3. `scene_graph` points to the same SceneGraph instance previously
-  //    passed to RegisterAsSourceForSceneGraph().
-  geometry::GeometryId RegisterGeometry(
-      const Body<T>& body, const math::RigidTransform<double>& X_BG,
-      const geometry::Shape& shape,
-      const std::string& name);
 
   // Registers a geometry frame for every body. If the body already has a
   // geometry frame, it is unchanged. This registration is part of finalization.

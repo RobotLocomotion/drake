@@ -3,9 +3,23 @@
 #include <memory>
 
 #include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 
 namespace drake {
 namespace multibody {
+
+template <typename T>
+template <typename ToScalar>
+std::unique_ptr<Joint<ToScalar>> WeldJoint<T>::TemplatedDoCloneToScalar(
+    const Frame<ToScalar>& frame_on_parent_body_clone,
+    const Frame<ToScalar>& frame_on_child_body_clone) const {
+  // Make the Joint<T> clone.
+  auto joint_clone = std::make_unique<WeldJoint<ToScalar>>(
+      this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,
+      X_FM());
+
+  return joint_clone;
+}
 
 template <typename T>
 template <typename ToScalar>
@@ -17,12 +31,8 @@ WeldJoint<T>::TemplatedDoCloneToScalar(
   const Frame<ToScalar>& frame_on_child_body_clone =
       tree_clone.get_variant(this->frame_on_child());
 
-  // Make the Joint<T> clone.
-  auto joint_clone = std::make_unique<WeldJoint<ToScalar>>(
-      this->name(),
-      frame_on_parent_body_clone, frame_on_child_body_clone, X_FM());
-
-  return joint_clone;
+  return TemplatedDoCloneToScalar(frame_on_parent_body_clone,
+                                  frame_on_child_body_clone);
 }
 
 template <typename T>
@@ -41,6 +51,14 @@ template <typename T>
 std::unique_ptr<Joint<symbolic::Expression>> WeldJoint<T>::DoCloneToScalar(
     const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T>
+const Joint<T>& WeldJoint<T>::DoCloneTo(
+    internal::MultibodyTree<T>* tree, const Frame<T>& dest_frame_on_parent,
+    const Frame<T>& dest_frame_on_child) const {
+  return tree->AddJoint(
+      TemplatedDoCloneToScalar(dest_frame_on_parent, dest_frame_on_child));
 }
 
 // N.B. Due to esoteric linking errors on Mac (see #9345) involving
