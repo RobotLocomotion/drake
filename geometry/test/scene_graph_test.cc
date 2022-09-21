@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
@@ -497,6 +498,22 @@ TEST_F(SceneGraphTest, RendererSmokeTest) {
   EXPECT_EQ(scene_graph_.RendererCount(), 1);
   EXPECT_EQ(scene_graph_.RegisteredRendererNames()[0], kRendererName);
   EXPECT_TRUE(scene_graph_.HasRenderer(kRendererName));
+}
+
+// Query the type name of a render engine. This logic is unique to SceneGraph
+// so we test it here.
+TEST_F(SceneGraphTest, GetRendererTypeName) {
+  const std::string kRendererName = "bob";
+
+  DRAKE_EXPECT_NO_THROW(scene_graph_.AddRenderer(
+      kRendererName, make_unique<DummyRenderEngine>()));
+
+  // If no renderer has the name, the type doesn't matter.
+  EXPECT_EQ(scene_graph_.GetRendererTypeName("non-existent"), "");
+
+  // Get the expected name.
+  EXPECT_EQ(scene_graph_.GetRendererTypeName(kRendererName),
+            NiceTypeName::Get<DummyRenderEngine>());
 }
 
 // SceneGraph provides a thin wrapper on the GeometryState role manipulation

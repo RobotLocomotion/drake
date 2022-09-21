@@ -307,7 +307,8 @@ GTEST_TEST(CameraConfigTest, MakeCameras) {
 //    - X_BD.base_frame is empty,
 //    - X_BC.base_frame is empty,
 //    - name is not empty,
-//    - renderer_name is not empty, and
+//    - renderer_name is not empty,
+//    - renderer_class is one of the documented set of supported strings, and
 //    - fps is a positive, finite value.
 // It relies on Drake's geometry::render artifacts to validate the other
 // restricted values. Finally, validation should be part of serialization.
@@ -336,68 +337,58 @@ GTEST_TEST(CameraConfigTest, Validation) {
         ".*X_BC must not specify a base frame. 'error' found.");
   }
 
-  {
-    CameraConfig config;
-    config.name = "";
-    DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                                ".* name cannot be empty.");
-  }
+  // We require a non-empty name.
+  DRAKE_EXPECT_THROWS_MESSAGE(CameraConfig{.name = ""}.ValidateOrThrow(),
+                              ".* name cannot be empty.");
+  // We require a non-empty renderer-name.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      CameraConfig{.renderer_name = ""}.ValidateOrThrow(),
+      ".*renderer_name cannot be empty.");
 
-  {
-    CameraConfig config;
-    config.renderer_name = "";
-    DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(),
-                                ".*renderer_name cannot be empty.");
-  }
+  // Good renderer_class strings don't throw (we already know that default
+  // doesn't throw).
+  EXPECT_NO_THROW(
+      CameraConfig{.renderer_class = "RenderEngineVtk"}.ValidateOrThrow());
+  EXPECT_NO_THROW(
+      CameraConfig{.renderer_class = "RenderEngineGl"}.ValidateOrThrow());
+  // Bad renderer_class strings throw -- proof the field is being validated.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      CameraConfig{.renderer_class = "BadName"}.ValidateOrThrow(),
+      ".*the given renderer_class value.*");
 
-  {
-    CameraConfig config;
-    config.fps = 0;
-    DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(), ".*FPS.*");
+  // Non-positive, non-finite values all throw.
+  DRAKE_EXPECT_THROWS_MESSAGE(CameraConfig{.fps = 0}.ValidateOrThrow(),
+                              ".*FPS.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(CameraConfig{.fps = -11}.ValidateOrThrow(),
+                              ".*FPS.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      CameraConfig{.fps = std::numeric_limits<double>::infinity()}
+          .ValidateOrThrow(),
+      ".*FPS.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      CameraConfig{.fps = std::numeric_limits<double>::quiet_NaN()}
+          .ValidateOrThrow(),
+      ".*FPS.*");
 
-    config.fps = -11;
-    DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(), ".*FPS.*");
+  // Indicator that geometry::render is being exercised to validate other
+  // values.
+  EXPECT_THROW(CameraConfig{.width = -5}.ValidateOrThrow(), std::exception);
 
-    config.fps = std::numeric_limits<double>::infinity();
-    DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(), ".*FPS.*");
+  // An invalid configuration should throw when serializing.
+  DRAKE_EXPECT_THROWS_MESSAGE(SaveYamlString(CameraConfig{.name = ""}),
+                              ".*name cannot be empty.");
+  // An invalid sub-struct should throw when serializing.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SaveYamlString(CameraConfig{.focal = CameraConfig::FovDegrees{}}),
+      ".*must define at least x or y.*");
 
-    config.fps = std::numeric_limits<double>::quiet_NaN();
-    DRAKE_EXPECT_THROWS_MESSAGE(config.ValidateOrThrow(), ".*FPS.*");
-  }
-
-  {
-    // Indicator that geometry::render is being exercised to validate other
-    // values.
-    CameraConfig config;
-    config.width = -5;
-    EXPECT_THROW(config.ValidateOrThrow(), std::exception);
-  }
-
-  {
-    // An invalid configuration should throw when serializing.
-    CameraConfig config;
-    config.renderer_name = "";
-    DRAKE_EXPECT_THROWS_MESSAGE(SaveYamlString(config),
-                                ".*renderer_name cannot be empty.");
-  }
-
-  {
-    // An invalid sub-struct should throw when serializing.
-    CameraConfig config;
-    config.focal = CameraConfig::FovDegrees{};
-    DRAKE_EXPECT_THROWS_MESSAGE(SaveYamlString(config),
-                                ".*must define at least x or y.*");
-  }
-
-  {
-    // However, if rgb = depth = false, then the configuration is by definition
-    // valid, even with otherwise bad values elsewhere.
-    CameraConfig config;
-    config.rgb = config.depth = false;
-    config.focal = CameraConfig::FovDegrees{};
-    EXPECT_NO_THROW(config.ValidateOrThrow());
-    EXPECT_NO_THROW(SaveYamlString(config));
-  }
+  // However, if rgb = depth = false, then the configuration is by definition
+  // valid, even with otherwise bad values elsewhere.
+  CameraConfig config_no_render;
+  config_no_render.rgb = config_no_render.depth = false;
+  config_no_render.focal = CameraConfig::FovDegrees{};
+  EXPECT_NO_THROW(config_no_render.ValidateOrThrow());
+  EXPECT_NO_THROW(SaveYamlString(config_no_render));
 }
 
 }  // namespace
