@@ -4,10 +4,19 @@
 #include <optional>
 #include <string>
 
-#include "lcm/lcm-cpp.hpp"
-
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/lcm/drake_lcm_interface.h"
+#include "drake/lcm/drake_lcm_params.h"
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace lcm {
+// We don't want to pollute our Drake headers with the include paths for either
+// @lcm or @glib, so we forward-declare the `class ::lcm::LCM` for use only by
+// DrakeLcm::get_lcm_instance() -- an advanced function that is rarely used.
+class LCM;
+}  // namespace lcm
+#endif
 
 namespace drake {
 namespace lcm {
@@ -32,16 +41,11 @@ class DrakeLcm : public DrakeLcmInterface {
   explicit DrakeLcm(std::string lcm_url);
 
   /**
-   * (Advanced) Constructs using the given URL, but with the ability to defer
-   * launching the receive thread.
-   *
-   * @param defer_initialization controls whether or not LCM's background
-   * receive thread will be launched immediately during the constructor (when
-   * false) or deferred until the first time it's needed (when true).  This can
-   * be useful if the scheduling configuration for new threads varies between
-   * the construction time and first use.  For other constructor overloads,
-   * this setting defaults to `false` -- the thread is launched immediately.
+   * Constructs using the given parameters.
    */
+  explicit DrakeLcm(const DrakeLcmParams& params);
+
+  DRAKE_DEPRECATED("2022-10-01", "Use DrakeLcmParams instead.")
   DrakeLcm(std::string lcm_url, bool defer_initialization);
 
   /**
@@ -55,7 +59,6 @@ class DrakeLcm : public DrakeLcmInterface {
    * lifetime.
    */
   ::lcm::LCM* get_lcm_instance();
-
 
   void Publish(const std::string&, const void*, int,
                std::optional<double>) override;

@@ -11,8 +11,9 @@ using systems::Context;
 
 IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
     : num_joints_(num_joints) {
-  this->DeclareAbstractInputPort(
-      "lcmt_iiwa_status", Value<lcmt_iiwa_status>{});
+  this->DeclareAbstractInputPort("lcmt_iiwa_status", Value<lcmt_iiwa_status>{});
+  this->DeclareVectorOutputPort("time_measured", 1,
+                                &IiwaStatusReceiver::CalcTimeOutput);
   this->DeclareVectorOutputPort(
       "position_commanded", num_joints_,
       &IiwaStatusReceiver::CalcLcmOutput<
@@ -39,23 +40,26 @@ IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
 IiwaStatusReceiver::~IiwaStatusReceiver() = default;
 
 using OutPort = systems::OutputPort<double>;
-const OutPort& IiwaStatusReceiver::get_position_commanded_output_port() const {
+const OutPort& IiwaStatusReceiver::get_time_measured_output_port() const {
   return LeafSystem<double>::get_output_port(0);
 }
-const OutPort& IiwaStatusReceiver::get_position_measured_output_port() const {
+const OutPort& IiwaStatusReceiver::get_position_commanded_output_port() const {
   return LeafSystem<double>::get_output_port(1);
 }
-const OutPort& IiwaStatusReceiver::get_velocity_estimated_output_port() const {
+const OutPort& IiwaStatusReceiver::get_position_measured_output_port() const {
   return LeafSystem<double>::get_output_port(2);
 }
-const OutPort& IiwaStatusReceiver::get_torque_commanded_output_port() const {
+const OutPort& IiwaStatusReceiver::get_velocity_estimated_output_port() const {
   return LeafSystem<double>::get_output_port(3);
 }
-const OutPort& IiwaStatusReceiver::get_torque_measured_output_port() const {
+const OutPort& IiwaStatusReceiver::get_torque_commanded_output_port() const {
   return LeafSystem<double>::get_output_port(4);
 }
-const OutPort& IiwaStatusReceiver::get_torque_external_output_port() const {
+const OutPort& IiwaStatusReceiver::get_torque_measured_output_port() const {
   return LeafSystem<double>::get_output_port(5);
+}
+const OutPort& IiwaStatusReceiver::get_torque_external_output_port() const {
+  return LeafSystem<double>::get_output_port(6);
 }
 
 template <std::vector<double> drake::lcmt_iiwa_status::* field_ptr>
@@ -73,6 +77,19 @@ void IiwaStatusReceiver::CalcLcmOutput(
     DRAKE_THROW_UNLESS(static_cast<int>(status_field.size()) == num_joints_);
     output->get_mutable_value() = Eigen::Map<const Eigen::VectorXd>(
         status_field.data(), num_joints_);
+  }
+}
+
+void IiwaStatusReceiver::CalcTimeOutput(const Context<double>& context,
+                                        BasicVector<double>* output) const {
+  const auto& status = get_input_port().Eval<lcmt_iiwa_status>(context);
+
+  // If we're using a default constructed message (i.e., we haven't received
+  // any status message yet), output zero.
+  if (status.num_joints == 0) {
+    output->get_mutable_value().setZero();
+  } else {
+    (*output)[0] = static_cast<double>(status.utime) / 1e6;
   }
 }
 

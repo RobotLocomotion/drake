@@ -1,9 +1,9 @@
 #include "drake/systems/primitives/saturation.h"
 
+#include <algorithm>
 #include <limits>
 
 #include "drake/common/default_scalars.h"
-#include "drake/math/saturate.h"
 
 namespace drake {
 namespace systems {
@@ -88,7 +88,8 @@ void Saturation<T>::CalcSaturatedOutput(const Context<T>& context,
 
   // Loop through and set the saturation values.
   for (int i = 0; i < u_min.size(); ++i) {
-    y[i] = math::saturate(u[i], u_min[i], u_max[i]);
+    using std::clamp;
+    y[i] = clamp(u[i], u_min[i], u_max[i]);
   }
 }
 

@@ -1,0 +1,92 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_library(
+    name = "scenario",
+    srcs = ["scenario.cc"],
+    hdrs = ["scenario.h"],
+    interface_deps = [
+        "//common:name_value",
+        "//lcm:drake_lcm_params",
+        "//manipulation/kuka_iiwa:iiwa_driver",
+        "//manipulation/schunk_wsg:schunk_wsg_driver",
+        "//manipulation/util:zero_force_driver",
+        "//multibody/plant:multibody_plant_config",
+        "//multibody/parsing:model_directives",
+        "//systems/analysis:simulator_config",
+        "//systems/sensors:camera_config",
+        "//visualization:visualization_config",
+    ],
+    deps = [
+        "//common/yaml",
+    ],
+)
+
+drake_cc_binary(
+    name = "hardware_sim",
+    srcs = ["hardware_sim.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":scenario",
+        "//common:add_text_logging_gflags",
+        "//manipulation/kuka_iiwa:iiwa_driver_functions",
+        "//manipulation/schunk_wsg:schunk_wsg_driver_functions",
+        "//manipulation/util:apply_driver_configs",
+        "//manipulation/util:zero_force_driver_functions",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config_functions",
+        "//systems/lcm:lcm_config_functions",
+        "//systems/sensors:camera_config_functions",
+        "//visualization:visualization_config_functions",
+    ],
+)
+
+drake_py_unittest(
+    name = "hardware_sim_test",
+    data = [
+        "test/test_scenarios.yaml",
+        ":demo",
+        ":hardware_sim",
+        "//examples/pendulum:prod_models",
+    ],
+    shard_count = 3,
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+# Binds the hardware_sim program to the data files required for the Demo
+# example scenario.
+sh_binary(
+    name = "demo",
+    srcs = [":hardware_sim"],
+    args = [
+        "--scenario_file=examples/hardware_sim/example_scenarios.yaml",
+        "--scenario_name=Demo",
+    ],
+    data = [
+        ":example_iiwa_wsg.dmd.yaml",
+        ":example_scenarios.yaml",
+        "//examples/manipulation_station:prod_models",
+        "//manipulation/models/iiwa_description:prod_models",
+        "//manipulation/models/wsg_50_description:prod_models",
+    ],
+    # Use the runfiles of the ":demo", not of the ":hardware_sim".
+    env = {"RUNFILES_DIR": "../"},
+)
+
+add_lint_tests()

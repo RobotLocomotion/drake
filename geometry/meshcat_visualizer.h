@@ -10,6 +10,7 @@
 #include "drake/geometry/meshcat_visualizer_params.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/systems/analysis/instantaneous_realtime_rate_calculator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -140,8 +141,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& query_object_port,
-      std::shared_ptr<Meshcat> meshcat,
-      MeshcatVisualizerParams params = {});
+      std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {});
 
  private:
   /* MeshcatVisualizer of different scalar types can all access each other's
@@ -213,6 +213,11 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   frame in the animation. */
   bool recording_{false};
   bool set_transforms_while_recording_{true};
+
+  /* TODO(#16486): ideally this mutable state will go away once it is safe to
+  run Meshcat multithreaded */
+  mutable systems::internal::InstantaneousRealtimeRateCalculator
+      realtime_rate_calculator_{};
 };
 
 /** A convenient alias for the MeshcatVisualizer class when using the `double`

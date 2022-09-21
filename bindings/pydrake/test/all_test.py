@@ -1,6 +1,12 @@
+import os
 import sys
 import unittest
 import warnings
+
+# When importing pydrake, confirm that it works without any matplotlib
+# customization. We don't need the MPLBACKEND=Template override (from
+# our tools/bazel.rc file) since importing doesn't open any new windows.
+del os.environ['MPLBACKEND']  # noqa
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
@@ -187,6 +193,7 @@ class TestAll(unittest.TestCase):
             # - sensors
             "Image",
             # visualization
+            "AddDefaultVisualization",
             # - meldis
             "Meldis",
             # - plotting

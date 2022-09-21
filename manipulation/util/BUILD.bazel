@@ -30,9 +30,12 @@ drake_cc_package_library(
     name = "util",
     visibility = ["//visibility:public"],
     deps = [
+        ":apply_driver_configs",
         ":move_ik_demo_base",
         ":moving_average_filter",
         ":robot_plan_utils",
+        ":zero_force_driver",
+        ":zero_force_driver_functions",
     ],
 )
 
@@ -93,9 +96,54 @@ drake_cc_library(
     deps = ["//common:essential"],
 )
 
+drake_cc_library(
+    name = "apply_driver_configs",
+    hdrs = ["apply_driver_configs.h"],
+)
+
+drake_cc_library(
+    name = "zero_force_driver",
+    hdrs = ["zero_force_driver.h"],
+    deps = [
+        "//common:name_value",
+    ],
+)
+
+drake_cc_library(
+    name = "zero_force_driver_functions",
+    srcs = ["zero_force_driver_functions.cc"],
+    hdrs = ["zero_force_driver_functions.h"],
+    interface_deps = [
+        ":zero_force_driver",
+        "//multibody/parsing:model_instance_info",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_buses",
+    ],
+    deps = [
+        "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_library(
+    name = "make_arm_controller_model",
+    srcs = ["make_arm_controller_model.cc"],
+    hdrs = ["make_arm_controller_model.h"],
+    internal = True,
+    visibility = [
+        "//manipulation/kuka_iiwa:__pkg__",
+    ],
+    deps = [
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
 drake_py_binary(
     name = "show_model",
     srcs = ["show_model.py"],
+    data = ["//manipulation/models/jaco_description:models"],
     deps = [
         ":module_py",
         "//bindings/pydrake",
@@ -151,6 +199,46 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+    ],
+)
+
+drake_cc_googletest(
+    name = "zero_force_driver_functions_test",
+    data = [
+        "//manipulation/models/wsg_50_description:prod_models",
+    ],
+    deps = [
+        ":zero_force_driver_functions",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_arm_controller_model_test",
+    data = [
+        ":test/iiwa7_wsg.dmd.yaml",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":make_arm_controller_model",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//multibody/parsing:parser",
+        "//multibody/parsing:process_model_directives",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:shared_pointer_system",
+    ],
+)
+
+filegroup(
+    name = "test_directives",
+    testonly = True,
+    srcs = [
+        ":test/iiwa7_wsg.dmd.yaml",
     ],
 )
 

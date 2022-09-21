@@ -49,16 +49,32 @@ generate_file(
 )
 
 _MOST_PUBLIC_HDRS = [
+    "include/ignition/utils/Environment.hh",
     "include/ignition/utils/ImplPtr.hh",
+    "include/ignition/utils/NeverDestroyed.hh",
     "include/ignition/utils/SuppressWarning.hh",
     "include/ignition/utils/detail/DefaultOps.hh",
     "include/ignition/utils/detail/ImplPtr.hh",
     "include/ignition/utils/detail/SuppressWarning.hh",
 ]
 
+_SRCS = [
+    "src/Environment.cc",
+]
+
 check_lists_consistency(
-    files = _MOST_PUBLIC_HDRS,
-    glob_include = ["include/**/*.hh"],
+    files = _MOST_PUBLIC_HDRS + _SRCS,
+    glob_include = [
+        "include/**/*.hh",
+        "src/**/*.cc",
+    ],
+    glob_exclude = [
+        # These are test utilities, not for use by library code.
+        "include/ignition/utils/ExtraTestMacros.hh",
+        "include/ignition/utils/detail/ExtraTestMacros.hh",
+        # These are test code, not library code.
+        "**/*TEST*",
+    ],
 )
 
 _HDRS = _MOST_PUBLIC_HDRS + [
@@ -72,6 +88,11 @@ cc_library_vendored(
     hdrs_vendored = [
         x.replace("include/ignition/", "drake_src/drake_vendor/ignition/")
         for x in _HDRS
+    ],
+    srcs = _SRCS,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/")
+        for x in _SRCS
     ],
     edit_include = {
         "ignition/": "drake_vendor/ignition/",

@@ -29,7 +29,7 @@ template <typename T>
 T SmoothMax(const std::vector<T>& x) {
   // We compute the smooth max of x as smoothmax(x) = log(∑ᵢ exp(αxᵢ)) / α.
   // This smooth max approaches max(x) as α increases. We choose α = 100, as
-  // that gives a qualitatively good fit for xᵢ ∈ [0, 1], which is the range of
+  // that gives a qualitatively good fit for xᵢ ∈ [0, 1], which is the range of
   // potential penalty values when the MinimumValueConstraint is feasible.
   DRAKE_ASSERT(x.size() > 0);
   const double alpha{100};
@@ -136,6 +136,8 @@ MinimumValueConstraint::MinimumValueConstraint(
       minimum_value_{minimum_value},
       influence_value_{minimum_value + influence_value_offset},
       max_num_values_{max_num_values} {
+  DRAKE_DEMAND(influence_value_offset > 0);
+  DRAKE_DEMAND(std::isfinite(influence_value_offset));
   set_penalty_function(QuadraticallySmoothedHingeLoss);
 }
 
@@ -152,10 +154,9 @@ void MinimumValueConstraint::set_penalty_function(
 template <>
 VectorX<double> MinimumValueConstraint::Values(
     const Eigen::Ref<const VectorX<double>>& x) const {
-  return value_function_double_
-             ? value_function_double_(x, influence_value_)
-             : math::ExtractValue(value_function_(math::InitializeAutoDiff(x),
-                                                  influence_value_));
+  return value_function_double_ ? value_function_double_(x, influence_value_)
+                                : math::ExtractValue(value_function_(
+                                      x.cast<AutoDiffXd>(), influence_value_));
 }
 
 template <>

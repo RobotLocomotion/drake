@@ -52,7 +52,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 
   /// Sets the parameters to describe MIT Robot Locomotion Group's hardware
   /// acrobot.
-  void SetMITAcrobotParameters(systems::Parameters<T>* parameters) const;
+  void SetMitAcrobotParameters(AcrobotParams<T>* parameters) const;
 
   ///@{
   /// Manipulator equation of Acrobot: M(q)q̈ + bias(q,q̇) = B*u.

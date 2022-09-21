@@ -56,6 +56,10 @@ std::string LoadResource(const std::string& resource_name) {
 const std::string& GetUrlContent(std::string_view url_path) {
   static const drake::never_destroyed<std::string> meshcat_js(
       LoadResource("drake/geometry/meshcat.js"));
+  static const drake::never_destroyed<std::string> stats_js(
+      LoadResource("drake/geometry/stats.min.js"));
+  static const drake::never_destroyed<std::string> msgpack_lite_js(
+      LoadResource("drake/geometry/msgpack.min.js"));
   static const drake::never_destroyed<std::string> meshcat_ico(
       LoadResource("drake/geometry/meshcat.ico"));
   static const drake::never_destroyed<std::string> meshcat_html(
@@ -68,6 +72,12 @@ const std::string& GetUrlContent(std::string_view url_path) {
   }
   if (url_path == "/meshcat.js") {
     return meshcat_js.access();
+  }
+  if (url_path == "/stats.min.js") {
+    return stats_js.access();
+  }
+  if (url_path == "/msgpack.min.js") {
+    return msgpack_lite_js.access();
   }
   if (url_path == "/favicon.ico") {
     return meshcat_ico.access();
@@ -396,8 +406,16 @@ class MeshcatShapeReifier : public ShapeReifier {
 
         // Scan .mtl file for map_ lines.  For each, load the file and add
         // the contents to geometry.resources.
-        // TODO(russt): Make this parsing more robust.
-        std::regex map_regex("map_[^\\s]+\\s+([^\\s]+)");
+        // The syntax (http://paulbourke.net/dataformats/mtl/) is e.g.
+        //   map_Ka -options args filename
+        // Here we ignore the options and only extract the filename (by
+        // extracting the last word before the end of line/string).
+        //  - "map_.+" matches the map_ plus any options,
+        //  - "\s" matches one whitespace (before the filename),
+        //  - "[^\s]+" matches the filename, and
+        //  - "[$\r\n]" matches the end of string or end of line.
+        // TODO(russt): This parsing could still be more robust.
+        std::regex map_regex(R"""(map_.+\s([^\s]+)[$\r\n])""");
         for (std::sregex_iterator iter(meshfile_object.mtl_library.begin(),
                                        meshfile_object.mtl_library.end(),
                                        map_regex);
@@ -602,6 +620,21 @@ class Meshcat::Impl {
   int port() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     return port_;
+  }
+
+  // This function is public via the PIMPL.
+  void SetRealtimeRate(double rate) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    internal::RealtimeRateData data;
+    data.rate = rate;
+    Defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      DRAKE_DEMAND(app_ != nullptr);
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+    });
   }
 
   // This function is public via the PIMPL.
@@ -888,6 +921,54 @@ class Meshcat::Impl {
     material->wireframe = wireframe;
     material->wireframeLineWidth = wireframe_line_width;
     material->vertexColors = false;
+    data.object.material = std::move(material);
+
+    internal::MeshData mesh;
+    mesh.uuid = uuids::to_string(uuid_generator());
+    mesh.type = "Mesh";
+    mesh.geometry = data.object.geometry->uuid;
+    mesh.material = data.object.material->uuid;
+    data.object.object = std::move(mesh);
+
+    Defer([this, data = std::move(data)]() {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      SceneTreeElement& e = scene_tree_root_[data.path];
+      e.object() = std::move(message);
+    });
+  }
+
+  // This function is public via the PIMPL.
+  void SetTriangleColorMesh(std::string_view path,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                       const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
+                       bool wireframe,
+                       double wireframe_line_width) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    uuids::uuid_random_generator uuid_generator{generator_};
+    internal::SetObjectData data;
+    data.path = FullPath(path);
+
+    auto geometry = std::make_unique<internal::BufferGeometryData>();
+    geometry->uuid = uuids::to_string(uuid_generator());
+    geometry->position = vertices.cast<float>();
+    geometry->faces = faces.cast<uint32_t>();
+    geometry->color = colors.cast<float>();
+    data.object.geometry = std::move(geometry);
+
+    auto material = std::make_unique<internal::MaterialData>();
+    material->uuid = uuids::to_string(uuid_generator());
+    material->type = "MeshPhongMaterial";
+    material->transparent = false;
+    material->opacity = 1.0;
+    material->wireframe = wireframe;
+    material->wireframeLineWidth = wireframe_line_width;
+    material->vertexColors = true;
+    material->side = internal::kDoubleSide;
     data.object.material = std::move(material);
 
     internal::MeshData mesh;
@@ -1355,28 +1436,23 @@ class Meshcat::Impl {
 
     // Replace the javascript code in the original html file which connects via
     // websockets with the static javascript commands.
-    // Note: If the html code changes, the DRAKE_DEMAND will fail, and the code
-    // string here will need to be updated to once again match the html.
-    const std::string html_connect = R"""(try {
-      url = location.toString();
-      url = url.replace("http://", "ws://")
-      url = url.replace("https://", "wss://")
-      url = url.replace("/index.html", "/")
-      url = url.replace("/meshcat.html", "/")
-      viewer.connect(url);
-    } catch (e) {
-      console.info("Not connected to MeshCat websocket server: ", e);
-    })""";
-    size_t pos = html.find(html_connect);
-    DRAKE_DEMAND(pos != std::string::npos);
-    html.replace(pos, html_connect.size(), std::move(f.get()));
+    std::regex block_re(
+        "<!-- CONNECTION BLOCK BEGIN [^]+ CONNECTION BLOCK END -->\n");
+    html = std::regex_replace(html, block_re, f.get());
 
     // Insert the javascript directly into the html.
-    const std::string meshcat_src_link(" src=\"meshcat.js\"");
-    pos = html.find(meshcat_src_link);
-    DRAKE_DEMAND(pos != std::string::npos);
-    html.erase(pos, meshcat_src_link.size());
-    html.insert(pos+1, GetUrlContent("/meshcat.js"));
+    std::vector<std::pair<std::string, std::string>> js_paths{
+        {" src=\"meshcat.js\"", "/meshcat.js"},
+        {" src=\"stats.min.js\"", "/stats.min.js"},
+        {" src=\"msgpack.min.js\"", "/msgpack.min.js"},
+    };
+
+    for (const auto& [src_link, url] : js_paths) {
+      const size_t js_pos = html.find(src_link);
+      DRAKE_DEMAND(js_pos != std::string::npos);
+      html.erase(js_pos, src_link.size());
+      html.insert(js_pos+1, GetUrlContent(url));
+    }
 
     return html;
   }
@@ -1649,6 +1725,14 @@ class Meshcat::Impl {
         ws->send(message_stream.str());
       }
     }
+
+    // Tell client if the realtime rate plot should be hidden
+    internal::ShowRealtimeRate realtime_rate_message;
+    realtime_rate_message.show = params_.show_stats_plot;
+    std::stringstream realtime_message_stream;
+    msgpack::pack(realtime_message_stream, realtime_rate_message);
+    ws->send(realtime_message_stream.str());
+
     if (inject_open_fault_.load()) {
       throw std::runtime_error(
           "InjectWebsocketThreadFault during socket open");
@@ -1974,6 +2058,15 @@ void Meshcat::SetTriangleMesh(
                               wireframe_line_width);
 }
 
+void Meshcat::SetTriangleColorMesh(
+    std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+    const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+    const Eigen::Ref<const Eigen::Matrix3Xd>& colors, bool wireframe,
+    double wireframe_line_width) {
+  impl().SetTriangleColorMesh(path, vertices, faces, colors, wireframe,
+                         wireframe_line_width);
+}
+
 void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {
   impl().SetCamera(std::move(camera), std::move(path));
 }
@@ -1994,6 +2087,10 @@ void Meshcat::SetTransform(std::string_view path,
 
 void Meshcat::Delete(std::string_view path) {
   impl().Delete(path);
+}
+
+void Meshcat::SetRealtimeRate(double rate) {
+  impl().SetRealtimeRate(rate);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,

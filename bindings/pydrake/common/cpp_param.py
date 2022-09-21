@@ -100,7 +100,7 @@ class _Generic:
     ``List[T]``.
 
     The ``typing`` module in Python provides generics like this; however, the
-    API does not admit easy inspection, at least in Python 3.6 and 3.8, thus we
+    API does not admit easy inspection, at least in Python 3.8, thus we
     reinvent a smaller wheel.
     """
     def __init__(self, name, factory, num_param):

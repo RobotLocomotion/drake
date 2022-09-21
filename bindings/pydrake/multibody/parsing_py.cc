@@ -55,6 +55,7 @@ PYBIND11_MODULE(parsing, m) {
         .def("PopulateFromEnvironment", &Class::PopulateFromEnvironment,
             py::arg("environment_variable"),
             cls_doc.PopulateFromEnvironment.doc)
+        .def("PopulateFromRosPackagePath", &Class::PopulateFromRosPackagePath)
         .def_static("MakeEmpty", &Class::MakeEmpty, cls_doc.MakeEmpty.doc);
   }
 
@@ -90,6 +91,10 @@ PYBIND11_MODULE(parsing, m) {
   m.def("LoadModelDirectives", &parsing::LoadModelDirectives,
       py::arg("filename"), doc.parsing.LoadModelDirectives.doc);
 
+  m.def("LoadModelDirectivesFromString",
+      &parsing::LoadModelDirectivesFromString, py::arg("model_directives"),
+      doc.parsing.LoadModelDirectivesFromString.doc);
+
   // ModelInstanceInfo
   {
     using Class = parsing::ModelInstanceInfo;
@@ -117,17 +122,23 @@ PYBIND11_MODULE(parsing, m) {
         .def_readonly("X_PF", &Class::X_PF, cls_doc.X_PF.doc);
   }
 
+  m.def("ProcessModelDirectives",
+      py::overload_cast<const parsing::ModelDirectives&, Parser*>(
+          &parsing::ProcessModelDirectives),
+      py::arg("directives"), py::arg("parser"),
+      doc.parsing.ProcessModelDirectives.doc_2args);
+
   m.def(
       "ProcessModelDirectives",
       [](const parsing::ModelDirectives& directives,
-          MultibodyPlant<double>* plant, Parser* parser = nullptr) {
+          MultibodyPlant<double>* plant, Parser* parser) {
         std::vector<parsing::ModelInstanceInfo> added_models;
         parsing::ProcessModelDirectives(
             directives, plant, &added_models, parser);
         return added_models;
       },
-      py::arg("directives"), py::arg("plant"), py::arg("parser"),
-      doc.parsing.ProcessModelDirectives.doc);
+      py::arg("directives"), py::arg("plant"), py::arg("parser") = nullptr,
+      doc.parsing.ProcessModelDirectives.doc_4args);
 
   m.def("GetScopedFrameByName", &parsing::GetScopedFrameByName,
       py::arg("plant"), py::arg("full_name"),

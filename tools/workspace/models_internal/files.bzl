@@ -63,6 +63,47 @@ def skydio_2_mesh_files():
         "skydio_2/LICENSE",
     ]
 
+def tri_homecart_mesh_files():
+    return [
+        "tri_homecart/LICENSE.txt",
+        "tri_homecart/homecart_arm_mount_cantilever.mtl",
+        "tri_homecart/homecart_arm_mount_cantilever.obj",
+        "tri_homecart/homecart_arm_mount_stack.mtl",
+        "tri_homecart/homecart_arm_mount_stack.obj",
+        "tri_homecart/homecart_basecart.mtl",
+        "tri_homecart/homecart_basecart.obj",
+        "tri_homecart/homecart_basecart_wood_color.png",
+        "tri_homecart/homecart_baseplate.mtl",
+        "tri_homecart/homecart_baseplate.obj",
+        "tri_homecart/homecart_bimanual_upper_structure.mtl",
+        "tri_homecart/homecart_bimanual_upper_structure.obj",
+        "tri_homecart/homecart_cutting_board.mtl",
+        "tri_homecart/homecart_cutting_board.obj",
+        "tri_homecart/homecart_cutting_board_color.png",
+    ]
+
+def ur3e_mesh_files():
+    return [
+        "ur3e/LICENSE.TXT",
+        "ur3e/base.mtl",
+        "ur3e/base.obj",
+        "ur3e/forearm.mtl",
+        "ur3e/forearm.obj",
+        "ur3e/shoulder.mtl",
+        "ur3e/shoulder.obj",
+        "ur3e/upperarm.mtl",
+        "ur3e/upperarm.obj",
+        "ur3e/ur3e_color.png",
+        "ur3e/ur3e_normal.png",
+        "ur3e/ur3e_occlusion_roughness_metallic.png",
+        "ur3e/wrist1.mtl",
+        "ur3e/wrist1.obj",
+        "ur3e/wrist2.mtl",
+        "ur3e/wrist2.obj",
+        "ur3e/wrist3.mtl",
+        "ur3e/wrist3.obj",
+    ]
+
 def wsg_50_description_mesh_files():
     return [
         "wsg_50_description/meshes/finger_without_tip.obj",

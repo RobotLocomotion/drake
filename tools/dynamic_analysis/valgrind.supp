@@ -69,18 +69,6 @@
     obj:/lib/x86_64-linux-gnu/ld-2.23.so
 }
 
-# Conditional jump depending on uninitialized value in IPOPT 3.11.9 as
-# packaged for Ubuntu Bionic. Fixed in IPOPT 3.12.11 per
-# https://projects.coin-or.org/Ipopt/changeset?new=2724
-{
-   <ipopt-mumps-solver-interface-1>
-   Memcheck:Cond
-   fun:dmumps_
-   fun:dmumps_f77_
-   fun:dmumps_c
-   fun:_ZN5Ipopt20MumpsSolverInterfaceC1Ev
-}
-
 {
    bash: definite leak in set_default_locale
    Memcheck:Leak
@@ -242,4 +230,12 @@
    fun:_ZN10ClpSimplex7startupEii
    fun:_ZN19ClpSimplexNonlinear6primalEv
    fun:_ZN10ClpSimplex6primalEii
+}
+
+{
+   VTK: file reader compare header line vs garbage
+   Memcheck:Cond
+   fun:_ZN13vtkDataReader10ReadHeaderEPKc
+   ...
+   fun:_ZN5drake8geometry8internal19ReadVtkToVolumeMeshERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEd
 }

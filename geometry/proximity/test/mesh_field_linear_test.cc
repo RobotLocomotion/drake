@@ -151,14 +151,15 @@ GTEST_TEST(MeshFieldLinearTest, TestTransform) {
   // Create mesh and field. Both mesh vertices and field gradient are expressed
   // in frame M.
   auto mesh_M = GenerateMesh<double>();
-  std::vector<double> e_values = {0., 1., 2., 3.};
+  const std::vector<double> e_values = {0., 1., 2., 3.};
   MeshFieldLinear<double, TriangleSurfaceMesh<double>> mesh_field_M(
-      std::move(e_values), mesh_M.get(), true /* calc_gradients */);
+      std::vector<double>(e_values), mesh_M.get(), true /* calc_gradients */);
 
   RigidTransformd X_NM(RollPitchYawd(M_PI_2, M_PI_4, M_PI / 6.),
                        Vector3d(1.2, 1.3, -4.3));
   MeshFieldLinear<double, TriangleSurfaceMesh<double>> mesh_field_N(
-      mesh_field_M);
+      std::vector<double>(e_values), mesh_M.get(), true /* calc_gradients */);
+
   // NOTE: re-expressing the field like this (and subsequent calls to
   // EvaluateCartesian()) don't actually require the field's captured mesh to
   // have properly transformed vertex positions. That is not generally true and

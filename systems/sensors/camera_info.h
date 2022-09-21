@@ -142,14 +142,19 @@ class CameraInfo final {
    Constructor that directly sets the image size, principal point, and focal
    lengths.
 
-   @param width    The image width in pixels, must be greater than zero.
-   @param height   The image height in pixels, must be greater than zero.
-   @param focal_x  The _model_ "focal length" x in pixels (as documented above).
-   @param focal_y  The _model_ "focal length" y in pixels (as documented above).
-   @param center_x The x coordinate of the principal point in pixels (as
-                   documented above).
-   @param center_y The y coordinate of the principal point in pixels (as
-                   documented above).
+   @param width      The image width in pixels, must be positive.
+   @param height     The image height in pixels, must be positive.
+   @param focal_x    The _model_ "focal length" x in pixels (see above), must be
+                     positive and finite.
+   @param focal_y    The _model_ "focal length" y in pixels (see above), must be
+                     positive and finite.
+   @param center_x   The x coordinate of the principal point in pixels (see
+                     above), must lie in the range 0 < center_x < width.
+   @param center_y   The y coordinate of the principal point in pixels (see
+                     above), must lie in the range 0 < center_y < height.
+
+   @throws std::exception if the provided values don't satisfy the listed
+   requirements.
   */
   CameraInfo(int width, int height, double focal_x, double focal_y,
              double center_x, double center_y);
@@ -158,9 +163,15 @@ class CameraInfo final {
    Constructs this instance by extracting focal_x, focal_y, center_x, and
    center_y from the provided intrinsic_matrix.
 
+   @param width             The image width in pixels, must be positive.
+   @param height            The image height in pixels, must be positive.
+   @param intrinsic_matrix  The intrinsic matrix (K) as documented above. Where
+                            K is defined to be non-zero, the values must be
+                            finite and the focal length values must be positive.
+
    @throws std::exception if intrinsic_matrix is not of the form indicated
    above for the pinhole camera model (representing an affine / homogeneous
-   transform).
+   transform) or the non-zero values don't meet the documented requirements.
   */
   CameraInfo(int width, int height, const Eigen::Matrix3d& intrinsic_matrix);
 
@@ -174,9 +185,13 @@ class CameraInfo final {
 
         focal_x = focal_y = height * 0.5 / tan(0.5 * fov_y)
 
-   @param width The image width in pixels, must be greater than zero.
-   @param height The image height in pixels, must be greater than zero.
-   @param fov_y The vertical field of view in radians.
+   @param width    The image width in pixels, must be positive.
+   @param height   The image height in pixels, must be positive.
+   @param fov_y    The vertical field of view in radians, must be positive and
+                   finite.
+
+   @throws std::exception if the provided values don't satisfy the listed
+   requirements.
   */
   CameraInfo(int width, int height, double fov_y);
 

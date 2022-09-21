@@ -35,7 +35,6 @@ cmake_configure_file(
         "HAVE_FPCLASSIFY=1",
         "HAVE_ISINF=1",
         "HAVE_ISNAN=1",
-        "HAVE_LIBM=1",
         "HAVE_QSORT_R=1",
         "HAVE_STDINT_H=1",
         "HAVE_UINT32_T=1",
@@ -301,7 +300,7 @@ genrule(
     cmd = " ".join([
         "cp $(execpath src/api/nlopt-in.hpp) $@",
         "&&",
-        "patch $@ $(execpath @drake//tools/workspace/nlopt_internal:patches/gen_enums.patch)",  # noqa
+        "patch --quiet $@ $(execpath @drake//tools/workspace/nlopt_internal:patches/gen_enums.patch)",  # noqa
     ]),
     visibility = ["@drake//tools/workspace/nlopt_internal:__pkg__"],
 )

@@ -356,7 +356,7 @@ TEST_F(SdfParserTest, EntireInertialTagOmitted) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("entire_inertial_tag_omitted"));
-  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_EQ(body->default_mass(), 1.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -377,7 +377,7 @@ TEST_F(SdfParserTest, InertiaTagOmitted) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("inertia_tag_omitted"));
-  EXPECT_EQ(body->get_default_mass(), 2.);
+  EXPECT_EQ(body->default_mass(), 2.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -405,7 +405,7 @@ TEST_F(SdfParserTest, MassTagOmitted) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("mass_tag_omitted"));
-  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_EQ(body->default_mass(), 1.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
   EXPECT_EQ(body->default_rotational_inertia().get_products(),
             Vector3d::Constant(0.1));
@@ -432,7 +432,7 @@ TEST_F(SdfParserTest, MasslessBody) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("massless_link"));
-  EXPECT_EQ(body->get_default_mass(), 0.);
+  EXPECT_EQ(body->default_mass(), 0.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -458,7 +458,7 @@ TEST_F(SdfParserTest, PointMass) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("point_mass"));
-  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_EQ(body->default_mass(), 1.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -895,6 +895,31 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_lower_limits(),
                               neg_inf2));
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
+  // axis = (0, 0, 1) and axis2 = (0, 1, 0) in the model frame (aka the world
+  // frame in this case). So Ix, Iy, Iz are (0, 0, 1), (0, 1, 0), and (-1, 0, 0)
+  // respectively when expressed in the world frame. Since M = F = I and C = P =
+  // W, We have R_PF = R_CM = R_WI, and R_WI has column vectors Ix_W, Iy_W, and
+  // Iz_W.
+  Matrix3<double> R_WI;
+  // clang-format off
+  R_WI << 0, 0, -1,
+          0, 1, 0,
+          1, 0, 0;
+  // clang-format on
+  // The intermediate frame I and the joint frame J are off by a rotation and
+  // p_WI = p_WJ.
+  const Vector3d p_WI(
+      1.0, 2.0, 3.0); /* To be kept in sync with the testing SDFormat file. */
+  const RigidTransform<double> X_WI =
+      RigidTransform<double>(math::RotationMatrix<double>(R_WI), p_WI);
+  // In the SDFormat file, the frames on all links are coincident with the
+  // world frame. So p_PJ = p_CJ = p_WJ = p_WI. Therefore, X_PJ = X_CJ = X_WJ.
+  EXPECT_TRUE(universal_joint.frame_on_parent()
+                  .GetFixedPoseInBodyFrame()
+                  .IsExactlyEqualTo(X_WI));
+  EXPECT_TRUE(universal_joint.frame_on_child()
+                  .GetFixedPoseInBodyFrame()
+                  .IsExactlyEqualTo(X_WI));
 
   // Planar joint
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<PlanarJoint>("planar_joint",
@@ -954,6 +979,86 @@ TEST_F(SdfParserTest, ActuatedUniversalJointParsingTest) {
 </model>)""");
   EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
       ".*effort limits.*universal joint.*not implemented.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling when axis2 isn't specified for universal joints.
+TEST_F(SdfParserTest, UniversalJointAxisParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz> 0 0 1</xyz>
+    </axis>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstError(),
+              ::testing::MatchesRegex(
+                  ".*Both axis and axis2 must be specified.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for an non-orthogonal axis and axis2 in universal
+// joints.
+TEST_F(SdfParserTest, UniversalJointNonOrthogonalAxisParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+    </axis>
+    <axis2>
+      <xyz>0 0 1</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(
+      FormatFirstError(),
+      ::testing::MatchesRegex(".*axis and axis2 must be orthogonal.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for axis and axis2 with incompatible damping
+// coefficients in universal joints.
+TEST_F(SdfParserTest, UniversalJointDampingCoeffParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <limit>
+        <effort>0</effort>
+      </limit>
+      <dynamics>
+        <damping>0.1</damping>
+      </dynamics>
+      <xyz>0 0 1</xyz>
+    </axis>
+    <axis2>
+      <limit>
+        <effort>0</effort>
+      </limit>
+      <dynamics>
+        <damping>0.2</damping>
+      </dynamics>
+      <xyz>0 1 0</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(
+      FormatFirstWarning(),
+      ::testing::MatchesRegex(
+          ".*damping must be equal.*jerry.*damping coefficient.*0.1.*is "
+          "used.*0.2.*is ignored.*should be explicitly defined as 0.1 to "
+          "match.*"));
   ClearDiagnostics();
 }
 
@@ -1544,7 +1649,7 @@ TEST_F(SdfParserTest, BushingParsingBad3) {
 TEST_F(SdfParserTest, ReflectedInertiaParametersParsing) {
   AddSceneGraph();
   // Common SDF string with format options for the two custom tags.
-  const std::string test_string = R"""(
+  constexpr const char* test_string = R"""(
     <model name='ReflectedInertiaModel_{2}'>
       <link name='A'/>
       <link name='B'/>
@@ -2641,6 +2746,7 @@ TEST_F(SdfParserTest, UnsupportedElements) {
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*lighting"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*script"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*shader"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*drake:QQQ_dynamic"));
 }
 
 }  // namespace

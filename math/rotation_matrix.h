@@ -15,7 +15,6 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
-#include "drake/common/symbolic.h"
 #include "drake/math/fast_pose_composition_functions.h"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -85,7 +84,7 @@ class RotationMatrix {
     // Drake  QuaternionToRotationMatrix() = 12 multiplies, 12 adds.
     // Extra cost for two_over_norm_squared =  4 multiplies,  3 adds, 1 divide.
     // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
-    const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
+    const T two_over_norm_squared = 2.0 / quaternion.squaredNorm();
     set(QuaternionToRotationMatrix(quaternion, two_over_norm_squared));
   }
 
@@ -944,39 +943,11 @@ class RotationMatrix {
   // 12 multiplies.  This method also costs 12 adds and 12 multiplies, but
   // has a provision for an efficient algorithm for always calculating an
   // orthogonal rotation matrix (whereas Eigen's algorithm does not).
+  // @throws std::exception if all the elements of quaternion are zero.
+  // Throws std::exception in debug builds if any of the elements in quaternion
+  // are infinity or NaN.
   static Matrix3<T> QuaternionToRotationMatrix(
-      const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared) {
-    Matrix3<T> m;
-
-    const T w = quaternion.w();
-    const T x = quaternion.x();
-    const T y = quaternion.y();
-    const T z = quaternion.z();
-    const T sx  = two_over_norm_squared * x;  // scaled x-value.
-    const T sy  = two_over_norm_squared * y;  // scaled y-value.
-    const T sz  = two_over_norm_squared * z;  // scaled z-value.
-    const T swx = sx * w;
-    const T swy = sy * w;
-    const T swz = sz * w;
-    const T sxx = sx * x;
-    const T sxy = sy * x;
-    const T sxz = sz * x;
-    const T syy = sy * y;
-    const T syz = sz * y;
-    const T szz = sz * z;
-
-    m.coeffRef(0, 0) = T(1) - syy - szz;
-    m.coeffRef(0, 1) = sxy - swz;
-    m.coeffRef(0, 2) = sxz + swy;
-    m.coeffRef(1, 0) = sxy + swz;
-    m.coeffRef(1, 1) = T(1) - sxx - szz;
-    m.coeffRef(1, 2) = syz - swx;
-    m.coeffRef(2, 0) = sxz - swy;
-    m.coeffRef(2, 1) = syz + swx;
-    m.coeffRef(2, 2) = T(1) - sxx - syy;
-
-    return m;
-  }
+      const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared);
 
   // Throws an exception if the vector v does not have a measurable magnitude
   // within 4ε of 1 (where machine epsilon ε ≈ 2.22E-16).

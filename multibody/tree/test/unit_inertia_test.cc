@@ -4,9 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -514,7 +512,7 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
 }
 
 // Tests that we can correctly cast a UnitInertia<double> to a UnitInertia
-// templated on an AutoDiffScalar type.
+// templated on AutoDiffXd.
 GTEST_TEST(UnitInertia, CastToAutoDiff) {
   const UnitInertia<double> I_double(1, 2.718, 3.14);
 
@@ -531,8 +529,8 @@ GTEST_TEST(UnitInertia, CastToAutoDiff) {
                               Eigen::MatrixXd(9, 0)));
 }
 
-// Tests that we can instantiate a unit inertia with AutoDiffScalar and
-// we can perform some basic operations with it.
+// Tests that we can instantiate a unit inertia with AutoDiffXd and we can
+// perform some basic operations with it.
 // As an example, we define the unit inertia G_B of a body B. The
 // orientation of this body in the world frame W is given by the time dependent
 // rotation R_WB = Rz(theta(t)) about the z-axis with angle theta(t).

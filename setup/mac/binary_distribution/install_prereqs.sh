@@ -70,9 +70,9 @@ EOF
 
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
-if ! command -v pip3.9 &>/dev/null; then
-  echo 'ERROR: pip3.9 is NOT installed. The post-install step for the python@3.9 formula may have failed.' >&2
+if ! command -v pip3.10 &>/dev/null; then
+  echo 'ERROR: pip3.10 is NOT installed. The post-install step for the python@3.10 formula may have failed.' >&2
   exit 2
 fi
 
-pip3.9 install -r "${BASH_SOURCE%/*}/requirements.txt"
+pip3.10 install -r "${BASH_SOURCE%/*}/requirements.txt"

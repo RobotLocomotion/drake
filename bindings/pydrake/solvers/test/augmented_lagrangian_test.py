@@ -7,8 +7,6 @@ from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers import augmented_lagrangian as al
 from pydrake.autodiffutils import InitializeAutoDiff, AutoDiffXd
 
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-
 
 class TestAugmentedLagrangian(unittest.TestCase):
     def setUp(self):
@@ -89,10 +87,3 @@ class TestAugmentedLagrangian(unittest.TestCase):
         self.assertEqual(
             al.AugmentedLagrangianSmooth(
                 prog=self.prog, include_x_bounds=True).is_equality(), [False])
-
-    def test_nonsmooth_augmented_lagrangian_deprecation(self):
-        # Remove after 2022-07-01.
-        with catch_drake_warnings(expected_count=1):
-            dut = al.NonsmoothAugmentedLagrangian(prog=self.prog,
-                                                  include_x_bounds=True)
-            self.assertEqual(dut.lagrangian_size(), 1)

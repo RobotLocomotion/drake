@@ -49,7 +49,7 @@ If you are using Gurobi, you must either have it installed in the suggested loca
 You should first browse the [Python API](https://drake.mit.edu/pydrake/index.html) to see what
 modules are available. The most up-to-date high-level demonstrations of what
 can be done using ``pydrake`` are in Drake's [Tutorials](/index.html#tutorials) and
-the [Underactuated Robotics Textbook](http://underactuated.mit.edu/) and
+the [Underactuated Robotics Textbook](https://underactuated.mit.edu/) and
 the [Robotic Manipulation Textbook](https://manipulation.mit.edu/).
 
 You can also see lower-level usages of the API in the ``pydrake`` unit tests

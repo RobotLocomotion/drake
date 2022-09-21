@@ -102,7 +102,22 @@ class PackageMap final {
   /// accomodates the expected behavior using ROS_PACKAGE_PATH, where a package
   /// path corresponds to the "highest" overlay in which that package is found.
   /// If a path does not exist or is unreadable, a warning is logged.
+  /// This function should not be used when populating manifests from the
+  /// ROS_PACKAGE_PATH environment variable. To do so, the
+  /// PopulateFromRosPackagePath function should be used instead, which follows
+  /// standard ROS package discovery semantics described in the documentation
+  /// for that function.
   void PopulateFromEnvironment(const std::string& environment_variable);
+
+  /// Obtains one or more paths from the ROS_PACKAGE_PATH environment variable.
+  /// Semantics are similar to PopulateFromEnvironment(), except that ROS-style
+  /// crawl termination semantics are enabled, which means that subdirectories
+  /// of already-identified packages are not searched, and neither are
+  /// directories which contain any of the following marker files:
+  /// - AMENT_IGNORE
+  /// - CATKIN_IGNORE
+  /// - COLCON_IGNORE
+  void PopulateFromRosPackagePath();
 
   friend std::ostream& operator<<(std::ostream& out,
                                   const PackageMap& package_map);
@@ -122,7 +137,15 @@ class PackageMap final {
 
   // Recursively crawls through @p path looking for package.xml files. Adds
   // the packages defined by these package.xml files to this PackageMap.
-  void CrawlForPackages(const std::string& path);
+  //
+  // @param[in] stop_at_package When passed true, do not crawl into
+  // subdirectories of packages which have already been found.
+  // @param[in] stop_markers When a directory contains one or more files or
+  // directories with one of the given names, do not crawl into that directory
+  // or any subdirectories when searching for packages.
+  void CrawlForPackages(const std::string& path,
+      bool stop_at_package = false,
+      const std::vector<std::string_view>& stop_markers = {});
 
   // This method is the same as Add() except if package_name is already present
   // with a different path, then this method prints a warning and returns false

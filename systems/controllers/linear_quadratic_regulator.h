@@ -16,8 +16,9 @@ struct LinearQuadraticRegulatorResult {
 /// Computes the optimal feedback controller, u=-Kx, and the optimal
 /// cost-to-go J = x'Sx for the problem:
 ///
-///   @f[ \dot{x} = Ax + Bu @f]
 ///   @f[ \min_u \int_0^\infty x'Qx + u'Ru + 2x'Nu dt @f]
+///   @f[ \dot{x} = Ax + Bu @f]
+///   @f[ Fx = 0 @f]
 ///
 /// @param A The state-space dynamics matrix of size num_states x num_states.
 /// @param B The state-space input matrix of size num_states x num_inputs.
@@ -25,13 +26,17 @@ struct LinearQuadraticRegulatorResult {
 /// num_states.
 /// @param R A symmetric positive definite cost matrix of size num_inputs x
 /// num_inputs.
-/// @param N A cost matrix of size num_states x num_inputs. If the matrix is
-/// zero-sized, N will be treated as a num_states x num_inputs zero matrix.
+/// @param N A cost matrix of size num_states x num_inputs. If N.rows() == 0, N
+/// will be treated as a num_states x num_inputs zero matrix.
+/// @param F A constraint matrix of size num_constraints x num_states. rank(F)
+/// must be < num_states. If F.rows() == 0, F will be treated as a 0 x
+/// num_states zero matrix.
 /// @returns A structure that contains the optimal feedback gain K and the
 /// quadratic cost term S. The optimal feedback control is u = -Kx;
 ///
 /// @throws std::exception if R is not positive definite.
 /// @ingroup control
+/// @pydrake_mkdoc_identifier{AB}
 ///
 LinearQuadraticRegulatorResult LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -39,6 +44,8 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::MatrixXd>& N =
+        Eigen::Matrix<double, 0, 0>::Zero(),
+    const Eigen::Ref<const Eigen::MatrixXd>& F =
         Eigen::Matrix<double, 0, 0>::Zero());
 
 // TODO(russt): Consider implementing the optional N argument as in the
@@ -89,6 +96,7 @@ LinearQuadraticRegulatorResult DiscreteTimeLinearQuadraticRegulator(
 ///
 /// @throws std::exception if R is not positive definite.
 /// @ingroup control_systems
+/// @pydrake_mkdoc_identifier{system}
 ///
 std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
     const LinearSystem<double>& system,
@@ -126,13 +134,14 @@ std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
 /// num_inputs.
 /// @param N A cost matrix of size num_states x num_inputs.  If the matrix is
 /// zero-sized, N will be treated as a num_states x num_inputs zero matrix.
-/// @param int_port_index The index of the input port to linearize around.
+/// @param input_port_index The index of the input port to linearize around.
 /// @returns A system implementing the optimal controller in the original system
 /// coordinates.
 ///
 /// @throws std::exception if R is not positive definite.
 /// @ingroup control_systems
 /// @see drake::systems::Linearize()
+/// @pydrake_mkdoc_identifier{linearize_at_context}
 ///
 std::unique_ptr<AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,

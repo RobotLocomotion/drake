@@ -1,0 +1,62 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load("//tools/workspace/models_internal:files.bzl", "tri_homecart_mesh_files")
+
+# This package is public so that other packages can refer to
+# individual files in these models from their bazel rules.
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "parse_homecart_test",
+    srcs = ["test/parse_homecart_test.cc"],
+    data = [
+        ":models",
+        "//manipulation/models/ur3e:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//multibody/parsing",
+    ],
+)
+
+xacro_file(
+    name = "homecart_bimanual.urdf",
+    src = "homecart_bimanual.urdf.xacro",
+)
+
+xacro_file(
+    name = "homecart_cutting_board.sdf",
+    src = "homecart_cutting_board.sdf.xacro",
+)
+
+_TRI_HOMECART_MESHES = forward_files(
+    srcs = ["@models_internal//:" + x for x in tri_homecart_mesh_files()],
+    dest_prefix = "",
+    strip_prefix = "@models_internal//:tri_homecart/",
+    visibility = ["//visibility:private"],
+)
+
+install_data(
+    extra_prod_models = [
+        "homecart_bimanual.urdf",
+        "homecart_cutting_board.sdf",
+        "homecart_grippers.dmd.yaml",
+        "homecart_no_grippers.dmd.yaml",
+        "homecart.dmd.yaml",
+    ] + _TRI_HOMECART_MESHES,
+)
+
+add_lint_tests()

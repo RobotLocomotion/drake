@@ -1,4 +1,4 @@
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/monomial_util.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/tools/performance/fixture_common.h"
 
@@ -119,5 +119,3 @@ BENCHMARK(BenchmarkSosProgram3);
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
-
-BENCHMARK_MAIN();

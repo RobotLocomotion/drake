@@ -18,7 +18,9 @@ auto BindTypeSafeIndex(
     py::module m, const std::string& name, const std::string& class_doc = "") {
   py::class_<Class> cls(m, name.c_str(), class_doc.c_str());
   cls  // BR
-      .def(py::init<int>(), pydrake_doc.drake.TypeSafeIndex.ctor.doc_0args)
+      .def(py::init<>(), pydrake_doc.drake.TypeSafeIndex.ctor.doc_0args)
+      .def(
+          py::init<int>(), pydrake_doc.drake.TypeSafeIndex.ctor.doc_1args_index)
       .def("__int__", &Class::operator int)
       .def("__index__", &Class::operator int)
       .def(py::self == py::self)

@@ -10,10 +10,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -121,12 +119,6 @@ class MultibodyPlantTester {
     }
     plant.CalcNormalAndTangentContactJacobians(
         context, discrete_pairs, Jn, Jt, R_WC_set);
-  }
-
-  static const geometry::QueryObject<double>& EvalGeometryQueryInput(
-      const MultibodyPlant<double>& plant,
-      const systems::Context<double>& context) {
-    return plant.EvalGeometryQueryInput(context);
   }
 };
 
@@ -698,7 +690,7 @@ class AcrobotPlantTests : public ::testing::Test {
       const Body<double>& body = plant_->get_body(body_index);
       const SpatialForce<double>& F_Bo_W =
           body.GetForceInWorld(*plant_context_, forces);
-      const double mass = body.get_default_mass();
+      const double mass = body.default_mass();
       // TODO(amcastro-tri): provide Body::EvalCOMInWorld().
       const Vector3<double> p_BoBcm_B =
           body.CalcCenterOfMassInBodyFrame(*plant_context_);
@@ -1040,7 +1032,7 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
   MultibodyPlant<double> plant(0.0);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const auto& body = plant.AddRigidBody("body",
-      SpatialInertia<double>::MakeTestCube());
+      SpatialInertia<double>::MakeUnitary());
   EXPECT_TRUE(CompareMatrices(
       plant.GetDefaultFreeBodyPose(body).GetAsMatrix4(),
       RigidTransformd::Identity().GetAsMatrix4()));
@@ -1197,7 +1189,7 @@ class SphereChainScenario {
       const double radius = 0.5;
       // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
       const RigidBody<double>& sphere = plant_->AddRigidBody(
-          "Sphere" + to_string(i), SpatialInertia<double>::MakeTestCube());
+          "Sphere" + to_string(i), SpatialInertia<double>::MakeUnitary());
       GeometryId sphere_id = plant_->RegisterCollisionGeometry(
           sphere, RigidTransformd::Identity(), geometry::Sphere(radius),
           "collision", CoulombFriction<double>());
@@ -1230,7 +1222,7 @@ class SphereChainScenario {
     // Body with no registered frame.
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
     no_geometry_body_ = &plant_->AddRigidBody("NothingRegistered",
-        SpatialInertia<double>::MakeTestCube());
+        SpatialInertia<double>::MakeUnitary());
   }
 
   void Finalize() {
@@ -1415,7 +1407,7 @@ GTEST_TEST(MultibodyPlantTest, FilterWeldedSubgraphs) {
 GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
   MultibodyPlant<double> plant(0.0);
   const RigidBody<double>& body = plant.AddRigidBody("body",
-      SpatialInertia<double>::MakeTestCube());
+      SpatialInertia<double>::MakeUnitary());
 
   // It's an error to call this without a SceneGraph.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1553,6 +1545,46 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
               UnorderedElementsAre(&upper_ad, &lower_ad));
 }
 
+// Checks plumbing and top-level contract in MultibodyPlant.
+// See more complete testing of this graph query in `multibody_graph_test`.
+GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
+  // This test expects that the following model has a world body and a pair of
+  // welded-together bodies.
+  const std::string sdf_file =
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModelFromFile(sdf_file);
+  const Body<double>& upper = plant.GetBodyByName("upper_section");
+  const Body<double>& lower = plant.GetBodyByName("lower_section");
+  const JointIndex shoulder = plant.GetJointByName("pin").index();
+  const JointIndex elbow = plant.GetJointByName("weld").index();
+  // Add a new body, and weld it to the world body.
+  const Body<double>& extra = plant.AddRigidBody(
+      "extra", default_model_instance(), SpatialInertia<double>());
+  plant.WeldFrames(plant.world_frame(), extra.body_frame());
+
+  const std::vector<JointIndex> joints1{shoulder};
+  std::vector<BodyIndex> expected_bodies1{lower.index(), upper.index()};
+  std::sort(expected_bodies1.begin(), expected_bodies1.end());
+
+  // Verify we can only call GetBodiesKinematicallyAffectedBy() post-finalize.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.GetBodiesKinematicallyAffectedBy(joints1),
+      "Pre-finalize calls to .*GetBodiesKinematicallyAffectedBy.*");
+  plant.Finalize();
+  EXPECT_EQ(plant.GetBodiesKinematicallyAffectedBy(joints1), expected_bodies1);
+
+  // Test throw condition: weld joint.
+  const std::vector<JointIndex> joints2{shoulder, elbow};
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesKinematicallyAffectedBy(joints2),
+                              ".*joint with index.*welded.");
+
+  // Test throw condition: unregistered joint.
+  std::vector<JointIndex> joint100{JointIndex(100)};
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesKinematicallyAffectedBy(joint100),
+                              ".*No joint with index.*registered.");
+}
+
 // Regression test for unhelpful error message -- see #14641.
 GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
   // This test expects that the following model has a world body and a pair of
@@ -1630,8 +1662,8 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
 
   // Add two spherical bodies.
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", SpatialInertia<double>::MakeTestCube());
+  const RigidBody<double>& sphere1 = plant.AddRigidBody("Sphere1",
+          SpatialInertia<double>::MakeUnitary());
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
   // estimated parameters for mass=1kg, penetration_tolerance=0.01m
   // and gravity g=9.8 m/s^2.
@@ -1667,8 +1699,8 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
                                  geometry::internal::kHcDissipation,
                                  sphere2_dissipation);
-  const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", SpatialInertia<double>::MakeTestCube());
+  const RigidBody<double>& sphere2 = plant.AddRigidBody("Sphere2",
+      SpatialInertia<double>::MakeUnitary());
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
       sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
       "collision", std::move(sphere2_properties));
@@ -1797,15 +1829,15 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
 
   // Add two spherical bodies.
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", SpatialInertia<double>::MakeTestCube());
+  const RigidBody<double>& sphere1 = plant.AddRigidBody("Sphere1",
+      SpatialInertia<double>::MakeUnitary());
   Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
   GeometryId sphere1_id = plant.RegisterVisualGeometry(
       sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
       "visual", sphere1_diffuse);
   EXPECT_EQ(render_engine.num_registered(), 2);
-  const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", SpatialInertia<double>::MakeTestCube());
+  const RigidBody<double>& sphere2 = plant.AddRigidBody("Sphere2",
+      SpatialInertia<double>::MakeUnitary());
   IllustrationProperties sphere2_props;
   const Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   sphere2_props.AddProperty("phong", "diffuse", sphere2_diffuse);
@@ -1888,30 +1920,6 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
   // This test case contains no collisions, and hence we should not throw.
   DRAKE_EXPECT_NO_THROW(
       autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
-}
-
-GTEST_TEST(MultibodyPlantTest, CalcPointPairPenetrationsDisconnectedPorts) {
-  // Creates a plant and register geometry with a SceneGraph, but does not
-  // connect their respective ports in a Diagram. MultibodyPlant will know
-  // that it is registered as a source for geometry, but will fail to Eval
-  // its geometry_query_input_port(). Check that this failure happens as
-  // expected.
-  SceneGraph<double> scene_graph;
-  MultibodyPlant<double> plant(0.0);
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
-  plant.Finalize();
-  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
-
-  // Plant was not connected to the SceneGraph in a diagram, so its input port
-  // should be invalid.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MultibodyPlantTester::EvalGeometryQueryInput(plant, *context),
-      "The geometry query input port \\(see "
-      "MultibodyPlant::get_geometry_query_input_port\\(\\)\\) "
-      "of this MultibodyPlant is not connected. Please connect the"
-      "geometry query output port of a SceneGraph object "
-      "\\(see SceneGraph::get_query_output_port\\(\\)\\) to this plants input "
-      "port in a Diagram.");
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
@@ -2037,8 +2045,8 @@ void InitializePlantAndContextForVelocityToQDotMapping(
     MultibodyPlant<double>* plant, std::unique_ptr<Context<double>>* context) {
   // This is used in purely kinematic tests.
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const RigidBody<double>& body =
-      plant->AddRigidBody("FreeBody", SpatialInertia<double>::MakeTestCube());
+  const RigidBody<double>& body = plant->AddRigidBody("FreeBody",
+      SpatialInertia<double>::MakeUnitary());
   plant->Finalize();
 
   *context = plant->CreateDefaultContext();
@@ -2184,7 +2192,8 @@ TEST_F(SplitPendulum, GetMultibodyPlantFromElement) {
   // Create an element-owning MBTreeSystem that _is not_ an MBPlant.
   struct MyMBSystem : public internal::MultibodyTreeSystem<double> {
     MyMBSystem() {
-      rigid_body = &mutable_tree().AddBody<RigidBody>(SpatialInertia<double>());
+      rigid_body = &mutable_tree().AddBody<RigidBody>(
+          "Body", SpatialInertia<double>());
       Finalize();
     }
     const RigidBody<double>* rigid_body{};
@@ -2283,15 +2292,15 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
 
     // The model simply contains a small and a large box.
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-    const RigidBody<double>& large_box =
-        plant_.AddRigidBody("LargeBox", SpatialInertia<double>::MakeTestCube());
+    const RigidBody<double>& large_box = plant_.AddRigidBody("LargeBox",
+        SpatialInertia<double>::MakeUnitary());
     large_box_id_ = plant_.RegisterCollisionGeometry(
         large_box, RigidTransformd::Identity(),
         geometry::Box(large_box_size_, large_box_size_, large_box_size_),
         "collision", CoulombFriction<double>());
 
-    const RigidBody<double>& small_box =
-        plant_.AddRigidBody("SmallBox", SpatialInertia<double>::MakeTestCube());
+    const RigidBody<double>& small_box = plant_.AddRigidBody("SmallBox",
+        SpatialInertia<double>::MakeUnitary());
     small_box_id_ = plant_.RegisterCollisionGeometry(
         small_box, RigidTransformd::Identity(),
         geometry::Box(small_box_size_, small_box_size_, small_box_size_),
@@ -3343,7 +3352,7 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
 
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const Body<double>& body = plant.AddRigidBody("LoneBody",
-      SpatialInertia<double>::MakeTestCube());
+      SpatialInertia<double>::MakeUnitary());
   plant.Finalize();
 
   RandomGenerator generator;
@@ -3950,6 +3959,67 @@ GTEST_TEST(MultibodyPlantTest, ThrowIfSpatialForcePortContainsNaN) {
       plant->get_reaction_forces_output_port()
           .Eval<std::vector<SpatialForce<double>>>(*context),
       "Spatial force.*contains NaN.");
+}
+
+GTEST_TEST(MultibodyPlantTest, SetDefaultPositions) {
+  // Construct a plant with two Iiwas.
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+      "iiwa14_no_collision.sdf";
+  auto plant =
+      std::make_unique<MultibodyPlant<double>>(0 /* plant type irrelevant */);
+  Parser parser(plant.get());
+  multibody::ModelInstanceIndex iiwa0_instance =
+      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa0");
+  multibody::ModelInstanceIndex iiwa1_instance =
+      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa1");
+  // Weld iiwa0 to the world, leave iiwa1 to be floating.
+  plant->WeldFrames(plant->world_frame(),
+                    plant->GetFrameByName("iiwa_link_0", iiwa0_instance));
+
+  Eigen::VectorXd q = Eigen::VectorXd::LinSpaced(
+      7 + 7 + 7, 1.0, 2.0);  // 7 joints each + 7 floating base positions.
+  q.segment(7, 4).normalize();  // normalize the quaternion indices.
+
+  // Throws if called pre-finalize.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant->SetDefaultPositions(q),
+                              ".*you must call Finalize.* first.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->SetDefaultPositions(iiwa0_instance, q.head<7>()),
+      ".*you must call Finalize.* first.");
+  plant->Finalize();
+
+  // Throws if the q is the wrong size.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant->SetDefaultPositions(q.head<3>()),
+                              ".*num_positions.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->SetDefaultPositions(iiwa1_instance, q.head<3>()),
+      ".*q_instance.size.* == num_positions.*");
+
+  plant->SetDefaultPositions(q);
+
+  const double kTol = 1e-15;
+  auto context = plant->CreateDefaultContext();
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context), q, kTol));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa0_instance),
+                              q.head<7>()));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa1_instance),
+                              q.tail<14>(), kTol));
+
+  // Change q, and now verify the model_instance variant.
+  q = Eigen::VectorXd::LinSpaced(
+      7 + 7 + 7, 3.0, 4.0);  // 7 joints each + 7 floating base positions.
+  q.segment(7, 4).normalize();  // normalize the quaternion indices.
+
+  plant->SetDefaultPositions(iiwa0_instance, q.head<7>());
+  plant->SetDefaultPositions(iiwa1_instance, q.tail<14>());
+
+  plant->SetDefaultContext(context.get());
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context), q, kTol));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa0_instance),
+                              q.head<7>()));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa1_instance),
+                              q.tail<14>(), kTol));
 }
 
 }  // namespace

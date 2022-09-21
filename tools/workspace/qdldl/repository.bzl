@@ -11,6 +11,6 @@ def qdldl_repository(
         # When updating this commit, see drake/tools/workspace/qdldl/README.md.
         commit = "v0.1.5",
         sha256 = "2868b0e61b7424174e9adef3cb87478329f8ab2075211ef28fe477f29e0e5c99",  # noqa
-        build_file = "@drake//tools/workspace/qdldl:package.BUILD.bazel",
+        build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

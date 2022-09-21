@@ -9,8 +9,6 @@
 set -euo pipefail
 
 with_doc_only=0
-# TODO(betsymcphail): Remove this deprecated option on or after 2022-08-01
-with_kcov=0
 with_maintainer_only=0
 with_clang=1
 with_test_only=1
@@ -25,10 +23,6 @@ while [ "${1:-}" != "" ]; do
     # i.e., those prerequisites that are dependencies of bazel run //doc:build.
     --with-doc-only)
       with_doc_only=1
-      ;;
-    # TODO(betsymcphail): Remove this deprecated option on or after 2022-08-01
-    --with-kcov)
-      with_kcov=1
       ;;
     # Install prerequisites that are only needed for --config clang, i.e.,
     # opts-in to the ability to compile Drake's C++ code using Clang.
@@ -91,12 +85,6 @@ codename=$(lsb_release -sc)
 
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}
-
-
-# TODO(svenevs): Ideally we would have `packages-${codename}-satisfy.txt`,
-# an example workflow is in #16233 but xargs needs work (see #16280).
-apt-get satisfy  ${maybe_yes} --no-install-recommends \
-  'libcurl4-gnutls-dev | libcurl4-dev'
 
 # Ensure that we have available a locale that supports UTF-8 for generating a
 # C++ header containing Python API documentation during the build.
@@ -180,12 +168,8 @@ zlib1g-dev
 EOF
 )
 
+# Keep this version number in sync with the drake/.bazeliskrc version number.
 dpkg_install_from_wget \
   bazel 5.1.0 \
   https://releases.bazel.build/5.1.0/release/bazel_5.1.0-linux-x86_64.deb \
   3d54055f764cfb61b5416f0a45d2d3df19c30d301d4da81565595cbe2e36a220
-
-# TODO(betsymcphail): Remove this deprecated option on or after 2022-08-01
-if [[ "${with_kcov}" -eq 1 ]]; then
-  echo 'WARNING: The --with-kcov option is deprecated and should no longer be used.' >&2
-fi

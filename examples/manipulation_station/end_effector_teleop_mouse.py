@@ -5,10 +5,10 @@ import webbrowser
 
 import numpy as np
 
-from pydrake.examples.manipulation_station import (
+from pydrake.examples import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
-from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizerCpp
+from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
@@ -326,7 +326,7 @@ def main():
         DrakeVisualizer.AddToBuilder(builder, query_port)
         if args.meshcat:
             meshcat = Meshcat()
-            meshcat_visualizer = MeshcatVisualizerCpp.AddToBuilder(
+            meshcat_visualizer = MeshcatVisualizer.AddToBuilder(
                 builder=builder,
                 query_object_port=query_port,
                 meshcat=meshcat)

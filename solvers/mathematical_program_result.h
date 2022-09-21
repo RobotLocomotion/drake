@@ -11,7 +11,8 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/polynomial.h"
 #include "drake/common/value.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
@@ -48,15 +49,13 @@ double GetVariableValue(
 template <typename Derived>
 typename std::enable_if_t<
     std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-    Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime>>
+    MatrixLikewise<double, Derived>>
 GetVariableValue(
     const Eigen::MatrixBase<Derived>& var,
     const std::optional<std::unordered_map<symbolic::Variable::Id, int>>&
         variable_index,
     const Eigen::Ref<const Eigen::VectorXd>& variable_values) {
-  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
-      value(var.rows(), var.cols());
+  MatrixLikewise<double, Derived> value(var.rows(), var.cols());
   for (int i = 0; i < var.rows(); ++i) {
     for (int j = 0; j < var.cols(); ++j) {
       value(i, j) =
@@ -87,7 +86,7 @@ class MathematicalProgramResult final {
    * For more information on the solution status, the user could call
    * get_solver_details() to obtain the solver-specific solution status.
    */
-  bool is_success() const;
+  [[nodiscard]] bool is_success() const;
 
   /**
    * Sets decision_variable_index mapping, that maps each decision variable to
@@ -149,7 +148,7 @@ class MathematicalProgramResult final {
   /** (Advanced.) Gets the type-erased solver details. Most users should use
    * get_solver_details() instead. Throws an error if the solver_details has
    * not been set. */
-  const AbstractValue& get_abstract_solver_details() const;
+  [[nodiscard]] const AbstractValue& get_abstract_solver_details() const;
 
   /** (Advanced.) Forces the solver_details to be stored using the given
    * type `T`.  Typically, only an implementation of SolverInterface will
@@ -173,7 +172,7 @@ class MathematicalProgramResult final {
   /**
    * Gets the solution of all decision variables.
    */
-  const Eigen::VectorXd& GetSolution() const { return x_val_; }
+  [[nodiscard]] const Eigen::VectorXd& GetSolution() const { return x_val_; }
 
   /**
    * Gets the solution of an Eigen matrix of decision variables.
@@ -182,10 +181,9 @@ class MathematicalProgramResult final {
    * @return The value of the decision variable after solving the problem.
    */
   template <typename Derived>
-  typename std::enable_if_t<
+  [[nodiscard]] typename std::enable_if_t<
       std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>
+      MatrixLikewise<double, Derived>>
   GetSolution(const Eigen::MatrixBase<Derived>& var) const {
     return GetVariableValue(var, decision_variable_index_, x_val_);
   }
@@ -198,14 +196,15 @@ class MathematicalProgramResult final {
    * decision_variable_index, as the input argument of
    * set_decision_variable_index().
    */
-  double GetSolution(const symbolic::Variable& var) const;
+  [[nodiscard]] double GetSolution(const symbolic::Variable& var) const;
 
   /**
    * Substitutes the value of all decision variables into the Expression.
    * @param e The decision variable.
    * @return the Expression that is the result of the substitution.
    */
-  symbolic::Expression GetSolution(const symbolic::Expression& e) const;
+  [[nodiscard]] symbolic::Expression GetSolution(
+      const symbolic::Expression& e) const;
 
   /**
    * Substitutes the value of all decision variables into the coefficients of
@@ -215,7 +214,8 @@ class MathematicalProgramResult final {
    * is obtained.
    * @return the symbolic::Polynomial as the result of the substitution.
    */
-  symbolic::Polynomial GetSolution(const symbolic::Polynomial& p) const;
+  [[nodiscard]] symbolic::Polynomial GetSolution(
+      const symbolic::Polynomial& p) const;
 
   /**
    * Substitutes the value of all decision variables into the
@@ -227,14 +227,11 @@ class MathematicalProgramResult final {
    * doc_was_unable_to_choose_unambiguous_name. }
    */
   template <typename Derived>
-  typename std::enable_if_t<
+  [[nodiscard]] typename std::enable_if_t<
       std::is_same_v<typename Derived::Scalar, symbolic::Expression>,
-      Eigen::Matrix<symbolic::Expression, Derived::RowsAtCompileTime,
-          Derived::ColsAtCompileTime>>
+      MatrixLikewise<symbolic::Expression, Derived>>
   GetSolution(const Eigen::MatrixBase<Derived>& m) const {
-    Eigen::Matrix<symbolic::Expression, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime>
-        value(m.rows(), m.cols());
+    MatrixLikewise<symbolic::Expression, Derived> value(m.rows(), m.cols());
     for (int i = 0; i < m.rows(); ++i) {
       for (int j = 0; j < m.cols(); ++j) {
         value(i, j) = GetSolution(m(i, j));
@@ -304,7 +301,7 @@ class MathematicalProgramResult final {
    *    solution to the (rotated) Lorentz cone constraint doesn't have the
    *    "shadow price" interpretation, but should lie in the dual cone, and
    *    satisfy the KKT condition. For more information, refer to
-   *    https://docs.mosek.com/9.3/capi/prob-def-conic.html#duality-for-conic-optimization
+   *    https://docs.mosek.com/10.0/capi/prob-def-conic.html#duality-for-conic-optimization
    *    as an explanation.
    *
    * The interpretation for the dual variable to conic constraint x ∈ K can be
@@ -333,7 +330,8 @@ class MathematicalProgramResult final {
    * Z.
    */
   template <typename C>
-  Eigen::VectorXd GetDualSolution(const Binding<C>& constraint) const {
+  [[nodiscard]] Eigen::VectorXd GetDualSolution(
+      const Binding<C>& constraint) const {
     const Binding<Constraint> constraint_cast =
         internal::BindingDynamicCast<Constraint>(constraint);
     auto it = dual_solutions_.find(constraint_cast);
@@ -403,10 +401,9 @@ class MathematicalProgramResult final {
    * problem.
    */
   template <typename Derived>
-  typename std::enable_if_t<
+  [[nodiscard]] typename std::enable_if_t<
       std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>
+      MatrixLikewise<double, Derived>>
   GetSuboptimalSolution(const Eigen::MatrixBase<Derived>& var,
                         int solution_number) const {
     return GetVariableValue(var, decision_variable_index_,
@@ -423,14 +420,14 @@ class MathematicalProgramResult final {
    * @return The suboptimal value of the decision variable after solving the
    * problem.
    */
-  double GetSuboptimalSolution(const symbolic::Variable& var,
-                               int solution_number) const;
+  [[nodiscard]] double GetSuboptimalSolution(const symbolic::Variable& var,
+                                             int solution_number) const;
 
   /**
    * Number of suboptimal solutions stored inside MathematicalProgramResult.
    * See @ref solution_pools "solution pools".
    */
-  int num_suboptimal_solution() const {
+  [[nodiscard]] int num_suboptimal_solution() const {
     return static_cast<int>(suboptimal_x_val_.size());
   }
 
@@ -440,7 +437,7 @@ class MathematicalProgramResult final {
    * @param solution_number The index of the sub-optimal solution. @pre @p
    * solution_number should be in the range [0, num_suboptimal_solution()).
    */
-  double get_suboptimal_objective(int solution_number) const {
+  [[nodiscard]] double get_suboptimal_objective(int solution_number) const {
     return suboptimal_objectives_[solution_number];
   }
 
@@ -484,7 +481,7 @@ class MathematicalProgramResult final {
    * e.g.
    * `prog.AddConstraint(x == 1).evaluator().set_description(str)`
    * to make this method more specific/useful. */
-  std::vector<std::string> GetInfeasibleConstraintNames(
+  [[nodiscard]] std::vector<std::string> GetInfeasibleConstraintNames(
       const MathematicalProgram& prog,
       std::optional<double> tolerance = std::nullopt) const;
 
@@ -500,7 +497,7 @@ class MathematicalProgramResult final {
    * (constraints together with the associated variables) at the best-effort
    * solution.
    */
-  std::vector<Binding<Constraint>> GetInfeasibleConstraints(
+  [[nodiscard]] std::vector<Binding<Constraint>> GetInfeasibleConstraints(
       const MathematicalProgram& prog,
       std::optional<double> tolerance = std::nullopt) const;
   // @}

@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
+#include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
 
 using drake::multibody::internal::RefFromPtrOrThrow;
 using drake::multibody::internal::UpdateContextPositionsAndVelocities;

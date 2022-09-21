@@ -343,8 +343,8 @@ void AssertPlantEquals(const MultibodyPlant<double>* plant_a,
       result.DoIfCastable([&](const auto* cast_joint_a) {
         auto cast_joint_b = dynamic_cast<decltype(cast_joint_a)>(&joint_b);
         ASSERT_NE(cast_joint_b, nullptr);
-        EXPECT_EQ(cast_joint_a->X_PC().GetAsMatrix4(),
-                  cast_joint_b->X_PC().GetAsMatrix4());
+        EXPECT_EQ(cast_joint_a->X_FM().GetAsMatrix4(),
+                  cast_joint_b->X_FM().GetAsMatrix4());
         ++num_matches;
       });
     }

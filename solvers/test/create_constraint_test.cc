@@ -186,31 +186,32 @@ TEST_F(ParseLorentzConeConstraintTest, Test5) {
 
 TEST_F(ParseLorentzConeConstraintTest, Test6) {
   // The linear expression is not actually linear.
-  EXPECT_THROW(internal::ParseLorentzConeConstraint(
-                   2 * x_(0) * x_(1), x_(0) * x_(0) + x_(1) * x_(1)),
+  EXPECT_THROW(unused(internal::ParseLorentzConeConstraint(
+                   2 * x_(0) * x_(1), x_(0) * x_(0) + x_(1) * x_(1))),
                std::runtime_error);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test7) {
   // The quadratic expression is actually linear.
-  EXPECT_THROW(internal::ParseLorentzConeConstraint(2 * x_(0), x_(0) + x_(1)),
-               std::runtime_error);
+  EXPECT_THROW(
+      unused(internal::ParseLorentzConeConstraint(2 * x_(0), x_(0) + x_(1))),
+      std::runtime_error);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test8) {
   // The quadratic expression is actually cubic.
-  EXPECT_THROW(
-      internal::ParseLorentzConeConstraint(2 * x_(0), pow(x_(1), 3) + x_(2)),
-      std::runtime_error);
+  EXPECT_THROW(unused(internal::ParseLorentzConeConstraint(
+                   2 * x_(0), pow(x_(1), 3) + x_(2))),
+               std::runtime_error);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test9) {
   // The quadratic expression is not positive semidefinite.
-  EXPECT_THROW(internal::ParseLorentzConeConstraint(
-                   x_(0), pow(x_(1) + 2 * x_(2) + 1, 2) - x_(3)),
+  EXPECT_THROW(unused(internal::ParseLorentzConeConstraint(
+                   x_(0), pow(x_(1) + 2 * x_(2) + 1, 2) - x_(3))),
                std::runtime_error);
-  EXPECT_THROW(internal::ParseLorentzConeConstraint(
-                   x_(0), pow(x_(1) + x_(2) + 2, 2) - 1),
+  EXPECT_THROW(unused(internal::ParseLorentzConeConstraint(
+                   x_(0), pow(x_(1) + x_(2) + 2, 2) - 1)),
                std::runtime_error);
 }
 
@@ -263,16 +264,16 @@ TEST_F(ParseRotatedLorentzConeConstraintTest, Test3) {
   // Throw a runtime error when the precondition is not satisfied.
   Eigen::Matrix<Expression, 4, 1> expression;
   expression << 2 * x_(0) * x_(1), x_(2), x_(3), 1;
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(expression),
+  EXPECT_THROW(unused(internal::ParseRotatedLorentzConeConstraint(expression)),
                std::runtime_error);
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(0) * x_(1), x_(1),
-                                                           x_(2) * x_(2) + 1),
+  EXPECT_THROW(unused(internal::ParseRotatedLorentzConeConstraint(
+                   x_(0) * x_(1), x_(1), x_(2) * x_(2) + 1)),
                std::runtime_error);
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(1), x_(0) * x_(1),
-                                                           x_(2) * x_(2) + 1),
+  EXPECT_THROW(unused(internal::ParseRotatedLorentzConeConstraint(
+                   x_(1), x_(0) * x_(1), x_(2) * x_(2) + 1)),
                std::runtime_error);
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(0), x_(1),
-                                                           x_(2) * x_(2) - 1),
+  EXPECT_THROW(unused(internal::ParseRotatedLorentzConeConstraint(
+                   x_(0), x_(1), x_(2) * x_(2) - 1)),
                std::runtime_error);
 }
 

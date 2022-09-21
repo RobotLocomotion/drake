@@ -18,7 +18,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":calc_distance_and_time_derivative",
-        ":compliant_contact_manager",
+        ":constraint_specs",
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
@@ -40,17 +40,16 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
-    name = "compliant_contact_manager",
-    srcs = ["compliant_contact_manager.cc"],
-    hdrs = ["compliant_contact_manager.h"],
+    name = "constraint_specs",
+    srcs = [
+        "constraint_specs.cc",
+    ],
+    hdrs = [
+        "constraint_specs.h",
+    ],
     deps = [
-        ":multibody_plant_core",
-        "//multibody/contact_solvers:contact_solver_utils",
-        "//multibody/contact_solvers/sap:sap_contact_problem",
-        "//multibody/contact_solvers/sap:sap_friction_cone_constraint",
-        "//multibody/contact_solvers/sap:sap_limit_constraint",
-        "//multibody/contact_solvers/sap:sap_solver",
-        "//multibody/triangle_quadrature",
+        "//common:default_scalars",
+        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
@@ -112,12 +111,16 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
+        "compliant_contact_manager.cc",
         "discrete_update_manager.cc",
+        "make_discrete_update_manager.cc",
         "multibody_plant.cc",
         "physical_model.cc",
     ],
     hdrs = [
+        "compliant_contact_manager.h",
         "discrete_update_manager.h",
+        "make_discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
         "multibody_plant_model_attorney.h",
@@ -126,6 +129,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        ":constraint_specs",
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
@@ -142,6 +146,7 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody/contact_solvers:contact_solver",
         "//multibody/contact_solvers:sparse_linear_operator",
+        "//multibody/contact_solvers/sap",
         "//multibody/hydroelastics:hydroelastic_engine",
         "//multibody/topology:multibody_graph",
         "//multibody/tree",
@@ -360,13 +365,22 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "compliant_contact_manager_scalar_conversion_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
     name = "compliant_contact_manager_test",
     data = [
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
-        ":compliant_contact_manager",
         ":plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
@@ -476,6 +490,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_query_object_connect_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "@fmt",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_symbolic_test",
     deps = [
         ":plant",
@@ -538,6 +562,7 @@ drake_cc_googletest(
         ":kuka_iiwa_model_tests",
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
         "//systems/primitives:linear_system",
     ],
 )
@@ -586,6 +611,7 @@ drake_cc_googletest(
         ":plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
         "//multibody/parsing",
     ],
 )
@@ -672,6 +698,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "constraint_specs_test",
+    deps = [
+        ":constraint_specs",
+    ],
+)
+
+drake_cc_googletest(
     name = "contact_results_to_lcm_test",
     deps = [
         ":contact_results_to_lcm",
@@ -705,6 +738,7 @@ drake_cc_googletest(
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//multibody/benchmarks/free_body",
         "//multibody/test_utilities:floating_body_plant",
         "//systems/analysis:simulator",
@@ -792,7 +826,7 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
-        "//examples/multibody/rolling_sphere:make_rolling_sphere_plant",
+        "//examples/multibody/rolling_sphere:populate_ball_plant",
     ],
 )
 
@@ -863,6 +897,15 @@ drake_cc_googletest(
         ":multibody_plant_config_functions",
         "//common/test_utilities:expect_throws_message",
         "//common/yaml",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_discrete_update_manager_test",
+    deps = [
+        ":multibody_plant_core",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:is_dynamic_castable",
     ],
 )
 

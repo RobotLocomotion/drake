@@ -102,13 +102,6 @@ bazel run //examples/acrobot:run_swing_up_traj_optimization
 ```
 
 
-### `//examples/acrobot:`*benchmark_autodiff*
-
-This is a simple benchmarking program that uses the acrobot plant to benchmark
-the performance of various plant operations under autodiff.  It is used by
-Drake developers to detect and avoid performance regressions.
-
-
 LCM-based Control Stack
 -----------------------
 

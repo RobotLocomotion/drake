@@ -16,17 +16,6 @@ _ALLOWED_EXTERNALS = [
     "spdlog",
 
     # The entries that follow are defects; we should work to remove them.
-    "double_conversion",
-    "glew",
-    "glib",
-    "glx",
-    "libjpeg",
-    "liblz4",
-    "liblzma",
-    "libpng",
-    "libtiff",
-    "opengl",
-    "vtk",
     "zlib",
 ]
 
@@ -34,19 +23,13 @@ _ALLOWED_EXTERNALS = [
 # permitted here are definitions required by the _ALLOWED_EXTERNALS, above.
 _ALLOWED_DEFINES = [
     "EIGEN_MPL2_ONLY",
+    "FMT_DEPRECATED_OSTREAM=1",
     "FMT_HEADER_ONLY=1",
     "FMT_NO_FMT_STRING_ALIAS=1",
     "HAVE_SPDLOG",
     "SPDLOG_COMPILED_LIB",
     "SPDLOG_FMT_EXTERNAL",
     "SPDLOG_SHARED_LIB",
-
-    # The entries that follow are defects; we should work to remove them.
-    "HAVE_CSTDDEF",
-    "SDFORMAT_DISABLE_CONSOLE_LOGFILE",
-    "SDFORMAT_STATIC_DEFINE",
-    "USE_LAPACK=1",
-    "_DARWIN_C_SOURCE",
 ]
 
 def _cc_check_allowed_headers_impl(ctx):

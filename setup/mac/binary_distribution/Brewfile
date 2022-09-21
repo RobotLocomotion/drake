@@ -7,7 +7,6 @@ cask 'adoptopenjdk' unless system '/usr/libexec/java_home --version 1.8+ --failf
 
 brew 'clp'
 brew 'cmake'
-brew 'curl'
 brew 'double-conversion'
 brew 'eigen'
 brew 'gcc'
@@ -24,12 +23,12 @@ brew 'numpy'
 brew 'msgpack-cxx'
 brew 'openblas'
 brew 'pkg-config'
-brew 'python@3.9'
-brew 'python-tk@3.9'
-brew 'scipy'
+brew 'python@3.10'
 brew 'spdlog'
 brew 'suite-sparse'
 brew 'tinyxml'
+# TODO(jwnimmer-tri) Drop tinyxml2 as of the deprecation 2023-01-01.
+# Ditto for the Ubuntu prereqs.
 brew 'tinyxml2'
 brew 'robotlocomotion/director/vtk@9.1.0'
 brew 'xz'

@@ -15,6 +15,7 @@ from pydrake.multibody.tree import (
     BallRpyJoint_,
     Body_,
     BodyIndex,
+    ConstraintIndex,
     DoorHinge_,
     DoorHingeConfig,
     FixedOffsetFrame_,
@@ -79,6 +80,7 @@ from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
@@ -234,6 +236,7 @@ class TestPlant(unittest.TestCase):
         MultibodyPlantConfig()
         config = MultibodyPlantConfig(time_step=0.01)
         self.assertEqual(config.time_step, 0.01)
+        self.assertIn("time_step", repr(config))
         copy.copy(config)
 
         builder = DiagramBuilder_[float]()
@@ -343,6 +346,10 @@ class TestPlant(unittest.TestCase):
             model_instance, plant.GetModelInstanceByName(name="acrobot"))
         self.assertEqual(
             plant.GetBodiesWeldedTo(plant.world_body()), [plant.world_body()])
+        link2 = plant.GetBodyByName(name="Link2")
+        self.assertEqual(
+            plant.GetBodiesKinematicallyAffectedBy(
+                [shoulder.index()]), [link1.index(), link2.index()])
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
@@ -409,7 +416,10 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(body.has_quaternion_dofs(), bool)
         self.assertIsInstance(body.floating_positions_start(), int)
         self.assertIsInstance(body.floating_velocities_start(), int)
-        self.assertIsInstance(body.get_default_mass(), float)
+        self.assertIsInstance(body.default_mass(), float)
+        # TODO(2022-11-01) Remove with completion of deprecation.
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(body.get_default_mass(), float)
 
     @numpy_compare.check_all_types
     def test_body_context_methods(self, T):
@@ -651,9 +661,10 @@ class TestPlant(unittest.TestCase):
         RigidBody = RigidBody_[T]
         M = SpatialInertia_[float]()
         i = ModelInstanceIndex(0)
-        RigidBody(M_BBo_B=M)
         RigidBody(body_name="body_name", M_BBo_B=M)
         RigidBody(body_name="body_name", model_instance=i, M_BBo_B=M)
+        with catch_drake_warnings(expected_count=1):
+            RigidBody(M_BBo_B=M)
 
     @numpy_compare.check_all_types
     def test_multibody_force_element(self, T):
@@ -732,6 +743,7 @@ class TestPlant(unittest.TestCase):
                          door_hinge_config.spring_zero_angle_rad)
         self.assertEqual(door_hinge_config_test.static_friction_torque,
                          door_hinge_config.static_friction_torque)
+        self.assertIn("spring_zero_angle_rad", repr(door_hinge_config))
 
         # Test DoorHinge torque calculation. Set the angle to be the half of
         # the catch width so that there is only torsional spring torque which
@@ -852,6 +864,11 @@ class TestPlant(unittest.TestCase):
             context=context, model_instances=[instance])
         self.assertTupleEqual(p_com.shape, (3, ))
 
+        M_WWo_W = plant.CalcSpatialInertia(
+            context=context, frame_F=world_frame,
+            body_indexes=[BodyIndex(0)])
+        self.assertIsInstance(M_WWo_W, SpatialInertia_[T])
+
         nq = plant.num_positions()
         nv = plant.num_velocities()
         wrt_list = [
@@ -882,18 +899,29 @@ class TestPlant(unittest.TestCase):
                 frame_A=world_frame, frame_E=world_frame)
             self.assert_sane(Js_w_AB_E)
             self.assertEqual(Js_w_AB_E.shape, (3, nw))
+
             Js_v_AB_E = plant.CalcJacobianTranslationalVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
                 p_BoBi_B=np.zeros(3), frame_A=world_frame, frame_E=world_frame)
             self.assert_sane(Js_v_AB_E)
             self.assertEqual(Js_v_AB_E.shape, (3, nw))
-
             Js_v_AB_E = plant.CalcJacobianTranslationalVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
                 p_BoBi_B=np.zeros((3, 3)), frame_A=world_frame,
                 frame_E=world_frame)
             self.assert_sane(Js_v_AB_E)
             self.assertEqual(Js_v_AB_E.shape, (9, nw))
+
+            Jq_p_AoBi_E = plant.CalcJacobianPositionVector(
+                context=context, frame_B=base_frame, p_BoBi_B=np.zeros(3),
+                frame_A=world_frame, frame_E=world_frame)
+            self.assert_sane(Jq_p_AoBi_E)
+            self.assertEqual(Jq_p_AoBi_E.shape, (3, nq))
+            Jq_p_AoBi_E = plant.CalcJacobianPositionVector(
+                context=context, frame_B=base_frame, p_BoBi_B=np.zeros((3, 3)),
+                frame_A=world_frame, frame_E=world_frame)
+            self.assert_sane(Jq_p_AoBi_E)
+            self.assertEqual(Jq_p_AoBi_E.shape, (9, nq))
 
         L_WSP_W = plant.CalcSpatialMomentumInWorldAboutPoint(
             context=context, p_WoP_W=np.zeros(3))
@@ -970,7 +998,7 @@ class TestPlant(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        Parser(plant_f).AddModelFromFile(file_name)
+        instance = Parser(plant_f).AddModelFromFile(file_name)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         context = plant.CreateDefaultContext()
@@ -1035,6 +1063,10 @@ class TestPlant(unittest.TestCase):
         plant.SetPositionsAndVelocities(context, x0)
         numpy_compare.assert_float_allclose(
             plant.GetPositionsAndVelocities(context), x0)
+
+        # Test SetDefaultPositions
+        plant.SetDefaultPositions(q=q0)
+        plant.SetDefaultPositions(model_instance=instance, q_instance=q0)
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
@@ -1250,9 +1282,9 @@ class TestPlant(unittest.TestCase):
         X_EeGripper = RigidTransform_[float](
             RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant_f.WeldFrames(
-            frame_on_parent_P=plant_f.world_frame(),
-            frame_on_child_C=plant_f.GetFrameByName("iiwa_link_0", iiwa_model),
-            X_PC=RigidTransform_[float]())
+            frame_on_parent_F=plant_f.world_frame(),
+            frame_on_child_M=plant_f.GetFrameByName("iiwa_link_0", iiwa_model),
+            X_FM=RigidTransform_[float]())
         # Perform the second weld without named arguments to ensure that the
         # proper binding gets invoked.
         plant_f.WeldFrames(
@@ -1399,13 +1431,13 @@ class TestPlant(unittest.TestCase):
         X_EeGripper = RigidTransform_[float](
             RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant_f.WeldFrames(
-            frame_on_parent_P=plant_f.world_frame(),
-            frame_on_child_C=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
+            frame_on_parent_F=plant_f.world_frame(),
+            frame_on_child_M=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
         plant_f.WeldFrames(
-            frame_on_parent_P=plant_f.GetFrameByName(
+            frame_on_parent_F=plant_f.GetFrameByName(
                 "iiwa_link_7", iiwa_model),
-            frame_on_child_C=plant_f.GetFrameByName("body", gripper_model),
-            X_PC=X_EeGripper)
+            frame_on_child_M=plant_f.GetFrameByName("body", gripper_model),
+            X_FM=X_EeGripper)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
 
@@ -1594,9 +1626,9 @@ class TestPlant(unittest.TestCase):
         def make_weld_joint(plant, P, C):
             return WeldJoint_[T](
                 name="weld",
-                frame_on_parent_P=P,
-                frame_on_child_C=C,
-                X_PC=X_PC,
+                frame_on_parent_F=P,
+                frame_on_child_M=C,
+                X_FM=X_PC,
             )
 
         make_joint_list = [
@@ -1763,7 +1795,7 @@ class TestPlant(unittest.TestCase):
                 joint.set_default_angles(angles=[1.0, 2.0])
             elif joint.name() == "weld":
                 numpy_compare.assert_float_equal(
-                    joint.X_PC().GetAsMatrix4(),
+                    joint.X_FM().GetAsMatrix4(),
                     X_PC.GetAsMatrix4())
             else:
                 raise TypeError(
@@ -1773,6 +1805,56 @@ class TestPlant(unittest.TestCase):
             with self.subTest(make_joint=make_joint):
                 loop_body(make_joint, 0.0)
                 loop_body(make_joint, 0.001)
+
+    def test_deprecated_weld_joint_api(self):
+        plant = MultibodyPlant_[float](0.01)
+        body1 = plant.AddRigidBody(
+            name="body1",
+            M_BBo_B=SpatialInertia_[float]())
+        body2 = plant.AddRigidBody(
+            name="body2",
+            M_BBo_B=SpatialInertia_[float]())
+
+        # Old keyword arguments raise a warning.
+        with catch_drake_warnings(expected_count=1) as w:
+            world_body1 = WeldJoint_[float](
+                name="world_body1",
+                frame_on_parent_P=plant.world_frame(),
+                frame_on_child_C=body1.body_frame(),
+                X_PC=RigidTransform_[float].Identity())
+            self.assertIn("2022-12-01", str(w[0].message))
+
+        # No keywords defaults to the first constructor defined in the binding.
+        # No warning.
+        world_body2 = WeldJoint_[float](
+            "world_body2",
+            plant.world_frame(),
+            body2.body_frame(),
+            RigidTransform_[float].Identity())
+
+    def test_deprecated_weld_frames_api(self):
+        plant = MultibodyPlant_[float](0.01)
+        body1 = plant.AddRigidBody(
+            name="body1",
+            M_BBo_B=SpatialInertia_[float]())
+        body2 = plant.AddRigidBody(
+            name="body2",
+            M_BBo_B=SpatialInertia_[float]())
+
+        # Old keyword arguments raise a warning.
+        with catch_drake_warnings(expected_count=1) as w:
+            plant.WeldFrames(
+                frame_on_parent_P=plant.world_frame(),
+                frame_on_child_C=body1.body_frame(),
+                X_PC=RigidTransform_[float].Identity())
+            self.assertIn("2022-12-01", str(w[0].message))
+
+        # No keywords defaults to the first function named `WeldFrames` defined
+        # in the binding. No warning.
+        plant.WeldFrames(
+            plant.world_frame(),
+            body2.body_frame(),
+            RigidTransform_[float].Identity())
 
     @numpy_compare.check_all_types
     def test_multibody_add_frame(self, T):
@@ -1878,12 +1960,52 @@ class TestPlant(unittest.TestCase):
     def test_fixed_offset_frame_api(self, T):
         FixedOffsetFrame = FixedOffsetFrame_[T]
         P = MultibodyPlant_[T](0.0).world_frame()
-        B = RigidBody_[T](SpatialInertia_[float]())
+        B = RigidBody_[T]("body", SpatialInertia_[float]())
         X = RigidTransform_[float].Identity()
         FixedOffsetFrame(name="name", P=P, X_PF=X, model_instance=None)
-        FixedOffsetFrame(P=P, X_PF=X)
         FixedOffsetFrame(name="name", bodyB=B, X_BF=X)
-        FixedOffsetFrame(bodyB=B, X_BF=X)
+        with catch_drake_warnings(expected_count=1):
+            FixedOffsetFrame(P=P, X_PF=X)
+        with catch_drake_warnings(expected_count=1):
+            FixedOffsetFrame(bodyB=B, X_BF=X)
+
+    @numpy_compare.check_all_types
+    def test_coupler_constraint_api(self, T):
+        MultibodyPlantConfig()
+        config = MultibodyPlantConfig(time_step=0.01,
+                                      discrete_contact_solver="sap")
+        self.assertEqual(config.time_step, 0.01)
+        self.assertEqual(config.discrete_contact_solver, "sap")
+
+        # Create a MultibodyPlant with only a WSG gripper.
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlant(config, builder)
+        self.assertIsNotNone(plant)
+        self.assertIsNotNone(scene_graph)
+
+        wsg50_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/"
+            "wsg_50_description/sdf/schunk_wsg_50.sdf")
+
+        parser = Parser(plant)
+        gripper_model = parser.AddModelFromFile(
+            file_name=wsg50_sdf_path, model_name='gripper')
+
+        # Add coupler constraint.
+        left_slider = plant.GetJointByName("left_finger_sliding_joint")
+        right_slider = plant.GetJointByName("right_finger_sliding_joint")
+        coupler_index = plant.AddCouplerConstraint(
+            joint0=left_slider, joint1=right_slider,
+            gear_ratio=1.2, offset=3.4)
+
+        # Constraint indexes are assigned in increasing order starting at zero.
+        self.assertEqual(coupler_index, ConstraintIndex(0))
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify the constraint was added.
+        self.assertEqual(plant.num_constraints(), 1)
 
     @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):

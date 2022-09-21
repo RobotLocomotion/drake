@@ -35,9 +35,13 @@ drake_cc_library(
     name = "point_cloud",
     srcs = ["point_cloud.cc"],
     hdrs = ["point_cloud.h"],
-    deps = [
+    interface_deps = [
         ":point_cloud_flags",
         "//common:essential",
+    ],
+    deps = [
+        "//common:unused",
+        "@nanoflann_internal//:nanoflann",
     ],
 )
 
@@ -87,6 +91,7 @@ drake_cc_googletest(
     name = "point_cloud_test",
     deps = [
         ":point_cloud",
+        "//common:random",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
     ],

@@ -48,13 +48,17 @@ class Binding {
               std::shared_ptr<U>, std::shared_ptr<C>>>* = nullptr)
       : Binding(b.evaluator(), b.variables()) {}
 
-  const std::shared_ptr<C>& evaluator() const { return evaluator_; }
+  [[nodiscard]] const std::shared_ptr<C>& evaluator() const {
+    return evaluator_;
+  }
 
-  const VectorXDecisionVariable& variables() const { return vars_; }
+  [[nodiscard]] const VectorXDecisionVariable& variables() const {
+    return vars_;
+  }
 
   /**
    * Returns true iff the given @p var is included in this Binding. */
-  bool ContainsVariable(const symbolic::Variable& var) const {
+  [[nodiscard]] bool ContainsVariable(const symbolic::Variable& var) const {
     for (int i = 0; i < vars_.rows(); ++i) {
       if (vars_(i).equal_to(var)) {
         return true;
@@ -66,7 +70,7 @@ class Binding {
   /**
    * Returns the number of variables associated with this evaluator.
    */
-  size_t GetNumElements() const {
+  [[nodiscard]] size_t GetNumElements() const {
     // TODO(ggould-tri) assumes that no index appears more than once in the
     // view, which is nowhere asserted (but seems assumed elsewhere).
     return vars_.size();
@@ -75,7 +79,7 @@ class Binding {
   /**
    * Returns string representation of Binding.
    */
-  std::string to_string() const {
+  [[nodiscard]] std::string to_string() const {
     std::ostringstream os;
     os << *this;
     return os.str();
@@ -85,7 +89,7 @@ class Binding {
    * Compare two bindings based on their evaluator pointers and the bound
    * variables.
    */
-  bool operator==(const Binding<C>& other) const {
+  [[nodiscard]] bool operator==(const Binding<C>& other) const {
     if (this->evaluator().get() != other.evaluator().get()) {
       return false;
     }
@@ -100,7 +104,7 @@ class Binding {
     return true;
   }
 
-  bool operator!=(const Binding<C>& other) const {
+  [[nodiscard]] bool operator!=(const Binding<C>& other) const {
     return !((*this) == (other));
   }
 
@@ -143,12 +147,13 @@ namespace internal {
  * `std::intializer_list`.
  */
 template <typename C, typename... Args>
-Binding<C> CreateBinding(const std::shared_ptr<C>& c, Args&&... args) {
+[[nodiscard]] Binding<C> CreateBinding(const std::shared_ptr<C>& c,
+                                       Args&&... args) {
   return Binding<C>(c, std::forward<Args>(args)...);
 }
 
 template <typename To, typename From>
-Binding<To> BindingDynamicCast(const Binding<From>& binding) {
+[[nodiscard]] Binding<To> BindingDynamicCast(const Binding<From>& binding) {
   auto constraint = std::dynamic_pointer_cast<To>(binding.evaluator());
   DRAKE_DEMAND(constraint != nullptr);
   return Binding<To>(constraint, binding.variables());

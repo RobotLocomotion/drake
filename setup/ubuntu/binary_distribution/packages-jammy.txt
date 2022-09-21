@@ -6,7 +6,6 @@ jupyter-notebook
 libamd2
 libblas3
 libbz2-1.0
-libcurl3-gnutls
 libdouble-conversion3
 libeigen3-dev
 libexpat1
@@ -57,8 +56,6 @@ python3-numpy
 python3-pil
 python3-pydot
 python3-pygame
-python3-scipy
-python3-tk
 python3-tornado
 python3-u-msgpack
 python3-yaml

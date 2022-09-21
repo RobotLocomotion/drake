@@ -18,9 +18,8 @@
 #include <fmt/ostream.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
-#include "drake/common/symbolic_decompose.h"
-#include "drake/common/symbolic_monomial_util.h"
+#include "drake/common/symbolic/decompose.h"
+#include "drake/common/symbolic/monomial_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/decision_variable.h"
@@ -255,19 +254,20 @@ symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
   switch (type) {
     case MathematicalProgram::NonnegativePolynomial::kSos: {
       AddPositiveSemidefiniteConstraint(gramian);
-      break;
+      return p;
     }
     case MathematicalProgram::NonnegativePolynomial::kSdsos: {
       AddScaledDiagonallyDominantMatrixConstraint(gramian);
-      break;
+      return p;
     }
     case MathematicalProgram::NonnegativePolynomial::kDsos: {
       AddPositiveDiagonallyDominantMatrixConstraint(
           gramian.cast<symbolic::Expression>());
-      break;
+      return p;
     }
   }
-  return p;
+  throw std::runtime_error(
+      "NewSosPolynomial() was passed an invalid NonnegativePolynomial type");
 }
 
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
@@ -1285,6 +1285,7 @@ std::vector<Binding<Constraint>> MathematicalProgram::GetAllConstraints()
   extend(lorentz_cone_constraint_);
   extend(rotated_lorentz_cone_constraint_);
   extend(linear_matrix_inequality_constraint_);
+  extend(positive_semidefinite_constraint_);
   extend(linear_complementarity_constraints_);
   extend(exponential_cone_constraints_);
   return conlist;

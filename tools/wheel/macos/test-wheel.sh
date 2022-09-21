@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
-# This script tests a wheel on macOS.
+# This script tests a wheel on macOS. It can be run directly, but is normally
+# run using the //tools/wheel:builder Bazel action.
 
 set -eu -o pipefail
 
 readonly resource_root="$(cd "$(dirname "${BASH_SOURCE}")" && realpath ..)"
 
-if [ $# -lt 1 ]; then
+if [[ $# -lt 1 ]]; then
     echo "Usage: $0 <wheel>" >&2
     exit 1
 fi

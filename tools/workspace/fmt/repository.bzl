@@ -20,9 +20,12 @@ def _impl(repo_ctx):
     elif os_result.is_manylinux or os_result.is_macos_wheel:
         # Compile from downloaded github sources.
         error = setup_github_repository(repo_ctx).error
-    elif os_result.is_ubuntu:
-        # On Ubuntu, we're using the host-provided spdlog which uses a bundled
-        # fmt, so we'll have to reuse that same bundle for ourselves.
+    elif os_result.is_ubuntu and os_result.ubuntu_release == "22.04":
+        # On Ubuntu Jammy, we use the host-provided fmt via pkg-config.
+        error = setup_pkg_config_repository(repo_ctx).error
+    elif os_result.is_ubuntu and os_result.ubuntu_release == "20.04":
+        # On Ubuntu Focal, we're using the host-provided spdlog which uses a
+        # bundled fmt, so we'll have to reuse that same bundle for ourselves.
         repo_ctx.symlink("/usr/include/spdlog/fmt/bundled", "include/fmt")
         repo_ctx.symlink("include/fmt/LICENSE.rst", "LICENSE.rst")
         repo_ctx.symlink(
@@ -48,6 +51,9 @@ fmt_repository = repository_rule(
 load("@drake//tools/install:install.bzl", "install")
 install(name = "install")
             """,
+        ),
+        "extra_defines": attr.string_list(
+            default = ["FMT_DEPRECATED_OSTREAM=1"],
         ),
         # The remaining attributes are used only when we take the branch for
         # setup_github_repository in the above logic.

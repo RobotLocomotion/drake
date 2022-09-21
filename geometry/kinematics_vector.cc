@@ -4,8 +4,8 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/autodiff.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/default_scalars.h"
+#include "drake/common/nice_type_name.h"
 
 namespace drake {
 namespace geometry {
@@ -70,20 +70,9 @@ const KinematicsValue& KinematicsVector<Id, KinematicsValue>::value(
       return *map_value;
     }
   }
-  // We use a chain of "if constexpr/else" to throw a readable error message.
-  // NiceTypeName doesn't work because the user-facing names are template
-  // aliases, not actual classes.
-  if constexpr (std::is_same_v<Id, FrameId>) {
-    throw std::runtime_error(
-        fmt::format("No such FrameId: {}.", to_string(id)));
-  } else if constexpr (std::is_same_v<Id, GeometryId>) {
-    throw std::runtime_error(
-        fmt::format("No such GeometryId: {}.", to_string(id)));
-  }
-  static_assert(
-      std::is_same_v<Id, FrameId> || std::is_same_v<Id, GeometryId>,
-      "Throw a helpful error message when a new type of Id is added.");
-  DRAKE_UNREACHABLE();
+  throw std::runtime_error(fmt::format(
+      "No such {}: {}.",
+      NiceTypeName::RemoveNamespaces(NiceTypeName::Get<Id>()), to_string(id)));
 }
 
 template <typename Id, typename KinematicsValue>

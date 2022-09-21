@@ -209,7 +209,7 @@ TEST_F(UrdfParserTest, JointChildLinkBroken) {
 }
 
 TEST_F(UrdfParserTest, JointBadDynamicsAttributes) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='parent'/>
       <link name='child'/>
@@ -444,7 +444,7 @@ TEST_F(UrdfParserTest, TransmissionJointNotExist) {
 }
 
 TEST_F(UrdfParserTest, TransmissionJointBadLimits) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='parent'/>
       <link name='child'/>
@@ -882,7 +882,7 @@ TEST_F(UrdfParserTest, EntireInertialTagOmitted) {
 
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("entire_inertial_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -900,7 +900,7 @@ TEST_F(UrdfParserTest, InertiaTagOmitted) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("inertia_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 2.);
+  EXPECT_EQ(body.default_mass(), 2.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -920,7 +920,7 @@ TEST_F(UrdfParserTest, MassTagOmitted) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("mass_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -938,7 +938,7 @@ TEST_F(UrdfParserTest, MasslessBody) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("massless_link"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -956,14 +956,14 @@ TEST_F(UrdfParserTest, PointMass) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("point_mass"));
-  EXPECT_EQ(body.get_default_mass(), 1.);
+  EXPECT_EQ(body.default_mass(), 1.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
 
 TEST_F(UrdfParserTest, BadInertia) {
   // Test various mis-formatted inputs.
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='point_mass'>
       <link name='point_mass'>
         <inertial>
@@ -1192,7 +1192,7 @@ class ReflectedInertiaTest : public UrdfParserTest {
                         double rotor_inertia,
                         double gear_ratio) {
     std::string text =
-        fmt::format(test_string_, rotor_inertia_text, gear_ratio_text);
+        fmt::format(kTestString, rotor_inertia_text, gear_ratio_text);
     EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
 
     const JointActuator<double>& actuator =
@@ -1206,14 +1206,14 @@ class ReflectedInertiaTest : public UrdfParserTest {
                     const std::string& gear_ratio_text,
                     const std::string& error_pattern) {
     std::string text =
-        fmt::format(test_string_, rotor_inertia_text, gear_ratio_text);
+        fmt::format(kTestString, rotor_inertia_text, gear_ratio_text);
     EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
     EXPECT_THAT(TakeError(), MatchesRegex(error_pattern));
   }
 
  protected:
   // Common URDF string with format options for the two custom tags.
-  const std::string test_string_ = R"""(
+  static constexpr const char* kTestString = R"""(
     <robot name='reflected_inertia_test'>
       <link name='A'/>
       <link name='B'/>
@@ -1498,7 +1498,7 @@ TEST_F(UrdfParserTest, UnsupportedTransmissionJointStuffIgnoredSilent) {
 
 TEST_F(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe) {
   // Two substitution slots: actuator, then transmission.
-  constexpr char robot_template[] = R"""(
+  constexpr const char* robot_template = R"""(
     <robot>
       <link name='parent'/>
       <link name='child'/>

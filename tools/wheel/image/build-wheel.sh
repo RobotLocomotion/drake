@@ -4,7 +4,7 @@
 
 set -eu -o pipefail
 
-if [ "$(uname)" == "Darwin" ]; then
+if [[ "$(uname)" == "Darwin" ]]; then
     HOMEBREW="$(brew config | \grep -E '^HOMEBREW_PREFIX' | cut -c18-)"
 
     # Use GNU 'cp' on macOS so we have a consistent CLI.
@@ -24,7 +24,7 @@ chrpath()
     shift 1
 
     for lib in "$@"; do
-        if [ "$(uname)" == "Linux" ]; then
+        if [[ "$(uname)" == "Linux" ]]; then
             patchelf --remove-rpath "$lib"
             patchelf --set-rpath "\$ORIGIN/$rpath" "$lib"
         else
@@ -40,6 +40,7 @@ chrpath()
 ###############################################################################
 
 readonly WHEEL_DIR=/opt/drake-wheel-build/wheel
+readonly WHEEL_DATA_DIR=${WHEEL_DIR}/pydrake/share/drake
 
 # TODO(mwoehlke-kitware) Most of this should move to Bazel.
 mkdir -p ${WHEEL_DIR}/drake
@@ -63,22 +64,22 @@ cp -r -t ${WHEEL_DIR}/pydrake/doc \
 
 # MOSEK is "sort of" third party, but is procured as part of Drake's build and
 # ends up in /opt/drake.
-if [ "$(uname)" == "Darwin" ]; then
+if [[ "$(uname)" == "Darwin" ]]; then
     # On macOS, it is explicitly referenced by @loader_path, and thus must be
     # copied to the same place as libdrake.so.
     cp -r -t ${WHEEL_DIR}/pydrake/lib \
         /opt/drake/lib/libmosek*.dylib \
-        /opt/drake/lib/libcilkrts*.dylib
+        /opt/drake/lib/libtbb*.dylib
 else
     # On Linux, it needs to be copied somewhere where auditwheel can find it.
     cp -r -t /opt/drake-dependencies/lib \
         /opt/drake/lib/libmosek*.so* \
-        /opt/drake/lib/libcilkrts*.so*
+        /opt/drake/lib/libtbb*.so*
 fi
 
 # TODO(mwoehlke-kitware) We need a different way of shipping non-arch files
 # (examples, models).
-cp -r -t ${WHEEL_DIR}/pydrake/share/drake \
+cp -r -t ${WHEEL_DATA_DIR} \
     /opt/drake/share/drake/.drake-find_resource-sentinel \
     /opt/drake/share/drake/package.xml \
     /opt/drake/share/drake/examples \
@@ -86,9 +87,9 @@ cp -r -t ${WHEEL_DIR}/pydrake/share/drake \
     /opt/drake/share/drake/manipulation \
     /opt/drake/share/drake/tutorials
 
-if [ "$(uname)" == "Linux" ]; then
-    mkdir -p ${WHEEL_DIR}/pydrake/share/drake/setup
-    cp -r -t ${WHEEL_DIR}/pydrake/share/drake/setup \
+if [[ "$(uname)" == "Linux" ]]; then
+    mkdir -p ${WHEEL_DATA_DIR}/setup
+    cp -r -t ${WHEEL_DATA_DIR}/setup \
         /opt/drake/share/drake/setup/deepnote
 fi
 
@@ -96,17 +97,23 @@ fi
 # too large, but (per above), the whole of share/drake shouldn't be in the
 # wheel.
 rm -rf \
-    ${WHEEL_DIR}/pydrake/share/drake/manipulation/models/ycb/meshes/*.png \
-    ${WHEEL_DIR}/pydrake/share/drake/examples/atlas
+    ${WHEEL_DATA_DIR}/manipulation/models/franka_description/meshes \
+    ${WHEEL_DATA_DIR}/manipulation/models/tri-homecart/*.obj \
+    ${WHEEL_DATA_DIR}/manipulation/models/tri-homecart/*.png \
+    ${WHEEL_DATA_DIR}/manipulation/models/ur3e/*.obj \
+    ${WHEEL_DATA_DIR}/manipulation/models/ur3e/*.png \
+    ${WHEEL_DATA_DIR}/manipulation/models/ycb/meshes \
+    ${WHEEL_DATA_DIR}/examples/atlas \
+    ${WHEEL_DATA_DIR}/examples/hydroelastic/spatula_slip_control
 
-if [ "$(uname)" == "Linux" ]; then
+if [[ "$(uname)" == "Linux" ]]; then
     export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib:/opt/drake-dependencies/lib
 fi
 
 chrpath lib pydrake/*.so
 chrpath ../lib pydrake/*/*.so
 
-if [ "$(uname)" == "Darwin" ]; then
+if [[ "$(uname)" == "Darwin" ]]; then
     change_lpath \
         --old='@loader_path/../../../' \
         --new='@rpath/' \
@@ -119,7 +126,7 @@ fi
 
 python setup.py bdist_wheel
 
-if [ "$(uname)" == "Darwin" ]; then
+if [[ "$(uname)" == "Darwin" ]]; then
     delocate-wheel -w wheelhouse -v dist/drake*.whl
 else
     GLIBC_VERSION=$(ldd --version | sed -n '1{s/.* //;s/[.]/_/p}')

@@ -6,12 +6,16 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/perception/point_cloud.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -32,6 +36,13 @@ using math::RotationMatrixd;
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
+
+GTEST_TEST(HPolyhedronTest, DefaultConstructor) {
+  HPolyhedron H;
+  EXPECT_EQ(H.ambient_dimension(), 0);
+  EXPECT_EQ(H.A().size(), 0);
+  EXPECT_EQ(H.b().size(), 0);
+}
 
 GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   Matrix<double, 6, 3> A;
@@ -71,6 +82,28 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   EXPECT_TRUE(CompareMatrices(A, H_scene_graph.A()));
   EXPECT_TRUE(CompareMatrices(b, H_scene_graph.b()));
 }
+
+GTEST_TEST(HPolyhedronTest, L1BallTest) {
+  Matrix<double, 8, 3> A;
+  VectorXd b = VectorXd::Ones(8);
+  // clang-format off
+  A <<   1,  1,  1,
+        -1,  1,  1,
+         1, -1,  1,
+        -1, -1,  1,
+         1,  1, -1,
+        -1,  1, -1,
+         1, -1, -1,
+        -1, -1, -1;
+  // clang-format on
+
+  // Test MakeL1Ball method.
+  HPolyhedron H_L1_box = HPolyhedron::MakeL1Ball(3);
+  EXPECT_EQ(H_L1_box.ambient_dimension(), 3);
+  EXPECT_TRUE(CompareMatrices(A, H_L1_box.A()));
+  EXPECT_TRUE(CompareMatrices(b, H_L1_box.b()));
+}
+
 
 GTEST_TEST(HPolyhedronTest, ArbitraryBoxTest) {
   RigidTransformd X_WG(RotationMatrixd::MakeZRotation(M_PI / 2.0),
@@ -303,7 +336,7 @@ GTEST_TEST(HPolyhedronTest, NonnegativeScalingTest2) {
   HPolyhedron H = HPolyhedron::MakeBox(lb, ub);
 
   MathematicalProgram prog;
-  Eigen::MatrixXd A(3, 2);
+  MatrixXd A(3, 2);
   // clang-format off
   A << 1, 0,
        0, 1,
@@ -311,7 +344,7 @@ GTEST_TEST(HPolyhedronTest, NonnegativeScalingTest2) {
   // clang-format on
   Vector3d b = Vector3d::Zero();
   auto x = prog.NewContinuousVariables(2, "x");
-  Eigen::Vector2d c(1, -1);
+  Vector2d c(1, -1);
   double d = 0;
   auto t = prog.NewContinuousVariables(2, "t");
 
@@ -440,6 +473,119 @@ GTEST_TEST(HPolyhedronTest, CartesianProductTest) {
   EXPECT_TRUE(H_C.PointInSet(x_C));
 }
 
+GTEST_TEST(HPolyhedronTest, AxisAlignedContainment) {
+  Vector2d lower_limit = -Vector2d::Ones();
+  Vector2d upper_limit = Vector2d::Ones();
+  double scale{0.25};
+
+  HPolyhedron outer = HPolyhedron::MakeBox(lower_limit, upper_limit);
+  HPolyhedron inner =
+      HPolyhedron::MakeBox(scale * lower_limit, scale * upper_limit);
+
+  EXPECT_TRUE(inner.ContainedIn(outer));
+  EXPECT_FALSE(outer.ContainedIn(inner));
+}
+
+GTEST_TEST(HPolyhedronTest, L1BallContainsInfinityBall3D) {
+  HPolyhedron L1_ball = HPolyhedron::MakeL1Ball(3);
+  HPolyhedron Linfty_ball = HPolyhedron::MakeUnitBox(3);
+
+  EXPECT_TRUE(L1_ball.ContainedIn(Linfty_ball));
+  EXPECT_FALSE(Linfty_ball.ContainedIn(L1_ball));
+}
+
+GTEST_TEST(HPolyhedronTest, L1BallIrredundantIntersectionInfinityBall3D) {
+  HPolyhedron L1_ball = HPolyhedron::MakeL1Ball(3);
+  HPolyhedron Linfty_ball = HPolyhedron::MakeUnitBox(3);
+
+  HPolyhedron IntersectionBall = L1_ball.Intersection(Linfty_ball, true);
+  EXPECT_TRUE(CompareMatrices(L1_ball.A(), IntersectionBall.A()));
+  EXPECT_TRUE(CompareMatrices(L1_ball.b(), IntersectionBall.b()));
+}
+
+GTEST_TEST(HPolyhedronTest, OffsetIrredundantBoxes) {
+  Vector2d left_box_lower = {-1, -1};
+  Vector2d left_box_upper = {0.25, 1};
+  HPolyhedron left_box = HPolyhedron::MakeBox(left_box_lower, left_box_upper);
+
+  Vector2d right_box_lower = {-0.25, -1};
+  Vector2d right_box_upper = {1, 1};
+  HPolyhedron right_box =
+      HPolyhedron::MakeBox(right_box_lower, right_box_upper);
+
+  HPolyhedron intersection_right_into_left =
+      left_box.Intersection(right_box, true);
+  HPolyhedron intersection_left_into_right =
+      right_box.Intersection(left_box, true);
+
+  MatrixXd A_right_into_left_expected(5, 2);
+  VectorXd b_right_into_left_expected(5);
+  MatrixXd A_left_into_right_expected(5, 2);
+  VectorXd b_left_into_right_expected(5);
+
+  A_right_into_left_expected.topRows(4) = left_box.A();
+  b_right_into_left_expected.topRows(4) = left_box.b();
+  A_left_into_right_expected.topRows(4) = right_box.A();
+  b_left_into_right_expected.topRows(4) = right_box.b();
+
+  A_right_into_left_expected.row(4) = right_box.A().row(2);
+  b_right_into_left_expected.row(4) = right_box.b().row(2);
+
+  A_left_into_right_expected.row(4) = left_box.A().row(0);
+  b_left_into_right_expected.row(4) = left_box.b().row(0);
+
+  EXPECT_TRUE(CompareMatrices(A_right_into_left_expected,
+                              intersection_right_into_left.A()));
+  EXPECT_TRUE(CompareMatrices(b_right_into_left_expected,
+                              intersection_right_into_left.b()));
+
+  EXPECT_TRUE(CompareMatrices(A_left_into_right_expected,
+                              intersection_left_into_right.A()));
+  EXPECT_TRUE(CompareMatrices(b_left_into_right_expected,
+                              intersection_left_into_right.b()));
+}
+
+GTEST_TEST(HPolyhedronTest, ContainedIn) {
+  // Checks Contained in with tolerance.
+  const HPolyhedron small_polyhedron(Eigen::RowVector2d(1, 1), Vector1d(2));
+  const HPolyhedron large_polyhedron(Eigen::RowVector2d(1, 1), Vector1d(3));
+  EXPECT_FALSE(large_polyhedron.ContainedIn(small_polyhedron, 0));
+  // We think the containment is true if we relax the tolerance.
+  EXPECT_TRUE(large_polyhedron.ContainedIn(small_polyhedron, 1.1));
+}
+
+GTEST_TEST(HPolyhedronTest,
+           IrredundantBallIntersectionContainsBothOriginal) {
+  HPolyhedron L1_ball = HPolyhedron::MakeL1Ball(3);
+  HPolyhedron Linfty_ball = HPolyhedron::MakeUnitBox(3);
+
+  // clang-format on
+  HPolyhedron IrredL1intoLinf = Linfty_ball.Intersection(L1_ball, true);
+  HPolyhedron IrredLinfintoL1 = L1_ball.Intersection(Linfty_ball, true);
+
+  EXPECT_TRUE(IrredL1intoLinf.ContainedIn(L1_ball, 3E-7));
+  EXPECT_TRUE(IrredL1intoLinf.ContainedIn(Linfty_ball));
+  EXPECT_TRUE(IrredLinfintoL1.ContainedIn(L1_ball));
+  EXPECT_TRUE(IrredLinfintoL1.ContainedIn(Linfty_ball));
+}
+
+GTEST_TEST(HPolyhedronTest, ReduceL1LInfBallIntersection) {
+  HPolyhedron L1_ball = HPolyhedron::MakeL1Ball(3);
+  HPolyhedron Linfty_ball = HPolyhedron::MakeUnitBox(3);
+
+  MatrixXd A_int(L1_ball.A().rows() + Linfty_ball.A().rows(), 3);
+  MatrixXd b_int(A_int.rows(), 1);
+  A_int.topRows(L1_ball.A().rows()) = L1_ball.A();
+  b_int.topRows(L1_ball.b().rows()) = L1_ball.b();
+  A_int.bottomRows(Linfty_ball.A().rows()) = Linfty_ball.A();
+  b_int.bottomRows(Linfty_ball.b().rows()) = Linfty_ball.b();
+  HPolyhedron polyhedron_to_reduce(A_int, b_int);
+  HPolyhedron reduced_polyhedron = polyhedron_to_reduce.ReduceInequalities();
+
+  EXPECT_TRUE(CompareMatrices(reduced_polyhedron.A(), L1_ball.A()));
+  EXPECT_TRUE(CompareMatrices(reduced_polyhedron.b(), L1_ball.b()));
+}
+
 GTEST_TEST(HPolyhedronTest, IntersectionTest) {
   HPolyhedron H_A = HPolyhedron::MakeUnitBox(2);
   HPolyhedron H_B = HPolyhedron::MakeBox(Vector2d(0, 0), Vector2d(2, 2));
@@ -496,33 +642,88 @@ GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestSquareTriangle) {
 }
 
 GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestNonAxisAligned) {
-  Eigen::MatrixXd A(8, 3);
-
   // L1 box scaled to have corners at 0.5 instead of 1; it is intentionally not
   // axis aligned in this test
-  Eigen::VectorXd b = Eigen::VectorXd::Constant(8, 0.5);
-  // clang-format off
-  A <<  1,  1,  1,
-        1,  1, -1,
-        1, -1,  1,
-        1, -1, -1,
-       -1,  1,  1,
-       -1,  1, -1,
-       -1, -1,  1,
-       -1, -1, -1;
-  // clang-format on
+  HPolyhedron L1_ball = HPolyhedron::MakeL1Ball(3);
   const HPolyhedron H_A = HPolyhedron::MakeUnitBox(3);
 
-  const HPolyhedron H_B{A, b};
+  const HPolyhedron H_B{L1_ball.A(), 0.5*L1_ball.b()};
 
   const HPolyhedron H_C = H_A.PontryaginDifference(H_B);
 
   const HPolyhedron H_C_expected =
-      HPolyhedron::MakeBox(Eigen::Vector3d::Constant(-0.5),
-                           Eigen::Vector3d::Constant(0.5));
+      HPolyhedron::MakeBox(Vector3d::Constant(-0.5),
+                           Vector3d::Constant(0.5));
 
   EXPECT_TRUE(CompareMatrices(H_C.A(), H_C_expected.A(), 1e-8));
   EXPECT_TRUE(CompareMatrices(H_C.b(), H_C_expected.b(), 1e-8));
+}
+
+GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
+  Matrix<double, 4, 2> A;
+  Vector4d b;
+  // clang-format off
+  A << -2, -1,  // 2x + y ≥ 4
+        2,  1,  // 2x + y ≤ 6
+       -1,  2,  // x - 2y ≥ 2
+        1, -2;  // x - 2y ≤ 8
+  b << -4, 6, -2, 8;
+  // clang-format on
+  HPolyhedron H(A, b);
+
+  // Draw random samples.
+  RandomGenerator generator(1234);
+  const int N{10000};
+  MatrixXd samples(2, N);
+  samples.col(0) = H.UniformSample(&generator);
+  for (int i = 1; i < N; ++i) {
+    samples.col(i) = H.UniformSample(&generator, samples.col(i - 1));
+  }
+
+  // Provide a visualization of the points.
+  {
+    std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
+    meshcat->SetProperty("/Background", "visible", false);
+    perception::PointCloud cloud(N);
+    cloud.mutable_xyzs().topRows<2>() = samples.cast<float>();
+    cloud.mutable_xyzs().bottomRows<1>().setZero();
+    meshcat->SetObject("samples", cloud, 0.01, Rgba(0, 0, 1));
+
+    // Note: This will not pause execution when running as a bazel test.
+    std::cout << "[Press RETURN to continue]." << std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  }
+
+  // Check that they are all in the polyhedron.
+  for (int i = 0; i < A.rows(); ++i) {
+    EXPECT_LE((A.row(i) * samples).maxCoeff(), b(i));
+  }
+
+  const double kTol = 0.05 * N;
+  // Check that approximately half of them satisfy 2x+y ≥ 5.
+  EXPECT_NEAR(((2 * samples.row(0) + samples.row(1)).array() >= 5.0).count(),
+              0.5 * N, kTol);
+
+  // Check that approximately half of them satisfy x - 2y ≥ 5.
+  EXPECT_NEAR(((samples.row(0) - 2 * samples.row(1)).array() >= 5.0).count(),
+              0.5 * N, kTol);
+
+  // Check that an off-center box gets the number of samples proportional to
+  // its (relative) volume. H is a rotated box with volume 1 x 2.5 = 2.5. We'll
+  // check the box: 3 ≤ x ≤ 3.5, -1.5 ≤ y ≤ -1, which has volume .5 x .5 = .25.
+  EXPECT_NEAR((samples.row(0).array() >= 3 && samples.row(0).array() <= 3.5 &&
+               samples.row(1).array() >= -1.5 && samples.row(1).array() <= -1)
+                  .count(),
+              N / 10, kTol);
+}
+
+GTEST_TEST(HPolyhedronTest, Serialize) {
+  const HPolyhedron H = HPolyhedron::MakeL1Ball(3);
+  const std::string yaml = yaml::SaveYamlString(H);
+  const auto H2 = yaml::LoadYamlString<HPolyhedron>(yaml);
+  EXPECT_EQ(H.ambient_dimension(), H2.ambient_dimension());
+  EXPECT_TRUE(CompareMatrices(H.A(), H2.A()));
+  EXPECT_TRUE(CompareMatrices(H.b(), H2.b()));
 }
 
 }  // namespace optimization

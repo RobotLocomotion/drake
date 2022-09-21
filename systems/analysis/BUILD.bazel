@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":implicit_euler_integrator",
         ":implicit_integrator",
         ":initial_value_problem",
+        ":instantaneous_realtime_rate_calculator",
         ":integrator_base",
         ":lyapunov",
         ":monte_carlo",
@@ -138,7 +139,6 @@ drake_cc_library(
     hdrs = ["hermitian_dense_output.h"],
     deps = [
         ":stepwise_dense_output",
-        "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
         "//common:extract_double",
@@ -299,6 +299,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "instantaneous_realtime_rate_calculator",
+    srcs = ["instantaneous_realtime_rate_calculator.cc"],
+    hdrs = [
+        "instantaneous_realtime_rate_calculator.h",
+    ],
+    deps = [
+        "//common:timer",
+    ],
+)
+
+drake_cc_library(
     name = "radau_integrator",
     srcs = ["radau_integrator.cc"],
     hdrs = [
@@ -409,6 +420,7 @@ drake_cc_library(
         ":simulator_config",
         ":simulator_status",
         "//common:extract_double",
+        "//common:name_value",
         "//systems/framework:context",
         "//systems/framework:system",
     ],
@@ -567,6 +579,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "instantaneous_realtime_rate_calculator_test",
+    deps = [
+        ":instantaneous_realtime_rate_calculator",
+    ],
+)
+
+drake_cc_googletest(
     name = "radau_integrator_test",
     # Note: if memcheck takes too long with Valgrind, disable
     # memcheck (per Drake issue #9621).
@@ -690,18 +709,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "initial_value_problem_deprecated_test",
-    timeout = "moderate",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":initial_value_problem",
-        ":runge_kutta2_integrator",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "scalar_initial_value_problem_test",
     deps = [
         ":runge_kutta2_integrator",
@@ -711,27 +718,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "scalar_initial_value_problem_deprecated_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":runge_kutta2_integrator",
-        ":scalar_initial_value_problem",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "antiderivative_function_test",
-    deps = [
-        ":antiderivative_function",
-        ":runge_kutta2_integrator",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "antiderivative_function_deprecated_test",
-    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":antiderivative_function",
         ":runge_kutta2_integrator",

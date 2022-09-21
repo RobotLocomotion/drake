@@ -1,0 +1,17 @@
+# The trio of `add_scoped_*.yaml` files are a test yaml structure that uses
+# each feature of the model directives system.  This file is the middle level
+# of a three-file inclusion hierarchy of model directives, and is also used as
+# a smoke test of the inclusion mechanism.
+
+directives:
+- add_model_instance:
+    name: nested
+- add_directives:
+    file: package://process_model_directives_test/add_scoped_sub.dmd.yaml
+    model_namespace: nested
+# This frame is only for testing name scoping.
+# TODO(aaronchongth): Add testing for posturing and welding.
+- add_frame:
+    name: nested::simple_model_test_frame
+    X_PF:
+      base_frame: nested::simple_model::__model__

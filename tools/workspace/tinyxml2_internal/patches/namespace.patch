@@ -1,0 +1,44 @@
+Add a drake_vendor namespace ala tools/workspace/vendor_cxx
+
+This prevents link-time symbol conflicts in case code downstream of
+Drake wants to use a different build of tinyxml2.
+
+Note that the upstream source repository contains windows newlines
+throughout, so we need to entertain `^M` shrapnel throughout this
+patch file.
+
+--- tinyxml2.h.orig	2021-06-06 17:10:24.000000000 -0700
++++ tinyxml2.h	2022-09-03 07:30:36.319764029 -0700
+@@ -42,6 +42,8 @@
+ #endif
+ #include <stdint.h>
+ 
++inline namespace drake_vendor __attribute__ ((visibility ("hidden"))) {
++
+ /*
+    TODO: intern strings instead of allocation.
+ */
+@@ -2377,4 +2379,6 @@
+ #   pragma warning(pop)
+ #endif
+ 
++}  // namespace drake_vendor
++
+ #endif // TINYXML2_INCLUDED
+--- tinyxml2.cpp.orig	2021-06-06 17:10:24.000000000 -0700
++++ tinyxml2.cpp	2022-09-03 07:31:12.036248705 -0700
+@@ -32,6 +32,8 @@
+ #   include <cstdarg>
+ #endif
+ 
++inline namespace drake_vendor __attribute__ ((visibility ("hidden"))) {
++
+ #if defined(_MSC_VER) && (_MSC_VER >= 1400 ) && (!defined WINCE)
+ 	// Microsoft Visual Studio, version 2005 and higher. Not WinCE.
+ 	/*int _snprintf_s(
+@@ -2984,3 +2986,5 @@
+ }
+ 
+ }   // namespace tinyxml2
++
++}  // namespace drake_vendor

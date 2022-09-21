@@ -80,15 +80,17 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "com_jidesoft_jide_oss",
     "common_robotics_utilities",
     "commons_io",
+    "curl_internal",
     "fcl",
     "fmt",
-    "ghc_filesystem",
     "gz_math_internal",
     "gz_utils_internal",
     "lcm",
     "meshcat",
     "meshcat_python",
+    "msgpack_lite_js",
     "net_sf_jchart2d",
+    "nanoflann_internal",
     "nlopt_internal",
     "org_apache_xmlgraphics_commons",
     "petsc",
@@ -96,7 +98,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "qhull_internal",
     "sdformat_internal",
     "spdlog",
+    "statsjs",
     "tinyobjloader",
+    "tinyxml2_internal",
     "usockets",
     "uwebsockets",
     "vtk",
@@ -120,6 +124,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//conditions:default": [],
 }) + select({
     "//tools:with_mosek": ["@mosek//:install"],
+    "//conditions:default": [],
+}) + select({
+    "//tools:with_snopt": ["//tools/workspace/snopt:install"],
     "//conditions:default": [],
 }) + select({
     "//conditions:default": [

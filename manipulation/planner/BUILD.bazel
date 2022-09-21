@@ -107,6 +107,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//manipulation/kuka_iiwa:iiwa_constants",
         "//multibody/parsing",
+        "//systems/analysis:simulator",
     ],
 )
 

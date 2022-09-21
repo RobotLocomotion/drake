@@ -1,6 +1,5 @@
 #include "drake/solvers/fbstab/components/mpc_data.h"
 
-#include <iostream>
 #include <stdexcept>
 
 #include <Eigen/Dense>

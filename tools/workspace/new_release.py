@@ -65,8 +65,8 @@ _IGNORED_REPOSITORIES = [
 # (This can be used to pin to a given major or major.minor release series.)
 _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py_internal": r"^(\d+.)",
-    "gz_math": "",
-    "gz_utils": "",
+    "gz_math_internal": "",
+    "gz_utils_internal": "",
     "intel_realsense_ros_internal": r"^(\d+\.\d+\.)",
     "petsc": r"^(v)",
     "pycodestyle": "",

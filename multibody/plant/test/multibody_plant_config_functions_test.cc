@@ -36,6 +36,7 @@ time_step: 0.002
 penetration_allowance: 0.003
 stiction_tolerance: 0.004
 contact_model: hydroelastic
+discrete_contact_solver: sap
 contact_surface_representation: triangle
 )""";
 
@@ -48,6 +49,8 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, YamlTest) {
             ContactModel::kHydroelasticsOnly);
   EXPECT_EQ(result.plant.get_contact_surface_representation(),
             geometry::HydroelasticContactRepresentation::kTriangle);
+  EXPECT_EQ(result.plant.get_discrete_contact_solver(),
+            DiscreteContactSolver::kSap);
   // There is no getter for penetration_allowance nor stiction_tolerance, so we
   // can't test them.
 }

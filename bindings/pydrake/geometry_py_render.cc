@@ -5,11 +5,12 @@
 #include "pybind11/operators.h"
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
-#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
+#include "drake/geometry/render_gl/factory.h"
 #include "drake/geometry/render_vtk/factory.h"
 
 namespace drake {
@@ -294,36 +295,6 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   {
-    using Class = geometry::RenderEngineVtkParams;
-    constexpr auto& cls_doc = doc_geometry.RenderEngineVtkParams;
-    py::class_<Class>(m, "RenderEngineVtkParams", cls_doc.doc)
-        .def(ParamInit<Class>())
-        .def_readwrite(
-            "default_label", &Class::default_label, cls_doc.default_label.doc)
-        .def_readwrite("default_diffuse", &Class::default_diffuse,
-            cls_doc.default_diffuse.doc);
-  }
-
-  m.def("MakeRenderEngineVtk", &geometry::MakeRenderEngineVtk,
-      py::arg("params"), doc_geometry.MakeRenderEngineVtk.doc);
-
-  {
-    using Class = RenderEngineGlParams;
-    constexpr auto& cls_doc = doc.RenderEngineGlParams;
-    py::class_<Class>(m, "RenderEngineGlParams", cls_doc.doc)
-        .def(ParamInit<Class>())
-        .def_readwrite(
-            "default_label", &Class::default_label, cls_doc.default_label.doc)
-        .def_readwrite("default_diffuse", &Class::default_diffuse,
-            cls_doc.default_diffuse.doc)
-        .def_readwrite("default_clear_color", &Class::default_clear_color,
-            cls_doc.default_clear_color.doc);
-  }
-
-  m.def("MakeRenderEngineGl", &MakeRenderEngineGl,
-      py::arg("params") = RenderEngineGlParams(), doc.MakeRenderEngineGl.doc);
-
-  {
     py::class_<RenderLabel> render_label(m, "RenderLabel", doc.RenderLabel.doc);
     render_label
         .def(py::init<int>(), py::arg("value"), doc.RenderLabel.ctor.doc_1args)
@@ -343,6 +314,34 @@ void DoScalarIndependentDefinitions(py::module m) {
     render_label.attr("kUnspecified") = RenderLabel::kUnspecified;
     render_label.attr("kMaxUnreserved") = RenderLabel::kMaxUnreserved;
   }
+
+  {
+    using Class = geometry::RenderEngineVtkParams;
+    constexpr auto& cls_doc = doc_geometry.RenderEngineVtkParams;
+    py::class_<Class> cls(m, "RenderEngineVtkParams", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  m.def("MakeRenderEngineVtk", &geometry::MakeRenderEngineVtk,
+      py::arg("params"), doc_geometry.MakeRenderEngineVtk.doc);
+
+  {
+    using Class = RenderEngineGlParams;
+    constexpr auto& cls_doc = doc.RenderEngineGlParams;
+    py::class_<Class> cls(m, "RenderEngineGlParams", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  m.def("MakeRenderEngineGl", &MakeRenderEngineGl,
+      py::arg("params") = RenderEngineGlParams(), doc.MakeRenderEngineGl.doc);
 
   AddValueInstantiation<RenderLabel>(m);
 }

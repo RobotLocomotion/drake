@@ -510,7 +510,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "PenetrationAsPointPair", param, doc.PenetrationAsPointPair.doc);
     cls  // BR
-        .def(ParamInit<Class>(), doc.PenetrationAsPointPair.ctor.doc)
+        .def(ParamInit<Class>())
         .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A,
             doc.PenetrationAsPointPair.id_A.doc)
         .def_readwrite("id_B", &PenetrationAsPointPair<T>::id_B,
@@ -526,6 +526,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
   }
 
   // ContactSurface
+  // Currently we do not bind the constructor because users do not need to
+  // construct it directly yet. We can get it from ComputeContactSurface*().
   if constexpr (scalar_predicate<T>::is_bool) {
     using Class = ContactSurface<T>;
     constexpr auto& cls_doc = doc.ContactSurface;
@@ -550,11 +552,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("is_triangle", &Class::is_triangle, cls_doc.is_triangle.doc)
         .def("representation", &Class::representation,
             cls_doc.representation.doc)
-        .def("tri_mesh_W", &Class::tri_mesh_W, cls_doc.tri_mesh_W.doc)
-        // The tri_e_MN accessor is not bound yet.
+        .def("tri_mesh_W", &Class::tri_mesh_W, py_rvp::reference_internal,
+            cls_doc.tri_mesh_W.doc)
+        .def("tri_e_MN", &Class::tri_e_MN, py_rvp::reference_internal,
+            cls_doc.tri_e_MN.doc)
         .def("poly_mesh_W", &Class::poly_mesh_W, py_rvp::reference_internal,
             cls_doc.poly_mesh_W.doc)
-        // The poly_e_MN accessor is not bound yet.
+        .def("poly_e_MN", &Class::poly_e_MN, py_rvp::reference_internal,
+            cls_doc.poly_e_MN.doc)
         .def("HasGradE_M", &Class::HasGradE_M, cls_doc.HasGradE_M.doc)
         .def("HasGradE_N", &Class::HasGradE_N, cls_doc.HasGradE_N.doc)
         .def("EvaluateGradE_M_W", &Class::EvaluateGradE_M_W, py::arg("index"),

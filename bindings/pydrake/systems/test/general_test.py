@@ -15,8 +15,7 @@ from pydrake.common import RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
-from pydrake.examples.pendulum import PendulumPlant
-from pydrake.examples.rimless_wheel import RimlessWheel
+from pydrake.examples import PendulumPlant, RimlessWheel
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     GetIntegrationSchemes,
@@ -500,6 +499,7 @@ class TestGeneral(unittest.TestCase):
             self.assertEqual(repr(params), "".join([
                 "InitializeParams("
                 "suppress_initialization_events=True)"]))
+            copy.copy(params)
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.

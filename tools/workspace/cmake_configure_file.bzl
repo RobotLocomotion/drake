@@ -19,6 +19,8 @@ def _cmake_configure_file_impl(ctx):
         arguments += ["-U" + item]
     for item in ctx.files.cmakelists:
         arguments += ["--cmakelists", item.path]
+    if ctx.attr.strict:
+        arguments += ["--strict"]
     ctx.actions.run(
         inputs = [ctx.file.src] + ctx.files.cmakelists,
         outputs = [ctx.outputs.out],
@@ -39,6 +41,7 @@ _cmake_configure_file_gen = rule(
         "defines": attr.string_list(),
         "undefines": attr.string_list(),
         "cmakelists": attr.label_list(allow_files = True),
+        "strict": attr.bool(default = False),
         "cmake_configure_file_py": attr.label(
             cfg = "host",
             executable = True,
@@ -60,6 +63,7 @@ def cmake_configure_file(
         defines = None,
         undefines = None,
         cmakelists = None,
+        strict = None,
         **kwargs):
     """Creates a rule to generate an out= file from a src= file, using CMake's
     configure_file substitution semantics.  This implementation is incomplete,
@@ -75,6 +79,10 @@ def cmake_configure_file(
     Variables that are known substitutions but which should be undefined can be
     passed as undefines= strings.
 
+    When strict is True, any substitution found in src that is not mentioned by
+    either defines, undefines, or cmakelists is an error. When False, anything
+    not mentioned is silently presumed to be undefined.
+
     See cmake_configure_file.py for our implementation of the configure_file
     substitution rules.
 
@@ -89,6 +97,7 @@ def cmake_configure_file(
         defines = defines,
         undefines = undefines,
         cmakelists = cmakelists,
+        strict = strict,
         env = hermetic_python_env(),
         **kwargs
     )

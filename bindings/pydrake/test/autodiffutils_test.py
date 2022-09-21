@@ -73,10 +73,10 @@ class TestAutoDiffXd(unittest.TestCase):
                 "don't know how to convert scalar number to float",
                 str(cm.exception))
         else:
-            self.assertEqual(
-                "float() argument must be a string or a number, not "
-                "'pydrake.autodiffutils.AutoDiffXd'",
-                str(cm.exception))
+            self.assertRegex(
+                str(cm.exception),
+                r"float\(\) argument must be a string or a (real )?number, "
+                r"not 'pydrake\.autodiffutils\.AutoDiffXd'")
         # Test multi-element pass-through.
         x = np.array([AD(1.), AD(2.), AD(3.)])
         numpy_compare.assert_equal(autodiff_vector_pass_through(x), x)

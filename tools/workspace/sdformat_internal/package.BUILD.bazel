@@ -38,7 +38,6 @@ cmake_configure_file(
     cmakelists = ["CMakeLists.txt"],
     defines = [
         "PROJECT_NAME=SDFormat",
-        "SDF_VERSION_NAME=",
         "PROJECT_VERSION_MAJOR=0",
         "PROJECT_VERSION_MINOR=0",
         "PROJECT_VERSION_PATCH=0",
@@ -49,6 +48,17 @@ cmake_configure_file(
         "SDF_MAJOR_VERSION=0",
         "CMAKE_INSTALL_FULL_DATAROOTDIR=does/not/exist",
     ],
+    undefines = [
+        "BUILD_TYPE_PROFILE",
+        "BUILD_TYPE_DEBUG",
+        "BUILD_TYPE_RELEASE",
+        "HAVE_URDFDOM",
+        "USE_INTERNAL_URDF",
+        # TODO(jwnimmer-tri) We could probably enable this and be able to drop
+        # some or all of our console.patch file.
+        "SDFORMAT_DISABLE_CONSOLE_LOGFILE",
+    ],
+    strict = True,
     visibility = ["//visibility:private"],
 )
 
@@ -255,6 +265,7 @@ cc_library_vendored(
         "sdf/": "drake_vendor/sdf/",
         "ignition/math/": "drake_vendor/ignition/math/",
         "ignition/utils/": "drake_vendor/ignition/utils/",
+        "tinyxml2": "drake_vendor/tinyxml2",
     },
     includes = ["drake_src"],
     copts = ["-w"],
@@ -264,7 +275,7 @@ cc_library_vendored(
     deps = [
         "@gz_math_internal//:gz_math",
         "@gz_utils_internal//:gz_utils",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
         # N.B. It's very unusual to add a dependency from a third-party library
         # onto Drake, but in this case it's the simplest way to be able to send
         # error messages from sdformat parsing into Drake's logging API.

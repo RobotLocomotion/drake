@@ -1,0 +1,61 @@
+name: Bug Report
+description: File a bug report.  (Please do not post questions this way; see below for StackOverflow links.)
+labels: ["type: bug"]
+body:
+  - type: markdown
+    attributes:
+      value:
+        Thanks for taking the time to fill out this bug report!
+        The `#drake` posts on [StackOverflow](https://stackoverflow.com/questions/tagged/drake)
+        also might help you find a solution.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      placeholder:
+        Tell us what you see!  Also tell us, what did you expect to happen?
+        Please provide enough information so that we can reproduce your problem for ourselves.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Version
+      description:
+        What version of Drake are you using?
+        If you've built from source, please provide the git commit sha.
+        If you're using our official binaries, please provide the contents of
+        `.../drake/share/doc/drake/VERSION.TXT`.  It's OK to leave this blank.
+  - type: dropdown
+    attributes:
+      label: What operating system are you using?
+      description: It's OK to leave this blank.
+      multiple: true
+      options:
+        - Unknown / Other
+        - Ubuntu 20.04
+        - Ubuntu 22.04
+        - macOS 11 (Big Sur)
+        - macOS 12 (Monterey)
+        - Other
+  - type: dropdown
+    attributes:
+      label: What installation option are you using?
+      description: It's OK to leave this blank.
+      multiple: true
+      options:
+        - Unknown / Other
+        - pip install drake
+        - apt install drake
+        - binary tar.gz download
+        - dockerhub
+        - compiled from source code using CMake
+        - compiled from source code using Bazel
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description:
+        Please copy and paste any relevant log output.
+        This will be automatically formatted into code, so no need for backticks.
+        It's OK to leave this blank.
+      render: shell

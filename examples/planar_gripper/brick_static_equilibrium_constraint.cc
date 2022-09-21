@@ -5,7 +5,7 @@
 #include "drake/examples/planar_gripper/gripper_brick_planning_constraint_helper.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
+#include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
 
 namespace drake {
 namespace examples {
@@ -27,7 +27,7 @@ BrickStaticEquilibriumNonlinearConstraint::
       plant_mutable_context_(plant_mutable_context) {
   brick_mass_ = gripper_brick_system_.plant()
                     .GetBodyByName("brick_link")
-                    .get_default_mass();
+                    .default_mass();
 }
 
 template <typename T>

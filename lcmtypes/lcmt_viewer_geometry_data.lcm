@@ -12,9 +12,9 @@ struct lcmt_viewer_geometry_data {
   const int8_t ELLIPSOID    = 6;
 
 
-  float position[3];
-  float quaternion[4];
-  float color[4];
+  float position[3];  // x, y, z
+  float quaternion[4];  // w, x, y, z
+  float color[4];  // r, g, b, a
 
   string string_data;
 

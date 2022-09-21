@@ -1,11 +1,18 @@
 #include "drake/perception/point_cloud.h"
 
+#include <algorithm>
+#include <functional>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
+#include <drake_vendor/nanoflann.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
+#include "drake/common/unused.h"
 
 using Eigen::Map;
 using Eigen::NoChange;
@@ -56,6 +63,17 @@ class PointCloud::Storage {
     CheckInvariants();
   }
 
+  // Update fields, allocating (but not initializing) new fields when needed.
+  void UpdateFields(pc_flags::Fields f) {
+    xyzs_.conservativeResize(NoChange, f.contains(pc_flags::kXYZs) ? size_ : 0);
+    normals_.conservativeResize(NoChange,
+                                f.contains(pc_flags::kNormals) ? size_ : 0);
+    rgbs_.conservativeResize(NoChange, f.contains(pc_flags::kRGBs) ? size_ : 0);
+    descriptors_.conservativeResize(NoChange, f.has_descriptor() ? size_ : 0);
+    fields_ = f;
+    CheckInvariants();
+  }
+
   Eigen::Ref<Matrix3X<T>> xyzs() { return xyzs_; }
   Eigen::Ref<Matrix3X<T>> normals() { return normals_; }
   Eigen::Ref<Matrix3X<C>> rgbs() { return rgbs_; }
@@ -81,7 +99,7 @@ class PointCloud::Storage {
     }
   }
 
-  const pc_flags::Fields fields_;
+  pc_flags::Fields fields_;
   int size_{};
   Matrix3X<T> xyzs_;
   Matrix3X<T> normals_;
@@ -316,6 +334,255 @@ void PointCloud::RequireExactFields(
                     "\nExpected {}, got {}",
                     fields_in, fields()));
   }
+}
+
+PointCloud PointCloud::Crop(const Eigen::Ref<const Vector3<T>>& lower_xyz,
+                            const Eigen::Ref<const Vector3<T>>& upper_xyz) {
+  DRAKE_DEMAND((lower_xyz.array() <= upper_xyz.array()).all());
+  if (!has_xyzs()) {
+    throw std::runtime_error("PointCloud must have xyzs in order to Crop");
+  }
+  PointCloud crop(size_, fields(), true);
+  int index = 0;
+  for (int i = 0; i < size_; ++i) {
+    if (((xyzs().col(i).array() >= lower_xyz.array()) &&
+         (xyzs().col(i).array() <= upper_xyz.array()))
+            .all()) {
+      crop.mutable_xyzs().col(index) = xyzs().col(i);
+      if (has_normals()) {
+        crop.mutable_normals().col(index) = normals().col(i);
+      }
+      if (has_rgbs()) {
+        crop.mutable_rgbs().col(index) = rgbs().col(i);
+      }
+      if (has_descriptors()) {
+        crop.mutable_descriptors().col(index) = descriptors().col(i);
+      }
+      ++index;
+    }
+  }
+  crop.resize(index);
+  return crop;
+}
+
+void PointCloud::FlipNormalsTowardPoint(
+    const Eigen::Ref<const Vector3<T>>& p_CP) {
+  DRAKE_THROW_UNLESS(has_xyzs());
+  DRAKE_THROW_UNLESS(has_normals());
+
+  for (int i = 0; i < size_; ++i) {
+    // Note: p_CP - xyz could be arbitrarily close to zero; but this behavior
+    // is still reasonable.
+    if ((p_CP - xyz(i)).dot(normal(i)) < 0.0) {
+      mutable_normal(i) *= T(-1.0);
+    }
+  }
+}
+
+PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
+  const int num_clouds = clouds.size();
+  DRAKE_DEMAND(num_clouds >= 1);
+  int count = clouds[0].size();
+  for (int i = 1; i < num_clouds; ++i) {
+    DRAKE_THROW_UNLESS(clouds[i].fields() == clouds[0].fields());
+    count += clouds[i].size();
+  }
+  PointCloud new_cloud(count, clouds[0].fields(), true);
+  int index = 0;
+  for (int i = 0; i < num_clouds; ++i) {
+    const int s = clouds[i].size();
+    if (new_cloud.has_xyzs()) {
+      new_cloud.mutable_xyzs().middleCols(index, s) = clouds[i].xyzs();
+    }
+    if (new_cloud.has_normals()) {
+      new_cloud.mutable_normals().middleCols(index, s) = clouds[i].normals();
+    }
+    if (new_cloud.has_rgbs()) {
+      new_cloud.mutable_rgbs().middleCols(index, s) = clouds[i].rgbs();
+    }
+    if (new_cloud.has_descriptors()) {
+      new_cloud.mutable_descriptors().middleCols(index, s) =
+          clouds[i].descriptors();
+    }
+    index += s;
+  }
+  return new_cloud;
+}
+
+namespace {
+
+// Hash function for Eigen::Vector3i
+// implemented as in boost::hash_combine.
+struct Vector3iHash {
+  std::size_t operator()(const Eigen::Vector3i& index) const {
+    size_t hash = 0;
+    const auto add_to_hash = [&hash] (int value) {
+      hash ^= std::hash<int>{}(value) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+    };
+    add_to_hash(index.x());
+    add_to_hash(index.y());
+    add_to_hash(index.z());
+    return hash;
+  }
+};
+
+}  // namespace
+
+PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
+  // This is a simple, narrow, no-frills implementation of the
+  // voxel_down_sample algorithm in Open3d and/or the down-sampling by a
+  // VoxelGrid filter in PCL.
+  DRAKE_THROW_UNLESS(has_xyzs());
+  DRAKE_THROW_UNLESS(voxel_size > 0);
+  Eigen::Vector3f lower_xyz =
+      Eigen::Vector3f::Constant(std::numeric_limits<float>::infinity());
+  for (int i = 0; i < size_; ++i) {
+    if (xyz(i).array().isFinite().all()) {
+      lower_xyz[0] = std::min(xyz(i)[0], lower_xyz[0]);
+      lower_xyz[1] = std::min(xyz(i)[1], lower_xyz[1]);
+      lower_xyz[2] = std::min(xyz(i)[2], lower_xyz[2]);
+    }
+  }
+
+  // Create a map from voxel coordinate to a set of points.
+  std::unordered_map<Eigen::Vector3i, std::vector<int>, Vector3iHash>
+      voxel_map;
+  for (int i = 0; i < size_; ++i) {
+    if (xyz(i).array().isFinite().all()) {
+      voxel_map[((xyz(i) - lower_xyz) / voxel_size).cast<int>()].emplace_back(
+          i);
+    }
+  }
+  PointCloud down_sampled(voxel_map.size(), fields());
+
+  // Iterate through the map populating the elements of the down_sampled cloud.
+  // TODO(russt): Consider using OpenMP. Sample code from calderpg-tri provided
+  // during review of #17885.
+  int index_in_down_sampled = 0;
+  for (const auto& [coordinates, indices_in_this] : voxel_map) {
+    unused(coordinates);
+    // Use doubles instead of floats for accumulators to avoid round-off errors.
+    Eigen::Vector3d xyz{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d rgb{Eigen::Vector3d::Zero()};
+    Eigen::VectorXd descriptor{
+        Eigen::VectorXd::Zero(has_descriptors() ? descriptors().rows() : 0)};
+    int num_normals{0};
+    int num_descriptors{0};
+
+    for (int index_in_this : indices_in_this) {
+      xyz += xyzs().col(index_in_this).cast<double>();
+      if (has_normals() &&
+          normals().col(index_in_this).array().isFinite().all()) {
+        normal += normals().col(index_in_this).cast<double>();
+        ++num_normals;
+      }
+      if (has_rgbs()) {
+        rgb += rgbs().col(index_in_this).cast<double>();
+      }
+      if (has_descriptors() &&
+          descriptors().col(index_in_this).array().isFinite().all()) {
+        descriptor += descriptors().col(index_in_this).cast<double>();
+        ++num_descriptors;
+      }
+    }
+    down_sampled.mutable_xyzs().col(index_in_down_sampled) =
+        (xyz / indices_in_this.size()).cast<T>();
+    if (has_normals()) {
+      down_sampled.mutable_normals().col(index_in_down_sampled) =
+          (normal / num_normals).normalized().cast<T>();
+    }
+    if (has_rgbs()) {
+      down_sampled.mutable_rgbs().col(index_in_down_sampled) =
+          (rgb / indices_in_this.size()).cast<C>();
+    }
+    if (has_descriptors()) {
+      down_sampled.mutable_descriptors().col(index_in_down_sampled) =
+          (descriptor / num_descriptors).cast<D>();
+    }
+    ++index_in_down_sampled;
+  }
+
+  return down_sampled;
+}
+
+bool PointCloud::EstimateNormals(double radius, int num_closest) {
+  DRAKE_DEMAND(radius > 0);
+  DRAKE_DEMAND(num_closest >= 3);
+  DRAKE_THROW_UNLESS(has_xyzs());
+  constexpr float kNaN = std::numeric_limits<float>::quiet_NaN();
+  const double squared_radius = radius * radius;
+
+  if (!has_normals()) {
+    fields_ |= pc_flags::kNormals;
+    storage_->UpdateFields(fields_);
+  }
+
+  const Eigen::MatrixX3f data = xyzs().transpose();
+  nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixX3f, 3,
+                                      nanoflann::metric_L2_Simple>
+      kd_tree(3, data);
+
+  // Iterate through all points and compute their normals.
+  // TODO(russt): Make an OpenMP implementation of this.
+  VectorX<Eigen::Index> indices(num_closest);
+  Eigen::VectorXf distances(num_closest);
+  Eigen::Vector3d mean;
+  Eigen::Matrix3d covariance;
+
+  bool all_points_have_at_least_three_neighbors = true;
+  for (int i = 0; i < size_; ++i) {
+    // With nanoflann, I can either search for the num_closest and
+    // take the ones closer than radius, or search for all points closer than
+    // radius and keep the num_closest.
+    const int num_neighbors = kd_tree.index->knnSearch(
+        xyz(i).data(), num_closest, indices.data(), distances.data());
+
+    if (num_neighbors < 3) {
+      all_points_have_at_least_three_neighbors = false;
+    }
+
+    if (num_neighbors < 2) {
+      mutable_normal(i) = Eigen::Vector3f::Constant(kNaN);
+      continue;
+    }
+
+    // Compute the covariance matrix.
+    {
+      int count = 0;
+      mean.setZero();
+      for (int j = 0; j < num_neighbors; ++j) {
+        if (distances[j] <= squared_radius) {
+          ++count;
+          mean += xyz(indices[j]).cast<double>();
+        }
+      }
+      if (count < 3) {
+        all_points_have_at_least_three_neighbors = false;
+      }
+      if (count < 2) {
+        mutable_normal(i) = Eigen::Vector3f::Constant(kNaN);
+        continue;
+      }
+
+      mean /= count;
+      covariance.setZero();
+      for (int j = 0; j < num_neighbors; ++j) {
+        if (distances[j] <= squared_radius) {
+          const Eigen::VectorXd x_minus_mean =
+              xyz(indices[j]).cast<double>() - mean;
+          covariance += x_minus_mean * x_minus_mean.transpose();
+        }
+      }
+    }
+
+    // TODO(russt): Open3d implements a "FastEigen3x3" for an optimized version
+    // of this. We probably should, too.
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver;
+    solver.computeDirect(covariance, Eigen::ComputeEigenvectors);
+    mutable_normal(i) = solver.eigenvectors().col(0).cast<float>();
+  }
+  return all_points_have_at_least_three_neighbors;
 }
 
 }  // namespace perception

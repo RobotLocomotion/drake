@@ -6,17 +6,19 @@
 #include <string>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/scope_exit.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/solvers/rotation_constraint.h"
+#include "drake/solvers/solve.h"
 
-using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
 using std::string;
 
+using drake::math::RigidTransformd;
 using drake::solvers::VectorDecisionVariable;
 using drake::symbolic::Expression;
 
@@ -86,7 +88,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
     if (weld_to_world_body_index_set.count(body_idx) > 0) {
       // This body is welded to the world.
       R_WB_[body_idx] = prog_.NewContinuousVariables<3, 3>(body_R_name);
-      const math::RigidTransform<double> X_WB = plant_.CalcRelativeTransform(
+      const math::RigidTransformd X_WB = plant_.CalcRelativeTransform(
           *dummy_plant_context, plant_.world_frame(), body.body_frame());
       // TODO(hongkai.dai): clean up this for loop using
       // elementwise matrix constraint when it is ready.
@@ -122,15 +124,17 @@ GlobalInverseKinematics::GlobalInverseKinematics(
         // parent link. Frame Jc is the outboard frame of the joint, rigidly
         // attached to the child link.
         const int parent_idx = joint->parent_body().index();
-        const math::RigidTransformd X_PJp =
+        const RigidTransformd X_PJp =
             joint->frame_on_parent().GetFixedPoseInBodyFrame();
-        const math::RigidTransformd X_CJc =
+        const RigidTransformd X_CJc =
             joint->frame_on_child().GetFixedPoseInBodyFrame();
         if (dynamic_cast<const WeldJoint<double>*>(joint) != nullptr) {
           const WeldJoint<double>* weld_joint =
               dynamic_cast<const WeldJoint<double>*>(joint);
 
-          const math::RigidTransformd X_PC = weld_joint->X_PC();
+          const RigidTransformd X_JpJc = weld_joint->X_FM();
+          const RigidTransformd X_PC =
+              X_PJp * X_JpJc * X_CJc.inverse();
           // Fixed to the parent body.
 
           // The position can be computed from the parent body pose.
@@ -243,9 +247,9 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
   if (weld_to_world_body_index_set.count(body_idx) == 0) {
     // R_WP is the rotation matrix of parent frame to the world frame.
     const Matrix3d& R_WP = reconstruct_R_WB->at(parent.index());
-    const math::RigidTransformd X_PJp =
+    const RigidTransformd X_PJp =
         joint.frame_on_parent().GetFixedPoseInBodyFrame();
-    const math::RigidTransformd X_CJc =
+    const RigidTransformd X_CJc =
         joint.frame_on_child().GetFixedPoseInBodyFrame();
 
     // For each different type of joints, use a separate branch to compute
@@ -286,7 +290,7 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
   } else {
     // The reconstructed body orientation is just the world fixed
     // orientation.
-    const math::RigidTransformd X_WB = plant_.CalcRelativeTransform(
+    const RigidTransformd X_WB = plant_.CalcRelativeTransform(
         *dummy_plant_context, plant_.world_frame(), body.body_frame());
     reconstruct_R_WB->at(body_idx) = X_WB.rotation().matrix();
   }
@@ -359,18 +363,56 @@ solvers::Binding<solvers::LinearConstraint>
 GlobalInverseKinematics::AddWorldPositionConstraint(
     BodyIndex body_idx, const Eigen::Vector3d& p_BQ,
     const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
-    const Isometry3d& X_WF) {
-  Vector3<Expression> body_pt_pos = p_WBo_[body_idx] + R_WB_[body_idx] * p_BQ;
-  Vector3<Expression> body_pt_in_measured_frame =
+    const Eigen::Isometry3d& X_WF) {
+  const Vector3<Expression> body_pt_pos =
+      p_WBo_[body_idx] + R_WB_[body_idx] * p_BQ;
+  const Vector3<Expression> body_pt_in_measured_frame =
       X_WF.linear().transpose() * (body_pt_pos - X_WF.translation());
   return prog_.AddLinearConstraint(body_pt_in_measured_frame, box_lb_F,
                                    box_ub_F);
 }
 
 solvers::Binding<solvers::LinearConstraint>
+GlobalInverseKinematics::AddWorldPositionConstraint(
+    BodyIndex body_idx, const Eigen::Vector3d& p_BQ,
+    const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
+    const RigidTransformd& X_WF) {
+  if (body_idx >= plant_.num_bodies() || body_idx <= 0) {
+    throw std::runtime_error("body index out of range.");
+  }
+  const Vector3<Expression> p_WQ = p_WBo_[body_idx] + R_WB_[body_idx] * p_BQ;
+  return prog_.AddLinearConstraint(X_WF.inverse().cast<Expression>() * p_WQ,
+                                   box_lb_F, box_ub_F);
+}
+
+solvers::Binding<solvers::LinearConstraint>
+GlobalInverseKinematics::AddWorldRelativePositionConstraint(
+    BodyIndex body_idx_B, const Eigen::Vector3d& p_BQ,
+    BodyIndex body_idx_A, const Eigen::Vector3d& p_AP,
+    const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
+    const RigidTransformd& X_WF) {
+  if (body_idx_B >= plant_.num_bodies() || body_idx_B <= 0) {
+    throw std::runtime_error("body index out of range.");
+  }
+  if (body_idx_A >= plant_.num_bodies() || body_idx_A <= 0) {
+    throw std::runtime_error("body index out of range.");
+  }
+  const Vector3<Expression> p_WQ =
+      p_WBo_[body_idx_B] + R_WB_[body_idx_B] * p_BQ;
+  const Vector3<Expression> p_WP =
+      p_WBo_[body_idx_A] + R_WB_[body_idx_A] * p_AP;
+  return prog_.AddLinearConstraint(
+      X_WF.rotation().inverse().cast<Expression>() * (p_WQ - p_WP), box_lb_F,
+      box_ub_F);
+}
+
+solvers::Binding<solvers::LinearConstraint>
 GlobalInverseKinematics::AddWorldOrientationConstraint(
     BodyIndex body_idx, const Eigen::Quaterniond& desired_orientation,
     double angle_tol) {
+  if (body_idx >= plant_.num_bodies() || body_idx <= 0) {
+    throw std::runtime_error("body index out of range.");
+  }
   // The rotation matrix error R_e satisfies
   // trace(R_e) = 2 * cos(θ) + 1, where θ is the rotation angle between
   // desired orientation and the current orientation. Thus the constraint is
@@ -433,7 +475,7 @@ void GlobalInverseKinematics::AddPostureCost(
 
     // The orientation error is on the angle θ between the body orientation and
     // the desired orientation, namely 1 - cos(θ).
-    // cos(θ) can be computed as (trace( R_WB_desired * R_WB_[i]ᵀ) - 1) / 2
+    // cos(θ) can be computed as (trace( R_WB_desired * R_WB_[i]ᵀ) - 1) / 2.
     // To see how the angle is computed from a rotation matrix, please refer to
     // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
     orient_err_sum +=
@@ -494,6 +536,9 @@ GlobalInverseKinematics::BodySphereInOneOfPolytopes(
     BodyIndex body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
     double radius,
     const std::vector<GlobalInverseKinematics::Polytope3D>& polytopes) {
+  if (body_index >= plant_.num_bodies() || body_index <= 0) {
+    throw std::runtime_error("body index out of range.");
+  }
   DRAKE_DEMAND(radius >= 0);
   const int num_polytopes = static_cast<int>(polytopes.size());
   const auto z = prog_.NewBinaryVariables(num_polytopes, "z");
@@ -577,9 +622,9 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
   }
   const Body<double>& parent = joint->parent_body();
   const int parent_idx = parent.index();
-  const math::RigidTransformd X_PJp =
+  const RigidTransformd X_PJp =
       joint->frame_on_parent().GetFixedPoseInBodyFrame();
-  const math::RigidTransformd X_CJc =
+  const RigidTransformd X_CJc =
       joint->frame_on_child().GetFixedPoseInBodyFrame();
   switch (joint->num_velocities()) {
     case 0: {
@@ -716,7 +761,7 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
             // welded to the world.
             auto dummy_plant_context = plant_.CreateDefaultContext();
             if (weld_to_world_body_index_set.count(BodyIndex{parent_idx}) > 0) {
-              const math::RigidTransformd X_WP = plant_.CalcRelativeTransform(
+              const RigidTransformd X_WP = plant_.CalcRelativeTransform(
                   *dummy_plant_context, plant_.world_frame(),
                   plant_.get_body(BodyIndex{parent_idx}).body_frame());
               // If the parent body is rigidly fixed to the world. Then we
@@ -787,5 +832,47 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
       throw std::runtime_error("Unsupported joint type.");
   }
 }
+
+// TODO(russt): This method is currently calling Solve in order to compute the
+// integer variables (given the poses). This is an easy, but relatively
+// expensive way; we could instead compute them in closed form based on the
+// implementation of the McCormick envelope constraints.
+void GlobalInverseKinematics::SetInitialGuess(
+    const Eigen::Ref<const Eigen::VectorXd>& q) {
+  auto context = plant_.CreateDefaultContext();
+  plant_.SetPositions(context.get(), q);
+
+  std::vector<solvers::Binding<solvers::BoundingBoxConstraint>> bindings;
+
+  // body 0 is the world. There is no position or orientation error on the
+  // world, so we just skip i = 0 and start from i = 1.
+  for (int i = 1; i < plant_.num_bodies(); ++i) {
+    const auto& X_WB = plant_.CalcRelativeTransform(
+        *context, plant_.world_frame(),
+        plant_.get_body(BodyIndex{i}).body_frame());
+
+    bindings.push_back(prog_.AddBoundingBoxConstraint(
+        X_WB.translation(), X_WB.translation(), p_WBo_[i]));
+    bindings.push_back(prog_.AddBoundingBoxConstraint(
+        X_WB.rotation().matrix(), X_WB.rotation().matrix(), R_WB_[i]));
+  }
+
+  ScopeExit guard([&]() {
+    for (const auto& b : bindings) {
+      prog_.RemoveConstraint(b);
+    }
+  });
+
+  const auto result = solvers::Solve(prog_);
+
+  if (!result.is_success()) {
+    throw std::runtime_error(
+        "SetInitialGuess tried to solve a variant of your IK problem, but "
+        "failed.");
+  }
+
+  prog_.SetInitialGuessForAllVariables(result.GetSolution());
+}
+
 }  // namespace multibody
 }  // namespace drake

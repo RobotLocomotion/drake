@@ -1,7 +1,8 @@
 #pragma once
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/solvers/decision_variable.h"
 
 namespace drake {
@@ -29,6 +30,9 @@ namespace solvers {
  * contains a variable in x or y.
  * @return The symbolic expression after replacing x(i) * y(j) with W(i, j).
  */
+DRAKE_DEPRECATED(
+    "2022-12-01",
+    "Use symbolic::ReplaceBilinearTerms in the namespace drake::symbolic")
 symbolic::Expression ReplaceBilinearTerms(
     const symbolic::Expression& e,
     const Eigen::Ref<const VectorXDecisionVariable>& x,

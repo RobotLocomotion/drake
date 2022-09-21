@@ -7,11 +7,13 @@
 #include <vector>
 
 #include <glib.h>
+#include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/scope_exit.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace lcm {
@@ -30,11 +32,12 @@ class DrakeLcm::Impl {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl)
 
-  explicit Impl(std::string lcm_url, bool defer_initialization)
-      : requested_lcm_url_(std::move(lcm_url)),
+  explicit Impl(const DrakeLcmParams& params)
+      : requested_lcm_url_(params.lcm_url),
         lcm_url_(requested_lcm_url_),
-        deferred_initialization_(defer_initialization),
-        lcm_(requested_lcm_url_) {
+        deferred_initialization_(params.defer_initialization),
+        lcm_(requested_lcm_url_),
+        channel_suffix_(params.channel_suffix) {
     // This duplicates logic from external/lcm/lcm.c, but until LCM offers an
     // API for this it's the best we can do.
     if (lcm_url_.empty()) {
@@ -57,21 +60,23 @@ class DrakeLcm::Impl {
         }), subscriptions_.end());
   }
 
-  std::string requested_lcm_url_;
+  const std::string requested_lcm_url_;
   std::string lcm_url_;
   bool deferred_initialization_{};
   ::lcm::LCM lcm_;
+  const std::string channel_suffix_;
   std::vector<std::weak_ptr<DrakeSubscription>> subscriptions_;
   std::string handle_subscriptions_error_message_;
 };
 
 DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {}
 
-DrakeLcm::DrakeLcm(std::string lcm_url) : DrakeLcm(std::move(lcm_url), false) {}
+DrakeLcm::DrakeLcm(std::string lcm_url)
+    : DrakeLcm(DrakeLcmParams{.lcm_url = std::move(lcm_url)}) {}
 
-DrakeLcm::DrakeLcm(std::string lcm_url, bool defer_initialization)
-    : impl_(std::make_unique<Impl>(std::move(lcm_url), defer_initialization)) {
-  if (!defer_initialization) {
+DrakeLcm::DrakeLcm(const DrakeLcmParams& params)
+    : impl_(std::make_unique<Impl>(params)) {
+  if (!params.defer_initialization) {
     // Ensure that LCM's self-test happens deterministically (here in our
     // ctor) and NOT in the first HandleSubscriptions call.  Without this,
     // ThreadSanitizer builds may report false positives related to the
@@ -79,6 +84,12 @@ DrakeLcm::DrakeLcm(std::string lcm_url, bool defer_initialization)
     impl_->lcm_.getFileno();
   }
 }
+
+DrakeLcm::DrakeLcm(std::string lcm_url, bool defer_initialization)
+    : DrakeLcm(DrakeLcmParams{
+          .lcm_url = std::move(lcm_url),
+          .channel_suffix = {},
+          .defer_initialization = defer_initialization}) {}
 
 std::string DrakeLcm::get_lcm_url() const {
   return impl_->lcm_url_;
@@ -91,7 +102,12 @@ std::string DrakeLcm::get_lcm_url() const {
 void DrakeLcm::Publish(const std::string& channel, const void* data,
                        int data_size, std::optional<double>) {
   DRAKE_THROW_UNLESS(!channel.empty());
-  impl_->lcm_.publish(channel, data, data_size);
+  if (impl_->channel_suffix_.empty()) {
+    impl_->lcm_.publish(channel, data, data_size);
+  } else {
+    const std::string actual_channel = channel + impl_->channel_suffix_;
+    impl_->lcm_.publish(actual_channel, data, data_size);
+  }
 }
 
 namespace {
@@ -125,6 +141,9 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
   static std::shared_ptr<DrakeSubscription> CreateMultichannel(
       ::lcm::LCM* native_instance,
       MultichannelHandlerFunction multichannel_handler) {
+    // TODO(jwnimmer-tri) If a channel_suffix was given, we should use it here
+    // for efficiency (to drop unwanted packets as early as possible). Be sure
+    // to regex-escape it first.
     return Create(native_instance, ".*", std::move(multichannel_handler));
   }
 
@@ -254,8 +273,9 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::Subscribe(
   impl_->CleanUpOldSubscriptions();
 
   // Add the new subscriber.
+  const std::string actual_channel = channel + impl_->channel_suffix_;
   auto result = DrakeSubscription::CreateSingleChannel(
-      &(impl_->lcm_), channel, std::move(handler));
+      &(impl_->lcm_), actual_channel, std::move(handler));
   if (!impl_->deferred_initialization_) {
     result->AttachIfNeeded();
   }
@@ -268,6 +288,23 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeAllChannels(
     MultichannelHandlerFunction handler) {
   DRAKE_THROW_UNLESS(handler != nullptr);
   impl_->CleanUpOldSubscriptions();
+  const std::string& suffix = impl_->channel_suffix_;
+  if (!suffix.empty()) {
+    handler =
+        [&suffix, handler](std::string_view channel,
+                           const void* data, int length) {
+          // TODO(ggould-tri) Use string_view::ends_with() once we have C++20.
+          if (channel.length() >= suffix.length() &&
+              channel.substr(channel.length() - suffix.length()) == suffix) {
+            channel.remove_suffix(suffix.length());
+            handler(channel, data, length);
+          } else {
+            drake::log()->debug("DrakeLcm with suffix {} received message on"
+                                " channel {}, which lacks the suffix.",
+                                suffix, channel);
+          }
+        };
+  }
 
   // Add the new subscriber.
   auto result = DrakeSubscription::CreateMultichannel(

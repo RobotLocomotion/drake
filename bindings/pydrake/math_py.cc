@@ -18,6 +18,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/bspline_basis.h"
+#include "drake/math/compute_numerical_gradient.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
 #include "drake/math/continuous_lyapunov_equation.h"
 #include "drake/math/discrete_algebraic_riccati_equation.h"
@@ -120,6 +121,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"), cls_doc.operator_mul.doc_1args_p_BoQ_B)
+        .def(
+            "multiply",
+            [](const Class* self, const Vector4<T>& vec_B) {
+              return *self * vec_B;
+            },
+            py::arg("vec_B"), cls_doc.operator_mul.doc_1args_vec_B)
         .def(
             "multiply",
             [](const Class* self, const Matrix3X<T>& p_BoQ_B) {
@@ -517,6 +524,42 @@ void DoScalarIndependentDefinitions(py::module m) {
       .def("inv", [](const Eigen::MatrixXd& X) -> Eigen::MatrixXd {
         return X.inverse();
       });
+
+  {
+    using Class = NumericalGradientMethod;
+    constexpr auto& cls_doc = doc.NumericalGradientMethod;
+    py::enum_<Class>(m, "NumericalGradientMethod", cls_doc.doc)
+        .value("kForward", Class::kForward, cls_doc.kForward.doc)
+        .value("kBackward", Class::kBackward, cls_doc.kBackward.doc)
+        .value("kCentral", Class::kCentral, cls_doc.kCentral.doc);
+  }
+
+  {
+    using Class = NumericalGradientOption;
+    constexpr auto& cls_doc = doc.NumericalGradientOption;
+    py::class_<Class>(m, "NumericalGradientOption", cls_doc.doc)
+        .def(py::init<NumericalGradientMethod, double>(), py::arg("method"),
+            py::arg("function_accuracy") = 1E-15, cls_doc.ctor.doc)
+        .def("NumericalGradientMethod", &Class::method, cls_doc.method.doc)
+        .def("perturbation_size", &Class::perturbation_size,
+            cls_doc.perturbation_size.doc);
+  }
+
+  m.def(
+      "ComputeNumericalGradient",
+      [](std::function<Eigen::VectorXd(const Eigen::VectorXd&)> calc_func,
+          const Eigen::VectorXd& x, const NumericalGradientOption& option) {
+        std::function<void(const Eigen::VectorXd&, Eigen::VectorXd*)>
+            calc_func_no_return =
+                [&calc_func](const Eigen::VectorXd& x_val, Eigen::VectorXd* y) {
+                  *y = calc_func(x_val);
+                };
+        return ComputeNumericalGradient(calc_func_no_return, x, option);
+      },
+      py::arg("calc_func"), py::arg("x"),
+      py::arg("option") =
+          NumericalGradientOption(NumericalGradientMethod::kForward),
+      doc.ComputeNumericalGradient.doc);
 
   // See TODO in corresponding header file - these should be removed soon!
   pydrake::internal::BindAutoDiffMathOverloads(&m);

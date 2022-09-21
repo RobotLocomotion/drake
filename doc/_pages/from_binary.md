@@ -25,15 +25,16 @@ Gurobi, you will need to [build Drake from source](/from_source.html).
 
 ## Stable Releases
 
-Binary packages of Drake for Ubuntu 20.04 (Focal) and
+Binary packages of Drake for Ubuntu 20.04 (Focal), Ubuntu 22.04 (Jammy), and
 Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.3.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.3.0):
+[v1.8.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.8.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220517-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220517-focal.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220517-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220517-mac.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-focal.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-jammy.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-mac.tar.gz)
 
 ### Use as a C++ library
 
@@ -61,7 +62,7 @@ Create and activate the envionment:
 ```bash
 mkdir -p env
 tar -xvzf drake.tar.gz -C env --strip-components=1
-python3 -m virtualenv -p python3 env --system-site-packages
+python3 -m venv env --system-site-packages
 source env/bin/activate
 ```
 
@@ -77,18 +78,20 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Binary packages of Drake for Ubuntu 20.04 (Focal) and
+Binary packages of Drake for Ubuntu 20.04 (Focal), Ubuntu 22.04 (Jammy), and
 Mac are generated nightly and are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz)
 
 Older packages for specific dates are available by replacing ``latest`` with an
-8-digit date, e.g., ``20200102`` for January 2nd, 2020.
+8-digit date, e.g., ``20220721`` for July 21st, 2022.
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-focal.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-mac.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-focal.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-jammy.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-mac.tar.gz)
 
-Individual packages are archived two years from their date of creation.
+Nightly archives are retained for 56 days from their date of creation.
 
 The installation instructions are identical to stable releases as shown above.

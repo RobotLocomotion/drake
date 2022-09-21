@@ -117,7 +117,10 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["symbolic_test_util.h"],
     deps = [
-        "//common:symbolic",
+        "//common/symbolic:expression",
+        "//common/symbolic:generic_polynomial",
+        "//common/symbolic:polynomial",
+        "//common/symbolic:rational_function",
     ],
 )
 

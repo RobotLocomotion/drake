@@ -6,6 +6,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -16,6 +17,7 @@ namespace drake {
 
 using multibody::Parser;
 using systems::Context;
+using test::LimitMalloc;
 
 namespace multibody {
 namespace {
@@ -64,7 +66,11 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
   void VerifyMassMatrixComputation(const Context<double>& context) {
     // Compute mass matrix via the Composite Body Algorithm.
     MatrixX<double> Mcba(plant_.num_velocities(), plant_.num_velocities());
-    plant_.CalcMassMatrix(context, &Mcba);
+    {
+      // CalcMassMatrix on `double` should never allocate.
+      LimitMalloc guard;
+      plant_.CalcMassMatrix(context, &Mcba);
+    }
 
     // Compute mass matrix using inverse dynamics for each column.
     MatrixX<double> Mid(plant_.num_velocities(), plant_.num_velocities());

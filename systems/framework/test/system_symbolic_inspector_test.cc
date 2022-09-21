@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic/polynomial.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/framework/leaf_system.h"
 

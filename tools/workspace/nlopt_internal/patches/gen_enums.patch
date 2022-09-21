@@ -6,7 +6,7 @@ CMake script both produce consistent results.
 
 --- src/api/nlopt-in.hpp.orig
 +++ src/api/nlopt-in.hpp
-@@ -39,4 +34,66 @@
+@@ -46,6 +46,68 @@
    // nlopt::* namespace versions of the C enumerated types
    //          AUTOMATICALLY GENERATED, DO NOT EDIT
    // GEN_ENUMS_HERE
@@ -73,3 +73,5 @@ CMake script both produce consistent results.
 +    NUM_RESULTS           /* not a result, just the number of possible successes */
 +  };
    //////////////////////////////////////////////////////////////////////
+
+   typedef nlopt_func func; // nlopt::func synoynm

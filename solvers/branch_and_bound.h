@@ -84,7 +84,7 @@ class MixedIntegerBranchAndBoundNode {
   /** Returns true if a node is the root.
    * A root node has no parent.
    */
-  bool IsRoot() const;
+  [[nodiscard]] bool IsRoot() const;
 
   /** Determine if a node is a leaf or not.
    * A leaf node has no child nodes.
@@ -158,7 +158,7 @@ class MixedIntegerBranchAndBoundNode {
    * @pre The optimization problem is solved successfully.
    * @throws std::exception if the precondition is not satisfied.
    */
-  bool optimal_solution_is_integral() const;
+  [[nodiscard]] bool optimal_solution_is_integral() const;
 
   /** Getter for solver id. */
   const SolverId& solver_id() const { return solver_id_; }
@@ -307,7 +307,7 @@ class MixedIntegerBranchAndBound {
   SolutionResult Solve();
 
   /** Get the optimal cost. */
-  double GetOptimalCost() const;
+  [[nodiscard]] double GetOptimalCost() const;
 
   /**
    * Get the n'th sub-optimal cost.
@@ -317,7 +317,7 @@ class MixedIntegerBranchAndBound {
    * @pre `nth_suboptimal_cost` is between 0 and solutions().size() - 1.
    * @throws std::exception if the precondition is not satisfied.
    */
-  double GetSubOptimalCost(int nth_suboptimal_cost) const;
+  [[nodiscard]] double GetSubOptimalCost(int nth_suboptimal_cost) const;
 
   /**
    * Get the n'th best integral solution for a variable.
@@ -330,8 +330,8 @@ class MixedIntegerBranchAndBound {
    * @pre `nth_best_solution` is between 0 and solutions().size().
    * @throws std::exception if the preconditions are not satisfied.
    */
-  double GetSolution(const symbolic::Variable& mip_var,
-                     int nth_best_solution = 0) const;
+  [[nodiscard]] double GetSolution(const symbolic::Variable& mip_var,
+                                   int nth_best_solution = 0) const;
 
   /**
    * Get the n'th best integral solution for some variables.
@@ -344,15 +344,12 @@ class MixedIntegerBranchAndBound {
    * @throws std::exception if the preconditions are not satisfied.
    */
   template <typename Derived>
-  typename std::enable_if_t<
+  [[nodiscard]] typename std::enable_if_t<
       std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>
+      MatrixLikewise<double, Derived>>
   GetSolution(const Eigen::MatrixBase<Derived>& mip_vars,
               int nth_best_solution = 0) const {
-    Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime>
-        value(mip_vars.rows(), mip_vars.cols());
+    MatrixLikewise<double, Derived> value(mip_vars.rows(), mip_vars.cols());
     for (int i = 0; i < mip_vars.rows(); ++i) {
       for (int j = 0; j < mip_vars.cols(); ++j) {
         value(i, j) = GetSolution(mip_vars(i, j), nth_best_solution);
@@ -371,7 +368,7 @@ class MixedIntegerBranchAndBound {
    * constructor of this MixedIntegerBranchAndBound.
    * @throws std::exception if the pre-condition fails.
    */
-  const symbolic::Variable& GetNewVariable(
+  [[nodiscard]] const symbolic::Variable& GetNewVariable(
       const symbolic::Variable& old_variable) const;
 
   /**
@@ -385,10 +382,9 @@ class MixedIntegerBranchAndBound {
   template <typename Derived>
   typename std::enable_if_t<
       is_eigen_scalar_same<Derived, symbolic::Variable>::value,
-      MatrixDecisionVariable<Derived::RowsAtCompileTime,
-                             Derived::ColsAtCompileTime>>
+      MatrixLikewise<symbolic::Variable, Derived>>
   GetNewVariables(const Eigen::MatrixBase<Derived>& old_variables) const {
-    Eigen::MatrixBase<Derived> new_variables;
+    MatrixLikewise<symbolic::Variable, Derived> new_variables;
     new_variables.resize(old_variables.rows(), old_variables.cols());
     for (int i = 0; i < old_variables.rows(); ++i) {
       for (int j = 0; j < old_variables.cols(); ++j) {
@@ -520,20 +516,22 @@ class MixedIntegerBranchAndBound {
    * @pre The node should be a leaf node.
    * @throws std::exception if the precondition is not satisfied.
    */
-  bool IsLeafNodeFathomed(
+  [[nodiscard]] bool IsLeafNodeFathomed(
       const MixedIntegerBranchAndBoundNode& leaf_node) const;
 
   /**
    * Getter for the root node. Note that this is aliased for the lifetime of
    * this object.
    */
-  const MixedIntegerBranchAndBoundNode* root() const { return root_.get(); }
+  [[nodiscard]] const MixedIntegerBranchAndBoundNode* root() const {
+    return root_.get();
+  }
 
   /** Getter for the best upper bound. */
-  double best_upper_bound() const { return best_upper_bound_; }
+  [[nodiscard]] double best_upper_bound() const { return best_upper_bound_; }
 
   /** Getter for the best lower bound. */
-  double best_lower_bound() const { return best_lower_bound_; }
+  [[nodiscard]] double best_lower_bound() const { return best_lower_bound_; }
 
   /**
    * Getter for the solutions.
@@ -541,7 +539,8 @@ class MixedIntegerBranchAndBound {
    * solutions. The solutions are sorted in the ascending order based on the
    * cost.
    */
-  const std::multimap<double, Eigen::VectorXd>& solutions() const {
+  [[nodiscard]] const std::multimap<double, Eigen::VectorXd>& solutions()
+      const {
     return solutions_;
   }
 
@@ -552,7 +551,7 @@ class MixedIntegerBranchAndBound {
   void set_absolute_gap_tol(double tol) { absolute_gap_tol_ = tol; }
 
   /** Getter for the absolute gap tolerance. */
-  double absolute_gap_tol() const { return absolute_gap_tol_; }
+  [[nodiscard]] double absolute_gap_tol() const { return absolute_gap_tol_; }
 
   /** Setter for the relative gap tolerance.
    * The branch-and-bound will terminate if
@@ -562,7 +561,7 @@ class MixedIntegerBranchAndBound {
   void set_relative_gap_tol(double tol) { relative_gap_tol_ = tol; }
 
   /** Geeter for the relative gap tolerance. */
-  double relative_gap_tol() const { return relative_gap_tol_; }
+  [[nodiscard]] double relative_gap_tol() const { return relative_gap_tol_; }
 
  private:
   // Forward declaration the tester class.
@@ -571,22 +570,22 @@ class MixedIntegerBranchAndBound {
   /**
    * Pick one node to branch.
    */
-  MixedIntegerBranchAndBoundNode* PickBranchingNode() const;
+  [[nodiscard]] MixedIntegerBranchAndBoundNode* PickBranchingNode() const;
 
   /**
    * Pick the node with the minimal lower bound.
    */
-  MixedIntegerBranchAndBoundNode* PickMinLowerBoundNode() const;
+  [[nodiscard]] MixedIntegerBranchAndBoundNode* PickMinLowerBoundNode() const;
 
   /**
    * Pick the node with the most binary variables fixed.
    */
-  MixedIntegerBranchAndBoundNode* PickDepthFirstNode() const;
+  [[nodiscard]] MixedIntegerBranchAndBoundNode* PickDepthFirstNode() const;
 
   /**
    * Pick the branching variable in a node.
    */
-  const symbolic::Variable* PickBranchingVariable(
+  [[nodiscard]] const symbolic::Variable* PickBranchingVariable(
       const MixedIntegerBranchAndBoundNode& node) const;
 
   /**
@@ -611,7 +610,7 @@ class MixedIntegerBranchAndBound {
    * The branch-and-bound has converged if the gap between the best upper bound
    * and the best lower bound is less than the tolerance.
    */
-  bool HasConverged() const;
+  [[nodiscard]] bool HasConverged() const;
 
   /** Call the callback function in each node. */
   void NodeCallback(const MixedIntegerBranchAndBoundNode& node);

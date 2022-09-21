@@ -77,7 +77,6 @@ drake_cc_package_library(
         ":solver_type_converter",
         ":sos_basis_generator",
         ":sparse_and_dense_matrix",
-        ":system_identification",
         ":unrevised_lemke_solver",
     ],
 )
@@ -111,7 +110,8 @@ drake_cc_library(
     srcs = ["sos_basis_generator.cc"],
     hdrs = ["sos_basis_generator.h"],
     interface_deps = [
-        "//common:symbolic",
+        "//common/symbolic:expression",
+        "//common/symbolic:polynomial",
     ],
     deps = [
         ":integer_inequality_solver",
@@ -163,7 +163,7 @@ drake_cc_library(
     interface_deps = [
         "//common:essential",
         "//common:polynomial",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//math:autodiff",
         ":function",
     ],
@@ -177,15 +177,15 @@ drake_cc_library(
     srcs = ["constraint.cc"],
     hdrs = ["constraint.h"],
     interface_deps = [
-        "//common:essential",
-        "//common:polynomial",
-        "//common:symbolic",
         ":decision_variable",
         ":evaluator_base",
         ":sparse_and_dense_matrix",
+        "//common:essential",
+        "//common:polynomial",
+        "//common/symbolic:expression",
     ],
     deps = [
-        "//common:symbolic_decompose",
+        "//common/symbolic:polynomial",
         "//math:gradient",
         "//math:matrix_util",
     ],
@@ -220,13 +220,12 @@ drake_cc_library(
     srcs = ["create_constraint.cc"],
     hdrs = ["create_constraint.h"],
     interface_deps = [
-        "//common:symbolic",
+        "//common/symbolic:expression",
         ":binding",
         ":constraint",
     ],
     deps = [
-        "//common:polynomial",
-        "//common:symbolic_decompose",
+        "//common/symbolic:polynomial",
         "//math:quadratic_form",
     ],
 )
@@ -238,12 +237,12 @@ drake_cc_library(
     interface_deps = [
         ":binding",
         ":cost",
-        "//common:symbolic",
+        "//common/symbolic:expression",
     ],
     deps = [
         "//common:polynomial",
-        "//common:symbolic_decompose",
         "//common:unused",
+        "//common/symbolic:polynomial",
     ],
 )
 
@@ -252,7 +251,7 @@ drake_cc_library(
     srcs = ["decision_variable.cc"],
     hdrs = ["decision_variable.h"],
     interface_deps = [
-        "//common:symbolic",
+        "//common/symbolic:expression",
     ],
     deps = [],
 )
@@ -314,7 +313,7 @@ drake_cc_library(
     srcs = ["indeterminate.cc"],
     hdrs = ["indeterminate.h"],
     interface_deps = [
-        "//common:symbolic",
+        "//common/symbolic:expression",
     ],
     deps = [
         "//solvers:decision_variable",
@@ -365,11 +364,12 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
-        "//common:symbolic",
+        "//common/symbolic:expression",
+        "//common/symbolic:monomial_util",
+        "//common/symbolic:polynomial",
     ],
     deps = [
         ":sos_basis_generator",
-        "//common:symbolic_decompose",
         "//math:matrix_util",
     ],
 )
@@ -384,8 +384,8 @@ drake_cc_library(
         ":mathematical_program",
         ":solution_result",
         ":solver_id",
-        "//common:symbolic",
         "//common:value",
+        "//common/symbolic:expression",
     ],
     deps = [],
 )
@@ -450,10 +450,10 @@ drake_cc_library(
     hdrs = ["bilinear_product_util.h"],
     interface_deps = [
         ":decision_variable",
-        "//common:essential",
-        "//common:symbolic",
     ],
-    deps = [],
+    deps = [
+        "//common/symbolic:replace_bilinear_terms",
+    ],
 )
 
 drake_cc_library(
@@ -466,19 +466,6 @@ drake_cc_library(
     ],
     deps = [
         ":create_constraint",
-    ],
-)
-
-drake_cc_library(
-    name = "system_identification",
-    srcs = ["system_identification.cc"],
-    hdrs = ["system_identification.h"],
-    deps = [
-        ":mathematical_program",
-        ":solve",
-        "//common:autodiff",
-        "//common:essential",
-        "//common:polynomial",
     ],
 )
 
@@ -507,9 +494,9 @@ drake_cc_library(
         ":mixed_integer_optimization_util",
     ],
     deps = [
-        ":bilinear_product_util",
         ":integer_optimization_util",
         ":solve",
+        "//common/symbolic:replace_bilinear_terms",
         "//math:gray_code",
     ],
 )
@@ -699,9 +686,6 @@ drake_cc_library(
     name = "solution_result",
     srcs = ["solution_result.cc"],
     hdrs = ["solution_result.h"],
-    deps = [
-        "//common:essential",  # For DRAKE_DEPRECATED; remove 2022-07-01
-    ],
 )
 
 drake_cc_library(
@@ -812,7 +796,7 @@ drake_cc_optional_library(
     srcs = ["ibex_converter.cc"],
     hdrs = ["ibex_converter.h"],
     interface_deps = [
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "@ibex//:ibex",
     ],
     deps = [],
@@ -1149,7 +1133,7 @@ drake_cc_googletest(
     name = "constraint_test",
     deps = [
         ":constraint",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
@@ -1172,7 +1156,7 @@ drake_cc_googletest(
         ":cost",
         ":create_cost",
         ":generic_trivial_cost",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:is_dynamic_castable",
         "//common/test_utilities:symbolic_test_util",
@@ -1220,6 +1204,7 @@ drake_cc_googletest(
         "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1439,7 +1424,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":snopt_solver",
         ":solve",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities",
         "//math:matrix_util",
     ],
@@ -1750,6 +1735,7 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":sos_basis_generator",
+        "//common/symbolic:monomial_util",
     ],
 )
 
@@ -1757,17 +1743,6 @@ drake_cc_googletest(
     name = "integer_inequality_solver_test",
     deps = [
         ":integer_inequality_solver",
-    ],
-)
-
-drake_cc_googletest(
-    name = "system_identification_test",
-    # Test timeout increased to not timeout in debug and when run with
-    # Valgrind.
-    timeout = "moderate",
-    deps = [
-        ":system_identification",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cmath>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -15,7 +16,6 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/yaml/yaml_node.h"
@@ -214,13 +214,17 @@ class YamlWriteArchive final {
   void VisitScalar(const NVP& nvp) {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
-    // Different versions of fmt disagree on whether to omit the trailing
-    // ".0" when formatting integer-valued floating-point numbers.  Force
-    // the ".0" in all cases by using the "#" option for floats.
-    constexpr std::string_view pattern =
-        std::is_floating_point_v<T> ? "{:#}" : "{}";
+    if constexpr (std::is_floating_point_v<T>) {
+      // Different versions of fmt disagree on whether to omit the trailing
+      // ".0" when formatting integer-valued floating-point numbers.  Force
+      // the ".0" in all cases by using the "#" option for floats.  Also be
+      // sure to add the required leading period for special values.
+      root_.Add(nvp.name(), internal::Node::MakeScalar(
+          fmt::format("{}{:#}", std::isfinite(value) ? "" : ".", value)));
+      return;
+    }
     root_.Add(nvp.name(), internal::Node::MakeScalar(
-        fmt::format(pattern, value)));
+        fmt::format("{}", value)));
   }
 
   // This is used for std::optional or similar.
@@ -358,10 +362,5 @@ class YamlWriteArchive final {
 };
 
 }  // namespace internal
-
-using YamlWriteArchive
-    DRAKE_DEPRECATED("2022-09-01", "Use the yaml_io.h functions instead")
-    = internal::YamlWriteArchive;
-
 }  // namespace yaml
 }  // namespace drake

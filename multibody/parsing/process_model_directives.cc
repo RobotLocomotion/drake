@@ -7,12 +7,14 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/schema/transform.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 #include "drake/multibody/parsing/detail_composite_parse.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/scoped_names.h"
 
@@ -34,6 +36,7 @@ using drake::multibody::MultibodyPlant;
 using drake::multibody::PackageMap;
 using drake::multibody::Parser;
 using drake::yaml::LoadYamlFile;
+using drake::yaml::LoadYamlString;
 
 namespace {
 
@@ -59,9 +62,10 @@ namespace {
 void AddWeld(
     const Frame<double>& parent_frame,
     const Frame<double>& child_frame,
+    const math::RigidTransform<double>& X_PC,
     MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models) {
-  plant->WeldFrames(parent_frame, child_frame);
+  plant->WeldFrames(parent_frame, child_frame, X_PC);
   if (added_models) {
     // Record weld info into crappy ModelInstanceInfo struct.
     bool found = false;
@@ -106,6 +110,17 @@ void ProcessModelDirectivesImpl(
           ResolveModelDirectiveUri(model.file, parser->package_map());
       drake::multibody::ModelInstanceIndex child_model_instance_id =
           composite->AddModelFromFile(file, name);
+      for (const auto& [joint_name, positions] :
+           directive.add_model->default_joint_positions) {
+        plant->GetMutableJointByName(joint_name, child_model_instance_id)
+            .set_default_positions(positions);
+      }
+      for (const auto& [body_name, pose] :
+           directive.add_model->default_free_body_pose) {
+        plant->SetDefaultFreeBodyPose(
+            plant->GetBodyByName(body_name, child_model_instance_id),
+            pose.GetDeterministicValue());
+      }
       info.model_instance = child_model_instance_id;
       info.model_name = name;
       info.model_path = file;
@@ -141,10 +156,13 @@ void ProcessModelDirectivesImpl(
       drake::log()->debug("    resolved_name: {}", resolved_name);
 
     } else if (directive.add_weld) {
-      AddWeld(
-          get_scoped_frame(directive.add_weld->parent),
-          get_scoped_frame(directive.add_weld->child),
-          plant, added_models);
+      math::RigidTransform<double> X_PC{};
+      if (directive.add_weld->X_PC) {
+        X_PC = directive.add_weld->X_PC->GetDeterministicValue();
+      }
+      AddWeld(get_scoped_frame(directive.add_weld->parent),
+              get_scoped_frame(directive.add_weld->child), X_PC, plant,
+              added_models);
 
     } else if (directive.add_collision_filter_group) {
       // Find the model instance index that corresponds to model_namespace, if
@@ -194,35 +212,8 @@ void ProcessModelDirectivesImpl(
 
 std::string ResolveModelDirectiveUri(const std::string& uri,
                                      const PackageMap& package_map) {
-  const std::string scheme_separator = "://";
-  const size_t scheme_end = uri.find(scheme_separator);
-  if (scheme_end == std::string::npos) {
-    drake::log()->error("Model resource '{}' is not a valid URI.",
-                        uri);
-    std::abort();
-  }
-
-  const std::string scheme = uri.substr(0, scheme_end);
-  const size_t package_end = uri.find("/", scheme_end + 3);
-  if (package_end == std::string::npos) {
-    drake::log()->error("Model resource '{}' has no path in package.",
-                        uri);
-    std::abort();
-  }
-
-  const std::string package_name =
-      uri.substr(scheme_end + scheme_separator.size(),
-                 package_end - scheme_end - scheme_separator.size());
-  const std::string path_in_package = uri.substr(package_end + 1);
-
-  DRAKE_DEMAND(scheme == "package");  // No other schemes supported for now.
-  if (!package_map.Contains(package_name)) {
-    drake::log()->error(
-        "Unable to resolve package '{}' for URI '{}' using package map: '{}'",
-        package_name, uri, package_map);
-    std::abort();
-  }
-  return package_map.GetPath(package_name) + "/" + path_in_package;
+  ::drake::internal::DiagnosticPolicy policy;
+  return ::drake::multibody::internal::ResolveUri(policy, uri, package_map, "");
 }
 
 void ProcessModelDirectives(
@@ -237,6 +228,15 @@ void ProcessModelDirectives(
   const std::string model_namespace = "";
   ProcessModelDirectivesImpl(directives, plant, added_models, parser,
                              composite.get(), model_namespace);
+}
+
+std::vector<ModelInstanceInfo> ProcessModelDirectives(
+    const ModelDirectives& directives,
+    drake::multibody::Parser* parser) {
+  DRAKE_THROW_UNLESS(parser != nullptr);
+  std::vector<ModelInstanceInfo> added_models;
+  ProcessModelDirectives(directives, &parser->plant(), &added_models, parser);
+  return added_models;
 }
 
 ModelDirectives LoadModelDirectives(const std::string& filename) {
@@ -255,6 +255,20 @@ ModelDirectives LoadModelDirectives(const std::string& filename) {
   const ModelDirectives defaults;
   const auto directives = LoadYamlFile<ModelDirectives>(
       filename, std::nullopt /* child_name */, defaults);
+  DRAKE_DEMAND(directives.IsValid());
+  return directives;
+}
+
+ModelDirectives LoadModelDirectivesFromString(
+    const std::string& model_directives) {
+  // Even though the 'defaults' we use to start parsing here are empty, by
+  // providing any defaults at all, the effect during parsing will be that
+  // any of the users' ModelDirective structs and sub-structs will _also_
+  // start from their default values and allow for overwriting only a subset
+  // of the data fields instead of requiring that the user provide them all.
+  const ModelDirectives defaults;
+  const auto directives = LoadYamlString<ModelDirectives>(
+      model_directives, std::nullopt /* child_name */, defaults);
   DRAKE_DEMAND(directives.IsValid());
   return directives;
 }

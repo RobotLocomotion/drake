@@ -45,13 +45,6 @@ class JacoStatusReceiver : public systems::LeafSystem<double> {
   JacoStatusReceiver(int num_joints = kJacoDefaultArmNumJoints,
                      int num_fingers = kJacoDefaultArmNumFingers);
 
-  DRAKE_DEPRECATED("2022-08-01", "Use position/velocity output ports instead.")
-  const systems::OutputPort<double>& get_state_output_port() const;
-  DRAKE_DEPRECATED("2022-08-01", "Use torque_measured output port instead.")
-  const systems::OutputPort<double>& get_torque_output_port() const {
-    return *torque_measured_output_;
-  }
-
   /// @name Named accessors for this System's input and output ports.
   //@{
   const systems::OutputPort<double>& get_position_measured_output_port() const {
@@ -83,7 +76,6 @@ class JacoStatusReceiver : public systems::LeafSystem<double> {
   const int num_joints_;
   const int num_fingers_;
   const systems::InputPort<double>* message_input_{};
-  const systems::OutputPort<double>* state_output_{};
   const systems::OutputPort<double>* position_measured_output_{};
   const systems::OutputPort<double>* velocity_measured_output_{};
   const systems::OutputPort<double>* torque_measured_output_{};

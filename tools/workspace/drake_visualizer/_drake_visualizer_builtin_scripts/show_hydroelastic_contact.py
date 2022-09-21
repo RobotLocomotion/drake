@@ -360,7 +360,7 @@ class ColorMap:
         if (min_val > max_val):
             raise AttributeError(
                 'Bad range: [{}, {}]'.format(min_val, max_val))
-        assert(max_val >= min_val)
+        assert max_val >= min_val
         range = max_val - min_val
         if (range > 0.00001):
             return np.clip((data - min_val) / (max_val - min_val), 0.0, 1.0)

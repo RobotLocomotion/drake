@@ -309,7 +309,7 @@ GTEST_TEST(RenderEngine, ValidateIntrinsicsAndImage) {
       "Can't render a label image. The given output image is nullptr");
 
   // Image size doesn't match.
-  const char* error_message =
+  constexpr const char* error_message =
       "The {} image to write has a size different from that specified in "
       "the camera intrinsics. Image: \\({}, {}\\), intrinsics: \\({}, {}\\)";
 

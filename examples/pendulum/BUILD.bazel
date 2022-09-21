@@ -135,7 +135,7 @@ drake_cc_binary(
     data = [":models"],
     deps = [
         ":pendulum_plant",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//multibody/parsing",
         "//multibody/plant",
     ],

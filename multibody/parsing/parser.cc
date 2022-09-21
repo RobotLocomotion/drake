@@ -7,6 +7,7 @@
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_composite_parse.h"
+#include "drake/multibody/parsing/detail_mujoco_parser.h"
 #include "drake/multibody/parsing/detail_parsing_workspace.h"
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 #include "drake/multibody/parsing/detail_urdf_parser.h"
@@ -45,7 +46,7 @@ Parser::Parser(
 }
 
 namespace {
-enum class FileType { kSdf, kUrdf };
+enum class FileType { kSdf, kUrdf, kMjcf };
 FileType DetermineFileType(const std::string& file_name) {
   const std::string ext = filesystem::path(file_name).extension().string();
   if ((ext == ".urdf") || (ext == ".URDF")) {
@@ -53,6 +54,9 @@ FileType DetermineFileType(const std::string& file_name) {
   }
   if ((ext == ".sdf") || (ext == ".SDF")) {
     return FileType::kSdf;
+  }
+  if ((ext == ".xml") || (ext == ".XML")) {
+    return FileType::kMjcf;
   }
   throw std::runtime_error(fmt::format(
       "The file type '{}' is not supported for '{}'",
@@ -77,7 +81,7 @@ std::vector<ModelInstanceIndex> Parser::CompositeAddAllModelsFromFile(
   std::vector<ModelInstanceIndex> result;
   if (type == FileType::kSdf) {
     result = AddModelsFromSdf(data_source, workspace);
-  } else {
+  } else if (type == FileType::kUrdf) {
     const std::optional<ModelInstanceIndex> maybe_model =
         AddModelFromUrdf(data_source, {}, {}, workspace);
     if (maybe_model.has_value()) {
@@ -86,6 +90,8 @@ std::vector<ModelInstanceIndex> Parser::CompositeAddAllModelsFromFile(
       throw std::runtime_error(
           fmt::format("{}: URDF model file parsing failed", file_name));
     }
+  } else {  // type == FileType::kMjcf
+    result = {AddModelFromMujocoXml(data_source, {}, {}, plant_)};
   }
   if (!composite) { resolver.Resolve(diagnostic_policy_); }
   return result;
@@ -110,8 +116,11 @@ ModelInstanceIndex Parser::CompositeAddModelFromFile(
   std::optional<ModelInstanceIndex> maybe_model;
   if (type == FileType::kSdf) {
     maybe_model = AddModelFromSdf(data_source, model_name, workspace);
-  } else {
+  } else if (type == FileType::kUrdf) {
     maybe_model = AddModelFromUrdf(data_source, model_name, {}, workspace);
+  } else {
+    maybe_model =
+        AddModelFromMujocoXml(data_source, model_name, {}, plant_);
   }
   if (!maybe_model.has_value()) {
     throw std::runtime_error(
@@ -143,8 +152,10 @@ ModelInstanceIndex Parser::CompositeAddModelFromString(
   std::optional<ModelInstanceIndex> maybe_model;
   if (type == FileType::kSdf) {
     maybe_model = AddModelFromSdf(data_source, model_name, workspace);
-  } else {
+  } else if (type == FileType::kUrdf) {
     maybe_model = AddModelFromUrdf(data_source, model_name, {}, workspace);
+  } else {  // FileType::kMjcf
+    maybe_model = AddModelFromMujocoXml(data_source, model_name, {}, plant_);
   }
   if (!maybe_model.has_value()) {
     throw std::runtime_error(

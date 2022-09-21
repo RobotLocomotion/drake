@@ -10,12 +10,14 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/sensors/camera_config_functions.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
@@ -56,6 +58,7 @@ PYBIND11_MODULE(sensors, m) {
   m.doc() = "Bindings for the sensors portion of the Systems framework.";
 
   py::module::import("pydrake.common.eigen_geometry");
+  py::module::import("pydrake.common.schema");
   py::module::import("pydrake.geometry.render");
   py::module::import("pydrake.systems.framework");
 
@@ -234,6 +237,44 @@ PYBIND11_MODULE(sensors, m) {
       double{RgbdSensorDiscrete::kDefaultPeriod};
 
   {
+    constexpr auto& config_cls_doc = doc.CameraConfig;
+    py::class_<CameraConfig> config_cls(m, "CameraConfig", config_cls_doc.doc);
+    config_cls  // BR
+        .def(ParamInit<CameraConfig>())
+        .def("focal_x", &CameraConfig::focal_x, config_cls_doc.focal_x.doc)
+        .def("focal_y", &CameraConfig::focal_y, config_cls_doc.focal_y.doc)
+        .def("principal_point", &CameraConfig::principal_point,
+            config_cls_doc.principal_point.doc);
+    DefAttributesUsingSerialize(&config_cls, config_cls_doc);
+    DefReprUsingSerialize(&config_cls);
+    DefCopyAndDeepCopy(&config_cls);
+
+    constexpr auto& fov_degrees_doc = doc.CameraConfig.FovDegrees;
+    py::class_<CameraConfig::FovDegrees> fov_class(
+        config_cls, "FovDegrees", fov_degrees_doc.doc);
+    fov_class  // BR
+        .def(ParamInit<CameraConfig::FovDegrees>());
+    DefAttributesUsingSerialize(&fov_class, fov_degrees_doc);
+    DefReprUsingSerialize(&fov_class);
+    DefCopyAndDeepCopy(&fov_class);
+
+    constexpr auto& focal_doc = doc.CameraConfig.FocalLength;
+    py::class_<CameraConfig::FocalLength> focal_class(
+        config_cls, "FocalLength", focal_doc.doc);
+    focal_class  // BR
+        .def(ParamInit<CameraConfig::FocalLength>());
+    DefAttributesUsingSerialize(&focal_class, focal_doc);
+    DefReprUsingSerialize(&focal_class);
+    DefCopyAndDeepCopy(&focal_class);
+
+    m.def("ApplyCameraConfig", &ApplyCameraConfig, py::arg("config"),
+        py::arg("plant"), py::arg("builder"), py::arg("scene_graph"),
+        py::arg("lcm"),
+        // Keep alive, reference: `builder` keeps `lcm` alive.
+        py::keep_alive<3, 5>(), doc.ApplyCameraConfig.doc);
+  }
+
+  {
     using Class = CameraInfo;
     constexpr auto& cls_doc = doc.CameraInfo;
     py::class_<Class> cls(m, "CameraInfo", cls_doc.doc);
@@ -252,6 +293,8 @@ PYBIND11_MODULE(sensors, m) {
         .def("height", &Class::height, cls_doc.height.doc)
         .def("focal_x", &Class::focal_x, cls_doc.focal_x.doc)
         .def("focal_y", &Class::focal_y, cls_doc.focal_y.doc)
+        .def("fov_x", &Class::fov_x, cls_doc.fov_x.doc)
+        .def("fov_y", &Class::fov_y, cls_doc.fov_y.doc)
         .def("center_x", &Class::center_x, cls_doc.center_x.doc)
         .def("center_y", &Class::center_y, cls_doc.center_y.doc)
         .def("intrinsic_matrix", &Class::intrinsic_matrix,

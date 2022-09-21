@@ -55,6 +55,12 @@ TEST_F(CsdpDocExample, Solve) {
     Z_expected(6, 6) = 1.0;
     EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(solver_details.Z_val),
                                 Z_expected, tol));
+    // Now add an empty constraint to the program and solve it again, there
+    // should be no error.
+    prog_->AddLinearEqualityConstraint(Eigen::RowVector2d(0, 0), 0, y_);
+    solver.Solve(*prog_, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(), -2.75, tol);
   }
 }
 
@@ -406,19 +412,6 @@ GTEST_TEST(TestSOS, MotzkinPolynomial) {
 
 GTEST_TEST(TestSOS, UnivariateNonnegative1) {
   UnivariateNonnegative1 dut;
-  // TODO(hongkai.dai): remove this for loop after we deprecate the constructor
-  // CsdpSolver(method)
-  for (auto method : GetRemoveFreeVariableMethods()) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    CsdpSolver solver(method);
-#pragma GCC diagnostic pop
-    if (solver.available()) {
-      const auto result = solver.Solve(dut.prog());
-      dut.CheckResult(result, 6E-9);
-    }
-  }
-
   for (auto method : GetRemoveFreeVariableMethods()) {
     CsdpSolver solver;
     if (solver.available()) {

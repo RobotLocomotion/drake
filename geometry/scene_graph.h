@@ -39,6 +39,7 @@ class QueryObject;
  name: SceneGraph
  input_ports:
  - <em style="color:gray">(source name)</em>_pose
+ - <em style="color:gray">(source name)</em>_configuration
  output_ports:
  - query
  @endsystem
@@ -64,7 +65,7 @@ class QueryObject;
  - Connect source's geometry output ports to the corresponding %SceneGraph
    input ports.
    - Implement appropriate `Calc*` methods on the geometry output ports to
-     update geometry pose values.
+     update geometry pose/configuration values.
 
  @section geom_sys_inputs Inputs
  @cond
@@ -74,13 +75,11 @@ class QueryObject;
  // types.
  @endcond
 
- <!-- TODO(xuchenhan-tri): Modify this section when position ports are added.
- -->
  For each registered geometry source, there is one input port for each order
- of kinematics values (e.g., pose, velocity, and acceleration). If a source
- registers a frame, it must connect to these ports (although, in the current
- version, only pose is supported). Failure to connect to the port (or to provide
- valid kinematics values) will lead to runtime exceptions.
+ of kinematics values (e.g., pose, velocity, acceleration, and configuration).
+ If a source registers a frame or a deformable geometry, it must connect to the
+ corresponding ports. Failure to connect to the ports (or to provide valid
+ kinematics values) will lead to runtime exceptions.
 
  __pose port__: An abstract-valued port providing an instance of
  FramePoseVector. For each registered frame, this "pose vector" maps the
@@ -88,6 +87,17 @@ class QueryObject;
  for and only frames registered by a source can be included in its output port.
  See the details in KinematicsVector for details on how to provide values for
  this port.
+
+ <!-- TODO(xuchenhan-tri): Consider adding some clarification about
+  "configuration" as in "deformable vertex positions" compared to
+  "configuration" as in articulated rigid-body configurations (and that we use
+  the word to exclusively mean the former in SceneGraph). -->
+ __configuration port__: An abstract-valued port providing an instance of
+ GeometryConfigurationVector. For each registered deformable geometry, this
+ "configuration vector" maps the registered GeometryId to its world space
+ configuration (i.e. the vertex positions of its mesh representation in the
+ world frame). All registered deformable geometries must be accounted for and
+ only geometries registered by a source can be included in its output port.
 
  @section geom_sys_outputs Outputs
 
@@ -178,13 +188,10 @@ class QueryObject;
  (see GeometrySource::RegisterAnchoredGeometry()). However, the source still
  "owns" the anchored geometry.
 
- <!-- TODO(xuchenhan-tri): Modify this section when configuration ports are
-added.
- -->
  _Updating Kinematics_
 
- Registering _dynamic_ geometry implies a contract between the geometry source
- and %SceneGraph. The geometry source must do the following:
+ Registering _dynamic_ non-deformable geometry implies a contract between the
+ geometry source and %SceneGraph. The geometry source must do the following:
    - It must provide, populate, and connect two output ports: the "id" port and
    the "pose" port.
    - The id port must contain _all_ the frame ids returned as a result of frame
@@ -193,6 +200,11 @@ added.
    expressed relative to the registered frame's _parent_ frame. As mentioned
    above, the iᵗʰ pose value should describe the frame indicated by the iᵗʰ id
    in the id output port.
+
+ Similarly, if it registers deformable geometries, the geometry source must
+ provide, populate, and connect the "configuration" port. The configuration
+ port must contain a vector of vertex positions per registered deformable
+ geometry.
 
  Failure to meet these requirements will lead to a run-time error.
 
@@ -314,13 +326,15 @@ class SceneGraph final : public systems::LeafSystem<T> {
    the returned SourceId; it is the token by which all other operations on the
    geometry world are conducted.
 
-   <!-- TODO(xuchenhan-tri): Modify this section when configuration ports are
-   added.
-   -->
    This source id can be used to register arbitrary _anchored_ geometry. But if
-   dynamic geometry is registered (via RegisterGeometry/RegisterFrame), then
-   the context-dependent pose values must be provided on an input port.
-   See get_source_pose_port().
+   dynamic non-deformable geometry is registered
+   (via RegisterGeometry/RegisterFrame), then the Context-dependent pose values
+   must be provided on an input port. See get_source_pose_port().
+
+   Similarly, if deformable geometry (always dynamic) is registered
+   (via RegisterDeformableGeometry), then the Context-dependent configuration
+   values must be provided on an input port. See
+   get_source_configuration_port().
 
    This method modifies the underlying model and requires a new Context to be
    allocated.
@@ -340,6 +354,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
    frames.
    @throws std::exception if the source_id is _not_ recognized.  */
   const systems::InputPort<T>& get_source_pose_port(SourceId id) const;
+
+  /** Given a valid source `id`, returns a _configuration_ input port associated
+   with that `id`. This port is used to communicate configuration data for
+   registered deformable geometries.
+   @throws std::exception if the source_id is _not_ recognized.  */
+  const systems::InputPort<T>& get_source_configuration_port(SourceId id) const;
 
   /** Returns the output port which produces the QueryObject for performing
    geometric queries.  */
@@ -826,7 +846,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    Rather than modifying %SceneGraph's model, it modifies the copy of the model
    stored in the provided context.  */
   int RemoveRole(systems::Context<T>* context, SourceId source_id,
-                  FrameId frame_id, Role role) const;
+                 FrameId frame_id, Role role) const;
 
   /** Removes the indicated `role` from the geometry indicated by `geometry_id`.
    Potentially modifies the proximity, perception, or illustration version based
@@ -848,7 +868,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    geometries. Rather than modifying %SceneGraph's model, it modifies the copy
    of the model stored in the provided context.  */
   int RemoveRole(systems::Context<T>* context, SourceId source_id,
-                  GeometryId geometry_id, Role role) const;
+                 GeometryId geometry_id, Role role) const;
 
   //@}
 
@@ -936,10 +956,23 @@ class SceneGraph final : public systems::LeafSystem<T> {
     this->get_cache_entry(pose_update_index_).template Eval<int>(context);
   }
 
-  // Updates the state of geometry world from *all* the inputs. This is the calc
+  // Refreshes the configuration of deformable geometries in various engines
+  // which exploits the caching infrastructure.
+  void FullConfigurationUpdate(const systems::Context<T>& context) const {
+    this->get_cache_entry(configuration_update_index_)
+        .template Eval<int>(context);
+  }
+
+  // Updates the state of geometry world from all pose inputs. This is the calc
   // method for the corresponding cache entry. The entry *value* (the int) is
   // strictly a dummy -- the value is unimportant; only the side effect matters.
   void CalcPoseUpdate(const systems::Context<T>& context, int*) const;
+
+  // Updates the state of geometry world from all configuration inputs. This is
+  // the calc method for the corresponding cache entry. The entry *value* (the
+  // int) is strictly a dummy -- the value is unimportant; only the side effect
+  // matters.
+  void CalcConfigurationUpdate(const systems::Context<T>& context, int*) const;
 
   // Asserts the given source_id is registered, throwing an exception whose
   // message is the given message with the source_id appended if not.
@@ -958,6 +991,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.
   struct SourcePorts {
     int pose_port{-1};
+    int configuration_port{-1};
   };
 
   // A mapping from added source identifier to the port indices associated with
@@ -981,8 +1015,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // index.
   int geometry_state_index_{-1};
 
-  // The cache index for the pose update cache entry.
+  // The cache indices for the pose and configuration update cache entries.
   systems::CacheIndex pose_update_index_{};
+  systems::CacheIndex configuration_update_index_{};
 };
 
 }  // namespace geometry

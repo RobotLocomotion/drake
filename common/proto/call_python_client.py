@@ -184,7 +184,22 @@ def default_globals():
     import numpy as np
     from mpl_toolkits.mplot3d import Axes3D
     import matplotlib
-    import matplotlib.pyplot as plt
+    # On Ubuntu the Debian package python3-tk is a recommended (but not
+    # required) dependency of python3-matplotlib; help users understand that
+    # by providing a nicer message upon a failure to import.
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        if e.name == 'tkinter':
+            plt = None
+        else:
+            raise
+    if plt is None:
+        raise NotImplementedError(
+            "On Ubuntu when using the default pyplot configuration (i.e., the"
+            " TkAgg backend) you must 'sudo apt install python3-tk' to obtain"
+            " Tk support. Alternatively, you may set MPLBACKEND to something"
+            " else (e.g., Qt5Agg).")
     import pylab  # See `%pylab?` in IPython.
 
     # TODO(eric.cousineau): Where better to put this?
@@ -209,8 +224,7 @@ def default_globals():
 
     def box(bmin, bmax, rstride=1, cstride=1, **kwargs):
         """Plots a box bmin[i] <= x[i] <= bmax[i] for i < 3."""
-        fig = plt.gcf()
-        ax = fig.gca(projection='3d')
+        ax = plt.subplot(projection='3d')
         u = np.linspace(1, 9, 5) * np.pi / 4
         U, V = np.meshgrid(u, u)
         cx, cy, cz = (bmax + bmin) / 2
@@ -222,14 +236,12 @@ def default_globals():
 
     def plot3(x, y, z, **kwargs):
         """Plots a 3d line plot."""
-        fig = plt.gcf()
-        ax = fig.gca(projection='3d')
+        ax = plt.subplot(projection='3d')
         ax.plot(x, y, z, **kwargs)
 
     def sphere(n, rstride=1, cstride=1, **kwargs):
         """Plots a sphere."""
-        fig = plt.gcf()
-        ax = fig.gca(projection='3d')
+        ax = plt.subplot(projection='3d')
         u = np.linspace(0, np.pi, n)
         v = np.linspace(0, 2 * np.pi, n)
         X = np.outer(np.sin(u), np.sin(v))
@@ -239,8 +251,7 @@ def default_globals():
 
     def surf(x, y, Z, rstride=1, cstride=1, **kwargs):
         """Plots a 3d surface."""
-        fig = plt.gcf()
-        ax = fig.gca(projection='3d')
+        ax = plt.subplot(projection='3d')
         X, Y = np.meshgrid(x, y)
         ax.plot_surface(X, Y, Z, rstride=rstride, cstride=cstride, **kwargs)
 
@@ -400,7 +411,12 @@ class CallPythonClient:
         if function_name == "exec":
             assert len(inputs) == 1
             assert kwargs is None or len(kwargs) == 0
-            exec(inputs[0], self.scope_globals, self.scope_locals)
+            # Merge globals and locals so that any functions or lambdas can
+            # have closures that refer to locals. For more information, see
+            # https://stackoverflow.com/a/28951271/7829525
+            globals_and_locals = _merge_dicts(
+                self.scope_globals, self.scope_locals)
+            exec(inputs[0], globals_and_locals, self.scope_locals)
             out = None
         else:
             out = eval(function_name + "(*_tmp_args, **_tmp_kwargs)",

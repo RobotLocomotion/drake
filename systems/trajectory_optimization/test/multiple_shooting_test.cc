@@ -217,8 +217,8 @@ GTEST_TEST(MultipleShootingTest, PlaceholderVariableTest) {
   // Arbitrarily set the decision variable values to 0.
   result.set_decision_variable_index(prog.decision_variable_index());
   result.set_x_val(Eigen::VectorXd::Zero(prog.num_vars()));
-  EXPECT_THROW(result.GetSolution(t(0)), std::exception);
-  EXPECT_THROW(result.GetSolution(u), std::exception);
+  EXPECT_THROW(unused(result.GetSolution(t(0))), std::exception);
+  EXPECT_THROW(unused(result.GetSolution(u)), std::exception);
 }
 
 GTEST_TEST(MultipleShootingTest, PlaceholderVariableNames) {

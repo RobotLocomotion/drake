@@ -1,5 +1,6 @@
 #include "drake/geometry/render/render_camera.h"
 
+#include <cmath>
 #include <utility>
 
 #include <fmt/format.h>
@@ -12,10 +13,10 @@ using math::RigidTransformd;
 using systems::sensors::CameraInfo;
 
 ClippingRange::ClippingRange(double near, double far) : near_(near), far_(far) {
-  if (near <= 0 || far <= 0 || far <= near) {
+  if (near <= 0 || far <= 0 || far <= near || !std::isfinite(near + far)) {
     throw std::runtime_error(fmt::format(
-        "The clipping range values must both be positive and far must be "
-        "greater than near. Instantiated with near = {} and far = {}",
+        "The clipping range values must both be positive and finite and far "
+        "must be greater than near. Instantiated with near = {} and far = {}",
         near, far));
   }
 }
@@ -55,11 +56,12 @@ Eigen::Matrix4d RenderCameraCore::CalcProjectionMatrix() const {
 
 DepthRange::DepthRange(double min_in, double max_in)
     : min_depth_(min_in), max_depth_(max_in) {
-  if (min_depth_ <= 0 || max_depth_ <= 0 || max_depth_ <= min_depth_) {
+  if (min_in <= 0 || max_in <= 0 || max_in <= min_in ||
+      !std::isfinite(min_in + max_in)) {
     throw std::runtime_error(
-        fmt::format("The depth range values must both be positive and "
-                    "the maximum depth must be greater than the minimum depth. "
-                    "Instantiated with min = {} and max = {}",
+        fmt::format("The depth range values must both be positive and finite "
+                    "and the maximum depth must be greater than the minimum "
+                    "depth. Instantiated with min = {} and max = {}",
                     min_depth_, max_depth_));
   }
 }

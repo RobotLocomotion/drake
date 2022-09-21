@@ -1,0 +1,28 @@
+# Only ever uses the defaults.
+Defaults: {}
+
+# Has at least one example of every kind of top-level option.
+# The specific details of the sub-structs are tested elsewhere.
+OneOfEverything:
+  random_seed: 1
+  simulation_duration: 3.14
+  simulator_config:
+    target_realtime_rate: 5.0
+  plant_config:
+    stiction_tolerance: 1e-2
+  directives:
+  - add_model:
+      name: alice
+      file: package://drake/examples/pendulum/Pendulum.urdf
+  lcm_buses:
+    extra_bus: {}
+  model_drivers:
+    alice: !ZeroForceDriver {}
+  cameras:
+    arbitrary_camera_name:
+      name: camera_0
+  visualization:
+    lcm_bus: extra_bus
+    publish_period: 0.125
+    default_illustration_color:
+      rgba: [0.8, 0.8, 0.8]

@@ -3,18 +3,17 @@
 
 import atexit
 import os
+import pathlib
 import subprocess
 import sys
 import tarfile
 
-from collections import namedtuple
 from datetime import datetime, timezone
 
-from .common import die, gripe
+from .common import die, gripe, wheel_name
+from .common import resource_root, wheelhouse
 
-# Location of various scripts and other artifacts used to complete the build.
-# Must be set; normally by common.entry.
-resource_root = None
+from .linux_types import Platform, Role, Target, BUILD, TEST
 
 # Artifacts that need to be cleaned up. DO NOT MODIFY outside of this file.
 _files_to_remove = []
@@ -26,19 +25,32 @@ tag_base = 'pip-drake'
 # default, all targets are built, but the user may down-select from this set.
 # The platform alias is used for Docker tag names, and, when combined with the
 # Python version, must be unique.
-Target = namedtuple('Target', [
-    'python_version',
-    'platform_name',
-    'platform_version',
-    'platform_alias',
-])
 targets = (
-    Target('38', 'ubuntu', '20.04', 'focal'),
-    Target('39', 'ubuntu', '20.04', 'focal'),
+    Target(
+        build_platform=Platform('ubuntu', '20.04', 'focal'),
+        test_platform=None,
+        python_version_tuple=(3, 8)),
+    Target(
+        build_platform=Platform('ubuntu', '20.04', 'focal'),
+        test_platform=None,
+        python_version_tuple=(3, 9)),
+    Target(
+        build_platform=Platform('ubuntu', '20.04', 'focal'),
+        test_platform=Platform('ubuntu', '22.04', 'jammy'),
+        python_version_tuple=(3, 10, 6),
+        python_sha='f795ff87d11d4b0c7c33bc8851b0c28648d8a4583aa2100a98c22b4326b6d3f3'),  # noqa
 )
 glibc_versions = {
     'focal': '2_31',
 }
+
+
+def _path_depth(path):
+    """
+    Return the number of components (i.e. the "depth") of `path`.
+    """
+    offset = 1 if os.path.isabs(path) else 0  # Strip leading '/'.
+    return len(pathlib.Path(path).parts[offset:])
 
 
 def _docker(*args, pipe=False):
@@ -136,12 +148,12 @@ def _create_source_tar(path):
     out.close()
 
 
-def _tagname(target, tag_prefix):
+def _tagname(target: Target, role: Role, tag_prefix: str):
     """
     Generates a Docker tag name for a target and tag prefix.
     """
-    platform = target.platform_alias
-    return f'{tag_base}:{tag_prefix}-{platform}-py{target.python_version}'
+    platform = target.platform(role).alias
+    return f'{tag_base}:{tag_prefix}-{platform}-py{target.python_tag}'
 
 
 def _build_stage(target, args, tag_prefix, stage=None):
@@ -150,7 +162,7 @@ def _build_stage(target, args, tag_prefix, stage=None):
     """
 
     # Generate canonical tag from target.
-    tag = _tagname(target, tag_prefix)
+    tag = _tagname(target, BUILD, tag_prefix)
 
     # Generate extra arguments to specify what stage to build.
     if stage is not None:
@@ -165,17 +177,27 @@ def _build_stage(target, args, tag_prefix, stage=None):
     return tag
 
 
-def _target_args(target):
+def _target_args(target: Target, role: Role):
     """
     Returns the docker build arguments for the specified platform target.
     """
-    platform_name = target.platform_name
-    platform_version = target.platform_version
+    platform_name = target.platform(role).name
+    platform_version = target.platform(role).version
     python_version = target.python_version
+
+    if role == BUILD and target.python_sha is not None:
+        python_args = [
+            '--build-arg', f'PYTHON=build:{target.python_version_full}',
+            '--build-arg', f'PYTHON_SHA={target.python_sha}',
+        ]
+    else:
+        python_args = [
+            '--build-arg', f'PYTHON={python_version}',
+        ]
+
     return [
-        '--build-arg', f'PYTHON={python_version[0]}.{python_version[1:]}',
         '--build-arg', f'PLATFORM={platform_name}:{platform_version}',
-    ]
+    ] + python_args
 
 
 def _build_image(target, identifier, options):
@@ -185,7 +207,7 @@ def _build_image(target, identifier, options):
     args = [
         '--ssh', 'default',
         '--build-arg', f'DRAKE_VERSION={options.version}',
-    ] + _target_args(target)
+    ] + _target_args(target, BUILD)
     if not options.keep_containers:
         args.append('--force-rm')
 
@@ -204,11 +226,14 @@ def _build_image(target, identifier, options):
     if options.extract:
         print('[-] Extracting wheel(s) from', tag)
 
-        command = 'tar -cf - /opt/drake-wheel-build/wheel/wheelhouse/*.whl'
+        wheelhouse_parts = _path_depth(wheelhouse)
+        wheel_glob = os.path.join(wheelhouse, '*.whl')
+
+        command = f'tar -cf - {wheel_glob}'
         extractor = _docker(
             'run', '--rm', tag, 'bash', '-c', command, pipe=True)
         subprocess.check_call(
-            ['tar', '--strip-components=4', '-xvf', '-'],
+            ['tar', f'--strip-components={wheelhouse_parts}', '-xvf', '-'],
             stdin=extractor.stdout, cwd=options.output_dir)
 
         extractor_result = extractor.wait()
@@ -221,24 +246,26 @@ def _test_wheel(target, identifier, options):
     """
     Runs the test script for the wheel matching the specified target.
     """
-    vm = f'cp{target.python_version}'
-    glibc = glibc_versions[target.platform_alias]
-    wheel = f'drake-{options.version}-{vm}-{vm}-manylinux_{glibc}_x86_64.whl'
+    glibc = glibc_versions[target.platform(BUILD).alias]
+    wheel = wheel_name(python_version=target.python_tag,
+                       wheel_version=options.version,
+                       wheel_platform=f'manylinux_{glibc}_x86_64')
 
     if options.tag_stages:
-        container = _tagname(target, 'test')
+        container = _tagname(target, TEST, 'test')
     else:
-        container = _tagname(target, f'test-{identifier}')
+        container = _tagname(target, TEST, f'test-{identifier}')
     test_dir = os.path.join(resource_root, 'test')
 
-    _docker('build', '-t', container, *_target_args(target), test_dir)
+    _docker('build', '-t', container, *_target_args(target, TEST), test_dir)
     if not options.tag_stages:
         _images_to_remove.append(container)
 
+    test_script = '/test/test-wheel.sh'
     _docker('run', '--rm', '-t',
             '-v' f'{test_dir}:/test',
-            '-v' f'{options.output_dir}:/wheel',
-            container, '/test/test-wheel.sh', f'/wheel/{wheel}')
+            '-v' f'{options.output_dir}:{wheelhouse}',
+            container, test_script, os.path.join(wheelhouse, wheel))
 
 
 def build(options):
@@ -249,8 +276,8 @@ def build(options):
     # Collect set of wheels to be built.
     targets_to_build = []
     for t in targets:
-        if t.platform_name in options.platforms:
-            if t.python_version in options.python_versions:
+        if t.platform(BUILD).name in options.platforms:
+            if t.python_tag in options.python_versions:
                 targets_to_build.append(t)
 
     # Check if there is anything to do.
@@ -297,20 +324,20 @@ def add_selection_arguments(parser):
     """
     parser.add_argument(
         '--platform', dest='platforms',
-        default=','.join(set([t.platform_name for t in targets])),
+        default=','.join(set([t.platform(BUILD).name for t in targets])),
         help='platform(s) to build; separate with \',\''
              ' (default: %(default)s)')
     parser.add_argument(
         '--python', dest='python_versions', metavar='VERSIONS',
-        default=','.join(sorted(set([t.python_version for t in targets]))),
+        default=','.join(sorted(set([t.python_tag for t in targets]))),
         help='python version(s) to build; separate with \',\''
              ' (default: %(default)s)')
 
 
 def fixup_options(options):
     """
-    Validates options and applies any necessary transformations (e.g. parsing
-    strings into structured data).
+    Validates options and applies any necessary transformations.
+    (Converts comma-separated strings to sets.)
     """
     options.python_versions = set(options.python_versions.split(','))
     options.platforms = set(options.platforms.split(','))

@@ -72,6 +72,7 @@ class TestPerception(unittest.TestCase):
         pc.normals()
         pc.mutable_normal(i=0)
         pc.normal(i=0)
+        pc.FlipNormalsTowardPoint(p_CP=[0, 0, 1])
         self.check_array(pc.mutable_rgbs(), np.uint8, (3, count))
         pc.rgbs()
         pc.mutable_rgb(i=0)
@@ -81,6 +82,22 @@ class TestPerception(unittest.TestCase):
             mut.PointCloud(new_size=0, fields=mut.Fields(mut.BaseField.kNone))
         # Test Systems' value registration.
         self.assertIsInstance(AbstractValue.Make(pc), Value[mut.PointCloud])
+
+        pc = mut.PointCloud(new_size=2, fields=mut.Fields(mut.BaseField.kXYZs))
+        test_xyzs = [[1., 2., 3.], [4., 5., 6.]]
+        pc.mutable_xyzs().T[:] = test_xyzs
+        crop = pc.Crop(lower_xyz=[3, 4, 5], upper_xyz=[5, 6, 7])
+        self.assertEqual(crop.size(), 1)
+
+        pc_merged = mut.Concatenate(clouds=[pc, pc_new])
+        self.assertEqual(pc_merged.size(), pc.size() + pc_new.size())
+
+        pc_downsampled = pc_merged.VoxelizedDownSample(voxel_size=2.0)
+        self.assertIsInstance(pc_downsampled, mut.PointCloud)
+
+        self.assertFalse(pc_merged.has_normals())
+        pc_merged.EstimateNormals(radius=1, num_closest=50)
+        self.assertTrue(pc_merged.has_normals())
 
     def test_depth_image_to_point_cloud_api(self):
         camera_info = CameraInfo(width=640, height=480, fov_y=np.pi / 4)

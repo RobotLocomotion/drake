@@ -27,6 +27,8 @@ drake_cc_package_library(
         ":accelerometer",
         ":beam_model",
         ":beam_model_params",
+        ":camera_config",
+        ":camera_config_functions",
         ":camera_info",
         ":color_palette",
         ":gyroscope",
@@ -39,6 +41,7 @@ drake_cc_package_library(
         ":optitrack_sender",
         ":rgbd_sensor",
         ":rotary_encoders",
+        ":sim_rgbd_sensor",
     ],
 )
 
@@ -68,6 +71,38 @@ drake_cc_library(
         ":beam_model_params",
         "//common:unused",
         "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "camera_config",
+    srcs = ["camera_config.cc"],
+    hdrs = ["camera_config.h"],
+    deps = [
+        ":camera_info",
+        "//common:name_value",
+        "//common/schema:transform",
+        "//geometry:rgba",
+        "//geometry/render:render_camera",
+    ],
+)
+
+drake_cc_library(
+    name = "camera_config_functions",
+    srcs = ["camera_config_functions.cc"],
+    hdrs = ["camera_config_functions.h"],
+    deps = [
+        ":camera_config",
+        ":camera_info",
+        ":rgbd_sensor",
+        ":sim_rgbd_sensor",
+        "//geometry:scene_graph",
+        "//geometry/render_vtk",
+        "//lcm:interface",
+        "//math:geometric_transform",
+        "//multibody/parsing:scoped_names",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
     ],
 )
 
@@ -110,7 +145,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:reset_after_move",
-        "//common:symbolic",
+        "//common/symbolic:expression",
     ],
 )
 
@@ -251,6 +286,20 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "sim_rgbd_sensor",
+    srcs = ["sim_rgbd_sensor.cc"],
+    hdrs = ["sim_rgbd_sensor.h"],
+    deps = [
+        ":image_to_lcm_image_array_t",
+        ":rgbd_sensor",
+        "//lcm",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_publisher_system",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -279,10 +328,33 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "camera_config_test",
+    deps = [
+        ":camera_config",
+        "//common/schema:transform",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/yaml:yaml_io",
+        "//geometry/render_gl",
+        "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "camera_config_functions_test",
+    deps = [
+        ":camera_config_functions",
+        "//common/test_utilities:expect_throws_message",
+        "//common/yaml:yaml_io",
+    ],
+)
+
+drake_cc_googletest(
     name = "camera_info_test",
     deps = [
         ":camera_info",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -370,6 +442,21 @@ drake_cc_googletest(
     deps = [
         ":optitrack_sender",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sim_rgbd_sensor_test",
+    deps = [
+        ":image_to_lcm_image_array_t",
+        ":rgbd_sensor",
+        ":sim_rgbd_sensor",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//lcm:drake_lcm",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_publisher_system",
+        "@fmt",
     ],
 )
 

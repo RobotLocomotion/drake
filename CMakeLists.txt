@@ -24,12 +24,6 @@ if(ANDROID OR CYGWIN OR IOS OR NOT UNIX)
   )
 endif()
 
-if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
-  message(FATAL_ERROR
-    "System processor ${CMAKE_SYSTEM_PROCESSOR} is NOT supported"
-  )
-endif()
-
 set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
@@ -81,10 +75,10 @@ else()
 
   # The supported releases should match those listed in both
   # doc/_pages/from_source.md and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(focal)$")
+  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(focal|jammy)$")
     message(FATAL_ERROR
       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-      "Ubuntu 20.04 (Focal)."
+      "Ubuntu 20.04 (Focal) or Ubuntu 22.04 (Jammy)."
     )
   endif()
 endif()
@@ -108,9 +102,8 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
-# TODO(jwnimmer-tri) Set MINIMUM_CLANG_VERSION=12 on 2022-09-01.
 set(MINIMUM_APPLE_CLANG_VERSION 12)
-set(MINIMUM_CLANG_VERSION 9)
+set(MINIMUM_CLANG_VERSION 12)
 set(MINIMUM_GNU_VERSION 9.3)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
@@ -209,9 +202,13 @@ set(CMAKE_CXX_STANDARD 17)
 # The supported Python major/minor versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/python/repository.bzl.
 if(APPLE)
-  set(SUPPORTED_PYTHON_VERSION 3.9)
+  set(SUPPORTED_PYTHON_VERSION 3.10)
 else()
-  set(SUPPORTED_PYTHON_VERSION 3.8)
+  if(UNIX_DISTRIBUTION_CODENAME STREQUAL focal)
+    set(SUPPORTED_PYTHON_VERSION 3.8)
+  else()  # UNIX_DISTRIBUTION_CODENAME := jammy
+    set(SUPPORTED_PYTHON_VERSION 3.10)
+  endif()
 endif()
 
 if(APPLE)

@@ -65,6 +65,7 @@ drake_py_unittest(
         ":allegro_single_object_simulation",
         ":run_twisting_mug",
     ],
+    flaky = True,
 )
 
 add_lint_tests()

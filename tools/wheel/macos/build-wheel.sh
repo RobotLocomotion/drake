@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-# This script builds a wheel on macOS. It requires an already-provisioned host.
+# This script builds a wheel on macOS. It can be run directly, but using the
+# //tools/wheel:builder Bazel action adds functionality. Running this script
+# directly also requires an already-provisioned host.
 #
 # Beware that this requires write permission to /opt and will nuke various
 # things therein. (Shouldn't affect ARM Homebrew, though.)
@@ -18,12 +20,12 @@ readonly git_root="$(
 )"
 
 build_deps=1
-if [ "$1" == "--no-deps" ]; then
+if [[ "$1" == "--no-deps" ]]; then
     build_deps=
     shift 1
 fi
 
-if [ $# -lt 1 ]; then
+if [[ $# -lt 1 ]]; then
     echo "Usage: $0 <drake-version>" >&2
     exit 1
 fi
@@ -33,16 +35,7 @@ fi
 # -----------------------------------------------------------------------------
 
 rm -rf "/opt/drake-wheel-build/wheel"
-
-if [ -d /opt/drake ]; then
-    # We need to ensure there are no remnants of a prior build, but CI creates
-    # a wheel output directory in /opt/drake that we don't have permission to
-    # remove. Thus, we have to get a little creative...
-    find /opt/drake \
-        \! -path /opt/drake/wheelhouse \
-        \! -path /opt/drake \
-        -delete
-fi
+rm -rf "/opt/drake"
 
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
@@ -66,7 +59,7 @@ export SDKROOT="$(xcrun --show-sdk-path)"
 # Build Drake's dependencies.
 # -----------------------------------------------------------------------------
 
-if [ -n "$build_deps" ]; then
+if [[ -n "$build_deps" ]]; then
     rm -rf /opt/drake-dependencies
 
     rm -rf "/opt/drake-wheel-build/dependencies"

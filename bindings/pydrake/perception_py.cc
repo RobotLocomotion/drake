@@ -118,10 +118,20 @@ void init_perception(py::module m) {
             [](PointCloud* self, const PointCloud& other) {
               self->SetFrom(other);
             },
-            py::arg("other"), cls_doc.SetFrom.doc);
+            py::arg("other"), cls_doc.SetFrom.doc)
+        .def("Crop", &Class::Crop, py::arg("lower_xyz"), py::arg("upper_xyz"),
+            cls_doc.Crop.doc)
+        .def("FlipNormalsTowardPoint", &Class::FlipNormalsTowardPoint,
+            py::arg("p_CP"), cls_doc.FlipNormalsTowardPoint.doc)
+        .def("VoxelizedDownSample", &Class::VoxelizedDownSample,
+            py::arg("voxel_size"), cls_doc.VoxelizedDownSample.doc)
+        .def("EstimateNormals", &Class::EstimateNormals, py::arg("radius"),
+            py::arg("num_closest"), cls_doc.EstimateNormals.doc);
   }
 
   AddValueInstantiation<PointCloud>(m);
+
+  m.def("Concatenate", &Concatenate, py::arg("clouds"), doc.Concatenate.doc);
 
   {
     using Class = DepthImageToPointCloud;

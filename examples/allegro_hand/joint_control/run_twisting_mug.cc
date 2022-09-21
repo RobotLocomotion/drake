@@ -10,6 +10,8 @@
 /// has finished the current motion, either by reaching the target position or
 /// get stuck by collisions.
 
+#include <iostream>
+
 #include "lcm/lcm-cpp.hpp"
 #include <Eigen/Dense>
 #include <gflags/gflags.h>

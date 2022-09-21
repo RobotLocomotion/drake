@@ -60,10 +60,12 @@ drake_cc_library(
     name = "affine_system",
     srcs = ["affine_system.cc"],
     hdrs = ["affine_system.h"],
-    deps = [
-        "//common:symbolic",
-        "//common:symbolic_decompose",
+    interface_deps = [
+        "//common/symbolic:expression",
         "//systems/framework",
+    ],
+    deps = [
+        "//common/symbolic:polynomial",
     ],
 )
 
@@ -165,11 +167,13 @@ drake_cc_library(
     name = "linear_system",
     srcs = ["linear_system.cc"],
     hdrs = ["linear_system.h"],
-    deps = [
+    interface_deps = [
         ":affine_system",
         "//common:essential",
-        "//common:symbolic",
-        "//common:symbolic_decompose",
+        "//common/symbolic:expression",
+    ],
+    deps = [
+        "//common/symbolic:polynomial",
         "//math:autodiff",
         "//math:gradient",
         "//systems/framework",
@@ -249,7 +253,6 @@ drake_cc_library(
     srcs = ["saturation.cc"],
     hdrs = ["saturation.h"],
     deps = [
-        "//math:saturate",
         "//systems/framework",
     ],
 )
@@ -270,7 +273,6 @@ drake_cc_library(
     hdrs = ["symbolic_vector_system.h"],
     deps = [
         "//common:default_scalars",
-        "//common:symbolic",
         "//math:gradient",
         "//systems/framework",
     ],
@@ -629,12 +631,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "sine_test",
-    srcs = [
-        "test/sine_test.cc",
-    ],
     deps = [
         ":sine",
-        "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework",

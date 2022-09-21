@@ -4,6 +4,7 @@ from pydrake.multibody.parsing import (
     Parser,
     PackageMap,
     LoadModelDirectives,
+    LoadModelDirectivesFromString,
     ProcessModelDirectives,
     ModelInstanceInfo,
     AddFrame,
@@ -117,29 +118,60 @@ class TestParsing(unittest.TestCase):
         match = re.match(pattern, message)
         self.assertTrue(match, f'"{message}" does not match "{pattern}"')
 
-    def test_model_directives(self):
-        model_dir = os.path.dirname(FindResourceOrThrow(
-            "drake/multibody/parsing/test/"
-            "process_model_directives_test/package.xml"))
-        plant = MultibodyPlant(time_step=0.01)
-        parser = Parser(plant=plant)
-        parser.package_map().PopulateFromFolder(model_dir)
-        directives_file = model_dir + "/add_scoped_top.yaml"
-        directives = LoadModelDirectives(directives_file)
-        added_models = ProcessModelDirectives(
-            directives=directives, plant=plant, parser=parser)
-        # Check for an instance.
-        model_names = [model.model_name for model in added_models]
-        self.assertIn("extra_model", model_names)
-        plant.GetModelInstanceByName("extra_model")
-        # Test that other bound symbols exist.
+    def test_model_instance_info(self):
+        """Checks that ModelInstanceInfo bindings exist."""
         ModelInstanceInfo.model_name
         ModelInstanceInfo.model_path
         ModelInstanceInfo.parent_frame_name
         ModelInstanceInfo.child_frame_name
         ModelInstanceInfo.X_PC
         ModelInstanceInfo.model_instance
+
+    def test_add_frame(self):
+        """Checks that AddFrame bindings exist."""
         AddFrame.name
         AddFrame.X_PF
+
+    def test_scoped_frame_names(self):
+        plant = MultibodyPlant(time_step=0.01)
         frame = GetScopedFrameByName(plant, "world")
         self.assertIsNotNone(GetScopedFrameName(plant, frame))
+
+    def _make_plant_parser_directives(self):
+        """Returns a tuple (plant, parser, directives) for later testing."""
+        model_dir = os.path.dirname(FindResourceOrThrow(
+            "drake/multibody/parsing/test/"
+            "process_model_directives_test/package.xml"))
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        parser.package_map().PopulateFromFolder(model_dir)
+        directives_file = model_dir + "/add_scoped_top.dmd.yaml"
+        directives = LoadModelDirectives(directives_file)
+        return (plant, parser, directives)
+
+    def test_load_model_directives_from_string(self):
+        str = """
+directives:
+- add_model:
+    name: new_model
+    file: base.sdf
+"""
+        LoadModelDirectivesFromString(model_directives=str)
+
+    def test_process_model_directives(self):
+        """Check the Process... overload using a Parser."""
+        (plant, parser, directives) = self._make_plant_parser_directives()
+        added_models = ProcessModelDirectives(
+            directives=directives, parser=parser)
+        model_names = [model.model_name for model in added_models]
+        self.assertIn("extra_model", model_names)
+        plant.GetModelInstanceByName("extra_model")
+
+    def test_process_model_directives_dispreferred(self):
+        """Check the Process... overload that also passes a MbP."""
+        (plant, parser, directives) = self._make_plant_parser_directives()
+        added_models = ProcessModelDirectives(
+            directives=directives, plant=plant, parser=parser)
+        model_names = [model.model_name for model in added_models]
+        self.assertIn("extra_model", model_names)
+        plant.GetModelInstanceByName("extra_model")

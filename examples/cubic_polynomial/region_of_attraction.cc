@@ -8,9 +8,11 @@
 // example.
 
 #include <cmath>
-#include <ostream>
+#include <iostream>
 
-#include "drake/common/symbolic.h"
+#include <gflags/gflags.h>
+
+#include "drake/common/symbolic/polynomial.h"
 #include "drake/common/unused.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
@@ -91,7 +93,9 @@ void ComputeRegionOfAttraction() {
 }
 }  // namespace drake
 
-int main() {
+int main(int argc, char* argv[]) {
+  // Process the add_text_logging_gflags from our BUILD file.
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::ComputeRegionOfAttraction();
   return 0;
 }

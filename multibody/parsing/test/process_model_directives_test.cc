@@ -1,6 +1,8 @@
 #include "drake/multibody/parsing/process_model_directives.h"
 
+#include <fstream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 
 #include <gtest/gtest.h>
@@ -11,6 +13,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/revolute_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -72,7 +75,7 @@ void VerifyCollisionFilters(
 // Simple smoke test of the most basic model directives.
 GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
   ModelDirectives station_directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.dmd.yaml"));
   const MultibodyPlant<double> empty_plant(0.0);
 
   MultibodyPlant<double> plant(0.0);
@@ -92,11 +95,58 @@ GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
   EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame_explicit"));
 }
 
+// Smoke test of the most basic model directives, now loading from string.
+GTEST_TEST(ProcessModelDirectivesTest, FromString) {
+  std::ifstream file_stream(
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.dmd.yaml"));
+  std::stringstream yaml;
+  yaml << file_stream.rdbuf();
+  ModelDirectives station_directives =
+      LoadModelDirectivesFromString(yaml.str());
+
+  const MultibodyPlant<double> empty_plant(0.0);
+
+  MultibodyPlant<double> plant(0.0);
+  ProcessModelDirectives(station_directives, &plant,
+                         nullptr, make_parser(&plant).get());
+  plant.Finalize();
+
+  // Expect the two model instances added by the directives.
+  EXPECT_EQ(plant.num_model_instances() - empty_plant.num_model_instances(), 2);
+
+  // Expect the two bodies added by the directives.
+  EXPECT_EQ(plant.num_bodies() - empty_plant.num_bodies(), 2);
+
+  // A great many frames are added in model directives processing, but we
+  // should at least expect that our named ones are present.
+  EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame"));
+  EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame_explicit"));
+}
+
+// Simple smoke test of the simpler function signature.
+GTEST_TEST(ProcessModelDirectivesTest, SugarSmokeTest) {
+  const ModelDirectives station_directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.dmd.yaml"));
+
+  MultibodyPlant<double> plant(0.0);
+  std::vector<ModelInstanceInfo> added_models =
+      ProcessModelDirectives(station_directives, make_parser(&plant).get());
+  plant.Finalize();
+
+  // Check that the directives were loaded.
+  EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame"));
+
+  // Check that the added models were returned.
+  ASSERT_EQ(added_models.size(), 2);
+  EXPECT_EQ(added_models[0].model_name, "simple_model");
+  EXPECT_EQ(added_models[1].model_name, "extra_model");
+}
+
 // Acceptance tests for the ModelDirectives name scoping, including acceptance
 // testing its interaction with SceneGraph.
 GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
   ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_top.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_top.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
@@ -140,8 +190,8 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
 // Tests for frames added without a model name, but different base_frame.
 GTEST_TEST(ProcessModelDirectivesTest, AddFrameWithoutScope) {
   ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(
-          std::string(kTestDir) + "/add_frame_without_model_namespace.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/add_frame_without_model_namespace.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
@@ -168,7 +218,8 @@ GTEST_TEST(ProcessModelDirectivesTest, AddFrameWithoutScope) {
 // Test backreference behavior in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, TestBackreferences) {
   ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) + "/test_backreferences.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/test_backreferences.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
@@ -194,7 +245,7 @@ GTEST_TEST(ProcessModelDirectivesTest, TestBackreferences) {
 // Test frame injection in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
   ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) + "/inject_frames.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) + "/inject_frames.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
@@ -218,19 +269,21 @@ GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
       .CalcPoseInWorld(*context)
       .translation()
       .isApprox(Vector3d(1, 2, 3)));
+  // This transform includes the translation from the parent frame to the world
+  // and from the parent frame to the child frame (via add_weld::X_PC).
   EXPECT_TRUE(plant
       .GetFrameByName("base",
                       plant.GetModelInstanceByName("bottom_level_model"))
       .CalcPoseInWorld(*context)
       .translation()
-      .isApprox(Vector3d(2, 4, 6)));
+      .isApprox(Vector3d(6, 9, 12)));
 }
 
 // Test collision filter groups in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
   ModelDirectives directives = LoadModelDirectives(
       FindResourceOrThrow(std::string(kTestDir) +
-                          "/collision_filter_group.yaml"));
+                          "/collision_filter_group.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
@@ -258,6 +311,31 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
   VerifyCollisionFilters(scene_graph, expected_filters);
 }
 
+// Test collision filter groups in ModelDirectives.
+GTEST_TEST(ProcessModelDirectivesTest, DefaultPositions) {
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/default_positions.dmd.yaml"));
+
+  MultibodyPlant<double> plant(0);
+  ProcessModelDirectives(directives, &plant, nullptr,
+                         make_parser(&plant).get());
+  plant.Finalize();
+
+  auto context = plant.CreateDefaultContext();
+  const math::RigidTransformd X_WB(
+      math::RollPitchYawd(5 * M_PI / 180, 6 * M_PI / 180, 7 * M_PI / 180),
+      Eigen::Vector3d(1, 2, 3));
+  EXPECT_TRUE(plant.GetFreeBodyPose(*context, plant.GetBodyByName("base"))
+                  .IsNearlyEqualTo(X_WB, 1e-14));
+  EXPECT_EQ(
+      plant.GetJointByName<RevoluteJoint>("ShoulderJoint").get_angle(*context),
+      0.1);
+  EXPECT_EQ(
+      plant.GetJointByName<RevoluteJoint>("ElbowJoint").get_angle(*context),
+      0.2);
+}
+
 // Make sure we have good error messages.
 GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
   // When the user gives a bogus filename, at minimum we must echo it back to
@@ -265,6 +343,18 @@ GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       LoadModelDirectives("no-such-file.yaml"),
       ".*no-such-file.yaml.*");
+
+  // User specifies a package that hasn't been properly registered.
+  {
+    MultibodyPlant<double> plant(0.0);
+    ModelDirectives directives = LoadModelDirectives(
+        FindResourceOrThrow(std::string(kTestDir) +
+                            "/bad_package_uri.dmd.yaml"));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ProcessModelDirectives(directives, &plant, nullptr,
+                               make_parser(&plant).get()),
+        ".*unknown package 'nonexistant'.*");
+  }
 }
 
 }  // namespace

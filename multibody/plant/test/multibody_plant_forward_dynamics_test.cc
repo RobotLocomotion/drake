@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/systems/framework/context.h"
@@ -10,6 +11,7 @@
 
 using drake::math::RigidTransformd;
 using drake::systems::Context;
+using drake::test::LimitMalloc;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
@@ -180,7 +182,15 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
   plant.get_actuation_input_port(atlas_instance)
       .FixValue(context.get(), VectorX<double>::Zero(num_actuators));
   auto derivatives = plant.AllocateTimeDerivatives();
-  EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, derivatives.get()));
+  {
+    // CalcTimeDerivatives should not be allocating, but for now we have a few
+    // remaining fixes before it's down to zero:
+    //  2 temps in MbTS::CalcArticulatedBodyForceCache (F_B_W_, tau_).
+    //  1 temp  in MbP::AssembleActuationInput (actuation_input).
+    //  2 temps in MbTS::DoCalcTimeDerivatives (xdot, qdot).
+    LimitMalloc guard({ .max_num_allocations = 5 });
+    EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, derivatives.get()));
+  }
 
   // Verify that the implicit dynamics match the continuous ones.
   Eigen::VectorXd residual = plant.AllocateImplicitTimeDerivativesResidual();

@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/name_value.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/rgba.h"
@@ -21,6 +22,16 @@ namespace geometry {
 
 /** The set of parameters for configuring Meshcat. */
 struct MeshcatParams {
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(host));
+    a->Visit(DRAKE_NVP(port));
+    a->Visit(DRAKE_NVP(web_url_pattern));
+    a->Visit(DRAKE_NVP(show_stats_plot));
+  }
+
   /** Meshcat will listen only on the given hostname (e.g., "localhost").
   If "*" is specified, then it will listen on all interfaces.
   If empty, an appropriate default value will be chosen (currently "*"). */
@@ -47,6 +58,11 @@ struct MeshcatParams {
     "all interfaces".
   */
   std::string web_url_pattern{"http://{host}:{port}"};
+
+  /** Determines whether or not to display the stats plot widget in the Meshcat
+  user interface. This plot including realtime rate and WebGL render
+  statistics. */
+  bool show_stats_plot{true};
 };
 
 /** Provides an interface to %Meshcat (https://github.com/rdeits/meshcat).
@@ -232,14 +248,13 @@ class Meshcat {
                        double line_width = 1.0,
                        const Rgba& rgba = Rgba(0.1, 0.1, 0.1, 1.0));
 
-  // TODO(russt): Support per-vertex coloring (maybe rgba as std::variant).
   /** Sets the "object" at `path` in the scene tree to a triangular mesh.
 
   @param path a "/"-delimited string indicating the path in the scene tree. See
               @ref meshcat_path "Meshcat paths" for the semantics.
   @param vertices is a 3-by-N matrix of 3D point defining the vertices of the
                   mesh.
-  @param faces is a 3-by-N integer matrix with each entry denoting an index
+  @param faces is a 3-by-M integer matrix with each entry denoting an index
                into vertices and each column denoting one face (aka
                SurfaceTriangle).
   @param rgba is the mesh face or wireframe color.
@@ -255,6 +270,30 @@ class Meshcat {
                        bool wireframe = false,
                        double wireframe_line_width = 1.0);
 
+  /** Sets the "object" at `path` in the scene tree to a triangular mesh with
+      per-vertex coloring.
+
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param vertices is a 3-by-N matrix of 3D point defining the vertices of the
+                  mesh.
+  @param faces is a 3-by-M integer matrix with each entry denoting an index
+               into vertices and each column denoting one face (aka
+               SurfaceTriangle).
+  @param colors is a 3-by-N matrix of color values, one color per vertex of the
+                mesh.
+  @param wireframe if "true", then only the triangle edges are visualized, not
+                   the faces.
+  @param wireframe_line_width is the width in pixels.  Due to limitations in
+                              WebGL implementations, the line width may be 1
+                              regardless of the set value. */
+  void SetTriangleColorMesh(std::string_view path,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                       const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
+                       bool wireframe = false,
+                       double wireframe_line_width = 1.0);
+
   // TODO(russt): Provide a more general SetObject(std::string_view path,
   // msgpack::object object) that would allow users to pass through anything
   // that meshcat.js / three.js can handle.  Possible this could use
@@ -263,6 +302,17 @@ class Meshcat {
   /** Properties for a perspective camera in three.js:
    https://threejs.org/docs/#api/en/cameras/PerspectiveCamera */
   struct PerspectiveCamera {
+    /** Passes this object to an Archive.
+    Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(fov));
+      a->Visit(DRAKE_NVP(aspect));
+      a->Visit(DRAKE_NVP(near));
+      a->Visit(DRAKE_NVP(far));
+      a->Visit(DRAKE_NVP(zoom));
+    }
+
     double fov{75};    ///< Camera frustum vertical field of view.
     double aspect{1};  ///< Camera frustum aspect ratio.
     double near{.01};  ///< Camera frustum near plane.
@@ -282,6 +332,19 @@ class Meshcat {
   /** Properties for an orthographic camera in three.js:
    https://threejs.org/docs/#api/en/cameras/OrthographicCamera */
   struct OrthographicCamera {
+    /** Passes this object to an Archive.
+    Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(left));
+      a->Visit(DRAKE_NVP(right));
+      a->Visit(DRAKE_NVP(top));
+      a->Visit(DRAKE_NVP(bottom));
+      a->Visit(DRAKE_NVP(near));
+      a->Visit(DRAKE_NVP(far));
+      a->Visit(DRAKE_NVP(zoom));
+    }
+
     double left{-1};     ///< Camera frustum left plane.
     double right{1};     ///< Camera frustum right plane.
     double top{-1};      ///< Camera frustum top plane.
@@ -352,6 +415,16 @@ class Meshcat {
   /** Deletes the object at the given `path` as well as all of its children.
   See @ref meshcat_path for the detailed semantics of deletion. */
   void Delete(std::string_view path = "");
+
+  // TODO(#16486): add low-pass filter to smooth the Realtime plot
+  /** Sets the realtime rate that is displayed in the meshcat visualizer stats
+   strip chart. This rate is the ratio between sim time and real
+   world time. 1 indicates the simulator is the same speed as real time. 2
+   indicates running twice as fast as real time, 0.5 is half speed, etc.
+  @see drake::systems::Simulator::set_target_realtime_rate()
+  @param rate the realtime rate value to be displayed, will be converted to a
+  percentage (multiplied by 100) */
+  void SetRealtimeRate(double rate);
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim

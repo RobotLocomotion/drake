@@ -4,16 +4,15 @@ title: Running Drake on macOS ARM hardware via Rosetta 2
 
 # Overview
 
-Building or running Drake directly on arm64 is not yet supported; plans
-for any future arm64 support on macOS and/or Ubuntu are discussed in
-[issue #13514](https://github.com/RobotLocomotion/drake/issues/13514).
-
-In the meantime, running Drake using Apple's x86_64 emulation should work.
+For users running on Apple's newer arm64 hardware, to use Drake's pre-compiled
+releases you must run Drake's x86_64 binaries using Apple's Rosetta 2 emulation.
+Running natively on arm64 is currently only supported by [building Drake from
+source](/from_source.html).
 
 # Instructions
 
-To use Drake on Apple's newer ARM hardware, **you must do all of your work in
-an x86_64 shell**:
+To run pre-compiled Drake on Apple's newer arm64 hardware, **you must do all of
+your work in an x86_64 shell**:
 
 1. Use ``arch -x86_64 /bin/bash`` to obtain a shell.
 1. In that shell, run ``arch`` (with no arguments).

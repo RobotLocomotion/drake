@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -163,6 +164,19 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   EXPECT_TRUE(CompareMatrices(
       Nplus_x_N, MatrixX<double>::Identity(6, 6),
       kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(QuaternionFloatingMobilizerTest, CheckExceptionMessage) {
+  const Quaterniond quaternion(0, 0, 0, 0);
+  mobilizer_->set_quaternion(context_.get(), quaternion);
+
+  const Vector3d position(0, 0, 0);
+  mobilizer_->set_position(context_.get(), position);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      mobilizer_->CalcAcrossMobilizerTransform(*context_),
+      "QuaternionToRotationMatrix\\(\\):"
+      " All the elements in a quaternion are zero\\.");
 }
 
 }  // namespace

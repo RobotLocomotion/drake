@@ -55,7 +55,8 @@ def _make_result(
         macos_release = None,
         ubuntu_release = None,
         is_wheel = False,
-        homebrew_prefix = None):
+        homebrew_prefix = None,
+        macos_arch_result = None):
     """Return a fully-populated struct result for determine_os, below."""
     is_macos = (macos_release != None) and not is_wheel
     is_macos_wheel = (macos_release != None) and is_wheel
@@ -81,6 +82,7 @@ def _make_result(
         ubuntu_release = ubuntu_release,
         macos_release = macos_release,
         homebrew_prefix = homebrew_prefix,
+        macos_arch_result = macos_arch_result,
     )
 
 def _determine_linux(repository_ctx):
@@ -169,7 +171,8 @@ def _determine_macos(repository_ctx):
 
     # Check which arch we should be using.
     arch_result = exec_using_which(repository_ctx, ["/usr/bin/arch"])
-    if arch_result.stdout.strip() == "arm64":
+    macos_arch_result = arch_result.stdout.strip()
+    if macos_arch_result == "arm64":
         homebrew_prefix = "/opt/homebrew"
     else:
         homebrew_prefix = "/usr/local"
@@ -178,8 +181,9 @@ def _determine_macos(repository_ctx):
     if macos_release in ["11", "12"]:
         return _make_result(
             macos_release = macos_release,
-            homebrew_prefix = homebrew_prefix,
             is_wheel = is_macos_wheel,
+            homebrew_prefix = homebrew_prefix,
+            macos_arch_result = macos_arch_result,
         )
 
     # Nothing matched.

@@ -40,7 +40,7 @@ GTEST_TEST(TestVectorLogSink, LogFinders) {
             &(dut->FindMutableLog(diagram_context.get())));
 
   DRAKE_EXPECT_THROWS_MESSAGE(dut->GetLog(*diagram_context),
-                              ".*Context was not created for.*");
+                              ".*was passed the root Diagram's Context[^]*");
   DRAKE_EXPECT_THROWS_MESSAGE(dut->FindLog(logger_context),
                               ".*given context must be a root context.*");
 }
@@ -59,9 +59,9 @@ GTEST_TEST(TestVectorLogSink, LogFindersWrongContext) {
 
   // Both access methods fail context validation.
   DRAKE_EXPECT_THROWS_MESSAGE(dut->GetLog(*wrong_diagram_context),
-                              ".*Context was not created for.*");
+                              ".*was passed the Context of .+ instead[^]*");
   DRAKE_EXPECT_THROWS_MESSAGE(dut->FindLog(*wrong_diagram_context),
-                              ".*Context was not created for.*");
+                              ".*was passed the Context of .+ instead[^]*");
 }
 
 // Log the output of a simple linear system (with a known solution).

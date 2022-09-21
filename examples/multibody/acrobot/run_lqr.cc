@@ -4,9 +4,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -14,13 +12,14 @@
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/affine_system.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 
 using geometry::SceneGraph;
-using lcm::DrakeLcm;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
+using multibody::AddMultibodyPlantSceneGraph;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::JointActuator;
@@ -95,19 +94,15 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
-  scene_graph.set_name("scene_graph");
-
   const double time_step = FLAGS_time_stepping ? 1.0e-3 : 0.0;
+  auto [acrobot, scene_graph] =
+      AddMultibodyPlantSceneGraph(&builder, time_step);
 
   // Make and add the acrobot model.
   const std::string relative_name =
       "drake/multibody/benchmarks/acrobot/acrobot.sdf";
   const std::string full_name = FindResourceOrThrow(relative_name);
-  MultibodyPlant<double>& acrobot =
-      *builder.AddSystem<MultibodyPlant>(time_step);
-
-  Parser parser(&acrobot, &scene_graph);
+  Parser parser(&acrobot);
   parser.AddModelFromFile(full_name);
 
   // We are done defining the model.
@@ -137,14 +132,7 @@ int do_main() {
   builder.Connect(controller->get_output_port(),
                   acrobot.get_actuation_input_port());
 
-  // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(acrobot.get_source_id().has_value());
-
-  builder.Connect(
-      acrobot.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(acrobot.get_source_id().value()));
-
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
+  visualization::AddDefaultVisualization(&builder);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

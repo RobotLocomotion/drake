@@ -7,7 +7,9 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/extract_double.h"
 #include "drake/math/linear_solve.h"
+#include "drake/multibody/contact_solvers/newton_with_bisection.h"
 #include "drake/multibody/contact_solvers/supernodal_solver.h"
 
 namespace drake {
@@ -81,11 +83,20 @@ void SapSolver<T>::CalcStoppingCriteriaResidual(const Context<T>& context,
 }
 
 template <typename T>
-SapSolverStatus SapSolver<T>::SolveWithGuess(const SapContactProblem<T>&,
-                                             const VectorX<T>&,
-                                             SapSolverResults<T>*) {
+SapSolverStatus SapSolver<T>::SolveWithGuess(
+    const SapContactProblem<T>& problem, const VectorX<T>&,
+    SapSolverResults<T>* results) {
+  if (problem.num_constraints() == 0) {
+    // In the absence of constraints the solution is trivially v = v*.
+    results->Resize(problem.num_velocities(),
+                    problem.num_constraint_equations());
+    results->v = problem.v_star();
+    results->j.setZero();
+    return SapSolverStatus::kSuccess;
+  }
   throw std::logic_error(
-      "SapSolver::SolveWithGuess(): Only T = double is supported.");
+      "SapSolver::SolveWithGuess(): Only T = double is supported when the set "
+      "of constraints is non-empty.");
 }
 
 template <>
@@ -128,8 +139,11 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
 
   // Start Newton iterations.
   int k = 0;
-  double ell_previous = model_->EvalCost(*context);
+  double ell = model_->EvalCost(*context);
+  double ell_previous = ell;
   bool converged = false;
+  double alpha = 1.0;
+  int num_line_search_iters = 0;
   for (;; ++k) {
     // We first verify the stopping criteria. If satisfied, we skip expensive
     // factorizations.
@@ -138,6 +152,8 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
     stats_.optimality_criterion_reached =
         momentum_residual <=
         parameters_.abs_tolerance + parameters_.rel_tolerance * momentum_scale;
+    stats_.cost.push_back(ell);
+    stats_.alpha.push_back(alpha);
     stats_.momentum_residual.push_back(momentum_residual);
     stats_.momentum_scale.push_back(momentum_scale);
     // TODO(amcastro-tri): consider monitoring the duality gap.
@@ -145,6 +161,25 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
       converged = true;
       break;
     } else {
+      // SAP's convergence is monotonic. We sanity check this here. We use a
+      // slop to account for round-off errors.
+      // N.B. Notice the check for monotonic convergence is placed AFTER the
+      // check for convergence. This is done puposedly to avoid round-off errors
+      // in the cost near convergence when the gradient is almost zero.
+      const double ell_scale = 0.5 * (ell + ell_previous);
+      const double ell_slop =
+          parameters_.relative_slop * std::max(1.0, ell_scale);
+      if (ell > ell_previous + ell_slop) {
+        DRAKE_LOGGER_DEBUG(
+            "At iter {} cost increased by: {}. alpha = {}. Relative momentum "
+            "residual = {}\n",
+            k, std::abs(ell - ell_previous), alpha,
+            momentum_residual / momentum_scale);
+        if (parameters_.nonmonotonic_convergence_is_error) {
+          throw std::runtime_error(
+              "SapSolver: Non-monotonic convergence detected.");
+        }
+      }
       if (!parameters_.use_dense_algebra && supernodal_solver == nullptr) {
         // Instantiate supernodal solver on the first iteration when needed. If
         // the stopping criteria is satisfied at k = 0 (good guess), then we
@@ -164,27 +199,30 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
                             &search_direction_data);
     const VectorX<double>& dv = search_direction_data.dv;
 
-    const auto [alpha, ls_iters] = PerformBackTrackingLineSearch(
-        *context, search_direction_data, scratch.get());
-    stats_.num_line_search_iters += ls_iters;
+    // Perform line search.
+    switch (parameters_.line_search_type) {
+      case SapSolverParameters::LineSearchType::kBackTracking:
+        std::tie(alpha, num_line_search_iters) = PerformBackTrackingLineSearch(
+            *context, search_direction_data, scratch.get());
+        break;
+      case SapSolverParameters::LineSearchType::kExact:
+        std::tie(alpha, num_line_search_iters) = PerformExactLineSearch(
+            *context, search_direction_data, scratch.get());
+        break;
+    }
+    stats_.num_line_search_iters += num_line_search_iters;
 
     // Update state.
     model_->GetMutableVelocities(context.get()) += alpha * dv;
 
-    const double ell = model_->EvalCost(*context);
+    ell_previous = ell;
+    ell = model_->EvalCost(*context);
+
     const double ell_scale = (ell + ell_previous) / 2.0;
     // N.B. Even though theoretically we expect ell < ell_previous, round-off
     // errors might make the difference ell_previous - ell negative, within
     // machine epsilon. Therefore we take the absolute value here.
     const double ell_decrement = std::abs(ell_previous - ell);
-
-    // SAP's convergence is monotonic. We sanity check this here. We use a slop
-    // to account for round-off errors.
-    // TODO(amcastro-tri): We might need to loosen this slop or make this an
-    // ASSERT instead.
-    const double slop =
-        50 * std::numeric_limits<double>::epsilon() * std::max(1.0, ell_scale);
-    DRAKE_DEMAND(ell <= ell_previous + slop);
 
     // N.B. Here we want alpha≈1 and therefore we impose alpha > 0.5, an
     // arbitrarily "large" value. This is to avoid a false positive on the
@@ -194,8 +232,6 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
         ell_decrement < parameters_.cost_abs_tolerance +
                             parameters_.cost_rel_tolerance * ell_scale &&
         alpha > 0.5;
-
-    ell_previous = ell;
   }
 
   if (!converged) return SapSolverStatus::kFailure;
@@ -214,7 +250,12 @@ template <typename T>
 T SapSolver<T>::CalcCostAlongLine(
     const systems::Context<T>& context,
     const SearchDirectionData& search_direction_data, const T& alpha,
-    systems::Context<T>* scratch) const {
+    systems::Context<T>* scratch, T* dell_dalpha, T* d2ell_dalpha2,
+    VectorX<T>* d2ell_dalpha2_scratch) const {
+  DRAKE_DEMAND(scratch != nullptr);
+  DRAKE_DEMAND(scratch != &context);
+  if (d2ell_dalpha2 != nullptr) DRAKE_DEMAND(d2ell_dalpha2_scratch != nullptr);
+
   // Data.
   const VectorX<T>& R = model_->constraints_bundle().R();
   const VectorX<T>& v_star = model_->v_star();
@@ -222,6 +263,7 @@ T SapSolver<T>::CalcCostAlongLine(
   // Search direction quantities at state v.
   const VectorX<T>& dv = search_direction_data.dv;
   const VectorX<T>& dp = search_direction_data.dp;
+  const VectorX<T>& dvc = search_direction_data.dvc;
   const T& d2ellA_dalpha2 = search_direction_data.d2ellA_dalpha2;
 
   // State at v(alpha).
@@ -229,7 +271,16 @@ T SapSolver<T>::CalcCostAlongLine(
   const VectorX<T>& v = model_->GetVelocities(context);
   model_->GetMutableVelocities(&context_alpha) = v + alpha * dv;
 
+  if (d2ell_dalpha2 != nullptr) {
+    // Since it is more efficient to calculate impulses (gamma) and their
+    // derivatives (G) together, this evaluation avoids calculating the impulses
+    // twice.
+    model_->EvalConstraintsHessian(context_alpha);
+  }
+
   // Update velocities and impulses at v(alpha).
+  // N.B. This evaluation should be cheap given we called
+  // EvalConstraintsHessian() at the very start of the scope of this function.
   const VectorX<T>& gamma = model_->EvalImpulses(context_alpha);
 
   // Regularizer cost.
@@ -249,6 +300,47 @@ T SapSolver<T>::CalcCostAlongLine(
   ellA += 0.5 * alpha * alpha * d2ellA_dalpha2;
   const T ell = ellA + ellR;
 
+  // Compute first derivative.
+  if (dell_dalpha != nullptr) {
+    const VectorX<T>& v_alpha = model_->GetVelocities(context_alpha);
+
+    // First derivative.
+    const T dellA_dalpha = dp.dot(v_alpha - v_star);  // Momentum term.
+    const T dellR_dalpha = -dvc.dot(gamma);           // Regularizer term.
+    *dell_dalpha = dellA_dalpha + dellR_dalpha;
+  }
+
+  // Compute second derivative.
+  if (d2ell_dalpha2 != nullptr) {
+    // N.B. This evaluation should be cheap given we called
+    // EvalConstraintsHessian() at the very start of the scope of this function.
+    const std::vector<MatrixX<T>>& G =
+        model_->EvalConstraintsHessian(context_alpha);
+
+    // First compute d2ell_dalpha2_scratch = G⋅Δvc.
+    d2ell_dalpha2_scratch->resize(model_->num_constraint_equations());
+    const int nc = model_->num_constraints();
+    int constraint_start = 0;
+    for (int i = 0; i < nc; ++i) {
+      const MatrixX<T>& G_i = G[i];
+      // Number of equations for the i-th constraint.
+      const int ni = G_i.rows();
+      const auto dvc_i = dvc.segment(constraint_start, ni);
+      d2ell_dalpha2_scratch->segment(constraint_start, ni) = G_i * dvc_i;
+      constraint_start += ni;
+    }
+
+    // d²ℓ/dα² = Δvcᵀ⋅G⋅Δvc
+    const T d2ellR_dalpha2 = dvc.dot(*d2ell_dalpha2_scratch);
+
+    *d2ell_dalpha2 = d2ellA_dalpha2 + d2ellR_dalpha2;
+
+    // Sanity check these terms are all positive.
+    DRAKE_DEMAND(d2ellR_dalpha2 >= 0.0);
+    DRAKE_DEMAND(d2ellA_dalpha2 > 0.0);
+    DRAKE_DEMAND(*d2ell_dalpha2 > 0);
+  }
+
   return ell;
 }
 
@@ -257,11 +349,16 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
     const systems::Context<T>& context,
     const SearchDirectionData& search_direction_data,
     systems::Context<T>* scratch) const {
+  DRAKE_DEMAND(parameters_.line_search_type ==
+               SapSolverParameters::LineSearchType::kBackTracking);
+  DRAKE_DEMAND(scratch != nullptr);
+  DRAKE_DEMAND(scratch != &context);
   using std::abs;
   // Line search parameters.
-  const double rho = parameters_.ls_rho;
-  const double c = parameters_.ls_c;
-  const int max_iterations = parameters_.ls_max_iterations;
+  const double rho = parameters_.backtracking_line_search.rho;
+  const double c = parameters_.backtracking_line_search.armijos_parameter;
+  const int max_iterations =
+      parameters_.backtracking_line_search.max_iterations;
 
   // Quantities at alpha = 0.
   const T& ell0 = model_->EvalCost(context);
@@ -270,24 +367,6 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
   // dℓ/dα(α = 0) = ∇ᵥℓ(α = 0)⋅Δv.
   const VectorX<T>& dv = search_direction_data.dv;
   const T dell_dalpha0 = ell_grad_v0.dot(dv);
-
-  T alpha = parameters_.ls_alpha_max;
-  T ell = CalcCostAlongLine(context, search_direction_data, alpha, scratch);
-
-  const double kTolerance = 50 * std::numeric_limits<double>::epsilon();
-  // N.B. We expect ell_scale != 0 since otherwise SAP's optimality condition
-  // would've been reached and the solver would not reach this point.
-  // N.B. ell = 0 implies v = v* and gamma = 0, for which the momentum residual
-  // is zero.
-  // Given that the Hessian in SAP is SPD we know that dell_dalpha0 < 0
-  // (strictly). dell_dalpha0 = 0 would mean that we reached the optimum but
-  // most certainly due to round-off errors or very tight user specified
-  // optimality tolerances, the optimality condition was not met and SAP
-  // performed an additional iteration to find a search direction that, most
-  // likely, is close to zero. We therefore detect this case with dell_dalpha0 ≈
-  // 0 and accept the search direction with alpha = 1.
-  const T ell_scale = 0.5 * (ell + ell0);
-  if (abs(dell_dalpha0 / ell_scale) < kTolerance) return std::make_pair(1.0, 0);
 
   // dℓ/dα(α = 0) is guaranteed to be strictly negative given the the Hessian of
   // the cost is positive definite. Only round-off errors in the factorization
@@ -300,6 +379,30 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
         "usually caused by an excessive accumulation round-off errors for "
         "ill-conditioned systems. Consider revisiting your model.");
   }
+
+  T alpha = parameters_.backtracking_line_search.alpha_max;
+  T dell{NAN};
+  T ell =
+      CalcCostAlongLine(context, search_direction_data, alpha, scratch, &dell);
+
+  // If the cost is still decreasing at alpha, we accept this value.
+  if (dell < 0) return std::make_pair(alpha, 0);
+
+  // N.B. ell = 0 implies v = v* and gamma = 0, the solver would've exited
+  // trivially and we would've never gotten to this point. Thus we know
+  // ell_scale != 0.
+  const double ell_scale = ExtractDoubleOrThrow(0.5 * (ell + ell0));
+
+  // N.B. SAP checks that the cost decreases monotonically using a slop to avoid
+  // false negatives due to round-off errors. Therefore if we are going to exit
+  // when the gradient is near zero, we want to ensure the error introduced by a
+  // gradient close to zero (though not exaclty zero) is much smaller than the
+  // slop. Thefore we use a relative slop much smaller than the one used to
+  // verify monotonic convergence.
+  const double ell_slop =
+      parameters_.relative_slop / 10.0 * std::max(1.0, ell_scale);
+  // N.B. We already checked that dell ≥ 0.
+  if (dell < ell_slop) return std::make_pair(alpha, 0);
 
   // Verifies if ell(alpha) satisfies Armijo's criterion.
   auto satisfies_armijo = [c, ell0, dell_dalpha0](const T& alpha_in,
@@ -315,6 +418,14 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
   for (; iteration < max_iterations; ++iteration) {
     alpha *= rho;
     ell = CalcCostAlongLine(context, search_direction_data, alpha, scratch);
+
+    // If variations in the cost are close to round-off errors (within some
+    // threshold), it is because the gradient is close to zero and we return
+    // with the latest value of alpha.
+    const T dell_dalpha_approx = (ell - ell_prev) / (alpha - alpha_prev);
+    if (abs(dell_dalpha_approx) < ell_slop)
+      return std::make_pair(alpha, iteration);
+
     // We scan discrete values of alpha from alpha_max to zero and seek for the
     // minimum value of the cost evaluated at those discrete values. Since we
     // know the cost is convex, we detect this minimum by checking the condition
@@ -345,6 +456,119 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
 
   // Silence "no-return value" warning from the compiler.
   DRAKE_UNREACHABLE();
+}
+
+template <typename T>
+std::pair<T, int> SapSolver<T>::PerformExactLineSearch(
+    const systems::Context<T>&, const SearchDirectionData&,
+    systems::Context<T>*) const {
+  throw std::logic_error(
+      "SapSolver::PerformExactLineSearch(): Only T = double is supported.");
+}
+
+template <>
+std::pair<double, int> SapSolver<double>::PerformExactLineSearch(
+    const systems::Context<double>& context,
+    const SearchDirectionData& search_direction_data,
+    systems::Context<double>* scratch) const {
+  DRAKE_DEMAND(parameters_.line_search_type ==
+               SapSolverParameters::LineSearchType::kExact);
+  DRAKE_DEMAND(scratch != nullptr);
+  DRAKE_DEMAND(scratch != &context);
+  // dℓ/dα(α = 0) = ∇ᵥℓ(α = 0)⋅Δv.
+  const VectorX<double>& ell_grad_v0 = model_->EvalCostGradient(context);
+  const VectorX<double>& dv = search_direction_data.dv;
+  const double dell_dalpha0 = ell_grad_v0.dot(dv);
+
+  // dℓ/dα(α = 0) is guaranteed to be strictly negative given the the Hessian of
+  // the cost is positive definite. Only round-off errors in the factorization
+  // of the Hessian for ill-conditioned systems (small regularization) can
+  // destroy this property. If so, we abort given that'd mean the model must be
+  // revisited.
+  if (dell_dalpha0 >= 0) {
+    throw std::runtime_error(
+        "The cost does not decrease along the search direction. This is "
+        "usually caused by an excessive accumulation round-off errors for "
+        "ill-conditioned systems. Consider revisiting your model.");
+  }
+
+  const double alpha_max = parameters_.exact_line_search.alpha_max;
+  double dell{NAN};
+  double d2ell{NAN};
+  VectorX<double> vec_scratch;
+  const double ell0 =
+      CalcCostAlongLine(context, search_direction_data, alpha_max, scratch,
+                        &dell, &d2ell, &vec_scratch);
+
+  // If the cost is still decreasing at alpha_max, we accept this value.
+  if (dell <= 0) return std::make_pair(alpha_max, 0);
+
+  // If the user requests very tight tolerances (say, samller than 10⁻¹⁰) then
+  // we might enter the line search with a very small gradient. If close to
+  // machine epsilon, the Newton method below might return inaccurate results.
+  // Therefore return early if we detect this situation.
+  // For these tight tolerances, we'd reach this condition close to the global
+  // minimizer of the cost. Even if the norm of the search direction Δv is
+  // small, we allow the Newton solver to take a full step and therefore we
+  // return with a step size of one.
+  if (-dell_dalpha0 <
+      parameters_.cost_abs_tolerance + parameters_.cost_rel_tolerance * ell0)
+    return std::make_pair(1.0, 0);
+
+  // N.B. We place the data needed to evaluate cost and gradients into a single
+  // struct so that cost_and_gradient only needs to capture a single pointer.
+  // This avoids heap allocations when passing the lambda to
+  // DoNewtonWithBisectionFallback().
+  struct EvalData {
+    const SapSolver<double>& solver;
+    const Context<double>& context0;  // Context at alpha = 0.
+    const SearchDirectionData& search_direction_data;
+    Context<double>& scratch;  // Context at alpha != 0.
+    // N.B. We normalize the gradient to minimize round-off errors as f(alpha) =
+    // −ℓ'(α)/dell_scale.
+    const double dell_scale;
+    VectorX<double> vec_scratch;
+  };
+
+  // N.B. At this point we know that dell_dalpha0 < 0. Also, if the line search
+  // was called it is because the residual (the gradient of the cost) is
+  // non-zero. Therefore we can safely divide by dell_dalpha0.
+  // N.B. We then define f(alpha) = −ℓ'(α)/ℓ'₀ so that f(alpha=0) = -1.
+  const double dell_scale = -dell_dalpha0;
+  EvalData data{*this, context, search_direction_data, *scratch, dell_scale};
+
+  // Cost and gradient of f(α) = −ℓ'(α)/ℓ'₀.
+  auto cost_and_gradient = [&data](double x) {
+    double dell_dalpha;
+    double d2ell_dalpha2;
+    data.solver.CalcCostAlongLine(data.context0, data.search_direction_data, x,
+                                   &data.scratch, &dell_dalpha, &d2ell_dalpha2,
+                                   &data.vec_scratch);
+    return std::make_pair(dell_dalpha / data.dell_scale,
+                          d2ell_dalpha2 / data.dell_scale);
+  };
+
+  // To estimate a guess, we approximate the cost as being quadratic around
+  // alpha = 0.
+  const double alpha_guess = std::min(-dell_dalpha0 / d2ell, alpha_max);
+
+  // N.B. If we are here, then we already know that dell_dalpha0 < 0 and dell >
+  // 0, and therefore [0, alpha_max] is a valid bracket.
+  const Bracket bracket(0., dell_dalpha0 / dell_scale, alpha_max,
+                        dell / dell_scale);
+
+  // This relative tolerance was obtained by experimentation on a large set of
+  // tests cases. We found out that with f_tolerance ∈ [10⁻¹⁴, 10⁻³] the solver
+  // is robust with small changes in performances (about 30%). We then choose a
+  // safe tolerance far enough from the lower limit (close to machine epsilon)
+  // and the upper limit (close to an inexact method).
+  const double f_tolerance = 1.0e-8;  // f = −ℓ'(α)/ℓ'₀ is dimensionless.
+  const double alpha_tolerance = f_tolerance * alpha_guess;
+  const auto [alpha, iters] = DoNewtonWithBisectionFallback(
+      cost_and_gradient, bracket, alpha_guess, alpha_tolerance, f_tolerance,
+      parameters_.exact_line_search.max_iterations);
+
+  return std::make_pair(alpha, iters);
 }
 
 template <typename T>
@@ -462,8 +686,7 @@ void SapSolver<T>::CallSuperNodalSolver(const Context<T>& context,
 
 template <typename T>
 void SapSolver<T>::CalcSearchDirectionData(
-    const systems::Context<T>& context,
-    SuperNodalSolver* supernodal_solver,
+    const systems::Context<T>& context, SuperNodalSolver* supernodal_solver,
     SapSolver<T>::SearchDirectionData* data) const {
   DRAKE_DEMAND(parameters_.use_dense_algebra || (supernodal_solver != nullptr));
   // Update search direction dv.

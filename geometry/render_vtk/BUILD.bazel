@@ -27,6 +27,7 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//common:essential",
+        "//common:name_value",
         "//geometry/render:render_label",
     ],
 )
@@ -51,11 +52,7 @@ drake_cc_library(
     hdrs = ["internal_render_engine_vtk.h"],
     internal = True,
     visibility = [
-        "//geometry/render_client_gltf:__pkg__",
-        # TODO(jwnimmer-tri) Remove this once the dev package is gone.
-        "//geometry/render/dev/render_gltf_client:__pkg__",
-        # TODO(jwnimmer-tri) Remove this after deprecation 2022-09-01.
-        "//geometry/render:__pkg__",
+        "//geometry/render_gltf_client:__pkg__",
     ],
     deps = [
         ":internal_render_engine_vtk_base",
@@ -73,18 +70,12 @@ drake_cc_library(
     ],
 )
 
-# TODO(jwnimmer-tri) Remove this after deprecation 2022-09-01.
-exports_files(["internal_render_engine_vtk.h"])
-
 drake_cc_library(
     name = "internal_render_engine_vtk_base",
     srcs = ["internal_render_engine_vtk_base.cc"],
     hdrs = ["internal_render_engine_vtk_base.h"],
     internal = True,
-    visibility = [
-        # TODO(jwnimmer-tri) Switch to private after deprecation 2022-09-01.
-        "//geometry/render:__pkg__",
-    ],
+    visibility = ["//visibility:private"],
     deps = [
         "//common:scope_exit",
         "//geometry:geometry_roles",
@@ -99,10 +90,7 @@ drake_cc_library(
     srcs = ["internal_vtk_util.cc"],
     hdrs = ["internal_vtk_util.h"],
     internal = True,
-    visibility = [
-        # TODO(jwnimmer-tri) Switch to private after deprecation 2022-09-01.
-        "//geometry/render:__pkg__",
-    ],
+    visibility = ["//visibility:private"],
     deps = [
         "//common:essential",
         "//math:geometric_transform",
@@ -115,6 +103,13 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
+    args = select({
+        # Disable test cases that break on Mac M1 CI.
+        "@platforms//cpu:arm64": [
+            "--gtest_filter=-*HorizonTest:*TerrainTest:*SphereTest",
+        ],
+        "//conditions:default": [],
+    }),
     data = [
         "//geometry/render:test_models",
     ],

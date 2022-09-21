@@ -92,9 +92,9 @@ namespace internal {
 namespace assert {
 // Allows for specialization of how to bool-convert Conditions used in
 // assertions, in case they are not intrinsically convertible.  See
-// symbolic_formula.h for an example use.  This is a public interface to
-// extend; it is intended to be specialized by unusual Scalar types that
-// require special handling.
+// common/symbolic/expression/formula.h for an example use.  This is a public
+// interface to extend; it is intended to be specialized by unusual Scalar
+// types that require special handling.
 template <typename Condition>
 struct ConditionTraits {
   static constexpr bool is_valid = std::is_convertible_v<Condition, bool>;

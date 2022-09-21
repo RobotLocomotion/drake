@@ -4,17 +4,16 @@
 #include <utility>
 #include <vector>
 
-#include "drake/geometry/proximity/deformable_contact_geometries.h"
 #include "drake/geometry/proximity/volume_mesh.h"
-#include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/fixed_fem/dev/reference_deformable_geometry.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
-/** Generates a deformable geometry from a given box by subdividing the box
+namespace internal {
+
+/* Generates a deformable mesh from a given box by subdividing the box
  into _rectangular cells_ (volume bounded by six axis-aligned faces) and
  subdividing each rectangular cell into five tetrahedra. Two adjacent
  rectangular cells (sharing a rectangular face) are subdivided in the patterns
@@ -44,64 +43,12 @@ namespace fem {
      to √3 of this parameter. The coarsest possible mesh can be made by
      providing a resolution hint at least as large as the box's largest
      dimension.
- @param[in] X_WB
-     The pose of the rectangular volume mesh in the world frame.
  @tparam_nonsymbolic_scalar */
 template <typename T>
-internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
-    const geometry::Box& box, double resolution_hint,
-    const math::RigidTransform<T>& X_WB);
+geometry::VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(const geometry::Box& box,
+                                                      double resolution_hint);
 
-/* Generates a volume mesh of an octahedron comprising of eight tetrahedral
- elements with vertices on the coordinate axes and the origin like this:
-
-                +Z   -X
-                 |   /
-              v5 ●  ● v3
-                 | /
-       v4     v0 |/
-  -Y----●--------●------●----+Y
-                /|      v2
-               / |
-           v1 ●  ● v6
-             /   |
-           +X    |
-                -Z
- @tparam_nonsymbolic_scalar */
-template <typename T>
-geometry::VolumeMesh<T> MakeOctahedronVolumeMesh();
-
-/* Generates a ReferenceDeformableGeometry whose underlying mesh is given by
- MakeOctahedronVolumeMesh(). */
-geometry::internal::deformable::ReferenceDeformableGeometry
-MakeOctahedronDeformableGeometry();
-
-/* Refines each boundary tetrahedron into tetrahedra with at least one
- interior vertex by applying "star" refinement from the centroid of the
- boundary tetrahedron. A boundary tetrahedron is a tetrahedron with
- all four vertices on the boundary surface. "Star" refinement replaces one
- boundary tetrahedron with four non-boundary tetrahedra.
-
- Schematically this is "star" refinement of a tetrahedron (each triangular
- face of the tetrahedron is drawn schematically as a line segment).
-
-             o                   o
-            / \                 /|\
-           /   \     star      / | \
-          o     o    ===>     o--*--o        --- represent triangular faces
-           \   /  refinement   \ | /
-            \ /                 \|/
-             o                   o
-
-       1 tetrahedron              4 tetrahedra
-       4 triangular faces        10 triangular faces
-       6 edges                   10 edges
-       4 vertices                 5 vertices
- */
-template <typename T>
-geometry::VolumeMesh<T> StarRefineBoundaryTetrahedra(
-    const geometry::VolumeMesh<T>& in);
-
+}  // namespace internal
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake

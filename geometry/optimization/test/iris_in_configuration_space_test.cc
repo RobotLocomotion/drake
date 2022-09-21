@@ -1,7 +1,11 @@
 #include <gtest/gtest.h>
 
+#include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/iris.h"
+#include "drake/geometry/optimization/vpolytope.h"
+#include "drake/geometry/test_utilities/meshcat_environment.h"
+#include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/solvers/ibex_solver.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -12,6 +16,9 @@ namespace optimization {
 namespace {
 
 using Eigen::Vector2d;
+using symbolic::Variable;
+
+const double kInf = std::numeric_limits<double>::infinity();
 
 // Helper method for testing IrisInConfigurationSpace from a urdf string.
 HPolyhedron IrisFromUrdf(const std::string urdf,
@@ -62,10 +69,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, JointLimits) {
   EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
 }
 
-// Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic
-// joint.  The configuration space is a (convex) line segment q ∈ (−1,1).
-GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
-  const std::string boxes_urdf = R"(
+const char boxes_urdf[] = R"(
 <robot name="boxes">
   <link name="fixed">
     <collision name="right">
@@ -95,6 +99,9 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
 </robot>
 )";
 
+// Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic
+// joint.  The configuration space is a (convex) line segment q ∈ (−1,1).
+GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
   const Vector1d sample = Vector1d::Zero();
   IrisOptions options;
   HPolyhedron region = IrisFromUrdf(boxes_urdf, sample, options);
@@ -427,6 +434,160 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   EXPECT_FALSE(region.PointInSet(Vector2d{z_test, theta_test}));
   // Confirm that the pendulum is colliding with the wall with true kinematics:
   EXPECT_LE(z_test + l*std::cos(theta_test), r);
+}
+
+// Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic
+// joint.  Additional constraints are added via
+// options.prog_with_additional_constraints:
+//    q <= 0.5
+//    sin(q) >= -1/sqrt(2)
+// The (constrained) configuration space is a (convex) line segment
+// q ∈ (−pi/4, .5).
+GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismaticPlusConstraints) {
+  const Vector1d sample = Vector1d::Zero();
+  IrisOptions options;
+
+  solvers::MathematicalProgram prog;
+  auto q = prog.NewContinuousVariables<1>("q");
+  prog.AddBoundingBoxConstraint(-kInf, 0.5, q[0]);
+  prog.AddConstraint(sin(q[0]), -1.0 / sqrt(2.0), kInf);
+  options.prog_with_additional_constraints = &prog;
+
+  HPolyhedron region = IrisFromUrdf(boxes_urdf, sample, options);
+
+  EXPECT_EQ(region.ambient_dimension(), 1);
+
+  const double kTol = 1e-5;
+  const double qmin = -M_PI / 4.0 + options.configuration_space_margin,
+               qmax = 0.5;  // Note: no margin here because linear constraints
+                            // are handled directly.
+  EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+  EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+}
+
+// This double pendulum doesn't have any collision geometry, but we'll add
+// this end-effector position constraint via an InverseKinematics problem:
+//    [-inf, -inf, -inf] <= p_WE <= [inf, inf, -1]
+// Leading the configuration space (since both links are length 1):
+//   cos(θ₁) + cos(θ₁ + θ₂) ≥ 1.
+//
+// Note that the zero lower and upper bounds in the y positions are included to
+// test that equality constraints that still result in a configuration space
+// region with an interior are supported.
+GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
+  const std::string double_pendulum_urdf = R"(
+<robot name="double_pendulum">
+  <link name="base"/>
+  <joint name="fixed_link_weld" type="fixed">
+    <parent link="world"/>
+    <child link="base"/>
+  </joint>
+  <link name="link1"/>
+  <joint name="joint1" type="revolute">
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.14" upper="3.14"/>
+    <parent link="world"/>
+    <child link="link1"/>
+  </joint>
+  <link name="link2"/>
+  <joint name="joint2" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 -1"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.14" upper="3.14"/>
+    <parent link="link1"/>
+    <child link="link2"/>
+  </joint>
+</robot>
+)";
+
+  systems::DiagramBuilder<double> builder;
+  multibody::MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
+  multibody::Parser(&plant).AddModelFromString(double_pendulum_urdf, "urdf");
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  auto context = diagram->CreateDefaultContext();
+  systems::Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(context.get());
+  // Choose an initial sample that is near zero (but not exactly zero because
+  // SNOPT fails to break the symmetry in the counter-example search).
+  plant.SetPositions(&plant_context, Eigen::Vector2d(0.01, 0.01));
+
+  multibody::InverseKinematics ik(plant, false);
+  // Note: It is tempting to set the lower and upper bounds on the y-axis to
+  // zero (afterall, the point is always in the y=0 plane for all q). This does
+  // work, but the numerics of the counter-example search are much worse and
+  // the resulting IRIS region is much smaller because of it.
+  ik.AddPositionConstraint(plant.GetFrameByName("link2"),
+                           Eigen::Vector3d(0, 0, -1), plant.world_frame(),
+                           Eigen::Vector3d(-kInf, -kInf, -kInf),
+                           Eigen::Vector3d(kInf, kInf, -1));
+
+  IrisOptions options;
+  options.prog_with_additional_constraints = &ik.prog();
+
+  HPolyhedron region = IrisInConfigurationSpace(
+      plant, plant.GetMyContextFromRoot(*context), options);
+
+  EXPECT_EQ(region.ambient_dimension(), 2);
+
+  const double theta1 = 0.1;
+  const double theta2_max = std::acos(1 - std::cos(theta1)) - theta1 -
+                            options.configuration_space_margin;
+  const double theta2_min = -std::acos(1 - std::cos(theta1)) - theta1 +
+                            options.configuration_space_margin;
+
+  // These tolerances are necessarily loose because we are approximating a
+  // non-convex configuration space region with a polytope.
+  const double kInnerTol = 0.01;
+  const double kOuterTol = 0.1;
+  EXPECT_TRUE(
+      region.PointInSet(Eigen::Vector2d{theta1, theta2_min + kInnerTol}));
+  EXPECT_TRUE(
+      region.PointInSet(Eigen::Vector2d{theta1, theta2_max - kInnerTol}));
+  EXPECT_FALSE(
+      region.PointInSet(Eigen::Vector2d{theta1, theta2_min - kOuterTol}));
+  EXPECT_FALSE(
+      region.PointInSet(Eigen::Vector2d{theta1, theta2_max + kOuterTol}));
+
+  {
+    std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
+    meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
+                            -3.25, 3.25, -3.25, 3.25);
+    meshcat->SetProperty("/Grid", "visible", true);
+    Eigen::RowVectorXd theta1s = Eigen::RowVectorXd::LinSpaced(100, -1.6, 1.6);
+    Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta1s.size());
+    for (int i = 0; i < theta1s.size(); ++i) {
+      points(0, i) = theta1s[i];
+      points(1, i) =  std::acos(1 - std::cos(theta1s[i])) - theta1s[i];
+      points(0, points.cols() - i - 1) = theta1s[i];
+      points(1, points.cols() - i - 1) =
+          -std::acos(1 - std::cos(theta1s[i])) - theta1s[i];
+    }
+    meshcat->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    points.resize(3, vregion.vertices().cols()+1);
+    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+    points.topRightCorner(2, 1) = vregion.vertices().col(0);
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+    meshcat->SetObject("Test point (max)", Sphere(0.03), Rgba(1, 0, 0));
+    meshcat->SetTransform("Test point (max)",
+                          math::RigidTransform(Eigen::Vector3d(
+                              theta1, theta2_max + kOuterTol, 0)));
+    meshcat->SetObject("Test point (min)", Sphere(0.03), Rgba(1, 0, 0));
+    meshcat->SetTransform("Test point (min)",
+                          math::RigidTransform(Eigen::Vector3d(
+                              theta1, theta2_min - kOuterTol, 0)));
+
+    // Note: This will not pause execution when running as a bazel test.
+    std::cout << "[Press RETURN to continue]." << std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  }
 }
 
 }  // namespace

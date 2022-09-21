@@ -32,14 +32,12 @@ void ThrowIfFilesMissing(const FileFieldsMap& file_fields) {
 }  // namespace
 
 HttpResponse HttpService::PostForm(
-    const std::string& temp_directory, const std::string& url, int port,
+    const std::string& temp_directory, const std::string& url,
     const DataFieldsMap& data_fields,
     const FileFieldsMap& file_fields,
     bool verbose) {
-
   ThrowIfFilesMissing(file_fields);
-  return DoPostForm(temp_directory, url, port, data_fields, file_fields,
-                    verbose);
+  return DoPostForm(temp_directory, url, data_fields, file_fields, verbose);
 }
 
 }  // namespace internal

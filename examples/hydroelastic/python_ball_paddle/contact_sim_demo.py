@@ -8,12 +8,10 @@ import argparse
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import DrakeVisualizer
 from pydrake.math import RigidTransform
 from pydrake.math import RollPitchYaw
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlant
-from pydrake.multibody.plant import ConnectContactResultsToDrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlantConfig
 from pydrake.systems.analysis import ApplySimulatorConfig
 from pydrake.systems.analysis import Simulator
@@ -21,6 +19,7 @@ from pydrake.systems.analysis import SimulatorConfig
 from pydrake.systems.analysis import PrintSimulatorStatistics
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.primitives import VectorLogSink
+from pydrake.visualization import AddDefaultVisualization
 
 
 def make_ball_paddle(contact_model, contact_surface_representation,
@@ -43,9 +42,9 @@ def make_ball_paddle(contact_model, contact_surface_representation,
                             "/paddle.sdf")
     paddle = parser.AddModelFromFile(paddle_sdf_file_name, model_name="paddle")
     plant.WeldFrames(
-        frame_on_parent_P=plant.world_frame(),
-        frame_on_child_C=plant.GetFrameByName("paddle", paddle),
-        X_PC=p_WPaddle_fixed
+        frame_on_parent_F=plant.world_frame(),
+        frame_on_child_M=plant.GetFrameByName("paddle", paddle),
+        X_FM=p_WPaddle_fixed
     )
     ball_sdf_file_name = \
         FindResourceOrThrow("drake/examples/hydroelastic/python_ball_paddle"
@@ -56,9 +55,7 @@ def make_ball_paddle(contact_model, contact_surface_representation,
 
     plant.Finalize()
 
-    DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
-    ConnectContactResultsToDrakeVisualizer(builder=builder, plant=plant,
-                                           scene_graph=scene_graph)
+    AddDefaultVisualization(builder=builder)
 
     nx = plant.num_positions() + plant.num_velocities()
     state_logger = builder.AddSystem(VectorLogSink(nx))
@@ -83,7 +80,7 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
                            target_realtime_rate=target_realtime_rate,
                            publish_every_time_step=True)
     simulator = Simulator(diagram)
-    ApplySimulatorConfig(simulator, simulator_config)
+    ApplySimulatorConfig(simulator_config, simulator)
 
     plant_context = diagram.GetSubsystemContext(ball_paddle_plant,
                                                 simulator.get_context())

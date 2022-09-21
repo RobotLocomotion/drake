@@ -45,8 +45,7 @@ def _gfortran_impl(repo_ctx):
             "-ldl",
             "-lgfortran",
         ]
-        arch_result = execute_or_fail(repo_ctx, ["/usr/bin/arch"])
-        if arch_result.stdout.strip() != "arm64":
+        if os_result.macos_arch_result != "arm64":
             linkopts.append("-lquadmath")
     else:
         libquadmath = "libquadmath{}".format(suffix)

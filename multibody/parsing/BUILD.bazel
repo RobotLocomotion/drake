@@ -24,8 +24,16 @@ filegroup(
         "test/**/*.urdf",
         "test/**/*.xml",
         "test/**/*.png",
+        "test/**/COLCON_IGNORE",
     ]),
     visibility = ["//visibility:public"],
+)
+
+_DM_CONTROL_MUJOCO_FILES = forward_files(
+    srcs = ["@dm_control_internal//:" + x for x in dm_control_mujoco_files()],
+    dest_prefix = "",
+    strip_prefix = "@dm_control_internal//:",
+    visibility = ["//visibility:private"],
 )
 
 drake_cc_package_library(
@@ -33,6 +41,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":model_directives",
+        ":model_instance_info",
         ":package_map",
         ":parser",
         ":process_model_directives",
@@ -52,7 +61,7 @@ drake_cc_library(
     deps = [
         "//common",
         "//common:filesystem",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 
@@ -89,7 +98,7 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody/plant",
         "@sdformat_internal//:sdformat",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 
@@ -173,7 +182,7 @@ drake_cc_library(
         ":scoped_names",
         "//common:filesystem",
         "@fmt",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 
@@ -188,7 +197,7 @@ drake_cc_library(
         ":scoped_names",
         "//multibody/plant",
         "@fmt",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 
@@ -226,6 +235,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
+        ":detail_mujoco_parser",
         ":detail_parsing_workspace",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
@@ -246,18 +256,30 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "model_instance_info",
+    hdrs = ["model_instance_info.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//math:geometric_transform",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
     name = "process_model_directives",
     srcs = ["process_model_directives.cc"],
     hdrs = ["process_model_directives.h"],
     visibility = ["//visibility:public"],
     interface_deps = [
         ":model_directives",
+        ":model_instance_info",
         ":parser",
         "//multibody/plant",
     ],
     deps = [
         ":detail_misc",
         ":scoped_names",
+        "//common:diagnostic_policy",
         "//common:filesystem",
         "//common:find_resource",
         "//common/yaml",
@@ -268,6 +290,7 @@ drake_cc_library(
     name = "scoped_names",
     srcs = ["scoped_names.cc"],
     hdrs = ["scoped_names.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//multibody/plant",
     ],
@@ -343,7 +366,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//multibody/benchmarks/acrobot:models",
-    ],
+    ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":parser",
         "//common:filesystem",
@@ -363,6 +386,7 @@ drake_cc_googletest(
     name = "process_model_directives_test",
     data = [
         ":process_model_directives_test_models",
+        "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
         ":process_model_directives",
@@ -434,13 +458,6 @@ drake_cc_googletest(
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
     ],
-)
-
-_DM_CONTROL_MUJOCO_FILES = forward_files(
-    srcs = ["@dm_control_internal//:" + x for x in dm_control_mujoco_files()],
-    dest_prefix = "",
-    strip_prefix = "@dm_control_internal//:",
-    visibility = ["//visibility:private"],
 )
 
 drake_cc_googletest(

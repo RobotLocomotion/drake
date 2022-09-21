@@ -14,7 +14,7 @@
 
 set -eu -o pipefail
 
-if [ -z "$1" ]; then
+if [[ -z "$1" ]]; then
     echo "Usage: $0 <wheel>" >&2
     exit 1
 fi
@@ -43,4 +43,16 @@ prog.AddLinearConstraint(x[1] >= 1)
 prog.AddQuadraticCost(numpy.eye(2), numpy.zeros(2), x)
 solver = pydrake.all.IpoptSolver()
 assert solver.Solve(prog, None, None).is_success(), "IPOPT is not usable"
+EOF
+
+python - "$1" << EOF
+import os
+import sys
+
+# Check that wheel size is within PyPI's per-wheel size quota.
+wheel_size = os.path.getsize(sys.argv[1])
+wheel_size_in_mib = wheel_size / float(1 << 20)
+pypi_wheel_max_size = 100 << 20  # 100 MiB
+fail_message = f"Wheel is too large ({wheel_size_in_mib:.2f} MiB) for PyPI"
+assert wheel_size < pypi_wheel_max_size, fail_message
 EOF

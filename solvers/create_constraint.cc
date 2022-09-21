@@ -4,8 +4,9 @@
 #include <cmath>
 #include <sstream>
 
-#include "drake/common/symbolic.h"
-#include "drake/common/symbolic_decompose.h"
+#include <fmt/format.h>
+
+#include "drake/common/symbolic/decompose.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/solvers/decision_variable.h"
 
@@ -59,10 +60,12 @@ Binding<Constraint> ParseConstraint(
   // We will determine if lb <= v <= ub is a bounding box constraint, namely
   // x_lb <= x <= x_ub.
   bool is_v_bounding_box = true;
+  Eigen::RowVectorXd Ai(A.cols());
   for (int i = 0; i < v.size(); ++i) {
     double constant_term = 0;
     int num_vi_variables = symbolic::DecomposeAffineExpression(
-        v(i), map_var_to_index, A.row(i), &constant_term);
+        v(i), map_var_to_index, &Ai, &constant_term);
+    A.row(i) = Ai;
     if (num_vi_variables == 0 &&
         !(lb(i) <= constant_term && constant_term <= ub(i))) {
       // Unsatisfiable constraint with no variables, such as 1 <= 0 <= 2
@@ -478,10 +481,12 @@ Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
   // TODO(hongkai.dai): use sparse matrix.
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(v.rows(), vars.rows());
   Eigen::VectorXd beq = Eigen::VectorXd::Zero(v.rows());
+  Eigen::RowVectorXd Ai(A.cols());
   for (int i = 0; i < v.rows(); ++i) {
     double constant_term(0);
-    symbolic::DecomposeAffineExpression(v(i), map_var_to_index, A.row(i),
+    symbolic::DecomposeAffineExpression(v(i), map_var_to_index, &Ai,
                                         &constant_term);
+    A.row(i) = Ai;
     beq(i) = b(i) - constant_term;
   }
   return CreateBinding(make_shared<LinearEqualityConstraint>(A, beq), vars);

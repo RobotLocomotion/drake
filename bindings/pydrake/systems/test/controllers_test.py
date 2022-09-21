@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.examples.pendulum import PendulumPlant
+from pydrake.examples import PendulumPlant
 from pydrake.multibody.tree import MultibodyForces
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
@@ -302,6 +302,11 @@ class TestControllers(unittest.TestCase):
         (K, S) = LinearQuadraticRegulator(A, B, Q, R)
         np.testing.assert_almost_equal(K, K_expected)
         np.testing.assert_almost_equal(S, S_expected)
+
+        # Test with N and F.
+        (K, S) = LinearQuadraticRegulator(
+            A=A, B=B, Q=Q, R=R,
+            N=np.array([[0.1], [0.2]]), F=np.array([[1, 2.]]))
 
         controller = LinearQuadraticRegulator(double_integrator, Q, R)
         np.testing.assert_almost_equal(controller.D(), -K_expected)

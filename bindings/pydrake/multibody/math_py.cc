@@ -4,7 +4,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -134,14 +133,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("h"), py::arg("l"), cls_doc.ctor.doc_2args)
         .def(
             py::init<const Vector6<T>&>(), py::arg("L"), cls_doc.ctor.doc_1args)
-        .def("Shift", &Class::Shift, py::arg("offset"), cls_doc.Shift.doc);
-    constexpr char doc_Shift_deprecatedArgName[] =
-        "The keyword argument (kwarg) has been renamed from"
-        " Shift(p_BpBq_E) to"
-        " Shift(offset)."
-        " Deprecated kwarg will be unavailable after 2022-08-01.";
-    cls.def("Shift", WrapDeprecated(doc_Shift_deprecatedArgName, &Class::Shift),
-           py::arg("p_BpBq_E"), doc_Shift_deprecatedArgName)
+        .def("Shift", &Class::Shift, py::arg("offset"), cls_doc.Shift.doc)
         .def("dot", &Class::dot, py::arg("velocity"), cls_doc.dot.doc);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
@@ -158,58 +150,23 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
             py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_2args)
-        .def(py::init<const Vector6<T>&>(), py::arg("A"),
-            cls_doc.ctor.doc_1args);
-    cls.def("ShiftWithZeroAngularVelocity",
-        &Class::ShiftWithZeroAngularVelocity, py::arg("offset"),
-        cls_doc.ShiftWithZeroAngularVelocity.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    constexpr char doc_ShiftOneArg_deprecatedArgName[] =
-        "Shift(p_PoQ_E) is deprecated, and will be removed on or around"
-        " 2022-07-01. Please instead use "
-        "ShiftWithZeroAngularVelocity(offset)";
-    cls.def("Shift",
-        WrapDeprecated(doc_ShiftOneArg_deprecatedArgName,
-            overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift)),
-        py::arg("p_PoQ_E"), doc_ShiftOneArg_deprecatedArgName);
-#pragma GCC diagnostic pop
-    cls.def("Shift",
-        overload_cast_explicit<Class, const Vector3<T>&, const Vector3<T>&>(
-            &Class::Shift),
-        py::arg("offset"), py::arg("angular_velocity_of_this_frame"),
-        cls_doc.Shift.doc);
-    constexpr char doc_ShiftTwoArg_deprecatedArgName[] =
-        "The keyword arguments (kwargs) have been renamed from"
-        " Shift(p_PoQ_E, w_WP_E) to"
-        " Shift(offset, angular_velocity_of_this_frame)."
-        " The old kwargs are deprecated and unavailable after 2022-07-01.";
-    cls.def("Shift",
-        WrapDeprecated(doc_ShiftTwoArg_deprecatedArgName,
+        .def(
+            py::init<const Vector6<T>&>(), py::arg("A"), cls_doc.ctor.doc_1args)
+        .def("ShiftWithZeroAngularVelocity",
+            &Class::ShiftWithZeroAngularVelocity, py::arg("offset"),
+            cls_doc.ShiftWithZeroAngularVelocity.doc)
+        .def("Shift",
             overload_cast_explicit<Class, const Vector3<T>&, const Vector3<T>&>(
-                &Class::Shift)),
-        py::arg("p_PoQ_E"), py::arg("w_WP_E"),
-        doc_ShiftTwoArg_deprecatedArgName);
-    cls.def("ComposeWithMovingFrameAcceleration",
-        &Class::ComposeWithMovingFrameAcceleration,
-        py::arg("position_of_moving_frame"),
-        py::arg("angular_velocity_of_this_frame"),
-        py::arg("velocity_of_moving_frame"),
-        py::arg("acceleration_of_moving_frame"),
-        cls_doc.ComposeWithMovingFrameAcceleration.doc);
-    constexpr char doc_ComposeMovingFrameAccel_deprecatedArgName[] =
-        "The keyword arguments (kwargs) have been renamed from"
-        " ComposeWithMovingFrameAcceleration(p_PB_E, w_WP_E, V_PB_E, A_PB_E) to"
-        " ComposeWithMovingFrameAcceleration(position_of_moving_frame,"
-        " angular_velocity_of_this_frame,"
-        " velocity_of_moving_frame,"
-        " acceleration_of_moving_frame)"
-        " The old kwargs are deprecated and unavailable after 2022-07-01.";
-    cls.def("ComposeWithMovingFrameAcceleration",
-        WrapDeprecated(doc_ComposeMovingFrameAccel_deprecatedArgName,
-            &Class::ComposeWithMovingFrameAcceleration),
-        py::arg("p_PB_E"), py::arg("w_WP_E"), py::arg("V_PB_E"),
-        py::arg("A_PB_E"), doc_ComposeMovingFrameAccel_deprecatedArgName);
+                &Class::Shift),
+            py::arg("offset"), py::arg("angular_velocity_of_this_frame"),
+            cls_doc.Shift.doc)
+        .def("ComposeWithMovingFrameAcceleration",
+            &Class::ComposeWithMovingFrameAcceleration,
+            py::arg("position_of_moving_frame"),
+            py::arg("angular_velocity_of_this_frame"),
+            py::arg("velocity_of_moving_frame"),
+            py::arg("acceleration_of_moving_frame"),
+            cls_doc.ComposeWithMovingFrameAcceleration.doc);
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
@@ -229,15 +186,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Shift",
             overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift),
             py::arg("offset"), cls_doc.Shift.doc_1args);
-    constexpr char doc_Shift_deprecatedArgName[] =
-        "The keyword argument (kwarg) has been renamed from"
-        " Shift(p_BqBq_E) to"
-        " Shift(offset)."
-        " Deprecated kwarg will be unavailable after 2022-08-01.";
-    cls.def("Shift",
-        WrapDeprecated(doc_Shift_deprecatedArgName,
-            overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift)),
-        py::arg("p_BpBq_E"), doc_Shift_deprecatedArgName);
     cls.def("dot",
         overload_cast_explicit<T, const SpatialVelocity<T>&>(&Class::dot),
         py::arg("velocity"), cls_doc.dot.doc);

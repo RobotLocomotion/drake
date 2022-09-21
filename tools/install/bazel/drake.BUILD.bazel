@@ -12,7 +12,7 @@ _DRAKE_SHLIBS = glob([
     ".lib/libdrake*.so",
     ".lib/libvtk*.so.*",
     # For Mosek (not enabled by default).
-    ".lib/libcilkrts*.so*",
+    ".lib/libtbb*.so*",
     ".lib/libmosek64*.so*",
     # For Gurobi (not enabled by default).
     ".lib/libgurobi*.so*",

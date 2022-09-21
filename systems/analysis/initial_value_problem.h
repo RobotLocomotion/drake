@@ -7,7 +7,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/dense_output.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -76,114 +75,6 @@ class InitialValueProblem {
   /// @return The derivative vector d𝐱/dt ∈ ℝⁿ.
   using OdeFunction = std::function<VectorX<T>(const T& t, const VectorX<T>& x,
                                                const VectorX<T>& k)>;
-
-  /// A collection of values i.e. initial time t₀, initial state vector 𝐱₀
-  /// and parameters vector 𝐤.to further specify the ODE system (in order
-  /// to become an initial value problem).  This places the same role as
-  /// systems::Context, but is intentionally much simpler.
-  struct DRAKE_DEPRECATED(
-      "2022-07-01",
-      "OdeContext is deprecated. InitialValueProblem now has a "
-      "complete API which does not depend on it.") OdeContext {
-    /// Default constructor, leaving all values unspecified.
-    OdeContext() = default;
-
-    /// Constructor specifying all values.
-    ///
-    /// @param t0_in Specified initial time t₀.
-    /// @param x0_in Specified initial state vector 𝐱₀.
-    /// @param k_in Specified parameter vector 𝐤.
-    OdeContext(const std::optional<T>& t0_in,
-               const std::optional<VectorX<T>>& x0_in,
-               const std::optional<VectorX<T>>& k_in)
-        : t0(t0_in), x0(x0_in), k(k_in) {}
-
-    bool operator==(const OdeContext& rhs) const {
-      return (t0 == rhs.t0 && x0 == rhs.x0 && k == rhs.k);
-    }
-
-    bool operator!=(const OdeContext& rhs) const { return !operator==(rhs); }
-
-    std::optional<T> t0;           ///< The initial time t₀ for the IVP.
-    std::optional<VectorX<T>> x0;  ///< The initial state vector 𝐱₀ for the IVP.
-    std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
-  };
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  /// Constructs an IVP described by the given @p ode_function, using
-  /// given @p default_values.t0 and @p default_values.x0 as initial
-  /// conditions, and parameterized with @p default_values.k by default.
-  ///
-  /// @param ode_function The ODE function f(t, 𝐱; 𝐤) that describes the state
-  ///                     evolution over time.
-  /// @param default_values The values specified by default for this IVP, i.e.
-  ///                       default initial time t₀ ∈ ℝ and state vector
-  ///                       𝐱₀ ∈ ℝⁿ, and default parameter vector 𝐤 ∈ ℝᵐ.
-  /// @pre An initial time @p default_values.t0 is given.
-  /// @pre An initial state vector @p default_values.x0 is given.
-  /// @pre A parameter vector @p default_values.k is given.
-  /// @throws std::exception if preconditions are not met.
-  DRAKE_DEPRECATED("2022-07-01",
-                   "OdeContext is deprecated. Use the constructor that takes "
-                   "x0, and k as arguments directly.")
-  InitialValueProblem(const OdeFunction& ode_function,
-                      const OdeContext& default_values);
-
-  /// Solves the IVP for time @p tf, using the initial time t₀, initial state
-  /// vector 𝐱₀ and parameter vector 𝐤 present in @p values, falling back to
-  /// the ones given on construction if not given.
-  ///
-  /// @param tf The IVP will be solved for this time.
-  /// @param values IVP initial conditions and parameters.
-  /// @returns The IVP solution 𝐱(@p tf; 𝐤) for 𝐱(t₀; 𝐤) = 𝐱₀.
-  /// @pre Given @p tf must be larger than or equal to the specified initial
-  ///      time t₀ (either given or default).
-  /// @pre If given, the dimension of the initial state vector @p values.x0
-  ///      must match that of the default initial state vector in the default
-  ///      specified values given on construction.
-  /// @pre If given, the dimension of the parameter vector @p values.k
-  ///      must match that of the parameter vector in the default specified
-  ///      values given on construction.
-  /// @throws std::exception if preconditions are not met.
-  DRAKE_DEPRECATED("2022-07-01",
-                   "OdeContext is deprecated. Use Solve(t0, tf) instead.")
-  VectorX<T> Solve(const T& tf, const OdeContext& values = {}) const;
-
-  /// Solves and yields an approximation of the IVP solution x(t; 𝐤) for
-  /// the closed time interval between the initial time t₀ and the given final
-  /// time @p tf, using initial state 𝐱₀ and parameter vector 𝐤 present in
-  /// @p values (falling back to the ones given on construction if not given).
-  ///
-  /// To this end, the wrapped IntegratorBase instance solves this IVP,
-  /// advancing time and state from t₀ and 𝐱₀ = 𝐱(t₀) to @p tf and 𝐱(@p tf),
-  /// creating a dense output over that [t₀, @p tf] interval along the way.
-  ///
-  /// @param tf The IVP will be solved up to this time. Usually, t₀ < @p tf as
-  ///           an empty dense output would result if t₀ = @p tf.
-  /// @param values IVP initial conditions and parameters.
-  /// @returns A dense approximation to 𝐱(t; 𝐤) with 𝐱(t₀; 𝐤) = 𝐱₀, defined for
-  ///          t₀ ≤ t ≤ tf.
-  /// @note The larger the given @p tf value is, the larger the approximated
-  ///       interval will be. See documentation of the specific dense output
-  ///       technique in use for reference on performance impact as this
-  ///       interval grows.
-  /// @pre Given @p tf must be larger than or equal to the specified initial
-  ///      time t₀ (either given or default).
-  /// @pre If given, the dimension of the initial state vector @p values.x0
-  ///      must match that of the default initial state vector in the default
-  ///      specified values given on construction.
-  /// @pre If given, the dimension of the parameter vector @p values.k
-  ///      must match that of the parameter vector in the default specified
-  ///      values given on construction.
-  /// @throws std::exception if any of the preconditions is not met.
-  DRAKE_DEPRECATED(
-      "2022-07-01",
-      "OdeContext is deprecated. Use DenseSolve(t0, tf) instead.")
-  std::unique_ptr<DenseOutput<T>> DenseSolve(
-      const T& tf, const OdeContext& values = {}) const;
-
-#pragma GCC diagnostic pop
 
   /// Constructs an IVP described by the given @p ode_function, using @p x0 as
   /// initial conditions, and parameterized with @p k.
@@ -259,48 +150,6 @@ class InitialValueProblem {
   }
 
  private:
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Sanitizes given @p values to solve for @p tf, i.e. sets defaults
-  // when values are missing and validates that all preconditions specified
-  // for InitialValueProblem::Solve() and InitialValueProblem::DenseSolve()
-  // hold.
-  //
-  // @param tf The IVP will be solved for this time.
-  // @param values IVP initial conditions and parameters.
-  // @returns Sanitized values.
-  // @throws std::exception If preconditions specified for
-  //                        InitialValueProblem::Solve() and
-  //                        InitialValueProblem::DenseSolve()
-  //                        do not hold.
-  OdeContext SanitizeValuesOrThrow(const T& tf, const OdeContext& values) const;
-
-  // IVP values specified by default.
-  const OdeContext default_values_;
-
-  // @name Caching support
-  //
-  // In order to provide basic computation caching, both cache
-  // initialization and cache invalidation must occur on IVP
-  // solution evaluation. The mutability of the cached results
-  // (and the conditions that must hold for them to be valid)
-  // expresses the fact that neither computation results nor IVP
-  // definition are affected when these change.
-
-  // Invalidates and initializes cached IVP specified values and
-  // integration context based on the newly provided @p values.
-  void ResetCachedState(const OdeContext& values) const;
-
-  // Conditionally invalidates and initializes cached IVP specified
-  // values and integration context based on time @p tf to solve for
-  // and the provided @p values. If cached state can be reused, it's a
-  // no-op.
-  void ResetCachedStateIfNecessary(const T& tf, const OdeContext& values) const;
-
-  // IVP current specified values (for caching).
-  mutable OdeContext current_values_;
-#pragma GCC diagnostic pop
-
   // Resets the context / integrator between multiple solves.
   void ResetState() const;
 

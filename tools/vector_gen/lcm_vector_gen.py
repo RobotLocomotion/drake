@@ -410,7 +410,7 @@ VECTOR_HH_PREAMBLE = """
 #include "drake/common/dummy_value.h"
 #include "drake/common/name_value.h"
 #include "drake/common/never_destroyed.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/systems/framework/basic_vector.h"
 
 %(opening_namespace)s

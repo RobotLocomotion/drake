@@ -41,6 +41,8 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
     return x;
   });
   SynchronizeGlobalsForPython3(m);
+  CheckValue("Index(10).is_valid()", true);
+  CheckValue("Index().is_valid()", false);
   CheckValue("pass_thru_int(10)", 10);
   CheckValue("pass_thru_int(Index(10))", 10);
   // TypeSafeIndex<> is not implicitly constructible from an int.

@@ -3,7 +3,7 @@
 #include <limits>
 
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
+#include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
 
 using drake::multibody::internal::NormalizeVector;
 using drake::multibody::internal::RefFromPtrOrThrow;
@@ -132,7 +132,7 @@ void GazeTargetConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                   Eigen::VectorXd* y) const {
   if (use_autodiff()) {
     AutoDiffVecXd y_t;
-    Eval(math::InitializeAutoDiff(x), &y_t);
+    Eval(x.cast<AutoDiffXd>(), &y_t);
     *y = math::ExtractValue(y_t);
   } else {
     DoEvalGeneric(*plant_double_, context_double_, frameA_index_, frameB_index_,

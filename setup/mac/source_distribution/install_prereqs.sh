@@ -55,17 +55,17 @@ if [[ "${with_maintainer_only}" -eq 1 ]]; then
   brew bundle --file="${BASH_SOURCE%/*}/Brewfile-maintainer-only" --no-lock
 fi
 
-if ! command -v pip3.9 &>/dev/null; then
-  echo 'ERROR: pip3.9 is NOT installed. The post-install step for the python@3.9 formula may have failed.' >&2
+if ! command -v pip3.10 &>/dev/null; then
+  echo 'ERROR: pip3.10 is NOT installed. The post-install step for the python@3.10 formula may have failed.' >&2
   exit 2
 fi
 
-pip3.9 install -r "${BASH_SOURCE%/*}/requirements.txt"
+pip3.10 install -r "${BASH_SOURCE%/*}/requirements.txt"
 
 if [[ "${with_test_only}" -eq 1 ]]; then
-  pip3.9 install -r "${BASH_SOURCE%/*}/requirements-test-only.txt"
+  pip3.10 install -r "${BASH_SOURCE%/*}/requirements-test-only.txt"
 fi
 
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
-  pip3.9 install -r "${BASH_SOURCE%/*}/requirements-maintainer-only.txt"
+  pip3.10 install -r "${BASH_SOURCE%/*}/requirements-maintainer-only.txt"
 fi
