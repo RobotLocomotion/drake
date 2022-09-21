@@ -542,7 +542,8 @@ class Meshcat::Impl {
     // values) through to fmt to allow any fmt-specific exception to percolate.
     // Then, confirm that the user's pattern started with a valid protocol.
     const std::string url = fmt::format(
-        params.web_url_pattern, fmt::arg("host", "foo"), fmt::arg("port", 1));
+        fmt_runtime(params.web_url_pattern),
+        fmt::arg("host", "foo"), fmt::arg("port", 1));
     if (url.substr(0, 4) != "http") {
       throw std::logic_error("The web_url_pattern must be http:// or https://");
     }
@@ -611,7 +612,7 @@ class Meshcat::Impl {
     const bool is_localhost = host.empty() || host == "*";
     const std::string display_host = is_localhost ? "localhost" : host;
     return fmt::format(
-        params_.web_url_pattern,
+        fmt_runtime(params_.web_url_pattern),
         fmt::arg("host", display_host),
         fmt::arg("port", port_));
   }

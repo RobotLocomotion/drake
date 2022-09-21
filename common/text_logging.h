@@ -92,6 +92,14 @@ used by Drake might be older.)
 
 namespace drake {
 
+#if FMT_VERSION >= 80000 || defined(DRAKE_DOXYGEN_CXX)
+/// When using fmt >= 8, this is an alias for fmt::runtime.
+/// When using fmt < 8, this is a no-op.
+inline auto fmt_runtime(std::string_view s) { return fmt::runtime(s); }
+#else
+inline auto fmt_runtime(std::string_view s) { return s; }
+#endif
+
 #ifdef HAVE_SPDLOG
 namespace logging {
 
@@ -195,7 +203,10 @@ sink* get_dist_sink();
 struct Warn {
   template <typename... Args>
   Warn(const char* a, const Args&... b) {
-    drake::log()->warn(a, b...);
+    // TODO(jwnimmer-tri) Ideally we would compile-time check our Warn format
+    // strings without using fmt_runtime here, but I haven't figured out how
+    // to forward the arguments properly for all versions of fmt.
+    drake::log()->warn(fmt_runtime(a), b...);
   }
 };
 
