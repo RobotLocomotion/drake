@@ -504,6 +504,9 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 #endif
   // End of hidden Doxygen section.
 
+  /// (Advanced) NVI to DoCloneTo() This method is mostly intended to be called
+  /// by MultibodyPlantSubgraph. Most users should not call this clone
+  /// method directly but rather use the API provided by MultibodyPlantSubgraph.
   const Joint<T>& CloneTo(internal::MultibodyTree<T>* tree,
                           const Frame<T>& dest_frame_on_parent,
                           const Frame<T>& dest_frame_on_child) const {
