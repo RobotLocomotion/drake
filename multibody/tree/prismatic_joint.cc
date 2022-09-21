@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {
@@ -14,7 +14,6 @@ std::unique_ptr<Joint<ToScalar>>
 PrismaticJoint<T>::TemplatedDoCloneToScalar(
       const Frame<ToScalar>& frame_on_parent_body_clone,
       const Frame<ToScalar>& frame_on_child_body_clone) const {
-
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<PrismaticJoint<ToScalar>>(
       this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,

@@ -373,7 +373,6 @@ class PlanarJoint final : public Joint<T> {
   std::unique_ptr<PlanarJoint<ToScalar>> TemplatedDoCloneToScalar(
       const Frame<ToScalar>& frame_on_parent_body_clone,
       const Frame<ToScalar>& frame_on_child_body_clone) const;
-
 };
 
 }  // namespace multibody

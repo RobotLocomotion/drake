@@ -4359,7 +4359,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   template <typename U, typename... Args>
-  const U& CloneTo(MultibodyPlant<T>* dest, const U& element, Args&&... args) const {
+  const U& CloneTo(MultibodyPlant<T>* dest, const U& element,
+                   Args&&... args) const {
     return element.CloneTo(&dest->mutable_tree(), args...);
   }
 

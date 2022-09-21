@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {

@@ -12,6 +12,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/parsing/detail_multibody_plant_subgraph.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
@@ -418,9 +419,16 @@ template <typename T>
 void ManipulationStation<T>::MakeIiwaControllerModel() {
   // Build the controller's version of the plant, which only contains the
   // IIWA and the equivalent inertia of the gripper.
-  multibody::Parser parser(owned_controller_plant_.get());
+  auto elems = multibody::internal::MultibodyPlantElements::FromPlant(plant_);
+  multibody::internal::MultibodyPlantSubgraph control_subgraph(elems);
+  for (auto model : elems.model_instances()) {
+    if (model != iiwa_model_.model_instance) {
+      control_subgraph.RemoveModelInstance(model);
+    }
+  }
+  control_subgraph.AddTo(owned_controller_plant_.get());
   const auto controller_iiwa_model =
-      parser.AddModelFromFile(iiwa_model_.model_path, "iiwa");
+      owned_controller_plant_->GetModelInstanceByName("iiwa");
 
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->world_frame(),

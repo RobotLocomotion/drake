@@ -137,6 +137,7 @@ drake_cc_library(
     name = "detail_multibody_plant_subgraph",
     srcs = ["detail_multibody_plant_subgraph.cc"],
     hdrs = ["detail_multibody_plant_subgraph.h"],
+    tags = ["exclude_from_package"],
     visibility = ["//visibility:public"],
     deps = [
         ":detail_misc",
