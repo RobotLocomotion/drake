@@ -712,6 +712,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "deformable_driver_contact_test",
+    deps = [
+        ":multibody_plant_core",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_driver_multiplexer_test",
+    deps = [
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_googletest(
     name = "deformable_model_test",
     deps = [
         ":multibody_plant_core",

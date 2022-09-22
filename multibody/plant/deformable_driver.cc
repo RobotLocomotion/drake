@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/deformable_driver.h"
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
@@ -9,6 +10,9 @@
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/systems/framework/context.h"
 
+using drake::geometry::GeometryId;
+using drake::geometry::internal::DeformableContact;
+using drake::multibody::contact_solvers::internal::PartialPermutation;
 using drake::multibody::fem::FemModel;
 using drake::multibody::fem::FemState;
 using drake::multibody::fem::internal::FemSolver;
@@ -40,6 +44,31 @@ template <typename T>
 void DeformableDriver<T>::DeclareCacheEntries(
     DiscreteUpdateManager<T>* manager) {
   DRAKE_DEMAND(manager_ == manager);
+  const auto& deformable_contact_cache_entry = manager->DeclareCacheEntry(
+      "deformable contact data",
+      systems::ValueProducer(this, &DeformableDriver<T>::CalcDeformableContact),
+      {systems::System<T>::configuration_ticket()});
+  cache_indexes_.deformable_contact =
+      deformable_contact_cache_entry.cache_index();
+
+  const auto& participating_velocity_mux_cache_entry =
+      manager->DeclareCacheEntry(
+          "multiplexer for participating velocities",
+          systems::ValueProducer(
+              this, &DeformableDriver<T>::CalcParticipatingVelocityMultiplexer),
+          {deformable_contact_cache_entry.ticket()});
+  cache_indexes_.participating_velocity_mux =
+      participating_velocity_mux_cache_entry.cache_index();
+
+  const auto& participating_velocities_cache_entry = manager->DeclareCacheEntry(
+      "participating velocities for all bodies",
+      systems::ValueProducer(this,
+                             &DeformableDriver<T>::CalcParticipatingVelocities),
+      {deformable_contact_cache_entry.ticket(),
+       systems::System<T>::xd_ticket()});
+  cache_indexes_.participating_velocities =
+      participating_velocities_cache_entry.cache_index();
+
   for (DeformableBodyIndex i(0); i < deformable_model_->num_bodies(); ++i) {
     const DeformableBodyId id = deformable_model_->GetBodyId(i);
     const fem::FemModel<T>& fem_model = deformable_model_->GetFemModel(id);
@@ -49,9 +78,8 @@ void DeformableDriver<T>::DeclareCacheEntries(
         fmt::format("FEM state for body with index {}", i),
         systems::ValueProducer(
             *model_state,
-            std::function<void(const systems::Context<T>&, fem::FemState<T>*)>{
-                [this, i](const systems::Context<T>& context,
-                          fem::FemState<T>* state) {
+            std::function<void(const Context<T>&, fem::FemState<T>*)>{
+                [this, i](const Context<T>& context, fem::FemState<T>* state) {
                   this->CalcFemState(context, i, state);
                 }}),
         {systems::System<T>::xd_ticket()});
@@ -59,7 +87,7 @@ void DeformableDriver<T>::DeclareCacheEntries(
 
     /* Cache entry for free motion FEM state. */
     const auto& free_motion_fem_state_cache_entry = manager->DeclareCacheEntry(
-        fmt::format("Free motion FEM state for body with index {}", i),
+        fmt::format("free motion FEM state for body with index {}", i),
         systems::ValueProducer(
             *model_state,
             std::function<void(const systems::Context<T>&, fem::FemState<T>*)>{
@@ -93,11 +121,64 @@ void DeformableDriver<T>::DeclareCacheEntries(
         {systems::SystemBase::nothing_ticket()});
     cache_indexes_.fem_solver_scratches.emplace_back(
         scratch_entry.cache_index());
+
+    /* Permutation for participating dofs for each body. */
+    const auto& dof_permutation_cache_entry = manager->DeclareCacheEntry(
+        fmt::format("partial permutation for dofs of body {} based on "
+                    "participation in contact",
+                    i),
+        systems::ValueProducer(
+            std::function<void(const Context<T>&, PartialPermutation*)>{
+                [this, i](const Context<T>& context,
+                          PartialPermutation* result) {
+                  this->CalcDofPermutation(context, i, result);
+                }}),
+        {deformable_contact_cache_entry.ticket()});
+    cache_indexes_.dof_permutations.emplace_back(
+        dof_permutation_cache_entry.cache_index());
   }
 }
 
 template <typename T>
-void DeformableDriver<T>::CalcFemState(const systems::Context<T>& context,
+DeformableDriver<T>::Multiplexer::Multiplexer(std::vector<int> sizes)
+    : sizes_(std::move(sizes)) {
+  DRAKE_THROW_UNLESS(!sizes_.empty());
+  DRAKE_THROW_UNLESS(sizes_[0] >= 0);
+  offsets_.resize(num_vectors());
+  offsets_[0] = 0;
+  for (int i = 1; i < num_vectors(); ++i) {
+    DRAKE_THROW_UNLESS(sizes_[i] >= 0);
+    offsets_[i] = offsets_[i - 1] + sizes_[i - 1];
+  }
+  num_entries_ = std::accumulate(sizes_.begin(), sizes_.end(), 0);
+}
+
+template <typename T>
+VectorX<T> DeformableDriver<T>::Multiplexer::Multiplex(
+    std::vector<VectorX<T>>&& inputs) const {
+  VectorX<T> result(num_entries_);
+  DRAKE_THROW_UNLESS(static_cast<int>(inputs.size()) == num_vectors());
+  for (int i = 0; i < num_vectors(); ++i) {
+    DRAKE_THROW_UNLESS(sizes_[i] == inputs[i].size());
+    /* We move inputs[i] into the block vector so that (hopefully) the move
+     semantic is applied to individual entries. This may be significant when
+     T != double. */
+    result.segment(offsets_[i], sizes_[i]) = std::move(inputs[i]);
+  }
+  return result;
+}
+
+template <typename T>
+VectorX<T> DeformableDriver<T>::Multiplexer::Demultiplex(
+    const VectorX<T>& input, int index) const {
+  DRAKE_THROW_UNLESS(0 <= index && index < num_vectors());
+  DRAKE_THROW_UNLESS(input.size() == num_entries_);
+  const VectorX<T> result = input.segment(offsets_[index], sizes_[index]);
+  return result;
+}
+
+template <typename T>
+void DeformableDriver<T>::CalcFemState(const Context<T>& context,
                                        DeformableBodyIndex index,
                                        FemState<T>* fem_state) const {
   const DeformableBodyId id = deformable_model_->GetBodyId(index);
@@ -117,7 +198,7 @@ void DeformableDriver<T>::CalcFemState(const systems::Context<T>& context,
 
 template <typename T>
 const FemState<T>& DeformableDriver<T>::EvalFemState(
-    const systems::Context<T>& context, DeformableBodyIndex index) const {
+    const Context<T>& context, DeformableBodyIndex index) const {
   return manager_->plant()
       .get_cache_entry(cache_indexes_.fem_states.at(index))
       .template Eval<FemState<T>>(context);
@@ -167,6 +248,88 @@ const FemState<T>& DeformableDriver<T>::EvalNextFemState(
   return manager_->plant()
       .get_cache_entry(cache_indexes_.next_fem_states.at(index))
       .template Eval<FemState<T>>(context);
+}
+
+template <typename T>
+void DeformableDriver<T>::CalcDeformableContact(
+    const Context<T>& context, DeformableContact<T>* result) const {
+  const geometry::QueryObject<T>& query_object =
+      manager_->plant()
+          .get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
+  query_object.ComputeDeformableContact(result);
+}
+
+template <typename T>
+const DeformableContact<T>& DeformableDriver<T>::EvalDeformableContact(
+    const Context<T>& context) const {
+  return manager_->plant()
+      .get_cache_entry(cache_indexes_.deformable_contact)
+      .template Eval<DeformableContact<T>>(context);
+}
+
+template <typename T>
+void DeformableDriver<T>::CalcDofPermutation(const Context<T>& context,
+                                             DeformableBodyIndex index,
+                                             PartialPermutation* result) const {
+  const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
+  const GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
+  *result = EvalDeformableContact(context)
+                .contact_participation(geometry_id)
+                .CalcDofPartialPermutation();
+}
+
+template <typename T>
+const PartialPermutation& DeformableDriver<T>::EvalDofPermutation(
+    const Context<T>& context, DeformableBodyIndex index) const {
+  return manager_->plant()
+      .get_cache_entry(cache_indexes_.dof_permutations.at(index))
+      .template Eval<PartialPermutation>(context);
+}
+
+template <typename T>
+void DeformableDriver<T>::CalcParticipatingVelocityMultiplexer(
+    const Context<T>& context,
+    typename DeformableDriver<T>::Multiplexer* result) const {
+  const int num_bodies = deformable_model_->num_bodies();
+  std::vector<int> num_participating_dofs(num_bodies);
+  for (DeformableBodyIndex i(0); i < num_bodies; ++i) {
+    num_participating_dofs[i] =
+        EvalDofPermutation(context, i).permuted_domain_size();
+  }
+  *result = Multiplexer(std::move(num_participating_dofs));
+}
+
+template <typename T>
+const typename DeformableDriver<T>::Multiplexer&
+DeformableDriver<T>::EvalParticipatingVelocityMultiplexer(
+    const Context<T>& context) const {
+  return manager_->plant()
+      .get_cache_entry(cache_indexes_.participating_velocity_mux)
+      .template Eval<DeformableDriver<T>::Multiplexer>(context);
+}
+
+template <typename T>
+void DeformableDriver<T>::CalcParticipatingVelocities(
+    const Context<T>& context, VectorX<T>* result) const {
+  const int num_bodies = deformable_model_->num_bodies();
+  std::vector<VectorX<T>> participating_velocities(num_bodies);
+  for (DeformableBodyIndex i(0); i < num_bodies; ++i) {
+    const PartialPermutation& permutation = EvalDofPermutation(context, i);
+    const VectorX<T>& v = EvalFemState(context, i).GetVelocities();
+    participating_velocities[i].resize(permutation.permuted_domain_size());
+    permutation.Apply(v, &participating_velocities[i]);
+  }
+  *result = EvalParticipatingVelocityMultiplexer(context).Multiplex(
+      std::move(participating_velocities));
+}
+
+template <typename T>
+const VectorX<T>& DeformableDriver<T>::EvalParticipatingVelocities(
+    const Context<T>& context) const {
+  return manager_->plant()
+      .get_cache_entry(cache_indexes_.participating_velocities)
+      .template Eval<VectorX<T>>(context);
 }
 
 template class DeformableDriver<double>;

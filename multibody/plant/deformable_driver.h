@@ -6,6 +6,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/fem/discrete_time_integrator.h"
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
@@ -51,8 +52,18 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
    provided at construction. */
   void DeclareCacheEntries(DiscreteUpdateManager<T>* manager);
 
+  /* Evaluates the velocities of all participating dofs. The dofs are ordered
+   in increasing order of deformable body indexes. That is, the participating
+   dofs of body 0 come first, followed by participating dofs of body 1 and so
+   on. Within a single body, the dofs are ordered according to
+   their associated vertex index. */
+  const VectorX<T>& EvalParticipatingVelocities(
+      const systems::Context<T>& context) const;
+
  private:
   friend class DeformableDriverTest;
+  friend class DeformableDriverContactTest;
+  friend class DeformableDriverMultiplexerTest;
 
   /* Struct used to conglomerate the indexes of cache entries declared by
    the manager. */
@@ -62,6 +73,48 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
     std::vector<systems::CacheIndex> free_motion_fem_states;
     std::vector<systems::CacheIndex> next_fem_states;
     std::vector<systems::CacheIndex> fem_solver_scratches;
+    systems::CacheIndex deformable_contact;
+    std::vector<systems::CacheIndex> dof_permutations;
+    systems::CacheIndex participating_velocity_mux;
+    systems::CacheIndex participating_velocities;
+  };
+
+  /* This private nested class acts both as a multiplexer and a demultiplexer --
+   it combines multiple Eigen vectors into a single stacked vector and it also
+   splits an Eigen vector into multiple vectors. */
+  class Multiplexer {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Multiplexer);
+
+    /* Create an empty Multiplexer. */
+    Multiplexer() = default;
+
+    /* Constructs a Multiplexer that combines and splits vectors of the given
+     sizes.
+     @pre `sizes` is not empty and each entry is non-negative. */
+    explicit Multiplexer(std::vector<int> sizes);
+
+    /* The number of vectors to be multiplexed. */
+    int num_vectors() const { return sizes_.size(); }
+
+    /* Combines the given vectors into a single vector.
+     @throws std::exception if the sizes of `inputs` aren't compatible with the
+     sizes provided at construction. */
+    VectorX<T> Multiplex(std::vector<VectorX<T>>&& inputs) const;
+
+    /* Splits the given vector into multiple vectors and returns the one with
+     the given `index`.
+     @throws std::exception if the size of `input` is not the sum of sizes
+     provided at construction.
+     @throws std::exception if index is not in [0, num_vectors).
+     @returns a copy of the indexed vector. */
+    VectorX<T> Demultiplex(const VectorX<T>& input, int index) const;
+
+   private:
+    std::vector<int> sizes_;
+    std::vector<int> offsets_;
+    /* The sum over `sizes_`. */
+    int num_entries_{0};
   };
 
   /* Copies the state of the deformable body with `id` in the given `context`
@@ -104,10 +157,48 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   const fem::FemState<T>& EvalNextFemState(const systems::Context<T>& context,
                                            DeformableBodyIndex index) const;
 
+  /* Computes the contact information for all registered deformable bodies
+   @pre The geometry query input port of the MultibodyPlant that owns the
+        manager associated with this DeformableDriver is connected.
+   @pre result != nullptr. */
+  void CalcDeformableContact(
+      const systems::Context<T>& context,
+      geometry::internal::DeformableContact<T>* result) const;
+
+  /* Eval version of CalcDeformableContact(). */
+  const geometry::internal::DeformableContact<T>& EvalDeformableContact(
+      const systems::Context<T>& context) const;
+
+  /* Computes the partial permutation that maps degrees of freedom of the
+   deformable body with the given `index` to degrees of freedom that belong to
+   vertices of the body that participate in contact.
+   @pre result != nullptr. */
+  void CalcDofPermutation(
+      const systems::Context<T>& context, DeformableBodyIndex index,
+      contact_solvers::internal::PartialPermutation* result) const;
+
+  /* Eval version of CalcDofPermutation(). */
+  const contact_solvers::internal::PartialPermutation& EvalDofPermutation(
+      const systems::Context<T>& context, DeformableBodyIndex index) const;
+
+  /* Computes the multiplexer for participating velocities for all bodies.
+   @pre result != nullptr. */
+  void CalcParticipatingVelocityMultiplexer(const systems::Context<T>& context,
+                                            Multiplexer* result) const;
+
+  /* Eval version of CalcParticipatingVelocityMultiplexer(). */
+  const Multiplexer& EvalParticipatingVelocityMultiplexer(
+      const systems::Context<T>& context) const;
+
+  /* Calc version of EvalParticipatingVelocities().
+   @pre result != nullptr. */
+  void CalcParticipatingVelocities(const systems::Context<T>& context,
+                                   VectorX<T>* result) const;
+
   CacheIndexes cache_indexes_;
   /* Modeling information about all deformable bodies. */
   const DeformableModel<T>* const deformable_model_;
-  const DiscreteUpdateManager<T>* const  manager_;
+  const DiscreteUpdateManager<T>* const manager_;
   /* The integrator used to advance deformable body free motion states in time.
    */
   std::unique_ptr<fem::internal::DiscreteTimeIntegrator<T>> integrator_;
