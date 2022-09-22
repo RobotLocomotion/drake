@@ -519,19 +519,19 @@ int LeafSystem<T>::DeclareAbstractParameter(const AbstractValue& model_value) {
 }
 
 template <typename T>
-void LeafSystem<T>::DeclarePeriodicPublish(
+void LeafSystem<T>::DeclarePeriodicPublishNoHandler(
     double period_sec, double offset_sec) {
   DeclarePeriodicEvent(period_sec, offset_sec, PublishEvent<T>());
 }
 
 template <typename T>
-void LeafSystem<T>::DeclarePeriodicDiscreteUpdate(
+void LeafSystem<T>::DeclarePeriodicDiscreteUpdateNoHandler(
     double period_sec, double offset_sec) {
   DeclarePeriodicEvent(period_sec, offset_sec, DiscreteUpdateEvent<T>());
 }
 
 template <typename T>
-void LeafSystem<T>::DeclarePeriodicUnrestrictedUpdate(
+void LeafSystem<T>::DeclarePeriodicUnrestrictedUpdateNoHandler(
     double period_sec, double offset_sec) {
   DeclarePeriodicEvent(period_sec, offset_sec, UnrestrictedUpdateEvent<T>());
 }

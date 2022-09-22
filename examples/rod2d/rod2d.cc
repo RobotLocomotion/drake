@@ -30,7 +30,7 @@ Rod2D<T>::Rod2D(SystemType system_type, double dt)
 
     // Discretization approach requires three position variables and
     // three velocity variables, all discrete, and periodic update.
-    this->DeclarePeriodicDiscreteUpdate(dt);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(dt);
     auto state_index = this->DeclareDiscreteState(6);
     state_output_port_ = &this->DeclareStateOutputPort(
         "state_output", state_index);

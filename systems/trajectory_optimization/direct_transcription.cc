@@ -113,7 +113,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
       *y = next_state - context->get_continuous_state_vector().CopyToVector();
     } else {
       context->SetDiscreteState(0, state);
-      integrator_->get_system().CalcDiscreteVariableUpdates(
+      integrator_->get_system().CalcForcedDiscreteVariableUpdate(
           *context, discrete_state_.get());
       *y = next_state - discrete_state_->get_vector(0).get_value();
     }
@@ -292,8 +292,8 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
 
     if (discrete_time_system_) {
       symbolic_context->SetDiscreteState(state(i).cast<Expression>());
-      symbolic_system->CalcDiscreteVariableUpdates(*symbolic_context,
-                                                   discrete_state.get());
+      symbolic_system->CalcForcedDiscreteVariableUpdate(*symbolic_context,
+                                                        discrete_state.get());
       next_state = discrete_state->get_vector(0).get_value();
     } else {
       symbolic_context->SetContinuousState(state(i).cast<Expression>());

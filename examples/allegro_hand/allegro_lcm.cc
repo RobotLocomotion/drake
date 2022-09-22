@@ -35,7 +35,7 @@ AllegroCommandReceiver::AllegroCommandReceiver(int num_joints,
                 this->CopyStateToOutput(c, num_joints_ * 2, num_joints_, o);
               })
           .get_index();
-  this->DeclarePeriodicDiscreteUpdate(lcm_period_);
+  this->DeclarePeriodicDiscreteUpdateNoHandler(lcm_period_);
   // State + torque
   this->DeclareDiscreteState(num_joints_ * 3);
 }

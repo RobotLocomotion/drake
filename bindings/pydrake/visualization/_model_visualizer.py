@@ -239,7 +239,7 @@ class ModelVisualizer:
         # TODO(eric.cousineau): Simplify as part of #13776 (was #10015).
         Simulator(self._diagram).Initialize()
         # Publish draw messages with current state.
-        self._diagram.Publish(self._context)
+        self._diagram.ForcedPublish(self._context)
 
         # Disable the collision geometry at the start; it can be enabled by
         # the checkbox in the meshcat controls.
@@ -269,7 +269,7 @@ class ModelVisualizer:
         elif position is not None:
             self._plant.SetPositions(self._plant_context, position)
             self._sliders.SetPositions(position)
-            self._diagram.Publish(self._context)
+            self._diagram.ForcedPublish(self._context)
 
         assert all([x is None for x in (
             self._builder,
@@ -296,7 +296,7 @@ class ModelVisualizer:
                 time.sleep(1 / 32.0)
                 q = self._sliders.get_output_port().Eval(sliders_context)
                 self._plant.SetPositions(self._plant_context, q)
-                self._diagram.Publish(self._context)
+                self._diagram.ForcedPublish(self._context)
                 if loop_once or self._meshcat.GetButtonClicks(button_name) > 0:
                     return
         except KeyboardInterrupt:

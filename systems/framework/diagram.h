@@ -389,7 +389,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const EventCollection<PublishEvent<T>>& event_info) const final;
 
   // For each subsystem, if there is a discrete update event in its
-  // corresponding subevent collection, calls its CalcDiscreteVariableUpdates
+  // corresponding subevent collection, calls its CalcDiscreteVariableUpdate()
   // method with the appropriate subcontext, subevent collection and
   // substate.
   void DispatchDiscreteVariableUpdateHandler(

@@ -55,7 +55,7 @@ SystemSymbolicInspector::SystemSymbolicInspector(
 
   // Discrete updates.
   if (context_->num_discrete_state_groups() > 0) {
-    system.CalcDiscreteVariableUpdates(*context_, discrete_updates_.get());
+    system.CalcForcedDiscreteVariableUpdate(*context_, discrete_updates_.get());
   }
 
   // Constraints.

@@ -200,14 +200,32 @@ class System : public SystemBase {
   void Publish(const Context<T>& context,
                const EventCollection<PublishEvent<T>>& events) const;
 
-  // TODO(sherm1) Rename this ForcedPublish().
+  /** (Advanced) Manually triggers any PublishEvent that has trigger
+  type kForced. Invokes the publish event dispatcher on this %System with the
+  given Context.
 
-  /** Forces a publish on the system, given a @p context. The publish event will
-  have a trigger type of kForced, with no additional data, attribute or
-  custom callback. The Simulator can be configured to call this in
-  Simulator::Initialize() and at the start of each continuous integration
-  step (not recommended). See the Simulator API for more details. */
-  void Publish(const Context<T>& context) const;
+  The default dispatcher will invoke the handlers (if any) associated with each
+  force-triggered event.
+
+  @note There will always be at least one force-triggered event, though with no
+  associated handler. By default that will do nothing when triggered, but that
+  behavior can be changed by overriding the dispatcher DoPublish()
+  (not recommended).
+
+  The Simulator can be configured to call this in Simulator::Initialize() and at
+  the start of each continuous integration step. See the Simulator API for more
+  details.
+
+  @see Publish(), CalcForcedDiscreteVariableUpdate(),
+       CalcForcedUnrestrictedUpdate() */
+  void ForcedPublish(const Context<T>& context) const;
+
+  /** (Deprecated) See ForcedPublish()
+  @pydrake_mkdoc_identifier{deprecated} */
+  DRAKE_DEPRECATED("2023-03-01", "Use ForcedPublish() instead")
+  void Publish(const Context<T>& context) const {
+    ForcedPublish(context);
+  }
   //@}
 
   //----------------------------------------------------------------------------
@@ -517,18 +535,29 @@ class System : public SystemBase {
   variables `xd(n)` in @p context and outputs the results to @p
   discrete_state. See documentation for
   DispatchDiscreteVariableUpdateHandler() for more details. */
-  void CalcDiscreteVariableUpdates(
+  void CalcDiscreteVariableUpdate(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const;
 
+  /** (Deprecated) See CalcDiscreteVariableUpdate() (no final 's')
+  @pydrake_mkdoc_identifier{deprecated_3args} */
+  DRAKE_DEPRECATED("2023-03-01",
+                   "Use CalcDiscreteVariableUpdate() (no final 's') instead")
+  void CalcDiscreteVariableUpdates(
+      const Context<T>& context,
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state) const {
+    CalcDiscreteVariableUpdate(context, events, discrete_state);
+  }
+
   /** Given the @p discrete_state results of a previous call to
-  CalcDiscreteVariableUpdates() that dispatched the given collection of
+  CalcDiscreteVariableUpdate() that dispatched the given collection of
   events, modifies the @p context to reflect the updated @p discrete_state.
   @param[in] events
       The Event collection that resulted in the given @p discrete_state.
   @param[in,out] discrete_state
-      The updated discrete state from a CalcDiscreteVariableUpdates()
+      The updated discrete state from a CalcDiscreteVariableUpdate()
       call. This is mutable to permit its contents to be swapped with the
       corresponding @p context contents (rather than copied).
   @param[in,out] context
@@ -537,20 +566,37 @@ class System : public SystemBase {
       may cause addresses of individual discrete state group vectors in
       @p context to be different on return than they were on entry.
   @pre @p discrete_state is the result of a previous
-       CalcDiscreteVariableUpdates() call that dispatched this @p events
+       CalcDiscreteVariableUpdate() call that dispatched this @p events
        collection. */
   void ApplyDiscreteVariableUpdate(
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state, Context<T>* context) const;
 
-  // TODO(sherm1) Rename this CalcForcedDiscreteVariableUpdate().
+  /** (Advanced) Manually triggers any DiscreteUpdateEvent that has trigger
+  type kForced. Invokes the discrete event dispatcher on this %System with the
+  given Context providing the initial values for the discrete variables. The
+  updated values of the discrete variables are written to the `discrete_state`
+  output argument; no change is made to the %Context.
 
-  /** This method forces a discrete update on the system
-  given a @p context, and the updated discrete state is stored in
-  @p discrete_state. The discrete update event will have a trigger type of
-  kForced, with no attribute or custom callback. */
+  The default dispatcher will invoke the handlers (if any) associated with each
+  force-triggered event.
+
+  @note There will always be at least one force-triggered event, though with no
+  associated handler. By default that will do nothing when triggered, but that
+  behavior can be changed by overriding the dispatcher (not recommended).
+
+  @see CalcDiscreteVariableUpdate(), CalcForcedUnrestrictedUpdate() */
+  void CalcForcedDiscreteVariableUpdate(
+      const Context<T>& context, DiscreteValues<T>* discrete_state) const;
+
+  /** (Deprecated) See CalcForcedDiscreteVariableUpdate()
+  @pydrake_mkdoc_identifier{deprecated_2args} */
+  DRAKE_DEPRECATED("2023-03-01",
+                   "Use CalcForcedDiscreteVariableUpdate() instead")
   void CalcDiscreteVariableUpdates(const Context<T>& context,
-                                   DiscreteValues<T>* discrete_state) const;
+                                   DiscreteValues<T>* discrete_state) const {
+    CalcForcedDiscreteVariableUpdate(context, discrete_state);
+  }
 
   /** This method is the public entry point for dispatching all unrestricted
   update event handlers. Using all the unrestricted update handers in
@@ -586,18 +632,30 @@ class System : public SystemBase {
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const;
 
-  // TODO(sherm1) Rename this CalcForcedUnrestrictedUpdate().
+  /** (Advanced) Manually triggers any UnrestrictedUpdateEvent that has trigger
+  type kForced. Invokes the unrestricted event dispatcher on this %System with
+  the given Context providing the initial values for the state variables. The
+  updated values of the state variables are written to the `state`
+  output argument; no change is made to the %Context.
 
-  /** This method forces an unrestricted update on the system
-  given a @p context, and the updated state is stored in @p state. The
-  unrestricted update event will have a trigger type of kForced, with no
-  additional data, attribute or custom callback.
+  The default dispatcher will invoke the handlers (if any) associated with each
+  force-triggered event.
 
-  @sa CalcUnrestrictedUpdate(const Context<T>&, const
-  EventCollection<UnrestrictedUpdateEvent<T>>*, State<T>* state)
-      for more information. */
+  @note There will always be at least one force-triggered event, though with no
+  associated handler. By default that will do nothing when triggered, but that
+  behavior can be changed by overriding the dispatcher (not recommended).
+
+  @see CalcUnrestrictedUpdate() */
+  void CalcForcedUnrestrictedUpdate(const Context<T>& context,
+                                    State<T>* state) const;
+
+  /** (Deprecated) See CalcForcedUnrestrictedUpdate()
+  @pydrake_mkdoc_identifier{deprecated} */
+  DRAKE_DEPRECATED("2023-02-01", "Use CalcForcedUnrestrictedUpdate() instead")
   void CalcUnrestrictedUpdate(const Context<T>& context,
-                              State<T>* state) const;
+                              State<T>* state) const {
+    CalcForcedUnrestrictedUpdate(context, state);
+  }
 
   /** This method is called by a Simulator during its calculation of the size of
   the next continuous step to attempt. The System returns the next time at
@@ -1905,6 +1963,12 @@ class System : public SystemBase {
   // (so that the external constraints are preserved); for runtime calculations,
   // only the constraints_ vector is used.
   std::vector<ExternalSystemConstraint> external_constraints_;
+
+  // TODO(sherm1) Unify force-triggered events with publish, per-step, and
+  //  initialization events (see leaf_system.h). These should be stored in
+  //  a CompositeEventCollection, likely in LeafSystem. But consider instead
+  //  moving the other collections up here so that the Diagram collections
+  //  don't have to be reconstructed on the fly when accessed.
 
   // These are only used to dispatch forced event handling. For a LeafSystem,
   // these contain at least one kForced triggered event. For a Diagram, they

@@ -189,7 +189,7 @@ int DoMain() {
     simulator.AdvanceTo(time);
     // Force-publish the lcmt_jaco_command (via the command_pub system within
     // the diagram).
-    diagram->Publish(diagram_context);
+    diagram->ForcedPublish(diagram_context);
   }
 
   // We should never reach here.

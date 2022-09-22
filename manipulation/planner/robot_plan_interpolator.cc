@@ -93,7 +93,7 @@ RobotPlanInterpolator::RobotPlanInterpolator(
   // Flag indicating whether RobotPlanInterpolator::Initialize has been called.
   init_flag_index_ = this->DeclareAbstractState(Value<bool>(false));
 
-  this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
+  this->DeclarePeriodicUnrestrictedUpdateNoHandler(update_interval, 0);
 }
 
 RobotPlanInterpolator::~RobotPlanInterpolator() {}
