@@ -674,7 +674,7 @@ TYPED_TEST(DrakeVisualizerTest, ForcePublish) {
   this->PopulateScene();
   auto context = this->diagram_->CreateDefaultContext();
   const auto& vis_context = this->visualizer_->GetMyContextFromRoot(*context);
-  this->visualizer_->Publish(vis_context);
+  this->visualizer_->ForcedPublish(vis_context);
 
   /* Confirm that messages were sent.  */
   MessageResults results = this->ProcessMessages();
@@ -875,7 +875,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeDeformableGeometry) {
   /* Dispatch a load message. */
   auto context = this->diagram_->CreateDefaultContext();
   const auto& vis_context = this->visualizer_->GetMyContextFromRoot(*context);
-  this->visualizer_->Publish(vis_context);
+  this->visualizer_->ForcedPublish(vis_context);
 
   /* Confirm that messages were sent.  */
   MessageResults results = this->ProcessMessages();
@@ -985,7 +985,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
   /* Dispatch a load message. */
   auto context = this->diagram_->CreateDefaultContext();
   const auto& vis_context = this->visualizer_->GetMyContextFromRoot(*context);
-  this->visualizer_->Publish(vis_context);
+  this->visualizer_->ForcedPublish(vis_context);
 
   /* Confirm that messages were sent.  */
   MessageResults results = this->ProcessMessages(params.role);

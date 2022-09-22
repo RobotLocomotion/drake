@@ -1191,7 +1191,7 @@ void Diagram<T>::DispatchDiscreteVariableUpdateHandler(
       DiscreteValues<T>& subdiscrete =
           diagram_discrete->get_mutable_subdiscrete(i);
 
-      registered_systems_[i]->CalcDiscreteVariableUpdates(
+      registered_systems_[i]->CalcDiscreteVariableUpdate(
           subcontext, subevents, &subdiscrete);
     }
   }

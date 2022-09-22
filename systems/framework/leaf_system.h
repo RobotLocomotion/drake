@@ -900,11 +900,11 @@ class LeafSystem : public System<T> {
   /** @anchor declare_forced_events
   @name                  Declare forced events
   Forced events are those that are triggered through invocation of
-  System::Publish(const Context&),
-  System::CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*),
-  or System::CalcUnrestrictedUpdate(const Context&, State<T>*),
+  System::ForcedPublish(const Context&),
+  System::CalcForcedDiscreteVariableUpdate(const Context&, DiscreteValues<T>*),
+  or System::CalcForcedUnrestrictedUpdate(const Context&, State<T>*),
   rather than as a response to some computation-related event (e.g.,
-  the beginning of a period of time was reached, a trajectory advancing
+  the beginning of a period of time was reached, a trajectory-advancing
   step was performed, etc.) One useful application of a forced publish:
   a process receives a network message and wants to trigger message
   emissions in various systems embedded within a Diagram in response.
@@ -917,15 +917,15 @@ class LeafSystem : public System<T> {
 
   @warning Simulator handles forced publish events at initialization
   and on a per-step basis when its "publish at initialization" and
-  "publish every time step" options are set.
+  "publish every time step" options are set (not recommended).
   @see Simulator::set_publish_at_initialization()
   @see Simulator::set_publish_every_time_step() */
   //@{
 
   /** Declares a function that is called whenever a user directly calls
-  Publish(const Context&). Multiple calls to
+  ForcedPublish(const Context&). Multiple calls to
   DeclareForcedPublishEvent() will cause multiple handlers to be called
-  upon a call to Publish(); these handlers which will be called with the
+  upon a call to ForcedPublish(); these handlers which will be called with the
   same const Context in arbitrary order. The handler should be a class
   member function (method) with this signature:
   @code
@@ -960,10 +960,10 @@ class LeafSystem : public System<T> {
   }
 
   /** Declares a function that is called whenever a user directly calls
-  CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*). Multiple
+  CalcForcedDiscreteVariableUpdate(const Context&, DiscreteValues<T>*). Multiple
   calls to DeclareForcedDiscreteUpdateEvent() will cause multiple handlers
-  to be called upon a call to CalcDiscreteVariableUpdates(); these handlers
-  which will be called with the same const Context in arbitrary order. The
+  to be called upon a call to CalcForcedDiscreteVariableUpdate(); these handlers
+  will be called with the same const Context in arbitrary order. The
   handler should be a class member function (method) with this signature:
   @code
     EventStatus MySystem::MyDiscreteVariableUpdates(const Context<T>&,
@@ -1002,10 +1002,10 @@ class LeafSystem : public System<T> {
   }
 
   /** Declares a function that is called whenever a user directly calls
-  CalcUnrestrictedUpdate(const Context&, State<T>*). Multiple calls to
+  CalcForcedUnrestrictedUpdate(const Context&, State<T>*). Multiple calls to
   DeclareForcedUnrestrictedUpdateEvent() will cause multiple handlers to be
-  called upon a call to CalcUnrestrictedUpdate(); these handlers which will
-  be called with the same const Context in arbitrary order.The handler
+  called upon a call to CalcForcedUnrestrictedUpdate(); these handlers which
+  will be called with the same const Context in arbitrary order.The handler
   should be a class member function (method) with this signature:
   @code
     EventStatus MySystem::MyUnrestrictedUpdates(const Context<T>&,
@@ -1825,6 +1825,10 @@ class LeafSystem : public System<T> {
       const Context<T>& context,
       const std::vector<const PublishEvent<T>*>& events) const;
 
+  // TODO(sherm1) This virtual implementation of CalcDiscreteVariableUpdate()
+  //  uses the plural "Updates" instead for unfortunate historical reasons.
+  //  Consider whether it is worth changing.
+
   /** Derived-class event dispatcher for all simultaneous discrete update
   events. Override this in your derived LeafSystem only if you require
   behavior other than the default dispatch behavior (not common).
@@ -1840,7 +1844,7 @@ class LeafSystem : public System<T> {
 
   This method is called only from the virtual
   DispatchDiscreteVariableUpdateHandler(), which is only called from
-  the public non-virtual CalcDiscreteVariableUpdates(), which will already
+  the public non-virtual CalcDiscreteVariableUpdate(), which will already
   have error-checked the parameters so you don't have to. In particular,
   implementations may assume that @p context is valid; that
   @p discrete_state is non-null, and that the referenced object has the
@@ -1858,6 +1862,7 @@ class LeafSystem : public System<T> {
   // TODO(sherm1) Shouldn't require preloading of the output state; better to
   //              note just the changes since usually only a small subset will
   //              be changed by this method.
+
   /** Derived-class event dispatcher for all simultaneous unrestricted update
   events. Override this in your derived LeafSystem only if you require
   behavior other than the default dispatch behavior (not common).

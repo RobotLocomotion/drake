@@ -320,8 +320,7 @@ struct Impl {
         DefineTemplateClassWithDefault<System<T>, SystemBase, PySystem>(
             m, "System", GetPyParam<T>(), doc.System.doc);
     system_cls  // BR
-        .def(
-            "Accept",
+        .def("Accept",
             [](const System<T>* self, PySystemVisitor* v) { self->Accept(v); },
             py::arg("v"), doc.System.Accept.doc)
         .def("get_input_port",
@@ -392,16 +391,14 @@ struct Impl {
             overload_cast_explicit<unique_ptr<DiscreteValues<T>>>(
                 &System<T>::AllocateDiscreteVariables),
             doc.System.AllocateDiscreteVariables.doc)
-        .def(
-            "EvalVectorInput",
+        .def("EvalVectorInput",
             [](const System<T>* self, const Context<T>& arg1, int arg2) {
               return self->EvalVectorInput(arg1, arg2);
             },
             py_rvp::reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), doc.System.EvalVectorInput.doc)
-        .def(
-            "EvalAbstractInput",
+        .def("EvalAbstractInput",
             [](const System<T>* self, const Context<T>& arg1, int arg2) {
               return self->EvalAbstractInput(arg1, arg2);
             },
@@ -426,8 +423,7 @@ struct Impl {
             &System<T>::CalcImplicitTimeDerivativesResidual, py::arg("context"),
             py::arg("proposed_derivatives"), py::arg("residual"),
             doc.System.CalcImplicitTimeDerivativesResidual.doc)
-        .def(
-            "CalcImplicitTimeDerivativesResidual",
+        .def("CalcImplicitTimeDerivativesResidual",
             [](const System<T>* self, const Context<T>& context,
                 const ContinuousState<T>& proposed_derivatives) {
               // Note: This is the only version of the method that works for
@@ -440,16 +436,16 @@ struct Impl {
             },
             py::arg("context"), py::arg("proposed_derivatives"),
             doc.System.CalcImplicitTimeDerivativesResidual.doc)
-        .def("CalcDiscreteVariableUpdates",
+        .def("CalcForcedDiscreteVariableUpdate",
             overload_cast_explicit<void, const Context<T>&, DiscreteValues<T>*>(
-                &System<T>::CalcDiscreteVariableUpdates),
+                &System<T>::CalcForcedDiscreteVariableUpdate),
             py::arg("context"), py::arg("discrete_state"),
-            doc.System.CalcDiscreteVariableUpdates.doc_2args)
-        .def("CalcUnrestrictedUpdate",
+            doc.System.CalcForcedDiscreteVariableUpdate.doc)
+        .def("CalcForcedUnrestrictedUpdate",
             overload_cast_explicit<void, const Context<T>&, State<T>*>(
-                &System<T>::CalcUnrestrictedUpdate),
+                &System<T>::CalcForcedUnrestrictedUpdate),
             py::arg("context"), py::arg("state"),
-            doc.System.CalcUnrestrictedUpdate.doc_2args)
+            doc.System.CalcForcedUnrestrictedUpdate.doc)
         .def("GetSubsystemContext",
             overload_cast_explicit<const Context<T>&, const System<T>&,
                 const Context<T>&>(&System<T>::GetSubsystemContext),
@@ -475,8 +471,7 @@ struct Impl {
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
         // Sugar.
-        .def(
-            "GetGraphvizString",
+        .def("GetGraphvizString",
             [str_py](const System<T>* self, int max_depth) {
               // @note This is a workaround; for some reason,
               // casting this using `py::str` does not work, but directly
@@ -486,10 +481,10 @@ struct Impl {
             py::arg("max_depth") = std::numeric_limits<int>::max(),
             doc.System.GetGraphvizString.doc)
         // Events.
-        .def("Publish",
+        .def("ForcedPublish",
             overload_cast_explicit<void, const Context<T>&>(
-                &System<T>::Publish),
-            doc.System.Publish.doc_1args)
+                &System<T>::ForcedPublish),
+            doc.System.ForcedPublish.doc)
         .def("GetUniquePeriodicDiscreteUpdateAttribute",
             &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
             doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)
@@ -498,8 +493,7 @@ struct Impl {
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
             doc.System.CalcUniquePeriodicDiscreteUpdate.doc)
-        .def(
-            "IsDifferenceEquationSystem",
+        .def("IsDifferenceEquationSystem",
             [](const System<T>& self) {
               double period = 0.0;
               bool retval = self.IsDifferenceEquationSystem(&period);
@@ -519,14 +513,12 @@ Note: The above is for the C++ documentation. For Python, use
         .def("EvalKineticEnergy", &System<T>::EvalKineticEnergy,
             py::arg("context"), doc.System.EvalKineticEnergy.doc)
         // Scalar types.
-        .def(
-            "ToAutoDiffXd",
+        .def("ToAutoDiffXd",
             [](const System<T>& self) { return self.ToAutoDiffXd(); },
             doc.System.ToAutoDiffXd.doc_0args)
         .def("ToAutoDiffXdMaybe", &System<T>::ToAutoDiffXdMaybe,
             doc.System.ToAutoDiffXdMaybe.doc)
-        .def(
-            "ToSymbolic",
+        .def("ToSymbolic",
             [](const System<T>& self) { return self.ToSymbolic(); },
             doc.System.ToSymbolic.doc_0args)
         .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe,
@@ -534,8 +526,7 @@ Note: The above is for the C++ documentation. For Python, use
         .def("FixInputPortsFrom", &System<T>::FixInputPortsFrom,
             py::arg("other_system"), py::arg("other_context"),
             py::arg("target_context"), doc.System.FixInputPortsFrom.doc)
-        .def(
-            "GetWitnessFunctions",
+        .def("GetWitnessFunctions",
             [](const System<T>& self, const Context<T>& context) {
               std::vector<const WitnessFunction<T>*> witnesses;
               self.GetWitnessFunctions(context, &witnesses);
