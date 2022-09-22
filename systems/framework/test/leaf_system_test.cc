@@ -105,9 +105,9 @@ GTEST_TEST(ForcedDispatchOverrideSystemTest, Dispatchers) {
   auto discrete_values = system.AllocateDiscreteVariables();
   EXPECT_EQ(discrete_values->get_system_id(), context->get_system_id());
   auto state = context->CloneState();
-  system.Publish(*context);
-  system.CalcDiscreteVariableUpdates(*context, discrete_values.get());
-  system.CalcUnrestrictedUpdate(*context, state.get());
+  system.ForcedPublish(*context);
+  system.CalcForcedDiscreteVariableUpdate(*context, discrete_values.get());
+  system.CalcForcedUnrestrictedUpdate(*context, state.get());
   ASSERT_TRUE(system.got_publish_event());
   ASSERT_TRUE(system.got_discrete_update_event());
   ASSERT_TRUE(system.got_unrestricted_update_event());
@@ -147,7 +147,7 @@ class TestSystem : public LeafSystem<T> {
   void AddPeriodicUpdate() {
     const double period = 10.0;
     const double offset = 5.0;
-    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
     std::optional<PeriodicEventData> periodic_attr =
         this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
@@ -157,7 +157,7 @@ class TestSystem : public LeafSystem<T> {
 
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
-    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
     std::optional<PeriodicEventData> periodic_attr =
        this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
@@ -166,14 +166,16 @@ class TestSystem : public LeafSystem<T> {
   }
 
   void AddPeriodicUpdate(double period, double offset) {
-    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
   }
 
   void AddPeriodicUnrestrictedUpdate(double period, double offset) {
-    this->DeclarePeriodicUnrestrictedUpdate(period, offset);
+    this->DeclarePeriodicUnrestrictedUpdateNoHandler(period, offset);
   }
 
-  void AddPublish(double period) { this->DeclarePeriodicPublish(period); }
+  void AddPublish(double period) {
+    this->DeclarePeriodicPublishNoHandler(period);
+  }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override {}
@@ -2364,7 +2366,7 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   ASSERT_EQ(system.do_publish_count(), 0);
   ASSERT_EQ(system.event_handle_count(), 0);
 
-  system.Publish(*context);
+  system.ForcedPublish(*context);
   EXPECT_EQ(system.do_publish_count(), 1);
   EXPECT_EQ(system.event_handle_count(), 1);
   system.Publish(*context, events);
@@ -2376,7 +2378,7 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   system.set_ignore_events(true);
   ASSERT_TRUE(system.ignore_events());
 
-  system.Publish(*context);
+  system.ForcedPublish(*context);
   EXPECT_EQ(system.do_publish_count(), 3);
   EXPECT_EQ(system.event_handle_count(), 2);
   system.Publish(*context, events);
@@ -2791,9 +2793,9 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   dut.GetInitializationEvents(*context, init_events.get());
 
   dut.Publish(*context, init_events->get_publish_events());
-  dut.CalcDiscreteVariableUpdates(*context,
-                                  init_events->get_discrete_update_events(),
-                                  discrete_updates.get());
+  dut.CalcDiscreteVariableUpdate(*context,
+                                 init_events->get_discrete_update_events(),
+                                 discrete_updates.get());
   dut.CalcUnrestrictedUpdate(
       *context, init_events->get_unrestricted_update_events(), state.get());
 
@@ -2979,12 +2981,12 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
 
   dut.CalcUnrestrictedUpdate(
       *context, all_events->get_unrestricted_update_events(), &*state);
-  dut.CalcUnrestrictedUpdate(*context, &*state);
-  dut.CalcDiscreteVariableUpdates(
+  dut.CalcForcedUnrestrictedUpdate(*context, &*state);
+  dut.CalcDiscreteVariableUpdate(
       *context, all_events->get_discrete_update_events(), &*discrete_state);
-  dut.CalcDiscreteVariableUpdates(*context, &*discrete_state);
+  dut.CalcForcedDiscreteVariableUpdate(*context, &*discrete_state);
   dut.Publish(*context, all_events->get_publish_events());
-  dut.Publish(*context);
+  dut.ForcedPublish(*context);
 
   EXPECT_EQ(dut.num_publish(), 5);
   EXPECT_EQ(dut.num_second_publish_handler_publishes(), 1);

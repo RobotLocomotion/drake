@@ -165,7 +165,7 @@ GTEST_TEST(TestVectorLogSink, ForcedPublishOnly) {
 
   EXPECT_EQ(log.num_samples(), 0);
 
-  diagram->Publish(*context);
+  diagram->ForcedPublish(*context);
   EXPECT_EQ(log.num_samples(), 1);
 }
 
@@ -183,7 +183,7 @@ GTEST_TEST(TestVectorLogSink, NoForcedPublish) {
 
   EXPECT_EQ(log.num_samples(), 0);
 
-  diagram->Publish(*context);
+  diagram->ForcedPublish(*context);
   EXPECT_EQ(log.num_samples(), 0);
 }
 

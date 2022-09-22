@@ -54,7 +54,7 @@ class PyPlotVisualizer(LeafSystem):
 
         self.set_name('pyplot_visualization')
         self.timestep = draw_period or default_draw_period
-        self.DeclarePeriodicPublish(self.timestep, 0.0)
+        self.DeclarePeriodicPublishNoHandler(self.timestep, 0.0)
 
         if ax is None:
             self.fig = self._plt.figure(facecolor=facecolor, figsize=figsize)

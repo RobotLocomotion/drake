@@ -201,7 +201,7 @@ def MakeJointSlidersThatPublishOnCallback(
     positions = plant.GetPositions(plant_context)
 
     # Publish once immediately.
-    publishing_system.Publish(publishing_context)
+    publishing_system.ForcedPublish(publishing_context)
     if my_callback:
         my_callback(plant_context)
 

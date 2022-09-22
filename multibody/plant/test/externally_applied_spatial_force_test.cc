@@ -168,7 +168,7 @@ TEST_F(ExternallyAppliedForcesTest, DiscretePlant) {
   MakePlantWithGravityCompensator(1.0e-3);
 
   auto updates = diagram_->AllocateDiscreteVariables();
-  diagram_->CalcDiscreteVariableUpdates(*context_, updates.get());
+  diagram_->CalcForcedDiscreteVariableUpdate(*context_, updates.get());
 
   // Copies to plain Eigen vectors to verify the math.
   auto& acrobot_context =

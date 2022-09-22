@@ -131,7 +131,7 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   // TODO(siyuan): transfer publish entirely to individual systems.
   // Do a force-publish before the simulation starts.
   if (publish_at_initialization_) {
-    system_.Publish(*context_);
+    system_.ForcedPublish(*context_);
     ++num_publishes_;
   }
 
@@ -168,7 +168,7 @@ void Simulator<T>::HandleDiscreteUpdate(
     const EventCollection<DiscreteUpdateEvent<T>>& events) {
   if (events.HasEvents()) {
     // First, compute the discrete updates into a temporary buffer.
-    system_.CalcDiscreteVariableUpdates(*context_, events,
+    system_.CalcDiscreteVariableUpdate(*context_, events,
         discrete_updates_.get());
     // Then, write them back into the context.
     system_.ApplyDiscreteVariableUpdate(events, discrete_updates_.get(),
@@ -298,7 +298,7 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     // TODO(siyuan): transfer per step publish entirely to individual systems.
     // Allow System a chance to produce some output.
     if (get_publish_every_time_step()) {
-      system_.Publish(*context_);
+      system_.ForcedPublish(*context_);
       ++num_publishes_;
     }
 

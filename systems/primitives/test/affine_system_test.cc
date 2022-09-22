@@ -234,7 +234,7 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   system.get_input_port().FixValue(context.get(), u0);
 
   auto update = system.AllocateDiscreteVariables();
-  system.CalcDiscreteVariableUpdates(*context, update.get());
+  system.CalcForcedDiscreteVariableUpdate(*context, update.get());
 
   EXPECT_TRUE(CompareMatrices(update->get_vector(0).CopyToVector(),
                               A * x0 + B * u0 + f0));
@@ -370,7 +370,8 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest,
   sys.get_input_port().FixValue(context.get(), 42.0);
 
   auto updates = sys.AllocateDiscreteVariables();
-  EXPECT_NO_THROW(sys.CalcDiscreteVariableUpdates(*context, updates.get()));
+  EXPECT_NO_THROW(sys.CalcForcedDiscreteVariableUpdate(*context,
+                                                       updates.get()));
 }
 
 GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
@@ -384,7 +385,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
   sys.get_input_port().FixValue(context.get(), 42.0);
 
   auto updates = sys.AllocateDiscreteVariables();
-  sys.CalcDiscreteVariableUpdates(*context, updates.get());
+  sys.CalcForcedDiscreteVariableUpdate(*context, updates.get());
   EXPECT_TRUE(CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t),
                               updates->get_vector().CopyToVector()));
 
