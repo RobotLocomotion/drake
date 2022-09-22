@@ -195,7 +195,7 @@ std::string ImageWriter::MakeFileName(const std::string& format,
 
   int64_t u_time = static_cast<int64_t>(time * 1e6 + 0.5);
   int m_time = static_cast<int>(time * 1e3 + 0.5);
-  return fmt::format(format, fmt::arg("port_name", port_name),
+  return fmt::format(fmt_runtime(format), fmt::arg("port_name", port_name),
                      fmt::arg("image_type", labels_.at(pixel_type)),
                      fmt::arg("time_double", time),
                      fmt::arg("time_usec", u_time),
