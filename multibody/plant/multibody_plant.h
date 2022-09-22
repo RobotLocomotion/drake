@@ -1788,7 +1788,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// With this method MultibodyPlant takes ownership of `model` and
   /// calls its DeclareSystemResources() method at Finalize(), giving specific
   /// physical model implementations a chance to declare the system resources it
-  /// needs.
+  /// needs. Each type of PhysicalModel can be added at most once.
   ///
   /// @param model After this call the model is owned by `this` MultibodyPlant.
   /// @pre model != nullptr.
