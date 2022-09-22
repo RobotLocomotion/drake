@@ -3826,9 +3826,35 @@ void MultibodyPlant<T>::CalcReactionForces(
   auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
   auto& tau_applied = applied_forces.mutable_generalized_forces();
 
-  // TODO(sherm1) This doesn't include hydroelastic contact forces
-  //              in continuous mode (#13888).
-  CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+  // Add in forces due to contact.
+  // Only add in hydroelastic contact forces for continuous mode for now as
+  // the forces computed by CalcHydroelasticContactForces() are wrong in
+  // discrete mode. See (#13888).
+  if (!is_discrete()) {
+    switch (contact_model_) {
+      case ContactModel::kPoint:
+        CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+        break;
+      case ContactModel::kHydroelastic:
+        Fapplied_Bo_W_array =
+            EvalHydroelasticContactForces(context).F_BBo_W_array;
+        break;
+      case ContactModel::kHydroelasticWithFallback:
+        // Combine the point-penalty forces with the contact surface forces.
+        CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+        const std::vector<SpatialForce<T>>& Fhydro_BBo_W_all =
+            EvalHydroelasticContactForces(context).F_BBo_W_array;
+        DRAKE_DEMAND(Fapplied_Bo_W_array.size() == Fhydro_BBo_W_all.size());
+        for (int i = 0; i < static_cast<int>(Fhydro_BBo_W_all.size()); ++i) {
+          // Both sets of forces are applied to the body's origins and expressed
+          // in frame W. They should simply sum.
+          Fapplied_Bo_W_array[i] += Fhydro_BBo_W_all[i];
+        }
+        break;
+    }
+  } else {
+    CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+  }
 
   // Compute reaction forces at each mobilizer.
   std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());

@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/drake_visualizer.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
@@ -29,6 +30,13 @@ using drake::systems::Context;
 using drake::systems::Diagram;
 using drake::systems::Simulator;
 using Eigen::Vector3d;
+using HT = drake::geometry::internal::HydroelasticType;
+using drake::geometry::internal::kComplianceType;
+using drake::geometry::internal::kElastic;
+using drake::geometry::internal::kMaterialGroup;
+using drake::geometry::internal::kHcDissipation;
+using drake::geometry::internal::kHydroGroup;
+using drake::geometry::internal::kRezHint;
 
 namespace drake {
 namespace multibody {
@@ -63,14 +71,15 @@ namespace {
 // We perform this test for both continuous and discrete models.
 class LadderTest : public ::testing::Test {
  protected:
-  void BuildLadderModel(double discrete_update_period) {
+  void BuildLadderModel(double discrete_update_period,
+                        bool hydro_geometry = false) {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(
         &builder,
         std::make_unique<MultibodyPlant<double>>(discrete_update_period));
 
-    AddWall();
-    AddPinnedLadder();
+    AddWall(hydro_geometry);
+    AddPinnedLadder(hydro_geometry);
     plant_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, 0.0, -kGravity));
     plant_->Finalize();
@@ -85,7 +94,7 @@ class LadderTest : public ::testing::Test {
   }
 
   // Adds the model for a wall anchored to the wall.
-  void AddWall() {
+  void AddWall(bool hydro_geometry = false) {
     const Vector3d size(kWallWidth, kProblemWidth, kWallHeight);
     const RigidTransformd X_WB = Eigen::Translation3d(
         kDistanceToWall + kWallWidth / 2.0, 0.0, kWallHeight / 2.0);
@@ -93,13 +102,24 @@ class LadderTest : public ::testing::Test {
     const auto shape = geometry::Box(size(0), size(1), size(2));
     plant_->RegisterVisualGeometry(plant_->world_body(), X_WB, shape,
                                    "wall_visual", green);
-    plant_->RegisterCollisionGeometry(
-        plant_->world_body(), X_WB, shape, "wall_collision",
+
+    geometry::ProximityProperties properties;
+    properties.AddProperty(
+        geometry::internal::kMaterialGroup, geometry::internal::kFriction,
         CoulombFriction<double>(kFrictionCoefficient, kFrictionCoefficient));
+
+    if (hydro_geometry) {
+      properties.AddProperty(kHydroGroup, kComplianceType, HT::kRigid);
+      properties.AddProperty(kHydroGroup, kRezHint, kProblemWidth);
+      properties.AddProperty(kMaterialGroup, kHcDissipation, kDissipation);
+    }
+
+    plant_->RegisterCollisionGeometry(plant_->world_body(), X_WB, shape,
+                                      "wall_collision", properties);
   }
 
   // Adds the model for the ladder pinned to the ground at the origin.
-  void AddPinnedLadder() {
+  void AddPinnedLadder(bool hydro_geometry) {
     // We split the ladder into two halves and join them with a weld joint so
     // that we can evaluate the reaction force right at the middle.
     // We define body frame Bl and Bu for the lower and upper portions of the
@@ -135,13 +155,28 @@ class LadderTest : public ::testing::Test {
     // We place it at the y+ corner of the ladder geometry so that the contact
     // force causes a non-zero torque at the pin joint for a more interesting
     // case.
-    const double point_contact_radius = 5.0e-3;
-    const RigidTransformd X_BC(
-        Vector3d(0.0, kProblemWidth / 2.0, kLadderLength / 2.0));
-    plant_->RegisterCollisionGeometry(
-        *ladder_upper_, X_BC, Sphere(point_contact_radius),
-        "LadderUpperCollisionGeometry",
+    const RigidTransformd X_BC(Vector3d(
+        0.0, (kProblemWidth / 2.0) - kPointContactRadius, kLadderLength / 2.0));
+
+    geometry::ProximityProperties properties;
+    properties.AddProperty(
+        geometry::internal::kMaterialGroup, geometry::internal::kFriction,
         CoulombFriction<double>(kFrictionCoefficient, kFrictionCoefficient));
+
+    if (hydro_geometry) {
+      properties.AddProperty(kHydroGroup, kComplianceType, HT::kSoft);
+      properties.AddProperty(kHydroGroup, kRezHint, kPointContactRadius);
+      properties.AddProperty(kHydroGroup, kElastic, kElasticModulus);
+      properties.AddProperty(kMaterialGroup, kHcDissipation, kDissipation);
+    }
+
+    ladder_upper_geometry_id_ = plant_->RegisterCollisionGeometry(
+        *ladder_upper_, X_BC, Sphere(kPointContactRadius),
+        "LadderUpperCollisionGeometry", properties);
+    plant_->RegisterVisualGeometry(*ladder_upper_, X_BC,
+                                   Sphere(kPointContactRadius),
+                                   "LadderUpperCollisionVisualGeometry",
+                                   Vector4<double>(0.0, 0.0, 0.8, 0.3));
 
     // Pin to the floor with a revolute joint.
     pin_ = &plant_->AddJoint<RevoluteJoint>("PinToGround", plant_->world_body(),
@@ -197,7 +232,7 @@ class LadderTest : public ::testing::Test {
   }
 
   void VerifyJointReactionForces(
-      Context<double>* diagram_context) {
+      Context<double>* diagram_context, bool hydro_geometry = false) {
     Context<double>* plant_context =
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context);
     // Evaluate the reaction forces output port to get the reaction force at the
@@ -217,21 +252,42 @@ class LadderTest : public ::testing::Test {
     const ContactResults<double>& contact_results =
         plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
             *plant_context);
-    // There should be a single contact pair.
-    ASSERT_EQ(contact_results.num_point_pair_contacts(), 1);
-    const PointPairContactInfo<double>& point_pair_contact_info =
-        contact_results.point_pair_contact_info(0);
 
-    const double direction =
-        point_pair_contact_info.bodyB_index() == ladder_upper_->index() ? 1.0
-                                                                        : -1.0;
-
-    // Contact force on the ladder at the contact point, expressed in the world
-    // frame.
-    const Vector3d f_Bc_W = direction * point_pair_contact_info.contact_force();
-
+    // Contact force on the ladder at the contact point, expressed in the
+    // world frame.
+    Vector3d f_Bc_W(0, 0, 0);
     // The contact point.
-    const Vector3d& p_WC = point_pair_contact_info.contact_point();
+    Vector3d p_WC(0, 0, 0);
+    if (hydro_geometry) {
+      // There should be a single contact surface.
+      ASSERT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+      const HydroelasticContactInfo<double>& hydroelastic_contact_info =
+          contact_results.hydroelastic_contact_info(0);
+      const double direction =
+          hydroelastic_contact_info.contact_surface().id_M() ==
+                  ladder_upper_geometry_id_
+              ? 1.0
+              : -1.0;
+
+      f_Bc_W = direction * hydroelastic_contact_info.F_Ac_W().translational();
+
+      p_WC = hydroelastic_contact_info.contact_surface().centroid();
+
+    } else {
+      // There should be a single contact pair.
+      ASSERT_EQ(contact_results.num_point_pair_contacts(), 1);
+      const PointPairContactInfo<double>& point_pair_contact_info =
+          contact_results.point_pair_contact_info(0);
+
+      const double direction =
+          point_pair_contact_info.bodyB_index() == ladder_upper_->index()
+              ? 1.0
+              : -1.0;
+
+      f_Bc_W = direction * point_pair_contact_info.contact_force();
+
+      p_WC = point_pair_contact_info.contact_point();
+    }
 
     // Ladder's weight.
     const double weight = kGravity * kLadderMass;
@@ -258,10 +314,11 @@ class LadderTest : public ::testing::Test {
     EXPECT_TRUE(CompareMatrices(f_Bc_W, f_C_W_expected, kTolerance));
 
     // Since the contact point was purposely located at
-    // y = kProblemWidth / 2.0, the contact force causes a reaction
-    // torque at the pin joint oriented along the z-axis.
-    const Vector3d t_Bl_W_expected(0.0, kActuationTorque,
-                                   -fc_x * kProblemWidth / 2.0);
+    // y = (kProblemWidth / 2.0) - kPointContactRadius, the contact force
+    // causes a reaction torque at the pin joint oriented along the z-axis.
+    const Vector3d t_Bl_W_expected(
+        0.0, kActuationTorque,
+        -fc_x * ((kProblemWidth / 2.0) - kPointContactRadius));
     EXPECT_TRUE(
         CompareMatrices(F_Bl_W.rotational(), t_Bl_W_expected, kTolerance));
 
@@ -273,15 +330,24 @@ class LadderTest : public ::testing::Test {
     const Vector3d f_Bu_expected(fc_x, 0.0, weight / 2.0);
     const double t_Bu_y =
         -(p_WBcm.x() / 2.0) * (weight / 2.0) + fc_x * p_WBcm.z();
-    const Vector3d t_Bu_expected(0.0, t_Bu_y, -fc_x * kProblemWidth / 2.0);
+    const Vector3d t_Bu_expected(
+        0.0, t_Bu_y, -fc_x * ((kProblemWidth / 2.0) - kPointContactRadius));
     EXPECT_TRUE(
         CompareMatrices(F_Bu_W.rotational(), t_Bu_expected, kTolerance));
     EXPECT_TRUE(
         CompareMatrices(F_Bu_W.translational(), f_Bu_expected, kTolerance));
   }
 
+  void Test(double time_step, bool hydro_geometry = false) {
+    BuildLadderModel(time_step, hydro_geometry);
+    auto context_prototype = diagram_->CreateDefaultContext();
+    auto simulator_prototype = Simulate(std::move(context_prototype));
+    VerifyJointReactionForces(&simulator_prototype->get_mutable_context(),
+                              hydro_geometry);
+  }
+
   void TestWithThreads(double time_step) {
-    SCOPED_TRACE(fmt::format("time_step = []", time_step));
+    SCOPED_TRACE(fmt::format("time_step = {}", time_step));
     BuildLadderModel(time_step);
     ASSERT_EQ(plant_->is_discrete(), (time_step != 0.));
 
@@ -289,7 +355,6 @@ class LadderTest : public ::testing::Test {
     // ensure the context deep copy is properly working.
     auto context_prototype = diagram_->CreateDefaultContext();
     auto simulator_prototype = Simulate(std::move(context_prototype));
-    VerifyJointReactionForces(&simulator_prototype->get_mutable_context());
 
     // TODO(#17720): As articulated in the issue, baking a query object when
     // cloning scene graph context is thread-unsafe. In particular, updating the
@@ -335,14 +400,20 @@ class LadderTest : public ::testing::Test {
   const double kProblemWidth{1.0};  // [m]
 
   // Ladder parameters.
-  const double kLadderLength{2.0};         // [m]
-  const double kLadderMass{7.0};           // [kg]
-  const double kLadderWidth{0.15};         // [m]
-  const double kFrictionCoefficient{0.0};  // Frictionless contact, [-]
+  const double kLadderLength{2.0};           // [m]
+  const double kLadderMass{7.0};             // [kg]
+  const double kLadderWidth{0.15};           // [m]
+  const double kFrictionCoefficient{0.0};    // Frictionless contact, [-]
+  const double kPointContactRadius{5.0e-3};  // [m]
+
 
   // Wall parameters.
   const double kWallWidth{0.3};   // [m]
   const double kWallHeight{3.0};  // [m]
+
+  // Hydroelastic parameters.
+  const double kElasticModulus{1.563248999e6};  // [Pa]
+  const double kDissipation{1e6};               // [s/m]
 
   // Pin joint parameters.
   const double kDistanceToWall{1.0};
@@ -357,6 +428,7 @@ class LadderTest : public ::testing::Test {
   SceneGraph<double>* scene_graph_{nullptr};
   const RigidBody<double>* ladder_lower_{nullptr};
   const RigidBody<double>* ladder_upper_{nullptr};
+  geometry::GeometryId ladder_upper_geometry_id_;
   const RevoluteJoint<double>* pin_{nullptr};
 
   // Weld joint joining the two halves of the ladder.
@@ -366,10 +438,18 @@ class LadderTest : public ::testing::Test {
 };
 
 TEST_F(LadderTest, PinReactionForcesContinuous) {
-  TestWithThreads(0.);
+  Test(0.);
+}
+
+TEST_F(LadderTest, PinReactionForcesContinuousHydroelastic) {
+  Test(0., true);
 }
 
 TEST_F(LadderTest, PinReactionForcesDiscrete) {
+  Test(1.0e-3);
+}
+
+TEST_F(LadderTest, TAMSIThreadSafety) {
   TestWithThreads(1.0e-3);
 }
 
