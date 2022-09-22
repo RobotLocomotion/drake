@@ -280,15 +280,15 @@ TEST_F(VectorSystemTest, TimeDerivatives) {
   EXPECT_EQ(dut.get_output_count(), 0);
 }
 
-// Forwarding of CalcDiscreteVariableUpdates works.
-TEST_F(VectorSystemTest, DiscreteVariableUpdates) {
+// Forwarding of CalcForcedDiscreteVariableUpdate works.
+TEST_F(VectorSystemTest, DiscreteVariableUpdate) {
   TestVectorSystem dut;
   auto context = dut.CreateDefaultContext();
   auto discrete_updates = dut.AllocateDiscreteVariables();
 
   // There's no state declared yet, so the VectorSystem base shouldn't call our
   // DUT.
-  dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
+  dut.CalcForcedDiscreteVariableUpdate(*context, discrete_updates.get());
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 0);
 
   // Now we have state, so the VectorSystem base should call our DUT.
@@ -297,7 +297,7 @@ TEST_F(VectorSystemTest, DiscreteVariableUpdates) {
   dut.get_input_port(0).FixValue(context.get(), Eigen::Vector2d(1.0, 2.0));
   context->SetDiscreteState(0, Eigen::Vector2d::Ones());
   discrete_updates = dut.AllocateDiscreteVariables();
-  dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
+  dut.CalcForcedDiscreteVariableUpdate(*context, discrete_updates.get());
   EXPECT_EQ(dut.get_last_context(), context.get());
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 1);
   EXPECT_EQ(discrete_updates->get_vector(0)[0], 2.0);
@@ -402,7 +402,7 @@ TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
 class NoInputNoOutputDiscreteTimeSystem : public VectorSystem<double> {
  public:
   NoInputNoOutputDiscreteTimeSystem() : VectorSystem<double>(0, 0) {
-    this->DeclarePeriodicDiscreteUpdate(1.0);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(1.0);
     this->DeclareDiscreteState(1);
   }
 
@@ -426,7 +426,7 @@ TEST_F(VectorSystemTest, NoInputNoOutputDiscreteTimeSystemTest) {
       Vector1d::Constant(2.0));
 
   auto discrete_updates = dut.AllocateDiscreteVariables();
-  dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
+  dut.CalcForcedDiscreteVariableUpdate(*context, discrete_updates.get());
   EXPECT_EQ(discrete_updates->get_vector(0)[0], 8.0);
 
   EXPECT_EQ(dut.num_output_ports(), 0);
@@ -545,7 +545,7 @@ TEST_F(VectorSystemTest, MissingMethodsContinuousTimeSystemTest) {
 class MissingMethodsDiscreteTimeSystem : public VectorSystem<double> {
  public:
   MissingMethodsDiscreteTimeSystem() : VectorSystem<double>(0, 1) {
-    this->DeclarePeriodicDiscreteUpdate(1.0);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(1.0);
     this->DeclareDiscreteState(1);
   }
 };
@@ -558,7 +558,7 @@ TEST_F(VectorSystemTest, MissingMethodsDiscreteTimeSystemTest) {
       Vector1d::Constant(2.0));
   auto discrete_updates = dut.AllocateDiscreteVariables();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get()),
+      dut.CalcForcedDiscreteVariableUpdate(*context, discrete_updates.get()),
       ".*DiscreteVariableUpdates.*next_state->size.. == 0.*failed.*");
 
   const auto& output = dut.get_output_port();

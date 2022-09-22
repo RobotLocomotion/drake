@@ -109,7 +109,7 @@ TEST_P(TrajectoryAffineSystemTest, DiscreteUpdates) {
       EXPECT_TRUE(CompareMatrices(
           A * x + B * u + f0, derivatives_->get_vector().CopyToVector(), tol));
     } else {
-      dut_->CalcDiscreteVariableUpdates(*context_, updates_.get());
+      dut_->CalcForcedDiscreteVariableUpdate(*context_, updates_.get());
       EXPECT_TRUE(CompareMatrices(
           A * x + B * u + f0, updates_->get_vector(0).CopyToVector(), tol));
     }

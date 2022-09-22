@@ -175,7 +175,7 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
 
           free_spheres_double.plant().SetPositions(
               free_spheres_double.get_mutable_plant_context(), q_sol);
-          free_spheres_double.get_mutable_diagram()->Publish(
+          free_spheres_double.get_mutable_diagram()->ForcedPublish(
               free_spheres_double.diagram_context());
           const double tol = 2E-5;
           EXPECT_NEAR(q_sol.head<4>().squaredNorm(), 1, tol);

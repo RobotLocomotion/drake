@@ -41,7 +41,7 @@ class CubicPolynomialSystem final : public systems::LeafSystem<T> {
         timestep_(timestep) {
     // Zero inputs, zero outputs.
     this->DeclareDiscreteState(1);  // One state variable.
-    this->DeclarePeriodicDiscreteUpdate(timestep);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(timestep);
   }
 
   // Scalar-converting copy constructor.
@@ -75,7 +75,7 @@ class LinearSystemWParams final : public systems::LeafSystem<T> {
     // Zero inputs, zero outputs.
     this->DeclareDiscreteState(1);                     // One state variable.
     this->DeclareNumericParameter(BasicVector<T>(1));  // One parameter.
-    this->DeclarePeriodicDiscreteUpdate(1.0);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(1.0);
   }
 
   // Scalar-converting copy constructor.

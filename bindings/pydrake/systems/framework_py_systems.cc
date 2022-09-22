@@ -92,9 +92,9 @@ struct Impl {
     using Base::DeclareDiscreteState;
     using Base::DeclareInitializationEvent;
     using Base::DeclareNumericParameter;
-    using Base::DeclarePeriodicDiscreteUpdate;
+    using Base::DeclarePeriodicDiscreteUpdateNoHandler;
     using Base::DeclarePeriodicEvent;
-    using Base::DeclarePeriodicPublish;
+    using Base::DeclarePeriodicPublishNoHandler;
     using Base::DeclarePeriodicUnrestrictedUpdateEvent;
     using Base::DeclarePerStepEvent;
     using Base::DeclareStateOutputPort;
@@ -440,16 +440,24 @@ struct Impl {
             },
             py::arg("context"), py::arg("proposed_derivatives"),
             doc.System.CalcImplicitTimeDerivativesResidual.doc)
+        .def("CalcForcedDiscreteVariableUpdate",
+            &System<T>::CalcForcedDiscreteVariableUpdate, py::arg("context"),
+            py::arg("discrete_state"),
+            doc.System.CalcForcedDiscreteVariableUpdate.doc)
         .def("CalcDiscreteVariableUpdates",
-            overload_cast_explicit<void, const Context<T>&, DiscreteValues<T>*>(
-                &System<T>::CalcDiscreteVariableUpdates),
+            WrapDeprecated(
+                doc.System.CalcDiscreteVariableUpdates.doc_deprecated_2args,
+                &System<T>::CalcForcedDiscreteVariableUpdate),
             py::arg("context"), py::arg("discrete_state"),
-            doc.System.CalcDiscreteVariableUpdates.doc_2args)
+            doc.System.CalcDiscreteVariableUpdates.doc_deprecated_2args)
+        .def("CalcForcedUnrestrictedUpdate",
+            &System<T>::CalcForcedUnrestrictedUpdate, py::arg("context"),
+            py::arg("state"), doc.System.CalcForcedUnrestrictedUpdate.doc)
         .def("CalcUnrestrictedUpdate",
-            overload_cast_explicit<void, const Context<T>&, State<T>*>(
-                &System<T>::CalcUnrestrictedUpdate),
+            WrapDeprecated(doc.System.CalcUnrestrictedUpdate.doc_deprecated,
+                &System<T>::CalcForcedUnrestrictedUpdate),
             py::arg("context"), py::arg("state"),
-            doc.System.CalcUnrestrictedUpdate.doc_2args)
+            doc.System.CalcUnrestrictedUpdate.doc_deprecated)
         .def("GetSubsystemContext",
             overload_cast_explicit<const Context<T>&, const System<T>&,
                 const Context<T>&>(&System<T>::GetSubsystemContext),
@@ -486,10 +494,12 @@ struct Impl {
             py::arg("max_depth") = std::numeric_limits<int>::max(),
             doc.System.GetGraphvizString.doc)
         // Events.
+        .def("ForcedPublish", &System<T>::ForcedPublish,
+            doc.System.ForcedPublish.doc)
         .def("Publish",
-            overload_cast_explicit<void, const Context<T>&>(
-                &System<T>::Publish),
-            doc.System.Publish.doc_1args)
+            WrapDeprecated(
+                doc.System.Publish.doc_deprecated, &System<T>::ForcedPublish),
+            doc.System.Publish.doc_deprecated)
         .def("GetUniquePeriodicDiscreteUpdateAttribute",
             &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
             doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)
@@ -722,14 +732,25 @@ Note: The above is for the C++ documentation. For Python, use
               self->DeclareInitializationEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
-        .def("DeclarePeriodicPublish",
-            &LeafSystemPublic::DeclarePeriodicPublish, py::arg("period_sec"),
-            py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicPublish.doc)
-        .def("DeclarePeriodicDiscreteUpdate",
-            &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
+        .def("DeclarePeriodicPublishNoHandler",
+            &LeafSystemPublic::DeclarePeriodicPublishNoHandler,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc)
+            doc.LeafSystem.DeclarePeriodicPublishNoHandler.doc)
+        .def("DeclarePeriodicPublish",
+            WrapDeprecated(doc.LeafSystem.DeclarePeriodicPublish.doc_deprecated,
+                &LeafSystemPublic::DeclarePeriodicPublishNoHandler),
+            py::arg("period_sec"), py::arg("offset_sec") = 0.,
+            doc.LeafSystem.DeclarePeriodicPublish.doc_deprecated)
+        .def("DeclarePeriodicDiscreteUpdateNoHandler",
+            &LeafSystemPublic::DeclarePeriodicDiscreteUpdateNoHandler,
+            py::arg("period_sec"), py::arg("offset_sec") = 0.,
+            doc.LeafSystem.DeclarePeriodicDiscreteUpdateNoHandler.doc)
+        .def("DeclarePeriodicDiscreteUpdate",
+            WrapDeprecated(
+                doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc_deprecated,
+                &LeafSystemPublic::DeclarePeriodicDiscreteUpdateNoHandler),
+            py::arg("period_sec"), py::arg("offset_sec") = 0.,
+            doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc_deprecated)
         .def("DeclarePeriodicPublishEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self, double period_sec, double offset_sec,

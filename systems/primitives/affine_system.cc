@@ -41,7 +41,7 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
       this->DeclareContinuousState(num_states_);
     } else {
       this->DeclareDiscreteState(num_states_);
-      this->DeclarePeriodicDiscreteUpdate(time_period_, 0.0);
+      this->DeclarePeriodicDiscreteUpdateNoHandler(time_period_, 0.0);
     }
   }
 
