@@ -1,11 +1,15 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/manipulation/kuka_iiwa/build_iiwa_control.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_command_receiver.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_command_sender.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_driver.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_driver_functions.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_status_receiver.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_status_sender.h"
 
@@ -121,10 +125,32 @@ PYBIND11_MODULE(kuka_iiwa, m) {
   }
 
   {
+    using Class = IiwaDriver;
+    constexpr auto& cls_doc = doc.IiwaDriver;
+    py::class_<Class> cls(m, "IiwaDriver", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
     m.def(
         "get_iiwa_max_joint_velocities",
         []() { return get_iiwa_max_joint_velocities(); },
         doc.get_iiwa_max_joint_velocities.doc);
+
+    m.def("ApplyDriverConfig", &ApplyDriverConfig, py::arg("driver_config"),
+        py::arg("model_instance_name"), py::arg("sim_plant"),
+        py::arg("models_from_directives"), py::arg("lcms"), py::arg("builder"),
+        doc.ApplyDriverConfig.doc);
+
+    m.def("BuildIiwaControl", &BuildIiwaControl, py::arg("plant"),
+        py::arg("iiwa_instance"), py::arg("controller_plant"), py::arg("lcm"),
+        py::arg("builder"), py::arg("ext_joint_filter_tau") = 0.01,
+        py::arg("desired_iiwa_kp_gains") = std::nullopt,
+        doc.BuildIiwaControl.doc);
   }
 }
 
