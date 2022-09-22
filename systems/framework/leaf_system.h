@@ -1906,6 +1906,11 @@ class LeafSystem : public System<T> {
            PeriodicEventDataComparator>
   DoMapPeriodicEventsByTiming(const Context<T>& context) const final;
 
+  void DoFindUniquePeriodicDiscreteUpdatesOrThrow(
+      const char* api_name, const Context<T>& context,
+      std::optional<PeriodicEventData>* timing,
+      EventCollection<DiscreteUpdateEvent<T>>* events) const final;
+
   // Calls DoPublish.
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.

@@ -535,6 +535,13 @@ class SystemBase : public internal::SystemMessageInterface {
     return DependencyTicket(internal::kPncTicket);
   }
 
+  /** Returns a ticket for the cache entry that provides scratch space for
+  discrete variable update computations.
+  @see System::CalcUniquePeriodicDiscreteUpdate() */
+  static DependencyTicket xd_scratch_ticket() {
+    return DependencyTicket(internal::kXdScratchTicket);
+  }
+
   /** (Internal use only) Returns a ticket indicating dependence on the output
   port indicated by `index`. No user-definable quantities in a system can
   meaningfully depend on that system's own output ports.

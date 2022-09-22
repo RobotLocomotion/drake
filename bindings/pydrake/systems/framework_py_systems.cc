@@ -493,6 +493,9 @@ struct Impl {
         .def("GetUniquePeriodicDiscreteUpdateAttribute",
             &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
             doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)
+        .def("CalcUniquePeriodicDiscreteUpdate",
+            &System<T>::CalcUniquePeriodicDiscreteUpdate, py::arg("context"),
+            doc.System.CalcUniquePeriodicDiscreteUpdate.doc)
         .def(
             "IsDifferenceEquationSystem",
             [](const System<T>& self) {

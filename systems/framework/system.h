@@ -261,6 +261,13 @@ class System : public SystemBase {
     return this->get_cache_entry(time_derivatives_cache_index_);
   }
 
+  /** (Advanced) Returns the CacheEntry used to provide a scratch copy of the
+  disrete variables for use (for example) by
+  CalcUniquePeriodicDiscreteUpdate(). */
+  const CacheEntry& get_discrete_variable_scratch_space_cache_entry() const {
+    return this->get_cache_entry(discrete_variable_scratch_space_cache_index_);
+  }
+
   /** Returns a reference to the cached value of the potential energy (PE),
   evaluating first if necessary using CalcPotentialEnergy().
 
@@ -671,6 +678,54 @@ class System : public SystemBase {
   timing if it exists, otherwise `nullopt`. */
   std::optional<PeriodicEventData>
       GetUniquePeriodicDiscreteUpdateAttribute() const;
+
+  /** If this %System contains a unique periodic timing for discrete update
+  events, this function executes the handlers for those events to determine what
+  their effect would be. Returns a reference to the discrete variable scratch
+  entry containing what values the discrete variables would have if these events
+  were triggered.
+
+  Note that this function _does not_ change the value of the discrete variables
+  in the supplied Context. However, you can apply the result to the %Context
+  like this: @code
+    const DiscreteValue<T>& updated =
+        CalcUniquePeriodicDiscreteUpdate(context);
+    context.SetDiscreteState(updated);
+  @endcode
+  You can write the updated values to a different %Context than the one you
+  used to calculate the update; the requirement is only that the discrete
+  state in the destination has the same structure (number of groups and size of
+  each group).
+
+  You can use GetUniquePeriodicDiscreteUpdateAttribute() to check whether you
+  can call %CalcUniquePeriodicDiscreteUpdate() safely, and to find the unique
+  periodic timing information (offset and period). See documentation there for
+  important caveats.
+
+  @param[in,out] context
+      The Context containing the current %System state and the mutable scratch
+      space into which the result is written. The current state is _not_
+      modified.
+  @returns
+      A reference to the DiscreteValues scratch space in `context` containing
+      the result of applying the discrete update event handlers to the current
+      discrete variable values.
+
+  @warning The referenced scratch space will be overwritten by the next call
+  to this method so copy it if you want it to persist.
+
+  @throws std::exception if there is not exactly one periodic timing in this
+  %System (which may be a Diagram) that triggers discrete update events.
+
+  @par Implementation
+  Copies the current discrete state values into preallocated scratch space in
+  the `context` cache. Applies the discrete update event handlers (in an
+  unspecified order) to the scratch copy, possibly updating it. Returns a
+  reference to the possibly-updated scratch space.
+
+  @see GetUniquePeriodicDiscreteUpdateAttribute(), GetPeriodicEvents() */
+  [[nodiscard]] const DiscreteValues<T>& CalcUniquePeriodicDiscreteUpdate(
+      const Context<T>& context) const;
 
   /** Returns true iff the state dynamics of this system are governed
   exclusively by a difference equation on a single discrete state group
@@ -1327,6 +1382,53 @@ class System : public SystemBase {
   // don't need "this->" everywhere when in templated derived classes.
   using SystemBase::DeclareCacheEntry;
 
+  /** Returns the set of all periodic discrete update events in this %System
+  (which may of course be a Diagram) provided that they share a unique periodic
+  timing. If PeriodicEventData is provided by the caller, then that is the
+  required timing. If not, then any unique timing will do and we set
+  PeriodicEventData to that timing on return. If there are no periodic discrete
+  update events in this %System we return quietly without touching `timing` or
+  `events`.
+
+  @note This is a protected helper function for the Leaf and Diagram
+  implementations of CalcUniquePeriodicDiscreteUpdate() which will apply the
+  event handlers for the event collection returned here.
+
+  @param[in] system The subsystem to be examined.
+  @param[in] context Compatible Context in case that's needed.
+  @param[in,out] timing If provided, the required timing. Otherwise set to
+     the discovered timing on return (if any).
+  @param[in,out] events A pre-allocated EventCollection of the appropriate
+     type for this %System. The set of periodic discrete events (if any) is
+     copied here on return.
+
+  @throws std::exception if PeriodicEventData is supplied and this %System
+      contains a periodic discrete event with different timing.
+  @throws std::exception if PeriodicEventData is not supplied and this %System
+      contains multiple periodic discrete update events with different timing.
+
+  @pre `timing` and `events` are non-null.
+  @see DoFindUniquePeriodicDiscreteUpdatesOrThrow() */
+  static void FindUniquePeriodicDiscreteUpdatesOrThrow(
+      const char* api_name, const System<T>& system, const Context<T>& context,
+      std::optional<PeriodicEventData>* timing,
+      EventCollection<DiscreteUpdateEvent<T>>* events) {
+    DRAKE_DEMAND(timing != nullptr && events != nullptr);
+    system.ValidateContext(context);
+    system.DoFindUniquePeriodicDiscreteUpdatesOrThrow(api_name, context, timing,
+                                                      events);
+  }
+
+  /** Diagram and LeafSystem must provide `final` implementations of this. The
+  default implementation is provided here just for internal testing purposes.
+  @see FindUniquePeriodicDiscreteUpdatesOrThrow() */
+  virtual void DoFindUniquePeriodicDiscreteUpdatesOrThrow(
+      const char* api_name, const Context<T>& context,
+      std::optional<PeriodicEventData>* timing,
+      EventCollection<DiscreteUpdateEvent<T>>* events) const {
+    unused(api_name, context, timing, events);
+  }
+
   /** Derived classes will implement this method to evaluate a witness function
   at the given context. */
   virtual T DoCalcWitnessValue(
@@ -1804,6 +1906,7 @@ class System : public SystemBase {
   CacheIndex kinetic_energy_cache_index_;
   CacheIndex conservative_power_cache_index_;
   CacheIndex nonconservative_power_cache_index_;
+  CacheIndex discrete_variable_scratch_space_cache_index_;
 };
 
 }  // namespace systems
