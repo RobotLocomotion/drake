@@ -107,6 +107,15 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
    @throws std::exception if no body with the given `id` has been registered. */
   geometry::GeometryId GetGeometryId(DeformableBodyId id) const;
 
+  /* Returns the output port of the vertex positions for all registered
+   deformable bodies.
+   @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
+  */
+  const systems::OutputPort<T>& vertex_positions_port() const {
+    this->ThrowIfSystemResourcesNotDeclared(__func__);
+    return plant_->get_output_port(vertex_positions_port_index_);
+  }
+
  private:
   PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant() const final {
     return PhysicalModelPointerVariant<T>(this);
@@ -131,6 +140,11 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
       DeformableBodyId id, const geometry::VolumeMesh<double>& mesh,
       const fem::DeformableBodyConfig<T>& config);
 
+  /* Copies the vertex positions of all deformable bodies to the output port
+   value which is guaranteed to be of type GeometryConfigurationVector. */
+  void CopyVertexPositions(const systems::Context<T>& context,
+                           AbstractValue* output) const;
+
   /* Helper to throw a useful message if a deformable body with the given `id`
    doesn't exist. */
   void ThrowUnlessRegistered(const char* source_method,
@@ -149,6 +163,7 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   std::unordered_map<DeformableBodyId, std::unique_ptr<fem::FemModel<T>>>
       fem_models_;
   std::vector<DeformableBodyId> body_ids_;
+  systems::OutputPortIndex vertex_positions_port_index_;
 };
 
 }  // namespace internal
