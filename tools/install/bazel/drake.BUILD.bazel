@@ -73,6 +73,7 @@ cc_library(
     name = ".fmt_headers",
     hdrs = glob([".include/fmt/**"], allow_empty = True),
     strip_include_prefix = ".include/fmt",
+    visibility = ["@fmt//:__pkg__"],
 )
 
 [
@@ -87,7 +88,8 @@ cc_library(
     name = "drake_shared_library",
     deps = [
         ":.drake_headers",
-        ":.fmt_headers",
+        "@eigen",
+        "@fmt",
     ] + [
         ":.imported{}".format(shlib)
         for shlib in _DRAKE_SHLIBS
