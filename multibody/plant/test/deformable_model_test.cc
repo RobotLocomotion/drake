@@ -157,6 +157,36 @@ TEST_F(DeformableModelTest, ToPhysicalModelPointerVariant) {
       std::holds_alternative<const DeformableModel<double>*>(variant));
 }
 
+TEST_F(DeformableModelTest, VertexPositionsOutputPort) {
+  Sphere sphere(1.0);
+  auto geometry = make_unique<GeometryInstance>(
+      RigidTransformd(), make_unique<Sphere>(sphere), "sphere");
+  constexpr double kRezHint = 0.5;
+  DeformableBodyId body_id = deformable_model_ptr_->RegisterDeformableBody(
+      std::move(geometry), default_body_config_, kRezHint);
+  plant_->Finalize();
+
+  std::unique_ptr<systems::Context<double>> context =
+      plant_->CreateDefaultContext();
+  std::unique_ptr<AbstractValue> output_value =
+      deformable_model_ptr_->vertex_positions_port().Allocate();
+  /* Compute the configuration for each geometry in the model. */
+  deformable_model_ptr_->vertex_positions_port().Calc(*context,
+                                                      output_value.get());
+  const geometry::GeometryConfigurationVector<double>& configurations =
+      output_value->get_value<geometry::GeometryConfigurationVector<double>>();
+
+  /* There's only one body and one geometry. */
+  EXPECT_EQ(configurations.size(), 1);
+  const geometry::GeometryId geometry_id =
+      deformable_model_ptr_->GetGeometryId(body_id);
+  ASSERT_TRUE(configurations.has_id(geometry_id));
+  /* Verify that the vertex positions port returns expected values, which in
+   this case should be the reference positions. */
+  EXPECT_EQ(configurations.value(geometry_id),
+            deformable_model_ptr_->GetReferencePositions(body_id));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
