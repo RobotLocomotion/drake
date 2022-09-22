@@ -325,13 +325,17 @@ void DoScalarDependentDefinitions(py::module m) {
       .def("SetDiscreteState",
           overload_cast_explicit<void, const Eigen::Ref<const VectorX<T>>&>(
               &Context<T>::SetDiscreteState),
-          py::arg("xd"), doc.Context.SetDiscreteState.doc_1args)
+          py::arg("xd"), doc.Context.SetDiscreteState.doc_single_group)
       .def("SetDiscreteState",
           overload_cast_explicit<void, int,
               const Eigen::Ref<const VectorX<T>>&>(
               &Context<T>::SetDiscreteState),
           py::arg("group_index"), py::arg("xd"),
-          doc.Context.SetDiscreteState.doc_2args)
+          doc.Context.SetDiscreteState.doc_select_one_group)
+      .def("SetDiscreteState",
+          overload_cast_explicit<void, const DiscreteValues<T>&>(
+              &Context<T>::SetDiscreteState),
+          py::arg("xd"), doc.Context.SetDiscreteState.doc_set_everything)
       .def(
           "SetAbstractState",
           [](py::object self, int index, py::object value) {

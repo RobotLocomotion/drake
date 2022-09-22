@@ -1398,6 +1398,30 @@ Diagram<T>::DoMapPeriodicEventsByTiming(const Context<T>& context) const {
   return periodic_events_map;
 }
 
+// Strategy:
+// For each subsystem, obtain its set of uniquely-timed periodic discrete
+// updates (if any) in an EventCollection. The first of these sets the timing;
+// all others must have the same timing. Once the full collection has been
+// assembled, we can use CalcDiscreteVariableUpdate() to get the result.
+// See the LeafSystem implementation of this virtual for clarification.
+template <typename T>
+void Diagram<T>::DoFindUniquePeriodicDiscreteUpdatesOrThrow(
+    const char* api_name, const Context<T>& context,
+    std::optional<PeriodicEventData>* timing,
+    EventCollection<DiscreteUpdateEvent<T>>* events) const {
+  auto& diagram_collection =
+      dynamic_cast<DiagramEventCollection<DiscreteUpdateEvent<T>>&>(*events);
+
+  for (int i = 0; i < num_subsystems(); ++i) {
+    const System<T>& sub_system = *registered_systems_[i];
+    const Context<T>& sub_context = GetSubsystemContext(sub_system, context);
+    EventCollection<DiscreteUpdateEvent<T>>& sub_collection =
+        diagram_collection.get_mutable_subevent_collection(i);
+    System<T>::FindUniquePeriodicDiscreteUpdatesOrThrow(
+        api_name, sub_system, sub_context, &*timing, &sub_collection);
+  }
+}
+
 template <typename T>
 void Diagram<T>::DoGetPeriodicEvents(
     const Context<T>& context,
