@@ -911,6 +911,47 @@ void LeafSystem<T>::DoApplyUnrestrictedUpdate(
   context->get_mutable_state().SetFrom(*state);
 }
 
+// The Diagram implementation of this method recursively visits sub-Diagrams
+// until we get to this LeafSystem implementation, where we can actually look
+// at the periodic discrete update Events. When no timing has yet been
+// established (`timing` parameter is empty), the first LeafSystem
+// to find a periodic discrete update event sets the timing for all the rest.
+// After that every periodic discrete update event must have the same timing
+// or this method throws an error message. If the timing is good, we return
+// all the periodic discrete update events we find in this LeafSystem.
+//
+// Unit testing for this method is in diagram_test.cc where it is used in
+// the leaf computation for the Diagram EvalUniquePeriodicDiscreteUpdate()
+// recursion.
+template <typename T>
+void LeafSystem<T>::DoFindUniquePeriodicDiscreteUpdatesOrThrow(
+    const char* api_name, const Context<T>& context,
+    std::optional<PeriodicEventData>* timing,
+    EventCollection<DiscreteUpdateEvent<T>>* events) const {
+  unused(context);
+  auto& leaf_collection =
+      dynamic_cast<LeafEventCollection<DiscreteUpdateEvent<T>>&>(*events);
+
+  for (const DiscreteUpdateEvent<T>* event :
+       periodic_events_.get_discrete_update_events().get_events()) {
+    DRAKE_DEMAND(event->get_trigger_type() == TriggerType::kPeriodic);
+    const PeriodicEventData* const event_timing =
+        event->template get_event_data<PeriodicEventData>();
+    DRAKE_DEMAND(event_timing != nullptr);
+    if (!timing->has_value())  // First find sets the required timing.
+      *timing = *event_timing;
+    if (!(*event_timing == *(*timing))) {
+      throw std::logic_error(fmt::format(
+          "{}(): found more than one "
+          "periodic timing that triggers discrete update events. "
+          "Timings were (offset,period)=({},{}) and ({},{}).",
+          api_name, (*timing)->offset_sec(), (*timing)->period_sec(),
+          event_timing->offset_sec(), event_timing->period_sec()));
+    }
+    leaf_collection.AddEvent(*event);
+  }
+}
+
 template <typename T>
 void LeafSystem<T>::DoGetPeriodicEvents(
       const Context<T>&,

@@ -535,6 +535,13 @@ class SystemBase : public internal::SystemMessageInterface {
     return DependencyTicket(internal::kPncTicket);
   }
 
+  /** (Internal use only) Returns a ticket for the cache entry that holds the
+  unique periodic discrete update computation.
+  @see System::EvalUniquePeriodicDiscreteUpdate() */
+  static DependencyTicket xd_unique_periodic_update_ticket() {
+    return DependencyTicket(internal::kXdUniquePeriodicUpdateTicket);
+  }
+
   /** (Internal use only) Returns a ticket indicating dependence on the output
   port indicated by `index`. No user-definable quantities in a system can
   meaningfully depend on that system's own output ports.

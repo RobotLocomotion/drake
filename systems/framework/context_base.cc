@@ -300,6 +300,11 @@ void ContextBase::CreateBuiltInTrackers() {
   auto& pnc_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kPncTicket), "pnc");
   unused(pnc_tracker);
+
+  auto& xd_unique_periodic_update_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kXdUniquePeriodicUpdateTicket),
+      "xd_unique_periodic_update");
+  unused(xd_unique_periodic_update_tracker);
 }
 
 void ContextBase::BuildTrackerPointerMap(

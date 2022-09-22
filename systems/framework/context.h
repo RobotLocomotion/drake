@@ -366,7 +366,8 @@ class Context : public ContextBase {
   discrete state. Sends out of date notifications for all
   discrete-state-dependent computations. Use the other signature for this
   method if you have multiple discrete state groups.
-  @pre There is exactly one discrete state group. */
+  @pre There is exactly one discrete state group.
+  @pydrake_mkdoc_identifier{single_group} */
   void SetDiscreteState(const Eigen::Ref<const VectorX<T>>& xd) {
     if (num_discrete_state_groups() != 1) {
       throw std::logic_error(fmt::format(
@@ -384,11 +385,22 @@ class Context : public ContextBase {
   state group. Sends out of date notifications for all computations that
   depend on this discrete state group.
   @pre `group_index` identifies an existing group.
-  @note Currently notifies dependents of _all_ groups. */
+  @note Currently notifies dependents of _all_ groups.
+  @pydrake_mkdoc_identifier{select_one_group} */
   void SetDiscreteState(int group_index,
                         const Eigen::Ref<const VectorX<T>>& xd) {
     get_mutable_discrete_state(DiscreteStateIndex(group_index))
         .SetFromVector(xd);
+  }
+
+  /** Sets all the discrete state variables in this %Context from a
+  compatible DiscreteValues object.
+
+  @throws std::exception unless the number of groups and size of each group
+  of `xd` matches those in this %Context.
+  @pydrake_mkdoc_identifier{set_everything} */
+  void SetDiscreteState(const DiscreteValues<T>& xd) {
+    get_mutable_discrete_state().SetFrom(xd);
   }
 
   // TODO(sherm1) Invalidate only dependents of this one abstract variable.
