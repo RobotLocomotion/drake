@@ -1,7 +1,0 @@
-Downloaded from:
-
-https://github.com/ros-infrastructure/artwork/blob/6172606e17/orgunits/ros.svg
-
-License is CC-NC 4.0:
-https://github.com/ros-infrastructure/artwork/blob/6172606e17/LICENSE
-https://creativecommons.org/licenses/by-nc/4.0/legalcode
