@@ -101,7 +101,7 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
 
   // Verifies that a correct message is published.
   Subscriber sub(&interface, channel_name);
-  dut->Publish(*context.get());
+  dut->ForcedPublish(*context.get());
   interface.HandleSubscriptions(0);
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(sub.message(), sample_data));
 }
@@ -190,7 +190,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestForcedPublishTrigger) {
   dut->get_input_port().FixValue(context.get(), lcmt_drake_signal{});
 
   for (int i = 0; i < force_publish_count; i++) {
-    dut->Publish(*context);
+    dut->ForcedPublish(*context);
     interface.HandleSubscriptions(0);
   }
 

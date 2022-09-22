@@ -3012,7 +3012,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   DRAKE_DEMAND(this->is_finalized());
 
   if (is_discrete()) {
-    this->DeclarePeriodicDiscreteUpdate(time_step_);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(time_step_);
   }
 
   DeclareCacheEntries();
