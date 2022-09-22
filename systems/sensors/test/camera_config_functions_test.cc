@@ -8,7 +8,6 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
-#include "drake/geometry/render_gl/factory.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
@@ -54,7 +53,6 @@ CameraConfig MakeConfig() {
                       .X_BC = Transform{RigidTransformd{Vector3d::UnitX()}},
                       .X_BD = Transform{RigidTransformd{Vector3d::UnitX()}},
                       .renderer_name = "test_renderer",
-                      .renderer_class = "RenderEngineVtk",
                       .background = Rgba(0.25, 0.5, 0.75),
                       .name = "test_camera",
                       .fps = 17,
@@ -351,63 +349,6 @@ TEST_F(CameraConfigFunctionsTest, Validation) {
   EXPECT_THROW(
       ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_),
       std::exception);
-}
-
-// Confirms that the render engine implementation follows the requested type
-// (when supported). We already know that the config gets validated, so we
-// don't need to test cases where an invalid renderer_class value is passed.
-// However, we do have to worry about requesting RenderEngineGl when it isn't
-// available.
-TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
-  // Unspecified class produces RenderEngineVtk.
-  const CameraConfig default_config{.renderer_name = "default"};
-  ASSERT_FALSE(scene_graph_->HasRenderer(default_config.renderer_name));
-  ApplyCameraConfig(default_config, plant_, &builder_, scene_graph_, &lcm_);
-  ASSERT_EQ(NiceTypeName::RemoveNamespaces(scene_graph_->GetRendererTypeName(
-                default_config.renderer_name)),
-            "RenderEngineVtk");
-
-  // Explicitly specifying *new* VTK class produces VTK render engine.
-  const CameraConfig vtk_config{.renderer_name = "vtk_renderer",
-                                .renderer_class = "RenderEngineVtk"};
-  ASSERT_FALSE(scene_graph_->HasRenderer(vtk_config.renderer_name));
-  ApplyCameraConfig(vtk_config, plant_, &builder_, scene_graph_, &lcm_);
-  ASSERT_EQ(NiceTypeName::RemoveNamespaces(scene_graph_->GetRendererTypeName(
-                vtk_config.renderer_name)),
-            "RenderEngineVtk");
-
-  // Using an existing name but the wrong render engine type throws.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ApplyCameraConfig(
-          CameraConfig{.renderer_name = default_config.renderer_name,
-                       .renderer_class = "RenderEngineGl"},
-          plant_, &builder_, scene_graph_, &lcm_),
-      ".*The name is already used with a different type.+");
-
-  // Using existing name but *no* render engine uses existing engine. Call to
-  // ApplyCameraConfig doesn't throw, and the renderer count doesn't change.
-  // This test assumes that this behavior doesn't depend on the type of the
-  // RenderEngine.
-  const int renderer_count = scene_graph_->RendererCount();
-  ApplyCameraConfig(CameraConfig{.renderer_name = "vtk_renderer"}, plant_,
-                    &builder_, scene_graph_, &lcm_);
-  EXPECT_EQ(renderer_count, scene_graph_->RendererCount());
-
-  // Now explicitly request a new RenderEngineGl -- whether it throws depends
-  // on whether GL is available.
-  const CameraConfig gl_config{.renderer_name = "gl_renderer",
-                               .renderer_class = "RenderEngineGl"};
-  if (geometry::render::kHasRenderEngineGl) {
-    ASSERT_FALSE(scene_graph_->HasRenderer(gl_config.renderer_name));
-    ApplyCameraConfig(gl_config, plant_, &builder_, scene_graph_, &lcm_);
-    ASSERT_EQ(NiceTypeName::RemoveNamespaces(
-                  scene_graph_->GetRendererTypeName(gl_config.renderer_name)),
-              "RenderEngineGl");
-  } else {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        ApplyCameraConfig(gl_config, plant_, &builder_, scene_graph_, &lcm_),
-        ".*'RenderEngineGl' is not supported.*");
-  }
 }
 
 }  // namespace

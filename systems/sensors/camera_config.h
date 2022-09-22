@@ -49,7 +49,6 @@ struct CameraConfig {
     a->Visit(DRAKE_NVP(X_BC));
     a->Visit(DRAKE_NVP(X_BD));
     a->Visit(DRAKE_NVP(renderer_name));
-    a->Visit(DRAKE_NVP(renderer_class));
     a->Visit(DRAKE_NVP(background));
     a->Visit(DRAKE_NVP(name));
     a->Visit(DRAKE_NVP(fps));
@@ -244,22 +243,6 @@ struct CameraConfig {
    value.
    @pre `renderer_name` is not empty. */
   std::string renderer_name{"default"};
-
-  /** The choice of render engine implementation to use. The value should be
-   one of empty, '"RenderEngineVtk"', or '"RenderEngineGl"'. An `empty` string
-   signals, in essence, "don't care". If a render engine with that name has
-   already been configured, the camera will use it (regardless of type). If
-   the name doesn't already exist, the default, slower, more portable, and more
-   robust RenderEngineVtk will be instantiated. RenderEngineGl can be selected
-   if you are on Ubuntu and need the improved performance (at the *possible*
-   cost of lesser image fidelity).
-
-   @pre `renderer_class` is empty or one of '"RenderEngineVtk"' or
-        '"RenderEngineGl"'.
-   @pre For two cameras with the same `renderer_name` value, they must also
-        specify the same `renderer_class` (either implicitly or explicitly).
-   @sa drake::geometry::SceneGraph::GetRendererTypeName(). */
-  std::string renderer_class;
 
   /** The "background" color. This is the color drawn where there are no objects
    visible. Its default value matches the default value for

@@ -128,15 +128,6 @@ void CameraConfig::ValidateOrThrow() const {
     child.ValidateOrThrow();
   }, focal);
 
-  if (!renderer_class.empty() && !(renderer_class == "RenderEngineVtk" ||
-                                   renderer_class == "RenderEngineGl")) {
-    throw std::logic_error(fmt::format(
-        "Invalid camera configuration; the given renderer_class value '{}' "
-        "must be empty (to use the default) or be one of 'RenderEngineVtk' or "
-        "'RenderEngineGl'.",
-        renderer_class));
-  }
-
   // This throws for us if we have bad bad numerical camera values (or an empty
   // renderer_name).
   MakeCameras();

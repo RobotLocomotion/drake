@@ -652,17 +652,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void AddRenderer(std::string name,
                    std::unique_ptr<render::RenderEngine> renderer);
 
-  /** Reports true if this %SceneGraph has a renderer registered with the given
-   name. */
+  /** Reports if this %SceneGraph has a renderer registered to the given name.
+   */
   bool HasRenderer(const std::string& name) const;
-
-  /** Reports the type name for the RenderEngine registered with the given
-   `name`.
-
-   @returns the name of the RenderEngine's most derived type (as produced by
-            NiceTypeName::Get()). An empty string if there is no RenderEngine
-            registered with the given `name`. */
-  std::string GetRendererTypeName(const std::string& name) const;
 
   /** Reports the number of renderers registered to this %SceneGraph.  */
   int RendererCount() const;

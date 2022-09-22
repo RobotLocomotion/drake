@@ -9,12 +9,9 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-/** Reports the availability of the RenderEngineGl implementation. */
-extern const bool kHasRenderEngineGl;
-
 /** Constructs a RenderEngine implementation which uses a purely OpenGL
  renderer. The engine only works under Ubuntu. If called on a Mac, it will
- throw.
+ produce a "dummy" implementation.
 
  @note %RenderEngineGl behaves a bit differently from other RenderEngine
  implementations (e.g., RenderEngineVtk) with respect to displayed images.
@@ -27,9 +24,7 @@ extern const bool kHasRenderEngineGl;
 
  @warning %RenderEngineGl is not threadsafe. If a SceneGraph is instantiated
  with a RenderEngineGl and there are multiple Context instances for that
- SceneGraph, rendering in multiple threads may exhibit issues.
-
- @throws std::exception if kHasRenderEngineGl is false. */
+ SceneGraph, rendering in multiple threads may exhibit issues.  */
 std::unique_ptr<RenderEngine> MakeRenderEngineGl(
     RenderEngineGlParams params = {});
 
