@@ -75,7 +75,7 @@ class TestMeldis(unittest.TestCase):
             visualizer_params=DrakeVisualizerParams(),
             lcm=lcm)
         context = diagram.CreateDefaultContext()
-        diagram.Publish(context)
+        diagram.ForcedPublish(context)
 
         # The geometry isn't registered until the load is processed.
         self.assertEqual(meshcat.HasPath("/DRAKE_VIEWER"), False)
@@ -102,7 +102,7 @@ class TestMeldis(unittest.TestCase):
                 role=Role.kProximity),
             lcm=lcm)
         context = diagram.CreateDefaultContext()
-        diagram.Publish(context)
+        diagram.ForcedPublish(context)
         lcm.HandleSubscriptions(timeout_millis=0)
         dut._invoke_subscriptions()
 
@@ -138,7 +138,7 @@ class TestMeldis(unittest.TestCase):
         context = diagram.CreateDefaultContext()
         plant.SetPositions(plant.GetMyMutableContextFromRoot(context),
                            [-0.03, 0.03])
-        diagram.Publish(context)
+        diagram.ForcedPublish(context)
 
         # The geometry isn't registered until the load is processed.
         pair_path = "/CONTACT_RESULTS/point/base_link(2)+base_link(3)"
@@ -181,7 +181,7 @@ class TestMeldis(unittest.TestCase):
         context = diagram.CreateDefaultContext()
         plant.SetPositions(plant.GetMyMutableContextFromRoot(context),
                            [0.1, 0.3])
-        diagram.Publish(context)
+        diagram.ForcedPublish(context)
 
         # The geometry isn't registered until the load is processed.
         hydro_path = "/CONTACT_RESULTS/hydroelastic/" + \

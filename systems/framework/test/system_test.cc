@@ -295,7 +295,7 @@ TEST_F(SystemTest, ContextBelongsWithSystem) {
 
   // These just uses a couple of arbitrary methods to test that a Context not
   // created by a System throws the appropriate exception.
-  DRAKE_EXPECT_THROWS_MESSAGE(system2.Publish(*context_),
+  DRAKE_EXPECT_THROWS_MESSAGE(system2.ForcedPublish(*context_),
                               "[^]*#framework-context-system-mismatch.*");
   DRAKE_EXPECT_THROWS_MESSAGE(system2.SetDefaultContext(context_.get()),
                               "[^]*#framework-context-system-mismatch.*");
@@ -376,7 +376,7 @@ TEST_F(SystemTest, DiscreteUpdate) {
 
   std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.CalcDiscreteVariableUpdates(
+  system_.CalcDiscreteVariableUpdate(
       *context_, event_info->get_discrete_update_events(), update.get());
   EXPECT_EQ(1, system_.get_update_count());
 }

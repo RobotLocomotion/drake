@@ -66,8 +66,8 @@ GTEST_TEST(MbpWithTamsiSolver, FixedWorld) {
   EXPECT_EQ(new_discrete_state_vector.size(), 0);
 
   // Verify we can to do discrete updates even if we have zero DOFs.
-  DRAKE_EXPECT_NO_THROW(
-      diagram->CalcDiscreteVariableUpdates(*context, new_discrete_state.get()));
+  DRAKE_EXPECT_NO_THROW(diagram->CalcForcedDiscreteVariableUpdate(
+      *context, new_discrete_state.get()));
 }
 
 }  // namespace

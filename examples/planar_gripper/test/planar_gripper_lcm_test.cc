@@ -50,7 +50,7 @@ GTEST_TEST(GripperLcmTest, GripperCommandPassthroughTest) {
   std::unique_ptr<systems::DiscreteValues<double>> update =
       diagram->AllocateDiscreteVariables();
   update->SetFrom(context->get_mutable_discrete_state());
-  diagram->CalcDiscreteVariableUpdates(*context, update.get());
+  diagram->CalcForcedDiscreteVariableUpdate(*context, update.get());
   context->get_mutable_discrete_state().SetFrom(*update);
 
   lcmt_planar_gripper_command command_out =
@@ -103,7 +103,7 @@ GTEST_TEST(GripperLcmTest, GripperStatusPassthroughTest) {
   std::unique_ptr<systems::DiscreteValues<double>> update =
       diagram->AllocateDiscreteVariables();
   update->SetFrom(context->get_mutable_discrete_state());
-  diagram->CalcDiscreteVariableUpdates(*context, update.get());
+  diagram->CalcForcedDiscreteVariableUpdate(*context, update.get());
   context->get_mutable_discrete_state().SetFrom(*update);
 
   lcmt_planar_gripper_status status_out =
