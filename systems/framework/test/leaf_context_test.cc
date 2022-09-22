@@ -881,7 +881,19 @@ TEST_F(LeafContextTest, TestStateSettingSugar) {
       context_.SetDiscreteState(xd0_new),
       ".*SetDiscreteState.*: expected exactly 1.*but there were 2 groups.*");
 
-  // Change to just one group, then it should work.
+  // Check the signature that takes a DiscreteValues argument.
+  // Make a compatible DiscreteValues object.
+  std::unique_ptr<DiscreteValues<double>> xd_clone =
+      context_.get_discrete_state().Clone();
+  const Vector1d val0{-4.};
+  const Eigen::Vector2d val1{5., 6.};
+  xd_clone->get_mutable_value(0) = val0;
+  xd_clone->get_mutable_value(1) = val1;
+  context_.SetDiscreteState(*xd_clone);
+  EXPECT_EQ(context_.get_discrete_state(0).get_value(), val0);
+  EXPECT_EQ(context_.get_discrete_state(1).get_value(), val1);
+
+  // Change to just one group, then the single-argument signature works.
   std::vector<std::unique_ptr<BasicVector<double>>> xd;
   const Eigen::VectorXd xd_init = Eigen::Vector3d{1., 2., 3.};
   const Eigen::Vector3d xd_new{4., 5., 6.};

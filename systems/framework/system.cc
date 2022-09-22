@@ -375,6 +375,42 @@ T System<T>::CalcNextUpdateTime(const Context<T>& context,
 }
 
 template <typename T>
+const DiscreteValues<T>& System<T>::CalcUniquePeriodicDiscreteUpdate(
+    const Context<T>& context) const {
+  ValidateContext(context);
+
+  // TODO(sherm1) We only need the DiscreteUpdateEvent portion of the
+  // CompositeEventCollection but don't have a convenient way to allocate
+  // that in a Leaf vs. Diagram agnostic way. Add that if needed for speed.
+  auto collection = AllocateCompositeEventCollection();
+
+  std::optional<PeriodicEventData> timing;
+  FindUniquePeriodicDiscreteUpdatesOrThrow(
+      __func__, *this, context, &timing,
+      &collection->get_mutable_discrete_update_events());
+  if (!timing) {
+    throw std::logic_error(
+        fmt::format("{}(): there are no periodic discrete "
+                    "update events in this System.", __func__));
+  }
+  // Get the discrete variables scratch space.
+  CacheEntryValue& scratch_entry_value =
+      this->get_discrete_variable_scratch_space_cache_entry()
+          .get_mutable_cache_entry_value(context);
+  DiscreteValues<T>& discrete_values =
+      scratch_entry_value
+          .template GetMutableValueOrThrow<DiscreteValues<T>>();
+
+  // Start with scratch discrete variables equal to the current values.
+  discrete_values.SetFrom(context.get_discrete_state());
+
+  // Then let the event handlers modify them or not.
+  this->CalcDiscreteVariableUpdates(
+      context, collection->get_discrete_update_events(), &discrete_values);
+  return discrete_values;
+}
+
+template <typename T>
 void System<T>::GetPeriodicEvents(const Context<T>& context,
                                   CompositeEventCollection<T>* events) const {
   ValidateContext(context);
@@ -420,7 +456,6 @@ std::optional<PeriodicEventData>
 
   return saved_attr;
 }
-
 
 template <typename T>
 bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
@@ -967,7 +1002,13 @@ System<T>::System(SystemScalarConverter converter)
               {all_sources_ticket()})
           .cache_index();
 
-  // TODO(sherm1) Allocate and use discrete update cache.
+  discrete_variable_scratch_space_cache_index_ =
+      this->DeclareCacheEntryWithKnownTicket(
+              xd_scratch_ticket(), "discrete variable scratch space",
+              ValueProducer(this, &System<T>::AllocateDiscreteVariables,
+                            &System<T>::CalcDiscreteVariableUpdates),  // unused
+              {nothing_ticket()})
+          .cache_index();
 }
 
 template <typename T>
