@@ -178,30 +178,34 @@ The Drake developers would like to acknowledge significant support from the
 
 
 <article markdown="1">
-## From Other Languages
+## Integrations
 
-### Python Bindings
+### Language Bindings
+
+#### Python
 
 <a href="/python_bindings.html">
   <img src="/third_party/images/python-logo-generic.svg" width="150px"/>
 </a>
 
-### Others
+#### Others
 
 [Julia](./julia_bindings.html)
 
-</article>
+### Middleware
 
-<article markdown="1">
-## Middleware Integration
+#### [LCM](https://lcm-proj.github.io/)
 
-### LCM
+Included with Drake
 
-Native to Drake.
+<h4>
+  <a href="https://ros.org">
+    <img src="/third_party/images/ros.svg" height="10em"/> ROS 2™
+  </a>
+</h4>
 
-<h3>ROS 2 <img src="/third_party/images/ros.svg" height="15em"/></h3>
-
-[`drake-ros`](https://github.com/RobotLocomotion/drake-ros) (experimental)
+[`drake-ros`](https://github.com/RobotLocomotion/drake-ros) (separate from Drake,
+experimental)
 
 </article>
 
