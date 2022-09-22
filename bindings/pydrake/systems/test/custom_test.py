@@ -299,9 +299,10 @@ class TestCustom(unittest.TestCase):
                 self.called_reset = False
                 self.called_system_reset = False
                 # Ensure we have desired overloads.
-                self.DeclarePeriodicPublish(1.0)
-                self.DeclarePeriodicPublish(1.0, 0)
-                self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
+                self.DeclarePeriodicPublishNoHandler(1.0)
+                self.DeclarePeriodicPublishNoHandler(1.0, 0)
+                self.DeclarePeriodicPublishNoHandler(
+                    period_sec=1.0, offset_sec=0.)
                 self.DeclareInitializationPublishEvent(
                     publish=self._on_initialize_publish)
                 self.DeclareInitializationDiscreteUpdateEvent(
@@ -312,7 +313,7 @@ class TestCustom(unittest.TestCase):
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
                         callback=self._on_initialize))
-                self.DeclarePeriodicDiscreteUpdate(
+                self.DeclarePeriodicDiscreteUpdateNoHandler(
                     period_sec=1.0, offset_sec=0.)
                 self.DeclarePeriodicPublishEvent(
                     period_sec=1.0,
@@ -544,7 +545,7 @@ class TestCustom(unittest.TestCase):
         # Test explicit calls.
         system = TrivialSystem()
         context = system.CreateDefaultContext()
-        system.Publish(context)
+        system.ForcedPublish(context)
         self.assertTrue(system.called_publish)
         self.assertTrue(system.called_forced_publish)
 
@@ -571,13 +572,13 @@ class TestCustom(unittest.TestCase):
         witnesses = system.GetWitnessFunctions(context)
         self.assertEqual(len(witnesses), 3)
 
-        system.CalcDiscreteVariableUpdates(
+        system.CalcForcedDiscreteVariableUpdate(
             context=context,
             discrete_state=context_update.get_mutable_discrete_state())
         self.assertTrue(system.called_discrete)
         self.assertTrue(system.called_forced_discrete)
 
-        system.CalcUnrestrictedUpdate(
+        system.CalcForcedUnrestrictedUpdate(
             context=context,
             state=context_update.get_mutable_state()
         )

@@ -32,7 +32,7 @@ DiscreteDerivative<T>::DiscreteDerivative(int num_inputs, double time_step,
     // at time == 0.0.
     this->DeclareDiscreteState(1);
   }
-  this->DeclarePeriodicDiscreteUpdate(time_step_);
+  this->DeclarePeriodicDiscreteUpdateNoHandler(time_step_);
 }
 
 template <typename T>

@@ -198,7 +198,7 @@ class TestSystemsLcm(unittest.TestCase):
     def _fix_and_publish(self, dut, value):
         context = dut.CreateDefaultContext()
         dut.get_input_port(0).FixValue(context, value)
-        dut.Publish(context)
+        dut.ForcedPublish(context)
 
     def test_publisher(self):
         lcm = DrakeLcm()
@@ -270,7 +270,7 @@ class TestSystemsLcm(unittest.TestCase):
                 publish_period=0.05))
         builder.Connect(source.get_output_port(), publisher.get_input_port())
         diagram = builder.Build()
-        diagram.Publish(diagram.CreateDefaultContext())
+        diagram.ForcedPublish(diagram.CreateDefaultContext())
 
     def test_lcm_scope(self):
         builder = DiagramBuilder()
