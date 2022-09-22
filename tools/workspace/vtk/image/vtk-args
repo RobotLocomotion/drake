@@ -6,7 +6,7 @@ CMAKE_CXX_STANDARD:STRING=17
 CMAKE_INSTALL_PREFIX:PATH=/opt/vtk
 # VTK by default installs license files to `share/licenses/PROJECT_NAME`, we
 # want the license files to end up in `share/doc/PROJECT_NAME`.
-CMAKE_INSTALL_LICENSEDIR:STRING=share/doc/vtk-9.1
+CMAKE_INSTALL_LICENSEDIR:STRING=share/doc/vtk-9.2
 CMAKE_C_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-deprecated-declarations'
 CMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-deprecated-declarations'
 CMAKE_EXE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro'

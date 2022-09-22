@@ -3,10 +3,10 @@
 set -eu -o pipefail
 
 # Get various version numbers.
-readonly vtk_tag=vtk-9.1.0
+readonly vtk_tag=vtk-9.2.0
 # To re-package, increase build_number by 1 and update repository.bzl to avoid
 # overwriting artifacts thus breaking historical builds.
-readonly build_number=3
+readonly build_number=1
 readonly platform=$(lsb_release --codename --short)-$(uname --processor)
 
 # Create archive named:
