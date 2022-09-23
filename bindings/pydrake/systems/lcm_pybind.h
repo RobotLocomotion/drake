@@ -38,7 +38,8 @@ py::object BindCppSerializer(const std::string& lcm_package) {
   py_cls.def(py::init());
   // We use move here because the type of py_class differs from our declared
   // return type.
-  return std::move(py_cls);
+  py::object result = std::move(py_cls);
+  return result;
 }
 
 }  // namespace pylcm
