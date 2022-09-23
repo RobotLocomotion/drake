@@ -178,17 +178,15 @@ The Drake developers would like to acknowledge significant support from the
 
 
 <article markdown="1">
-## From Other Languages
+## Integrations
 
-### Python Bindings
+[Python](./python_bindings.html)
 
-<a href="/python_bindings.html">
-  <img src="/third_party/images/python-logo-generic.svg" width="150px"/>
-</a>
+[LCM](./doxygen_cxx/group__message__passing.html)
 
-### Others
+[ROS 2](https://github.com/RobotLocomotion/drake-ros)™ (unsupported)
 
-[Julia](./julia_bindings.html)
+[Julia](./julia_bindings.html) (unsupported)
 
 </article>
 
