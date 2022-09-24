@@ -36,6 +36,7 @@ using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
 using solvers::MathematicalProgramResult;
 using solvers::QuadraticCost;
+using solvers::SolutionResult;
 using solvers::SolverOptions;
 using symbolic::Environment;
 using symbolic::Expression;
@@ -995,6 +996,38 @@ GTEST_TEST(ShortestPathTest, ClassicalShortestPath) {
   }
 }
 
+GTEST_TEST(ShortestPathTest, InfeasibleProblem) {
+  GraphOfConvexSets spp;
+
+  Vertex* source = spp.AddVertex(Point(Vector1d(-1)));
+  Vertex* v1 = spp.AddVertex(Point(Vector1d(-0.5)));
+  Vertex* v2 = spp.AddVertex(Point(Vector1d(0.5)));
+  Vertex* target = spp.AddVertex(Point(Vector1d(1)));
+
+  spp.AddEdge(*source, *v1);
+  spp.AddEdge(*v2, *target);
+
+  auto result = spp.SolveShortestPath(*source, *target);
+  ASSERT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  GraphOfConvexSetsOptions options;
+  options.max_rounded_paths = 1;
+  result = spp.SolveShortestPath(*source, *target, options);
+  ASSERT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  if (!MixedIntegerSolverAvailable()) {
+    return;
+  }
+
+  options.convex_relaxation = false;
+  result = spp.SolveShortestPath(*source, *target, options);
+  ASSERT_FALSE(result.is_success());
+}
+
 GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
   GraphOfConvexSets spp;
 
@@ -1476,11 +1509,11 @@ GTEST_TEST(ShortestPathTest, Figure9) {
       spp.AddVertex(HPolyhedron::MakeBox(Vector2d(2, -2), Vector2d(4, 2)));
   const Vertex* target = spp.AddVertex(Point(Vector2d(5, 0)), "target");
 
-  const Edge* e01 = spp.AddEdge(*source, *v1);
-  const Edge* e02 = spp.AddEdge(*source, *v2);
-  const Edge* e13 = spp.AddEdge(*v1, *v3);
-  const Edge* e23 = spp.AddEdge(*v2, *v3);
-  const Edge* e34 = spp.AddEdge(*v3, *target);
+  Edge* e01 = spp.AddEdge(*source, *v1);
+  Edge* e02 = spp.AddEdge(*source, *v2);
+  Edge* e13 = spp.AddEdge(*v1, *v3);
+  Edge* e23 = spp.AddEdge(*v2, *v3);
+  Edge* e34 = spp.AddEdge(*v3, *target);
 
   // Edge length is distance for all edges.
   Matrix<double, 2, 4> A;
@@ -1507,6 +1540,39 @@ GTEST_TEST(ShortestPathTest, Figure9) {
   EXPECT_TRUE(v3->GetSolution(result)[0] > 2.0 - kTol);
   EXPECT_TRUE(v3->GetSolution(result)[0] < 4.0 - kTol);
   EXPECT_NEAR(v3->GetSolution(result)[1], 0, kTol);
+
+  // Test that rounding returns the convex relaxation when relaxation is
+  // feasible but integer solution is not.
+  //
+  // CSDP crashes when fed an infeasible problem so don't test behaviour under
+  // CSDP when problem is not integer feasible.
+  if (!MixedIntegerSolverAvailable()) {
+    return;
+  }
+
+  e13->AddConstraint(e13->xu()[1] == e13->xv()[1]);
+  e23->AddConstraint(e23->xu()[1] == e23->xv()[1]);
+  e34->AddConstraint(e34->xu()[1] == e34->xv()[1]);
+
+  auto relaxed_result = spp.SolveShortestPath(source->id(), target->id());
+  GraphOfConvexSetsOptions options;
+  options.max_rounded_paths = 1;
+  auto rounded_result =
+      spp.SolveShortestPath(source->id(), target->id(), options);
+
+  ASSERT_TRUE(relaxed_result.is_success());
+  EXPECT_EQ(rounded_result.get_solution_result(),
+            SolutionResult::kIterationLimit);
+  for (const auto& e : spp.Edges()) {
+    EXPECT_NEAR(relaxed_result.GetSolution(e->phi()),
+                rounded_result.GetSolution(e->phi()), 1e-10);
+    EXPECT_TRUE(CompareMatrices(relaxed_result.GetSolution(e->xu()),
+                                rounded_result.GetSolution(e->xu()), 1e-12));
+    EXPECT_TRUE(CompareMatrices(relaxed_result.GetSolution(e->xv()),
+                                rounded_result.GetSolution(e->xv()), 1e-12));
+    EXPECT_NEAR(e->GetSolutionCost(relaxed_result),
+                e->GetSolutionCost(rounded_result), 1e-10);
+  }
 }
 
 GTEST_TEST(ShortestPathTest, Graphviz) {
