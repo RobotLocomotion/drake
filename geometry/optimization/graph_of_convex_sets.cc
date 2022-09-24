@@ -39,6 +39,7 @@ using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
 using solvers::PerspectiveQuadraticCost;
 using solvers::QuadraticCost;
+using solvers::SolutionResult;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
 using symbolic::Expression;
@@ -884,7 +885,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   // Implements the rounding scheme put forth in Section 4.2 of
   // "Motion Planning around Obstacles with Convex Optimization":
   // https://arxiv.org/abs/2205.04422
-  if (options.convex_relaxation && options.max_rounded_paths > 0) {
+  if (options.convex_relaxation && options.max_rounded_paths > 0 &&
+      result.is_success()) {
     DRAKE_THROW_UNLESS(options.max_rounding_trials > 0);
     RandomGenerator generator(options.rounding_seed);
     std::uniform_real_distribution<double> uniform;
@@ -898,6 +900,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       }
     }
     int num_trials = 0;
+    bool found_feasible_path = false;
     MathematicalProgramResult best_result;
     while (static_cast<int>(paths.size()) < options.max_rounded_paths &&
            num_trials < options.max_rounding_trials) {
@@ -971,8 +974,9 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
       // Check path quality and early termination.
       if (rounded_result.is_success() &&
-          (num_trials == 1 || rounded_result.get_optimal_cost() <
-                                  best_result.get_optimal_cost())) {
+          (!found_feasible_path || rounded_result.get_optimal_cost() <
+                                       best_result.get_optimal_cost())) {
+        found_feasible_path = true;
         best_result = rounded_result;
       }
 
@@ -980,7 +984,11 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         prog.RemoveConstraint(con);
       }
     }
-    result = best_result;
+    if (found_feasible_path) {
+      result = best_result;
+    } else {
+      result.set_solution_result(SolutionResult::kIterationLimit);
+    }
   }
 
   // Push the placeholder variables and excluded edge variables into the result,
