@@ -94,7 +94,7 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
     }
   }
 
-  sap_driver_->DeclareCacheEntries(this);
+  if (sap_driver_ != nullptr) sap_driver_->DeclareCacheEntries(this);
 }
 
 template <typename T>

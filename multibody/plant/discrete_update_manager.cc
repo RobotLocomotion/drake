@@ -80,14 +80,6 @@ DiscreteUpdateManager<T>::EvalContactJacobians(
 }
 
 template <typename T>
-const std::vector<internal::DiscreteContactPair<T>>&
-DiscreteUpdateManager<T>::EvalDiscreteContactPairs(
-    const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::EvalDiscreteContactPairs(plant(), context);
-}
-
-template <typename T>
 const std::vector<geometry::ContactSurface<T>>&
 DiscreteUpdateManager<T>::EvalContactSurfaces(
     const systems::Context<T>& context) const {
