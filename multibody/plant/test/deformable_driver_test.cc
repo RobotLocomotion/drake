@@ -42,6 +42,8 @@ class DeformableDriverTest : public ::testing::Test {
     body_id_ = RegisterSphere(deformable_model.get(), kRezHint);
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(move(deformable_model));
+    // N.B. Currently the manager only supports SAP.
+    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
     plant_->Finalize();
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
