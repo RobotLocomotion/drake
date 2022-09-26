@@ -58,12 +58,6 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.EvalContactSurfaces(context);
   }
 
-  static std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
-      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
-      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) {
-    return plant.CalcCombinedFrictionCoefficients(context, contact_pairs);
-  }
-
   static void AddInForcesFromInputPorts(const MultibodyPlant<T>& plant,
                                         const systems::Context<T>& context,
                                         MultibodyForces<T>* forces) {
