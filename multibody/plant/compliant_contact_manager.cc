@@ -536,7 +536,10 @@ void CompliantContactManager<T>::DoCalcDiscreteValues(
 template <typename T>
 std::unique_ptr<DiscreteUpdateManager<double>>
 CompliantContactManager<T>::CloneToDouble() const {
+  // Create a manager with default SAP parameters.
   auto clone = std::make_unique<CompliantContactManager<double>>();
+  // Make SAP parameters stay the same.
+  clone->sap_parameters_ = this->sap_parameters_;
   // N.B. we should copy/clone all members except for those overwritten in
   // ExtractModelInfo and DeclareCacheEntries.
   return clone;
@@ -545,7 +548,10 @@ CompliantContactManager<T>::CloneToDouble() const {
 template <typename T>
 std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>>
 CompliantContactManager<T>::CloneToAutoDiffXd() const {
+  // Create a manager with default SAP parameters.
   auto clone = std::make_unique<CompliantContactManager<AutoDiffXd>>();
+  // Make SAP parameters stay the same.
+  clone->sap_parameters_ = this->sap_parameters_;
   // N.B. we should copy/clone all members except for those overwritten in
   // ExtractModelInfo and DeclareCacheEntries.
   return clone;

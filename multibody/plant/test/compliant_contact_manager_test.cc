@@ -395,6 +395,9 @@ TEST_F(SpheresStackTest, SapFailureException) {
 // but rather to verify that data flows correctly. That is, that
 // CalcContactSolverResults() loads the expected computation into the contact
 // results.
+// TODO(amcastro-tri): The correctness of the computation should be moved into
+// the SapDriver tests. Here we should only test that the manager invokes the
+// SapDriver counterpart.
 TEST_F(SpheresStackTest, DoCalcContactSolverResults) {
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
   // N.B. We make sure both the manager and the manual invocations of the SAP
