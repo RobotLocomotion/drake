@@ -48,11 +48,13 @@ struct IrisOptions {
   */
   double configuration_space_margin{1e-2};
 
-  /** For IRIS in configuration space, we can optionally use IbexSolver to
-  rigorously confirm that regions are collision-free. This step may be
-  computationally demanding, so we disable it by default for a faster
-  algorithm for obtaining regions without the rigorous guarantee. */
-  bool enable_ibex = false;
+  /** For each possible collision, IRIS will search for a counter-example by
+  formulating a (likely nonconvex) optimization problem. The initial guess for
+  this optimization is taken by sampling uniformly inside the current IRIS
+  region. This option controls the termination condition for that
+  counter-example search, defining the number of consecutive failures to find a
+  counter-example requested before moving on to the next constraint. */
+  int num_collision_infeasible_samples{5};
 
   /** By default, IRIS in configuration space certifies regions for collision
   avoidance constraints and joint limits. This option can be used to pass
@@ -68,9 +70,6 @@ struct IrisOptions {
   For example, one could create an InverseKinematics problem with rich
   kinematic constraints, and then pass `InverseKinematics::prog()` into this
   option.
-
-  @note Currently, when prog_with_additional_constraints is set, the enable_ibex
-  option must be `false`.
   */
   const solvers::MathematicalProgram* prog_with_additional_constraints{};
 
@@ -81,7 +80,7 @@ struct IrisOptions {
   termination condition for that counter-example search, defining the number of
   consecutive failures to find a counter-example requested before moving on to
   the next constraint. */
-  int num_additional_constraint_infeasible_samples{10};
+  int num_additional_constraint_infeasible_samples{5};
 
   /** The only randomization in IRIS is the random sampling done to find
   counter-examples for the additional constraints using in
@@ -142,21 +141,25 @@ ConvexSets MakeIrisObstacles(
     std::optional<FrameId> reference_frame = std::nullopt);
 
 /** A variation of the Iris (Iterative Region Inflation by Semidefinite
-programming) algorithm which finds collision-free regions in the
-*configuration space* of @p plant.  @see Iris for details on the original
-algorithm. The possibility of this configuration-space variant was suggested
-in the original IRIS paper, but substantial new ideas have been employed here
-to address the non-convexity of configuration-space obstacles; these will be
-documented in a forth-coming publication.
+programming) algorithm which finds collision-free regions in the *configuration
+space* of @p plant.  @see Iris for details on the original algorithm. This
+variant uses nonlinear optimization (instead of convex optimization) to find
+collisions in configuration space; each potential collision is
+probabilistically "certified" by restarting the nonlinear optimization from
+random initial seeds inside the candidate IRIS region until it fails to find a
+collision in `options.num_collision_infeasible_samples` consecutive attempts.
 
 @param plant describes the kinematics of configuration space.  It must be
 connected to a SceneGraph in a systems::Diagram.
 @param context is a context of the @p plant. The context must have the
 positions of the plant set to the initialIRIS seed configuration.
 @param options provides additional configuration options.  In particular,
-`options.enabled_ibex` may have a significant impact on the runtime of the
-algorithm.
+increasing `options.num_collision_infeasible_samples` increases the chances that
+the IRIS regions are collision free but can also significantly increase the
+run-time of the algorithm. The same goes for
+`options.num_additional_constraints_infeasible_samples`.
 
+@throws std::exception if the sample configuration in @p context is infeasible.
 @ingroup geometry_optimization
 */
 HPolyhedron IrisInConfigurationSpace(
