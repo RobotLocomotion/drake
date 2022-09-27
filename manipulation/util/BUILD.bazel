@@ -31,6 +31,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":apply_driver_configs",
+        ":make_arm_controller_model",
         ":move_ik_demo_base",
         ":moving_average_filter",
         ":robot_plan_utils",
@@ -129,10 +130,6 @@ drake_cc_library(
     name = "make_arm_controller_model",
     srcs = ["make_arm_controller_model.cc"],
     hdrs = ["make_arm_controller_model.h"],
-    internal = True,
-    visibility = [
-        "//manipulation/kuka_iiwa:__pkg__",
-    ],
     deps = [
         "//math:geometric_transform",
         "//multibody/parsing",

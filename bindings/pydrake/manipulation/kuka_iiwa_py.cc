@@ -150,7 +150,8 @@ PYBIND11_MODULE(kuka_iiwa, m) {
         py::arg("iiwa_instance"), py::arg("controller_plant"), py::arg("lcm"),
         py::arg("builder"), py::arg("ext_joint_filter_tau") = 0.01,
         py::arg("desired_iiwa_kp_gains") = std::nullopt,
-        doc.BuildIiwaControl.doc);
+        // Keep alive, reference: `builder` keeps `controller_plant` alive.
+        py::keep_alive<5, 3>(), doc.BuildIiwaControl.doc);
   }
 }
 
