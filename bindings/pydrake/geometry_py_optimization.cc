@@ -141,7 +141,7 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("other"), cls_doc.PontryaginDifference.doc)
         .def("UniformSample",
             overload_cast_explicit<Eigen::VectorXd, RandomGenerator*,
-                const Eigen::Ref<Eigen::VectorXd>&>(
+                const Eigen::Ref<const Eigen::VectorXd>&>(
                 &HPolyhedron::UniformSample),
             py::arg("generator"), py::arg("previous_sample"),
             cls_doc.UniformSample.doc_2args)
