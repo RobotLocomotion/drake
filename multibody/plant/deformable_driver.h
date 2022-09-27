@@ -60,6 +60,20 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   const VectorX<T>& EvalParticipatingVelocities(
       const systems::Context<T>& context) const;
 
+  /* Evaluates the free motion velocities of all participating dofs. The dofs
+   are ordered in the increasing order of deformable body indexes. That is, the
+   participating dofs of body 0 come first, followed by participating dofs of
+   body 1 and so on. Within a single body, the dofs are ordered according to
+   their associated vertex index. */
+  const VectorX<T>& EvalParticipatingFreeMotionVelocities(
+      const systems::Context<T>& context) const;
+
+  /* Appends the linear dynamics matrices of each deformable body registered
+   in this model to `A` in increasing order of deformable body indexes.
+   @pre A != nullptr. */
+  void AppendLinearDynamicsMatrix(const systems::Context<T>& context,
+                                  std::vector<MatrixX<T>>* A) const;
+
  private:
   friend class DeformableDriverTest;
   friend class DeformableDriverContactTest;
@@ -77,6 +91,10 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
     std::vector<systems::CacheIndex> dof_permutations;
     systems::CacheIndex participating_velocity_mux;
     systems::CacheIndex participating_velocities;
+    systems::CacheIndex participating_free_motion_velocities;
+    std::vector<systems::CacheIndex> free_motion_tangent_matrices;
+    std::vector<systems::CacheIndex>
+        free_motion_tangent_matrix_schur_complements;
   };
 
   /* This private nested class acts both as a multiplexer and a demultiplexer --
@@ -194,6 +212,38 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
    @pre result != nullptr. */
   void CalcParticipatingVelocities(const systems::Context<T>& context,
                                    VectorX<T>* result) const;
+
+  /* Calc version of EvalParticipatingFreeMotionVelocities().
+   @pre result != nullptr. */
+  void CalcParticipatingFreeMotionVelocities(const systems::Context<T>& context,
+                                             VectorX<T>* result) const;
+
+  /* Computes the tangent matrix (see FemModel::CalcTangentMatrix) of deformable
+   body with the given `id` at the free motion state.
+   @pre tangent_matrix != nullptr. */
+  void CalcFreeMotionTangentMatrix(
+      const systems::Context<T>& context, DeformableBodyIndex index,
+      fem::internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const;
+
+  /* Eval version of CalcFreeMotionTangentMatrix(). */
+  const fem::internal::PetscSymmetricBlockSparseMatrix&
+  EvalFreeMotionTangentMatrix(const systems::Context<T>& context,
+                              DeformableBodyIndex index) const;
+
+  /* Computes the Schur complement of the tangent matrix of deformable body with
+   the given `id` at the free motion state based on contact participation (see
+   PetscSymmetricBlockSparseMatrix::CalcSchurComplement). The dofs not
+   participating in contact are eliminated in favor of those that do
+   participate in contact.
+   @pre schur_complement != nullptr. */
+  void CalcFreeMotionTangentMatrixSchurComplement(
+      const systems::Context<T>& context, DeformableBodyIndex index,
+      fem::internal::SchurComplement<T>* schur_complement) const;
+
+  /* Eval version of CalcFreeMotionTangentMatrixSchurComplement(). */
+  const fem::internal::SchurComplement<T>&
+  EvalFreeMotionTangentMatrixSchurComplement(const systems::Context<T>& context,
+                                             DeformableBodyIndex index) const;
 
   CacheIndexes cache_indexes_;
   /* Modeling information about all deformable bodies. */
