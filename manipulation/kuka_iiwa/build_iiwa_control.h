@@ -44,6 +44,10 @@ namespace kuka_iiwa {
 /// corresponding to the Iiwa Dof (7) in the controller.  If no argument is
 /// passed, the gains derived from hardware will be used instead (hardcoded
 /// within the implementation of this function).
+///
+/// Note: This function constructs an InverseDynamicsController that holds an
+/// internal, non-owned reference to `controller_plant`, so you must ensure that
+/// `controller_plant` has a longer lifetime than the InverseDynamicsController.
 void BuildIiwaControl(
     const multibody::MultibodyPlant<double>& plant,
     const multibody::ModelInstanceIndex iiwa_instance,
