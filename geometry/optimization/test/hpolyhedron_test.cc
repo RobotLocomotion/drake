@@ -1,7 +1,6 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 
 #include <limits>
-#include <regex>
 
 #include <gtest/gtest.h>
 
@@ -729,32 +728,39 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest2) {
         0,  1,  // y ≤ 1
        -1,  0,  // x ≥ -1
         0, -1,  // y ≥ -1
-       -1,  1,  // y ≥ x
+       -1,  0,  // x ≥ 0
   b << 1, 1, 1, 1, 0;
   // clang-format on
   HPolyhedron H(A, b);
 
   // Draw random samples.
   RandomGenerator generator(1234);
-  // Use a seed that is outside the set (because y ≤ x), but still inside the
+  // Use a seed that is outside the set (because x ≤ 0), but still inside the
   // [-1, 1] unit box (so the line search in all directions returns finite
-  // values).
-  const Vector2d seed{0.9, -0.9};
+  // values). It throws when the hit and run direction intersects x=0 outside
+  // of the unit box.
+  const Vector2d seed{-0.5, 0.9};
   // Make sure that random samples either return a point in the set (because
   // they were lucky) or throw.  Previously, the method could return a point
   // outside the set.
-  for (int i = 1; i < 10; ++i) {
+  int num_throws = 0;
+  int num_success = 0;
+  for (int i = 0; i < 10; ++i) {
     try {
       const Vector2d sample = H.UniformSample(&generator, seed);
       EXPECT_TRUE(H.PointInSet(sample, 1e-12));
+      ++num_success;
     } catch (const std::exception& err) {
-      auto matcher = [](const char* s, const std::string& re) {
-        return std::regex_match(s, std::regex(re));
-      };
-      EXPECT_PRED2(matcher, err.what(),
-                   ".*Hit and Run algorithm failed to find a feasible point.*");
+      ++num_throws;
+      EXPECT_NE(
+          std::string(err.what())
+              .find("Hit and Run algorithm failed to find a feasible point"),
+          std::string::npos);
     }
   }
+  // Make sure both paths were touched.
+  EXPECT_GT(num_throws, 0);
+  EXPECT_GT(num_success, 0);
 }
 
 GTEST_TEST(HPolyhedronTest, Serialize) {
