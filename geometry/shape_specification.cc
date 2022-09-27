@@ -56,6 +56,9 @@ Cylinder::Cylinder(double radius, double length)
   }
 }
 
+Cylinder::Cylinder(const Vector2<double>& measures)
+    : Cylinder(measures(0), measures(1)) {}
+
 HalfSpace::HalfSpace() : Shape(ShapeTag<HalfSpace>()) {}
 
 RigidTransform<double> HalfSpace::MakePose(const Vector3<double>& Hz_dir_F,
@@ -100,6 +103,9 @@ Box::Box(double width, double depth, double height)
   }
 }
 
+Box::Box(const Vector3<double>& measures)
+    : Box(measures(0), measures(1), measures(2)) {}
+
 Box Box::MakeCube(double edge_size) {
   return Box(edge_size, edge_size, edge_size);
 }
@@ -114,6 +120,9 @@ Capsule::Capsule(double radius, double length)
   }
 }
 
+Capsule::Capsule(const Vector2<double>& measures)
+    : Capsule(measures(0), measures(1)) {}
+
 Ellipsoid::Ellipsoid(double a, double b, double c)
     : Shape(ShapeTag<Ellipsoid>()), radii_(a, b, c) {
   if (a <= 0 || b <= 0 || c <= 0) {
@@ -123,6 +132,9 @@ Ellipsoid::Ellipsoid(double a, double b, double c)
                     a, b, c));
   }
 }
+
+Ellipsoid::Ellipsoid(const Vector3<double>& measures)
+    : Ellipsoid(measures(0), measures(1), measures(2)) {}
 
 Mesh::Mesh(const std::string& absolute_filename, double scale)
     : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
@@ -147,6 +159,9 @@ MeshcatCone::MeshcatCone(double height, double a, double b)
         height, a, b));
   }
 }
+
+MeshcatCone::MeshcatCone(const Vector3<double>& measures)
+    : MeshcatCone(measures(0), measures(1), measures(2)) {}
 
 ShapeReifier::~ShapeReifier() = default;
 

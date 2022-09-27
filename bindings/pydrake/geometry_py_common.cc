@@ -364,7 +364,9 @@ void DoScalarIndependentDefinitions(py::module m) {
 
     py::class_<Box, Shape>(m, "Box", doc.Box.doc)
         .def(py::init<double, double, double>(), py::arg("width"),
-            py::arg("depth"), py::arg("height"), doc.Box.ctor.doc)
+            py::arg("depth"), py::arg("height"), doc.Box.ctor.doc_3args)
+        .def(py::init<const Vector3<double>&>(), py::arg("measures"),
+            doc.Box.ctor.doc_1args)
         .def("width", &Box::width, doc.Box.width.doc)
         .def("depth", &Box::depth, doc.Box.depth.doc)
         .def("height", &Box::height, doc.Box.height.doc)
@@ -380,7 +382,9 @@ void DoScalarIndependentDefinitions(py::module m) {
 
     py::class_<Capsule, Shape>(m, "Capsule", doc.Capsule.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
-            doc.Capsule.ctor.doc)
+            doc.Capsule.ctor.doc_2args)
+        .def(py::init<const Vector2<double>&>(), py::arg("measures"),
+            doc.Capsule.ctor.doc_1args)
         .def("radius", &Capsule::radius, doc.Capsule.radius.doc)
         .def("length", &Capsule::length, doc.Capsule.length.doc)
         .def(py::pickle(
@@ -406,7 +410,9 @@ void DoScalarIndependentDefinitions(py::module m) {
 
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
-            doc.Cylinder.ctor.doc)
+            doc.Cylinder.ctor.doc_2args)
+        .def(py::init<const Vector2<double>&>(), py::arg("measures"),
+            doc.Cylinder.ctor.doc_1args)
         .def("radius", &Cylinder::radius, doc.Cylinder.radius.doc)
         .def("length", &Cylinder::length, doc.Cylinder.length.doc)
         .def(py::pickle(
@@ -419,7 +425,9 @@ void DoScalarIndependentDefinitions(py::module m) {
 
     py::class_<Ellipsoid, Shape>(m, "Ellipsoid", doc.Ellipsoid.doc)
         .def(py::init<double, double, double>(), py::arg("a"), py::arg("b"),
-            py::arg("c"), doc.Ellipsoid.ctor.doc)
+            py::arg("c"), doc.Ellipsoid.ctor.doc_3args)
+        .def(py::init<const Vector3<double>&>(), py::arg("measures"),
+            doc.Ellipsoid.ctor.doc_1args)
         .def("a", &Ellipsoid::a, doc.Ellipsoid.a.doc)
         .def("b", &Ellipsoid::b, doc.Ellipsoid.b.doc)
         .def("c", &Ellipsoid::c, doc.Ellipsoid.c.doc)
@@ -458,7 +466,10 @@ void DoScalarIndependentDefinitions(py::module m) {
 
     py::class_<MeshcatCone, Shape>(m, "MeshcatCone", doc.MeshcatCone.doc)
         .def(py::init<double, double, double>(), py::arg("height"),
-            py::arg("a") = 1.0, py::arg("b") = 1.0, doc.MeshcatCone.ctor.doc)
+            py::arg("a") = 1.0, py::arg("b") = 1.0,
+            doc.MeshcatCone.ctor.doc_3args)
+        .def(py::init<const Vector3<double>&>(), py::arg("measures"),
+            doc.MeshcatCone.ctor.doc_1args)
         .def("height", &MeshcatCone::height, doc.MeshcatCone.height.doc)
         .def("a", &MeshcatCone::a, doc.MeshcatCone.a.doc)
         .def("b", &MeshcatCone::b, doc.MeshcatCone.b.doc)

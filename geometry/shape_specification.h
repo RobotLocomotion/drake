@@ -129,6 +129,10 @@ class Cylinder final : public Shape {
    */
   Cylinder(double radius, double length);
 
+  /** Constructs a cylinder with a vector of measures: radius and length.
+   @throws std::exception if the measures are not strictly positive. */
+  explicit Cylinder(const Vector2<double>& measures);
+
   double radius() const { return radius_; }
   double length() const { return length_; }
 
@@ -150,6 +154,11 @@ class Box final : public Shape {
    @throws std::exception if `width`, `depth` or `height` are not strictly
    positive. */
   Box(double width, double depth, double height);
+
+  /** Constructs a box with a vector of measures: width, depth, and height --
+   the box's dimensions along the canonical x-, y-, and z-axes, respectively.
+   @throws std::exception if the measures are not strictly positive. */
+  explicit Box(const Vector3<double>& measures);
 
   /** Constructs a cube with the given `edge_size` for its width, depth, and
    height. */
@@ -187,6 +196,10 @@ class Capsule final : public Shape {
    */
   Capsule(double radius, double length);
 
+  /** Constructs a capsule with a vector of measures: radius and length.
+   @throws std::exception if the measures are not strictly positive. */
+  explicit Capsule(const Vector2<double>& measures);
+
   double radius() const { return radius_; }
   double length() const { return length_; }
 
@@ -200,6 +213,7 @@ class Capsule final : public Shape {
  equation for the ellipsoid is:
 
           x²/a² + y²/b² + z²/c² = 1,
+
  where a,b,c are the lengths of the principal semi-axes of the ellipsoid.
  The bounding box of the ellipsoid is [-a,a]x[-b,b]x[-c,c].
 */
@@ -208,10 +222,17 @@ class Ellipsoid final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Ellipsoid)
 
   /** Constructs an ellipsoid with the given lengths of its principal
-   semi-axes.
+   semi-axes, with a, b, and c measured along the x-, y-, and z- axes of the
+   canonical frame, respectively.
    @throws std::exception if `a`, `b`, or `c` are not strictly positive.
    */
   Ellipsoid(double a, double b, double c);
+
+  /** Constructs an ellipsoid with a vector of measures: the lengths of its
+   principal semi-axes, with a, b, and c measured along the x-, y-, and z- axes
+   of the canonical frame, respectively.
+   @throws std::exception if the measures are not strictly positive. */
+  explicit Ellipsoid(const Vector3<double>& measures);
 
   double a() const { return radii_(0); }
   double b() const { return radii_(1); }
@@ -328,7 +349,7 @@ class Convex final : public Shape {
 
       sqrt(x²/a² + y²/b²) ≤ z;  z ∈ [0, height],
 
- where `a` and `b` are the lengths of the principle semi-axes of the horizontal
+ where `a` and `b` are the lengths of the principal semi-axes of the horizontal
  section at `z=height()`.
 
  This shape is currently only supported by Meshcat. It will not appear in any
@@ -342,6 +363,11 @@ class MeshcatCone final : public Shape {
    @throws std::exception if `height`, `a`, or `b` are not strictly positive.
    */
   explicit MeshcatCone(double height, double a = 1.0, double b = 1.0);
+
+  /** Constructs a cone with a vector of measures: height and principal
+   semi-axes.
+   @throws std::exception if the measures are not strictly positive. */
+  explicit MeshcatCone(const Vector3<double>& measures);
 
   double height() const { return height_; }
   double a() const { return a_; }
