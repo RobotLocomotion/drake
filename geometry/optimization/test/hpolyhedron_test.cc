@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 
 #include <limits>
+#include <regex>
 
 #include <gtest/gtest.h>
 
@@ -715,6 +716,45 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
                samples.row(1).array() >= -1.5 && samples.row(1).array() <= -1)
                   .count(),
               N / 10, kTol);
+}
+
+// Test the case where the sample point is outside the region, but the max
+// threshold can be smaller than the min threshold. (This was a bug uncovered
+// by hammering on this code from IRIS).
+GTEST_TEST(HPolyhedronTest, UniformSampleTest2) {
+  Matrix<double, 5, 2> A;
+  Matrix<double, 5, 1> b;
+  // clang-format off
+  A <<  1,  0,  // x ≤ 1
+        0,  1,  // y ≤ 1
+       -1,  0,  // x ≥ -1
+        0, -1,  // y ≥ -1
+       -1,  1,  // y ≥ x
+  b << 1, 1, 1, 1, 0;
+  // clang-format on
+  HPolyhedron H(A, b);
+
+  // Draw random samples.
+  RandomGenerator generator(1234);
+  // Use a seed that is outside the set (because y ≤ x), but still inside the
+  // [-1, 1] unit box (so the line search in all directions returns finite
+  // values).
+  const Vector2d seed{0.9, -0.9};
+  // Make sure that random samples either return a point in the set (because
+  // they were lucky) or throw.  Previously, the method could return a point
+  // outside the set.
+  for (int i = 1; i < 10; ++i) {
+    try {
+      const Vector2d sample = H.UniformSample(&generator, seed);
+      EXPECT_TRUE(H.PointInSet(sample, 1e-12));
+    } catch (const std::exception& err) {
+      auto matcher = [](const char* s, const std::string& re) {
+        return std::regex_match(s, std::regex(re));
+      };
+      EXPECT_PRED2(matcher, err.what(),
+                   ".*Hit and Run algorithm failed to find a feasible point.*");
+    }
+  }
 }
 
 GTEST_TEST(HPolyhedronTest, Serialize) {

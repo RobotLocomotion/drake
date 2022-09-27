@@ -157,7 +157,7 @@ class HPolyhedron final : public ConvexSet {
   */
   Eigen::VectorXd UniformSample(
       RandomGenerator* generator,
-      const Eigen::Ref<Eigen::VectorXd>& previous_sample) const;
+      const Eigen::Ref<const Eigen::VectorXd>& previous_sample) const;
 
   /** Variant of UniformSample that uses the ChebyshevCenter() as the
   previous_sample as a feasible point to start the Markov chain sampling. */
