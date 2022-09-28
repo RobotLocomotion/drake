@@ -550,6 +550,8 @@ std::tuple<double, double, double, double> ParseJointLimits(
         "An axis must be specified for joint '" + joint_spec.Name() + "'");
   }
 
+  // As of libsdformat13, ±∞ are used for axes with no position limits,
+  // so no special handling is needed.
   const double lower_limit = axis->Lower();
   const double upper_limit = axis->Upper();
   if (lower_limit > upper_limit) {
