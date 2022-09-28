@@ -36,7 +36,7 @@ namespace multibody {
 namespace {
 
 // This test simulates a "ladder" leaning against a wall, under the action of
-// gravity pullin in the -z axis direction. The bottom of the ladder is pinned
+// gravity pulling in the -z axis direction. The bottom of the ladder is pinned
 // to the ground by a revolute joint with its axis of revolution aligned with
 // the y axis. We apply an external torque to this joint.
 // Please run this unit test along with Drake's visualizer to obtain a
@@ -60,18 +60,17 @@ namespace {
 // bottom pin joint holding the ladder to the ground, in the presence of contact
 // and actuation.
 //
-// We perform this test for both continuous and discrete models, and expect
-// identical results from a weld joint and a locked revolute joint.
+// We perform this test for both continuous and discrete models.
 class LadderTest : public ::testing::Test {
  protected:
-  void BuildLadderModel(double discrete_update_period, bool locked_joint) {
+  void BuildLadderModel(double discrete_update_period) {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(
         &builder,
         std::make_unique<MultibodyPlant<double>>(discrete_update_period));
 
     AddWall();
-    AddPinnedLadder(locked_joint);
+    AddPinnedLadder();
     plant_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, 0.0, -kGravity));
     plant_->Finalize();
@@ -99,10 +98,8 @@ class LadderTest : public ::testing::Test {
         CoulombFriction<double>(kFrictionCoefficient, kFrictionCoefficient));
   }
 
-  // Adds the model for the ladder pinned to the ground at the origin. If @p
-  // locked_joint is true, uses a locked revolute joint; otherwise uses a weld
-  // joint.
-  void AddPinnedLadder(bool locked_joint) {
+  // Adds the model for the ladder pinned to the ground at the origin.
+  void AddPinnedLadder() {
     // We split the ladder into two halves and join them with a weld joint so
     // that we can evaluate the reaction force right at the middle.
     // We define body frame Bl and Bu for the lower and upper portions of the
@@ -153,14 +150,8 @@ class LadderTest : public ::testing::Test {
 
     // Join the two halves.
     const RigidTransformd X_BlBu(Vector3d(0.0, 0.0, kLadderLength / 2.0));
-    if (locked_joint) {
-      joint_ = &plant_->AddJoint<RevoluteJoint>("Weld", *ladder_lower_, X_BlBu,
-                                               *ladder_upper_, {},
-                                               Vector3d::UnitY(), 0.0);
-    } else {
-      joint_ = &plant_->WeldFrames(ladder_lower_->body_frame(),
-                                  ladder_upper_->body_frame(), X_BlBu);
-    }
+    joint_ = &plant_->WeldFrames(ladder_lower_->body_frame(),
+                                 ladder_upper_->body_frame(), X_BlBu);
 
     // Add actuation.
     plant_->AddJointActuator("PinActuator", *pin_);
@@ -168,7 +159,7 @@ class LadderTest : public ::testing::Test {
 
   // Build and run a simulator, and return it after simulating.
   std::unique_ptr<Simulator<double>> Simulate(
-      std::unique_ptr<Context<double>> diagram_context, bool locked_joint) {
+      std::unique_ptr<Context<double>> diagram_context) {
     Context<double>* plant_context =
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context.get());
 
@@ -181,14 +172,10 @@ class LadderTest : public ::testing::Test {
     const Vector1d tau_actuation = kActuationTorque * Vector1d::Ones();
     plant_->get_actuation_input_port().FixValue(plant_context, tau_actuation);
 
-    if (locked_joint) {
-        joint_->Lock(plant_context);
-    }
-
     // Sanity check model size.
-    auto sanity_check = [this, &locked_joint]() {
+    auto sanity_check = [this]() {
       ASSERT_EQ(plant_->num_bodies(), 3);
-      ASSERT_EQ(plant_->num_velocities(), locked_joint ? 2 : 1);
+      ASSERT_EQ(plant_->num_velocities(), 1);
       ASSERT_EQ(plant_->num_actuated_dofs(), 1);
     };
     sanity_check();
@@ -210,7 +197,7 @@ class LadderTest : public ::testing::Test {
   }
 
   void VerifyJointReactionForces(
-      Context<double>* diagram_context, bool locked_joint) {
+      Context<double>* diagram_context) {
     Context<double>* plant_context =
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context);
     // Evaluate the reaction forces output port to get the reaction force at the
@@ -293,18 +280,16 @@ class LadderTest : public ::testing::Test {
         CompareMatrices(F_Bu_W.translational(), f_Bu_expected, kTolerance));
   }
 
-  void TestWithThreads(double time_step, bool locked_joint) {
+  void TestWithThreads(double time_step) {
     SCOPED_TRACE(fmt::format("time_step = []", time_step));
-    BuildLadderModel(time_step, locked_joint);
+    BuildLadderModel(time_step);
     ASSERT_EQ(plant_->is_discrete(), (time_step != 0.));
 
     // Create the threads' contexts by cloning a prototype. This will help
     // ensure the context deep copy is properly working.
     auto context_prototype = diagram_->CreateDefaultContext();
-    auto simulator_prototype =
-        Simulate(std::move(context_prototype), locked_joint);
-    VerifyJointReactionForces(
-        &simulator_prototype->get_mutable_context(), locked_joint);
+    auto simulator_prototype = Simulate(std::move(context_prototype));
+    VerifyJointReactionForces(&simulator_prototype->get_mutable_context());
 
     // TODO(#17720): As articulated in the issue, baking a query object when
     // cloning scene graph context is thread-unsafe. In particular, updating the
@@ -332,9 +317,9 @@ class LadderTest : public ::testing::Test {
     std::vector<std::thread> threads;
     for (int k = 0; k < kThreads; k++) {
       threads.push_back(
-          std::thread([this, &simulator_prototype, &locked_joint]() {
+          std::thread([this, &simulator_prototype]() {
               auto context = simulator_prototype->get_context().Clone();
-              Simulate(std::move(context), locked_joint);
+              Simulate(std::move(context));
               // We skip verifying forces here because system evolution
               // invalidates the expected values used above.
             }));
@@ -374,36 +359,18 @@ class LadderTest : public ::testing::Test {
   const RigidBody<double>* ladder_upper_{nullptr};
   const RevoluteJoint<double>* pin_{nullptr};
 
-  // Either a weld joint, or a locked revolute joint, depending on test
-  // configuration.
+  // Weld joint joining the two halves of the ladder.
   const Joint<double>* joint_{nullptr};
 
   std::unique_ptr<Diagram<double>> diagram_;
 };
 
 TEST_F(LadderTest, PinReactionForcesContinuous) {
-  static constexpr bool kIsJointLocked = false;
-  TestWithThreads(0., kIsJointLocked);
+  TestWithThreads(0.);
 }
 
 TEST_F(LadderTest, PinReactionForcesDiscrete) {
-  static constexpr bool kIsJointLocked = false;
-  TestWithThreads(1.0e-3, kIsJointLocked);
-}
-
-// TODO(joemasterjohn) Expand the continuous locked joint test when continuous
-// joint locking is implemented.
-TEST_F(LadderTest, PinReactionForcesLockedJointContinuous) {
-  static constexpr bool kIsJointLocked = true;
-  BuildLadderModel(0, kIsJointLocked);
-  auto context = diagram_->CreateDefaultContext();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Simulate(std::move(context), kIsJointLocked), ".*is_state_discrete.*");
-}
-
-TEST_F(LadderTest, PinReactionForcesLockedJointDiscrete) {
-  static constexpr bool kIsJointLocked = true;
-  TestWithThreads(1.0e-3, kIsJointLocked);
+  TestWithThreads(1.0e-3);
 }
 
 // This test verifies the computation of joint reaction forces for a case in
