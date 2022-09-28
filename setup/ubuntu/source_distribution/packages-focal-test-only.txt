@@ -20,3 +20,4 @@ python3-yaml-dbg
 python3-zmq-dbg
 valgrind
 valgrind-dbg
+zip
