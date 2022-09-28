@@ -665,7 +665,7 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
       sap.SolveWithGuess(sap_problem, v0, &sap_results);
   if (status != SapSolverStatus::kSuccess) {
     const std::string msg = fmt::format(
-        "The SAP solver failed to converge at simulation time = {}. "
+        "The SAP solver failed to converge at simulation time = {:7.3g}. "
         "Reasons for divergence and possible solutions include:\n"
         "  1. Externally applied actuation values diverged due to external "
         "     reasons to the solver. Revise your control logic.\n"
@@ -678,7 +678,7 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
         "     extremely large mass ratios. Revise your model and consider "
         "     whether very small objects can be removed or welded to larger "
         "     objects in the model.",
-        ExtractDoubleOrThrow(context.get_time()));
+        context.get_time());
     throw std::runtime_error(msg);
   }
 
