@@ -28,3 +28,7 @@
 
 # User-specified configuration
 /user.bazelrc
+
+drake-build
+
+*.pyc
