@@ -178,6 +178,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:serialize_pybind",
+        "//bindings/pydrake/common:sorted_pair_pybind",
         "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["optimization_py.cc"],
@@ -331,6 +332,9 @@ drake_py_unittest(
 drake_py_unittest(
     name = "optimization_test",
     timeout = "moderate",
+    data = [
+        ":models",
+    ],
     deps = [
         ":benchmarks_py",
         ":inverse_kinematics_py",
