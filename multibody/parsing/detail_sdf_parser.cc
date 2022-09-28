@@ -141,7 +141,7 @@ std::string GetRelativeBodyName(
   }
 }
 
-// Given an gz::math::Inertial object, extract a RotationalInertia object
+// Given a gz::math::Inertial object, extract a RotationalInertia object
 // for the rotational inertia of body B, about its center of mass Bcm and,
 // expressed in the inertial frame Bi (as specified in <inertial> in the SDF
 // file.)
@@ -254,7 +254,7 @@ std::string ResolveJointChildLinkName(
 }
 
 // Helper method to extract the SpatialInertia M_BBo_B of body B, about its body
-// frame origin Bo and, expressed in body frame B, from an gz::Inertial
+// frame origin Bo and, expressed in body frame B, from a gz::Inertial
 // object.
 SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
     const gz::math::Inertiald& Inertial_BBcm_Bi) {
