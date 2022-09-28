@@ -180,8 +180,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
               GetChildElementValue<std::string>(*mesh_element, "uri"));
       double scale = 1.0;
       if (mesh_element->HasElement("scale")) {
-        const ignition::math::Vector3d& scale_vector =
-            GetChildElementValue<ignition::math::Vector3d>(
+        const gz::math::Vector3d& scale_vector =
+            GetChildElementValue<gz::math::Vector3d>(
                 *mesh_element, "scale");
         // geometry::Mesh only supports isotropic scaling and therefore we
         // enforce it.
@@ -206,7 +206,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       return make_unique<geometry::Capsule>(shape.Radius(), shape.Length());
     }
     case sdf::GeometryType::ELLIPSOID: {
-      const ignition::math::Vector3d& radii =
+      const gz::math::Vector3d& radii =
           sdf_geometry.EllipsoidShape()->Radii();
       return make_unique<geometry::Ellipsoid>(radii.X(), radii.Y(), radii.Z());
     }
@@ -359,7 +359,7 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
     auto add_property = [material_element](const char* property,
                                            IllustrationProperties* props) {
       if (!material_element->HasElement(property)) return;
-      using ignition::math::Color;
+      using gz::math::Color;
       const std::pair<Color, bool> value_pair =
           material_element->Get<Color>(property, Color());
       if (value_pair.second == false) return;

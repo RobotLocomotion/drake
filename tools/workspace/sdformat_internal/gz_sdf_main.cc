@@ -1,5 +1,5 @@
 /*
-Provides a C++ version libsdformat's `ign sdf` ruby command-line interface.
+Provides a C++ version libsdformat's `gz sdf` ruby command-line interface.
 */
 
 #include <stdexcept>
@@ -20,11 +20,11 @@ DEFINE_string(
     "Prints an SDFormat file after parsing and converting to the converted "
     "to the latest specification");
 
-// These following `extern` functions are defined in ign.cc, and are normally
+// These following `extern` functions are defined in gz.cc, and are normally
 // consumed by Ruby in libsdformat as a shared library. However, we don't want
-// Ruby, and the current header file (ign.hh) does not export all function, so
+// Ruby, and the current header file (gz.hh) does not export all function, so
 // we must declare them here.
-// TODO(eric.cousineau): Remove these and include `ign.hh`. See:
+// TODO(eric.cousineau): Remove these and include `gz.hh`. See:
 // https://github.com/osrf/sdformat/issues/323
 extern "C" int cmdCheck(const char *_path);
 extern "C" int cmdDescribe(const char *_version);

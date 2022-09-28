@@ -43,16 +43,11 @@ cmake_configure_file(
         "PROJECT_VERSION_PATCH=0",
         "PROJECT_VERSION=0.0",
         "PROJECT_VERSION_FULL=0.0.0",
-        "PROJECT_VERSION_NAME=",
         "SDF_PKG_VERSION=0.0",
         "SDF_MAJOR_VERSION=0",
         "CMAKE_INSTALL_FULL_DATAROOTDIR=does/not/exist",
     ],
     undefines = [
-        "BUILD_TYPE_PROFILE",
-        "BUILD_TYPE_DEBUG",
-        "BUILD_TYPE_RELEASE",
-        "HAVE_URDFDOM",
         "USE_INTERNAL_URDF",
         # TODO(jwnimmer-tri) We could probably enable this and be able to drop
         # some or all of our console.patch file.
@@ -67,8 +62,8 @@ generate_file(
     content = """
 #pragma once
 // Simplified version of visibility and deprecation macros.
-#define IGNITION_SDFORMAT_VISIBLE __attribute__ ((visibility("default")))
-#define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
+#define GZ_SDFORMAT_VISIBLE __attribute__ ((visibility("default")))
+#define GZ_DEPRECATED(version) __attribute__ ((__deprecated__))
     """,
 )
 
@@ -164,8 +159,8 @@ _HDRS = _MOST_HDRS + [
 ]
 
 # This list of sources matches upstream's explicitly listed sources
-# (sdformat/src/CMakeLists.txt), with two exceptions: ign.hh and ign.cc are not
-# incorporated in this library, but are incorporated into the `ign_sdf_cmdline`
+# (sdformat/src/CMakeLists.txt), with two exceptions: gz.hh and gz.cc are not
+# incorporated in this library, but are incorporated into the `gz_sdf_cmdline`
 # library defined below; and the parser_urdf.hh and parser_urdf.cc are excluded
 # because we don't use them.
 _SRCS = [
@@ -263,8 +258,8 @@ cc_library_vendored(
     ],
     edit_include = {
         "sdf/": "drake_vendor/sdf/",
-        "ignition/math/": "drake_vendor/ignition/math/",
-        "ignition/utils/": "drake_vendor/ignition/utils/",
+        "gz/math/": "drake_vendor/gz/math/",
+        "gz/utils/": "drake_vendor/gz/utils/",
         "tinyxml2": "drake_vendor/tinyxml2",
     },
     includes = ["drake_src"],
@@ -284,8 +279,8 @@ cc_library_vendored(
 )
 
 _IGN_CMDLINE_SRCS = [
-    "src/ign.cc",
-    "src/ign.hh",
+    "src/gz.cc",
+    "src/gz.hh",
 ]
 
 cc_library_vendored(
@@ -297,7 +292,7 @@ cc_library_vendored(
     ],
     edit_include = {
         "sdf/": "drake_vendor/sdf/",
-        "ignition/math/": "drake_vendor/ignition/math/",
+        "gz/math/": "drake_vendor/gz/math/",
     },
     copts = ["-w"],
     linkstatic = 1,
