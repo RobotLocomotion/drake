@@ -2831,7 +2831,7 @@ void MultibodyPlant<T>::CallTamsiSolver(
         "  2. decrease the high gains in your controller whenever possible,\n"
         "  3. switch to a continuous model (discrete update period is zero), "
         "     though this might affect the simulation run time.",
-        time0, this->time_step());
+        ExtractDoubleOrThrow(time0), this->time_step());
     throw std::runtime_error(msg);
   }
 
@@ -2930,12 +2930,11 @@ void MultibodyPlant<T>::CallContactSolver(
 
   if (info != contact_solvers::internal::ContactSolverStatus::kSuccess) {
     const std::string msg =
-        fmt::format("MultibodyPlant's contact solver of type '" +
-                        NiceTypeName::Get(*contact_solver_) +
-                        "' failed to converge at "
-                        "simulation time = {:7.3g} with discrete update "
-                        "period = {:7.3g}.",
-                    time0, time_step());
+        fmt::format("MultibodyPlant's contact solver of type '{}' failed to "
+                        "converge at simulation time = {} with discrete "
+                        "update period = {}.",
+                    NiceTypeName::Get(*contact_solver_),
+                    ExtractDoubleOrThrow(time0), time_step());
     throw std::runtime_error(msg);
   }
 }
