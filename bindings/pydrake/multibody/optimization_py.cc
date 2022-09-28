@@ -3,6 +3,7 @@
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
+#include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -57,6 +58,19 @@ PYBIND11_MODULE(optimization, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 4>(), cls_doc.ctor.doc);
+  }
+
+  {
+    using Class = ContactWrenchFromForceInWorldFrameEvaluator;
+    constexpr auto& cls_doc = doc.ContactWrenchFromForceInWorldFrameEvaluator;
+    using Ptr = std::shared_ptr<Class>;
+    py::class_<Class, solvers::EvaluatorBase, Ptr>(
+        m, "ContactWrenchFromForceInWorldFrameEvaluator", cls_doc.doc)
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 systems::Context<AutoDiffXd>*,
+                 const SortedPair<geometry::GeometryId>&>(),
+            py::arg("plant"), py::arg("context"), py::arg("geometry_id_pair"),
+            cls_doc.ctor.doc);
   }
 
   {
