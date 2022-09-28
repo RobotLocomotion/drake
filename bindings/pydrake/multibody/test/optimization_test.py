@@ -8,6 +8,7 @@ import numpy as np
 from pydrake.multibody.optimization import (
     CalcGridPointsOptions,
     CentroidalMomentumConstraint,
+    ContactWrenchFromForceInWorldFrameEvaluator,
     QuaternionEulerIntegrationConstraint,
     StaticEquilibriumProblem,
     Toppra,
@@ -27,9 +28,10 @@ from pydrake.multibody.tree import (
 import pydrake.multibody.inverse_kinematics as ik
 import pydrake.solvers.mathematicalprogram as mp
 from pydrake.solvers import SnoptSolver
-from pydrake.systems.framework import DiagramBuilder_
+from pydrake.systems.framework import DiagramBuilder, DiagramBuilder_
 from pydrake.geometry import (
     Box,
+    Role,
     Sphere,
 )
 from pydrake.math import RigidTransform
@@ -178,6 +180,33 @@ class TestQuaternionEulerIntegrationConstraint(unittest.TestCase):
         dut = QuaternionEulerIntegrationConstraint(
             allow_quaternion_negation=True)
         self.assertIsInstance(dut, mp.Constraint)
+
+
+class TestContactWrenchFromForceInWorldFrameEvaluator(unittest.TestCase):
+    def test(self):
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(
+            builder, MultibodyPlant(time_step=0.01))
+        Parser(plant).AddModelFromFile(FindResourceOrThrow(
+                "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
+        plant.Finalize()
+        diagram = builder.Build()
+        ad_diagram = diagram.ToAutoDiffXd()
+        ad_plant = ad_diagram.GetSubsystemByName("plant")
+        ad_context = ad_diagram.CreateDefaultContext()
+        ad_plant_context = ad_plant.GetMyMutableContextFromRoot(ad_context)
+        inspector = scene_graph.model_inspector()
+        frame_id1 = inspector.GetGeometryIdByName(
+            plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("body1").index()),
+            Role.kProximity, "two_bodies::body1_collision")
+        frame_id2 = inspector.GetGeometryIdByName(
+            plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("body2").index()),
+            Role.kProximity, "two_bodies::body2_collision")
+        dut = ContactWrenchFromForceInWorldFrameEvaluator(
+            plant=ad_plant,
+            context=ad_plant_context,
+            geometry_id_pair=(frame_id1, frame_id2))
+        self.assertIsInstance(dut, mp.EvaluatorBase)
 
 
 class TestToppra(unittest.TestCase):
