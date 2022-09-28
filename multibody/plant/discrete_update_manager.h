@@ -194,15 +194,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const internal::ContactJacobians<T>& EvalContactJacobians(
       const systems::Context<T>& context) const;
 
-  const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
-      const systems::Context<T>& context) const;
-
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const systems::Context<T>& context) const;
-
-  std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
-      const systems::Context<T>& context,
-      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const;
 
   void AddInForcesFromInputPorts(const drake::systems::Context<T>& context,
                                  MultibodyForces<T>* forces) const;
