@@ -5,6 +5,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
+#include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 using drake::geometry::GeometryId;
@@ -22,16 +23,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Friend class used to provide access to a selection of private functions in
-// CompliantContactManager for testing purposes.
-class CompliantContactManagerTest {
- public:
-  static const DeformableDriver<double>* deformable_driver(
-      const CompliantContactManager<double>& manager) {
-    return manager.deformable_driver_.get();
-  }
-};
-
 class DeformableDriverTest : public ::testing::Test {
  protected:
   static constexpr double kDt = 0.01;
@@ -44,11 +35,13 @@ class DeformableDriverTest : public ::testing::Test {
     body_id_ = RegisterSphere(deformable_model.get(), kRezHint);
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(move(deformable_model));
+    // N.B. Currently the manager only supports SAP.
+    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
     plant_->Finalize();
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
     plant_->SetDiscreteUpdateManager(move(contact_manager));
-    driver_ = CompliantContactManagerTest::deformable_driver(*manager_);
+    driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
     context_ = plant_->CreateDefaultContext();
   }
 

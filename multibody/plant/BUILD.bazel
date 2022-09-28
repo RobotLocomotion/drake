@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":calc_distance_and_time_derivative",
         ":constraint_specs",
         ":contact_jacobians",
+        ":contact_pair_kinematics",
         ":contact_results",
         ":coulomb_friction",
         ":discrete_contact_pair",
@@ -94,6 +95,7 @@ drake_cc_library(
         "make_discrete_update_manager.cc",
         "multibody_plant.cc",
         "physical_model.cc",
+        "sap_driver.cc",
     ],
     hdrs = [
         "compliant_contact_manager.h",
@@ -105,12 +107,14 @@ drake_cc_library(
         "multibody_plant_discrete_update_manager_attorney.h",
         "multibody_plant_model_attorney.h",
         "physical_model.h",
+        "sap_driver.h",
         "scalar_convertible_component.h",
     ],
     visibility = ["//visibility:private"],
     deps = [
         ":constraint_specs",
         ":contact_jacobians",
+        ":contact_pair_kinematics",
         ":contact_results",
         ":coulomb_friction",
         ":discrete_contact_pair",
@@ -147,6 +151,32 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//geometry/query_results:penetration_as_point_pair",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "compliant_contact_manager_tester",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["test/compliant_contact_manager_tester.h"],
+    deps = [
+        ":multibody_plant_core",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_pair_kinematics",
+    srcs = [
+        "contact_pair_kinematics.cc",
+    ],
+    hdrs = [
+        "contact_pair_kinematics.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//math:geometric_transform",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )
@@ -345,6 +375,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "spheres_stack",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["test/spheres_stack.h"],
+    deps = [
+        ":multibody_plant_config",
+        ":multibody_plant_core",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
 drake_cc_googletest(
     name = "compliant_contact_manager_scalar_conversion_test",
     deps = [
@@ -357,18 +399,51 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "compliant_contact_manager_test",
-    data = [
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
-    ],
     deps = [
+        ":compliant_contact_manager_tester",
         ":plant",
+        ":spheres_stack",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
         "//systems/primitives:pass_through",
         "//systems/primitives:zero_order_hold",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_driver_test",
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        ":spheres_stack",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_driver_joint_limits_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_driver_multidof_joints_test",
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -704,6 +779,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "deformable_driver_test",
     deps = [
+        ":compliant_contact_manager_tester",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
