@@ -3,8 +3,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/primitives/linear_system.h"
@@ -278,6 +280,112 @@ GTEST_TEST(MultibodyPlantTest, CartPoleLinearization) {
 
   EXPECT_TRUE(CompareMatrices(dt_linearization->A(), A_expected, 1e-16));
   EXPECT_TRUE(CompareMatrices(dt_linearization->B(), B_expected, 1e-16));
+}
+
+
+// Helper function to create a unit inertia for a uniform-density cube B about
+// Bo (B's origin point) from a given dimension (length).
+// @param[in] length The length of any of the cube's edges.
+//   If length = 0, the spatial inertia is that of a particle.
+// @retval M_BBo_B Cube B's unit inertia about point Bo (B's origin),
+// expressed in terms of unit vectors Bx, By, Bz, each of which are parallel
+// to sides (edges) of the cube. Point Bo is the centroid of the face of the
+// cube whose outward normal is -Bx. Hence, the position vector from Bo to Bcm
+// (B's center of mass) is p_BoBcm_B = Lx/2 Bx.
+UnitInertia<double> MakeTestCubeUnitInertia(const double length = 1.0) {
+    const UnitInertia<double> G_BBcm_B = UnitInertia<double>::SolidCube(length);
+    const Vector3<double> p_BoBcm_B(length / 2, 0, 0);
+    const UnitInertia<double> G_BBo_B =
+        G_BBcm_B.ShiftFromCenterOfMass(-p_BoBcm_B);
+    return G_BBo_B;
+}
+
+// Helper function to create a cube-shaped rigid body B and add it to a plant.
+// @param[in] plant MultibodyPlant to which body B is added.
+// @param[in] body_name name of the body that is being added to the plant.
+// @param[in] link_length length, width, and depth of the cube-shaped body.
+// @param[in] skip_validity_check setting which is `true` to skip the validity
+//  check on the new body B's spatial inertia, which ensures an exception is not
+//  thrown when setting body B's spatial inertia (which would otherwise occur if
+//  mass or link_length is NaN). Avoiding this early exception allows for a
+//  later exception to be thrown in a subsequent function and tested below.
+const RigidBody<double>& AddCubicalLink(
+    MultibodyPlant<double>* plant,
+    const std::string& body_name,
+    const double mass,
+    const double link_length = 1.0,
+    const bool skip_validity_check = false) {
+  DRAKE_DEMAND(plant != nullptr);
+  const Vector3<double> p_BoBcm_B(link_length / 2, 0, 0);
+  const UnitInertia<double> G_BBo_B = MakeTestCubeUnitInertia(link_length);
+  const SpatialInertia<double> M_BBo_B(mass, p_BoBcm_B, G_BBo_B,
+                                       skip_validity_check);
+  return plant->AddRigidBody(body_name, M_BBo_B);
+}
+
+// Verify an exception is thrown for a dynamic analysis that includes two
+// sequential zero-mass bodies that translate in the same direction.
+GTEST_TEST(TestSingularHingeMatrix, ThrowErrorForZeroMassTranslatingBodies) {
+  // Create a plant, add rigid bodies, and use discrete_update_period = 0 to
+  // set a continuous model that uses the Articulated Body Algorithm (ABA) to
+  // evaluate forward dynamics.
+  const double discrete_update_period = 0;
+  MultibodyPlant<double> plant(discrete_update_period);
+
+  const double mA = 0, mB = 0, mC = 0;  // Mass of links A, B, C.
+  const double length = 3;  // Length of uniform-density link (arbitrary > 0).
+  const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
+  const RigidBody<double>& body_B = AddCubicalLink(&plant, "bodyB", mB, length);
+  const RigidBody<double>& body_C = AddCubicalLink(&plant, "bodyC", mC, length);
+
+  // Add bodyA to world with X-prismatic joint (bodyA has zero mass).
+  const RigidBody<double>& world_body = plant.world_body();
+  plant.AddJoint<multibody::PrismaticJoint>("WA_prismatic_jointX",
+      world_body, std::nullopt, body_A, std::nullopt, Vector3<double>::UnitX());
+
+  // Add bodyB to bodyA with X-prismatic joint (bodyB has zero mass).
+  plant.AddJoint<multibody::PrismaticJoint>("AB_prismatic_jointX",
+      body_A, std::nullopt, body_B, std::nullopt, Vector3<double>::UnitX());
+
+  // Add bodyB to bodyA with X-prismatic joint (bodyB has zero mass).
+  plant.AddJoint<multibody::PrismaticJoint>("BC_prismatic_jointX",
+      body_B, std::nullopt, body_C, std::nullopt, Vector3<double>::UnitX());
+
+  // Signal that we are done building the test model.
+  plant.Finalize();
+
+  // Create a default context and evaluate forward dynamics.
+  auto context = plant.CreateDefaultContext();
+
+  // Different error messages are thrown depending on debug vs. release.
+  if (kDrakeAssertIsArmed) {
+    // Verify message that is thrown in debug mode.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.EvalForwardDynamics(*context).get_vdot(),
+        "Encountered singular articulated body hinge inertia for body node "
+        "index 3. Please ensure that this body has non-zero inertia along "
+         "all axes of motion.*");
+  } else {
+    // Verify message that is thrown in release mode.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.EvalForwardDynamics(*context).get_vdot(),
+        "Encountered singular articulated body hinge inertia for body node "
+        "index 3. Please ensure that this body has non-zero inertia along "
+        "all axes of motion.*");
+  }
+
+  // const VectorXd vdot = plant.EvalForwardDynamics(*context).get_vdot();
+  // if (vdot.size() == 0) std::cout << "\nvdot(0) = " << vdot(0);
+  // std::cout << "\nvdot(0) = " << vdot(0);
+  // std::cout << "\nvdot(1) = " << vdot(1);
+  // std::cout << "\nvdot(2) = " << vdot(2) << "\n";
+  // EXPECT_EQ(vdot.size(), 2);
+
+  // No exception is thrown due to default mass/inertia properties. It is OK
+  // that there are 3 successive prismatic joints that have no mass since their
+  // prismatic joints are orthogonal. Alternatively, if two prismatic joints
+  // are parallel (with no associated mass), expect numerical problems.
+  // EXPECT_NO_THROW(plant.ThrowDefaultMassInertiaError());
 }
 
 // TODO(amcastro-tri): Include test with non-zero actuation and external forces.
