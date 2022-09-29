@@ -74,14 +74,14 @@ class ArticulatedBodyInertiaCache {
   }
 
   // LDLT factorization `ldlt_D_B` of the articulated body hinge inertia.
-  const math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& get_ldlt_D_B(
+  const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_ldlt_D_B(
       BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return ldlt_D_B_[body_node_index];
   }
 
   // Mutable version of get_ldlt_D_B().
-  math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
+  math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
       BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return ldlt_D_B_[body_node_index];
@@ -128,7 +128,7 @@ class ArticulatedBodyInertiaCache {
   // Pools indexed by BodyNodeIndex.
   std::vector<ArticulatedBodyInertia<T>> P_B_W_;
   std::vector<ArticulatedBodyInertia<T>> Pplus_PB_W_;
-  std::vector<math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>> ldlt_D_B_;
+  std::vector<math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>> ldlt_D_B_;
   std::vector<Matrix6xUpTo6<T>> g_PB_W_;
 };
 
