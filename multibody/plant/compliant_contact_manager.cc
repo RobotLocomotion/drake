@@ -665,7 +665,7 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
       sap.SolveWithGuess(sap_problem, v0, &sap_results);
   if (status != SapSolverStatus::kSuccess) {
     const std::string msg = fmt::format(
-        "The SAP solver failed to converge at simulation time = {:7.3g}. "
+        "The SAP solver failed to converge at simulation time = {}. "
         "Reasons for divergence and possible solutions include:\n"
         "  1. Externally applied actuation values diverged due to external "
         "     reasons to the solver. Revise your control logic.\n"
