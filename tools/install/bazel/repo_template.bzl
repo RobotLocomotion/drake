@@ -111,7 +111,7 @@ def _eigen_repository(name):
         build_file_content = """
 cc_library(
     name = "eigen",
-    hdrs = glob(["Eigen/**"], allow_empty = False),
+    hdrs = glob(["Eigen/**", "unsupported/Eigen/**"], allow_empty = False),
     includes = ["."],
     visibility = ["//visibility:public"],
 )
