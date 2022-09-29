@@ -83,6 +83,7 @@ cc_library_vendored(
         x.replace("src/", "drake_src/drake_vendor/")
         for x in _SRCS_CPP
     ],
+    copts = ["-w"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [":qhull_r"],

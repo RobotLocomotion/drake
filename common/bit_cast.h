@@ -1,5 +1,19 @@
 #pragma once
 
+#ifdef __cpp_lib_bit_cast
+
+#include <bit>
+
+namespace drake {
+namespace internal {
+
+using std::bit_cast;
+
+}  // namespace internal
+}  // namespace drake
+
+#else  // __cpp_lib_bit_cast
+
 #include <cstring>
 #include <type_traits>
 
@@ -23,3 +37,5 @@ To bit_cast(const From& from) noexcept {
 
 }  // namespace internal
 }  // namespace drake
+
+#endif  // __cpp_lib_bit_cast
