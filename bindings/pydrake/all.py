@@ -26,27 +26,43 @@ To see example usages, please see `doc/python_bindings.rst`.
 
 import inspect as __inspect
 
-# Normal symbols.
-from . import getDrakePath
-from .autodiffutils import *
-from .forwarddiff import *
-from .lcm import *
-from .math import *
-from .perception import *
-from .polynomial import *
-# "from .symbolic import *" but don't shadow pydrake.math's existing functions.
-from . import symbolic as __symbolic
-for __name, __value in __inspect.getmembers(__symbolic):
-    if __name[0] != '_':
-        locals().setdefault(__name, __value)
-from .trajectories import *
+try:
+  # Normal symbols.
+  from . import getDrakePath
+  from .autodiffutils import *
+  from .forwarddiff import *
+  from .lcm import *
+  from .math import *
+  from .perception import *
+  from .polynomial import *
+  # "from .symbolic import *" but don't shadow pydrake.math's existing functions.
+  from . import symbolic as __symbolic
+  for __name, __value in __inspect.getmembers(__symbolic):
+      if __name[0] != '_':
+          locals().setdefault(__name, __value)
+  from .trajectories import *
 
-# Submodules.
-from .common.all import *
-from .geometry.all import *
-# - `examples` does not offer public Drake library symbols.
-from .manipulation.all import *
-from .multibody.all import *
-from .solvers.all import *
-from .systems.all import *
-from .visualization.all import *
+  # Submodules.
+  from .common.all import *
+  from .geometry.all import *
+  # - `examples` does not offer public Drake library symbols.
+  from .manipulation.all import *
+  from .multibody.all import *
+  from .solvers.all import *
+  from .systems.all import *
+  from .visualization.all import *
+
+except ImportError as e:
+  if True or 'cannot open shared object file' in e.msg:
+    import os
+
+    print('''
+Drake failed to load a required library. This could indicate an installation
+problem, or that your system is missing required distro-provided packages.
+Please refer to the installation instructions to ensure that all required
+dependencies are installed.
+''')
+    me = os.path.dirname(os.path.realpath(__file__))
+    doc = os.path.join(me, 'doc', 'pydrake', 'INSTALLATION')
+    print(f'For more information, please see:\n{doc}\n')
+  raise
