@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/iris.h"
@@ -7,7 +8,6 @@
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/solvers/ibex_solver.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -115,6 +115,9 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
   EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
   EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
   EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(IrisFromUrdf(boxes_urdf, Vector1d{1.1}, options),
+                              "The seed point is in collision.*");
 }
 
 // Three spheres.  Two on the outside are fixed.  One in the middle on a
@@ -362,16 +365,11 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
 // polytopes):  A simple pendulum of length `l` with a sphere at the tip of
 // radius `r` on a vertical track, plus a ground plane at z=0.  The
 // configuration space is given by the joint limits and z + l*cos(theta) >= r.
-// The region is visualized at https://www.desmos.com/calculator/flshvay78b.
-// In addition to testing the convex space, this is a test for which Ibex finds
-// counter-examples that Snopt misses.
+// The region is visualized at https://www.desmos.com/calculator/flshvay78b. In
+// addition to testing the convex space, this was originally a test for which
+// Ibex found counter-examples that Snopt missed; now Snopt succeeds due to
+// having options.num_collision_infeasible_samples > 1.
 GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
-  if (!solvers::IbexSolver::is_available() ||
-      !solvers::IbexSolver::is_enabled()) {
-    // This test requires Ibex.
-    return;
-  }
-
   const double l = 1.5;
   const double r = 0.1;
   const std::string convex_urdf = fmt::format(
@@ -411,10 +409,25 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
 )",
       fmt::arg("l", l), fmt::arg("r", r));
 
-  const Vector2d sample{1.0, 0.0};
+  const Vector2d sample{-0.5, 0.0};
   IrisOptions options;
-  options.enable_ibex = true;
+
+  // This point should be outside of the configuration space (in collision).
+  // The particular value was found by visual inspection using the desmos plot.
+  const double z_test = 0, theta_test = -1.55;
+  // Confirm that the pendulum is colliding with the wall with true kinematics:
+  EXPECT_LE(z_test + l*std::cos(theta_test), r);
+
+  // With num_collision_infeasible_samples == 1, we found that SNOPT misses this
+  // point (on some platforms with some random seeds).
+
+  options.num_collision_infeasible_samples = 5;
   HPolyhedron region = IrisFromUrdf(convex_urdf, sample, options);
+  EXPECT_FALSE(region.PointInSet(Vector2d{z_test, theta_test}));
+
+  EXPECT_EQ(region.ambient_dimension(), 2);
+  // Confirm that we've found a substantial region.
+  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 0.5);
 
   // Note: You may use this to plot the solution in the desmos graphing
   // calculator link above.  Just copy each equation in the printed formula into
@@ -423,17 +436,8 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   //                                        symbolic::Variable("y")};
   // std::cout << (region.A()*xy <= region.b()) << std::endl;
 
-  EXPECT_EQ(region.ambient_dimension(), 2);
-  // Confirm that we've found a substantial region.
-  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 0.5);
-
-  // Without Ibex, we find that SNOPT misses this point. It should be outside of
-  // the configuration space (in collision).  The particular value was found by
-  // visual inspection using the desmos plot.
-  const double z_test = 0, theta_test = -1.55;
-  EXPECT_FALSE(region.PointInSet(Vector2d{z_test, theta_test}));
-  // Confirm that the pendulum is colliding with the wall with true kinematics:
-  EXPECT_LE(z_test + l*std::cos(theta_test), r);
+  // TODO(russt): Drop desmos and draw these in meshcat (as I did in the
+  // DoublePendulumEndEffectorConstraints test below).
 }
 
 // Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic
@@ -528,6 +532,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
 
   IrisOptions options;
   options.prog_with_additional_constraints = &ik.prog();
+  options.num_additional_constraint_infeasible_samples = 10;
 
   HPolyhedron region = IrisInConfigurationSpace(
       plant, plant.GetMyContextFromRoot(*context), options);
@@ -542,7 +547,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
 
   // These tolerances are necessarily loose because we are approximating a
   // non-convex configuration space region with a polytope.
-  const double kInnerTol = 0.01;
+  const double kInnerTol = 0.1;
   const double kOuterTol = 0.1;
   EXPECT_TRUE(
       region.PointInSet(Eigen::Vector2d{theta1, theta2_min + kInnerTol}));
@@ -575,14 +580,22 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
     points.bottomRows<1>().setZero();
     meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
 
-    meshcat->SetObject("Test point (max)", Sphere(0.03), Rgba(1, 0, 0));
-    meshcat->SetTransform("Test point (max)",
+    meshcat->SetObject("Test point in (min)", Sphere(0.03), Rgba(0, 1, 0));
+    meshcat->SetTransform("Test point in (min)",
                           math::RigidTransform(Eigen::Vector3d(
-                              theta1, theta2_max + kOuterTol, 0)));
-    meshcat->SetObject("Test point (min)", Sphere(0.03), Rgba(1, 0, 0));
-    meshcat->SetTransform("Test point (min)",
+                              theta1, theta2_min + kInnerTol, 0)));
+    meshcat->SetObject("Test point in (max)", Sphere(0.03), Rgba(0, 1, 0));
+    meshcat->SetTransform("Test point in (max)",
+                          math::RigidTransform(Eigen::Vector3d(
+                              theta1, theta2_max - kInnerTol, 0)));
+    meshcat->SetObject("Test point out (min)", Sphere(0.03), Rgba(1, 0, 0));
+    meshcat->SetTransform("Test point out (min)",
                           math::RigidTransform(Eigen::Vector3d(
                               theta1, theta2_min - kOuterTol, 0)));
+    meshcat->SetObject("Test point out (max)", Sphere(0.03), Rgba(1, 0, 0));
+    meshcat->SetTransform("Test point out (max)",
+                          math::RigidTransform(Eigen::Vector3d(
+                              theta1, theta2_max + kOuterTol, 0)));
 
     // Note: This will not pause execution when running as a bazel test.
     std::cout << "[Press RETURN to continue]." << std::endl;

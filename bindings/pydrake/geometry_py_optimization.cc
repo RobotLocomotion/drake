@@ -292,8 +292,9 @@ void DefineGeometryOptimization(py::module m) {
       .def_readwrite("configuration_space_margin",
           &IrisOptions::configuration_space_margin,
           doc.IrisOptions.configuration_space_margin.doc)
-      .def_readwrite("enable_ibex", &IrisOptions::enable_ibex,
-          doc.IrisOptions.enable_ibex.doc)
+      .def_readwrite("num_collision_infeasible_samples",
+          &IrisOptions::num_collision_infeasible_samples,
+          doc.IrisOptions.num_collision_infeasible_samples.doc)
       .def_readwrite("prog_with_additional_constraints",
           &IrisOptions::prog_with_additional_constraints,
           doc.IrisOptions.prog_with_additional_constraints.doc)
@@ -310,7 +311,7 @@ void DefineGeometryOptimization(py::module m) {
             "termination_threshold={}, "
             "relative_termination_threshold={}, "
             "configuration_space_margin={}, "
-            "enable_ibex={}, "
+            "num_collision_infeasible_samples={}, "
             "prog_with_additional_constraints {}, "
             "num_additional_constraint_infeasible_samples={}, "
             "random_seed={}"
@@ -318,7 +319,8 @@ void DefineGeometryOptimization(py::module m) {
             .format(self.require_sample_point_is_contained,
                 self.iteration_limit, self.termination_threshold,
                 self.relative_termination_threshold,
-                self.configuration_space_margin, self.enable_ibex,
+                self.configuration_space_margin,
+                self.num_collision_infeasible_samples,
                 self.prog_with_additional_constraints ? "is set" : "is not set",
                 self.num_additional_constraint_infeasible_samples,
                 self.random_seed);
