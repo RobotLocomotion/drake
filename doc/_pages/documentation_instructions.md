@@ -47,7 +47,7 @@ $ bazel run //doc/doxygen_cxx:build -- --serve drake.math            # C++ math 
 $ bazel run //doc/pydrake:build     -- --serve pydrake.math          # Python math API.
 $ bazel run //doc:build             -- --serve {drake,pydrake}.math  # Both at once.
 
-# Further speed up preview by omitting expensive `dot` graphs:
+# Further speed up preview by omitting expensive `dot` graphs (C++ API only):
 $ bazel run //doc/doxygen_cxx:build -- --serve --quick drake.math
 ````
 
