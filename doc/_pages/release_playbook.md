@@ -206,7 +206,7 @@ the email address associated with your github account.
    1. Edit the first line to refer to the YYYYMMDD for this release.
       1. For reference, the typical content is thus:
          ```
-         FROM robotlocomotion/drake:focal-20220420
+         FROM robotlocomotion/drake:jammy-20220929
 
          RUN apt-get -q update && apt-get -q install -y --no-install-recommends nginx-light xvfb && apt-get -q clean
 
@@ -230,9 +230,12 @@ the email address associated with your github account.
    has this cell added the bottom, as a Drake-specific customization:
    ```
    %%bash
+   /opt/drake/share/drake/setup/deepnote/install_nginx
    /opt/drake/share/drake/setup/deepnote/install_xvfb
    ```
    In case the display server is not working later on, this might be a good place to double-check.
+   For Jammy we also needed to add ``cd /work`` atop the stanza that checks for
+   ``requirements.txt`` to get it working again.
 4. Copy the updated tutorials from the pinned Dockerfile release
    (in ``/opt/drake/share/drake/tutorials/...``) into the Deepnote project
    storage (``~/work/...``):
