@@ -1,3 +1,7 @@
+# Use C++20 by default.
+build --cxxopt=-std=c++20
+build --host_cxxopt=-std=c++20
+
 build --fission=dbg
 build --features=per_object_debug_info
 
