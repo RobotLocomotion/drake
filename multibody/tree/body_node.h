@@ -1061,9 +1061,9 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
       // Compute the LDLT factorization of D_B as ldlt_D_B.
       // TODO(bobbyluig): Test performance against inverse().
-      math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& ldlt_D_B =
+      math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& ldlt_D_B =
           get_mutable_ldlt_D_B(abic);
-      ldlt_D_B = math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>(
+      ldlt_D_B = math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>(
           MatrixUpTo6<T>(D_B.template selfadjointView<Eigen::Lower>()));
 
       // Ensure that D_B (the articulated body hinge inertia) is not singular.
@@ -1643,13 +1643,13 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
   // Returns a const reference to the LDLT factorization `ldlt_D_B` of the
   // articulated body hinge inertia.
-  const math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& get_ldlt_D_B(
+  const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_ldlt_D_B(
       const ArticulatedBodyInertiaCache<T>& abic) const {
     return abic.get_ldlt_D_B(topology_.index);
   }
 
   // Mutable version of get_ldlt_D_B().
-  math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
+  math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
       ArticulatedBodyInertiaCache<T>* abic) const {
     return abic->get_mutable_ldlt_D_B(topology_.index);
   }
