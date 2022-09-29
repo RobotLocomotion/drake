@@ -24,7 +24,7 @@ namespace internal {
 
 // Friend class used to provide access to a selection of private functions in
 // CompliantContactManager for testing purposes.
-class CompliantContactManagerTest {
+class CompliantContactManagerTester {
  public:
   static const DeformableDriver<double>* deformable_driver(
       const CompliantContactManager<double>& manager) {
@@ -45,6 +45,7 @@ class DeformableDriverContactTest : public ::testing::Test {
         RegisterDeformableOctahedron(deformable_model.get(), "deformable1");
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(move(deformable_model));
+    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
     /* Register a rigid collision geometry intersecting with the bottom half of
      the deformable octahedrons. */
     geometry::ProximityProperties proximity_prop;
@@ -63,7 +64,7 @@ class DeformableDriverContactTest : public ::testing::Test {
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
     plant_->SetDiscreteUpdateManager(move(contact_manager));
-    driver_ = CompliantContactManagerTest::deformable_driver(*manager_);
+    driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
 
     builder.Connect(model_->vertex_positions_port(),
                     scene_graph_->get_source_configuration_port(
