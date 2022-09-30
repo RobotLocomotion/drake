@@ -170,6 +170,6 @@ EOF
 
 # Keep this version number in sync with the drake/.bazeliskrc version number.
 dpkg_install_from_wget \
-  bazel 5.1.0 \
-  https://releases.bazel.build/5.1.0/release/bazel_5.1.0-linux-x86_64.deb \
-  3d54055f764cfb61b5416f0a45d2d3df19c30d301d4da81565595cbe2e36a220
+  bazel 5.3.1 \
+  https://releases.bazel.build/5.3.1/release/bazel_5.3.1-linux-x86_64.deb \
+  1e939b50d90f68d30fa4f3c12dfdf31429b83ddd8076c622429854f64253c23d
