@@ -85,12 +85,6 @@ DrakeLcm::DrakeLcm(const DrakeLcmParams& params)
   }
 }
 
-DrakeLcm::DrakeLcm(std::string lcm_url, bool defer_initialization)
-    : DrakeLcm(DrakeLcmParams{
-          .lcm_url = std::move(lcm_url),
-          .channel_suffix = {},
-          .defer_initialization = defer_initialization}) {}
-
 std::string DrakeLcm::get_lcm_url() const {
   return impl_->lcm_url_;
 }

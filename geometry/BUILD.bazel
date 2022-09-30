@@ -24,7 +24,6 @@ drake_cc_package_library(
         ":collision_filter_manager",
         ":drake_visualizer",
         ":drake_visualizer_params",
-        ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
         ":geometry_instance",
@@ -142,17 +141,6 @@ drake_cc_library(
     ],
 )
 
-# Remove on 2022-10-01.
-drake_cc_library(
-    name = "frame_kinematics",
-    hdrs = [
-        "frame_kinematics_vector.h",
-    ],
-    deps = [
-        ":kinematics_vector",
-    ],
-)
-
 drake_cc_library(
     name = "kinematics_vector",
     srcs = [
@@ -260,8 +248,6 @@ drake_cc_library(
         ":proximity_engine",
         ":utilities",
         "//geometry/render:render_engine",
-        # Add an unused dependency to help smooth out the deprecation.
-        ":frame_kinematics",
     ],
 )
 

@@ -35,10 +35,6 @@ class TestLcm(unittest.TestCase):
         self.assertIn("lcm_url", repr(dut))
         copy.copy(dut)
 
-    def test_deprecated(self):
-        with catch_drake_warnings(expected_count=1):
-            DrakeLcm(lcm_url="", defer_initialization=True)
-
     def _handler(self, raw):
         quat = lcmt_quaternion.decode(raw)
         self.assertTupleEqual((quat.w, quat.x, quat.y, quat.z), self.wxyz)
