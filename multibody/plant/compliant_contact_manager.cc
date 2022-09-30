@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
@@ -189,84 +190,6 @@ CompliantContactManager<T>::CalcContactKinematics(
 }
 
 template <typename T>
-T CompliantContactManager<T>::GetPointContactStiffness(
-    geometry::GeometryId id,
-    const geometry::SceneGraphInspector<T>& inspector) const {
-  const geometry::ProximityProperties* prop =
-      inspector.GetProximityProperties(id);
-  DRAKE_DEMAND(prop != nullptr);
-  // N.B. Here we rely on the resolution of #13289 and #5454 to get properties
-  // with the proper scalar type T. This will not work on scalar converted
-  // models until those issues are resolved.
-  return prop->template GetPropertyOrDefault<T>(
-      geometry::internal::kMaterialGroup, geometry::internal::kPointStiffness,
-      this->default_contact_stiffness());
-}
-
-template <typename T>
-T CompliantContactManager<T>::GetDissipationTimeConstant(
-    geometry::GeometryId id,
-    const geometry::SceneGraphInspector<T>& inspector) const {
-  const geometry::ProximityProperties* prop =
-      inspector.GetProximityProperties(id);
-  DRAKE_DEMAND(prop != nullptr);
-
-  auto provide_context_string =
-      [this, &inspector](geometry::GeometryId geometry_id) -> std::string {
-    const BodyIndex body_index =
-        this->geometry_id_to_body_index().at(geometry_id);
-    const Body<T>& body = plant().get_body(body_index);
-    return fmt::format("For geometry {} on body {}.",
-                       inspector.GetName(geometry_id), body.name());
-  };
-
-  // N.B. Here we rely on the resolution of #13289 and #5454 to get properties
-  // with the proper scalar type T. This will not work on scalar converted
-  // models until those issues are resolved.
-  const T relaxation_time = prop->template GetPropertyOrDefault<double>(
-      geometry::internal::kMaterialGroup, "relaxation_time", 0.1);
-  if (relaxation_time < 0.0) {
-    const std::string message = fmt::format(
-        "Relaxation time must be non-negative and relaxation_time "
-        "= {} was provided. {}",
-        relaxation_time, provide_context_string(id));
-    throw std::runtime_error(message);
-  }
-  return relaxation_time;
-}
-
-template <typename T>
-double CompliantContactManager<T>::GetCoulombFriction(
-    geometry::GeometryId id,
-    const geometry::SceneGraphInspector<T>& inspector) const {
-  const geometry::ProximityProperties* prop =
-      inspector.GetProximityProperties(id);
-  DRAKE_DEMAND(prop != nullptr);
-  DRAKE_THROW_UNLESS(prop->HasProperty(geometry::internal::kMaterialGroup,
-                                       geometry::internal::kFriction));
-  return prop
-      ->GetProperty<CoulombFriction<double>>(geometry::internal::kMaterialGroup,
-                                             geometry::internal::kFriction)
-      .dynamic_friction();
-}
-
-template <typename T>
-T CompliantContactManager<T>::CombineStiffnesses(const T& k1, const T& k2) {
-  // Simple utility to detect 0 / 0. As it is used in this method, denom
-  // can only be zero if num is also zero, so we'll simply return zero.
-  auto safe_divide = [](const T& num, const T& denom) {
-    return denom == 0.0 ? 0.0 : num / denom;
-  };
-  return safe_divide(k1 * k2, k1 + k2);
-}
-
-template <typename T>
-T CompliantContactManager<T>::CombineDissipationTimeConstant(const T& tau1,
-                                                             const T& tau2) {
-  return tau1 + tau2;
-}
-
-template <typename T>
 void CompliantContactManager<T>::CalcDiscreteContactPairs(
     const systems::Context<T>& context,
     std::vector<DiscreteContactPair<T>>* contact_pairs) const {
@@ -316,6 +239,11 @@ void CompliantContactManager<T>::CalcDiscreteContactPairs(
       contact_model == ContactModel::kHydroelasticWithFallback) {
     AppendDiscreteContactPairsForHydroelasticContact(context, contact_pairs);
   }
+  if constexpr (std::is_same_v<T, double>) {
+    if (deformable_driver_ != nullptr) {
+      deformable_driver_->AppendDiscreteContactPairs(context, contact_pairs);
+    }
+  }
 }
 
 template <typename T>
@@ -330,27 +258,29 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
           .template Eval<geometry::QueryObject<T>>(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
-  // Simple utility to detect 0 / 0. As it is used in this method, denom
-  // can only be zero if num is also zero, so we'll simply return zero.
-  auto safe_divide = [](const T& num, const T& denom) {
-    return denom == 0.0 ? T(0.0) : num / denom;
-  };
-
   // Fill in the point contact pairs.
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       plant().EvalPointPairPenetrations(context);
   for (const PenetrationAsPointPair<T>& pair : point_pairs) {
-    const T kA = GetPointContactStiffness(pair.id_A, inspector);
-    const T kB = GetPointContactStiffness(pair.id_B, inspector);
-    const T k = CombineStiffnesses(kA, kB);
-    const T tauA = GetDissipationTimeConstant(pair.id_A, inspector);
-    const T tauB = GetDissipationTimeConstant(pair.id_B, inspector);
-    const T tau = CombineDissipationTimeConstant(tauA, tauB);
+    const BodyIndex body_A_index =
+        this->geometry_id_to_body_index().at(pair.id_A);
+    const Body<T>& body_A = plant().get_body(body_A_index);
+    const BodyIndex body_B_index =
+        this->geometry_id_to_body_index().at(pair.id_B);
+    const Body<T>& body_B = plant().get_body(body_B_index);
 
-    // Combine friction coefficients.
-    const double muA = GetCoulombFriction(pair.id_A, inspector);
-    const double muB = GetCoulombFriction(pair.id_B, inspector);
-    const T mu = T(safe_divide(2.0 * muA * muB, muA + muB));
+    const T kA = GetPointContactStiffness(
+        pair.id_A, this->default_contact_stiffness(), inspector);
+    const T kB = GetPointContactStiffness(
+        pair.id_B, this->default_contact_stiffness(), inspector);
+    const T k = GetCombinedPointContactStiffness(
+        pair.id_A, pair.id_B, this->default_contact_stiffness(), inspector);
+    const double default_dissipation_time_constant = 0.1;
+    const T tau = GetCombinedDissipationTimeConstant(
+        pair.id_A, pair.id_B, default_dissipation_time_constant, body_A.name(),
+        body_B.name(), inspector);
+    const T mu =
+        GetCombinedDynamicCoulombFriction(pair.id_A, pair.id_B, inspector);
 
     // We compute the position of the point contact based on Hertz's theory
     // for contact between two elastic bodies.
@@ -376,12 +306,6 @@ void CompliantContactManager<T>::
         std::vector<DiscreteContactPair<T>>* result) const {
   std::vector<DiscreteContactPair<T>>& contact_pairs = *result;
 
-  // Simple utility to detect 0 / 0. As it is used in this method, denom
-  // can only be zero if num is also zero, so we'll simply return zero.
-  auto safe_divide = [](const T& num, const T& denom) {
-    return denom == 0.0 ? 0.0 : num / denom;
-  };
-
   // N.B. For discrete hydro we use a first order quadrature rule. As such,
   // the per-face quadrature point is the face's centroid and the weight is 1.
   // This is compatible with a mesh that is triangle or polygon. If we attempted
@@ -401,14 +325,20 @@ void CompliantContactManager<T>::
     DRAKE_DEMAND(M_is_compliant || N_is_compliant);
 
     // Combine dissipation.
-    const T tau_M = GetDissipationTimeConstant(s.id_M(), inspector);
-    const T tau_N = GetDissipationTimeConstant(s.id_N(), inspector);
-    const T tau = CombineDissipationTimeConstant(tau_M, tau_N);
+    const BodyIndex body_M_index =
+        this->geometry_id_to_body_index().at(s.id_M());
+    const Body<T>& body_M = plant().get_body(body_M_index);
+    const BodyIndex body_N_index =
+        this->geometry_id_to_body_index().at(s.id_N());
+    const Body<T>& body_N = plant().get_body(body_N_index);
+    const double default_dissipation_time_constant = 0.1;
+    const T tau = GetCombinedDissipationTimeConstant(
+        s.id_M(), s.id_N(), default_dissipation_time_constant, body_M.name(),
+        body_N.name(), inspector);
 
     // Combine friction coefficients.
-    const double muA = GetCoulombFriction(s.id_M(), inspector);
-    const double muB = GetCoulombFriction(s.id_N(), inspector);
-    const T mu = T(safe_divide(2.0 * muA * muB, muA + muB));
+    const T mu =
+        GetCombinedDynamicCoulombFriction(s.id_M(), s.id_N(), inspector);
 
     for (int face = 0; face < s.num_faces(); ++face) {
       const T& Ae = s.area(face);  // Face element area.

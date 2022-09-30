@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/deformable_driver.h"
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "drake/common/eigen_types.h"
@@ -8,11 +9,13 @@
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/fem/fem_solver.h"
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
+#include "drake/multibody/plant/contact_properties.h"
 #include "drake/systems/framework/context.h"
 
 using drake::geometry::GeometryId;
 using drake::geometry::internal::ContactParticipation;
 using drake::geometry::internal::DeformableContact;
+using drake::geometry::internal::DeformableContactSurface;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
 using drake::multibody::fem::FemModel;
 using drake::multibody::fem::FemState;
@@ -198,6 +201,62 @@ void DeformableDriver<T>::AppendLinearDynamicsMatrix(
     const SchurComplement<T>& schur_complement =
         EvalFreeMotionTangentMatrixSchurComplement(context, index);
     A->emplace_back(schur_complement.get_D_complement());
+  }
+}
+
+template <typename T>
+void DeformableDriver<T>::AppendDiscreteContactPairs(
+    const systems::Context<T>& context,
+    std::vector<DiscreteContactPair<T>>* result) const {
+  DRAKE_DEMAND(result != nullptr);
+  std::vector<DiscreteContactPair<T>>& contact_pairs = *result;
+
+  const geometry::QueryObject<T>& query_object =
+      manager_->plant()
+          .get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
+  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
+  const DeformableContact<T>& deformable_contact =
+      EvalDeformableContact(context);
+
+  for (const DeformableContactSurface<double>& surface :
+       deformable_contact.contact_surfaces()) {
+    /* We use an arbitrarily large stiffness as the default stiffness so that
+     the contact is in near-rigid regime and the compliance is only used as
+     stabilization. */
+    const double default_contact_stiffness = 1.0e12;
+    const T k = GetCombinedPointContactStiffness(
+        surface.id_A(), surface.id_B(), default_contact_stiffness, inspector);
+    // TODO(xuchenhan-tri): Currently, body_B is guaranteed to be
+    // non-deformable. When we support deformable vs. deformable contact, we
+    // need to update this logic for retrieving body names.
+    DRAKE_DEMAND(manager_->geometry_id_to_body_index().count(surface.id_B()) >
+                 0);
+    // TODO(xuchenhan-tri): Currently deformable bodies don't have names. When
+    // they do get names upon registration (in DeformableModel), update its body
+    // name here.
+    const std::string body_A_name(
+        fmt::format("deformable body with geometry id {}", surface.id_A()));
+    const BodyIndex body_B_index =
+        manager_->geometry_id_to_body_index().at(surface.id_B());
+    const Body<T>& body_B = manager_->plant().get_body(body_B_index);
+    /* We use dt as the default dissipation constant so that the contact is in
+     near-rigid regime and the compliance is only used as stabilization. */
+    const T tau = GetCombinedDissipationTimeConstant(
+        surface.id_A(), surface.id_B(), manager_->plant().time_step(),
+        body_A_name, body_B.name(), inspector);
+    const double mu = GetCombinedDynamicCoulombFriction(
+        surface.id_A(), surface.id_B(), inspector);
+
+    for (int i = 0; i < surface.num_contact_points(); ++i) {
+      const Vector3<T>& p_WC = surface.contact_points_W()[i];
+      const Vector3<T>& nhat_BA_W = surface.nhats_W()[i];
+      const T& phi0 = surface.signed_distances()[i];
+      const T fn0 = NAN;  // not used.
+      const T d = NAN;    // not used.
+      contact_pairs.push_back({surface.id_A(), surface.id_B(), p_WC, nhat_BA_W,
+                               phi0, fn0, k, d, tau, mu});
+    }
   }
 }
 

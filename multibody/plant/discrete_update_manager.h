@@ -143,6 +143,13 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   systems::CacheEntry& DeclareCacheEntry(std::string description,
                                          systems::ValueProducer,
                                          std::set<systems::DependencyTicket>);
+
+  double default_contact_stiffness() const;
+  double default_contact_dissipation() const;
+
+  const std::unordered_map<geometry::GeometryId, BodyIndex>&
+  geometry_id_to_body_index() const;
+
   /* @} */
 
  protected:
@@ -213,12 +220,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   //  geometries.
   const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
       const;
-
-  double default_contact_stiffness() const;
-  double default_contact_dissipation() const;
-
-  const std::unordered_map<geometry::GeometryId, BodyIndex>&
-  geometry_id_to_body_index() const;
 
   const std::vector<internal::CouplerConstraintSpecs<T>>&
   coupler_constraints_specs() const;

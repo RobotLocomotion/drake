@@ -145,48 +145,6 @@ class CompliantContactManager final
   std::vector<ContactPairKinematics<T>> CalcContactKinematics(
       const systems::Context<T>& context) const;
 
-  // Returns the point contact stiffness stored in group
-  // geometry::internal::kMaterialGroup with property
-  // geometry::internal::kPointStiffness for the specified geometry.
-  // If the stiffness property is absent, it returns MultibodyPlant's default
-  // stiffness.
-  // GeometryId `id` must exist in the model or an exception is thrown.
-  T GetPointContactStiffness(
-      geometry::GeometryId id,
-      const geometry::SceneGraphInspector<T>& inspector) const;
-
-  // Returns the dissipation time constant stored in group
-  // geometry::internal::kMaterialGroup with property
-  // "dissipation_time_constant". If not present, it returns
-  // plant().time_step().
-  T GetDissipationTimeConstant(
-      geometry::GeometryId id,
-      const geometry::SceneGraphInspector<T>& inspector) const;
-
-  // Helper to acquire per-geometry Coulomb friction coefficients from
-  // SceneGraph. Discrete models cannot make a distinction between static and
-  // dynamic coefficients of friction. Therefore this method returns the
-  // coefficient of dynamic friction stored by SceneGraph while the coefficient
-  // of static friction is ignored.
-  // @pre id is a valid GeometryId in the inspector.
-  double GetCoulombFriction(
-      geometry::GeometryId id,
-      const geometry::SceneGraphInspector<T>& inspector) const;
-
-  // Utility to combine stiffnesses k1 and k2 according to the rule:
-  //   k  = k₁⋅k₂/(k₁+k₂)
-  // In other words, the combined compliance (the inverse of stiffness) is the
-  // sum of the individual compliances.
-  static T CombineStiffnesses(const T& k1, const T& k2);
-
-  // Utility to combine linear dissipation time constants. Consider two
-  // spring-dampers with stiffnesses k₁ and k₂, and dissipation timescales τ₁
-  // and τ₂, respectively. When these spring-dampers are connected in series,
-  // they result in an equivalent spring-damper with stiffness k  =
-  // k₁⋅k₂/(k₁+k₂) and dissipation τ = τ₁ + τ₂.
-  // This method returns tau1 + tau2.
-  static T CombineDissipationTimeConstant(const T& tau1, const T& tau2);
-
   // Given the configuration stored in `context`, this method appends discrete
   // pairs corresponding to point contact into `pairs`.
   // @pre pairs != nullptr.
@@ -202,9 +160,10 @@ class CompliantContactManager final
       std::vector<internal::DiscreteContactPair<T>>* pairs) const;
 
   // Given the configuration stored in `context`, this method computes all
-  // discrete contact pairs, including point and hydroelastic contact, into
-  // `pairs.`
-  // Throws an exception if `pairs` is nullptr.
+  // discrete contact pairs, including point, hydroelastic, and deformable
+  // contact, into `pairs`. Contact pairs including deformable bodies are
+  // guaranteed to come after point and hydroelastic contact pairs. Throws an
+  // exception if `pairs` is nullptr.
   void CalcDiscreteContactPairs(
       const systems::Context<T>& context,
       std::vector<internal::DiscreteContactPair<T>>* pairs) const;

@@ -81,6 +81,13 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   void AppendLinearDynamicsMatrix(const systems::Context<T>& context,
                                   std::vector<MatrixX<T>>* A) const;
 
+  /* Given the configuration stored in `context`, appends discrete pairs in
+   which one of the body in contact is deformable to the given `pairs`.
+   @pre pairs != nullptr. */
+  void AppendDiscreteContactPairs(
+      const systems::Context<T>& context,
+      std::vector<DiscreteContactPair<T>>* pairs) const;
+
  private:
   friend class DeformableDriverTest;
   friend class DeformableDriverContactTest;
