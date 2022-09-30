@@ -16,6 +16,9 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+template <typename T>
+struct ContactPairKinematics;
+
 /* DeformableDriver is responsible for computing dynamics information about all
  deformable bodies. It works in tandem with a DeformableModel and a
  DiscreteUpdateManager that are provided at construction time. The deformable
@@ -80,6 +83,20 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
    @pre A != nullptr. */
   void AppendLinearDynamicsMatrix(const systems::Context<T>& context,
                                   std::vector<MatrixX<T>>* A) const;
+
+  /* Given the configuration stored in `context`, appends discrete pairs in
+   which one of the body in contact is deformable to the given `pairs`.
+   @pre pairs != nullptr. */
+  void AppendDiscreteContactPairs(
+      const systems::Context<T>& context,
+      std::vector<DiscreteContactPair<T>>* pairs) const;
+
+  /* Appends the contact kinematics information for each contact pair where at
+   least one of the body in contact is deformable.
+   @pre contact_kinematics != nullptr. */
+  void AppendContactKinematics(
+      const systems::Context<T>& context,
+      std::vector<ContactPairKinematics<T>>* contact_kinematics) const;
 
  private:
   friend class DeformableDriverTest;
