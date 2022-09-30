@@ -11,6 +11,7 @@ using drake::geometry::GeometryInstance;
 using drake::geometry::SceneGraph;
 using drake::geometry::Sphere;
 using drake::geometry::internal::DeformableContact;
+using drake::geometry::internal::DeformableContactSurface;
 using drake::math::RigidTransformd;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
 using drake::multibody::fem::FemModel;
@@ -48,6 +49,8 @@ class CompliantContactManagerTester {
 class DeformableDriverContactTest : public ::testing::Test {
  protected:
   static constexpr double kDt = 0.01;
+  static constexpr double kPointContactStiffness = 1e6;
+  static constexpr double kDissipationTimeScale = 0.1;
 
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
@@ -63,7 +66,8 @@ class DeformableDriverContactTest : public ::testing::Test {
     /* Register a rigid collision geometry intersecting with the bottom half of
      the deformable octahedrons. */
     geometry::ProximityProperties proximity_prop;
-    geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
+    geometry::AddContactMaterial({}, kPointContactStiffness,
+                                 CoulombFriction<double>(1.0, 1.0),
                                  &proximity_prop);
     // TODO(xuchenhan-tri): Modify this when resolution hint is no longer used
     //  as the trigger for contact with deformable bodies.
@@ -71,7 +75,7 @@ class DeformableDriverContactTest : public ::testing::Test {
                                geometry::internal::kRezHint, 1.0);
     RigidTransformd X_WG(Vector3<double>(0, 0, -0.75));
     rigid_geometry_id_ = plant_->RegisterCollisionGeometry(
-        plant_->world_body(), X_WG, geometry::Box(1, 1, 1),
+        plant_->world_body(), X_WG, geometry::Box(10, 10, 1),
         "rigid_collision_geometry", proximity_prop);
     plant_->Finalize();
 
@@ -126,6 +130,7 @@ class DeformableDriverContactTest : public ::testing::Test {
       DeformableBodyIndex index) const {
     return driver_->EvalFreeMotionTangentMatrixSchurComplement(context, index);
   }
+
   /* @} */
 
   /* Sets the velocity of the deformable body with the given id in the member
@@ -163,8 +168,14 @@ class DeformableDriverContactTest : public ::testing::Test {
   DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
                                                 std::string name) {
     auto geometry = make_unique<GeometryInstance>(
-        RigidTransformd(), make_unique<Sphere>(1.0), std::move(name));
-    geometry->set_proximity_properties(geometry::ProximityProperties());
+        RigidTransformd(), make_unique<Sphere>(1.0), move(name));
+    geometry::ProximityProperties props;
+    geometry::AddContactMaterial({}, kPointContactStiffness,
+                                 CoulombFriction<double>(1.0, 1.0), &props);
+    props.AddProperty(geometry::internal::kMaterialGroup,
+                      geometry::internal::kRelaxationTime,
+                      kDissipationTimeScale);
+    geometry->set_proximity_properties(move(props));
     fem::DeformableBodyConfig<double> body_config;
     body_config.set_youngs_modulus(1e6);
     body_config.set_poissons_ratio(0.4);
@@ -363,6 +374,42 @@ TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrix) {
                                                              body_index1)
                       .get_D_complement());
 }
+
+TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
+  std::vector<DiscreteContactPair<double>> contact_pairs;
+  driver_->AppendDiscreteContactPairs(plant_context, &contact_pairs);
+
+  const DeformableContact<double>& contact_data =
+      EvalDeformableContact(plant_context);
+  int num_contact_points = 0;
+  for (const DeformableContactSurface<double>& surface :
+       contact_data.contact_surfaces()) {
+    num_contact_points += surface.num_contact_points();
+  }
+  EXPECT_GT(num_contact_points, 0);
+  EXPECT_EQ(contact_pairs.size(), num_contact_points);
+  /* tau for deformable body is set to kDissipationTimeScale and is unset for
+   rigid body (which then assumes the default value, dt). */
+  constexpr double expected_tau = kDissipationTimeScale + kDt;
+  constexpr double expected_k = kPointContactStiffness / 2.0;
+  GeometryId id0 = model_->GetGeometryId(body_id0_);
+  GeometryId id1 = model_->GetGeometryId(body_id1_);
+
+  for (const DiscreteContactPair<double>& pair : contact_pairs) {
+    EXPECT_TRUE(pair.id_A == id0 || pair.id_A == id1);
+    EXPECT_EQ(pair.id_B, rigid_geometry_id_);
+    /* The contact point is on the z = -0.25 plane, the top surface of the rigid
+     box. */
+    EXPECT_EQ(pair.p_WC(2), -0.25);
+    EXPECT_TRUE(CompareMatrices(pair.nhat_BA_W, Eigen::Vector3d(0, 0, 1)));
+    EXPECT_EQ(pair.stiffness, expected_k);
+    EXPECT_EQ(pair.dissipation_time_scale, expected_tau);
+    EXPECT_EQ(pair.friction_coefficient, 1.0);
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
