@@ -13,13 +13,13 @@ integration. Any other configurations are provided on a best-effort basis.
 <!-- The minimum compiler versions should match those listed in both the root
      CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
 
-| Operating System ⁽³⁾               | Architecture | Python   | Bazel | CMake | C/C++ Compiler ⁽⁴⁾             | Java                          |
-|------------------------------------|--------------|----------|-------|-------|--------------------------------|-------------------------------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8 ⁽²⁾  | 5.3   | 3.16  | GCC 9.3 (default) or Clang 12  | OpenJDK 11                    |
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.22  | GCC 11.2 (default) or Clang 12 | OpenJDK 11                    |
-| macOS Big Sur (11)                 | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 12.0.5 (Xcode 12.5) | AdoptOpenJDK 16 (HotSpot JVM) |
-| macOS Monterey (12)                | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 13.0.0 (Xcode 13.1) | AdoptOpenJDK 16 (HotSpot JVM) |
-| macOS Monterey (12)                | arm64 ⁽¹⁾    | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 13.1.6 (Xcode 13.4) | AdoptOpenJDK 16 (HotSpot JVM) |
+| Operating System ⁽³⁾               | Architecture | Python   | Bazel | CMake | C/C++ Compiler ⁽⁴⁾           | Java                          |
+|------------------------------------|--------------|----------|-------|-------|------------------------------|-------------------------------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8 ⁽²⁾  | 5.3   | 3.16  | GCC 9 (default) or Clang 12  | OpenJDK 11                    |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.22  | GCC 11 (default) or Clang 12 | OpenJDK 11                    |
+| macOS Big Sur (11)                 | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 12 (Xcode 12)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Monterey (12)                | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Monterey (12)                | arm64 ⁽¹⁾    | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 13 (Xcode 13)     | AdoptOpenJDK 16 (HotSpot JVM) |
 
 ⁽¹⁾ For users running on Apple's newer arm64 hardware, you may run Drake in
 native arm64 mode when building from source. However, to use Drake's
