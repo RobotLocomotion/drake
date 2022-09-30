@@ -343,7 +343,7 @@ def main():
                                                      robot.num_velocities())
 
     time_step = 0.005
-    params.set_timestep(time_step)
+    params.set_time_step(time_step)
     # True velocity limits for the IIWA14 (in rad, rounded down to the first
     # decimal)
     iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])

@@ -20,7 +20,7 @@ DifferentialInverseKinematicsIntegrator::
       frame_E_(frame_E),
       parameters_(parameters),
       time_step_(time_step) {
-  parameters_.set_timestep(time_step);
+  parameters_.set_time_step(time_step);
 
   // This is accessed as port 0 in the code below.
   this->DeclareAbstractInputPort("X_WE_desired",
@@ -97,6 +97,7 @@ systems::EventStatus DifferentialInverseKinematicsIntegrator::Integrate(
     systems::DiscreteValues<double>* discrete_state) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_DEMAND(input != nullptr);
+  DRAKE_THROW_UNLESS(parameters_.get_time_step() == time_step_);
   const math::RigidTransformd& X_WE_desired =
       input->get_value<math::RigidTransformd>();
   const math::RigidTransform<double> X_WE = ForwardKinematics(context);
