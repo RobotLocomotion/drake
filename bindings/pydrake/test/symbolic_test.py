@@ -3,6 +3,7 @@
 import copy
 import itertools
 import unittest
+import warnings
 
 import numpy as np
 
@@ -2298,3 +2299,13 @@ class TestReplaceBilinearTerms(unittest.TestCase):
         e = x[0]*y[1] * 3 + x[1]*y[2] * 4
         e_replace = sym.ReplaceBilinearTerms(e=e, x=x, y=y, W=W)
         self.assertTrue(e_replace.EqualTo(W[0, 1]*3 + W[1, 2]*4))
+
+
+class TestIssue17898(unittest.TestCase):
+    def test(self):
+        with warnings.catch_warnings(record=True) as w:
+            v = sym.MakeVectorVariable(2, "v")
+            np.eye(2) @ v
+            np.sqrt(v)
+            # Ensure no user-visible warnings occur.
+            self.assertEqual(len(w), 0)
