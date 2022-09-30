@@ -3,11 +3,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/primitives/linear_system.h"
 
@@ -281,7 +282,7 @@ GTEST_TEST(MultibodyPlantTest, CartPoleLinearization) {
   EXPECT_TRUE(CompareMatrices(dt_linearization->A(), A_expected, 1e-16));
   EXPECT_TRUE(CompareMatrices(dt_linearization->B(), B_expected, 1e-16));
 }
-
+// TODO(amcastro-tri): Include test with non-zero actuation and external forces.
 
 // Helper function to create a unit inertia for a uniform-density cube B about
 // Bo (B's origin point) from a given dimension (length).
@@ -323,72 +324,171 @@ const RigidBody<double>& AddCubicalLink(
   return plant->AddRigidBody(body_name, M_BBo_B);
 }
 
-// Verify an exception is thrown for a dynamic analysis that includes two
-// sequential zero-mass bodies that translate in the same direction.
-GTEST_TEST(TestSingularHingeMatrix, ThrowErrorForZeroMassTranslatingBodies) {
-  // Create a plant, add rigid bodies, and use discrete_update_period = 0 to
-  // set a continuous model that uses the Articulated Body Algorithm (ABA) to
-  // evaluate forward dynamics.
+// Verify an exception is thrown for a forward dynamic analysis of a single
+// zero-mass body that is allowed to translate due to a prismatic joint.
+GTEST_TEST(TestSingularHingeMatrix, ThrowErrorForZeroMassTranslatingBody) {
+  // Create a plant with discrete_update_period = 0 to set a continuous model
+  // that uses the Articulated Body Algorithm (ABA) for forward dynamics.
   const double discrete_update_period = 0;
   MultibodyPlant<double> plant(discrete_update_period);
 
-  const double mA = 0, mB = 0, mC = 0;  // Mass of links A, B, C.
+  double mA = 0;  // Mass of link A.
   const double length = 3;  // Length of uniform-density link (arbitrary > 0).
   const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
-  const RigidBody<double>& body_B = AddCubicalLink(&plant, "bodyB", mB, length);
-  const RigidBody<double>& body_C = AddCubicalLink(&plant, "bodyC", mC, length);
 
   // Add bodyA to world with X-prismatic joint (bodyA has zero mass).
   const RigidBody<double>& world_body = plant.world_body();
   plant.AddJoint<multibody::PrismaticJoint>("WA_prismatic_jointX",
       world_body, std::nullopt, body_A, std::nullopt, Vector3<double>::UnitX());
 
-  // Add bodyB to bodyA with X-prismatic joint (bodyB has zero mass).
-  plant.AddJoint<multibody::PrismaticJoint>("AB_prismatic_jointX",
-      body_A, std::nullopt, body_B, std::nullopt, Vector3<double>::UnitX());
+  // Signal that we are done building the test model.
+  plant.Finalize();
 
-  // Add bodyB to bodyA with X-prismatic joint (bodyB has zero mass).
-  plant.AddJoint<multibody::PrismaticJoint>("BC_prismatic_jointX",
-      body_B, std::nullopt, body_C, std::nullopt, Vector3<double>::UnitX());
+  // Create a default context and evaluate forward dynamics.
+  auto context = plant.CreateDefaultContext();
+  systems::Context<double>* context_ptr = context.get();
+
+  // Verify proper error message is thrown.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context).get_vdot(),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 1. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
+
+  // Verify no assertion is thrown if mA = 1E-33.
+  body_A.SetMass(context_ptr, mA = 1E-33);
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+}
+
+// Verify an exception is thrown for a forward dynamic analysis of a single
+// zero-inertia body that is allowed to rotate due to a revolute joint.
+GTEST_TEST(TestSingularHingeMatrix, ThrowErrorForZeroInertiaRotatingBody) {
+  // Create a plant with discrete_update_period = 0 to set a continuous model
+  // that uses the Articulated Body Algorithm (ABA) for forward dynamics.
+  const double discrete_update_period = 0;
+  MultibodyPlant<double> plant(discrete_update_period);
+
+  double mA = 0;  // Mass of link A.
+  const double length = 3;  // Length of uniform-density link (arbitrary > 0).
+  const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
+
+  // Add bodyA to world with Z-revolute joint (bodyA has zero mass/inertia).
+  const RigidBody<double>& world_body = plant.world_body();
+  plant.AddJoint<multibody::RevoluteJoint>("WA_revolute_jointZ",
+      world_body, std::nullopt, body_A, std::nullopt, Vector3<double>::UnitZ());
 
   // Signal that we are done building the test model.
   plant.Finalize();
 
   // Create a default context and evaluate forward dynamics.
   auto context = plant.CreateDefaultContext();
+  systems::Context<double>* context_ptr = context.get();
 
-  // Different error messages are thrown depending on debug vs. release.
-  if (kDrakeAssertIsArmed) {
-    // Verify message that is thrown in debug mode.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant.EvalForwardDynamics(*context).get_vdot(),
-        "Encountered singular articulated body hinge inertia for body node "
-        "index 3. Please ensure that this body has non-zero inertia along "
-         "all axes of motion.*");
-  } else {
-    // Verify message that is thrown in release mode.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant.EvalForwardDynamics(*context).get_vdot(),
-        "Encountered singular articulated body hinge inertia for body node "
-        "index 3. Please ensure that this body has non-zero inertia along "
-        "all axes of motion.*");
-  }
+  // Verify proper error message is thrown.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context).get_vdot(),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 1. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
 
-  // const VectorXd vdot = plant.EvalForwardDynamics(*context).get_vdot();
-  // if (vdot.size() == 0) std::cout << "\nvdot(0) = " << vdot(0);
-  // std::cout << "\nvdot(0) = " << vdot(0);
-  // std::cout << "\nvdot(1) = " << vdot(1);
-  // std::cout << "\nvdot(2) = " << vdot(2) << "\n";
-  // EXPECT_EQ(vdot.size(), 2);
-
-  // No exception is thrown due to default mass/inertia properties. It is OK
-  // that there are 3 successive prismatic joints that have no mass since their
-  // prismatic joints are orthogonal. Alternatively, if two prismatic joints
-  // are parallel (with no associated mass), expect numerical problems.
-  // EXPECT_NO_THROW(plant.ThrowDefaultMassInertiaError());
+  // Verify no assertion is thrown if mA = 1E-33.
+  body_A.SetMass(context_ptr, mA = 1E-33);
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
 }
 
-// TODO(amcastro-tri): Include test with non-zero actuation and external forces.
+// Verify an exception may be thrown for a forward dynamic analysis that has
+// sequential rigid bodies A and B that translate in the same direction, where
+// body A's mass may be disproportionally small (or lage) relative to B's mass.
+GTEST_TEST(TestSingularHingeMatrix, DisproportionateMassTranslatingBodiesAB) {
+  // Create a plant with discrete_update_period = 0 to set a continuous model
+  // that uses the Articulated Body Algorithm (ABA) for forward dynamics.
+  const double discrete_update_period = 0;
+  MultibodyPlant<double> plant(discrete_update_period);
+
+  double mA = 1E-9, mB = 1E9;  // Mass of links A, B.
+  const double length = 3;  // Length of uniform-density link (arbitrary > 0).
+  const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
+  const RigidBody<double>& body_B = AddCubicalLink(&plant, "bodyB", mB, length);
+
+  // Add bodyA to world with X-prismatic joint.
+  const RigidBody<double>& world_body = plant.world_body();
+  plant.AddJoint<multibody::PrismaticJoint>("WA_prismatic_jointX",
+      world_body, std::nullopt, body_A, std::nullopt, Vector3<double>::UnitX());
+
+  // Add bodyB to bodyA with X-prismatic joint.
+  plant.AddJoint<multibody::PrismaticJoint>("AB_prismatic_jointX",
+      body_A, std::nullopt, body_B, std::nullopt, Vector3<double>::UnitX());
+
+  // Signal that we are done building the test model.
+  plant.Finalize();
+
+  // Create a default context and evaluate forward dynamics.
+  auto context = plant.CreateDefaultContext();
+  systems::Context<double>* context_ptr = context.get();
+
+  // Verify proper assertion is thrown if mA = 1E-9, mB = 1E9.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context).get_vdot(),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 1. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
+
+  // Verify no assertion is thrown if mA = 1E-3, mB = 1E9.
+  body_A.SetMass(context_ptr, mA = 1E-3);
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+
+  // Verify no assertion is thrown if mA = 1E9, mB = 1E-9.
+  body_A.SetMass(context_ptr, mA = 1E9);
+  body_B.SetMass(context_ptr, mB = 1E-9);
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+}
+
+// Verify an exception may be thrown for a forward dynamic analysis that has
+// sequential rigid bodies A and B that rotate in the same direction, where
+// body A's inertia may be disproportionally small (or lage) relative to B.
+GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesAB) {
+  // Create a plant with discrete_update_period = 0 to set a continuous model
+  // that uses the Articulated Body Algorithm (ABA) for forward dynamics.
+  const double discrete_update_period = 0;
+  MultibodyPlant<double> plant(discrete_update_period);
+
+  double mA = 1, mB = 0;  // Mass of links A, B.
+  const double length = 3;  // Length of uniform-density links A, B.
+  const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
+  const RigidBody<double>& body_B = AddCubicalLink(&plant, "bodyB", mB, length);
+
+  // Add bodyA to world with Z-revolute joint.
+  const RigidBody<double>& world_body = plant.world_body();
+  const RevoluteJoint<double>& WA_revolute_jointZ =
+      plant.AddJoint<multibody::RevoluteJoint>("WA_revolute_jointZ",
+      world_body, std::nullopt, body_A, std::nullopt, Vector3<double>::UnitZ());
+
+  // Add bodyB to bodyA with Z-revolute joint.
+  const RevoluteJoint<double>& AB_revolute_jointZ =
+      plant.AddJoint<multibody::RevoluteJoint>("AB_revolute_jointZ",
+      body_A, std::nullopt, body_B, std::nullopt, Vector3<double>::UnitZ());
+
+  // Signal that we are done building the test model.
+  plant.Finalize();
+
+  // Create a default context and evaluate forward dynamics.
+  auto context = plant.CreateDefaultContext();
+  systems::Context<double>* context_ptr = context.get();
+  WA_revolute_jointZ.set_angle(context_ptr, M_PI/6.0);
+  AB_revolute_jointZ.set_angle(context_ptr, M_PI/4.0);
+
+  // Verify proper assertion is thrown if mA = 1, mB = 0.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context).get_vdot(),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 2. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
+
+  // Verify no assertion is thrown if mA = 1, mB = 1E-33.
+  body_B.SetMass(context_ptr, mB = 1E-33);
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+
+  // Verify no assertion is thrown if mA = 1E-11, mB = 1.
+  body_A.SetMass(context_ptr, mA = 1);
+  body_B.SetMass(context_ptr, mB = 1E-9);
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+}
 
 }  // namespace
 }  // namespace multibody
