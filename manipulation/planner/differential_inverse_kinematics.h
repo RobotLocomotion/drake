@@ -232,11 +232,11 @@ class DifferentialInverseKinematicsParameters {
  * MathematicalProgram:
  *
  * ```
- *   min_{v_next,alpha}   100 * | alpha - |V| |^2
+ *   min_{v_next,alpha}   100 * |V|^2 * | alpha - 1 |^2
  *                        // iff J.rows() < J.cols(), then
  *                          + | q_current + v_next*dt - q_nominal |^2
  *
- *   s.t. J*v_next = alpha * V / |V|  // J*v_next has the same direction as V
+ *   s.t. J*v_next = alpha * V  // J*v_next has the same direction as V
  *        joint_lim_min <= q_current + v_next*dt <= joint_lim_max
  *        joint_vel_lim_min <= v_next <= joint_vel_lim_max
  *        joint_accel_lim_min <= (v_next - v_current)/dt <=
