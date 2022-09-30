@@ -39,8 +39,23 @@ GTEST_TEST(MultibodyPlantSymbolicTest, Pendulum) {
   const auto& derivatives = dut->EvalTimeDerivatives(*context);
   ASSERT_EQ(derivatives.size(), 2);
   EXPECT_PRED2(symbolic::test::ExprEqual, derivatives[0], thetadot);
-  EXPECT_PRED2(symbolic::test::ExprEqual, derivatives[1],
-      (tau - m * g * l * sin(theta) - damping * thetadot) / std::pow(l, 2));
+
+  // The expression for thetaddot depends on which Eigen solver is used, e.g., a
+  // standard LLᵀ Cholesky matrix decomposition or a LDLT matrix decomposition.
+  // Info: https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html
+  const symbolic::Expression& thetaddot_for_LDLT_solver =
+      (tau - m * g * l * sin(theta) - damping * thetadot) / std::pow(l, 2);
+  const symbolic::Expression& thetaddot_for_LLT_solver =
+      (tau - m * g * l * sin(theta) - damping * thetadot) / l / l;
+  const bool is_thetaddot_match =
+      derivatives[1].EqualTo(thetaddot_for_LDLT_solver) ||
+      derivatives[1].EqualTo(thetaddot_for_LLT_solver);
+
+  // If derivatives[1] does not match either expression, throw an exception.
+  if (!is_thetaddot_match) {
+    EXPECT_PRED2(symbolic::test::ExprEqual, derivatives[1],
+      thetaddot_for_LDLT_solver);
+  }
 }
 
 }  // namespace
