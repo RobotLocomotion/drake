@@ -4171,7 +4171,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the size of the generalized position vector q for this model.
   /// @warning The intent of this function is only to be used after Finalize().
   /// Calling it prior to Finalize() will return inaccurate results. On or after
-  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// 2023-01-01, calling this function before Finalize() will result in an
   /// exception.
   int num_positions() const { return internal_tree().num_positions(); }
 
@@ -4185,7 +4185,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the size of the generalized velocity vector v for this model.
   /// @warning The intent of this function is only to be used after Finalize().
   /// Calling it prior to Finalize() will return inaccurate results. On or after
-  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// 2023-01-01, calling this function before Finalize() will result in an
   /// exception.
   int num_velocities() const { return internal_tree().num_velocities(); }
 
@@ -4202,7 +4202,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// will be `num_positions()` plus `num_velocities()`.
   /// @warning The intent of this function is only to be used after Finalize().
   /// Calling it prior to Finalize() will return inaccurate results. On or after
-  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// 2023-01-01, calling this function before Finalize() will result in an
   /// exception.
   int num_multibody_states() const { return internal_tree().num_states(); }
 
