@@ -115,6 +115,11 @@ def _remove_float_suffix(typename):
     return typename
 
 
+def _roll_pitch_yaw_repr(rpy):
+    return (f"RollPitchYaw(r={rpy.roll_angle()}, p={rpy.pitch_angle()}, "
+            f"y={rpy.yaw_angle()})")
+
+
 def _rotation_matrix_repr(R):
     M = R.matrix().tolist()
     return (
@@ -133,6 +138,9 @@ def _rigid_transform_repr(X):
         f")")
 
 
+RollPitchYaw_[float].__repr__ = _roll_pitch_yaw_repr
+RollPitchYaw_[_AutoDiffXd].__repr__ = _roll_pitch_yaw_repr
+RollPitchYaw_[_sym.Expression].__repr__ = _roll_pitch_yaw_repr
 RotationMatrix_[float].__repr__ = _rotation_matrix_repr
 RotationMatrix_[_AutoDiffXd].__repr__ = _rotation_matrix_repr
 RotationMatrix_[_sym.Expression].__repr__ = _rotation_matrix_repr
