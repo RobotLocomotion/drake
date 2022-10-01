@@ -112,9 +112,9 @@ math::RigidTransform<T> ScrewMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  const Vector3<T> X_FM_translation(0.0, 0.0,
+  const Vector3<T> X_FM_translation(axis_F_ *
       get_screw_translation_from_rotation(q[0], screw_pitch_));
-  return math::RigidTransform<T>(math::RotationMatrix<T>::MakeZRotation(q[0]),
+  return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_F_),
                                  X_FM_translation);
 }
 
@@ -124,8 +124,8 @@ SpatialVelocity<T> ScrewMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
   DRAKE_ASSERT(v.size() == kNv);
   Vector6<T> V_FM_vector;
   V_FM_vector <<
-    0.0, 0.0, get_screw_rotation_from_translation(v[0], screw_pitch_),
-    0.0, 0.0, v[0];
+    (axis_F_ * get_screw_rotation_from_translation(v[0], screw_pitch_)),
+    (axis_F_ * v[0]);
   return SpatialVelocity<T>(V_FM_vector);
 }
 
@@ -136,8 +136,9 @@ ScrewMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
   Vector6<T> A_FM_vector;
-  A_FM_vector << 0.0, 0.0, vdot[0], 0.0, 0.0,
-                 get_screw_translation_from_rotation(vdot[0], screw_pitch_);
+  A_FM_vector <<
+    (axis_F_ * vdot[0]),
+    (axis_F_ * get_screw_translation_from_rotation(vdot[0], screw_pitch_));
   return SpatialAcceleration<T>(A_FM_vector);
 }
 
