@@ -218,15 +218,6 @@ GTEST_TEST(KinematicsVector, FrameIdRange) {
   for (FrameId id : ids) EXPECT_EQ(actual_ids.count(id), 1);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(KinematicsVector, DeprecatedFrameIds) {
-  FramePoseVector<double> poses;
-  poses.set_value(FrameId::get_new_id(), RigidTransformd::Identity());
-  EXPECT_EQ(poses.frame_ids(), poses.ids());
-}
-#pragma GCC diagnostic pop
-
 }  // namespace test
 }  // namespace geometry
 }  // namespace drake
