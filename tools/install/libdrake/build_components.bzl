@@ -76,8 +76,6 @@ LIBDRAKE_COMPONENTS = [
     "//perception",
     "//planning",
     "//solvers",
-    "//solvers/fbstab",
-    "//solvers/fbstab/components",
     "//systems/analysis",
     "//systems/controllers",
     "//systems/estimators",
