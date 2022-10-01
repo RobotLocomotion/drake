@@ -250,6 +250,29 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
                               1e-5, MatrixCompareType::absolute));
 }
 
+TEST_F(DifferentialInverseKinematicsTest, EndEffectorVelocityLimits) {
+  math::RigidTransform<double> X_WE = frame_E_->CalcPoseInWorld(*context_);
+  // Choosing too large a displacement can cause us to get "stuck".
+  math::RigidTransform<double> X_WE_desired =
+      math::RigidTransform<double>(
+          math::RotationMatrix<double>::MakeXRotation(M_PI / 10.0),
+          Vector3d(-0.1, -0.2, 0.3)) *
+      X_WE;
+  const DifferentialInverseKinematicsResult result =
+      DoDiffIKForRigidTransform(X_WE_desired);
+  EXPECT_EQ(result.status,
+            DifferentialInverseKinematicsStatus::kStuck);
+
+  // Setting speed limits can get us "unstuck".
+  params_->set_end_effector_angular_speed_limit(0.2);
+  params_->set_end_effector_translational_velocity_limits(
+      Vector3d::Constant(-0.1), Vector3d::Constant(0.1));
+  const DifferentialInverseKinematicsResult result2 =
+      DoDiffIKForRigidTransform(X_WE_desired);
+  EXPECT_EQ(result2.status,
+            DifferentialInverseKinematicsStatus::kSolutionFound);
+}
+
 // Test various throw conditions.
 GTEST_TEST(DifferentialInverseKinematicsParametersTest, TestSetter) {
   DifferentialInverseKinematicsParameters dut(1, 1);
@@ -288,6 +311,23 @@ GTEST_TEST(DifferentialInverseKinematicsParametersTest, TestSetter) {
                std::exception);
   EXPECT_THROW(dut.set_joint_acceleration_limits({VectorXd(2), h}),
                std::exception);
+
+  dut.set_end_effector_angular_speed_limit(1.23);
+  EXPECT_EQ(dut.get_end_effector_angular_speed_limit(), 1.23);
+  EXPECT_THROW(dut.set_end_effector_angular_speed_limit(-1.0), std::exception);
+
+  EXPECT_FALSE(dut.get_end_effector_translational_velocity_limits());
+  const Vector3d low = Vector3d::Constant(-4.56);
+  const Vector3d high = Vector3d::Constant(7.89);
+  dut.set_end_effector_translational_velocity_limits(low, high);
+  EXPECT_EQ(dut.get_end_effector_translational_velocity_limits()->first[0],
+            -4.56);
+  EXPECT_EQ(dut.get_end_effector_translational_velocity_limits()->second[0],
+            7.89);
+
+  EXPECT_THROW(dut.set_end_effector_translational_velocity_limits(
+                   Vector3d::Constant(1), Vector3d::Constant(-1)),
+               std::exception);
 }
 
 // Test linear velocity constraint mutators.
@@ -319,7 +359,7 @@ GTEST_TEST(DifferentialInverseKinematicsParametersTest, TestMutators) {
 // Use the planar iiwa to test when the Jacobian is full rank. The quadratic
 // joint-centering costs will not be added to the program, resulting in a
 // linear objective, rather than a quadratic objective. We need to make sure
-// that OsqpSolver does not fall down.
+// that the ClpSolver does not fall down.
 GTEST_TEST(AdditionalDifferentialInverseKinematicsTests, TestLinearObjective) {
   MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
@@ -328,14 +368,8 @@ GTEST_TEST(AdditionalDifferentialInverseKinematicsTests, TestLinearObjective) {
       "planar_iiwa14_spheres_dense_elbow_collision.urdf");
   parser.AddModelFromFile(filename, "iiwa");
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("iiwa_link_0"));
-
-  // Add the EE frame.
-  const math::RigidTransformd X_7E(AngleAxis<double>(M_PI, Vector3d::UnitZ()),
-                                   Vector3d(0.1, 0, 0));
-  const FixedOffsetFrame<double>* frame_E =
-      &plant.AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          "E", plant.GetBodyByName("iiwa_link_7").body_frame(), X_7E));
   plant.Finalize();
+  const multibody::Frame<double>& frame_7 = plant.GetFrameByName("iiwa_link_7");
   auto context = plant.CreateDefaultContext();
 
   // Configure the Diff IK.
@@ -344,29 +378,55 @@ GTEST_TEST(AdditionalDifferentialInverseKinematicsTests, TestLinearObjective) {
   const int num_joints = plant.num_positions();
   params.set_nominal_joint_position(VectorX<double>::Zero(num_joints));
   params.set_time_step(1e-3);
-  // The planar model can only move in x, z, and pitch.
+  // The planar model can only move in x, z, and rotations around the link 7
+  // y-axis.
   params.set_end_effector_velocity_flag(
       (Vector6<bool>() << false, true, false, true, false, true).finished());
 
   // Set the initial plant state.  These values were randomly generated.
-  const Vector3d q{1.40, 0.90, -1.76};
+  const Vector3d q{0.1, 1.2, 1.6};
   const VectorXd v = VectorXd::Zero(plant.num_velocities());
   plant.SetPositions(context.get(), q);
   plant.SetVelocities(context.get(), v);
 
-  const multibody::SpatialVelocity<double> V_WE_W_desired(
-      Vector3d(0, 0.2, 0) / 2, Vector3d(0.1, 0, 0.3) / 2);
+  multibody::SpatialVelocity<double> V_WE_W_desired(
+      Vector3d(0, 1, 0), Vector3d(0.1, 0, 0.3));
   auto result = DoDifferentialInverseKinematics(
-      plant, *context, V_WE_W_desired.get_coeffs(), *frame_E, params);
+      plant, *context, V_WE_W_desired.get_coeffs(), frame_7, params);
 
-  EXPECT_TRUE(result.status ==
-              DifferentialInverseKinematicsStatus::kSolutionFound);
+  EXPECT_EQ(result.status, DifferentialInverseKinematicsStatus::kSolutionFound);
   plant.SetVelocities(context.get(), result.joint_velocities.value());
 
-  const multibody::SpatialVelocity<double> V_WE_W_actual =
-      frame_E->CalcSpatialVelocityInWorld(*context);
+  const double kTol = 5e-3;
+  multibody::SpatialVelocity<double> V_WE_W_actual =
+      frame_7.CalcSpatialVelocityInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(V_WE_W_actual.get_coeffs(),
+                              V_WE_W_desired.get_coeffs(), kTol));
+
+  const Vector3d joint_velocity_limits{0.5, 0.5, 0.5};
+  // Check that these joint limits were violated with the unconstrained
+  // solution.
+  EXPECT_GT((result.joint_velocities.value().cwiseAbs() - joint_velocity_limits)
+                .maxCoeff(),
+            0);
+
+  params.set_joint_velocity_limits(
+      std::pair(-joint_velocity_limits, joint_velocity_limits));
+  result = DoDifferentialInverseKinematics(
+      plant, *context, V_WE_W_desired.get_coeffs(), frame_7, params);
+  EXPECT_EQ(result.status, DifferentialInverseKinematicsStatus::kSolutionFound);
+  plant.SetVelocities(context.get(), result.joint_velocities.value());
+  // Check that these joint limits are enforced.
+  EXPECT_LE((result.joint_velocities.value().cwiseAbs() - joint_velocity_limits)
+                .maxCoeff(),
+            0);
+  V_WE_W_actual = frame_7.CalcSpatialVelocityInWorld(*context);
+  // We no longer match the desired spatial velocity exactly...
+  EXPECT_FALSE(CompareMatrices(V_WE_W_actual.get_coeffs(),
+                              V_WE_W_desired.get_coeffs(), kTol));
+  // but we still match the direction.
   EXPECT_TRUE(CompareMatrices(V_WE_W_actual.get_coeffs().normalized(),
-                              V_WE_W_desired.get_coeffs().normalized(), 1e-4));
+                              V_WE_W_desired.get_coeffs().normalized(), kTol));
 }
 
 }  // namespace
