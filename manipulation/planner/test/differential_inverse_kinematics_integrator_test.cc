@@ -91,6 +91,7 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, BasicTest) {
   const auto b = Eigen::VectorXd::Zero(A.rows());
   diff_ik.get_mutable_parameters().AddLinearVelocityConstraint(
       std::make_shared<solvers::LinearConstraint>(A, b, b));
+  Eigen::VectorXd last_q = robot->GetPositions(*robot_context);
   for (const auto& [data, events] : diff_ik.GetPeriodicEvents()) {
     dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
         ->handle(diff_ik, *diff_ik_context, discrete_state.get());
@@ -98,6 +99,8 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, BasicTest) {
   EXPECT_EQ(discrete_state->get_vector(1).GetAtIndex(0),
             static_cast<double>(
                 DifferentialInverseKinematicsStatus::kStuck));
+  // kStuck does *not* imply that the positions will not advance.
+  EXPECT_FALSE(CompareMatrices(discrete_state->get_value(0), last_q, 1e-12));
 }
 
 GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, ParametersTest) {

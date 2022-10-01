@@ -100,19 +100,14 @@ systems::EventStatus DifferentialInverseKinematicsIntegrator::Integrate(
   DRAKE_THROW_UNLESS(parameters_.get_time_step() == time_step_);
   const math::RigidTransformd& X_WE_desired =
       input->get_value<math::RigidTransformd>();
-  const math::RigidTransform<double> X_WE = ForwardKinematics(context);
-
-  const Vector6<double> V_WE_desired =
-      ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
-      time_step_;
 
   const Context<double>& robot_context =
       robot_context_cache_entry_->Eval<Context<double>>(context);
   DifferentialInverseKinematicsResult result = DoDifferentialInverseKinematics(
-      robot_, robot_context, V_WE_desired, frame_E_, parameters_);
+      robot_, robot_context, X_WE_desired, frame_E_, parameters_);
 
   const auto& positions = context.get_discrete_state(0).get_value();
-  if (result.status != DifferentialInverseKinematicsStatus::kSolutionFound) {
+  if (result.status == DifferentialInverseKinematicsStatus::kNoSolutionFound) {
     if (this->num_discrete_state_groups() == 1) {
       drake::log()->warn(
           "Differential IK could not find a solution at time {}.",

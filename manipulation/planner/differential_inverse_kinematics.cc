@@ -257,9 +257,25 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   const math::RigidTransform<double> X_WE =
       plant.EvalBodyPoseInWorld(context, frame_E.body()) *
       frame_E.CalcPoseInBodyFrame(context);
-  const Vector6<double> V_WE_desired =
+  Vector6<double> V_WE_desired =
       ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
       parameters.get_time_step();
+  // Saturate the velocity command at the limits:
+  if (V_WE_desired.head<3>().norm() >
+      parameters.get_end_effector_angular_speed_limit()) {
+    V_WE_desired.head<3>().normalize();
+    V_WE_desired.head<3>() *= parameters.get_end_effector_angular_speed_limit();
+  }
+  if (parameters.get_end_effector_translational_velocity_limits()) {
+    V_WE_desired.tail<3>() =
+        V_WE_desired.tail<3>()
+            .cwiseMax(
+                parameters.get_end_effector_translational_velocity_limits()
+                    ->first)
+            .cwiseMin(
+                parameters.get_end_effector_translational_velocity_limits()
+                    ->second);
+  }
   return DoDifferentialInverseKinematics(plant, context, V_WE_desired, frame_E,
                                          parameters);
 }

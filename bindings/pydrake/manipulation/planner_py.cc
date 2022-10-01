@@ -98,7 +98,20 @@ PYBIND11_MODULE(planner, m) {
             cls_doc.get_maximum_scaling_to_report_stuck.doc)
         .def("set_maximum_scaling_to_report_stuck",
             &Class::set_maximum_scaling_to_report_stuck, py::arg("scaling"),
-            cls_doc.set_maximum_scaling_to_report_stuck.doc);
+            cls_doc.set_maximum_scaling_to_report_stuck.doc)
+        .def("get_end_effector_angular_speed_limit",
+            &Class::get_end_effector_angular_speed_limit,
+            cls_doc.get_end_effector_angular_speed_limit.doc)
+        .def("set_end_effector_angular_speed_limit",
+            &Class::set_end_effector_angular_speed_limit, py::arg("speed"),
+            cls_doc.set_end_effector_angular_speed_limit.doc)
+        .def("get_end_effector_translational_velocity_limits",
+            &Class::get_end_effector_translational_velocity_limits,
+            cls_doc.get_end_effector_translational_velocity_limits.doc)
+        .def("set_end_effector_translational_velocity_limits",
+            &Class::set_end_effector_translational_velocity_limits,
+            py::arg("lower"), py::arg("upper"),
+            cls_doc.set_end_effector_translational_velocity_limits.doc);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

@@ -59,7 +59,7 @@ class DifferentialInverseKinematicsParameters {
   /**
    * Constructor. Initializes the nominal joint position to zeros of size
    * @p num_positions. The time step is initialized to 1. The end effector
-   * gains are initialized to ones. The joint centering gains are initialized
+   * flags are initialized to True. The joint centering gains are initialized
    * to zero. All constraints are initialized to nullopt.
    * @param num_positions Number of generalized positions.
    * @param num_velocities Number of generalized velocities (by default it will
@@ -136,6 +136,15 @@ class DifferentialInverseKinematicsParameters {
     return max_scaling_to_report_stuck_;
   }
 
+  double get_end_effector_angular_speed_limit() const {
+    return angular_speed_limit_;
+  }
+
+  const std::optional<std::pair<Eigen::Vector3d, Eigen::Vector3d>>&
+  get_end_effector_translational_velocity_limits() const {
+    return translational_velocity_bounds_;
+  }
+
   const std::vector<std::shared_ptr<solvers::LinearConstraint>>&
   get_linear_velocity_constraints() const;
   /// @}
@@ -191,6 +200,8 @@ class DifferentialInverseKinematicsParameters {
     flag_E_ = gain_E.cast<bool>();
   }
 
+  // TODO(russt): It's not clear that it is reasonable to enable/disable
+  // independent components of the angular velocity vector.
   /**
    * Sets the end effector flags in the body frame. If a spatial velocity flag
    * is set to false, it will not be included in the differential IK
@@ -211,6 +222,11 @@ class DifferentialInverseKinematicsParameters {
     joint_centering_gain_ = K;
   }
 
+  // TODO(russt): These setters do not provide a way to *unset* the optional
+  // methods to nullopt.
+
+  // TODO(russt): Change to two arguments: (lower, upper) to match
+  // MathematicalProgram and other pieces of Drake.
   /**
    * Sets the joint position limits.
    * @param q_bounds The first element is the lower bound, and the second is
@@ -271,6 +287,22 @@ class DifferentialInverseKinematicsParameters {
     max_scaling_to_report_stuck_ = scaling;
   }
 
+  /** When calling DoDifferentialInverseKinematics with a desired end-effector
+  pose, this limits the magnitude of the angular velocity vector. */
+  void set_end_effector_angular_speed_limit(double speed) {
+    DRAKE_THROW_UNLESS(speed >= 0);
+    angular_speed_limit_ = speed;
+  }
+
+  /** When calling DoDifferentialInverseKinematics with a desired end-effector
+  pose, this sets limits on the translational velocity. */
+  void set_end_effector_translational_velocity_limits(
+      const Eigen::Ref<const Eigen::Vector3d>& lower,
+      const Eigen::Ref<const Eigen::Vector3d>& upper) {
+    DRAKE_THROW_UNLESS((upper.array() >= lower.array()).all());
+    translational_velocity_bounds_ = std::pair(lower, upper);
+  }
+
   /// @}
 
   /**
@@ -299,6 +331,9 @@ class DifferentialInverseKinematicsParameters {
   Vector6<bool> flag_E_{Vector6<bool>::Ones()};
   double dt_{1};
   double max_scaling_to_report_stuck_{1e-2};
+  double angular_speed_limit_{std::numeric_limits<double>::infinity()};
+  std::optional<std::pair<Eigen::Vector3d, Eigen::Vector3d>>
+      translational_velocity_bounds_{};
   std::vector<std::shared_ptr<solvers::LinearConstraint>>
       linear_velocity_constraints_;
 };
@@ -367,6 +402,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const MatrixX<double>>& J,
     const DifferentialInverseKinematicsParameters& parameters);
 
+// TODO(russt): V_WE_desired should be of type SpatialVelocity.
 /**
  * A wrapper over DoDifferentialInverseKinematics(q_current, v_current, V, J,
  * params) that tracks frame E's spatial velocity. q_current and v_current are
