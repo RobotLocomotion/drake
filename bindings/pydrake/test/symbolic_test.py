@@ -2302,7 +2302,13 @@ class TestReplaceBilinearTerms(unittest.TestCase):
 
 
 class TestIssue17898(unittest.TestCase):
-    def test(self):
+    def test_numpy_dtype_object_operations_no_warnings(self):
+        """
+        Tests that operations like `np.matmul`, `np.sqrt`, etc. do not issue
+        warnings when using Drake-specified dtype=object types.
+
+        See #17898 for more context.
+        """
         with warnings.catch_warnings(record=True) as w:
             v = sym.MakeVectorVariable(2, "v")
             np.eye(2) @ v
