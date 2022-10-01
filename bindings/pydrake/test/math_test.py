@@ -322,6 +322,9 @@ class TestMath(unittest.TestCase):
           [{z}, {i}, {z}],
           [{z}, {z}, {i}],
         ])"""))
+        self.assertEqual(repr(RollPitchYaw(1, 2, 3)),
+                         (f"RollPitchYaw(r={repr(T(1.0))}, p={repr(T(2.0))}, "
+                          f"y={repr(T(3.0))})"))
         if T == float:
             # TODO(jwnimmer-tri) Once AutoDiffXd and Expression implement an
             # eval-able repr, then we can test more than just T=float here.
