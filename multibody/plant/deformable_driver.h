@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -8,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/fem/discrete_time_integrator.h"
+#include "drake/multibody/plant/contact_pair_kinematics.h"
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/systems/framework/context.h"
@@ -88,9 +90,17 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       std::vector<DiscreteContactPair<T>>* pairs) const;
 
+  /* Appends the contact kinematics information for each contact pair where at
+   least one of the body in contact is deformable.
+   @pre result != nullptr. */
+  void AppendContactKinematics(
+      const systems::Context<T>& context,
+      std::vector<ContactPairKinematics<T>>* result) const;
+
  private:
   friend class DeformableDriverTest;
   friend class DeformableDriverContactTest;
+  friend class DeformableDriverContactKinematicsTest;
   friend class DeformableDriverMultiplexerTest;
 
   /* Struct used to conglomerate the indexes of cache entries declared by
@@ -103,6 +113,8 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
     std::vector<systems::CacheIndex> fem_solver_scratches;
     systems::CacheIndex deformable_contact;
     std::vector<systems::CacheIndex> dof_permutations;
+    std::unordered_map<geometry::GeometryId, systems::CacheIndex>
+        vertex_permutations;
     systems::CacheIndex participating_velocity_mux;
     systems::CacheIndex participating_velocities;
     systems::CacheIndex participating_free_motion_velocities;
@@ -212,6 +224,18 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   /* Eval version of CalcDofPermutation(). */
   const contact_solvers::internal::PartialPermutation& EvalDofPermutation(
       const systems::Context<T>& context, DeformableBodyIndex index) const;
+
+  /* Computes the partial permutation that maps vertices of the
+   deformable geometry with the given `id` to vertices that belong to
+   vertices of the geometry that participate in contact.
+   @pre result != nullptr. */
+  void CalcVertexPermutation(
+      const systems::Context<T>& context, geometry::GeometryId id,
+      contact_solvers::internal::PartialPermutation* result) const;
+
+  /* Eval version of CalcVertexPermutation(). */
+  const contact_solvers::internal::PartialPermutation& EvalVertexPermutation(
+      const systems::Context<T>& context, geometry::GeometryId id) const;
 
   /* Computes the multiplexer for participating velocities for all bodies.
    @pre result != nullptr. */
