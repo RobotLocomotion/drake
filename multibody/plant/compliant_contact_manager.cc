@@ -111,6 +111,11 @@ CompliantContactManager<T>::CalcContactKinematics(
   // Quick no-op exit.
   if (num_contacts == 0) return contact_kinematics;
 
+  const geometry::QueryObject<T>& query_object =
+      this->plant()
+          .get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
+  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
   // Scratch workspace variables.
   const int nv = plant().num_velocities();
   Matrix3X<T> Jv_WAc_W(3, nv);
@@ -122,6 +127,12 @@ CompliantContactManager<T>::CalcContactKinematics(
     const auto& point_pair = contact_pairs[icontact];
 
     const GeometryId geometryA_id = point_pair.id_A;
+    // All contact pairs involving deformable bodies come after pairs involving
+    // only rigid bodies. Once we reach a deformable body, we know that there
+    // are no rigid-only pairs left.
+    if (inspector.IsDeformableGeometry(geometryA_id)) {
+      break;
+    }
     const GeometryId geometryB_id = point_pair.id_B;
 
     BodyIndex bodyA_index = this->geometry_id_to_body_index().at(geometryA_id);
@@ -184,6 +195,11 @@ CompliantContactManager<T>::CalcContactKinematics(
 
     contact_kinematics.emplace_back(point_pair.phi0, std::move(jacobian_blocks),
                                     std::move(R_WC));
+  }
+  if constexpr (std::is_same_v<T, double>) {
+    if (deformable_driver_ != nullptr) {
+      deformable_driver_->AppendContactKinematics(context, &contact_kinematics);
+    }
   }
 
   return contact_kinematics;

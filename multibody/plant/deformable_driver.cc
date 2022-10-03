@@ -189,6 +189,23 @@ void DeformableDriver<T>::DeclareCacheEntries(
         {deformable_contact_cache_entry.ticket()});
     cache_indexes_.dof_permutations.emplace_back(
         dof_permutation_cache_entry.cache_index());
+
+    /* Permutation for participating vertices for each body. */
+    const GeometryId g_id =
+        deformable_model_->GetGeometryId(deformable_model_->GetBodyId(i));
+    const auto& vertex_permutation_cache_entry = manager->DeclareCacheEntry(
+        fmt::format("partial permutation for vertices of body {} based on "
+                    "participation in contact",
+                    i),
+        systems::ValueProducer(
+            std::function<void(const Context<T>&, PartialPermutation*)>{
+                [this, g_id](const Context<T>& context,
+                             PartialPermutation* result) {
+                  this->CalcVertexPermutation(context, g_id, result);
+                }}),
+        {deformable_contact_cache_entry.ticket()});
+    cache_indexes_.vertex_permutations.emplace(
+        g_id, vertex_permutation_cache_entry.cache_index());
   }
 }
 
@@ -256,6 +273,97 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const T d = NAN;    // not used.
       contact_pairs.push_back({surface.id_A(), surface.id_B(), p_WC, nhat_BA_W,
                                phi0, fn0, k, d, tau, mu});
+    }
+  }
+}
+
+template <typename T>
+void DeformableDriver<T>::AppendContactKinematics(
+    const systems::Context<T>& context,
+    std::vector<ContactPairKinematics<T>>* result) const {
+  DRAKE_DEMAND(result != nullptr);
+  /* Since v_AcBc_W = v_WBc - v_WAc the relative velocity Jacobian will be:
+     Jv_v_AcBc_W = Jv_v_WBc_W - Jv_v_WAc_W.
+   That is the relative velocity at C is v_AcBc_W = Jv_v_AcBc_W * v.
+   Finally Jv_v_AcBc_C = R_WC.transpose() * Jv_v_AcBc_W.
+   Currently, only deformable vs rigid contact is supported. Deformable
+   body is body A and rigid body is body B. Moreover, the set of dofs for
+   deformable bodies and rigid bodies are mutually exclusive, and
+   Jv_v_WAc_W = 0 for rigid dofs and Jv_v_WBc_W = 0 for deformable dofs. As a
+   result, we know the size of Jv_v_WBc_W up front. */
+  const int nv = manager_->plant().num_velocities();
+  Matrix3X<T> Jv_v_WBc_W(3, nv);
+  const MultibodyTreeTopology& tree_topology =
+      manager_->internal_tree().get_topology();
+  const DeformableContact<T>& deformable_contact =
+      EvalDeformableContact(context);
+  const std::vector<DeformableContactSurface<T>>& contact_surfaces =
+      deformable_contact.contact_surfaces();
+  for (const auto& surface : contact_surfaces) {
+    const GeometryId id_A = surface.id_A();
+    const GeometryId id_B = surface.id_B();
+    /* Body A is guaranteed to be deformable. */
+    const DeformableBodyIndex index_A =
+        deformable_model_->GetBodyIndex(deformable_model_->GetBodyId(id_A));
+    const TreeIndex clique_index_A(tree_topology.num_trees() + index_A);
+    const ContactParticipation& participation =
+        deformable_contact.contact_participation(id_A);
+    Matrix3X<T> Jv_v_WAc_W =
+        Matrix3X<T>::Zero(3, participation.num_vertices_in_contact() * 3);
+    const PartialPermutation& vertex_permutation =
+        EvalVertexPermutation(context, id_A);
+    /* For now, body B is guaranteed to be rigid. */
+    DRAKE_DEMAND(!surface.is_B_deformable());
+
+    for (int i = 0; i < surface.num_contact_points(); ++i) {
+      /* We have at most two blocks per contact. */
+      std::vector<typename ContactPairKinematics<T>::JacobianTreeBlock>
+          jacobian_blocks;
+      jacobian_blocks.reserve(2);
+      /* Contact solver assumes the normal points from A to B whereas the
+       surface's normal points from B to A. */
+      const Vector3<T>& nhat_W = -surface.nhats_W()[i];
+      constexpr int kZAxis = 2;
+      math::RotationMatrix<T> R_WC =
+          math::RotationMatrix<T>::MakeFromOneUnitVector(nhat_W, kZAxis);
+      const math::RotationMatrix<T> R_CW = R_WC.transpose();
+      /* Calculate the jacobian block for the body A. */
+      Jv_v_WAc_W.setZero();
+      Vector4<int> participating_vertices =
+          surface.contact_vertex_indexes_A()[i];
+      const Vector4<T>& b = surface.barycentric_coordinates_A()[i];
+      for (int v = 0; v < 4; ++v) {
+        /* Map indexes to the permuted domain. */
+        participating_vertices(v) =
+            vertex_permutation.permuted_index(participating_vertices(v));
+        /* v_WAc = (b₀ * v₀ + b₁ * v₁ + b₂ * v₂ + b₃ * v₃) where v₀, v₁, v₂,
+         v₃ are the velocities of the vertices forming the tetrahedron
+         containing the contact point and the b's are their corresponding
+         barycentric weights. */
+        Jv_v_WAc_W.template middleCols<3>(3 * participating_vertices(v)) =
+            b(v) * Matrix3<T>::Identity();
+      }
+      jacobian_blocks.emplace_back(clique_index_A, -R_CW.matrix() * Jv_v_WAc_W);
+
+      /* Calculate the jacobian block for the rigid body B if it's not static.
+       */
+      const BodyIndex index_B = manager_->geometry_id_to_body_index().at(id_B);
+      const TreeIndex tree_index = tree_topology.body_to_tree_index(index_B);
+      if (tree_index.is_valid()) {
+        const Body<T>& rigid_body = manager_->plant().get_body(index_B);
+        const Frame<T>& frame_W = manager_->plant().world_frame();
+        const Vector3<T>& p_WC = surface.contact_points_W()[i];
+        manager_->internal_tree().CalcJacobianTranslationalVelocity(
+            context, JacobianWrtVariable::kV, rigid_body.body_frame(), frame_W,
+            p_WC, frame_W, frame_W, &Jv_v_WBc_W);
+        Matrix3X<T> J =
+            R_CW.matrix() * Jv_v_WBc_W.middleCols(
+                                tree_topology.tree_velocities_start(tree_index),
+                                tree_topology.num_tree_velocities(tree_index));
+        jacobian_blocks.emplace_back(tree_index, std::move(J));
+      }
+      result->emplace_back(surface.signed_distances()[i],
+                           std::move(jacobian_blocks), std::move(R_WC));
     }
   }
 }
@@ -409,6 +517,23 @@ const PartialPermutation& DeformableDriver<T>::EvalDofPermutation(
 }
 
 template <typename T>
+void DeformableDriver<T>::CalcVertexPermutation(
+    const Context<T>& context, GeometryId id,
+    PartialPermutation* result) const {
+  *result = EvalDeformableContact(context)
+                .contact_participation(id)
+                .CalcVertexPartialPermutation();
+}
+
+template <typename T>
+const PartialPermutation& DeformableDriver<T>::EvalVertexPermutation(
+    const Context<T>& context, GeometryId id) const {
+  return manager_->plant()
+      .get_cache_entry(cache_indexes_.vertex_permutations.at(id))
+      .template Eval<PartialPermutation>(context);
+}
+
+template <typename T>
 void DeformableDriver<T>::CalcParticipatingVelocityMultiplexer(
     const Context<T>& context,
     typename DeformableDriver<T>::Multiplexer* result) const {
@@ -524,8 +649,8 @@ void DeformableDriver<T>::CalcFreeMotionTangentMatrixSchurComplement(
       EvalFreeMotionTangentMatrix(context, index);
   std::vector<int> participating_vertices;
   std::vector<int> non_participating_vertices;
-  const PartialPermutation permutation =
-      body_contact_participation.CalcVertexPartialPermutation();
+  const PartialPermutation& permutation =
+      EvalVertexPermutation(context, geometry_id);
   DRAKE_DEMAND(3 * permutation.domain_size() == tangent_matrix.cols());
   for (int v = 0; v < permutation.domain_size(); ++v) {
     if (permutation.participates(v)) {
