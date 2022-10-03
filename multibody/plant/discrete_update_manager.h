@@ -140,9 +140,14 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   // N.B. Keep the spelling and order of declarations here identical to the
   // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
 
+  const MultibodyTree<T>& internal_tree() const;
+
   systems::CacheEntry& DeclareCacheEntry(std::string description,
                                          systems::ValueProducer,
                                          std::set<systems::DependencyTicket>);
+
+  const std::unordered_map<geometry::GeometryId, BodyIndex>&
+  geometry_id_to_body_index() const;
   /* @} */
 
  protected:
@@ -186,8 +191,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   // N.B. Keep the spelling and order of declarations here identical to the
   // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
 
-  const MultibodyTree<T>& internal_tree() const;
-
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const;
 
@@ -216,9 +219,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   double default_contact_stiffness() const;
   double default_contact_dissipation() const;
-
-  const std::unordered_map<geometry::GeometryId, BodyIndex>&
-  geometry_id_to_body_index() const;
 
   const std::vector<internal::CouplerConstraintSpecs<T>>&
   coupler_constraints_specs() const;

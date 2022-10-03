@@ -20,6 +20,13 @@ systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
 }
 
 template <typename T>
+const std::unordered_map<geometry::GeometryId, BodyIndex>&
+DiscreteUpdateManager<T>::geometry_id_to_body_index() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::geometry_id_to_body_index(*plant_);
+}
+
+template <typename T>
 std::unique_ptr<DiscreteUpdateManager<double>>
 DiscreteUpdateManager<T>::CloneToDouble() const {
   throw std::logic_error(
@@ -135,13 +142,6 @@ template <typename T>
 double DiscreteUpdateManager<T>::default_contact_dissipation() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::default_contact_dissipation(plant());
-}
-
-template <typename T>
-const std::unordered_map<geometry::GeometryId, BodyIndex>&
-DiscreteUpdateManager<T>::geometry_id_to_body_index() const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::geometry_id_to_body_index(*plant_);
 }
 
 template <typename T>
