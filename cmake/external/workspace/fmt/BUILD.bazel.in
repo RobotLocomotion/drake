@@ -2,7 +2,7 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load(
-    "@drake//tools/workspace:cmake_util.bzl",
+    "@drake//:cmake/external/workspace/conversion.bzl",
     "library_to_linkopts",
     "split_cmake_list",
 )
