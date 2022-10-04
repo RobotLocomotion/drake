@@ -5,7 +5,6 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_params.h"
 
@@ -44,9 +43,6 @@ class DrakeLcm : public DrakeLcmInterface {
    * Constructs using the given parameters.
    */
   explicit DrakeLcm(const DrakeLcmParams& params);
-
-  DRAKE_DEPRECATED("2022-10-01", "Use DrakeLcmParams instead.")
-  DrakeLcm(std::string lcm_url, bool defer_initialization);
 
   /**
    * A destructor that forces the receive thread to be stopped.

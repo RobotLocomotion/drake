@@ -7,7 +7,7 @@ licenses(["notice"])  # Python-2.0
 py_library(
     name = "mypy",
     srcs = glob(["mypy/**/*.py"]),
-    data = glob(["mypy/typeshed/**"]),
+    data = glob(["mypy/typeshed/**", "**/py.typed"]),
     visibility = ["//visibility:public"],
     deps = [
         "@mypy_extensions_internal//:mypy_extensions",

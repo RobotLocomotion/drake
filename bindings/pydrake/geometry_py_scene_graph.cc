@@ -347,13 +347,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("has_id", &FramePoseVector<T>::has_id, py::arg("id"),
             doc.KinematicsVector.has_id.doc)
         .def("ids", &FramePoseVector<T>::ids, doc.KinematicsVector.ids.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("frame_ids",
-        WrapDeprecated(doc.KinematicsVector.frame_ids.doc_deprecated,
-            &FramePoseVector<T>::frame_ids),
-        doc.KinematicsVector.frame_ids.doc_deprecated);
-#pragma GCC diagnostic pop
     AddValueInstantiation<FramePoseVector<T>>(m);
   }
 
