@@ -421,6 +421,9 @@ class TestGeometryOptimization(unittest.TestCase):
         options.rounding_seed = 1
         options.solver = ClpSolver()
         options.solver_options = SolverOptions()
+        options.solver_options.SetOption(ClpSolver.id(), "scaling", 2)
+        self.assertIn("scaling",
+                      options.solver_options.GetOptions(ClpSolver.id()))
         self.assertIn("convex_relaxation", repr(options))
 
         spp = mut.GraphOfConvexSets()
