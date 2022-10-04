@@ -51,6 +51,16 @@ class TestPlanner(unittest.TestCase):
         params.set_joint_acceleration_limits
         params.set_maximum_scaling_to_report_stuck(scaling=0.1)
         self.assertEqual(params.get_maximum_scaling_to_report_stuck(), 0.1)
+        params.set_end_effector_angular_speed_limit(speed=0.12)
+        self.assertEqual(params.get_end_effector_angular_speed_limit(), 0.12)
+        params.set_end_effector_translational_velocity_limits([-1, -2, -3],
+                                                              [1, 2, 3])
+        np.testing.assert_equal(
+            params.get_end_effector_translational_velocity_limits()[0],
+            [-1, -2, -3])
+        np.testing.assert_equal(
+            params.get_end_effector_translational_velocity_limits()[1],
+            [1, 2, 3])
 
         # The following methods are deprecated, to be removed on or after
         # 2023-01-01.

@@ -16,9 +16,11 @@ position commands.
 
 Rather than calling DoDifferentialInverseKinematics on the current measured
 positions of the robot, this System maintains its own internal state and
-integrates successive velocity commands open loop.  Using measured joint
-positions in a feedback loop can lead to undamped oscillations in the redundant
-joints; we hope to resolve this and are tracking it in #9773.
+integrates successive velocity commands open loop. If
+DoDifferentialInverseKinematics returns kNoSolution, then the integrator will
+hold the integrated position (with zero velocity); on kStuck the integration
+will continue (though "kStuck" implies that the achieved spatial velocity will
+be much smaller than what was commanded).
 
 Note: It is highly recommended that the user calls `SetPosition()` once to
 initialize the position commands to match the initial positions of the robot.
@@ -27,6 +29,10 @@ is only used at Initialization, and simply sets the positions to the positions
 on this input port (the port accepts the state vector with positions and
 velocities for easy of use with MultibodyPlant, but only the positions are
 used).
+
+Note: Using measured joint positions in a feedback loop can lead to undamped
+oscillations in the redundant joints; we hope to resolve this and are tracking
+it in #9773.
 
 @system
 name: DifferentialInverseKinematicsIntegrator
