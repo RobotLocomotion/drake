@@ -8,15 +8,11 @@ def petsc_repository(
     github_archive(
         name = name,
         repository = "petsc/petsc",
-        commit = "v3.17.4",
-        sha256 = "413098359fc44033e4d63eef25b89b30db9439307f9f369e5405e3f1ed3aa9a0",  # noqa
+        commit = "v3.18.0",
+        sha256 = "f7d4e16dd88ccdba955e44b3fd893137a5ff41f248f56470d1abe46b48305c5c",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
         patches = [
-            # Cherry-picked from upstream (to be removed once
-            # https://gitlab.com/petsc/petsc/-/merge_requests/5228/commits
-            # is included in the release).
-            ":patches/baij.patch",
             # Patch to fix dangerous global state in PETSc.
             ":patches/destroy.patch",
             ":patches/dlregispetsc.patch",
