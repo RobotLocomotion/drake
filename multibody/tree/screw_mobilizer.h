@@ -71,7 +71,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
 
    @param[in] context The context of the model this mobilizer belongs to.
    @returns The translation (z) of the mobilizer */
-  T get_translation(const systems::Context<T>& context) const;
+  const T get_translation(const systems::Context<T>& context) const;
 
   /* Sets in `context` the position for `this` mobilizer to the translation z
    provided by the input argument `translation`.
@@ -92,7 +92,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
 
    @param[in] context The context of the model this mobilizer belongs to.
    @returns The angle θ of the mobilizer. */
-  T get_angle(const systems::Context<T>& context) const;
+  const T& get_angle(const systems::Context<T>& context) const;
 
   /* Sets in `context` the orientation for `this` mobilizer to the angle θ
    provided by the input argument `angle`.
@@ -107,7 +107,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    `this` mobilizer's translation (see get_translation()).
    @param[in] context The context of the model this mobilizer belongs to.
    @returns The rate of change of the translation (ż)*/
-  T get_translation_rate(const systems::Context<T>& context) const;
+  const T get_translation_rate(const systems::Context<T>& context) const;
 
   /* Sets in `context` the rate of change, in meters per second, of `this`
    mobilizer's translation (see get_translation()) to `vz`.
@@ -128,7 +128,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    `this` mobilizer's angle (see get_angle()).
    @param[in] context The context of the model this mobilizer belongs to.
    @returns The rate of change of `this` mobilizer's angle. */
-  T get_angular_rate(const systems::Context<T>& context) const;
+  const T& get_angular_rate(const systems::Context<T>& context) const;
 
   /* Sets in `context` the rate of change, in radians per second, of `this`
    mobilizer's angle (see angle()) to `theta_dot`.
@@ -232,15 +232,15 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    and acceleration conversions.  All of these are governed by
    the same relation, depended on the `screw_pitch` of a screw mobilizer. */
 template <typename T>
-inline T get_screw_translation_from_rotation(const T& theta,
-                                             double screw_pitch) {
+inline const T get_screw_translation_from_rotation(const T& theta,
+                                                   double screw_pitch) {
   const T revolution_amount{theta / (2 * M_PI)};
   return screw_pitch * revolution_amount;
 }
 
 template <typename T>
-inline T get_screw_rotation_from_translation(const T& z,
-                                             double screw_pitch) {
+inline const T get_screw_rotation_from_translation(const T& z,
+                                                   double screw_pitch) {
   const T revolution_amount{z / screw_pitch};
   return revolution_amount * 2 * M_PI;
 }
