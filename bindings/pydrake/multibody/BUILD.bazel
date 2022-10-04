@@ -274,6 +274,13 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "benchmarks_test",
+    deps = [
+        ":benchmarks_py",
+    ],
+)
+
+drake_py_unittest(
     name = "plant_test",
     data = [
         ":models",
