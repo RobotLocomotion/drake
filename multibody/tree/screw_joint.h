@@ -131,7 +131,7 @@ class ScrewJoint final : public Joint<T> {
   /// @param[in] context The context of the model this joint belongs to.
   /// @retval theta The angle of `this` joint stored in the `context`. See class
   ///               documentation for details.
-  T get_rotation(const systems::Context<T>& context) const {
+  const T& get_rotation(const systems::Context<T>& context) const {
     return get_mobilizer()->get_angle(context);
   }
 
@@ -152,8 +152,7 @@ class ScrewJoint final : public Joint<T> {
   /// @param[in] context The context of the model this joint belongs to.
   /// @retval vz The translational velocity of `this` joint as stored in the
   ///            `context`.
-  T get_translational_velocity(
-      const systems::Context<T>& context) const {
+  T get_translational_velocity(const systems::Context<T>& context) const {
     return get_mobilizer()->get_translation_rate(context);
   }
 
@@ -177,7 +176,7 @@ class ScrewJoint final : public Joint<T> {
   /// @param[in] context The context of the model this joint belongs to.
   /// @retval theta_dot The rate of change of `this` joint's angle θ as
   ///                   stored in the `context`.
-  T get_angular_velocity(const systems::Context<T>& context) const {
+  const T& get_angular_velocity(const systems::Context<T>& context) const {
     return get_mobilizer()->get_angular_rate(context);
   }
 
@@ -199,7 +198,7 @@ class ScrewJoint final : public Joint<T> {
 
   /// Gets the default position for `this` joint.
   /// @retval z The default position of `this` joint.
-  T get_default_translation() const {
+  double get_default_translation() const {
     return internal::get_screw_translation_from_rotation(
         this->default_positions()[0], screw_pitch());
   }
@@ -295,6 +294,14 @@ class ScrewJoint final : public Joint<T> {
     if (this->has_implementation()) {
       get_mutable_mobilizer()->set_default_position(default_positions);
     }
+  }
+
+  const T& DoGetOnePosition(const systems::Context<T>& context) const override {
+    return get_rotation(context);
+  }
+
+  const T& DoGetOneVelocity(const systems::Context<T>& context) const override {
+    return get_angular_velocity(context);
   }
 
   // Joint<T> overrides:
