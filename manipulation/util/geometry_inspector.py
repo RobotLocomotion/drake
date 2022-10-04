@@ -20,27 +20,27 @@ Example usage (drake visualizer):
     # Terminal 2
     ./bazel-bin/manipulation/util/geometry_inspector \
         --find_resource \
-        drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+        drake/manipulation/models/iiwa_description/iiwa7/iiwa7_with_box_collision.sdf
 
 If your model has all of its data available in your source tree, then you can
 remove the need for `--find_resource`:
 
     ./bazel-bin/manipulation/util/geometry_inspector \
-        ${PWD}/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+        ${PWD}/manipulation/models/iiwa_description/iiwa7/iiwa7_with_box_collision.sdf
 
 Example usage (meshcat):
 
     ./bazel-bin/manipulation/util/geometry_inspector \
         --open-window \
         --find_resource \
-        drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+        drake/manipulation/models/iiwa_description/iiwa7/iiwa7_with_box_collision.sdf
 
 Example usage (pyplot):
 
     ./bazel-bin/manipulation/util/geometry_inspector \
         --pyplot \
         --find_resource \
-        drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+        drake/manipulation/models/iiwa_description/iiwa7/iiwa7_with_box_collision.sdf
 
 Optional argument examples:
 
@@ -90,23 +90,14 @@ def main():
     add_filename_and_parser_argparse_arguments(args_parser)
     add_visualizers_argparse_arguments(args_parser)
     args_parser.add_argument(
-        "--position", type=float, nargs="+", default=[],
-        help="A list of positions which must be the same length as the number "
-             "of positions in the sdf model.  Note that most models have a "
-             "floating-base joint by default (unless the sdf explicitly welds "
-             "the base to the world, and so have 7 positions corresponding to "
-             "the quaternion representation of that floating-base position.")
+        "--loop_once", action='store_true',
+        help="Run the evaluation loop once and then quit.")
     # TODO(eric.cousineau): Support sliders (or widgets) for floating body
     # poses.
     # TODO(russt): Once floating body sliders are supported, add an option to
     # disable them too, either by welding via GetUniqueBaseBody #9747 or by
     # hiding the widgets.
-    args_parser.add_argument(
-        "--test", action='store_true',
-        help="Disable opening the slider gui window for testing.")
     args = args_parser.parse_args()
-    # NOTE: meshcat is required to create the JointSliders.
-    args.meshcat = True
     filename, make_parser = parse_filename_and_parser(args_parser, args)
     update_visualization, connect_visualizers = parse_visualizers(
         args_parser, args)
@@ -125,12 +116,12 @@ def main():
     update_visualization(plant, scene_graph)
     plant.Finalize()
 
-    meshcat = connect_visualizers(builder, plant, scene_graph,
-                                  publish_contacts=False)
+    # TODO(todd.rowell) When this script is removed, simplify the return
+    # of connect_visualizers to return just the meshcat instance.
+    meshcat, sliders = connect_visualizers(builder, plant, scene_graph,
+                                           publish_contacts=False)
     assert meshcat is not None, "Meshcat visualizer not created but required."
 
-    # Add sliders to set positions of the joints.
-    sliders = builder.AddSystem(JointSliders(meshcat=meshcat, plant=plant))
     to_pose = builder.AddSystem(MultibodyPositionToGeometryPose(plant))
     builder.Connect(sliders.get_output_port(0), to_pose.get_input_port())
     builder.Connect(
@@ -143,8 +134,13 @@ def main():
     # Make the diagram and run it.
     diagram = builder.Build()
     simulator = Simulator(diagram)
+    simulator.Initialize()
 
-    if args.test:
+    # Disable the collision geometry at the start; it can be enabled by
+    # the checkbox in the meshcat controls.
+    meshcat.SetProperty("collision", "visible", False)
+
+    if args.loop_once:
         simulator.AdvanceTo(0.1)
     else:
         simulator.set_target_realtime_rate(1.0)

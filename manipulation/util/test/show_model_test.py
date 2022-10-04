@@ -22,4 +22,4 @@ class TestShowModel(unittest.TestCase):
         for model_runpath in model_runpaths:
             print(model_runpath)
             model_file = manifest.Rlocation(model_runpath)
-            subprocess.check_call([bin, model_file])
+            subprocess.check_call([bin, model_file, "--loop_once"])

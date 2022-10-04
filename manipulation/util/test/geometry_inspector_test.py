@@ -14,7 +14,7 @@ class TestGeometryInspector(unittest.TestCase):
             print("model: {}".format(model))
             subprocess.check_call(
                 ["manipulation/util/geometry_inspector",
-                 model, "--test", "--position", "0.1", "0.2"])
+                 model, "--loop_once", "--position", "0.1", "0.2"])
 
     def test_package_path(self):
         # Test that the binary doesn't crash when fed a package path argument.
@@ -22,7 +22,7 @@ class TestGeometryInspector(unittest.TestCase):
             ["manipulation/util/geometry_inspector",
              "manipulation/models/iiwa_description/sdf/"
              "iiwa14_no_collision.sdf",
-             "--test",
+             "--loop_once",
              "--package_path=."])
 
     def test_pyplot(self):
@@ -30,5 +30,5 @@ class TestGeometryInspector(unittest.TestCase):
             ["manipulation/util/geometry_inspector",
              "manipulation/models/iiwa_description/sdf/"
              "iiwa14_no_collision.sdf",
-             "--test",
+             "--loop_once",
              "--pyplot"])
