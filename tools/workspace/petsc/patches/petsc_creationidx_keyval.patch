@@ -1,0 +1,93 @@
+Remove Petsc_CreationIdx_keyval and all its usage -- it's used to do object
+index bookkeeping for MPI (which we don't use in Drake) and is causing thread
+safety issues. (PETSc isn't designed guarantee thread safety.)
+--- include/petsc/private/petscimpl.h
++++ include/petsc/private/petscimpl.h
+@@ -1148,7 +1148,6 @@ PETSC_EXTERN PetscMPIInt Petsc_InnerComm_keyval;
+ PETSC_EXTERN PetscMPIInt Petsc_OuterComm_keyval;
+ PETSC_EXTERN PetscMPIInt Petsc_Seq_keyval;
+ PETSC_EXTERN PetscMPIInt Petsc_ShmComm_keyval;
+-PETSC_EXTERN PetscMPIInt Petsc_CreationIdx_keyval;
+ PETSC_EXTERN PetscMPIInt Petsc_Garbage_HMap_keyval;
+ 
+ struct PetscCommStash {
+--- src/sys/objects/inherit.c
++++ src/sys/objects/inherit.c
+@@ -34,10 +34,6 @@ PetscObjectId PetscObjectNewId_Internal(void)
+ */
+ PetscErrorCode PetscHeaderCreate_Private(PetscObject h, PetscClassId classid, const char class_name[], const char descr[], const char mansec[], MPI_Comm comm, PetscObjectDestroyFunction destroy, PetscObjectViewFunction view)
+ {
+-  void       *get_tmp;
+-  PetscInt64 *cidx;
+-  PetscMPIInt flg;
+-
+   PetscFunctionBegin;
+   h->classid               = classid;
+   h->class_name            = (char *)class_name;
+@@ -55,14 +51,6 @@ PetscErrorCode PetscHeaderCreate_Private(PetscObject h, PetscClassId classid, co
+ 
+   PetscCall(PetscCommDuplicate(comm, &h->comm, &h->tag));
+ 
+-  /* Increment and store current object creation index */
+-  PetscCallMPI(MPI_Comm_get_attr(h->comm, Petsc_CreationIdx_keyval, &get_tmp, &flg));
+-  if (flg) {
+-    cidx    = (PetscInt64 *)get_tmp;
+-    h->cidx = (*cidx)++;
+-    PetscCallMPI(MPI_Comm_set_attr(h->comm, Petsc_CreationIdx_keyval, cidx));
+-  } else SETERRQ(h->comm, PETSC_ERR_ARG_CORRUPT, "MPI_Comm does not have an object creation index");
+-
+ #if defined(PETSC_USE_LOG)
+   /* Keep a record of object created */
+   if (PetscObjectsLog) {
+--- src/sys/objects/pinit.c
++++ src/sys/objects/pinit.c
+@@ -54,7 +54,6 @@ PetscMPIInt Petsc_Counter_keyval      = MPI_KEYVAL_INVALID;
+ PetscMPIInt Petsc_InnerComm_keyval    = MPI_KEYVAL_INVALID;
+ PetscMPIInt Petsc_OuterComm_keyval    = MPI_KEYVAL_INVALID;
+ PetscMPIInt Petsc_ShmComm_keyval      = MPI_KEYVAL_INVALID;
+-PetscMPIInt Petsc_CreationIdx_keyval  = MPI_KEYVAL_INVALID;
+ PetscMPIInt Petsc_Garbage_HMap_keyval = MPI_KEYVAL_INVALID;
+ 
+ /*
+@@ -962,7 +961,6 @@ PETSC_INTERN PetscErrorCode PetscInitialize_Common(const char *prog, const char
+   PetscCallMPI(MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN, Petsc_InnerComm_Attr_Delete_Fn, &Petsc_InnerComm_keyval, (void *)0));
+   PetscCallMPI(MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN, Petsc_OuterComm_Attr_Delete_Fn, &Petsc_OuterComm_keyval, (void *)0));
+   PetscCallMPI(MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN, Petsc_ShmComm_Attr_Delete_Fn, &Petsc_ShmComm_keyval, (void *)0));
+-  PetscCallMPI(MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN, MPI_COMM_NULL_DELETE_FN, &Petsc_CreationIdx_keyval, (void *)0));
+   PetscCallMPI(MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN, MPI_COMM_NULL_DELETE_FN, &Petsc_Garbage_HMap_keyval, (void *)0));
+ 
+ #if defined(PETSC_HAVE_FORTRAN)
+@@ -1748,7 +1746,6 @@ PetscErrorCode PetscFinalize(void)
+   PetscCallMPI(MPI_Comm_free_keyval(&Petsc_InnerComm_keyval));
+   PetscCallMPI(MPI_Comm_free_keyval(&Petsc_OuterComm_keyval));
+   PetscCallMPI(MPI_Comm_free_keyval(&Petsc_ShmComm_keyval));
+-  PetscCallMPI(MPI_Comm_free_keyval(&Petsc_CreationIdx_keyval));
+   PetscCallMPI(MPI_Comm_free_keyval(&Petsc_Garbage_HMap_keyval));
+ 
+   PetscCall(PetscSpinlockDestroy(&PetscViewerASCIISpinLockOpen));
+--- src/sys/objects/tagm.c
++++ src/sys/objects/tagm.c
+@@ -220,10 +220,6 @@ PetscErrorCode PetscCommDuplicate(MPI_Comm comm_in, MPI_Comm *comm_out, PetscMPI
+       PetscCall(PetscNew(&counter)); /* all fields of counter are zero'ed */
+       counter->tag = *maxval;
+       PetscCallMPI(MPI_Comm_set_attr(*comm_out, Petsc_Counter_keyval, counter));
+-      /* Add an object creation index to the communicator */
+-      PetscCall(PetscNew(&cidx));
+-      PetscCallMPI(MPI_Comm_set_attr(*comm_out, Petsc_CreationIdx_keyval, cidx));
+-      PetscCall(PetscInfo(NULL, "Duplicating a communicator %ld %ld max tags = %d\n", (long)comm_in, (long)*comm_out, *maxval));
+ 
+       /* save PETSc communicator inside user communicator, so we can get it next time */
+       ucomm.comm = *comm_out; /* ONLY the comm part of the union is significant. */
+@@ -309,12 +305,6 @@ PetscErrorCode PetscCommDestroy(MPI_Comm *comm)
+       PetscCallMPI(MPI_Comm_delete_attr(ocomm, Petsc_InnerComm_keyval));
+     }
+ 
+-    /* Remove the object creation index on the communicator */
+-    PetscCallMPI(MPI_Comm_get_attr(icomm, Petsc_CreationIdx_keyval, &cidx, &flg));
+-    if (flg) {
+-      PetscCall(PetscFree(cidx));
+-    } else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_CORRUPT, "MPI_Comm does not have object creation index");
+-
+     /* Remove garbage hashmap set up by garbage collection */
+     PetscCallMPI(MPI_Comm_get_attr(icomm, Petsc_Garbage_HMap_keyval, &garbage, &flg));
+     if (flg) {
