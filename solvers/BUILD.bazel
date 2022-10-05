@@ -861,9 +861,15 @@ drake_cc_variant_library(
     name = "mosek_solver",
     opt_in_condition = "//tools:with_mosek",
     srcs_always = ["mosek_solver_common.cc"],
-    srcs_enabled = ["mosek_solver.cc"],
+    srcs_enabled = [
+        "mosek_solver_internal.cc",
+        "mosek_solver.cc",
+    ],
     srcs_disabled = ["no_mosek.cc"],
-    hdrs = ["mosek_solver.h"],
+    hdrs = [
+        "mosek_solver.h",
+        "mosek_solver_internal.h",
+    ],
     interface_deps = [
         ":mathematical_program_result",
         ":solver_base",
