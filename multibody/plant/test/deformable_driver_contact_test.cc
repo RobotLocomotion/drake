@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/deformable_driver.h"
@@ -12,8 +13,13 @@ using drake::geometry::Sphere;
 using drake::geometry::internal::DeformableContact;
 using drake::math::RigidTransformd;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
+using drake::multibody::fem::FemModel;
+using drake::multibody::fem::FemState;
+using drake::multibody::fem::internal::PetscSymmetricBlockSparseMatrix;
+using drake::multibody::fem::internal::SchurComplement;
 using drake::systems::Context;
 using drake::systems::DiscreteStateIndex;
+using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::make_unique;
 using std::move;
@@ -32,10 +38,18 @@ class CompliantContactManagerTester {
   }
 };
 
+/* This fixture tests DeformableDriver member functions associated with the
+ concept of contact. In particular, it sets up two identical and overlapping
+ deformable octahedron bodies centered at world origin, each with 8 elements,
+ 7 vertices, and 21 dofs. A rigid rectangle is added so that its top face
+ intersects the bottom half of each deformable octahedron. As a result, each
+ deformable body has 6 participating vertices (all vertices except the top
+ vertex) and 18 participating dofs. */
 class DeformableDriverContactTest : public ::testing::Test {
  protected:
+  static constexpr double kDt = 0.01;
+
   void SetUp() override {
-    constexpr double kDt = 0.01;
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
     auto deformable_model = make_unique<DeformableModel<double>>(plant_);
@@ -89,7 +103,50 @@ class DeformableDriverContactTest : public ::testing::Test {
       const Context<double>& context) const {
     return driver_->EvalParticipatingVelocities(context);
   }
+
+  const VectorXd& EvalParticipatingFreeMotionVelocities(
+      const Context<double>& context) const {
+    return driver_->EvalParticipatingFreeMotionVelocities(context);
+  }
+
+  const FemState<double>& EvalFreeMotionFemState(
+      const systems::Context<double>& context,
+      DeformableBodyIndex index) const {
+    return driver_->EvalFreeMotionFemState(context, index);
+  }
+
+  const PetscSymmetricBlockSparseMatrix& EvalFreeMotionTangentMatrix(
+      const systems::Context<double>& context,
+      DeformableBodyIndex index) const {
+    return driver_->EvalFreeMotionTangentMatrix(context, index);
+  }
+
+  const SchurComplement<double>& EvalFreeMotionTangentMatrixSchurComplement(
+      const systems::Context<double>& context,
+      DeformableBodyIndex index) const {
+    return driver_->EvalFreeMotionTangentMatrixSchurComplement(context, index);
+  }
   /* @} */
+
+  /* Sets the velocity of the deformable body with the given id in the member
+   context.
+   @pre The size of v is compatible with the number of degree of freedom of the
+   body with id. */
+  void SetVelocities(DeformableBodyId id, const VectorXd& v) {
+    Context<double>& plant_context =
+        plant_->GetMyMutableContextFromRoot(context_.get());
+    const DiscreteStateIndex state_index = model_->GetDiscreteStateIndex(id);
+    VectorXd state = plant_context.get_discrete_state(state_index).value();
+    DRAKE_DEMAND(state.size() % 3 == 0);
+    const int num_dofs = state.size() / 3;
+    DRAKE_DEMAND(num_dofs == v.size());
+    state.segment(num_dofs, num_dofs) = v;
+    plant_context.SetDiscreteState(state_index, state);
+  }
+
+  Vector3<double> GetIntegratorWeights() const {
+    return driver_->integrator_->GetWeights();
+  }
 
   MultibodyPlant<double>* plant_{nullptr};
   SceneGraph<double>* scene_graph_{nullptr};
@@ -108,11 +165,13 @@ class DeformableDriverContactTest : public ::testing::Test {
     auto geometry = make_unique<GeometryInstance>(
         RigidTransformd(), make_unique<Sphere>(1.0), std::move(name));
     geometry->set_proximity_properties(geometry::ProximityProperties());
-    const fem::DeformableBodyConfig<double> default_body_config;
+    fem::DeformableBodyConfig<double> body_config;
+    body_config.set_youngs_modulus(1e6);
+    body_config.set_poissons_ratio(0.4);
     /* Make the resolution hint large enough so that we get an octahedron. */
     constexpr double kRezHint = 10.0;
-    DeformableBodyId body_id = model->RegisterDeformableBody(
-        move(geometry), default_body_config, kRezHint);
+    DeformableBodyId body_id =
+        model->RegisterDeformableBody(move(geometry), body_config, kRezHint);
     return body_id;
   }
 };
@@ -156,23 +215,11 @@ TEST_F(DeformableDriverContactTest, EvalDofPermutation) {
  EvalParticipatingVelocityMultiplexer. */
 TEST_F(DeformableDriverContactTest, EvalParticipatingVelocities) {
   /* Set states for both bodies so that they have different velocities. */
-  const VectorXd& q = model_->GetReferencePositions(body_id0_);
-  const int num_dofs = q.size();
+  const int num_dofs = model_->GetFemModel(body_id0_).num_dofs();
   const auto v0 = VectorXd::Zero(num_dofs);
   const auto v1 = VectorXd::Ones(num_dofs);
-  const auto a = VectorXd::Zero(num_dofs);
-  VectorXd state0_value(3 * num_dofs);
-  state0_value << q, v0, a; /* position, velocity, acceleration. */
-  VectorXd state1_value(3 * num_dofs);
-  state1_value << q, v1, a; /* position, velocity, acceleration. */
-  const DiscreteStateIndex state0_index =
-      model_->GetDiscreteStateIndex(body_id0_);
-  const DiscreteStateIndex state1_index =
-      model_->GetDiscreteStateIndex(body_id1_);
-  Context<double>& plant_context =
-      plant_->GetMyMutableContextFromRoot(context_.get());
-  plant_context.SetDiscreteState(state0_index, state0_value);
-  plant_context.SetDiscreteState(state1_index, state1_value);
+  SetVelocities(body_id0_, v0);
+  SetVelocities(body_id1_, v1);
 
   const int num_participating_vertices = 6;
   const int num_participating_dofs_per_body = num_participating_vertices * 3;
@@ -181,10 +228,141 @@ TEST_F(DeformableDriverContactTest, EvalParticipatingVelocities) {
   expected_participating_velocity
       << VectorXd::Zero(num_participating_dofs_per_body),
       VectorXd::Ones(num_participating_dofs_per_body);
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
   EXPECT_EQ(EvalParticipatingVelocities(plant_context),
             expected_participating_velocity);
 }
 
+TEST_F(DeformableDriverContactTest, EvalParticipatingFreeMotionVelocities) {
+  /* Set states for both bodies so that they have different velocities. */
+  const int num_dofs = model_->GetFemModel(body_id0_).num_dofs();
+  const auto v0 = VectorXd::LinSpaced(num_dofs, 0.0, 1.0);
+  const auto v1 = VectorXd::LinSpaced(num_dofs, 1.0, 2.0);
+  SetVelocities(body_id0_, v0);
+  SetVelocities(body_id1_, v1);
+
+  /* Here we rely on the correctness of EvalDofPermutation and
+   EvalFreeMotionFemState which are tested separately in this fixture and in
+   DeformableDriverTest respectively. */
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
+  const VectorXd& v0_star =
+      EvalFreeMotionFemState(plant_context, DeformableBodyIndex(0))
+          .GetVelocities();
+  const VectorXd& v1_star =
+      EvalFreeMotionFemState(plant_context, DeformableBodyIndex(1))
+          .GetVelocities();
+  const PartialPermutation& p0 =
+      EvalDofPermutation(plant_context, DeformableBodyIndex(0));
+  const PartialPermutation& p1 =
+      EvalDofPermutation(plant_context, DeformableBodyIndex(0));
+  VectorXd participating_v0_star(p0.permuted_domain_size());
+  VectorXd participating_v1_star(p1.permuted_domain_size());
+  p0.Apply(v0_star, &participating_v0_star);
+  p1.Apply(v1_star, &participating_v1_star);
+  const int num_participating_vertices = 6;
+  const int num_participating_dofs_per_body = num_participating_vertices * 3;
+  VectorXd expected_participating_v_star(2 * num_participating_dofs_per_body);
+  expected_participating_v_star << participating_v0_star, participating_v1_star;
+  EXPECT_EQ(expected_participating_v_star,
+            EvalParticipatingFreeMotionVelocities(plant_context));
+}
+
+TEST_F(DeformableDriverContactTest, EvalFreeMotionTangentMatrix) {
+  DeformableBodyIndex body_index(0);
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
+  const FemState<double>& free_motion_state =
+      EvalFreeMotionFemState(plant_context, body_index);
+  DeformableBodyId body_id = model_->GetBodyId(body_index);
+  const FemModel<double>& fem_model = model_->GetFemModel(body_id);
+  std::unique_ptr<PetscSymmetricBlockSparseMatrix> fem_tangent_matrix =
+      fem_model.MakePetscSymmetricBlockSparseTangentMatrix();
+  fem_model.CalcTangentMatrix(free_motion_state, GetIntegratorWeights(),
+                              fem_tangent_matrix.get());
+  fem_tangent_matrix->AssembleIfNecessary();
+  const MatrixXd expected_tangent_matrix =
+      fem_tangent_matrix->MakeDenseMatrix() * plant_->time_step();
+  const PetscSymmetricBlockSparseMatrix& calculated_tangent_matrix =
+      EvalFreeMotionTangentMatrix(plant_context, body_index);
+  EXPECT_TRUE(CompareMatrices(expected_tangent_matrix,
+                              calculated_tangent_matrix.MakeDenseMatrix(),
+                              1e-14, MatrixCompareType::relative));
+}
+
+TEST_F(DeformableDriverContactTest,
+       EvalFreeMotionTangentMatrixSchurComplement) {
+  DeformableBodyIndex body_index(0);
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
+  const PetscSymmetricBlockSparseMatrix& tangent_matrix =
+      EvalFreeMotionTangentMatrix(plant_context, body_index);
+  const MatrixXd dense_tangent_matrix = tangent_matrix.MakeDenseMatrix();
+  /* Schematically the participating block (A), the non-participating block (D),
+   and the off-diagonal block (B) look like
+                           _______________________________________
+                           |                       |      |      |
+   Dofs 0-14 (associated   |                       |      |      |
+   with vertices 0-4) are  |                       |      |      |
+   participating.          |                       |      |      |
+                           |                       |      |      |
+                           |           A           |   B  |   A  |
+                           |                       |      |      |
+                           |                       |      |      |
+                           |                       |      |      |
+                           |                       |      |      |
+                           |_______________________|______|______|
+   Dofs 15-17 (associated  |                       |      |      |
+   with vertex 5) are not  |                       |   D  |      |
+   participating.          |_______________________|______|______|
+   Dofs 18-20 (associated  |                       |      |      |
+   with vertex 6) are      |           A           |   B  |   A  |
+   participating.          |_______________________|______|______|       */
+  /* Matrix block for participating dofs. */
+  const int num_participating_vertices = 6;
+  const int num_participating_dofs = num_participating_vertices * 3;
+  MatrixXd A = MatrixXd::Zero(num_participating_dofs, num_participating_dofs);
+  /* Vertices 0, 1, 2, 3, 4, 6 are participating in contact. */
+  A.topLeftCorner(15, 15) = dense_tangent_matrix.topLeftCorner(15, 15);
+  A.topRightCorner(15, 3) = dense_tangent_matrix.topRightCorner(15, 3);
+  A.bottomLeftCorner(3, 15) = dense_tangent_matrix.bottomLeftCorner(3, 15);
+  A.bottomRightCorner(3, 3) = dense_tangent_matrix.bottomRightCorner(3, 3);
+  /* Matrix block for non-participating dofs. */
+  const int num_nonparticipating_vertices = 1;
+  const int num_nonparticipating_dofs = num_nonparticipating_vertices * 3;
+  MatrixXd D = dense_tangent_matrix.block<3, 3>(15, 15);
+  /* Off diagonal block. */
+  MatrixXd B =
+      MatrixXd::Zero(num_participating_dofs, num_nonparticipating_dofs);
+  B.topRows(15) = dense_tangent_matrix.block<15, 3>(0, 15);
+  B.bottomRows(3) = dense_tangent_matrix.block<3, 3>(18, 15);
+  const MatrixXd expected_complement_matrix =
+      SchurComplement<double>(A.sparseView(), B.transpose().sparseView(),
+                              D.sparseView())
+          .get_D_complement();
+  EXPECT_TRUE(CompareMatrices(
+      expected_complement_matrix,
+      EvalFreeMotionTangentMatrixSchurComplement(plant_context, body_index)
+          .get_D_complement(),
+      1e-10));
+}
+
+TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrix) {
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
+  std::vector<MatrixXd> A;
+  driver_->AppendLinearDynamicsMatrix(plant_context, &A);
+  ASSERT_EQ(A.size(), 2);
+  DeformableBodyIndex body_index0(0);
+  DeformableBodyIndex body_index1(1);
+  EXPECT_EQ(A[0], EvalFreeMotionTangentMatrixSchurComplement(plant_context,
+                                                             body_index0)
+                      .get_D_complement());
+  EXPECT_EQ(A[1], EvalFreeMotionTangentMatrixSchurComplement(plant_context,
+                                                             body_index1)
+                      .get_D_complement());
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
