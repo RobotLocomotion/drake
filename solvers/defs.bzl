@@ -36,7 +36,9 @@ def drake_cc_variant_library(
         hdrs,
         interface_deps,
         deps_always,
-        deps_enabled):
+        deps_enabled,
+        internal = False,
+        visibility = None):
     """Declares a library with a uniform set of header files (typically just
     one header file) but with two different cc file implementations, depending
     on a configuration setting. This is how we turn on/off specific solver
@@ -81,6 +83,8 @@ def drake_cc_variant_library(
             opt_in_condition: deps_always + deps_enabled,
             opt_out_condition: deps_always,
         }),
+        internal = internal,
+        visibility = visibility,
     )
     cpplint_extra(
         name = name + "_cpplint",
