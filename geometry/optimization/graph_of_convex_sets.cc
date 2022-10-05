@@ -37,6 +37,7 @@ using solvers::LinearEqualityConstraint;
 using solvers::LInfNormCost;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
+using solvers::MatrixXDecisionVariable;
 using solvers::PerspectiveQuadraticCost;
 using solvers::QuadraticCost;
 using solvers::SolutionResult;
@@ -643,7 +644,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
   std::map<VertexId, std::vector<Edge*>> incoming_edges;
   std::map<VertexId, std::vector<Edge*>> outgoing_edges;
-  std::map<VertexId, VectorXDecisionVariable> vertex_edge_ell;
+  std::map<VertexId, MatrixXDecisionVariable> vertex_edge_ell;
   std::vector<Edge*> excluded_edges;
 
   std::map<EdgeId, Variable> relaxed_phi;

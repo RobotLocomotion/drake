@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
@@ -484,6 +485,12 @@ TEST_F(ThreePoints, LinearCost5) {
   source_->AddCost(b);
   DRAKE_EXPECT_THROWS_MESSAGE(g_.SolveShortestPath(*source_, *target_, options),
                               "Constant costs must be non-negative.*");
+}
+
+TEST_F(ThreePoints, MultipleVertexCosts) {
+  source_->AddCost(1.0);
+  source_->AddCost(1.0);
+  DRAKE_EXPECT_NO_THROW(g_.SolveShortestPath(*source_, *target_, options));
 }
 
 TEST_F(ThreePoints, QuadraticCost) {
