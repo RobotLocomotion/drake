@@ -5,19 +5,19 @@ import webbrowser
 
 import numpy as np
 
+from pydrake.common.value import AbstractValue
 from pydrake.examples import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
 from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
+    DifferentialInverseKinematicsIntegrator,
     DifferentialInverseKinematicsParameters)
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder, LeafSystem
 from pydrake.systems.primitives import FirstOrderLowPassFilter
-
-from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
 # On macOS, our setup scripts do not provide pygame so we need to skip this
 # program and its tests.  On Ubuntu, we do expect to have pygame.
@@ -130,8 +130,13 @@ class TeleopMouseKeyboardManager():
 class MouseKeyboardTeleop(LeafSystem):
     def __init__(self, grab_focus=True):
         LeafSystem.__init__(self)
-        self.DeclareVectorOutputPort("rpy_xyz", 6, self.DoCalcOutput)
-        self.DeclareVectorOutputPort("position", 1, self.CalcPositionOutput)
+        # Note: Disable caching because the teleop_manager has undeclared
+        # state.
+        self.DeclareVectorOutputPort(
+            "rpy_xyz", 6, self.DoCalcOutput).disable_caching_by_default()
+        self.DeclareVectorOutputPort(
+            "position", 1,
+            self.CalcPositionOutput).disable_caching_by_default()
         self.DeclareVectorOutputPort("force_limit", 1,
                                      self.CalcForceLimitOutput)
 
@@ -237,6 +242,20 @@ class MouseKeyboardTeleop(LeafSystem):
         output.SetAtIndex(3, self.x)
         output.SetAtIndex(4, self.y)
         output.SetAtIndex(5, self.z)
+
+
+class ToPose(LeafSystem):
+    def __init__(self, grab_focus=True):
+        LeafSystem.__init__(self)
+        self.DeclareVectorInputPort("rpy_xyz", 6)
+        self.DeclareAbstractOutputPort(
+            "pose", lambda: AbstractValue.Make(RigidTransform()),
+            self.DoCalcOutput)
+
+    def DoCalcOutput(self, context, output):
+        rpy_xyz = self.get_input_port().Eval(context)
+        output.set_value(RigidTransform(RollPitchYaw(rpy_xyz[:3]),
+                                        rpy_xyz[3:]))
 
 
 def main():
@@ -352,10 +371,11 @@ def main():
     params.set_joint_velocity_limits((-factor*iiwa14_velocity_limits,
                                       factor*iiwa14_velocity_limits))
 
-    differential_ik = builder.AddSystem(DifferentialIK(
-        robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
+    differential_ik = builder.AddSystem(
+        DifferentialInverseKinematicsIntegrator(
+            robot, robot.GetFrameByName("iiwa_link_7"), time_step, params))
 
-    builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
+    builder.Connect(differential_ik.GetOutputPort("joint_positions"),
                     station.GetInputPort("iiwa_position"))
 
     teleop = builder.AddSystem(MouseKeyboardTeleop(grab_focus=grab_focus))
@@ -363,8 +383,12 @@ def main():
         FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
 
     builder.Connect(teleop.get_output_port(0), filter_.get_input_port(0))
+
+    to_pose = builder.AddSystem(ToPose())
     builder.Connect(filter_.get_output_port(0),
-                    differential_ik.GetInputPort("rpy_xyz_desired"))
+                    to_pose.get_input_port())
+    builder.Connect(to_pose.get_output_port(),
+                    differential_ik.GetInputPort("X_WE_desired"))
 
     builder.Connect(teleop.GetOutputPort("position"), station.GetInputPort(
         "wsg_position"))
@@ -392,16 +416,19 @@ def main():
         simulator.AdvanceTo(1e-6)
 
     q0 = station.GetOutputPort("iiwa_position_measured").Eval(station_context)
-    differential_ik.parameters.set_nominal_joint_position(q0)
+    differential_ik.get_mutable_parameters().set_nominal_joint_position(q0)
 
-    teleop.SetPose(differential_ik.ForwardKinematics(q0))
+    differential_ik.SetPositions(
+        differential_ik.GetMyMutableContextFromRoot(
+            simulator.get_mutable_context()), q0)
+    teleop.SetPose(
+        differential_ik.ForwardKinematics(
+            differential_ik.GetMyContextFromRoot(simulator.get_context())))
     filter_.set_initial_output_value(
         diagram.GetMutableSubsystemContext(
             filter_, simulator.get_mutable_context()),
         teleop.get_output_port(0).Eval(diagram.GetMutableSubsystemContext(
             teleop, simulator.get_mutable_context())))
-    differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
-        differential_ik, simulator.get_mutable_context()), q0)
 
     simulator.set_target_realtime_rate(args.target_realtime_rate)
 
