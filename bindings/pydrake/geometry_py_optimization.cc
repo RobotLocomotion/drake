@@ -361,6 +361,17 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.flow_tolerance.doc)
         .def_readwrite("rounding_seed",
             &GraphOfConvexSetsOptions::rounding_seed, cls_doc.rounding_seed.doc)
+        .def_property("solver_options",
+            py::cpp_function(
+                [](GraphOfConvexSetsOptions& self) {
+                  return &(self.solver_options);
+                },
+                py_rvp::reference_internal),
+            py::cpp_function([](GraphOfConvexSetsOptions& self,
+                                 solvers::SolverOptions solver_options) {
+              self.solver_options = std::move(solver_options);
+            }),
+            cls_doc.solver_options.doc)
         .def("__repr__", [](const GraphOfConvexSetsOptions& self) {
           return py::str(
               "GraphOfConvexSetsOptions("
@@ -381,8 +392,6 @@ void DefineGeometryOptimization(py::module m) {
 
     DefReadWriteKeepAlive(&gcs_options, "solver",
         &GraphOfConvexSetsOptions::solver, cls_doc.solver.doc);
-    DefReadWriteKeepAlive(&gcs_options, "solver_options",
-        &GraphOfConvexSetsOptions::solver_options, cls_doc.solver_options.doc);
   }
 
   // GraphOfConvexSets
