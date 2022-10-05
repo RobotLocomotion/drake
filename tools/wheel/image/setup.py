@@ -53,7 +53,10 @@ The development team has now grown significantly, with core development led by
 the Toyota Research Institute.
 It is a collection of tools for analyzing the dynamics of our robots and
 building control systems for them, with a heavy emphasis on optimization-based
-design/analysis.'''.strip(),
+design/analysis.
+
+See https://drake.mit.edu/pip.html for installation instructions and caveats.
+'''.strip(),
       url='https://drake.mit.edu',
       author='Drake Development Team',
       author_email='drake-users@mit.edu',
@@ -63,16 +66,14 @@ design/analysis.'''.strip(),
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
+        'License :: Other/Proprietary License',
         'Operating System :: MacOS',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Scientific/Engineering',
         'Topic :: Software Development :: Libraries :: Python Modules'],
-      # TODO Check this: do we need to add third-party licenses?
-      license='BSD 3-Clause License',
+      license='Various',
       platforms=['linux_x86_64', 'macosx_x86_64'],
       packages=_actually_find_packages(),
       # Add in any packaged data.
