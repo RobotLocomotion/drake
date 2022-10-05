@@ -11,6 +11,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -21,6 +22,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
+#include "drake/multibody/parsing/detail_urdf_parser.h"
 #include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
@@ -65,12 +67,21 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
   }
 
+  static ParserInterface& TestingSelect(const DiagnosticPolicy&,
+                                        const std::string&) {
+    // TODO(rpoyner-tri): add more formats here, as tests use them.
+    static never_destroyed<UrdfParserWrapper> urdf;
+    return urdf.access();
+  }
+
+
   ModelInstanceIndex AddModelFromSdfFile(
       const std::string& file_name,
       const std::string& model_name) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    ParsingWorkspace w{package_map_, diagnostic_policy_,
+                       &plant_, &resolver, TestingSelect};
     std::optional<ModelInstanceIndex> result = AddModelFromSdf(
         data_source, model_name, w);
     EXPECT_TRUE(result.has_value());
@@ -82,7 +93,8 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
       const std::string& file_name) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    ParsingWorkspace w{package_map_, diagnostic_policy_,
+                       &plant_, &resolver, TestingSelect};
     auto result = AddModelsFromSdf(data_source, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
@@ -92,7 +104,8 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
       const std::string& file_contents) {
     const DataSource data_source{DataSource::kContents, &file_contents};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_,
+                       &resolver, TestingSelect};
     auto result = AddModelsFromSdf(data_source, w);
     resolver.Resolve(diagnostic_policy_);
     return result;

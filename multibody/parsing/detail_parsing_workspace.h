@@ -1,9 +1,14 @@
 #pragma once
 
+#include <optional>
+#include <string>
+#include <vector>
+
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
+#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -11,13 +16,91 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+// This forward declaration is necessary to support the definition cycle among
+// ParsingWorkspace, ParserInterface, and ParserSelector.
+struct ParsingWorkspace;
+
+// ParserInterface is a common interface for format-specific parsers. It
+// enables the definition of an abstract parser-selector functor type.
+class ParserInterface {
+ public:
+  virtual ~ParserInterface() {}
+
+  // Parses a model from the input file specified by @p data_source and adds it
+  // to @p plant. A new model instance will be added to @p plant.
+  //
+  // @param data_source
+  //   The model data to be parsed.
+  // @param model_name
+  //   The name given to the newly created instance of this model.  If
+  //   empty, the model name found within the model data will be used.
+  // @param parent_model_name
+  //   Optional name of parent model. If set, this will be prefixed onto the
+  //   model name (either `model_name` or from the "name" attribute) using the
+  //   SDFormat scope delimiter "::". The prefixed name will used as the name
+  //   given to the newly created instance of this model.
+  // @param workspace
+  //   The ParsingWorkspace.
+  // @returns The model instance index for the newly added model, or
+  //          std::nullopt if no model instance was allocated. An instance will
+  //          be allocated as long as a valid model name can be constructed, by
+  //          consulting the supplied name parameters, and the model name (if
+  //          any) found in the @p data_source.
+  virtual std::optional<ModelInstanceIndex> AddModel(
+      const DataSource& data_source, const std::string& model_name,
+      const std::optional<std::string>& parent_model_name,
+      const ParsingWorkspace& workspace) = 0;
+
+  // Parses all models from the input file specified by @p data_source and adds
+  // them to @p plant. New model instances will be added to @p plant.
+  //
+  // @param data_source
+  //   The model data to be parsed.
+  // @param parent_model_name
+  //   Optional name of parent model. If set, this will be prefixed onto the
+  //   model name (either `model_name` or from the "name" attribute) using the
+  //   SDFormat scope delimiter "::". The prefixed name will used as the name
+  //   given to the newly created instance of this model.
+  // @param workspace
+  //   The ParsingWorkspace.
+  // @returns The model instance indices for the newly added models, or an
+  //          empty vector if no model instances were allocated. Instances will
+  //          be allocated as long as valid model names can be constructed, by
+  //          consulting the model names (if any) found in the @p data_source.
+  virtual std::vector<ModelInstanceIndex> AddAllModels(
+      const DataSource& data_source,
+      const std::optional<std::string>& parent_model_name,
+      const ParsingWorkspace& workspace) = 0;
+};
+
+// The function type of a parser-selector. This abstraction helps avoid
+// dependencies between format-specific parsers. Only concrete ParserSelector
+// implementations should induce dependencies on format-specific parsers.
+//
+// Note that the behavior when the format is unknown is left unspecified
+// here. Functors for use in production may return a do-nothing interface
+// object to allow further best-effort parsing; functors used for test programs
+// may assert or throw.
+//
+// @param policy
+//   The DiagnosticPolicy object, for processing errors and warnings. It is
+//   only used to report selection errors. It is not aliased or retained.
+// @param filename
+//   The name of the input file to parse; it is only used to detect the likely
+//   format of the data.
+// @returns A reference to a ParserInterface.
+using ParserSelector = std::function<ParserInterface&(
+    const drake::internal::DiagnosticPolicy& policy,
+    const std::string& filename)>;
+
+
 // ParsingWorkspace bundles the commonly-needed elements for parsing routines.
 // It owns nothing; all members are references or pointers to objects owned
 // elsewhere.
 //
 // Note that code using this struct may pass it via const-ref, but the
 // indicated plant and collision resolver objects will still be mutable; only
-// the pointer values within the struct are const.
+// the pointer values of the plant and resolver within the struct are const.
 struct ParsingWorkspace {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParsingWorkspace)
 
@@ -27,19 +110,23 @@ struct ParsingWorkspace {
       const PackageMap& package_map_in,
       const drake::internal::DiagnosticPolicy& diagnostic_in,
       MultibodyPlant<double>* plant_in,
-      internal::CollisionFilterGroupResolver* collision_resolver_in)
+      internal::CollisionFilterGroupResolver* collision_resolver_in,
+      ParserSelector parser_selector_in)
       : package_map(package_map_in),
         diagnostic(diagnostic_in),
         plant(plant_in),
-        collision_resolver(collision_resolver_in) {
+        collision_resolver(collision_resolver_in),
+        parser_selector(parser_selector_in) {
     DRAKE_DEMAND(plant != nullptr);
     DRAKE_DEMAND(collision_resolver != nullptr);
+    DRAKE_DEMAND(parser_selector != nullptr);
   }
 
   const PackageMap& package_map;
   const drake::internal::DiagnosticPolicy& diagnostic;
   MultibodyPlant<double>* const plant;
   internal::CollisionFilterGroupResolver* const collision_resolver;
+  const ParserSelector parser_selector;
 };
 
 }  // namespace internal

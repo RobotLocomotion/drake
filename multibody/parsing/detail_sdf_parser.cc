@@ -102,13 +102,6 @@ bool StartsWith(const std::string_view str, const std::string_view prefix) {
          std::equal(str.begin(), str.begin() + prefix.size(), prefix.begin());
 }
 
-// Returns true if `str` ends with `ext`. The length of `ext` has to be
-// strictly less than the size of `str`.
-bool EndsWith(const std::string_view str, const std::string_view ext) {
-  return ext.size() < str.size() &&
-         std::equal(str.end() - ext.size(), str.end(), ext.begin());
-}
-
 // Calculates the scoped name of a body relative to the model instance @p
 // relative_to_model_instance. If the body is a direct child of the model,
 // this simply returns the local name of the body. However, if the body is
@@ -1434,8 +1427,7 @@ void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
 
 // This is a forward-declaration of an anonymous helper that's defined later
 // in this file.
-sdf::ParserConfig MakeSdfParserConfig(
-    const PackageMap&, MultibodyPlant<double>*, CollisionFilterGroupResolver*);
+sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace&);
 
 sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
   sdf::Error result(code, detail.message);
@@ -1454,15 +1446,18 @@ sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
 // order. If we add support for other file formats, we should ensure that the
 // parsers comply with this assumption.
 sdf::InterfaceModelPtr ParseNestedInterfaceModel(
-    MultibodyPlant<double>* plant, const PackageMap& package_map,
-    CollisionFilterGroupResolver* resolver,
+    const ParsingWorkspace& workspace,
     const sdf::NestedInclude& include, sdf::Errors* errors) {
-  const sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      package_map, plant, resolver);
+  const sdf::ParserConfig parser_config = MakeSdfParserConfig(workspace);
+  auto& [package_map, diagnostic, plant, collision_resolver, parser_selector] =
+      workspace;
+  const std::string resolved_filename{include.ResolvedFileName()};
 
   // Do not attempt to parse anything other than URDF files.
-  const bool is_urdf = EndsWith(include.ResolvedFileName(), kExtUrdf);
+  const bool is_urdf = EndsWithCaseInsensitive(resolved_filename, kExtUrdf);
   if (!is_urdf) {
+    // TODO(rpoyner-tri): implement nesting of mujoco files; saved for another
+    // day since it requires some study of mujoco scene composition semantics.
     return nullptr;
   }
 
@@ -1473,14 +1468,14 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     return nullptr;
   }
 
-  DataSource data_source(DataSource::kFilename, &include.ResolvedFileName());
-  drake::internal::DiagnosticPolicy diagnostic;
-  diagnostic.SetActionForWarnings(
+  DataSource data_source(DataSource::kFilename, &resolved_filename);
+  drake::internal::DiagnosticPolicy subdiagnostic;
+  subdiagnostic.SetActionForWarnings(
       [&errors](const DiagnosticDetail& detail) {
         errors->emplace_back(MakeSdfError(
             sdf::ErrorCode::NONE, detail));
       });
-  diagnostic.SetActionForErrors(
+  subdiagnostic.SetActionForErrors(
       [&errors](const DiagnosticDetail& detail) {
         errors->emplace_back(MakeSdfError(
             sdf::ErrorCode::ELEMENT_INVALID, detail));
@@ -1489,35 +1484,33 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   ModelInstanceIndex main_model_instance;
   // New instances will have indices starting from cur_num_models
   int cur_num_models = plant->num_model_instances();
-  if (is_urdf) {
-    ParsingWorkspace workspace{package_map, diagnostic, plant, resolver};
-    const std::optional<ModelInstanceIndex> maybe_model =
-        AddModelFromUrdf(data_source, include.LocalModelName().value_or(""),
-                         include.AbsoluteParentName(), workspace);
-    if (maybe_model.has_value()) {
-      main_model_instance = *maybe_model;
-    } else {
-      return nullptr;
-    }
-
-    // Add explicit model frame to first link.
-    auto body_indices = plant->GetBodyIndices(main_model_instance);
-    if (body_indices.empty()) {
-      errors->emplace_back(sdf::ErrorCode::ELEMENT_INVALID,
-                           "URDF must have at least one link.");
-      return nullptr;
-    }
-    const auto& canonical_link = plant->get_body(body_indices[0]);
-
-    const Frame<double>& canonical_link_frame =
-        plant->GetFrameByName(canonical_link.name(), main_model_instance);
-    plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        "__model__", canonical_link_frame, RigidTransformd::Identity(),
-        main_model_instance));
+  ParsingWorkspace subworkspace{
+    package_map, subdiagnostic, plant, collision_resolver, parser_selector};
+  const std::optional<ModelInstanceIndex> maybe_model =
+      parser_selector(diagnostic, resolved_filename).
+      AddModel(data_source, include.LocalModelName().value_or(""),
+               include.AbsoluteParentName(), subworkspace);
+  if (maybe_model.has_value()) {
+    main_model_instance = *maybe_model;
   } else {
-    // TODO(jwnimmer-tri) Eventually we'll add our MuJoCo parser here.
-    DRAKE_UNREACHABLE();
+    return nullptr;
   }
+
+  // Add explicit model frame to first link.
+  auto body_indices = workspace.plant->GetBodyIndices(main_model_instance);
+  if (body_indices.empty()) {
+    errors->emplace_back(sdf::ErrorCode::ELEMENT_INVALID,
+                         "URDF must have at least one link.");
+    return nullptr;
+  }
+  const auto& canonical_link = workspace.plant->get_body(body_indices[0]);
+
+  const Frame<double>& canonical_link_frame =
+      plant->GetFrameByName(canonical_link.name(), main_model_instance);
+  plant->AddFrame(
+      std::make_unique<FixedOffsetFrame<double>>(
+          "__model__", canonical_link_frame, RigidTransformd::Identity(),
+          main_model_instance));
 
   // Now that the model is parsed, we create interface elements to send to
   // libsdformat.
@@ -1533,8 +1526,9 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   // their "child" models.
   for (ModelInstanceIndex model_instance(cur_num_models);
        model_instance < plant->num_model_instances(); ++model_instance) {
-    sdf::RepostureFunction reposture_model = [plant, model_instance, errors](
-        const sdf::InterfaceModelPoseGraph &graph) {
+    sdf::RepostureFunction reposture_model =
+        [plant = plant, model_instance, errors](
+            const sdf::InterfaceModelPoseGraph &graph) {
       // N.B. This should also posture the model appropriately.
       for (auto interface_link_ind : plant->GetBodyIndices(model_instance)) {
         const auto& interface_link = plant->get_body(interface_link_ind);
@@ -1593,11 +1587,10 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   return main_interface_model;
 }
 
-sdf::ParserConfig MakeSdfParserConfig(
-    const PackageMap& package_map,
-    MultibodyPlant<double>* plant,
-    CollisionFilterGroupResolver* resolver) {
-
+// Note that this function keeps an alias of the input @p workspace in its
+// return value. Therefore, the lifetime of the @p workspace must be greater
+// than that of the returned parser config object.
+sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace) {
   // The error severity settings here are somewhat subtle. We set all of them
   // to ERR so that reports will append into an sdf::Errors collection instead
   // of spamming into spdlog. However, when grabbing the reports out of the
@@ -1609,7 +1602,7 @@ sdf::ParserConfig MakeSdfParserConfig(
   parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetFindCallback(
-    [=](const std::string &_input) {
+    [&workspace](const std::string &_input) {
       // This callback uses an empty return value to denote errors, and then its
       // caller reports its own "no such file" error directly. We'll route
       // Drake's specific messages about *why* the file wasn't found into a
@@ -1621,14 +1614,13 @@ sdf::ParserConfig MakeSdfParserConfig(
       debug_log.SetActionForErrors([](const DiagnosticDetail& detail) {
         drake::log()->debug(detail.FormatError());
       });
-      return ResolveUri(debug_log, _input, package_map, ".");
+      return ResolveUri(debug_log, _input, workspace.package_map, ".");
     });
 
   parser_config.RegisterCustomModelParser(
-      [&package_map, plant, resolver](
+      [&workspace](
           const sdf::NestedInclude& include, sdf::Errors& errors) {
-        return ParseNestedInterfaceModel(plant, package_map, resolver,
-                                         include, &errors);
+        return ParseNestedInterfaceModel(workspace, include, &errors);
       });
 
   return parser_config;
@@ -1641,8 +1633,7 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
     const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
-  sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      workspace.package_map, workspace.plant, workspace.collision_resolver);
+  sdf::ParserConfig parser_config = MakeSdfParserConfig(workspace);
 
   sdf::Root root;
 
@@ -1676,8 +1667,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
-  sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      workspace.package_map, workspace.plant, workspace.collision_resolver);
+  sdf::ParserConfig parser_config = MakeSdfParserConfig(workspace);
 
   sdf::Root root;
 
@@ -1757,6 +1747,27 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   }
 
   return model_instances;
+}
+
+SdfParserWrapper::SdfParserWrapper() {}
+
+SdfParserWrapper::~SdfParserWrapper() {}
+
+std::optional<ModelInstanceIndex> SdfParserWrapper::AddModel(
+    const DataSource& data_source, const std::string& model_name,
+    const std::optional<std::string>& parent_model_name,
+    const ParsingWorkspace& workspace) {
+  std::string full_name =
+      parsing::PrefixName(parent_model_name.value_or(""), model_name);
+  return AddModelFromSdf(data_source, full_name, workspace);
+}
+
+std::vector<ModelInstanceIndex> SdfParserWrapper::AddAllModels(
+    const DataSource& data_source,
+    const std::optional<std::string>&,
+    const ParsingWorkspace& workspace) {
+  // TODO(rpoyner-tri): parent_model_name dropped?
+  return AddModelsFromSdf(data_source, workspace);
 }
 
 }  // namespace internal
