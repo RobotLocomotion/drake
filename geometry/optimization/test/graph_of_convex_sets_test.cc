@@ -486,6 +486,12 @@ TEST_F(ThreePoints, LinearCost5) {
                               "Constant costs must be non-negative.*");
 }
 
+TEST_F(ThreePoints, MultipleVertexCosts) {
+  source_->AddCost(1.0);
+  source_->AddCost(1.0);
+  auto result = g_.SolveShortestPath(*source_, *target_, options);
+}
+
 TEST_F(ThreePoints, QuadraticCost) {
   e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
   e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
