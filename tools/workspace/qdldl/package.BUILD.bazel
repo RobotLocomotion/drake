@@ -15,22 +15,38 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-# Generates osqp_configure.h based on the defines= we want in Drake.
 cmake_configure_file(
-    name = "configure_file",
+    name = "configure_file_types",
     src = "configure/qdldl_types.h.in",
     out = "include/qdldl_types.h",
+    # https://github.com/osqp/qdldl/blob/v0.1.6/README.md#custom-types-for-integer-floats-and-booleans
     defines = [
         "QDLDL_BOOL_TYPE=unsigned char",
         # Keep the `int` type sync'd with the @osqp and @scs build.
         # See drake/tools/workspace/qdldl/README.md.
         "QDLDL_INT_TYPE=int",
+        "QDLDL_LONG=0",
         # Keep the `double` type sync'd with the @osqp and @scs build.
         # See drake/tools/workspace/qdldl/README.md.
         "QDLDL_FLOAT_TYPE=double",
+        "QDLDL_FLOAT=0",
         # Match this to QDLDL_INT_TYPE above.
         "QDLDL_INT_TYPE_MAX=INT_MAX",
     ],
+    strict = True,
+    visibility = ["//visibility:private"],
+)
+
+cmake_configure_file(
+    name = "configure_file_version",
+    src = "configure/qdldl_version.h.in",
+    out = "include/qdldl_version.h",
+    defines = [
+        "QDLDL_VERSION_MAJOR=0",
+        "QDLDL_VERSION_MINOR=0",
+        "QDLDL_VERSION_PATCH=0",
+    ],
+    strict = True,
     visibility = ["//visibility:private"],
 )
 
@@ -38,7 +54,8 @@ cc_library(
     name = "qdldl",
     hdrs = [
         "include/qdldl.h",
-        "include/qdldl_types.h",
+        ":include/qdldl_types.h",
+        ":include/qdldl_version.h",
     ],
     srcs = [
         "src/qdldl.c",
