@@ -19,7 +19,7 @@ integration. Any other configurations are provided on a best-effort basis.
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.22  | GCC 11 (default) or Clang 12 | OpenJDK 11                    |
 | macOS Big Sur (11)                 | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 12 (Xcode 12)     | AdoptOpenJDK 16 (HotSpot JVM) |
 | macOS Monterey (12)                | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
-| macOS Monterey (12)                | arm64 ⁽¹⁾    | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 13 (Xcode 13)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Monterey (12)                | arm64 ⁽¹⁾    | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
 
 ⁽¹⁾ For users running on Apple's newer arm64 hardware, you may run Drake in
 native arm64 mode when building from source. However, to use Drake's
