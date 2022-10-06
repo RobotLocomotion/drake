@@ -27,10 +27,21 @@ Gurobi, you will need to [build Drake from source](/from_source.html).
 ## Stable Releases
 
 <div class="warning" markdown="1">
+For users running on Apple's newer arm64 hardware,  Drake does not yet provide
+native pypi wheels (follow
+[issue #17906](https://github.com/RobotLocomotion/drake/issues/17906)
+for updates). In the meantime, we recommend that you install from a
+[Direct Download](/from_binary.html#stable-releases) that includes both Python
+and C++ support, using a dedicated virtual environment.
+</div>
+
+<div class="warning" markdown="1">
 Drake does not support the Python environment supplied by Anaconda. Before
 installing or using Drake, please `conda deactivate` (repeatedly, until even
 the conda base environment has been deactivated) such that none of the paths
 reported `which -a python python3 pip pip3` refer to conda.
+Note that Miniconda seems to work fine; it's only Anaconda that has caused
+problems for some users.
 </div>
 
 <div class="warning" markdown="1">
@@ -82,8 +93,8 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Binary wheels of Drake for Ubuntu 20.04 (Focal) and
-Mac are generated nightly and are available to download at:
+Binary packages of Drake for Ubuntu 20.04 (Focal), Ubuntu 22.04 (Jammy), and
+Mac x86_64 are generated nightly and are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp38-cp38-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp38-cp38-manylinux_2_31_x86_64.whl)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp39-cp39-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp39-cp39-manylinux_2_31_x86_64.whl)

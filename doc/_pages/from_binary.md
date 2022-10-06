@@ -30,11 +30,12 @@ Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.8.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.8.0):
+[v1.9.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.9.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-focal.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-jammy.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-mac.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-YYYYMMDD-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-YYYYMMDD-focal.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-YYYYMMDD-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-YYYYMMDD-jammy.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-YYYYMMDD-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-YYYYMMDD-mac.tar.gz) (for x86_64)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-YYYYMMDD-mac-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-YYYYMMDD-mac-arm64.tar.gz) (for arm64)
 
 ### Use as a C++ library
 
@@ -46,7 +47,8 @@ example.
 ### Use as a Python library
 
 In most cases, we suggest using our [pip releases](/pip.html), because that
-will be more convenient than manually downloading.  However, if you need both
+will be more convenient than manually downloading.  However, if you are running
+on macOS arm64 or if you need both
 C++ and Python API support, then pip will not work.  This section shows
 how to incorporate a manual download into a
 [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment)
@@ -83,14 +85,16 @@ Mac are generated nightly and are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz) (for x86_64)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz) (for arm64)
 
 Older packages for specific dates are available by replacing ``latest`` with an
-8-digit date, e.g., ``20220721`` for July 21st, 2022.
+8-digit date, e.g., ``20221005`` for October 5th, 2022.
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-focal.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-jammy.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20220721-mac.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20221005-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20221005-focal.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20221005-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20221005-jammy.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20221005-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20221005-mac.tar.gz) (for x86_64)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20221005-mac-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20221005-mac-arm64.tar.gz) (for arm64)
 
 Nightly archives are retained for 56 days from their date of creation.
 

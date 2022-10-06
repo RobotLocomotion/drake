@@ -30,7 +30,8 @@ instructions on running using x86_64 emulation.
 
 ⁽³⁾ Drake features that perform image rendering (e.g., camera simulation)
 require a working display server.  Most personal computers will have this
-already built in, but some cloud or docker environments may not.
+already built in, but some cloud or docker environments may require extra
+setup steps.
 
 ⁽⁴⁾ Drake requires a compiler running in C++17 or C++20 mode.
 

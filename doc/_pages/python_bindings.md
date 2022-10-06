@@ -20,6 +20,8 @@ Drake does not support the Python environment supplied by Anaconda. Before
 installing or using Drake, please `conda deactivate` (repeatedly, until even
 the conda base environment has been deactivated) such that none of the paths
 reported `which -a python python3 pip pip3` refer to conda.
+Note that Miniconda seems to work fine; it's only Anaconda that has caused
+problems for some users.
 </div>
 
 # Installation
