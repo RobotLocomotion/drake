@@ -24,7 +24,6 @@ drake_cc_package_library(
         ":collision_filter_manager",
         ":drake_visualizer",
         ":drake_visualizer_params",
-        ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
         ":geometry_instance",
@@ -68,6 +67,7 @@ drake_cc_library(
         "//geometry/proximity:collision_filter",
         "//geometry/proximity:deformable_contact_internal",
         "//geometry/proximity:hydroelastic_internal",
+        "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/query_results",
         "//math",
         ":geometry_ids",
@@ -138,17 +138,6 @@ drake_cc_library(
         ":geometry_roles",
         ":rgba",
         "//common:name_value",
-    ],
-)
-
-# Remove on 2022-10-01.
-drake_cc_library(
-    name = "frame_kinematics",
-    hdrs = [
-        "frame_kinematics_vector.h",
-    ],
-    deps = [
-        ":kinematics_vector",
     ],
 )
 
@@ -259,8 +248,6 @@ drake_cc_library(
         ":proximity_engine",
         ":utilities",
         "//geometry/render:render_engine",
-        # Add an unused dependency to help smooth out the deprecation.
-        ":frame_kinematics",
     ],
 )
 
@@ -300,6 +287,7 @@ drake_cc_library(
         ":geometry_state",
         ":scene_graph_inspector",
         "//common:essential",
+        "//common:nice_type_name",
         "//geometry/query_results:contact_surface",
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_pair",
@@ -667,7 +655,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "proximity_engine_test",
-    data = [":test_obj_files"],
+    data = [
+        ":test_obj_files",
+        ":test_vtk_files",
+    ],
     deps = [
         ":proximity_engine",
         ":shape_specification",

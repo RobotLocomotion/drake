@@ -97,6 +97,7 @@ drake_cc_library(
         ":rgbd_sensor",
         ":sim_rgbd_sensor",
         "//geometry:scene_graph",
+        "//geometry/render_gl",
         "//geometry/render_vtk",
         "//lcm:interface",
         "//math:geometric_transform",
@@ -342,10 +343,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "camera_config_functions_test",
+    tags = vtk_test_tags(),
     deps = [
         ":camera_config_functions",
         "//common/test_utilities:expect_throws_message",
         "//common/yaml:yaml_io",
+        "//geometry/render_gl",
     ],
 )
 

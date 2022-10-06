@@ -405,7 +405,8 @@ struct SetButtonControl {
   int num_clicks{0};
   std::string name;
   std::string callback;
-  MSGPACK_DEFINE_MAP(type, name, callback);
+  std::string keycode1{};
+  MSGPACK_DEFINE_MAP(type, name, callback, keycode1);
 };
 
 struct SetSliderControl {
@@ -416,7 +417,10 @@ struct SetSliderControl {
   double min{};
   double max{};
   double step{};
-  MSGPACK_DEFINE_MAP(type, name, callback, value, min, max, step);
+  std::string keycode1{};
+  std::string keycode2{};
+  MSGPACK_DEFINE_MAP(type, name, callback, value, min, max, step, keycode1,
+                     keycode2);
 };
 
 struct SetSliderValue {

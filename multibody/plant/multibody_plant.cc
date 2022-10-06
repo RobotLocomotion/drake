@@ -1406,6 +1406,8 @@ void MultibodyPlant<T>::SetDiscreteUpdateManager(
 template <typename T>
 void MultibodyPlant<T>::AddPhysicalModel(
     std::unique_ptr<internal::PhysicalModel<T>> model) {
+  // TODO(xuchenhan-tri): Guard against the same type of model being registered
+  //  more than once.
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_DEMAND(model != nullptr);
   auto& added_model = physical_models_.emplace_back(std::move(model));
@@ -2820,7 +2822,7 @@ void MultibodyPlant<T>::CallTamsiSolver(
   if (info != TamsiSolverResult::kSuccess) {
     const std::string msg = fmt::format(
         "MultibodyPlant's discrete update solver failed to converge at "
-        "simulation time = {:7.3g} with discrete update period = {:7.3g}. "
+        "simulation time = {} with discrete update period = {}. "
         "This usually means that the plant's discrete update period is too "
         "large to resolve the system's dynamics for the given simulation "
         "conditions. This is often the case during abrupt collisions or during "
@@ -2931,13 +2933,10 @@ void MultibodyPlant<T>::CallContactSolver(
                                     v0, &*results);
 
   if (info != contact_solvers::internal::ContactSolverStatus::kSuccess) {
-    const std::string msg =
-        fmt::format("MultibodyPlant's contact solver of type '" +
-                        NiceTypeName::Get(*contact_solver_) +
-                        "' failed to converge at "
-                        "simulation time = {:7.3g} with discrete update "
-                        "period = {:7.3g}.",
-                    time0, time_step());
+    const std::string msg = fmt::format(
+        "MultibodyPlant's contact solver of type '{}' failed to converge at "
+        "simulation time = {} with discrete update period = {}.",
+        NiceTypeName::Get(*contact_solver_), time0, time_step());
     throw std::runtime_error(msg);
   }
 }

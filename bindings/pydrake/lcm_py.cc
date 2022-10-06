@@ -83,14 +83,6 @@ PYBIND11_MODULE(lcm, m) {
             },
             py::arg("channel"), py::arg("handler"), cls_doc.Subscribe.doc);
     // TODO(eric.cousineau): Add remaining methods.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const char* const doc_deprecated =
-        cls_doc.ctor
-            .doc_deprecated_deprecated_2args_lcm_url_defer_initialization;
-    cls.def(py_init_deprecated<Class, std::string, bool>(doc_deprecated),
-        py::arg("lcm_url"), py::arg("defer_initialization"), doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   ExecuteExtraPythonCode(m);

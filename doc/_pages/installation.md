@@ -40,12 +40,12 @@ Additionally, if you are compiling your own C++ code against Drake's C++ code
 and are using Drake's pre-compiled binaries, then you must use the same
 compiler as our releases:
 
-| Operating System                   | C/C++ Compiler                 | Std   |
-|------------------------------------|--------------------------------|-------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | GCC 9.3                        | C++17 |
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11.2                       | C++17 |
-| macOS Big Sur (11)                 | Apple LLVM 12.0.5 (Xcode 12.5) | C++17 |
-| macOS Monterey (12) on x86_64      | Apple LLVM 13.0.0 (Xcode 13.1) | C++17 |
+| Operating System                   | C/C++ Compiler           | Std   |
+|------------------------------------|--------------------------|-------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | GCC 9                    | C++17 |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                   | C++20 |
+| macOS Big Sur (11)                 | Apple LLVM 12 (Xcode 12) | C++20 |
+| macOS Monterey (12) on x86_64      | Apple LLVM 14 (Xcode 14) | C++20 |
 
 ## Available Versions
 

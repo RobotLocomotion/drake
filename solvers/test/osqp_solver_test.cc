@@ -249,20 +249,20 @@ GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
     // OSQP is not very accurate, use a loose tolerance.
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x), -b, 1E-5));
 
-    // Now only allow one tenth of the solve time in the OSQP solver. The solver
-    // should not be able to solve the problem in time.
-    const double one_tenth_solve_time =
-        result.get_solver_details<OsqpSolver>().solve_time / 10;
+    // Now only allow one hundredth of the solve time in the OSQP solver. The
+    // solver should not be able to solve the problem in time.
+    const double one_hundredth_solve_time =
+        result.get_solver_details<OsqpSolver>().solve_time / 100.0;
     SolverOptions solver_options;
     solver_options.SetOption(osqp_solver.solver_id(), "time_limit",
-                             one_tenth_solve_time);
+                             one_hundredth_solve_time);
     osqp_solver.Solve(prog, {}, solver_options, &result);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
               OSQP_TIME_LIMIT_REACHED);
 
     // Now set the options in prog.
     prog.SetSolverOption(osqp_solver.solver_id(), "time_limit",
-                         one_tenth_solve_time);
+                         one_hundredth_solve_time);
     osqp_solver.Solve(prog, {}, {}, &result);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
               OSQP_TIME_LIMIT_REACHED);

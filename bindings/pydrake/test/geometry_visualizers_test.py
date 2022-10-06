@@ -140,10 +140,16 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.Set2dRenderMode(
             X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
         meshcat.ResetRenderMode()
-        meshcat.AddButton(name="button")
+        meshcat.AddButton(name="button", keycode="KeyB")
         self.assertEqual(meshcat.GetButtonClicks(name="button"), 0)
         meshcat.DeleteButton(name="button")
-        meshcat.AddSlider(name="slider", min=0, max=1, step=0.01, value=0.5)
+        meshcat.AddSlider(name="slider",
+                          min=0,
+                          max=1,
+                          step=0.01,
+                          value=0.5,
+                          decrement_keycode="ArrowLeft",
+                          increment_keycode="ArrowRight")
         meshcat.SetSliderValue(name="slider", value=0.7)
         self.assertAlmostEqual(meshcat.GetSliderValue(
             name="slider"), 0.7, delta=1e-14)

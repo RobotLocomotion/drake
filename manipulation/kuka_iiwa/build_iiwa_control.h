@@ -44,6 +44,10 @@ namespace kuka_iiwa {
 /// corresponding to the Iiwa Dof (7) in the controller.  If no argument is
 /// passed, the gains derived from hardware will be used instead (hardcoded
 /// within the implementation of this function).
+///
+/// Note: The Diagram will maintain an internal reference to `controller_plant`,
+/// so you must ensure that `controller_plant` has a longer lifetime than the
+/// Diagram.
 void BuildIiwaControl(
     const multibody::MultibodyPlant<double>& plant,
     const multibody::ModelInstanceIndex iiwa_instance,

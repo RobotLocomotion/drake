@@ -8,5 +8,4 @@ website:
 * [`third_party/dracula/LICENSE.txt`](third_party/dracula/LICENSE.txt)
 * [`third_party/github-styling/LICENSE.txt`](third_party/github-styling/LICENSE.txt)
 * [`third_party/images/GitHub-Mark.README.txt`](third_party/images/GitHub-Mark.README.txt)
-* [`third_party/images/python.README.txt`](third_party/images/python.README.txt)
 * [`third_party/pylons/LICENSE.txt`](third_party/pylons/LICENSE.txt)

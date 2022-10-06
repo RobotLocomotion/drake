@@ -14,11 +14,13 @@ if sys.platform == "darwin":
 
 import numpy as np
 
+from pydrake.common.value import AbstractValue
 from pydrake.examples import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
 from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizer
 from pydrake.manipulation.planner import (
+    DifferentialInverseKinematicsIntegrator,
     DifferentialInverseKinematicsParameters)
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
@@ -28,7 +30,6 @@ from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.primitives import FirstOrderLowPassFilter, VectorLogSink
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 
-from drake.examples.manipulation_station.differential_ik import DifferentialIK
 from drake.examples.manipulation_station.schunk_wsg_buttons import \
     SchunkWsgButtons
 
@@ -59,7 +60,10 @@ class EndEffectorTeleop(LeafSystem):
         """
 
         LeafSystem.__init__(self)
-        self.DeclareVectorOutputPort("rpy_xyz", 6, self.DoCalcOutput)
+        # Note: Disable caching because meshcat's sliders have undeclared
+        # state.
+        self.DeclareVectorOutputPort(
+            "rpy_xyz", 6, self.DoCalcOutput).disable_caching_by_default()
         self.meshcat = meshcat
         self.planar = planar
 
@@ -135,6 +139,20 @@ class EndEffectorTeleop(LeafSystem):
         output.SetAtIndex(3, x)
         output.SetAtIndex(4, y)
         output.SetAtIndex(5, z)
+
+
+class ToPose(LeafSystem):
+    def __init__(self, grab_focus=True):
+        LeafSystem.__init__(self)
+        self.DeclareVectorInputPort("rpy_xyz", 6)
+        self.DeclareAbstractOutputPort(
+            "pose", lambda: AbstractValue.Make(RigidTransform()),
+            self.DoCalcOutput)
+
+    def DoCalcOutput(self, context, output):
+        rpy_xyz = self.get_input_port().Eval(context)
+        output.set_value(RigidTransform(RollPitchYaw(rpy_xyz[:3]),
+                                        rpy_xyz[3:]))
 
 
 def main():
@@ -275,7 +293,7 @@ def main():
                                                      robot.num_velocities())
 
     time_step = 0.005
-    params.set_timestep(time_step)
+    params.set_time_step(time_step)
     # True velocity limits for the IIWA14 (in rad, rounded down to the first
     # decimal)
     iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])
@@ -286,12 +304,13 @@ def main():
         params.set_end_effector_velocity_gain([1, 0, 0, 0, 1, 1])
     # Stay within a small fraction of those limits for this teleop demo.
     factor = args.velocity_limit_factor
-    params.set_joint_velocity_limits((-factor*iiwa14_velocity_limits,
-                                      factor*iiwa14_velocity_limits))
-    differential_ik = builder.AddSystem(DifferentialIK(
-        robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
+    params.set_joint_velocity_limits(
+        (-factor * iiwa14_velocity_limits, factor * iiwa14_velocity_limits))
+    differential_ik = builder.AddSystem(
+        DifferentialInverseKinematicsIntegrator(
+            robot, robot.GetFrameByName("iiwa_link_7"), time_step, params))
 
-    builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
+    builder.Connect(differential_ik.GetOutputPort("joint_positions"),
                     station.GetInputPort("iiwa_position"))
 
     teleop = builder.AddSystem(EndEffectorTeleop(
@@ -300,8 +319,12 @@ def main():
         FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
 
     builder.Connect(teleop.get_output_port(0), filter.get_input_port(0))
+
+    to_pose = builder.AddSystem(ToPose())
     builder.Connect(filter.get_output_port(0),
-                    differential_ik.GetInputPort("rpy_xyz_desired"))
+                    to_pose.get_input_port())
+    builder.Connect(to_pose.get_output_port(),
+                    differential_ik.GetInputPort("X_WE_desired"))
 
     wsg_buttons = builder.AddSystem(SchunkWsgButtons(meshcat=meshcat))
     builder.Connect(wsg_buttons.GetOutputPort("position"),
@@ -341,16 +364,19 @@ def main():
 
     q0 = station.GetOutputPort("iiwa_position_measured").Eval(
         station_context)
-    differential_ik.parameters.set_nominal_joint_position(q0)
+    differential_ik.get_mutable_parameters().set_nominal_joint_position(q0)
 
-    teleop.SetPose(differential_ik.ForwardKinematics(q0))
+    differential_ik.SetPositions(
+        differential_ik.GetMyMutableContextFromRoot(
+            simulator.get_mutable_context()), q0)
+    teleop.SetPose(
+        differential_ik.ForwardKinematics(
+            differential_ik.GetMyContextFromRoot(simulator.get_context())))
     filter.set_initial_output_value(
         diagram.GetMutableSubsystemContext(
             filter, simulator.get_mutable_context()),
         teleop.get_output_port(0).Eval(diagram.GetMutableSubsystemContext(
             teleop, simulator.get_mutable_context())))
-    differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
-        differential_ik, simulator.get_mutable_context()), q0)
 
     simulator.set_target_realtime_rate(args.target_realtime_rate)
     simulator.AdvanceTo(args.duration)

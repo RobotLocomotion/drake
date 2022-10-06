@@ -8,9 +8,8 @@ def mypy_internal_repository(
     github_archive(
         name = name,
         repository = "python/mypy",
-        # TODO(mwoehlke-kitware): switch to a tag >= v0.980.
-        commit = "7c6faf4c7a7bac6b126a30c5c61f5d209a4312c0",
-        sha256 = "f0ab4a26f0f75fc345865b17e4c21f34f13b7d9220eab663e96116dd326b9e48",  # noqa
+        commit = "f85dfa1b2533621094bc45b4263ea41fd3bc2e39",
+        sha256 = "68800395a9fbaba5494710d0a316eb1c7090cc5553ab53eb62219939e58a67fd",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

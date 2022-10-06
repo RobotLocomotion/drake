@@ -56,6 +56,7 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   /* Do the book-keeping. */
   reference_positions_.emplace(body_id, std::move(reference_position));
   body_id_to_geometry_id_.emplace(body_id, geometry_id);
+  body_ids_.emplace_back(body_id);
   return body_id;
 }
 
@@ -79,6 +80,20 @@ const VectorX<T>& DeformableModel<T>::GetReferencePositions(
     DeformableBodyId id) const {
   ThrowUnlessRegistered(__func__, id);
   return reference_positions_.at(id);
+}
+
+template <typename T>
+DeformableBodyId DeformableModel<T>::GetBodyId(
+    DeformableBodyIndex index) const {
+  this->ThrowIfSystemResourcesNotDeclared(__func__);
+  DRAKE_THROW_UNLESS(index.is_valid() && index < num_bodies());
+  return body_ids_[index];
+}
+
+template <typename T>
+GeometryId DeformableModel<T>::GetGeometryId(DeformableBodyId id) const {
+  ThrowUnlessRegistered(__func__, id);
+  return body_id_to_geometry_id_.at(id);
 }
 
 template <typename T>
@@ -160,6 +175,37 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
     model_state.tail(num_dofs) = default_fem_state->GetAccelerations();
     discrete_state_indexes_.emplace(
         deformable_id, this->DeclareDiscreteState(plant, model_state));
+  }
+
+  /* Declare the vertex position output port. */
+  vertex_positions_port_index_ =
+      this->DeclareAbstractOutputPort(
+              plant, "vertex_positions",
+              []() {
+                return AbstractValue::Make<
+                    geometry::GeometryConfigurationVector<T>>();
+              },
+              [this](const systems::Context<T>& context,
+                     AbstractValue* output) {
+                this->CopyVertexPositions(context, output);
+              },
+              {systems::System<double>::xd_ticket()})
+          .get_index();
+}
+
+template <typename T>
+void DeformableModel<T>::CopyVertexPositions(const systems::Context<T>& context,
+                                             AbstractValue* output) const {
+  auto& output_value =
+      output->get_mutable_value<geometry::GeometryConfigurationVector<T>>();
+  output_value.clear();
+  for (const auto& [body_id, geometry_id] : body_id_to_geometry_id_) {
+    const auto& fem_model = GetFemModel(body_id);
+    const int num_dofs = fem_model.num_dofs();
+    const auto& discrete_state_index = GetDiscreteStateIndex(body_id);
+    VectorX<T> vertex_positions =
+        context.get_discrete_state(discrete_state_index).value().head(num_dofs);
+    output_value.set_value(geometry_id, std::move(vertex_positions));
   }
 }
 

@@ -2,9 +2,14 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/manipulation/schunk_wsg/build_schunk_wsg_control.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_controller.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_driver.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_driver_functions.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 
@@ -43,6 +48,14 @@ PYBIND11_MODULE(schunk_wsg, m) {
             cls_doc.get_generalized_force_output_port.doc)
         .def("get_grip_force_output_port", &Class::get_grip_force_output_port,
             py_rvp::reference_internal, cls_doc.get_grip_force_output_port.doc);
+  }
+
+  {
+    using Class = manipulation::schunk_wsg::SchunkWsgController;
+    constexpr auto& cls_doc = doc.SchunkWsgController;
+    py::class_<Class, Diagram<double>>(m, "SchunkWsgController", cls_doc.doc)
+        .def(py::init<double, double, double>(), py::arg("kp") = 2000.,
+            py::arg("ki") = 0., py::arg("kd") = 5., cls_doc.ctor.doc);
   }
 
   {
@@ -101,7 +114,28 @@ PYBIND11_MODULE(schunk_wsg, m) {
   }
 
   {
+    using Class = manipulation::schunk_wsg::SchunkWsgDriver;
+    constexpr auto& cls_doc = doc.SchunkWsgDriver;
+    py::class_<Class> cls(m, "SchunkWsgDriver", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
     using T = double;
+
+    m.def("ApplyDriverConfig", &manipulation::schunk_wsg::ApplyDriverConfig,
+        py::arg("driver_config"), py::arg("model_instance_name"),
+        py::arg("sim_plant"), py::arg("models_from_directives"),
+        py::arg("lcms"), py::arg("builder"), doc.ApplyDriverConfig.doc);
+
+    m.def("BuildSchunkWsgControl",
+        &manipulation::schunk_wsg::BuildSchunkWsgControl, py::arg("plant"),
+        py::arg("wsg_instance"), py::arg("lcm"), py::arg("builder"),
+        py::arg("pid_gains") = std::nullopt, doc.BuildSchunkWsgControl.doc);
 
     m.def(
         "GetSchunkWsgOpenPosition",
@@ -117,6 +151,10 @@ PYBIND11_MODULE(schunk_wsg, m) {
               T>();
         },
         doc.MakeMultibodyStateToWsgStateSystem.doc);
+
+    m.def("MakeMultibodyForceToWsgForceSystem",
+        &manipulation::schunk_wsg::MakeMultibodyForceToWsgForceSystem<T>,
+        doc.MakeMultibodyForceToWsgForceSystem.doc);
   }
 }
 

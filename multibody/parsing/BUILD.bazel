@@ -195,6 +195,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":detail_misc",
+        ":detail_parsing_workspace",
         ":scoped_names",
         "//multibody/plant",
         "@fmt",
@@ -211,6 +212,20 @@ drake_cc_library(
         ":package_map",
         "//common:diagnostic_policy",
         "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_select_parser",
+    srcs = ["detail_select_parser.cc"],
+    hdrs = ["detail_select_parser.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":detail_mujoco_parser",
+        ":detail_parsing_workspace",
+        ":detail_sdf_parser",
+        ":detail_urdf_parser",
     ],
 )
 
@@ -236,10 +251,8 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
-        ":detail_mujoco_parser",
         ":detail_parsing_workspace",
-        ":detail_sdf_parser",
-        ":detail_urdf_parser",
+        ":detail_select_parser",
         "//common:filesystem",
     ],
 )
@@ -279,6 +292,7 @@ drake_cc_library(
     ],
     deps = [
         ":detail_misc",
+        ":detail_parsing_workspace",
         ":scoped_names",
         "//common:diagnostic_policy",
         "//common:filesystem",
@@ -435,6 +449,14 @@ drake_cc_googletest(
     name = "detail_common_test",
     deps = [
         ":detail_misc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_select_parser_test",
+    deps = [
+        ":detail_select_parser",
+        ":diagnostic_policy_test_base",
     ],
 )
 

@@ -499,10 +499,18 @@ class Meshcat {
   //@{
 
   /** Adds a button with the label `name` to the meshcat browser controls GUI.
-   If the button already existed, then resets its click count to zero instead.
-   @throws std::exception if `name` has already been added as any other type
-   of control (e.g., slider). */
-  void AddButton(std::string name);
+   If the optional @p keycode is set to a javascript string key code (such as
+   "KeyG" or "ArrowLeft", see
+   https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_code_values),
+   then a keydown callback is registered in the GUI which will also `click` the
+   button. If the button already existed, then resets its click count to zero;
+   and sets the keycode if no keycode was set before.
+
+   @throws std::exception if `name` has already been added as any other type of
+   control (e.g., slider).
+   @throw std::exception if a button of the same `name` has already been
+   assigned a different keycode. */
+  void AddButton(std::string name, std::string keycode = "");
 
   /** Returns the number of times the button `name` has been clicked in the
    GUI, from the time that it was added to `this`.  If multiple browsers are
@@ -518,11 +526,18 @@ class Meshcat {
    The slider range is given by [`min`, `max`]. `step` is the smallest
    increment by which the slider can change values (and therefore send updates
    back to this Meshcat instance). `value` specifies the initial value; it will
-   be truncated to the slider range and rounded to the nearest increment.
+   be truncated to the slider range and rounded to the nearest increment. If
+   the optional @p decrement_keycode or @p increment_keycode are set to a
+   javascript string key code (such as "KeyG" or "ArrowLeft", see
+   https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_code_values),
+   then keydown callbacks will be registered in the GUI that will move the
+   slider by @p step (within the limits) when those buttons are pressed.
+
    @throws std::exception if `name` has already been added as any type of
    control (e.g., either button or slider). */
   void AddSlider(std::string name, double min, double max, double step,
-                 double value);
+                 double value, std::string decrement_keycode = "",
+                 std::string increment_keycode = "");
 
   /** Sets the current `value` of the slider `name`. `value` will be truncated
    to the slider range and rounded to the nearest increment specified by the

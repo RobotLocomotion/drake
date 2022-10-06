@@ -363,19 +363,6 @@ solvers::Binding<solvers::LinearConstraint>
 GlobalInverseKinematics::AddWorldPositionConstraint(
     BodyIndex body_idx, const Eigen::Vector3d& p_BQ,
     const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
-    const Eigen::Isometry3d& X_WF) {
-  const Vector3<Expression> body_pt_pos =
-      p_WBo_[body_idx] + R_WB_[body_idx] * p_BQ;
-  const Vector3<Expression> body_pt_in_measured_frame =
-      X_WF.linear().transpose() * (body_pt_pos - X_WF.translation());
-  return prog_.AddLinearConstraint(body_pt_in_measured_frame, box_lb_F,
-                                   box_ub_F);
-}
-
-solvers::Binding<solvers::LinearConstraint>
-GlobalInverseKinematics::AddWorldPositionConstraint(
-    BodyIndex body_idx, const Eigen::Vector3d& p_BQ,
-    const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
     const RigidTransformd& X_WF) {
   if (body_idx >= plant_.num_bodies() || body_idx <= 0) {
     throw std::runtime_error("body index out of range.");

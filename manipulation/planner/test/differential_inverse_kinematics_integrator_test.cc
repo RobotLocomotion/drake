@@ -74,7 +74,7 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, BasicTest) {
       discrete_state->get_vector(1).GetAtIndex(0),
       static_cast<double>(DifferentialInverseKinematicsStatus::kSolutionFound));
 
-  params.set_timestep(time_step);  // intentionally set this after diff_ik call
+  params.set_time_step(time_step);  // intentionally set this after diff_ik call
   DifferentialInverseKinematicsResult result = DoDifferentialInverseKinematics(
       *robot, *robot_context, X_WE_desired, frame_E, params);
 
@@ -91,6 +91,7 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, BasicTest) {
   const auto b = Eigen::VectorXd::Zero(A.rows());
   diff_ik.get_mutable_parameters().AddLinearVelocityConstraint(
       std::make_shared<solvers::LinearConstraint>(A, b, b));
+  Eigen::VectorXd last_q = robot->GetPositions(*robot_context);
   for (const auto& [data, events] : diff_ik.GetPeriodicEvents()) {
     dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
         ->handle(diff_ik, *diff_ik_context, discrete_state.get());
@@ -98,6 +99,8 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, BasicTest) {
   EXPECT_EQ(discrete_state->get_vector(1).GetAtIndex(0),
             static_cast<double>(
                 DifferentialInverseKinematicsStatus::kStuck));
+  // kStuck does *not* imply that the positions will not advance.
+  EXPECT_FALSE(CompareMatrices(discrete_state->get_value(0), last_q, 1e-12));
 }
 
 GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, ParametersTest) {
@@ -112,9 +115,9 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, ParametersTest) {
   DifferentialInverseKinematicsIntegrator diff_ik(
       *robot, frame_E, time_step, params);
 
-  EXPECT_EQ(diff_ik.get_parameters().get_timestep(), time_step);
-  diff_ik.get_mutable_parameters().set_timestep(0.2);
-  EXPECT_EQ(diff_ik.get_parameters().get_timestep(), 0.2);
+  EXPECT_EQ(diff_ik.get_parameters().get_time_step(), time_step);
+  diff_ik.get_mutable_parameters().set_time_step(0.2);
+  EXPECT_EQ(diff_ik.get_parameters().get_time_step(), 0.2);
 }
 
 // Confirm that we can act like a difference equation system when the warning

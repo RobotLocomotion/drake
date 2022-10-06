@@ -185,10 +185,10 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
   MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromFile("acrobot.foo"),
-      ".*file type '\\.foo' is not supported .*");
+      ".*file.*\\.foo.* is not.*recognized.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddAllModelsFromFile("acrobot.foo"),
-      ".*file type '\\.foo' is not supported .*");
+      ".*file.*\\.foo.* is not.*recognized.*");
 
   // Uppercase extensions are accepted (i.e., still call the underlying SDF or
   // URDF parser, shown here by it generating a different exception message).
@@ -217,7 +217,7 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   // Unknown extension is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromString("<bad/>", "weird-ext"),
-      ".*file type '\\.weird-ext' is not supported .*");
+      ".*file.*\\.weird-ext.* is not.*recognized.*");
 }
 
 // If a non-Drake URDF or SDF file uses package URIs, this confirms that it is

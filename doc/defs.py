@@ -12,7 +12,9 @@ import shlex
 import shutil
 import subprocess
 from subprocess import PIPE, STDOUT
+import sys
 import tempfile
+import traceback
 
 from bazel_tools.tools.python.runfiles import runfiles
 
@@ -134,6 +136,18 @@ class _HttpHandler(SimpleHTTPRequestHandler):
         pass
 
 
+def _on_server_error(server, *_):
+    """An implementation of socketserver.BaseServer.handle_error that ignores
+    expected errors.
+    """
+    exception = sys.exc_info()[1]
+    if isinstance(exception, ConnectionError):
+        # These are expected errors when the browser closes the connection.
+        return
+    # Other errors would be unexpected, so print them.
+    traceback.print_exc()
+
+
 def _do_preview(*, build, subdir, port):
     """Implements the "serve" (http) mode of main().
 
@@ -168,6 +182,7 @@ def _do_preview(*, build, subdir, port):
         print("Use Ctrl-C to exit.")
         ThreadingTCPServer.allow_reuse_address = True
         server = ThreadingTCPServer(("127.0.0.1", port), _HttpHandler)
+        server.handle_error = _on_server_error
         try:
             server.serve_forever()
         except KeyboardInterrupt:

@@ -398,6 +398,7 @@ class TestGeometryOptimization(unittest.TestCase):
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
         options = mut.IrisOptions()
+        options.num_collision_infeasible_samples = 3
         ik = InverseKinematics(plant)
         options.prog_with_additional_constraints = ik.prog()
         options.num_additional_constraint_infeasible_samples = 2
@@ -420,6 +421,9 @@ class TestGeometryOptimization(unittest.TestCase):
         options.rounding_seed = 1
         options.solver = ClpSolver()
         options.solver_options = SolverOptions()
+        options.solver_options.SetOption(ClpSolver.id(), "scaling", 2)
+        self.assertIn("scaling",
+                      options.solver_options.GetOptions(ClpSolver.id()))
         self.assertIn("convex_relaxation", repr(options))
 
         spp = mut.GraphOfConvexSets()

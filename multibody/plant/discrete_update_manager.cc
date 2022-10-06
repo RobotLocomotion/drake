@@ -9,6 +9,17 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
+    std::string description, systems::ValueProducer value_producer,
+    std::set<systems::DependencyTicket> prerequisites_of_calc) {
+  DRAKE_DEMAND(mutable_plant_ != nullptr);
+  DRAKE_DEMAND(mutable_plant_ == plant_);
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::DeclareCacheEntry(
+      mutable_plant_, std::move(description), std::move(value_producer),
+      std::move(prerequisites_of_calc));
+}
+
+template <typename T>
 std::unique_ptr<DiscreteUpdateManager<double>>
 DiscreteUpdateManager<T>::CloneToDouble() const {
   throw std::logic_error(
@@ -53,17 +64,6 @@ const MultibodyTree<T>& DiscreteUpdateManager<T>::internal_tree() const {
 }
 
 template <typename T>
-systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
-    std::string description, systems::ValueProducer value_producer,
-    std::set<systems::DependencyTicket> prerequisites_of_calc) {
-  DRAKE_DEMAND(mutable_plant_ != nullptr);
-  DRAKE_DEMAND(mutable_plant_ == plant_);
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::DeclareCacheEntry(
-      mutable_plant_, std::move(description), std::move(value_producer),
-      std::move(prerequisites_of_calc));
-}
-
-template <typename T>
 const contact_solvers::internal::ContactSolverResults<T>&
 DiscreteUpdateManager<T>::EvalContactSolverResults(
     const systems::Context<T>& context) const {
@@ -80,28 +80,11 @@ DiscreteUpdateManager<T>::EvalContactJacobians(
 }
 
 template <typename T>
-const std::vector<internal::DiscreteContactPair<T>>&
-DiscreteUpdateManager<T>::EvalDiscreteContactPairs(
-    const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::EvalDiscreteContactPairs(plant(), context);
-}
-
-template <typename T>
 const std::vector<geometry::ContactSurface<T>>&
 DiscreteUpdateManager<T>::EvalContactSurfaces(
     const systems::Context<T>& context) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalContactSurfaces(
       plant(), context);
-}
-
-template <typename T>
-std::vector<CoulombFriction<double>>
-DiscreteUpdateManager<T>::CalcCombinedFrictionCoefficients(
-    const systems::Context<T>& context,
-    const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::CalcCombinedFrictionCoefficients(plant(), context, contact_pairs);
 }
 
 template <typename T>

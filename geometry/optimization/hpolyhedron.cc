@@ -224,7 +224,7 @@ HPolyhedron HPolyhedron::Intersection(const HPolyhedron& other,
 
 VectorXd HPolyhedron::UniformSample(
     RandomGenerator* generator,
-    const Eigen::Ref<Eigen::VectorXd>& previous_sample) const {
+    const Eigen::Ref<const Eigen::VectorXd>& previous_sample) const {
   std::normal_distribution<double> gaussian;
   // Choose a random direction.
   VectorXd direction(ambient_dimension());
@@ -232,7 +232,8 @@ VectorXd HPolyhedron::UniformSample(
     direction[i] = gaussian(*generator);
   }
   // Find max and min θ subject to
-  //   A(previous_sample + θ*direction) ≤ b.
+  //   A(previous_sample + θ*direction) ≤ b,
+  // aka ∀i, θ * (A * direction)[i] ≤ (b - A * previous_sample)[i].
   VectorXd line_b = b_ - A_ * previous_sample;
   VectorXd line_a = A_ * direction;
   double theta_max = std::numeric_limits<double>::infinity();
@@ -244,12 +245,14 @@ VectorXd HPolyhedron::UniformSample(
       theta_max = std::min(theta_max, line_b[i] / line_a[i]);
     }
   }
-  if (std::isinf(theta_max) || std::isinf(theta_min)) {
-    throw std::invalid_argument(
+  if (std::isinf(theta_max) || std::isinf(theta_min) || theta_max < theta_min) {
+    throw std::invalid_argument(fmt::format(
         "The Hit and Run algorithm failed to find a feasible point in the set. "
-        "The `previous_sample` must be in the set.");
+        "The `previous_sample` must be in the set.\nmax(A * previous_sample - "
+        "b) = {}",
+        (A_ * previous_sample - b_).maxCoeff()));
   }
-  // Now pick θ uniformly from [θ_min, θ_max].
+  // Now pick θ uniformly from [θ_min, θ_max).
   std::uniform_real_distribution<double> uniform_theta(theta_min, theta_max);
   const double theta = uniform_theta(*generator);
   // The new sample is previous_sample + θ * direction.

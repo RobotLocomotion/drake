@@ -92,6 +92,12 @@ void ApplyVisualizationConfig(
     }
   }
   DRAKE_DEMAND(lcm != nullptr);
+  // N.B. The "a plant is required" precondition for ApplyVisualizationConfig
+  // stems from the fact that we need to future-proof ourselves in case we
+  // decide to add more kinds of visualization features by default, e.g., if
+  // we decide to visualize properties of rigid bodies (e.g., their mass),
+  // then we'll need the plant, not just the scene graph. Establishing the
+  // precondition now means we won't break users down the road when we add that.
   if (plant == nullptr) {
     plant = DowncastSubsystem<MultibodyPlant>(builder, "plant");
   }
