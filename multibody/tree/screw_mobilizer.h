@@ -48,17 +48,16 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
                           revolute joint, i.e. producing zero translation for
                           any value of the generalized coordinate. */
   ScrewMobilizer(const Frame<T>& inboard_frame_F,
-                 const Frame<T>& outboard_frame_M,
-                 double screw_pitch)
-      : MobilizerBase(inboard_frame_F, outboard_frame_M)
-      , screw_pitch_(screw_pitch) {}
+                 const Frame<T>& outboard_frame_M, double screw_pitch)
+      : MobilizerBase(inboard_frame_F, outboard_frame_M),
+        screw_pitch_(screw_pitch) {}
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
-  bool can_rotate() const final    { return true; }
+  bool can_rotate() const final { return true; }
   bool can_translate() const final { return true; }
 
   /* @returns the screw pitch, which is used to relate rotational
@@ -83,16 +82,15 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    @returns A constant reference to `this` mobilizer.
    @throws std::exception if the screw_pitch is very near zero and
            |translation| > kEpsilon. */
-  const ScrewMobilizer<T>& set_translation(
-      systems::Context<T>* context,
-      const T& translation) const;
+  const ScrewMobilizer<T>& set_translation(systems::Context<T>* context,
+                                           const T& translation) const;
 
   /* Retrieves from `context` the angle θ which describes the orientation for
    `this` mobilizer as documented in this class's documentation.
 
    @param[in] context The context of the model this mobilizer belongs to.
    @returns The angle θ of the mobilizer. */
-  T get_angle(const systems::Context<T>& context) const;
+  const T& get_angle(const systems::Context<T>& context) const;
 
   /* Sets in `context` the orientation for `this` mobilizer to the angle θ
    provided by the input argument `angle`.
@@ -101,7 +99,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    @param[in] angle The desired angle in radians.
    @returns a constant reference to `this` mobilizer. */
   const ScrewMobilizer<T>& set_angle(systems::Context<T>* context,
-                                      const T& angle) const;
+                                     const T& angle) const;
 
   /* Retrieves from `context` the rate of change, in meters per second, of
    `this` mobilizer's translation (see get_translation()).
@@ -120,15 +118,14 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    @returns A constant reference to `this` mobilizer.
    @throws std::exception if the screw_pitch is very near zero and
            |vz| > kEpsilon. */
-  const ScrewMobilizer<T>& set_translation_rate(
-      systems::Context<T>* context,
-      const T& vz) const;
+  const ScrewMobilizer<T>& set_translation_rate(systems::Context<T>* context,
+                                                const T& vz) const;
 
   /* Retrieves from `context` the rate of change, in radians per second, of
    `this` mobilizer's angle (see get_angle()).
    @param[in] context The context of the model this mobilizer belongs to.
    @returns The rate of change of `this` mobilizer's angle. */
-  T get_angular_rate(const systems::Context<T>& context) const;
+  const T& get_angular_rate(const systems::Context<T>& context) const;
 
   /* Sets in `context` the rate of change, in radians per second, of `this`
    mobilizer's angle (see angle()) to `theta_dot`.
@@ -137,7 +134,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
                         in radians per second.
    @returns A constant reference to `this` mobilizer. */
   const ScrewMobilizer<T>& set_angular_rate(systems::Context<T>* context,
-                                             const T& theta_dot) const;
+                                            const T& theta_dot) const;
 
   /* Computes the across-mobilizer transform `X_FM(q)` between the inboard
    frame F and the outboard frame M as a function of the configuration q stored
@@ -227,21 +224,20 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   const double screw_pitch_;
 };
 
-  /* `get_screw_translation_from_rotation`,
-   `get_screw_rotation_from_translation` are used for position, velocity,
-   and acceleration conversions.  All of these are governed by
-   the same relation, depended on the `screw_pitch` of a screw mobilizer. */
+/* `get_screw_translation_from_rotation`,
+ `get_screw_rotation_from_translation` are used for position, velocity,
+ and acceleration conversions.  All of these are governed by
+ the same relation, depended on the `screw_pitch` of a screw mobilizer. */
 template <typename T>
 inline T get_screw_translation_from_rotation(const T& theta,
                                              double screw_pitch) {
-  const T revolution_amount{theta / (2 * M_PI)};
+  T revolution_amount{theta / (2 * M_PI)};
   return screw_pitch * revolution_amount;
 }
 
 template <typename T>
-inline T get_screw_rotation_from_translation(const T& z,
-                                             double screw_pitch) {
-  const T revolution_amount{z / screw_pitch};
+inline T get_screw_rotation_from_translation(const T& z, double screw_pitch) {
+  T revolution_amount{z / screw_pitch};
   return revolution_amount * 2 * M_PI;
 }
 

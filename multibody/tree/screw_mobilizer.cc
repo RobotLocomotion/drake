@@ -31,8 +31,7 @@ double ScrewMobilizer<T>::screw_pitch() const {
 }
 
 template <typename T>
-T ScrewMobilizer<T>::get_translation(
-    const systems::Context<T>& context) const {
+T ScrewMobilizer<T>::get_translation(const systems::Context<T>& context) const {
   auto q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
   return get_screw_translation_from_rotation(q[0], screw_pitch_);
@@ -53,11 +52,11 @@ const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation(
 }
 
 template <typename T>
-T ScrewMobilizer<T>::get_angle(
+const T& ScrewMobilizer<T>::get_angle(
     const systems::Context<T>& context) const {
   auto q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  return q[0];
+  return q.coeffRef(0);
 }
 
 template <typename T>
@@ -92,11 +91,11 @@ const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation_rate(
 }
 
 template <typename T>
-T ScrewMobilizer<T>::get_angular_rate(
+const T& ScrewMobilizer<T>::get_angular_rate(
     const systems::Context<T>& context) const {
   auto v = this->get_velocities(context);
   DRAKE_ASSERT(v.size() == kNv);
-  return v[0];
+  return v.coeffRef(0);
 }
 
 template <typename T>
