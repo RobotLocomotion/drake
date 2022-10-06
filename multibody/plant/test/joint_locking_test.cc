@@ -19,6 +19,7 @@ namespace drake {
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RigidTransformd;
+using math::RotationMatrix;
 using systems::Context;
 using systems::Simulator;
 
@@ -37,9 +38,7 @@ class MultibodyPlantTester {
 namespace {
 
 const double kTimestep = 0.01;
-// Allow 6 bits of error.
-const double kEps = (1 << 6) * std::numeric_limits<double>::epsilon();
-const int kNumTimesteps = 100;
+const double kElbowPosition = 0.3;
 
 // Set up a plant with 2 trees, one tree having a single floating body, the
 // second tree a serial chain of two bodies attached to each other and world by
@@ -180,11 +179,11 @@ INSTANTIATE_TEST_SUITE_P(IndexPermutations, JointLockingTest,
 
 // Create a plant with a XZ-planar double pendulum where the masses are
 // concentrated at the lower ends of the two links. The 0-configuration has the
-// upper arm sticking out horizontally in the x direction and the longer lower
-// arm oriented in the (0.1, 0, 0.1) direction from the end of the upper arm. If
-// the `weld_elbow` parameter is true, then the revolute joint between bodies
-// `upper_arm` and `lower_arm` is replaced with a fixed weld at the
-// 0-configuration.
+// upper arm sticking out horizontally at (-0.1, 0, 0) and the longer lower
+// arm placed at (-0.1, 0, 0.0) relative to the upper arm's frame. If the
+// `weld_elbow` parameter is true, then the revolute joint between bodies
+// `upper_arm` and `lower_arm` is replaced with a fixed weld corresponding to
+// the configuration (0, kElbowPosition) in the model with two joints.
 std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
     bool weld_elbow) {
   std::unique_ptr<MultibodyPlant<double>> plant;
@@ -201,10 +200,12 @@ std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
 
   if (weld_elbow) {
     plant->WeldFrames(body1.body_frame(), body2.body_frame(),
-                      RigidTransformd(Vector3d(-0.1, 0, -0.1)));
+                      RigidTransformd(Vector3d(-0.1 * cos(kElbowPosition),
+                                                0.0,
+                                                0.1 * sin(kElbowPosition))));
   } else {
     plant->AddJoint<RevoluteJoint>("elbow", body1, {}, body2,
-                                   RigidTransformd(Vector3d(0.1, 0, 0.1)),
+                                   RigidTransformd(Vector3d(0.1, 0, 0.0)),
                                    Vector3d::UnitY());
   }
   plant->Finalize();
@@ -213,11 +214,18 @@ std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
 
 // To verify that the physical behavior of a locked joint is identical to a weld
 // joint, we construct two plants. Each plant consists of a double pendulum with
-// the shoulder welded to the world. The elbow joint of `plant_welded` is a
-// WeldJoint fixed at the 0-configuration. The elbow joint of `plant_locked` is
-// a revolute joint that has been locked at the 0-configuration. We verify that
-// the generalized accelerations,
-GTEST_TEST(JointLockingTest, AccelerationTest) {
+// the shoulder welded to the world. The elbow joint of `plant_welded` is
+// replaced with a WeldJoint fixed at configuration (0, kElbowPosition). The
+// elbow joint of `plant_locked` is a revolute joint that has been locked at the
+// configuration (0, kElbowPosition). We verify that the generalized
+// accelerations, velocities and positions match to a given accuracy at each
+// timestep.
+GTEST_TEST(JointLockingTest, TrajectoryTest) {
+  // Allow 2 digits of precision loss to account for roundoff differences
+  // between the two code paths. This value was determined empircally by
+  // observing the maximum error between the two trajectories.
+  const double kEps = 1e2 * std::numeric_limits<double>::epsilon();
+  const int kNumTimesteps = 100;
   auto plant_welded = MakeDoublePendulumPlant(true);
   auto plant_locked = MakeDoublePendulumPlant(false);
 
@@ -226,11 +234,13 @@ GTEST_TEST(JointLockingTest, AccelerationTest) {
   std::unique_ptr<systems::Context<double>> context_locked =
       plant_locked->CreateDefaultContext();
 
-  // Lock the elbow in the unwelded plant
-  plant_locked->GetJointByName<RevoluteJoint>("elbow").Lock(
-      context_locked.get());
+  // Lock the elbow in the unwelded plant.
+  const RevoluteJoint<double>& elbow =
+      plant_locked->GetJointByName<RevoluteJoint>("elbow");
+  elbow.set_angle(context_locked.get(), kElbowPosition);
+  elbow.Lock(context_locked.get());
 
-  // Sanity check
+  // Sanity check.
   ASSERT_EQ(plant_welded->num_velocities(), 1);
   ASSERT_EQ(plant_locked->num_velocities(), 2);
 
@@ -259,8 +269,8 @@ GTEST_TEST(JointLockingTest, AccelerationTest) {
         plant_locked->GetJointByName<RevoluteJoint>("shoulder")
             .velocity_start();
 
-    // The welded plant has only one dof which corresponds to dof 0 of the
-    // locked plant. Their accelerations should match.
+    // The welded plant has only one dof, shoulder. The acceleration of each
+    // plant at the corresponding dof should match.
     const auto welded_accelerations =
         plant_welded->get_generalized_acceleration_output_port().Eval(
             welded_context);
@@ -269,15 +279,15 @@ GTEST_TEST(JointLockingTest, AccelerationTest) {
             locked_context);
     EXPECT_NEAR(welded_accelerations[shoulder_index_welded],
                 locked_accelerations[shoulder_index_locked], kEps);
-    // The welded dof should have 0 acceleration.
+    // The locked elbow dof should have 0 acceleration.
     int elbow_index_locked =
         plant_locked->GetJointByName<RevoluteJoint>("elbow").velocity_start();
     EXPECT_EQ(locked_accelerations[elbow_index_locked], 0);
 
     // Check that the velocities and positions of corresponding dofs match.
-    const auto welded_positions_and_velocities =
+    Eigen::VectorBlock<const VectorX<double>> welded_positions_and_velocities =
         plant_welded->GetPositionsAndVelocities(welded_context);
-    const auto locked_positions_and_velocities =
+    Eigen::VectorBlock<const VectorX<double>> locked_positions_and_velocities =
         plant_locked->GetPositionsAndVelocities(locked_context);
 
     EXPECT_NEAR(welded_positions_and_velocities[shoulder_index_welded],
@@ -288,8 +298,10 @@ GTEST_TEST(JointLockingTest, AccelerationTest) {
                                                 shoulder_index_locked],
                 kEps);
 
-    // Position and velocity of the locked joint should be identically 0.
-    EXPECT_EQ(locked_positions_and_velocities[elbow_index_locked], 0);
+    // Position of the locked joint should be identically kElbowPosition.
+    // Velocity of the locked joint should be identically 0.
+    EXPECT_EQ(locked_positions_and_velocities[elbow_index_locked],
+              kElbowPosition);
     EXPECT_EQ(locked_positions_and_velocities[plant_locked->num_positions() +
                                               elbow_index_locked],
               0);
