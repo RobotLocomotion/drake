@@ -42,6 +42,7 @@ drake_cc_package_library(
     deps = [
         ":model_directives",
         ":model_instance_info",
+        ":multibody_plant_copying",
         ":package_map",
         ":parser",
         ":process_model_directives",
@@ -137,8 +138,8 @@ drake_cc_library(
     name = "detail_multibody_plant_subgraph",
     srcs = ["detail_multibody_plant_subgraph.cc"],
     hdrs = ["detail_multibody_plant_subgraph.h"],
-    tags = ["exclude_from_package"],
-    visibility = ["//visibility:public"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":detail_misc",
         ":scoped_names",
@@ -317,6 +318,16 @@ drake_cc_library(
     deps = [
         "//common:diagnostic_policy",
         "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_plant_copying",
+    srcs = ["multibody_plant_copying.cc"],
+    hdrs = ["multibody_plant_copying.h"],
+    deps = [
+        ":detail_multibody_plant_subgraph",
+        "//multibody/plant",
     ],
 )
 
