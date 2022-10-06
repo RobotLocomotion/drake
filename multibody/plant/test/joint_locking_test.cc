@@ -39,6 +39,7 @@ namespace {
 
 const double kTimestep = 0.01;
 const double kElbowPosition = 0.3;
+const double kArmLength = 0.1;
 
 // Set up a plant with 2 trees, one tree having a single floating body, the
 // second tree a serial chain of two bodies attached to each other and world by
@@ -179,8 +180,8 @@ INSTANTIATE_TEST_SUITE_P(IndexPermutations, JointLockingTest,
 
 // Create a plant with a XZ-planar double pendulum where the masses are
 // concentrated at the lower ends of the two links. The 0-configuration has the
-// upper arm sticking out horizontally at (-0.1, 0, 0) and the longer lower
-// arm placed at (-0.1, 0, 0.0) relative to the upper arm's frame. If the
+// upper arm sticking out horizontally at (-kArmLength, 0, 0) and the lower
+// arm placed at (-kArmLength, 0, 0.0) relative to the upper arm's frame. If the
 // `weld_elbow` parameter is true, then the revolute joint between bodies
 // `upper_arm` and `lower_arm` is replaced with a fixed weld corresponding to
 // the configuration (0, kElbowPosition) in the model with two joints.
@@ -195,18 +196,18 @@ std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
       plant->AddRigidBody("lower_arm", SpatialInertia<double>::MakeUnitary());
 
   plant->AddJoint<RevoluteJoint>("shoulder", plant->world_body(), {}, body1,
-                                 RigidTransformd(Vector3d(0.1, 0, 0)),
+                                 RigidTransformd(Vector3d(kArmLength, 0, 0)),
                                  Vector3d::UnitY());
 
   if (weld_elbow) {
-    plant->WeldFrames(body1.body_frame(), body2.body_frame(),
-                      RigidTransformd(Vector3d(-0.1 * cos(kElbowPosition),
-                                                0.0,
-                                                0.1 * sin(kElbowPosition))));
+    plant->WeldFrames(
+        body1.body_frame(), body2.body_frame(),
+        RigidTransformd(Vector3d(-kArmLength * cos(kElbowPosition), 0.0,
+                                  kArmLength * sin(kElbowPosition))));
   } else {
-    plant->AddJoint<RevoluteJoint>("elbow", body1, {}, body2,
-                                   RigidTransformd(Vector3d(0.1, 0, 0.0)),
-                                   Vector3d::UnitY());
+    plant->AddJoint<RevoluteJoint>(
+        "elbow", body1, {}, body2,
+        RigidTransformd(Vector3d(kArmLength, 0, 0.0)), Vector3d::UnitY());
   }
   plant->Finalize();
   return plant;
