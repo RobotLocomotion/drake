@@ -871,6 +871,7 @@ drake_cc_googletest(
     name = "joint_locking_test",
     deps = [
         ":plant",
+        "//systems/analysis:simulator",
     ],
 )
 
