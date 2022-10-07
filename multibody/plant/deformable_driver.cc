@@ -16,6 +16,7 @@ using drake::geometry::GeometryId;
 using drake::geometry::internal::ContactParticipation;
 using drake::geometry::internal::DeformableContact;
 using drake::geometry::internal::DeformableContactSurface;
+using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
 using drake::multibody::fem::FemModel;
 using drake::multibody::fem::FemState;
@@ -369,8 +370,26 @@ void DeformableDriver<T>::AppendContactKinematics(
 }
 
 template <typename T>
-DeformableDriver<T>::Multiplexer::Multiplexer(std::vector<int> sizes)
-    : sizes_(std::move(sizes)) {
+void DeformableDriver<T>::CalcDiscreteStates(
+    const systems::Context<T>& context,
+    systems::DiscreteValues<T>* next_states) const {
+  const int num_bodies = deformable_model_->num_bodies();
+  for (DeformableBodyIndex index(0); index < num_bodies; ++index) {
+    const FemState<T>& next_fem_state = EvalNextFemState(context, index);
+    const int num_dofs = next_fem_state.num_dofs();
+    // Update the discrete values.
+    VectorX<T> discrete_value(num_dofs * 3);
+    discrete_value.head(num_dofs) = next_fem_state.GetPositions();
+    discrete_value.segment(num_dofs, num_dofs) = next_fem_state.GetVelocities();
+    discrete_value.tail(num_dofs) = next_fem_state.GetAccelerations();
+    const DeformableBodyId id = deformable_model_->GetBodyId(index);
+    next_states->set_value(deformable_model_->GetDiscreteStateIndex(id),
+                           discrete_value);
+  }
+}
+
+template <typename T>
+Multiplexer<T>::Multiplexer(std::vector<int> sizes) : sizes_(std::move(sizes)) {
   DRAKE_THROW_UNLESS(!sizes_.empty());
   DRAKE_THROW_UNLESS(sizes_[0] >= 0);
   offsets_.resize(num_vectors());
@@ -383,8 +402,7 @@ DeformableDriver<T>::Multiplexer::Multiplexer(std::vector<int> sizes)
 }
 
 template <typename T>
-VectorX<T> DeformableDriver<T>::Multiplexer::Multiplex(
-    std::vector<VectorX<T>>&& inputs) const {
+VectorX<T> Multiplexer<T>::Multiplex(std::vector<VectorX<T>>&& inputs) const {
   VectorX<T> result(num_entries_);
   DRAKE_THROW_UNLESS(static_cast<int>(inputs.size()) == num_vectors());
   for (int i = 0; i < num_vectors(); ++i) {
@@ -398,12 +416,24 @@ VectorX<T> DeformableDriver<T>::Multiplexer::Multiplex(
 }
 
 template <typename T>
-VectorX<T> DeformableDriver<T>::Multiplexer::Demultiplex(
-    const VectorX<T>& input, int index) const {
+Eigen::Ref<const VectorX<T>> Multiplexer<T>::Demultiplex(
+    const Eigen::Ref<const VectorX<T>>& input, int index) const {
   DRAKE_THROW_UNLESS(0 <= index && index < num_vectors());
   DRAKE_THROW_UNLESS(input.size() == num_entries_);
-  const VectorX<T> result = input.segment(offsets_[index], sizes_[index]);
-  return result;
+  /* We prefer Eigen::Ref<const VectorX<T>> to Eigen::VectorBlock<const
+   Eigen::Ref<const VectorX<T>>> for readability. */
+  return input.segment(offsets_[index], sizes_[index]);
+}
+
+template <typename T>
+Eigen::Ref<VectorX<T>> Multiplexer<T>::Demultiplex(EigenPtr<VectorX<T>> input,
+                                                   int index) const {
+  DRAKE_THROW_UNLESS(0 <= index && index < num_vectors());
+  DRAKE_THROW_UNLESS(input->size() == num_entries_);
+  /* We prefer Eigen::Ref<VectorX<T>> to
+   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> for readability and encapsulation
+   of the implementation of EigenPtr. */
+  return input->segment(offsets_[index], sizes_[index]);
 }
 
 template <typename T>
@@ -463,12 +493,62 @@ template <typename T>
 void DeformableDriver<T>::CalcNextFemState(const systems::Context<T>& context,
                                            DeformableBodyIndex index,
                                            FemState<T>* next_fem_state) const {
-  // TODO(xuchenhan-tri): Update this implementation to include the effect of
-  // contact and constraints.
-  const FemState<T>& free_motion_state = EvalFreeMotionFemState(context, index);
-  next_fem_state->SetPositions(free_motion_state.GetPositions());
-  next_fem_state->SetVelocities(free_motion_state.GetVelocities());
-  next_fem_state->SetAccelerations(free_motion_state.GetAccelerations());
+  const DeformableContact<T>& contact_data = EvalDeformableContact(context);
+  const GeometryId g_id =
+      deformable_model_->GetGeometryId(deformable_model_->GetBodyId(index));
+  const ContactParticipation& participation =
+      contact_data.contact_participation(g_id);
+  if (participation.num_vertices_in_contact() == 0) {
+    // TODO(xuchenhan-tri): Account for constraints when we support them.
+    /* The next states are the free motion states if no vertex of the
+     deformable body participates in contact. */
+    const FemState<T>& free_motion_state =
+        EvalFreeMotionFemState(context, index);
+    next_fem_state->SetPositions(free_motion_state.GetPositions());
+    next_fem_state->SetVelocities(free_motion_state.GetVelocities());
+    next_fem_state->SetAccelerations(free_motion_state.GetAccelerations());
+  } else {
+    const ContactSolverResults<T>& results =
+        manager_->EvalContactSolverResults(context);
+    /* Get the next time step velocities and free motion velocities for *all*
+     participating deformable dofs (belonging to *all* deformable bodies). */
+    const int num_participating_dofs =
+        results.v_next.size() - manager_->plant().num_velocities();
+    const auto participating_v_next =
+        results.v_next.tail(num_participating_dofs);
+    const VectorX<T>& participating_v_star =
+        EvalParticipatingFreeMotionVelocities(context);
+    /* The next time step velocities and free motion velocities for *this*
+     body. */
+    const Multiplexer<T>& mux = EvalParticipatingVelocityMultiplexer(context);
+    const Eigen::Ref<const VectorX<T>> body_participating_v_star =
+        mux.Demultiplex(participating_v_star, index);
+    const Eigen::Ref<const VectorX<T>> body_participating_v_next =
+        mux.Demultiplex(participating_v_next, index);
+    const VectorX<T> body_participating_dv =
+        body_participating_v_next - body_participating_v_star;
+    /* Compute the value of the post-constraint non-participating
+     velocities using Schur complement. */
+    const SchurComplement<T>& schur_complement =
+        EvalFreeMotionTangentMatrixSchurComplement(context, index);
+    const VectorX<T> body_nonparticipating_dv =
+        schur_complement.SolveForY(body_participating_dv);
+    /* Concatenate the participating and non-participating velocities and
+     then apply the inverse permutation to put the dofs in their original
+     order. */
+    const PartialPermutation& full_velocity_permutation =
+        participation.CalcDofPermutation();
+    const int num_dofs = full_velocity_permutation.domain_size();
+    VectorX<T> permuted_dv(num_dofs);
+    permuted_dv << body_participating_dv, body_nonparticipating_dv;
+    VectorX<T> dv(num_dofs);
+    full_velocity_permutation.ApplyInverse(permuted_dv, &dv);
+    /* v_next = v_star + dv */
+    VectorX<T>& v_next = dv;
+    v_next += EvalFreeMotionFemState(context, index).GetVelocities();
+    const FemState<T>& fem_state = EvalFemState(context, index);
+    integrator_->AdvanceOneTimeStep(fem_state, v_next, next_fem_state);
+  }
 }
 
 template <typename T>
@@ -535,24 +615,22 @@ const PartialPermutation& DeformableDriver<T>::EvalVertexPermutation(
 
 template <typename T>
 void DeformableDriver<T>::CalcParticipatingVelocityMultiplexer(
-    const Context<T>& context,
-    typename DeformableDriver<T>::Multiplexer* result) const {
+    const Context<T>& context, Multiplexer<T>* result) const {
   const int num_bodies = deformable_model_->num_bodies();
   std::vector<int> num_participating_dofs(num_bodies);
   for (DeformableBodyIndex i(0); i < num_bodies; ++i) {
     num_participating_dofs[i] =
         EvalDofPermutation(context, i).permuted_domain_size();
   }
-  *result = Multiplexer(std::move(num_participating_dofs));
+  *result = Multiplexer<T>(std::move(num_participating_dofs));
 }
 
 template <typename T>
-const typename DeformableDriver<T>::Multiplexer&
-DeformableDriver<T>::EvalParticipatingVelocityMultiplexer(
+const Multiplexer<T>& DeformableDriver<T>::EvalParticipatingVelocityMultiplexer(
     const Context<T>& context) const {
   return manager_->plant()
       .get_cache_entry(cache_indexes_.participating_velocity_mux)
-      .template Eval<DeformableDriver<T>::Multiplexer>(context);
+      .template Eval<Multiplexer<T>>(context);
 }
 
 template <typename T>
@@ -674,6 +752,8 @@ DeformableDriver<T>::EvalFreeMotionTangentMatrixSchurComplement(
 }
 
 template class DeformableDriver<double>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::Multiplexer);
 
 }  // namespace internal
 }  // namespace multibody

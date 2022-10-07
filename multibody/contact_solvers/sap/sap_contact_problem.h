@@ -86,7 +86,7 @@ class SapContactProblem {
      ordering implicitly induced by A.
 
    @throws exception if time_step is not strictly positive.
-   @throws exception if the blocks in A are not square or have zero size.
+   @throws exception if the blocks in A are not square.
    @throws exception if the size of v_star is not nv = ∑A[c].rows(). */
   SapContactProblem(const T& time_step, std::vector<MatrixX<T>> A,
                     VectorX<T> v_star);
@@ -110,7 +110,7 @@ class SapContactProblem {
      Free-motion velocities, of size nv. DOFs in v_star must match the
      ordering implicitly induced by A.
 
-   @throws exception if the blocks in A are not square or have zero size.
+   @throws exception if the blocks in A are not square.
    @throws exception if the size of v_star is not nv = ∑A[c].rows(). */
   void Reset(std::vector<MatrixX<T>> A, VectorX<T> v_star);
 
@@ -125,7 +125,7 @@ class SapContactProblem {
    the range [0, num_cliques()).
    @throws exception if the number of columns of the Jacobian matrices in
    `constraint` is not consistent with the number of velocities for the cliques
-   in this problem referenced by `constraint`.
+   in this problem referenced by `constraint` or if they are both zero.
    @returns the index to the newly added constraint. */
   int AddConstraint(std::unique_ptr<SapConstraint<T>> constraint);
 
