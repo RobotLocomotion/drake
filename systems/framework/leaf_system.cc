@@ -336,12 +336,9 @@ T LeafSystem<T>::DoCalcWitnessValue(
 
 template <typename T>
 void LeafSystem<T>::AddTriggeredWitnessFunctionToCompositeEventCollection(
-    Event<T>* event,
-    CompositeEventCollection<T>* events) const {
+    Event<T>* event, CompositeEventCollection<T>* events) const {
   DRAKE_DEMAND(event != nullptr);
-  DRAKE_DEMAND(event->get_event_data() != nullptr);
-  DRAKE_DEMAND(dynamic_cast<const WitnessTriggeredEventData<T>*>(
-      event->get_event_data()) != nullptr);
+  DRAKE_DEMAND(event->template has_event_data<WitnessTriggeredEventData<T>>());
   DRAKE_DEMAND(events != nullptr);
   event->AddToComposite(events);
 }
