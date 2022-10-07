@@ -290,7 +290,6 @@ class TestGeneral(unittest.TestCase):
         system1 = LinearSystem(A=[1], B=[1], C=[1], D=[1], time_period=0.1)
         periodic_data = system1.GetUniquePeriodicDiscreteUpdateAttribute()
         self.assertIsInstance(periodic_data, PeriodicEventData)
-        self.assertIsInstance(periodic_data.Clone(), PeriodicEventData)
         periodic_data.period_sec()
         periodic_data.offset_sec()
         is_diff_eq, period = system1.IsDifferenceEquationSystem()

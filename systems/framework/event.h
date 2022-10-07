@@ -4,6 +4,7 @@
 #include <memory>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/value.h"
@@ -149,10 +150,10 @@ template <typename T> class System;
  it. The problem then becomes how an event handler should determine which
  condition triggered it.
 
- The EventData structure was created for exactly this purpose, at the price
- of some verbosity when declaring the events. Every Event stores the type of
- trigger associated with it and, if relevant, some %EventData that provides
- greater insight into why the event handler was invoked. For example:
+ The EventData variant allows trigger type-specific data to be stored with any
+ Event that needs it. Every Event stores the type of trigger associated with it
+ and, if relevant, some %EventData that provides greater insight into why the
+ event handler was invoked. For example:
  ```
    template <typename T>
    class MySystem : public LeafSystem<T> {
@@ -181,9 +182,9 @@ template <typename T> class System;
     // A single update handler for all triggered events.
     EventStatus MyPublish(const Context<T>&, const PublishEvent<T>& e) const {
       if (e.get_trigger_type() == TriggerType::kPeriodic) {
-        std::cout << "Event period: " <<
-            static_cast<PeriodicEventData<T>*>(
-                  e.get_event_data()).period_sec() << std::endl;
+        std::cout << "Event period: "
+            << e.template get_event_data<PeriodicEventData>()->period_sec()
+            << std::endl;
       }
     }
    };
@@ -233,27 +234,11 @@ template <typename T>
 class LeafCompositeEventCollection;
 
 /**
- * Base class for storing trigger-specific data to be passed to event handlers.
+ * An EventData variant describing an event that recurs on a fixed period. The
+ * events are triggered at time = offset_sec + i * period_sec, where i is a
+ * non-negative integer.
  */
-class EventData {
- public:
-  EventData() {}
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EventData);
-  virtual ~EventData() {}
-  virtual std::unique_ptr<EventData> Clone() const {
-    return std::unique_ptr<EventData>(DoClone());
-  }
-
- protected:
-  [[nodiscard]] virtual EventData* DoClone() const = 0;
-};
-
-/**
- * A token describing an event that recurs on a fixed period. The events are
- * triggered at time = offset_sec + i * period_sec, where i is a non-negative
- * integer.
- */
-class PeriodicEventData : public EventData {
+class PeriodicEventData {
  public:
   PeriodicEventData() {}
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PeriodicEventData);
@@ -271,27 +256,20 @@ class PeriodicEventData : public EventData {
   void set_offset_sec(double offset_sec) { offset_sec_ = offset_sec; }
 
  private:
-  [[nodiscard]] EventData* DoClone() const override {
-    PeriodicEventData* clone = new PeriodicEventData;
-    clone->period_sec_ = period_sec_;
-    clone->offset_sec_ = offset_sec_;
-    return clone;
-  }
-
   double period_sec_{0.0};
   double offset_sec_{0.0};
 };
 
 /**
- * Class for storing data from a witness function triggering to be passed
- * to event handlers. A witness function isolates the time to a (typically
+ * An EventData variant for storing data from a witness function triggering to
+ * be passed to event handlers. A witness function isolates time to a (typically
  * small) window during which the witness function crosses zero. The time and
  * state at both sides of this window are passed to the event handler so that
  * the system can precisely determine the reason that the witness function
  * triggered.
  */
 template <class T>
-class WitnessTriggeredEventData : public EventData {
+class WitnessTriggeredEventData {
  public:
   WitnessTriggeredEventData() {}
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(WitnessTriggeredEventData);
@@ -339,22 +317,17 @@ class WitnessTriggeredEventData : public EventData {
   void set_xcf(const ContinuousState<T>* xcf) { xcf_ = xcf; }
 
  private:
-  [[nodiscard]] EventData* DoClone() const override {
-    WitnessTriggeredEventData<T>* clone = new WitnessTriggeredEventData;
-    clone->triggered_witness_ = triggered_witness_;
-    clone->t0_ = t0_;
-    clone->tf_ = tf_;
-    clone->xc0_ = xc0_;
-    clone->xcf_ = xcf_;
-    return clone;
-  }
-
   const WitnessFunction<T>* triggered_witness_{nullptr};
   T t0_{std::numeric_limits<double>::quiet_NaN()};
   T tf_{std::numeric_limits<double>::quiet_NaN()};
   const ContinuousState<T>* xc0_{nullptr};
   const ContinuousState<T>* xcf_{nullptr};
 };
+
+/** The trigger type defines the expected variant. */
+template <typename T>
+using EventData = std::variant<std::monostate, PeriodicEventData,
+                               WitnessTriggeredEventData<T>>;
 
 /**
  * Predefined types of triggers for events. Used at run time to determine why
@@ -415,7 +388,7 @@ enum class TriggerType {
 
   /**
    * This trigger indicates that an associated event is triggered by the zero
-   * crossing of a witness function.
+   * crossing of a witness function. @see WitnessTriggeredEventData.
    */
   kWitness,
 };
@@ -469,32 +442,42 @@ class Event {
   TriggerType get_trigger_type() const { return trigger_type_; }
 
   /**
-   * Returns true if this event has associated data.
+   * Returns true if this event has associated data of the expected type.
    */
-  bool has_event_data() const { return event_data_ != nullptr; }
+  template <typename EventDataType>
+  bool has_event_data() const {
+    return std::holds_alternative<EventDataType>(event_data_);
+  }
 
   /**
    * Returns a const pointer to the event data. The returned value
    * can be nullptr, which means this event does not have any associated
-   * data.
+   * data of the expected type.
    */
-  const EventData* get_event_data() const { return event_data_.get(); }
+  template <typename EventDataType>
+  const EventDataType* get_event_data() const {
+    return std::get_if<EventDataType>(&event_data_);
+  }
 
   /**
    * Returns a mutable pointer to the event data. The returned value
    * can be nullptr, which means this event does not have any associated
-   * data.
+   * data of the expected type.
    */
-  EventData* get_mutable_event_data() { return event_data_.get_mutable(); }
+  template <typename EventDataType>
+  EventDataType* get_mutable_event_data() {
+    return std::get_if<EventDataType>(&event_data_);
+  }
 
-  // Note: Users should not be calling this.
+  // Note: Users should not be calling these.
   #if !defined(DRAKE_DOXYGEN_CXX)
   // Sets the trigger type.
   void set_trigger_type(const TriggerType trigger_type) {
     trigger_type_ = trigger_type; }
 
-  // Sets and transfers the ownership of @p data.
-  void set_event_data(std::unique_ptr<EventData> data) {
+  // Sets data to one of the available variants.
+  template <typename EventDataType>
+  void set_event_data(EventDataType data) {
     event_data_ = std::move(data);
   }
   #endif
@@ -551,7 +534,7 @@ class Event {
 
  private:
   TriggerType trigger_type_;
-  copyable_unique_ptr<EventData> event_data_{nullptr};
+  EventData<T> event_data_;  // Defaults to none (std::monostate).
 };
 
 /**

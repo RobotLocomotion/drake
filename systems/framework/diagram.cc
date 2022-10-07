@@ -625,11 +625,10 @@ void Diagram<T>::AddTriggeredWitnessFunctionToCompositeEventCollection(
     CompositeEventCollection<T>* events) const {
   DRAKE_DEMAND(events != nullptr);
   DRAKE_DEMAND(event != nullptr);
-  DRAKE_DEMAND(event->get_event_data() != nullptr);
 
   // Get the event data- it will need to be modified.
-  auto data = dynamic_cast<WitnessTriggeredEventData<T>*>(
-      event->get_mutable_event_data());
+  WitnessTriggeredEventData<T>* data =
+      event->template get_mutable_event_data<WitnessTriggeredEventData<T>>();
   DRAKE_DEMAND(data != nullptr);
 
   // Get the vector of events corresponding to the subsystem.

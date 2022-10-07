@@ -526,8 +526,9 @@ void Simulator<T>::PopulateEventDataForTriggeredWitness(
     const T& t0, const T& tf, const WitnessFunction<T>* witness,
     Event<T>* event, CompositeEventCollection<T>* events) const {
   // Populate the event data.
-  auto event_data = static_cast<WitnessTriggeredEventData<T>*>(
-      event->get_mutable_event_data());
+  WitnessTriggeredEventData<T>* event_data =
+      event->template get_mutable_event_data<WitnessTriggeredEventData<T>>();
+  DRAKE_DEMAND(event_data != nullptr);
   event_data->set_triggered_witness(witness);
   event_data->set_t0(t0);
   event_data->set_tf(tf);
@@ -625,7 +626,7 @@ Simulator<T>::IntegrateContinuousState(
       if (!event) {
         event = fn->get_event()->Clone();
         event->set_trigger_type(TriggerType::kWitness);
-        event->set_event_data(std::make_unique<WitnessTriggeredEventData<T>>());
+        event->set_event_data(WitnessTriggeredEventData<T>());
       }
       PopulateEventDataForTriggeredWitness(t0, tf, fn, event.get(),
                                            witnessed_events);

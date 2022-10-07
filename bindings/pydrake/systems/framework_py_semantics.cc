@@ -142,9 +142,7 @@ void DoScalarIndependentDefinitions(py::module m) {
       .value("kCrossesZero", WitnessFunctionDirection::kCrossesZero,
           doc.WitnessFunctionDirection.kCrossesZero.doc);
 
-  auto event_data = py::class_<EventData>(m, "EventData", doc.EventData.doc);
-  DefClone(&event_data);
-  py::class_<PeriodicEventData, EventData>(
+  py::class_<PeriodicEventData>(
       m, "PeriodicEventData", doc.PeriodicEventData.doc)
       .def("period_sec", &PeriodicEventData::period_sec,
           doc.PeriodicEventData.period_sec.doc)
