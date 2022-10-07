@@ -18,8 +18,55 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/* DeformableDriver is responsible for computing dynamics information about all
- deformable bodies. It works in tandem with a DeformableModel and a
+/* Helper class for DeformableDriver that acts both as a multiplexer and a
+ demultiplexer -- it combines multiple Eigen vectors into a single stacked
+ vector and it also splits an Eigen vector into multiple vectors.
+ @tparam_default_scalar */
+template <typename T>
+class Multiplexer {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Multiplexer);
+
+  /* Create an invalid Multiplexer. It cannot be used to (de)multiplex any
+   vectors. */
+  Multiplexer() = default;
+
+  /* Constructs a Multiplexer that combines and splits vectors of the given
+   sizes.
+   @pre `sizes` is not empty and each entry is non-negative. */
+  explicit Multiplexer(std::vector<int> sizes);
+
+  /* The number of vectors to be multiplexed. */
+  int num_vectors() const { return sizes_.size(); }
+
+  /* Combines the given vectors into a single vector.
+   @throws std::exception if the sizes of `inputs` aren't compatible with the
+   sizes provided at construction. */
+  VectorX<T> Multiplex(std::vector<VectorX<T>>&& inputs) const;
+
+  /* Splits the given vector into multiple vectors and returns the one with
+   the given `index`.
+   @throws std::exception if the size of `input` is not the sum of sizes
+   provided at construction.
+   @throws std::exception if index is not in [0, num_vectors).
+   @returns a vector block of the indexed vector. */
+  Eigen::Ref<const VectorX<T>> Demultiplex(
+      const Eigen::Ref<const VectorX<T>>& input, int index) const;
+
+  /* Mutable version of `Demultiplex()` that takes a pointer to a stacked
+   vector. */
+  Eigen::Ref<VectorX<T>> Demultiplex(EigenPtr<VectorX<T>> input,
+                                     int index) const;
+
+ private:
+  std::vector<int> sizes_;
+  std::vector<int> offsets_;
+  /* The sum over `sizes_`. */
+  int num_entries_{0};
+};
+
+/* DeformableDriver is responsible for computing dynamics information about
+ all deformable bodies. It works in tandem with a DeformableModel and a
  DiscreteUpdateManager that are provided at construction time. The deformable
  model informs the driver of modeling choices of the deformable bodies
  such as its Finite Element Model. The discrete update manager consumes the
@@ -97,6 +144,17 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       std::vector<ContactPairKinematics<T>>* result) const;
 
+  /* Evaluates FemState at the next time step for each deformable body and
+   copies the them into the corresponding DiscreteValues.
+   @pre next_states != nullptr. */
+  void CalcDiscreteStates(const systems::Context<T>& context,
+                          systems::DiscreteValues<T>* next_states) const;
+
+  /* Evaluates the multiplexer for participating velocities for all bodies.
+   @pre result != nullptr. */
+  const Multiplexer<T>& EvalParticipatingVelocityMultiplexer(
+      const systems::Context<T>& context) const;
+
  private:
   friend class DeformableDriverTest;
   friend class DeformableDriverContactTest;
@@ -122,45 +180,6 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
     std::vector<systems::CacheIndex>
         free_motion_tangent_matrix_schur_complements;
   };
-
-  /* This private nested class acts both as a multiplexer and a demultiplexer --
-   it combines multiple Eigen vectors into a single stacked vector and it also
-   splits an Eigen vector into multiple vectors. */
-  class Multiplexer {
-   public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Multiplexer);
-
-    /* Create an empty Multiplexer. */
-    Multiplexer() = default;
-
-    /* Constructs a Multiplexer that combines and splits vectors of the given
-     sizes.
-     @pre `sizes` is not empty and each entry is non-negative. */
-    explicit Multiplexer(std::vector<int> sizes);
-
-    /* The number of vectors to be multiplexed. */
-    int num_vectors() const { return sizes_.size(); }
-
-    /* Combines the given vectors into a single vector.
-     @throws std::exception if the sizes of `inputs` aren't compatible with the
-     sizes provided at construction. */
-    VectorX<T> Multiplex(std::vector<VectorX<T>>&& inputs) const;
-
-    /* Splits the given vector into multiple vectors and returns the one with
-     the given `index`.
-     @throws std::exception if the size of `input` is not the sum of sizes
-     provided at construction.
-     @throws std::exception if index is not in [0, num_vectors).
-     @returns a copy of the indexed vector. */
-    VectorX<T> Demultiplex(const VectorX<T>& input, int index) const;
-
-   private:
-    std::vector<int> sizes_;
-    std::vector<int> offsets_;
-    /* The sum over `sizes_`. */
-    int num_entries_{0};
-  };
-
   /* Copies the state of the deformable body with `id` in the given `context`
    to the `fem_state`.
    @pre fem_state != nullptr and has size compatible with the state of the
@@ -190,7 +209,10 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   /* Given the state of the deformable body with `index` in the given `context`,
    computes the state of the deformable body at the next time step.
    @note The state of the deformable body will the same as the "free motion"
-         state in the absense of contact or constraints.
+         state in the absense of contact or constraints. Otherwise, the discrete
+         solver results for participating dofs are evaluated, and the Schur
+         complement of the tangent matrix is used to update the
+         non-participating dofs.
    @pre next_fem_state != nullptr and is compatible with the state of
         the deformable body with the given `index`. */
   void CalcNextFemState(const systems::Context<T>& context,
@@ -237,14 +259,9 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   const contact_solvers::internal::PartialPermutation& EvalVertexPermutation(
       const systems::Context<T>& context, geometry::GeometryId id) const;
 
-  /* Computes the multiplexer for participating velocities for all bodies.
-   @pre result != nullptr. */
+  /* Calc version of EvalParticipatingVelocityMultiplexer(). */
   void CalcParticipatingVelocityMultiplexer(const systems::Context<T>& context,
-                                            Multiplexer* result) const;
-
-  /* Eval version of CalcParticipatingVelocityMultiplexer(). */
-  const Multiplexer& EvalParticipatingVelocityMultiplexer(
-      const systems::Context<T>& context) const;
+                                            Multiplexer<T>* result) const;
 
   /* Calc version of EvalParticipatingVelocities().
    @pre result != nullptr. */
@@ -288,8 +305,8 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   /* Modeling information about all deformable bodies. */
   const DeformableModel<T>* const deformable_model_;
   const DiscreteUpdateManager<T>* const manager_;
-  /* The integrator used to advance deformable body free motion states in time.
-   */
+  /* The integrator used to advance deformable body free motion states in
+   time. */
   std::unique_ptr<fem::internal::DiscreteTimeIntegrator<T>> integrator_;
 };
 

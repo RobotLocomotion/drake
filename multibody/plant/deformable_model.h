@@ -48,8 +48,7 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
 
   // TODO(xuchenhan-tri): Document the minimal requirement on the geometry
   //  instance. For example, it must have a friction proximity property to be
-  //  simulated with an MbP that involves contact. Also, move resolution_hint
-  //  into the properties of the instance.
+  //  simulated with an MbP that involves contact.
   // TODO(xuchenhan-tri): Consider allowing registering deformable bodies with
   //  non-world frames.
   /* Registers a deformable body in `this` DeformableModel with the given

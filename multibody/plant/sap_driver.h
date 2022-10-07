@@ -90,8 +90,8 @@ class SapDriver {
   }
 
   // Computes the linearized momentum equation matrix A to build the SAP
-  // contact problem. Refer to SapContactProblem's class documentation for
-  // details.
+  // contact problem. The matrices for deformable bodies come after those for
+  // rigid bodies. Refer to SapContactProblem's class documentation for details.
   void CalcLinearDynamicsMatrix(const systems::Context<T>& context,
                                 std::vector<MatrixX<T>>* A) const;
 
@@ -149,11 +149,41 @@ class SapDriver {
   // CalcContactProblemCache(), which is responsible for adding constraints in
   // this particular order.
   void PackContactSolverResults(
+      const systems::Context<T>& context,
       const contact_solvers::internal::SapContactProblem<T>& problem,
       int num_contacts,
       const contact_solvers::internal::SapSolverResults<T>& sap_results,
       contact_solvers::internal::ContactSolverResults<T>* contact_results)
       const;
+
+  // Adds the contribution from `clique_values` for `clique` into the full
+  // vector of generalized velocities/forces for the entire system (including
+  // both rigid and deformable dofs).
+  // @param[in] clique  Index for a clique of generalized velocities. All trees
+  //                    in the multibody system are indexed first, followed by
+  //                    all deformable bodies.
+  // @pre size of `clique_values` must be compatible with the number of dofs in
+  // `clique`.
+  void AddCliqueContribution(const systems::Context<T>& context, int clique,
+                             const Eigen::Ref<const VectorX<T>>& clique_values,
+                             EigenPtr<VectorX<T>> values) const;
+
+  // Adds the contact forces on degrees of freedom in `clique` to the given
+  // generalized contact force vector, `tau_contact`.
+  // @pre 0 <= clique < number of cliques in the SAP problem in `context`.
+  // @param[in] context           The context of the MultibodyPlant.
+  // @param[in] clique            The clique index of the degrees of freedom of
+  //                              interest.
+  // @param[in] contact_jacobian  The contact jacobian J, must have exactly 3
+  //                              rows.
+  // @param[in] impulse           The contact impulse at the contact point.
+  // @param[in, out] tau_contact  The contact force for all degrees of freedom
+  //                              in the SAP problem to be written to.
+  void AddToGeneralizedContactForce(const systems::Context<T>& context,
+                                    int clique,
+                                    const MatrixX<T>& contact_jacobian,
+                                    const Vector3<T>& impulse,
+                                    EigenPtr<VectorX<T>> tau_contact) const;
 
   // Computes the necessary data to describe the SAP contact problem. Additional
   // information such as the orientation of each contact frame in the world is
