@@ -8,8 +8,8 @@ def mypy_internal_repository(
     github_archive(
         name = name,
         repository = "python/mypy",
-        commit = "f85dfa1b2533621094bc45b4263ea41fd3bc2e39",
-        sha256 = "68800395a9fbaba5494710d0a316eb1c7090cc5553ab53eb62219939e58a67fd",  # noqa
+        commit = "v0.982",
+        sha256 = "22d642f7d2e0cf073585e61209d9775f6fa1bf57a2de0a9f992a73a59486d6e1",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
