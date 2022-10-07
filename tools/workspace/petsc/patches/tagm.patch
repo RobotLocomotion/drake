@@ -1,64 +1,62 @@
 --- src/sys/objects/tagm.c
 +++ src/sys/objects/tagm.c
-@@ -63,15 +63,15 @@ PetscErrorCode  PetscCommGetNewTag(MPI_Comm comm,PetscMPIInt *tag)
-   PetscCallMPI(MPI_Comm_get_attr(comm,Petsc_Counter_keyval,&counter,&flg));
-   PetscCheck(flg,PETSC_COMM_SELF,PETSC_ERR_ARG_CORRUPT,"Bad MPI communicator supplied; must be a PETSc communicator");
- 
--  if (counter->tag < 1) {
-+  if (atomic_load(&counter->atomic_tag) < 1) {
+@@ -69,14 +69,14 @@ PetscErrorCode PetscCommGetNewTag(MPI_Comm comm, PetscMPIInt *tag)
+   PetscCallMPI(MPI_Comm_get_attr(comm, Petsc_Counter_keyval, &counter, &flg));
+   PetscCheck(flg, PETSC_COMM_SELF, PETSC_ERR_ARG_CORRUPT, "Bad MPI communicator supplied; must be a PETSc communicator");
 
--    PetscCall(PetscInfo(NULL,"Out of tags for object, starting to recycle. Comm reference count %" PetscInt_FMT "\n",counter->refcount));
-+    PetscCall(PetscInfo(NULL,"Out of tags for object, starting to recycle. Comm reference count %" PetscInt_FMT "\n",atomic_load(&counter->atomic_refcount)));
-     PetscCallMPI(MPI_Comm_get_attr(MPI_COMM_WORLD,MPI_TAG_UB,&maxval,&flg));
-     PetscCheck(flg,PETSC_COMM_SELF,PETSC_ERR_LIB,"MPI error: MPI_Comm_get_attr() is not returning a MPI_TAG_UB");
+-  if (counter->tag < 1) {
+-    PetscCall(PetscInfo(NULL, "Out of tags for object, starting to recycle. Comm reference count %" PetscInt_FMT "\n", counter->refcount));
++  if (atomic_load(&counter->atomic_tag) < 1) {
++    PetscCall(PetscInfo(NULL, "Out of tags for object, starting to recycle. Comm reference count %" PetscInt_FMT "\n", atomic_load(&counter->atomic_refcount)));
+     PetscCallMPI(MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &maxval, &flg));
+     PetscCheck(flg, PETSC_COMM_SELF, PETSC_ERR_LIB, "MPI error: MPI_Comm_get_attr() is not returning a MPI_TAG_UB");
 -    counter->tag = *maxval - 128; /* hope that any still active tags were issued right at the beginning of the run */
 +    atomic_store(&counter->atomic_tag, *maxval - 128); /* hope that any still active tags were issued right at the beginning of the run */
    }
- 
+
 -  *tag = counter->tag--;
-+  *tag = atomic_fetch_sub(&counter->atomic_tag,1);
++  *tag = atomic_fetch_sub(&counter->atomic_tag, 1);
    if (PetscDefined(USE_DEBUG)) {
      /*
       Hanging here means that some processes have called PetscCommGetNewTag() and others have not.
-@@ -208,7 +208,7 @@ PetscErrorCode  PetscCommDuplicate(MPI_Comm comm_in,MPI_Comm *comm_out,PetscMPII
-       PetscCallMPI(MPI_Comm_get_attr(MPI_COMM_WORLD,MPI_TAG_UB,&maxval,&flg));
-       PetscCheck(flg,PETSC_COMM_SELF,PETSC_ERR_LIB,"MPI error: MPI_Comm_get_attr() is not returning a MPI_TAG_UB");
+@@ -218,7 +218,7 @@ PetscErrorCode PetscCommDuplicate(MPI_Comm comm_in, MPI_Comm *comm_out, PetscMPI
+       PetscCallMPI(MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &maxval, &flg));
+       PetscCheck(flg, PETSC_COMM_SELF, PETSC_ERR_LIB, "MPI error: MPI_Comm_get_attr() is not returning a MPI_TAG_UB");
        PetscCall(PetscNew(&counter)); /* all fields of counter are zero'ed */
 -      counter->tag = *maxval;
 +      atomic_store(&counter->atomic_tag, *maxval);
-       PetscCallMPI(MPI_Comm_set_attr(*comm_out,Petsc_Counter_keyval,counter));
-       PetscCall(PetscInfo(NULL,"Duplicating a communicator %ld %ld max tags = %d\n",(long)comm_in,(long)*comm_out,*maxval));
- 
-@@ -235,16 +235,16 @@ PetscErrorCode  PetscCommDuplicate(MPI_Comm comm_in,MPI_Comm *comm_out,PetscMPII
+       PetscCallMPI(MPI_Comm_set_attr(*comm_out, Petsc_Counter_keyval, counter));
+       /* Add an object creation index to the communicator */
+       PetscCall(PetscNew(&cidx));
+@@ -248,16 +248,16 @@ PetscErrorCode PetscCommDuplicate(MPI_Comm comm_in, MPI_Comm *comm_out, PetscMPI
      PetscCallMPI(MPI_Barrier(comm_in));
    }
- 
+
 -  if (counter->tag < 1) {
--    PetscCall(PetscInfo(NULL,"Out of tags for object, starting to recycle. Comm reference count %" PetscInt_FMT "\n",counter->refcount));
+-    PetscCall(PetscInfo(NULL, "Out of tags for object, starting to recycle. Comm reference count %" PetscInt_FMT "\n", counter->refcount));
 +  if (atomic_load(&counter->atomic_tag) < 1) {
-+    PetscCall(PetscInfo(NULL,"Out of tags for object, starting to recycle. Comm reference count %" PetscInt_FMT "\n",atomic_load(&counter->atomic_refcount)));
-     PetscCallMPI(MPI_Comm_get_attr(MPI_COMM_WORLD,MPI_TAG_UB,&maxval,&flg));
-     PetscCheck(flg,PETSC_COMM_SELF,PETSC_ERR_LIB,"MPI error: MPI_Comm_get_attr() is not returning a MPI_TAG_UB");
++    PetscCall(PetscInfo(NULL, "Out of tags for object, starting to recycle. Comm reference count %" PetscInt_FMT "\n", atomic_load(&counter->atomic_refcount)));
+     PetscCallMPI(MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &maxval, &flg));
+     PetscCheck(flg, PETSC_COMM_SELF, PETSC_ERR_LIB, "MPI error: MPI_Comm_get_attr() is not returning a MPI_TAG_UB");
 -    counter->tag = *maxval - 128; /* hope that any still active tags were issued right at the beginning of the run */
-+    atomic_store(&counter->atomic_tag,  *maxval - 128); /* hope that any still active tags were issued right at the beginning of the run */
++    atomic_store(&counter->atomic_tag, *maxval - 128); /* hope that any still active tags were issued right at the beginning of the run */
    }
- 
+
 -  if (first_tag) *first_tag = counter->tag--;
-+  if (first_tag) *first_tag = atomic_fetch_sub(&counter->atomic_tag,1);
- 
++  if (first_tag) *first_tag = atomic_fetch_sub(&counter->atomic_tag, 1);
+
 -  counter->refcount++; /* number of references to this comm */
-+  atomic_fetch_add(&counter->atomic_refcount,1); /* number of references to this comm */
++  atomic_fetch_add(&counter->atomic_refcount, 1); /* number of references to this comm */
    PetscCall(PetscSpinlockUnlock(&PetscCommSpinLock));
    PetscFunctionReturn(0);
  }
-@@ -280,9 +280,7 @@ PetscErrorCode  PetscCommDestroy(MPI_Comm *comm)
-     PetscCheck(flg,PETSC_COMM_SELF,PETSC_ERR_ARG_CORRUPT,"Inner MPI_Comm does not have expected tag/name counter, problem with corrupted memory");
+@@ -298,8 +298,7 @@ PetscErrorCode PetscCommDestroy(MPI_Comm *comm)
+     PetscCallMPI(MPI_Comm_get_attr(icomm, Petsc_Counter_keyval, &counter, &flg));
+     PetscCheck(flg, PETSC_COMM_SELF, PETSC_ERR_ARG_CORRUPT, "Inner MPI_Comm does not have expected tag/name counter, problem with corrupted memory");
    }
- 
 -  counter->refcount--;
--
 -  if (!counter->refcount) {
-+  if (!atomic_fetch_sub(&counter->atomic_refcount,1)) {
++  if (!atomic_fetch_sub(&counter->atomic_refcount, 1)) {
      /* if MPI_Comm has outer comm then remove reference to inner MPI_Comm from outer MPI_Comm */
-     PetscCallMPI(MPI_Comm_get_attr(icomm,Petsc_OuterComm_keyval,&ucomm,&flg));
+     PetscCallMPI(MPI_Comm_get_attr(icomm, Petsc_OuterComm_keyval, &ucomm, &flg));
      if (flg) {
