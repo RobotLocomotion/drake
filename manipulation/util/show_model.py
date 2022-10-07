@@ -305,9 +305,7 @@ def parse_visualizers(args_parser, args):
         if args.pyplot:
             ConnectPlanarSceneGraphVisualizer(builder, scene_graph)
 
-        # TODO(todd.rowell) We're only returning sliders here for the benefit
-        # of geometry_inspector. When that script is removed, simplify here.
-        return meshcat, sliders
+        return meshcat
 
     return update_visualization, connect_visualizers
 
@@ -334,7 +332,7 @@ def main():
     update_visualization(plant, scene_graph)
     plant.Finalize()
 
-    meshcat, _ = connect_visualizers(builder, plant, scene_graph)
+    meshcat = connect_visualizers(builder, plant, scene_graph)
 
     diagram = builder.Build()
     context = diagram.CreateDefaultContext()
