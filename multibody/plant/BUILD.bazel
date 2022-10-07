@@ -822,6 +822,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "deformable_driver_contact_kinematics_test",
+    deps = [
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
     name = "deformable_driver_multiplexer_test",
     deps = [
         ":multibody_plant_core",

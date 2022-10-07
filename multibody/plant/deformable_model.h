@@ -102,10 +102,20 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
    deformable bodies. */
   DeformableBodyId GetBodyId(DeformableBodyIndex index) const;
 
+  /* Returns the DeformableBodyIndex of the body with the given id.
+   @throws std::exception if MultibodyPlant::Finalize() has not been called yet
+   or if no body with the given `id` has been registered. */
+  DeformableBodyIndex GetBodyIndex(DeformableBodyId id) const;
+
   /* Returns the GeometryId of the geometry associated with the body with the
    given `id`.
    @throws std::exception if no body with the given `id` has been registered. */
   geometry::GeometryId GetGeometryId(DeformableBodyId id) const;
+
+  /* Returns the DeformableBodyId associated with the given `geometry_id`.
+   @throws std::exception if the given `geometry_id` does not correspond to a
+   deformable body registered with this model. */
+  DeformableBodyId GetBodyId(geometry::GeometryId geometry_id) const;
 
   /* Returns the output port of the vertex positions for all registered
    deformable bodies.
@@ -160,9 +170,12 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
       discrete_state_indexes_;
   std::unordered_map<DeformableBodyId, geometry::GeometryId>
       body_id_to_geometry_id_;
+  std::unordered_map<geometry::GeometryId, DeformableBodyId>
+      geometry_id_to_body_id_;
   std::unordered_map<DeformableBodyId, std::unique_ptr<fem::FemModel<T>>>
       fem_models_;
   std::vector<DeformableBodyId> body_ids_;
+  std::unordered_map<DeformableBodyId, DeformableBodyIndex> body_id_to_index_;
   systems::OutputPortIndex vertex_positions_port_index_;
 };
 

@@ -140,6 +140,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   // N.B. Keep the spelling and order of declarations here identical to the
   // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
 
+  const MultibodyTree<T>& internal_tree() const;
+
   systems::CacheEntry& DeclareCacheEntry(std::string description,
                                          systems::ValueProducer,
                                          std::set<systems::DependencyTicket>);
@@ -192,8 +194,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   // N.B. Keep the spelling and order of declarations here identical to the
   // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
-
-  const MultibodyTree<T>& internal_tree() const;
 
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const;
