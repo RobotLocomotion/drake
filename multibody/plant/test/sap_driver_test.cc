@@ -60,13 +60,13 @@ class SapDriverTest {
   }
 
   static void PackContactSolverResults(
-      const SapDriver<double>& driver,
+      const SapDriver<double>& driver, const Context<double>& context,
       const contact_solvers::internal::SapContactProblem<double>& problem,
       int num_contacts,
       const contact_solvers::internal::SapSolverResults<double>& sap_results,
       contact_solvers::internal::ContactSolverResults<double>*
           contact_results) {
-    driver.PackContactSolverResults(problem, num_contacts, sap_results,
+    driver.PackContactSolverResults(context, problem, num_contacts, sap_results,
                                     contact_results);
   }
 };
@@ -99,13 +99,15 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
   }
 
   void PackContactSolverResults(
+      const Context<double>& context,
       const contact_solvers::internal::SapContactProblem<double>& problem,
       int num_contacts,
       const contact_solvers::internal::SapSolverResults<double>& sap_results,
       contact_solvers::internal::ContactSolverResults<double>* contact_results)
       const {
-    SapDriverTest::PackContactSolverResults(sap_driver(), problem, num_contacts,
-                                            sap_results, contact_results);
+    SapDriverTest::PackContactSolverResults(sap_driver(), context, problem,
+                                            num_contacts, sap_results,
+                                            contact_results);
   }
 
   // The functions below provide access to private CompliantContactManager
@@ -308,8 +310,8 @@ TEST_F(SpheresStackTest, PackContactSolverResults) {
   const SapContactProblem<double>& sap_problem =
       *EvalContactProblemCache(*plant_context_).sap_problem;
   ContactSolverResults<double> contact_results;
-  PackContactSolverResults(sap_problem, num_contacts, sap_results,
-                           &contact_results);
+  PackContactSolverResults(*plant_context_, sap_problem, num_contacts,
+                           sap_results, &contact_results);
 
   // Verify against expected values.
   VectorXd gamma(3 * num_contacts);

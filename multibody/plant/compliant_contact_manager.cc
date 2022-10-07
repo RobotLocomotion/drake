@@ -552,8 +552,8 @@ void CompliantContactManager<T>::DoCalcDiscreteValues(
       context.get_discrete_state(this->multibody_state_index()).value();
   const auto q0 = x0.topRows(nq);
 
-  // Retrieve the solution velocity for the next time step.
-  const VectorX<T>& v_next = results.v_next;
+  // Retrieve the rigid velocity for the next time step.
+  const VectorX<T>& v_next = results.v_next.head(plant().num_velocities());
 
   // Update generalized positions.
   VectorX<T> qdot_next(plant().num_positions());
@@ -563,6 +563,12 @@ void CompliantContactManager<T>::DoCalcDiscreteValues(
   VectorX<T> x_next(plant().num_multibody_states());
   x_next << q_next, v_next;
   updates->set_value(this->multibody_state_index(), x_next);
+
+  if constexpr (std::is_same_v<T, double>) {
+    if (deformable_driver_ != nullptr) {
+      deformable_driver_->CalcDiscreteStates(context, updates);
+    }
+  }
 }
 
 // TODO(xuchenhan-tri): Consider a scalar converting constructor to cut down

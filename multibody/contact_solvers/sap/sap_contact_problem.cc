@@ -43,7 +43,7 @@ void SapContactProblem<T>::Reset(std::vector<MatrixX<T>> A, VectorX<T> v_star) {
   graph_.ResetNumCliques(num_cliques());
   nv_ = 0;
   for (const auto& Ac : A_) {
-    DRAKE_THROW_UNLESS(Ac.size() > 0);
+    DRAKE_THROW_UNLESS(Ac.size() >= 0);
     DRAKE_THROW_UNLESS(Ac.rows() == Ac.cols());
     nv_ += Ac.rows();
   }
