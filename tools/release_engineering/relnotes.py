@@ -76,7 +76,7 @@ def _filename_to_primary_package(filename):
 
 
 def _format_commit(gh, drake, commit):
-    """Returns (packages, bullet) for the given commit.
+    """Returns (packages, severities, bullet) for the given commit.
 
     The packages is a list of top-level directories whose files were edited in
     this commit. If the packages list is empty, then the commit is ineligible
@@ -119,11 +119,18 @@ def _format_commit(gh, drake, commit):
             pr_object = results[0]
             pr_num = str(pr_object.number)
 
-    # Check if this commit is ineligible due to a label.
+    # Check if this commit is ineligible due to a label, or otherwise which
+    # kind of category it should appear in.
+    label_needle = "release notes: "
+    severities = []
     if pr_object is not None:
         for label in pr_object.labels:
-            if label["name"] == "release notes: none":
-                return [], ""
+            if not label["name"].startswith(label_needle):
+                continue
+            severity = label["name"][len(label_needle):]
+            severities.append(severity)
+    if severities == ["none"]:
+        return [], ["none"], ""
 
     # Figure out which top-level package(s) were changed, to help the release
     # notes author sort things better.
@@ -136,7 +143,7 @@ def _format_commit(gh, drake, commit):
     committed_nondev_files = [
         x for x in committed_files_weighted.keys() if '/dev/' not in x]
     if not committed_nondev_files:
-        return [], ""
+        return [], ["none"], ""
 
     # Report packages in order of most lines changed.
     packages_weighted = sum(
@@ -167,7 +174,8 @@ def _format_commit(gh, drake, commit):
 
     # Format as top-level bullet point.
     inline_link = _format_inline_pr_link(pr_num)
-    return packages, f"* TBD {preamble}{nice_summary} ({inline_link}){detail}"
+    bullet = f"* TBD {preamble}{nice_summary} ({inline_link}){detail}"
+    return packages, severities, bullet
 
 
 def _update(args, notes_filename, gh, drake, target_commit):
@@ -232,11 +240,17 @@ def _update(args, notes_filename, gh, drake, target_commit):
             continue
         # Try not to hit GitHub API rate limits.
         time.sleep(0.2)
-        packages, bullet = _format_commit(gh, drake, commit)
+        packages, severities, bullet = _format_commit(gh, drake, commit)
 
         # Skip commits deemed ineligible.
         if not packages:
+            assert severities == ["none"], severities
             continue
+
+        # TODO(jwnimmer-tri) Eventually we should auto-sort these as well.
+        # For the moment, we'll just paste in the text so the human doesn't
+        # overlook any important labels.
+        bullet = f"* [{' '.join(severities)}] {bullet[2:]}"
 
         primary_package = packages[0]
         # Find the section for this commit, matching a line that looks like:
