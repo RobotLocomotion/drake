@@ -106,8 +106,7 @@ Newly bound
 
 ## Build dependencies
 
-<!-- Manually relocate any "Upgrade foo_external to latest" lines to here, -->
-<!-- and then sort them alphabetically. -->
+<!-- <relnotes for workspace go here> -->
 
 * TBD
 

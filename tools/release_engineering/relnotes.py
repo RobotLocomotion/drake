@@ -65,6 +65,8 @@ def _filename_to_primary_package(filename):
     """Given a filename (e.g., "systems/framework/system.h"), return its
     primary package (e.g., "systems").
     """
+    if filename.startswith("tools/workspace/"):
+        return "workspace"
     segments = filename.split("/")
     if len(segments) > 1:
         return segments[0]
