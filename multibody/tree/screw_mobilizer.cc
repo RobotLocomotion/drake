@@ -124,8 +124,8 @@ SpatialVelocity<T> ScrewMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
   DRAKE_ASSERT(v.size() == kNv);
   Vector6<T> V_FM_vector;
   V_FM_vector <<
-    (axis_ * get_screw_rotation_from_translation(v[0], screw_pitch_)),
-    (axis_ * v[0]);
+    (axis_ * v[0]),
+    (axis_ * get_screw_translation_from_rotation(v[0], screw_pitch_));
   return SpatialVelocity<T>(V_FM_vector);
 }
 

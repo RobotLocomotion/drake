@@ -216,15 +216,15 @@ TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerTransform) {
 
 TEST_F(ScrewMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
   const double angle = 1.5;
-  const double angular_velocity = 0.1;
-  const Vector1d spatial_velocity(angular_velocity / (2 * M_PI) * kScrewPitch);
+  const Vector1d angular_velocity(0.1);
   mobilizer_->set_angle(context_.get(), angle);
   const SpatialVelocity<double> V_FM =
       mobilizer_->CalcAcrossMobilizerSpatialVelocity(*context_,
-                                                     spatial_velocity);
+                                                     angular_velocity);
 
   VectorXd v_expected(6);
-  v_expected << kScrewAxis * angular_velocity, kScrewAxis * spatial_velocity(0);
+  v_expected << kScrewAxis * angular_velocity[0],
+                kScrewAxis * angular_velocity[0] / (2 * M_PI) * kScrewPitch;
   const SpatialVelocity<double> V_FM_expected(v_expected);
 
   EXPECT_TRUE(V_FM.IsApprox(V_FM_expected, kTolerance));
