@@ -84,8 +84,7 @@ class RevoluteJoint final : public Joint<T> {
   ///   are exactly the same, that is, `axis_F = axis_M`. In other words,
   ///   `axis_F` (or `axis_M`) is the eigenvector of `R_FM` with eigenvalue
   ///   equal to one.
-  ///   This vector can have any length, only the direction is used. This method
-  ///   aborts if `axis` is the zero vector.
+  ///   This vector can have any length, only the direction is used.
   /// @param[in] pos_lower_limit
   ///   Lower position limit, in radians, for the rotation coordinate
   ///   (see get_angle()).
@@ -97,6 +96,8 @@ class RevoluteJoint final : public Joint<T> {
   ///   joint. The damping torque (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e.
   ///   opposing motion, with ω the angular rate for `this` joint (see
   ///   get_angular_rate()).
+  /// @throws std::exception if the L2 norm of `axis` is less than the square
+  /// root of machine epsilon.
   /// @throws std::exception if damping is negative.
   /// @throws std::exception if pos_lower_limit > pos_upper_limit.
   RevoluteJoint(const std::string& name, const Frame<T>& frame_on_parent,
@@ -116,7 +117,7 @@ class RevoluteJoint final : public Joint<T> {
                  VectorX<double>::Constant(
                      1, std::numeric_limits<double>::infinity())) {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
-    DRAKE_DEMAND(!axis.isZero(kEpsilon));
+    DRAKE_THROW_UNLESS(!axis.isZero(kEpsilon));
     DRAKE_THROW_UNLESS(damping >= 0);
     axis_ = axis.normalized();
   }
