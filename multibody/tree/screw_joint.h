@@ -21,7 +21,7 @@ namespace multibody {
 /// attached to the child body B (see the Joint class's documentation), this
 /// joint allows frame M to translate (while rotating) along an axis â.
 /// Axis â is constant and has the same measures in both frames F and M, that
-/// is, `â_F = â_M`. The rotation about the `â_F` axis and their rate
+/// is, `â_F = â_M`. The rotation about the `â_F` axis and its rate
 /// specify the state of the joint.
 /// Zero (θ) corresponds to frames F and M being coincident and aligned.
 /// The translation distance is defined positive when child body B translates
@@ -50,7 +50,7 @@ class ScrewJoint final : public Joint<T> {
   /// are the pair `(-∞, ∞)`.
   /// These can be set using the Joint methods set_position_limits(),
   /// set_velocity_limits() and set_acceleration_limits() in radians,
-  /// radians/sec, radians/sec^2 units.
+  /// radians/s, radians/s² units.
   /// The first three arguments to this constructor are those of the Joint class
   /// constructor. See the Joint class's documentation for details.
   /// The additional parameters are:
@@ -80,15 +80,14 @@ class ScrewJoint final : public Joint<T> {
   /// are the pair `(-∞, ∞)`.
   /// These can be set using the Joint methods set_position_limits(),
   /// set_velocity_limits() and set_acceleration_limits() in radians,
-  /// radians/sec, radians/sec^2 units.
+  /// radians/s, radians/s² units.
   /// The first three arguments to this constructor are those of the Joint class
   /// constructor. See the Joint class's documentation for details.
   /// The additional parameters are:
   /// @param[in] axis
-  ///   A vector in ℝ³ specifying the axis of motion for this joint. Given
-  ///   that the measure of this axis in frames M and F are
-  ///   coincident at all times, the measures of `axis` in either frame F or M
-  ///   are exactly the same, that is, `axis_F = axis_M`. In other words,
+  ///   A vector in ℝ³ specifying the axis of motion for this joint. The
+  ///   coordinates of `axis` expressed in frames F and M are the same at all
+  ///   times, that is, `axis_F = axis_M`. In other words,
   ///   `axis_F` (or `axis_M`) is the eigenvector of `R_FM` with eigenvalue
   ///   equal to one.
   ///   This vector can have any length, only the direction is used.
@@ -136,7 +135,7 @@ class ScrewJoint final : public Joint<T> {
     return name.access();
   }
 
-  /// Returns the axis of motion of `this` joint as a unit vector.
+  /// Returns the normalized axis of motion of `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
   /// this class's documentation for frames's definitions) then,
   /// `axis = axis_F = axis_M`.

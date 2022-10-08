@@ -43,6 +43,13 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   /* Constructor for a %ScrewMobilizer between an inboard frame F and
      an outboard frame M  granting one translational and one rotational degrees
      of freedom as described in this class's documentation.
+   @param[in] axis A vector in ℝ³ specifying the axis of motion for this joint.
+                   The coordinates of `axis` expressed in frames F and M are
+		   the same at all times, that is, `axis_F = axis_M`. In other
+		   words, `axis_F` (or `axis_M`) is the eigenvector of `R_FM`
+		   with eigenvalue equal to one. This vector can have any
+		   length, only the direction is used. This method aborts if
+		   `axis` is the zero vector.
    @param[in] screw_pitch The amount of translation along F's z-axis in meters
                           for a one full revolution about F's z-axis.
                           When set to zero, the mobilizer behaves like a
@@ -50,11 +57,14 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
                           any value of the generalized coordinate. */
   ScrewMobilizer(const Frame<T>& inboard_frame_F,
                  const Frame<T>& outboard_frame_M,
-                 const Vector3<double>& axis_F,
+                 const Vector3<double>& axis,
                  double screw_pitch)
       : MobilizerBase(inboard_frame_F, outboard_frame_M)
-      , axis_F_(axis_F)
-      , screw_pitch_(screw_pitch) {}
+      , screw_pitch_(screw_pitch) {
+    const double kEpsilon = std::numeric_limits<double>::epsilon();
+    DRAKE_DEMAND(!axis.isZero(kEpsilon));
+    axis_ = axis.normalized();
+  }
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
@@ -64,9 +74,11 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   bool can_rotate() const final    { return true; }
   bool can_translate() const final { return true; }
 
-  // @retval axis_F The screw axis as a unit vector expressed in the inboard
-  //                frame F.
-  const Vector3<double>& screw_axis() const { return axis_F_; }
+  // @returns axis The normalized axis of motion as a unit vector.
+  // Since the measures of this axis in either frame F or M are the same (see
+  // this class's documentation for frames's definitions) then,
+  // `axis = axis_F = axis_M`.
+  const Vector3<double>& screw_axis() const { return axis_; }
 
   /* @returns the screw pitch, which is used to relate rotational
    to translational motion for `this` mobilizer as documented
@@ -232,7 +244,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   using MobilizerBase::kNv;
 
   // Default joint axis expressed in the inboard frame F.
-  Vector3<double> axis_F_;
+  Vector3<double> axis_;
 
   const double screw_pitch_;
 };
