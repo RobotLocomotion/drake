@@ -261,7 +261,9 @@ TEST_F(ScrewMobilizerTest, ProjectSpatialForce) {
   Vector1d tau;
   mobilizer_->ProjectSpatialForce(*context_, F_Mo_F, tau);
 
-  const Vector1d tau_expected(torque_Mo_F[2] + kScrewPitch * force_Mo_F[2]);
+  const Vector1d tau_expected(
+      torque_Mo_F.dot(kScrewAxis) +
+      force_Mo_F.dot(kScrewAxis) / (2 * M_PI) * kScrewPitch);
   EXPECT_TRUE(CompareMatrices(tau, tau_expected, kTolerance,
                               MatrixCompareType::relative));
 }

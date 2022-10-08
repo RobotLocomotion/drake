@@ -146,7 +146,8 @@ void ScrewMobilizer<T>::ProjectSpatialForce(const systems::Context<T>&,
                                              const SpatialForce<T>& F_Mo_F,
                                              Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  tau[0] = F_Mo_F.rotational()[2] + screw_pitch() * F_Mo_F.translational()[2];
+  tau[0] = F_Mo_F.rotational().dot(axis_) +
+           F_Mo_F.translational().dot(axis_) / (2 * M_PI) * screw_pitch_;
 }
 
 template <typename T>
