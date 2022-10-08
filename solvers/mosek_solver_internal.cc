@@ -37,31 +37,33 @@ void ConvertTripletsToVectors(
   }
 }
 
-size_t MosekSolverProgram::MatrixVariableEntry::get_next_id() {
+size_t MatrixVariableEntry::get_next_id() {
   static never_destroyed<std::atomic<int>> next_id(0);
   return next_id.access()++;
 }
 
-MosekSolverProgram::MosekSolverProgram(MSKenv_t env, int num_vars) {
+MosekSolverProgram::MosekSolverProgram(const MathematicalProgram& prog,
+                                       MSKenv_t env)
+    : map_decision_var_to_mosek_var_{prog} {
   // Create the optimization task.
   // task is initialized as a null pointer, same as in Mosek's documentation
   // https://docs.mosek.com/10.0/capi/design.html#hello-world-in-mosek
   task_ = nullptr;
-  MSK_maketask(env, 0, num_vars, &task_);
+  MSK_maketask(env, 0,
+               map_decision_var_to_mosek_var_
+                   .decision_variable_index_to_mosek_nonmatrix_variable.size(),
+               &task_);
 }
 
 MosekSolverProgram::~MosekSolverProgram() { MSK_deletetask(&task_); }
 
 MSKrescodee
 MosekSolverProgram::AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
-    const MosekSolverProgram::MatrixVariableEntry& matrix_variable_entry,
-    std::unordered_map<MosekSolverProgram::MatrixVariableEntry::Id, MSKint64t>*
-        matrix_variable_entry_to_selection_matrix_id,
-    MSKint64t* E_index) {
+    const MatrixVariableEntry& matrix_variable_entry, MSKint64t* E_index) {
   MSKrescodee rescode{MSK_RES_OK};
-  auto it = matrix_variable_entry_to_selection_matrix_id->find(
+  auto it = matrix_variable_entry_to_selection_matrix_id_.find(
       matrix_variable_entry.id());
-  if (it != matrix_variable_entry_to_selection_matrix_id->end()) {
+  if (it != matrix_variable_entry_to_selection_matrix_id_.end()) {
     *E_index = it->second;
   } else {
     const MSKint32t row = matrix_variable_entry.row_index();
@@ -73,7 +75,7 @@ MosekSolverProgram::AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    matrix_variable_entry_to_selection_matrix_id->emplace_hint(
+    matrix_variable_entry_to_selection_matrix_id_.emplace_hint(
         it, matrix_variable_entry.id(), *E_index);
   }
   return rescode;
@@ -81,15 +83,11 @@ MosekSolverProgram::AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
 
 MSKrescodee MosekSolverProgram::AddScalarTimesMatrixVariableEntryToMosek(
     MSKint32t constraint_index,
-    const MosekSolverProgram::MatrixVariableEntry& matrix_variable_entry,
-    MSKrealt scalar,
-    std::unordered_map<MosekSolverProgram::MatrixVariableEntry::Id, MSKint64t>*
-        matrix_variable_entry_to_selection_matrix_id) {
+    const MatrixVariableEntry& matrix_variable_entry, MSKrealt scalar) {
   MSKrescodee rescode{MSK_RES_OK};
   MSKint64t E_index;
   rescode = AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
-      matrix_variable_entry, matrix_variable_entry_to_selection_matrix_id,
-      &E_index);
+      matrix_variable_entry, &E_index);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
@@ -146,13 +144,7 @@ MSKrescodee MosekSolverProgram::AddLinearConstraintToMosek(
     const Eigen::VectorXd& upper,
     const VectorX<symbolic::Variable>& decision_vars,
     const std::vector<MSKint32t>& slack_vars_mosek_indices,
-    LinearConstraintBoundType bound_type,
-    const std::unordered_map<int, MosekSolverProgram::MatrixVariableEntry>&
-        decision_variable_index_to_mosek_matrix_variable,
-    const std::unordered_map<int, int>&
-        decision_variable_index_to_mosek_nonmatrix_variable,
-    std::unordered_map<MosekSolverProgram::MatrixVariableEntry::Id, MSKint64t>*
-        matrix_variable_entry_to_selection_matrix_id) {
+    LinearConstraintBoundType bound_type) {
   MSKrescodee rescode{MSK_RES_OK};
   DRAKE_ASSERT(lower.rows() == upper.rows());
   DRAKE_ASSERT(A.rows() == lower.rows() && A.cols() == decision_vars.rows());
@@ -195,8 +187,7 @@ MSKrescodee MosekSolverProgram::AddLinearConstraintToMosek(
   // variable X̅ⱼ that show up in this new linear constraint.
   // This map is used to compute the symmetric matrix A̅ᵢⱼ in the term
   // <A̅ᵢⱼ, X̅ⱼ>.
-  std::unordered_map<MSKint64t,
-                     std::vector<MosekSolverProgram::MatrixVariableEntry>>
+  std::unordered_map<MSKint64t, std::vector<MatrixVariableEntry>>
       mosek_matrix_variable_entries;
 
   if (A.nonZeros() != 0) {
@@ -209,21 +200,20 @@ MSKrescodee MosekSolverProgram::AddLinearConstraintToMosek(
       decision_var_indices[i] =
           prog.FindDecisionVariableIndex(decision_vars(i));
       const auto it_mosek_matrix_variable =
-          decision_variable_index_to_mosek_matrix_variable.find(
+          decision_variable_index_to_mosek_matrix_variable().find(
               decision_var_indices[i]);
       if (it_mosek_matrix_variable !=
-          decision_variable_index_to_mosek_matrix_variable.end()) {
+          decision_variable_index_to_mosek_matrix_variable().end()) {
         // This decision variable is a matrix variable.
         // Denote the matrix variables as X̅. Add the corresponding matrix
         // E̅ₘₙ, such that <E̅ₘₙ, X̅> = X̅(m, n) if such matrix has not been
         // added to Mosek yet.
         mosek_matrix_variable_in_decision_var.push_back(i);
-        const MosekSolverProgram::MatrixVariableEntry& matrix_variable_entry =
+        const MatrixVariableEntry& matrix_variable_entry =
             it_mosek_matrix_variable->second;
         MSKint64t E_mn_index;
         rescode = AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
-            matrix_variable_entry, matrix_variable_entry_to_selection_matrix_id,
-            &E_mn_index);
+            matrix_variable_entry, &E_mn_index);
         if (rescode != MSK_RES_OK) {
           return rescode;
         }
@@ -231,7 +221,7 @@ MSKrescodee MosekSolverProgram::AddLinearConstraintToMosek(
             .push_back(matrix_variable_entry);
       } else {
         const int mosek_nonmatrix_variable =
-            decision_variable_index_to_mosek_nonmatrix_variable.at(
+            decision_variable_index_to_mosek_nonmatrix_variable().at(
                 decision_var_indices[i]);
         // Add the linear term Aₓ * x to the constraint.
         for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
@@ -248,8 +238,8 @@ MSKrescodee MosekSolverProgram::AddLinearConstraintToMosek(
           MSKint64t, std::pair<std::vector<MSKint64t>, std::vector<MSKrealt>>>>
           bar_A(lower.rows());
       for (int col_index : mosek_matrix_variable_in_decision_var) {
-        const MosekSolverProgram::MatrixVariableEntry& matrix_variable_entry =
-            decision_variable_index_to_mosek_matrix_variable.at(
+        const MatrixVariableEntry& matrix_variable_entry =
+            decision_variable_index_to_mosek_matrix_variable().at(
                 decision_var_indices[col_index]);
         for (Eigen::SparseMatrix<double>::InnerIterator it(A, col_index); it;
              ++it) {
@@ -261,14 +251,14 @@ MSKrescodee MosekSolverProgram::AddLinearConstraintToMosek(
               bar_A[it.row()].find(matrix_variable_entry.bar_matrix_index());
           if (it_bar_A != bar_A[it.row()].end()) {
             it_bar_A->second.first.push_back(
-                matrix_variable_entry_to_selection_matrix_id->at(
+                matrix_variable_entry_to_selection_matrix_id_.at(
                     matrix_variable_entry.id()));
             it_bar_A->second.second.push_back(it.value());
           } else {
             bar_A[it.row()].emplace_hint(
                 it_bar_A, matrix_variable_entry.bar_matrix_index(),
                 std::pair<std::vector<MSKint64t>, std::vector<MSKrealt>>(
-                    {matrix_variable_entry_to_selection_matrix_id->at(
+                    {matrix_variable_entry_to_selection_matrix_id_.at(
                         matrix_variable_entry.id())},
                     {it.value()}));
           }
@@ -315,29 +305,19 @@ MSKrescodee MosekSolverProgram::AddLinearConstraintToMosek(
 
 MSKrescodee MosekSolverProgram::AddLinearConstraints(
     const MathematicalProgram& prog,
-    const std::unordered_map<int, MosekSolverProgram::MatrixVariableEntry>&
-        decision_variable_to_mosek_matrix_variable,
-    const std::unordered_map<int, int>&
-        decision_variable_to_mosek_nonmatrix_variable,
-    std::unordered_map<MosekSolverProgram::MatrixVariableEntry::Id, MSKint64t>*
-        matrix_variable_entry_to_selection_matrix_id,
     std::unordered_map<Binding<LinearConstraint>, ConstraintDualIndices>*
         linear_con_dual_indices,
     std::unordered_map<Binding<LinearEqualityConstraint>,
                        ConstraintDualIndices>* lin_eq_con_dual_indices) {
   MSKrescodee rescode = AddLinearConstraintsFromBindings(
       prog.linear_equality_constraints(), LinearConstraintBoundType::kEquality,
-      prog, decision_variable_to_mosek_matrix_variable,
-      decision_variable_to_mosek_nonmatrix_variable,
-      matrix_variable_entry_to_selection_matrix_id, lin_eq_con_dual_indices);
+      prog, lin_eq_con_dual_indices);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
   rescode = AddLinearConstraintsFromBindings(
       prog.linear_constraints(), LinearConstraintBoundType::kInequality, prog,
-      decision_variable_to_mosek_matrix_variable,
-      decision_variable_to_mosek_nonmatrix_variable,
-      matrix_variable_entry_to_selection_matrix_id, linear_con_dual_indices);
+      linear_con_dual_indices);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
@@ -350,12 +330,6 @@ MSKrescodee MosekSolverProgram::AddLinearConstraints(
 // constraint to mosek to bound that variable.
 MSKrescodee MosekSolverProgram::AddBoundingBoxConstraints(
     const MathematicalProgram& prog,
-    const std::unordered_map<int, MosekSolverProgram::MatrixVariableEntry>&
-        decision_variable_index_to_mosek_matrix_variable,
-    const std::unordered_map<int, int>&
-        decision_variable_index_to_mosek_nonmatrix_variable,
-    std::unordered_map<MosekSolverProgram::MatrixVariableEntry::Id, MSKint64t>*
-        matrix_variable_entry_to_selection_matrix_id,
     std::unordered_map<Binding<BoundingBoxConstraint>,
                        std::pair<ConstraintDualIndices, ConstraintDualIndices>>*
         dual_indices) {
@@ -401,8 +375,8 @@ MSKrescodee MosekSolverProgram::AddBoundingBoxConstraints(
   std::vector<int> bounded_matrix_var_indices;
   bounded_matrix_var_indices.reserve(prog.num_vars());
   for (int i = 0; i < num_decision_vars; i++) {
-    auto it1 = decision_variable_index_to_mosek_nonmatrix_variable.find(i);
-    if (it1 != decision_variable_index_to_mosek_nonmatrix_variable.end()) {
+    auto it1 = decision_variable_index_to_mosek_nonmatrix_variable().find(i);
+    if (it1 != decision_variable_index_to_mosek_nonmatrix_variable().end()) {
       // The variable is not a matrix variable in Mosek.
       const int mosek_var_index = it1->second;
       rescode = add_variable_bound_in_mosek(mosek_var_index, x_lb[i], x_ub[i]);
@@ -457,10 +431,7 @@ MSKrescodee MosekSolverProgram::AddBoundingBoxConstraints(
   }
   rescode = AddLinearConstraintToMosek(
       prog, A_eye, B_zero, bounded_matrix_vars_lower, bounded_matrix_vars_upper,
-      bounded_matrix_vars, {}, LinearConstraintBoundType::kInequality,
-      decision_variable_index_to_mosek_matrix_variable,
-      decision_variable_index_to_mosek_nonmatrix_variable,
-      matrix_variable_entry_to_selection_matrix_id);
+      bounded_matrix_vars, {}, LinearConstraintBoundType::kInequality);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
@@ -479,9 +450,9 @@ MSKrescodee MosekSolverProgram::AddBoundingBoxConstraints(
       const int var_index =
           prog.FindDecisionVariableIndex(binding.variables()(i));
       auto it1 =
-          decision_variable_index_to_mosek_nonmatrix_variable.find(var_index);
+          decision_variable_index_to_mosek_nonmatrix_variable().find(var_index);
       int dual_variable_index_if_active = -1;
-      if (it1 != decision_variable_index_to_mosek_nonmatrix_variable.end()) {
+      if (it1 != decision_variable_index_to_mosek_nonmatrix_variable().end()) {
         // Add the dual variables for the constraint registered as bounds on
         // Mosek non-matrix variables.
         lower_bound_duals[i].type = DualVarType::kVariableBound;
@@ -490,7 +461,7 @@ MSKrescodee MosekSolverProgram::AddBoundingBoxConstraints(
       } else {
         // This variable is a Mosek matrix variable. The bound on this variable
         // is imposed as a linear constraint.
-        DRAKE_DEMAND(decision_variable_index_to_mosek_matrix_variable.count(
+        DRAKE_DEMAND(decision_variable_index_to_mosek_matrix_variable().count(
                          var_index) > 0);
         lower_bound_duals[i].type = DualVarType::kLinearConstraint;
         upper_bound_duals[i].type = DualVarType::kLinearConstraint;
@@ -546,13 +517,7 @@ MSKrescodee MosekSolverProgram::AddPositiveSemidefiniteConstraints(
 }
 
 MSKrescodee MosekSolverProgram::AddLinearMatrixInequalityConstraint(
-    const MathematicalProgram& prog,
-    const std::unordered_map<int, MosekSolverProgram::MatrixVariableEntry>&
-        decision_variable_index_to_mosek_matrix_variable,
-    const std::unordered_map<int, int>&
-        decision_variable_index_to_mosek_nonmatrix_variable,
-    std::unordered_map<MosekSolverProgram::MatrixVariableEntry::Id, MSKint64t>*
-        matrix_variable_entry_to_selection_matrix_id) {
+    const MathematicalProgram& prog) {
   // 1. Create the matrix variable X_bar.
   // 2. Add the constraint
   //     x1 * F1(m, n) + ... + xk * Fk(m, n) + <E_mn, X_bar> = -F0(m, n)
@@ -614,10 +579,7 @@ MSKrescodee MosekSolverProgram::AddLinearMatrixInequalityConstraint(
 
     rescode = AddLinearConstraintToMosek(
         prog, F_lower, Eigen::SparseMatrix<double>(num_lower_entries, 0), bound,
-        bound, binding.variables(), {}, LinearConstraintBoundType::kEquality,
-        decision_variable_index_to_mosek_matrix_variable,
-        decision_variable_index_to_mosek_nonmatrix_variable,
-        matrix_variable_entry_to_selection_matrix_id);
+        bound, binding.variables(), {}, LinearConstraintBoundType::kEquality);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
@@ -648,11 +610,7 @@ MSKrescodee MosekSolverProgram::AddLinearMatrixInequalityConstraint(
 MSKrescodee MosekSolverProgram::AddLinearCost(
     const Eigen::SparseVector<double>& linear_coeff,
     const VectorX<symbolic::Variable>& linear_vars,
-    const MathematicalProgram& prog,
-    const std::unordered_map<int, MosekSolverProgram::MatrixVariableEntry>&
-        decision_variable_index_to_mosek_matrix_variable,
-    const std::unordered_map<int, int>&
-        decision_variable_index_to_mosek_nonmatrix_variable) {
+    const MathematicalProgram& prog) {
   MSKrescodee rescode = MSK_RES_OK;
   // The cost linear_coeff' * linear_vars could be written as
   // c' * x + ∑ᵢ <C̅ᵢ, X̅ᵢ>, where X̅ᵢ is the i'th matrix variable stored
@@ -669,8 +627,8 @@ MSKrescodee MosekSolverProgram::AddLinearCost(
     const symbolic::Variable& var = linear_vars(it.row());
     const int var_index = prog.FindDecisionVariableIndex(var);
     auto it1 =
-        decision_variable_index_to_mosek_nonmatrix_variable.find(var_index);
-    if (it1 != decision_variable_index_to_mosek_nonmatrix_variable.end()) {
+        decision_variable_index_to_mosek_nonmatrix_variable().find(var_index);
+    if (it1 != decision_variable_index_to_mosek_nonmatrix_variable().end()) {
       // This variable is a non-matrix variable.
       rescode =
           MSK_putcj(task_, static_cast<MSKint32t>(it1->second), it.value());
@@ -680,9 +638,9 @@ MSKrescodee MosekSolverProgram::AddLinearCost(
     } else {
       // Aggregate the matrix C̅ᵢ
       auto it2 =
-          decision_variable_index_to_mosek_matrix_variable.find(var_index);
+          decision_variable_index_to_mosek_matrix_variable().find(var_index);
       DRAKE_DEMAND(it2 !=
-                   decision_variable_index_to_mosek_matrix_variable.end());
+                   decision_variable_index_to_mosek_matrix_variable().end());
       C_bar_lower_triplets[it2->second.bar_matrix_index()].emplace_back(
           it2->second.row_index(), it2->second.col_index(),
           it2->second.row_index() == it2->second.col_index() ? it.value()
@@ -723,13 +681,7 @@ MSKrescodee MosekSolverProgram::AddLinearCost(
 MSKrescodee MosekSolverProgram::AddQuadraticCostAsLinearCost(
     const Eigen::SparseMatrix<double>& Q_lower,
     const VectorX<symbolic::Variable>& quadratic_vars,
-    const MathematicalProgram& prog,
-    const std::unordered_map<int, MosekSolverProgram::MatrixVariableEntry>&
-        decision_variable_index_to_mosek_matrix_variable,
-    const std::unordered_map<int, int>&
-        decision_variable_index_to_mosek_nonmatrix_variable,
-    std::unordered_map<MosekSolverProgram::MatrixVariableEntry::Id, MSKint64t>*
-        matrix_variable_entry_to_selection_matrix_id) {
+    const MathematicalProgram& prog) {
   // We can add the quaratic cost 0.5 * quadratic_vars' * Q * quadratic_vars as
   // a linear cost with a rotated Lorentz cone constraint. To do so, we
   // introduce a slack variable s, with the rotated Lorentz cone constraint
@@ -790,10 +742,7 @@ MSKrescodee MosekSolverProgram::AddQuadraticCostAsLinearCost(
   rescode = AddLinearConstraintToMosek(
       prog, -L.sparseView(), B_sparse, Eigen::VectorXd::Zero(L.rows()),
       Eigen::VectorXd::Zero(L.rows()), quadratic_vars, z2_mosek_indices,
-      LinearConstraintBoundType::kEquality,
-      decision_variable_index_to_mosek_matrix_variable,
-      decision_variable_index_to_mosek_nonmatrix_variable,
-      matrix_variable_entry_to_selection_matrix_id);
+      LinearConstraintBoundType::kEquality);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
@@ -809,9 +758,7 @@ MSKrescodee MosekSolverProgram::AddQuadraticCostAsLinearCost(
 MSKrescodee MosekSolverProgram::AddQuadraticCost(
     const Eigen::SparseMatrix<double>& Q_quadratic_vars,
     const VectorX<symbolic::Variable>& quadratic_vars,
-    const MathematicalProgram& prog,
-    const std::unordered_map<int, int>&
-        decision_variable_index_to_mosek_nonmatrix_variable) {
+    const MathematicalProgram& prog) {
   MSKrescodee rescode = MSK_RES_OK;
   // Add the quadratic cost 0.5 * quadratic_vars' * Q_quadratic_vars *
   // quadratic_vars to Mosek. Q_lower_triplets correspond to the matrix that
@@ -820,7 +767,7 @@ MSKrescodee MosekSolverProgram::AddQuadraticCost(
   // index in Mosek non-matrix variables.
   std::vector<int> var_indices(quadratic_vars.rows());
   for (int i = 0; i < quadratic_vars.rows(); ++i) {
-    var_indices[i] = decision_variable_index_to_mosek_nonmatrix_variable.at(
+    var_indices[i] = decision_variable_index_to_mosek_nonmatrix_variable().at(
         prog.FindDecisionVariableIndex(quadratic_vars(i)));
   }
   std::vector<Eigen::Triplet<double>> Q_lower_triplets;
@@ -833,7 +780,7 @@ MSKrescodee MosekSolverProgram::AddQuadraticCost(
   }
   std::vector<MSKint32t> qrow, qcol;
   std::vector<double> qval;
-  const int xDim = decision_variable_index_to_mosek_nonmatrix_variable.size();
+  const int xDim = decision_variable_index_to_mosek_nonmatrix_variable().size();
   ConvertTripletsToVectors(Q_lower_triplets, xDim, xDim, &qrow, &qcol, &qval);
   const int Q_nnz = static_cast<int>(qrow.size());
   rescode = MSK_putqobj(task_, Q_nnz, qrow.data(), qcol.data(), qval.data());
@@ -843,14 +790,7 @@ MSKrescodee MosekSolverProgram::AddQuadraticCost(
   return rescode;
 }
 
-MSKrescodee MosekSolverProgram::AddCosts(
-    const MathematicalProgram& prog,
-    const std::unordered_map<int, MosekSolverProgram::MatrixVariableEntry>&
-        decision_variable_index_to_mosek_matrix_variable,
-    const std::unordered_map<int, int>&
-        decision_variable_index_to_mosek_nonmatrix_variable,
-    std::unordered_map<MosekSolverProgram::MatrixVariableEntry::Id, MSKint64t>*
-        matrix_variable_entry_to_selection_matrix_id) {
+MSKrescodee MosekSolverProgram::AddCosts(const MathematicalProgram& prog) {
   // Add the cost in the form 0.5 * x' * Q_all * x + linear_coeff' * x + ∑ᵢ <C̅ᵢ,
   // X̅ᵢ>, where X̅ᵢ is the i'th matrix variable stored inside Mosek.
 
@@ -866,9 +806,7 @@ MSKrescodee MosekSolverProgram::AddCosts(
 
   MSKrescodee rescode = MSK_RES_OK;
   // Add linear cost.
-  rescode = AddLinearCost(linear_coeff, linear_vars, prog,
-                          decision_variable_index_to_mosek_matrix_variable,
-                          decision_variable_index_to_mosek_nonmatrix_variable);
+  rescode = AddLinearCost(linear_coeff, linear_vars, prog);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
@@ -878,19 +816,13 @@ MSKrescodee MosekSolverProgram::AddCosts(
         prog.linear_matrix_inequality_constraints().empty() &&
         prog.positive_semidefinite_constraints().empty() &&
         prog.exponential_cone_constraints().empty()) {
-      rescode =
-          AddQuadraticCost(Q_lower, quadratic_vars, prog,
-                           decision_variable_index_to_mosek_nonmatrix_variable);
+      rescode = AddQuadraticCost(Q_lower, quadratic_vars, prog);
 
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
     } else {
-      rescode = AddQuadraticCostAsLinearCost(
-          Q_lower, quadratic_vars, prog,
-          decision_variable_index_to_mosek_matrix_variable,
-          decision_variable_index_to_mosek_nonmatrix_variable,
-          matrix_variable_entry_to_selection_matrix_id);
+      rescode = AddQuadraticCostAsLinearCost(Q_lower, quadratic_vars, prog);
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
@@ -904,15 +836,10 @@ MSKrescodee MosekSolverProgram::AddCosts(
 }
 
 MSKrescodee MosekSolverProgram::SpecifyVariableType(
-    const MathematicalProgram& prog,
-    const std::unordered_map<int, MosekSolverProgram::MatrixVariableEntry>&
-        decision_variable_index_to_mosek_matrix_variable,
-    const std::unordered_map<int, int>&
-        decision_variable_index_to_mosek_nonmatrix_variable,
-    bool* with_integer_or_binary_variable) {
+    const MathematicalProgram& prog, bool* with_integer_or_binary_variable) {
   MSKrescodee rescode = MSK_RES_OK;
   for (const auto& decision_variable_mosek_variable :
-       decision_variable_index_to_mosek_nonmatrix_variable) {
+       decision_variable_index_to_mosek_nonmatrix_variable()) {
     const int mosek_variable_index = decision_variable_mosek_variable.second;
     switch (prog.decision_variable(decision_variable_mosek_variable.first)
                 .get_type()) {
@@ -963,7 +890,7 @@ MSKrescodee MosekSolverProgram::SpecifyVariableType(
     }
   }
   for (const auto& decision_variable_mosek_matrix_variable :
-       decision_variable_index_to_mosek_matrix_variable) {
+       decision_variable_index_to_mosek_matrix_variable()) {
     const auto& decision_variable =
         prog.decision_variable(decision_variable_mosek_matrix_variable.first);
     if (decision_variable.get_type() !=
@@ -977,15 +904,8 @@ MSKrescodee MosekSolverProgram::SpecifyVariableType(
   return rescode;
 }
 
-void MapProgramDecisionVariableToMosekVariable(
-    const MathematicalProgram& prog,
-    std::unordered_map<int, MosekSolverProgram::MatrixVariableEntry>*
-        decision_variable_index_to_mosek_matrix_variable,
-    std::unordered_map<int, int>*
-        decision_variable_index_to_mosek_nonmatrix_variable,
-    std::unordered_map<int,
-                       std::vector<MosekSolverProgram::MatrixVariableEntry>>*
-        matrix_variable_entries_for_same_decision_variable) {
+MapDecisionVariableToMosekVariable::MapDecisionVariableToMosekVariable(
+    const MathematicalProgram& prog) {
   // Each PositiveSemidefiniteConstraint will add one matrix variable to Mosek.
   int psd_constraint_count = 0;
   for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
@@ -995,31 +915,31 @@ void MapProgramDecisionVariableToMosekVariable(
     const int matrix_rows = psd_constraint.evaluator()->matrix_rows();
     for (int j = 0; j < matrix_rows; ++j) {
       for (int i = j; i < matrix_rows; ++i) {
-        const MosekSolverProgram::MatrixVariableEntry matrix_variable_entry(
-            psd_constraint_count, i, j, matrix_rows);
+        const MatrixVariableEntry matrix_variable_entry(psd_constraint_count, i,
+                                                        j, matrix_rows);
         const int decision_variable_index = prog.FindDecisionVariableIndex(
             psd_constraint.variables()(j * matrix_rows + i));
-        auto it = decision_variable_index_to_mosek_matrix_variable->find(
+        auto it = decision_variable_index_to_mosek_matrix_variable.find(
             decision_variable_index);
-        if (it == decision_variable_index_to_mosek_matrix_variable->end()) {
+        if (it == decision_variable_index_to_mosek_matrix_variable.end()) {
           // This variable has not been registered as a mosek matrix variable
           // before.
-          decision_variable_index_to_mosek_matrix_variable->emplace_hint(
+          decision_variable_index_to_mosek_matrix_variable.emplace_hint(
               it, decision_variable_index, matrix_variable_entry);
         } else {
           // This variable has been registered as a mosek matrix variable
           // already. This matrix variable entry will be registered into
           // matrix_variable_entries_for_same_decision_variable.
           auto it_same_decision_variable =
-              matrix_variable_entries_for_same_decision_variable->find(
+              matrix_variable_entries_for_same_decision_variable.find(
                   decision_variable_index);
           if (it_same_decision_variable !=
-              matrix_variable_entries_for_same_decision_variable->end()) {
+              matrix_variable_entries_for_same_decision_variable.end()) {
             it_same_decision_variable->second.push_back(matrix_variable_entry);
           } else {
-            matrix_variable_entries_for_same_decision_variable->emplace_hint(
+            matrix_variable_entries_for_same_decision_variable.emplace_hint(
                 it_same_decision_variable, decision_variable_index,
-                std::vector<MosekSolverProgram::MatrixVariableEntry>(
+                std::vector<MatrixVariableEntry>(
                     {it->second, matrix_variable_entry}));
           }
         }
@@ -1031,23 +951,23 @@ void MapProgramDecisionVariableToMosekVariable(
   // Mosek.
   int nonmatrix_variable_count = 0;
   for (int i = 0; i < prog.num_vars(); ++i) {
-    if (decision_variable_index_to_mosek_matrix_variable->count(i) == 0) {
-      decision_variable_index_to_mosek_nonmatrix_variable->emplace(
+    if (decision_variable_index_to_mosek_matrix_variable.count(i) == 0) {
+      decision_variable_index_to_mosek_nonmatrix_variable.emplace(
           i, nonmatrix_variable_count++);
     }
   }
+  DRAKE_ASSERT(
+      static_cast<int>(
+          decision_variable_index_to_mosek_matrix_variable.size() +
+          decision_variable_index_to_mosek_nonmatrix_variable.size()) ==
+      prog.num_vars());
 }
 
 MSKrescodee MosekSolverProgram::
-    AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable(
-        const std::unordered_map<
-            int, std::vector<MosekSolverProgram::MatrixVariableEntry>>&
-            matrix_variable_entries_for_same_decision_variable,
-        std::unordered_map<MosekSolverProgram::MatrixVariableEntry::Id,
-                           MSKint64t>*
-            matrix_variable_entry_to_selection_matrix_id) {
+    AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable() {
   MSKrescodee rescode{MSK_RES_OK};
-  for (const auto& pair : matrix_variable_entries_for_same_decision_variable) {
+  for (const auto& pair :
+       matrix_variable_entries_for_same_decision_variable()) {
     int num_mosek_constraint;
     rescode = MSK_getnumcon(task_, &num_mosek_constraint);
     if (rescode != MSK_RES_OK) {
@@ -1069,14 +989,12 @@ MSKrescodee MosekSolverProgram::
         // We add the constraint X̅ᵢ(m, n) - X̅ⱼ(p, q) = 0 where the index of
         // the bar matrix is different (i ≠ j).
         rescode = AddScalarTimesMatrixVariableEntryToMosek(
-            linear_constraint_index, matrix_variable_entries[0], 1.0,
-            matrix_variable_entry_to_selection_matrix_id);
+            linear_constraint_index, matrix_variable_entries[0], 1.0);
         if (rescode != MSK_RES_OK) {
           return rescode;
         }
         rescode = AddScalarTimesMatrixVariableEntryToMosek(
-            linear_constraint_index, matrix_variable_entries[i], -1.0,
-            matrix_variable_entry_to_selection_matrix_id);
+            linear_constraint_index, matrix_variable_entries[i], -1.0);
         if (rescode != MSK_RES_OK) {
           return rescode;
         }
@@ -1088,14 +1006,12 @@ MSKrescodee MosekSolverProgram::
         // A(p, q) = -1 if p == q else -0.5
         std::array<MSKint64t, 2> E_indices{};
         rescode = AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
-            matrix_variable_entries[0],
-            matrix_variable_entry_to_selection_matrix_id, &(E_indices[0]));
+            matrix_variable_entries[0], &(E_indices[0]));
         if (rescode != MSK_RES_OK) {
           return rescode;
         }
         rescode = AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
-            matrix_variable_entries[i],
-            matrix_variable_entry_to_selection_matrix_id, &(E_indices[1]));
+            matrix_variable_entries[i], &(E_indices[1]));
         if (rescode != MSK_RES_OK) {
           return rescode;
         }
@@ -1119,14 +1035,270 @@ MSKrescodee MosekSolverProgram::
         }
       }
       rescode = SetMosekLinearConstraintBound(
-          linear_constraint_index, 0, 0,
-          MosekSolverProgram::LinearConstraintBoundType::kEquality);
+          linear_constraint_index, 0, 0, LinearConstraintBoundType::kEquality);
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
     }
   }
   return rescode;
+}
+
+MSKrescodee MosekSolverProgram::SetPositiveSemidefiniteConstraintDualSolution(
+    const MathematicalProgram& prog,
+    const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                             MSKint32t>& psd_barvar_indices,
+    MSKsoltypee whichsol, MathematicalProgramResult* result) const {
+  MSKrescodee rescode = MSK_RES_OK;
+  for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
+    // Get the bar index of the Mosek matrix var.
+    const auto it = psd_barvar_indices.find(psd_constraint);
+    if (it == psd_barvar_indices.end()) {
+      throw std::runtime_error(
+          "SetPositiveSemidefiniteConstraintDualSolution: this positive "
+          "semidefinite constraint has not been "
+          "registered in Mosek as a matrix variable. This should not happen, "
+          "please post an issue on Drake: "
+          "https://github.com/RobotLocomotion/drake/issues/new.");
+    }
+    const auto bar_index = it->second;
+    // barsj stores the lower triangular values of the psd matrix (as the dual
+    // solution).
+    std::vector<MSKrealt> barsj(
+        psd_constraint.evaluator()->matrix_rows() *
+        (psd_constraint.evaluator()->matrix_rows() + 1) / 2);
+    rescode = MSK_getbarsj(task_, whichsol, bar_index, barsj.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Copy barsj to dual_lower. We don't use barsj directly since MSKrealt
+    // might be a different data type from double.
+    Eigen::VectorXd dual_lower(barsj.size());
+    for (int i = 0; i < dual_lower.rows(); ++i) {
+      dual_lower(i) = barsj[i];
+    }
+    result->set_dual_solution(psd_constraint, dual_lower);
+  }
+  return rescode;
+}
+
+namespace {
+// Throws a runtime error if the mosek option is set incorrectly.
+template <typename T>
+void ThrowForInvalidOption(MSKrescodee rescode, const std::string& option,
+                           const T& val) {
+  if (rescode != MSK_RES_OK) {
+    const std::string mosek_version =
+        fmt::format("{}.{}", MSK_VERSION_MAJOR, MSK_VERSION_MINOR);
+    throw std::runtime_error(fmt::format(
+        "MosekSolver(): cannot set Mosek option '{option}' to value '{value}', "
+        "response code {code}, check "
+        "https://docs.mosek.com/{version}/capi/response-codes.html for the "
+        "meaning of the response code, check "
+        "https://docs.mosek.com/{version}/capi/param-groups.html for allowable "
+        "values in C++, or "
+        "https://docs.mosek.com/{version}/pythonapi/param-groups.html "
+        "for allowable values in python.",
+        fmt::arg("option", option), fmt::arg("value", val),
+        fmt::arg("code", rescode), fmt::arg("version", mosek_version)));
+  }
+}
+
+}  // namespace
+
+MSKrescodee MosekSolverProgram::UpdateOptions(
+    const SolverOptions& merged_options, const SolverId solver_id,
+    std::optional<std::string>* msk_writedata) {
+  MSKrescodee rescode{MSK_RES_OK};
+  for (const auto& double_options :
+       merged_options.GetOptionsDouble(solver_id)) {
+    if (rescode == MSK_RES_OK) {
+      rescode = MSK_putnadouparam(task_, double_options.first.c_str(),
+                                  double_options.second);
+      ThrowForInvalidOption(rescode, double_options.first,
+                            double_options.second);
+    }
+  }
+  for (const auto& int_options : merged_options.GetOptionsInt(solver_id)) {
+    if (rescode == MSK_RES_OK) {
+      rescode = MSK_putnaintparam(task_, int_options.first.c_str(),
+                                  int_options.second);
+      ThrowForInvalidOption(rescode, int_options.first, int_options.second);
+    }
+  }
+  for (const auto& str_options : merged_options.GetOptionsStr(solver_id)) {
+    if (rescode == MSK_RES_OK) {
+      if (str_options.first == "writedata") {
+        if (str_options.second != "") {
+          msk_writedata->emplace(str_options.second);
+        }
+      } else {
+        rescode = MSK_putnastrparam(task_, str_options.first.c_str(),
+                                    str_options.second.c_str());
+        ThrowForInvalidOption(rescode, str_options.first, str_options.second);
+      }
+    }
+  }
+  return rescode;
+}
+
+MSKrescodee MosekSolverProgram::SetDualSolution(
+    MSKsoltypee which_sol, const MathematicalProgram& prog,
+    const std::unordered_map<
+        Binding<BoundingBoxConstraint>,
+        std::pair<ConstraintDualIndices, ConstraintDualIndices>>&
+        bb_con_dual_indices,
+    const std::unordered_map<Binding<LinearConstraint>, ConstraintDualIndices>&
+        linear_con_dual_indices,
+    const std::unordered_map<Binding<LinearEqualityConstraint>,
+                             ConstraintDualIndices>& lin_eq_con_dual_indices,
+    const std::unordered_map<Binding<LorentzConeConstraint>,
+                             ConstraintDualIndices>& lorentz_cone_dual_indices,
+    const std::unordered_map<Binding<RotatedLorentzConeConstraint>,
+                             ConstraintDualIndices>&
+        rotated_lorentz_cone_dual_indices,
+    const std::unordered_map<Binding<ExponentialConeConstraint>,
+                             ConstraintDualIndices>& exp_cone_dual_indices,
+    const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                             MSKint32t>& psd_barvar_indices,
+    MathematicalProgramResult* result) const {
+  // TODO(hongkai.dai): support other types of constraints, like linear
+  // constraint, second order cone constraint, etc.
+  MSKrescodee rescode{MSK_RES_OK};
+  if (which_sol != MSK_SOL_ITG) {
+    // Mosek cannot return dual solution if the solution type is MSK_SOL_ITG
+    // (which stands for mixed integer optimizer), see
+    // https://docs.mosek.com/10.0/capi/accessing-solution.html#available-solutions
+    int num_mosek_vars{0};
+    rescode = MSK_getnumvar(task_, &num_mosek_vars);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Mosek dual variables for variable lower bounds (slx) and upper bounds
+    // (sux). Refer to
+    // https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
+    // for more explanation.
+    std::vector<MSKrealt> slx(num_mosek_vars);
+    std::vector<MSKrealt> sux(num_mosek_vars);
+    rescode = MSK_getslx(task_, which_sol, slx.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    rescode = MSK_getsux(task_, which_sol, sux.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    int num_linear_constraints{0};
+    rescode = MSK_getnumcon(task_, &num_linear_constraints);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Mosek dual variables for linear constraints lower bounds (slc) and upper
+    // bounds (suc). Refer to
+    // https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
+    // for more explanation.
+    std::vector<MSKrealt> slc(num_linear_constraints);
+    std::vector<MSKrealt> suc(num_linear_constraints);
+    rescode = MSK_getslc(task_, which_sol, slc.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    rescode = MSK_getsuc(task_, which_sol, suc.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Set the duals for the bounding box constraint.
+    SetBoundingBoxDualSolution(prog.bounding_box_constraints(), slx, sux, slc,
+                               suc, bb_con_dual_indices, result);
+    // Set the duals for the linear constraint.
+    SetLinearConstraintDualSolution(prog.linear_constraints(), slc, suc,
+                                    linear_con_dual_indices, result);
+    // Set the duals for the linear equality constraint.
+    SetLinearConstraintDualSolution(prog.linear_equality_constraints(), slc,
+                                    suc, lin_eq_con_dual_indices, result);
+    // Set the duals for the nonlinear conic constraint.
+    // Mosek provides the dual solution for nonlinear conic constraints only if
+    // the program is solved through interior point approach.
+    if (which_sol == MSK_SOL_ITR) {
+      std::vector<MSKrealt> snx(num_mosek_vars);
+      rescode = MSK_getsnx(task_, which_sol, snx.data());
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+      SetNonlinearConstraintDualSolution(prog.lorentz_cone_constraints(), snx,
+                                         lorentz_cone_dual_indices, result);
+      SetNonlinearConstraintDualSolution(
+          prog.rotated_lorentz_cone_constraints(), snx,
+          rotated_lorentz_cone_dual_indices, result);
+      SetNonlinearConstraintDualSolution(prog.exponential_cone_constraints(),
+                                         snx, exp_cone_dual_indices, result);
+    }
+    rescode = SetPositiveSemidefiniteConstraintDualSolution(
+        prog, psd_barvar_indices, which_sol, result);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+  }
+  return rescode;
+}
+
+void SetBoundingBoxDualSolution(
+    const std::vector<Binding<BoundingBoxConstraint>>& constraints,
+    const std::vector<MSKrealt>& slx, const std::vector<MSKrealt>& sux,
+    const std::vector<MSKrealt>& slc, const std::vector<MSKrealt>& suc,
+    const std::unordered_map<
+        Binding<BoundingBoxConstraint>,
+        std::pair<ConstraintDualIndices, ConstraintDualIndices>>&
+        bb_con_dual_indices,
+    MathematicalProgramResult* result) {
+  auto set_dual_sol = [](int mosek_dual_lower_index, int mosek_dual_upper_index,
+                         const std::vector<MSKrealt>& mosek_dual_lower,
+                         const std::vector<MSKrealt>& mosek_dual_upper,
+                         double* dual_sol) {
+    const double dual_lower = mosek_dual_lower_index == -1
+                                  ? 0.
+                                  : mosek_dual_lower[mosek_dual_lower_index];
+    const double dual_upper = mosek_dual_upper_index == -1
+                                  ? 0.
+                                  : mosek_dual_upper[mosek_dual_upper_index];
+    // Mosek defines all dual solutions as non-negative. However we use
+    // "reduced cost" as the dual solution, so the dual solution for a
+    // lower bound should be non-negative, while the dual solution for
+    // an upper bound should be non-positive.
+    if (dual_lower > dual_upper) {
+      // We use the larger dual as the active one.
+      *dual_sol = dual_lower;
+    } else {
+      *dual_sol = -dual_upper;
+    }
+  };
+  for (const auto& binding : constraints) {
+    ConstraintDualIndices lower_bound_duals, upper_bound_duals;
+    std::tie(lower_bound_duals, upper_bound_duals) =
+        bb_con_dual_indices.at(binding);
+    Eigen::VectorXd dual_sol =
+        Eigen::VectorXd::Zero(binding.evaluator()->num_vars());
+    for (int i = 0; i < binding.variables().rows(); ++i) {
+      switch (lower_bound_duals[i].type) {
+        case DualVarType::kVariableBound: {
+          set_dual_sol(lower_bound_duals[i].index, upper_bound_duals[i].index,
+                       slx, sux, &(dual_sol(i)));
+          break;
+        }
+        case DualVarType::kLinearConstraint: {
+          set_dual_sol(lower_bound_duals[i].index, upper_bound_duals[i].index,
+                       slc, suc, &(dual_sol(i)));
+          break;
+        }
+        default: {
+          throw std::runtime_error(
+              "The dual variable for a BoundingBoxConstraint lower bound can "
+              "only be slx or slc.");
+        }
+      }
+    }
+    result->set_dual_solution(binding, dual_sol);
+  }
 }
 
 }  // namespace internal
