@@ -30,6 +30,9 @@ GTEST_TEST(FileParserTest, BasicTest) {
       "drake/multibody/benchmarks/acrobot/acrobot.urdf");
   const std::string xml_name = FindResourceOrThrow(
       "drake/multibody/parsing/dm_control/suite/acrobot.xml");
+  const std::string dmd_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/process_model_directives_test/"
+      "acrobot.dmd.yaml");
 
   // Load from SDF using plural method.
   // Add a second one with an overridden model_name.
@@ -70,6 +73,20 @@ GTEST_TEST(FileParserTest, BasicTest) {
     const ModelInstanceIndex id = dut.AddModelFromFile(xml_name, "foo");
     EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
   }
+
+  // Load from DMD using plural method.
+  // Using the singular method is always an error.
+  {
+    MultibodyPlant<double> plant(0.0);
+    Parser dut(&plant);
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddAllModelsFromFile(dmd_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        dut.AddModelFromFile(dmd_name, "foo"),
+        ".* always an error.*");
+  }
 }
 
 GTEST_TEST(FileParserTest, BasicStringTest) {
@@ -79,6 +96,9 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
       "drake/multibody/benchmarks/acrobot/acrobot.urdf");
   const std::string xml_name = FindResourceOrThrow(
       "drake/multibody/parsing/dm_control/suite/acrobot.xml");
+  const std::string dmd_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/process_model_directives_test/"
+      "acrobot.dmd.yaml");
 
   // Load an SDF via string.
   {
@@ -105,6 +125,17 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
     Parser dut(&plant);
     const ModelInstanceIndex id = dut.AddModelFromString(xml_contents, "xml");
     EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+  }
+
+  // Load a DMD.YAML via string.
+  // Using the singular method is always an error.
+  {
+    const std::string dmd_contents = ReadEntireFile(dmd_name);
+    MultibodyPlant<double> plant(0.0);
+    Parser dut(&plant);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        dut.AddModelFromString(dmd_contents, "dmd.yaml"),
+        ".* always an error.*");
   }
 }
 
@@ -212,6 +243,13 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromString("bad", "urdf"),
       "<literal-string>.urdf:1: error: "
+      "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
+
+  // Malformed Mujoco string is an error.
+  // TODO(#18055): Until the underlying parser supports diagnostic policy, the
+  // error message matching here will be less than convincing.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Parser(&plant).AddModelFromString("bad", "xml"),
       "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
 
   // Unknown extension is an error.
