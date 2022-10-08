@@ -91,8 +91,7 @@ class ScrewJoint final : public Joint<T> {
   ///   are exactly the same, that is, `axis_F = axis_M`. In other words,
   ///   `axis_F` (or `axis_M`) is the eigenvector of `R_FM` with eigenvalue
   ///   equal to one.
-  ///   This vector can have any length, only the direction is used. This method
-  ///   aborts if `axis` is the zero vector.
+  ///   This vector can have any length, only the direction is used.
   /// @param[in] screw_pitch
   ///   Amount of translation in meters occuring over a one full
   ///   screw revolution. It's domain is (-∞, ∞). When the screw pitch is
@@ -103,6 +102,8 @@ class ScrewJoint final : public Joint<T> {
   ///   Viscous damping coefficient, N⋅m⋅s/rad for
   ///   rotation, used to model losses within the joint. See documentation of
   ///   damping() for details on modelling of the damping torque.
+  /// @throws std::exception if the L2 norm of `axis` is less than the square
+  /// root of machine epsilon.
   /// @throws std::exception if damping is negative.
   ScrewJoint(const std::string& name, const Frame<T>& frame_on_parent,
               const Frame<T>& frame_on_child,
@@ -125,7 +126,7 @@ class ScrewJoint final : public Joint<T> {
                      1, std::numeric_limits<double>::infinity()))
       , screw_pitch_{screw_pitch} {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
-    DRAKE_DEMAND(!axis.isZero(kEpsilon));
+    DRAKE_THROW_UNLESS(!axis.isZero(kEpsilon));
     DRAKE_THROW_UNLESS(damping >= 0);
     axis_ = axis.normalized();
   }
