@@ -27,7 +27,7 @@ Gurobi, you will need to [build Drake from source](/from_source.html).
 ## Stable Releases
 
 <div class="warning" markdown="1">
-For users running on Apple's newer arm64 hardware,  Drake does not yet provide
+For users running on Apple's newer arm64 hardware, Drake does not yet provide
 native pypi wheels (follow
 [issue #17906](https://github.com/RobotLocomotion/drake/issues/17906)
 for updates). In the meantime, we recommend that you install from a
