@@ -1,5 +1,6 @@
 #include "drake/multibody/plant/deformable_model.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -56,6 +57,7 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   /* Do the book-keeping. */
   reference_positions_.emplace(body_id, std::move(reference_position));
   body_id_to_geometry_id_.emplace(body_id, geometry_id);
+  geometry_id_to_body_id_.emplace(geometry_id, body_id);
   body_ids_.emplace_back(body_id);
   return body_id;
 }
@@ -91,9 +93,29 @@ DeformableBodyId DeformableModel<T>::GetBodyId(
 }
 
 template <typename T>
+DeformableBodyIndex DeformableModel<T>::GetBodyIndex(
+    DeformableBodyId id) const {
+  this->ThrowIfSystemResourcesNotDeclared(__func__);
+  ThrowUnlessRegistered(__func__, id);
+  return body_id_to_index_.at(id);
+}
+
+template <typename T>
 GeometryId DeformableModel<T>::GetGeometryId(DeformableBodyId id) const {
   ThrowUnlessRegistered(__func__, id);
   return body_id_to_geometry_id_.at(id);
+}
+
+template <typename T>
+DeformableBodyId DeformableModel<T>::GetBodyId(
+    geometry::GeometryId geometry_id) const {
+  if (geometry_id_to_body_id_.count(geometry_id) == 0) {
+    throw std::runtime_error(
+        fmt::format("The given GeometryId {} does not correspond to a "
+                    "deformable body registered with this model.",
+                    geometry_id));
+  }
+  return geometry_id_to_body_id_.at(geometry_id);
 }
 
 template <typename T>
@@ -191,6 +213,12 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
               },
               {systems::System<double>::xd_ticket()})
           .get_index();
+
+  std::sort(body_ids_.begin(), body_ids_.end());
+  for (DeformableBodyIndex i(0); i < static_cast<int>(body_ids_.size()); ++i) {
+    DeformableBodyId id = body_ids_[i];
+    body_id_to_index_[id] = i;
+  }
 }
 
 template <typename T>

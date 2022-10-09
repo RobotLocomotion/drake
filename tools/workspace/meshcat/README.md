@@ -15,7 +15,7 @@ Required:
 Possible options:
 
   - drake/manipulation/util/show_model.py
-    - Simply loads a model into the viewer in its default configuration.
+    - Loads a model and provides sliders to control its degrees of freedom.
     - Build and execute instructions are contained in the Python file itself.
   - drake/manipulation/util/geometry_inspector.py
     - Loads a model and provides sliders to control its degrees of freedom.

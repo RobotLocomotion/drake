@@ -23,6 +23,7 @@ filegroup(
         "test/**/*.sdf",
         "test/**/*.urdf",
         "test/**/*.xml",
+        "test/**/*.dmd.yaml",
         "test/**/*.png",
         "test/**/COLCON_IGNORE",
     ]),
@@ -190,6 +191,24 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "detail_dmd_parser",
+    srcs = ["detail_dmd_parser.cc"],
+    hdrs = ["detail_dmd_parser.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":detail_misc",
+        ":detail_parsing_workspace",
+        ":model_directives",
+        ":model_instance_info",
+        ":scoped_names",
+        "//common/yaml",
+        "//multibody/plant",
+        "@fmt",
+    ],
+)
+
+drake_cc_library(
     name = "detail_parsing_workspace",
     hdrs = ["detail_parsing_workspace.h"],
     internal = True,
@@ -208,6 +227,7 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":detail_dmd_parser",
         ":detail_mujoco_parser",
         ":detail_parsing_workspace",
         ":detail_sdf_parser",
@@ -277,13 +297,13 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
+        ":detail_dmd_parser",
         ":detail_misc",
         ":detail_parsing_workspace",
         ":scoped_names",
         "//common:diagnostic_policy",
         "//common:filesystem",
         "//common:find_resource",
-        "//common/yaml",
     ],
 )
 
