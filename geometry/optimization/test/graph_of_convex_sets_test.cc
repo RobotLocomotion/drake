@@ -1360,6 +1360,81 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
               2e-6);
 }
 
+// In some cases, the depth first search performed in rounding will lead to a
+// dead end. This test confirms that the search can backtrack to explore a new
+// branch. Note that this test is only effective when Mosek or Gurobi is
+// enabled. Otherwise, the failure mode that required backtracking in the depth
+// first search is not triggered.
+GTEST_TEST(ShortestPathTest, RoundingBacktrack) {
+  GraphOfConvexSets spp;
+
+  Vertex* source = spp.AddVertex(Point(Vector2d(1, -2)), "source");
+  Vertex* target = spp.AddVertex(Point(Vector2d(0.4, 2.5)), "target");
+
+  Vector3d b(3, 3, -1);
+  Vertex* v0 = spp.AddVertex(
+      HPolyhedron((Matrix<double, 3, 2>() << -1, 0, 0, -1, 1, 1).finished(), b)
+          .CartesianPower(2));
+  Vertex* v1 = spp.AddVertex(
+      HPolyhedron((Matrix<double, 3, 2>() << 1, 0, 0, -1, -1, 1).finished(), b)
+          .CartesianPower(2));
+  Vertex* v2 = spp.AddVertex(
+      HPolyhedron((Matrix<double, 3, 2>() << -1, 0, 0, 1, 1, -1).finished(), b)
+          .CartesianPower(2));
+  Vertex* v3 = spp.AddVertex(
+      HPolyhedron((Matrix<double, 3, 2>() << 1, 0, 0, 1, -1, -1).finished(), b)
+          .CartesianPower(2));
+
+  std::vector<Edge*> source_edges;
+  std::vector<Edge*> region_edges;
+  std::vector<Edge*> target_edges;
+
+  source_edges.push_back(spp.AddEdge(*source, *v0));
+  source_edges.push_back(spp.AddEdge(*source, *v1));
+
+  region_edges.push_back(spp.AddEdge(*v0, *v1));
+  region_edges.push_back(spp.AddEdge(*v1, *v0));
+  region_edges.push_back(spp.AddEdge(*v0, *v2));
+  region_edges.push_back(spp.AddEdge(*v2, *v0));
+  region_edges.push_back(spp.AddEdge(*v1, *v3));
+  region_edges.push_back(spp.AddEdge(*v3, *v1));
+  region_edges.push_back(spp.AddEdge(*v2, *v3));
+  region_edges.push_back(spp.AddEdge(*v3, *v2));
+
+  target_edges.push_back(spp.AddEdge(*v2, *target));
+  target_edges.push_back(spp.AddEdge(*v3, *target));
+
+  Matrix<double, 2, 4> A_diff;
+  A_diff << -Matrix2d::Identity(), Matrix2d::Identity();
+  auto continuity_con = std::make_shared<solvers::LinearEqualityConstraint>(
+      A_diff, Vector2d::Zero());
+  for (Edge* e : source_edges) {
+    e->AddConstraint(
+        solvers::Binding(continuity_con, {e->xu(), e->xv().head<2>()}));
+  }
+  for (Edge* e : source_edges) {
+    e->AddConstraint(solvers::Binding(continuity_con,
+                                      {e->xu().tail<2>(), e->xv().head<2>()}));
+  }
+  for (Edge* e : target_edges) {
+    e->AddConstraint(
+        solvers::Binding(continuity_con, {e->xu().tail<2>(), e->xv()}));
+  }
+
+  auto cost = std::make_shared<solvers::L2NormCost>(A_diff, Vector2d::Zero());
+  v0->AddCost(solvers::Binding(cost, v0->x()));
+  v1->AddCost(solvers::Binding(cost, v1->x()));
+  v2->AddCost(solvers::Binding(cost, v2->x()));
+  v3->AddCost(solvers::Binding(cost, v3->x()));
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 10;
+  auto result = spp.SolveShortestPath(source->id(), target->id(), options);
+  ASSERT_TRUE(result.is_success());
+}
+
 GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   GraphOfConvexSets spp;
 

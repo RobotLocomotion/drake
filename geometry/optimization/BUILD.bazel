@@ -120,6 +120,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "graph_of_convex_sets_test",
+    timeout = "moderate",
+    shard_count = 8,
     deps = [
         ":graph_of_convex_sets",
         "//common/test_utilities:eigen_matrix_compare",
