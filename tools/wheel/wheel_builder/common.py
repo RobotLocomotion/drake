@@ -15,6 +15,13 @@ wheelhouse = os.path.join(build_root, 'wheel', 'wheelhouse')
 # Location of various scripts and other artifacts used to complete the build.
 resource_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
+# List of (common) tests to execute.
+common_tests = [
+    'tests/sanity-test.py',
+    'tests/size-test.py',
+    'tests/pyi-install-test.py',
+]
+
 
 def gripe(message):
     """

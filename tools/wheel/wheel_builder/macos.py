@@ -9,6 +9,11 @@ import subprocess
 
 from .common import die, wheel_name
 from .common import build_root, resource_root, wheelhouse
+from .common import common_tests
+
+# List of (platform-specific) tests to execute.
+all_tests = common_tests + [
+]
 
 
 def _find_wheel(path, version):
@@ -54,7 +59,7 @@ def _test_wheel(path, env):
     Runs the test script on the wheel at `path`.
     """
     test_script = os.path.join(resource_root, 'macos', 'test-wheel.sh')
-    subprocess.check_call(['bash', test_script, path], env=env)
+    subprocess.check_call(['bash', test_script, path, *all_tests], env=env)
 
 
 def build(options):
