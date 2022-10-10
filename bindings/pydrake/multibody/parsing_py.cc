@@ -1,6 +1,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsing/package_map.h"
@@ -85,7 +86,22 @@ PYBIND11_MODULE(parsing, m) {
   // Model Directives
   {
     using Class = parsing::ModelDirectives;
-    py::class_<Class>(m, "ModelDirectives", doc.parsing.ModelDirectives.doc);
+    constexpr auto& cls_doc = doc.parsing.ModelDirectives;
+    py::class_<Class> cls(m, "ModelDirectives", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::ModelDirective;
+    constexpr auto& cls_doc = doc.parsing.ModelDirective;
+    py::class_<Class> cls(m, "ModelDirective", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 
   m.def("LoadModelDirectives", &parsing::LoadModelDirectives,
