@@ -13,26 +13,22 @@ integration. Any other configurations are provided on a best-effort basis.
 <!-- The minimum compiler versions should match those listed in both the root
      CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
 
-| Operating System ⁽³⁾               | Architecture | Python   | Bazel | CMake | C/C++ Compiler ⁽⁴⁾           | Java                          |
-|------------------------------------|--------------|----------|-------|-------|------------------------------|-------------------------------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8 ⁽²⁾  | 5.3   | 3.16  | GCC 9 (default) or Clang 12  | OpenJDK 11                    |
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.22  | GCC 11 (default) or Clang 12 | OpenJDK 11                    |
-| macOS Big Sur (11)                 | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 12 (Xcode 12)     | AdoptOpenJDK 16 (HotSpot JVM) |
-| macOS Monterey (12)                | x86_64       | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
-| macOS Monterey (12)                | arm64 ⁽¹⁾    | 3.10 ⁽²⁾ | 5.3   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| Operating System ⁽²⁾               | Architecture | Python ⁽¹⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java                          |
+|------------------------------------|--------------|------------|-------|-------|------------------------------|-------------------------------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8        | 5.3   | 3.16  | GCC 9 (default) or Clang 12  | OpenJDK 11                    |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 5.3   | 3.22  | GCC 11 (default) or Clang 12 | OpenJDK 11                    |
+| macOS Big Sur (11)                 | x86_64       | 3.10       | 5.3   | 3.24  | Apple LLVM 12 (Xcode 12)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Monterey (12)                | x86_64       | 3.10       | 5.3   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Monterey (12)                | arm64        | 3.10       | 5.3   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
 
-⁽¹⁾ For users running on Apple's newer arm64 hardware, you may run Drake in
-native arm64 mode when building from source. However, to use Drake's
-pre-compiled binaries, refer to [Running under Rosetta 2](/rosetta2.html) for
-instructions on running using x86_64 emulation.
+⁽¹⁾ CPython is the only Python implementation supported.
 
-⁽²⁾ CPython is the only Python implementation supported.
-
-⁽³⁾ Drake features that perform image rendering (e.g., camera simulation)
+⁽²⁾ Drake features that perform image rendering (e.g., camera simulation)
 require a working display server.  Most personal computers will have this
-already built in, but some cloud or docker environments may not.
+already built in, but some cloud or docker environments may require extra
+setup steps.
 
-⁽⁴⁾ Drake requires a compiler running in C++17 or C++20 mode.
+⁽³⁾ Drake requires a compiler running in C++17 or C++20 mode.
 
 # Getting Drake
 

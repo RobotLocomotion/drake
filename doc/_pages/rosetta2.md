@@ -2,17 +2,21 @@
 title: Running Drake on macOS ARM hardware via Rosetta 2
 ---
 
-# Overview
-
-For users running on Apple's newer arm64 hardware, to use Drake's pre-compiled
-releases you must run Drake's x86_64 binaries using Apple's Rosetta 2 emulation.
-Running natively on arm64 is currently only supported by [building Drake from
-source](/from_source.html).
-
 # Instructions
 
-To run pre-compiled Drake on Apple's newer arm64 hardware, **you must do all of
-your work in an x86_64 shell**:
+<div class="warning" markdown="1">
+**The advice on this page is no longer necessary as of current Drake.**
+
+For older versions of Drake, users running on Apple's newer arm64 hardware were
+required to run Drake's x86_64 binaries using Apple's Rosetta 2 emulation. That
+is no longer the case as of v1.9.0. The page serves as a historical record for
+how to run Drake x86_64 under Rosetta 2 emulation. Most users should ignore it
+and follow one of the typical [installation](/installation.html) instructions
+instead.
+</div>
+
+To run macOS x86_64 pre-compiled Drake binaries on Apple's newer arm64 hardware,
+you must do all of your work in an x86_64 shell:
 
 1. Use ``arch -x86_64 /bin/bash`` to obtain a shell.
 1. In that shell, run ``arch`` (with no arguments).
