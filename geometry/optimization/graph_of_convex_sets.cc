@@ -919,25 +919,27 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
             candidate_edges.emplace_back(e);
           }
         }
-        // Note: This rounding strategy should not end at a node with no
-        // candidate outbound edges. If it does, the right next step would be to
-        // pop the last` path_vertex_ids` and `new_path` edge. Since no examples
-        // of this happening have been observed, we use an assertion to detect a
-        // failure instead of adding an untested conditional.
-        DRAKE_DEMAND(candidate_edges.size() > 0);
-        Eigen::VectorXd candidate_flows(candidate_edges.size());
-        for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
-          candidate_flows(ii) = flows[candidate_edges[ii]->id()];
-        }
-        double edge_sample = uniform(generator) * candidate_flows.sum();
-        for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
-          if (edge_sample >= candidate_flows(ii)) {
-            edge_sample -= candidate_flows(ii);
-          } else {
-            visited_vertex_ids.push_back(candidate_edges[ii]->v().id());
-            path_vertex_ids.push_back(candidate_edges[ii]->v().id());
-            new_path.emplace_back(candidate_edges[ii]);
-            break;
+        // If the depth first search finds itself at a node with no candidate
+        // outbound edges, backtrack to the previous node and continue the
+        // search.
+        if (candidate_edges.size() == 0) {
+          path_vertex_ids.pop_back();
+          new_path.pop_back();
+        } else {
+          Eigen::VectorXd candidate_flows(candidate_edges.size());
+          for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
+            candidate_flows(ii) = flows[candidate_edges[ii]->id()];
+          }
+          double edge_sample = uniform(generator) * candidate_flows.sum();
+          for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
+            if (edge_sample >= candidate_flows(ii)) {
+              edge_sample -= candidate_flows(ii);
+            } else {
+              visited_vertex_ids.push_back(candidate_edges[ii]->v().id());
+              path_vertex_ids.push_back(candidate_edges[ii]->v().id());
+              new_path.emplace_back(candidate_edges[ii]);
+              break;
+            }
           }
         }
       }
