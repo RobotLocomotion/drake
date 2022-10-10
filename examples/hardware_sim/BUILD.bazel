@@ -6,6 +6,11 @@ load(
     "drake_cc_library",
 )
 load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
@@ -87,6 +92,22 @@ sh_binary(
     ],
     # Use the runfiles of the ":demo", not of the ":hardware_sim".
     env = {"RUNFILES_DIR": "../"},
+)
+
+drake_py_library(
+    name = "hardware_sim_py_lib",
+    srcs = ["hardware_sim.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_unittest(
+    name = "hardware_sim_py_test",
+    deps = [
+        ":hardware_sim_py_lib",
+        "//bindings/pydrake",
+    ],
 )
 
 add_lint_tests()
