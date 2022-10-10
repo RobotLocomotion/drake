@@ -920,12 +920,14 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
             candidate_edges.emplace_back(e);
           }
         }
-        // Note: This rounding strategy should not end at a node with no
-        // candidate outbound edges. If it does, the right next step would be to
-        // pop the last` path_vertex_ids` and `new_path` edge. Since no examples
-        // of this happening have been observed, we use an assertion to detect a
-        // failure instead of adding an untested conditional.
-        DRAKE_DEMAND(candidate_edges.size() > 0);
+        // If the depth first search finds itself at a node with no candidate
+        // outbound edges, backtrack to the previous node and continue the
+        // search.
+        if (candidate_edges.size() == 0) {
+          path_vertex_ids.pop_back();
+          new_path.pop_back();
+          continue;
+        }
         Eigen::VectorXd candidate_flows(candidate_edges.size());
         for (size_t ii = 0; ii < candidate_edges.size(); ++ii) {
           candidate_flows(ii) = flows[candidate_edges[ii]->id()];
