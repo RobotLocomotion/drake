@@ -30,7 +30,7 @@ using drake::systems::Context;
 using drake::systems::Diagram;
 using drake::systems::Simulator;
 using Eigen::Vector3d;
-using HT = drake::geometry::internal::HydroelasticType;
+using drake::geometry::internal::HydroelasticType;
 using drake::geometry::internal::kComplianceType;
 using drake::geometry::internal::kElastic;
 using drake::geometry::internal::kMaterialGroup;
@@ -68,7 +68,16 @@ namespace {
 // bottom pin joint holding the ladder to the ground, in the presence of contact
 // and actuation.
 //
-// We perform this test for both continuous and discrete models.
+// Passing true as the value of the `hydro_geometry` argument sets up the above
+// problem with hydroelastic contact. The point contact sphere geometry is
+// replaced by a compliant hydroelastic sphere and the wall's box geometry is
+// replaced by a rigid hydroelastic box. Verification is done using hydroelastic
+// contact results.
+//
+// We perform this test with point contact for both continuous and discrete
+// models. We perform this test with hydroelastic contact for continuous mode
+// only. See (#13888).
+//
 class LadderTest : public ::testing::Test {
  protected:
   void BuildLadderModel(double discrete_update_period,
@@ -109,7 +118,8 @@ class LadderTest : public ::testing::Test {
         CoulombFriction<double>(kFrictionCoefficient, kFrictionCoefficient));
 
     if (hydro_geometry) {
-      properties.AddProperty(kHydroGroup, kComplianceType, HT::kRigid);
+      properties.AddProperty(kHydroGroup, kComplianceType,
+                             HydroelasticType::kRigid);
       properties.AddProperty(kHydroGroup, kRezHint, kProblemWidth);
       properties.AddProperty(kMaterialGroup, kHcDissipation, kDissipation);
     }
@@ -164,7 +174,8 @@ class LadderTest : public ::testing::Test {
         CoulombFriction<double>(kFrictionCoefficient, kFrictionCoefficient));
 
     if (hydro_geometry) {
-      properties.AddProperty(kHydroGroup, kComplianceType, HT::kSoft);
+      properties.AddProperty(kHydroGroup, kComplianceType,
+                             HydroelasticType::kSoft);
       properties.AddProperty(kHydroGroup, kRezHint, kPointContactRadius);
       properties.AddProperty(kHydroGroup, kElastic, kElasticModulus);
       properties.AddProperty(kMaterialGroup, kHcDissipation, kDissipation);
