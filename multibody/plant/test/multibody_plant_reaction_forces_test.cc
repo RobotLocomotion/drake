@@ -237,8 +237,24 @@ class LadderTest : public ::testing::Test {
     simulator->get_mutable_integrator().set_maximum_step_size(5e-3);
     simulator->get_mutable_integrator().set_target_accuracy(1e-6);
     simulator->Initialize();
-    const double simulation_time = 1.0;  // seconds.
+    // Simulate until equilibrium is reached (or a max of 60 seconds)
+    const double simulation_time = 60.0;  // seconds.
+    const double kTolerance = 1e-13;
+    simulator->set_monitor(
+        [this, kTolerance](const drake::systems::Context<double>& context) {
+          double v =
+              plant_->GetVelocities(plant_->GetMyContextFromRoot(context))[0];
+          double a = plant_->get_generalized_acceleration_output_port().Eval(
+              plant_->GetMyContextFromRoot(context))[0];
+          if (abs(v) < kTolerance && abs(a) < kTolerance) {
+            return systems::EventStatus::ReachedTermination(
+                diagram_.get(), "Reached Equilibrium");
+          }
+          return systems::EventStatus::DidNothing();
+        });
     simulator->AdvanceTo(simulation_time);
+    drake::log()->info(fmt::format("Reached Equilibrium after {} seconds.\n",
+                                   simulator->get_context().get_time()));
     return simulator;
   }
 
@@ -423,8 +439,11 @@ class LadderTest : public ::testing::Test {
   const double kWallHeight{3.0};  // [m]
 
   // Hydroelastic parameters.
-  const double kElasticModulus{1.563248999e6};  // [Pa]
-  const double kDissipation{1e6};               // [s/m]
+  // const double kElasticModulus{1.563248999e6};  // [Pa]
+  // const double kDissipation{1e6};               // [s/m]
+  const double kElasticModulus{1.6e6};  // [Pa]
+  const double kDissipation{1.0};               // [s/m]
+
 
   // Pin joint parameters.
   const double kDistanceToWall{1.0};
