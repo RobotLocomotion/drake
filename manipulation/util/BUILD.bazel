@@ -40,23 +40,6 @@ drake_cc_package_library(
     ],
 )
 
-drake_py_binary(
-    name = "geometry_inspector",
-    srcs = ["geometry_inspector.py"],
-    deps = [
-        ":show_model",
-        "//bindings/pydrake",
-    ],
-)
-
-drake_py_unittest(
-    name = "geometry_inspector_test",
-    data = [
-        ":geometry_inspector",
-        "//multibody/benchmarks/acrobot:models",
-    ],
-)
-
 drake_cc_library(
     name = "move_ik_demo_base",
     srcs = [
