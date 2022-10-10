@@ -171,8 +171,8 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Into the box labeled "Attach binaries by dropping them here or selecting
-      them.", drag and drop the 9 ``tgz``-related binary artifacts from
-      ``/tmp/drake-release/v1.N.0`` (the 3 tarballs, and their 6 checksums).
+      them.", drag and drop the 12 ``tgz``-related binary artifacts from
+      ``/tmp/drake-release/v1.N.0`` (the 4 tarballs, and their 8 checksums).
       * Do not attach the ``whl``-related binary artifacts; we'll upload those
         pypi a bit later on.
    6. Choose "Save draft" and take a deep breath.
@@ -197,7 +197,7 @@ instructions to obtain a username and password.
 1. Run ``twine`` to upload the wheel release, as follows:
 
    1. You will need your PyPI username and password for this. (Do not use drake-robot.)
-   2. Run ``twine upload /tmp/drake_release/v1.N.0/*.whl``.
+   2. Run ``twine upload /tmp/drake-release/v1.N.0/*.whl``.
    3. Confirm that all of the uploads succeeded without any error messages in
       your terminal.
 
@@ -293,6 +293,10 @@ the email address associated with your github account.
       2. Do not try to run the ``licensed_solvers_deepnote`` notebook.
          (You do not have a suitable license key.)
       3. If you get an error like "Synchronization of file ... failed, your changes are not being saved. You might be running out of disk quota" you may ignore it.
+      4. In the "rendering multibody plant" tutorial, sometimes the rendering
+         step may crash with an interrupted error. In that case, click through
+         to the "Environment" gear in the right-hand panel, then into the
+         "init.ipynb" notbook and re-run the initialization.
    2. For all markdown cells, quickly skim over the rendered output to check
       that no markup errors have snuck through (e.g., LaTeX syntax errors).
    3. For all code cells, examine the output of each cell to check that no
