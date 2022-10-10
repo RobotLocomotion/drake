@@ -37,6 +37,14 @@ The most recent release is
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-20221009-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-20221009-mac.tar.gz) (for x86_64)
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-20221009-mac-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-20221009-mac-arm64.tar.gz) (for arm64)
 
+Users of macOS must download using a command-line tool such as ``curl`` instead
+of using a web browser, to avoid hassles from Gatekeeper checks for malicious
+software. For example:
+
+```
+curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.9.0/drake-20221009-mac-arm64.tar.gz
+```
+
 ### Use as a C++ library
 
 For an example of using a Drake ``*.tar.gz`` image from a CMake project, refer
@@ -99,3 +107,7 @@ Older packages for specific dates are available by replacing ``latest`` with an
 Nightly archives are retained for 56 days from their date of creation.
 
 The installation instructions are identical to stable releases as shown above.
+
+As with stable releases, users of macOS must download using a command-line tool
+such as ``curl`` instead of using a web browser, to avoid hassles from
+Gatekeeper checks for malicious software.
