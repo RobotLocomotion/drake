@@ -85,6 +85,7 @@ def _download_binaries(*, timestamp, wheels, version):
             f"drake-{timestamp}-focal.tar.gz",
             f"drake-{timestamp}-jammy.tar.gz",
             f"drake-{timestamp}-mac.tar.gz",
+            f"drake-{timestamp}-mac-arm64.tar.gz",
         ],
     }
     if wheels:
