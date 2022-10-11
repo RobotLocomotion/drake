@@ -375,6 +375,15 @@ T System<T>::CalcNextUpdateTime(const Context<T>& context,
 }
 
 template <typename T>
+void System<T>::GetPeriodicEvents(const Context<T>& context,
+                                  CompositeEventCollection<T>* events) const {
+  ValidateContext(context);
+  ValidateCreatedForThisSystem(events);
+  events->Clear();
+  DoGetPeriodicEvents(context, events);
+}
+
+template <typename T>
 void System<T>::GetPerStepEvents(const Context<T>& context,
                                  CompositeEventCollection<T>* events) const {
   ValidateContext(context);
@@ -397,8 +406,8 @@ template <typename T>
 std::optional<PeriodicEventData>
     System<T>::GetUniquePeriodicDiscreteUpdateAttribute() const {
   std::optional<PeriodicEventData> saved_attr;
-  auto periodic_events = GetPeriodicEvents();
-  for (const auto& saved_attr_and_vector : periodic_events) {
+  auto periodic_events_map = MapPeriodicEventsByTiming();
+  for (const auto& saved_attr_and_vector : periodic_events_map) {
     for (const auto& event : saved_attr_and_vector.second) {
       if (event->is_discrete_update()) {
         if (saved_attr)
@@ -411,6 +420,7 @@ std::optional<PeriodicEventData>
 
   return saved_attr;
 }
+
 
 template <typename T>
 bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
@@ -433,8 +443,15 @@ bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
 
 template <typename T>
 std::map<PeriodicEventData, std::vector<const Event<T>*>,
-  PeriodicEventDataComparator> System<T>::GetPeriodicEvents() const {
-  return DoGetPeriodicEvents();
+         PeriodicEventDataComparator>
+System<T>::MapPeriodicEventsByTiming(const Context<T>* context) const {
+  std::unique_ptr<Context<T>> dummy_context;
+  const Context<T>* context_to_use = context;
+  if (context_to_use == nullptr) {
+    dummy_context = AllocateContext();
+    context_to_use = dummy_context.get();
+  }
+  return DoMapPeriodicEventsByTiming(*context_to_use);
 }
 
 template <typename T>
@@ -1024,6 +1041,13 @@ void System<T>::DoCalcNextUpdateTime(const Context<T>& context,
                                      T* time) const {
   unused(context, events);
   *time = std::numeric_limits<double>::infinity();
+}
+
+template <typename T>
+void System<T>::DoGetPeriodicEvents(
+    const Context<T>& context,
+    CompositeEventCollection<T>* events) const {
+  unused(context, events);
 }
 
 template <typename T>
