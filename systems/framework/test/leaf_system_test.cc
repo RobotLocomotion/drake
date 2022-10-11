@@ -367,7 +367,7 @@ class LeafSystemTest : public ::testing::Test {
   }
 
   double CalcNextUpdateTime() const {
-    // Unless there are an extrene number of concurrent events, calculating the
+    // Unless there are an extreme number of concurrent events, calculating the
     // next update time should not allocate.
     test::LimitMalloc guard;
     return system_.CalcNextUpdateTime(context_, event_info_.get());

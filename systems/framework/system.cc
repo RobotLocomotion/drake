@@ -375,6 +375,15 @@ T System<T>::CalcNextUpdateTime(const Context<T>& context,
 }
 
 template <typename T>
+void System<T>::GetPeriodicEventsCollection(const Context<T>& context,
+                                 CompositeEventCollection<T>* events) const {
+  ValidateContext(context);
+  ValidateCreatedForThisSystem(events);
+  events->Clear();
+  DoGetPeriodicEventsCollection(context, events);
+}
+
+template <typename T>
 void System<T>::GetPerStepEvents(const Context<T>& context,
                                  CompositeEventCollection<T>* events) const {
   ValidateContext(context);
@@ -412,6 +421,7 @@ std::optional<PeriodicEventData>
   return saved_attr;
 }
 
+
 template <typename T>
 bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
   if (num_continuous_states() || num_abstract_states()) { return false; }
@@ -433,8 +443,10 @@ bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
 
 template <typename T>
 std::map<PeriodicEventData, std::vector<const Event<T>*>,
-  PeriodicEventDataComparator> System<T>::GetPeriodicEvents() const {
-  return DoGetPeriodicEvents();
+         PeriodicEventDataComparator>
+System<T>::MapPeriodicEventsByTiming(const Context<T>& context) const {
+  ValidateContext(context);
+  return DoMapPeriodicEventsByTiming(context);
 }
 
 template <typename T>
@@ -1024,6 +1036,13 @@ void System<T>::DoCalcNextUpdateTime(const Context<T>& context,
                                      T* time) const {
   unused(context, events);
   *time = std::numeric_limits<double>::infinity();
+}
+
+template <typename T>
+void System<T>::DoGetPeriodicEventsCollection(
+    const Context<T>& context,
+    CompositeEventCollection<T>* events) const {
+  unused(context, events);
 }
 
 template <typename T>

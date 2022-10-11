@@ -434,7 +434,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const;
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> DoGetPeriodicEvents() const override;
+           PeriodicEventDataComparator>
+  DoMapPeriodicEventsByTiming(const Context<T>& context) const final;
 
   void DoGetPerStepEvents(
       const Context<T>& context,

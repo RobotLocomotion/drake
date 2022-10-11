@@ -349,13 +349,13 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
     CompositeEventCollection<T>* events, T* time) const {
   T min_time = std::numeric_limits<double>::infinity();
 
-  if (periodic_events_.empty()) {
+  if (!periodic_events_.HasEvents()) {
     *time = min_time;
     return;
   }
 
   // Calculate which events to fire. Use an InlinedVector so that small-ish
-  // numbers events can be processed without heap allocations. Our threshold
+  // numbers of events can be processed without heap allocations. Our threshold
   // for "small" is the same amount that would cause an EventCollection to
   // grow beyond its pre-allocated size.
   using NextEventsVector = absl::InlinedVector<
@@ -364,17 +364,29 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
 
   // Find the minimum next sample time across all declared periodic events,
   // and store the set of declared events that will occur at that time.
-  for (const auto& event_pair : periodic_events_) {
-    const PeriodicEventData& event_data = event_pair.first;
-    const Event<T>* const event = event_pair.second.get();
-    const T t = GetNextSampleTime(event_data, context.get_time());
-    if (t < min_time) {
-      min_time = t;
-      next_events = {event};
-    } else if (t == min_time) {
-      next_events.push_back(event);
+  // There are three lists to run through in a CompositeEventCollection.
+
+  // We give absl hidden visibility in Drake so can't capture the absl vector
+  // (otherwise we suffer a warning). Works as a parameter though.
+  auto scan_events = [&context, &min_time](const auto& typed_events,
+                                           NextEventsVector* event_list) {
+    for (const auto* event : typed_events.get_events()) {
+      const PeriodicEventData* event_data =
+          event->template get_event_data<PeriodicEventData>();
+      DRAKE_DEMAND(event_data != nullptr);
+      const T t = GetNextSampleTime(*event_data, context.get_time());
+      if (t < min_time) {
+        min_time = t;
+        *event_list = {event};
+      } else if (t == min_time) {
+        event_list->push_back(event);
+      }
     }
-  }
+  };
+
+  scan_events(periodic_events_.get_publish_events(), &next_events);
+  scan_events(periodic_events_.get_discrete_update_events(), &next_events);
+  scan_events(periodic_events_.get_unrestricted_update_events(), &next_events);
 
   // Write out the events that fire at min_time.
   *time = min_time;
@@ -805,12 +817,28 @@ std::unique_ptr<AbstractValue> LeafSystem<T>::DoAllocateInput(
 
 template <typename T>
 std::map<PeriodicEventData, std::vector<const Event<T>*>,
-    PeriodicEventDataComparator> LeafSystem<T>::DoGetPeriodicEvents() const {
+         PeriodicEventDataComparator>
+LeafSystem<T>::DoMapPeriodicEventsByTiming(const Context<T>&) const {
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> periodic_events_map;
-  for (const auto& i : periodic_events_) {
-    periodic_events_map[i.first].push_back(i.second.get());
-  }
+           PeriodicEventDataComparator>
+      periodic_events_map;
+
+  // Build a mapping from (offset,period) to the periodic events sharing
+  // that trigger. There are three lists of different types in a
+  // CompositeEventCollection; we use this generic lambda for all.
+  auto map_events = [&periodic_events_map](const auto& typed_events) {
+    for (const auto* event : typed_events.get_events()) {
+      const PeriodicEventData* event_data =
+          event->template get_event_data<PeriodicEventData>();
+      DRAKE_DEMAND(event_data != nullptr);
+      periodic_events_map[*event_data].push_back(event);
+    }
+  };
+
+  map_events(periodic_events_.get_publish_events());
+  map_events(periodic_events_.get_discrete_update_events());
+  map_events(periodic_events_.get_unrestricted_update_events());
+
   return periodic_events_map;
 }
 
@@ -881,6 +909,35 @@ void LeafSystem<T>::DoApplyUnrestrictedUpdate(
   DRAKE_DEMAND(events.HasEvents());
   // TODO(sherm1) Should swap rather than copy.
   context->get_mutable_state().SetFrom(*state);
+}
+
+template <typename T>
+void LeafSystem<T>::DoFindUniquePeriodicDiscreteUpdatesOrThrow(
+    const char* api_name, const Context<T>& context,
+    std::optional<PeriodicEventData>* timing,
+    EventCollection<DiscreteUpdateEvent<T>>* events) const {
+  unused(context);
+  auto& leaf_collection =
+      dynamic_cast<LeafEventCollection<DiscreteUpdateEvent<T>>&>(*events);
+
+  for (const DiscreteUpdateEvent<T>* event :
+       periodic_events_.get_discrete_update_events().get_events()) {
+    DRAKE_DEMAND(event->get_trigger_type() == TriggerType::kPeriodic);
+    const PeriodicEventData* const event_timing =
+        event->template get_event_data<PeriodicEventData>();
+    DRAKE_DEMAND(event_timing != nullptr);
+    if (!*timing)  // First find sets the required timing.
+      *timing = *event_timing;
+    if (!(*event_timing == *(*timing))) {
+      throw std::logic_error(fmt::format(
+          "{}(): found more than one "
+          "periodic timing that triggers discrete update events. "
+          "Timings were (offset,period)=({},{}) and ({},{}).",
+          api_name, (*timing)->offset_sec(), (*timing)->period_sec(),
+          event_timing->offset_sec(), event_timing->period_sec()));
+    }
+    leaf_collection.AddEvent(*event);
+  }
 }
 
 template <typename T>
