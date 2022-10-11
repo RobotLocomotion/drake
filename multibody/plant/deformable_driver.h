@@ -160,6 +160,7 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   friend class DeformableDriverContactTest;
   friend class DeformableDriverContactKinematicsTest;
   friend class DeformableDriverMultiplexerTest;
+  friend class DeformableIntegrationTest;
 
   /* Struct used to conglomerate the indexes of cache entries declared by
    the manager. */
