@@ -6,6 +6,8 @@ namespace drake {
 namespace systems {
 namespace {
 
+// PeriodicEventData has an operator==() member function, and a Comparator
+// struct whose operator() defines a "less than" ordering.
 GTEST_TEST(EventsTest, PeriodicAttributeComparatorTest) {
   PeriodicEventDataComparator comparator;
 
@@ -18,11 +20,13 @@ GTEST_TEST(EventsTest, PeriodicAttributeComparatorTest) {
 
   // Case 1: both period_sec's equal (d1's offset is less than d2's).
   EXPECT_TRUE(comparator(d1, d2));
+  EXPECT_FALSE(d1 == d2);
 
   // Case 2: d1's period is greater than d2's period (but d2's offset is
   // greater than d1's offset).
   d1.set_period_sec(1e-8);
   EXPECT_FALSE(comparator(d1, d2));
+  EXPECT_FALSE(d1 == d2);
 
   // Case 3: d1's period is less than d2's period (but d2's offset is
   // lesser than d1's offset).
@@ -32,6 +36,7 @@ GTEST_TEST(EventsTest, PeriodicAttributeComparatorTest) {
   d2 = d1;
   EXPECT_FALSE(comparator(d1, d2));
   EXPECT_FALSE(comparator(d2, d1));
+  EXPECT_TRUE(d1 == d2);
 }
 
 // Check trigger data accessors:
