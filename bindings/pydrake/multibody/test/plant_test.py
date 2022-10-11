@@ -1644,6 +1644,7 @@ class TestPlant(unittest.TestCase):
         make_joint_list = [
             make_ball_rpy_joint,
             make_planar_joint,
+            make_screw_joint,
             make_prismatic_joint,
             make_revolute_joint,
             make_universal_joint,
