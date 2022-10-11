@@ -28,6 +28,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
+using drake::systems::analysis_test::StatelessSystem;
 
 namespace drake {
 namespace systems {
@@ -477,7 +478,7 @@ class ExampleDiagram : public Diagram<double> {
     adder1_->set_name("adder1");
     adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder2_->set_name("adder2");
-    stateless_ = builder.AddSystem<analysis_test::StatelessSystem<double>>(
+    stateless_ = builder.AddSystem<StatelessSystem<double>>(
         1.0 /* trigger time */,
         WitnessFunctionDirection::kCrossesZero);
     stateless_->set_name("stateless");
@@ -525,7 +526,7 @@ class ExampleDiagram : public Diagram<double> {
   Integrator<double>* integrator0() { return integrator0_; }
   Integrator<double>* integrator1() { return integrator1_; }
   Sink<double>* sink() { return sink_; }
-  analysis_test::StatelessSystem<double>* stateless() { return stateless_; }
+  StatelessSystem<double>* stateless() { return stateless_; }
   KitchenSinkStateAndParameters<double>* kitchen_sink() {
     return kitchen_sink_;
   }
@@ -534,7 +535,7 @@ class ExampleDiagram : public Diagram<double> {
   Adder<double>* adder0_ = nullptr;
   Adder<double>* adder1_ = nullptr;
   Adder<double>* adder2_ = nullptr;
-  analysis_test::StatelessSystem<double>* stateless_ = nullptr;
+  StatelessSystem<double>* stateless_ = nullptr;
 
   Integrator<double>* integrator0_ = nullptr;
   Integrator<double>* integrator1_ = nullptr;
@@ -974,11 +975,25 @@ TEST_F(DiagramTest, AllocateInputs) {
 TEST_F(DiagramTest, GetSubsystemByName) {
   const System<double>& stateless = diagram_->GetSubsystemByName("stateless");
   EXPECT_NE(
-      dynamic_cast<const analysis_test::StatelessSystem<double>*>(&stateless),
+      dynamic_cast<const StatelessSystem<double>*>(&stateless),
       nullptr);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       diagram_->GetSubsystemByName("not_a_subsystem"),
+      "System .* does not have a subsystem named not_a_subsystem");
+}
+
+TEST_F(DiagramTest, GetDowncastSubsystemByName) {
+  const StatelessSystem<double>& stateless =
+      diagram_->GetDowncastSubsystemByName<StatelessSystem>("stateless");
+  EXPECT_EQ(stateless.get_name(), "stateless");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      diagram_->GetDowncastSubsystemByName<EmptySystem>("stateless"),
+      ".*cast.*StatelessSystem.*EmptySystem.*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      diagram_->GetDowncastSubsystemByName<StatelessSystem>("not_a_subsystem"),
       "System .* does not have a subsystem named not_a_subsystem");
 }
 
