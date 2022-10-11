@@ -22,6 +22,12 @@ hold the integrated position (with zero velocity); on kStuck the integration
 will continue (though "kStuck" implies that the achieved spatial velocity will
 be much smaller than what was commanded).
 
+The optional boolean (abstract-)valued input port `use_robot_state` can be used
+to reset the integrated state to the value obtained from the `robot_state`
+input (which must also be connected). Note: Using measured joint positions in a
+feedback loop can lead to undamped oscillations in the redundant joints; we
+hope to resolve this and are tracking it in #9773.
+
 Note: It is highly recommended that the user calls `SetPosition()` once to
 initialize the position commands to match the initial positions of the robot.
 Alternatively, one can connect the optional `robot_state` input port -- which
@@ -30,15 +36,13 @@ on this input port (the port accepts the state vector with positions and
 velocities for easy of use with MultibodyPlant, but only the positions are
 used).
 
-Note: Using measured joint positions in a feedback loop can lead to undamped
-oscillations in the redundant joints; we hope to resolve this and are tracking
-it in #9773.
 
 @system
 name: DifferentialInverseKinematicsIntegrator
 input_ports:
 - X_WE_desired
 - robot_state (optional)
+- use_robot_state (optional)
 output_ports:
 - joint_positions
 @endsystem
@@ -122,6 +126,9 @@ class DifferentialInverseKinematicsIntegrator
   DifferentialInverseKinematicsParameters parameters_;
   const double time_step_{0.0};
   const systems::CacheEntry* robot_context_cache_entry_{};
+  systems::InputPortIndex X_WE_desired_index_{};
+  systems::InputPortIndex robot_state_index_{};
+  systems::InputPortIndex use_robot_state_index_{};
 };
 
 }  // namespace planner
