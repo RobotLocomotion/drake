@@ -200,11 +200,13 @@ class System : public SystemBase {
   void Publish(const Context<T>& context,
                const EventCollection<PublishEvent<T>>& events) const;
 
+  // TODO(sherm1) Rename this ForcedPublish().
+
   /** Forces a publish on the system, given a @p context. The publish event will
   have a trigger type of kForced, with no additional data, attribute or
   custom callback. The Simulator can be configured to call this in
   Simulator::Initialize() and at the start of each continuous integration
-  step. See the Simulator API for more details. */
+  step (not recommended). See the Simulator API for more details. */
   void Publish(const Context<T>& context) const;
   //@}
 
@@ -541,10 +543,12 @@ class System : public SystemBase {
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state, Context<T>* context) const;
 
-  /** This method forces a discrete update on the system given a @p context,
-  and the updated discrete state is stored in @p discrete_state. The
-  discrete update event will have a trigger type of kForced, with no
-  attribute or custom callback. */
+  // TODO(sherm1) Rename this CalcForcedDiscreteVariableUpdate().
+
+  /** This method forces a discrete update on the system
+  given a @p context, and the updated discrete state is stored in
+  @p discrete_state. The discrete update event will have a trigger type of
+  kForced, with no attribute or custom callback. */
   void CalcDiscreteVariableUpdates(const Context<T>& context,
                                    DiscreteValues<T>* discrete_state) const;
 
@@ -582,8 +586,10 @@ class System : public SystemBase {
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const;
 
-  /** This method forces an unrestricted update on the system given a
-  @p context, and the updated state is stored in @p state. The
+  // TODO(sherm1) Rename this CalcForcedUnrestrictedUpdate().
+
+  /** This method forces an unrestricted update on the system
+  given a @p context, and the updated state is stored in @p state. The
   unrestricted update event will have a trigger type of kForced, with no
   additional data, attribute or custom callback.
 
@@ -602,6 +608,9 @@ class System : public SystemBase {
   merged CompositeEventCollection will be passed to all event handling
   mechanisms.
 
+  Despite the name, the returned events includes both state-updating events
+  and publish events.
+
   If there is no timed event coming, the return value is Infinity. If
   a finite update time is returned, there will be at least one Event object
   in the returned event collection.
@@ -609,6 +618,14 @@ class System : public SystemBase {
   @p events cannot be null. @p events will be cleared on entry. */
   T CalcNextUpdateTime(const Context<T>& context,
                        CompositeEventCollection<T>* events) const;
+
+  /** Returns all periodic events in this %System. This includes publish,
+  discrete update, and unrestricted update events.
+
+  @p events cannot be null. @p events will be cleared on entry.
+  @see GetPerStepEvents(), GetInitializationEvents() */
+  void GetPeriodicEvents(const Context<T>& context,
+                         CompositeEventCollection<T>* events) const;
 
   /** This method is called by Simulator::Initialize() to gather all update
   and publish events that are to be handled in AdvanceTo() at the point
@@ -621,7 +638,8 @@ class System : public SystemBase {
   will be passed to the appropriate handlers before Simulator integrates the
   continuous state.
 
-  @p events cannot be null. @p events will be cleared on entry. */
+  @p events cannot be null. @p events will be cleared on entry.
+  @see GetPeriodicEvents(), GetInitializationEvents() */
   void GetPerStepEvents(const Context<T>& context,
                         CompositeEventCollection<T>* events) const;
 
@@ -629,18 +647,28 @@ class System : public SystemBase {
   update and publish events that need to be handled at initialization
   before the simulator starts integration.
 
-  @p events cannot be null. @p events will be cleared on entry. */
+  @p events cannot be null. @p events will be cleared on entry.
+  @see GetPeriodicEvents(), GetPerStepEvents() */
   void GetInitializationEvents(const Context<T>& context,
                                CompositeEventCollection<T>* events) const;
 
-  /** Gets whether there exists a unique periodic attribute that triggers
-  one or more discrete update events (and, if so, returns that unique
-  periodic attribute). Thus, this method can be used (1) as a test to
+  /** Determines whether there exists a unique periodic timing (offset and
+  period) that triggers one or more discrete update events (and, if so, returns
+  that unique periodic timing). Thus, this method can be used (1) as a test to
   determine whether a system's dynamics are at least partially governed by
-  difference equations and (2) to obtain the difference equation update
-  times.
-  @returns optional<PeriodicEventData> Contains the periodic trigger
-  attributes if the unique periodic attribute exists, otherwise `nullopt`. */
+  difference equations, and (2) to obtain the difference equation update times.
+
+  @warning Even if we find a unique discrete update timing as described above,
+  there may also be unrestricted updates performed with that timing or other
+  timings. (Unrestricted updates can modify any state variables including
+  discrete variables.) Also, there may be trigger types other than periodic that
+  can modify discrete variables. This function does not attempt to look for any
+  of those. If you are concerned with those, you can use GetPerStepEvents(),
+  GetInitializationEvents(), and GetPeriodicEvents() to get a more
+  comprehensive picture of the event landscape.
+
+  @returns optional<PeriodicEventData> Contains the unique periodic trigger
+  timing if it exists, otherwise `nullopt`. */
   std::optional<PeriodicEventData>
       GetUniquePeriodicDiscreteUpdateAttribute() const;
 
@@ -648,11 +676,18 @@ class System : public SystemBase {
   exclusively by a difference equation on a single discrete state group
   and with a unique periodic update (having zero offset).  E.g., it is
   amenable to analysis of the form:
-    x[n+1] = f(x[n], u[n])
+
+      x[n+1] = f(x[n], u[n])
+
   Note that we do NOT consider the number of input ports here, because
   in practice many systems of interest (e.g. MultibodyPlant) have input
   ports that are safely treated as constant during the analysis.
   Consider using get_input_port_selection() to choose one.
+
+  @warning In determining whether this system is governed as above, we do not
+  consider unrestricted updates or any update events that have trigger types
+  other than periodic. See GetUniquePeriodicDiscreteUpdateAttribute() for more
+  information.
 
   @param[out] time_period if non-null, then iff the function
   returns `true`, then time_period is set to the period data
@@ -661,11 +696,30 @@ class System : public SystemBase {
   system), then `time_period` does not receive a value. */
   bool IsDifferenceEquationSystem(double* time_period = nullptr) const;
 
-  /** Gets all periodic triggered events for a system. Each periodic attribute
-  (offset and period, in seconds) is mapped to one or more update events
-  that are to be triggered at the proper times. */
+  /** Maps all periodic triggered events for a %System, organized by timing.
+  Each unique periodic timing attribute (offset and period) is
+  mapped to the set of Event objects that are triggered with that timing.
+  Those may include a mix of Publish, DiscreteUpdate, and UnrestrictedUpdate
+  events.
+
+  @param context Optional Context to pass on to Event selection functions;
+      not commonly needed. */
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-    PeriodicEventDataComparator> GetPeriodicEvents() const;
+           PeriodicEventDataComparator>
+  MapPeriodicEventsByTiming(const Context<T>* context = nullptr) const;
+
+  /** (Deprecated) See MapPeriodicEventsByTiming(). If you are looking for
+  the EventCollection of periodic events (analogous to GetPerStepEvents()
+  and GetInitializationEvents()), see
+  GetPeriodicEvents(Context, EventCollection). */
+  DRAKE_DEPRECATED("2023-02-01",
+      "Use MapPeriodicEventsByTiming() or "
+      "GetPeriodicEvents(Context, EventCollection) instead")
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+           PeriodicEventDataComparator>
+  GetPeriodicEvents() const {
+    return MapPeriodicEventsByTiming();
+  }
 
   /** Utility method that computes for _every_ output port i the value y(i) that
   should result from the current contents of the given Context. Note that
@@ -1457,19 +1511,33 @@ class System : public SystemBase {
   time, you _must_ put at least one Event object in the @p events collection.
   These requirements are enforced by the public CalcNextUpdateTime() method.
 
+  @note Despite the name, you must include publish events along with
+  state-updating events.
+
   The default implementation returns with the next sample time being
   Infinity and no events added to @p events. */
   virtual void DoCalcNextUpdateTime(const Context<T>& context,
                                     CompositeEventCollection<T>* events,
                                     T* time) const;
 
-  /** Implement this method to return all periodic triggered events.
-  @see GetPeriodicEvents() for a detailed description of the returned
-       variable.
-  @note The default implementation returns an empty map. */
-  virtual std::map<PeriodicEventData,
-      std::vector<const Event<T>*>, PeriodicEventDataComparator>
-    DoGetPeriodicEvents() const = 0;
+  /** Implement this method to return all periodic triggered events organized
+  by timing.
+  @see MapPeriodicEventsByTiming() for a detailed description of the returned
+       variable. */
+  virtual std::map<PeriodicEventData, std::vector<const Event<T>*>,
+                   PeriodicEventDataComparator>
+  DoMapPeriodicEventsByTiming(const Context<T>& context) const = 0;
+
+  /** Implement this method to return any periodic events. @p events is cleared
+  in the public non-virtual GetPeriodicEvents(). You may assume that
+  @p context has already been validated and that @p events is not null.
+  @p events can be changed freely by the overriding implementation.
+
+  The default implementation returns without changing @p events.
+  @sa GetPeriodicEvents() */
+  virtual void DoGetPeriodicEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const;
 
   /** Implement this method to return any events to be handled before the
   simulator integrates the system's continuous state at each time step.

@@ -261,19 +261,19 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
 
     // None of these should have a unique periodic event.
     EXPECT_FALSE(d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys1upd.GetPeriodicEvents().size(), i + 1);
+    EXPECT_EQ(d_sys1upd.MapPeriodicEventsByTiming().size(), i + 1);
     EXPECT_FALSE(d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys2upd.GetPeriodicEvents().size(), i + 1);
+    EXPECT_EQ(d_sys2upd.MapPeriodicEventsByTiming().size(), i + 1);
     EXPECT_FALSE(d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_bothupd.GetPeriodicEvents().size(), 2 * (i + 1));
+    EXPECT_EQ(d_bothupd.MapPeriodicEventsByTiming().size(), 2 * (i + 1));
     EXPECT_FALSE(d_both_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_both_last.GetPeriodicEvents().size(), 2);
+    EXPECT_EQ(d_both_last.MapPeriodicEventsByTiming().size(), 2);
 
     // All of these should have a unique periodic event.
     EXPECT_TRUE(d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys1_last.GetPeriodicEvents().size(), 1);
+    EXPECT_EQ(d_sys1_last.MapPeriodicEventsByTiming().size(), 1);
     EXPECT_TRUE(d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys2_last.GetPeriodicEvents().size(), 1);
+    EXPECT_EQ(d_sys2_last.MapPeriodicEventsByTiming().size(), 1);
   }
 }
 
@@ -3251,11 +3251,10 @@ GTEST_TEST(MyEventTest, MyEventTestLeaf) {
     EXPECT_EQ(events->get_system_id(), context->get_system_id());
 
     // If period is zero, we still need to evaluate the per step events.
-    double time = dut.CalcNextUpdateTime(*context, periodic_events.get());
+    dut.GetPeriodicEvents(*context, periodic_events.get());
     dut.GetPerStepEvents(*context, per_step_events.get());
     events->AddToEnd(*periodic_events);
     events->AddToEnd(*per_step_events);
-    context->SetTime(time);
     dut.Publish(*context, events->get_publish_events());
 
     EXPECT_EQ(dut.get_periodic_count(), period > 0 ? 1 : 0);
@@ -3301,6 +3300,7 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   events->AddToEnd(*periodic_events);
   events->AddToEnd(*per_step_events);
 
+  // FYI time not actually needed here; events to handle already selected.
   context->SetTime(time);
   dut->Publish(*context, events->get_publish_events());
 
