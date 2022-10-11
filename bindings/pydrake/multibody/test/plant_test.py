@@ -35,6 +35,7 @@ from pydrake.multibody.tree import (
     PlanarJoint_,
     PrismaticJoint_,
     RevoluteJoint_,
+    ScrewJoint,
     RevoluteSpring_,
     RotationalInertia_,
     RigidBody_,
@@ -1592,6 +1593,15 @@ class TestPlant(unittest.TestCase):
                 frame_on_parent=P,
                 frame_on_child=C,
                 axis=x_axis,
+                damping=damping,
+            )
+
+        def make_screw_joint(plant, P, C):
+            return ScrewJoint(
+                name="screw",
+                frame_on_parent=P,
+                frame_on_child=C,
+                screw_pitch=0.005,
                 damping=damping,
             )
 

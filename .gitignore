@@ -27,4 +27,3 @@
 /gen/
 
 # User-specified configuration
-/user.bazelrc
