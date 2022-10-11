@@ -204,8 +204,10 @@ class LadderTest : public ::testing::Test {
   }
 
   // Build and run a simulator, and return it after simulating.
-  std::unique_ptr<Simulator<double>> Simulate(
-      std::unique_ptr<Context<double>> diagram_context) {
+  std::unique_ptr<Simulator<double>> Simulate() {
+    std::unique_ptr<Context<double>> diagram_context =
+        diagram_->CreateDefaultContext();
+
     Context<double>* plant_context =
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context.get());
 
@@ -365,23 +367,16 @@ class LadderTest : public ::testing::Test {
         CompareMatrices(F_Bu_W.translational(), f_Bu_expected, kTolerance));
   }
 
-  void Test(double time_step, bool hydro_geometry = false) {
-    BuildLadderModel(time_step, hydro_geometry);
-    auto context_prototype = diagram_->CreateDefaultContext();
-    auto simulator_prototype = Simulate(std::move(context_prototype));
-    VerifyJointReactionForces(&simulator_prototype->get_mutable_context(),
-                              hydro_geometry);
-  }
-
-  void TestWithThreads(double time_step) {
+  void TestWithThreads(double time_step, bool hydro_geometry = false) {
     SCOPED_TRACE(fmt::format("time_step = {}", time_step));
-    BuildLadderModel(time_step);
+    BuildLadderModel(time_step, hydro_geometry);
     ASSERT_EQ(plant_->is_discrete(), (time_step != 0.));
 
     // Create the threads' contexts by cloning a prototype. This will help
     // ensure the context deep copy is properly working.
-    auto context_prototype = diagram_->CreateDefaultContext();
-    auto simulator_prototype = Simulate(std::move(context_prototype));
+    auto simulator_prototype = Simulate();
+    VerifyJointReactionForces(&simulator_prototype->get_mutable_context(),
+                              hydro_geometry);
 
     // TODO(#17720): As articulated in the issue, baking a query object when
     // cloning scene graph context is thread-unsafe. In particular, updating the
@@ -409,9 +404,8 @@ class LadderTest : public ::testing::Test {
     std::vector<std::thread> threads;
     for (int k = 0; k < kThreads; k++) {
       threads.push_back(
-          std::thread([this, &simulator_prototype]() {
-              auto context = simulator_prototype->get_context().Clone();
-              Simulate(std::move(context));
+          std::thread([this]() {
+              Simulate();
               // We skip verifying forces here because system evolution
               // invalidates the expected values used above.
             }));
@@ -468,18 +462,14 @@ class LadderTest : public ::testing::Test {
 };
 
 TEST_F(LadderTest, PinReactionForcesContinuous) {
-  Test(0.);
+  TestWithThreads(0.);
 }
 
 TEST_F(LadderTest, PinReactionForcesContinuousHydroelastic) {
-  Test(0., true);
+  TestWithThreads(0., true);
 }
 
 TEST_F(LadderTest, PinReactionForcesDiscrete) {
-  Test(1.0e-3);
-}
-
-TEST_F(LadderTest, TAMSIThreadSafety) {
   TestWithThreads(1.0e-3);
 }
 
