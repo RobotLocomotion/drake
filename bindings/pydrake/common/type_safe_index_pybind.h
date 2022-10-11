@@ -5,6 +5,7 @@
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/type_safe_index.h"
@@ -16,6 +17,8 @@ namespace pydrake {
 template <typename Class>
 auto BindTypeSafeIndex(
     py::module m, const std::string& name, const std::string& class_doc = "") {
+  py::module::import("pydrake.common.value");
+
   py::class_<Class> cls(m, name.c_str(), class_doc.c_str());
   cls  // BR
       .def(py::init<>(), pydrake_doc.drake.TypeSafeIndex.ctor.doc_0args)
@@ -33,6 +36,7 @@ auto BindTypeSafeIndex(
       .def("__repr__", [name](const Class& self) {
         return py::str("{}({})").format(name, static_cast<int>(self));
       });
+  AddValueInstantiation<Class>(m);
   return cls;
 }
 

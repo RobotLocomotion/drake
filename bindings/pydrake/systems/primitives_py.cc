@@ -24,6 +24,7 @@
 #include "drake/systems/primitives/multilayer_perceptron.h"
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/pass_through.h"
+#include "drake/systems/primitives/port_switch.h"
 #include "drake/systems/primitives/random_source.h"
 #include "drake/systems/primitives/saturation.h"
 #include "drake/systems/primitives/shared_pointer_system.h"
@@ -353,6 +354,19 @@ PYBIND11_MODULE(primitives, m) {
             doc.PassThrough.ctor.doc_1args_value)
         .def(py::init<const AbstractValue&>(), py::arg("abstract_model_value"),
             doc.PassThrough.ctor.doc_1args_abstract_model_value);
+
+    DefineTemplateClassWithDefault<PortSwitch<T>, LeafSystem<T>>(
+        m, "PortSwitch", GetPyParam<T>(), doc.PortSwitch.doc)
+        .def(py::init<int>(), py::arg("vector_size"), doc.PortSwitch.ctor.doc)
+        // TODO(russt): implement AbstractValue version of the constructor and
+        // bind it here.
+        .def("get_port_selector_input_port",
+            &PortSwitch<T>::get_port_selector_input_port,
+            py_rvp::reference_internal,
+            doc.PortSwitch.get_port_selector_input_port.doc)
+        .def("DeclareInputPort", &PortSwitch<T>::DeclareInputPort,
+            py::arg("name"), py_rvp::reference_internal,
+            doc.PortSwitch.DeclareInputPort.doc);
 
     DefineTemplateClassWithDefault<Saturation<T>, LeafSystem<T>>(
         m, "Saturation", GetPyParam<T>(), doc.Saturation.doc)
