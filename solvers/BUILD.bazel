@@ -1486,6 +1486,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "mosek_solver_internal_test",
+    tags = mosek_test_tags(),
+    use_default_main = False,
+    deps = [
+        ":mosek_solver",
+        ":mosek_solver_internal",
+        "//common/test_utilities:symbolic_test_util",
+        "@mosek",
+    ],
+)
+
+drake_cc_googletest(
     name = "mosek_solver_test",
     tags = mosek_test_tags(),
     use_default_main = False,

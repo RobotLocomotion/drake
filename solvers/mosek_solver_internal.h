@@ -29,7 +29,8 @@ namespace internal {
 // "coefficient matrix" A̅ that multiplies X̅ (using the matrix inner product) to
 // yield the linear constraint lower ≤ <A̅, X̅> ≤ upper. For example, to impose
 // the constraint X̅(0, 0) + X̅(1, 0) = 1, where X̅ is a 2 x 2 psd matrix, Mosek
-// requires the user to write it as <A̅, X̅> = 1, where A̅ = ⌈1   0.5⌉
+// requires the user to write it as <A̅, X̅> = 1, where
+// A̅ = ⌈1   0.5⌉
 //     ⌊0.5   0⌋
 // On the other hand, drake::solvers::MathematicalProgram doesn't treat psd
 // matrix variables in a special manner.
@@ -169,6 +170,29 @@ class MosekSolverProgram {
       const VectorX<symbolic::Variable>& decision_vars,
       const std::vector<MSKint32t>& slack_vars_mosek_indices,
       LinearConstraintBoundType bound_type);
+
+  // Convert the expression A * decicion_vars + B * slack_vars to Mosek affine
+  // expression format
+  // ∑ⱼ fᵢⱼ xⱼ + ∑ⱼ<F̅ᵢⱼ, X̅ⱼ>
+  // Please refer to
+  // https://docs.mosek.com/latest/capi/tutorial-acc-optimizer.html for an
+  // introduction on Mosek affine expression, and
+  // https://docs.mosek.com/latest/capi/tutorial-sdo-shared.html for the affine
+  // expression with matrix variables.
+  // F̅ᵢⱼ is a weighted sum of the symmetric matrix E stored inside Mosek.
+  // bar_F[i][j] stores the indices of E and the weights of E.
+  // namely F̅ᵢⱼ = ∑ₖbar_F[i][j][k].second* E[bar_F[i][j][k].first]
+  MSKrescodee ParseLinearExpression(
+      const solvers::MathematicalProgram& prog,
+      const Eigen::SparseMatrix<double>& A,
+      const Eigen::SparseMatrix<double>& B,
+      const VectorX<symbolic::Variable>& decision_vars,
+      const std::vector<MSKint32t>& slack_vars_mosek_indices,
+      std::vector<MSKint32t>* F_subi, std::vector<MSKint32t>* F_subj,
+      std::vector<MSKrealt>* F_valij,
+      std::vector<std::unordered_map<
+          MSKint64t, std::pair<std::vector<MSKint64t>, std::vector<MSKrealt>>>>*
+          bar_F);
 
   // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
   // @param[out] dual_indices maps each linear constraint to its dual variable
@@ -371,6 +395,7 @@ MSKrescodee MosekSolverProgram::AddLinearConstraintsFromBindings(
   }
   return rescode;
 }
+
 template <typename C>
 MSKrescodee MosekSolverProgram::AddConeConstraints(
     const MathematicalProgram& prog,
