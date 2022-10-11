@@ -1035,6 +1035,28 @@ GTEST_TEST(ShortestPathTest, InfeasibleProblem) {
   ASSERT_FALSE(result.is_success());
 }
 
+GTEST_TEST(ShortestPathTest, SelfLoop) {
+  GraphOfConvexSets spp;
+
+  Vertex* source = spp.AddVertex(Point(Vector1d(-1)));
+  Vertex* v1 = spp.AddVertex(Point(Vector1d(0)));
+  Vertex* target = spp.AddVertex(Point(Vector1d(1)));
+
+  spp.AddEdge(*source, *v1);
+  Edge* loop = spp.AddEdge(*v1, *v1);
+  spp.AddEdge(*v1, *target);
+
+  auto result = spp.SolveShortestPath(*source, *target);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_EQ(result.GetSolution(loop->phi()), 0);
+
+  GraphOfConvexSetsOptions options;
+  options.max_rounded_paths = 1;
+  auto result2 = spp.SolveShortestPath(*source, *target, options);
+  ASSERT_TRUE(result2.is_success());
+  EXPECT_EQ(result2.GetSolution(loop->phi()), 0);
+}
+
 GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
   GraphOfConvexSets spp;
 

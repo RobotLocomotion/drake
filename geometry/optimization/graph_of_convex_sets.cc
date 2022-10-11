@@ -651,11 +651,17 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   std::vector<Variable> excluded_phi;
 
   for (const auto& [edge_id, e] : edges_) {
-    // If an edge is turned off (ϕ = 0) or excluded by preprocessing, don't
-    // include it in the optimization.
-    if (!e->phi_value_.value_or(true) || unusable_edges.count(edge_id)) {
-      // Track excluded edges (ϕ = 0 and preprocessed) so that their variables
-      // can be set in the optimization result.
+    // If an edge is a self loop (same start and end vertex), turned off
+    // (ϕ = 0), or excluded by preprocessing, don't include it in the
+    // optimization.
+    if (&(e->u()) == &(e->v()) || !e->phi_value_.value_or(true) ||
+        unusable_edges.count(edge_id)) {
+      // Track excluded edges (self loop, ϕ = 0, and preprocessed) so that their
+      // variables can be set in the optimization result.
+      if (&(e->u()) == &(e->v())) {
+        drake::log()->warn("Ignoring edge {} that creates a self loop.",
+                           e->name());
+      }
       excluded_edges.emplace_back(e.get());
       if (options.convex_relaxation) {
         Variable phi("phi_excluded");
@@ -894,7 +900,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     std::vector<std::vector<const Edge*>> paths;
     std::map<EdgeId, double> flows;
     for (const auto& [edge_id, e] : edges_) {
-      if (!e->phi_value_.value_or(true) || unusable_edges.count(edge_id)) {
+      if (&(e->u()) == &(e->v()) || !e->phi_value_.value_or(true) ||
+          unusable_edges.count(edge_id)) {
         flows.emplace(edge_id, 0);
       } else {
         flows.emplace(edge_id, result.GetSolution(relaxed_phi[edge_id]));
@@ -951,7 +958,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       // Optimize path
       std::vector<Binding<Constraint>> added_constraints;
       for (const auto& [edge_id, e] : edges_) {
-        if (e->phi_value_.has_value() || unusable_edges.count(edge_id)) {
+        if (&(e->u()) == &(e->v()) || e->phi_value_.has_value() ||
+            unusable_edges.count(edge_id)) {
           continue;
         }
         if (std::find(new_path.begin(), new_path.end(), e.get()) !=
