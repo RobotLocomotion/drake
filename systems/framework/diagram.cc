@@ -1378,13 +1378,16 @@ Diagram<T>::ConvertScalarType() const {
 
 template <typename T>
 std::map<PeriodicEventData, std::vector<const Event<T>*>,
-    PeriodicEventDataComparator> Diagram<T>::DoGetPeriodicEvents() const {
-  std::map<PeriodicEventData,
-      std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> periodic_events_map;
+         PeriodicEventDataComparator>
+Diagram<T>::DoMapPeriodicEventsByTiming(const Context<T>& context) const {
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+           PeriodicEventDataComparator>
+      periodic_events_map;
 
   for (int i = 0; i < num_subsystems(); ++i) {
-    auto sub_map = registered_systems_[i]->GetPeriodicEvents();
+    const System<T>& sub_system = *registered_systems_[i];
+    const Context<T>& sub_context = GetSubsystemContext(sub_system, context);
+    auto sub_map = sub_system.MapPeriodicEventsByTiming(&sub_context);
     for (const auto& sub_attr_events : sub_map) {
       const auto& sub_vec = sub_attr_events.second;
       auto& vec = periodic_events_map[sub_attr_events.first];
@@ -1393,6 +1396,24 @@ std::map<PeriodicEventData, std::vector<const Event<T>*>,
   }
 
   return periodic_events_map;
+}
+
+template <typename T>
+void Diagram<T>::DoGetPeriodicEvents(
+    const Context<T>& context,
+    CompositeEventCollection<T>* event_info) const {
+  auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+  auto info = dynamic_cast<DiagramCompositeEventCollection<T>*>(event_info);
+  DRAKE_DEMAND(diagram_context != nullptr);
+  DRAKE_DEMAND(info != nullptr);
+
+  for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+    const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+    CompositeEventCollection<T>& subinfo =
+        info->get_mutable_subevent_collection(i);
+
+    registered_systems_[i]->GetPeriodicEvents(subcontext, &subinfo);
+  }
 }
 
 template <typename T>

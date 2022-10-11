@@ -506,14 +506,14 @@ class LeafSystem : public System<T> {
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
                             const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
-        event.get_trigger_type() == TriggerType::kPeriodic);
+                 event.get_trigger_type() == TriggerType::kPeriodic);
     PeriodicEventData periodic_data;
     periodic_data.set_period_sec(period_sec);
     periodic_data.set_offset_sec(offset_sec);
     auto event_copy = event.Clone();
     event_copy->set_trigger_type(TriggerType::kPeriodic);
-    periodic_events_.emplace_back(
-        std::make_pair(periodic_data, std::move(event_copy)));
+    event_copy->set_event_data(periodic_data);
+    event_copy->AddToComposite(TriggerType::kPeriodic, &periodic_events_);
   }
 
   /** (To be deprecated) Declares a periodic publish event that invokes the
@@ -1903,7 +1903,8 @@ class LeafSystem : public System<T> {
       DoAllocateCompositeEventCollection() const final;
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> DoGetPeriodicEvents() const override;
+           PeriodicEventDataComparator>
+  DoMapPeriodicEventsByTiming(const Context<T>& context) const final;
 
   // Calls DoPublish.
   // Assumes @param events is an instance of LeafEventCollection, throws
@@ -1945,13 +1946,17 @@ class LeafSystem : public System<T> {
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const final;
 
+  void DoGetPeriodicEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
+
   void DoGetPerStepEvents(
-      const Context<T>&,
-      CompositeEventCollection<T>* events) const override;
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
 
   void DoGetInitializationEvents(
-      const Context<T>&,
-      CompositeEventCollection<T>* events) const override;
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
 
   // Creates a new cached, vector-valued LeafOutputPort in this LeafSystem and
   // returns a reference to it.
@@ -1999,9 +2004,7 @@ class LeafSystem : public System<T> {
           get_vector_from_context);
 
   // Periodic Update or Publish events declared by this system.
-  std::vector<std::pair<PeriodicEventData,
-                        std::unique_ptr<Event<T>>>>
-      periodic_events_;
+  LeafCompositeEventCollection<T> periodic_events_;
 
   // Update or Publish events declared by this system for every simulator
   // major time step.

@@ -80,8 +80,8 @@ TEST_F(MeshcatPointCloudVisualizerTest, PublishPeriod) {
   const double kPeriod = 1/12.0;
   SetUpDiagram(true, kPeriod);
 
-  auto periodic_events = visualizer_->GetPeriodicEvents();
-  for (const auto& data_and_vector : periodic_events) {
+  auto periodic_events_map = visualizer_->MapPeriodicEventsByTiming();
+  for (const auto& data_and_vector : periodic_events_map) {
     EXPECT_EQ(data_and_vector.second.size(), 1);  // only one periodic event
     EXPECT_EQ(data_and_vector.first.period_sec(), kPeriod);
     EXPECT_EQ(data_and_vector.first.offset_sec(), 0.0);
