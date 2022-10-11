@@ -267,11 +267,17 @@ PYBIND11_MODULE(sensors, m) {
     DefReprUsingSerialize(&focal_class);
     DefCopyAndDeepCopy(&focal_class);
 
-    m.def("ApplyCameraConfig", &ApplyCameraConfig, py::arg("config"),
-        py::arg("plant"), py::arg("builder"), py::arg("scene_graph"),
-        py::arg("lcm"),
+    m.def("ApplyCameraConfig",
+        py::overload_cast<const CameraConfig&, DiagramBuilder<double>*,
+            const systems::lcm::LcmBuses*,
+            const multibody::MultibodyPlant<double>*,
+            geometry::SceneGraph<double>*, drake::lcm::DrakeLcmInterface*>(
+            &ApplyCameraConfig),
+        py::arg("config"), py::arg("builder"), py::arg("lcm_buses") = nullptr,
+        py::arg("plant") = nullptr, py::arg("scene_graph") = nullptr,
+        py::arg("lcm") = nullptr,
         // Keep alive, reference: `builder` keeps `lcm` alive.
-        py::keep_alive<3, 5>(), doc.ApplyCameraConfig.doc);
+        py::keep_alive<2, 6>(), doc.ApplyCameraConfig.doc);
   }
 
   {
