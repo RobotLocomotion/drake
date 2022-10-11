@@ -833,6 +833,13 @@ void DoScalarDependentDefinitions(py::module m) {
               &State<T>::get_abstract_state),
           py_rvp::reference_internal, doc.State.get_abstract_state.doc)
       .def(
+          "get_abstract_state",
+          [](State<T>* self, int index) -> const AbstractValue& {
+            return self->get_abstract_state().get_value(index);
+          },
+          py::arg("index"), py_rvp::reference_internal,
+          doc.State.get_abstract_state.doc)
+      .def(
           "get_mutable_abstract_state",
           [](State<T>* self) -> AbstractValues& {
             return self->get_mutable_abstract_state();
