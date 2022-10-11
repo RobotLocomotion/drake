@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
-  <!-- Note: This is the accompaning SDF file for the example demo in
-       simple_gripper.cc and therefore these two files must be kept in sync.
+  <!-- Note: This is the accompanying SDF file for the example demo in
+       simple_gripper.cc and deformable_box.cc and therefore these files must
+       be kept in sync.
 
        This file defines the model for a simple gripper having two fingers on
        prismatic joints. Only the left finger is actuated. The modeler will want
@@ -71,6 +72,9 @@
             <size>0.146 0.0725 0.049521</size>
           </box>
         </geometry>
+        <material>
+          <diffuse>0.3 0.3 0.3 0.9</diffuse>
+        </material>
       </visual>
     </link>
     <link name="left_finger">
@@ -95,6 +99,9 @@
             <size>0.007 0.081 0.028</size>
           </box>
         </geometry>
+        <material>
+          <diffuse>0.3 0.3 0.3 0.9</diffuse>
+        </material>
       </visual>
     </link>
     <link name="right_finger">
@@ -119,6 +126,9 @@
             <size>0.007 0.081 0.028</size>
           </box>
         </geometry>
+        <material>
+          <diffuse>0.3 0.3 0.3 0.9</diffuse>
+        </material>
       </visual>
     </link>
     <joint name="left_slider" type="prismatic">
