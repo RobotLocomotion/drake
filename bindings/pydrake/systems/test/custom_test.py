@@ -739,6 +739,9 @@ class TestCustom(unittest.TestCase):
             state.get_mutable_discrete_state(index=0) is
             state.get_mutable_discrete_state().get_vector(index=0))
         self.assertTrue(
+            state.get_abstract_state(index=0) is
+            state.get_abstract_state().get_value(index=0))
+        self.assertTrue(
             state.get_mutable_abstract_state(index=0) is
             state.get_mutable_abstract_state().get_value(index=0))
 
