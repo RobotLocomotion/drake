@@ -88,6 +88,11 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
 
   // Check string representation.
   CheckValue("repr(Index(10)) == 'Index(10)'", true);
+
+  // Check value instantiation.
+  py::exec("from pydrake.common.value import AbstractValue");
+  CheckValue(
+      "isinstance(AbstractValue.Make(Index(11)).get_value(), Index)", true);
 }
 
 int main(int argc, char** argv) {
