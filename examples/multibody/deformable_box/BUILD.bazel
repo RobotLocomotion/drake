@@ -1,0 +1,34 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_binary(
+    name = "deformable_box",
+    srcs = [
+        "deformable_box.cc",
+    ],
+    add_test_rule = 1,
+    data = [
+        "box.vtk",
+        "//examples/simple_gripper:simple_gripper_models",
+    ],
+    test_rule_args = [
+        "-simulation_time=0.1",
+        "-realtime_rate=0.0",
+    ],
+    deps = [
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()

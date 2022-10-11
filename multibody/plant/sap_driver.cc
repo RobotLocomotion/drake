@@ -129,7 +129,7 @@ void SapDriver<T>::CalcFreeMotionVelocities(const systems::Context<T>& context,
       const VectorX<T>& deformable_v_star =
           manager().deformable_driver_->EvalParticipatingFreeMotionVelocities(
               context);
-      const int rigid_dofs = v_star->size();
+      const int rigid_dofs = v0.size();
       const int deformable_dofs = deformable_v_star.size();
       v_star->resize(rigid_dofs + deformable_dofs);
       v_star->head(rigid_dofs) = v0 + dt * vdot0;
