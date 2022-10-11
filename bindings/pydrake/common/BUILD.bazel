@@ -325,6 +325,7 @@ drake_cc_library(
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
     deps = [
+        ":value_pybind",
         "//:drake_shared_library",
         "//bindings/pydrake:documentation_pybind",
     ],
@@ -675,6 +676,9 @@ drake_pybind_cc_googletest(
     cc_deps = [
         ":type_safe_index_pybind",
         "//bindings/pydrake:test_util_pybind",
+    ],
+    py_deps = [
+        "//bindings/pydrake/common:value_py",
     ],
 )
 
