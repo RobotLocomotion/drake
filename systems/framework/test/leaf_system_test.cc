@@ -142,6 +142,7 @@ class TestSystem : public LeafSystem<T> {
   using LeafSystem<T>::DeclareVectorOutputPort;
   using LeafSystem<T>::DeclareAbstractOutputPort;
   using LeafSystem<T>::DeclarePerStepEvent;
+  using LeafSystem<T>::DeclarePeriodicEvent;
 
   void AddPeriodicUpdate() {
     const double period = 10.0;
@@ -367,7 +368,7 @@ class LeafSystemTest : public ::testing::Test {
   }
 
   double CalcNextUpdateTime() const {
-    // Unless there are an extrene number of concurrent events, calculating the
+    // Unless there are an extreme number of concurrent events, calculating the
     // next update time should not allocate.
     test::LimitMalloc guard;
     return system_.CalcNextUpdateTime(context_, event_info_.get());
@@ -558,7 +559,7 @@ TEST_F(LeafSystemTest, MultipleUniquePeriods) {
   system_.AddPeriodicUpdate();
 
   // Verify the size of the periodic events mapping.
-  auto mapping = system_.GetPeriodicEvents();
+  auto mapping = system_.MapPeriodicEventsByTiming();
   ASSERT_EQ(mapping.size(), 1);
   EXPECT_EQ(mapping.begin()->second.size(), 2);
   EXPECT_TRUE(system_.GetUniquePeriodicDiscreteUpdateAttribute());
@@ -571,7 +572,7 @@ TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
   system_.AddPeriodicUpdate(2.0, 3.0);
 
   // Verify the size of the periodic events mapping.
-  auto mapping = system_.GetPeriodicEvents();
+  auto mapping = system_.MapPeriodicEventsByTiming();
   ASSERT_EQ(mapping.size(), 2);
   EXPECT_FALSE(system_.GetUniquePeriodicDiscreteUpdateAttribute());
   EXPECT_FALSE(system_.IsDifferenceEquationSystem());
@@ -937,6 +938,33 @@ TEST_F(LeafSystemTest, DeclarePerStepEvents) {
         leaf_info_->get_unrestricted_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPerStep);
+  }
+}
+
+TEST_F(LeafSystemTest, DeclarePeriodicEvents) {
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+
+  system_.DeclarePeriodicEvent(0.1, 0.0, PublishEvent<double>());
+  system_.DeclarePeriodicEvent(0.1, 0.0, DiscreteUpdateEvent<double>());
+  system_.DeclarePeriodicEvent(0.1, 0.0, UnrestrictedUpdateEvent<double>());
+
+  system_.GetPeriodicEvents(*context, event_info_.get());
+
+  {
+    const auto& events = leaf_info_->get_publish_events().get_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
+  }
+  {
+    const auto& events = leaf_info_->get_discrete_update_events().get_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
+  }
+  {
+    const auto& events =
+        leaf_info_->get_unrestricted_update_events().get_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
 }
 
@@ -2918,6 +2946,12 @@ GTEST_TEST(EventSugarTest, EventsAreRegistered) {
   EXPECT_TRUE(per_step_events->HasDiscreteUpdateEvents());
   EXPECT_TRUE(per_step_events->HasUnrestrictedUpdateEvents());
 
+  auto periodic_events = dut.AllocateCompositeEventCollection();
+  dut.GetPeriodicEvents(*context, &*periodic_events);
+  EXPECT_TRUE(periodic_events->HasPublishEvents());
+  EXPECT_TRUE(periodic_events->HasDiscreteUpdateEvents());
+  EXPECT_TRUE(periodic_events->HasUnrestrictedUpdateEvents());
+
   auto timed_events = dut.AllocateCompositeEventCollection();
   double next_event_time = dut.CalcNextUpdateTime(*context, &*timed_events);
   EXPECT_EQ(next_event_time, 0.25);
@@ -2939,9 +2973,9 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   dut.GetPerStepEvents(*context, &*per_step_events);
   all_events->AddToEnd(*per_step_events);
 
-  auto timed_events = dut.AllocateCompositeEventCollection();
-  dut.CalcNextUpdateTime(*context, &*timed_events);
-  all_events->AddToEnd(*timed_events);
+  auto periodic_events = dut.AllocateCompositeEventCollection();
+  dut.GetPeriodicEvents(*context, &*periodic_events);
+  all_events->AddToEnd(*periodic_events);
 
   dut.CalcUnrestrictedUpdate(
       *context, all_events->get_unrestricted_update_events(), &*state);

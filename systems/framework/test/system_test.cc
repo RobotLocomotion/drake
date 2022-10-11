@@ -119,7 +119,7 @@ class TestSystemBase : public System<T> {
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
            PeriodicEventDataComparator>
-  DoGetPeriodicEvents() const final {
+  DoMapPeriodicEventsByTiming(const Context<T>&) const final {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
     return {};
   }
