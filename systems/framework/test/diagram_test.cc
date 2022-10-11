@@ -261,19 +261,19 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
 
     // None of these should have a unique periodic event.
     EXPECT_FALSE(d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys1upd.GetPeriodicEvents().size(), i + 1);
+    EXPECT_EQ(d_sys1upd.MapPeriodicEventsByTiming().size(), i + 1);
     EXPECT_FALSE(d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys2upd.GetPeriodicEvents().size(), i + 1);
+    EXPECT_EQ(d_sys2upd.MapPeriodicEventsByTiming().size(), i + 1);
     EXPECT_FALSE(d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_bothupd.GetPeriodicEvents().size(), 2 * (i + 1));
+    EXPECT_EQ(d_bothupd.MapPeriodicEventsByTiming().size(), 2 * (i + 1));
     EXPECT_FALSE(d_both_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_both_last.GetPeriodicEvents().size(), 2);
+    EXPECT_EQ(d_both_last.MapPeriodicEventsByTiming().size(), 2);
 
     // All of these should have a unique periodic event.
     EXPECT_TRUE(d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys1_last.GetPeriodicEvents().size(), 1);
+    EXPECT_EQ(d_sys1_last.MapPeriodicEventsByTiming().size(), 1);
     EXPECT_TRUE(d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys2_last.GetPeriodicEvents().size(), 1);
+    EXPECT_EQ(d_sys2_last.MapPeriodicEventsByTiming().size(), 1);
   }
 }
 
