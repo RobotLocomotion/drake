@@ -437,13 +437,17 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
            PeriodicEventDataComparator>
   DoMapPeriodicEventsByTiming(const Context<T>& context) const final;
 
+  void DoGetPeriodicEventsCollection(
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
+
   void DoGetPerStepEvents(
       const Context<T>& context,
-      CompositeEventCollection<T>* event_info) const override;
+      CompositeEventCollection<T>* event_info) const final;
 
   void DoGetInitializationEvents(
       const Context<T>& context,
-      CompositeEventCollection<T>* event_info) const override;
+      CompositeEventCollection<T>* event_info) const final;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final;

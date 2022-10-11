@@ -912,32 +912,10 @@ void LeafSystem<T>::DoApplyUnrestrictedUpdate(
 }
 
 template <typename T>
-void LeafSystem<T>::DoFindUniquePeriodicDiscreteUpdatesOrThrow(
-    const char* api_name, const Context<T>& context,
-    std::optional<PeriodicEventData>* timing,
-    EventCollection<DiscreteUpdateEvent<T>>* events) const {
-  unused(context);
-  auto& leaf_collection =
-      dynamic_cast<LeafEventCollection<DiscreteUpdateEvent<T>>&>(*events);
-
-  for (const DiscreteUpdateEvent<T>* event :
-       periodic_events_.get_discrete_update_events().get_events()) {
-    DRAKE_DEMAND(event->get_trigger_type() == TriggerType::kPeriodic);
-    const PeriodicEventData* const event_timing =
-        event->template get_event_data<PeriodicEventData>();
-    DRAKE_DEMAND(event_timing != nullptr);
-    if (!*timing)  // First find sets the required timing.
-      *timing = *event_timing;
-    if (!(*event_timing == *(*timing))) {
-      throw std::logic_error(fmt::format(
-          "{}(): found more than one "
-          "periodic timing that triggers discrete update events. "
-          "Timings were (offset,period)=({},{}) and ({},{}).",
-          api_name, (*timing)->offset_sec(), (*timing)->period_sec(),
-          event_timing->offset_sec(), event_timing->period_sec()));
-    }
-    leaf_collection.AddEvent(*event);
-  }
+void LeafSystem<T>::DoGetPeriodicEventsCollection(
+      const Context<T>&,
+      CompositeEventCollection<T>* events) const {
+  events->SetFrom(periodic_events_);
 }
 
 template <typename T>
@@ -953,7 +931,6 @@ void LeafSystem<T>::DoGetInitializationEvents(
     CompositeEventCollection<T>* events) const {
   events->SetFrom(initialization_events_);
 }
-
 
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(

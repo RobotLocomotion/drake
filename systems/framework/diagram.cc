@@ -1398,6 +1398,24 @@ Diagram<T>::DoMapPeriodicEventsByTiming(const Context<T>& context) const {
 }
 
 template <typename T>
+void Diagram<T>::DoGetPeriodicEventsCollection(
+    const Context<T>& context,
+    CompositeEventCollection<T>* event_info) const {
+  auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+  auto info = dynamic_cast<DiagramCompositeEventCollection<T>*>(event_info);
+  DRAKE_DEMAND(diagram_context != nullptr);
+  DRAKE_DEMAND(info != nullptr);
+
+  for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+    const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+    CompositeEventCollection<T>& subinfo =
+        info->get_mutable_subevent_collection(i);
+
+    registered_systems_[i]->GetPeriodicEventsCollection(subcontext, &subinfo);
+  }
+}
+
+template <typename T>
 void Diagram<T>::DoGetPerStepEvents(
     const Context<T>& context,
     CompositeEventCollection<T>* event_info) const {

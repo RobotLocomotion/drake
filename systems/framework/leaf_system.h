@@ -1946,13 +1946,17 @@ class LeafSystem : public System<T> {
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const final;
 
+  void DoGetPeriodicEventsCollection(
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
+
   void DoGetPerStepEvents(
-      const Context<T>&,
-      CompositeEventCollection<T>* events) const override;
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
 
   void DoGetInitializationEvents(
-      const Context<T>&,
-      CompositeEventCollection<T>* events) const override;
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
 
   // Creates a new cached, vector-valued LeafOutputPort in this LeafSystem and
   // returns a reference to it.
