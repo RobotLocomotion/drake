@@ -9,7 +9,6 @@ namespace drake {
 namespace solvers {
 namespace internal {
 using BarFType = std::vector<std::unordered_map<
-
     MSKint64t, std::pair<std::vector<MSKint64t>, std::vector<MSKrealt>>>>;
 
 void CheckParseLinearExpression(
