@@ -239,24 +239,8 @@ class LadderTest : public ::testing::Test {
     simulator->get_mutable_integrator().set_maximum_step_size(5e-3);
     simulator->get_mutable_integrator().set_target_accuracy(1e-6);
     simulator->Initialize();
-    // Simulate until equilibrium is reached (or a max of 60 seconds)
-    const double simulation_time = 60.0;  // seconds.
-    const double kTolerance = 1e-13;
-    simulator->set_monitor(
-        [this, kTolerance](const drake::systems::Context<double>& context) {
-          double v =
-              plant_->GetVelocities(plant_->GetMyContextFromRoot(context))[0];
-          double a = plant_->get_generalized_acceleration_output_port().Eval(
-              plant_->GetMyContextFromRoot(context))[0];
-          if (abs(v) < kTolerance && abs(a) < kTolerance) {
-            return systems::EventStatus::ReachedTermination(
-                diagram_.get(), "Reached Equilibrium");
-          }
-          return systems::EventStatus::DidNothing();
-        });
+    const double simulation_time = 5.0;  // seconds.
     simulator->AdvanceTo(simulation_time);
-    drake::log()->info(fmt::format("Reached Equilibrium after {} seconds.\n",
-                                   simulator->get_context().get_time()));
     return simulator;
   }
 
@@ -297,10 +281,15 @@ class LadderTest : public ::testing::Test {
                   ladder_upper_geometry_id_
               ? 1.0
               : -1.0;
+      // There is a slight non-zero moment on the y-axis because the computed
+      // force was shifted to the mesh centroid. Shift the contact force
+      // back to a point with zero torque for easier analysis.
+      const SpatialForce<double>& F_Bc_W = hydroelastic_contact_info.F_Ac_W();
+      const Vector3d offset(
+          0.0, 0.0, F_Bc_W.rotational().y() / F_Bc_W.translational().x());
 
-      f_Bc_W = direction * hydroelastic_contact_info.F_Ac_W().translational();
-
-      p_WC = hydroelastic_contact_info.contact_surface().centroid();
+      f_Bc_W = direction * F_Bc_W.Shift(offset).translational();
+      p_WC = hydroelastic_contact_info.contact_surface().centroid() + offset;
 
     } else {
       // There should be a single contact pair.
@@ -314,7 +303,6 @@ class LadderTest : public ::testing::Test {
               : -1.0;
 
       f_Bc_W = direction * point_pair_contact_info.contact_force();
-
       p_WC = point_pair_contact_info.contact_point();
     }
 
@@ -358,7 +346,7 @@ class LadderTest : public ::testing::Test {
         X_WBu.rotation() * reaction_forces[joint_->index()];
     const Vector3d f_Bu_expected(fc_x, 0.0, weight / 2.0);
     const double t_Bu_y =
-        -(p_WBcm.x() / 2.0) * (weight / 2.0) + fc_x * p_WBcm.z();
+        -(p_WBcm.x() / 2.0) * (weight / 2.0) + fc_x * (p_WC.z() - p_WBcm.z());
     const Vector3d t_Bu_expected(
         0.0, t_Bu_y, -fc_x * ((kProblemWidth / 2.0) - kPointContactRadius));
     EXPECT_TRUE(
@@ -427,17 +415,13 @@ class LadderTest : public ::testing::Test {
   const double kFrictionCoefficient{0.0};    // Frictionless contact, [-]
   const double kPointContactRadius{5.0e-3};  // [m]
 
-
   // Wall parameters.
   const double kWallWidth{0.3};   // [m]
   const double kWallHeight{3.0};  // [m]
 
   // Hydroelastic parameters.
-  // const double kElasticModulus{1.563248999e6};  // [Pa]
-  // const double kDissipation{1e6};               // [s/m]
   const double kElasticModulus{1.6e6};  // [Pa]
-  const double kDissipation{1.0};               // [s/m]
-
+  const double kDissipation{10.0};       // [s/m]
 
   // Pin joint parameters.
   const double kDistanceToWall{1.0};
