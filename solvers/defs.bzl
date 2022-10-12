@@ -161,7 +161,8 @@ def drake_cc_optional_googletest(
         opt_in_condition = None,
         opt_out_condition = None,
         tags = None,
-        deps):
+        deps,
+        use_default_main = True):
     """Declares a test that is not even compiled under certain configurations.
 
     This is intended only for testing of drake_cc_optional_library targets,
@@ -195,6 +196,7 @@ def drake_cc_optional_googletest(
             opt_in_condition: deps,
             opt_out_condition: [],
         }),
+        use_default_main = use_default_main,
     )
     cpplint_extra(
         name = name + "_cpplint",
