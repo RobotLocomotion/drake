@@ -719,17 +719,21 @@ GeometryId GeometryState<T>::RegisterDeformableGeometry(
 
   InternalGeometry internal_geometry(source_id, geometry->release_shape(),
                                      frame_id, geometry_id, geometry->name(),
-                                     resolution_hint);
-  // The reference mesh defined in the geometry's frame.
-  const VolumeMesh<double>* reference_mesh = internal_geometry.reference_mesh();
-  DRAKE_DEMAND(reference_mesh != nullptr);
+                                     geometry->pose(), resolution_hint);
+  // The reference mesh is defined in the frame F.
+  const VolumeMesh<double>* reference_mesh_F =
+      internal_geometry.reference_mesh();
+  DRAKE_DEMAND(reference_mesh_F != nullptr);
   const InternalFrame& frame = frames_[frame_id];
-  const RigidTransform<T> X_WG =
-      kinematics_data_.X_WFs[frame.index()] * geometry->pose().cast<T>();
-  VectorX<T> q_WG(reference_mesh->num_vertices() * 3);
-  for (int v = 0; v < reference_mesh->num_vertices(); ++v) {
+  const RigidTransform<T>& X_WF = kinematics_data_.X_WFs[frame.index()];
+  VectorX<T> q_WG(reference_mesh_F->num_vertices() * 3);
+  for (int v = 0; v < reference_mesh_F->num_vertices(); ++v) {
+    // TODO(xuchenhan-tri): Right now X_WF is necessarily the identity since F
+    // is required to be W upon deformable geometry registration. We keep the
+    // illusion of generality here to make it easier to allow non-world frame
+    // registration in the future.
     q_WG.template segment<3>(3 * v) =
-        X_WG * Vector3<T>(reference_mesh->vertex(v));
+        X_WF * Vector3<T>(reference_mesh_F->vertex(v));
   }
   kinematics_data_.q_WGs[geometry_id] = std::move(q_WG);
   geometries_.emplace(geometry_id, std::move(internal_geometry));
