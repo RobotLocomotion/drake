@@ -8,11 +8,12 @@ set -eu -o pipefail
 readonly resource_root="$(cd "$(dirname "${BASH_SOURCE}")" && realpath ..)"
 
 if [[ $# -lt 1 ]]; then
-    echo "Usage: $0 <wheel>" >&2
+    echo "Usage: $0 <wheel> [<test>...]" >&2
     exit 1
 fi
 
 readonly wheel="$(realpath "$1")"
+shift 1
 
 # -----------------------------------------------------------------------------
 # Clean up from old tests and prepare test environment.
@@ -28,7 +29,11 @@ cd /opt/drake-wheel-test/python
 # Install the wheel and run the tests.
 # -----------------------------------------------------------------------------
 
-"$resource_root/test/test-wheel.sh" "$wheel"
+"$resource_root/test/install-wheel.sh" "$wheel"
+
+for t in "$@"; do
+    "$resource_root/test/test-wheel.sh" "$resource_root/test/$t" "$wheel"
+done
 
 # -----------------------------------------------------------------------------
 # Remove the test environment.
