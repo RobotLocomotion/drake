@@ -22,9 +22,10 @@ namespace internal {
 
 // TODO(xuchenhan-tri): Consider splitting this class into RigidInternalGeometry
 // and DeformableInternalGeometry because the two abstractions don't fit in the
-// same class very nicely. For example, rigid geometries have the concept of
-// "hangs-in" frame and parent geometry while deformable geometries have mesh
-// representations. Right now we are manually disabling incompatible features.
+// same class very nicely. For example, rigid geometries have the concept of one
+// geometry being the parent of another geometry while all deformable
+// geometries' immediate parent is the frame the geometry is expressed in. Right
+// now we are manually disabling incompatible features.
 /* The internal representation of the fixed portion of the scene graph
  geometry. This includes those aspects that do *not* depend on computed values.
  It includes things like the topology (which frame is a geometry attached to),
@@ -53,22 +54,21 @@ class InternalGeometry {
                    FrameId frame_id, GeometryId geometry_id, std::string name,
                    math::RigidTransform<double> X_FG);
 
-  /* Constructs a deformable internal geometry without any assigned
-   roles defined in the given frame. The position of the geometry is
-   characterized by the positions of the mesh vertices in the given frame
-   instead of "pose" of the geometry in the frame. X_FG and X_PG are always
-   identity.
-   @param source_id         The id for the source that registered this
-                            geometry.
+  /* Constructs a deformable internal geometry in its reference configuration
+   without any assigned roles defined in the given frame. Every deformable
+   geometry is an immediate child of the frame; X_PG = X_FG is required and
+   enforced (see set_geometry_parent()).
+   @param source_id         The id for the source that registered this geometry.
    @param shape             The shape specification for this instance.
    @param frame_id          The id of the frame this belongs to.
    @param geometry_id       The identifier for _this_ geometry.
    @param name              The name of the geometry.
+   @param X_FG              The pose of the geometry G in the parent frame F.
    @param resolution_hint   The resolution hint for the mesh representation of
                             the geometry.  */
   InternalGeometry(SourceId source_id, std::unique_ptr<Shape> shape,
                    FrameId frame_id, GeometryId geometry_id, std::string name,
-                   double resolution_hint);
+                   math::RigidTransform<double> X_FG, double resolution_hint);
 
   /* Compares two %InternalGeometry instances for "equality". Two internal
    geometries are considered equal if they have the same geometry identifier.
@@ -284,7 +284,8 @@ class InternalGeometry {
   //@}
 
   /* Returns a pointer to the geometry's reference mesh if the geometry is
-   deformable, or nullptr otherwise.  */
+   deformable, or nullptr otherwise. The positions of the vertices of the
+   reference mesh is measured and expressed in the geometry's frame G.  */
   const VolumeMesh<double>* reference_mesh() const {
     return reference_mesh_.get();
   }
@@ -293,7 +294,7 @@ class InternalGeometry {
   // The specification for this instance's shape.
   copyable_unique_ptr<Shape> shape_spec_;
 
-  // The identifier for this frame.
+  // The identifier for this geometry.
   GeometryId id_;
 
   // The name of the geometry. Must be unique among geometries attached to the
@@ -307,8 +308,8 @@ class InternalGeometry {
   FrameId frame_id_;
 
   // The pose of this geometry in the registered parent frame. The parent may be
-  // a frame or another registered geometry. Identity if the geometry is
-  // deformable.
+  // a frame or another registered geometry if the geometry is rigid. The parent
+  // of a deformable geometry is always the frame.
   math::RigidTransform<double> X_PG_;
 
   // The pose of this geometry in the ultimate frame to which this geometry is
@@ -330,10 +331,9 @@ class InternalGeometry {
   std::optional<IllustrationProperties> illustration_props_{};
   std::optional<PerceptionProperties> perception_props_{};
 
-  // Optional mesh representation for deformable geometries. The geometry is
-  // considered as deformable if a mesh representation exists. The vertex
-  // positions corresponds to those of the mesh in its reference configuration
-  // expressed in `this` geometry's frame.
+  // Mesh representation for deformable geometries at its reference
+  // configuration. The vertex positions are expressed in the geometry's
+  // frame, G. It's a nullptr if the geometry is rigid.
   copyable_unique_ptr<VolumeMesh<double>> reference_mesh_;
 };
 
