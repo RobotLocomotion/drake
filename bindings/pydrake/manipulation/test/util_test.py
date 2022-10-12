@@ -10,6 +10,7 @@ from pydrake.multibody.parsing import (
     Parser,
     ProcessModelDirectives,
 )
+from pydrake.manipulation import ApplyDriverConfigs
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.lcm import LcmBuses
@@ -37,3 +38,29 @@ class TestUtil(unittest.TestCase):
             models_from_directives=model_dict, lcms=LcmBuses(),
             builder=builder)
         self.assertEqual(len(builder.GetSystems()), 2)
+
+    def test_apply_driver_configs(self):
+        """Checks the ApplyDriverConfigs from our parent module.
+        """
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(MultibodyPlant(1.))
+        parser = Parser(plant)
+        directives = LoadModelDirectives(FindResourceOrThrow(
+            "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"))
+        models_from_directives = ProcessModelDirectives(directives, parser)
+        plant.Finalize()
+
+        driver_configs = {
+            "iiwa7": mut.ZeroForceDriver(),
+            "schunk_wsg": mut.ZeroForceDriver(),
+        }
+        lcm_buses = LcmBuses()
+
+        self.assertEqual(len(builder.GetSystems()), 1)
+        ApplyDriverConfigs(
+            driver_configs=driver_configs,
+            sim_plant=plant,
+            models_from_directives=models_from_directives,
+            lcm_buses=lcm_buses,
+            builder=builder)
+        self.assertEqual(len(builder.GetSystems()), 3)

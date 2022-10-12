@@ -5,6 +5,8 @@ from pydrake.multibody.parsing import (
     PackageMap,
     LoadModelDirectives,
     LoadModelDirectivesFromString,
+    ModelDirective,
+    ModelDirectives,
     ProcessModelDirectives,
     ModelInstanceInfo,
     AddFrame,
@@ -12,6 +14,7 @@ from pydrake.multibody.parsing import (
     GetScopedFrameName,
 )
 
+import copy
 import os
 import re
 import unittest
@@ -175,3 +178,24 @@ directives:
         model_names = [model.model_name for model in added_models]
         self.assertIn("extra_model", model_names)
         plant.GetModelInstanceByName("extra_model")
+
+    def test_model_directive_struct(self):
+        """Checks the bindings of the ModelDirective helper struct."""
+        dut = ModelDirective(add_model=None)
+        dut.add_model = None
+        dut.add_model_instance = None
+        dut.add_frame = None
+        dut.add_weld = None
+        dut.add_collision_filter_group = None
+        dut.add_directives = None
+        self.assertIn("add_collision_filter_group", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_model_directives_struct(self):
+        """Checks the bindings of the ModelDirectives helper struct."""
+        directive = ModelDirective()
+        dut = ModelDirectives(directives=[directive])
+        self.assertIn("add_collision_filter_group", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)

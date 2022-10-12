@@ -22,7 +22,9 @@ namespace drake {
 namespace internal {
 
 /* Defines the YAML format for a (possibly stochastic) scenario to be
-simulated. */
+simulated.
+
+Drake maintainers should keep this file in sync with hardware_sim.py. */
 struct Scenario {
   template <typename Archive>
   void Serialize(Archive* a) {
