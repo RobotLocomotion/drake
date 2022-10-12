@@ -165,11 +165,16 @@ class QueryObject {
    @throws std::exception if the frame `frame_id` is not valid.  */
   const math::RigidTransform<T>& GetPoseInParent(FrameId frame_id) const;
 
-  /** Reports the position of the geometry indicated by `geometry_id` relative
-   to the world frame.
-   @sa GetConfigurationsInWorld().
+  /** Reports the position of the frame of the rigid geometry indicated by
+   `geometry_id` relative to the world frame (X_WG).
+   @note This query is meaningless for deformable geometries. Their current
+   state cannot be represented by a single rigid transformation. Instead, one
+   should use GetConfigurationsInWorld() to get the current vertex positions of
+   the deformable geometry in the world frame. On the other hand, it _is_
+   meaningful to query the *fixed* pose of the *reference* geometry in its
+   parent frame (see SceneGraphInspector::GetPoseInFrame()).
    @throws std::exception if the geometry `geometry_id` is not valid or if it
-   exists but is deformable.  */
+   is deformable.  */
   const math::RigidTransform<T>& GetPoseInWorld(GeometryId geometry_id) const;
 
   /** Reports the configuration of the deformable geometry indicated by

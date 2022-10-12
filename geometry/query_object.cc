@@ -69,6 +69,15 @@ template <typename T>
 const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
     GeometryId geometry_id) const {
   ThrowIfNotCallable();
+  if (inspector_.IsDeformableGeometry(geometry_id)) {
+    throw std::logic_error(
+        fmt::format("{} is not allowed to be called on deformable geometries. "
+                    "Use QueryObject::GetConfigurationsInWorld() to get the "
+                    "current configuration of the deformable geometry or use "
+                    "SceneGraphInspector::GetPoseInFrame() to get the pose of "
+                    "the reference geometry in its parent frame.",
+                    __func__));
+  }
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();

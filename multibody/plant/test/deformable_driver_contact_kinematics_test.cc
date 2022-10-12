@@ -36,7 +36,7 @@ class CompliantContactManagerTester {
   }
 };
 
-/* Test fixure to test DeformableDriver::AppendContactKinematics.
+/* Test fixture to test DeformableDriver::AppendContactKinematics.
  In particular, this fixture sets up a deformable octahedron centered at world
  origin with 8 elements, 7 vertices, and 21 dofs. A rigid rectangle is added so
  that its top face intersects the bottom half of the deformable octahedron. The
@@ -50,9 +50,9 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
   /* Sets up the scene described in the class documentation. The rigid body is
    dynamic if `dynamic_rigid_body` is true. Otherwise, a collision geometry
    bound to the world body with the same shape is added. The pose/configuration
-   of the bodies are set so that the contact normal in an arbitrarily chosen F
-   frame is (0, 0, 1). Velocities of the body are set so that the contact
-   velocity in the contact frame is (0, 0, 1). */
+   of the bodies are set so that the contact normals are all equal to -Fz, for
+   an arbitrarily chosen frame F. Velocities of the body are set so that the
+   contact velocity in the C frame is (0, 0, -1). */
   void MakeScene(bool dynamic_rigid_body) {
     systems::DiagramBuilder<double> builder;
     constexpr double kDt = 0.01;
@@ -72,22 +72,25 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     rigid_proximity_props.AddProperty(geometry::internal::kHydroGroup,
                                       geometry::internal::kRezHint, 1.0);
 
-    const RigidTransformd X_FB(Vector3<double>(0, 0, -0.75));
-    const RigidTransformd X_WB = X_WF_ * X_FB;
+    const RigidTransformd X_FR(Vector3<double>(0, 0, -0.75));
+    const RigidTransformd X_WR = X_WF_ * X_FR;
     if (dynamic_rigid_body) {
       /* Register a dynamic rigid body intersecting with the bottom half of the
-       deformable octahedron. */
+       deformable octahedron. The rigid body is below the deformable body along
+       Fz and the contact normal is defined to point into the rigid body (in the
+       -Fz direction), so Cz = -Fz. */
       const RigidBody<double>& rigid_body =
           plant_->AddRigidBody("rigid_body", SpatialInertia<double>());
+      const RigidTransformd& X_BR = X_WR;  // because the pose of the rigid body
+                                           // in world, X_WB, is identity.
       rigid_geometry_id_ = plant_->RegisterCollisionGeometry(
-          rigid_body, X_WB, geometry::Box(10, 10, 1),
+          rigid_body, X_BR, geometry::Box(10, 10, 1),
           "dynamic_collision_geometry", rigid_proximity_props);
       rigid_body_index_ = rigid_body.index();
     } else {
-      /* Register a rigid static collision geometry intersecting with the bottom
-       half of the deformable octahedron. */
+      /* Register the same rigid geometry, but static instead of dynamic. */
       rigid_geometry_id_ = plant_->RegisterCollisionGeometry(
-          plant_->world_body(), X_WB, geometry::Box(10, 10, 1),
+          plant_->world_body(), X_WR, geometry::Box(10, 10, 1),
           "static_collision_geometry", rigid_proximity_props);
     }
 
@@ -104,17 +107,34 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     diagram_ = builder.Build();
     context_ = diagram_->CreateDefaultContext();
 
-    /* Set up the deformable body velocity and the rigid body velocity so that
-     the contact velocities in the contact frame are (0, 0, 1). */
+    /* We define the contact velocity as the velocity of the Rp, the point on
+     the rigid body coincident with the contact point, relative to Dp, the point
+     on the deformable body coincident with the contact point. In monogram
+     notation, this is v_DpRp. We set up the deformable body velocity and the
+     rigid body velocity so that the v_DpRp_F at each contact points is
+     conveniently (0, 0, 1). Because we set up the geometries such that Cz = -Fz
+     at all contact points, we can expect the contact velocities in the C
+     frames, v_DpRp_C, are (0, 0, -1). */
     if (dynamic_rigid_body) {
-      SetVelocity(deformable_body_id_, Vector3d(0, 0, -0.5));
+      /* The rigid body can move, so we'll achieve the desired relative velocity
+       by splitting it evenly between the rigid and deformable bodies. */
+      const Vector3d v_WD_F = Vector3d(0, 0, -0.5);
+      const Vector3d v_WD = X_WF_.rotation() * v_WD_F;
+      SetVelocity(deformable_body_id_, v_WD);
       Context<double>& mutable_plant_context =
           plant_->GetMyMutableContextFromRoot(context_.get());
+      /* Only the deformable geometry can move; it gets the full desired
+       relative velocity. */
+      const Vector3d v_WR_F = Vector3d(0, 0, 0.5);
+      const SpatialVelocity<double> V_WR(Vector3d::Zero(),
+                                         X_WF_.rotation() * v_WR_F);
       plant_->SetFreeBodySpatialVelocity(
-          &mutable_plant_context, plant_->get_body(rigid_body_index_),
-          SpatialVelocity<double>(Vector3d(0, 0, 0), Vector3d(0, 0, 0.5)));
+          &mutable_plant_context, plant_->get_body(rigid_body_index_), V_WR);
     } else {
-      SetVelocity(deformable_body_id_, Vector3d(0, 0, -1.0));
+      /* Set the velocity of the deformable body so that it's (0, 0, -1.0) in
+       the F frame. */
+      const Vector3d v_WD_F = Vector3d(0, 0, -1.0);
+      SetVelocity(deformable_body_id_, X_WF_.rotation() * v_WD_F);
     }
   }
 
@@ -137,29 +157,32 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     constexpr int kZAxis = 2;
     const math::RotationMatrixd expected_R_WC =
         math::RotationMatrixd::MakeFromOneUnitVector(nhat_W, kZAxis);
-    const Vector3d expected_vc(0, 0, -1);
+    /* Velocities of the participating deformable dofs. */
+    const VectorXd v0 = driver_->EvalParticipatingVelocities(plant_context);
+    const Vector3d expected_v_DpRp_C(0, 0, -1);
     for (int i = 0; i < num_contact_points; ++i) {
       const ContactPairKinematics<double>& contact_kinematic =
           contact_kinematics[i];
       EXPECT_LT(contact_kinematic.phi, 0.0);
-      EXPECT_TRUE(contact_kinematic.R_WC.IsNearlyEqualTo(
-          expected_R_WC, std::numeric_limits<double>::epsilon()));
+      EXPECT_TRUE(contact_kinematic.R_WC.IsNearlyEqualTo(expected_R_WC, 1e-12));
       if (dynamic_rigid_body) {
         ASSERT_EQ(contact_kinematic.jacobian.size(), 2);
         const Matrix3X<double> J0 = contact_kinematic.jacobian[0].J;
-        const VectorXd v0 = driver_->EvalParticipatingVelocities(plant_context);
         ASSERT_EQ(v0.size(), J0.cols());
         const Matrix3X<double> J1 = contact_kinematic.jacobian[1].J;
+        const Vector3d v_WR_F(0, 0, 0.5);
+        const Vector3d v_WR = X_WF_.rotation() * v_WR_F;
+        const Vector3d w_WR(0, 0, 0);
         Vector6<double> v1;
-        v1 << 0, 0, 0, 0, 0, 0.5;
+        v1 << w_WR, v_WR;
         ASSERT_EQ(v1.size(), J1.cols());
-        EXPECT_TRUE(CompareMatrices(J0 * v0 + J1 * v1, expected_vc));
+        EXPECT_TRUE(
+            CompareMatrices(J0 * v0 + J1 * v1, expected_v_DpRp_C, 1e-14));
       } else {
         ASSERT_EQ(contact_kinematic.jacobian.size(), 1);
         const Matrix3X<double> J0 = contact_kinematic.jacobian[0].J;
-        const VectorXd v0 = driver_->EvalParticipatingVelocities(plant_context);
         ASSERT_EQ(v0.size(), J0.cols());
-        EXPECT_TRUE(CompareMatrices(J0 * v0, expected_vc));
+        EXPECT_TRUE(CompareMatrices(J0 * v0, expected_v_DpRp_C, 1e-14));
       }
     }
   }

@@ -299,8 +299,9 @@ class SceneGraphInspector {
    frame F or another geometry. If the geometry was registered directly to F,
    then `X_PG = X_FG`.
    @sa GetPoseInFrame()
+   @note For deformable geometries, this returns the pose of the reference mesh.
    @throws std::exception if `geometry_id` does not map to a registered
-   geometry or if it maps to a deformable geometry.  */
+   geometry. */
   const math::RigidTransform<double>& GetPoseInParent(
       GeometryId geometry_id) const;
 
@@ -309,8 +310,9 @@ class SceneGraphInspector {
    geometry P or not). If the geometry was registered directly to the frame F,
    then `X_PG = X_FG`.
    @sa GetPoseInParent()
+   @note For deformable geometries, this returns the pose of the reference mesh.
    @throws std::exception if `geometry_id` does not map to a registered
-   geometry or if it maps to a deformable geometry.  */
+   geometry. */
   const math::RigidTransform<double>& GetPoseInFrame(
       GeometryId geometry_id) const;
 
@@ -383,10 +385,14 @@ class SceneGraphInspector {
   const PerceptionProperties* GetPerceptionProperties(
       GeometryId geometry_id) const;
 
-  /** Returns the reference mesh of the geometry with the given `geometry_id`.
+  /** Returns the reference mesh of the geometry with the given `geometry_id`,
+   measured and expressed in the geometry's frame, G.
    @param geometry_id   The identifier for the queried geometry.
    @return A pointer to the reference mesh of the geometry if the geometry is
            deformable, or `nullptr` if the geometry is rigid.
+   @note GetPoseInFrame() provides the transform necessary to measure and
+         express the reference mesh's vertex positions in the geometry's
+         registered frame F.
    @throws std::exception if `geometry_id` does not map to a registered
            geometry.  */
   const VolumeMesh<double>* GetReferenceMesh(GeometryId geometry_id) const;

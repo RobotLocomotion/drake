@@ -41,18 +41,20 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   /* Record the reference positions. */
   const geometry::SceneGraphInspector<T>& inspector =
       scene_graph.model_inspector();
-  const geometry::VolumeMesh<double>* mesh_ptr =
+  const geometry::VolumeMesh<double>* mesh_G =
       inspector.GetReferenceMesh(geometry_id);
-  DRAKE_DEMAND(mesh_ptr != nullptr);
-  const auto& mesh = *mesh_ptr;
-  VectorX<T> reference_position(3 * mesh.num_vertices());
-  for (int v = 0; v < mesh.num_vertices(); ++v) {
-    reference_position.template segment<3>(3 * v) = mesh.vertex(v);
+  DRAKE_DEMAND(mesh_G != nullptr);
+  const math::RigidTransform<T>& X_WG = inspector.GetPoseInFrame(geometry_id);
+  geometry::VolumeMesh<double> mesh_W = *mesh_G;
+  mesh_W.TransformVertices(X_WG);
+  VectorX<T> reference_position(3 * mesh_W.num_vertices());
+  for (int v = 0; v < mesh_W.num_vertices(); ++v) {
+    reference_position.template segment<3>(3 * v) = mesh_W.vertex(v);
   }
 
   const DeformableBodyId body_id = DeformableBodyId::get_new_id();
   /* Build FEM model for the deformable body. */
-  BuildLinearVolumetricModel(body_id, mesh, config);
+  BuildLinearVolumetricModel(body_id, mesh_W, config);
 
   /* Do the book-keeping. */
   reference_positions_.emplace(body_id, std::move(reference_position));
