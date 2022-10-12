@@ -130,6 +130,7 @@ drake_pybind_library(
     name = "parsing_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_srcs = ["parsing_py.cc"],
     package_info = PACKAGE_INFO,
