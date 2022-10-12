@@ -623,13 +623,16 @@ drake_cc_library(
     name = "diagram",
     srcs = ["diagram.cc"],
     hdrs = ["diagram.h"],
-    deps = [
-        ":abstract_value_cloner",
+    interface_deps = [
         ":diagram_context",
         ":diagram_output_port",
         ":system",
         "//common:default_scalars",
         "//common:essential",
+    ],
+    deps = [
+        ":abstract_value_cloner",
+        "//common:pointer_cast",
     ],
 )
 
@@ -637,10 +640,13 @@ drake_cc_library(
     name = "diagram_builder",
     srcs = ["diagram_builder.cc"],
     hdrs = ["diagram_builder.h"],
-    deps = [
+    interface_deps = [
         ":diagram",
         "//common:default_scalars",
         "//common:essential",
+    ],
+    deps = [
+        "//common:pointer_cast",
     ],
 )
 

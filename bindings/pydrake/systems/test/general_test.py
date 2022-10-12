@@ -943,6 +943,8 @@ class TestGeneral(unittest.TestCase):
             builder.ExportInput(adder1.get_input_port(0), "in0")
             builder.ExportInput(adder1.get_input_port(1), "in1")
             builder.ExportOutput(adder2.get_output_port(), "out")
+            builder.GetSubsystemByName(name="adder1")
+            builder.GetMutableSubsystemByName(name="adder2")
             self.assertEqual(len(builder.connection_map()), 1)
             diagram = builder.Build()
             return adder1, adder2, diagram

@@ -539,6 +539,13 @@ void DoScalarDependentDefinitions(py::module m) {
             return out;
           },
           doc.DiagramBuilder.GetMutableSystems.doc)
+      .def("GetSubsystemByName", &DiagramBuilder<T>::GetSubsystemByName,
+          py::arg("name"), py_rvp::reference_internal,
+          doc.DiagramBuilder.GetSubsystemByName.doc)
+      .def("GetMutableSubsystemByName",
+          &DiagramBuilder<T>::GetMutableSubsystemByName, py::arg("name"),
+          py_rvp::reference_internal,
+          doc.DiagramBuilder.GetMutableSubsystemByName.doc)
       .def(
           "connection_map",
           [](DiagramBuilder<T>* self) {
