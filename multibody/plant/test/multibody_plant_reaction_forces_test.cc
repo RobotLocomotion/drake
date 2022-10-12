@@ -213,11 +213,31 @@ class LadderTest : public ::testing::Test {
 
     // Set initial condition with the ladder leaning against the wall.
     // We compute the angle in the pin joint for this condition.
-    // Length offset to make the contact geometry tangent to the wall.
-    const double offset = (kLadderLength * kPointContactRadius /
+    // The contact sphere of radius `kPointContactRadius` is placed at the
+    // upper end of the ladder.
+    // We want the contact sphere to initially be tangent to the wall
+    // so we compute an offset the necessary offset using similar triangles.
+    // We define the following in the xz plane:
+    //   O: origin and placement point of the pin joint at the lower end.
+    //   A: Bottom of the wall offset from O by (+kDistanceToWall, 0).
+    //   E: Upper endpoint of the ladder |E - O| = kLadderLength.
+    //   R: Point at which the contact sphere is tangent to the wall.
+    //      |R - E| = kPointContactRadius
+    //   U: Projection point along the line OE touching the wall.
+    //
+    // In this configuration there are two similar right triangles:
+    //   ΔAOU and ΔREU
+    // Therefore the following ratios are equal:
+    //   |EU| / |RE| = |OU| / |AO| = (|OE| + |EU|) / |AO|
+    // Substituting known quantities:
+    //   |EU| / kPointContactRadius == (kLadderLength + |EU|) / kDistanceToWall
+    // Solving for |EU| gives:
+    //   |EU| =   (kLadderLength * kPointContactRadius)
+    //          / (kDistanceToWall - kPointContactRadius)
+    const double norm_EU = (kLadderLength * kPointContactRadius /
                            (kDistanceToWall - kPointContactRadius));
     const double theta =
-        std::asin(kDistanceToWall / (kLadderLength + offset));
+        std::asin(kDistanceToWall / (kLadderLength + norm_EU));
     pin_->set_angle(plant_context, theta);
 
     // Fix the actuation.
@@ -285,15 +305,15 @@ class LadderTest : public ::testing::Test {
                   ladder_upper_geometry_id_
               ? 1.0
               : -1.0;
-      // There is a slight non-zero moment on the y-axis because the computed
-      // force was shifted to the mesh centroid. Shift the contact force
-      // back to a point with zero torque for easier analysis.
+      // There is a slight non-zero moment on the y-axis because the centroid in
+      // general does not coincide with the center of pressure. Shift the
+      // contact force back to a point with zero torque for easier analysis.
       const SpatialForce<double>& F_Bc_W = hydroelastic_contact_info.F_Ac_W();
-      const Vector3d offset(
+      const Vector3d p_CP_W(
           0.0, 0.0, F_Bc_W.rotational().y() / F_Bc_W.translational().x());
 
-      f_Bc_W = direction * F_Bc_W.Shift(offset).translational();
-      p_WC = hydroelastic_contact_info.contact_surface().centroid() + offset;
+      f_Bc_W = direction * F_Bc_W.Shift(p_CP_W).translational();
+      p_WC = hydroelastic_contact_info.contact_surface().centroid() + p_CP_W;
 
     } else {
       // There should be a single contact pair.
@@ -322,6 +342,10 @@ class LadderTest : public ::testing::Test {
     // steady state and the integration accuracy (for the continuous model).
     const double kTolerance = 1.0e-11;
 
+    // Using a free-body diagram of the entire ladder and known quantities,
+    // we use the balance of momentum to verify the pin joint's reaction force
+    // and torque.
+
     // The x component of the contact force must counteract the torque due to
     // gravity plus the actuation torque.
     const double tau_g = p_WBcm.x() * weight;  // gravity torque about Bo.
@@ -337,22 +361,35 @@ class LadderTest : public ::testing::Test {
     // Since the contact point was purposely located at
     // y = (kProblemWidth / 2.0) - kPointContactRadius, the contact force
     // causes a reaction torque at the pin joint oriented along the z-axis.
-    const Vector3d t_Bl_W_expected(
-        0.0, kActuationTorque,
-        -fc_x * ((kProblemWidth / 2.0) - kPointContactRadius));
+    const Vector3d t_Bl_W_expected(0.0, kActuationTorque, -fc_x * p_WC.y());
     EXPECT_TRUE(
         CompareMatrices(F_Bl_W.rotational(), t_Bl_W_expected, kTolerance));
 
-    // Verify reaction forces at the joint.
+    // Verify reaction forces at the weld joint. We use a free body diagram of
+    // the upper half of the ladder and balance of momentum at the upper half's
+    // body frame.
+
+    // Upper half's origin.
     const RigidTransformd X_WBu =
         ladder_upper_->EvalPoseInWorld(*plant_context);
+    const Vector3d p_WBu = X_WBu.translation();
+    // Upper half's COM in W.
+    const Vector3d p_BuBucm =
+        ladder_upper_->CalcCenterOfMassInBodyFrame(*plant_context);
+    const Vector3d p_WBucm = X_WBu * p_BuBucm;
+    // Reaction forces at X_WBu in W.
     const SpatialForce<double>& F_Bu_W =
         X_WBu.rotation() * reaction_forces[joint_->index()];
+    // Apart from reaction forces, two forces at on the upper half:
+    // Contact force fc_x and gravity.
     const Vector3d f_Bu_expected(fc_x, 0.0, weight / 2.0);
-    const double t_Bu_y =
-        -(p_WBcm.x() / 2.0) * (weight / 2.0) + fc_x * (p_WC.z() - p_WBcm.z());
-    const Vector3d t_Bu_expected(
-        0.0, t_Bu_y, -fc_x * ((kProblemWidth / 2.0) - kPointContactRadius));
+    // Compute the y component of the expected torque due to gravity applied at
+    // p_WVu and torque due to the contact force applied at p_WC.
+    const double t_Bu_y = -(weight / 2.0) * (p_WBucm.x() - p_WBu.x()) +
+                          fc_x * (p_WC.z() - p_WBu.z());
+    // Contact point offset causes a torque at the weld joint oriented along
+    // the z-axis.
+    const Vector3d t_Bu_expected(0.0, t_Bu_y, -fc_x * (p_WC.y() - p_WBu.y()));
     EXPECT_TRUE(
         CompareMatrices(F_Bu_W.rotational(), t_Bu_expected, kTolerance));
     EXPECT_TRUE(

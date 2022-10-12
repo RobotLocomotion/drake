@@ -2990,6 +2990,18 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
   std::fill(F_BBo_W_array->begin(), F_BBo_W_array->end(),
             SpatialForce<T>::Zero());
 
+  CalcAndAddSpatialContactForcesContinuous(context, F_BBo_W_array);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
+      const drake::systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const {
+  this->ValidateContext(context);
+  DRAKE_DEMAND(F_BBo_W_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
+  DRAKE_DEMAND(!is_discrete());
+
   // Early exit if there are no contact forces.
   if (num_collision_geometries() == 0) return;
 
@@ -3831,27 +3843,7 @@ void MultibodyPlant<T>::CalcReactionForces(
   // the forces computed by CalcHydroelasticContactForces() are wrong in
   // discrete mode. See (#13888).
   if (!is_discrete()) {
-    switch (contact_model_) {
-      case ContactModel::kPoint:
-        CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
-        break;
-      case ContactModel::kHydroelastic:
-        Fapplied_Bo_W_array =
-            EvalHydroelasticContactForces(context).F_BBo_W_array;
-        break;
-      case ContactModel::kHydroelasticWithFallback:
-        // Combine the point-penalty forces with the contact surface forces.
-        CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
-        const std::vector<SpatialForce<T>>& Fhydro_BBo_W_all =
-            EvalHydroelasticContactForces(context).F_BBo_W_array;
-        DRAKE_DEMAND(Fapplied_Bo_W_array.size() == Fhydro_BBo_W_all.size());
-        for (int i = 0; i < static_cast<int>(Fhydro_BBo_W_all.size()); ++i) {
-          // Both sets of forces are applied to the body's origins and expressed
-          // in frame W. They should simply sum.
-          Fapplied_Bo_W_array[i] += Fhydro_BBo_W_all[i];
-        }
-        break;
-    }
+    CalcAndAddSpatialContactForcesContinuous(context, &Fapplied_Bo_W_array);
   } else {
     CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
   }

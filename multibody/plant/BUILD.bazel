@@ -704,6 +704,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multibody_plant_reaction_forces_test",
+    timeout = "moderate",
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
