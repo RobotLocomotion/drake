@@ -45,9 +45,8 @@ drake_cc_library(
     ],
     deps = [
         "//geometry:drake_visualizer",
-        "//lcm:drake_lcm",
         "//multibody/plant:contact_results_to_lcm",
-        "//systems/primitives:shared_pointer_system",
+        "//systems/lcm:lcm_config_functions",
     ],
 )
 
