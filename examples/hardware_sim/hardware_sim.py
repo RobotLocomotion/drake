@@ -132,14 +132,11 @@ def run(*, scenario):
         builder=builder)
 
     # Add scene cameras.
-    camera_lcm = lcm_buses.Find("Cameras", "default")
     for _, camera in scenario.cameras.items():
         ApplyCameraConfig(
             config=camera,
-            plant=sim_plant,
             builder=builder,
-            scene_graph=scene_graph,
-            lcm=camera_lcm)
+            lcm_buses=lcm_buses)
 
     # Add visualization.
     ApplyVisualizationConfig(scenario.visualization, builder, lcm_buses)
