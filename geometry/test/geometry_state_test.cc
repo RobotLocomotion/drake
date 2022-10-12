@@ -1675,8 +1675,10 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
       "Registering deformable geometry.*non-world frame.*");
 
   /* Successful registration of deformable geometry. */
+  const RigidTransformd pose(AngleAxis<double>(M_PI_2, Vector3d::UnitX()),
+                             Vector3d{1, 2, 3});
   auto instance2 = make_unique<GeometryInstance>(
-      RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
+      pose, make_unique<Sphere>(sphere), "sphere");
   const GeometryId expected_g_id = instance2->id();
   const auto g_id = geometry_state_.RegisterDeformableGeometry(
       s_id, InternalFrame::world_frame_id(), move(instance2), kRezHint);
@@ -1696,14 +1698,17 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   ASSERT_NE(reference_mesh, nullptr);
   EXPECT_TRUE(reference_mesh->Equal(expected_mesh));
 
-  // Verify querying pose on deformable geometry throws. (Deformable geometries
-  // are characterized by vertex positions.)
-  EXPECT_THROW(geometry_state_.GetPoseInFrame(g_id), std::exception);
-  EXPECT_THROW(geometry_state_.GetPoseInParent(g_id), std::exception);
+  // Querying the _reference_ pose is fine.
+  EXPECT_TRUE(geometry_state_.GetPoseInFrame(g_id).IsExactlyEqualTo(pose));
+  EXPECT_TRUE(geometry_state_.GetPoseInParent(g_id).IsExactlyEqualTo(pose));
+  // Querying _current_ pose on deformable geometry throws. (Deformable
+  // geometries are characterized by vertex positions via
+  // get_configuration_in_world.)
   EXPECT_THROW(geometry_state_.get_pose_in_world(g_id), std::exception);
 
   // Verify vertex positions can be retrieved.
-  // TODO(xuchenhan-tri): Strengthen this test when we can set vertex positions.
+  // TODO(xuchenhan-tri): Strengthen this test when we can set vertex
+  // positions.
   const VectorX<double>& q_WG =
       geometry_state_.get_configurations_in_world(g_id);
   EXPECT_EQ(q_WG.size(), expected_mesh.num_vertices() * 3);

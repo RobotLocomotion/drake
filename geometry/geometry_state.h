@@ -327,7 +327,8 @@ class GeometryState {
   /** Implementation of QueryObject::GetPoseInWorld(FrameId).  */
   const math::RigidTransform<T>& get_pose_in_world(FrameId frame_id) const;
 
-  /** Implementation of QueryObject::GetPoseInWorld(GeometryId).  */
+  /** Implementation of QueryObject::GetPoseInWorld(GeometryId).
+   @throws std::exception if the geometry with `geometry_id` is deformable. */
   const math::RigidTransform<T>& get_pose_in_world(
       GeometryId geometry_id) const;
 
