@@ -36,6 +36,7 @@ from pydrake.multibody.tree import (
     PrismaticJoint_,
     RevoluteJoint_,
     ScrewJoint,
+    ScrewJoint_,
     RevoluteSpring_,
     RotationalInertia_,
     RigidBody_,
@@ -1597,7 +1598,7 @@ class TestPlant(unittest.TestCase):
             )
 
         def make_screw_joint(plant, P, C):
-            return ScrewJoint(
+            return ScrewJoint_[T](
                 name="screw",
                 frame_on_parent=P,
                 frame_on_child=C,
@@ -1789,6 +1790,23 @@ class TestPlant(unittest.TestCase):
                 joint.AddInOneForce(
                     context=context, joint_dof=0, joint_tau=0.0, forces=forces)
                 joint.AddInDamping(context=context, forces=forces)
+            elif joint.name() == "screw":
+                self.assertEqual(joint.damping(), damping)
+                joint.damping()
+                joint.screw_pitch()
+                joint.get_default_rotation()
+                joint.set_default_rotation(0.0)
+                joint.get_default_translation()
+                joint.set_default_translation(0.0)
+                joint.get_translational_velocity(context)
+                joint.set_translational_velocity(context, 0.0)
+                joint.get_rotation(context=context)
+                joint.set_angular_velocity(context, 0.0)
+                joint.get_angular_velocity(context=context)
+                joint.set_random_pose_distribution(theta=np.array([[1]]))
+                # Check the Joint base class sugar for 1dof.
+                joint.GetOnePosition(context=context)
+                joint.GetOneVelocity(context=context)
             elif joint.name() == "universal":
                 self.assertEqual(joint.damping(), damping)
                 set_point = array_T([1., 2.])
