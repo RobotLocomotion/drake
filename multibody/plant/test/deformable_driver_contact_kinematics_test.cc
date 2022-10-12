@@ -107,14 +107,19 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     /* Set up the deformable body velocity and the rigid body velocity so that
      the contact velocities in the contact frame are (0, 0, 1). */
     if (dynamic_rigid_body) {
-      SetVelocity(deformable_body_id_, Vector3d(0, 0, -0.5));
+      const Vector3d v_FD =
+          Vector3d(0, 0, -0.5);  // velocity of deformable body
+      SetVelocity(deformable_body_id_, X_WF_.rotation() * v_FD);
       Context<double>& mutable_plant_context =
           plant_->GetMyMutableContextFromRoot(context_.get());
+      const Vector3d v_FR = Vector3d(0, 0, 0.5);  // velocity of rigid body
+      const SpatialVelocity<double> V_WR(Vector3d::Zero(),
+                                         X_WF_.rotation() * v_FR);
       plant_->SetFreeBodySpatialVelocity(
-          &mutable_plant_context, plant_->get_body(rigid_body_index_),
-          SpatialVelocity<double>(Vector3d(0, 0, 0), Vector3d(0, 0, 0.5)));
+          &mutable_plant_context, plant_->get_body(rigid_body_index_), V_WR);
     } else {
-      SetVelocity(deformable_body_id_, Vector3d(0, 0, -1.0));
+      const Vector3d v_FD = Vector3d(0, 0, -1.0);
+      SetVelocity(deformable_body_id_, X_WF_.rotation() * v_FD);
     }
   }
 
@@ -142,8 +147,7 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
       const ContactPairKinematics<double>& contact_kinematic =
           contact_kinematics[i];
       EXPECT_LT(contact_kinematic.phi, 0.0);
-      EXPECT_TRUE(contact_kinematic.R_WC.IsNearlyEqualTo(
-          expected_R_WC, std::numeric_limits<double>::epsilon()));
+      EXPECT_TRUE(contact_kinematic.R_WC.IsNearlyEqualTo(expected_R_WC, 1e-12));
       if (dynamic_rigid_body) {
         ASSERT_EQ(contact_kinematic.jacobian.size(), 2);
         const Matrix3X<double> J0 = contact_kinematic.jacobian[0].J;
@@ -151,15 +155,15 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
         ASSERT_EQ(v0.size(), J0.cols());
         const Matrix3X<double> J1 = contact_kinematic.jacobian[1].J;
         Vector6<double> v1;
-        v1 << 0, 0, 0, 0, 0, 0.5;
+        v1 << Vector3d::Zero(), X_WF_.rotation() * Vector3d(0, 0, 0.5);
         ASSERT_EQ(v1.size(), J1.cols());
-        EXPECT_TRUE(CompareMatrices(J0 * v0 + J1 * v1, expected_vc));
+        EXPECT_TRUE(CompareMatrices(J0 * v0 + J1 * v1, expected_vc, 1e-14));
       } else {
         ASSERT_EQ(contact_kinematic.jacobian.size(), 1);
         const Matrix3X<double> J0 = contact_kinematic.jacobian[0].J;
         const VectorXd v0 = driver_->EvalParticipatingVelocities(plant_context);
         ASSERT_EQ(v0.size(), J0.cols());
-        EXPECT_TRUE(CompareMatrices(J0 * v0, expected_vc));
+        EXPECT_TRUE(CompareMatrices(J0 * v0, expected_vc, 1e-14));
       }
     }
   }

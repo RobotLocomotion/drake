@@ -53,11 +53,10 @@ class InternalGeometry {
                    FrameId frame_id, GeometryId geometry_id, std::string name,
                    math::RigidTransform<double> X_FG);
 
-  /* Constructs a deformable internal geometry without any assigned
-   roles defined in the given frame. The position of the geometry is
-   characterized by the positions of the mesh vertices in the given frame
-   instead of "pose" of the geometry in the frame. X_FG and X_PG are always
-   identity.
+  /* Constructs a deformable internal geometry in its reference configuration
+   without any assigned roles defined in the given frame. Every deformable
+   geometry is an immediate child of the frame. Therefore, it is assumed that
+   X_FG = X_PG.
    @param source_id         The id for the source that registered this
                             geometry.
    @param shape             The shape specification for this instance.
@@ -68,7 +67,7 @@ class InternalGeometry {
                             the geometry.  */
   InternalGeometry(SourceId source_id, std::unique_ptr<Shape> shape,
                    FrameId frame_id, GeometryId geometry_id, std::string name,
-                   double resolution_hint);
+                   math::RigidTransform<double> X_FG, double resolution_hint);
 
   /* Compares two %InternalGeometry instances for "equality". Two internal
    geometries are considered equal if they have the same geometry identifier.
