@@ -704,6 +704,60 @@ GTEST_TEST(DiagramBuilderTest, GetMutableSystems) {
             builder.GetMutableSystems());
 }
 
+// Test for the by-name suite of GetSystems functions.
+GTEST_TEST(DiagramBuilderTest, GetByName) {
+  DiagramBuilder<double> builder;
+  auto adder = builder.AddNamedSystem<Adder>("adder", 1, 1);
+  auto pass = builder.AddNamedSystem<PassThrough>("pass", 1);
+
+  // Plain by-name.
+  EXPECT_EQ(&builder.GetSubsystemByName("adder"), adder);
+  EXPECT_EQ(&builder.GetMutableSubsystemByName("pass"), pass);
+
+  // Downcasting by-name.
+  const Adder<double>& adder2 =
+      builder.GetDowncastSubsystemByName<Adder>("adder");
+  const PassThrough<double>& pass2 =
+      builder.GetDowncastSubsystemByName<PassThrough>("pass");
+  EXPECT_EQ(&adder2, adder);
+  EXPECT_EQ(&pass2, pass);
+
+  // Error: no such name.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.GetSubsystemByName("not_a_subsystem"),
+      ".*not_a_subsystem.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.GetMutableSubsystemByName("not_a_subsystem"),
+      ".*not_a_subsystem.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.GetDowncastSubsystemByName<Adder>("not_a_subsystem"),
+      ".*not_a_subsystem.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.GetMutableDowncastSubsystemByName<Adder>("not_a_subsystem"),
+      ".*not_a_subsystem.*");
+
+  // Error: wrong type.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.GetDowncastSubsystemByName<Gain>("adder"),
+      ".*cast.*Adder.*Gain.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.GetMutableDowncastSubsystemByName<Gain>("adder"),
+      ".*cast.*Adder.*Gain.*");
+
+  // Add a second system named "pass". We can still look up the "adder" but
+  // not the "pass" anymore
+  auto bonus_pass = builder.AddNamedSystem<PassThrough>("pass", 1);
+  EXPECT_EQ(&builder.GetSubsystemByName("adder"), adder);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.GetMutableSubsystemByName("pass"),
+      ".*multiple subsystems.*pass.*unqiue.*");
+
+  // Once the system is reset to use unique name, both lookups succeed.
+  bonus_pass->set_name("bonus_pass");
+  EXPECT_EQ(&builder.GetSubsystemByName("pass"), pass);
+  EXPECT_EQ(&builder.GetSubsystemByName("bonus_pass"), bonus_pass);
+}
+
 // Tests that the returned exported input / output port id matches the
 // number of ExportInput() / ExportOutput() calls.
 GTEST_TEST(DiagramBuilderTest, ExportInputOutputIndex) {

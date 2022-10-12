@@ -73,4 +73,30 @@ std::unique_ptr<T> dynamic_pointer_cast_or_throw(std::unique_ptr<U>&& other) {
   return std::unique_ptr<T>(result);
 }
 
+/// Casts the pointer `other` from type `U` to `T` using `dynamic_cast`.
+/// The result is never nullptr.
+///
+/// This differs from the C++ built-in dynamic_cast by providing a nicer
+/// exception message, and always throwing on any failure.
+///
+/// @throws std::exception if `other` is nullptr or the cast fails.
+template <class T, class U>
+T* dynamic_pointer_cast_or_throw(U* other) {
+  if (!other) {
+    throw std::logic_error(fmt::format(
+        "Cannot cast a nullptr {}* to {}*.",
+        NiceTypeName::Get<U>(),
+        NiceTypeName::Get<T>()));
+  }
+  T* result = dynamic_cast<T*>(other);
+  if (!result) {
+    throw std::logic_error(fmt::format(
+        "Cannot cast a {}* pointing to an object of type {} to {}*.",
+        NiceTypeName::Get<U>(),
+        NiceTypeName::Get(*other),
+        NiceTypeName::Get<T>()));
+  }
+  return result;
+}
+
 }  // namespace drake

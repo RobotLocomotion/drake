@@ -96,7 +96,7 @@ GTEST_TEST(DynamicPointerCastTest, DowncastConst) {
   EXPECT_EQ(!!t, true);
 }
 
-// === Tests for dynamic_pointer_cast_or_throw<> ===
+// === Tests for dynamic_pointer_cast_or_throw<> on unique_ptr ===
 
 // Downcasting works.
 GTEST_TEST(DynamicPointerCastOrThrowTest, Downcast) {
@@ -150,6 +150,36 @@ GTEST_TEST(DynamicPointerCastOrThrowTest, DowncastConst) {
       dynamic_pointer_cast_or_throw<const Derived>(std::move(u));
   EXPECT_EQ(!!u, false);
   EXPECT_EQ(!!t, true);
+}
+
+// === Tests for dynamic_pointer_cast_or_throw<> on a raw pointer ===
+
+// Downcasting works.
+GTEST_TEST(BareDynamicPointerCastOrThrowTest, Downcast) {
+  Derived derived;
+  Base* u = &derived;
+  Derived* t = dynamic_pointer_cast_or_throw<Derived>(u);
+  EXPECT_TRUE(t != nullptr);
+  EXPECT_TRUE(t == u);
+}
+
+// Failed cast of nullptr.
+GTEST_TEST(BareDynamicPointerCastOrThrowTest, FailedCastFromNullptr) {
+  Base* u = nullptr;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dynamic_pointer_cast_or_throw<MoreDerived>(u),
+      "Cannot cast a nullptr drake.*Base. "
+      "to drake.*MoreDerived..");
+}
+
+// Failed cast (type mismatch).
+GTEST_TEST(BareDynamicPointerCastOrThrowTest, FailedDowncast) {
+  Derived derived;
+  Base* u = &derived;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dynamic_pointer_cast_or_throw<MoreDerived>(u),
+      "Cannot cast a drake.*Base. pointing to an object of type "
+      "drake.*Derived to drake.*MoreDerived..");
 }
 
 }  // namespace
