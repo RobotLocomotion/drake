@@ -21,6 +21,7 @@ OneOfEverything:
   cameras:
     arbitrary_camera_name:
       name: camera_0
+      lcm_bus: extra_bus
   visualization:
     lcm_bus: extra_bus
     publish_period: 0.125

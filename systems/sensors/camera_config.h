@@ -57,6 +57,7 @@ struct CameraConfig {
     a->Visit(DRAKE_NVP(depth));
     a->Visit(DRAKE_NVP(show_rgb));
     a->Visit(DRAKE_NVP(do_compress));
+    a->Visit(DRAKE_NVP(lcm_bus));
     ValidateOrThrow();
   }
 
@@ -301,6 +302,10 @@ struct CameraConfig {
 
   /** Controls whether the images are broadcast in a compressed format. */
   bool do_compress{true};
+
+  /** Which LCM URL to use.
+  @see drake::systems::lcm::LcmBuses */
+  std::string lcm_bus{"default"};
 
   //@}
 
