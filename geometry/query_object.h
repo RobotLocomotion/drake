@@ -167,6 +167,12 @@ class QueryObject {
 
   /** Reports the position of the geometry indicated by `geometry_id` relative
    to the world frame.
+   @note As deformable geometries deform, a single pose is not sufficient to
+   capture the current position of the geometry. Instead, one should use
+   QueryObject::GetConfigurationsInWorld() to get the current vertex positions
+   of the deformable geometry in the world frame. On the other hand, it _is_
+   meaningful to to query the pose of the reference geometry in its parent
+   frame. One should use SceneGraphInspector::GetPoseInFrame() for that purpose.
    @sa GetConfigurationsInWorld().
    @throws std::exception if the geometry `geometry_id` is not valid or if it
    exists but is deformable.  */
