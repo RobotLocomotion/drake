@@ -426,6 +426,12 @@ class TestMath(unittest.TestCase):
         if T != Expression:
             self.assertEqual(value, T(.5))
 
+    @numpy_compare.check_all_types
+    def test_cross_product(self, T):
+        p = np.array([T(1), T(2), T(3)])
+        p_cross = mut.VectorToSkewSymmetric(p)
+        self.assertEqual(p_cross.shape, (3, 3))
+
     def test_random_rotations(self):
         g = RandomGenerator()
         quat = mut.UniformlyRandomQuaternion(g)
