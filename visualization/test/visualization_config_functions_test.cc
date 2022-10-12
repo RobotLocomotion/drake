@@ -137,37 +137,6 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
   drake_lcm.HandleSubscriptions(1);
 }
 
-// When the lcm pointer is directly provided, the lcm_buses can be nullptr
-// and nothing crashes.
-GTEST_TEST(VisualizationConfigFunctionsTest, IgnoredLcmBuses) {
-  DrakeLcm drake_lcm;
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  plant.Finalize();
-  VisualizationConfig config;
-  config.lcm_bus = "will_be_ignored";
-  ApplyVisualizationConfig(config, &builder, nullptr, nullptr, nullptr,
-      &drake_lcm);
-  // Guard against any crashes or dangling pointers during diagram construction.
-  builder.Build();
-}
-
-// When the lcm pointer is directly provided, the lcm_bus config string can
-// refer to a missing bus_name and nothing crashes.
-GTEST_TEST(VisualizationConfigFunctionsTest, IgnoredLcmBusName) {
-  DrakeLcm drake_lcm;
-  const LcmBuses empty_lcm_buses;
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  plant.Finalize();
-  VisualizationConfig config;
-  config.lcm_bus = "will_be_ignored";
-  ApplyVisualizationConfig(config, &builder, &empty_lcm_buses, nullptr, nullptr,
-      &drake_lcm);
-  // Guard against any crashes or dangling pointers during diagram construction.
-  builder.Build();
-}
-
 // The AddDefault... sugar shouldn't crash.
 GTEST_TEST(VisualizationConfigFunctionsTest, AddDefault) {
   DiagramBuilder<double> builder;
