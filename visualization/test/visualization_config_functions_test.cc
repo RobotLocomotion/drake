@@ -174,7 +174,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, WrongSystemTypes) {
   scene_graph.set_name("plant");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddDefaultVisualization(&builder),
-      ".*of the wrong type.*");
+      ".*not cast.*");
 }
 
 }  // namespace

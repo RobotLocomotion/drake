@@ -24,28 +24,6 @@ using systems::DiagramBuilder;
 using systems::System;
 using systems::lcm::LcmBuses;
 
-template <template <typename> class ChildSystem>
-const ChildSystem<double>* DowncastSubsystem(
-    const DiagramBuilder<double>* builder, std::string_view name) {
-  DRAKE_DEMAND(builder != nullptr);
-  for (const System<double>* system : builder->GetSystems()) {
-    if (system->get_name() == name) {
-      const auto* child = dynamic_cast<const ChildSystem<double>*>(system);
-      if (child == nullptr) {
-        throw std::logic_error(fmt::format(
-            "ApplyVisualizationConfig: the DiagramBuilder contains a system"
-            " named '{}' but of the wrong type (expected: {}, actual {}).",
-            name, NiceTypeName::Get<ChildSystem<double>>(),
-            NiceTypeName::Get(*system)));
-      }
-      return child;
-    }
-  }
-  throw std::logic_error(fmt::format(
-      "ApplyVisualizationConfig: the DiagramBuilder does not contain a system"
-      " named '{}'.",  name));
-}
-
 void ApplyVisualizationConfigImpl(
     const VisualizationConfig& config,
     DrakeLcmInterface* lcm,
@@ -88,10 +66,11 @@ void ApplyVisualizationConfig(
   // then we'll need the plant, not just the scene graph. Establishing the
   // precondition now means we won't break users down the road when we add that.
   if (plant == nullptr) {
-    plant = DowncastSubsystem<MultibodyPlant>(builder, "plant");
+    plant = &builder->GetDowncastSubsystemByName<MultibodyPlant>("plant");
   }
   if (scene_graph == nullptr) {
-    scene_graph = DowncastSubsystem<SceneGraph>(builder, "scene_graph");
+    scene_graph = &builder->GetDowncastSubsystemByName<SceneGraph>(
+        "scene_graph");
   }
   ApplyVisualizationConfigImpl(config, lcm, *plant, *scene_graph, builder);
 }
