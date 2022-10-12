@@ -213,7 +213,8 @@ class LadderTest : public ::testing::Test {
 
     // Set initial condition with the ladder leaning against the wall.
     // We compute the angle in the pin joint for this condition.
-    const double theta = std::asin(kDistanceToWall / kLadderLength);
+    const double theta =
+        std::asin(kDistanceToWall / (kLadderLength + kPointContactRadius));
     pin_->set_angle(plant_context, theta);
 
     // Fix the actuation.
@@ -239,7 +240,7 @@ class LadderTest : public ::testing::Test {
     simulator->get_mutable_integrator().set_maximum_step_size(5e-3);
     simulator->get_mutable_integrator().set_target_accuracy(1e-6);
     simulator->Initialize();
-    const double simulation_time = 5.0;  // seconds.
+    const double simulation_time = 1.0;  // seconds.
     simulator->AdvanceTo(simulation_time);
     return simulator;
   }
@@ -420,8 +421,8 @@ class LadderTest : public ::testing::Test {
   const double kWallHeight{3.0};  // [m]
 
   // Hydroelastic parameters.
-  const double kElasticModulus{1.6e6};  // [Pa]
-  const double kDissipation{10.0};       // [s/m]
+  const double kElasticModulus{5e6};  // [Pa]
+  const double kDissipation{10.0};    // [s/m]
 
   // Pin joint parameters.
   const double kDistanceToWall{1.0};
