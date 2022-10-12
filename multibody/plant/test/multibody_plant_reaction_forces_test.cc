@@ -213,8 +213,11 @@ class LadderTest : public ::testing::Test {
 
     // Set initial condition with the ladder leaning against the wall.
     // We compute the angle in the pin joint for this condition.
+    // Length offset to make the contact geometry tangent to the wall.
+    const double offset = (kLadderLength * kPointContactRadius /
+                           (kDistanceToWall - kPointContactRadius));
     const double theta =
-        std::asin(kDistanceToWall / (kLadderLength + kPointContactRadius));
+        std::asin(kDistanceToWall / (kLadderLength + offset));
     pin_->set_angle(plant_context, theta);
 
     // Fix the actuation.
