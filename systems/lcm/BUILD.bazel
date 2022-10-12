@@ -147,6 +147,8 @@ drake_cc_googletest(
     name = "lcm_config_functions_test",
     deps = [
         ":lcm_config_functions",
+        "//common/test_utilities:expect_throws_message",
+        "//lcm:drake_lcm",
     ],
 )
 

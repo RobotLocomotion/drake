@@ -32,7 +32,7 @@ DrakeLcmInterface* LcmBuses::Find(
     return result;
   }
   throw std::runtime_error(fmt::format(
-      "{} requested lcm bus {} that does not exist",
+      "{} requested an LCM bus '{}' that does not exist",
       description_of_caller, bus_name));
 }
 
@@ -50,7 +50,7 @@ void LcmBuses::Add(std::string bus_name, DrakeLcmInterface* bus) {
   const bool inserted = buses_.emplace(std::move(bus_name), bus).second;
   if (!inserted) {
     throw std::runtime_error(fmt::format(
-        "An LCM bus with name {} has already been defined",
+        "An LCM bus with name '{}' has already been defined",
         bus_name));
   }
 }
