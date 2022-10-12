@@ -15,3 +15,6 @@ Note that neither the hardware_sim program nor its scenario schema are
 installed as part of Drake releases. We expect and encourage users to
 copy these files into their own projects and customize the code for
 their specific needs.
+
+We also have a Python flavor of this example under development. It is
+not yet feature-complete.
