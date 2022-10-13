@@ -71,10 +71,7 @@ class PrismaticJoint final : public Joint<T> {
       double pos_upper_limit = std::numeric_limits<double>::infinity(),
       double damping = 0);
 
-  const std::string& type_name() const override {
-    static const never_destroyed<std::string> name{kTypeName};
-    return name.access();
-  }
+  const std::string& type_name() const override;
 
   /// Returns the axis of translation for `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see

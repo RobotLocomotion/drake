@@ -105,10 +105,7 @@ class RevoluteJoint final : public Joint<T> {
                 double pos_lower_limit, double pos_upper_limit,
                 double damping = 0);
 
-  const std::string& type_name() const override {
-    static const never_destroyed<std::string> name{kTypeName};
-    return name.access();
-  }
+  const std::string& type_name() const override;
 
   /// Returns the axis of revolution of `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
