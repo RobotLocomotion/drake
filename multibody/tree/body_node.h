@@ -1059,11 +1059,13 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // additional_diagonal_inertias.
       D_B.diagonal() += diagonal_inertias.segment(this->velocity_start(), nv);
 
-      // Compute the LDLT factorization of D_B as ldlt_D_B.
+      // Compute the LLT factorization of D_B as llt_D_B.
+      // Note: Eigen benchmarks for various matrix factorizations is here:
+      // https://eigen.tuxfamily.org/dox/group__DenseDecompositionBenchmark.html
       // TODO(bobbyluig): Test performance against inverse().
-      math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& ldlt_D_B =
-          get_mutable_ldlt_D_B(abic);
-      ldlt_D_B = math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>(
+      math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
+          get_mutable_llt_D_B(abic);
+      llt_D_B = math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>(
           MatrixUpTo6<T>(D_B.template selfadjointView<Eigen::Lower>()));
 
       // Ensure that D_B (the articulated body hinge inertia) is not singular.
@@ -1071,7 +1073,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // that this articulated body inertia has some non-physical quantities
       // (such as zero moment of inertia along an axis which the hinge mapping
       // matrix permits motion).
-      if (ldlt_D_B.eigen_linear_solver().info() != Eigen::Success) {
+      if (llt_D_B.eigen_linear_solver().info() != Eigen::Success) {
         std::stringstream message;
         message << "Encountered singular articulated body hinge inertia "
                 << "for body node index " << topology_.index << ". "
@@ -1082,7 +1084,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
       // Compute the Kalman gain, g_PB_W, using (6).
       Matrix6xUpTo6<T>& g_PB_W = get_mutable_g_PB_W(abic);
-      g_PB_W = ldlt_D_B.Solve(U_B_W).transpose();
+      g_PB_W = llt_D_B.Solve(U_B_W).transpose();
 
       // Project P_B_W using (7) to obtain Pplus_PB_W, the articulated body
       // inertia of this body B as felt by body P and expressed in frame W.
@@ -1267,7 +1269,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Compute nu_B, the articulated body inertia innovations generalized
       // acceleration.
       const VectorUpTo6<T> nu_B =
-          get_ldlt_D_B(abic).Solve(get_e_B(aba_force_cache));
+          get_llt_D_B(abic).Solve(get_e_B(aba_force_cache));
 
       // Mutable reference to the generalized acceleration.
       auto vmdot = get_mutable_accelerations(ac);
@@ -1641,17 +1643,17 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return abic->get_mutable_Pplus_PB_W(topology_.index);
   }
 
-  // Returns a const reference to the LDLT factorization `ldlt_D_B` of the
+  // Returns a const reference to the LLT factorization `llt_D_B` of the
   // articulated body hinge inertia.
-  const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_ldlt_D_B(
+  const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_llt_D_B(
       const ArticulatedBodyInertiaCache<T>& abic) const {
-    return abic.get_ldlt_D_B(topology_.index);
+    return abic.get_llt_D_B(topology_.index);
   }
 
-  // Mutable version of get_ldlt_D_B().
-  math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
+  // Mutable version of get_llt_D_B().
+  math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_mutable_llt_D_B(
       ArticulatedBodyInertiaCache<T>* abic) const {
-    return abic->get_mutable_ldlt_D_B(topology_.index);
+    return abic->get_mutable_llt_D_B(topology_.index);
   }
 
   // Returns a const reference to the Kalman gain `g_PB_W` of the body.

@@ -440,30 +440,48 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateMassTranslatingBodiesAB) {
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
 }
 
-// Verify an exception may be thrown for a forward dynamic analysis that has
-// sequential rigid bodies A and B that rotate in the same direction, where
-// body A's inertia may be disproportionally small (or lage) relative to B.
-GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesAB) {
+// Perform a forward dynamic analysis for a planar triple pendulum consisting of
+// rigid bodies A, B, C rotating in the world's Z-direction.
+// Verify an exception is thrown if body C's mass and inertia are zero or if
+// bodies A and B's mass and inertia are disproportionally small relative to C.
+GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
   // Create a plant with discrete_update_period = 0 to set a continuous model
   // that uses the Articulated Body Algorithm (ABA) for forward dynamics.
   const double discrete_update_period = 0;
   MultibodyPlant<double> plant(discrete_update_period);
 
-  double mA = 1, mB = 0;  // Mass of links A, B.
-  const double length = 3;  // Length of uniform-density links A, B.
+  // World X is vertically downward and world Y is horizontally-right.
+  plant.mutable_gravity_field().set_gravity_vector(Vector3d(9.8, 0, 0));
+
+  // Create the bodies in the triple pendulum.
+  // Reminder: Cubical link B has p_BoBcm_B = [length/2, 0, 0].
+  double mA = 1, mB = 1, mC = 0;  // Mass of links A, B, C.
+  const double length = 0.2;      // Length of uniform-density links A, B, C.
   const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddCubicalLink(&plant, "bodyB", mB, length);
+  const RigidBody<double>& body_C = AddCubicalLink(&plant, "bodyC", mC, length);
 
-  // Add bodyA to world with Z-revolute joint.
+  // Add body A to world W  with a Z-revolute joint.
   const RigidBody<double>& world_body = plant.world_body();
   const RevoluteJoint<double>& WA_revolute_jointZ =
       plant.AddJoint<multibody::RevoluteJoint>("WA_revolute_jointZ",
       world_body, std::nullopt, body_A, std::nullopt, Vector3<double>::UnitZ());
 
-  // Add bodyB to bodyA with Z-revolute joint.
+  // Add body B to body A with a Z-revolute joint. To do this, create a
+  // frame AB at the X-distal end of link A that connects to B.
+  const Vector3d p_AoABo_A(length, 0, 0);  // Position vector from Ao to ABo.
+  const math::RigidTransformd X_AAB(p_AoABo_A);  // Rigid transform from A to AB
   const RevoluteJoint<double>& AB_revolute_jointZ =
       plant.AddJoint<multibody::RevoluteJoint>("AB_revolute_jointZ",
-      body_A, std::nullopt, body_B, std::nullopt, Vector3<double>::UnitZ());
+      body_A, X_AAB, body_B, std::nullopt, Vector3<double>::UnitZ());
+
+  // Add body C to body B with a Z-revolute joint. To do this, create a
+  // frame BC at the X-distal end of link BC that connects to C.
+  const Vector3d p_BoBCo_B(length, 0, 0);  // Position vector from Bo to BCo.
+  const math::RigidTransformd X_BBC(p_AoABo_A);  // Rigid transform from B to BC
+  const RevoluteJoint<double>& BC_revolute_jointZ =
+      plant.AddJoint<multibody::RevoluteJoint>("BC_revolute_jointZ",
+      body_B, X_BBC, body_C, std::nullopt, Vector3<double>::UnitZ());
 
   // Signal that we are done building the test model.
   plant.Finalize();
@@ -471,23 +489,51 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesAB) {
   // Create a default context and evaluate forward dynamics.
   auto context = plant.CreateDefaultContext();
   systems::Context<double>* context_ptr = context.get();
-  WA_revolute_jointZ.set_angle(context_ptr, M_PI/6.0);
-  AB_revolute_jointZ.set_angle(context_ptr, M_PI/4.0);
+  WA_revolute_jointZ.set_angle(context_ptr, 0);
+  AB_revolute_jointZ.set_angle(context_ptr, 0);
+  BC_revolute_jointZ.set_angle(context_ptr, 0);
 
-  // Verify proper assertion is thrown if mA = 1, mB = 0.
+  // Verify proper assertion is thrown if mA = 1, mB = 1, mc = 0.
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context).get_vdot(),
     "Encountered singular articulated body hinge inertia for body node "
-    "index 2. Please ensure that this body has non-zero inertia along "
+    "index 3. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
 
-  // Verify no assertion is thrown if mA = 1, mB = 1E-33.
-  body_B.SetMass(context_ptr, mB = 1E-33);
+  // Verify no assertion is thrown if mA = 1, mB = 1, mC = 1E-77.
+  body_C.SetMass(context_ptr, mC = 1E-77);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
 
-  // Verify no assertion is thrown if mA = 1E-11, mB = 1.
-  body_A.SetMass(context_ptr, mA = 1);
-  body_B.SetMass(context_ptr, mB = 1E-9);
+  // Verify no assertion is thrown if mA = 1, mB = 0, mC = 1.
+  body_B.SetMass(context_ptr, mB = 0);
+  body_C.SetMass(context_ptr, mC = 1);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+
+  // Verify assertion is thrown if mA = 0, mB = 0, mC = 1.
+  body_A.SetMass(context_ptr, mA = 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context).get_vdot(),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 1. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
+
+  // Notice that no assertion is thrown for non-zero angles, even though angular
+  // accelerations are unusually large (hinge matrix is near singular).
+  WA_revolute_jointZ.set_angle(context_ptr, 5 * M_PI/180);
+  AB_revolute_jointZ.set_angle(context_ptr, 7 * M_PI/180);
+  BC_revolute_jointZ.set_angle(context_ptr, 9 * M_PI/180);
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+
+  // Drake's angular accelerations are large and are nearly identical to those
+  // produced by MotionGenesis (MG) for this same problem. The MG simulation
+  // for this simulation fails at t = 0.0124 seconds with:
+  // qAddot = 2.6E+10   qBddot = -5.2E+10  qCddot = 2.6E+010.
+  const VectorX<double>& vdot = plant.EvalForwardDynamics(*context).get_vdot();
+  const Vector3d qddot_expected(393.28375042294266,   // qAddot
+                               -793.82369625837146,   // qBddot
+                                400.53994583542919);  // qCddot
+  constexpr double kAngularAccelerationTolerance = 1E-8;
+  EXPECT_NEAR(vdot(0), qddot_expected(0), kAngularAccelerationTolerance);
+  EXPECT_NEAR(vdot(1), qddot_expected(1), kAngularAccelerationTolerance);
+  EXPECT_NEAR(vdot(2), qddot_expected(2), kAngularAccelerationTolerance);
 }
 
 }  // namespace
