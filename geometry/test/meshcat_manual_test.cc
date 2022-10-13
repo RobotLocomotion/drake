@@ -115,6 +115,31 @@ int do_main() {
                           RigidTransformd(Vector3d{7.75, -.25, 0}));
   }
 
+  // SetTriangleColorMesh.
+  {
+    // clang-format off
+    Eigen::Matrix3Xd vertices(3, 4);
+    vertices <<
+      0, 0.5, 0.5, 0,
+      0, 0,   0.5, 0.5,
+      0, 0,   0,   0.5;
+    Eigen::Matrix3Xi faces(3, 2);
+    faces <<
+      0, 2,
+      1, 3,
+      2, 0;
+    Eigen::Matrix3Xd colors(3, 4);
+    colors <<
+      1, 0, 0, 1,
+      0, 1, 0, 1,
+      0, 0, 1, 0;
+    // clang-format on
+    meshcat->SetTriangleColorMesh("triangle_color_mesh", vertices, faces,
+                                  colors);
+    meshcat->SetTransform("triangle_color_mesh",
+                          RigidTransformd(Vector3d{8.75, -.25, 0}));
+  }
+
   std::cout << R"""(
 Open up your browser to the URL above.
 
@@ -132,6 +157,7 @@ Open up your browser to the URL above.
   - 4 green vertical line segments (in z).
   - a purple triangle mesh with 2 faces.
   - the same purple triangle mesh drawn as a wireframe.
+  - the same triangle mesh drawn in multicolor.
 )""";
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');

@@ -280,8 +280,8 @@ class Meshcat {
   @param faces is a 3-by-M integer matrix with each entry denoting an index
                into vertices and each column denoting one face (aka
                SurfaceTriangle).
-  @param colors is a 3-by-N matrix of color values, one color per vertex of the
-                mesh.
+  @param colors is a 3-by-N matrix of RGB color values, one color per vertex of
+                the mesh. Color values are in the range [0, 1].
   @param wireframe if "true", then only the triangle edges are visualized, not
                    the faces.
   @param wireframe_line_width is the width in pixels.  Due to limitations in

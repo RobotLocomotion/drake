@@ -130,6 +130,13 @@ class TestGeometryVisualizers(unittest.TestCase):
             rgba=mut.Rgba(0.3, 0.3, 0.3),
             wireframe=True,
             wireframe_line_width=2.0)
+        meshcat.SetTriangleColorMesh(
+            path="/test/triangle_mesh",
+            vertices=np.array([[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]]).T,
+            faces=np.array([[0, 1, 2], [3, 0, 2]]).T,
+            colors=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]]).T,
+            wireframe=False,
+            wireframe_line_width=2.0)
         meshcat.SetProperty(path="/Background",
                             property="visible",
                             value=True)
