@@ -74,10 +74,7 @@ class PlanarJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS((damping.array() >= 0).all());
   }
 
-  const std::string& type_name() const final {
-    static const never_destroyed<std::string> name{kTypeName};
-    return name.access();
-  }
+  const std::string& type_name() const final;
 
   /// Returns `this` joint's damping constant in N⋅s/m for the translational
   /// degrees and N⋅m⋅s for the rotational degree. The damping force (in N) is

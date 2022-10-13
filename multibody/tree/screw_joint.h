@@ -86,10 +86,7 @@ class ScrewJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS(damping >= 0);
   }
 
-  const std::string& type_name() const final {
-    static const never_destroyed<std::string> name{kTypeName};
-    return name.access();
-  }
+  const std::string& type_name() const;
 
   /// Returns `this` joint's amount of translation in meters
   /// occuring over a one full revolution.
