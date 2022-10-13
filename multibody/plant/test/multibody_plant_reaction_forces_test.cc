@@ -204,10 +204,8 @@ class LadderTest : public ::testing::Test {
   }
 
   // Build and run a simulator, and return it after simulating.
-  std::unique_ptr<Simulator<double>> Simulate() {
-    std::unique_ptr<Context<double>> diagram_context =
-        diagram_->CreateDefaultContext();
-
+  std::unique_ptr<Simulator<double>> Simulate(
+      std::unique_ptr<Context<double>> diagram_context) {
     Context<double>* plant_context =
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context.get());
 
@@ -406,7 +404,8 @@ class LadderTest : public ::testing::Test {
 
     // Create the threads' contexts by cloning a prototype. This will help
     // ensure the context deep copy is properly working.
-    auto simulator_prototype = Simulate();
+    auto context_prototype = diagram_->CreateDefaultContext();
+    auto simulator_prototype = Simulate(std::move(context_prototype));
     VerifyJointReactionForces(&simulator_prototype->get_mutable_context(),
                               hydro_geometry);
 
@@ -435,12 +434,12 @@ class LadderTest : public ::testing::Test {
     static constexpr int kThreads = 2;
     std::vector<std::thread> threads;
     for (int k = 0; k < kThreads; k++) {
-      threads.push_back(
-          std::thread([this]() {
-              Simulate();
-              // We skip verifying forces here because system evolution
-              // invalidates the expected values used above.
-            }));
+      threads.push_back(std::thread([this, &simulator_prototype]() {
+        auto context = simulator_prototype->get_context().Clone();
+        Simulate(std::move(context));
+        // We skip verifying forces here because system evolution
+        // invalidates the expected values used above.
+      }));
     }
     for (auto& thread : threads) {
       thread.join();
