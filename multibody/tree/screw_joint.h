@@ -55,7 +55,7 @@ class ScrewJoint final : public Joint<T> {
   /// constructor. See the Joint class's documentation for details.
   /// The additional parameters are:
   /// @param[in] screw_pitch
-  ///   Amount of translation in meters occuring over a one full
+  ///   Amount of translation in meters occurring over a one full
   ///   screw revolution. It's domain is (-∞, ∞). When the screw pitch is
   ///   negative, positive rotation will result in translating towards the
   ///   negative direction of z-axis. When the screw pitch is zero, this joint
@@ -92,7 +92,7 @@ class ScrewJoint final : public Joint<T> {
   ///   equal to one.
   ///   This vector can have any length, only the direction is used.
   /// @param[in] screw_pitch
-  ///   Amount of translation in meters occuring over a one full
+  ///   Amount of translation in meters occurring over a one full
   ///   screw revolution. It's domain is (-∞, ∞). When the screw pitch is
   ///   negative, positive rotation will result in translating towards the
   ///   negative direction of â-axis. When the screw pitch is zero, this joint
@@ -144,7 +144,7 @@ class ScrewJoint final : public Joint<T> {
   }
 
   /// Returns `this` joint's amount of translation in meters
-  /// occuring over a one full revolution.
+  /// occurring over a one full revolution.
   double screw_pitch() const { return screw_pitch_; }
 
   /// Returns `this` joint's damping constant N⋅m⋅s for the rotational degree.
@@ -405,7 +405,7 @@ class ScrewJoint final : public Joint<T> {
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
   Vector3<double> axis_;
 
-  // The amount of translation in meters occuring over a one full revolution.
+  // The amount of translation in meters occurring over a one full revolution.
   double screw_pitch_;
 };
 
