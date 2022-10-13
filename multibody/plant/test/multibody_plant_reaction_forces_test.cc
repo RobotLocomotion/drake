@@ -104,7 +104,7 @@ class LadderTest : public ::testing::Test {
     // that we can evaluate the reaction force right at the middle.
     // We define body frame Bl and Bu for the lower and upper portions of the
     // ladder respectively.
-    // Both of these frames's origins are located at the lower end of each half.
+    // Both of these frame origins are located at the lower end of each half.
     // In particular, the lower frame Bl attaches to the ground with the pin
     // joint.
     const Vector3<double> p_BoBcm_B(0.0, 0.0, kLadderLength / 4.0);

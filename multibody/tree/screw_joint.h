@@ -137,7 +137,7 @@ class ScrewJoint final : public Joint<T> {
 
   /// Returns the normalized axis of motion of `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
-  /// this class's documentation for frames's definitions) then,
+  /// this class's documentation for frame definitions) then,
   /// `axis = axis_F = axis_M`.
   const Vector3<double>& screw_axis() const {
     return axis_;

@@ -95,7 +95,7 @@ class PrismaticJoint final : public Joint<T> {
 
   /// Returns the axis of translation for `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
-  /// this class's documentation for frames's definitions) then,
+  /// this class's documentation for frame definitions) then,
   /// `axis = axis_F = axis_M`.
   const Vector3<double>& translation_axis() const {
     return axis_;

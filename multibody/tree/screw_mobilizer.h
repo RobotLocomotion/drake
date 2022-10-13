@@ -76,7 +76,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   /* @returns the normalized axis of motion as a unit vector.
    Since the measures of this axis in either frame F or M are the same (see
-   this class's documentation for frames's definitions) then,
+   this class's documentation for frame definitions) then,
    `axis = axis_F = axis_M`. */
   const Vector3<double>& screw_axis() const { return axis_; }
 
