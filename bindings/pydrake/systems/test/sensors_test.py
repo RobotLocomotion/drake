@@ -31,6 +31,7 @@ from pydrake.systems.framework import (
     InputPort,
     OutputPort,
     )
+from pydrake.systems.lcm import LcmBuses
 
 # Shorthand aliases, to reduce verbosity.
 pt = mut.PixelType
@@ -205,6 +206,21 @@ class TestSensors(unittest.TestCase):
         mut.ApplyCameraConfig(config=config, plant=plant, builder=builder,
                               scene_graph=scene_graph, lcm=lcm)
         # Systems have been added.
+        self.assertGreater(len(builder.GetSystems()), system_count)
+
+    def test_camera_config_lcm_buses(self):
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        system_count = len(builder.GetSystems())
+
+        # We'll call the Apply function using lcm_buses= instead of lcm=.
+        lcm_buses = LcmBuses()
+        lcm_buses.Add("fancy", DrakeLcm())
+        config = mut.CameraConfig(lcm_bus="fancy")
+        mut.ApplyCameraConfig(config=config, builder=builder,
+                              lcm_buses=lcm_buses)
+
+        # Check that systems were added.
         self.assertGreater(len(builder.GetSystems()), system_count)
 
     def test_camera_info(self):

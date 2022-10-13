@@ -2,6 +2,7 @@
 
 #include <initializer_list>
 #include <map>
+#include <memory>
 #include <string>
 
 #include <fmt/format.h>
@@ -14,6 +15,7 @@
 #include "drake/geometry/render_vtk/factory.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/scoped_names.h"
+#include "drake/systems/lcm/lcm_config_functions.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
 #include "drake/systems/sensors/sim_rgbd_sensor.h"
 
@@ -22,6 +24,7 @@ namespace systems {
 namespace sensors {
 
 using drake::lcm::DrakeLcmInterface;
+using drake::systems::lcm::LcmBuses;
 using Eigen::Vector3d;
 using geometry::render::MakeRenderEngineGl;
 using geometry::render::RenderEngineGlParams;
@@ -104,14 +107,22 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
 }  // namespace
 
 void ApplyCameraConfig(const CameraConfig& config,
-                       MultibodyPlant<double>* plant,
                        DiagramBuilder<double>* builder,
+                       const LcmBuses* lcm_buses,
+                       const MultibodyPlant<double>* plant,
                        SceneGraph<double>* scene_graph,
                        DrakeLcmInterface* lcm) {
-  DRAKE_DEMAND(plant != nullptr);
-  DRAKE_DEMAND(scene_graph != nullptr);
   if (!(config.rgb || config.depth)) {
     return;
+  }
+
+  // Find the plant and scene graph.
+  if (plant == nullptr) {
+    plant = &builder->GetDowncastSubsystemByName<MultibodyPlant>("plant");
+  }
+  if (scene_graph == nullptr) {
+    scene_graph = &builder->GetMutableDowncastSubsystemByName<SceneGraph>(
+        "scene_graph");
   }
 
   config.ValidateOrThrow();
@@ -134,6 +145,11 @@ void ApplyCameraConfig(const CameraConfig& config,
   const RgbdSensor* camera_sys =
       AddSimRgbdSensor(*scene_graph, *plant, sim_camera, builder);
 
+  // Find the LCM bus.
+  lcm = FindOrCreateLcmBus(
+      lcm, lcm_buses, builder, "ApplyCameraConfig", config.lcm_bus);
+  DRAKE_DEMAND(lcm != nullptr);
+
   // Connect the sensor the the lcm system.
   const auto* rgb_port =
       config.rgb ? &camera_sys->color_image_output_port() : nullptr;
@@ -141,6 +157,18 @@ void ApplyCameraConfig(const CameraConfig& config,
       config.depth ? &camera_sys->depth_image_16U_output_port() : nullptr;
   AddSimRgbdSensorLcmPublisher(sim_camera, rgb_port, depth_16u_port,
                                config.do_compress, builder, lcm);
+}
+
+void ApplyCameraConfig(const CameraConfig& config,
+                       MultibodyPlant<double>* plant,
+                       DiagramBuilder<double>* builder,
+                       SceneGraph<double>* scene_graph,
+                       DrakeLcmInterface* lcm) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  DRAKE_THROW_UNLESS(builder != nullptr);
+  DRAKE_THROW_UNLESS(scene_graph != nullptr);
+  DRAKE_THROW_UNLESS(lcm != nullptr);
+  ApplyCameraConfig(config, builder, nullptr, plant, scene_graph, lcm);
 }
 
 }  // namespace sensors

@@ -35,7 +35,7 @@ class HardwareSimTest(unittest.TestCase):
         scenario.directives = [self.make_add_model_directive()]
         scenario.lcm_buses["extra_bus"] = DrakeLcmParams()
         scenario.model_drivers["alice"] = ZeroForceDriver()
-        # TODO(jwnimmer-tri) The scenario.cameras doesn't work yet.
+        scenario.cameras["arbitrary_camera_name"] = CameraConfig()
         scenario.visualization.publish_period = 0.125
         return scenario
 
