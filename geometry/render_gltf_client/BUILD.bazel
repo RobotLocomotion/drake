@@ -291,6 +291,10 @@ drake_py_unittest(
     data = [
         ":client_demo",
     ],
+    # Temporarily disable the test due to the CI failure on macOS.
+    tags = [
+        "manual",
+    ],
     deps = [
         ":server_demo",
         "@bazel_tools//tools/python/runfiles",
