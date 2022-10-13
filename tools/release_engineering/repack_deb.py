@@ -1,8 +1,9 @@
 r"""Re-package a Drake .tar.gz archive into a Debian archive.
 
 This script assumes that the Ubuntu distribution the .tar.gz archive was built
-for is the same as what is running the script.  For example, a
-drake-latest-focal.tar.gz must be re-packaged on a focal machine.
+for is the same as what is running the script.  If not, make sure to provide
+the codename argument.  For example, a drake-latest-focal.tar.gz being
+re-packaged should have the codename `focal` provided.
 
 Command line arguments should specify absolute paths, e.g.,
 
@@ -15,9 +16,11 @@ and copy the final re-packaged debian archive to the directory $PWD/drake_deb.
 """
 
 import argparse
+from difflib import unified_diff
 import email.utils
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tarfile
@@ -26,6 +29,12 @@ import tempfile
 import lsb_release
 
 from bazel_tools.tools.python.runfiles import runfiles
+
+THIS_OS_CODENAME = lsb_release.get_os_release()['CODENAME']
+"""
+The `lsb_release -cs` codename for the os running the script.  When different
+than the `args.codename`, `debian/rules` needs filtering to succeed.
+"""
 
 
 def _rlocation(relative_path):
@@ -46,17 +55,16 @@ def _run(args):
     deb_changelog_in = _rlocation('debian/changelog.in')
 
     # Discern the version badging to use, get the dependencies for drake.
-    codename = lsb_release.get_os_release()['CODENAME']
-    assert codename in args.tgz, \
-        ("Debian re-packaging must be performed on the same distribution, but "
-         f"'{codename}' was not found in '{args.tgz}'.")
+    assert args.codename in args.tgz, \
+        (f"'{args.codename}' was not found in '{args.tgz}'.  The `--codename` "
+         "argument is needed when re-packaging from a different distribution.")
     with tarfile.open(args.tgz) as archive:
         version = archive.getmember('drake/share/doc/drake/VERSION.TXT')
         version_txt = archive.extractfile(version).read().decode('utf-8')
         version_mtime = version.mtime
 
         packages = archive.getmember(
-            f'drake/share/drake/setup/packages-{codename}.txt')
+            f'drake/share/drake/setup/packages-{args.codename}.txt')
         packages_txt = archive.extractfile(packages).read().decode('utf-8')
 
     version_tokens = version_txt.split()
@@ -66,6 +74,16 @@ def _run(args):
         debian_version = args.version
     else:
         debian_version = f'0.0.{yyyymmddhhmmss}'
+
+    # Fail early if the expected output filename already exists, otherwise the
+    # call to `shutil.move` at the end will fail, even though everything else
+    # was already successful.
+    debian_output_filename = f'drake-dev_{debian_version}-1_amd64.deb'
+    final_output_path = Path(args.output_dir) / debian_output_filename
+    if final_output_path.exists():
+        raise RuntimeError(
+            f'The final destination output path "{str(final_output_path)}" '
+            'already exists, please delete it!')
 
     # Compute the new control.  The `packages_txt` will have one package-name
     # per line; transform this to an indented and comma separated list.
@@ -134,11 +152,39 @@ def _run(args):
     with open(f'{package_dir}/debian/changelog', 'w', encoding='utf-8') as f:
         f.write(deb_changelog_contents)
 
+    # If the host OS repackaging is different, we cannot run `dh_shlibdeps`
+    # which is enabled by default in the `debian/rules` makefile.  It will
+    # error being unable to find the right dependencies, but these checks *DO*
+    # run in CI (when THIS_OS_CODENAME := args.codename).  Disabling this
+    # enables the release manager to prepare the final artifacts from one OS.
+    if THIS_OS_CODENAME != args.codename:
+        print('\033[33;1mWARNING:\033[0m disabling "dh_shlibdeps", the host '
+              f'OS is "{THIS_OS_CODENAME}" but you are repackaging for '
+              f'"{args.codename}".  The artifact will be valid, but runtime '
+              'dependency analysis cannot be performed on a different OS.')
+        debian_rules = f'{package_dir}/debian/rules'
+        with open(debian_rules) as f:
+            debian_rules_contents = f.read()
+        fixed_debian_rules_contents = re.sub(
+            r'(-dh_shlibdeps)', r'# \1', debian_rules_contents)
+        # Display to the user what change took place behind the scenes, error
+        # if no change detected.
+        if debian_rules_contents == fixed_debian_rules_contents:
+            raise RuntimeError(
+                f'File "{debian_rules}" was expected to be patched, but the '
+                'file contents did not change!')
+        print('\n'.join(unified_diff(
+            debian_rules_contents.splitlines(),
+            fixed_debian_rules_contents.splitlines(),
+            fromfile='debian/rules', tofile='debian/rules')))
+        # Patch the file.
+        with open(debian_rules, "w") as f:
+            f.write(fixed_debian_rules_contents)
+
     # Create the deb.
     subprocess.check_call(['fakeroot', 'debian/rules', 'binary'],
                           cwd=package_dir)
-    shutil.move(f'{cwd}/drake-dev_{debian_version}-1_amd64.deb',
-                f'{args.output_dir}/')
+    shutil.move(f'{cwd}/{debian_output_filename}', f'{args.output_dir}/')
 
 
 def main():
@@ -160,6 +206,12 @@ def main():
             'version number to package (e.g., "1.3.0"); if not specified the '
             'date timestamp YYYYMMDD found in the foo.tar.gz file '
             'drake/share/doc/drake/VERSION.TXT will be used'))
+    parser.add_argument(
+        '--codename', type=str, choices={"focal", "jammy"},
+        default=THIS_OS_CODENAME,
+        help=(
+            'The codename of the foo.tar.gz file being re-packaged.  Default: '
+            'the codename of the machine running this script is used.'))
     args = parser.parse_args()
     args.tgz = os.path.realpath(args.tgz)
     args.output_dir = os.path.realpath(args.output_dir)
