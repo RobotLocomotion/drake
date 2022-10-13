@@ -284,41 +284,28 @@ GTEST_TEST(MultibodyPlantTest, CartPoleLinearization) {
 }
 // TODO(amcastro-tri): Include test with non-zero actuation and external forces.
 
-// Helper function to create a unit inertia for a uniform-density cube B about
-// Bo (B's origin point) from a given dimension (length).
-// @param[in] length The length of any of the cube's edges.
-//   If length = 0, the spatial inertia is that of a particle.
-// @retval M_BBo_B Cube B's unit inertia about point Bo (B's origin),
-// expressed in terms of unit vectors Bx, By, Bz, each of which are parallel
-// to sides (edges) of the cube. Point Bo is the centroid of the face of the
-// cube whose outward normal is -Bx. Hence, the position vector from Bo to Bcm
-// (B's center of mass) is p_BoBcm_B = Lx/2 Bx.
-UnitInertia<double> MakeTestCubeUnitInertia(const double length = 1.0) {
-    const UnitInertia<double> G_BBcm_B = UnitInertia<double>::SolidCube(length);
-    const Vector3<double> p_BoBcm_B(length / 2, 0, 0);
-    const UnitInertia<double> G_BBo_B =
-        G_BBcm_B.ShiftFromCenterOfMass(-p_BoBcm_B);
-    return G_BBo_B;
-}
-
-// Helper function to create a cube-shaped rigid body B and add it to a plant.
+// Helper function to create a uniform-density cube B and add it to a plant.
 // @param[in] plant MultibodyPlant to which body B is added.
 // @param[in] body_name name of the body that is being added to the plant.
-// @param[in] link_length length, width, and depth of the cube-shaped body.
+// @param[in] length length, width, and depth of the cube-shaped body.
 // @param[in] skip_validity_check setting which is `true` to skip the validity
 //  check on the new body B's spatial inertia, which ensures an exception is not
 //  thrown when setting body B's spatial inertia (which would otherwise occur if
 //  mass or link_length is NaN). Avoiding this early exception allows for a
 //  later exception to be thrown in a subsequent function and tested below.
+// @note The position vector from Bcm (B's center of mass which is at the cube's
+// geometric center) to Bo (B's origin) is p_BcmBo = (-length/2, 0, 0).
 const RigidBody<double>& AddCubicalLink(
     MultibodyPlant<double>* plant,
     const std::string& body_name,
     const double mass,
-    const double link_length = 1.0,
+    const double length,
     const bool skip_validity_check = false) {
   DRAKE_DEMAND(plant != nullptr);
-  const Vector3<double> p_BoBcm_B(link_length / 2, 0, 0);
-  const UnitInertia<double> G_BBo_B = MakeTestCubeUnitInertia(link_length);
+  const Vector3<double> p_BoBcm_B(length / 2, 0, 0);
+  const UnitInertia<double> G_BBcm_B = UnitInertia<double>::SolidCube(length);
+  const UnitInertia<double> G_BBo_B =
+      G_BBcm_B.ShiftFromCenterOfMass(-p_BoBcm_B);
   const SpatialInertia<double> M_BBo_B(mass, p_BoBcm_B, G_BBo_B,
                                        skip_validity_check);
   return plant->AddRigidBody(body_name, M_BBo_B);
@@ -349,14 +336,14 @@ GTEST_TEST(TestSingularHingeMatrix, ThrowErrorForZeroMassTranslatingBody) {
   systems::Context<double>* context_ptr = context.get();
 
   // Verify proper error message is thrown.
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context).get_vdot(),
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "Encountered singular articulated body hinge inertia for body node "
     "index 1. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
 
   // Verify no assertion is thrown if mA = 1E-33.
   body_A.SetMass(context_ptr, mA = 1E-33);
-  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 }
 
 // Verify an exception is thrown for a forward dynamic analysis of a single
@@ -384,14 +371,14 @@ GTEST_TEST(TestSingularHingeMatrix, ThrowErrorForZeroInertiaRotatingBody) {
   systems::Context<double>* context_ptr = context.get();
 
   // Verify proper error message is thrown.
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context).get_vdot(),
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "Encountered singular articulated body hinge inertia for body node "
     "index 1. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
 
   // Verify no assertion is thrown if mA = 1E-33.
   body_A.SetMass(context_ptr, mA = 1E-33);
-  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 }
 
 // Verify an exception may be thrown for a forward dynamic analysis that has
@@ -425,19 +412,19 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateMassTranslatingBodiesAB) {
   systems::Context<double>* context_ptr = context.get();
 
   // Verify proper assertion is thrown if mA = 1E-9, mB = 1E9.
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context).get_vdot(),
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "Encountered singular articulated body hinge inertia for body node "
     "index 1. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
 
   // Verify no assertion is thrown if mA = 1E-3, mB = 1E9.
   body_A.SetMass(context_ptr, mA = 1E-3);
-  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 
   // Verify no assertion is thrown if mA = 1E9, mB = 1E-9.
   body_A.SetMass(context_ptr, mA = 1E9);
   body_B.SetMass(context_ptr, mB = 1E-9);
-  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 }
 
 // Perform a forward dynamic analysis for a planar triple pendulum consisting of
@@ -494,23 +481,23 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
   BC_revolute_jointZ.set_angle(context_ptr, 0);
 
   // Verify proper assertion is thrown if mA = 1, mB = 1, mc = 0.
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context).get_vdot(),
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "Encountered singular articulated body hinge inertia for body node "
     "index 3. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
 
   // Verify no assertion is thrown if mA = 1, mB = 1, mC = 1E-77.
   body_C.SetMass(context_ptr, mC = 1E-77);
-  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 
   // Verify no assertion is thrown if mA = 1, mB = 0, mC = 1.
   body_B.SetMass(context_ptr, mB = 0);
   body_C.SetMass(context_ptr, mC = 1);
-  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 
   // Verify assertion is thrown if mA = 0, mB = 0, mC = 1.
   body_A.SetMass(context_ptr, mA = 0);
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context).get_vdot(),
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "Encountered singular articulated body hinge inertia for body node "
     "index 1. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
@@ -520,7 +507,7 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
   WA_revolute_jointZ.set_angle(context_ptr, 5 * M_PI/180);
   AB_revolute_jointZ.set_angle(context_ptr, 7 * M_PI/180);
   BC_revolute_jointZ.set_angle(context_ptr, 9 * M_PI/180);
-  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context).get_vdot())
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 
   // Drake's angular accelerations are large and are nearly identical to those
   // produced by MotionGenesis (MG) for this same problem. The MG simulation
