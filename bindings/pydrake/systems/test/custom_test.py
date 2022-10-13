@@ -544,7 +544,7 @@ class TestCustom(unittest.TestCase):
         # Test explicit calls.
         system = TrivialSystem()
         context = system.CreateDefaultContext()
-        system.Publish(context)
+        system.ForcedPublish(context)
         self.assertTrue(system.called_publish)
         self.assertTrue(system.called_forced_publish)
 
@@ -571,13 +571,13 @@ class TestCustom(unittest.TestCase):
         witnesses = system.GetWitnessFunctions(context)
         self.assertEqual(len(witnesses), 3)
 
-        system.CalcDiscreteVariableUpdates(
+        system.CalcForcedDiscreteVariableUpdate(
             context=context,
             discrete_state=context_update.get_mutable_discrete_state())
         self.assertTrue(system.called_discrete)
         self.assertTrue(system.called_forced_discrete)
 
-        system.CalcUnrestrictedUpdate(
+        system.CalcForcedUnrestrictedUpdate(
             context=context,
             state=context_update.get_mutable_state()
         )

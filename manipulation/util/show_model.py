@@ -349,7 +349,7 @@ def main():
     # TODO(eric.cousineau): Simplify as part of #10015.
     Simulator(diagram).Initialize()
     # Publish draw messages with current state.
-    diagram.Publish(context)
+    diagram.ForcedPublish(context)
 
     # Disable the collision geometry at the start; it can be enabled by the
     # checkbox in the meshcat controls.
@@ -364,7 +364,7 @@ def main():
             time.sleep(1 / 32.0)
             q = sliders.get_output_port().Eval(sliders_context)
             plant.SetPositions(plant_context, q)
-            diagram.Publish(context)
+            diagram.ForcedPublish(context)
             if args.loop_once:
                 return
     except KeyboardInterrupt:

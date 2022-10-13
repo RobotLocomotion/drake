@@ -59,7 +59,7 @@ GTEST_TEST(AllegroLcmTest, AllegroCommandReceiver) {
   std::unique_ptr<systems::DiscreteValues<double>> update =
       dut.AllocateDiscreteVariables();
   update->SetFrom(context->get_mutable_discrete_state());
-  dut.CalcDiscreteVariableUpdates(*context, update.get());
+  dut.CalcForcedDiscreteVariableUpdate(*context, update.get());
   context->get_mutable_discrete_state().SetFrom(*update);
 
   dut.CalcOutput(*context, output.get());

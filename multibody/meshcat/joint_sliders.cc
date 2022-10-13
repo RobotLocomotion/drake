@@ -248,7 +248,7 @@ void JointSliders<T>::Run(
   const auto start_time = Clock::now();
 
   // Loop until the button is clicked, or the timeout (when given) is reached.
-  diagram.Publish(diagram_context);
+  diagram.ForcedPublish(diagram_context);
   while (meshcat_->GetButtonClicks(kButtonName) < 1) {
     if (timeout.has_value()) {
       const auto elapsed = Duration(Clock::now() - start_time).count();
@@ -267,7 +267,7 @@ void JointSliders<T>::Run(
 
     // Publish the new positions.
     plant_->SetPositions(&plant_context, new_positions);
-    diagram.Publish(diagram_context);
+    diagram.ForcedPublish(diagram_context);
   }
 }
 
