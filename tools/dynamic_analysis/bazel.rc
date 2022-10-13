@@ -140,6 +140,7 @@ build:tsan --noforce_pic
 build:tsan --linkopt -fsanitize=thread
 build:tsan --run_under=//tools/dynamic_analysis:tsan
 build:tsan --test_env=TSAN_OPTIONS
+build:tsan --test_env=OPENBLAS_CORETYPE=CORE2
 build:tsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_tsan
 build:tsan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x
@@ -165,6 +166,7 @@ build:tsan_everything --linkopt -fsanitize=thread
 build:tsan_everything --test_tag_filters=-no_tsan
 build:tsan_everything --run_under=//tools/dynamic_analysis:tsan
 build:tsan_everything --test_env=TSAN_OPTIONS
+build:tsan_everything --test_env=OPENBLAS_CORETYPE=CORE2
 build:tsan_everything --test_lang_filters=-sh,-py
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
