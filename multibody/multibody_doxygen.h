@@ -132,13 +132,15 @@ We are more careful about the font for more complex symbols and equations.
 Physical quantities in general may be characterized by
 - a symbol for the quantity type, e.g. @f$v@f$ for velocity or @f$I@f$ for
   inertia,
-- a reference symbol (typically a body or frame, can be a point),
+- a reference symbol (typically a "measured-in" body or frame, can 
+  sometimes be a "measured from" point),
 - a target symbol (can be a point, body, or frame), and
 - an index for selecting a particular quantity from a collection (rarely
   needed in practice).
 
 Quantities involving mass properties may have an additional "taken about" point;
-we'll discuss that elsewhere.
+_relative_ velocities and accelerations may need an additional frame; we'll
+discuss those elsewhere.
 
 (Note that a physical quantity does not have an expressed-in frame; that is
 necessary only for numerical computation.)
