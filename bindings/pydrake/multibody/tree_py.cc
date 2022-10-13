@@ -552,9 +552,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.get_default_translation.doc)
         .def("set_default_translation", &Class::set_default_translation,
             py::arg("translation"), cls_doc.set_default_translation.doc)
-        .def("AddInForce", &Class::AddInForce, py::arg("context"),
-            py::arg("force"), py::arg("multibody_forces"),
-            cls_doc.AddInForce.doc)
         .def("set_random_translation_distribution",
             &Class::set_random_translation_distribution, py::arg("translation"),
             cls_doc.set_random_translation_distribution.doc);
