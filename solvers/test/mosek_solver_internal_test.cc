@@ -37,9 +37,9 @@ void CheckParseLinearExpression(
   // mosek_vars are the non-matrix variables stored inside Mosek.
   VectorX<symbolic::Variable> mosek_vars(num_mosek_vars);
   // bar_X are Mosek matrix variables.
-  int numbarvar = 0;
-  MSK_getnumbarvar(dut.task(), &numbarvar);
-  std::vector<MatrixX<symbolic::Variable>> bar_X(numbarvar);
+  int num_barvar = 0;
+  MSK_getnumbarvar(dut.task(), &num_barvar);
+  std::vector<MatrixX<symbolic::Variable>> bar_X(num_barvar);
   // Now set up mosek_vars and bar_X.
   for (int i = 0; i < slack_vars.rows(); ++i) {
     mosek_vars(slack_vars_mosek_indices[i]) = slack_vars(i);
@@ -227,6 +227,229 @@ GTEST_TEST(ParseLinearExpression, Test3) {
   CheckParseLinearExpression(dut, prog, A_sparse, B_sparse, decision_vars,
                              slack_vars_mosek_indices, F_subi, F_subj, F_valij,
                              bar_F);
+  MSK_deleteenv(&env);
+}
+
+/**
+ * Returns all of the affine expressions stored inside dut.task().
+ */
+VectorX<symbolic::Expression> GetAffineExpression(
+    const MathematicalProgram& prog, const MosekSolverProgram& dut) {
+  // First set up mosek variable.
+  int num_mosek_vars;
+  MSK_getnumvar(dut.task(), &num_mosek_vars);
+  // mosek_vars are the non-matrix variables stored inside Mosek.
+  VectorX<symbolic::Variable> mosek_vars(num_mosek_vars);
+  // bar_X are Mosek matrix variables.
+  int num_barvar = 0;
+  MSK_getnumbarvar(dut.task(), &num_barvar);
+  std::vector<MatrixX<symbolic::Variable>> bar_X(num_barvar);
+  // Now set up mosek_vars and bar_X.
+  for (int i = 0; i < prog.num_vars(); ++i) {
+    auto it1 = dut.decision_variable_to_mosek_nonmatrix_variable().find(i);
+    if (it1 != dut.decision_variable_to_mosek_nonmatrix_variable().end()) {
+      mosek_vars(it1->second) = prog.decision_variable(i);
+    } else {
+      auto it2 = dut.decision_variable_to_mosek_matrix_variable().find(i);
+      EXPECT_NE(it2, dut.decision_variable_to_mosek_matrix_variable().end());
+      bar_X[it2->second.bar_matrix_index()].resize(
+          it2->second.num_matrix_rows(), it2->second.num_matrix_rows());
+      bar_X[it2->second.bar_matrix_index()](it2->second.row_index(),
+                                            it2->second.col_index()) =
+          prog.decision_variable(i);
+      bar_X[it2->second.bar_matrix_index()](it2->second.col_index(),
+                                            it2->second.row_index()) =
+          prog.decision_variable(i);
+    }
+  }
+  for (int i = 0; i < mosek_vars.rows(); ++i) {
+    if (mosek_vars(i).is_dummy()) {
+      mosek_vars(i) = symbolic::Variable("unused_slack");
+    }
+  }
+  MSKint64t afe_f_nnz;
+  MSK_getafefnumnz(dut.task(), &afe_f_nnz);
+  std::vector<MSKint64t> afe_idx(afe_f_nnz);
+  std::vector<MSKint32t> var_idx(afe_f_nnz);
+  std::vector<MSKrealt> val(afe_f_nnz);
+  MSK_getafeftrip(dut.task(), afe_idx.data(), var_idx.data(), val.data());
+  std::vector<Eigen::Triplet<double>> F_triplets(afe_f_nnz);
+  for (int i = 0; i < afe_f_nnz; ++i) {
+    F_triplets[i] = Eigen::Triplet<double>(afe_idx[i], var_idx[i], val[i]);
+  }
+  MSKint64t num_afe;
+  MSK_getnumafe(dut.task(), &num_afe);
+  Eigen::SparseMatrix<double> F(num_afe, num_mosek_vars);
+  F.setFromTriplets(F_triplets.begin(), F_triplets.end());
+  Eigen::VectorXd g(num_afe);
+  MSK_getafegslice(dut.task(), 0, num_afe, g.data());
+  // The affine expression is F*x + <bar_F, bar_X> + g. We first compute the
+  // part F*x+g.
+  VectorX<symbolic::Expression> affine_expressions = F * mosek_vars + g;
+  // Compute <bar_F, bar_X>.
+  for (MSKint64t i = 0; i < num_afe; ++i) {
+    MSKint32t num_entry;
+    MSKint64t num_term_total;
+    MSK_getafebarfrowinfo(dut.task(), i, &num_entry, &num_term_total);
+    std::vector<MSKint32t> barvar_idx(num_entry);
+    std::vector<MSKint64t> ptr_term(num_entry);
+    std::vector<MSKint64t> num_term(num_entry);
+    std::vector<MSKint64t> term_idx(num_term_total);
+    std::vector<MSKrealt> term_weight(num_term_total);
+    MSK_getafebarfrow(dut.task(), i, barvar_idx.data(), ptr_term.data(),
+                      num_term.data(), term_idx.data(), term_weight.data());
+    for (int k = 0; k < num_entry; ++k) {
+      const MSKint32t j = barvar_idx[k];
+      Eigen::MatrixXd bar_F_ij =
+          Eigen::MatrixXd::Zero(bar_X[j].rows(), bar_X[j].rows());
+      for (int l = ptr_term[k]; l < ptr_term[k] + num_term[k]; ++l) {
+        // I know the selection matrix E always has 1 non-zero entry in the
+        // lower triangular part.
+        MSKint32t subi{0};
+        MSKint32t subj{0};
+        MSKrealt valij{0};
+        MSK_getsparsesymmat(dut.task(), term_idx[l], 1, &subi, &subj, &valij);
+        bar_F_ij(subi, subj) += valij * term_weight[l];
+        if (subi != subj) {
+          bar_F_ij(subj, subi) += valij * term_weight[l];
+        }
+      }
+      affine_expressions(i) += (bar_F_ij.transpose() * bar_X[j]).trace();
+    }
+  }
+
+  return affine_expressions;
+}
+
+GTEST_TEST(AddConeConstraings, Test1) {
+  // Test Lorentz cone constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  Eigen::Matrix<double, 4, 2> A1;
+  A1 << 1, 2, -1, 3, 0, 2, 1, 0;
+  Eigen::Vector4d b1(1, 0, -2, 3);
+  auto constraint1 = prog.AddLorentzConeConstraint(A1, b1, x.tail<2>());
+  Eigen::Matrix<double, 3, 2> A2;
+  A2 << 1, 2, -1, 3, 0, 1;
+  Eigen::Vector3d b2(2, 1, 0);
+  auto constraint2 = prog.AddLorentzConeConstraint(A2, b2, x.head<2>());
+  MSKenv_t env;
+  MSK_makeenv(&env, nullptr);
+  MosekSolverProgram dut(prog, env);
+  MSK_appendvars(dut.task(),
+                 dut.decision_variable_to_mosek_nonmatrix_variable().size());
+  std::unordered_map<Binding<LorentzConeConstraint>, MSKint64t> acc_indices;
+  auto rescode = dut.AddConeConstraints(prog, prog.lorentz_cone_constraints(),
+                                        &acc_indices);
+  // Check the number of affine expressions, affine cone constraints, domains.
+  ASSERT_EQ(rescode, MSK_RES_OK);
+  MSKint64t num_afe;
+  MSK_getnumafe(dut.task(), &num_afe);
+  EXPECT_EQ(num_afe, 7);
+  MSKint64t num_acc;
+  MSK_getnumacc(dut.task(), &num_acc);
+  EXPECT_EQ(num_acc, 2);
+  MSKint64t acc_total;
+  MSK_getaccntot(dut.task(), &acc_total);
+  EXPECT_EQ(acc_total, 7);
+  EXPECT_EQ(acc_indices.size(), 2);
+  EXPECT_EQ(acc_indices.at(constraint1), 0);
+  EXPECT_EQ(acc_indices.at(constraint2), 1);
+  MSKint64t num_domain;
+  MSK_getnumdomain(dut.task(), &num_domain);
+  EXPECT_EQ(num_domain, 2);
+  // Check domain types.
+  for (MSKint64t i = 0; i < num_domain; ++i) {
+    MSKdomaintypee domain_type;
+    MSK_getdomaintype(dut.task(), i, &domain_type);
+    EXPECT_EQ(domain_type, MSK_DOMAIN_QUADRATIC_CONE);
+  }
+
+  // Checks the affine expressions.
+  MSKint64t afe_f_nnz;
+  MSK_getafefnumnz(dut.task(), &afe_f_nnz);
+  EXPECT_EQ(afe_f_nnz, constraint1.evaluator()->A().nonZeros() +
+                           constraint2.evaluator()->A().nonZeros());
+  const VectorX<symbolic::Expression> affine_expressions =
+      GetAffineExpression(prog, dut);
+  VectorX<symbolic::Expression> affine_expressions_expected(7);
+  affine_expressions_expected.head<4>() = A1 * x.tail<2>() + b1;
+  affine_expressions_expected.tail<3>() = A2 * x.head<2>() + b2;
+  EXPECT_EQ(affine_expressions.rows(), affine_expressions_expected.rows());
+  for (int i = 0; i < affine_expressions.rows(); ++i) {
+    EXPECT_PRED2(symbolic::test::ExprEqual, affine_expressions(i).Expand(),
+                 affine_expressions_expected(i).Expand());
+  }
+
+  MSK_deleteenv(&env);
+}
+
+GTEST_TEST(AddConeConstraints, Test2) {
+  // Test rotated Lorentz cone constraint.
+  // This program has positive semidefinite constraints, hence Mosek has matrix
+  // variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  auto X1 = prog.NewSymmetricContinuousVariables<3>();
+  auto X2 = prog.NewSymmetricContinuousVariables<4>();
+  prog.AddPositiveSemidefiniteConstraint(X1);
+  prog.AddPositiveSemidefiniteConstraint(X2);
+
+  Eigen::Matrix<double, 4, 2> A1;
+  A1 << 1, 2, -1, 3, 0, 2, 1, 0;
+  Eigen::Vector4d b1(1, 0, -2, 3);
+  auto constraint1 = prog.AddRotatedLorentzConeConstraint(
+      A1, b1, Vector2<symbolic::Variable>(x(0), X1(1, 1)));
+  Eigen::Matrix<double, 3, 3> A2;
+  A2 << 1, 2, -1, 3, 0, 1, 0, 1, -4;
+  Eigen::Vector3d b2(2, 1, 0);
+  auto constraint2 = prog.AddRotatedLorentzConeConstraint(
+      A2, b2, Vector3<symbolic::Variable>(x(2), X1(0, 1), X2(2, 1)));
+  MSKenv_t env;
+  MSK_makeenv(&env, nullptr);
+  MosekSolverProgram dut(prog, env);
+  MSK_appendvars(dut.task(),
+                 dut.decision_variable_to_mosek_nonmatrix_variable().size());
+  std::vector<MSKint32t> bar_var_dimension = {3, 4};
+  MSK_appendbarvars(dut.task(), 2, bar_var_dimension.data());
+  std::unordered_map<Binding<RotatedLorentzConeConstraint>, MSKint64t>
+      acc_indices;
+  auto rescode = dut.AddConeConstraints(
+      prog, prog.rotated_lorentz_cone_constraints(), &acc_indices);
+  ASSERT_EQ(rescode, MSK_RES_OK);
+
+  // Check acc_indices.
+  EXPECT_EQ(acc_indices.size(), 2);
+  EXPECT_EQ(acc_indices.at(constraint1), 0);
+  EXPECT_EQ(acc_indices.at(constraint2), 1);
+
+  // Check domain types.
+  MSKint64t num_domain;
+  MSK_getnumdomain(dut.task(), &num_domain);
+  EXPECT_EQ(num_domain, 2);
+  for (MSKint64t i = 0; i < num_domain; ++i) {
+    MSKdomaintypee domain_type;
+    MSK_getdomaintype(dut.task(), i, &domain_type);
+    EXPECT_EQ(domain_type, MSK_DOMAIN_RQUADRATIC_CONE);
+  }
+  // Check affine expressions in Mosek.
+  const VectorX<symbolic::Expression> affine_expressions =
+      GetAffineExpression(prog, dut);
+  VectorX<symbolic::Expression> affine_expressions_expected(A1.rows() +
+                                                            A2.rows());
+  affine_expressions_expected.head(A1.rows()) =
+      A1 * constraint1.variables() + b1;
+  affine_expressions_expected(0) *= 0.5;
+  affine_expressions_expected.tail(A2.rows()) =
+      A2 * constraint2.variables() + b2;
+  affine_expressions_expected(A1.rows()) *= 0.5;
+  EXPECT_EQ(affine_expressions.rows(), affine_expressions_expected.rows());
+  for (int i = 0; i < affine_expressions.rows(); ++i) {
+    EXPECT_PRED2(symbolic::test::ExprEqual, affine_expressions(i).Expand(),
+                 affine_expressions_expected(i).Expand());
+  }
+
   MSK_deleteenv(&env);
 }
 }  // namespace internal

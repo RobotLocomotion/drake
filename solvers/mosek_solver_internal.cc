@@ -1209,10 +1209,12 @@ MSKrescodee MosekSolverProgram::SetDualSolution(
         bb_con_dual_indices,
     const DualMap<LinearConstraint>& linear_con_dual_indices,
     const DualMap<LinearEqualityConstraint>& lin_eq_con_dual_indices,
-    const DualMap<LorentzConeConstraint>& lorentz_cone_dual_indices,
-    const DualMap<RotatedLorentzConeConstraint>&
-        rotated_lorentz_cone_dual_indices,
-    const DualMap<ExponentialConeConstraint>& exp_cone_dual_indices,
+    const std::unordered_map<Binding<LorentzConeConstraint>, MSKint64t>&
+        lorentz_cone_acc_indices,
+    const std::unordered_map<Binding<RotatedLorentzConeConstraint>, MSKint64t>&
+        rotated_lorentz_cone_acc_indices,
+    const std::unordered_map<Binding<ExponentialConeConstraint>, MSKint64t>&
+        exp_cone_acc_indices,
     const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
                              MSKint32t>& psd_barvar_indices,
     MathematicalProgramResult* result) const {
@@ -1281,13 +1283,24 @@ MSKrescodee MosekSolverProgram::SetDualSolution(
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    SetNonlinearConstraintDualSolution(prog.lorentz_cone_constraints(), snx,
-                                       lorentz_cone_dual_indices, result);
-    SetNonlinearConstraintDualSolution(prog.rotated_lorentz_cone_constraints(),
-                                       snx, rotated_lorentz_cone_dual_indices,
-                                       result);
-    SetNonlinearConstraintDualSolution(prog.exponential_cone_constraints(), snx,
-                                       exp_cone_dual_indices, result);
+    rescode = SetAffineConeConstraintDualSolution(
+        prog.lorentz_cone_constraints(), task_, which_sol,
+        lorentz_cone_acc_indices, result);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    rescode = SetAffineConeConstraintDualSolution(
+        prog.rotated_lorentz_cone_constraints(), task_, which_sol,
+        rotated_lorentz_cone_acc_indices, result);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    rescode = SetAffineConeConstraintDualSolution(
+        prog.exponential_cone_constraints(), task_, which_sol,
+        exp_cone_acc_indices, result);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
   }
   rescode = SetPositiveSemidefiniteConstraintDualSolution(
       prog, psd_barvar_indices, which_sol, result);
