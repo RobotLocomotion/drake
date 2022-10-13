@@ -31,6 +31,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 
@@ -554,6 +555,49 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_random_translation_distribution",
             &Class::set_random_translation_distribution, py::arg("translation"),
             cls_doc.set_random_translation_distribution.doc);
+  }
+
+  // // ScrewJoint
+  {
+    using Class = ScrewJoint<T>;
+    constexpr auto& cls_doc = doc.ScrewJoint;
+    auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
+        m, "ScrewJoint", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
+                 double>(),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"), py::arg("screw_pitch") = 0,
+            py::arg("damping") = 0, cls_doc.ctor.doc)
+        .def("screw_pitch", &Class::screw_pitch, cls_doc.screw_pitch.doc)
+        .def("damping", &Class::damping, cls_doc.damping.doc)
+        .def("get_default_translation", &Class::get_default_translation,
+            cls_doc.get_default_translation.doc)
+        .def("set_default_translation", &Class::set_default_translation,
+            py::arg("z"), cls_doc.set_default_translation.doc)
+        .def("get_default_rotation", &Class::get_default_rotation,
+            cls_doc.get_default_rotation.doc)
+        .def("set_default_rotation", &Class::set_default_rotation,
+            py::arg("theta"), cls_doc.set_default_rotation.doc)
+        .def("get_translation", &Class::get_translation, py::arg("context"),
+            cls_doc.get_translation.doc)
+        .def("set_translation", &Class::set_translation, py::arg("context"),
+            py::arg("translation"), cls_doc.set_translation.doc)
+        .def("get_translational_velocity", &Class::get_translational_velocity,
+            py::arg("context"), cls_doc.get_translational_velocity.doc)
+        .def("set_translational_velocity", &Class::set_translational_velocity,
+            py::arg("context"), py::arg("translation_dot"),
+            cls_doc.set_translational_velocity.doc)
+        .def("get_rotation", &Class::get_rotation, py::arg("context"),
+            cls_doc.get_rotation.doc)
+        .def("get_angular_velocity", &Class::get_angular_velocity,
+            py::arg("context"), cls_doc.get_angular_velocity.doc)
+        .def("set_angular_velocity", &Class::set_angular_velocity,
+            py::arg("context"), py::arg("theta_dot"),
+            cls_doc.set_angular_velocity.doc)
+        .def("set_random_pose_distribution",
+            &Class::set_random_pose_distribution, py::arg("theta"),
+            cls_doc.set_random_pose_distribution.doc);
   }
 
   // RevoluteJoint
