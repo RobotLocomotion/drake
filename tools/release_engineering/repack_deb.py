@@ -1,8 +1,9 @@
 r"""Re-package a Drake .tar.gz archive into a Debian archive.
 
 This script assumes that the Ubuntu distribution the .tar.gz archive was built
-for is the same as what is running the script.  For example, a
-drake-latest-focal.tar.gz must be re-packaged on a focal machine.
+for is the same as what is running the script.  If not, make sure to provide
+the codename argument.  For example, a drake-latest-focal.tar.gz being
+re-packaged should have the codename `focal` provided.
 
 Command line arguments should specify absolute paths, e.g.,
 
@@ -46,17 +47,16 @@ def _run(args):
     deb_changelog_in = _rlocation('debian/changelog.in')
 
     # Discern the version badging to use, get the dependencies for drake.
-    codename = lsb_release.get_os_release()['CODENAME']
-    assert codename in args.tgz, \
-        ("Debian re-packaging must be performed on the same distribution, but "
-         f"'{codename}' was not found in '{args.tgz}'.")
+    assert args.codename in args.tgz, \
+        (f"'{args.codename}' was not found in '{args.tgz}'.  The `--codename` "
+         "argument is needed when re-packaging from a different distribution.")
     with tarfile.open(args.tgz) as archive:
         version = archive.getmember('drake/share/doc/drake/VERSION.TXT')
         version_txt = archive.extractfile(version).read().decode('utf-8')
         version_mtime = version.mtime
 
         packages = archive.getmember(
-            f'drake/share/drake/setup/packages-{codename}.txt')
+            f'drake/share/drake/setup/packages-{args.codename}.txt')
         packages_txt = archive.extractfile(packages).read().decode('utf-8')
 
     version_tokens = version_txt.split()
@@ -160,6 +160,12 @@ def main():
             'version number to package (e.g., "1.3.0"); if not specified the '
             'date timestamp YYYYMMDD found in the foo.tar.gz file '
             'drake/share/doc/drake/VERSION.TXT will be used'))
+    parser.add_argument(
+        '--codename', type=str, choices={"focal", "jammy"},
+        default=lsb_release.get_os_release()['CODENAME'],
+        help=(
+            'The codename of the foo.tar.gz file being re-packaged.  Default: '
+            'the codename of the machine running this script is used.'))
     args = parser.parse_args()
     args.tgz = os.path.realpath(args.tgz)
     args.output_dir = os.path.realpath(args.output_dir)
