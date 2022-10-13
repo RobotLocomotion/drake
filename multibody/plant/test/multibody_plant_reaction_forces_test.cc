@@ -216,7 +216,7 @@ class LadderTest : public ::testing::Test {
     // The contact sphere of radius `kPointContactRadius` is placed at the
     // upper end of the ladder.
     // We want the contact sphere to initially be tangent to the wall
-    // so we compute an offset the necessary offset using similar triangles.
+    // so we compute the necessary offset using similar triangles.
     // We define the following in the xz plane:
     //   O: origin and placement point of the pin joint at the lower end.
     //   A: Bottom of the wall offset from O by (+kDistanceToWall, 0).
@@ -290,11 +290,11 @@ class LadderTest : public ::testing::Test {
         plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
             *plant_context);
 
-    // Contact force on the ladder at the contact point, expressed in the
-    // world frame.
-    Vector3d f_Bc_W(0, 0, 0);
+    // Contact force on the ladder at the contact point, or center of pressure
+    // P, expressed in the world frame.
+    Vector3d f_Bp_W(0, 0, 0);
     // The contact point.
-    Vector3d p_WC(0, 0, 0);
+    Vector3d p_WP(0, 0, 0);
     if (hydro_geometry) {
       // There should be a single contact surface.
       ASSERT_EQ(contact_results.num_hydroelastic_contacts(), 1);
@@ -306,14 +306,17 @@ class LadderTest : public ::testing::Test {
               ? 1.0
               : -1.0;
       // There is a slight non-zero moment on the y-axis because the centroid in
-      // general does not coincide with the center of pressure. Shift the
+      // general does not coincide with the center of pressure, P. Shift the
       // contact force back to a point with zero torque for easier analysis.
+
+      // Spatial force on the ladder, applied at the centroid of the contact
+      // patch, expressed in the world frame.
       const SpatialForce<double>& F_Bc_W = hydroelastic_contact_info.F_Ac_W();
       const Vector3d p_CP_W(
           0.0, 0.0, F_Bc_W.rotational().y() / F_Bc_W.translational().x());
 
-      f_Bc_W = direction * F_Bc_W.Shift(p_CP_W).translational();
-      p_WC = hydroelastic_contact_info.contact_surface().centroid() + p_CP_W;
+      f_Bp_W = direction * F_Bc_W.Shift(p_CP_W).translational();
+      p_WP = hydroelastic_contact_info.contact_surface().centroid() + p_CP_W;
 
     } else {
       // There should be a single contact pair.
@@ -326,8 +329,8 @@ class LadderTest : public ::testing::Test {
               ? 1.0
               : -1.0;
 
-      f_Bc_W = direction * point_pair_contact_info.contact_force();
-      p_WC = point_pair_contact_info.contact_point();
+      f_Bp_W = direction * point_pair_contact_info.contact_force();
+      p_WP = point_pair_contact_info.contact_point();
     }
 
     // Ladder's weight.
@@ -343,30 +346,30 @@ class LadderTest : public ::testing::Test {
     const double kTolerance = 1.0e-11;
 
     // Using a free-body diagram of the entire ladder and known quantities,
-    // we use the balance of momentum to verify the pin joint's reaction force
+    // we use the balance of moments to verify the pin joint's reaction force
     // and torque.
 
     // The x component of the contact force must counteract the torque due to
     // gravity plus the actuation torque.
     const double tau_g = p_WBcm.x() * weight;  // gravity torque about Bo.
-    const double fc_x = (tau_g + kActuationTorque) / p_WC.z();
+    const double fc_x = (tau_g + kActuationTorque) / p_WP.z();
     const Vector3d f_Bl_W_expected(fc_x, 0.0, weight);
     EXPECT_TRUE(
         CompareMatrices(F_Bl_W.translational(), f_Bl_W_expected, kTolerance));
 
     // Expected contact force.
     const Vector3d f_C_W_expected(-fc_x, 0.0, 0.0);
-    EXPECT_TRUE(CompareMatrices(f_Bc_W, f_C_W_expected, kTolerance));
+    EXPECT_TRUE(CompareMatrices(f_Bp_W, f_C_W_expected, kTolerance));
 
     // Since the contact point was purposely located at
     // y = (kProblemWidth / 2.0) - kPointContactRadius, the contact force
     // causes a reaction torque at the pin joint oriented along the z-axis.
-    const Vector3d t_Bl_W_expected(0.0, kActuationTorque, -fc_x * p_WC.y());
+    const Vector3d t_Bl_W_expected(0.0, kActuationTorque, -fc_x * p_WP.y());
     EXPECT_TRUE(
         CompareMatrices(F_Bl_W.rotational(), t_Bl_W_expected, kTolerance));
 
     // Verify reaction forces at the weld joint. We use a free body diagram of
-    // the upper half of the ladder and balance of momentum at the upper half's
+    // the upper half of the ladder and balance of moments at the upper half's
     // body frame.
 
     // Upper half's origin.
@@ -380,16 +383,16 @@ class LadderTest : public ::testing::Test {
     // Reaction forces at X_WBu in W.
     const SpatialForce<double>& F_Bu_W =
         X_WBu.rotation() * reaction_forces[joint_->index()];
-    // Apart from reaction forces, two forces at on the upper half:
+    // Apart from reaction forces, two forces act on the upper half:
     // Contact force fc_x and gravity.
     const Vector3d f_Bu_expected(fc_x, 0.0, weight / 2.0);
     // Compute the y component of the expected torque due to gravity applied at
-    // p_WVu and torque due to the contact force applied at p_WC.
+    // Bcm and torque due to the contact force applied at P.
     const double t_Bu_y = -(weight / 2.0) * (p_WBucm.x() - p_WBu.x()) +
-                          fc_x * (p_WC.z() - p_WBu.z());
+                          fc_x * (p_WP.z() - p_WBu.z());
     // Contact point offset causes a torque at the weld joint oriented along
     // the z-axis.
-    const Vector3d t_Bu_expected(0.0, t_Bu_y, -fc_x * (p_WC.y() - p_WBu.y()));
+    const Vector3d t_Bu_expected(0.0, t_Bu_y, -fc_x * (p_WP.y() - p_WBu.y()));
     EXPECT_TRUE(
         CompareMatrices(F_Bu_W.rotational(), t_Bu_expected, kTolerance));
     EXPECT_TRUE(
