@@ -17,12 +17,16 @@ GTEST_TEST(GetProgramTypeTest, LP) {
   auto x = prog.NewContinuousVariables<2>();
   prog.AddLinearConstraint(x[0] + x[1] == 1);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kLP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
   prog.AddLinearCost(x[0] + x[1]);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kLP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
   prog.AddLinearConstraint(x[0] >= 0);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kLP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
   prog.AddQuadraticCost(x[0] * x[0]);
   EXPECT_NE(GetProgramType(prog), ProgramType::kLP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
 }
 
 GTEST_TEST(GetProgramTypeTest, QP) {
@@ -30,17 +34,22 @@ GTEST_TEST(GetProgramTypeTest, QP) {
   auto x = prog.NewContinuousVariables<2>();
   prog.AddQuadraticCost(x[0] * x[0] + x[1], true);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kQP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
   prog.AddLinearConstraint(x[0] + x[1] == 1);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kQP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
   prog.AddLinearCost(x[0] + x[1]);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kQP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
 
   // Add a non-convex quadratic cost.
   auto nonconvex_cost =
       prog.AddQuadraticCost(-x[1] * x[1], false /* non-convex */);
   EXPECT_NE(GetProgramType(prog), ProgramType::kQP);
+  EXPECT_FALSE(AcceptConvexSolver(prog));
   prog.RemoveCost(nonconvex_cost);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kQP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
 
   prog.AddLorentzConeConstraint(
       Vector3<symbolic::Expression>(x[0] + 2, 2 * x[0] + 1, x[0] + x[1]));
@@ -54,8 +63,10 @@ GTEST_TEST(GetProgramTypeTest, SOCP) {
   EXPECT_EQ(GetProgramType(prog), ProgramType::kSOCP);
   prog.AddRotatedLorentzConeConstraint(x.cast<symbolic::Expression>());
   EXPECT_EQ(GetProgramType(prog), ProgramType::kSOCP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
   prog.AddLinearConstraint(x[0] >= 1);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kSOCP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
   auto quadratic_cost = prog.AddQuadraticCost(x[0] * x[0]);
   EXPECT_NE(GetProgramType(prog), ProgramType::kSOCP);
   prog.RemoveCost(quadratic_cost);
@@ -71,6 +82,7 @@ GTEST_TEST(GetProgramTypeTest, SDP) {
   prog.AddPositiveSemidefiniteConstraint(X);
   prog.AddLinearCost(X(0, 0) + X(1, 1));
   EXPECT_EQ(GetProgramType(prog), ProgramType::kSDP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
   prog.AddLorentzConeConstraint(
       Vector3<symbolic::Expression>(X(0, 0) + 1, X(1, 1), X(1, 2) + 2));
   EXPECT_EQ(GetProgramType(prog), ProgramType::kSDP);
@@ -91,11 +103,13 @@ GTEST_TEST(GetProgramTypeTest, GP) {
   A.setIdentity();
   prog.AddExponentialConeConstraint(A, Eigen::Vector3d(0, 1, 2), x);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kGP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
   // Adding a Lorentz cone constraint, now this program cannot be modelled as
   // GP, but a CGP.
   prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
   EXPECT_NE(GetProgramType(prog), ProgramType::kGP);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kCGP);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
 }
 
 GTEST_TEST(GetProgramTypeTest, NLP) {
@@ -105,12 +119,14 @@ GTEST_TEST(GetProgramTypeTest, NLP) {
     auto quadratic_cost =
         prog.AddQuadraticCost(x(0) * x(0) - x(1) * x(1), false);
     EXPECT_EQ(GetProgramType(prog), ProgramType::kNLP);
+    EXPECT_FALSE(AcceptConvexSolver(prog));
   }
   {
     MathematicalProgram prog;
     auto x = prog.NewContinuousVariables<2>();
     prog.AddPolynomialCost(x(0) * x(0) * x(1) + 2 * x(1));
     EXPECT_EQ(GetProgramType(prog), ProgramType::kNLP);
+    EXPECT_FALSE(AcceptConvexSolver(prog));
   }
   {
     MathematicalProgram prog;
@@ -120,8 +136,10 @@ GTEST_TEST(GetProgramTypeTest, NLP) {
                                               Eigen::Vector2d(1, 0), 0, 1),
         x);
     EXPECT_EQ(GetProgramType(prog), ProgramType::kNLP);
+    EXPECT_FALSE(AcceptConvexSolver(prog));
     auto b = prog.NewBinaryVariables<2>();
     EXPECT_NE(GetProgramType(prog), ProgramType::kNLP);
+    EXPECT_FALSE(AcceptConvexSolver(prog));
   }
   {
     // A problem with linear complementarity constraint and a cost.
@@ -132,6 +150,7 @@ GTEST_TEST(GetProgramTypeTest, NLP) {
                        x);
     prog.AddLinearCost(x(0) + x(1));
     EXPECT_EQ(GetProgramType(prog), ProgramType::kNLP);
+    EXPECT_FALSE(AcceptConvexSolver(prog));
   }
   {
     // A problem with linear complementarity constraint and a lorentz cone
@@ -144,6 +163,7 @@ GTEST_TEST(GetProgramTypeTest, NLP) {
         x);
     prog.AddLorentzConeConstraint(x);
     EXPECT_EQ(GetProgramType(prog), ProgramType::kNLP);
+    EXPECT_FALSE(AcceptConvexSolver(prog));
   }
 }
 
@@ -156,6 +176,7 @@ GTEST_TEST(GetProgramTypeTest, LCP) {
   // LCP doesn't accept linear constraint.
   prog.AddLinearConstraint(x[0] + x[1] >= 1);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kNLP);
+  EXPECT_FALSE(AcceptConvexSolver(prog));
 }
 
 GTEST_TEST(GetProgramTypeTest, MILP) {
@@ -167,6 +188,7 @@ GTEST_TEST(GetProgramTypeTest, MILP) {
   EXPECT_EQ(GetProgramType(prog), ProgramType::kMILP);
   prog.AddQuadraticCost(x[0] * x[0]);
   EXPECT_NE(GetProgramType(prog), ProgramType::kMILP);
+  EXPECT_FALSE(AcceptConvexSolver(prog));
 }
 
 GTEST_TEST(GetProgramTypeTest, MIQP) {
@@ -180,6 +202,7 @@ GTEST_TEST(GetProgramTypeTest, MIQP) {
   // Add a non-convex quadratic cost.
   prog.AddQuadraticCost(-x[1] * x[1], false /* non-convex */);
   EXPECT_NE(GetProgramType(prog), ProgramType::kMIQP);
+  EXPECT_FALSE(AcceptConvexSolver(prog));
 }
 
 GTEST_TEST(GetProgramTypeTest, MISOCP) {
@@ -193,6 +216,7 @@ GTEST_TEST(GetProgramTypeTest, MISOCP) {
   prog.AddPositiveSemidefiniteConstraint(x[0] * Eigen::Matrix2d::Identity() +
                                          b[0] * Eigen::Matrix2d::Ones());
   EXPECT_NE(GetProgramType(prog), ProgramType::kMISOCP);
+  EXPECT_FALSE(AcceptConvexSolver(prog));
 }
 
 GTEST_TEST(GetProgramTypeTest, MISDP) {
@@ -207,6 +231,7 @@ GTEST_TEST(GetProgramTypeTest, MISDP) {
   EXPECT_EQ(GetProgramType(prog), ProgramType::kMISDP);
   prog.AddQuadraticCost(x[0] * x[0], true);
   EXPECT_NE(GetProgramType(prog), ProgramType::kMISDP);
+  EXPECT_FALSE(AcceptConvexSolver(prog));
 }
 
 GTEST_TEST(GetProgramTypeTest, QuadraticCostConicConstraint) {
@@ -216,6 +241,7 @@ GTEST_TEST(GetProgramTypeTest, QuadraticCostConicConstraint) {
   prog.AddRotatedLorentzConeConstraint(x.cast<symbolic::Expression>());
   auto quadratic_cost = prog.AddQuadraticCost(x(0) * x(0) + x(3) * x(3), true);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kQuadraticCostConicConstraint);
+  EXPECT_TRUE(AcceptConvexSolver(prog));
   prog.RemoveCost(quadratic_cost);
   EXPECT_NE(GetProgramType(prog), ProgramType::kQuadraticCostConicConstraint);
 }
@@ -229,6 +255,7 @@ GTEST_TEST(GetProgramTypeTest, Unknown) {
   prog.AddLinearComplementarityConstraint(Eigen::Matrix3d::Identity(),
                                           Eigen::Vector3d::Ones(), x);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kUnknown);
+  EXPECT_FALSE(AcceptConvexSolver(prog));
 }
 }  // namespace solvers
 }  // namespace drake

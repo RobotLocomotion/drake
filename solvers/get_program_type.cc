@@ -3,6 +3,7 @@
 #include <initializer_list>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/solvers/program_attribute.h"
 
@@ -265,6 +266,29 @@ ProgramType GetProgramType(const MathematicalProgram& prog) {
     return ProgramType::kNLP;
   } else {
     return ProgramType::kUnknown;
+  }
+  DRAKE_UNREACHABLE();
+}
+
+bool AcceptConvexSolver(const solvers::MathematicalProgram& prog) {
+  auto program_type = GetProgramType(prog);
+  switch (program_type) {
+    case ProgramType::kGP:
+    case ProgramType::kLP:
+    case ProgramType::kQP:
+    case ProgramType::kCGP:
+    case ProgramType::kSDP:
+    case ProgramType::kSOCP:
+    case ProgramType::kQuadraticCostConicConstraint:
+      return true;
+    case ProgramType::kLCP:
+    case ProgramType::kNLP:
+    case ProgramType::kMILP:
+    case ProgramType::kMIQP:
+    case ProgramType::kMISDP:
+    case ProgramType::kMISOCP:
+    case ProgramType::kUnknown:
+      return false;
   }
   DRAKE_UNREACHABLE();
 }
