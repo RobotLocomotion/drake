@@ -266,6 +266,14 @@ TEST_F(ScrewMobilizerTest, ProjectSpatialForce) {
       force_Mo_F.dot(kScrewAxis) / (2 * M_PI) * kScrewPitch);
   EXPECT_TRUE(CompareMatrices(tau, tau_expected, kTolerance,
                               MatrixCompareType::relative));
+
+  // Power computed from quantities in different frames should be invariant
+  // V_FM.dot(F_Mo) == tau * v
+  const Vector1d angular_velocity(0.1);
+  const SpatialVelocity<double> V_FM =
+      mobilizer_->CalcAcrossMobilizerSpatialVelocity(*context_,
+                                                     angular_velocity);
+  EXPECT_NEAR(V_FM.dot(F_Mo_F), tau[0] * angular_velocity[0], kTolerance);
 }
 
 TEST_F(ScrewMobilizerTest, MapVelocityToQDotAndBack) {
