@@ -286,4 +286,15 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "integration_test",
+    data = [
+        ":client_demo",
+    ],
+    deps = [
+        ":server_demo",
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
 add_lint_tests()
