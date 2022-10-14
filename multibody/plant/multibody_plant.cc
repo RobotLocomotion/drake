@@ -2829,7 +2829,7 @@ void MultibodyPlant<T>::CallTamsiSolver(
         "solutions include:\n"
         "  1. reduce the discrete update period set at construction,\n"
         "  2. decrease the high gains in your controller whenever possible,\n"
-        "  3. switch to a continuous model (discrete update period is zero), "
+        "  3. switch to a continuous model (discrete update period is zero),\n"
         "     though this might affect the simulation run time.",
         time0, this->time_step());
     throw std::runtime_error(msg);
