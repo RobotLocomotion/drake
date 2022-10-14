@@ -455,20 +455,20 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
       world_body, std::nullopt, body_A, std::nullopt, Vector3<double>::UnitZ());
 
   // Add body B to body A with a Z-revolute joint. To do this, create a
-  // frame AB at the X-distal end of link A that connects to B.
-  const Vector3d p_AoABo_A(length, 0, 0);  // Position vector from Ao to ABo.
-  const math::RigidTransformd X_AAB(p_AoABo_A);  // Rigid transform from A to AB
+  // "fixed" frame Af at the X-distal end of link A that connects to B.
+  const Vector3d p_AoAfo_A(length, 0, 0);  // Position vector from Ao to Afo.
+  const math::RigidTransformd X_AAf(p_AoAfo_A);  // Rigid transform from A to Af
   const RevoluteJoint<double>& AB_revolute_jointZ =
       plant.AddJoint<multibody::RevoluteJoint>("AB_revolute_jointZ",
-      body_A, X_AAB, body_B, std::nullopt, Vector3<double>::UnitZ());
+      body_A, X_AAf, body_B, std::nullopt, Vector3<double>::UnitZ());
 
   // Add body C to body B with a Z-revolute joint. To do this, create a
-  // frame BC at the X-distal end of link BC that connects to C.
-  const Vector3d p_BoBCo_B(length, 0, 0);  // Position vector from Bo to BCo.
-  const math::RigidTransformd X_BBC(p_AoABo_A);  // Rigid transform from B to BC
+  // "fixed" frame Bf at the X-distal end of link B that connects to C.
+  const Vector3d p_BoBfo_B(length, 0, 0);  // Position vector from Bo to Bfo.
+  const math::RigidTransformd X_BBf(p_BoBfo_B);  // Rigid transform from B to Bf
   const RevoluteJoint<double>& BC_revolute_jointZ =
       plant.AddJoint<multibody::RevoluteJoint>("BC_revolute_jointZ",
-      body_B, X_BBC, body_C, std::nullopt, Vector3<double>::UnitZ());
+      body_B, X_BBf, body_C, std::nullopt, Vector3<double>::UnitZ());
 
   // Signal that we are done building the test model.
   plant.Finalize();
@@ -502,7 +502,7 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
     "index 1. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
 
-  // Notice that no assertion is thrown for non-zero angles, even though angular
+  // No assertion is thrown for these non-zero angles, even though angular
   // accelerations are unusually large (hinge matrix is near singular).
   WA_revolute_jointZ.set_angle(context_ptr, 5 * M_PI/180);
   AB_revolute_jointZ.set_angle(context_ptr, 7 * M_PI/180);
@@ -521,6 +521,27 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
   EXPECT_NEAR(vdot(0), qddot_expected(0), kAngularAccelerationTolerance);
   EXPECT_NEAR(vdot(1), qddot_expected(1), kAngularAccelerationTolerance);
   EXPECT_NEAR(vdot(2), qddot_expected(2), kAngularAccelerationTolerance);
+
+  // Verify that an assertion is thrown when the initial revolute angles for WA,
+  // AB, and BC are 5 degrees, 1.0E-7, and 9 degrees, respectively. There is a
+  // singularity when the initial BC revolute angle is zero (or very small).
+  AB_revolute_jointZ.set_angle(context_ptr,  1E-7 * M_PI/180);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 1. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
+
+  // Verify an assertion is thrown if mA = 1, mB = 1, mC = -1.
+  // Note: The associated 3x3 mass matrix (not the hinge matrix) is indefinite,
+  // with both negative and positive eigenvalues.
+  body_A.SetMass(context_ptr, mA = 1);
+  body_B.SetMass(context_ptr, mB = 1);
+  body_C.SetMass(context_ptr, mC = -1);
+  AB_revolute_jointZ.set_angle(context_ptr, 7 * M_PI/180);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 3. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
 }
 
 }  // namespace
