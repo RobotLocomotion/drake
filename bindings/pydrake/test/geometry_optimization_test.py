@@ -393,7 +393,7 @@ class TestGeometryOptimization(unittest.TestCase):
 </robot>"""
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-        Parser(plant).AddModelFromString(limits_urdf, "urdf")
+        Parser(plant).AddModelsFromString(limits_urdf, "urdf")
         plant.Finalize()
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
