@@ -100,39 +100,51 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
       "drake/multibody/parsing/test/process_model_directives_test/"
       "acrobot.dmd.yaml");
 
-  // Load an SDF via string.
+  // Load an SDF via string using plural method.
+  // Add a second one with an overridden model_name.
   {
     const std::string sdf_contents = ReadEntireFile(sdf_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const ModelInstanceIndex id = dut.AddModelFromString(sdf_contents, "sdf");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+    EXPECT_EQ(dut.AddAllModelsFromString(sdf_contents, "sdf").size(), 1);
+    dut.AddModelFromString(sdf_contents, "sdf", "foo");
   }
 
-  // Load an URDF via string.
+  // Load an URDF via string using plural method.
+  // Add a second one with an overridden model_name.
   {
     const std::string urdf_contents = ReadEntireFile(urdf_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const ModelInstanceIndex id = dut.AddModelFromString(urdf_contents, "urdf");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+    EXPECT_EQ(dut.AddAllModelsFromString(urdf_contents, "urdf").size(), 1);
+    dut.AddModelFromString(urdf_contents, "urdf", "foo");
   }
 
-  // Load an MJCF via string.
+  // Load an MJCF via string using plural method.
+  // Add a second one with an overridden model_name.
   {
     const std::string xml_contents = ReadEntireFile(xml_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const ModelInstanceIndex id = dut.AddModelFromString(xml_contents, "xml");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddAllModelsFromString(xml_contents, "xml");
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
+    const ModelInstanceIndex id = dut.AddModelFromString(xml_contents, "xml",
+                                                         "foo");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
   }
 
-  // Load a DMD.YAML via string.
+  // Load a DMD.YAML via string using plural method.
   // Using the singular method is always an error.
   {
     const std::string dmd_contents = ReadEntireFile(dmd_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddAllModelsFromString(dmd_contents, "dmd.yaml");
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
     DRAKE_EXPECT_THROWS_MESSAGE(
         dut.AddModelFromString(dmd_contents, "dmd.yaml"),
         ".* always an error.*");
@@ -251,6 +263,13 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromString("bad", "xml"),
       "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
+
+  // Malformed DMD string is an error.
+  // TODO(#18052): Until the underlying parser supports diagnostic policy, the
+  // input needs to crafted to avoid reachable fatal assertions.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Parser(&plant).AddAllModelsFromString("bad:", "dmd.yaml"),
+      ".*YAML.*bad.*");
 
   // Unknown extension is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(

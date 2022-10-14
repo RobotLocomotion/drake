@@ -74,6 +74,9 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.package_map.doc)
         .def("AddAllModelsFromFile", &Class::AddAllModelsFromFile,
             py::arg("file_name"), cls_doc.AddAllModelsFromFile.doc)
+        .def("AddAllModelsFromString", &Class::AddAllModelsFromString,
+            py::arg("file_contents"), py::arg("file_type"),
+            cls_doc.AddAllModelsFromString.doc)
         .def("AddModelFromFile", &Class::AddModelFromFile, py::arg("file_name"),
             py::arg("model_name") = "", cls_doc.AddModelFromFile.doc)
         .def("AddModelFromString", &Class::AddModelFromString,

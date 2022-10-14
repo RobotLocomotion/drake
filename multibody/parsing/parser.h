@@ -92,6 +92,19 @@ class Parser final {
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
       const std::string& file_name);
 
+  /// Provides same functionality as AddAllModelsFromFile, but instead parses
+  /// the model description text data via @p file_contents with format dictated
+  /// by @p file_type.
+  ///
+  /// @param file_contents The model data to be parsed.
+  /// @param file_type The data format; must be one of the filename suffixes
+  /// listed above, *without* the leading dot (.) .
+  /// @returns The set of model instance indices for the newly added models,
+  /// including nested models.
+  /// @throws std::exception in case of errors.
+  std::vector<ModelInstanceIndex> AddAllModelsFromString(
+      const std::string& file_contents, const std::string& file_type);
+
   /// Parses the input file named in @p file_name and adds one top-level model
   /// to @p plant. It is an error to call this using any file that adds more
   /// than one model instance.
