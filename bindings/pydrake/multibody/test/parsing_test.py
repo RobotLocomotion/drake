@@ -104,6 +104,12 @@ class TestParsing(unittest.TestCase):
             file_contents=sdf_contents, file_type="sdf")
         self.assertIsInstance(result, ModelInstanceIndex)
 
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        results = parser.AddModelsFromString(
+            file_contents=sdf_contents, file_type="sdf")
+        self.assertIsInstance(results[0], ModelInstanceIndex)
+
     def test_strict(self):
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)

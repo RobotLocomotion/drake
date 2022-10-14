@@ -27,7 +27,7 @@ HPolyhedron IrisFromUrdf(const std::string urdf,
   systems::DiagramBuilder<double> builder;
   multibody::MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
-  multibody::Parser(&plant).AddModelFromString(urdf, "urdf");
+  multibody::Parser(&plant).AddModelsFromString(urdf, "urdf");
   plant.Finalize();
   auto diagram = builder.Build();
 
@@ -509,7 +509,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
   systems::DiagramBuilder<double> builder;
   multibody::MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
-  multibody::Parser(&plant).AddModelFromString(double_pendulum_urdf, "urdf");
+  multibody::Parser(&plant).AddModelsFromString(double_pendulum_urdf, "urdf");
   plant.Finalize();
   auto diagram = builder.Build();
 

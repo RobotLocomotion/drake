@@ -239,8 +239,6 @@ std::optional<ModelInstanceIndex> DmdParserWrapper::AddModel(
       "'{}' is a model directives data source; it is always an error to pass"
       " a model directives source to a single-model parser method. Use"
       " AddAllModelsFromFile() instead.", display_source));
-  // TODO(rpoyner-tri): Does this imply we should have
-  // AddAllModelsFromString() as well?
   return {};
 }
 
