@@ -130,6 +130,7 @@ drake_pybind_library(
     name = "parsing_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_srcs = ["parsing_py.cc"],
@@ -271,6 +272,7 @@ drake_py_unittest(
     deps = [
         ":parsing_py",
         ":plant_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

@@ -50,6 +50,15 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
   return parser.AddAllModels(data_source, {}, composite->workspace());
 }
 
+std::vector<ModelInstanceIndex> Parser::AddModelsFromString(
+    const std::string& file_contents, const std::string& file_type) {
+  DataSource data_source(DataSource::kContents, &file_contents);
+  const std::string pseudo_name(data_source.GetStem() + "." + file_type);
+  ParserInterface& parser = SelectParser(diagnostic_policy_, pseudo_name);
+  auto composite = internal::CompositeParse::MakeCompositeParse(this);
+  return parser.AddAllModels(data_source, {}, composite->workspace());
+}
+
 ModelInstanceIndex Parser::AddModelFromFile(
     const std::string& file_name,
     const std::string& model_name) {
