@@ -880,21 +880,13 @@ drake_cc_variant_library(
     ],
 )
 
-# If --config mosek is used, this target builds object code constructs internal
-# functions used in mosek_solver. Otherwise, this target builds no object
-# code.
-drake_cc_variant_library(
+drake_cc_optional_library(
     name = "mosek_solver_internal",
     opt_in_condition = "//tools:with_mosek",
-    srcs_always = [],
-    srcs_enabled = ["mosek_solver_internal.cc"],
-    srcs_disabled = [],
+    srcs = ["mosek_solver_internal.cc"],
     hdrs = ["mosek_solver_internal.h"],
-    internal = True,
-    visibility = ["//visibility:private"],
     interface_deps = [":mathematical_program_result"],
-    deps_always = [],
-    deps_enabled = [
+    deps = [
         ":aggregate_costs_constraints",
         ":mathematical_program",
         "//math:quadratic_form",
@@ -1482,6 +1474,18 @@ drake_cc_googletest(
         ":mathematical_program",
         ":unrevised_lemke_solver",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_optional_googletest(
+    name = "mosek_solver_internal_test",
+    opt_in_condition = "//tools:with_mosek",
+    use_default_main = False,
+    deps = [
+        ":mosek_solver",
+        ":mosek_solver_internal",
+        "//common/test_utilities:symbolic_test_util",
+        "@mosek",
     ],
 )
 
