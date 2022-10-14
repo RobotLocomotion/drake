@@ -142,6 +142,8 @@ class Installer:
         """
         relative_link = _is_relative_link(src)
         if relative_link:
+            if os.path.exists(dst) or os.path.islink(dst):
+                os.unlink(dst)
             os.symlink(relative_link, dst)
         else:
             shutil.copy2(src, dst)

@@ -51,6 +51,11 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "install_test",
+    data = [":installer"],
+)
+
+drake_py_unittest(
     name = "install_meta_test",
     data = [
         ":installer",
