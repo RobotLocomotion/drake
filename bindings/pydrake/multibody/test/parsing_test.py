@@ -1,17 +1,22 @@
 # -*- coding: utf-8 -*-
 
 from pydrake.multibody.parsing import (
-    Parser,
-    PackageMap,
+    AddCollisionFilterGroup,
+    AddDirectives,
+    AddFrame,
+    AddModel,
+    AddModelInstance,
+    AddWeld,
+    GetScopedFrameByName,
+    GetScopedFrameName,
     LoadModelDirectives,
     LoadModelDirectivesFromString,
     ModelDirective,
     ModelDirectives,
-    ProcessModelDirectives,
     ModelInstanceInfo,
-    AddFrame,
-    GetScopedFrameByName,
-    GetScopedFrameName,
+    PackageMap,
+    Parser,
+    ProcessModelDirectives,
 )
 
 import copy
@@ -130,11 +135,6 @@ class TestParsing(unittest.TestCase):
         ModelInstanceInfo.X_PC
         ModelInstanceInfo.model_instance
 
-    def test_add_frame(self):
-        """Checks that AddFrame bindings exist."""
-        AddFrame.name
-        AddFrame.X_PF
-
     def test_scoped_frame_names(self):
         plant = MultibodyPlant(time_step=0.01)
         frame = GetScopedFrameByName(plant, "world")
@@ -179,23 +179,58 @@ directives:
         self.assertIn("extra_model", model_names)
         plant.GetModelInstanceByName("extra_model")
 
+    def test_add_collision_filter_group_struct(self):
+        """Checks the bindings of the AddCollisionFilterGroup helper struct."""
+        dut = AddCollisionFilterGroup(name="foo")
+        self.assertIn("foo", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_add_directives_struct(self):
+        """Checks the bindings of the AddDirectives helper struct."""
+        dut = AddDirectives(file="package://foo/bar.dmd.yaml")
+        self.assertIn("bar.dmd.yaml", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_add_frame_struct(self):
+        """Checks the bindings of the AddFrame helper struct."""
+        dut = AddFrame(name="foo")
+        self.assertIn("foo", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_add_model_struct(self):
+        """Checks the bindings of the AddModel helper struct."""
+        dut = AddModel(file="package://foo/bar.sdf")
+        self.assertIn("bar.sdf", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_add_model_instance_struct(self):
+        """Checks the bindings of the AddModelInstance helper struct."""
+        dut = AddModelInstance(name="foo")
+        self.assertIn("foo", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_add_weld_struct(self):
+        """Checks the bindings of the AddWeld helper struct."""
+        dut = AddWeld(parent="foo")
+        self.assertIn("foo", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
     def test_model_directive_struct(self):
         """Checks the bindings of the ModelDirective helper struct."""
         dut = ModelDirective(add_model=None)
-        dut.add_model = None
-        dut.add_model_instance = None
-        dut.add_frame = None
-        dut.add_weld = None
-        dut.add_collision_filter_group = None
-        dut.add_directives = None
-        self.assertIn("add_collision_filter_group", repr(dut))
+        self.assertIn("add_model", repr(dut))
         copy.copy(dut)
         copy.deepcopy(dut)
 
     def test_model_directives_struct(self):
         """Checks the bindings of the ModelDirectives helper struct."""
-        directive = ModelDirective()
-        dut = ModelDirectives(directives=[directive])
-        self.assertIn("add_collision_filter_group", repr(dut))
+        dut = ModelDirectives(directives=[ModelDirective()])
+        self.assertIn("add_model", repr(dut))
         copy.copy(dut)
         copy.deepcopy(dut)
