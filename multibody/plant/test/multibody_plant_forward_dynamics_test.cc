@@ -524,12 +524,18 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
 
   // Verify that an assertion is thrown when the initial revolute angles for WA,
   // AB, and BC are 5 degrees, 1.0E-7, and 9 degrees, respectively. There is a
-  // singularity when the initial BC revolute angle is zero (or very small).
+  // singularity when the initial AB revolute angle is zero (or very small).
   AB_revolute_jointZ.set_angle(context_ptr,  1E-7 * M_PI/180);
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "Encountered singular articulated body hinge inertia for body node "
     "index 1. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
+
+  // Verify no assertion is thrown when the initial revolute angles for WA, AB,
+  // and BC are 5 degrees, 1.0E-4, and 9 degrees, respectively, i.e., with the
+  // initial AB revolute angle sufficiently far from zero.
+  AB_revolute_jointZ.set_angle(context_ptr,  1E-4 * M_PI/180);
+  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 
   // Verify an assertion is thrown if mA = 1, mB = 1, mC = -1.
   // Note: The associated 3x3 mass matrix (not the hinge matrix) is indefinite,
