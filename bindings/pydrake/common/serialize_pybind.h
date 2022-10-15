@@ -1,17 +1,23 @@
 #pragma once
 
 #include <climits>
+#include <map>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
+#include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace pydrake {
@@ -85,9 +91,26 @@ class DefAttributesArchive {
     // Add the binding.
     ppy_class_->def_property(name, getter, setter, doc,
         pybind11::return_value_policy::reference_internal);
+
+    // Remember the field's name and type for later use by Finished().
+    auto field = pybind11::module::import("types").attr("SimpleNamespace")();
+    pybind11::setattr(field, "name", pybind11::str(name));
+    pybind11::setattr(field, "type", CalcSchemaType(prototype_value));
+    fields_.append(field);
   }
 
-  // Return the offset (in bytes) of `address` within our `prototype_` object.
+  // To be called after Serialize() is complete; binds any members that are
+  // scoped to the entire struct (rather than one field at a time).
+  void Finished() {
+    ppy_class_->def_property_readonly_static(
+        "__fields__", [fields_tuple = pybind11::tuple(fields_)](
+                          pybind11::object /* self */) {  // BR
+          return fields_tuple;
+        });
+  }
+
+ private:
+  // Returns the offset (in bytes) of `address` within our `prototype_` object.
   // Fails if the address does not fall within the `prototype_` object.
   int CalcClassOffset(const void* address) {
     static_assert(sizeof(CxxClass) < INT_MAX);
@@ -98,10 +121,82 @@ class DefAttributesArchive {
     return reinterpret_cast<const char*>(address) - begin;
   }
 
- private:
+  // Returns the python type-annotation corresponding to the given T.
+  // This template function is specialized below for container types.
+  // Note that the argument pointer is ignored (can be nullptr).
+  // @tparam T the C++ type for which we'll return the Python type.
+  template <typename T>
+  static pybind11::object CalcSchemaType(const T*) {
+    // When the type is registered with pybind11, we can use type::of<>. That
+    // function doesn't work for primitive types[1], so we'll need to list
+    // those out by hand.
+    // [1] https://github.com/pybind/pybind11/issues/2486
+    if constexpr (std::is_base_of_v<pybind11::detail::type_caster_generic,
+                      pybind11::detail::make_caster<T>>) {
+      return pybind11::type::of<T>();
+    } else if constexpr (std::is_same_v<T, bool>) {
+      return pybind11::type::of(pybind11::bool_());
+    } else if constexpr (std::is_integral_v<T>) {
+      return pybind11::type::of(pybind11::int_());
+    } else if constexpr (std::is_floating_point_v<T>) {
+      return pybind11::type::of(pybind11::float_());
+    } else if constexpr (std::is_same_v<T, std::string>) {
+      return pybind11::type::of(pybind11::str());
+    } else if constexpr (is_eigen_type<T>::value) {
+      return pybind11::module::import("numpy").attr("ndarray");
+    } else {
+      return CannotIdentifySchemaType<T>();
+    }
+  }
+
+  // Partial specialization for Optional.
+  template <typename U>
+  static pybind11::object CalcSchemaType(const std::optional<U>*) {
+    auto u_type = CalcSchemaType(static_cast<U*>(nullptr));
+    return pybind11::module::import("typing").attr("Optional")[u_type];
+  }
+
+  // Partial specialization for List.
+  template <typename U>
+  static pybind11::object CalcSchemaType(const std::vector<U>*) {
+    auto u_type = CalcSchemaType(static_cast<U*>(nullptr));
+    return pybind11::module::import("typing").attr("List")[u_type];
+  }
+
+  // Partial specialization for Mapping.
+  template <typename U, typename V>
+  static pybind11::object CalcSchemaType(const std::map<U, V>*) {
+    auto u_type = CalcSchemaType(static_cast<U*>(nullptr));
+    auto v_type = CalcSchemaType(static_cast<V*>(nullptr));
+    auto inner_types = pybind11::make_tuple(u_type, v_type);
+    return pybind11::module::import("typing").attr("Mapping")[inner_types];
+  }
+
+  // Partial specialization for Union.
+  template <typename... Types>
+  static pybind11::object CalcSchemaType(const std::variant<Types...>*) {
+    auto inner_types = pybind11::make_tuple(  // BR
+        CalcSchemaType(static_cast<Types*>(nullptr))...);
+    return pybind11::module::import("typing").attr("Union")[inner_types];
+  }
+
+  // When there is no match found for the schema type, this function will
+  // produce a compile-time error that's at least somewhat readable.
+  template <typename T>
+  static pybind11::object CannotIdentifySchemaType(T*) {
+    // N.B. This static_assert will always fail, but with a nice message.
+    static_assert(std::is_same_v<T, void>,
+        "DefAttributesUsingSerialize() could not understand a field type");
+    return pybind11::none();
+  }
+
   PyClass* const ppy_class_;
   CxxClass* const prototype_;
   const Docs* const cls_docs_;
+
+  // As we visit each field, we'll accumulate a list of [{name=, type=}, ...]
+  // to bind later as the `__fields__` static propery.
+  pybind11::list fields_;
 };
 
 }  // namespace internal
@@ -120,6 +215,7 @@ void DefAttributesUsingSerialize(PyClass* ppy_class, const Docs& cls_docs) {
   CxxClass prototype{};
   internal::DefAttributesArchive archive(ppy_class, &prototype, &cls_docs);
   prototype.Serialize(&archive);
+  archive.Finished();
 }
 
 /// (Advanced) An overload that doesn't bind docstrings. We expect that pydrake
