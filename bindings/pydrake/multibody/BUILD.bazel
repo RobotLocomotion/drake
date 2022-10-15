@@ -76,6 +76,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:value_py",
         "//bindings/pydrake:math_py",
     ],
+    py_srcs = ["_math_extra.py"],
 )
 
 drake_pybind_library(
