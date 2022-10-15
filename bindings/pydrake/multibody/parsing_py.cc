@@ -24,6 +24,8 @@ PYBIND11_MODULE(parsing, m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
+  py::module::import("pydrake.common.schema");
+
   // PackageMap
   {
     using Class = PackageMap;
@@ -85,9 +87,59 @@ PYBIND11_MODULE(parsing, m) {
 
   // Model Directives
   {
-    using Class = parsing::ModelDirectives;
-    constexpr auto& cls_doc = doc.parsing.ModelDirectives;
-    py::class_<Class> cls(m, "ModelDirectives", cls_doc.doc);
+    using Class = parsing::AddWeld;
+    constexpr auto& cls_doc = doc.parsing.AddWeld;
+    py::class_<Class> cls(m, "AddWeld", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::AddModel;
+    constexpr auto& cls_doc = doc.parsing.AddModel;
+    py::class_<Class> cls(m, "AddModel", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::AddModelInstance;
+    constexpr auto& cls_doc = doc.parsing.AddModelInstance;
+    py::class_<Class> cls(m, "AddModelInstance", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::AddFrame;
+    constexpr auto& cls_doc = doc.parsing.AddFrame;
+    py::class_<Class> cls(m, "AddFrame", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::AddCollisionFilterGroup;
+    constexpr auto& cls_doc = doc.parsing.AddCollisionFilterGroup;
+    py::class_<Class> cls(m, "AddCollisionFilterGroup", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::AddDirectives;
+    constexpr auto& cls_doc = doc.parsing.AddDirectives;
+    py::class_<Class> cls(m, "AddDirectives", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -98,6 +150,16 @@ PYBIND11_MODULE(parsing, m) {
     using Class = parsing::ModelDirective;
     constexpr auto& cls_doc = doc.parsing.ModelDirective;
     py::class_<Class> cls(m, "ModelDirective", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::ModelDirectives;
+    constexpr auto& cls_doc = doc.parsing.ModelDirectives;
+    py::class_<Class> cls(m, "ModelDirectives", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
@@ -125,17 +187,6 @@ PYBIND11_MODULE(parsing, m) {
         .def_readonly("X_PC", &Class::X_PC, cls_doc.X_PC.doc)
         .def_readonly("model_instance", &Class::model_instance,
             cls_doc.model_instance.doc);
-  }
-
-  // Individual directives are not bound here (they are generally loaded from
-  // yaml rather than constructed explicitly), but some downstream users use
-  // this type as a return value which requires an explicit binding.
-  {
-    using Class = drake::multibody::parsing::AddFrame;
-    constexpr auto& cls_doc = doc.parsing.AddFrame;
-    py::class_<Class>(m, "AddFrame")
-        .def_readonly("name", &Class::name, cls_doc.name.doc)
-        .def_readonly("X_PF", &Class::X_PF, cls_doc.X_PF.doc);
   }
 
   m.def("ProcessModelDirectives",
