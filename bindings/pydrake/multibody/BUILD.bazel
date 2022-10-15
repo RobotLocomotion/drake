@@ -136,6 +136,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake/common:schema_py",
     ],
 )
 
