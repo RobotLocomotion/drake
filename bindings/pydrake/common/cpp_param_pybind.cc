@@ -67,11 +67,12 @@ void RegisterCommon(py::module m, py::object param_aliases) {
   RegisterType<double>(m, param_aliases, "float");
   RegisterType<float>(m, param_aliases, "np.float32");
   RegisterType<int>(m, param_aliases, "int");
+  RegisterType<int16_t>(m, param_aliases, "np.int16");
+  RegisterType<int64_t>(m, param_aliases, "np.int64");
   RegisterType<uint8_t>(m, param_aliases, "np.uint8");
   RegisterType<uint16_t>(m, param_aliases, "np.uint16");
-  RegisterType<int16_t>(m, param_aliases, "np.int16");
   RegisterType<uint32_t>(m, param_aliases, "np.uint32");
-  RegisterType<int64_t>(m, param_aliases, "np.int64");
+  RegisterType<uint64_t>(m, param_aliases, "np.uint64");
   // For supporting generic Python types.
   RegisterType<Object>(m, param_aliases, "object");
 }

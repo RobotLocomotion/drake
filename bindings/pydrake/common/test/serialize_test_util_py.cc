@@ -25,6 +25,8 @@ struct MyData2 {
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(some_bool));
     a->Visit(DRAKE_NVP(some_int));
+    a->Visit(DRAKE_NVP(some_uint64));
+    a->Visit(DRAKE_NVP(some_float));
     a->Visit(DRAKE_NVP(some_double));
     a->Visit(DRAKE_NVP(some_string));
     a->Visit(DRAKE_NVP(some_eigen));
@@ -35,6 +37,8 @@ struct MyData2 {
   }
   bool some_bool{};
   int some_int{};
+  std::uint64_t some_uint64{};
+  float some_float{};
   double some_double{};
   std::string some_string;
   Eigen::MatrixXd some_eigen;
@@ -54,6 +58,8 @@ struct MyData2Docs {
     return std::array{
         std::make_pair("some_bool", "Field docstring for a bool."),
         std::make_pair("some_int", "Field docstring for a int."),
+        std::make_pair("some_uint64", "Field docstring for a uint64."),
+        std::make_pair("some_float", "Field docstring for a float."),
         std::make_pair("some_double", "Field docstring for a double."),
         std::make_pair("some_string", "Field docstring for a string."),
         std::make_pair("some_eigen", "Field docstring for a eigen."),

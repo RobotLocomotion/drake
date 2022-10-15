@@ -10,6 +10,8 @@
 #include <variant>
 #include <vector>
 
+#include "bindings/pydrake/common/cpp_param_pybind.h"
+#include "bindings/pydrake/pydrake_pybind.h"
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
@@ -21,9 +23,6 @@
 
 namespace drake {
 namespace pydrake {
-
-namespace py = pybind11;
-
 namespace internal {
 
 // Helper for DefAttributesUsingSerialize.
@@ -133,18 +132,16 @@ class DefAttributesArchive {
     // function doesn't work for primitive types[1], so we'll need to list
     // those out by hand.
     // [1] https://github.com/pybind/pybind11/issues/2486
+    constexpr bool is_python_primitive_type =  // BR
+        std::is_integral_v<T> || std::is_floating_point_v<T> ||
+        std::is_same_v<T, bool> || std::is_same_v<T, std::string>;
     if constexpr (std::is_base_of_v<py::detail::type_caster_generic,
                       py::detail::make_caster<T>>) {
       return py::type::of<T>();
-    } else if constexpr (std::is_same_v<T, bool>) {
-      return py::type::of(py::bool_());
-    } else if constexpr (std::is_integral_v<T>) {
-      return py::type::of(py::int_());
-    } else if constexpr (std::is_floating_point_v<T>) {
-      return py::type::of(py::float_());
-    } else if constexpr (std::is_same_v<T, std::string>) {
-      return py::type::of(py::str());
+    } else if constexpr (is_python_primitive_type) {
+      return GetPyParam<T>()[0];
     } else if constexpr (is_eigen_type<T>::value) {
+      // TODO(jwnimmer-tri) Perhaps we can use numpy.typing here some day?
       return py::module::import("numpy").attr("ndarray");
     } else {
       return CannotIdentifySchemaType<T>();

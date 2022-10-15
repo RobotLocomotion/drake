@@ -21,6 +21,8 @@ class TestSerializePybind(unittest.TestCase):
         return MyData2(
             some_bool=False,
             some_int=1,
+            some_uint64=1 << 48,
+            some_float=0.5,
             some_double=2.0,
             some_string="3",
             some_eigen=[4.4],
@@ -65,6 +67,8 @@ class TestSerializePybind(unittest.TestCase):
         # Reset all fields.
         dut.some_bool = True
         dut.some_int = 10
+        dut.some_uint64 = 1 << 52
+        dut.some_float = 5.0
         dut.some_double = 20.0
         dut.some_string = "30"
         dut.some_eigen = [44.4]
@@ -76,6 +80,8 @@ class TestSerializePybind(unittest.TestCase):
         # Read back all fields.
         self.assertEqual(dut.some_bool, True)
         self.assertEqual(dut.some_int, 10)
+        self.assertEqual(dut.some_uint64, 1 << 52)
+        self.assertEqual(dut.some_float, 5.0)
         self.assertEqual(dut.some_double, 20.0)
         self.assertEqual(dut.some_string, "30")
         self.assertEqual(dut.some_eigen, [44.4])
@@ -89,6 +95,8 @@ class TestSerializePybind(unittest.TestCase):
         self.assertSequenceEqual([(x.name, x.type) for x in fields], (
             ("some_bool", bool),
             ("some_int", int),
+            ("some_uint64", np.uint64),
+            ("some_float", np.float32),
             ("some_double", float),
             ("some_string", str),
             ("some_eigen", np.ndarray),
@@ -112,6 +120,8 @@ class TestSerializePybind(unittest.TestCase):
                          "MyData2("
                          "some_bool=False, "
                          "some_int=1, "
+                         "some_uint64=281474976710656, "
+                         "some_float=0.5, "
                          "some_double=2.0, "
                          "some_string='3', "
                          "some_eigen=array([[4.4]]), "
