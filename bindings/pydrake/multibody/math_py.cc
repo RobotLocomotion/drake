@@ -92,6 +92,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
   m.doc() = "Bindings for multibody math.";
 
+  // N.B. Some classes define `__repr__` in `_math_extra.py`.
+
   {
     using Class = SpatialVelocity<T>;
     constexpr auto& cls_doc = doc.SpatialVelocity;
@@ -208,6 +210,8 @@ PYBIND11_MODULE(math, m) {
   m.doc() = "Bindings for multibody math.";
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

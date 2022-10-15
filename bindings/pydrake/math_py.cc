@@ -48,6 +48,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
   using namespace drake::math;
   constexpr auto& doc = pydrake_doc.drake.math;
 
+  // N.B. Some classes define `__repr__` in `_math_extra.py`.
+
   {
     using Class = RigidTransform<T>;
     constexpr auto& cls_doc = doc.RigidTransform;
