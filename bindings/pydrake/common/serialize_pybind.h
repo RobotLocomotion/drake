@@ -1,20 +1,29 @@
 #pragma once
 
 #include <climits>
+#include <map>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
+#include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace pydrake {
+
+namespace py = pybind11;
+
 namespace internal {
 
 // Helper for DefAttributesUsingSerialize.
@@ -51,20 +60,20 @@ class DefAttributesArchive {
     const int offset = CalcClassOffset(prototype_value);
 
     // Define property functions to get and set this particular field.
-    pybind11::cpp_function getter(
+    py::cpp_function getter(
         [offset](const CxxClass& self) -> const T& {
           const T* const field_in_self = reinterpret_cast<const T*>(
               reinterpret_cast<const char*>(&self) + offset);
           return *field_in_self;
         },
-        pybind11::is_method(*ppy_class_));
-    pybind11::cpp_function setter(
+        py::is_method(*ppy_class_));
+    py::cpp_function setter(
         [offset](CxxClass& self, const T& value) {
           T* const field_in_self =
               reinterpret_cast<T*>(reinterpret_cast<char*>(&self) + offset);
           *field_in_self = value;
         },
-        pybind11::is_method(*ppy_class_));
+        py::is_method(*ppy_class_));
 
     // Fetch the docstring (or the empty string, if we aren't using docstrings).
     const char* doc = "";
@@ -83,11 +92,27 @@ class DefAttributesArchive {
     }
 
     // Add the binding.
-    ppy_class_->def_property(name, getter, setter, doc,
-        pybind11::return_value_policy::reference_internal);
+    ppy_class_->def_property(
+        name, getter, setter, doc, py::return_value_policy::reference_internal);
+
+    // Remember the field's name and type for later use by Finished().
+    auto field = py::module::import("types").attr("SimpleNamespace")();
+    py::setattr(field, "name", py::str(name));
+    py::setattr(field, "type", CalcSchemaType(prototype_value));
+    fields_.append(field);
   }
 
-  // Return the offset (in bytes) of `address` within our `prototype_` object.
+  // To be called after Serialize() is complete; binds any members that are
+  // scoped to the entire struct (rather than one field at a time).
+  void Finished() {
+    ppy_class_->def_property_readonly_static("__fields__",
+        [fields_tuple = py::tuple(fields_)](py::object /* self */) {  // BR
+          return fields_tuple;
+        });
+  }
+
+ private:
+  // Returns the offset (in bytes) of `address` within our `prototype_` object.
   // Fails if the address does not fall within the `prototype_` object.
   int CalcClassOffset(const void* address) {
     static_assert(sizeof(CxxClass) < INT_MAX);
@@ -98,10 +123,82 @@ class DefAttributesArchive {
     return reinterpret_cast<const char*>(address) - begin;
   }
 
- private:
+  // Returns the python type-annotation corresponding to the given T.
+  // This template function is specialized below for container types.
+  // Note that the argument pointer is ignored (can be nullptr).
+  // @tparam T the C++ type for which we'll return the Python type.
+  template <typename T>
+  static py::object CalcSchemaType(const T*) {
+    // When the type is registered with pybind11, we can use type::of<>. That
+    // function doesn't work for primitive types[1], so we'll need to list
+    // those out by hand.
+    // [1] https://github.com/pybind/pybind11/issues/2486
+    if constexpr (std::is_base_of_v<py::detail::type_caster_generic,
+                      py::detail::make_caster<T>>) {
+      return py::type::of<T>();
+    } else if constexpr (std::is_same_v<T, bool>) {
+      return py::type::of(py::bool_());
+    } else if constexpr (std::is_integral_v<T>) {
+      return py::type::of(py::int_());
+    } else if constexpr (std::is_floating_point_v<T>) {
+      return py::type::of(py::float_());
+    } else if constexpr (std::is_same_v<T, std::string>) {
+      return py::type::of(py::str());
+    } else if constexpr (is_eigen_type<T>::value) {
+      return py::module::import("numpy").attr("ndarray");
+    } else {
+      return CannotIdentifySchemaType<T>();
+    }
+  }
+
+  // Partial specialization for Optional.
+  template <typename U>
+  static py::object CalcSchemaType(const std::optional<U>*) {
+    auto u_type = CalcSchemaType(static_cast<U*>(nullptr));
+    return py::module::import("typing").attr("Optional")[u_type];
+  }
+
+  // Partial specialization for List.
+  template <typename U>
+  static py::object CalcSchemaType(const std::vector<U>*) {
+    auto u_type = CalcSchemaType(static_cast<U*>(nullptr));
+    return py::module::import("typing").attr("List")[u_type];
+  }
+
+  // Partial specialization for Mapping.
+  template <typename U, typename V>
+  static py::object CalcSchemaType(const std::map<U, V>*) {
+    auto u_type = CalcSchemaType(static_cast<U*>(nullptr));
+    auto v_type = CalcSchemaType(static_cast<V*>(nullptr));
+    auto inner_types = py::make_tuple(u_type, v_type);
+    return py::module::import("typing").attr("Mapping")[inner_types];
+  }
+
+  // Partial specialization for Union.
+  template <typename... Types>
+  static py::object CalcSchemaType(const std::variant<Types...>*) {
+    auto inner_types = py::make_tuple(  // BR
+        CalcSchemaType(static_cast<Types*>(nullptr))...);
+    return py::module::import("typing").attr("Union")[inner_types];
+  }
+
+  // When there is no match found for the schema type, this function will
+  // produce a compile-time error that's at least somewhat readable.
+  template <typename T>
+  static py::object CannotIdentifySchemaType(T*) {
+    // N.B. This static_assert will always fail, but with a nice message.
+    static_assert(std::is_same_v<T, void>,
+        "DefAttributesUsingSerialize() could not understand a field type");
+    return py::none();
+  }
+
   PyClass* const ppy_class_;
   CxxClass* const prototype_;
   const Docs* const cls_docs_;
+
+  // As we visit each field, we'll accumulate a list of [{name=, type=}, ...]
+  // to bind later as the `__fields__` static propery.
+  py::list fields_;
 };
 
 }  // namespace internal
@@ -120,6 +217,7 @@ void DefAttributesUsingSerialize(PyClass* ppy_class, const Docs& cls_docs) {
   CxxClass prototype{};
   internal::DefAttributesArchive archive(ppy_class, &prototype, &cls_docs);
   prototype.Serialize(&archive);
+  archive.Finished();
 }
 
 /// (Advanced) An overload that doesn't bind docstrings. We expect that pydrake
@@ -166,16 +264,16 @@ void DefReprUsingSerialize(PyClass* ppy_class) {
   CxxClass prototype{};
   prototype.Serialize(&archive);
   ppy_class->def("__repr__",
-      [names = std::move(archive.property_names())](pybind11::object self) {
+      [names = std::move(archive.property_names())](py::object self) {
         std::ostringstream result;
-        result << pybind11::str(self.attr("__class__").attr("__name__"));
+        result << py::str(self.attr("__class__").attr("__name__"));
         result << "(";
         bool first = true;
         for (const std::string& name : names) {
           if (!first) {
             result << ", ";
           }
-          result << name << "=" << pybind11::repr(self.attr(name.c_str()));
+          result << name << "=" << py::repr(self.attr(name.c_str()));
           first = false;
         }
         result << ")";
