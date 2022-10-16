@@ -488,7 +488,7 @@ class MultipleShooting {
   symbolic::Substitution ConstructPlaceholderVariableSubstitution(
       int interval_index) const;
 
-  // TODO(russt): Add a constructor whichs take a MathematicalProgram&
+  // TODO(russt): Add a constructor which takes a MathematicalProgram&
   // as an argument.
   const std::unique_ptr<solvers::MathematicalProgram> owned_prog_;
   solvers::MathematicalProgram& prog_;

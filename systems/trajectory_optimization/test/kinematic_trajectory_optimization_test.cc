@@ -1,4 +1,4 @@
-#include "planning/kinematic_trajectory_optimization.h"
+#include "systems/trajectory_optimization/kinematic_trajectory_optimization.h"
 
 #include <optional>
 
@@ -7,21 +7,19 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic/expression.h"
 
-using drake::Vector1;
-using drake::VectorX;
-using drake::solvers::ExpressionConstraint;
-using drake::solvers::VectorXDecisionVariable;
+namespace drake {
+namespace systems {
+namespace trajectory_optimization {
+
+using solvers::ExpressionConstraint;
+using solvers::VectorXDecisionVariable;
 using std::nullopt;
 
-namespace symbolic = drake::symbolic;
-
-namespace anzu {
-namespace planning {
 namespace {
 
 std::shared_ptr<ExpressionConstraint> MakeExpressionConstraint(int num) {
   VectorXDecisionVariable position(num);
-  for (int i = 0; i < num; i++)
+  for (int i = 0; i < num; ++i)
     position(i) = symbolic::Variable("q" + std::to_string(i));
   auto position_squared =
       (VectorX<symbolic::Expression>(1) << position.transpose() * position)
@@ -131,5 +129,6 @@ TEST_F(KinematicTrajectoryOptimizationTest, SolveWithEverything) {
 }
 
 }  // namespace
-}  // namespace planning
-}  // namespace anzu
+}  // namespace trajectory_optimization
+}  // namespace systems
+}  // namespace drake
