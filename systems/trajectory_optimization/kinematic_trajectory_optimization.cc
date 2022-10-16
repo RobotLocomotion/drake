@@ -1,4 +1,4 @@
-#include "planning/kinematic_trajectory_optimization.h"
+#include "systems/trajectory_optimization/kinematic_trajectory_optimization.h"
 
 #include <algorithm>
 #include <string>
@@ -9,37 +9,26 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/bspline_basis.h"
-#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 
-using drake::AutoDiffVecXd;
-using drake::MatrixX;
-using drake::Vector1;
-using drake::VectorX;
-using drake::log;
-using drake::math::ExtractValue;
-using drake::math::BsplineBasis;
-using drake::math::InitializeAutoDiff;
-using drake::solvers::Constraint;
-using drake::solvers::MathematicalProgram;
-using drake::solvers::MathematicalProgramResult;
-using drake::solvers::MatrixXDecisionVariable;
-using drake::solvers::SnoptSolver;
-using drake::solvers::SolutionResult;
-using drake::solvers::VectorXDecisionVariable;
-using drake::trajectories::BsplineTrajectory;
-using drake::trajectories::PiecewiseTrajectory;
+namespace drake {
+namespace trajectory_optimization {
+
+using math::ExtractValue;
+using math::BsplineBasis;
+using math::InitializeAutoDiff;
+using solvers::Constraint;
+using solvers::MathematicalProgram;
+using solvers::MathematicalProgramResult;
+using solvers::MatrixXDecisionVariable;
+using solvers::SnoptSolver;
+using solvers::SolutionResult;
+using solvers::VectorXDecisionVariable;
+using trajectories::BsplineTrajectory;
+using trajectories::PiecewiseTrajectory;
 using std::nullopt;
 using std::optional;
-
-namespace symbolic = drake::symbolic;
-namespace trajectories = drake::trajectories;
-
-namespace anzu {
-namespace planning {
-
-using drake::dynamic_pointer_cast_or_throw;
 
 namespace {
 VectorXDecisionVariable MakeNamedVariables(const std::string& prefix, int num) {
@@ -82,8 +71,8 @@ class PointConstraint : public Constraint {
   }
 
   void DoEval(
-      const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-      VectorX<symbolic::Expression>* y) const override {
+      const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+      VectorX<symbolic::Expression>*) const override {
     throw std::runtime_error("PointConstraint on Expression not implemented");
   }
 
@@ -534,7 +523,7 @@ SolutionResult KinematicTrajectoryOptimization::Solve(
 
 optional<BsplineTrajectory<double>>
 KinematicTrajectoryOptimization::ComputeFirstSolution(
-    std::vector<planning::KinematicTrajectoryOptimization>* programs,
+    std::vector<KinematicTrajectoryOptimization>* programs,
     std::optional<double> min_duration) {
   log()->info("Calling program.Solve() ...");
   bool done{false};
@@ -672,5 +661,5 @@ BsplineTrajectory<double> KinematicTrajectoryOptimization::GetPositionCurve(
       position_curve_.control_points());
 }
 
-}  // namespace planning
-}  // namespace anzu
+}  // namespace trajectory_optimization
+}  // namespace drake
