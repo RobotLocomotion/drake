@@ -45,8 +45,11 @@ class TestCppParam(unittest.TestCase):
         self._check_idempotent(float)
         self._check_idempotent(np.float32)
         self._check_idempotent(int)
-        self._check_idempotent(np.uint32)
+        self._check_idempotent(np.int16)
         self._check_idempotent(np.int64)
+        self._check_idempotent(np.uint16)
+        self._check_idempotent(np.uint32)
+        self._check_idempotent(np.uint64)
         self._check_idempotent(object)
         # - Custom Types.
         self._check_idempotent(CustomPyType)
@@ -60,8 +63,11 @@ class TestCppParam(unittest.TestCase):
         self._check_aliases(float, [np.double, ctypes.c_double])
         self._check_aliases(np.float32, [ctypes.c_float])
         self._check_aliases(int, [np.int32, ctypes.c_int32])
-        self._check_aliases(np.uint32, [ctypes.c_uint32])
+        self._check_aliases(np.int16, [ctypes.c_int16])
         self._check_aliases(np.int64, [ctypes.c_int64])
+        self._check_aliases(np.uint16, [ctypes.c_uint16])
+        self._check_aliases(np.uint32, [ctypes.c_uint32])
+        self._check_aliases(np.uint64, [ctypes.c_uint64])
 
     def test_names(self):
         self._check_names("int", [int, np.int32, ctypes.c_int32])
