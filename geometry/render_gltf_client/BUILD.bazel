@@ -288,15 +288,15 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "integration_test",
+    size = "medium",
     data = [
         ":client_demo",
+        ":server_demo",
     ],
-    # Temporarily disable the test due to the CI failure on macOS.
     tags = [
-        "manual",
+        "cpu:2",
     ],
     deps = [
-        ":server_demo",
         "@bazel_tools//tools/python/runfiles",
     ],
 )
