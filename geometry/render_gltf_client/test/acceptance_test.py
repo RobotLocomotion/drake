@@ -102,7 +102,7 @@ class TestGltfRenderBinary(unittest.TestCase):
         server_demo = self.runfiles.Rlocation(
             "drake/geometry/render_gltf_client/server_demo"
         )
-        subprocess.run([server_demo, "--test"])
+        subprocess.run([server_demo, "--acceptance_test"])
 
     def test_client_demo_client(self):
         """A minimal smoke test to run the client demo that launches a Drake
