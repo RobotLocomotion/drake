@@ -1,4 +1,4 @@
-#include "planning/kinematic_trajectory_optimization.h"
+#include "systems/trajectory_optimization/kinematic_trajectory_optimization.h"
 
 #include <algorithm>
 #include <string>
@@ -9,37 +9,27 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/bspline_basis.h"
-#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 
-using drake::AutoDiffVecXd;
-using drake::MatrixX;
-using drake::Vector1;
-using drake::VectorX;
-using drake::log;
-using drake::math::ExtractValue;
-using drake::math::BsplineBasis;
-using drake::math::InitializeAutoDiff;
-using drake::solvers::Constraint;
-using drake::solvers::MathematicalProgram;
-using drake::solvers::MathematicalProgramResult;
-using drake::solvers::MatrixXDecisionVariable;
-using drake::solvers::SnoptSolver;
-using drake::solvers::SolutionResult;
-using drake::solvers::VectorXDecisionVariable;
-using drake::trajectories::BsplineTrajectory;
-using drake::trajectories::PiecewiseTrajectory;
+namespace drake {
+namespace systems {
+namespace trajectory_optimization {
+
+using math::ExtractValue;
+using math::BsplineBasis;
+using math::InitializeAutoDiff;
+using solvers::Constraint;
+using solvers::MathematicalProgram;
+using solvers::MathematicalProgramResult;
+using solvers::MatrixXDecisionVariable;
+using solvers::SnoptSolver;
+using solvers::SolutionResult;
+using solvers::VectorXDecisionVariable;
+using trajectories::BsplineTrajectory;
+using trajectories::PiecewiseTrajectory;
 using std::nullopt;
 using std::optional;
-
-namespace symbolic = drake::symbolic;
-namespace trajectories = drake::trajectories;
-
-namespace anzu {
-namespace planning {
-
-using drake::dynamic_pointer_cast_or_throw;
 
 namespace {
 VectorXDecisionVariable MakeNamedVariables(const std::string& prefix, int num) {
@@ -82,8 +72,8 @@ class PointConstraint : public Constraint {
   }
 
   void DoEval(
-      const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-      VectorX<symbolic::Expression>* y) const override {
+      const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+      VectorX<symbolic::Expression>*) const override {
     throw std::runtime_error("PointConstraint on Expression not implemented");
   }
 
@@ -209,6 +199,7 @@ void KinematicTrajectoryOptimization::AddGenericPositionConstraint(
     const std::shared_ptr<Constraint>& constraint,
     const std::array<double, 2>& plan_interval,
     const std::shared_ptr<Constraint>& validation_constraint) {
+  DRAKE_DEMAND(plan_interval[0] <= plan_interval[1]);
   // Add the constraint to the vector in case we need to re-build later.
   if (plan_interval.back() - plan_interval.front() <
       PiecewiseTrajectory<double>::kEpsilonTime) {
@@ -233,20 +224,23 @@ void KinematicTrajectoryOptimization::AddGenericPositionConstraint(
 
 void KinematicTrajectoryOptimization::AddLinearConstraint(
     const symbolic::Formula& f, const std::array<double, 2>& plan_interval) {
+  DRAKE_DEMAND(plan_interval[0] <= plan_interval[1]);
   formula_linear_constraints_.push_back(FormulaWrapper({f, plan_interval}));
   AddLinearConstraintToProgram(formula_linear_constraints_.back(),
                                prog_.get_mutable());
 }
 
 void KinematicTrajectoryOptimization::AddQuadraticCost(
-    const symbolic::Expression& f, const std::array<double, 2>& plan_interval) {
+    const symbolic::Expression& f) {
+  const std::array<double, 2>& plan_interval{{0.0, 1.0}};
   expression_quadratic_costs_.push_back(ExpressionWrapper({f, plan_interval}));
   AddQuadraticCostToProgram(expression_quadratic_costs_.back(),
                             prog_.get_mutable());
 }
 
 void KinematicTrajectoryOptimization::AddLinearCost(
-    const symbolic::Expression& f, const std::array<double, 2>& plan_interval) {
+    const symbolic::Expression& f) {
+  const std::array<double, 2>& plan_interval{{0.0, 1.0}};
   expression_linear_costs_.push_back(ExpressionWrapper({f, plan_interval}));
   AddLinearCostToProgram(expression_linear_costs_.back(), prog_.get_mutable());
 }
@@ -534,7 +528,7 @@ SolutionResult KinematicTrajectoryOptimization::Solve(
 
 optional<BsplineTrajectory<double>>
 KinematicTrajectoryOptimization::ComputeFirstSolution(
-    std::vector<planning::KinematicTrajectoryOptimization>* programs,
+    std::vector<KinematicTrajectoryOptimization>* programs,
     std::optional<double> min_duration) {
   log()->info("Calling program.Solve() ...");
   bool done{false};
@@ -672,5 +666,6 @@ BsplineTrajectory<double> KinematicTrajectoryOptimization::GetPositionCurve(
       position_curve_.control_points());
 }
 
-}  // namespace planning
-}  // namespace anzu
+}  // namespace trajectory_optimization
+}  // namespace systems
+}  // namespace drake

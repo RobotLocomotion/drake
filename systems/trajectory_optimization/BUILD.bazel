@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":direct_collocation",
         ":direct_transcription",
         ":integration_constraint",
+        ":kinematic_trajectory_optimization",
         ":multiple_shooting",
         ":sequential_expression_manager",
     ],
@@ -87,6 +88,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "kinematic_trajectory_optimization",
+    srcs = ["kinematic_trajectory_optimization.cc"],
+    hdrs = ["kinematic_trajectory_optimization.h"],
+    deps = [
+        "//common",
+        "//common/trajectories:bspline_trajectory",
+        "//common/trajectories:piecewise_trajectory",
+        "//math:bspline_basis",
+        "//math:gradient",
+        "//solvers:mathematical_program",
+        "//solvers:snopt_solver",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_library(
     name = "integration_constraint",
     srcs = ["integration_constraint.cc"],
     hdrs = ["integration_constraint.h"],
@@ -143,6 +160,15 @@ drake_cc_googletest(
         ":sequential_expression_manager",
         "//common/test_utilities:expect_throws_message",
         "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "kinematic_trajectory_optimization_test",
+    tags = ["snopt"],
+    deps = [
+        ":kinematic_trajectory_optimization",
+        "//solvers:constraint",
     ],
 )
 
