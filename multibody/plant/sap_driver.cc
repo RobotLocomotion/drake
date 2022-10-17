@@ -102,6 +102,12 @@ void SapDriver<T>::CalcLinearDynamicsMatrix(const systems::Context<T>& context,
     const int tree_nv = tree_topology().num_tree_velocities(t);
     (*A)[t] = M.block(tree_start, tree_start, tree_nv, tree_nv);
   }
+
+  if constexpr (std::is_same_v<T, double>) {
+    if (manager().deformable_driver_ != nullptr) {
+      manager().deformable_driver_->AppendLinearDynamicsMatrix(context, A);
+    }
+  }
 }
 
 template <typename T>
@@ -118,7 +124,22 @@ void SapDriver<T>::CalcFreeMotionVelocities(const systems::Context<T>& context,
   const VectorX<T>& x0 =
       context.get_discrete_state(manager().multibody_state_index()).value();
   const auto v0 = x0.bottomRows(this->plant().num_velocities());
-  *v_star = v0 + dt * vdot0;
+  if constexpr (std::is_same_v<T, double>) {
+    if (manager().deformable_driver_ != nullptr) {
+      const VectorX<T>& deformable_v_star =
+          manager().deformable_driver_->EvalParticipatingFreeMotionVelocities(
+              context);
+      const int rigid_dofs = v_star->size();
+      const int deformable_dofs = deformable_v_star.size();
+      v_star->resize(rigid_dofs + deformable_dofs);
+      v_star->head(rigid_dofs) = v0 + dt * vdot0;
+      v_star->tail(deformable_dofs) = deformable_v_star;
+    } else {
+      *v_star = v0 + dt * vdot0;
+    }
+  } else {
+    *v_star = v0 + dt * vdot0;
+  }
 }
 
 template <typename T>
@@ -361,11 +382,11 @@ void SapDriver<T>::CalcContactProblemCache(
 
 template <typename T>
 void SapDriver<T>::PackContactSolverResults(
-    const SapContactProblem<T>& problem, int num_contacts,
-    const SapSolverResults<T>& sap_results,
+    const systems::Context<T>& context, const SapContactProblem<T>& problem,
+    int num_contacts, const SapSolverResults<T>& sap_results,
     ContactSolverResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
-  contact_results->Resize(plant().num_velocities(), num_contacts);
+  contact_results->Resize(sap_results.v.size(), num_contacts);
   contact_results->v_next = sap_results.v;
   // The driver adds all contact constraints first and therefore we know the
   // head of the impulses corresponds to contact impulses.
@@ -386,24 +407,49 @@ void SapDriver<T>::PackContactSolverResults(
   for (int i = 0; i < num_contacts; ++i) {
     const SapConstraint<T>& c = problem.get_constraint(i);
     {
-      const TreeIndex t(c.first_clique());
       const MatrixX<T>& Jic = c.first_clique_jacobian();
-      const int v_start = tree_topology().tree_velocities_start(t);
-      const int nv = tree_topology().num_tree_velocities(t);
       const auto impulse = contact_impulses.template segment<3>(3 * i);
-      tau_contact.segment(v_start, nv) += Jic.transpose() * impulse;
+      AddCliqueContribution(context, c.first_clique(),
+                            Jic.transpose() * impulse, &tau_contact);
     }
 
     if (c.num_cliques() == 2) {
-      const TreeIndex t(c.second_clique());
       const MatrixX<T>& Jic = c.second_clique_jacobian();
-      const int v_start = tree_topology().tree_velocities_start(t);
-      const int nv = tree_topology().num_tree_velocities(t);
       const auto impulse = contact_impulses.template segment<3>(3 * i);
-      tau_contact.segment(v_start, nv) += Jic.transpose() * impulse;
+      AddCliqueContribution(context, c.second_clique(),
+                            Jic.transpose() * impulse, &tau_contact);
     }
   }
   tau_contact /= time_step;
+}
+
+template <typename T>
+void SapDriver<T>::AddCliqueContribution(
+    const systems::Context<T>& context, int clique,
+    const Eigen::Ref<const VectorX<T>>& clique_values,
+    EigenPtr<VectorX<T>> values) const {
+  if (clique >= tree_topology().num_trees()) {
+    const DeformableDriver<double>* deformable_driver =
+        manager().deformable_driver_.get();
+    DRAKE_THROW_UNLESS(deformable_driver != nullptr);
+    if constexpr (std::is_same_v<T, double>) {
+      const int num_deformable_dofs = values->size() - plant().num_velocities();
+      Eigen::Ref<VectorX<T>> deformable_values =
+          values->tail(num_deformable_dofs);
+      DeformableBodyIndex body_index(clique - tree_topology().num_trees());
+      deformable_driver->EvalParticipatingVelocityMultiplexer(context)
+          .Demultiplex(&deformable_values, body_index) += clique_values;
+    } else {
+      /* For non-double scalars, we can't have `deformable_driver != nullptr`,
+       so we won't reach here. */
+      DRAKE_UNREACHABLE();
+    }
+  } else {
+    const TreeIndex t(clique);
+    const int v_start = tree_topology().tree_velocities_start(t);
+    const int nv = tree_topology().num_tree_velocities(t);
+    values->segment(v_start, nv) += clique_values;
+  }
 }
 
 template <typename T>
@@ -417,7 +463,17 @@ void SapDriver<T>::CalcContactSolverResults(
   // We use the velocity stored in the current context as initial guess.
   const VectorX<T>& x0 =
       context.get_discrete_state(manager().multibody_state_index()).value();
-  const auto v0 = x0.bottomRows(this->plant().num_velocities());
+  VectorX<T> v0 = x0.bottomRows(this->plant().num_velocities());
+  if constexpr (std::is_same_v<T, double>) {
+    if (manager().deformable_driver_ != nullptr) {
+      const VectorX<double> deformable_v0 =
+          manager().deformable_driver_->EvalParticipatingVelocities(context);
+      const int rigid_dofs = v0.size();
+      const int deformable_dofs = deformable_v0.size();
+      v0.conservativeResize(rigid_dofs + deformable_dofs);
+      v0.tail(deformable_dofs) = deformable_v0;
+    }
+  }
 
   // Solve contact problem.
   SapSolver<T> sap;
@@ -450,7 +506,8 @@ void SapDriver<T>::CalcContactSolverResults(
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = discrete_pairs.size();
 
-  PackContactSolverResults(sap_problem, num_contacts, sap_results, results);
+  PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
+                           results);
 }
 
 }  // namespace internal
