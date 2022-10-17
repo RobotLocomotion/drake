@@ -25,6 +25,7 @@ import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.multibody.tree import (
     ModelInstanceIndex,
 )
@@ -105,22 +106,34 @@ class TestParsing(unittest.TestCase):
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
         self.assertEqual(parser.plant(), plant)
-        result = parser.AddModelFromString(
-            file_contents=sdf_contents, file_type="sdf")
+        with catch_drake_warnings(expected_count=1):
+            result = parser.AddModelFromString(
+                file_contents=sdf_contents, file_type="sdf")
         self.assertIsInstance(result, ModelInstanceIndex)
 
-    def test_strict(self):
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
+        results = parser.AddModelsFromString(
+            file_contents=sdf_contents, file_type="sdf")
+        self.assertIsInstance(results[0], ModelInstanceIndex)
+
+    def test_strict(self):
         model = """<robot name='robot' version='0.99'>
             <link name='a'/>
             </robot>"""
-        parser.AddModelFromString(
-            file_contents=model, file_type='urdf', model_name='lax')
+        # Use lax parsing.
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        results = parser.AddModelsFromString(
+            file_contents=model, file_type='urdf')
+        self.assertIsInstance(results[0], ModelInstanceIndex)
+        # Use strict parsing.
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
         parser.SetStrictParsing()
         with self.assertRaises(RuntimeError) as e:
-            result = parser.AddModelFromString(
-                file_contents=model, file_type='urdf', model_name='strict')
+            result = parser.AddModelsFromString(
+                file_contents=model, file_type='urdf')
         pattern = r'.*version.*ignored.*'
         message = str(e.exception)
         match = re.match(pattern, message)

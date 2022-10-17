@@ -89,6 +89,8 @@ GTEST_TEST(FileParserTest, BasicTest) {
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(FileParserTest, BasicStringTest) {
   const std::string sdf_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/acrobot.sdf");
@@ -100,44 +102,67 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
       "drake/multibody/parsing/test/process_model_directives_test/"
       "acrobot.dmd.yaml");
 
-  // Load an SDF via string.
+  // Load an SDF via string using plural method.
+  // Add a second one with an overridden model_name.
   {
     const std::string sdf_contents = ReadEntireFile(sdf_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const ModelInstanceIndex id = dut.AddModelFromString(sdf_contents, "sdf");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddModelsFromString(sdf_contents, "sdf");
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
+    const ModelInstanceIndex id = dut.AddModelFromString(sdf_contents, "sdf",
+                                                         "foo");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
   }
 
-  // Load an URDF via string.
+  // Load an URDF via string using plural method.
+  // Add a second one with an overridden model_name.
   {
     const std::string urdf_contents = ReadEntireFile(urdf_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const ModelInstanceIndex id = dut.AddModelFromString(urdf_contents, "urdf");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddModelsFromString(urdf_contents, "urdf");
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
+    const ModelInstanceIndex id = dut.AddModelFromString(urdf_contents, "urdf",
+                                                         "foo");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
   }
 
-  // Load an MJCF via string.
+  // Load an MJCF via string using plural method.
+  // Add a second one with an overridden model_name.
   {
     const std::string xml_contents = ReadEntireFile(xml_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const ModelInstanceIndex id = dut.AddModelFromString(xml_contents, "xml");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddModelsFromString(xml_contents, "xml");
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
+    const ModelInstanceIndex id = dut.AddModelFromString(xml_contents, "xml",
+                                                         "foo");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
   }
 
-  // Load a DMD.YAML via string.
+  // Load a DMD.YAML via string using plural method.
   // Using the singular method is always an error.
   {
     const std::string dmd_contents = ReadEntireFile(dmd_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddModelsFromString(dmd_contents, "dmd.yaml");
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
     DRAKE_EXPECT_THROWS_MESSAGE(
         dut.AddModelFromString(dmd_contents, "dmd.yaml"),
         ".* always an error.*");
   }
 }
+#pragma GCC diagnostic push
 
 // Try loading a file with two <model> elements, but without a <world>.
 // This should always result in an error. For an example of a valid <world>
@@ -236,12 +261,12 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   // Malformed SDF string is an error.
   MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Parser(&plant).AddModelFromString("bad", "sdf"),
+      Parser(&plant).AddModelsFromString("bad", "sdf"),
       ".*Unable to read SDF string.*");
 
   // Malformed URDF string is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Parser(&plant).AddModelFromString("bad", "urdf"),
+      Parser(&plant).AddModelsFromString("bad", "urdf"),
       "<literal-string>.urdf:1: error: "
       "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
 
@@ -249,12 +274,19 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   // TODO(#18055): Until the underlying parser supports diagnostic policy, the
   // error message matching here will be less than convincing.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Parser(&plant).AddModelFromString("bad", "xml"),
+      Parser(&plant).AddModelsFromString("bad", "xml"),
       "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
+
+  // Malformed DMD string is an error.
+  // TODO(#18052): Until the underlying parser supports diagnostic policy, the
+  // input needs to crafted to avoid reachable fatal assertions.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Parser(&plant).AddModelsFromString("bad:", "dmd.yaml"),
+      ".*YAML.*bad.*");
 
   // Unknown extension is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Parser(&plant).AddModelFromString("<bad/>", "weird-ext"),
+      Parser(&plant).AddModelsFromString("<bad/>", "weird-ext"),
       ".*file.*\\.weird-ext.* is not.*recognized.*");
 }
 
