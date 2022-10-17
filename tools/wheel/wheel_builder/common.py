@@ -52,6 +52,28 @@ def _check_version(version):
         version) is not None
 
 
+def find_tests(*args):
+    """
+    Returns a list of tests in the common directory and any subdirectories
+    given as additional arguments.
+    """
+    all_tests = []
+    for test_dir in ('', *args):
+        tests = []
+
+        test_dir_full = os.path.join(resource_root, 'test', 'tests', test_dir)
+        for test in os.listdir(test_dir_full):
+            if not os.path.isdir(os.path.join(test_dir_full, test)):
+                tests.append(os.path.join('tests', test_dir, test))
+
+        where = f'subdirectory {test_dir!r}' if len(test_dir) else 'directory'
+        assert len(tests), f'No tests were found in the test {where}!'
+
+        all_tests += sorted(tests)
+
+    return all_tests
+
+
 def do_main(args, platform):
     """
     Entry point; performs the build using the given CLI arguments, platform,
