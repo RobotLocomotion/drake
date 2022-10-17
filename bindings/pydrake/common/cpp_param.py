@@ -42,10 +42,12 @@ class _ParamAliases:
         self.register(float, [np.double, ctypes.c_double])
         self.register(np.float32, [ctypes.c_float])
         self.register(int, [np.int32, ctypes.c_int32])
-        self.register(np.uint8, [ctypes.c_uint8])
         self.register(np.int16, [ctypes.c_int16])
-        self.register(np.uint32, [ctypes.c_uint32])
         self.register(np.int64, [ctypes.c_int64])
+        self.register(np.uint8, [ctypes.c_uint8])
+        self.register(np.uint16, [ctypes.c_uint16])
+        self.register(np.uint32, [ctypes.c_uint32])
+        self.register(np.uint64, [ctypes.c_uint64])
 
     def register(self, canonical, aliases):
         # Registers a set of aliases to a canonical value.
