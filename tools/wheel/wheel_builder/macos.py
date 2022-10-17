@@ -9,6 +9,7 @@ import subprocess
 
 from .common import die, wheel_name
 from .common import build_root, resource_root, wheelhouse
+from .common import find_tests
 
 
 def _find_wheel(path, version):
@@ -49,12 +50,24 @@ def _provision():
     subprocess.check_call(command)
 
 
-def _test_wheel(path, env):
+def _test_wheel(wheel, env):
     """
-    Runs the test script on the wheel at `path`.
+    Runs the test script on `wheel`.
     """
-    test_script = os.path.join(resource_root, 'macos', 'test-wheel.sh')
-    subprocess.check_call(['bash', test_script, path], env=env)
+    setup_script = os.path.join(resource_root, 'macos',
+                                'provision-test-python.sh')
+    subprocess.check_call(['bash', setup_script], env=env)
+
+    # Install the wheel.
+    install_script = os.path.join(resource_root, 'test', 'install-wheel.sh')
+    subprocess.check_call(['bash', install_script, wheel], env=env)
+
+    # Run individual tests.
+    test_script = os.path.join(resource_root, 'test', 'test-wheel.sh')
+    for test in find_tests():
+        print(f'-- Executing test {test}')
+        subprocess.check_call(['bash', test_script, test, wheel], env=env)
+        print(f'-- Executing test {test} - PASSED')
 
 
 def build(options):
