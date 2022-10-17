@@ -358,16 +358,29 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
 
   GurobiSolver solver;
   if (solver.available()) {
-    SolverOptions solver_options1;
     // Report error when we set an unknown attribute to Gurobi.
+    SolverOptions solver_options1;
     solver_options1.SetOption(solver.solver_id(), "Foo", 1);
     DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, solver_options1),
                                 ".* 'Foo' is an unknown parameter in Gurobi.*");
+
     // Report error when we pass an incorect value to a valid Gurobi parameter
     SolverOptions solver_options2;
     solver_options2.SetOption(solver.solver_id(), "FeasibilityTol", 1E10);
     DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, solver_options2),
                                 ".* is outside the parameter Feasibility.*");
+
+    // It is NOT an error to pass a float option using an int.
+    // Drake will promote the int to a float automatically.
+    SolverOptions solver_options3;
+    solver_options3.SetOption(solver.solver_id(), "TimeLimit", 3);
+    EXPECT_NO_THROW(solver.Solve(prog, {}, solver_options3));
+
+    // But it IS an error to pass a numeric option using a string.
+    SolverOptions solver_options4;
+    solver_options4.SetOption(solver.solver_id(), "Quad", "0");
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, solver_options4),
+                                ".*Quad.*integer.*not.*string.*");
   }
 }
 
