@@ -1739,26 +1739,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return contact_surface_representation_;
   }
 
-  /// <!-- TODO(xuchenhan-tri): Remove SetContactSolver() once
-  /// SetDiscreteUpdateManager() stabilizes. -->
-  ///
-  /// For use only by advanced developers wanting to try out their custom
-  /// contact solvers.
-  ///
-  /// @experimental
-  ///
-  /// @param solver The contact solver to be used for simulations of discrete
-  /// models with frictional contact. Discrete updates will use this solver
-  /// after this call.
-  /// @pre solver != nullptr.
-  /// @note `this` MultibodyPlant will no longer support scalar conversion to or
-  /// from symbolic::Expression after a call to this method.
-  void SetContactSolver(
-      std::unique_ptr<contact_solvers::internal::ContactSolver<T>> solver) {
-    DRAKE_DEMAND(solver != nullptr);
-    contact_solver_ = std::move(solver);
-  }
-
   /// For use only by advanced developers wanting to try out their custom time
   /// stepping strategies, including contact resolution.
   ///
@@ -5182,11 +5162,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // time_step_ corresponds to the period of those updates. Otherwise, if the
   // plant is modeled as a continuous system, it is exactly zero.
   double time_step_{0};
-
-  // TODO(xuchenhan-tri): Entirely remove the contact_solver_ back door by the
-  // newer design using DiscreteUpdateManager. When not the nullptr, this is the
-  // solver to be used for discrete updates.
-  std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
 
   // When not the nullptr, this manager class is used to advance discrete
   // states.
