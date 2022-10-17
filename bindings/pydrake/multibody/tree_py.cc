@@ -567,8 +567,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
             py::arg("name"), py::arg("frame_on_parent"),
-            py::arg("frame_on_child"), py::arg("screw_pitch") = 0,
-            py::arg("damping") = 0, cls_doc.ctor.doc)
+            py::arg("frame_on_child"), py::arg("screw_pitch"),
+            py::arg("damping"), cls_doc.ctor.doc)
         .def("screw_pitch", &Class::screw_pitch, cls_doc.screw_pitch.doc)
         .def("damping", &Class::damping, cls_doc.damping.doc)
         .def("get_default_translation", &Class::get_default_translation,
