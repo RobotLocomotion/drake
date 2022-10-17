@@ -69,24 +69,7 @@ class PrismaticJoint final : public Joint<T> {
       const Frame<T>& frame_on_child, const Vector3<double>& axis,
       double pos_lower_limit = -std::numeric_limits<double>::infinity(),
       double pos_upper_limit = std::numeric_limits<double>::infinity(),
-      double damping = 0)
-      : Joint<T>(name, frame_on_parent, frame_on_child,
-                 VectorX<double>::Constant(1, damping),
-                 VectorX<double>::Constant(1, pos_lower_limit),
-                 VectorX<double>::Constant(1, pos_upper_limit),
-                 VectorX<double>::Constant(
-                     1, -std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     1, std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     1, -std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     1, std::numeric_limits<double>::infinity())) {
-    const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
-    DRAKE_THROW_UNLESS(!axis.isZero(kEpsilon));
-    DRAKE_THROW_UNLESS(damping >= 0);
-    axis_ = axis.normalized();
-  }
+      double damping = 0);
 
   const std::string& type_name() const override {
     static const never_destroyed<std::string> name{kTypeName};
@@ -95,7 +78,7 @@ class PrismaticJoint final : public Joint<T> {
 
   /// Returns the axis of translation for `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
-  /// this class's documentation for frames's definitions) then,
+  /// this class's documentation for frame definitions) then,
   /// `axis = axis_F = axis_M`.
   const Vector3<double>& translation_axis() const {
     return axis_;

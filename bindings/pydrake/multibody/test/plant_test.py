@@ -1598,10 +1598,20 @@ class TestPlant(unittest.TestCase):
             )
 
         def make_screw_joint(plant, P, C):
+            # First, check that the no-axis overload works.
+            ScrewJoint_[T](
+                name="screw",
+                frame_on_parent=P,
+                frame_on_child=C,
+                screw_pitch=0.005,
+                damping=damping,
+            )
+            # Then, create one with an explicit axis.
             return ScrewJoint_[T](
                 name="screw",
                 frame_on_parent=P,
                 frame_on_child=C,
+                axis=x_axis,
                 screw_pitch=0.005,
                 damping=damping,
             )
