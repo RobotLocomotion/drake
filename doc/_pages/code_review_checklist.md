@@ -122,14 +122,14 @@ Changes to third-party software (e.g., upgrading to a newer version) are the
 most common cause of CI divergence between Ubuntu and macOS.  For PRs with such
 changes, be sure to opt-in to a pre-merge macOS build.
 
-[Schedule one on-demand build](/jenkins.html#scheduling-an-on-demand-build) using an "everything"
+[Schedule an on-demand build](/jenkins.html#scheduling-an-on-demand-build) using an "everything"
 flavor, for example:
 
 * ``@drake-jenkins-bot mac-big-sur-clang-bazel-experimental-everything-release please``
 
 # Have you run linting tools?
 
-* See [Automated style checks](/code_style_tools.html).
+* See [Automated style checks](/code_style_tools.html#automated-style-checks).
 
 # Is your code deterministic?
 

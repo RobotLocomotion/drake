@@ -77,4 +77,4 @@ To view an 80 character-wide ruler:
 ```
 
 Always displaying a ruler is useful to conform to
-[Drake’s coding style](/code_style_guide.html).
+[Drake's Code Style Guide](/code_style_guide.html).

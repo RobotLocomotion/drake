@@ -7,8 +7,8 @@ components, (2) limit dependencies, and (3) prevent circular dependencies.
 
 # Dev Directories
 
-All code in Drake must adhere to the code standards described in
-[Developer Notes](/developers.html#developer-notes) and must be covered by tests, unless
+All code in Drake must adhere to the code standards described in the notes
+[For Developers](/developers.html#developer-notes) and must be covered by tests, unless
 the code lives in a subdirectory named ``dev``.
 
 To promote rapid development of research ideas, experimental code may be placed

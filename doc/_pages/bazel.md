@@ -18,7 +18,7 @@ to install Bazel.
 
 * Start with a **git clone** of drake, per the [Getting Drake](/from_source.html#getting-drake)
   instructions.
-* Continue with the *"Mandatory platform specific instructions"* on the same
+* Continue with the *"Mandatory platform-specific instructions"* on the same
   page.
 
 # Developing Drake using Bazel

@@ -9,5 +9,5 @@ Sphinx is the framework for generating Drake's
 
 # Sphinx Website Generation
 
-To generate and view Drake's website, see:
-[Documentation Instructions](/documentation_instructions.html).
+To generate and view Drake's website, see the
+[Documentation Generation Instructions](/documentation_instructions.html).

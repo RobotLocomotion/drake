@@ -14,7 +14,7 @@ To learn about other installation methods, refer to
 [Installation and Quickstart](/installation.html).
 
 If you experience any problems or questions with Drake, please
-[ask for help on Stack Overflow](/getting_help.html).
+[ask for help on Stack Overflow](/getting_help.html#asking-your-question).
 
 Drake binary releases incorporate a pre-compiled version of
 [SNOPT](https://ccom.ucsd.edu/~optimizers/solvers/snopt/) as part of the
@@ -22,7 +22,8 @@ Drake binary releases incorporate a pre-compiled version of
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
 Drake's pip packages do not support the Gurobi solver. To use
-Gurobi, you will need to [build Drake from source](/from_source.html).
+Gurobi, you will need to build Drake from source following the instructions
+in [Source Installation](/from_source.html).
 
 ## Stable Releases
 
@@ -31,7 +32,7 @@ For users running on Apple's newer arm64 hardware, Drake does not yet provide
 native pypi wheels (follow
 [issue #17906](https://github.com/RobotLocomotion/drake/issues/17906)
 for updates). In the meantime, we recommend that you install from a
-[Direct Download](/from_binary.html#stable-releases) that includes both Python
+[Stable Release](/from_binary.html#stable-releases) that includes both Python
 and C++ support, using a dedicated virtual environment.
 </div>
 
