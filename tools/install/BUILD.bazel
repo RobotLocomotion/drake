@@ -44,6 +44,11 @@ drake_py_binary(
     deps = [":otool"],
 )
 
+drake_py_unittest(
+    name = "installer_test",
+    data = [":installer"],
+)
+
 # Runs `install_test_helper` unit tests.
 drake_py_unittest(
     name = "install_test_helper_test",
