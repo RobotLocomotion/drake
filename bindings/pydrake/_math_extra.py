@@ -140,12 +140,11 @@ def _rigid_transform_repr(X):
         f")")
 
 
-RollPitchYaw_[float].__repr__ = _roll_pitch_yaw_repr
-RollPitchYaw_[_AutoDiffXd].__repr__ = _roll_pitch_yaw_repr
-RollPitchYaw_[_sym.Expression].__repr__ = _roll_pitch_yaw_repr
-RotationMatrix_[float].__repr__ = _rotation_matrix_repr
-RotationMatrix_[_AutoDiffXd].__repr__ = _rotation_matrix_repr
-RotationMatrix_[_sym.Expression].__repr__ = _rotation_matrix_repr
-RigidTransform_[float].__repr__ = _rigid_transform_repr
-RigidTransform_[_AutoDiffXd].__repr__ = _rigid_transform_repr
-RigidTransform_[_sym.Expression].__repr__ = _rigid_transform_repr
+def _add_repr_functions():
+    for T in [float, _AutoDiffXd, _sym.Expression]:
+        RollPitchYaw_[T].__repr__ = _roll_pitch_yaw_repr
+        RotationMatrix_[T].__repr__ = _rotation_matrix_repr
+        RigidTransform_[T].__repr__ = _rigid_transform_repr
+
+
+_add_repr_functions()

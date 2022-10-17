@@ -1,4 +1,5 @@
 import copy
+import textwrap
 import unittest
 
 import numpy as np
@@ -10,16 +11,29 @@ from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.symbolic import Expression
 from pydrake.math import RotationMatrix_
 from pydrake.multibody.math import (
+    SpatialAcceleration,
     SpatialAcceleration_,
+    SpatialForce,
     SpatialForce_,
+    SpatialMomentum,
     SpatialMomentum_,
+    SpatialVelocity,
     SpatialVelocity_,
 )
 
 
 class TestMultibodyTreeMath(unittest.TestCase):
+    def test_default_aliases(self):
+        # N.B. This is tested in general via `cpp_template`, but we add this to
+        # test to also appease flake8.
+        self.assertIs(SpatialAcceleration, SpatialAcceleration_[float])
+        self.assertIs(SpatialForce, SpatialForce_[float])
+        self.assertIs(SpatialMomentum, SpatialMomentum_[float])
+        self.assertIs(SpatialVelocity, SpatialVelocity_[float])
+
     def check_spatial_vector(
-            self, T, cls, coeffs_name, rotation_name, translation_name):
+            self, *, T, cls, base_name,
+            coeffs_name, rotation_name, translation_name):
         vec = cls()
         # - Accessors.
         if T == Expression:
@@ -84,14 +98,44 @@ class TestMultibodyTreeMath(unittest.TestCase):
             vec1.Rotate(R_FE=R)).get_coeffs(), coeffs_expected)
         # Test pickling.
         assert_pickle(self, vec1, cls.get_coeffs, T=T)
+        # Repr.
+        z = repr(T(0.0))
+        type_suffix = {
+            float: "",
+            AutoDiffXd: "_[AutoDiffXd]",
+            Expression: "_[Expression]",
+        }[T]
+        repr_cls_name = f"{base_name}{type_suffix}"
+        self.assertEqual(
+            repr(cls.Zero()),
+            textwrap.dedent(f"""\
+                {repr_cls_name}(
+                  {rotation_name}=[{z}, {z}, {z}],
+                  {translation_name}=[{z}, {z}, {z}],
+                )"""))
+        if T == float:
+            # TODO(jwnimmer-tri) Once AutoDiffXd and Expression implement an
+            # eval-able repr, then we can test more than just T=float here.
+            original = cls.Zero()
+            roundtrip = eval(repr(original))
+            self.assertIsInstance(roundtrip, cls)
+            numpy_compare.assert_float_equal(
+                original.get_coeffs(), roundtrip.get_coeffs())
 
     @numpy_compare.check_all_types
     def test_spatial_vector_types(self, T):
-        self.check_spatial_vector(T, SpatialVelocity_[T], "V", "w", "v")
-        self.check_spatial_vector(T, SpatialMomentum_[T], "L", "h", "l")
         self.check_spatial_vector(
-            T, SpatialAcceleration_[T], "A", "alpha", "a")
-        self.check_spatial_vector(T, SpatialForce_[T], "F", "tau", "f")
+            T=T, cls=SpatialVelocity_[T], base_name="SpatialVelocity",
+            coeffs_name="V", rotation_name="w", translation_name="v")
+        self.check_spatial_vector(
+            T=T, cls=SpatialMomentum_[T], base_name="SpatialMomentum",
+            coeffs_name="L", rotation_name="h", translation_name="l")
+        self.check_spatial_vector(
+            T=T, cls=SpatialAcceleration_[T], base_name="SpatialAcceleration",
+            coeffs_name="A", rotation_name="alpha", translation_name="a")
+        self.check_spatial_vector(
+            T=T, cls=SpatialForce_[T], base_name="SpatialForce",
+            coeffs_name="F", rotation_name="tau", translation_name="f")
 
     @numpy_compare.check_all_types
     def test_value_instantiations(self, T):
