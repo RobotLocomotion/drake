@@ -198,17 +198,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "contact_solver_test",
-    data = ["test/particle_with_infinite_inertia.sdf"],
-    deps = [
-        ":contact_solver",
-        ":contact_solver_utils",
-        ":multibody_sim_driver",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
     name = "linear_operator_test",
     deps = [
         ":block_sparse_matrix",
