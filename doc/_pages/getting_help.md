@@ -7,7 +7,7 @@ title: Getting Help
 If you need help with Drake, please first review the documentation on this
 website for things such as [installation](/installation.html),
 the [C++ API](https://drake.mit.edu/doxygen_cxx/index.html), or
-[Python bindings](/python_bindings.html).
+[Using Drake from Python](/python_bindings.html).
 
 Please also briefly review
 [Drake's open and closed GitHub issues](https://github.com/RobotLocomotion/drake/issues?q=is%3Aissue)
@@ -55,7 +55,8 @@ When reporting an issue, please consider providing the following information
         * CMake version (``which cmake; cmake --version``)
         * CMake C++ compiler (``cmake -LA <path_to_source_dir> | grep 'CMAKE_.*_COMPILER'``)
     * Git revision (``git rev-parse --short HEAD``)
-    * [Building Drake](/from_source.html) vs. downstream project (like [drake_bazel_external](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_bazel_external), [drake_cmake_external](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_external))
+    * [Building Drake from source](/from_source.html) vs. downstream project
+    (like [drake_bazel_external](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_bazel_external), [drake_cmake_external](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_external))
 * If using binary release:
     * Download URL
     * Contents of ``drake/share/doc/drake/VERSION.TXT``
