@@ -73,13 +73,16 @@ class TestCppParam(unittest.TestCase):
         self._check_names("int", [int, np.int32, ctypes.c_int32])
         self._check_names("CustomPyType", [CustomPyType])
         self._check_names("1", [1])
-        self._check_names("List[CustomPyType]", [mut.List[CustomPyType]])
         self._check_names(
-            "List[List[CustomPyType]]", [mut.List[mut.List[CustomPyType]]])
-        # TODO(eric.cousineau): Hoist this if Dict[K, V] is ever needed for
-        # registration.
-        Dict = mut._Generic("Dict", dict, num_param=2)
-        self._check_names("Dict[str, CustomPyType]", [Dict[str, CustomPyType]])
+            "dict[str, CustomPyType]", [mut.Dict[str, CustomPyType]])
+        self._check_names(
+            "list[CustomPyType]", [mut.List[CustomPyType]])
+        self._check_names(
+            "list[list[CustomPyType]]", [mut.List[mut.List[CustomPyType]]])
+        self._check_names(
+            "typing.Optional[CustomPyType]", [mut.Optional[CustomPyType]])
+        self._check_names(
+            "typing.Union[str, CustomPyType]", [mut.Union[str, CustomPyType]])
 
     def assert_equal_but_not_aliased(self, a, b):
         self.assertEqual(a, b)
@@ -95,9 +98,23 @@ class TestCppParam(unittest.TestCase):
         nonempty_random = ["hello"]
         self.assert_equal_but_not_aliased(
             mut.List[int](nonempty_random), nonempty_random)
-        # Ensure error message is good.
+
+    def test_generic_dims(self):
+        """Ensures errors are detected and use provide good error messages."""
+        with self.assertRaises(RuntimeError) as cm:
+            mut.Dict[int]
+        self.assertEqual(
+            str(cm.exception),
+            "Dict[] requires exactly 2 type parameter(s)")
+
         with self.assertRaises(RuntimeError) as cm:
             mut.List[int, float]
         self.assertEqual(
             str(cm.exception),
-            "<Generic List> can only accept 1 parameter(s)")
+            "List[] requires exactly 1 type parameter(s)")
+
+        with self.assertRaises(RuntimeError) as cm:
+            mut.Optional[()]
+        self.assertEqual(
+            str(cm.exception),
+            "Optional[] requires exactly 1 type parameter(s)")
