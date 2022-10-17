@@ -819,9 +819,9 @@ class GeometryState {
   void ThrowIfNameExistsInRole(FrameId id, Role role,
                                const std::string& name) const;
 
-  // Propagate all roles defined in geometry instance to `this` geometry state.
-  void AssignAllRoles(SourceId source_id, GeometryId geometry_id,
-                      std::unique_ptr<GeometryInstance> geometry);
+  // Propagates all roles defined in geometry instance to `this` geometry state.
+  void AssignAllDefinedRoles(SourceId source_id,
+                             std::unique_ptr<GeometryInstance> geometry);
 
   // Confirms that the given role assignment is valid and return the geometry
   // if valid. Throws if not.
