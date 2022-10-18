@@ -1,4 +1,4 @@
-#include "drake/multibody/dev/c_iris/rational_forward_kinematics_internal.h"
+#include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 
 #include <algorithm>
 #include <memory>
@@ -10,73 +10,7 @@
 
 namespace drake {
 namespace multibody {
-namespace c_iris {
 namespace internal {
-using drake::multibody::BodyIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::internal::BodyTopology;
-using drake::multibody::internal::GetInternalTree;
-using drake::multibody::internal::Mobilizer;
-using drake::multibody::internal::MobilizerIndex;
-using drake::multibody::internal::MultibodyTree;
-using drake::multibody::internal::RevoluteMobilizer;
-using drake::multibody::internal::WeldMobilizer;
-
-void AddChildrenToChangedRootBody(const MultibodyPlant<double>& plant,
-                                  ChangedRootBody* body,
-                                  std::unordered_set<BodyIndex>* visited) {
-  const MultibodyTree<double>& tree = internal::GetInternalTree(plant);
-  const BodyTopology& body_topology =
-      tree.get_topology().get_body(body->body_index);
-
-  if (body_topology.parent_body.is_valid()) {
-    auto it = visited->find(body_topology.parent_body);
-    if (it == visited->end()) {
-      auto child = std::make_unique<ChangedRootBody>(
-          body_topology.parent_body, body,
-          &(tree.get_mobilizer(body_topology.inboard_mobilizer)));
-      body->children.push_back(std::move(child));
-      visited->emplace_hint(it, body_topology.parent_body);
-    }
-  }
-  for (BodyIndex body_index(0); body_index < plant.num_bodies(); ++body_index) {
-    const BodyTopology& body_topology_i =
-        tree.get_topology().get_body(body_index);
-    if (body_topology_i.parent_body.is_valid() &&
-        body_topology_i.parent_body == body->body_index) {
-      auto it = visited->find(body_index);
-      if (it == visited->end()) {
-        body->children.emplace_back(new ChangedRootBody(
-            body_index, body,
-            &(tree.get_mobilizer(body_topology_i.inboard_mobilizer))));
-        visited->emplace_hint(it, body_index);
-      }
-    }
-  }
-}
-
-void ChangeKinematicTreeRoot(const MultibodyPlant<double>& plant,
-                             ChangedRootBody* root) {
-  DRAKE_DEMAND(root->parent == nullptr);
-  DRAKE_DEMAND(root->mobilizer == nullptr);
-  root->children.clear();
-  std::unordered_set<BodyIndex> visited;
-  visited.emplace(root->body_index);
-  std::queue<ChangedRootBody*> queue_bodies;
-  queue_bodies.push(root);
-  while (!queue_bodies.empty()) {
-    ChangedRootBody* changed_root_body = queue_bodies.front();
-    queue_bodies.pop();
-    AddChildrenToChangedRootBody(plant, changed_root_body, &visited);
-    if (!changed_root_body->children.empty()) {
-      for (int i = 0; i < static_cast<int>(changed_root_body->children.size());
-           ++i) {
-        queue_bodies.push(changed_root_body->children[i].get());
-      }
-    }
-  }
-}
-
 struct BodyOnPath {
   BodyOnPath(BodyIndex m_index, int m_distance_to_start, BodyOnPath* m_parent)
       : index(m_index),
@@ -90,7 +24,7 @@ struct BodyOnPath {
 std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
                                 BodyIndex start, BodyIndex end) {
   DRAKE_ASSERT(start.is_valid() && end.is_valid());
-  const MultibodyTree<double>& tree = internal::GetInternalTree(plant);
+  const MultibodyTree<double>& tree = GetInternalTree(plant);
   // Do a breadth first search in the tree.
   std::unordered_map<BodyIndex, std::unique_ptr<BodyOnPath>> visited_bodies;
   BodyIndex start_copy = start;
@@ -193,6 +127,5 @@ BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
 }
 
 }  // namespace internal
-}  // namespace c_iris
 }  // namespace multibody
 }  // namespace drake
