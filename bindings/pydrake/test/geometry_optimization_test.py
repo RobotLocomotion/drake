@@ -410,6 +410,13 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(region.ambient_dimension(), 1)
         self.assertTrue(region.PointInSet([1.0]))
         self.assertFalse(region.PointInSet([3.0]))
+        region = mut.IrisInConfigurationSpace(
+            plant=plant, context=plant.GetMyContextFromRoot(context),
+            options=options, configuration_obstacles=[mut.Point([-0.5])])
+        self.assertIsInstance(region, mut.ConvexSet)
+        self.assertEqual(region.ambient_dimension(), 1)
+        self.assertTrue(region.PointInSet([1.0]))
+        self.assertFalse(region.PointInSet([-1.0]))
 
     def test_graph_of_convex_sets(self):
         options = mut.GraphOfConvexSetsOptions()

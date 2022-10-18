@@ -165,7 +165,8 @@ run-time of the algorithm. The same goes for
 HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
-    const IrisOptions& options = IrisOptions());
+    const IrisOptions& options = IrisOptions(),
+    const std::optional<ConvexSets>& configuration_obstacles = std::nullopt);
 
 }  // namespace optimization
 }  // namespace geometry

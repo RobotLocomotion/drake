@@ -334,9 +334,10 @@ void DefineGeometryOptimization(py::module m) {
 
   m.def("IrisInConfigurationSpace",
       py::overload_cast<const multibody::MultibodyPlant<double>&,
-          const systems::Context<double>&, const IrisOptions&>(
-          &IrisInConfigurationSpace),
+          const systems::Context<double>&, const IrisOptions&,
+          const std::optional<ConvexSets>&>(&IrisInConfigurationSpace),
       py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
+      py::arg("configuration_obstacles") = std::nullopt,
       doc.IrisInConfigurationSpace.doc);
 
   // GraphOfConvexSetsOptions

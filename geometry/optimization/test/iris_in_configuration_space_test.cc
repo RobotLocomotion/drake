@@ -21,9 +21,10 @@ using symbolic::Variable;
 const double kInf = std::numeric_limits<double>::infinity();
 
 // Helper method for testing IrisInConfigurationSpace from a urdf string.
-HPolyhedron IrisFromUrdf(const std::string urdf,
-                         const Eigen::Ref<const Eigen::VectorXd>& sample,
-                         const IrisOptions& options) {
+HPolyhedron IrisFromUrdf(
+    const std::string urdf, const Eigen::Ref<const Eigen::VectorXd>& sample,
+    const IrisOptions& options,
+    const std::optional<ConvexSets>& configuration_obstacles = std::nullopt) {
   systems::DiagramBuilder<double> builder;
   multibody::MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
@@ -34,7 +35,7 @@ HPolyhedron IrisFromUrdf(const std::string urdf,
   auto context = diagram->CreateDefaultContext();
   plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()), sample);
   return IrisInConfigurationSpace(plant, plant.GetMyContextFromRoot(*context),
-                                  options);
+                                  options, configuration_obstacles);
 }
 
 // One prismatic link with joint limits.  Iris should return the joint limits.
@@ -118,6 +119,59 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(IrisFromUrdf(boxes_urdf, Vector1d{1.1}, options),
                               "The seed point is in collision.*");
+}
+
+GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstacles) {
+  const double kTol = 1e-3;  // due to ibex's rel_eps_f.
+  const Vector1d sample = Vector1d::Zero();
+  IrisOptions options;
+
+  // Configutation space obstacles less restrictive than task space obstacle.
+  {
+    ConvexSets obstacles;
+    obstacles.emplace_back(HPolyhedron::MakeBox(Vector1d(1.5), Vector1d(3)));
+    HPolyhedron region = IrisFromUrdf(boxes_urdf, sample, options, obstacles);
+
+    EXPECT_EQ(region.ambient_dimension(), 1);
+
+    const double qmin = -1.0 + options.configuration_space_margin,
+                 qmax = 1.0 - options.configuration_space_margin;
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  }
+
+  // Configuration space obstacle more restirctive than task space obstacles.
+  {
+    ConvexSets obstacles;
+    obstacles.emplace_back(HPolyhedron::MakeBox(Vector1d(0.5), Vector1d(3)));
+    HPolyhedron region = IrisFromUrdf(boxes_urdf, sample, options, obstacles);
+
+    EXPECT_EQ(region.ambient_dimension(), 1);
+
+    const double qmin = -1.0 + options.configuration_space_margin, qmax = 0.5;
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  }
+
+  // Configutation space obstacles align with task space obstacle.
+  {
+    ConvexSets obstacles;
+    obstacles.emplace_back(HPolyhedron::MakeBox(Vector1d(1), Vector1d(3)));
+    HPolyhedron region = IrisFromUrdf(boxes_urdf, sample, options, obstacles);
+
+    EXPECT_EQ(region.ambient_dimension(), 1);
+
+    const double qmin = -1.0 + options.configuration_space_margin,
+                 qmax = 1.0 - options.configuration_space_margin;
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  }
 }
 
 // Three spheres.  Two on the outside are fixed.  One in the middle on a
