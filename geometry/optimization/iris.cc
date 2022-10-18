@@ -607,11 +607,15 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   plant.ValidateContext(context);
   const int nq = plant.num_positions();
   const Eigen::VectorXd sample = plant.GetPositions(context);
+  const int Nc = static_cast<int>(options.configuration_obstacles.size());
   // Note: We require finite joint limits to define the bounding box for the
   // IRIS algorithm.
   DRAKE_DEMAND(plant.GetPositionLowerLimits().array().isFinite().all());
   DRAKE_DEMAND(plant.GetPositionUpperLimits().array().isFinite().all());
   DRAKE_DEMAND(options.num_collision_infeasible_samples >= 0);
+  for (int i = 0; i < Nc; ++i) {
+    DRAKE_DEMAND(options.configuration_obstacles[i]->ambient_dimension() == nq);
+  }
 
   if (options.prog_with_additional_constraints) {
     DRAKE_DEMAND(options.prog_with_additional_constraints->num_vars() == nq);
@@ -673,8 +677,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   // {x | A * x <= b}.  Here we pre-allocate matrices with a generous maximum
   // size.
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
-      P.A().rows() + 2 * N, nq);
-  VectorXd b(P.A().rows() + 2 * N);
+      P.A().rows() + 2 * N + Nc, nq);
+  VectorXd b(P.A().rows() + 2 * N + Nc);
   A.topRows(P.A().rows()) = P.A();
   b.head(P.A().rows()) = P.b();
   int num_initial_constraints = P.A().rows();
@@ -751,6 +755,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   int iteration = 0;
   VectorXd closest(nq);
   RandomGenerator generator(options.random_seed);
+  std::vector<std::pair<double, int>> scaling(Nc);
+  MatrixXd closest_points(nq, Nc);
 
   auto solver = solvers::MakeFirstAvailableSolver(
       {solvers::SnoptSolver::id(), solvers::IpoptSolver::id()});
@@ -762,6 +768,38 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     HPolyhedron P_candidate = P;
     DRAKE_ASSERT(best_volume > 0);
     // Find separating hyperplanes
+
+    // Add constraints from configuration space obstacles to reduce the domain
+    // for later optimization.
+    if (options.configuration_obstacles.size() > 0) {
+      const ConvexSets& obstacles = options.configuration_obstacles;
+      for (int i = 0; i < Nc; ++i) {
+        const auto touch = E.MinimumUniformScalingToTouch(*obstacles[i]);
+        scaling[i].first = touch.first;
+        scaling[i].second = i;
+        closest_points.col(i) = touch.second;
+      }
+      std::sort(scaling.begin(), scaling.end());
+
+      for (int i = 0; i < Nc; ++i) {
+        // Only add a constraint if this obstacle still has overlap with the set
+        // that has been constructed so far on this iteration.
+        if (HPolyhedron(A.topRows(num_constraints), b.head(num_constraints))
+                .IntersectsWith(*obstacles[scaling[i].second])) {
+          const VectorXd point = closest_points.col(scaling[i].second);
+          AddTangentToPolytope(E, point, 0.0, &A, &b, &num_constraints);
+        }
+      }
+
+      if (options.require_sample_point_is_contained) {
+        sample_point_requirement =
+            ((A.topRows(num_constraints) * sample).array() <=
+             b.head(num_constraints).array())
+                .any();
+      }
+    }
+
+    if (!sample_point_requirement) break;
 
     // Use the fast nonlinear optimizer until it fails
     // num_collision_infeasible_samples consecutive times.
