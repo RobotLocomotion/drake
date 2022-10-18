@@ -23,7 +23,7 @@ from PIL import Image
 COLOR_PIXEL_THRESHOLD = 20  # RGB pixel value tolerance.
 DEPTH_PIXEL_THRESHOLD = 0.001  # Depth measurement tolerance in meters.
 LABEL_PIXEL_THRESHOLD = 0
-INVALID_PIXEL_FRACTION = 0.1
+INVALID_PIXEL_FRACTION = 0.5
 
 # TODO(zachfang): Add another test for glTF verification.
 
