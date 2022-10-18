@@ -2,6 +2,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/multibody/fem/matrix_utilities.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/deformable_driver.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -10,9 +11,11 @@ using drake::geometry::GeometryId;
 using drake::geometry::GeometryInstance;
 using drake::geometry::SceneGraph;
 using drake::geometry::Sphere;
+using drake::geometry::internal::ContactParticipation;
 using drake::geometry::internal::DeformableContact;
 using drake::geometry::internal::DeformableContactSurface;
 using drake::math::RigidTransformd;
+using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
 using drake::multibody::fem::FemModel;
 using drake::multibody::fem::FemState;
@@ -48,7 +51,7 @@ class CompliantContactManagerTester {
  vertex) and 18 participating dofs. */
 class DeformableDriverContactTest : public ::testing::Test {
  protected:
-  static constexpr double kDt = 0.01;
+  static constexpr double kDt = 0.001;
   static constexpr double kPointContactStiffness = 1e6;
   static constexpr double kDissipationTimeScale = 0.1;
 
@@ -117,6 +120,17 @@ class DeformableDriverContactTest : public ::testing::Test {
       const systems::Context<double>& context,
       DeformableBodyIndex index) const {
     return driver_->EvalFreeMotionFemState(context, index);
+  }
+
+  const FemState<double>& EvalNextFemState(
+      const systems::Context<double>& context,
+      DeformableBodyIndex index) const {
+    return driver_->EvalNextFemState(context, index);
+  }
+
+  const Multiplexer<double>& EvalParticipatingVelocityMultiplexer(
+      const systems::Context<double>& context) const {
+    return driver_->EvalParticipatingVelocityMultiplexer(context);
   }
 
   const PetscSymmetricBlockSparseMatrix& EvalFreeMotionTangentMatrix(
@@ -408,6 +422,67 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
     EXPECT_EQ(pair.dissipation_time_scale, expected_tau);
     EXPECT_EQ(pair.friction_coefficient, 1.0);
   }
+}
+
+/* Verifies that the post contact velocites for deformable bodies are as
+ expected. In particular, verify that A * dv = Jᵀγ is satisfied where A is the
+ tangent matrix for deformable bodies evaluated at free motion state,
+ dv = v - v*, and Jᵀγ is the generalized contact impulse. */
+TEST_F(DeformableDriverContactTest, CalcNextFemStateWithContact) {
+  /* Set states for both bodies so that they have non-trivial initial
+   velocities. */
+  const int num_dofs = model_->GetFemModel(body_id0_).num_dofs();
+  const auto v0 = VectorXd::LinSpaced(num_dofs, 0.0, 1.0);
+  SetVelocities(body_id0_, v0);
+
+  /* Build v*. */
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
+  const VectorXd& v_star =
+      EvalFreeMotionFemState(plant_context, DeformableBodyIndex(0))
+          .GetVelocities();
+
+  /* Build v. */
+  const VectorXd& v_next =
+      EvalNextFemState(plant_context, DeformableBodyIndex(0)).GetVelocities();
+
+  /* Build A. */
+  const MatrixXd A =
+      EvalFreeMotionTangentMatrix(plant_context, DeformableBodyIndex(0))
+          .MakeDenseMatrix();
+
+  /* Build tau. */
+  const ContactSolverResults<double>& solver_results =
+      manager_->EvalContactSolverResults(plant_context);
+  const Multiplexer<double>& mux =
+      EvalParticipatingVelocityMultiplexer(plant_context);
+  const VectorXd participating_tau =
+      mux.Demultiplex(solver_results.tau_contact, 0);
+  const int num_participating_dofs = participating_tau.size();
+  const int num_nonparticipating_dofs = num_dofs - num_participating_dofs;
+  const VectorXd non_participating_tau =
+      VectorXd::Zero(num_nonparticipating_dofs);
+  VectorXd permuted_tau(num_dofs);
+  permuted_tau << participating_tau, non_participating_tau;
+  const DeformableContact<double>& contact_data =
+      EvalDeformableContact(plant_context);
+  const GeometryId geometry_id = model_->GetGeometryId(body_id0_);
+  const ContactParticipation& participation =
+      contact_data.contact_participation(geometry_id);
+  const PartialPermutation& full_dof_permutation =
+      participation.CalcDofPermutation();
+  VectorXd tau(num_dofs);
+  full_dof_permutation.ApplyInverse(permuted_tau, &tau);
+  /* The convergence criterion for the SAP solver is
+     ‖A⋅(v−v*)−Jᵀγ‖ = ‖∇ℓ‖ < εₐ + εᵣ max(‖A⋅v‖,‖jc‖),
+   where ‖x‖ = ‖D⋅x‖₂, where D = diag(A)^(-1/2). Usually, the relative tolerance
+   condition is triggered, that is,
+     ‖A⋅(v−v*)−Jᵀγ‖ < εᵣ‖D⋅A⋅v‖₂. */
+  const VectorXd D = A.diagonal().cwiseInverse().cwiseSqrt();
+  const double scale = (D.asDiagonal() * (A * v_next)).norm();
+  const double relative_tolerance = 1e-6;  // The default SAP tolerance.
+  EXPECT_TRUE(CompareMatrices(A * (v_next - v_star), tau * kDt,
+                              scale * relative_tolerance));
 }
 
 }  // namespace

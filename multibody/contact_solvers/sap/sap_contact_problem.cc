@@ -29,7 +29,7 @@ SapContactProblem<T>::SapContactProblem(const T& time_step,
   DRAKE_THROW_UNLESS(time_step > 0.0);
   nv_ = 0;
   for (const auto& Ac : A_) {
-    DRAKE_THROW_UNLESS(Ac.size() > 0);
+    DRAKE_THROW_UNLESS(Ac.size() >= 0);
     DRAKE_THROW_UNLESS(Ac.rows() == Ac.cols());
     nv_ += Ac.rows();
   }
@@ -43,7 +43,7 @@ void SapContactProblem<T>::Reset(std::vector<MatrixX<T>> A, VectorX<T> v_star) {
   graph_.ResetNumCliques(num_cliques());
   nv_ = 0;
   for (const auto& Ac : A_) {
-    DRAKE_THROW_UNLESS(Ac.size() > 0);
+    DRAKE_THROW_UNLESS(Ac.size() >= 0);
     DRAKE_THROW_UNLESS(Ac.rows() == Ac.cols());
     nv_ += Ac.rows();
   }
@@ -83,6 +83,12 @@ int SapContactProblem<T>::AddConstraint(std::unique_ptr<SapConstraint<T>> c) {
         "The number of columns in the constraint's "
         "Jacobian does not match the number of velocities in this problem for "
         "the second clique.");
+  }
+  if (num_velocities(c->first_clique()) == 0 ||
+      (c->num_cliques() == 2 && num_velocities(c->second_clique()) == 0)) {
+    throw std::runtime_error(
+        "Adding constraint to a clique with zero number of velocities is not "
+        "allowed.");
   }
 
   // Update graph.

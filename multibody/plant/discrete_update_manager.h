@@ -146,6 +146,10 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
                                          systems::ValueProducer,
                                          std::set<systems::DependencyTicket>);
 
+  // TODO(#16955): Remove this function when the referenced issue is resolved.
+  const contact_solvers::internal::ContactSolverResults<T>&
+  EvalContactSolverResults(const systems::Context<T>& context) const;
+
   double default_contact_stiffness() const;
   double default_contact_dissipation() const;
 
@@ -194,9 +198,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   // N.B. Keep the spelling and order of declarations here identical to the
   // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
-
-  const contact_solvers::internal::ContactSolverResults<T>&
-  EvalContactSolverResults(const systems::Context<T>& context) const;
 
   const internal::ContactJacobians<T>& EvalContactJacobians(
       const systems::Context<T>& context) const;

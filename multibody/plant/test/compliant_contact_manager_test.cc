@@ -71,13 +71,13 @@ class SapDriverTest {
   }
 
   static void PackContactSolverResults(
-      const SapDriver<double>& driver,
+      const Context<double>& context, const SapDriver<double>& driver,
       const contact_solvers::internal::SapContactProblem<double>& problem,
       int num_contacts,
       const contact_solvers::internal::SapSolverResults<double>& sap_results,
       contact_solvers::internal::ContactSolverResults<double>*
           contact_results) {
-    driver.PackContactSolverResults(problem, num_contacts, sap_results,
+    driver.PackContactSolverResults(context, problem, num_contacts, sap_results,
                                     contact_results);
   }
 };
@@ -457,9 +457,9 @@ TEST_F(SpheresStackTest, DoCalcContactSolverResults) {
   ContactSolverResults<double> contact_results_expected;
   const auto& sap_driver =
       CompliantContactManagerTester::sap_driver(*contact_manager_);
-  SapDriverTest::PackContactSolverResults(sap_driver, sap_problem, num_contacts,
-                                          sap_results,
-                                          &contact_results_expected);
+  SapDriverTest::PackContactSolverResults(
+      *plant_context_, sap_driver, sap_problem, num_contacts, sap_results,
+      &contact_results_expected);
 
   // Verify the expected result.
   EXPECT_TRUE(CompareMatrices(contact_results.v_next,
