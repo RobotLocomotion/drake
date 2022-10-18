@@ -557,18 +557,33 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_random_translation_distribution.doc);
   }
 
-  // // ScrewJoint
+  // ScrewJoint
   {
     using Class = ScrewJoint<T>;
     constexpr auto& cls_doc = doc.ScrewJoint;
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "ScrewJoint", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
-                 double>(),
+        .def(py::init([](const std::string& name,
+                          const Frame<T>& frame_on_parent,
+                          const Frame<T>& frame_on_child,
+                          std::optional<double> screw_pitch,
+                          std::optional<double> damping) {
+          if (!screw_pitch.has_value() || !damping.has_value()) {
+            WarnDeprecated(
+                "Defaults for the ScrewJoint constructor are deprecated.",
+                "2023-02-01");
+          }
+          return std::make_unique<Class>(name, frame_on_parent, frame_on_child,
+              screw_pitch.value_or(0.0), damping.value_or(0.0));
+        }),
             py::arg("name"), py::arg("frame_on_parent"),
-            py::arg("frame_on_child"), py::arg("screw_pitch") ,
-            py::arg("damping"), cls_doc.ctor.doc_5args)
+            py::arg("frame_on_child"), py::arg("screw_pitch") = py::none(),
+            py::arg("damping") = py::none(),
+            (std::string(cls_doc.ctor.doc_5args) +
+                "The defaults values for screw_pitch and damping are "
+                "deprecated and will removed on 2023-02-01.")
+                .c_str())
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<double>&, double, double>(),
             py::arg("name"), py::arg("frame_on_parent"),
