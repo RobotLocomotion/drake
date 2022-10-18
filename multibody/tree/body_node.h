@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -1062,23 +1063,64 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Compute the LLT factorization of D_B as llt_D_B.
       // Note: Eigen benchmarks for various matrix factorizations is here:
       // https://eigen.tuxfamily.org/dox/group__DenseDecompositionBenchmark.html
+      // According to the benchmark (October 2022) and for small 8x8 matrices,
+      // as compared to LLT, the follow are slower by the following factors:
+      // LDLT 1.3x, PartialPivLU 1.5x, FullPivLU = 1.9x, HouseholderQR 3.5x,
+      // CompleteOrthogonalDecomposition 4.3x, FullPivHouseholderQR 4.3x,
+      // JacobiSVD 18.6x, BDCSVD 19.7x (less for singular values, sans vectors).
       // TODO(bobbyluig): Test performance against inverse().
       math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
           get_mutable_llt_D_B(abic);
       llt_D_B = math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>(
           MatrixUpTo6<T>(D_B.template selfadjointView<Eigen::Lower>()));
 
-      // Ensure that D_B (the articulated body hinge inertia) is not singular.
-      // Singularity means that a non-physical hinge mapping matrix was used or
-      // that this articulated body inertia has some non-physical quantities
-      // (such as zero moment of inertia along an axis which the hinge mapping
-      // matrix permits motion).
-      if (llt_D_B.eigen_linear_solver().info() != Eigen::Success) {
+      // Ensure D_B (the articulated body hinge inertia) is positive definite
+      // enough (which means that all its eigenvalues are positive enough).
+      // If there is a singularity (or near-singularity), the articulated body
+      // hinge matrix may be non-physical, e.g., it has a zero (or near-zero)
+      // moment of inertia along an axis along which rotation is permitted.
+      // Example: The 1x1 hinge matrix D_B = [1.2] is positive definite whereas
+      // D_B = [0] or D_B = [-1E-22] are not positive definite. We also want to
+      // avoid near-singular hinge matrices such as D_B = [+ε], where ε = 1E-9
+      // was chosen by considering "small" mass and inertia robotic properties.
+      // We regard small mass as 1E-3 (1 gram) and small length as 1E-3 (1 mm),
+      // so a small moment of inertia ≈ mass * length² = 1E-9.  We then ensure
+      // the LLT factorization of (D_B - ε I) is still positive definite (i.e.,
+      // all its eigenvalues are positive). The following proof establishes
+      // the mathematical validity for this test. By definition, the eigenvalues
+      // λ and eigenvectors v of the matrix A are determined by A v = λ v.
+      //   (A - ε I) v = A v - ε I v  where I is the identity matrix.
+      //               = λ v - ε v    since ε I = ε
+      //               = (λ - ε) v    which shows (λ - ε) are the eigenvalues of
+      // (A - ε I). Since A is symmetric, (A - ε I) is symmetric. Hence if
+      // (λ - ε) > 0 (positive eigenvalues), then λ > ε which means all the
+      // eigenvalues of A are not only positive, but greater than ε (which means
+      // that A is not super-close to singular (for the ε chosen here).
+      bool is_failed = llt_D_B.eigen_linear_solver().info() != Eigen::Success;
+
+      // If the matrix has not already failed, check (D_B - ε I).
+      if (!is_failed) {
+        constexpr double epsilon = 1.0E-9;
+        MatrixUpTo6<T> D_B_minus_epsilon(nv, nv);
+        D_B_minus_epsilon = D_B;
+        for (int i = 0; i < nv; ++i) D_B_minus_epsilon(i, i) -= epsilon;
+
+        // Check if LLT factorization on llt_D_B_minus_epsilon fails.
+        math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>> llt_D_B_minus_epsilon =
+            math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>(MatrixUpTo6<T>(
+                D_B_minus_epsilon.template selfadjointView<Eigen::Lower>()));
+        is_failed = llt_D_B_minus_epsilon.eigen_linear_solver().info() !=
+                    Eigen::Success;
+      }
+
+      // If factorization fails on original or shifted matrix, issue an error.
+      if (is_failed) {
         std::stringstream message;
         message << "Encountered singular articulated body hinge inertia "
                 << "for body node index " << topology_.index << ". "
                 << "Please ensure that this body has non-zero inertia "
                 << "along all axes of motion.";
+        std::cout << "\n\nHinge matrix = " << D_B << "\n";
         throw std::runtime_error(message.str());
       }
 
