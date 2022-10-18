@@ -142,7 +142,17 @@ struct assert_if_is_constraint {
  */
 class MathematicalProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
+  /** @name Does not allow copy, move, or assignment. */
+  /** @{ */
+#ifdef DRAKE_DOXYGEN_CXX
+  // Copy constructor is private for use in implementing Clone().
+  MathematicalProgram(const MathematicalProgram&) = delete;
+#endif
+  MathematicalProgram& operator=(const MathematicalProgram&) = delete;
+  MathematicalProgram(MathematicalProgram&&) = delete;
+  MathematicalProgram& operator=(MathematicalProgram&&) = delete;
+  /** @} */
+
   using VarType = symbolic::Variable::Type;
 
   /// The optimal cost is +∞ when the problem is globally infeasible.
@@ -165,8 +175,9 @@ class MathematicalProgram {
    * - solver settings
    * - initial guess
    *
-   * However, the clone's x values will be initialized to NaN, and all internal
-   * solvers will be freshly constructed.
+   * Note that this is currently a *shallow* clone. The costs and constraints
+   * are not themselves cloned.
+   *
    * @retval new_prog. The newly constructed mathematical program.
    */
   [[nodiscard]] std::unique_ptr<MathematicalProgram> Clone() const;
@@ -3233,6 +3244,9 @@ class MathematicalProgram {
   //@}
 
  private:
+  // Copy constructor is private for use in implementing Clone().
+  explicit MathematicalProgram(const MathematicalProgram&);
+
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
 
   // Removes a binding of a constraint/constraint, @p removal, from a given
