@@ -66,9 +66,8 @@ class ScrewJoint final : public Joint<T> {
   ///   damping() for details on modelling of the damping torque.
   /// @throws std::exception if damping is negative.
   ScrewJoint(const std::string& name, const Frame<T>& frame_on_parent,
-              const Frame<T>& frame_on_child,
-              double screw_pitch,
-              double damping) :
+             const Frame<T>& frame_on_child, double screw_pitch,
+             double damping) :
       ScrewJoint<T>(name, frame_on_parent, frame_on_child,
                     Vector3<double>::UnitZ(), screw_pitch, damping) {}
 
@@ -105,10 +104,8 @@ class ScrewJoint final : public Joint<T> {
   /// root of machine epsilon.
   /// @throws std::exception if damping is negative.
   ScrewJoint(const std::string& name, const Frame<T>& frame_on_parent,
-              const Frame<T>& frame_on_child,
-              const Vector3<double>& axis,
-              double screw_pitch,
-              double damping);
+             const Frame<T>& frame_on_child, const Vector3<double>& axis,
+             double screw_pitch, double damping);
 
   const std::string& type_name() const final;
 
