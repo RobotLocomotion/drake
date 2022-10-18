@@ -9,6 +9,9 @@ import sys
 # Location where most of the build will take place.
 build_root = '/opt/drake-wheel-build'
 
+# Location where testing of the wheel will take place.
+test_root = '/opt/drake-wheel-test'
+
 # Location where the wheel will be produced.
 wheelhouse = os.path.join(build_root, 'wheel', 'wheelhouse')
 
@@ -50,6 +53,28 @@ def _check_version(version):
         r'(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?'
         r'([+][a-z0-9]+([-_\.][a-z0-9]+)*)?$',
         version) is not None
+
+
+def find_tests(*test_subdirs):
+    """
+    Returns a list of tests in the common directory and any subdirectories
+    given as additional arguments.
+    """
+    all_tests = []
+    for test_dir in ('', *test_subdirs):
+        tests = []
+
+        test_dir_full = os.path.join(resource_root, 'test', 'tests', test_dir)
+        for test in os.listdir(test_dir_full):
+            if not os.path.isdir(os.path.join(test_dir_full, test)):
+                tests.append(os.path.join('tests', test_dir, test))
+
+        where = f'subdirectory {test_dir!r}' if len(test_dir) else 'directory'
+        assert len(tests), f'No tests were found in the test {where}!'
+
+        all_tests += sorted(tests)
+
+    return all_tests
 
 
 def do_main(args, platform):

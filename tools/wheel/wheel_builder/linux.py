@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 
 from .common import die, gripe, wheel_name
 from .common import resource_root, wheelhouse
+from .common import find_tests
 
 from .linux_types import Platform, Role, Target, BUILD, TEST
 
@@ -251,21 +252,42 @@ def _test_wheel(target, identifier, options):
                        wheel_version=options.version,
                        wheel_platform=f'manylinux_{glibc}_x86_64')
 
+    test_image = _tagname(target, TEST, f'test-{identifier}')
+    test_container = test_image.replace(':', '__')
     if options.tag_stages:
-        container = _tagname(target, TEST, 'test')
+        base_image = _tagname(target, TEST, 'test')
     else:
-        container = _tagname(target, TEST, f'test-{identifier}')
+        base_image = test_container
     test_dir = os.path.join(resource_root, 'test')
 
-    _docker('build', '-t', container, *_target_args(target, TEST), test_dir)
+    # Build the test base image.
+    _docker('build', '-t', base_image, *_target_args(target, TEST), test_dir)
     if not options.tag_stages:
-        _images_to_remove.append(container)
+        _images_to_remove.append(base_image)
 
-    test_script = '/test/test-wheel.sh'
-    _docker('run', '--rm', '-t',
+    # Install the wheel.
+    install_script = '/test/install-wheel.sh'
+    _docker('run', '-t', f'--name={test_container}',
             '-v' f'{test_dir}:/test',
             '-v' f'{options.output_dir}:{wheelhouse}',
-            container, test_script, os.path.join(wheelhouse, wheel))
+            base_image, install_script, os.path.join(wheelhouse, wheel))
+
+    # Tag the container with the wheel installed.
+    _docker('commit', test_container, test_image)
+    _docker('container', 'rm', test_container)
+    if options.tag_stages:
+        _images_to_remove.append(test_image)
+
+    # Run individual tests.
+    test_script = '/test/test-wheel.sh'
+    for test in find_tests():
+        print(f'[-] Executing test {test}')
+        _docker('run', '--rm', '-t',
+                '-v' f'{test_dir}:/test',
+                '-v' f'{options.output_dir}:{wheelhouse}',
+                test_image, test_script, f'/test/{test}',
+                os.path.join(wheelhouse, wheel))
+        print(f'[-] Executing test {test} - PASSED')
 
 
 def build(options):
