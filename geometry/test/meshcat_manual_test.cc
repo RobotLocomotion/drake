@@ -127,6 +127,7 @@ Open up your browser to the URL above.
   - a green cylinder (with the long axis in z)
   - a pink semi-transparent ellipsoid (long axis in z)
   - a blue box (long axis in z)
+  - a teal capsule (long axis in z)
   - a red cone (expanding in +z, twice as wide in y than in x)
   - a bright green cube (the green comes from a texture map)
   - a yellow mustard bottle w/ label
