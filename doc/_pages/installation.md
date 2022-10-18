@@ -75,8 +75,8 @@ All other packages support both C++ and/or Python.
 | Using tar.gz download | [Stable](/from_binary.html#stable-releases) or [Nightly](/from_binary.html#nightly-releases) | [Stable](/from_binary.html#stable-releases) or [Nightly](/from_binary.html#nightly-releases) |
 | Using Docker Hub      | [Stable](/docker.html#stable-releases) or [Nightly](/docker.html#nightly-releases) | [Stable](/docker.html#stable-releases) or [Nightly](/docker.html#nightly-releases) |
 
-Alternatively, you can skip the pre-compiled binaries and
-[build Drake from source](/from_source.html).
+Alternatively, you can skip the pre-compiled binaries and build Drake
+following the instructions in [Source Installation](/from_source.html).
 
 Drake's binary releases do not support the Gurobi solver.
 To use Gurobi, you must build Drake from source.

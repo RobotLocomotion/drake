@@ -31,7 +31,7 @@ using an even more comprehensive set of unit tests.
 If problems are detected on this branch, the build cop will
 [revert the PRs that most likely caused the problem](buildcop.html).
 To increase the likelihood that your pull requests pass CI tests and are not
-reverted, you can run the unit tests locally. Instructions for how to do that
+reverted, you can run the unit tests locally; instructions for how to do that
 are provided [here](/unit_testing_instructions.html). Note, however, that there are
 many computationally-demanding tests and running the entire test suite can take
 several hours depending on your machine.
@@ -77,8 +77,8 @@ downgrade Bazel. If on Mac, there is no easy mechanism to downgrade with
 Homebrew; however, we generally try to stay on top of Bazel versions.
 
 If you have tried and are unable to configure your system by
-[following the instructions](/from_source.html) please do not hesitate
-to [ask for help](/getting_help.html).
+[following the instructions for source installation](/from_source.html)
+please do not hesitate to [ask for help](/getting_help.html).
 
 # Issue Tracking
 
@@ -110,7 +110,7 @@ green ``+###`` number as reported by github), and *must not* include more than
   * Data files do not count towards the line limit.
   * Machine-generated changes do not count towards the line limit.
   * Files in
-    [Special Directories](/directory_structure.html)
+    [Dev Directories](/directory_structure.html#dev-directories)
     do not count towards the line limit.
   * This rule may be overridden by agreement of at least two platform reviewers
     (listed below).
@@ -182,7 +182,7 @@ Choose the "Squash and merge option" unless otherwise instructed (see
 [Curated Commits](/reviewable.html#curated-commits)).
 
 **After Merge.** If your PR breaks continuous integration, the
-[buildcop](/buildcop.html) will contact you to work out a resolution.
+[build cop](/buildcop.html) will contact you to work out a resolution.
 
 
 ## Review Process Tooling

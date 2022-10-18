@@ -63,7 +63,7 @@ git remote add upstream git@github.com:RobotLocomotion/drake.git
 git remote set-url --push upstream no_push
 ```
 
-# Mandatory platform specific instructions
+# Mandatory platform-specific instructions
 
 Before running the build, you must follow some one-time platform-specific
 setup steps:
@@ -77,8 +77,9 @@ All else being equal, we would recommend developers use Ubuntu Focal.
 
 # Build with Bazel
 
-For instructions, jump to [Using Bazel](/bazel.html#developing-drake-using-bazel), or check out the
-full details at:
+For instructions, jump to
+[Developing Drake using Bazel](/bazel.html#developing-drake-using-bazel),
+or check out the full details at:
 
 * [Bazel build system](/bazel.html)
 
