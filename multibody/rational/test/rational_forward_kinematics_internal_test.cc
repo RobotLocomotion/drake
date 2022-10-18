@@ -1,18 +1,12 @@
-#include "drake/multibody/dev/c_iris/rational_forward_kinematics_internal.h"
+#include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/dev/c_iris/test/rational_forward_kinematics_test_utilities.h"
+#include "drake/multibody/rational/test/rational_forward_kinematics_test_utilities.h"
 
 namespace drake {
 namespace multibody {
-namespace c_iris {
 namespace internal {
-using drake::multibody::BodyIndex;
-using drake::multibody::internal::Mobilizer;
-using drake::multibody::internal::MobilizerIndex;
-using drake::multibody::internal::MultibodyTree;
-
 const Mobilizer<double>* GetInboardMobilizer(const MultibodyTree<double>& tree,
                                              BodyIndex body_index) {
   return &(tree.get_mobilizer(
@@ -271,6 +265,5 @@ TEST_F(FinalizedIiwaTest, FindMobilizersOnPath) {
 }
 
 }  // namespace internal
-}  // namespace c_iris
 }  // namespace multibody
 }  // namespace drake

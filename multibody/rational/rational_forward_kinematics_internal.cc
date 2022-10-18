@@ -1,4 +1,4 @@
-#include "drake/multibody/dev/c_iris/rational_forward_kinematics_internal.h"
+#include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 
 #include <algorithm>
 #include <memory>
@@ -10,22 +10,12 @@
 
 namespace drake {
 namespace multibody {
-namespace c_iris {
 namespace internal {
-using drake::multibody::BodyIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::internal::BodyTopology;
-using drake::multibody::internal::GetInternalTree;
-using drake::multibody::internal::Mobilizer;
-using drake::multibody::internal::MobilizerIndex;
-using drake::multibody::internal::MultibodyTree;
-using drake::multibody::internal::RevoluteMobilizer;
-using drake::multibody::internal::WeldMobilizer;
 
 void AddChildrenToChangedRootBody(const MultibodyPlant<double>& plant,
                                   ChangedRootBody* body,
                                   std::unordered_set<BodyIndex>* visited) {
-  const MultibodyTree<double>& tree = internal::GetInternalTree(plant);
+  const MultibodyTree<double>& tree = GetInternalTree(plant);
   const BodyTopology& body_topology =
       tree.get_topology().get_body(body->body_index);
 
@@ -90,7 +80,7 @@ struct BodyOnPath {
 std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
                                 BodyIndex start, BodyIndex end) {
   DRAKE_ASSERT(start.is_valid() && end.is_valid());
-  const MultibodyTree<double>& tree = internal::GetInternalTree(plant);
+  const MultibodyTree<double>& tree = GetInternalTree(plant);
   // Do a breadth first search in the tree.
   std::unordered_map<BodyIndex, std::unique_ptr<BodyOnPath>> visited_bodies;
   BodyIndex start_copy = start;
@@ -193,6 +183,5 @@ BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
 }
 
 }  // namespace internal
-}  // namespace c_iris
 }  // namespace multibody
 }  // namespace drake
