@@ -335,14 +335,23 @@ GTEST_TEST(TestSingularHingeMatrix, ThrowErrorForZeroMassTranslatingBody) {
   auto context = plant.CreateDefaultContext();
   systems::Context<double>* context_ptr = context.get();
 
-  // Verify proper error message is thrown.
+  // Verify proper error message is thrown when HingeMatrix = [0].
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "Encountered singular articulated body hinge inertia for body node "
     "index 1. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
 
-  // Verify no assertion is thrown if mA = 1E-33.
-  body_A.SetMass(context_ptr, mA = 1E-33);
+  // Verify assertion is thrown if mA = 1E-13.
+  // HingeMatrix ≈ [1E-13], so this is regarded as near-singular.
+  body_A.SetMass(context_ptr, mA = 1E-13);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 1. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
+
+  // Verify no assertion is thrown if mA = 1E-4.
+  // HingeMatrix ≈ [2E-5], so this is regarded as non-singular.
+  body_A.SetMass(context_ptr, mA = 1E-4);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 }
 
@@ -355,7 +364,7 @@ GTEST_TEST(TestSingularHingeMatrix, ThrowErrorForZeroInertiaRotatingBody) {
   MultibodyPlant<double> plant(discrete_update_period);
 
   double mA = 0;  // Mass of link A.
-  const double length = 3;  // Length of uniform-density link (arbitrary > 0).
+  const double length = 1;  // Length of uniform-density link (arbitrary > 0).
   const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
 
   // Add bodyA to world with Z-revolute joint (bodyA has zero mass/inertia).
@@ -370,14 +379,22 @@ GTEST_TEST(TestSingularHingeMatrix, ThrowErrorForZeroInertiaRotatingBody) {
   auto context = plant.CreateDefaultContext();
   systems::Context<double>* context_ptr = context.get();
 
-  // Verify proper error message is thrown.
+  // Verify proper error message is thrown when HingeMatrix = [0].
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "Encountered singular articulated body hinge inertia for body node "
     "index 1. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
 
-  // Verify no assertion is thrown if mA = 1E-33.
-  body_A.SetMass(context_ptr, mA = 1E-33);
+  // Verify an assertion is thrown if mA = 1E-11.
+  // HingeMatrix ≈ [4.167e-12], so this is regarded as near-singular.
+  body_A.SetMass(context_ptr, mA = 1E-11);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 1. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
+
+  // Verify no assertion is thrown if mA = 1E-4 (far enough from singular).
+  body_A.SetMass(context_ptr, mA = 1E-4);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 }
 
@@ -390,8 +407,8 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateMassTranslatingBodiesAB) {
   const double discrete_update_period = 0;
   MultibodyPlant<double> plant(discrete_update_period);
 
-  double mA = 1E-9, mB = 1E9;  // Mass of links A, B.
-  const double length = 3;  // Length of uniform-density link (arbitrary > 0).
+  double mA = 1E-11, mB = 1E9;  // Mass of links A, B.
+  const double length = 1;  // Length of uniform-density link (arbitrary > 0).
   const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddCubicalLink(&plant, "bodyB", mB, length);
 
@@ -411,7 +428,8 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateMassTranslatingBodiesAB) {
   auto context = plant.CreateDefaultContext();
   systems::Context<double>* context_ptr = context.get();
 
-  // Verify proper assertion is thrown if mA = 1E-9, mB = 1E9.
+  // Verify proper assertion is thrown if mA = 1E-11, mB = 1E9.
+  // HingeMatrix ≈ [-2.38E-07], negative maybe due to round-off (so singular).
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "Encountered singular articulated body hinge inertia for body node "
     "index 1. Please ensure that this body has non-zero inertia along "
@@ -421,10 +439,13 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateMassTranslatingBodiesAB) {
   body_A.SetMass(context_ptr, mA = 1E-3);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 
-  // Verify no assertion is thrown if mA = 1E9, mB = 1E-9.
+  // Verify no assertion is thrown if mA = 1E9, mB = 1E-11.
   body_A.SetMass(context_ptr, mA = 1E9);
-  body_B.SetMass(context_ptr, mB = 1E-9);
-  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
+  body_B.SetMass(context_ptr, mB = 1E-11);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 2. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
 }
 
 // Perform a forward dynamic analysis for a planar triple pendulum consisting of
@@ -486,9 +507,13 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
     "index 3. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
 
-  // Verify no assertion is thrown if mA = 1, mB = 1, mC = 1E-77.
-  body_C.SetMass(context_ptr, mC = 1E-77);
-  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
+  // Verify no assertion is thrown if mA = 1, mB = 1, mC = 1E-13.
+  // HingeMatrix ≈ [1.67e-15], so this is regarded as near-singular.
+  body_C.SetMass(context_ptr, mC = 1E-13);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 3. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
 
   // Verify no assertion is thrown if mA = 1, mB = 0, mC = 1.
   body_B.SetMass(context_ptr, mB = 0);
@@ -496,6 +521,7 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 
   // Verify assertion is thrown if mA = 0, mB = 0, mC = 1.
+  // HingeMatrix ≈ [0], so this is regarded as singular.
   body_A.SetMass(context_ptr, mA = 0);
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "Encountered singular articulated body hinge inertia for body node "
@@ -525,21 +551,51 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
   // Verify that an assertion is thrown when the initial revolute angles for WA,
   // AB, and BC are 5 degrees, 1.0E-7, and 9 degrees, respectively. There is a
   // singularity when the initial AB revolute angle is zero (or very small).
+  // HingeMatrix ≈ [-3.0E-18], so this is regarded as singular.
   AB_revolute_jointZ.set_angle(context_ptr,  1E-7 * M_PI/180);
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "Encountered singular articulated body hinge inertia for body node "
     "index 1. Please ensure that this body has non-zero inertia along "
     "all axes of motion.*");
 
-  // Verify no assertion is thrown when the initial revolute angles for WA, AB,
-  // and BC are 5 degrees, 1.0E-4, and 9 degrees, respectively, i.e., with the
-  // initial AB revolute angle sufficiently far from zero.
+  // HingeMatrix ≈ [3.3E-17], so this is regarded as singular.
+  AB_revolute_jointZ.set_angle(context_ptr,  1E-6 * M_PI/180);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 1. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
+
+  // HingeMatrix ≈ [1.2E-15], so this is regarded as singular.
+  AB_revolute_jointZ.set_angle(context_ptr,  1E-5 * M_PI/180);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 1. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
+
+  // Hinge matrix ≈ [1.2E-13], so this is regarded as singular.
   AB_revolute_jointZ.set_angle(context_ptr,  1E-4 * M_PI/180);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 1. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
+
+  // Hinge matrix ≈ [1.2E-11], so this is regarded as singular.
+  AB_revolute_jointZ.set_angle(context_ptr,  1E-3 * M_PI/180);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
+    "Encountered singular articulated body hinge inertia for body node "
+    "index 1. Please ensure that this body has non-zero inertia along "
+    "all axes of motion.*");
+
+  // Verify no assertion is thrown when the initial revolute angles for WA, AB,
+  // and BC are 5 degrees, 0.1, and 9 degrees, respectively, i.e., with the
+  // initial AB revolute angle sufficiently far from zero.
+  AB_revolute_jointZ.set_angle(context_ptr,  1E-1 * M_PI/180);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 
   // Verify an assertion is thrown if mA = 1, mB = 1, mC = -1.
   // Note: The associated 3x3 mass matrix (not the hinge matrix) is indefinite,
   // with both negative and positive eigenvalues.
+  // Hinge matrix ≈ [-0.0166667], so this is regarded as singular.
   body_A.SetMass(context_ptr, mA = 1);
   body_B.SetMass(context_ptr, mB = 1);
   body_C.SetMass(context_ptr, mC = -1);
