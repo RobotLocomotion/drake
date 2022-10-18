@@ -8,9 +8,9 @@ def sdformat_internal_repository(
     github_archive(
         name = name,
         repository = "gazebosim/sdformat",
-        commit = "sdformat13_13.0.1",
+        commit = "sdformat13_13.1.0",
         build_file = ":package.BUILD.bazel",
-        sha256 = "4dfb9d938f77d590c4465c9ad5769777e5b0f40dd21c288fe2cc1987d5a0b036",  # noqa
+        sha256 = "4b40bf64bc7d3f22c89a2395c2802d5315a3fd5e5dbaf29b087c5c806180a9db",  # noqa
         patches = [
             ":patches/console.patch",
             ":patches/deprecation_unit_testing.patch",

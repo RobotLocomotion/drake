@@ -112,7 +112,8 @@ unique_ptr<sdf::Geometry> MakeSdfGeometryFromString(
       sdf_parsed->Root()->GetElement("model")->
           GetElement("link")->GetElement("visual")->GetElement("geometry");
   auto sdf_geometry = make_unique<sdf::Geometry>();
-  sdf_geometry->Load(geometry_element);
+  sdf::ParserConfig config = MakeStrictConfig();
+  sdf_geometry->Load(geometry_element, config);
   return sdf_geometry;
 }
 
@@ -143,7 +144,8 @@ unique_ptr<sdf::Visual> MakeSdfVisualFromString(
       sdf_parsed->Root()->GetElement("model")->
           GetElement("link")->GetElement("visual");
   auto sdf_visual = make_unique<sdf::Visual>();
-  sdf_visual->Load(visual_element);
+  sdf::ParserConfig config = MakeStrictConfig();
+  sdf_visual->Load(visual_element, config);
   return sdf_visual;
 }
 
@@ -178,7 +180,8 @@ unique_ptr<sdf::Collision> MakeSdfCollisionFromString(
       sdf_parsed->Root()->GetElement("model")->
           GetElement("link")->GetElement("collision");
   auto sdf_collision = make_unique<sdf::Collision>();
-  sdf_collision->Load(collision_element);
+  sdf::ParserConfig config = MakeStrictConfig();
+  sdf_collision->Load(collision_element, config);
   return sdf_collision;
 }
 
