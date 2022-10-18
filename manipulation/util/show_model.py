@@ -82,9 +82,313 @@ from pydrake.visualization import (
 )
 
 
+class ModelVisualizer:
+    """
+    Visualizes models from a file or string buffer in Drake Viz, meldis,
+    or MeshCat.
+
+    To use this class to visualize model(s), create an instance with
+    any desired options, add any models, and then call Run():
+
+        visualizer = ModelVisualizer(browser_new=True)
+        visualizer.AddModels(filename)
+        visualizer.Run()
+
+    The class also provides a `parser` property to allow more complex
+    Parser handling, e.g. adding a model from a string:
+        visualizer.parser.AddModelsFromString(buffer_containing_model, 'sdf')
+    """
+    # Note: this class uses C++ method names to ease future porting.
+
+    def __init__(self,
+                 position=None,
+                 visualize_frames=False,
+                 triad_length=0.5,
+                 triad_radius=0.01,
+                 triad_opacity=1,
+                 browser_new=False,
+                 pyplot=False,
+                 loop_once=False,
+                 publish_contacts=True):
+        """
+        Initializes a ModelVisualizer.
+
+        Args:
+          browser_new: a flag that will open the MeshCat display in a new
+            browser window.
+          pyplot: a flag that will open a pyplot figure for rendering using
+            PlanarSceneGraphVisualizer.
+
+          loop_once: a flag that exits the evaluation loop after one pass.
+
+          position: a list of positions for an SDF model; must match the number
+            of positions in the model, including 7 positions corresponding to
+            the model base if the model base isn't welded to the world.
+
+          visualize_frames: a flag that visualizes the frames as triads for all
+            links.
+          triad_length: an option length for visualization triads.
+          triad_radius: an option radius for visualization triads.
+          triad_opacity: an option opacity for visualization triads.
+
+          publish_contacts: an optional flag for VisualizationConfig.
+        """
+        self._position = position
+        self._visualize_frames = visualize_frames
+        self._triad_length = triad_length
+        self._triad_radius = triad_radius
+        self._triad_opacity = triad_opacity
+        self._browser_new = browser_new
+        self._pyplot = pyplot
+        self._loop_once = loop_once
+        self._publish_contacts = publish_contacts
+
+        # The following fields remain valid for this object's lifetime after
+        # Finalize() has been called.
+        self._diagram = None
+        self._sliders = None
+        self._context = None
+        self._plant_context = None
+
+        # The builder, scene_graph, and parser become invalid after Finalize().
+        # The plant remains valid for this object's lifetime.
+        self._builder = DiagramBuilder()
+        self._plant, self._scene_graph = AddMultibodyPlantSceneGraph(
+            self._builder, time_step=0.0)
+        self._parser = Parser(self._plant)
+
+    @property
+    def position(self):
+        return self._position
+
+    @property
+    def visualize_frames(self):
+        return self._visualize_frames
+
+    @property
+    def triad_length(self):
+        return self._triad_length
+
+    @property
+    def triad_radius(self):
+        return self._triad_radius
+
+    @property
+    def triad_opacity(self):
+        return self._triad_opacity
+
+    @property
+    def browser_new(self):
+        return self._browser_new
+
+    @property
+    def pyplot(self):
+        return self._pyplot
+
+    @property
+    def loop_once(self):
+        return self._loop_once
+
+    @property
+    def publish_contacts(self):
+        return self._publish_contacts
+
+    @property
+    def parser(self):
+        """
+        The internal Parser instance.
+
+        This property is only valid until Finalize is called.
+        """
+        return self._parser
+
+    def AddModels(self, filename):
+        """
+        Adds all models found in an input file.
+
+        This can be called multiple times, until the object is finalized.
+
+        Args:
+          filename: the name of a file containing one or more models.
+        """
+        self._parser.AddAllModelsFromFile(filename)
+
+    def Finalize(self):
+        """
+        Finalizes the object and sets up the visualization using the provided
+        options once models have been added.
+        """
+        assert self._builder is not None, "Finalize has already been called."
+
+        if self._visualize_frames:
+            # Find all the frames and draw them using _add_triad().
+            # The frames are drawn using the parsed length.
+            # The world frame is drawn thicker than the rest.
+            inspector = self._scene_graph.model_inspector()
+            for frame_id in inspector.GetAllFrameIds():
+                radius = self._triad_radius * (
+                    3 if frame_id == self._scene_graph.world_frame_id() else 1
+                    )
+                self._add_triad(
+                    frame_id,
+                    length=self._triad_length,
+                    radius=radius,
+                    opacity=self._triad_opacity,
+                )
+
+        self._plant.Finalize()
+
+        # Connect to drake_visualizer or meldis. Meldis provides simultaneous
+        # visualization of illustration and proximity geometry.
+        ApplyVisualizationConfig(
+            config=VisualizationConfig(
+                publish_contacts=self._publish_contacts),
+            plant=self._plant,
+            scene_graph=self._scene_graph,
+            builder=self._builder)
+
+        # Connect to MeshCat, which is required to connect e.g. JointSliders.
+        meshcat = Meshcat()
+        # Add two visualizers: one to publish the "illustration" geometry and
+        # another to publish the "collision" geometry.
+        MeshcatVisualizer.AddToBuilder(
+            self._builder, self._scene_graph, meshcat,
+            MeshcatVisualizerParams(role=Role.kIllustration, prefix="visual"))
+        MeshcatVisualizer.AddToBuilder(
+            self._builder, self._scene_graph, meshcat,
+            MeshcatVisualizerParams(role=Role.kProximity, prefix="collision"))
+        self._sliders = self._builder.AddNamedSystem(
+            "joint_sliders", JointSliders(meshcat=meshcat, plant=self._plant))
+
+        if self._browser_new:
+            url = meshcat.web_url()
+            webbrowser.open(url=url, new=self._browser_new)
+
+        # Connect to PyPlot.
+        if self._pyplot:
+            ConnectPlanarSceneGraphVisualizer(self._builder, self._scene_graph)
+
+        self._diagram = self._builder.Build()
+        self._context = self._diagram.CreateDefaultContext()
+        self._plant_context = self._plant.GetMyContextFromRoot(self._context)
+
+        if self._position:
+            self._plant.SetPositions(self._plant_context, self._position)
+            self._sliders.SetPositions(self._position)
+
+        # Use Simulator to dispatch initialization events.
+        # TODO(eric.cousineau): Simplify as part of #13776 (was #10015).
+        Simulator(self._diagram).Initialize()
+        # Publish draw messages with current state.
+        self._diagram.Publish(self._context)
+
+        # Disable the collision geometry at the start; it can be enabled by
+        # the checkbox in the meshcat controls.
+        meshcat.SetProperty("collision", "visible", False)
+
+        self._builder = None
+        self._parser = None
+
+    def Iterate(self):
+        """
+        Iterates the model.
+
+        Will iterate once and exit if `loop_once` is set, otherwise will
+        loop until the user quits.
+        """
+        # Wait for the user to cancel us.
+        if not self._loop_once:
+            print("Use Ctrl-C to quit")
+
+        try:
+            sliders_context = self._sliders.GetMyContextFromRoot(self._context)
+            while True:
+                time.sleep(1 / 32.0)
+                q = self._sliders.get_output_port().Eval(sliders_context)
+                self._plant.SetPositions(self._plant_context, q)
+                self._diagram.Publish(self._context)
+                if self._loop_once:
+                    return
+        except KeyboardInterrupt:
+            pass
+
+    def Run(self):
+        """
+        Finalizes the object and then iterates the models.
+        (Calls Finalize() and then Iterate().)
+        """
+        self.Finalize()
+        self.Iterate()
+
+    def _add_triad(
+        self,
+        frame_id,
+        *,
+        length,
+        radius,
+        opacity,
+        X_FT=RigidTransform(),
+        name="frame",
+    ):
+        """
+        Adds illustration geometry representing the coordinate frame, with
+        the x-axis drawn in red, the y-axis in green and the z-axis in blue.
+        The axes point in +x, +y and +z directions, respectively.
+        Based on [code permalink](https://github.com/RussTedrake/manipulation/blob/5e59811/manipulation/scenarios.py#L367-L414).# noqa
+        Args:
+          frame_id: A geometry::frame_id registered with scene_graph.
+          length: the length of each axis in meters.
+          radius: the radius of each axis in meters.
+          opacity: the opacity of the coordinate axes, between 0 and 1.
+          X_FT: a RigidTransform from the triad frame T to the frame_id frame F
+          name: the added geometry will have names name + " x-axis", etc.
+        """
+        # x-axis
+        X_TG = RigidTransform(
+            RotationMatrix.MakeYRotation(np.pi / 2),
+            [length / 2.0, 0, 0],
+        )
+        geom = GeometryInstance(
+            X_FT.multiply(X_TG), Cylinder(radius, length), name + " x-axis"
+        )
+        geom.set_illustration_properties(
+            MakePhongIllustrationProperties([1, 0, 0, opacity])
+        )
+        self._scene_graph.RegisterGeometry(
+            self._plant.get_source_id(), frame_id, geom)
+
+        # y-axis
+        X_TG = RigidTransform(
+            RotationMatrix.MakeXRotation(np.pi / 2),
+            [0, length / 2.0, 0],
+        )
+        geom = GeometryInstance(
+            X_FT.multiply(X_TG), Cylinder(radius, length), name + " y-axis"
+        )
+        geom.set_illustration_properties(
+            MakePhongIllustrationProperties([0, 1, 0, opacity])
+        )
+        self._scene_graph.RegisterGeometry(
+            self._plant.get_source_id(), frame_id, geom)
+
+        # z-axis
+        X_TG = RigidTransform([0, 0, length / 2.0])
+        geom = GeometryInstance(
+            X_FT.multiply(X_TG), Cylinder(radius, length), name + " z-axis"
+        )
+        geom.set_illustration_properties(
+            MakePhongIllustrationProperties([0, 0, 1, opacity])
+        )
+        self._scene_graph.RegisterGeometry(
+            self._plant.get_source_id(), frame_id, geom)
+
+
 def add_filename_and_parser_argparse_arguments(args_parser):
     """
     Adds argparse arguments for filename and model parsing.
+
+    Args:
+      args_parser: the `argparse.ArgumentParser` to add arguments to.
     """
     args_parser.add_argument(
         "filename", type=str, default=None,
@@ -99,27 +403,30 @@ def add_filename_and_parser_argparse_arguments(args_parser):
         help="Full path to the root package for reading in SDF resources.")
 
 
-def parse_filename_and_parser(args_parser, args):
+def parse_filename_and_package(args_parser, args, parser):
     """
-    Parses results from arguments added by
+    Parses results from argparse arguments added by
     `add_filename_and_parser_argparse_arguments`:
     * Parses filename (and possibly --find_resource) and returns filename.
-    * Parses --package_path and returns make_parser factory.
+    * Parses --package_path and updates the parser.
+
+    Args:
+      args_parser: the `argparse.ArgumentParser`.
+      args: the namespace object returned by `args_parser.parse_args()`.
+      parser: the `multibody.parsing.Parser`.
+
+    Returns:
+      The model filename.
     """
+    if args.package_path:
+        # Verify that package.xml is found in the designated path.
+        package_path = os.path.abspath(args.package_path)
+        package_xml = os.path.join(package_path, "package.xml")
+        if not os.path.isfile(package_xml):
+            args_parser.error(f"package.xml not found at: {package_path}")
 
-    def make_parser(plant):
-        parser = Parser(plant)
-        # Get the package pathname.
-        if args.package_path:
-            # Verify that package.xml is found in the designated path.
-            package_path = os.path.abspath(args.package_path)
-            package_xml = os.path.join(package_path, "package.xml")
-            if not os.path.isfile(package_xml):
-                args_parser.error(f"package.xml not found at: {package_path}")
-
-            # Get the package map and populate it using the package path.
-            parser.package_map().AddPackageXml(package_xml)
-        return parser
+        # Get the package map and populate it using the package path.
+        parser.package_map().AddPackageXml(package_xml)
 
     if args.find_resource:
         res_path = os.path.normpath(args.filename)
@@ -130,12 +437,15 @@ def parse_filename_and_parser(args_parser, args):
         if not os.path.isfile(filename):
             args_parser.error(f"File does not exist: {filename}")
 
-    return filename, make_parser
+    return filename
 
 
 def add_visualizers_argparse_arguments(args_parser):
     """
     Adds argparse arguments for visualizers.
+
+    Args:
+      args_parser: the `argparse.ArgumentParser` to add arguments to.
     """
     args_parser.add_argument(
         "-w", "--open-window", dest="browser_new",
@@ -152,25 +462,28 @@ def add_visualizers_argparse_arguments(args_parser):
         action="store_true",
         help="Visualize the frames as triads for all links.",
     )
+
+    # Create a ModelVisualizer so we can access the defaults.
+    defaults = ModelVisualizer()
     args_parser.add_argument(
         "--triad_length",
         type=float,
         dest="triad_length",
-        default=0.5,
+        default=defaults.triad_length,
         help="Triad length for frame visualization.",
     )
     args_parser.add_argument(
         "--triad_radius",
         type=float,
         dest="triad_radius",
-        default=0.01,
+        default=defaults.triad_radius,
         help="Triad radius for frame visualization.",
     )
     args_parser.add_argument(
         "--triad_opacity",
         type=float,
         dest="triad_opacity",
-        default=1,
+        default=defaults.triad_opacity,
         help="Triad opacity for frame visualization.",
     )
     args_parser.add_argument(
@@ -182,135 +495,9 @@ def add_visualizers_argparse_arguments(args_parser):
              "the quaternion representation of that floating-base position).")
 
 
-def add_triad(
-    source_id,
-    frame_id,
-    scene_graph,
-    *,
-    length,
-    radius,
-    opacity,
-    X_FT=RigidTransform(),
-    name="frame",
-):
-    """
-    Adds illustration geometry representing the coordinate frame, with the
-    x-axis drawn in red, the y-axis in green and the z-axis in blue. The axes
-    point in +x, +y and +z directions, respectively.
-    Based on [code permalink](https://github.com/RussTedrake/manipulation/blob/5e59811/manipulation/scenarios.py#L367-L414).# noqa
-    Args:
-    source_id: The source registered with SceneGraph.
-    frame_id: A geometry::frame_id registered with scene_graph.
-    scene_graph: The SceneGraph with which we will register the geometry.
-    length: the length of each axis in meters.
-    radius: the radius of each axis in meters.
-    opacity: the opacity of the coordinate axes, between 0 and 1.
-    X_FT: a RigidTransform from the triad frame T to the frame_id frame F
-    name: the added geometry will have names name + " x-axis", etc.
-    """
-    # x-axis
-    X_TG = RigidTransform(
-        RotationMatrix.MakeYRotation(np.pi / 2),
-        [length / 2.0, 0, 0],
-    )
-    geom = GeometryInstance(
-        X_FT.multiply(X_TG), Cylinder(radius, length), name + " x-axis"
-    )
-    geom.set_illustration_properties(
-        MakePhongIllustrationProperties([1, 0, 0, opacity])
-    )
-    scene_graph.RegisterGeometry(source_id, frame_id, geom)
-
-    # y-axis
-    X_TG = RigidTransform(
-        RotationMatrix.MakeXRotation(np.pi / 2),
-        [0, length / 2.0, 0],
-    )
-    geom = GeometryInstance(
-        X_FT.multiply(X_TG), Cylinder(radius, length), name + " y-axis"
-    )
-    geom.set_illustration_properties(
-        MakePhongIllustrationProperties([0, 1, 0, opacity])
-    )
-    scene_graph.RegisterGeometry(source_id, frame_id, geom)
-
-    # z-axis
-    X_TG = RigidTransform([0, 0, length / 2.0])
-    geom = GeometryInstance(
-        X_FT.multiply(X_TG), Cylinder(radius, length), name + " z-axis"
-    )
-    geom.set_illustration_properties(
-        MakePhongIllustrationProperties([0, 0, 1, opacity])
-    )
-    scene_graph.RegisterGeometry(source_id, frame_id, geom)
-
-
-def parse_visualizers(args_parser, args):
-    """
-    Parses argparse arguments for visualizers, returning update_visualization,
-    and connect_visualizers.
-
-    The returned ``connect_visualizers`` function will return the
-    underlying ``Meshcat`` instance.
-    """
-    def update_visualization(plant, scene_graph):
-        if args.visualize_frames:
-            # Visualize frames
-            # Find all the frames and draw them using add_triad().
-            # The frames are drawn using the parsed length.
-            # The world frame is drawn thicker than the rest.
-            inspector = scene_graph.model_inspector()
-            for frame_id in inspector.GetAllFrameIds():
-                radius = args.triad_radius * (
-                    3 if frame_id == scene_graph.world_frame_id() else 1
-                    )
-                add_triad(
-                    plant.get_source_id(),
-                    frame_id,
-                    scene_graph,
-                    length=args.triad_length,
-                    radius=radius,
-                    opacity=args.triad_opacity,
-                )
-
-    def connect_visualizers(builder, plant, scene_graph,
-                            publish_contacts=True):
-        # Connect this to drake_visualizer or meldis. Meldis provides
-        # simultaneous visualization of illustration and proximity geometry.
-        ApplyVisualizationConfig(
-            config=VisualizationConfig(publish_contacts=publish_contacts),
-            plant=plant,
-            scene_graph=scene_graph,
-            builder=builder)
-
-        # Connect to MeshCat: this instance is required to connect
-        # e.g., JointSliders.
-        meshcat = Meshcat()
-        # Add two visualizers, one to publish the "illustration" geometry, and
-        # another to publish the "collision" geometry.
-        MeshcatVisualizer.AddToBuilder(
-            builder, scene_graph, meshcat,
-            MeshcatVisualizerParams(role=Role.kIllustration, prefix="visual"))
-        MeshcatVisualizer.AddToBuilder(
-            builder, scene_graph, meshcat,
-            MeshcatVisualizerParams(role=Role.kProximity, prefix="collision"))
-        sliders = builder.AddNamedSystem(
-            "joint_sliders", JointSliders(meshcat=meshcat, plant=plant))
-
-        if args.browser_new is not None:
-            url = meshcat.web_url()
-            webbrowser.open(url=url, new=args.browser_new)
-
-        # Connect to PyPlot.
-        if args.pyplot:
-            ConnectPlanarSceneGraphVisualizer(builder, scene_graph)
-
-        return meshcat
-
-    return update_visualization, connect_visualizers
-
-
 def main():
+    # TODO(todd.rowell) Move this file docstring elsewhere when this gets
+    # moved into pydrake.
     args_parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -320,55 +507,19 @@ def main():
         "--loop_once", action='store_true',
         help="Run the evaluation loop once and then quit.")
     args = args_parser.parse_args()
-    filename, make_parser = parse_filename_and_parser(args_parser, args)
-    update_visualization, connect_visualizers = parse_visualizers(
-        args_parser, args)
 
-    # Construct Plant + SceneGraph.
-    builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step=0.0)
-    # Load the model(s) from specified file.
-    make_parser(plant).AddAllModelsFromFile(filename)
-    update_visualization(plant, scene_graph)
-    plant.Finalize()
+    visualizer = ModelVisualizer(position=args.position,
+                                 visualize_frames=args.visualize_frames,
+                                 triad_length=args.triad_length,
+                                 triad_radius=args.triad_radius,
+                                 triad_opacity=args.triad_opacity,
+                                 browser_new=args.browser_new,
+                                 pyplot=args.pyplot,
+                                 loop_once=args.loop_once)
 
-    meshcat = connect_visualizers(builder, plant, scene_graph)
-
-    diagram = builder.Build()
-    context = diagram.CreateDefaultContext()
-
-    sliders = diagram.GetSubsystemByName("joint_sliders")
-    sliders_context = sliders.GetMyContextFromRoot(context)
-    plant_context = plant.GetMyContextFromRoot(context)
-
-    if args.position:
-        plant.SetPositions(plant_context, args.position)
-        sliders.SetPositions(args.position)
-
-    # Use Simulator to dispatch initialization events.
-    # TODO(eric.cousineau): Simplify as part of #10015.
-    Simulator(diagram).Initialize()
-    # Publish draw messages with current state.
-    diagram.Publish(context)
-
-    # Disable the collision geometry at the start; it can be enabled by the
-    # checkbox in the meshcat controls.
-    meshcat.SetProperty("collision", "visible", False)
-
-    # Wait for the user to cancel us.
-    if not args.loop_once:
-        print("Use Ctrl-C to quit")
-
-    try:
-        while True:
-            time.sleep(1 / 32.0)
-            q = sliders.get_output_port().Eval(sliders_context)
-            plant.SetPositions(plant_context, q)
-            diagram.Publish(context)
-            if args.loop_once:
-                return
-    except KeyboardInterrupt:
-        pass
+    visualizer.AddModels(
+        parse_filename_and_package(args_parser, args, visualizer.parser))
+    visualizer.Run()
 
 
 if __name__ == '__main__':
