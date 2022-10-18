@@ -1,4 +1,4 @@
-#include "drake/multibody/dev/c_iris/test/rational_forward_kinematics_test_utilities.h"
+#include "drake/multibody/rational/test/rational_forward_kinematics_test_utilities.h"
 
 #include <algorithm>
 #include <optional>
@@ -15,7 +15,6 @@
 
 namespace drake {
 namespace multibody {
-namespace c_iris {
 using drake::VectorX;
 using drake::math::RigidTransformd;
 using drake::multibody::BodyIndex;
@@ -154,6 +153,5 @@ void AddDualArmIiwa(const RigidTransformd& X_WL, const RigidTransformd& X_WR,
                     plant->GetFrameByName("body", right_schunk_instance), X_7S);
 }
 
-}  // namespace c_iris
 }  // namespace multibody
 }  // namespace drake

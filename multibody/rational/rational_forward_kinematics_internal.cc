@@ -1,4 +1,4 @@
-#include "drake/multibody/dev/c_iris/rational_forward_kinematics_internal.h"
+#include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 
 #include <algorithm>
 #include <memory>
@@ -10,7 +10,6 @@
 
 namespace drake {
 namespace multibody {
-namespace c_iris {
 namespace internal {
 using drake::multibody::BodyIndex;
 using drake::multibody::MultibodyPlant;
@@ -193,6 +192,5 @@ BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
 }
 
 }  // namespace internal
-}  // namespace c_iris
 }  // namespace multibody
 }  // namespace drake
