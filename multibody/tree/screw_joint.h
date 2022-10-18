@@ -110,10 +110,7 @@ class ScrewJoint final : public Joint<T> {
               double screw_pitch,
               double damping);
 
-  const std::string& type_name() const final {
-    static const never_destroyed<std::string> name{kTypeName};
-    return name.access();
-  }
+  const std::string& type_name() const final;
 
   /// Returns the normalized axis of motion of `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see

@@ -37,9 +37,14 @@ PrismaticJoint<T>::PrismaticJoint(
 }
 
 template <typename T>
+const std::string& PrismaticJoint<T>::type_name() const {
+  static const never_destroyed<std::string> name{kTypeName};
+  return name.access();
+}
+
+template <typename T>
 template <typename ToScalar>
-std::unique_ptr<Joint<ToScalar>>
-PrismaticJoint<T>::TemplatedDoCloneToScalar(
+std::unique_ptr<Joint<ToScalar>> PrismaticJoint<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& frame_on_parent_body_clone =
       tree_clone.get_variant(this->frame_on_parent());

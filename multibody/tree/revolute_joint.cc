@@ -37,6 +37,12 @@ RevoluteJoint<T>::RevoluteJoint(const std::string& name,
 }
 
 template <typename T>
+const std::string& RevoluteJoint<T>::type_name() const {
+  static const never_destroyed<std::string> name{kTypeName};
+  return name.access();
+}
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Joint<ToScalar>> RevoluteJoint<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
