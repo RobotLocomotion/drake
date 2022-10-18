@@ -120,6 +120,72 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
                               "The seed point is in collision.*");
 }
 
+GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstacles) {
+  const double kTol = 1e-3;  // due to ibex's rel_eps_f.
+  const Vector1d sample = Vector1d::Zero();
+  IrisOptions options;
+
+  // Configuration space obstacles less restrictive than task space obstacle.
+  {
+    ConvexSets obstacles;
+    obstacles.emplace_back(HPolyhedron::MakeBox(Vector1d(1.5), Vector1d(3)));
+    options.configuration_obstacles = obstacles;
+    HPolyhedron region = IrisFromUrdf(boxes_urdf, sample, options);
+
+    EXPECT_EQ(region.ambient_dimension(), 1);
+
+    const double qmin = -1.0 + options.configuration_space_margin,
+                 qmax = 1.0 - options.configuration_space_margin;
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  }
+
+  // Configuration space obstacle more restrictive than task space obstacles.
+  {
+    ConvexSets obstacles;
+    obstacles.emplace_back(HPolyhedron::MakeBox(Vector1d(0.5), Vector1d(3)));
+    options.configuration_obstacles = obstacles;
+    HPolyhedron region = IrisFromUrdf(boxes_urdf, sample, options);
+
+    EXPECT_EQ(region.ambient_dimension(), 1);
+
+    const double qmin = -1.0 + options.configuration_space_margin, qmax = 0.5;
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  }
+
+  // Configuration space obstacles align with task space obstacle.
+  {
+    ConvexSets obstacles;
+    obstacles.emplace_back(HPolyhedron::MakeBox(Vector1d(1), Vector1d(3)));
+    options.configuration_obstacles = obstacles;
+    HPolyhedron region = IrisFromUrdf(boxes_urdf, sample, options);
+
+    EXPECT_EQ(region.ambient_dimension(), 1);
+
+    const double qmin = -1.0 + options.configuration_space_margin,
+                 qmax = 1.0 - options.configuration_space_margin;
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  }
+
+  // Sample is in configuration space obstacles.
+  {
+    ConvexSets obstacles;
+    obstacles.emplace_back(HPolyhedron::MakeBox(Vector1d(0.5), Vector1d(3)));
+    options.configuration_obstacles = obstacles;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        IrisFromUrdf(boxes_urdf, Vector1d(0.7), options),
+        "The seed point is in configuration obstacle.*");
+  }
+}
+
 // Three spheres.  Two on the outside are fixed.  One in the middle on a
 // prismatic joint.  The configuration space is a (convex) line segment q ∈
 // (−1,1).
