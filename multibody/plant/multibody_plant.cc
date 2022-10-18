@@ -2990,6 +2990,18 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
   std::fill(F_BBo_W_array->begin(), F_BBo_W_array->end(),
             SpatialForce<T>::Zero());
 
+  CalcAndAddSpatialContactForcesContinuous(context, F_BBo_W_array);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
+      const drake::systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const {
+  this->ValidateContext(context);
+  DRAKE_DEMAND(F_BBo_W_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
+  DRAKE_DEMAND(!is_discrete());
+
   // Early exit if there are no contact forces.
   if (num_collision_geometries() == 0) return;
 
@@ -3826,9 +3838,15 @@ void MultibodyPlant<T>::CalcReactionForces(
   auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
   auto& tau_applied = applied_forces.mutable_generalized_forces();
 
-  // TODO(sherm1) This doesn't include hydroelastic contact forces
-  //              in continuous mode (#13888).
-  CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+  // Add in forces due to contact.
+  // Only add in hydroelastic contact forces for continuous mode for now as
+  // the forces computed by CalcHydroelasticContactForces() are wrong in
+  // discrete mode. See (#13888).
+  if (!is_discrete()) {
+    CalcAndAddSpatialContactForcesContinuous(context, &Fapplied_Bo_W_array);
+  } else {
+    CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+  }
 
   // Compute reaction forces at each mobilizer.
   std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());

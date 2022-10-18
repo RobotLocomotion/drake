@@ -4776,7 +4776,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       std::vector<SpatialAcceleration<T>>* A_WB_all) const;
 
   // Method to compute spatial contact forces for continuous plants.
+  // @note This version zeros out the forces in @p F_BBo_W_array before adding
+  // in contact force.
+  // @see CalcAndAddSpatialContactForcesContinuous() for the version of this
+  // method that does not zero out the forces.
   void CalcSpatialContactForcesContinuous(
+      const drake::systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
+  // Method to compute spatial contact forces for continuous plants.
+  // @note This version does *not* zero out the forces in @p F_BBo_W_array.
+  // @see CalcSpatialContactForcesContinuous() for the version of this method
+  // that zeros out @p F_BBo_W_array before adding in contact forces.
+  void CalcAndAddSpatialContactForcesContinuous(
       const drake::systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
