@@ -55,44 +55,12 @@ const double kInf = std::numeric_limits<double>::infinity();
 
 MathematicalProgram::MathematicalProgram() = default;
 
+MathematicalProgram::MathematicalProgram(const MathematicalProgram&) = default;
+
 MathematicalProgram::~MathematicalProgram() = default;
 
 std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
-  // The constructor of MathematicalProgram will construct each solver. It
-  // also sets x_initial_guess_ to default values.
-  auto new_prog = std::make_unique<MathematicalProgram>();
-  // Add variables and indeterminates
-  // AddDecisionVariables and AddIndeterminates also set
-  // decision_variable_index_ and indeterminate_index_ properly.
-  new_prog->AddDecisionVariables(this->decision_variables());
-  new_prog->AddIndeterminates(this->indeterminates());
-  // Add costs
-  new_prog->generic_costs_ = generic_costs_;
-  new_prog->quadratic_costs_ = quadratic_costs_;
-  new_prog->linear_costs_ = linear_costs_;
-  new_prog->l2norm_costs_ = l2norm_costs_;
-
-  // Add constraints
-  new_prog->generic_constraints_ = generic_constraints_;
-  new_prog->linear_constraints_ = linear_constraints_;
-  new_prog->linear_equality_constraints_ = linear_equality_constraints_;
-  new_prog->bbox_constraints_ = bbox_constraints_;
-  new_prog->lorentz_cone_constraint_ = lorentz_cone_constraint_;
-  new_prog->rotated_lorentz_cone_constraint_ =
-      rotated_lorentz_cone_constraint_;
-  new_prog->positive_semidefinite_constraint_ =
-      positive_semidefinite_constraint_;
-  new_prog->linear_matrix_inequality_constraint_ =
-      linear_matrix_inequality_constraint_;
-  new_prog->exponential_cone_constraints_ = exponential_cone_constraints_;
-  new_prog->linear_complementarity_constraints_ =
-      linear_complementarity_constraints_;
-
-  new_prog->x_initial_guess_ = x_initial_guess_;
-  new_prog->solver_options_ = solver_options_;
-
-  new_prog->required_capabilities_ = required_capabilities_;
-  return new_prog;
+  return std::unique_ptr<MathematicalProgram>(new MathematicalProgram(*this));
 }
 
 string MathematicalProgram::to_string() const {
