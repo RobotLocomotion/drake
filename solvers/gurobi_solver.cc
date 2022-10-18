@@ -33,6 +33,13 @@ namespace drake {
 namespace solvers {
 namespace {
 
+// Returns the (base) URL for Gurobi's online reference manual.
+std::string refman() {
+  return fmt::format(
+      "https://www.gurobi.com/documentation/{}.{}/refman",
+      GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
+}
+
 // Information to be passed through a Gurobi C callback to
 // grant it information about its problem (the host
 // MathematicalProgram prog, and which decision variables
@@ -771,40 +778,76 @@ void SetOptionOrThrow(GRBenv* model_env, const std::string& option,
   static_assert(std::is_same_v<T, int> || std::is_same_v<T, double> ||
                     std::is_same_v<T, std::string>,
                 "Option values must be int, double, or string");
+
+  // Set the parameter as requested, returning immediately in case of success.
+  const char* actual_type;
   int error = 0;
   if constexpr (std::is_same_v<T, int>) {
+    actual_type = "integer";
     error = GRBsetintparam(model_env, option.c_str(), val);
   } else if constexpr (std::is_same_v<T, double>) {
+    actual_type = "floating-point";
     error = GRBsetdblparam(model_env, option.c_str(), val);
   } else if constexpr (std::is_same_v<T, std::string>) {
+    actual_type = "string";
     error = GRBsetstrparam(model_env, option.c_str(), val.c_str());
   }
-  if (error) {
-    const std::string gurobi_version =
-        fmt::format("{}.{}", GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
-    if (error == GRB_ERROR_UNKNOWN_PARAMETER) {
-      throw std::runtime_error(fmt::format(
-          "GurobiSolver(): '{}' is an unknown parameter in Gurobi, check "
-          "https://www.gurobi.com/documentation/{}/refman/parameters.html for "
-          "allowable parameters",
-          option, gurobi_version));
-    } else if (error == GRB_ERROR_VALUE_OUT_OF_RANGE) {
-      throw std::runtime_error(fmt::format(
-          "GurobiSolver(): '{}' is outside the parameter {}'s valid range", val,
-          option));
-    }
-    // The error message for Setting a Gurobi option should be either
-    // GRB_ERROR_UNKNOWN_PARAMETER or GRB_ERROR_VALUE_OF_OF_RANGE. But just in
-    // case I missed something, I added this throw to capture any other possible
-    // error message. This is untested because I don't know how to trigger an
-    // unknown error.
-    throw std::runtime_error(
-        fmt::format("GurobiSolver(): error code {}, cannot set option '{}' to "
-                    "value '{}', check "
-                    "https://www.gurobi.com/documentation/{}/refman/"
-                    "parameters.html for all allowable options and values.",
-                    error, option, val, gurobi_version));
+  if (!error) {
+    return;
   }
+
+  // Report range errors (i.e., the parameter name is known, but `val` is bad).
+  if (error == GRB_ERROR_VALUE_OUT_OF_RANGE) {
+    throw std::runtime_error(fmt::format(
+        "GurobiSolver(): '{}' is outside the parameter {}'s valid range", val,
+        option));
+  }
+
+  // In case of "unknown", it could either be truly unknown or else just the
+  // wrong data type.
+  if (error == GRB_ERROR_UNKNOWN_PARAMETER) {
+    // For the expected param_type, we have:
+    //   1: INT param
+    //   2: DBL param
+    //   3: STR param
+    const int param_type = GRBgetparamtype(model_env, option.c_str());
+
+    // If the user provided an int for a double param, treat it as a double
+    // without any complaint. This is especially helpful for Python users.
+    if constexpr (std::is_same_v<T, int>) {
+      if (param_type == 2) {
+        SetOptionOrThrow<double>(model_env, option, val);
+        return;
+      }
+    }
+
+    // Otherwise, identify all other cases of type-mismatches.
+    const char* expected_type = nullptr;
+    switch (param_type) {
+      case 1: { expected_type = "integer"; break; }
+      case 2: { expected_type = "floating-point"; break; }
+      case 3: { expected_type = "string"; break; }
+    }
+    if (expected_type != nullptr) {
+      throw std::runtime_error(fmt::format(
+          "GurobiSolver(): parameter {} should be a {} not a {}",
+          option, expected_type, actual_type));
+    }
+
+    // Otherwise, it was truly unknown not just wrongly-typed.
+    throw std::runtime_error(fmt::format(
+        "GurobiSolver(): '{}' is an unknown parameter in Gurobi, check "
+        "{}/parameters.html for allowable parameters",
+        option, refman()));
+  }
+
+  // The error code should always be UNKNOWN_PARAMETER or VALUE_OUT_OF_RANGE,
+  // but just in case we'll handle other errors with a fallback. This is
+  // untested because it's thought to be unreachable in practice.
+  throw std::runtime_error(fmt::format(
+      "GurobiSolver(): error code {}, cannot set option '{}' to value '{}', "
+      "check {}/parameters.html for all allowable options and values.",
+      error, option, val, refman()));
 }
 }  // anonymous namespace
 
@@ -1135,12 +1178,10 @@ void GurobiSolver::DoSolve(
       if (error) {
         const std::string gurobi_version =
             fmt::format("{}.{}", GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
-        throw std::runtime_error(
-            fmt::format("GurobiSolver(): setting GRBwrite to {}, this is not "
-                        "supported. Check "
-                        "https://www.gurobi.com/documentation/{}/refman/"
-                        "py_model_write.html for more details.",
-                        grb_write.value(), gurobi_version));
+        throw std::runtime_error(fmt::format(
+            "GurobiSolver(): setting GRBwrite to {}, this is not supported. "
+            "Check {}/py_model_write.html for more details.",
+            grb_write.value(), refman()));
       }
     }
   }
