@@ -581,7 +581,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("frame_on_child"), py::arg("screw_pitch") = py::none(),
             py::arg("damping") = py::none(),
             (std::string(cls_doc.ctor.doc_5args) +
-                "The defaults values for screw_pitch and damping are "
+                "\n\nThe defaults values for screw_pitch and damping are "
                 "deprecated and will removed on 2023-02-01.")
                 .c_str())
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
