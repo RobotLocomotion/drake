@@ -44,6 +44,27 @@ def getDrakePath():
     return os.path.abspath(_common.GetDrakePath())
 
 
+def _getInstallInstructionsPath():
+    me = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(me, 'INSTALLATION')
+
+
+def showInstallInstructions():
+    path = _getInstallInstructionsPath()
+
+    if os.path.exists(path):
+        with open(path) as f:
+            for line in f:
+                print(line.rstrip())
+    else:
+        print('''
+The Drake installation instructions could not be found. This likely indicates
+that Drake was not installed from a wheel.
+
+The non-wheel instructions can be found at:
+    https://drake.mit.edu/installation.html'''.strip())
+
+
 def _execute_extra_python_code(m, use_subdir: bool = False):
     # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
     # rationale.
@@ -110,6 +131,37 @@ def _import_cc_module_vars(
 class _DrakeImportWarning(Warning):
     pass
 
+
+class _drake_excepthook:
+    def __init__(self):
+        self._message = f'''
+Drake failed to load a required library. This could indicate an installation
+problem, or that your system is missing required distro-provided packages.
+Please refer to the installation instructions to ensure that all required
+dependencies are installed.
+
+For more information, please see:
+    '''
+
+        doc = _getInstallInstructionsPath()
+        if os.path.exists(doc):
+            self._message += f'{doc}\n'
+        else:
+            self._message += 'https://drake.mit.edu/installation.html\n'
+
+        self._chain = sys.excepthook
+        sys.excepthook = self.hook
+
+    def hook(self, kind, value, traceback):
+        if (kind is ImportError
+            and '/pydrake/' in value.path
+            and 'cannot open shared object file' in value.msg):
+            print(self._message)
+
+        self._chain(kind, value, traceback)
+
+
+_EXCEPTHOOK = _drake_excepthook()
 
 _RTLD_GLOBAL_WARNING = r"""
 You may have already (directly or indirectly) imported `torch` which uses

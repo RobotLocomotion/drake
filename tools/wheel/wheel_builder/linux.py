@@ -280,7 +280,7 @@ def _test_wheel(target, identifier, options):
 
     # Run individual tests.
     test_script = '/test/test-wheel.sh'
-    for test in find_tests():
+    for test in find_tests('hermetic'):
         print(f'[-] Executing test {test}')
         _docker('run', '--rm', '-t',
                 '-v' f'{test_dir}:/test',

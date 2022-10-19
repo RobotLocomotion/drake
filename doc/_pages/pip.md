@@ -66,7 +66,22 @@ env/bin/pip install --upgrade pip
 env/bin/pip install drake
 ```
 
-(2) Drake requires certain basic runtime libraries from the host linux distribution.
+(2) Drake requires certain basic runtime libraries
+from the host Linux distribution.
+
+<!-- TODO(mwoehlke-kitware)
+On or after 2022-12-01 (once Drake 1.9.0 is released),
+remove these instructions and replace with:
+
+    Refer to the file share/doc/pydrake/INSTALLATION
+    inside the pydrake installation,
+    or run the following Python code:
+
+    ```python
+    import pydrake
+    pydrake.showInstallInstructions()
+    ```
+-->
 
 For Ubuntu 20.04, install these additional libraries:
 
