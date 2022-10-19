@@ -116,9 +116,26 @@ GTEST_TEST(CartesianProductTest, TwoBoxes) {
   HPolyhedron H1 = HPolyhedron::MakeBox(Vector2d{1, 1}, Vector2d{2, 2});
   HPolyhedron H2 = HPolyhedron::MakeBox(Vector2d{-2, 2}, Vector2d{0, 4});
   CartesianProduct S(H1, H2);
+  EXPECT_TRUE(S.IsBounded());
   EXPECT_TRUE(S.PointInSet(Vector4d{1.9, 1.9, -.1, 3.9}));
   EXPECT_FALSE(S.PointInSet(Vector4d{1.9, 1.9, -.1, 4.1}));
   EXPECT_FALSE(S.PointInSet(Vector4d{2.1, 1.9, -.1, 3.9}));
+}
+
+GTEST_TEST(CartesianProductTest, UnboundedSets) {
+  const Point P(Vector2d{1.2, 3.4});
+  Eigen::Matrix2d A;
+  A << -1, 0, 0, 1;
+  const HPolyhedron H(A, Vector2d(0, 2));
+  const CartesianProduct S(P, H);
+
+  EXPECT_FALSE(S.IsBounded());
+
+  Vector4d in, out;
+  in << P.x(), 1, 0;
+  out << P.x() + Vector2d::Constant(0.01), 1, 0;
+  EXPECT_TRUE(S.PointInSet(in));
+  EXPECT_FALSE(S.PointInSet(out));
 }
 
 GTEST_TEST(CartesianProductTest, CloneTest) {
@@ -243,6 +260,7 @@ GTEST_TEST(CartesianProductTest, Rotated) {
 
   EXPECT_EQ(S.ambient_dimension(), 2);
   EXPECT_EQ(S.num_factors(), 2);
+  EXPECT_TRUE(S.IsBounded());
 
   // The set S is equivalent to Point(in_S).
   const double kTol = 1e-14;
