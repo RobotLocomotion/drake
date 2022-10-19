@@ -287,7 +287,54 @@ drake_cc_library(
     hdrs = ["serialize_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
-    deps = ["//:drake_shared_library"],
+    deps = [
+        "//:drake_shared_library",
+        "//bindings/pydrake:pydrake_pybind",
+    ],
+)
+
+drake_pybind_library(
+    name = "serialize_test_foo_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [":serialize_pybind"],
+    cc_so_name = "test/serialize_test_foo",
+    cc_srcs = [
+        "test/serialize_test_foo_py.cc",
+        "test/serialize_test_foo_py.h",
+    ],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":cpp_param_py",
+        ":module_py",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+drake_pybind_library(
+    name = "serialize_test_bar_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [":serialize_pybind"],
+    cc_so_name = "test/serialize_test_bar",
+    cc_srcs = [
+        "test/serialize_test_bar_py.cc",
+        "test/serialize_test_foo_py.h",
+    ],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":cpp_param_py",
+        ":module_py",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+drake_py_unittest(
+    name = "serialize_import_failure_test",
+    deps = [
+        ":serialize_test_bar_py",
+        ":serialize_test_foo_py",
+    ],
 )
 
 drake_pybind_library(
@@ -299,6 +346,7 @@ drake_pybind_library(
     cc_srcs = ["test/serialize_test_util_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":cpp_param_py",
         ":module_py",
     ],
     visibility = ["//visibility:private"],
