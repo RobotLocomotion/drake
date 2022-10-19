@@ -237,18 +237,12 @@ PYBIND11_MODULE(sensors, m) {
       double{RgbdSensorDiscrete::kDefaultPeriod};
 
   {
+    // To bind nested serializable structs without errors, we declare the outer
+    // struct first, then bind its inner structs, then bind the outer struct.
     constexpr auto& config_cls_doc = doc.CameraConfig;
     py::class_<CameraConfig> config_cls(m, "CameraConfig", config_cls_doc.doc);
-    config_cls  // BR
-        .def(ParamInit<CameraConfig>())
-        .def("focal_x", &CameraConfig::focal_x, config_cls_doc.focal_x.doc)
-        .def("focal_y", &CameraConfig::focal_y, config_cls_doc.focal_y.doc)
-        .def("principal_point", &CameraConfig::principal_point,
-            config_cls_doc.principal_point.doc);
-    DefAttributesUsingSerialize(&config_cls, config_cls_doc);
-    DefReprUsingSerialize(&config_cls);
-    DefCopyAndDeepCopy(&config_cls);
 
+    // Inner struct.
     constexpr auto& fov_degrees_doc = doc.CameraConfig.FovDegrees;
     py::class_<CameraConfig::FovDegrees> fov_class(
         config_cls, "FovDegrees", fov_degrees_doc.doc);
@@ -258,6 +252,7 @@ PYBIND11_MODULE(sensors, m) {
     DefReprUsingSerialize(&fov_class);
     DefCopyAndDeepCopy(&fov_class);
 
+    // Inner struct.
     constexpr auto& focal_doc = doc.CameraConfig.FocalLength;
     py::class_<CameraConfig::FocalLength> focal_class(
         config_cls, "FocalLength", focal_doc.doc);
@@ -266,6 +261,17 @@ PYBIND11_MODULE(sensors, m) {
     DefAttributesUsingSerialize(&focal_class, focal_doc);
     DefReprUsingSerialize(&focal_class);
     DefCopyAndDeepCopy(&focal_class);
+
+    // Now we can bind the outer struct (see above).
+    config_cls  // BR
+        .def(ParamInit<CameraConfig>())
+        .def("focal_x", &CameraConfig::focal_x, config_cls_doc.focal_x.doc)
+        .def("focal_y", &CameraConfig::focal_y, config_cls_doc.focal_y.doc)
+        .def("principal_point", &CameraConfig::principal_point,
+            config_cls_doc.principal_point.doc);
+    DefAttributesUsingSerialize(&config_cls, config_cls_doc);
+    DefReprUsingSerialize(&config_cls);
+    DefCopyAndDeepCopy(&config_cls);
 
     m.def("ApplyCameraConfig",
         py::overload_cast<const CameraConfig&, DiagramBuilder<double>*,
