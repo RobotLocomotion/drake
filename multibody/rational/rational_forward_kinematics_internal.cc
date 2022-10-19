@@ -11,61 +11,51 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-struct BodyOnPath {
-  BodyOnPath(BodyIndex m_index, int m_distance_to_start, BodyOnPath* m_parent)
-      : index(m_index),
-        distance_to_start(m_distance_to_start),
-        parent(m_parent) {}
-  BodyIndex index;
-  int distance_to_start;
-  BodyOnPath* parent;
-};
 
 std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
                                 BodyIndex start, BodyIndex end) {
-  DRAKE_ASSERT(start.is_valid() && end.is_valid());
-  const MultibodyTree<double>& tree = GetInternalTree(plant);
-  // Do a breadth first search in the tree.
-  std::unordered_map<BodyIndex, std::unique_ptr<BodyOnPath>> visited_bodies;
-  BodyIndex start_copy = start;
-  visited_bodies.emplace(std::make_pair(
-      std::move(start_copy), std::make_unique<BodyOnPath>(start, 0, nullptr)));
-  std::queue<BodyOnPath*> queue_bodies;
-  queue_bodies.push(visited_bodies[start].get());
-  BodyOnPath* queue_front = queue_bodies.front();
-  while (queue_front->index != end) {
-    queue_bodies.pop();
-    const BodyTopology& body_node =
-        tree.get_topology().get_body(queue_front->index);
-    if (body_node.parent_body.is_valid()) {
-      BodyIndex parent = body_node.parent_body;
-      visited_bodies.emplace(std::make_pair(
-          std::move(parent),
-          std::make_unique<BodyOnPath>(body_node.parent_body,
-                                       queue_front->distance_to_start + 1,
-                                       queue_front)));
-      queue_bodies.emplace(visited_bodies[body_node.parent_body].get());
+  DRAKE_DEMAND(start.is_valid());
+  DRAKE_DEMAND(end.is_valid());
+  const MultibodyTreeTopology& topology = GetInternalTree(plant).get_topology();
+
+  // Do a breadth first search in the tree. The `worklist` stores the nodes
+  // ready for exploration; the keys of the `parent` map are the already-
+  // explored notes, and the values are the ancestor nodes (ancestor in the
+  // sense of "towards the `start` node"; NOT in the sense of parent/child).
+  std::queue<BodyIndex> worklist({start});
+  std::unordered_map<BodyIndex, BodyIndex> ancestors{{start, {}}};
+  auto visit_edge = [&](BodyIndex current, BodyIndex next) {
+    DRAKE_DEMAND(next.is_valid());
+    if (ancestors.emplace(next, current).second) {
+      worklist.push(next);
     }
-    for (BodyIndex child : body_node.child_bodies) {
-      if (child.is_valid()) {
-        BodyIndex child_copy = child;
-        visited_bodies.emplace(std::make_pair(
-            std::move(child_copy),
-            std::make_unique<BodyOnPath>(
-                child, queue_front->distance_to_start + 1, queue_front)));
-        queue_bodies.emplace(visited_bodies[child].get());
-      }
+  };
+  while (!worklist.empty()) {
+    BodyIndex current = worklist.front();
+    worklist.pop();
+    if (current == end) {
+      break;
     }
-    queue_front = queue_bodies.front();
+    const BodyTopology& current_node = topology.get_body(current);
+    if (current != world_index()) {
+      const BodyIndex parent = current_node.parent_body;
+      visit_edge(current, parent);
+    }
+    for (BodyIndex child : current_node.child_bodies) {
+      visit_edge(current, child);
+    }
   }
-  // Backup the path
+
+  // Retrieve the path in reverse order.
   std::vector<BodyIndex> path;
-  BodyOnPath* path_body = queue_front;
-  while (path_body->index != start) {
-    path.push_back(path_body->index);
-    path_body = path_body->parent;
+  for (BodyIndex current = end; ; current = ancestors.at(current)) {
+    path.push_back(current);
+    if (current == start) {
+      break;
+    }
   }
-  path.push_back(start);
+
+  // Switch to forward order.
   std::reverse(path.begin(), path.end());
   return path;
 }
