@@ -101,6 +101,7 @@ drake_cc_library(
     srcs = [
         "ball_rpy_joint.cc",
         "body.cc",
+        "body_node.cc",
         "body_node_impl.cc",
         "door_hinge.cc",
         "fixed_offset_frame.cc",
