@@ -111,7 +111,7 @@ the main body of the document:
    3. Open the latest builds from the following builds:
       1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-mosek-packaging/>
       2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-bazel-nightly-snopt-mosek-packaging/>
-      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-big-sur-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
+      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-x86-big-sur-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
       4. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-m1-monterey-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
@@ -127,7 +127,7 @@ the main body of the document:
 2. Launch the wheel staging builds for that git commit sha:
    1. For both macOS and linux, open the jenkins build page from
       this list:
-      - [macOS Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Wheel/job/mac-big-sur-unprovisioned-clang-wheel-staging-snopt-mosek-release/)
+      - [macOS Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Wheel/job/mac-x86-big-sur-unprovisioned-clang-wheel-staging-snopt-mosek-release/)
       - [linux Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-wheel-staging-snopt-mosek-release/)
    2. In the upper right, click "log in" (unless you're already logged in). This
       will use your GitHub credentials.
