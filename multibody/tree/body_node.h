@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -24,7 +23,6 @@
 
 namespace drake {
 namespace multibody {
-
 namespace internal {
 
 // For internal use only of the MultibodyTree implementation.
@@ -933,7 +931,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // - Prismatic: [0 0 0 x y z]
   // - Ball: 3x3 blocks of zeroes.
   void CalcArticulatedBodyInertiaCache_TipToBase(
-      const systems::Context<T>&,
+      const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       const SpatialInertia<T>& M_B_W,
@@ -1061,68 +1059,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       D_B.diagonal() += diagonal_inertias.segment(this->velocity_start(), nv);
 
       // Compute the LLT factorization of D_B as llt_D_B.
-      // Note: Eigen benchmarks for various matrix factorizations is here:
-      // https://eigen.tuxfamily.org/dox/group__DenseDecompositionBenchmark.html
-      // According to the benchmark (October 2022) and for small 8x8 matrices,
-      // as compared to LLT, the follow are slower by the following factors:
-      // LDLT 1.3x, PartialPivLU 1.5x, FullPivLU = 1.9x, HouseholderQR 3.5x,
-      // CompleteOrthogonalDecomposition 4.3x, FullPivHouseholderQR 4.3x,
-      // JacobiSVD 18.6x, BDCSVD 19.7x (less for singular values, sans vectors).
-      // TODO(bobbyluig): Test performance against inverse().
       math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
-          get_mutable_llt_D_B(abic);
-      llt_D_B = math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>(
-          MatrixUpTo6<T>(D_B.template selfadjointView<Eigen::Lower>()));
-
-      // Ensure D_B (the articulated body hinge inertia) is positive definite
-      // enough (which means that all its eigenvalues are positive enough).
-      // If there is a singularity (or near-singularity), the articulated body
-      // hinge matrix may be non-physical, e.g., it has a zero (or near-zero)
-      // moment of inertia along an axis along which rotation is permitted.
-      // Example: The 1x1 hinge matrix D_B = [1.2] is positive definite whereas
-      // D_B = [0] or D_B = [-1E-22] are not positive definite. We also want to
-      // avoid near-singular hinge matrices such as D_B = [+ε], where ε = 1E-9
-      // was chosen by considering "small" mass and inertia robotic properties.
-      // We regard small mass as 1E-3 (1 gram) and small length as 1E-3 (1 mm),
-      // so a small moment of inertia ≈ mass * length² = 1E-9.  We then ensure
-      // the LLT factorization of (D_B - ε I) is still positive definite (i.e.,
-      // all its eigenvalues are positive). The following proof establishes
-      // the mathematical validity for this test. By definition, the eigenvalues
-      // λ and eigenvectors v of the matrix A are determined by A v = λ v.
-      //   (A - ε I) v = A v - ε I v  where I is the identity matrix.
-      //               = λ v - ε v    since ε I = ε
-      //               = (λ - ε) v    which shows (λ - ε) are the eigenvalues of
-      // (A - ε I). Since A is symmetric, (A - ε I) is symmetric. Hence if
-      // (λ - ε) > 0 (positive eigenvalues), then λ > ε which means all the
-      // eigenvalues of A are not only positive, but greater than ε (which means
-      // that A is not super-close to singular (for the ε chosen here).
-      bool is_failed = llt_D_B.eigen_linear_solver().info() != Eigen::Success;
-
-      // If the matrix has not already failed, check (D_B - ε I).
-      if (!is_failed) {
-        constexpr double epsilon = 1.0E-9;
-        MatrixUpTo6<T> D_B_minus_epsilon(nv, nv);
-        D_B_minus_epsilon = D_B;
-        for (int i = 0; i < nv; ++i) D_B_minus_epsilon(i, i) -= epsilon;
-
-        // Check if LLT factorization on llt_D_B_minus_epsilon fails.
-        math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>> llt_D_B_minus_epsilon =
-            math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>(MatrixUpTo6<T>(
-                D_B_minus_epsilon.template selfadjointView<Eigen::Lower>()));
-        is_failed = llt_D_B_minus_epsilon.eigen_linear_solver().info() !=
-                    Eigen::Success;
-      }
-
-      // If factorization fails on original or shifted matrix, issue an error.
-      if (is_failed) {
-        std::stringstream message;
-        message << "Encountered singular articulated body hinge inertia "
-                << "for body node index " << topology_.index << ". "
-                << "Please ensure that this body has non-zero inertia "
-                << "along all axes of motion.";
-        std::cout << "\n\nHinge matrix = " << D_B << "\n";
-        throw std::runtime_error(message.str());
-      }
+          CalcHingeMatrixFactorization(context, D_B, abic);
 
       // Compute the Kalman gain, g_PB_W, using (6).
       Matrix6xUpTo6<T>& g_PB_W = get_mutable_g_PB_W(abic);
@@ -1698,6 +1636,19 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return abic->get_mutable_llt_D_B(topology_.index);
   }
 
+  // Returns a mutable version of the LLT factorization of the articulated
+  // rigid body's hinge matrix.
+  // param[in] context Contains the state of the multibody system and is only
+  //   used if factorization fails and an assertion is thrown which contains
+  //   mass and/or inertia properties of this body node's outboard body.
+  // param[in] D_B Articulated rigid body hinge matrix.
+  // param[in] abic Efficient access to articulated body inertia cache.
+  // @throws an exception if D_B is not positive definite or is near-singular.
+  math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& CalcHingeMatrixFactorization(
+    const systems::Context<T>& context,
+    const MatrixUpTo6<T>& D_B,
+    ArticulatedBodyInertiaCache<T>* abic) const;
+
   // Returns a const reference to the Kalman gain `g_PB_W` of the body.
   const Matrix6xUpTo6<T>& get_g_PB_W(
       const ArticulatedBodyInertiaCache<T>& abic) const {
@@ -1727,6 +1678,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return aba_force_cache->get_mutable_Zplus_PB_W(topology_.index);
   }
 
+#if 0
   // Returns a const reference to the Coriolis spatial acceleration `Ab_WB`
   // for this body due to the relative velocities of body B and body P.
   const SpatialAcceleration<T>& get_Ab_WB(
@@ -1739,6 +1691,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       ArticulatedBodyForceCache<T>* aba_force_cache) const {
     return aba_force_cache->get_mutable_Ab_WB(topology_.index);
   }
+#endif
 
   // Returns a const reference to the Coriolis spatial acceleration `Ab_WB`
   // for this body due to the relative velocities of body B and body P.
@@ -1968,3 +1921,6 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::BodyNode)
