@@ -3,8 +3,6 @@
 // Note: the user should not include this header in their code. This header is
 // created for internal use only.
 
-#include <memory>
-#include <unordered_set>
 #include <vector>
 
 #include "drake/multibody/plant/multibody_plant.h"
@@ -13,7 +11,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 /*
- * Find the path on the kinematic tree from start to the end.
+ * Finds the path on the kinematic tree from start to the end.
  * Here we make the following assumptions
  * 1. The `plant` kinematic topology is a tree with every link on being
  * reachable. Hence for any two bodies, there exists one and only one path
@@ -30,16 +28,16 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
                                 BodyIndex start, BodyIndex end);
 
 /*
- * Find all the mobilizer on the path from start to the end.
+ * Finds all the mobilizer on the path from start to the end.
  */
 std::vector<internal::MobilizerIndex> FindMobilizersOnPath(
     const MultibodyPlant<double>& plant, BodyIndex start, BodyIndex end);
 
 /*
- * Find the body in the middle of the kinematic chain that goes from the start
+ * Finds the body in the middle of the kinematic chain that goes from the start
  * to the end. Notice that we ignore the welded joint, and only count revolute
- * joint as one step along the chain, we throw an error when hitting non-revolue
- * / weld mobilizers.
+ * joint as one step along the chain, we throw an error when hitting
+ * non-revolute weld mobilizers.
  */
 BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
                                      BodyIndex start, BodyIndex end);

@@ -9,9 +9,6 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/solvers/solve.h"
-#include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/vector_system.h"
-#include "drake/systems/rendering/multibody_position_to_geometry_pose.h"
 
 namespace drake {
 namespace multibody {
@@ -46,7 +43,7 @@ Eigen::Matrix<double, 3, 8> GenerateBoxVertices(const Eigen::Vector3d& size,
               1, -1, 1, -1, 1, -1, 1, -1;
   // clang-format on
   for (int i = 0; i < 3; ++i) {
-    DRAKE_ASSERT(size(i) > 0);
+    DRAKE_DEMAND(size(i) > 0);
     vertices.row(i) *= size(i) / 2;
   }
   vertices = pose.rotation().matrix() * vertices +
