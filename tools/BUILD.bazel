@@ -38,7 +38,6 @@ py_binary(
     deps = [
         "//lcmtypes:lcmtypes_drake_py",
         "//tools/workspace/drake_visualizer:builtin_scripts_py",
-        "//tools/workspace/drake_visualizer:stub_pydrake",
         "@drake_visualizer//:drake_visualizer_python_deps",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ] if _DRAKE_VISUALIZER_ENABLED else [],
