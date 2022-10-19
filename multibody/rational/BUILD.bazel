@@ -54,7 +54,6 @@ drake_cc_library(
         "//multibody/parsing:parser",
         "//multibody/plant",
         "//solvers:solve",
-        "//systems/rendering:multibody_position_to_geometry_pose",
         "@gtest//:without_main",
     ],
 )

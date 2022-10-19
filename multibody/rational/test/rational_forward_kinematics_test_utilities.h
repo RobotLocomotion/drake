@@ -1,3 +1,5 @@
+// TODO(hongkai.dai): remove any of the helpers here that we don't end up using
+// in the completed version of rational kinematics
 #pragma once
 
 #include <array>
@@ -17,12 +19,22 @@
 namespace drake {
 namespace multibody {
 
+/**
+ * Constructs an IIWA plant with the base welded to the ground.
+ */
 std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
     const std::string& iiwa_sdf_name, bool finalize);
 
+/*
+ * Each row of the returned matrix is a vertex of the box.
+ */
 Eigen::Matrix<double, 3, 8> GenerateBoxVertices(
     const Eigen::Vector3d& size, const drake::math::RigidTransformd& pose);
 
+/*
+ * Constructs a dual arm IIWA plant with the base of each IIWA welded to the
+ * ground at the given pose.
+ */
 std::unique_ptr<MultibodyPlant<double>> ConstructDualArmIiwaPlant(
     const std::string& iiwa_sdf_name, const drake::math::RigidTransformd& X_WL,
     const drake::math::RigidTransformd& X_WR,

@@ -19,14 +19,18 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
   const MultibodyTreeTopology& topology = GetInternalTree(plant).get_topology();
 
   // Do a breadth first search in the tree. The `worklist` stores the nodes
-  // ready for exploration; the keys of the `parent` map are the already-
-  // explored notes, and the values are the ancestor nodes (ancestor in the
-  // sense of "towards the `start` node"; NOT in the sense of parent/child).
+  // ready for exploration; In the `ancestor` map, the values are the immediate
+  // ancestor nodes of the keys (ancestor in the sense of "towards the `start`
+  // node"; NOT in the sense of parent/child). All the values in `ancestor` map
+  // have been explored.
   std::queue<BodyIndex> worklist({start});
   std::unordered_map<BodyIndex, BodyIndex> ancestors{{start, {}}};
   auto visit_edge = [&](BodyIndex current, BodyIndex next) {
     DRAKE_DEMAND(next.is_valid());
-    if (ancestors.emplace(next, current).second) {
+    // Try to insert `next` into the map; no-op in case it already existed.
+    const bool inserted = ancestors.emplace(next, current).second;
+    if (inserted) {
+      // next is just succesfully inserted into ancestors.
       worklist.push(next);
     }
   };
@@ -68,10 +72,13 @@ std::vector<MobilizerIndex> FindMobilizersOnPath(
   const MultibodyTree<double>& tree = GetInternalTree(plant);
   for (int i = 0; i < static_cast<int>(path.size()) - 1; ++i) {
     const BodyTopology& body_topology = tree.get_topology().get_body(path[i]);
-    if (body_topology.parent_body.is_valid() &&
-        body_topology.parent_body == path[i + 1]) {
+    if (path[i] != world_index() && body_topology.parent_body == path[i + 1]) {
+      // path[i] is the child of path[i+1] in MultibodyTreeTopology, they are
+      // connected by path[i]'s inboard mobilizer.
       mobilizers_on_path.push_back(body_topology.inboard_mobilizer);
     } else {
+      // path[i] is the parent of path[i+1] in MultibodyTreeTopology, they are
+      // connected by path[i+1]'s inboard mobilizer.
       mobilizers_on_path.push_back(
           tree.get_topology().get_body(path[i + 1]).inboard_mobilizer);
     }
@@ -83,37 +90,23 @@ BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
                                      BodyIndex start, BodyIndex end) {
   const std::vector<BodyIndex> path = FindPath(plant, start, end);
 
-  // path_only_revolute goes from start to end. If path[i] and path[i-1] is
-  // connected through a prismatic joint, then path[i] is not included in
-  // path_only_revolute.
-  std::vector<BodyIndex> path_only_revolute;
-  path_only_revolute.reserve(path.size());
-  path_only_revolute.push_back(start);
+  // path_not_weld goes from start to end, it excludes the path[i] if path[i]
+  // and path[i-1] is conected through a welded joint.
+  std::vector<BodyIndex> path_not_weld;
+  path_not_weld.reserve(path.size());
+  path_not_weld.push_back(start);
   const MultibodyTree<double>& tree = GetInternalTree(plant);
-  for (int i = 0; i < static_cast<int>(path.size()) - 1; ++i) {
-    const BodyTopology& body_topology = tree.get_topology().get_body(path[i]);
-    MobilizerIndex mobilizer_index;
-    if (body_topology.parent_body.is_valid() &&
-        body_topology.parent_body == path[i + 1]) {
-      mobilizer_index = body_topology.inboard_mobilizer;
-    } else {
-      mobilizer_index =
-          tree.get_topology().get_body(path[i + 1]).inboard_mobilizer;
-    }
+  const std::vector<MobilizerIndex> mobilizer_indices =
+      FindMobilizersOnPath(plant, path[0], path.back());
+  for (int i = 0; i < static_cast<int>(mobilizer_indices.size()); ++i) {
+    const MobilizerIndex mobilizer_index = mobilizer_indices[i];
     const Mobilizer<double>& mobilizer = tree.get_mobilizer(mobilizer_index);
-    if (dynamic_cast<const RevoluteMobilizer<double>*>(&mobilizer) != nullptr) {
-      path_only_revolute.push_back(path[i + 1]);
-    } else if (dynamic_cast<const WeldMobilizer<double>*>(&mobilizer) !=
-               nullptr) {
-      continue;
-    } else {
-      throw std::invalid_argument(
-          "FindBodyInTheMiddleOfChain: only allow revolute or weld mobilizer "
-          "along the path.");
+    if (mobilizer.num_positions() != 0) {
+      path_not_weld.push_back(path[i + 1]);
     }
   }
 
-  return path_only_revolute[(path_only_revolute.size() / 2)];
+  return path_not_weld[(path_not_weld.size() / 2)];
 }
 
 }  // namespace internal
