@@ -2567,6 +2567,44 @@ TEST_F(SdfParserTest, MergeInclude) {
 }
 
 // Verify merge-include works with Interface API.
+
+TEST_F(SdfParserTest, BasicMergeIncludeInterfaceAPI) {
+  AddSceneGraph();
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "arm_with_gripper_merge_include.sdf");
+
+  // We start with the world and default model instances.
+  ASSERT_EQ(plant_.num_model_instances(), 2);
+  ASSERT_EQ(plant_.num_bodies(), 1);
+  ASSERT_EQ(plant_.num_joints(), 0);
+
+  package_map_.PopulateFromFolder(filesystem::path(full_name).parent_path());
+  AddModelsFromSdfFile(full_name);
+  plant_.Finalize();
+
+  // We should have loaded *only* 1 more model.
+  EXPECT_EQ(plant_.num_model_instances(), 3);
+  EXPECT_EQ(plant_.num_bodies(), 4);
+  EXPECT_EQ(plant_.num_joints(), 2);
+
+  const char* model_name = "arm_with_gripper";
+  ASSERT_TRUE(plant_.HasModelInstanceNamed(model_name));
+  ModelInstanceIndex arm_model = plant_.GetModelInstanceByName(model_name);
+
+  // Check that the links and joints from arm.urdf are included in the model
+  // without introducing a nested scope, thus exercising the merge-include
+  // behavior through SDFormat's Interface API.
+  EXPECT_TRUE(plant_.HasBodyNamed("L1", arm_model));
+  EXPECT_TRUE(plant_.HasBodyNamed("L2", arm_model));
+  EXPECT_TRUE(plant_.HasJointNamed("J1", arm_model));
+
+  // Check gripper.sdf is included in the model without introducing a nested
+  // scope showing that both urdf and sdf files can be merge included into a
+  // single containing model.
+  EXPECT_TRUE(plant_.HasBodyNamed("gripper_link", arm_model));
+}
+
 // Two models are merge-included in the model loaded by this test.
 // 1. In top_merge_include.sdf: arm_merge_include.forced_nesting_sdf is merge
 //    included. The merged model is contained in a parent model named

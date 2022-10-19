@@ -12,7 +12,6 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/parsing/detail_multibody_plant_subgraph.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
@@ -176,15 +175,13 @@ MakeD415CameraModel(const std::string& renderer_name) {
 }  // namespace internal
 
 template <typename T>
-ManipulationStation<T>::ManipulationStation(double time_step,
-                                            ControllerConstructionMethod method)
+ManipulationStation<T>::ManipulationStation(double time_step)
     : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
       // Given the controller does not compute accelerations, it is irrelevant
       // whether the plant is continuous or discrete. We make it
       // discrete to avoid warnings about joint limits.
-      owned_controller_plant_(std::make_unique<MultibodyPlant<T>>(1.0)),
-      controller_construction_method_(method) {
+      owned_controller_plant_(std::make_unique<MultibodyPlant<T>>(1.0)) {
   // This class holds the unique_ptrs explicitly for plant and scene_graph
   // until Finalize() is called (when they are moved into the Diagram). Grab
   // the raw pointers, which should stay valid for the lifetime of the Diagram.
@@ -419,31 +416,11 @@ void ManipulationStation<T>::SetRandomState(
 
 template <typename T>
 void ManipulationStation<T>::MakeIiwaControllerModel() {
-  multibody::ModelInstanceIndex controller_iiwa_model;
   // Build the controller's version of the plant, which only contains the
   // IIWA and the equivalent inertia of the gripper.
-  if (controller_construction_method_ ==
-      ControllerConstructionMethod::kReparseModelFile) {
-    multibody::Parser parser(owned_controller_plant_.get());
-    controller_iiwa_model =
-        parser.AddModelFromFile(iiwa_model_.model_path, "iiwa");
-
-  } else if (controller_construction_method_ ==
-             ControllerConstructionMethod::kMBPSubgraphFilter) {
-    auto elems = multibody::internal::MultibodyPlantElements::FromPlant(plant_);
-    multibody::internal::MultibodyPlantSubgraph control_subgraph(elems);
-    for (auto model : elems.model_instances()) {
-      if (model != iiwa_model_.model_instance) {
-        control_subgraph.RemoveModelInstance(model);
-      }
-    }
-    control_subgraph.AddTo(owned_controller_plant_.get());
-    controller_iiwa_model =
-        owned_controller_plant_->GetModelInstanceByName("iiwa");
-  } else if (controller_construction_method_ ==
-             ControllerConstructionMethod::kMBPSubgraphFreezeJoints) {
-    // TODO (azeey) Implement FreezeJointSubgraphPolicy
-  }
+  multibody::Parser parser(owned_controller_plant_.get());
+  const auto controller_iiwa_model =
+      parser.AddModelFromFile(iiwa_model_.model_path, "iiwa");
 
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->world_frame(),
