@@ -47,25 +47,8 @@ def main():
         "This must be called by a script generated using the "
         "`drake_runfiles_binary` macro.")
 
-    # Stub out pydrake (refer to our ./BUILD.bazel comments for rationale).
-    # If pydrake is already on the path, for instance because intentionally
-    # included as a dependency, then the stub will not be added to avoid
-    # conflicting.
-    #
-    # We add it to PYTHONPATH within the script, rather than
-    # `imports = ["stub"]` on the stub py_library, to avoid any other target
-    # accidentally pulling in the stubbed pydrake onto its PYTHONPATH.  Only
-    # the visualizer, when launched via this wrapper script, should employ the
-    # stub.
-    try:
-        import pydrake
-    except ImportError:
-        prepend_path("PYTHONPATH", "tools/workspace/drake_visualizer/stub")
-
-    # Don't use DRAKE_RESOURCE_ROOT; the stub getDrakePath should always win.
-    # This also placates the drake-visualizer logic that puts it into Director
-    # mode when DRAKE_RESOURCE_ROOT is set (thus requiring more than just
-    # getDrakePath).
+    # Placate the drake-visualizer logic that puts it into Director mode when
+    # DRAKE_RESOURCE_ROOT is set.
     try:
         del os.environ["DRAKE_RESOURCE_ROOT"]
     except KeyError:
