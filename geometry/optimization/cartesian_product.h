@@ -13,8 +13,7 @@ namespace optimization {
 
 /** The Cartesian product of convex sets is a convex set:
 S = X₁ × X₂ × ⋯ × Xₙ =
-    {(x₁, x₂, ..., xₙ) | x₁ ∈ X₁, x₂ ∈ X₂, ..., xₙ ∈ Xₙ}
-We currently require the sets X to be bounded.
+    {(x₁, x₂, ..., xₙ) | x₁ ∈ X₁, x₂ ∈ X₂, ..., xₙ ∈ Xₙ}.
 
 This class also supports a generalization of this concept in which the
 coordinates are transformed by the linear map,
@@ -29,17 +28,14 @@ class CartesianProduct final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianProduct)
 
-  /** Constructs the product from a vector of convex sets. All of the sets must
-  be bounded. */
+  /** Constructs the product from a vector of convex sets. */
   explicit CartesianProduct(const ConvexSets& sets);
 
-  /** Constructs the product from a pair of convex sets. `setA` and `setB` must
-  be bounded. */
+  /** Constructs the product from a pair of convex sets. */
   CartesianProduct(const ConvexSet& setA, const ConvexSet& setB);
 
   /** Constructs the product of convex sets in the transformed coordinates:
-  {x | y = Ax + b, y ∈ Y₁ × Y₂ × ⋯ × Yₙ}. `A` must be full column rank, and all
-  of the sets must be bounded. */
+  {x | y = Ax + b, y ∈ Y₁ × Y₂ × ⋯ × Yₙ}. `A` must be full column rank. */
   CartesianProduct(const ConvexSets& sets,
                    const Eigen::Ref<const Eigen::MatrixXd>& A,
                    const Eigen::Ref<const Eigen::VectorXd>& b);
