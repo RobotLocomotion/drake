@@ -1,0 +1,21 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+filegroup(
+    name = "models",
+    srcs = glob([
+        "*.sdf",
+        "*.urdf",
+        "*.yaml",
+        "*.xml",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+exports_files(
+    glob([
+        "*.sdf",
+        "*.urdf",
+    ]),
+    visibility = ["//visibility:public"],
+)

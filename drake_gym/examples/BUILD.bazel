@@ -1,0 +1,126 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:py.bzl",
+    "py_binary",
+    "py_library",
+    "py_test",
+)
+
+py_library(
+    name = "scenario_helpers",
+    srcs = ["scenario_helpers.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+py_library(
+    name = "named_view_helpers",
+    srcs = ["named_view_helpers.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+py_library(
+    name = "box_flipup",
+    srcs = ["envs/box_flipup/box_flipup.py"],
+    data = [
+        "//drake_gym/models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":scenario_helpers",
+        "//bindings/pydrake",
+        "//drake_gym",
+    ],
+)
+
+py_library(
+    name = "cart_pole",
+    srcs = ["envs/cart_pole/cart_pole.py"],
+    data = [
+        "//drake_gym/models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":named_view_helpers",
+        ":scenario_helpers",
+        "//bindings/pydrake",
+        "//drake_gym",
+    ],
+)
+
+py_binary(
+    name = "train_box_flipup",
+    srcs = ["train_box_flipup.py"],
+    data = [
+        "//drake_gym/models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//drake_gym",
+        "//drake_gym/examples:box_flipup",
+        "@stable_baselines3_internal//:stable_baselines3",
+    ],
+)
+
+py_binary(
+    name = "train_cart_pole",
+    srcs = ["train_cart_pole.py"],
+    data = [
+        "//drake_gym/models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//drake_gym",
+        "//drake_gym/examples:cart_pole",
+        "@stable_baselines3_internal//:stable_baselines3",
+    ],
+)
+
+py_binary(
+    name = "play_cart_pole",
+    srcs = ["play_cart_pole.py"],
+    data = [
+        "//drake_gym/models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//drake_gym",
+        "//drake_gym/examples:cart_pole",
+    ],
+)
+
+# Get some test coverage on the example; `--test` limits its time
+# and CPU budget.
+py_test(
+    name = "train_box_flipup_test",
+    srcs = ["train_box_flipup.py"],
+    args = ["--test"],
+    main = "train_box_flipup.py",
+    deps = [
+        "//drake_gym",
+        "//drake_gym/examples:box_flipup",
+        "@stable_baselines3_internal//:stable_baselines3",
+    ],
+)
+
+py_test(
+    name = "train_cart_pole_test",
+    srcs = ["train_cart_pole.py"],
+    args = ["--test"],
+    main = "train_cart_pole.py",
+    deps = [
+        "//drake_gym",
+        "//drake_gym/examples:cart_pole",
+        "@stable_baselines3_internal//:stable_baselines3",
+    ],
+)
+
+add_lint_tests()
