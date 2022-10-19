@@ -112,7 +112,7 @@ the main body of the document:
       1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-mosek-packaging/>
       2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-bazel-nightly-snopt-mosek-packaging/>
       3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-x86-big-sur-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
-      4. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-m1-monterey-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
+      4. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-monterey-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
       ``drake/nightly/drake-20``), and find the date.  It will be ``YYYYMMDD``
