@@ -287,7 +287,10 @@ drake_cc_library(
     hdrs = ["serialize_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
-    deps = ["//:drake_shared_library"],
+    deps = [
+        "//:drake_shared_library",
+        "//bindings/pydrake:pydrake_pybind",
+    ],
 )
 
 drake_pybind_library(
@@ -299,6 +302,7 @@ drake_pybind_library(
     cc_srcs = ["test/serialize_test_util_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":cpp_param_py",
         ":module_py",
     ],
     visibility = ["//visibility:private"],
