@@ -2,6 +2,7 @@ curl
 kcov
 libstdc++6-10-dbg
 llvm-12
+python3-cloudpickle
 python3-dateutil
 python3-dbg
 python3-flask

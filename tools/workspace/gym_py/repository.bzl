@@ -1,3 +1,5 @@
+# -*- python -*-
+
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
 def gym_py_repository(

@@ -1,12 +1,11 @@
 stable_baselines3_internal
 ==========================
 
-A local import of `stable_baselines3` that *does not* have its dependencies
-(such as `pytorch`).  As such, code using this module will have a
-`ModuleNotFoundError` error if it attempts to use any functions that depend on 
-those modules.
+A local import of `stable_baselines3` that cuts away functions that depend
+on python modules that we cannot guarantee are available as drake
+dependencies (e.g. `pytorch`)
 
-The resulting `stable_baselines3` workalike is available via the bazel::
+The resulting `stable_baselines3` workalike is available via::
 
   deps = [
       "@stable_baselines3_internal//:stable_baselines3",

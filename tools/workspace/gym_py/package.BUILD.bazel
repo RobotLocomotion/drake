@@ -1,4 +1,4 @@
-# -*- bazel -*-
+# -*- python -*-
 
 load("@drake//tools/skylark:py.bzl", "py_library")
 
