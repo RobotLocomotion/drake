@@ -1,5 +1,6 @@
 flask
 jupyter
 pandas
+python3-cloudpickle
 six
 websockets

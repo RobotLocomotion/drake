@@ -36,6 +36,7 @@ load("@drake//tools/workspace/glx:repository.bzl", "glx_repository")
 load("@drake//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
 load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
+load("@drake//tools/workspace/gym_py:repository.bzl", "gym_py_repository")
 load("@drake//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
 load("@drake//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
 load("@drake//tools/workspace/ibex:repository.bzl", "ibex_repository")
@@ -85,6 +86,7 @@ load("@drake//tools/workspace/scs:repository.bzl", "scs_repository")
 load("@drake//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
 load("@drake//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("@drake//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
+load("@drake//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
 load("@drake//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
 load("@drake//tools/workspace/stduuid:repository.bzl", "stduuid_repository")
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
@@ -192,6 +194,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gz_math_internal_repository(name = "gz_math_internal", mirrors = mirrors)  # noqa
     if "gz_utils_internal" not in excludes:
         gz_utils_internal_repository(name = "gz_utils_internal", mirrors = mirrors)  # noqa
+    if "gym_py" not in excludes:
+        gym_py_repository(name = "gym_py", mirrors = mirrors)
     if "ibex" not in excludes:
         # N.B. This repository is deprecated for removal on 2023-02-01.
         # For details see https://github.com/RobotLocomotion/drake/pull/18156.
@@ -292,6 +296,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         snopt_repository(name = "snopt")
     if "spdlog" not in excludes:
         spdlog_repository(name = "spdlog", mirrors = mirrors)
+    if "stable_baselines3_internal" not in excludes:
+        stable_baselines3_internal_repository(name = "stable_baselines3_internal", mirrors = mirrors)  # noqa
     if "statsjs" not in excludes:
         statsjs_repository(name = "statsjs", mirrors = mirrors)
     if "stduuid" not in excludes:
