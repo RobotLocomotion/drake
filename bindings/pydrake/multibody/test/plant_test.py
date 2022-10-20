@@ -45,6 +45,7 @@ from pydrake.multibody.tree import (
     UnitInertia_,
     UniversalJoint_,
     WeldJoint_,
+    world_frame_index,
     world_index,
     world_model_instance,
     default_model_instance
@@ -152,6 +153,8 @@ class TestPlant(unittest.TestCase):
     def test_type_safe_indices(self):
         self.assertEqual(world_index(), BodyIndex(0))
         self.assertEqual(repr(world_index()), "BodyIndex(0)")
+        self.assertEqual(world_frame_index(), FrameIndex(0))
+        self.assertEqual(repr(world_frame_index()), "FrameIndex(0)")
         self.assertEqual(world_model_instance(), ModelInstanceIndex(0))
         self.assertEqual(repr(world_model_instance()), "ModelInstanceIndex(0)")
         self.assertEqual(default_model_instance(), ModelInstanceIndex(1))
