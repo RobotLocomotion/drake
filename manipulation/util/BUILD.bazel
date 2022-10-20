@@ -237,7 +237,10 @@ drake_py_unittest(
         ":test_models",
         "//multibody/benchmarks/acrobot:models",
     ],
-    deps = ["@bazel_tools//tools/python/runfiles"],
+    deps = [
+        ":show_model",
+        "@bazel_tools//tools/python/runfiles",
+    ],
 )
 
 drake_py_unittest(
