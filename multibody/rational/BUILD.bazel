@@ -13,7 +13,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
-    name = "c_iris",
+    name = "rational",
     visibility = ["//visibility:public"],
     deps = [
         ":rational_forward_kinematics",
@@ -47,13 +47,13 @@ drake_cc_library(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         "//common:find_resource",
         "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/parsing:parser",
         "//multibody/plant",
         "//solvers:solve",
-        "//systems/rendering:multibody_position_to_geometry_pose",
         "@gtest//:without_main",
     ],
 )
