@@ -4597,9 +4597,10 @@ TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesRigid) {
 // Tests that replacing properties for deformable geometries yields expected
 // behaviors.
 TEST_F(ProximityEngineDeformableContactTest, ReplacePropertiesDeformable) {
-  InternalGeometry sphere(
-      SourceId::get_new_id(), make_unique<Sphere>(kSphereRadius),
-      FrameId::get_new_id(), GeometryId::get_new_id(), "sphere", 1.0);
+  InternalGeometry sphere(SourceId::get_new_id(),
+                          make_unique<Sphere>(kSphereRadius),
+                          FrameId::get_new_id(), GeometryId::get_new_id(),
+                          "sphere", RigidTransformd{}, 1.0);
 
   // Case: throws when the id doesn't refer to a valid geometry.
   DRAKE_EXPECT_THROWS_MESSAGE(
