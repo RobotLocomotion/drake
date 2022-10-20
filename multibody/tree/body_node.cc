@@ -54,10 +54,12 @@ math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
   // (λ - ε) > 0 (positive eigenvalues), then λ > ε which means all the
   // eigenvalues of A are not only positive, but greater than ε (which means
   // that A is not super-close to singular (for the ε chosen here).
-  bool is_failed = llt_D_B.eigen_linear_solver().info() != Eigen::Success;
+  bool is_failure_with_epsilon = false;
+  const bool is_failure_absolute =
+      llt_D_B.eigen_linear_solver().info() != Eigen::Success;
 
   // If the matrix has not already failed, check (D_B - ε I).
-  if (!is_failed) {
+  if (is_failure_absolute == false) {
     // For rotational motion, ε is chosen from a "small" moment of inertia which
     // scales as mass * length². In robotics and for rotation, we regard a small
     // mass as 1E-3 kg (1 gram) and a small length as 1E-3 m (1 mm).
@@ -75,38 +77,41 @@ math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
     math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>> llt_D_B_minus_epsilon =
         math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>(MatrixUpTo6<T>(
             D_B_minus_epsilon.template selfadjointView<Eigen::Lower>()));
-    is_failed =
+    is_failure_with_epsilon =
         llt_D_B_minus_epsilon.eigen_linear_solver().info() != Eigen::Success;
   }
 
   // If factorization fails on original or shifted matrix, issue an error.
-  if (is_failed) {
+  if (is_failure_absolute || is_failure_with_epsilon) {
     // Create a meaningful message the helps the user as much as possible.
     const Body<T>& inboard_body = mobilizer.inboard_body();
     const Body<T>& outboard_body = mobilizer.outboard_body();
-    // DRAKE_DEMAND(&(body()) == &inboard_body);
-    // DRAKE_DEMAND(&(parent_body()) == &outboard_body);
+    DRAKE_DEMAND(&(body()) == &outboard_body);
+    DRAKE_DEMAND(&(parent_body()) == &inboard_body);
     const std::string& inboard_body_name = inboard_body.name();
     const std::string& outboard_body_name = outboard_body.name();
     const T outboard_body_mass = outboard_body.get_mass(context);
     const RotationalInertia<T> I_BBo_B = outboard_body.
         CalcSpatialInertiaInBodyFrame(context).CalcRotationalInertia();
+    const std::string fail_msg(is_failure_absolute ? "not positive definite"
+                                                   : "nearly singular");
     std::stringstream message;
-    message << "Encountered singular (or near-singular) articulated body hinge "
-               "inertia matrix for BodyNode index " << topology_.index << ", "
-               "which is associated with the joint that connects body "
-            << inboard_body_name << " to body " << outboard_body_name << ". "
-               "The articulated body hinge inertia matrix is [" << D_B << "]. ";
+    message << "The articulated body hinge inertia matrix associated with "
+            << "the joint that connects body " << inboard_body_name <<
+               " to body " << outboard_body_name << " is " << fail_msg <<
+               " and equal to [" << D_B << "]. ";
     if (can_rotate) {
-      message << "Since the joint allows rotation, ensure that body "
+      message << "Since the joint allows rotation, ensure body "
               << outboard_body_name << " has reasonable non-zero moments of "
-                 "inertia around joint rotation axes. The body's inertia "
-                 "matrix around its body origin is " << I_BBo_B << ". ";
+                 "inertia about joint rotation axes. Note: The inertia matrix "
+                 "of body " << outboard_body_name << " about its body origin "
+                 "is " << I_BBo_B << ". ";
     }
     if (can_translate) {
-      message << "Since the joint allows translation, ensure that body "
+      message << "Since the joint allows translation, ensure body "
               << outboard_body_name << " has a reasonable non-zero mass. "
-                 "Note: The body's mass is " << outboard_body_mass << ". ";
+                 "Note: The mass of body " << outboard_body_name << " is "
+              << outboard_body_mass << ". ";
     }
     throw std::runtime_error(message.str());
   }
