@@ -37,8 +37,12 @@ class MultibodyPlantGeneralizedAppliedForceTest
     plant_ = builder.AddSystem<MultibodyPlant<double>>(dt);
 
     // Add the model twice.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // XXX rewrite?
     auto iiwa1 = Parser(plant_).AddModelFromFile(full_name, "iiwa1");
     auto iiwa2 = Parser(plant_).AddModelFromFile(full_name, "iiwa2");
+#pragma GCC diagnostic pop
     plant_->WeldFrames(plant_->world_frame(),
                        plant_->GetFrameByName("iiwa_link_0", iiwa1));
     plant_->WeldFrames(plant_->world_frame(),

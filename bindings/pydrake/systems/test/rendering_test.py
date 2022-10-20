@@ -34,7 +34,7 @@ class TestRendering(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant(time_step=0.01)
-        model_instance = Parser(plant).AddModelFromFile(file_name)
+        model_instance = Parser(plant).AddAllModelsFromFile(file_name)[0]
         scene_graph = SceneGraph()
         plant.RegisterAsSourceForSceneGraph(scene_graph)
         plant.Finalize()

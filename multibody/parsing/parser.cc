@@ -20,11 +20,18 @@ using internal::ParserInterface;
 using internal::ParsingWorkspace;
 using internal::SelectParser;
 
-Parser::Parser(
-    MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph)
+Parser::Parser(MultibodyPlant<double>* plant,
+               geometry::SceneGraph<double>* scene_graph)
+    : Parser({}, plant, scene_graph) {}
+
+Parser::Parser(std::string_view model_scope, MultibodyPlant<double>* plant,
+               geometry::SceneGraph<double>* scene_graph)
     : plant_(plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
+
+  if (!model_scope.empty()) {
+    model_scope_ = std::string(model_scope);
+  }
 
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
@@ -46,7 +53,7 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
   DataSource data_source(DataSource::kFilename, &file_name);
   ParserInterface& parser = SelectParser(diagnostic_policy_, file_name);
   auto composite = internal::CompositeParse::MakeCompositeParse(this);
-  return parser.AddAllModels(data_source, {}, composite->workspace());
+  return parser.AddAllModels(data_source, model_scope_, composite->workspace());
 }
 
 std::vector<ModelInstanceIndex> Parser::AddModelsFromString(
@@ -55,7 +62,7 @@ std::vector<ModelInstanceIndex> Parser::AddModelsFromString(
   const std::string pseudo_name(data_source.GetStem() + "." + file_type);
   ParserInterface& parser = SelectParser(diagnostic_policy_, pseudo_name);
   auto composite = internal::CompositeParse::MakeCompositeParse(this);
-  return parser.AddAllModels(data_source, {}, composite->workspace());
+  return parser.AddAllModels(data_source, model_scope_, composite->workspace());
 }
 
 ModelInstanceIndex Parser::AddModelFromFile(
@@ -65,8 +72,8 @@ ModelInstanceIndex Parser::AddModelFromFile(
   ParserInterface& parser = SelectParser(diagnostic_policy_, file_name);
   auto composite = internal::CompositeParse::MakeCompositeParse(this);
   std::optional<ModelInstanceIndex> maybe_model;
-  maybe_model = parser.AddModel(data_source, model_name, {},
-                                 composite->workspace());
+  maybe_model = parser.AddModel(data_source, model_name, model_scope_,
+                                composite->workspace());
   if (!maybe_model.has_value()) {
     throw std::runtime_error(
         fmt::format("{}: parsing failed", file_name));
@@ -83,8 +90,8 @@ ModelInstanceIndex Parser::AddModelFromString(
   ParserInterface& parser = SelectParser(diagnostic_policy_, pseudo_name);
   auto composite = internal::CompositeParse::MakeCompositeParse(this);
   std::optional<ModelInstanceIndex> maybe_model;
-  maybe_model = parser.AddModel(data_source, model_name, {},
-                                 composite->workspace());
+  maybe_model = parser.AddModel(data_source, model_name, model_scope_,
+                                composite->workspace());
   if (!maybe_model.has_value()) {
     throw std::runtime_error(
         fmt::format("{}: parsing failed", pseudo_name));

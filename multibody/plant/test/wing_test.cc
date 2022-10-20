@@ -17,7 +17,7 @@ using Eigen::Vector3d;
 
 GTEST_TEST(WingTest, BasicTest) {
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModelFromFile(
+  Parser(&plant).AddAllModelsFromFile(
       FindResourceOrThrow("drake/multibody/models/box.urdf"));
   plant.Finalize();
 
@@ -35,7 +35,7 @@ GTEST_TEST(WingTest, FallingFlatPlate) {
   systems::DiagramBuilder<double> builder;
 
   auto* plant = builder.AddSystem<MultibodyPlant<double>>(0);
-  Parser(plant).AddModelFromFile(
+  Parser(plant).AddAllModelsFromFile(
       FindResourceOrThrow("drake/multibody/models/box.urdf"));
   plant->Finalize();
 
@@ -147,7 +147,7 @@ GTEST_TEST(WingTest, ScalarConversion) {
   systems::DiagramBuilder<double> builder;
 
   auto* plant = builder.AddSystem<MultibodyPlant<double>>(0);
-  Parser(plant).AddModelFromFile(
+  Parser(plant).AddAllModelsFromFile(
       FindResourceOrThrow("drake/multibody/models/box.urdf"));
   plant->Finalize();
 
@@ -167,7 +167,7 @@ GTEST_TEST(WingTest, DerivativesAtZeroVelocity) {
   systems::DiagramBuilder<double> builder;
 
   auto* plant = builder.AddSystem<MultibodyPlant<double>>(0);
-  Parser(plant).AddModelFromFile(
+  Parser(plant).AddAllModelsFromFile(
       FindResourceOrThrow("drake/multibody/models/box.urdf"));
   plant->Finalize();
   plant->set_name("plant");

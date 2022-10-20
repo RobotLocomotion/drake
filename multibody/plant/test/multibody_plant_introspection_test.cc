@@ -44,20 +44,25 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   // Load a model of a table for the environment around the robot.
   Parser parser(&plant);
   const ModelInstanceIndex robot_table_model =
-      parser.AddModelFromFile(table_sdf_path, "robot_table");
+      parser.AddAllModelsFromFile(table_sdf_path).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("link", robot_table_model));
 
   // Load two Atlas robots.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // XXX rewrite?
   const ModelInstanceIndex atlas_model1 =
       parser.AddModelFromFile(atlas_path, "Atlas1");
   const ModelInstanceIndex atlas_model2 =
       parser.AddModelFromFile(atlas_path, "Atlas2");
+#pragma GCC diagnostic pop
   const Body<double>& pelvis1 = plant.GetBodyByName("pelvis", atlas_model1);
   const Body<double>& pelvis2 = plant.GetBodyByName("pelvis", atlas_model2);
 
   // Add a floating mug.
-  const ModelInstanceIndex mug_model = parser.AddModelFromFile(mug_sdf_path);
+  const ModelInstanceIndex mug_model =
+      parser.AddAllModelsFromFile(mug_sdf_path).at(0);
   const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
 
   // Introspection of the underlying mathematical model is not available until

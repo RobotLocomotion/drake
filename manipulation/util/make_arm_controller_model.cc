@@ -53,8 +53,12 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
 
   auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
   Parser parser(plant.get());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // XXX rewrite?
   const ModelInstanceIndex arm_model_index =
       parser.AddModelFromFile(arm_info.model_path, arm_info.model_name);
+#pragma GCC diagnostic pop
   // The arm must be anchored to the world.
   const Frame<double>& sim_arm_child_frame = simulation_plant.GetFrameByName(
       arm_info.child_frame_name, sim_arm_model_index);

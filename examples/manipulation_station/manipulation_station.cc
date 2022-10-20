@@ -62,7 +62,7 @@ SpatialInertia<double> CalcGripperSpatialInertia(
   // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
   MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
-  parser.AddModelFromFile(wsg_sdf_path);
+  parser.AddAllModelsFromFile(wsg_sdf_path);
   plant.Finalize();
 
   // Create a default context which should contain a default state in which all
@@ -125,8 +125,12 @@ multibody::ModelInstanceIndex AddAndWeldModelFrom(
   DRAKE_THROW_UNLESS(!plant->HasModelInstanceNamed(model_name));
 
   multibody::Parser parser(plant);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // XXX rewrite?
   const multibody::ModelInstanceIndex new_model =
       parser.AddModelFromFile(model_path, model_name);
+#pragma GCC diagnostic pop
   const auto& child_frame = plant->GetFrameByName(child_frame_name, new_model);
   plant->WeldFrames(parent, child_frame, X_PC);
   return new_model;
@@ -198,8 +202,10 @@ template <typename T>
 void ManipulationStation<T>::AddManipulandFromFile(
     const std::string& model_file, const RigidTransform<double>& X_WObject) {
   multibody::Parser parser(plant_);
-  const auto model_index =
-      parser.AddModelFromFile(FindResourceOrThrow(model_file));
+  const auto models =
+      parser.AddAllModelsFromFile(FindResourceOrThrow(model_file));
+  DRAKE_DEMAND(!models.empty());
+  const auto model_index = models[0];
   const auto indices = plant_->GetBodyIndices(model_index);
   // Only support single-body objects for now.
   // Note: this could be generalized fairly easily... would just want to
@@ -419,8 +425,13 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   // Build the controller's version of the plant, which only contains the
   // IIWA and the equivalent inertia of the gripper.
   multibody::Parser parser(owned_controller_plant_.get());
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // XXX rewrite?
   const auto controller_iiwa_model =
       parser.AddModelFromFile(iiwa_model_.model_path, "iiwa");
+#pragma GCC diagnostic pop
 
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->world_frame(),

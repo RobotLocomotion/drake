@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -67,9 +68,20 @@ class Parser final {
   /// @param scene_graph A pointer to a mutable SceneGraph object used for
   ///   geometry registration (either to model visual or contact geometry).
   ///   May be nullptr.
-  explicit Parser(
-    MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
+  explicit Parser(MultibodyPlant<double>* plant,
+                  geometry::SceneGraph<double>* scene_graph = nullptr);
+
+  /// Creates a Parser that adds models to the given plant and (optionally)
+  /// scene_graph. The model names will be within the given scope.
+  ///
+  /// @param plant A pointer to a mutable MultibodyPlant object to which parsed
+  ///   model(s) will be added; `plant->is_finalized()` must remain `false` for
+  ///   as long as the @p plant is in used by `this`.
+  /// @param scene_graph A pointer to a mutable SceneGraph object used for
+  ///   geometry registration (either to model visual or contact geometry).
+  ///   May be nullptr.
+  Parser(std::string_view model_scope, MultibodyPlant<double>* plant,
+         geometry::SceneGraph<double>* scene_graph = nullptr);
 
   /// Gets a mutable reference to the plant that will be modified by this
   /// parser.
@@ -118,6 +130,7 @@ class Parser final {
   ///
   /// @sa http://sdformat.org/tutorials?tut=composition&ver=1.7 for details on
   /// nesting in SDFormat.
+  DRAKE_DEPRECATED("2023-04-01", "Use AddAllModelsFromFile() instead.")
   ModelInstanceIndex AddModelFromFile(
       const std::string& file_name,
       const std::string& model_name = {});
@@ -146,6 +159,7 @@ class Parser final {
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
+  std::optional<std::string> model_scope_;
 };
 
 }  // namespace multibody

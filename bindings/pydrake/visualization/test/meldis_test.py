@@ -50,7 +50,7 @@ class TestMeldis(unittest.TestCase):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         parser = Parser(plant=plant)
-        parser.AddModelFromFile(FindResourceOrThrow(sdf_filename))
+        parser.AddAllModelsFromFile(FindResourceOrThrow(sdf_filename))
         plant.Finalize()
         DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
                                      params=visualizer_params, lcm=lcm)
@@ -120,9 +120,10 @@ class TestMeldis(unittest.TestCase):
             "drake/examples/manipulation_station/models/sphere.sdf")
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
-        parser = Parser(plant=plant)
-        sphere1_model = parser.AddModelFromFile(sdf_file, "sphere1")
-        sphere2_model = parser.AddModelFromFile(sdf_file, "sphere2")
+        parser = Parser("1", plant=plant)
+        sphere1_model = parser.AddAllModelsFromFile(sdf_file)[0]
+        parser = Parser("2", plant=plant)
+        sphere2_model = parser.AddAllModelsFromFile(sdf_file)[0]
         body1 = plant.GetBodyByName("base_link", sphere1_model)
         body2 = plant.GetBodyByName("base_link", sphere2_model)
         plant.AddJoint(PrismaticJoint(
@@ -165,7 +166,7 @@ class TestMeldis(unittest.TestCase):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
         parser = Parser(plant=plant)
-        parser.AddModelFromFile(sdf_file)
+        parser.AddAllModelsFromFile(sdf_file)
         body1 = plant.GetBodyByName("body1")
         body2 = plant.GetBodyByName("body2")
         plant.AddJoint(PrismaticJoint(

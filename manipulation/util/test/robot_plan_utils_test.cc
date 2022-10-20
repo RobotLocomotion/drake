@@ -17,7 +17,8 @@ const char kIiwaUrdf[] =
 
 GTEST_TEST(RobotPlanUtilsTest, GetJointNamesTest) {
   multibody::MultibodyPlant<double> plant(0.001);
-  multibody::Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaUrdf));
+  multibody::Parser(&plant).AddAllModelsFromFile(
+      FindResourceOrThrow(kIiwaUrdf));
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base").body_frame());
   plant.Finalize();
@@ -46,7 +47,8 @@ GTEST_TEST(RobotPlanUtilsTest, ApplyJointVelocityLimitsTest) {
 
 GTEST_TEST(RobotPlanUtilsTest, EncodeKeyFramesTest) {
   multibody::MultibodyPlant<double> plant(0.001);
-  multibody::Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaUrdf));
+  multibody::Parser(&plant).AddAllModelsFromFile(
+      FindResourceOrThrow(kIiwaUrdf));
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base").body_frame());
   plant.Finalize();

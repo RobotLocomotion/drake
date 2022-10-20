@@ -12,7 +12,7 @@ void MultibodySimDriver::BuildModel(double dt, const std::string& model_file) {
   plant_ = &pair.plant;
   scene_graph_ = &pair.scene_graph;
   const std::string full_name = FindResourceOrThrow(model_file);
-  multibody::Parser(plant_).AddModelFromFile(full_name);
+  multibody::Parser(plant_).AddAllModelsFromFile(full_name);
 
   // We set gravity to a simpler number for tests.
   plant_->mutable_gravity_field().set_gravity_vector(

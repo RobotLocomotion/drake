@@ -196,10 +196,8 @@ int DoMain() {
   // we don't want to have to wait for gravity to take effect to observe a
   // difference in position.
   Parser parser{&plant};
-  parser.AddModelFromFile(
-      FindResourceOrThrow(
-          "drake/geometry/render_gltf_client/test/example_scene.sdf"),
-      "example_scene");
+  parser.AddAllModelsFromFile(FindResourceOrThrow(
+      "drake/geometry/render_gltf_client/test/example_scene.sdf"));
 
   DrakeLcm lcm;
   DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);

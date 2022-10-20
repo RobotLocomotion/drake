@@ -34,7 +34,7 @@ GTEST_TEST(SchunkWsgDriverFunctionsTest, ApplyDriverConfig) {
   const std::string filename = FindResourceOrThrow(
       "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
   const ModelInstanceIndex schunk_wsg =
-      Parser(&plant).AddModelFromFile(filename, "schunk_wsg");
+      Parser(&plant).AddAllModelsFromFile(filename).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("body", schunk_wsg));
   plant.Finalize();
@@ -45,7 +45,8 @@ GTEST_TEST(SchunkWsgDriverFunctionsTest, ApplyDriverConfig) {
       systems::lcm::ApplyLcmBusConfig(lcm_bus_config, &builder);
 
   const SchunkWsgDriver schunk_wsg_driver;
-  ApplyDriverConfig(schunk_wsg_driver, "schunk_wsg", plant, {}, lcm_buses,
+  const std::string schunk_wsg_name = plant.GetModelInstanceName(schunk_wsg);
+  ApplyDriverConfig(schunk_wsg_driver, schunk_wsg_name, plant, {}, lcm_buses,
                     &builder);
 
   // Prove that simulation does not crash.

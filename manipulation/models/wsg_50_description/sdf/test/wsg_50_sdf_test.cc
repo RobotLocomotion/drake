@@ -26,7 +26,7 @@ GTEST_TEST(Wsg50DescriptionSdfTest, TestBoxSchunkSdf) {
 
     multibody::MultibodyPlant<double> plant(0.0);
     multibody::Parser parser(&plant);
-    parser.AddModelFromFile(kPath);
+    parser.AddAllModelsFromFile(kPath);
     plant.Finalize();
 
     // Expect 3 model instances. One for the world, one default model instance

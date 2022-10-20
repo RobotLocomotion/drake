@@ -74,12 +74,12 @@ class TestParsing(unittest.TestCase):
         urdf_file = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.urdf")
         for dut, file_name, model_name, result_dim in (
-                (Parser.AddModelFromFile, sdf_file, None, int),
-                (Parser.AddModelFromFile, sdf_file, "", int),
-                (Parser.AddModelFromFile, sdf_file, "a", int),
-                (Parser.AddModelFromFile, urdf_file, None, int),
-                (Parser.AddModelFromFile, urdf_file, "", int),
-                (Parser.AddModelFromFile, urdf_file, "a", int),
+                # (Parser.AddModelFromFile, sdf_file, None, int),
+                # (Parser.AddModelFromFile, sdf_file, "", int),
+                # (Parser.AddModelFromFile, sdf_file, "a", int),
+                # (Parser.AddModelFromFile, urdf_file, None, int),
+                # (Parser.AddModelFromFile, urdf_file, "", int),
+                # (Parser.AddModelFromFile, urdf_file, "a", int),
                 (Parser.AddAllModelsFromFile, sdf_file, None, list),
                 (Parser.AddAllModelsFromFile, urdf_file, None, list),
                 ):

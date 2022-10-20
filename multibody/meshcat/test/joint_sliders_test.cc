@@ -34,7 +34,11 @@ class JointSlidersTest : public ::testing::Test {
   void Add(const std::string& resource_path,
            const std::string& model_name = {}) {
     Parser parser(&plant_);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // XXX rewrite?
     parser.AddModelFromFile(FindResourceOrThrow(resource_path), model_name);
+#pragma GCC diagnostic push
   }
 
   void AddAcrobot() {

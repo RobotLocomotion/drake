@@ -31,18 +31,22 @@ class GeometryNamesTest : public ::testing::Test {
     // A single model, single body, single geometry.
     const std::string box = FindResourceOrThrow(
         "drake/multibody/models/box.urdf");
-    parser.AddModelFromFile(box);
+    parser.AddAllModelsFromFile(box);
 
     // A single model, single body, multiple geometries.
     const std::string bin = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/bin.sdf");
-    parser.AddModelFromFile(bin);
+    parser.AddAllModelsFromFile(bin);
 
     // Two identical models (each one has a single body, single geometry).
     const std::string sphere = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/sphere.sdf");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // XXX rewrite?15~
     parser.AddModelFromFile(sphere, "sphere1");
     parser.AddModelFromFile(sphere, "sphere2");
+#pragma GCC diagnostic pop
 
     // Build everything.
     plant_->Finalize();

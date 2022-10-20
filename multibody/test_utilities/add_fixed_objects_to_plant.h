@@ -32,15 +32,15 @@ void AddFixedObjectsToPlant(MultibodyPlant<T>* plant) {
       FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
 
   // Load a model of a table for a robot.
-  Parser parser(plant);
   const ModelInstanceIndex robot_table_model =
-      parser.AddModelFromFile(table_sdf_path, "robot_table");
+      Parser("robot", plant).AddAllModelsFromFile(table_sdf_path).at(0);
   plant->WeldFrames(plant->world_frame(),
                    plant->GetFrameByName("link", robot_table_model));
 
   // Load a second table for objects.
+  Parser parser("objects", plant);
   const ModelInstanceIndex objects_table_model =
-      parser.AddModelFromFile(table_sdf_path, "objects_table");
+      parser.AddAllModelsFromFile(table_sdf_path).at(0);
   const RigidTransformd X_WT(Vector3d(0.8, 0.0, 0.0));
   plant->WeldFrames(plant->world_frame(),
                    plant->GetFrameByName("link", objects_table_model), X_WT);
@@ -59,7 +59,8 @@ void AddFixedObjectsToPlant(MultibodyPlant<T>* plant) {
           X_TO));
 
   // Add a mug and weld it to the table.
-  const ModelInstanceIndex mug_model = parser.AddModelFromFile(mug_sdf_path);
+  const ModelInstanceIndex mug_model =
+      parser.AddAllModelsFromFile(mug_sdf_path).at(0);
   const Body<double>& mug = plant->GetBodyByName("main_body", mug_model);
 
   // Weld the mug to the table with its center 5 cm above the table, i.e. with

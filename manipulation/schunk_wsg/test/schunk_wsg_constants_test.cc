@@ -16,7 +16,7 @@ namespace {
 GTEST_TEST(SchunkWsgConstantTest, ConstantTest) {
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
-  parser.AddModelFromFile(FindResourceOrThrow(
+  parser.AddAllModelsFromFile(FindResourceOrThrow(
       "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf"));
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("body"));
   plant.Finalize();

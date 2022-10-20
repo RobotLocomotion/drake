@@ -41,7 +41,7 @@ TEST_P(DrakeManifestResolutionTest, ResolvesMeshUris) {
   // Check to ensure model is parsable.
   // The call to AddModelFromFile should throw an exception if any of the
   // mesh URIs in the SDF model could not be resolved or loaded.
-  EXPECT_NO_THROW(Parser(&plant).AddModelFromFile(filename));
+  EXPECT_NO_THROW(Parser(&plant).AddAllModelsFromFile(filename));
 
   // Sanity checks to ensure there was exactly one model instance and one
   // geometry added for the new model.

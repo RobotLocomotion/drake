@@ -71,7 +71,7 @@ TEST_P(ParseTest, Quantities) {
 
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant).AddModelFromFile(filename);
+  Parser(&plant).AddAllModelsFromFile(filename);
   const auto& visualizer = MeshcatVisualizerd::AddToBuilder(
       &builder, scene_graph, GetTestEnvironmentMeshcat());
   plant.Finalize();

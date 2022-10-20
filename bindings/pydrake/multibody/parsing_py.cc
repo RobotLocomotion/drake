@@ -69,9 +69,13 @@ PYBIND11_MODULE(parsing, m) {
     constexpr auto& cls_doc = doc.Parser;
     auto cls = py::class_<Class>(m, "Parser", cls_doc.doc);
     cls  // BR
+        .def(py::init<std::string_view, MultibodyPlant<double>*,
+                 SceneGraph<double>*>(),
+            py::arg("model_scope"), py::arg("plant"),
+            py::arg("scene_graph") = nullptr, cls_doc.ctor.doc_3args)
         .def(py::init<MultibodyPlant<double>*, SceneGraph<double>*>(),
             py::arg("plant"), py::arg("scene_graph") = nullptr,
-            cls_doc.ctor.doc)
+            cls_doc.ctor.doc_2args)
         .def("plant", &Class::plant, py_rvp::reference_internal,
             cls_doc.plant.doc)
         .def("package_map", &Class::package_map, py_rvp::reference_internal,
@@ -81,14 +85,17 @@ PYBIND11_MODULE(parsing, m) {
         .def("AddModelsFromString", &Class::AddModelsFromString,
             py::arg("file_contents"), py::arg("file_type"),
             cls_doc.AddModelsFromString.doc)
-        .def("AddModelFromFile", &Class::AddModelFromFile, py::arg("file_name"),
-            py::arg("model_name") = "", cls_doc.AddModelFromFile.doc)
         .def("SetStrictParsing", &Class::SetStrictParsing,
             cls_doc.SetStrictParsing.doc);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls  // BR
+        .def("AddModelFromFile",
+            WrapDeprecated(cls_doc.AddModelFromFile.doc_deprecated,
+                &Class::AddModelFromFile),
+            py::arg("file_name"), py::arg("model_name") = "",
+            cls_doc.AddModelFromFile.doc_deprecated)
         .def("AddModelFromString",
             WrapDeprecated(cls_doc.AddModelFromString.doc_deprecated,
                 &Class::AddModelFromString),

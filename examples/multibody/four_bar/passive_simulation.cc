@@ -82,7 +82,7 @@ int do_main() {
   const std::string full_name = FindResourceOrThrow(relative_name);
 
   Parser parser(&four_bar);
-  parser.AddModelFromFile(full_name);
+  parser.AddAllModelsFromFile(full_name);
 
   // Get the two frames that define the bushing, namely frame Bc that is
   // welded to the end of link B and frame Cb that is welded to the end of

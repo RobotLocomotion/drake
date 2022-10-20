@@ -65,7 +65,9 @@ int DoMain() {
       multibody::AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
 
   const multibody::ModelInstanceIndex jaco_id =
-      Parser(&jaco_plant).AddModelFromFile(FindResourceOrThrow(kUrdfPath));
+      Parser(&jaco_plant)
+          .AddAllModelsFromFile(FindResourceOrThrow(kUrdfPath))
+          .at(0);
   jaco_plant.WeldFrames(jaco_plant.world_frame(),
                         jaco_plant.GetFrameByName("base"));
   jaco_plant.Finalize();

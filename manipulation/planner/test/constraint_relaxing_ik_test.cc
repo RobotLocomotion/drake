@@ -21,7 +21,7 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_polytope_collision.urdf");
   multibody::MultibodyPlant<double> iiwa(0);
-  multibody::Parser(&iiwa).AddModelFromFile(kModelPath);
+  multibody::Parser(&iiwa).AddAllModelsFromFile(kModelPath);
   iiwa.WeldFrames(iiwa.world_frame(),
                   iiwa.GetBodyByName("base").body_frame());
   iiwa.Finalize();

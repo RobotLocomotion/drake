@@ -40,7 +40,8 @@ def make_ball_paddle(contact_model, contact_surface_representation,
     paddle_sdf_file_name = \
         FindResourceOrThrow("drake/examples/hydroelastic/python_ball_paddle"
                             "/paddle.sdf")
-    paddle = parser.AddModelFromFile(paddle_sdf_file_name, model_name="paddle")
+    paddle = parser.AddAllModelsFromFile(
+        paddle_sdf_file_name, model_name="paddle")[0]
     plant.WeldFrames(
         frame_on_parent_F=plant.world_frame(),
         frame_on_child_M=plant.GetFrameByName("paddle", paddle),
@@ -49,7 +50,7 @@ def make_ball_paddle(contact_model, contact_surface_representation,
     ball_sdf_file_name = \
         FindResourceOrThrow("drake/examples/hydroelastic/python_ball_paddle"
                             "/ball.sdf")
-    parser.AddModelFromFile(ball_sdf_file_name)
+    parser.AddAllModelsFromFile(ball_sdf_file_name)
     # TODO(DamrongGuoy): Let users override hydroelastic modulus, dissipation,
     #  and resolution hint from the two SDF files above.
 
