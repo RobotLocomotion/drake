@@ -4362,9 +4362,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return scene_graph_;
   }
 
-  template <typename U, typename... Args>
-  const U& CloneTo(MultibodyPlant<T>* dest, const U& element, Args&&... args) const {
-    return element.CloneTo(&dest->mutable_tree(), args...);
+  // (Advanced) Helper method to call CloneTo for a given ElementType.
+  template <typename ElementType, typename... Args>
+  const ElementType& CloneTo(MultibodyPlant<T>* dest,
+                             const ElementType& element, Args&&... args) const {
+    return element.CloneTo(&dest->mutable_tree(), std::forward<Args>(args)...);
   }
 
   /// @} <!-- Introspection -->
