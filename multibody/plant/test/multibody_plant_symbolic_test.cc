@@ -35,12 +35,17 @@ GTEST_TEST(MultibodyPlantSymbolicTest, Pendulum) {
   dut->get_actuation_input_port().FixValue(context.get(), T(tau));
   dut->SetPositionsAndVelocities(context.get(), Vector2<T>(theta, thetadot));
 
-  // Check the symbolic derivatives.
+  // Check the symbolic derivatives. We compare the expanded results because we
+  // only care about their mathematical equivalence, not their operational form.
+  // (The plant's order of operations may change as its implementation evolves,
+  // which changes the operational form of the Expression.)
   const auto& derivatives = dut->EvalTimeDerivatives(*context);
   ASSERT_EQ(derivatives.size(), 2);
   EXPECT_PRED2(symbolic::test::ExprEqual, derivatives[0], thetadot);
-  EXPECT_PRED2(symbolic::test::ExprEqual, derivatives[1],
-      (tau - m * g * l * sin(theta) - damping * thetadot) / std::pow(l, 2));
+  const T expected_thetaddot =
+      (tau - m * g * l * sin(theta) - damping * thetadot) / (l * l);
+  EXPECT_PRED2(symbolic::test::ExprEqual, derivatives[1].Expand(),
+               expected_thetaddot.Expand());
 }
 
 }  // namespace
