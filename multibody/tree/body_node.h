@@ -1678,21 +1678,6 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return aba_force_cache->get_mutable_Zplus_PB_W(topology_.index);
   }
 
-#if 0
-  // Returns a const reference to the Coriolis spatial acceleration `Ab_WB`
-  // for this body due to the relative velocities of body B and body P.
-  const SpatialAcceleration<T>& get_Ab_WB(
-      const ArticulatedBodyForceCache<T>& aba_force_cache) const {
-    return aba_force_cache.get_Ab_WB(topology_.index);
-  }
-
-  // Mutable version of get_Ab_WB().
-  SpatialAcceleration<T>& get_mutable_Ab_WB(
-      ArticulatedBodyForceCache<T>* aba_force_cache) const {
-    return aba_force_cache->get_mutable_Ab_WB(topology_.index);
-  }
-#endif
-
   // Returns a const reference to the Coriolis spatial acceleration `Ab_WB`
   // for this body due to the relative velocities of body B and body P.
   const VectorUpTo6<T>& get_e_B(
