@@ -8,10 +8,6 @@ import numpy as np
 from ._module_py import *
 from ._module_py import _set_log_level
 
-# When running from python, turn DRAKE_ASSERT and DRAKE_DEMAND failures into
-# SystemExit, instead of process aborts.  See RobotLocomotion/drake#5268.
-set_assertion_failure_to_throw_exception()
-
 _root_logger = _logging.getLogger()
 _drake_logger = _logging.getLogger("drake")
 
