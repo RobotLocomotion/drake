@@ -452,12 +452,40 @@ GTEST_TEST(MultibodyPlantTest, NoHeapAllocOnStringQueries) {
   plant->GetJointActuatorByName(kJointName, iiwa_instance);
 }
 
+// This test creates an empty model and checks simple invariants on model
+// elements. We test the contracts here, not in MultibodyTree, to test
+// behavior from public API perspective.
+GTEST_TEST(MultibodyPlant, EmptyWorldElements) {
+  const double time_step = 0.0;
+  MultibodyPlant<double> plant(time_step);
+  // Model instances.
+  EXPECT_EQ(plant.num_model_instances(), 2);
+  // Bodies.
+  EXPECT_EQ(plant.num_bodies(), 1);
+  const Body<double>& world_body = plant.world_body();
+  EXPECT_EQ(world_body.index(), world_index());
+  EXPECT_EQ(world_body.model_instance(), world_model_instance());
+  // Frames.
+  EXPECT_EQ(plant.num_frames(), 1);
+  const Frame<double>& world_frame = plant.world_frame();
+  EXPECT_EQ(world_frame.index(), world_frame_index());
+  EXPECT_EQ(world_frame.model_instance(), world_model_instance());
+  EXPECT_EQ(&world_body.body_frame(), &world_frame);
+  // Remaining elements.
+  EXPECT_EQ(plant.num_joints(), 0);
+  EXPECT_EQ(plant.num_actuators(), 0);
+  EXPECT_EQ(plant.num_constraints(), 0);
+  EXPECT_EQ(plant.num_force_elements(), 1);
+}
+
 GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
   const double discrete_update_period = 1.0e-3;
   MultibodyPlant<double> plant(discrete_update_period);
   plant.Finalize();
   EXPECT_EQ(plant.num_velocities(), 0);
   EXPECT_EQ(plant.num_positions(), 0);
+  EXPECT_EQ(plant.num_multibody_states(), 0);
+  EXPECT_EQ(plant.num_actuated_dofs(), 0);
   // Compute discrete update.
   auto context = plant.CreateDefaultContext();
   auto& discrete_state_vector = context->get_discrete_state_vector();
@@ -475,6 +503,8 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
   plant.Finalize();
   EXPECT_EQ(plant.num_velocities(), 0);
   EXPECT_EQ(plant.num_positions(), 0);
+  EXPECT_EQ(plant.num_multibody_states(), 0);
+  EXPECT_EQ(plant.num_actuated_dofs(), 0);
   // Compute continuous derivatives.
   auto context = plant.CreateDefaultContext();
   auto& continuous_state_vector = context->get_continuous_state_vector();

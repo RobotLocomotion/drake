@@ -51,12 +51,16 @@ using ModelInstanceIndex = TypeSafeIndex<class ModelInstanceTag>;
 // For this reason, we create and return an instance of pre-defined indices
 // instead of using a static variable.
 
-/// For every MultibodyTree the **world** body _always_ has this unique index
+/// For every MultibodyPlant the **world** body _always_ has this unique index
 /// and it is always zero.
 inline BodyIndex world_index() { return BodyIndex(0); }
 
+/// For every MultibodyPlant the **world** frame _always_ has this unique index
+/// and it is always zero.
+inline FrameIndex world_frame_index() { return FrameIndex(0); }
+
 /// Returns the model instance containing the *world* body.  For
-/// every MultibodyTree the **world** body _always_ has this unique
+/// every MultibodyPlant the **world** body _always_ has this unique
 /// model instance and it is always zero (as described in #3088).
 inline ModelInstanceIndex world_model_instance() {
   return ModelInstanceIndex(0);
