@@ -168,22 +168,20 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   // Add Lorentz cone constraints.
-  std::unordered_map<Binding<LorentzConeConstraint>,
-                     internal::ConstraintDualIndices>
-      lorentz_cone_dual_indices;
+  std::unordered_map<Binding<LorentzConeConstraint>, MSKint64t>
+      lorentz_cone_acc_indices;
   if (rescode == MSK_RES_OK) {
     rescode = impl.AddConeConstraints(prog, prog.lorentz_cone_constraints(),
-                                      &lorentz_cone_dual_indices);
+                                      &lorentz_cone_acc_indices);
   }
 
   // Add rotated Lorentz cone constraints.
-  std::unordered_map<Binding<RotatedLorentzConeConstraint>,
-                     internal::ConstraintDualIndices>
-      rotated_lorentz_cone_dual_indices;
+  std::unordered_map<Binding<RotatedLorentzConeConstraint>, MSKint64t>
+      rotated_lorentz_cone_acc_indices;
   if (rescode == MSK_RES_OK) {
     rescode =
         impl.AddConeConstraints(prog, prog.rotated_lorentz_cone_constraints(),
-                                &rotated_lorentz_cone_dual_indices);
+                                &rotated_lorentz_cone_acc_indices);
   }
 
   // Add linear matrix inequality constraints.
@@ -192,12 +190,11 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   // Add exponential cone constraints.
-  std::unordered_map<Binding<ExponentialConeConstraint>,
-                     internal::ConstraintDualIndices>
-      exp_cone_dual_indices;
+  std::unordered_map<Binding<ExponentialConeConstraint>, MSKint64t>
+      exp_cone_acc_indices;
   if (rescode == MSK_RES_OK) {
     rescode = impl.AddConeConstraints(prog, prog.exponential_cone_constraints(),
-                                      &exp_cone_dual_indices);
+                                      &exp_cone_acc_indices);
   }
 
   // Determines the solution type.
@@ -323,8 +320,8 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     }
     rescode = impl.SetDualSolution(
         solution_type, prog, bb_con_dual_indices, linear_con_dual_indices,
-        lin_eq_con_dual_indices, lorentz_cone_dual_indices,
-        rotated_lorentz_cone_dual_indices, exp_cone_dual_indices,
+        lin_eq_con_dual_indices, lorentz_cone_acc_indices,
+        rotated_lorentz_cone_acc_indices, exp_cone_acc_indices,
         psd_barvar_indices, result);
     DRAKE_ASSERT(rescode == MSK_RES_OK);
   }
