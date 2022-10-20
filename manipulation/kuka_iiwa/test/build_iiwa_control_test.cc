@@ -46,12 +46,13 @@ class BuildIiwaControlTest : public ::testing::Test {
   void SetUp() {
     sim_plant_ = builder_.AddSystem<MultibodyPlant<double>>(0.001);
     Parser parser{sim_plant_};
-    const std::string iiwa7_model_name = "iiwa7_model";
     const std::string iiwa7_model_path = FindResourceOrThrow(
         "drake/manipulation/models/iiwa_description/iiwa7"
         "/iiwa7_no_collision.sdf");
     const ModelInstanceIndex iiwa7_instance =
-        parser.AddModelFromFile(iiwa7_model_path, iiwa7_model_name);
+        parser.AddAllModelsFromFile(iiwa7_model_path).at(0);
+    const std::string iiwa7_model_name =
+        sim_plant_->GetModelInstanceName(iiwa7_instance);
 
     iiwa7_info_.model_name = iiwa7_model_name;
     iiwa7_info_.model_path = iiwa7_model_path;

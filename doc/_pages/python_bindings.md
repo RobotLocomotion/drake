@@ -74,7 +74,7 @@ from pydrake.systems.framework import DiagramBuilder
 
 builder = DiagramBuilder()
 plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
-Parser(plant).AddModelFromFile(
+Parser(plant).AddAllModelsFromFile(
     FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
 plant.Finalize()
 diagram = builder.Build()
@@ -99,7 +99,7 @@ from pydrake.all import (
 
 builder = DiagramBuilder()
 plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
-Parser(plant).AddModelFromFile(
+Parser(plant).AddAllModelsFromFile(
     FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
 plant.Finalize()
 diagram = builder.Build()
@@ -114,7 +114,7 @@ import pydrake.all
 
 builder = pydrake.systems.framework.DiagramBuilder()
 plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(builder, 0.0)
-pydrake.multibody.parsing.Parser(plant).AddModelFromFile(
+pydrake.multibody.parsing.Parser(plant).AddAllModelsFromFile(
   pydrake.common.FindResourceOrThrow(
       "drake/examples/pendulum/Pendulum.urdf"))
 plant.Finalize()

@@ -18,7 +18,7 @@ GTEST_TEST(MultibodyDynamicsTest, AllTests) {
   for (const char* const ext : {"urdf", "sdf"}) {
     const double kTimeStep = 0.0;
     multibody::MultibodyPlant<double> mbp(kTimeStep);
-    multibody::Parser(&mbp).AddModelFromFile(FindResourceOrThrow(
+    multibody::Parser(&mbp).AddAllModelsFromFile(FindResourceOrThrow(
         fmt::format("drake/examples/acrobot/Acrobot.{}", ext)));
     mbp.Finalize();
 

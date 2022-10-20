@@ -54,9 +54,13 @@ class MakeArmControllerModelTest : public ::testing::Test {
  protected:
   // Adds an Iiwa model into `sim_plant_` and returns its ModelInstanceInfo.
   ModelInstanceInfo AddIiwaModel(const std::string& iiwa7_model_name) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // XXX rewrite?
     const ModelInstanceIndex iiwa7_instance =
         Parser(sim_plant_)
             .AddModelFromFile(iiwa7_model_path_, iiwa7_model_name);
+#pragma GCC diagnostic pop
     return {.model_name = iiwa7_model_name,
             .model_path = iiwa7_model_path_,
             .child_frame_name = "iiwa_link_0",
@@ -65,8 +69,12 @@ class MakeArmControllerModelTest : public ::testing::Test {
 
   // Adds a Wsg model into `sim_plant_` and returns its ModelInstanceInfo.
   ModelInstanceInfo AddWsgModel(const std::string& wsg_model_name) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // XXX rewrite?
     const ModelInstanceIndex wsg_instance =
         Parser(sim_plant_).AddModelFromFile(wsg_model_path_, wsg_model_name);
+#pragma GCC diagnostic pop
     return {.model_name = wsg_model_name,
             .model_path = wsg_model_path_,
             .child_frame_name = "body",

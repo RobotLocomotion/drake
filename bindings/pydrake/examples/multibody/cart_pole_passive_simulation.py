@@ -31,7 +31,7 @@ def main():
     builder = DiagramBuilder()
     cart_pole, scene_graph = AddMultibodyPlantSceneGraph(
         builder=builder, time_step=args.time_step)
-    Parser(plant=cart_pole).AddModelFromFile(file_name)
+    Parser(plant=cart_pole).AddAllModelsFromFile(file_name)
     cart_pole.Finalize()
 
     AddDefaultVisualization(builder=builder)

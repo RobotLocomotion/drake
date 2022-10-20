@@ -45,7 +45,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     const std::string filename = FindResourceOrThrow(
         "drake/manipulation/models/"
         "iiwa_description/sdf/iiwa14_no_collision.sdf");
-    parser.AddModelFromFile(filename, "iiwa");
+    parser.AddAllModelsFromFile(filename);
     plant_->WeldFrames(
         plant_->world_frame(),
         plant_->GetFrameByName("iiwa_link_0"));
@@ -366,7 +366,7 @@ GTEST_TEST(AdditionalDifferentialInverseKinematicsTests, TestLinearObjective) {
   const std::string filename = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/urdf/"
       "planar_iiwa14_spheres_dense_elbow_collision.urdf");
-  parser.AddModelFromFile(filename, "iiwa");
+  parser.AddAllModelsFromFile(filename);
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("iiwa_link_0"));
   plant.Finalize();
   const multibody::Frame<double>& frame_7 = plant.GetFrameByName("iiwa_link_7");

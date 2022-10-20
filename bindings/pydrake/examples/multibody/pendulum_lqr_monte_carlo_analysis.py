@@ -57,7 +57,7 @@ def main():
     pendulum = builder.AddSystem(MultibodyPlant(0.0))
     file_name = FindResourceOrThrow(
         "drake/examples/pendulum/Pendulum.urdf")
-    Parser(pendulum).AddModelFromFile(file_name)
+    Parser(pendulum).AddAllModelsFromFile(file_name)
     pendulum.Finalize()
 
     # Set the pendulum to start at uniformly random

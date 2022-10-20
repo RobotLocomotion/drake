@@ -102,8 +102,9 @@ void DoMain() {
   const std::string object_model_path = FindResourceOrThrow(
       "drake/examples/allegro_hand/joint_control/simple_mug.sdf");
   multibody::Parser parser(&plant);
-  parser.AddModelFromFile(hand_model_path);
-  ModelInstanceIndex mug_model = parser.AddModelFromFile(object_model_path);
+  parser.AddAllModelsFromFile(hand_model_path);
+  ModelInstanceIndex mug_model =
+      parser.AddAllModelsFromFile(object_model_path).at(0);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");

@@ -29,9 +29,9 @@ TEST_P(ParseTest, Quantities) {
   MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);
   const ModelInstanceIndex right_hand_index =
-      parser.AddModelFromFile(path_right);
+      parser.AddAllModelsFromFile(path_right).at(0);
   const ModelInstanceIndex left_hand_index =
-      parser.AddModelFromFile(path_left);
+      parser.AddAllModelsFromFile(path_left).at(0);
   plant.Finalize();
 
   // MultibodyPlant always creates at least two model instances, one for the

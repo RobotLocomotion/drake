@@ -83,7 +83,7 @@ class TestKukaIiwa(unittest.TestCase):
         plant.Finalize()
         controller_plant = MultibodyPlant(1.)
         parser = Parser(controller_plant)
-        parser.AddModelFromFile(FindResourceOrThrow(
+        parser.AddAllModelsFromFile(FindResourceOrThrow(
             "drake/manipulation/models/iiwa_description/iiwa7/"
             "iiwa7_no_collision.sdf"))
         controller_plant.WeldFrames(
