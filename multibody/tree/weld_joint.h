@@ -44,10 +44,7 @@ class WeldJoint final : public Joint<T> {
                  VectorX<double>() /* no acc upper limits */),
         X_FM_(X_FM) {}
 
-  const std::string& type_name() const override {
-    static const never_destroyed<std::string> name{kTypeName};
-    return name.access();
-  }
+  const std::string& type_name() const override;
 
   /// Returns the pose X_FM of frame M in F.
   const math::RigidTransform<double>& X_FM() const { return X_FM_; }

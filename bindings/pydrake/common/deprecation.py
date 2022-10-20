@@ -236,6 +236,14 @@ def install_numpy_warning_filters(force=False):
         "error", category=DeprecationWarning,
         message="elementwise comparison failed")
 
+    # TODO(#17898): This is not a deprecation per se, nor is it promoting the
+    # deprecation to warning. However, this warning currently does not incur
+    # a functional penalty, so we suppress the warning to minimize
+    # distractions. Root-cause investigation pending.
+    warnings.filterwarnings(
+        "ignore", category=RuntimeWarning,
+        message="invalid value encountered in")
+
 
 def deprecated_callable(message, *, date=None):
     """

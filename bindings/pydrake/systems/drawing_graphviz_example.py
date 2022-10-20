@@ -21,7 +21,7 @@ from pydrake.systems.drawing import plot_graphviz, plot_system_graphviz
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.visualization import AddDefaultVisualization
 
-# If running under `bazel run`, output to cwd to the user can find it.
+# If running under `bazel run`, output to cwd so the user can find it.
 # If running under `bazel test` avoid polluting the test's cwd.
 for env_name in ['BUILD_WORKING_DIRECTORY', 'TEST_TMPDIR']:
     if env_name in os.environ:

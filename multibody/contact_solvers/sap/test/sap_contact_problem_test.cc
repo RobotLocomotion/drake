@@ -17,6 +17,7 @@ namespace {
 
 // Useful SPD matrices for testing. The numbers specify their size.
 // clang-format off
+const Eigen::MatrixXd S00 = Eigen::MatrixXd::Zero(0, 0);
 const Eigen::Matrix2d S22 =
     (Eigen::Matrix2d() << 2, 1,
                           1, 2).finished();
@@ -101,7 +102,7 @@ GTEST_TEST(ContactProblem, Construction) {
 // are wrong.
 GTEST_TEST(ContactProblem, AddConstraintWithWrongArguments) {
   const double time_step = 0.01;
-  const std::vector<MatrixXd> A{S22, S33, S44, S22};
+  const std::vector<MatrixXd> A{S22, S33, S44, S22, S00};
   const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
   SapContactProblem<double> problem(time_step, A, v_star);
 
@@ -129,6 +130,11 @@ GTEST_TEST(ContactProblem, AddConstraintWithWrongArguments) {
           1 /* second_clique */, 6 /* (wrong) second_clique_nv */)),
       ".* does not match the number of velocities in this problem for "
       "the second clique.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      problem.AddConstraint(std::make_unique<TestConstraint>(
+          3 /* num_equations */, 0 /* first_clique */, 2 /* first_clique_nv */,
+          4 /* (empty) second_clique */, 0 /* second_clique_nv */)),
+      ".*Adding constraint.*zero.*velocities.*");
 }
 
 /* We test ContactProblem with the graph setup sketched below where each

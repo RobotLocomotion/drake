@@ -717,6 +717,52 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
               N / 10, kTol);
 }
 
+// Test the case where the sample point is outside the region, but the max
+// threshold can be smaller than the min threshold. (This was a bug uncovered
+// by hammering on this code from IRIS).
+GTEST_TEST(HPolyhedronTest, UniformSampleTest2) {
+  Matrix<double, 5, 2> A;
+  Matrix<double, 5, 1> b;
+  // clang-format off
+  A <<  1,  0,  // x ≤ 1
+        0,  1,  // y ≤ 1
+       -1,  0,  // x ≥ -1
+        0, -1,  // y ≥ -1
+       -1,  0,  // x ≥ 0
+  b << 1, 1, 1, 1, 0;
+  // clang-format on
+  HPolyhedron H(A, b);
+
+  // Draw random samples.
+  RandomGenerator generator(1234);
+  // Use a seed that is outside the set (because x ≤ 0), but still inside the
+  // [-1, 1] unit box (so the line search in all directions returns finite
+  // values). It throws when the hit and run direction intersects x=0 outside
+  // of the unit box.
+  const Vector2d seed{-0.5, 0.9};
+  // Make sure that random samples either return a point in the set (because
+  // they were lucky) or throw.  Previously, the method could return a point
+  // outside the set.
+  int num_throws = 0;
+  int num_success = 0;
+  for (int i = 0; i < 10; ++i) {
+    try {
+      const Vector2d sample = H.UniformSample(&generator, seed);
+      EXPECT_TRUE(H.PointInSet(sample, 1e-12));
+      ++num_success;
+    } catch (const std::exception& err) {
+      ++num_throws;
+      EXPECT_NE(
+          std::string(err.what())
+              .find("Hit and Run algorithm failed to find a feasible point"),
+          std::string::npos);
+    }
+  }
+  // Make sure both paths were touched.
+  EXPECT_GT(num_throws, 0);
+  EXPECT_GT(num_success, 0);
+}
+
 GTEST_TEST(HPolyhedronTest, Serialize) {
   const HPolyhedron H = HPolyhedron::MakeL1Ball(3);
   const std::string yaml = yaml::SaveYamlString(H);

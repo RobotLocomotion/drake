@@ -2,7 +2,7 @@ Respell the imported lcmtypes to match Drake's build system.
 
 --- drakevisualizer.py	2020-07-15 08:51:01.000000000 -0700
 +++ drakevisualizer.py	2021-06-30 21:52:04.169503858 -0700
-@@ -15,22 +15,8 @@
+@@ -15,22 +15,7 @@
  from director import packagepath
  from director.fieldcontainer import FieldContainer
  
@@ -23,7 +23,6 @@ Respell the imported lcmtypes to match Drake's build system.
 -except ImportError:
 -    HAVE_PYDRAKE = False
 +import drake
-+import pydrake
  
  from PythonQt import QtGui
  
@@ -63,13 +62,12 @@ Respell the imported lcmtypes to match Drake's build system.
              d = DebugData()
              radii = geom.float_data[0:3]
              d.addEllipsoid(center=(0,0,0), radii=radii)
-@@ -191,8 +177,7 @@
+@@ -191,8 +177,6 @@
  
          if Geometry.PackageMap is None:
              m = packagepath.PackageMap()
 -            if HAVE_PYDRAKE:
 -                m.populateFromSearchPaths([pydrake.getDrakePath()])
-+            m.populateFromSearchPaths([pydrake.getDrakePath()])
              m.populateFromEnvironment(['DRAKE_PACKAGE_PATH', 'ROS_PACKAGE_PATH'])
              Geometry.PackageMap = m
  
@@ -107,4 +105,21 @@ Respell the imported lcmtypes to match Drake's build system.
 +        msg.command_type = drake.lcmt_viewer_command.STATUS
          msg.command_data = message
          lcmUtils.publish('DRAKE_VIEWER_STATUS', msg)
+ 
+--- drcargs.py	2022-05-05 14:25:21.000000000 -0700
++++ drcargs.py	2022-10-19 11:05:04.797458629 -0700
+@@ -80,13 +80,7 @@
+ 
+ 
+     def _isPyDrakeAvailable(self):
+-        try:
+-            import pydrake
+-        except ImportError:
+-            return False
+-        if 'DRAKE_RESOURCE_ROOT' not in os.environ:
+-            return False
+-        return True
++        return False
+ 
+     def addDrakeConfigShortcuts(self, directorConfig):
  

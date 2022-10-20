@@ -8,6 +8,7 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/geometry/render_gl/factory.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
@@ -24,6 +25,7 @@ using drake::geometry::render::DepthRenderCamera;
 using drake::geometry::Rgba;
 using drake::geometry::SceneGraph;
 using drake::lcm::DrakeLcm;
+using drake::lcm::DrakeLcmInterface;
 using drake::math::RigidTransformd;
 using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::FixedOffsetFrame;
@@ -31,6 +33,7 @@ using drake::multibody::MultibodyPlant;
 using drake::multibody::SpatialInertia;
 using drake::schema::Transform;
 using drake::systems::DiagramBuilder;
+using drake::systems::lcm::LcmBuses;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::sensors::ImageToLcmImageArrayT;
 using drake::systems::sensors::RgbdSensor;
@@ -53,13 +56,15 @@ CameraConfig MakeConfig() {
                       .X_BC = Transform{RigidTransformd{Vector3d::UnitX()}},
                       .X_BD = Transform{RigidTransformd{Vector3d::UnitX()}},
                       .renderer_name = "test_renderer",
+                      .renderer_class = "RenderEngineVtk",
                       .background = Rgba(0.25, 0.5, 0.75),
                       .name = "test_camera",
                       .fps = 17,
                       .rgb = false,
                       .depth = true,
                       .show_rgb = true,
-                      .do_compress = false};
+                      .do_compress = false,
+                      .lcm_bus = "test_lcm_bus"};
   // drake::scheme::Transform cannot be constructed with a base frame.
   config.X_PB.base_frame = "test_frame";
   return config;
@@ -105,7 +110,6 @@ class CameraConfigFunctionsTest : public ::testing::Test {
   DiagramBuilder<double> builder_;
   MultibodyPlant<double>* plant_{};
   SceneGraph<double>* scene_graph_{};
-  DrakeLcm lcm_;
   FrameId body_frame_id_;
 };
 
@@ -117,7 +121,7 @@ TEST_F(CameraConfigFunctionsTest, EarlyExit) {
   // requesting rgb or depth publication.
   config.rgb = config.depth = false;
   const int system_count = static_cast<int>(builder_.GetSystems().size());
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_);
+  ApplyCameraConfig(config, &builder_);
   // We haven't added anything to the builder.
   EXPECT_EQ(builder_.GetSystems().size(), system_count);
 }
@@ -134,7 +138,7 @@ GTEST_TEST(CameraConfigFunctionsTestAux, DefaultConfigRenders) {
 TEST_F(CameraConfigFunctionsTest, ParentBaseFrameDefaultToWorld) {
   CameraConfig config;
   config.X_PB.base_frame = std::nullopt;
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_);
+  ApplyCameraConfig(config, &builder_);
 
   const auto* sensor =
       GetSystem<RgbdSensor>(builder_, "rgbd_sensor_preview_camera");
@@ -147,7 +151,7 @@ TEST_F(CameraConfigFunctionsTest, ParentBaseFrameDefaultToWorld) {
 TEST_F(CameraConfigFunctionsTest, ParentBaseFrameSpecified) {
   CameraConfig config;
   config.X_PB.base_frame = "test_frame";
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_);
+  ApplyCameraConfig(config, &builder_);
 
   const auto* sensor =
       GetSystem<RgbdSensor>(builder_, "rgbd_sensor_preview_camera");
@@ -166,7 +170,7 @@ TEST_F(CameraConfigFunctionsTest, InvalidParentBaseFrame) {
   CameraConfig config;
   config.X_PB.base_frame = "invalid_frame";
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_),
+      ApplyCameraConfig(config, &builder_),
       "Could not find frame.+");
 }
 
@@ -180,7 +184,7 @@ TEST_F(CameraConfigFunctionsTest, RenderEngine) {
   ASSERT_EQ(scene_graph_->RendererCount(), 0);
 
   CameraConfig config;
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_);
+  ApplyCameraConfig(config, &builder_);
   ASSERT_EQ(scene_graph_->RendererCount(), 1);
 
   const auto* sensor1 =
@@ -194,7 +198,7 @@ TEST_F(CameraConfigFunctionsTest, RenderEngine) {
   // Now add second camera which uses the same name.
   size_t previous_system_count = builder_.GetSystems().size();
   config.name = config.name + "_the_other_one";
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_);
+  ApplyCameraConfig(config, &builder_);
 
   // No new render engine added.
   ASSERT_EQ(scene_graph_->RendererCount(), 1);
@@ -212,7 +216,7 @@ TEST_F(CameraConfigFunctionsTest, RenderEngine) {
   // Third camera uses a unique name creates a unique render engine.
   config.name = "just_for_test";
   config.renderer_name = "just_for_test";
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_);
+  ApplyCameraConfig(config, &builder_);
   ASSERT_EQ(scene_graph_->RendererCount(), 2);
   // New RgbdSensor added.
   EXPECT_GT(builder_.GetSystems().size(), previous_system_count);
@@ -243,7 +247,14 @@ TEST_F(CameraConfigFunctionsTest, AllParametersCount) {
   // "not default" config file has at least one image enabled.
   ASSERT_EQ(config.depth || config.rgb, true);
 
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_);
+  // Prepare the LCM dictionary, based on the bus name from MakeConfig().
+  LcmBuses lcm_buses;
+  DRAKE_DEMAND(config.lcm_bus != "default");
+  DrakeLcm non_default_lcm;
+  lcm_buses.Add(config.lcm_bus, &non_default_lcm);
+
+  // Add the camera and then read back its properties to confirm.
+  ApplyCameraConfig(config, &builder_, &lcm_buses);
   const auto* sensor =
       GetSystem<RgbdSensor>(builder_, "rgbd_sensor_test_camera");
   ASSERT_NE(sensor, nullptr);
@@ -290,15 +301,31 @@ TEST_F(CameraConfigFunctionsTest, AllParametersCount) {
       builder_, "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_test_camera)");
   ASSERT_NE(publisher, nullptr);
   EXPECT_DOUBLE_EQ(publisher->get_publish_period(), 1.0 / config.fps);
+
+  // Publishing destination.
+  const DrakeLcmInterface& actual_lcm =
+      const_cast<LcmPublisherSystem*>(publisher)->lcm();
+  EXPECT_TRUE(&actual_lcm == &non_default_lcm);
+}
+
+// The user can pass a plant and scene_graph explicitly.
+TEST_F(CameraConfigFunctionsTest, SubsystemPointers) {
+  // We'll prove that the arguments are obeyed by using non-standard names,
+  // and checking that nothing throws.
+  plant_->set_name("Is it secret?");
+  scene_graph_->set_name("Is it safe?");
+  EXPECT_NO_THROW(ApplyCameraConfig(
+      CameraConfig{}, &builder_, {}, plant_, scene_graph_));
 }
 
 // Confirms that if only rgb is specified, only rgb is published.
 TEST_F(CameraConfigFunctionsTest, PublishingRgb) {
   CameraConfig config = MakeConfig();
+  config.lcm_bus = "default";
   config.rgb = true;
   config.depth = false;
 
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_);
+  ApplyCameraConfig(config, &builder_);
 
   // Rgb and depth ports.
   const auto* images =
@@ -311,10 +338,11 @@ TEST_F(CameraConfigFunctionsTest, PublishingRgb) {
 // Confirms that if only depth is specified, only depth is published.
 TEST_F(CameraConfigFunctionsTest, PublishingDepth) {
   CameraConfig config = MakeConfig();
+  config.lcm_bus = "default";
   config.rgb = false;
   config.depth = true;
 
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_);
+  ApplyCameraConfig(config, &builder_);
 
   // Rgb and depth ports.
   const auto* images =
@@ -327,10 +355,11 @@ TEST_F(CameraConfigFunctionsTest, PublishingDepth) {
 // Confirms that if both rgb and depth are specified, both are published.
 TEST_F(CameraConfigFunctionsTest, PublishingRgbAndDepth) {
   CameraConfig config = MakeConfig();
+  config.lcm_bus = "default";
   config.rgb = true;
   config.depth = true;
 
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_);
+  ApplyCameraConfig(config, &builder_);
 
   // Rgb and depth ports.
   const auto* images =
@@ -347,9 +376,95 @@ TEST_F(CameraConfigFunctionsTest, Validation) {
   CameraConfig config = MakeConfig();
   config.fps = -10;
   EXPECT_THROW(
-      ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &lcm_),
+      ApplyCameraConfig(config, &builder_),
       std::exception);
 }
+
+// When the user requests a non-standard LCM bus, it is an error to omit an
+// LcmBuses object from the argument list.
+TEST_F(CameraConfigFunctionsTest, BadLcmBus) {
+  CameraConfig config;
+  config.lcm_bus = "special_request";
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ApplyCameraConfig(config, &builder_),
+      ".*non-default.*special_request.*");
+}
+
+// Confirms that the render engine implementation follows the requested type
+// (when supported). We already know that the config gets validated, so we
+// don't need to test cases where an invalid renderer_class value is passed.
+// However, we do have to worry about requesting RenderEngineGl when it isn't
+// available.
+TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
+  // Unspecified class produces RenderEngineVtk.
+  const CameraConfig default_config{.renderer_name = "default"};
+  ASSERT_FALSE(scene_graph_->HasRenderer(default_config.renderer_name));
+  ApplyCameraConfig(default_config, &builder_);
+  ASSERT_EQ(NiceTypeName::RemoveNamespaces(scene_graph_->GetRendererTypeName(
+                default_config.renderer_name)),
+            "RenderEngineVtk");
+
+  // Explicitly specifying *new* VTK class produces VTK render engine.
+  const CameraConfig vtk_config{.renderer_name = "vtk_renderer",
+                                .renderer_class = "RenderEngineVtk"};
+  ASSERT_FALSE(scene_graph_->HasRenderer(vtk_config.renderer_name));
+  ApplyCameraConfig(vtk_config, &builder_);
+  ASSERT_EQ(NiceTypeName::RemoveNamespaces(scene_graph_->GetRendererTypeName(
+                vtk_config.renderer_name)),
+            "RenderEngineVtk");
+
+  // Using an existing name but the wrong render engine type throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ApplyCameraConfig(
+          CameraConfig{.renderer_name = default_config.renderer_name,
+                       .renderer_class = "RenderEngineGl"},
+          &builder_),
+      ".*The name is already used with a different type.+");
+
+  // Using existing name but *no* render engine uses existing engine. Call to
+  // ApplyCameraConfig doesn't throw, and the renderer count doesn't change.
+  // This test assumes that this behavior doesn't depend on the type of the
+  // RenderEngine.
+  const int renderer_count = scene_graph_->RendererCount();
+  ApplyCameraConfig(CameraConfig{.renderer_name = "vtk_renderer"}, &builder_);
+  EXPECT_EQ(renderer_count, scene_graph_->RendererCount());
+
+  // Now explicitly request a new RenderEngineGl -- whether it throws depends
+  // on whether GL is available.
+  const CameraConfig gl_config{.renderer_name = "gl_renderer",
+                               .renderer_class = "RenderEngineGl"};
+  if (geometry::render::kHasRenderEngineGl) {
+    ASSERT_FALSE(scene_graph_->HasRenderer(gl_config.renderer_name));
+    ApplyCameraConfig(gl_config, &builder_);
+    ASSERT_EQ(NiceTypeName::RemoveNamespaces(
+                  scene_graph_->GetRendererTypeName(gl_config.renderer_name)),
+              "RenderEngineGl");
+  } else {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ApplyCameraConfig(gl_config, &builder_),
+        ".*'RenderEngineGl' is not supported.*");
+  }
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TEST_F(CameraConfigFunctionsTest, DeprecatedOverload) {
+  CameraConfig config;
+  config.name = "test_camera";
+
+  DrakeLcm expected_lcm;
+  const size_t previous_count = builder_.GetSystems().size();
+  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &expected_lcm);
+  EXPECT_GT(builder_.GetSystems().size(), previous_count);
+
+  const auto* publisher = GetSystem<LcmPublisherSystem>(
+      builder_, "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_test_camera)");
+  ASSERT_NE(publisher, nullptr);
+  const DrakeLcmInterface& actual_lcm =
+      const_cast<LcmPublisherSystem*>(publisher)->lcm();
+  EXPECT_TRUE(&actual_lcm == &expected_lcm);
+}
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace sensors

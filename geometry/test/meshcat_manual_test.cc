@@ -115,6 +115,31 @@ int do_main() {
                           RigidTransformd(Vector3d{7.75, -.25, 0}));
   }
 
+  // SetTriangleColorMesh.
+  {
+    // clang-format off
+    Eigen::Matrix3Xd vertices(3, 4);
+    vertices <<
+      0, 0.5, 0.5, 0,
+      0, 0,   0.5, 0.5,
+      0, 0,   0,   0.5;
+    Eigen::Matrix3Xi faces(3, 2);
+    faces <<
+      0, 2,
+      1, 3,
+      2, 0;
+    Eigen::Matrix3Xd colors(3, 4);
+    colors <<
+      1, 0, 0, 1,
+      0, 1, 0, 1,
+      0, 0, 1, 0;
+    // clang-format on
+    meshcat->SetTriangleColorMesh("triangle_color_mesh", vertices, faces,
+                                  colors);
+    meshcat->SetTransform("triangle_color_mesh",
+                          RigidTransformd(Vector3d{8.75, -.25, 0}));
+  }
+
   std::cout << R"""(
 Open up your browser to the URL above.
 
@@ -132,6 +157,7 @@ Open up your browser to the URL above.
   - 4 green vertical line segments (in z).
   - a purple triangle mesh with 2 faces.
   - the same purple triangle mesh drawn as a wireframe.
+  - the same triangle mesh drawn in multicolor.
 )""";
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -350,11 +376,19 @@ Open up your browser to the URL above.
       << "Note: I've deleted the temporary HTML file (it's several Mb).\n\n";
 
   meshcat->AddButton("ButtonTest");
-  meshcat->AddSlider("SliderTest", 0, 1, 0.01, 0.5);
+  meshcat->AddButton("Press t Key");
+  meshcat->AddButton("Press t Key", "KeyT");  // Now the keycode is assigned.
+  meshcat->AddSlider("SliderTest", 0, 1, 0.01, 0.5, "ArrowLeft", "ArrowRight");
 
-  std::cout << "I've added a button and a slider to the controls menu.\n";
+  std::cout << "I've added two buttons and a slider to the controls menu.\n";
   std::cout << "- Click the ButtonTest button a few times.\n";
+  std::cout << "- Press the 't' key in the meshcat window, which "
+               "should be equivalent to pressing the second button.\n";
+  std::cout << "The buttons do nothing, but the total number of clicks for "
+               "each button will be reported after you press RETURN.\n";
   std::cout << "- Move SliderTest slider.\n";
+  std::cout << "- Confirm that the ArrowLeft and ArrowRight keys also move the "
+               "slider.\n";
   std::cout << "- Open a second browser (" << meshcat->web_url()
             << ") and confirm that moving the slider in one updates the slider "
                "in the other.\n";
@@ -364,6 +398,8 @@ Open up your browser to the URL above.
 
   std::cout << "Got " << meshcat->GetButtonClicks("ButtonTest")
             << " clicks on ButtonTest.\n"
+            << "Got " << meshcat->GetButtonClicks("Press t Key")
+            << " clicks on \"Press t Key\".\n"
             << "Got " << meshcat->GetSliderValue("SliderTest")
             << " value for SliderTest." << std::endl;
 

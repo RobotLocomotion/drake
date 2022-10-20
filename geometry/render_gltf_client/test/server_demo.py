@@ -523,11 +523,14 @@ def render_endpoint():
             # NOTE: the client does *NOT* rely on the mime type.
             mime_type = None
             image_extension = output_image.suffix.lower()
-            if image_extension == "png":
+            if image_extension == ".png":
                 mime_type = "image/png"
-            elif image_extension in {"tif", "tiff"}:
+            elif image_extension in {".tif", ".tiff"}:
                 mime_type = "image/tiff"
-
+            else:
+                raise RuntimeError(
+                    f"Missing mime_type for '{image_extension}'"
+                )
             # If we are not deleting the file, use the file path directly for
             # simplicity.  Otherwise, we load the image into RAM, delete it,
             # and then send that.  See the documentation:
@@ -551,12 +554,7 @@ def render_endpoint():
                 if render_request.verbose:
                     print(f"Deleting rendered image: {str(output_image)}")
                 output_image.unlink(missing_ok=True)
-                return send_file(
-                    buffer,
-                    mimetype=mime_type,
-                    # NOTE: do not reveal internal details of the server.
-                    attachment_filename=f"rendering.{image_extension}",
-                )
+                return send_file(buffer, mimetype=mime_type)
         except RenderError as re:
             return re.flask_json_code_response()
         except Exception as e:

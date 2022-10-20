@@ -21,6 +21,7 @@
 #include "drake/math/compute_numerical_gradient.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
 #include "drake/math/continuous_lyapunov_equation.h"
+#include "drake/math/cross_product.h"
 #include "drake/math/discrete_algebraic_riccati_equation.h"
 #include "drake/math/discrete_lyapunov_equation.h"
 #include "drake/math/matrix_util.h"
@@ -46,6 +47,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
   constexpr auto& doc = pydrake_doc.drake.math;
+
+  // N.B. Some classes define `__repr__` in `_math_extra.py`.
 
   {
     using Class = RigidTransform<T>;
@@ -341,6 +344,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
       py::arg("high"), doc.wrap_to.doc);
+
+  // Cross product
+  m.def(
+      "VectorToSkewSymmetric",
+      [](const Eigen::Ref<const Vector3<T>>& p) {
+        return VectorToSkewSymmetric(p);
+      },
+      py::arg("p"), doc.VectorToSkewSymmetric.doc);
 }
 
 void DoScalarIndependentDefinitions(py::module m) {

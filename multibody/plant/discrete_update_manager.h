@@ -21,10 +21,12 @@
 
 namespace drake {
 namespace multibody {
+
 template <typename T>
 class MultibodyPlant;
 
 namespace internal {
+
 template <typename T>
 class AccelerationKinematicsCache;
 
@@ -132,6 +134,30 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     DoCalcDiscreteValues(context, updates);
   }
 
+  /* Publicly exposed MultibodyPlant private/protected methods.
+   @{ */
+
+  // N.B. Keep the spelling and order of declarations here identical to the
+  // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
+
+  const MultibodyTree<T>& internal_tree() const;
+
+  systems::CacheEntry& DeclareCacheEntry(std::string description,
+                                         systems::ValueProducer,
+                                         std::set<systems::DependencyTicket>);
+
+  // TODO(#16955): Remove this function when the referenced issue is resolved.
+  const contact_solvers::internal::ContactSolverResults<T>&
+  EvalContactSolverResults(const systems::Context<T>& context) const;
+
+  double default_contact_stiffness() const;
+  double default_contact_dissipation() const;
+
+  const std::unordered_map<geometry::GeometryId, BodyIndex>&
+  geometry_id_to_body_index() const;
+
+  /* @} */
+
  protected:
   /* Derived classes that support making a clone that uses double as a scalar
    type must implement this so that it creates a copy of the object with double
@@ -173,27 +199,11 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   // N.B. Keep the spelling and order of declarations here identical to the
   // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
 
-  const MultibodyTree<T>& internal_tree() const;
-
-  systems::CacheEntry& DeclareCacheEntry(std::string description,
-                                         systems::ValueProducer,
-                                         std::set<systems::DependencyTicket>);
-
-  const contact_solvers::internal::ContactSolverResults<T>&
-  EvalContactSolverResults(const systems::Context<T>& context) const;
-
   const internal::ContactJacobians<T>& EvalContactJacobians(
-      const systems::Context<T>& context) const;
-
-  const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const;
 
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const systems::Context<T>& context) const;
-
-  std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
-      const systems::Context<T>& context,
-      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const;
 
   void AddInForcesFromInputPorts(const drake::systems::Context<T>& context,
                                  MultibodyForces<T>* forces) const;
@@ -211,12 +221,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   //  geometries.
   const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
       const;
-
-  double default_contact_stiffness() const;
-  double default_contact_dissipation() const;
-
-  const std::unordered_map<geometry::GeometryId, BodyIndex>&
-  geometry_id_to_body_index() const;
 
   const std::vector<internal::CouplerConstraintSpecs<T>>&
   coupler_constraints_specs() const;
@@ -242,6 +246,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   MultibodyPlant<T>* mutable_plant_{nullptr};
   systems::DiscreteStateIndex multibody_state_index_;
 };
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

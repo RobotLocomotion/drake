@@ -64,15 +64,30 @@ filegroup(
 )
 
 cc_library(
+    name = ".lcm_coretypes",
+    hdrs = [".include/lcm/lcm/lcm_coretypes.h"],
+    strip_include_prefix = ".include/lcm",
+)
+
+cc_library(
+    name = ".drake_lcm_headers",
+    hdrs = glob([".include/drake_lcmtypes/drake/**"]),
+    strip_include_prefix = ".include/drake_lcmtypes",
+    deps = [":.lcm_coretypes"],
+)
+
+cc_library(
     name = ".drake_headers",
-    hdrs = glob([".include/drake/**"]),
+    hdrs = glob([".include/drake/**"], exclude = ["**/drake_lcmtypes/**"]),
     strip_include_prefix = ".include",
+    deps = [":.drake_lcm_headers"],
 )
 
 cc_library(
     name = ".fmt_headers",
     hdrs = glob([".include/fmt/**"], allow_empty = True),
     strip_include_prefix = ".include/fmt",
+    visibility = ["@fmt//:__pkg__"],
 )
 
 [
@@ -87,7 +102,8 @@ cc_library(
     name = "drake_shared_library",
     deps = [
         ":.drake_headers",
-        ":.fmt_headers",
+        "@eigen",
+        "@fmt",
     ] + [
         ":.imported{}".format(shlib)
         for shlib in _DRAKE_SHLIBS

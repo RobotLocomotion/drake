@@ -8,6 +8,7 @@
 #include "drake/systems/primitives/shared_pointer_system.h"
 
 using drake::lcm::DrakeLcm;
+using drake::lcm::DrakeLcmInterface;
 using drake::lcm::DrakeLcmParams;
 using drake::systems::DiagramBuilder;
 using drake::systems::SharedPointerSystem;
@@ -46,6 +47,30 @@ LcmBuses ApplyLcmBusConfig(
     result.Add(bus_name, pumper_system);
   }
   return result;
+}
+
+DrakeLcmInterface* FindOrCreateLcmBus(
+    DrakeLcmInterface* forced_result,
+    const LcmBuses* lcm_buses,
+    DiagramBuilder<double>* builder,
+    std::string_view description_of_caller,
+    const std::string& bus_name) {
+  DRAKE_THROW_UNLESS(builder != nullptr);
+  if (forced_result != nullptr) {
+    return forced_result;
+  }
+  if (lcm_buses == nullptr) {
+    if (bus_name != "default") {
+      throw std::runtime_error(fmt::format(
+          "{} requested a non-default LCM bus '{}' but did not provide an"
+          " LcmBuses object to locate it",
+          description_of_caller, bus_name));
+    }
+    auto* owner_system = builder->AddSystem<SharedPointerSystem<double>>(
+        std::make_shared<DrakeLcm>());
+    return owner_system->get<DrakeLcm>();
+  }
+  return lcm_buses->Find(description_of_caller, bus_name);
 }
 
 }  // namespace lcm

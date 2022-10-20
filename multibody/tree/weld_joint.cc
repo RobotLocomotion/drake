@@ -9,6 +9,12 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+const std::string& WeldJoint<T>::type_name() const {
+  static const never_destroyed<std::string> name{kTypeName};
+  return name.access();
+}
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Joint<ToScalar>> WeldJoint<T>::TemplatedDoCloneToScalar(
     const Frame<ToScalar>& frame_on_parent_body_clone,

@@ -1,22 +1,31 @@
 # -*- coding: utf-8 -*-
 
 from pydrake.multibody.parsing import (
-    Parser,
-    PackageMap,
-    LoadModelDirectives,
-    LoadModelDirectivesFromString,
-    ProcessModelDirectives,
-    ModelInstanceInfo,
+    AddCollisionFilterGroup,
+    AddDirectives,
     AddFrame,
+    AddModel,
+    AddModelInstance,
+    AddWeld,
     GetScopedFrameByName,
     GetScopedFrameName,
+    LoadModelDirectives,
+    LoadModelDirectivesFromString,
+    ModelDirective,
+    ModelDirectives,
+    ModelInstanceInfo,
+    PackageMap,
+    Parser,
+    ProcessModelDirectives,
 )
 
+import copy
 import os
 import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.multibody.tree import (
     ModelInstanceIndex,
 )
@@ -97,22 +106,34 @@ class TestParsing(unittest.TestCase):
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
         self.assertEqual(parser.plant(), plant)
-        result = parser.AddModelFromString(
-            file_contents=sdf_contents, file_type="sdf")
+        with catch_drake_warnings(expected_count=1):
+            result = parser.AddModelFromString(
+                file_contents=sdf_contents, file_type="sdf")
         self.assertIsInstance(result, ModelInstanceIndex)
 
-    def test_strict(self):
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
+        results = parser.AddModelsFromString(
+            file_contents=sdf_contents, file_type="sdf")
+        self.assertIsInstance(results[0], ModelInstanceIndex)
+
+    def test_strict(self):
         model = """<robot name='robot' version='0.99'>
             <link name='a'/>
             </robot>"""
-        parser.AddModelFromString(
-            file_contents=model, file_type='urdf', model_name='lax')
+        # Use lax parsing.
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        results = parser.AddModelsFromString(
+            file_contents=model, file_type='urdf')
+        self.assertIsInstance(results[0], ModelInstanceIndex)
+        # Use strict parsing.
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
         parser.SetStrictParsing()
         with self.assertRaises(RuntimeError) as e:
-            result = parser.AddModelFromString(
-                file_contents=model, file_type='urdf', model_name='strict')
+            result = parser.AddModelsFromString(
+                file_contents=model, file_type='urdf')
         pattern = r'.*version.*ignored.*'
         message = str(e.exception)
         match = re.match(pattern, message)
@@ -126,11 +147,6 @@ class TestParsing(unittest.TestCase):
         ModelInstanceInfo.child_frame_name
         ModelInstanceInfo.X_PC
         ModelInstanceInfo.model_instance
-
-    def test_add_frame(self):
-        """Checks that AddFrame bindings exist."""
-        AddFrame.name
-        AddFrame.X_PF
 
     def test_scoped_frame_names(self):
         plant = MultibodyPlant(time_step=0.01)
@@ -175,3 +191,59 @@ directives:
         model_names = [model.model_name for model in added_models]
         self.assertIn("extra_model", model_names)
         plant.GetModelInstanceByName("extra_model")
+
+    def test_add_collision_filter_group_struct(self):
+        """Checks the bindings of the AddCollisionFilterGroup helper struct."""
+        dut = AddCollisionFilterGroup(name="foo")
+        self.assertIn("foo", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_add_directives_struct(self):
+        """Checks the bindings of the AddDirectives helper struct."""
+        dut = AddDirectives(file="package://foo/bar.dmd.yaml")
+        self.assertIn("bar.dmd.yaml", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_add_frame_struct(self):
+        """Checks the bindings of the AddFrame helper struct."""
+        dut = AddFrame(name="foo")
+        self.assertIn("foo", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_add_model_struct(self):
+        """Checks the bindings of the AddModel helper struct."""
+        dut = AddModel(file="package://foo/bar.sdf")
+        self.assertIn("bar.sdf", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_add_model_instance_struct(self):
+        """Checks the bindings of the AddModelInstance helper struct."""
+        dut = AddModelInstance(name="foo")
+        self.assertIn("foo", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_add_weld_struct(self):
+        """Checks the bindings of the AddWeld helper struct."""
+        dut = AddWeld(parent="foo")
+        self.assertIn("foo", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_model_directive_struct(self):
+        """Checks the bindings of the ModelDirective helper struct."""
+        dut = ModelDirective(add_model=None)
+        self.assertIn("add_model", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_model_directives_struct(self):
+        """Checks the bindings of the ModelDirectives helper struct."""
+        dut = ModelDirectives(directives=[ModelDirective()])
+        self.assertIn("add_model", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)

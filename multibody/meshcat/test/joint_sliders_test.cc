@@ -118,8 +118,11 @@ TEST_F(JointSlidersTest, WideConstructorWithVectors) {
   const Eigen::Vector2d lower_limit(min_angle_1, min_angle_2);
   const Eigen::Vector2d upper_limit(max_angle_1, max_angle_2);
   const Eigen::Vector2d step(step_1, step_2);
-  const JointSliders dut(
-      meshcat_, &plant_, initial_value, lower_limit, upper_limit, step);
+  const std::vector<std::string> decrement_keycodes{"ArrowLeft", "ArrowDown"};
+  const std::vector<std::string> increment_keycodes{"ArrowRight", "ArrowUp"};
+  const JointSliders dut(meshcat_, &plant_, initial_value, lower_limit,
+                         upper_limit, step, decrement_keycodes,
+                         increment_keycodes);
   auto context = dut.CreateDefaultContext();
 
   // Sliders start at their initial value.
@@ -280,6 +283,9 @@ TEST_F(JointSlidersTest, Run) {
   const double timeout = 1.0;
   dut->Run(*diagram, timeout);
 
+  // Note: the stop button is deleted on timeout, so we cannot easily check
+  // that it was created correctly here.
+
   // Obtain the current pose of one shape.
   const std::string geometry_path = "visualizer/acrobot/Link1";
   const std::string original = meshcat_->GetPackedTransform(geometry_path);
@@ -288,8 +294,8 @@ TEST_F(JointSlidersTest, Run) {
   // Set a non-default slider position.
   meshcat_->SetSliderValue(kAcrobotJoint1, 0.25);
 
-  // Run for a while.
-  dut->Run(*diagram, timeout);
+  // Run for a while (with a non-default stop_button_keycode).
+  dut->Run(*diagram, timeout, "KeyP");
 
   // Check that the slider's transform had any effect, i.e., that the
   // MeshcatVisualizer::Publish was called.

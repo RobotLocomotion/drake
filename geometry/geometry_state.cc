@@ -716,7 +716,7 @@ GeometryId GeometryState<T>::RegisterGeometry(
       InternalGeometry(source_id, geometry->release_shape(), frame_id,
                        geometry_id, geometry->name(), geometry->pose()));
 
-  AssignAllRoles(source_id, geometry_id, std::move(geometry));
+  AssignAllDefinedRoles(source_id, std::move(geometry));
 
   return geometry_id;
 }
@@ -757,7 +757,7 @@ GeometryId GeometryState<T>::RegisterDeformableGeometry(
   kinematics_data_.q_WGs[geometry_id] = std::move(q_WG);
   geometries_.emplace(geometry_id, std::move(internal_geometry));
 
-  AssignAllRoles(source_id, geometry_id, std::move(geometry));
+  AssignAllDefinedRoles(source_id, std::move(geometry));
 
   return geometry_id;
 }
@@ -1432,9 +1432,11 @@ void GeometryState<T>::ThrowIfNameExistsInRole(FrameId id, Role role,
 }
 
 template <typename T>
-void GeometryState<T>::AssignAllRoles(
-    SourceId source_id, GeometryId geometry_id,
-    std::unique_ptr<GeometryInstance> geometry) {
+void GeometryState<T>::AssignAllDefinedRoles(
+    SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
+  DRAKE_DEMAND(geometry != nullptr);
+
+  const GeometryId geometry_id = geometry->id();
   // Any roles defined on the geometry instance propagate through
   // automatically.
   if (geometry->illustration_properties()) {

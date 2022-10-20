@@ -4,7 +4,7 @@ title: macOS
 
 We assume that you have already installed:
 
-* Xcode 10 or above ([from the Mac App Store](https://itunes.apple.com/us/app/xcode/id497799835))
+* Xcode ([from the Mac App Store](https://itunes.apple.com/us/app/xcode/id497799835))
 
 Prerequisite setup is otherwise automated. Simply run:
 

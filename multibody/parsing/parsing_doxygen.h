@@ -5,11 +5,9 @@
 @defgroup multibody_parsing Parsing Models for Multibody Dynamics
 @ingroup multibody
 
-Drake's drake::multibody::Parser accepts model files written in either SDFormat
-or URDF. In both formats, however, there are Drake-specific extensions and
-Drake-specific limitations.
-
-<!-- TODO(rpoyner-tri): document mujoco format support -->
+Drake's drake::multibody::Parser accepts model files written in a variety of
+input formats. Drake's parsing of URDF, SDFormat, and MJCF (Mujoco XML) has
+Drake-specific extensions and limitations.
 
 The result of the parse is an in-memory model realized within
 drake::multibody::MultibodyPlant and (optionally)
@@ -17,8 +15,24 @@ drake::geometry::SceneGraph. Note that parses that do not use a `SceneGraph`
 will effectively ignore geometric model elements, especially `//visual` and
 `//collision` elements.
 
-In the reference sections below, the relevant usage paths for various tags
-are indicated using [XPath](https://www.w3.org/TR/xpath-31/) notation.
+In the reference sections below, when discussing XML formats, the relevant
+usage paths for various tags are indicated using
+[XPath](https://www.w3.org/TR/xpath-31/) notation.
+
+@section multibody_parsing_dmd Drake Model Directives Support
+
+Drake Model Directives is a Drake-native model description format, primarily
+intended for combining models written in other formats into complex scenes. It
+is YAML based, and follows a limited data schema.  See
+`multibody/parsing/README_model_directives.md` for more detail.
+
+@section multibody_parsing_mjcf MJCF (Mujoco XML) Support
+
+There is limited, undocumented support for parsing MJCF (Mujoco XML) files. The
+files are recognized by an .xml file extension. The scope of features that are
+actually supported still need to be documented.
+
+<!-- TODO(rpoyner-tri): document mujoco format support -->
 
 @section multibody_parsing_sdf SDFormat Support
 Drake supports SDFormat files following the specification at

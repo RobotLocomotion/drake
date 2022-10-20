@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/systems/framework/context.h"
@@ -255,6 +256,16 @@ void SceneGraph<T>::AddRenderer(
 template <typename T>
 bool SceneGraph<T>::HasRenderer(const std::string& name) const {
   return model_.HasRenderer(name);
+}
+
+template <typename T>
+std::string SceneGraph<T>::GetRendererTypeName(const std::string& name) const {
+  const render::RenderEngine* engine = model_.GetRenderEngineByName(name);
+  if (engine == nullptr) {
+    return {};
+  }
+
+  return NiceTypeName::Get(*engine);
 }
 
 template <typename T>

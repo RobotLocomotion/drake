@@ -2,28 +2,27 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load(
-    "@drake//tools/workspace:cmake_util.bzl",
-    "library_to_linkopts",
+    "@drake//:cmake/external/workspace/conversion.bzl",
     "split_cmake_list",
 )
 
-SPDLOG_DEFINES = split_cmake_list(
+_DEFINES = split_cmake_list(
     "$<TARGET_PROPERTY:spdlog::spdlog,INTERFACE_COMPILE_DEFINITIONS>",
-)
-
-SPDLOG_LINKOPTS = library_to_linkopts(
-    "$<TARGET_LINKER_FILE:spdlog::spdlog>",
 )
 
 cc_library(
     name = "spdlog",
+    srcs = glob(
+        ["lib/**"],
+        allow_empty = False,
+    ),
     hdrs = glob(
         ["include/**"],
         allow_empty = False,
     ),
-    defines = SPDLOG_DEFINES + ["HAVE_SPDLOG"],
+    defines = _DEFINES + ["HAVE_SPDLOG"],
     includes = ["include"],
-    linkopts = SPDLOG_LINKOPTS + ["-pthread"],
+    linkopts = ["-pthread"],
     visibility = ["//visibility:public"],
     deps = ["@fmt"],
 )

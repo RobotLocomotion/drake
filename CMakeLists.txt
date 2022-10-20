@@ -366,6 +366,8 @@ function(generate_external_repository_file OUTPUT)
   endif()
 endfunction()
 
+# Symlinks the C++ include path for TARGET as workspace/NAME/include, e.g.
+#  workspace/eigen/include -> .../build/install/include/eigen3
 function(symlink_external_repository_includes NAME TARGET)
   if(ARGN)
     get_target_property(include_dir ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
@@ -380,6 +382,40 @@ function(symlink_external_repository_includes NAME TARGET)
         ${CMAKE_CONFIGURATION_TYPES})
     elseif(CMAKE_BUILD_TYPE)
       symlink_external_repository_includes(${NAME} ${TARGET}
+        ${CMAKE_BUILD_TYPE})
+    endif()
+  endif()
+endfunction()
+
+# Symlinks the C++ libraries for TARGET as workspace/NAME/lib/*, e.g.
+#  workspace/fmt/lib/libfmt.so.6.1.2 -> .../build/install/lib/fmt/libfmt.so.6.1.2
+#  workspace/fmt/lib/libfmt.so.6 -> .../build/install/lib/fmt/libfmt.so.6.1.2
+function(symlink_external_repository_libs NAME TARGET)
+  if(ARGN)
+    foreach(config IN LISTS ARGN)
+      set(workspace "${CMAKE_CURRENT_BINARY_DIR}/external/${config}/workspace")
+      file(MAKE_DIRECTORY "${workspace}/${NAME}/lib")
+      # Link the full library name (i.e., libfmt.so.6.1.2 in the case of shared).
+      get_target_property(location ${TARGET} LOCATION_${config})
+      if(NOT location)
+        message(FATAL_ERROR "Target ${TARGET} has no library in LOCATION_${config}")
+      endif()
+      get_filename_component(basename "${location}" NAME)
+      file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${basename}" SYMBOLIC)
+      # Link the SONAME spelling in case of shared libraries.
+      # If the basename does not match this pattern, this part is all a no-op.
+      string(REGEX REPLACE "(\\.so\\.[0-9]+)\\.[0-9]+\\.[0-9]+$" "\\1"
+          other_basename "${basename}")
+      string(REGEX REPLACE "(\\.[0-9]+)\\.[0-9]+\\.[0-9]+\\.dylib$" "\\1.dylib"
+          other_basename "${other_basename}")
+      file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${other_basename}" SYMBOLIC)
+    endforeach()
+  else()
+    if(CMAKE_CONFIGURATION_TYPES)
+      symlink_external_repository_libs(${NAME} ${TARGET}
+        ${CMAKE_CONFIGURATION_TYPES})
+    elseif(CMAKE_BUILD_TYPE)
+      symlink_external_repository_libs(${NAME} ${TARGET}
         ${CMAKE_BUILD_TYPE})
     endif()
   endif()
@@ -412,6 +448,7 @@ if(WITH_USER_FMT)
   find_package(fmt CONFIG REQUIRED)
 
   symlink_external_repository_includes(fmt fmt::fmt)
+  symlink_external_repository_libs(fmt fmt::fmt)
   generate_external_repository_file(fmt/WORKSPACE)
   generate_external_repository_file(
     fmt/BUILD.bazel
@@ -432,6 +469,7 @@ if(WITH_USER_SPDLOG)
   find_package(spdlog CONFIG REQUIRED)
 
   symlink_external_repository_includes(spdlog spdlog::spdlog)
+  symlink_external_repository_libs(spdlog spdlog::spdlog)
   generate_external_repository_file(spdlog/WORKSPACE)
   generate_external_repository_file(
     spdlog/BUILD.bazel

@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 
+#include <algorithm>
+#include <filesystem>
 #include <string>
 
 #include <fmt/format.h>
@@ -250,8 +252,24 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Mesh& mesh_spec, const ProximityProperties&) {
   // Mesh does not use any properties.
-  auto mesh = make_unique<TriangleSurfaceMesh<double>>(
-      ReadObjToTriangleSurfaceMesh(mesh_spec.filename(), mesh_spec.scale()));
+  std::unique_ptr<TriangleSurfaceMesh<double>> mesh;
+
+  std::string extension =
+      std::filesystem::path(mesh_spec.filename()).extension();
+  std::transform(extension.begin(), extension.end(), extension.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+
+  if (extension == ".obj") {
+    mesh = make_unique<TriangleSurfaceMesh<double>>(
+        ReadObjToTriangleSurfaceMesh(mesh_spec.filename(), mesh_spec.scale()));
+  } else if (extension == ".vtk") {
+    mesh = make_unique<TriangleSurfaceMesh<double>>(
+        ConvertVolumeToSurfaceMesh(MakeVolumeMeshFromVtk<double>(mesh_spec)));
+  } else {
+    throw(std::runtime_error(fmt::format(
+        "hydroelastic::MakeRigidRepresentation(): unsupported mesh file: {}",
+        mesh_spec.filename())));
+  }
 
   return RigidGeometry(RigidMesh(move(mesh)));
 }

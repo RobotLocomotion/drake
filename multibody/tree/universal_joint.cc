@@ -9,6 +9,12 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+const std::string& UniversalJoint<T>::type_name() const {
+  static const never_destroyed<std::string> name{kTypeName};
+  return name.access();
+}
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<UniversalJoint<ToScalar>>
 UniversalJoint<T>::TemplatedDoCloneToScalar(

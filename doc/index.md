@@ -109,14 +109,11 @@ bug fixes, features, and examples!
 <article markdown="1">
 ## Tutorials
 
-Drake offers Python-based tutorials using Jupyter notebooks.
-The tutorials can be
-[viewed online](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Findex.ipynb)
-without any local installation.
+Drake offers Python-based tutorials using Jupyter notebooks. We recommend that
+you [view the tutorials online](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Findex.ipynb).
 
-To run the tutorial interactively (either online or via `pip`) refer to
-[drake/tutorials/README.md](https://github.com/RobotLocomotion/drake/blob/master/tutorials/README.md)
-for instructions.
+Alternatively, to run the tutorials locally via `pip`, refer to
+[drake/tutorials/README.md](https://github.com/RobotLocomotion/drake/blob/master/tutorials/README.md).
 
 </article>
 
@@ -178,17 +175,15 @@ The Drake developers would like to acknowledge significant support from the
 
 
 <article markdown="1">
-## From Other Languages
+## Integrations
 
-### Python Bindings
+[Python](./python_bindings.html)
 
-<a href="/python_bindings.html">
-  <img src="/third_party/images/python-logo-generic.svg" width="150px"/>
-</a>
+[LCM](./doxygen_cxx/group__message__passing.html)
 
-### Others
+[ROS 2](https://github.com/RobotLocomotion/drake-ros)™ (unsupported)
 
-[Julia](./julia_bindings.html)
+[Julia](./julia_bindings.html) (unsupported)
 
 </article>
 

@@ -873,8 +873,22 @@ drake_cc_variant_library(
         ":mathematical_program",
     ],
     deps_enabled = [
+        ":mosek_solver_internal",
         "//common:scoped_singleton",
         "//common:scope_exit",
+        "@mosek",
+    ],
+)
+
+drake_cc_optional_library(
+    name = "mosek_solver_internal",
+    opt_in_condition = "//tools:with_mosek",
+    srcs = ["mosek_solver_internal.cc"],
+    hdrs = ["mosek_solver_internal.h"],
+    interface_deps = [":mathematical_program_result"],
+    deps = [
+        ":aggregate_costs_constraints",
+        ":mathematical_program",
         "//math:quadratic_form",
         "@mosek",
     ],
@@ -1460,6 +1474,18 @@ drake_cc_googletest(
         ":mathematical_program",
         ":unrevised_lemke_solver",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_optional_googletest(
+    name = "mosek_solver_internal_test",
+    opt_in_condition = "//tools:with_mosek",
+    use_default_main = False,
+    deps = [
+        ":mosek_solver",
+        ":mosek_solver_internal",
+        "//common/test_utilities:symbolic_test_util",
+        "@mosek",
     ],
 )
 

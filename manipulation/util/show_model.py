@@ -1,8 +1,11 @@
-r"""Loads a model file (*.sdf or *.urdf) and then displays it in all
-available visualizers.
+r"""Loads a model file (*.sdf or *.urdf) and then displays all models found
+in all available visualizers (MeshCat, meldis/drake visualizer).
 
-To view the model with a simple gui to change joint positions, please see
-`geometry_inspector`.
+Joint sliders are available in visualizers that support them by clicking on
+"Open Controls" in top right corner.
+
+To have the MeshCat server automatically open in your browser, supply the
+`--open-window` flag.
 
 To build all necessary targets and see available command-line options:
 
@@ -16,31 +19,30 @@ Example usage:
 
     # Terminal 1
     ./bazel-bin/tools/drake_visualizer
+
     # Terminal 2 (wait for visualizers to start)
     ./bazel-bin/manipulation/util/show_model \
-        --meshcat \
         --open-window \
+        --position 1 0 0 0 0 0 0 0 1 0 0 0 0 0 \
         --find_resource \
-        drake/manipulation/models/iiwa_description/iiwa7/iiwa7_no_collision.sdf
+        drake/manipulation/models/iiwa_description/iiwa7/iiwa7_with_box_collision.sdf
 
 If your model has all of its data available in your source tree, then you can
 remove the need for `--find_resource`:
 
     ./bazel-bin/manipulation/util/show_model \
-        --meshcat \
         --open-window \
-        ${PWD}/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+        ${PWD}/manipulation/models/iiwa_description/iiwa7/iiwa7_with_box_collision.sdf
 
 If the model uses package path (e.g. "package://package_name/model_sdf.obj") to
-refer mesh files, you also have to provide the argument `--package_path`:
+refer to mesh files, you also have to provide the argument `--package_path`:
     ./bazel-bin/manipulation/util/show_model \
-        --package_path \
-        manipulation/models/iiwa_description \
-        ./manipulation/models/iiwa_description/iiwa7/iiwa7_no_collision.sdf
+        --package_path multibody/parsing/test/box_package \
+        multibody/parsing/test/box_package/sdfs/box.sdf
 
 Note:
-    If `--meshcat` is not specified, no meshcat visualization will take
-place.
+    The output of running ``show_model`` will include the URL of the MeshCat
+server.
 
 Note:
     If you use `bazel run` without `--find_resource`, it is highly encouraged
@@ -51,7 +53,6 @@ binary.
 import argparse
 import os
 import time
-import warnings
 import webbrowser
 
 import numpy as np
@@ -64,10 +65,10 @@ from pydrake.geometry import (
     Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
-    Rgba,
     Role,
 )
 from pydrake.math import RigidTransform, RotationMatrix
+from pydrake.multibody.meshcat import JointSliders
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
@@ -132,44 +133,14 @@ def parse_filename_and_parser(args_parser, args):
     return filename, make_parser
 
 
-class _StringToRoleAction(argparse.Action):
-    """
-    Action that converts the string 'proximity' or 'illustration' to the
-    corresponding Role enumeration value.
-    """
-    def __init__(self, option_strings, dest, nargs=None, **kwargs):
-        if nargs is not None:
-            raise ValueError("nargs not allowed")
-        super().__init__(option_strings, dest, **kwargs)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        assert isinstance(values, str)
-
-        if values == 'proximity':
-            mapped_value = Role.kProximity
-        elif values == 'illustration':
-            mapped_value = Role.kIllustration
-        else:
-            raise ValueError(f"Role parameter got invalid value {values}")
-
-        setattr(namespace, self.dest, mapped_value)
-
-
 def add_visualizers_argparse_arguments(args_parser):
     """
     Adds argparse arguments for visualizers.
     """
     args_parser.add_argument(
-        "--meshcat", action="store_true",
-        help="Enable the MeshCat display.")
-    args_parser.add_argument(
         "-w", "--open-window", dest="browser_new",
         action="store_const", const=1, default=None,
         help="Open the MeshCat display in a new browser window.")
-    args_parser.add_argument(
-        "--meshcat_role", action=_StringToRoleAction,
-        default=Role.kIllustration, choices=['illustration', 'proximity'],
-        help="Defines the role of the geometry to visualize")
     args_parser.add_argument(
         "--pyplot", action="store_true",
         help="Opens a pyplot figure for rendering using "
@@ -202,6 +173,13 @@ def add_visualizers_argparse_arguments(args_parser):
         default=1,
         help="Triad opacity for frame visualization.",
     )
+    args_parser.add_argument(
+        "--position", type=float, nargs="+", default=[],
+        help="A list of positions which must be the same length as the number "
+             "of positions in the sdf model.  Note that most models have a "
+             "floating-base joint by default (unless the sdf explicitly welds "
+             "the base to the world, and so have 7 positions corresponding to "
+             "the quaternion representation of that floating-base position).")
 
 
 def add_triad(
@@ -272,8 +250,8 @@ def parse_visualizers(args_parser, args):
     Parses argparse arguments for visualizers, returning update_visualization,
     and connect_visualizers.
 
-    When ``args.meshcat`` is ``True``, ``connect_visualizers`` will return the
-    underlying ``Meshcat`` instance.  Otherwise, it returns ``None``.
+    The returned ``connect_visualizers`` function will return the
+    underlying ``Meshcat`` instance.
     """
     def update_visualization(plant, scene_graph):
         if args.visualize_frames:
@@ -305,26 +283,27 @@ def parse_visualizers(args_parser, args):
             scene_graph=scene_graph,
             builder=builder)
 
-        # Connect to Meshcat.  If the consuming application needs to connect,
-        # e.g., JointSliders, the meshcat instance is required.
-        meshcat = None
-        if args.meshcat:
-            meshcat = Meshcat()
-            meshcat_vis_params = MeshcatVisualizerParams()
-            meshcat_vis_params.role = args.meshcat_role
-            MeshcatVisualizer.AddToBuilder(
-                builder=builder, scene_graph=scene_graph, meshcat=meshcat,
-                params=meshcat_vis_params)
-            if args.browser_new is not None:
-                url = meshcat.web_url()
-                webbrowser.open(url=url, new=args.browser_new)
-        else:
-            if args.browser_new is not None:
-                args_parser.error("-w / --open-window require --meshcat")
+        # Connect to MeshCat: this instance is required to connect
+        # e.g., JointSliders.
+        meshcat = Meshcat()
+        # Add two visualizers, one to publish the "illustration" geometry, and
+        # another to publish the "collision" geometry.
+        MeshcatVisualizer.AddToBuilder(
+            builder, scene_graph, meshcat,
+            MeshcatVisualizerParams(role=Role.kIllustration, prefix="visual"))
+        MeshcatVisualizer.AddToBuilder(
+            builder, scene_graph, meshcat,
+            MeshcatVisualizerParams(role=Role.kProximity, prefix="collision"))
+        sliders = builder.AddNamedSystem(
+            "joint_sliders", JointSliders(meshcat=meshcat, plant=plant))
+
+        if args.browser_new is not None:
+            url = meshcat.web_url()
+            webbrowser.open(url=url, new=args.browser_new)
 
         # Connect to PyPlot.
         if args.pyplot:
-            pyplot = ConnectPlanarSceneGraphVisualizer(builder, scene_graph)
+            ConnectPlanarSceneGraphVisualizer(builder, scene_graph)
 
         return meshcat
 
@@ -337,6 +316,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     add_filename_and_parser_argparse_arguments(args_parser)
     add_visualizers_argparse_arguments(args_parser)
+    args_parser.add_argument(
+        "--loop_once", action='store_true',
+        help="Run the evaluation loop once and then quit.")
     args = args_parser.parse_args()
     filename, make_parser = parse_filename_and_parser(args_parser, args)
     update_visualization, connect_visualizers = parse_visualizers(
@@ -350,9 +332,18 @@ def main():
     update_visualization(plant, scene_graph)
     plant.Finalize()
 
-    connect_visualizers(builder, plant, scene_graph)
+    meshcat = connect_visualizers(builder, plant, scene_graph)
+
     diagram = builder.Build()
     context = diagram.CreateDefaultContext()
+
+    sliders = diagram.GetSubsystemByName("joint_sliders")
+    sliders_context = sliders.GetMyContextFromRoot(context)
+    plant_context = plant.GetMyContextFromRoot(context)
+
+    if args.position:
+        plant.SetPositions(plant_context, args.position)
+        sliders.SetPositions(args.position)
 
     # Use Simulator to dispatch initialization events.
     # TODO(eric.cousineau): Simplify as part of #10015.
@@ -360,13 +351,24 @@ def main():
     # Publish draw messages with current state.
     diagram.Publish(context)
 
+    # Disable the collision geometry at the start; it can be enabled by the
+    # checkbox in the meshcat controls.
+    meshcat.SetProperty("collision", "visible", False)
+
     # Wait for the user to cancel us.
-    if args.meshcat:
+    if not args.loop_once:
         print("Use Ctrl-C to quit")
-        try:
-            time.sleep(1e3)
-        except KeyboardInterrupt:
-            pass
+
+    try:
+        while True:
+            time.sleep(1 / 32.0)
+            q = sliders.get_output_port().Eval(sliders_context)
+            plant.SetPositions(plant_context, q)
+            diagram.Publish(context)
+            if args.loop_once:
+                return
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == '__main__':

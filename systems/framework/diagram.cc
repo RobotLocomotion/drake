@@ -352,14 +352,15 @@ void Diagram<T>::DoCalcImplicitTimeDerivativesResidual(
 }
 
 template <typename T>
-const System<T>& Diagram<T>::GetSubsystemByName(const std::string& name) const {
+const System<T>& Diagram<T>::GetSubsystemByName(std::string_view name) const {
   for (const auto& child : registered_systems_) {
     if (child->get_name() == name) {
       return *child;
     }
   }
-  throw std::logic_error("System " + this->GetSystemName() +
-                         " does not have a subsystem named " + name);
+  throw std::logic_error(fmt::format(
+      "System {} does not have a subsystem named {}",
+      this->GetSystemName(), name));
 }
 
 template <typename T>
@@ -625,11 +626,10 @@ void Diagram<T>::AddTriggeredWitnessFunctionToCompositeEventCollection(
     CompositeEventCollection<T>* events) const {
   DRAKE_DEMAND(events != nullptr);
   DRAKE_DEMAND(event != nullptr);
-  DRAKE_DEMAND(event->get_event_data() != nullptr);
 
   // Get the event data- it will need to be modified.
-  auto data = dynamic_cast<WitnessTriggeredEventData<T>*>(
-      event->get_mutable_event_data());
+  WitnessTriggeredEventData<T>* data =
+      event->template get_mutable_event_data<WitnessTriggeredEventData<T>>();
   DRAKE_DEMAND(data != nullptr);
 
   // Get the vector of events corresponding to the subsystem.

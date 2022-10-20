@@ -31,6 +31,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 
@@ -554,6 +555,69 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_random_translation_distribution",
             &Class::set_random_translation_distribution, py::arg("translation"),
             cls_doc.set_random_translation_distribution.doc);
+  }
+
+  // ScrewJoint
+  {
+    using Class = ScrewJoint<T>;
+    constexpr auto& cls_doc = doc.ScrewJoint;
+    auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
+        m, "ScrewJoint", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init([](const std::string& name,
+                          const Frame<T>& frame_on_parent,
+                          const Frame<T>& frame_on_child,
+                          std::optional<double> screw_pitch,
+                          std::optional<double> damping) {
+          if (!screw_pitch.has_value() || !damping.has_value()) {
+            WarnDeprecated(
+                "Defaults for the ScrewJoint constructor are deprecated.",
+                "2023-02-01");
+          }
+          return std::make_unique<Class>(name, frame_on_parent, frame_on_child,
+              screw_pitch.value_or(0.0), damping.value_or(0.0));
+        }),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"), py::arg("screw_pitch") = py::none(),
+            py::arg("damping") = py::none(),
+            (std::string(cls_doc.ctor.doc_5args) +
+                "\n\nThe defaults values for screw_pitch and damping are "
+                "deprecated and will removed on 2023-02-01.")
+                .c_str())
+        .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
+                 const Vector3<double>&, double, double>(),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"), py::arg("axis"), py::arg("screw_pitch"),
+            py::arg("damping"), cls_doc.ctor.doc_6args)
+        .def("screw_pitch", &Class::screw_pitch, cls_doc.screw_pitch.doc)
+        .def("damping", &Class::damping, cls_doc.damping.doc)
+        .def("get_default_translation", &Class::get_default_translation,
+            cls_doc.get_default_translation.doc)
+        .def("set_default_translation", &Class::set_default_translation,
+            py::arg("z"), cls_doc.set_default_translation.doc)
+        .def("get_default_rotation", &Class::get_default_rotation,
+            cls_doc.get_default_rotation.doc)
+        .def("set_default_rotation", &Class::set_default_rotation,
+            py::arg("theta"), cls_doc.set_default_rotation.doc)
+        .def("get_translation", &Class::get_translation, py::arg("context"),
+            cls_doc.get_translation.doc)
+        .def("set_translation", &Class::set_translation, py::arg("context"),
+            py::arg("translation"), cls_doc.set_translation.doc)
+        .def("get_translational_velocity", &Class::get_translational_velocity,
+            py::arg("context"), cls_doc.get_translational_velocity.doc)
+        .def("set_translational_velocity", &Class::set_translational_velocity,
+            py::arg("context"), py::arg("translation_dot"),
+            cls_doc.set_translational_velocity.doc)
+        .def("get_rotation", &Class::get_rotation, py::arg("context"),
+            cls_doc.get_rotation.doc)
+        .def("get_angular_velocity", &Class::get_angular_velocity,
+            py::arg("context"), cls_doc.get_angular_velocity.doc)
+        .def("set_angular_velocity", &Class::set_angular_velocity,
+            py::arg("context"), py::arg("theta_dot"),
+            cls_doc.set_angular_velocity.doc)
+        .def("set_random_pose_distribution",
+            &Class::set_random_pose_distribution, py::arg("theta"),
+            cls_doc.set_random_pose_distribution.doc);
   }
 
   // RevoluteJoint

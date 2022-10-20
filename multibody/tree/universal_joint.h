@@ -87,10 +87,7 @@ class UniversalJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS(damping >= 0);
   }
 
-  const std::string& type_name() const override {
-    static const never_destroyed<std::string> name{kTypeName};
-    return name.access();
-  }
+  const std::string& type_name() const override;
 
   /// Returns `this` joint's damping constant in N⋅m⋅s. The damping torque
   /// (in N⋅m) is modeled as `τᵢ = -damping⋅ωᵢ, i = 1, 2` i.e. opposing motion,

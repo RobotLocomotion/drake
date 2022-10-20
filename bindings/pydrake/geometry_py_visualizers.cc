@@ -226,6 +226,11 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("rgba") = Rgba(0.1, 0.1, 0.1, 1.0),
             py::arg("wireframe") = false, py::arg("wireframe_line_width") = 1.0,
             cls_doc.SetTriangleMesh.doc)
+        .def("SetTriangleColorMesh", &Class::SetTriangleColorMesh,
+            py::arg("path"), py::arg("vertices"), py::arg("faces"),
+            py::arg("colors"), py::arg("wireframe") = false,
+            py::arg("wireframe_line_width") = 1.0,
+            cls_doc.SetTriangleColorMesh.doc)
         .def("SetCamera",
             py::overload_cast<Meshcat::PerspectiveCamera, std::string>(
                 &Class::SetCamera),
@@ -273,14 +278,15 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("SetAnimation", &Class::SetAnimation, py::arg("animation"),
             +cls_doc.SetAnimation.doc)
         .def("AddButton", &Class::AddButton, py::arg("name"),
-            cls_doc.AddButton.doc)
+            py::arg("keycode") = "", cls_doc.AddButton.doc)
         .def("GetButtonClicks", &Class::GetButtonClicks, py::arg("name"),
             cls_doc.GetButtonClicks.doc)
         .def("DeleteButton", &Class::DeleteButton, py::arg("name"),
             cls_doc.DeleteButton.doc)
         .def("AddSlider", &Class::AddSlider, py::arg("name"), py::arg("min"),
             py::arg("max"), py::arg("step"), py::arg("value"),
-            cls_doc.AddSlider.doc)
+            py::arg("decrement_keycode") = "",
+            py::arg("increment_keycode") = "", cls_doc.AddSlider.doc)
         .def("SetSliderValue", &Class::SetSliderValue, py::arg("name"),
             py::arg("value"), cls_doc.SetSliderValue.doc)
         .def("GetSliderValue", &Class::GetSliderValue, py::arg("name"),

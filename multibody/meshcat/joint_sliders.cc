@@ -4,6 +4,7 @@
 #include <thread>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 
@@ -130,17 +131,18 @@ VectorXd Broadcast(
 
 template <typename T>
 JointSliders<T>::JointSliders(
-    std::shared_ptr<geometry::Meshcat> meshcat,
-    const MultibodyPlant<T>* plant,
+    std::shared_ptr<geometry::Meshcat> meshcat, const MultibodyPlant<T>* plant,
     std::optional<VectorXd> initial_value,
     std::variant<std::monostate, double, VectorXd> lower_limit,
     std::variant<std::monostate, double, VectorXd> upper_limit,
-    std::variant<std::monostate, double, VectorXd> step)
+    std::variant<std::monostate, double, VectorXd> step,
+    std::vector<std::string> decrement_keycodes,
+    std::vector<std::string> increment_keycodes)
     : meshcat_(std::move(meshcat)),
       plant_(plant),
       position_names_(GetPositionNames(plant)),
-      initial_value_(std::move(initial_value).value_or(
-          GetDefaultPositions(plant))),
+      initial_value_(
+          std::move(initial_value).value_or(GetDefaultPositions(plant))),
       is_registered_{true} {
   DRAKE_THROW_UNLESS(meshcat_ != nullptr);
   DRAKE_THROW_UNLESS(plant_ != nullptr);
@@ -160,6 +162,22 @@ JointSliders<T>::JointSliders(
   const VectorXd step_broadcast = Broadcast(
       "step",          0.01, nq, std::move(step));
 
+  if (decrement_keycodes.size() &&
+      static_cast<int>(decrement_keycodes.size()) != nq) {
+    throw std::logic_error(
+        fmt::format("Expected decrement_keycodes of size zero or {}, but got "
+                    "size {} instead",
+                    nq, decrement_keycodes.size()));
+  }
+
+  if (increment_keycodes.size() &&
+      static_cast<int>(increment_keycodes.size()) != nq) {
+    throw std::logic_error(
+        fmt::format("Expected increment_keycodes of size zero or {}, but got "
+                    "size {} instead",
+                    nq, increment_keycodes.size()));
+  }
+
   // Add one slider per joint position.
   const VectorXd lower_plant = plant_->GetPositionLowerLimits();
   const VectorXd upper_plant = plant_->GetPositionUpperLimits();
@@ -174,7 +192,16 @@ JointSliders<T>::JointSliders(
         upper_plant[position_index]);
     const double one_step = step_broadcast[position_index];
     const double one_value = initial_value_[position_index];
-    meshcat_->AddSlider(slider_name, one_min, one_max, one_step, one_value);
+    const std::string one_decrement_keycode =
+        decrement_keycodes.size()
+            ? std::move(decrement_keycodes[position_index])
+            : "";
+    const std::string one_increment_keycode =
+        increment_keycodes.size()
+            ? std::move(increment_keycodes[position_index])
+            : "";
+    meshcat_->AddSlider(slider_name, one_min, one_max, one_step, one_value,
+                        one_decrement_keycode, one_increment_keycode);
   }
 
   // Declare the output port.
@@ -220,9 +247,9 @@ void JointSliders<T>::CalcOutput(
 }
 
 template <typename T>
-void JointSliders<T>::Run(
-    const Diagram<T>& diagram,
-    std::optional<double> timeout) const {
+void JointSliders<T>::Run(const Diagram<T>& diagram,
+                          std::optional<double> timeout,
+                          std::string stop_button_keycode) const {
   // Make a context and create reference shortcuts to some pieces of it.
   // TODO(jwnimmer-tri) If the user has forgotten to add the plant or sliders
   // to the diagram, our error message here is awful. Ideally, we should be
@@ -236,8 +263,11 @@ void JointSliders<T>::Run(
 
   // Add the Stop button.
   constexpr char kButtonName[] = "Stop JointSliders";
-  log()->info("Press the '{}' button in Meshcat to continue.", kButtonName);
-  meshcat_->AddButton(kButtonName);
+  log()->info("Press the '{}' button in Meshcat{} to continue.", kButtonName,
+              stop_button_keycode.empty()
+                  ? ""
+                  : fmt::format(" or press '{}'", stop_button_keycode));
+  meshcat_->AddButton(kButtonName, std::move(stop_button_keycode));
   ScopeExit guard([this, kButtonName]() {
     meshcat_->DeleteButton(kButtonName);
   });

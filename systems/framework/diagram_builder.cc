@@ -41,6 +41,39 @@ std::vector<System<T>*> DiagramBuilder<T>::GetMutableSystems() {
 }
 
 template <typename T>
+const System<T>& DiagramBuilder<T>::GetSubsystemByName(
+    std::string_view name) const {
+  ThrowIfAlreadyBuilt();
+  const System<T>* result = nullptr;
+  for (const auto& child : registered_systems_) {
+    if (child->get_name() == name) {
+      if (result != nullptr) {
+        throw std::logic_error(fmt::format(
+            "DiagramBuilder contains multiple subsystems named {} so cannot "
+            "provide a unqiue answer to a lookup by name",
+            name));
+      }
+      result = child.get();
+      // We can't return early here because we need to check the whole list
+      // for duplicate names.
+    }
+  }
+  if (result != nullptr) {
+    return *result;
+  }
+  throw std::logic_error(fmt::format(
+      "DiagramBuilder does not contain a subsystem named {}",
+      name));
+}
+
+template <typename T>
+System<T>& DiagramBuilder<T>::GetMutableSubsystemByName(
+    std::string_view name) {
+  ThrowIfAlreadyBuilt();
+  return const_cast<System<T>&>(GetSubsystemByName(name));
+}
+
+template <typename T>
 const std::map<typename DiagramBuilder<T>::InputPortLocator,
                typename DiagramBuilder<T>::OutputPortLocator>&
 DiagramBuilder<T>::connection_map() const {

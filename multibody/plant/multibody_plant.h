@@ -1818,7 +1818,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// With this method MultibodyPlant takes ownership of `model` and
   /// calls its DeclareSystemResources() method at Finalize(), giving specific
   /// physical model implementations a chance to declare the system resources it
-  /// needs.
+  /// needs. Each type of PhysicalModel can be added at most once.
   ///
   /// @param model After this call the model is owned by `this` MultibodyPlant.
   /// @pre model != nullptr.
@@ -4201,7 +4201,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the size of the generalized position vector q for this model.
   /// @warning The intent of this function is only to be used after Finalize().
   /// Calling it prior to Finalize() will return inaccurate results. On or after
-  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// 2023-01-01, calling this function before Finalize() will result in an
   /// exception.
   int num_positions() const { return internal_tree().num_positions(); }
 
@@ -4215,7 +4215,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the size of the generalized velocity vector v for this model.
   /// @warning The intent of this function is only to be used after Finalize().
   /// Calling it prior to Finalize() will return inaccurate results. On or after
-  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// 2023-01-01, calling this function before Finalize() will result in an
   /// exception.
   int num_velocities() const { return internal_tree().num_velocities(); }
 
@@ -4232,7 +4232,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// will be `num_positions()` plus `num_velocities()`.
   /// @warning The intent of this function is only to be used after Finalize().
   /// Calling it prior to Finalize() will return inaccurate results. On or after
-  /// 2022-10-01, calling this function before Finalize() will result in an
+  /// 2023-01-01, calling this function before Finalize() will result in an
   /// exception.
   int num_multibody_states() const { return internal_tree().num_states(); }
 
@@ -4803,7 +4803,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       std::vector<SpatialAcceleration<T>>* A_WB_all) const;
 
   // Method to compute spatial contact forces for continuous plants.
+  // @note This version zeros out the forces in @p F_BBo_W_array before adding
+  // in contact force.
+  // @see CalcAndAddSpatialContactForcesContinuous() for the version of this
+  // method that does not zero out the forces.
   void CalcSpatialContactForcesContinuous(
+      const drake::systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
+  // Method to compute spatial contact forces for continuous plants.
+  // @note This version does *not* zero out the forces in @p F_BBo_W_array.
+  // @see CalcSpatialContactForcesContinuous() for the version of this method
+  // that zeros out @p F_BBo_W_array before adding in contact forces.
+  void CalcAndAddSpatialContactForcesContinuous(
       const drake::systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 

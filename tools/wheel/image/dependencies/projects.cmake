@@ -70,9 +70,17 @@ set(gflags_dlname "gflags-${gflags_version}.tar.gz")
 list(APPEND ALL_PROJECTS gflags)
 
 # eigen
-set(eigen_version 3.3.7)
-set(eigen_url "https://gitlab.com/libeigen/eigen/-/archive/${eigen_version}/eigen-${eigen_version}.tar.gz")
-set(eigen_md5 "9e30f67e8531477de4117506fe44669b")
+if(APPLE)
+    # This version mimics homebrew.
+    set(eigen_version 3.4.0)
+    set(eigen_url "https://gitlab.com/libeigen/eigen/-/archive/${eigen_version}/eigen-${eigen_version}.tar.gz")
+    set(eigen_md5 "4c527a9171d71a72a9d4186e65bea559")
+else()
+    # This version mimics Ubuntu 20.04 (Focal).
+    set(eigen_version 3.3.7)
+    set(eigen_url "https://gitlab.com/libeigen/eigen/-/archive/${eigen_version}/eigen-${eigen_version}.tar.gz")
+    set(eigen_md5 "9e30f67e8531477de4117506fe44669b")
+endif()
 set(eigen_dlname "eigen-${eigen_version}.tar.gz")
 list(APPEND ALL_PROJECTS eigen)
 

@@ -82,9 +82,9 @@ MultibodyPlant<double>& PopulateTestDiagram(DiagramBuilder<double>* builder,
 
   Parser parser(plant);
   if (has_collision_geometry) {
-    parser.AddModelFromString(kModelWithCollisions, "urdf");
+    parser.AddModelsFromString(kModelWithCollisions, "urdf");
   } else {
-    parser.AddModelFromString(kModelWithoutCollisions, "urdf");
+    parser.AddModelsFromString(kModelWithoutCollisions, "urdf");
   }
 
   plant->Finalize();

@@ -1406,6 +1406,8 @@ void MultibodyPlant<T>::SetDiscreteUpdateManager(
 template <typename T>
 void MultibodyPlant<T>::AddPhysicalModel(
     std::unique_ptr<internal::PhysicalModel<T>> model) {
+  // TODO(xuchenhan-tri): Guard against the same type of model being registered
+  //  more than once.
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_DEMAND(model != nullptr);
   auto& added_model = physical_models_.emplace_back(std::move(model));
@@ -2820,7 +2822,7 @@ void MultibodyPlant<T>::CallTamsiSolver(
   if (info != TamsiSolverResult::kSuccess) {
     const std::string msg = fmt::format(
         "MultibodyPlant's discrete update solver failed to converge at "
-        "simulation time = {:7.3g} with discrete update period = {:7.3g}. "
+        "simulation time = {} with discrete update period = {}. "
         "This usually means that the plant's discrete update period is too "
         "large to resolve the system's dynamics for the given simulation "
         "conditions. This is often the case during abrupt collisions or during "
@@ -2831,7 +2833,7 @@ void MultibodyPlant<T>::CallTamsiSolver(
         "solutions include:\n"
         "  1. reduce the discrete update period set at construction,\n"
         "  2. decrease the high gains in your controller whenever possible,\n"
-        "  3. switch to a continuous model (discrete update period is zero), "
+        "  3. switch to a continuous model (discrete update period is zero),\n"
         "     though this might affect the simulation run time.",
         time0, this->time_step());
     throw std::runtime_error(msg);
@@ -2931,13 +2933,10 @@ void MultibodyPlant<T>::CallContactSolver(
                                     v0, &*results);
 
   if (info != contact_solvers::internal::ContactSolverStatus::kSuccess) {
-    const std::string msg =
-        fmt::format("MultibodyPlant's contact solver of type '" +
-                        NiceTypeName::Get(*contact_solver_) +
-                        "' failed to converge at "
-                        "simulation time = {:7.3g} with discrete update "
-                        "period = {:7.3g}.",
-                    time0, time_step());
+    const std::string msg = fmt::format(
+        "MultibodyPlant's contact solver of type '{}' failed to converge at "
+        "simulation time = {} with discrete update period = {}.",
+        NiceTypeName::Get(*contact_solver_), time0, time_step());
     throw std::runtime_error(msg);
   }
 }
@@ -2994,6 +2993,18 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
   // Forces can accumulate into F_BBo_W_array; initialize it to zero first.
   std::fill(F_BBo_W_array->begin(), F_BBo_W_array->end(),
             SpatialForce<T>::Zero());
+
+  CalcAndAddSpatialContactForcesContinuous(context, F_BBo_W_array);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
+      const drake::systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const {
+  this->ValidateContext(context);
+  DRAKE_DEMAND(F_BBo_W_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
+  DRAKE_DEMAND(!is_discrete());
 
   // Early exit if there are no contact forces.
   if (num_collision_geometries() == 0) return;
@@ -3831,9 +3842,15 @@ void MultibodyPlant<T>::CalcReactionForces(
   auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
   auto& tau_applied = applied_forces.mutable_generalized_forces();
 
-  // TODO(sherm1) This doesn't include hydroelastic contact forces
-  //              in continuous mode (#13888).
-  CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+  // Add in forces due to contact.
+  // Only add in hydroelastic contact forces for continuous mode for now as
+  // the forces computed by CalcHydroelasticContactForces() are wrong in
+  // discrete mode. See (#13888).
+  if (!is_discrete()) {
+    CalcAndAddSpatialContactForcesContinuous(context, &Fapplied_Bo_W_array);
+  } else {
+    CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+  }
 
   // Compute reaction forces at each mobilizer.
   std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());

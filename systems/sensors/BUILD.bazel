@@ -91,18 +91,23 @@ drake_cc_library(
     name = "camera_config_functions",
     srcs = ["camera_config_functions.cc"],
     hdrs = ["camera_config_functions.h"],
-    deps = [
+    interface_deps = [
         ":camera_config",
+        "//geometry:scene_graph",
+        "//lcm:interface",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_buses",
+    ],
+    deps = [
         ":camera_info",
         ":rgbd_sensor",
         ":sim_rgbd_sensor",
-        "//geometry:scene_graph",
+        "//geometry/render_gl",
         "//geometry/render_vtk",
-        "//lcm:interface",
         "//math:geometric_transform",
         "//multibody/parsing:scoped_names",
-        "//multibody/plant",
-        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_config_functions",
     ],
 )
 
@@ -342,10 +347,16 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "camera_config_functions_test",
+    tags = vtk_test_tags(),
     deps = [
         ":camera_config_functions",
+        ":image_to_lcm_image_array_t",
+        ":sim_rgbd_sensor",
         "//common/test_utilities:expect_throws_message",
         "//common/yaml:yaml_io",
+        "//geometry/render_gl",
+        "//lcm:drake_lcm",
+        "//systems/lcm:lcm_publisher_system",
     ],
 )
 

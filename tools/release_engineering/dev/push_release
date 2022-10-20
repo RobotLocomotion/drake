@@ -1,0 +1,337 @@
+#!/bin/bash
+
+################################################################################
+# NOTE: before running this script, you must set the value of `gpg_key` below! #
+################################################################################
+
+# This shell script is used to complete the manual steps at the end of the
+# release process.
+
+set -euo pipefail
+
+readonly usage="Usage: $0 {{ source version x.y.z }} {{ binary version YYYYMMDD }} [--apt] [--no-docker] [--no-sign] [--no-tar]"
+
+if [[ "$#" -lt 2 ]]; then
+  echo "${usage}" >&2
+  exit 1
+fi
+
+readonly source_version=$1
+readonly binary_version=$2
+
+# Sanity check that the nightly binary release version is 8 characters long.
+# Apologies to the maintainer of the January release in the year 10000.
+if [[ "${#binary_version}" -ne 8 ]]; then
+  echo "${usage}" >&2
+  exit 1
+fi
+
+shift 2;
+
+# Do not publish Debian packages by default as they need to be manually built.
+push_apt=0
+push_docker=1
+push_tar=1
+sign=1
+
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --apt)
+      push_apt=1
+      ;;
+    --no-docker)
+      push_docker=0
+      ;;
+    --no-sign)
+      sign=0
+      ;;
+    --no-tar)
+      push_tar=0
+      ;;
+    *)
+      echo "${usage}" >&2
+      exit 1
+      ;;
+    esac
+  shift
+done
+
+if ! tty -s; then
+  echo 'ERROR: tty was NOT detected. This script may need various login credentials to be entered interactively.'  >&2
+  exit 2;
+fi
+
+if [[ "${push_apt}" -ne 0 ]] && ! command -v aptly &>/dev/null; then
+  echo 'ERROR: aptly(1) was NOT found. Fix with apt-get install aptly or brew install aptly.' >&2
+  exit 3
+fi
+
+if [[ "${push_apt}" -ne 0 || "${push_tar}" -ne 0 ]] && ! command -v aws &>/dev/null; then
+  echo 'ERROR: aws(1) was NOT found. Fix with apt-get install awscli or brew install awscli.' >&2
+  exit 4
+fi
+
+# curl is always available on macOS.
+if ! command -v curl &>/dev/null; then
+  echo 'ERROR: curl(1) was NOT found. Fix with apt-get install curl.' >&2
+  exit 5
+fi
+
+# Docker is available both as a formula and a cask on macOS. Either is fine as
+# are any of the Docker CE packages from the Docker website for both Ubuntu and
+# macOS. The Docker package on Ubuntu really does have a strange name. An
+# unrelated docklet for KDE or GNOME claimed the obvious name long ago.
+if [[ "${push_docker}" -ne 0 ]] && ! command -v docker &>/dev/null; then
+  echo 'ERROR: docker(1) was NOT found. Fix with apt-get install docker.io or brew install [--cask] docker.' >&2
+  exit 6
+fi
+
+if [[ "${push_apt}" -ne 0 || ("${push_tar}" -ne 0 && "${sign}" -ne 0) ]] && ! command -v gpg &>/dev/null; then
+  echo 'ERROR: gpg(1) was NOT found. Fix with apt-get install gnupg or brew install gnupg.' >&2
+  exit 6
+fi
+
+# sha256sum and sha512sum are not available on macOS and unusually this is a
+# maintainer script that will usually be used on macOS.
+if [[ "${push_tar}" -ne 0 ]] && ! command -v shasum &>/dev/null; then
+  echo 'ERROR: shasum(1) was NOT found. Fix with apt-get install libdigest-sha-perl.' >&2
+  exit 7
+fi
+
+# Sanity check that the release for the source version exists and has been
+# published.
+if ! curl --fail --head --location --output /dev/null \
+    "https://api.github.com/repos/RobotLocomotion/drake/releases/tags/v${source_version}"; then
+  echo "ERROR: GitHub release v${source_version} does NOT exist." >&2
+  exit 8
+fi
+
+# Sanity check that the nightly binary is likely to exist given the datestamp.
+# In an ideal world, we would query the GitHub API to get an exact mapping from
+# source version to nightly binary version.
+if [[ "$(date '+%Y%m%d')" < "${binary_version}" ]]; then
+  echo "ERROR: Binary release has a future date so probably does NOT exist." >&2
+  exit 9
+fi
+
+platforms=( focal jammy )
+
+# Unfortunately, but necessarily, the secret key is not available over any
+# network, including VPC and the Internet. The public key is at
+# https://drake-apt.csail.mit.edu/drake.asc and
+# https://drake-packages.csail.mit.edu/drake/release/drake.asc
+################################################################################
+# TODO(svenevs): allow command line or environment variable to set this.
+# The value for this variable is currently saved in the AWS Secrets Manager
+# `push_release` key.
+readonly gpg_key=0000000000000000000000000000000000000000
+################################################################################
+if ! [[ "${gpg_key}" =~ ^[a-fA-F0-9]{40}$ ]]; then
+  echo "Error: gpg_key value expected to be a length 40 hexadecimal string." >&2
+  exit 1
+fi
+
+if [[ "${push_apt}" -ne 0 || ("${push_tar}" -ne 0 && "${sign}" -ne 0) ]] && ! gpg --list-secret-keys "${gpg_key}" &>/dev/null; then
+  echo "ERROR: GPG secret key ${gpg_key} does NOT exist." >&2
+  exit 10
+fi
+
+if [[ "${push_apt}" -ne 0 ]]; then
+  if [ ! -s "${HOME}/.aptly.conf" ]; then
+    echo "ERROR: aptly is NOT configured." >&2
+    exit 11
+  fi
+fi
+
+if [[ "${push_docker}" -ne 0 ]]; then
+  set -x
+
+  # You need credentials to the robotlocomotion organization on Docker Hub. The
+  # number of people or bots that have or need these are necessarily very small.
+  docker login
+
+  # Keep the Docker images available locally on error for retrying and/or
+  # debugging.
+  trap 'echo "Not cleaning downloaded Docker images due to error. No files have been downloaded yet."' ERR
+
+  # Pull the nightly Docker images for focal and jammy from Docker Hub, tag
+  # them with the appropriate platform prefix and the x.y.z version number, and
+  # push the tag to Docker Hub.
+  for platform in "${platforms[@]}"; do
+    image="robotlocomotion/drake:${platform}-${binary_version}"
+    tag="robotlocomotion/drake:${platform}-${source_version}"
+
+    docker pull "${image}"
+    docker tag "${image}" "${tag}"
+    docker push "${tag}"
+  done
+
+  image="robotlocomotion/drake:${platform}-${binary_version}"
+  tag="robotlocomotion/drake:${source_version}"
+
+  # Tag the Docker image without a platform prefix them and push the tag to
+  # Docker Hub.
+  docker tag "${image}" "${tag}"
+  docker push "${tag}"
+
+  # Remove the pulled Docker images on success.
+  for platform in "${platforms[@]}"; do
+    docker rmi "robotlocomotion/drake:${platform}-${binary_version}"
+  done
+
+  set +x
+fi
+
+readonly temp_dir="$(mktemp -u)"
+
+mkdir -p "${temp_dir}"
+pushd "${temp_dir}"
+
+algorithms=( 256 512 )
+
+if [[ "${push_apt}" -ne 0 ]]; then
+  set -x
+
+  # Download the current version of the aptly database from S3.
+  aws s3 sync --delete s3://drake-infrastructure/aptly/.aptly "${HOME}/.aptly"
+
+  for platform in "${platforms[@]}"; do
+    mkdir -p "${platform}"
+    pushd "${platform}"
+
+    filename="drake-dev_${source_version}-1_amd64.deb"
+
+    curl --fail --location --remote-name \
+      "https://drake-packages.csail.mit.edu/drake/release/${platform}/${filename}"
+
+    # Generate detached armored GPG signature and SHA256 and SHA512 checksums
+    # of the downloaded Debian package and upload the signature and checksums
+    # to S3.
+    if [[ "${sign}" -ne 0 ]]; then
+      asc_filename="${filename}.asc"
+
+      gpg --armor --detach-sign --local-user "${gpg_key}" \
+        --output "${asc_filename}" --sign "${filename}"
+      aws s3 cp "${asc_filename}" \
+        "s3://drake-packages/drake/release/${platform}/${asc_filename}"
+    fi
+
+    for algorithm in "${algorithms[@]}"; do
+      sha_filename="${filename}.sha${algorithm}"
+
+      shasum --algorithm "${algorithm}" "${filename}" | tee "${sha_filename}"
+      aws s3 cp "${sha_filename}" \
+        "s3://drake-packages/drake/release/${platform}/${sha_filename}"
+    done
+
+    # Add the Debian package to the aptly database.
+    aptly repo add "drake-${platform}" "${filename}"
+    aptly snapshot create "drake-${platform}-${binary_version}" \
+      from repo "drake-${platform}"
+
+    # Publish the new apt repository to S3.
+    aptly publish switch -gpg-key="${gpg_key: -8}" "${platform}" \
+      "s3:drake-apt.csail.mit.edu/${platform}:" "drake-${platform}-${binary_version}"
+
+    # Invalidate the cached apt repository.
+    aws cloudfront create-invalidation --distribution-id E2RAGJYS5GNIOS \
+      --paths "/${platform}/dists/${platform}/*"
+
+    popd
+  done
+
+  # Upload the new version of the aptly database to S3.
+  aws s3 sync --delete --exclude .DS_Store "${HOME}/.aptly" \
+    s3://drake-infrastructure/aptly/.aptly
+
+  set +x
+fi
+
+platforms+=( mac )
+
+if [[ "${push_tar}" -ne 0 ]]; then
+  set -x
+
+  # Download the nightly binary release archives for focal, jammy, and mac from
+  # S3 via CloudFront and rename with the x.y.z version number.
+  for platform in "${platforms[@]}"; do
+    curl --fail --location --output "drake-${source_version}-${platform}.tar.gz" \
+      "https://drake-packages.csail.mit.edu/drake/nightly/drake-${binary_version}-${platform}.tar.gz"
+  done
+
+  # Download the source release archive from GitHub and rename with the x.y.z
+  # version number and the suffix src.
+  curl --fail --location --output "drake-${source_version}-src.tar.gz" \
+    "https://github.com/RobotLocomotion/drake/archive/v${source_version}.tar.gz"
+
+  platforms+=( src )
+
+  # You need write credentials to drake-packages bucket S3. The number of people
+  # or bots that have or need these are necessarily very small.
+  if [[ ! -s "${HOME}/.aws/credentials" ]]; then
+    aws configure
+  fi
+
+  # Generate detached armored GPG signatures and SHA256 and SHA512 checksums of
+  # the renamed binary and source release archives and upload each archive,
+  # signature, and checksum to S3.
+  for platform in "${platforms[@]}"; do
+    filename="drake-${source_version}-${platform}.tar.gz"
+
+    aws s3 cp "${filename}" "s3://drake-packages/drake/release/${filename}"
+
+    if [[ "${sign}" -ne 0 ]]; then
+      asc_filename="${filename}.asc"
+
+      gpg --armor --detach-sign --local-user "${gpg_key}" \
+        --output "${asc_filename}" --sign "${filename}"
+      aws s3 cp "${asc_filename}" \
+        "s3://drake-packages/drake/release/${asc_filename}"
+    fi
+
+    for algorithm in "${algorithms[@]}"; do
+      sha_filename="${filename}.sha${algorithm}"
+
+      shasum --algorithm "${algorithm}" "${filename}" | tee "${sha_filename}"
+      aws s3 cp "${sha_filename}" \
+        "s3://drake-packages/drake/release/${sha_filename}"
+    done
+  done
+
+  # COMMENT OUT EVERYTHING RELATED TO push_drake_colab.py
+  #filename=setup_drake_colab.py
+
+  # Download the nightly setup_drake_colab.py from S3 via CloudFront.
+  #curl --fail --location --remote-name \
+  #  "https://drake-packages.csail.mit.edu/drake/nightly/drake-${binary_version}/${filename}"
+
+  # Generate the detached armored GPG signature and SHA256 and SHA512 checksums
+  # of setup_drake_colab.py and upload it, and its signature, and checksums to
+  # S3.
+  #aws s3 cp "${filename}" \
+  #  "s3://drake-packages/drake/release/drake-${source_version}/${filename}"
+
+  #if [[ "${sign}" -ne 0 ]]; then
+  #  asc_filename="${filename}.asc"
+
+  #  gpg --armor --detach-sign --local-user "${gpg_key}" \
+  #    --output "${asc_filename}" --sign "${filename}"
+  #  aws s3 cp "${asc_filename}" \
+  #    "s3://drake-packages/drake/release/drake-${source_version}/${asc_filename}"
+  #fi
+
+  #for algorithm in "${algorithms[@]}"; do
+  #  sha_filename="${filename}.sha${algorithm}"
+
+  #  shasum --algorithm "${algorithm}" "${filename}" | tee "${sha_filename}"
+  #  aws s3 cp "${sha_filename}" \
+  #    "s3://drake-packages/drake/release/drake-${source_version}/${sha_filename}"
+  #done
+
+  set +x
+fi
+
+popd
+
+# Remove the downloaded files on success.
+rm -rf "${temp_dir}"

@@ -14,38 +14,36 @@ notebooks. See the [Tutorials](/index.html#tutorials) page for details.
 The following table shows the configurations and platforms that Drake
 officially supports:
 
-| Operating System ⁽³⁾               | Architecture          | Python   |
-|------------------------------------|-----------------------|----------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64                | 3.8 ⁽²⁾  |
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64                | 3.10 ⁽²⁾ |
-| macOS Big Sur (11)                 | x86_64                | 3.10 ⁽²⁾ |
-| macOS Monterey (12)                | x86_64 or arm64 ⁽¹⁾   | 3.10 ⁽²⁾ |
+| Operating System ⁽²⁾               | Architecture     | Python ⁽¹⁾ |
+|------------------------------------|------------------|------------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64           | 3.8        |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64           | 3.10       |
+| macOS Big Sur (11)                 | x86_64           | 3.10       |
+| macOS Monterey (12)                | x86_64 or arm64  | 3.10       |
 
-⁽¹⁾ For users running on Apple's newer arm64 hardware, to use Drake's
-pre-compiled releases refer to [Running under Rosetta 2](/rosetta2.html) for
-instructions on running using x86_64 emulation. Running natively on arm64 is
-currently only supported by [building Drake from source](/from_source.html).
-
-⁽²⁾ CPython is the only Python implementation supported.
+⁽¹⁾ CPython is the only Python implementation supported.
 Drake does not support the Python environment supplied by Anaconda. Before
 installing or using Drake, please `conda deactivate` (repeatedly, until even
 the conda base environment has been deactivated) such that none of the paths
 reported `which -a python python3` refer to conda.
+Note that Miniconda seems to work fine; it's only Anaconda that has caused
+problems for some users.
 
-⁽³⁾ Drake features that perform image rendering (e.g., camera simulation)
+⁽²⁾ Drake features that perform image rendering (e.g., camera simulation)
 require a working display server.  Most personal computers will have this
-already built in, but some cloud or docker environments may not.
+already built in, but some cloud or docker environments may require extra
+setup steps.
 
 Additionally, if you are compiling your own C++ code against Drake's C++ code
 and are using Drake's pre-compiled binaries, then you must use the same
 compiler as our releases:
 
-| Operating System                   | C/C++ Compiler                 | Std   |
-|------------------------------------|--------------------------------|-------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | GCC 9.3                        | C++17 |
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11.2                       | C++17 |
-| macOS Big Sur (11)                 | Apple LLVM 12.0.5 (Xcode 12.5) | C++17 |
-| macOS Monterey (12) on x86_64      | Apple LLVM 13.0.0 (Xcode 13.1) | C++17 |
+| Operating System                   | C/C++ Compiler           | Std   |
+|------------------------------------|--------------------------|-------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | GCC 9                    | C++17 |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                   | C++20 |
+| macOS Big Sur (11)                 | Apple LLVM 12 (Xcode 12) | C++20 |
+| macOS Monterey (12)                | Apple LLVM 14 (Xcode 14) | C++20 |
 
 ## Available Versions
 
@@ -77,8 +75,8 @@ All other packages support both C++ and/or Python.
 | Using tar.gz download | [Stable](/from_binary.html#stable-releases) or [Nightly](/from_binary.html#nightly-releases) | [Stable](/from_binary.html#stable-releases) or [Nightly](/from_binary.html#nightly-releases) |
 | Using Docker Hub      | [Stable](/docker.html#stable-releases) or [Nightly](/docker.html#nightly-releases) | [Stable](/docker.html#stable-releases) or [Nightly](/docker.html#nightly-releases) |
 
-Alternatively, you can skip the pre-compiled binaries and
-[build Drake from source](/from_source.html).
+Alternatively, you can skip the pre-compiled binaries and build Drake
+following the instructions in [Source Installation](/from_source.html).
 
 Drake's binary releases do not support the Gurobi solver.
 To use Gurobi, you must build Drake from source.

@@ -309,8 +309,9 @@ class TestMath(unittest.TestCase):
         numpy_compare.assert_equal(R.IsNearlyIdentity(0.0), True)
         numpy_compare.assert_equal(R.IsNearlyIdentity(tolerance=1E-15), True)
         # - Repr.
-        z = repr(T(0.0))
-        i = repr(T(1.0))
+        z = repr(T(0.0))  # "z" for zero
+        i = repr(T(1.0))  # "i" for identity (one)
+        t = repr(T(2.0))  # "t" for two
         type_suffix = {
             float: "",
             AutoDiffXd: "_[AutoDiffXd]",
@@ -322,11 +323,17 @@ class TestMath(unittest.TestCase):
           [{z}, {i}, {z}],
           [{z}, {z}, {i}],
         ])"""))
+        self.assertEqual(repr(RollPitchYaw(rpy=[2, 1, 0])),
+                         f"RollPitchYaw(roll={t}, pitch={i}, yaw={z})")
         if T == float:
             # TODO(jwnimmer-tri) Once AutoDiffXd and Expression implement an
             # eval-able repr, then we can test more than just T=float here.
             roundtrip = eval(repr(RotationMatrix()))
             self.assertTrue(roundtrip.IsExactlyIdentity())
+            roundtrip = eval(repr(RollPitchYaw(rpy=[2, 1, 0])))
+            self.assertAlmostEqual(roundtrip.roll_angle(), 2)
+            self.assertAlmostEqual(roundtrip.pitch_angle(), 1)
+            self.assertAlmostEqual(roundtrip.yaw_angle(), 0)
         # Test pickling.
         assert_pickle(self, R_AB, RotationMatrix.matrix, T=T)
 
@@ -418,6 +425,12 @@ class TestMath(unittest.TestCase):
         value = wrap_to(T(1.5), T(0.), T(1.))
         if T != Expression:
             self.assertEqual(value, T(.5))
+
+    @numpy_compare.check_all_types
+    def test_cross_product(self, T):
+        p = np.array([T(1), T(2), T(3)])
+        p_cross = mut.VectorToSkewSymmetric(p)
+        self.assertEqual(p_cross.shape, (3, 3))
 
     def test_random_rotations(self):
         g = RandomGenerator()

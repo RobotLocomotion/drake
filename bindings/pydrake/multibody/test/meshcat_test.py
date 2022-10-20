@@ -91,6 +91,8 @@ class TestMeshcat(unittest.TestCase):
             lower_limit=[-3.0, -6.0],
             upper_limit=[3.0, 6.0],
             step=[0.25, 0.50],
+            decrement_keycodes=["ArrowLeft", "ArrowDown"],
+            increment_keycodes=["ArrowRight", "ArrowUp"],
         )
 
         # Various methods should not crash.
@@ -126,7 +128,7 @@ class TestMeshcat(unittest.TestCase):
         # The Run function doesn't crash.
         builder.AddSystem(dut)
         diagram = builder.Build()
-        dut.Run(diagram=diagram, timeout=1.0)
+        dut.Run(diagram=diagram, timeout=1.0, stop_button_keycode="ArrowLeft")
 
         # The SetPositions function doesn't crash (Acrobot has two positions).
         dut.SetPositions(q=[1, 2])

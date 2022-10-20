@@ -32,7 +32,8 @@ struct VisualizationConfig {
     a->Visit(DRAKE_NVP(publish_contacts));
   }
 
-  /** Which LCM URL to use. */
+  /** Which LCM URL to use.
+  @see drake::systems::lcm::LcmBuses */
   std::string lcm_bus{"default"};
 
   /** The duration (in seconds) between published LCM messages that update

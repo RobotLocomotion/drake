@@ -7,7 +7,9 @@ It is intended to operate in the "no ground truth" regime, i.e, the only LCM
 messages it knows about are the ones used by the actual hardware. The one
 messaging difference from real life is that we emit visualization messages (for
 meldis or drake-visualizer) so that you can watch a simulation on your screen
-while some (separate) controller operates the robot, without extra hassle. */
+while some (separate) controller operates the robot, without extra hassle.
+
+Drake maintainers should keep this file in sync with hardware_sim.py. */
 
 #include <gflags/gflags.h>
 
@@ -98,10 +100,9 @@ void Simulation::Setup() {
                      lcm_buses, &builder);
 
   // Add scene cameras.
-  DrakeLcmInterface* camera_lcm = lcm_buses.Find("Cameras", "default");
   for (const auto& [yaml_name, camera] : scenario_.cameras) {
     unused(yaml_name);
-    ApplyCameraConfig(camera, &sim_plant, &builder, &scene_graph, camera_lcm);
+    ApplyCameraConfig(camera, &builder, &lcm_buses);
   }
 
   // Add visualization.

@@ -193,6 +193,30 @@ Defines an SDF model with various types of joints used for testing the parser.
         <drake:parent>frame6</drake:parent>
         <drake:damping>0.1 0.1 0.1</drake:damping>
       </drake:joint>
+      <link name="link8">
+        <inertial>
+          <mass>1</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.1</iyy>
+            <iyz>0</iyz>
+            <izz>0.1</izz>
+          </inertia>
+        </inertial>
+      </link>
+      <joint name="continuous_joint" type="continuous">
+        <child>link8</child>
+        <parent>link7</parent>
+        <axis>
+          <xyz expressed_in="__model__">0 0 1</xyz>
+          <dynamics>
+            <spring_reference>0</spring_reference>
+            <spring_stiffness>0</spring_stiffness>
+          </dynamics>
+        </axis>
+      </joint>
     </model>
     <model name="joint_parsing_test2">
       <link name="link6">

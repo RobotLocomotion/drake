@@ -23,6 +23,9 @@ namespace internal {
 
 using ElementNode = std::variant<sdf::ElementPtr, tinyxml2::XMLElement*>;
 
+// @returns true if @p str ends with @p ext. The match is case-insensitive.
+bool EndsWithCaseInsensitive(std::string_view str, std::string_view ext);
+
 // Helper class that provides for either a file name xor file contents to be
 // passed between our various parsing functions.
 class DataSource {
