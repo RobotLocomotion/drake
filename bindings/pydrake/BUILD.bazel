@@ -10,7 +10,6 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
-    "drake_py_test",
     "drake_py_unittest",
 )
 load(
@@ -592,14 +591,6 @@ drake_py_unittest(
         ":autodiffutils_py",
         ":math_py",
         ":symbolic_py",
-    ],
-)
-
-drake_py_test(
-    name = "minimal_import_test",
-    allow_import_unittest = True,
-    deps = [
-        "//bindings/pydrake",
     ],
 )
 

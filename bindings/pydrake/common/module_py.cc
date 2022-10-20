@@ -93,6 +93,10 @@ PYBIND11_MODULE(_module_py, m) {
   m.doc() = "Bindings for //common:common";
   constexpr auto& doc = pydrake_doc.drake;
 
+  // Morph any DRAKE_ASSERT and DRAKE_DEMAND failures into SystemExit exceptions
+  // instead of process aborts.  See RobotLocomotion/drake#5268.
+  drake_set_assertion_failure_to_throw_exception();
+
   // WARNING: Deprecations for this module can be *weird* because of stupid
   // cyclic dependencies (#7912). If you need functions that immediately import
   // `pydrake.common.deprecation` (e.g. DeprecateAttribute, WrapDeprecated),
@@ -197,9 +201,6 @@ discussion), use e.g.
       },
       doc.MaybeGetDrakePath.doc);
   // These are meant to be called internally by pydrake; not by users.
-  m.def("set_assertion_failure_to_throw_exception",
-      &drake_set_assertion_failure_to_throw_exception,
-      "Set Drake's assertion failure mechanism to be exceptions");
   m.def("trigger_an_assertion_failure", &trigger_an_assertion_failure,
       "Trigger a Drake C++ assertion failure");
 

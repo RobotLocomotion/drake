@@ -34,14 +34,16 @@ try:
 except ImportError:
     pass
 
+# We specifically load `common` prior to loading any other pydrake modules,
+# in order to get assertion configuration done as early as possible.
+from . import common
 
-__all__ = ['getDrakePath']
+__all__ = ['common', 'getDrakePath']
 
 
 def getDrakePath():
     # Compatibility alias.
-    from . import common as _common
-    return os.path.abspath(_common.GetDrakePath())
+    return os.path.abspath(common.GetDrakePath())
 
 
 def _execute_extra_python_code(m, use_subdir: bool = False):
