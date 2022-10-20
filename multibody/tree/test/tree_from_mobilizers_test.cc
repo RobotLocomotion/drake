@@ -408,7 +408,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
 // assign these indexes.
 TEST_F(PendulumTests, Indexes) {
   CreatePendulumModel();
-  EXPECT_EQ(shoulder_inboard_frame_->index(), FrameIndex(0));
+  EXPECT_EQ(shoulder_inboard_frame_->index(), world_frame_index());
   EXPECT_EQ(upper_link_->body_frame().index(), FrameIndex(1));
   EXPECT_EQ(lower_link_->body_frame().index(), FrameIndex(2));
   EXPECT_EQ(shoulder_outboard_frame_->index(), FrameIndex(3));

@@ -45,6 +45,7 @@ from pydrake.multibody.tree import (
     UnitInertia_,
     UniversalJoint_,
     WeldJoint_,
+    world_frame_index,
     world_index,
     world_model_instance,
     default_model_instance
@@ -152,6 +153,8 @@ class TestPlant(unittest.TestCase):
     def test_type_safe_indices(self):
         self.assertEqual(world_index(), BodyIndex(0))
         self.assertEqual(repr(world_index()), "BodyIndex(0)")
+        self.assertEqual(world_frame_index(), FrameIndex(0))
+        self.assertEqual(repr(world_frame_index()), "FrameIndex(0)")
         self.assertEqual(world_model_instance(), ModelInstanceIndex(0))
         self.assertEqual(repr(world_model_instance()), "ModelInstanceIndex(0)")
         self.assertEqual(default_model_instance(), ModelInstanceIndex(1))
@@ -363,7 +366,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             plant.get_contact_results_output_port(), OutputPort)
         self.assertIsInstance(plant.num_frames(), int)
-        self.assertIsInstance(plant.get_body(body_index=BodyIndex(0)), Body)
+        self.assertIsInstance(plant.get_body(body_index=world_index()), Body)
         self.assertIs(shoulder, plant.get_joint(joint_index=JointIndex(0)))
         self.assertIs(shoulder, plant.get_mutable_joint(
             joint_index=JointIndex(0)))
@@ -377,7 +380,7 @@ class TestPlant(unittest.TestCase):
             "<JointActuator_[float] name='ElbowJoint' index=0 "
             "model_instance=2>")
         self.assertIsInstance(
-            plant.get_frame(frame_index=FrameIndex(0)), Frame)
+            plant.get_frame(frame_index=world_frame_index()), Frame)
         self.assertEqual("acrobot", plant.GetModelInstanceName(
             model_instance=model_instance))
         self.assertIn("acrobot", plant.GetTopologyGraphvizString())

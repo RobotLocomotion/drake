@@ -107,6 +107,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   BindTypeSafeIndex<ConstraintIndex>(
       m, "ConstraintIndex", doc.ConstraintIndex.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
+  m.def("world_frame_index", &world_frame_index, doc.world_frame_index.doc);
   m.def("world_model_instance", &world_model_instance,
       doc.world_model_instance.doc);
   m.def("default_model_instance", &default_model_instance,
