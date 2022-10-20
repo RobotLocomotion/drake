@@ -68,15 +68,15 @@ def _download_with_sha(*, base_url, filename):
     _run(["sha256sum", "-c", f"{filename}.sha256"])
 
 
-def _download_binaries(*, timestamp, wheels, version):
+def _download_binaries(*, timestamp, staging, version):
     """Downloads the binaries as specified, and returns a list of (relative)
     paths.
 
     The `timestamp` is a string like "YYYYMMDD".
-    The `wheels` is a bool (whether to download wheels).
+    The `staging` is a bool (whether to download staged wheels / debian).
     The `version` is a string like "vM.m.p".
     """
-    assert (version is None) == (wheels is False)
+    assert (version is None) == (staging is False)
 
     # This is a partial inventory of our binary releases (tgz and wheel only).
     # The apt and docker releases are handled separately.
@@ -88,12 +88,19 @@ def _download_binaries(*, timestamp, wheels, version):
             f"drake-{timestamp}-mac-arm64.tar.gz",
         ],
     }
-    if wheels:
+    if staging:
         binaries["https://drake-packages.csail.mit.edu/drake/staging"] = [
             f"drake-{version[1:]}-cp38-cp38-manylinux_2_31_x86_64.whl",
             f"drake-{version[1:]}-cp39-cp39-manylinux_2_31_x86_64.whl",
             f"drake-{version[1:]}-cp310-cp310-manylinux_2_31_x86_64.whl",
             f"drake-{version[1:]}-cp310-cp310-macosx_11_0_x86_64.whl",
+            # TODO(18145): do not download the staged .tar.gz, just .deb.
+            # TODO(svenevs): temporary testing with v1.9.0 but no such deb
+            # is currently staged hence `replace()` call.
+            f"drake-dev_{version[1:]}-1_amd64-focal.deb".replace(
+                "1.9.0", "9.8.7"),
+            f"drake-dev_{version[1:]}-1_amd64-jammy.deb".replace(
+                "1.9.0", "9.8.7"),
         ]
 
     # Download.
@@ -111,7 +118,7 @@ def _get_consistent_git_commit_sha(*, filenames):
     # TODO(jwnimmer-tri) Add git sha into whl files for cross-checking.
     non_wheel_filenames = [
         x for x in filenames
-        if not x.endswith(".whl")
+        if not x.endswith(".whl") and not x.endswith(".deb")
     ]
     # Verify that each archive uses the same version.
     commit_list = [
@@ -125,6 +132,10 @@ def _get_consistent_git_commit_sha(*, filenames):
             version_errors.append(
                 f"For '{one_filename}': Commit '{commit}' is not "
                 f"the expected value '{result}'")
+    # TODO(svenevs): add helper method to validate the .deb version numbers
+    # and VERSION.TXT match.  `ar x <file>` then `control.tar.xz` extracted
+    # has control file with a Version line.  `data.tar.xz` will have the
+    # VERSION.TXT member.
     if len(version_errors) > 0:
         raise UserError("\n".join(version_errors))
     return result
@@ -137,7 +148,7 @@ def _find_git_sha(*, timestamp):
         print(f"+ cd {tmp_dir}", file=sys.stderr)
         os.chdir(tmp_dir)
         filenames = _download_binaries(
-            timestamp=timestamp, wheels=False, version=None)
+            timestamp=timestamp, staging=False, version=None)
         result = _get_consistent_git_commit_sha(filenames=filenames)
         print()
         print(f"The nightly binaries all have the same commit: {result}")
@@ -159,7 +170,7 @@ def _download_version(*, timestamp, version):
     os.chdir(tmp_dir)
 
     filenames = _download_binaries(
-        timestamp=timestamp, wheels=True, version=version)
+        timestamp=timestamp, staging=True, version=version)
     git_sha = _get_consistent_git_commit_sha(filenames=filenames)
     print(f"The binaries all have the same git commit sha: {git_sha}")
 

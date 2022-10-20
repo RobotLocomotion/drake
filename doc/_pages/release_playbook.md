@@ -140,25 +140,32 @@ the main body of the document:
    7. Wait for those two build jobs to succeed.  It's OK to work on release
       notes finishing touches in the meantime, but do not merge the release
       notes nor tag the release until the wheel builds have succeeded.
-3. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
+3. Launch the debian staging builds for that git commit sha:
+   1. Open the following two jenkins jobs:
+       - [Focal Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-bazel-staging-snopt-mosek-packaging/)
+       - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-bazel-staging-snopt-mosek-packaging/)
+   2. Repeat steps 2-5 exactly as you did for the wheel to run the packaging staging
+      builds for both focal and jammy.
+   3. Wait for those two build jobs to succeed.
+4. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
    sure that the nightly build git sha from the prior steps matches the
    ``newest_commit`` whose changes are enumerated in the notes.  Some dates
    are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
    them all.
    1. Update the github links within ``doc/_pages/from_binary.md`` to reflect
       the upcoming v1.N.0 and YYYYMMDD.
-4. Re-enable CI by reverting the commit you added way up above in step 3.
-5. Wait for the wheel builds to complete, and then download release artifacts:
+5. Re-enable CI by reverting the commit you added way up above in step 3.
+6. Wait for the wheel builds to complete, and then download release artifacts:
    1. Use the
       ``tools/release_engineering/download_release_candidate`` tool with the
       ``--version`` option to download and verify all binaries.  (It's usage
       instructions are atop its source code:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
-6. Merge the release notes PR
+7. Merge the release notes PR
    1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
    2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-focal-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
-7. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
+8. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
    a new release".  Note that this page does has neither history nor undo.  Be
    slow and careful!
    1. Tag version is: v1.N.0
@@ -176,7 +183,7 @@ the main body of the document:
       * Do not attach the ``whl``-related binary artifacts; we'll upload those
         pypi a bit later on.
    6. Choose "Save draft" and take a deep breath.
-8. Once the documentation build finishes, release!
+9. Once the documentation build finishes, release!
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
       page actually works.
    2. Click "Publish release"
