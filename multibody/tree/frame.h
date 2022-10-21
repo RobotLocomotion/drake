@@ -61,7 +61,7 @@ class Frame : public FrameBase<T> {
 
   /// Returns true if `this` is the world frame.
   bool is_world_frame() const {
-    return this->index() == FrameIndex(0);
+    return this->index() == world_frame_index();
   }
 
   /// Returns true if `this` is the body frame.
