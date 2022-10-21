@@ -261,23 +261,13 @@ class KukaIiwaArmTests : public ::testing::Test {
     const char kWsg50FilePath[] =
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
 
-    Parser parser(plant);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // XXX rewrite?
+    Parser parser(std::to_string(robot_number), plant);
     ModelInstanceIndex arm_model =
-        parser.AddModelFromFile(FindResourceOrThrow(kArmFilePath),
-                                "robot_" + std::to_string(robot_number));
-#pragma GCC diagnostic pop
+        parser.AddAllModelsFromFile(FindResourceOrThrow(kArmFilePath)).at(0);
 
     // Add the gripper.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // XXX rewrite?
     ModelInstanceIndex gripper_model =
-        parser.AddModelFromFile(FindResourceOrThrow(kWsg50FilePath),
-                                "gripper_" + std::to_string(robot_number));
-#pragma GCC diagnostic pop
+        parser.AddAllModelsFromFile(FindResourceOrThrow(kWsg50FilePath)).at(0);
 
     const auto& base_body = plant->GetBodyByName("base", arm_model);
     const auto& end_effector = plant->GetBodyByName("iiwa_link_7", arm_model);

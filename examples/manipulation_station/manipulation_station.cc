@@ -111,7 +111,7 @@ void get_camera_poses(std::map<std::string, RigidTransform<double>>* pose_map) {
 // Load a SDF model and weld it to the MultibodyPlant.
 // @param model_path Full path to the sdf model file. i.e. with
 // FindResourceOrThrow
-// @param model_name Name of the added model instance.
+// @param model_name_prefix Scoped name added to front of model instance name.
 // @param parent Frame P from the MultibodyPlant to which the new model is
 // welded to.
 // @param child_frame_name Defines frame C (the child frame), assumed to be
@@ -119,18 +119,13 @@ void get_camera_poses(std::map<std::string, RigidTransform<double>>* pose_map) {
 // @param X_PC Transformation of frame C relative to frame P.
 template <typename T>
 multibody::ModelInstanceIndex AddAndWeldModelFrom(
-    const std::string& model_path, const std::string& model_name,
+    const std::string& model_path, const std::string& model_name_prefix,
     const multibody::Frame<T>& parent, const std::string& child_frame_name,
     const RigidTransform<double>& X_PC, MultibodyPlant<T>* plant) {
-  DRAKE_THROW_UNLESS(!plant->HasModelInstanceNamed(model_name));
-
-  multibody::Parser parser(plant);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // XXX rewrite?
+  multibody::Parser parser(model_name_prefix, plant);
   const multibody::ModelInstanceIndex new_model =
-      parser.AddModelFromFile(model_path, model_name);
-#pragma GCC diagnostic pop
+      parser.AddAllModelsFromFile(model_path).at(0);
+
   const auto& child_frame = plant->GetFrameByName(child_frame_name, new_model);
   plant->WeldFrames(parent, child_frame, X_PC);
   return new_model;
@@ -426,12 +421,8 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   // IIWA and the equivalent inertia of the gripper.
   multibody::Parser parser(owned_controller_plant_.get());
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // XXX rewrite?
   const auto controller_iiwa_model =
-      parser.AddModelFromFile(iiwa_model_.model_path, "iiwa");
-#pragma GCC diagnostic pop
+      parser.AddAllModelsFromFile(iiwa_model_.model_path).at(0);
 
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->world_frame(),

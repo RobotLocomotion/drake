@@ -41,12 +41,8 @@ class GeometryNamesTest : public ::testing::Test {
     // Two identical models (each one has a single body, single geometry).
     const std::string sphere = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/sphere.sdf");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // XXX rewrite?
-    parser.AddModelFromFile(sphere, "sphere1");
-    parser.AddModelFromFile(sphere, "sphere2");
-#pragma GCC diagnostic pop
+    Parser("1", plant_).AddAllModelsFromFile(sphere);
+    Parser("2", plant_).AddAllModelsFromFile(sphere);
 
     // Build everything.
     plant_->Finalize();
@@ -141,27 +137,27 @@ TEST_F(GeometryNamesTest, FullBox) {
 TEST_F(GeometryNamesTest, BasicSphere1) {
   GeometryNames dut;
   dut.ResetBasic(plant());
-  const GeometryId id = GetSoleGeometryId("base_link", "sphere1");
+  const GeometryId id = GetSoleGeometryId("base_link", "1::sphere");
   const Entry& entry = dut.Find(id);
-  EXPECT_EQ(entry.model_instance_name, "sphere1");
+  EXPECT_EQ(entry.model_instance_name, "1::sphere");
   EXPECT_EQ(entry.body_name, "base_link");
   EXPECT_EQ(entry.geometry_name, std::nullopt);
   EXPECT_EQ(entry.body_name_is_unique_within_plant, false);
   EXPECT_EQ(entry.is_sole_geometry_within_body, true);
-  EXPECT_EQ(dut.GetFullName(id, "$"), "sphere1$base_link");
+  EXPECT_EQ(dut.GetFullName(id, "$"), "1::sphere$base_link");
 }
 
 TEST_F(GeometryNamesTest, FullSphere1) {
   GeometryNames dut;
   dut.ResetFull(plant(), inspector());
-  const GeometryId id = GetSoleGeometryId("base_link", "sphere1");
+  const GeometryId id = GetSoleGeometryId("base_link", "1::sphere");
   const Entry& entry = dut.Find(id);
-  EXPECT_EQ(entry.model_instance_name, "sphere1");
+  EXPECT_EQ(entry.model_instance_name, "1::sphere");
   EXPECT_EQ(entry.body_name, "base_link");
   EXPECT_EQ(entry.geometry_name, "sphere_collision");
   EXPECT_EQ(entry.body_name_is_unique_within_plant, false);
   EXPECT_EQ(entry.is_sole_geometry_within_body, true);
-  EXPECT_EQ(dut.GetFullName(id, "$"), "sphere1$base_link");
+  EXPECT_EQ(dut.GetFullName(id, "$"), "1::sphere$base_link");
 }
 
 TEST_F(GeometryNamesTest, BasicBin) {

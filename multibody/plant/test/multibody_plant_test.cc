@@ -2863,14 +2863,12 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
           "iiwa14_no_collision.sdf";
   plant_ = std::make_unique<MultibodyPlant<double>>(this->GetParam());
   Parser parser(plant_.get());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // XXX rewrite?
-  multibody::ModelInstanceIndex arm1 = parser.AddModelFromFile(
-      FindResourceOrThrow(kSdfPath), "arm1");
-  multibody::ModelInstanceIndex arm2 = parser.AddModelFromFile(
-      FindResourceOrThrow(kSdfPath), "arm2");
-#pragma GCC diagnostic pop
+  multibody::ModelInstanceIndex arm1 =
+      Parser("1", plant_.get()).AddAllModelsFromFile(
+          FindResourceOrThrow(kSdfPath)).at(0);
+  multibody::ModelInstanceIndex arm2 =
+      Parser("2", plant_.get()).AddAllModelsFromFile(
+          FindResourceOrThrow(kSdfPath)).at(0);
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0", arm1));
   plant_->WeldFrames(plant_->world_frame(),
