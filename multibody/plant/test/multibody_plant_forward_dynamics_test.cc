@@ -343,16 +343,6 @@ GTEST_TEST(TestSingularHingeMatrix, ThrowErrorForZeroMassTranslatingBodyA) {
     "\\(combined with other outboard bodies\\) has a reasonable non-zero mass. "
     "Note: The mass of body bodyA is 0. ");
 
-
-  // Verify assertion is thrown if mA = 1E-13.
-  body_A.SetMass(context_ptr, mA = 1E-13);
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
-    "An internal mass matrix associated with the joint that "
-    "connects body WorldBody to body bodyA is nearly singular. "
-    "Since the joint allows translation, ensure body bodyA "
-    "\\(combined with other outboard bodies\\) has a reasonable non-zero mass. "
-    "Note: The mass of body bodyA is 1e-13. ");
-
   // Verify no assertion is thrown if mA = 1E-4.
   // HingeMatrix ≈ [1E-4] which is regarded as non-singular.
   body_A.SetMass(context_ptr, mA = 1E-4);
@@ -387,17 +377,6 @@ GTEST_TEST(TestSingularHingeMatrix, ThrowErrorForZeroInertiaRotatingBody) {
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "An internal mass matrix associated with the joint that "
     "connects body WorldBody to body bodyA is not positive-definite. "
-    "Since the joint allows rotation, ensure body bodyA "
-    "\\(combined with other outboard bodies\\) has reasonable "
-    "non-zero moments of inertia about joint rotation axes. "
-    "Note: The inertia matrix of body bodyA about its body origin is [^]*");
-
-  // Verify an assertion is thrown if mA = 1E-11.
-  // HingeMatrix ≈ [4.16667e-12], so this is regarded as near-singular.
-  body_A.SetMass(context_ptr, mA = 1E-11);
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
-    "An internal mass matrix associated with the joint that "
-    "connects body WorldBody to body bodyA is nearly singular. "
     "Since the joint allows rotation, ensure body bodyA "
     "\\(combined with other outboard bodies\\) has reasonable "
     "non-zero moments of inertia about joint rotation axes. "
@@ -450,16 +429,6 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateMassTranslatingBodiesAB) {
   // Verify no assertion is thrown if mA = 1E-3, mB = 1E9.
   body_A.SetMass(context_ptr, mA = 1E-3);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
-
-  // Verify no assertion is thrown if mA = 1E9, mB = 1E-11.
-  body_A.SetMass(context_ptr, mA = 1E9);
-  body_B.SetMass(context_ptr, mB = 1E-11);
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
-    "An internal mass matrix associated with the joint that "
-    "connects body bodyA to body bodyB is nearly singular. "
-    "Since the joint allows translation, ensure body bodyB "
-    "\\(combined with other outboard bodies\\) has a reasonable non-zero mass. "
-    "Note: The mass of body bodyB is 1e-11. ");
 }
 
 // Perform a forward dynamic analysis for a planar triple pendulum consisting of
@@ -524,17 +493,6 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
     "non-zero moments of inertia about joint rotation axes. "
     "Note: The inertia matrix of body bodyC about its body origin is [^]*");
 
-  // Verify no assertion is thrown if mA = 1, mB = 1, mC = 1E-13.
-  // HingeMatrix ≈ [1.67e-15] which is regarded as near-singular.
-  body_C.SetMass(context_ptr, mC = 1E-13);
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
-    "An internal mass matrix associated with the joint that "
-    "connects body bodyB to body bodyC is nearly singular. "
-    "Since the joint allows rotation, ensure body bodyC "
-    "\\(combined with other outboard bodies\\) has reasonable "
-    "non-zero moments of inertia about joint rotation axes. "
-    "Note: The inertia matrix of body bodyC about its body origin is [^]*");
-
   // Verify no assertion is thrown if mA = 1, mB = 0, mC = 1.
   body_B.SetMass(context_ptr, mB = 0);
   body_C.SetMass(context_ptr, mC = 1);
@@ -570,27 +528,6 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
   EXPECT_NEAR(vdot(0), qddot_expected(0), kAngularAccelerationTolerance);
   EXPECT_NEAR(vdot(1), qddot_expected(1), kAngularAccelerationTolerance);
   EXPECT_NEAR(vdot(2), qddot_expected(2), kAngularAccelerationTolerance);
-
-  // Verify that an assertion is thrown when the initial revolute angles for WA,
-  // AB, BC are 5 degrees, theta_AB, and 9 degrees, respectively. The hinge
-  // matrix is either not positive-definite or near singular when the theta_AB
-  // revolute angle is very small. Hinge matrices for joint angles (in degrees):
-  // theta_AB_deg = 1E-6  HingeMatrix ≈ [3.3E-17].
-  // theta_AB_deg = 1E-5  HingeMatrix ≈ [1.2E-15].
-  // theta_AB_deg = 1E-4  HingeMatrix ≈ [1.2E-13].
-  // theta_AB_deg = 1E-3  HingeMatrix ≈ [1.2E-11].
-  double theta_AB_deg = 1E-6 * M_PI/180;
-  for (int i = 0; i < 4; ++i) {
-     AB_revolute_jointZ.set_angle(context_ptr,  theta_AB_deg);
-     DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
-      "An internal mass matrix associated with the joint that "
-      "connects body WorldBody to body bodyA is nearly singular. "
-      "Since the joint allows rotation, ensure body bodyA "
-      "\\(combined with other outboard bodies\\) has reasonable "
-      "non-zero moments of inertia about joint rotation axes. "
-      "Note: The inertia matrix of body bodyA about its body origin is [^]*");
-     theta_AB_deg *= 10;
-  }
 
   // Verify no assertion is thrown when the initial revolute angles for WA, AB,
   // and BC are 5 degrees, 0.1, and 9 degrees, respectively, i.e., with the
