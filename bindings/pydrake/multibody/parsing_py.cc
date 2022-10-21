@@ -80,8 +80,8 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.plant.doc)
         .def("package_map", &Class::package_map, py_rvp::reference_internal,
             cls_doc.package_map.doc)
-        .def("AddAllModelsFromFile", &Class::AddAllModelsFromFile,
-            py::arg("file_name"), cls_doc.AddAllModelsFromFile.doc)
+        .def("AddModelsFromFile", &Class::AddModelsFromFile,
+            py::arg("file_name"), cls_doc.AddModelsFromFile.doc)
         .def("AddModelsFromString", &Class::AddModelsFromString,
             py::arg("file_contents"), py::arg("file_type"),
             cls_doc.AddModelsFromString.doc)
@@ -91,6 +91,10 @@ PYBIND11_MODULE(parsing, m) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls  // BR
+        .def("AddAllModelsFromFile",
+            WrapDeprecated(cls_doc.AddAllModelsFromFile.doc_deprecated,
+                &Class::AddAllModelsFromFile),
+            py::arg("file_name"), cls_doc.AddAllModelsFromFile.doc_deprecated)
         .def("AddModelFromFile",
             WrapDeprecated(cls_doc.AddModelFromFile.doc_deprecated,
                 &Class::AddModelFromFile),

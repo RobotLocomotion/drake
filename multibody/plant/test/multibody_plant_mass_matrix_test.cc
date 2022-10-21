@@ -32,7 +32,7 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
   void LoadModel(const std::string& file_path) {
     const std::string model_path = FindResourceOrThrow(file_path);
     Parser parser(&plant_);
-    parser.AddAllModelsFromFile(model_path);
+    parser.AddModelsFromFile(model_path);
     plant_.Finalize();
   }
 
@@ -46,11 +46,11 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
 
     Parser parser(&plant_);
     const ModelInstanceIndex arm_model =
-        parser.AddAllModelsFromFile(FindResourceOrThrow(kArmSdfPath)).at(0);
+        parser.AddModelsFromFile(FindResourceOrThrow(kArmSdfPath)).at(0);
 
     // Add the gripper.
     const ModelInstanceIndex gripper_model =
-        parser.AddAllModelsFromFile(FindResourceOrThrow(kWsg50SdfPath)).at(0);
+        parser.AddModelsFromFile(FindResourceOrThrow(kWsg50SdfPath)).at(0);
 
     const auto& base_body = plant_.GetBodyByName("iiwa_link_0", arm_model);
     const auto& end_effector = plant_.GetBodyByName("iiwa_link_7", arm_model);

@@ -93,7 +93,7 @@ class TestPlanner(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant(0.0)
-        Parser(plant).AddAllModelsFromFile(file_name)
+        Parser(plant).AddModelsFromFile(file_name)
         plant.Finalize()
 
         context = plant.CreateDefaultContext()
@@ -110,7 +110,7 @@ class TestPlanner(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant(0.0)
-        Parser(plant).AddAllModelsFromFile(file_name)
+        Parser(plant).AddModelsFromFile(file_name)
         plant.Finalize()
 
         context = plant.CreateDefaultContext()

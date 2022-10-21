@@ -263,11 +263,11 @@ class KukaIiwaArmTests : public ::testing::Test {
 
     Parser parser(std::to_string(robot_number), plant);
     ModelInstanceIndex arm_model =
-        parser.AddAllModelsFromFile(FindResourceOrThrow(kArmFilePath)).at(0);
+        parser.AddModelsFromFile(FindResourceOrThrow(kArmFilePath)).at(0);
 
     // Add the gripper.
     ModelInstanceIndex gripper_model =
-        parser.AddAllModelsFromFile(FindResourceOrThrow(kWsg50FilePath)).at(0);
+        parser.AddModelsFromFile(FindResourceOrThrow(kWsg50FilePath)).at(0);
 
     const auto& base_body = plant->GetBodyByName("base", arm_model);
     const auto& end_effector = plant->GetBodyByName("iiwa_link_7", arm_model);

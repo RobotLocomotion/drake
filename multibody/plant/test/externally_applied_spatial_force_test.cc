@@ -117,7 +117,7 @@ class ExternallyAppliedForcesTest : public ::testing::Test {
         FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.sdf");
     systems::DiagramBuilder<double> builder;
     plant_ = builder.AddSystem<MultibodyPlant<double>>(time_step);
-    Parser(plant_).AddAllModelsFromFile(full_name);
+    Parser(plant_).AddModelsFromFile(full_name);
     plant_->Finalize();
 
     // Add the system that applies inverse gravitational forces to the link

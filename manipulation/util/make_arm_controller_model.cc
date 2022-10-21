@@ -55,7 +55,7 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
   // TODO(rpoyner-tri): name algebra here?
   Parser parser(arm_info.model_name, plant.get());
   const ModelInstanceIndex arm_model_index =
-      parser.AddAllModelsFromFile(arm_info.model_path).at(0);
+      parser.AddModelsFromFile(arm_info.model_path).at(0);
   // The arm must be anchored to the world.
   const Frame<double>& sim_arm_child_frame = simulation_plant.GetFrameByName(
       arm_info.child_frame_name, sim_arm_model_index);

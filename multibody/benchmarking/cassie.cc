@@ -157,7 +157,7 @@ std::unique_ptr<MultibodyPlant<T>> Cassie<T>::MakePlant() {
   auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
   Parser parser(plant.get());
   const auto& model = "drake/multibody/benchmarking/cassie_v2.urdf";
-  parser.AddAllModelsFromFile(FindResourceOrThrow(model));
+  parser.AddModelsFromFile(FindResourceOrThrow(model));
   plant->Finalize();
   if constexpr (std::is_same_v<T, double>) {
     return plant;

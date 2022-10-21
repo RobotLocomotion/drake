@@ -69,7 +69,7 @@ class TestManipulationStation(unittest.TestCase):
         iiwa_model_file = FindResourceOrThrow(
             "drake/manipulation/models/iiwa_description/iiwa7/"
             "iiwa7_no_collision.sdf")
-        iiwa = parser.AddAllModelsFromFile(iiwa_model_file)[0]
+        iiwa = parser.AddModelsFromFile(iiwa_model_file)[0]
         X_WI = RigidTransform.Identity()
         plant.WeldFrames(plant.world_frame(),
                          plant.GetFrameByName("iiwa_link_0", iiwa),
@@ -78,7 +78,7 @@ class TestManipulationStation(unittest.TestCase):
         wsg_model_file = FindResourceOrThrow(
             "drake/manipulation/models/wsg_50_description/sdf/"
             "schunk_wsg_50.sdf")
-        wsg = parser.AddAllModelsFromFile(wsg_model_file)[0]
+        wsg = parser.AddModelsFromFile(wsg_model_file)[0]
         X_7G = RigidTransform.Identity()
         plant.WeldFrames(
             plant.GetFrameByName("iiwa_link_7", iiwa),

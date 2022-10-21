@@ -136,7 +136,7 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
   auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(mbp.get()).AddAllModelsFromFile(full_name);
+  multibody::Parser(mbp.get()).AddModelsFromFile(full_name);
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 
@@ -169,7 +169,7 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
   auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(mbp.get()).AddAllModelsFromFile(full_name);
+  multibody::Parser(mbp.get()).AddModelsFromFile(full_name);
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 
@@ -189,7 +189,7 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
 
   // Re-initialize the model so we can add gravity.
   mbp = std::make_unique<MultibodyPlant<double>>(0.0);
-  multibody::Parser(mbp.get()).AddAllModelsFromFile(full_name);
+  multibody::Parser(mbp.get()).AddModelsFromFile(full_name);
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 

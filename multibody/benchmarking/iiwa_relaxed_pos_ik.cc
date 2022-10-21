@@ -50,7 +50,7 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
   multibody::Parser parser{&plant};
   // Load the model into the parser.
   const multibody::ModelInstanceIndex model_instance =
-      parser.AddAllModelsFromFile(iiwa_path).at(0);
+      parser.AddModelsFromFile(iiwa_path).at(0);
   // Attach the base of the robot into the world frame.
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("iiwa_link_0", model_instance));

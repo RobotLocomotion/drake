@@ -20,7 +20,7 @@ GTEST_TEST(FrankaArmTest, TestLoadArm) {
 
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
-  parser.AddAllModelsFromFile(kPath);
+  parser.AddModelsFromFile(kPath);
 
   // There should be actuators for all 7 degrees of freedom.
   EXPECT_EQ(plant.num_actuators(), 7);
@@ -34,7 +34,7 @@ GTEST_TEST(FrankaArmTest, TestLoadHand) {
 
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
-  parser.AddAllModelsFromFile(kPath);
+  parser.AddModelsFromFile(kPath);
 
   EXPECT_EQ(plant.num_actuators(), 2);
   EXPECT_EQ(plant.num_bodies(), 4);
@@ -47,7 +47,7 @@ GTEST_TEST(FrankaArmTest, TestLoadCombined) {
 
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
-  parser.AddAllModelsFromFile(kPath);
+  parser.AddModelsFromFile(kPath);
 
   EXPECT_EQ(plant.num_actuators(), 9);
   EXPECT_EQ(plant.num_bodies(), 13);

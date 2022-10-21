@@ -40,7 +40,7 @@ class TestAll(unittest.TestCase):
 
         builder = DiagramBuilder()
         plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
-        Parser(plant).AddAllModelsFromFile(
+        Parser(plant).AddModelsFromFile(
             FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
         plant.Finalize()
         diagram = builder.Build()
@@ -53,7 +53,7 @@ class TestAll(unittest.TestCase):
 
         builder = DiagramBuilder()
         plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
-        Parser(plant).AddAllModelsFromFile(
+        Parser(plant).AddModelsFromFile(
             FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
         plant.Finalize()
         diagram = builder.Build()
@@ -65,7 +65,7 @@ class TestAll(unittest.TestCase):
         builder = pydrake.systems.framework.DiagramBuilder()
         plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(
             builder, 0.0)
-        pydrake.multibody.parsing.Parser(plant).AddAllModelsFromFile(
+        pydrake.multibody.parsing.Parser(plant).AddModelsFromFile(
             pydrake.common.FindResourceOrThrow(
                 "drake/examples/pendulum/Pendulum.urdf"))
         plant.Finalize()

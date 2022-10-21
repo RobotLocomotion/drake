@@ -39,7 +39,7 @@ class MeshcatVisualizerWithIiwaTest : public ::testing::Test {
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
     plant_ = &plant;
     scene_graph_ = &scene_graph;
-    multibody::Parser(plant_).AddAllModelsFromFile(
+    multibody::Parser(plant_).AddModelsFromFile(
         FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
                             "iiwa14_spheres_collision.urdf"));
     plant.WeldFrames(plant.world_frame(),
@@ -288,10 +288,10 @@ GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
   std::string urdf = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_no_collision.urdf");
-  auto iiwa0 = multibody::Parser("0", &plant).AddAllModelsFromFile(urdf).at(0);
+  auto iiwa0 = multibody::Parser("0", &plant).AddModelsFromFile(urdf).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base", iiwa0).body_frame());
-  auto iiwa1 = multibody::Parser("1", &plant).AddAllModelsFromFile(urdf).at(0);
+  auto iiwa1 = multibody::Parser("1", &plant).AddModelsFromFile(urdf).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base", iiwa1).body_frame());
   plant.Finalize();

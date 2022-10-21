@@ -43,7 +43,7 @@ GTEST_TEST(KukaTorqueControllerTest, GravityCompensationTest) {
     "manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
   multibody::MultibodyPlant<double> plant(0.0);
-  multibody::Parser(&plant).AddAllModelsFromFile(kIiwaUrdf);
+  multibody::Parser(&plant).AddModelsFromFile(kIiwaUrdf);
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
   plant.Finalize();
 
@@ -104,7 +104,7 @@ GTEST_TEST(KukaTorqueControllerTest, SpringTorqueTest) {
     "manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
   multibody::MultibodyPlant<double> plant(0.0);
-  multibody::Parser(&plant).AddAllModelsFromFile(kIiwaUrdf);
+  multibody::Parser(&plant).AddModelsFromFile(kIiwaUrdf);
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
   plant.Finalize();
 
@@ -169,7 +169,7 @@ GTEST_TEST(KukaTorqueControllerTest, DampingTorqueTest) {
     "manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
   multibody::MultibodyPlant<double> plant(0.0);
-  multibody::Parser(&plant).AddAllModelsFromFile(kIiwaUrdf);
+  multibody::Parser(&plant).AddModelsFromFile(kIiwaUrdf);
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
   plant.Finalize();
 

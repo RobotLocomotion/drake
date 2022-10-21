@@ -44,21 +44,21 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   // Load a model of a table for the environment around the robot.
   Parser parser(&plant);
   const ModelInstanceIndex robot_table_model =
-      parser.AddAllModelsFromFile(table_sdf_path).at(0);
+      parser.AddModelsFromFile(table_sdf_path).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("link", robot_table_model));
 
   // Load two Atlas robots.
   const ModelInstanceIndex atlas_model1 =
-      Parser("1", &plant).AddAllModelsFromFile(atlas_path).at(0);
+      Parser("1", &plant).AddModelsFromFile(atlas_path).at(0);
   const ModelInstanceIndex atlas_model2 =
-      Parser("2", &plant).AddAllModelsFromFile(atlas_path).at(0);
+      Parser("2", &plant).AddModelsFromFile(atlas_path).at(0);
   const Body<double>& pelvis1 = plant.GetBodyByName("pelvis", atlas_model1);
   const Body<double>& pelvis2 = plant.GetBodyByName("pelvis", atlas_model2);
 
   // Add a floating mug.
   const ModelInstanceIndex mug_model =
-      parser.AddAllModelsFromFile(mug_sdf_path).at(0);
+      parser.AddModelsFromFile(mug_sdf_path).at(0);
   const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
 
   // Introspection of the underlying mathematical model is not available until

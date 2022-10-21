@@ -25,7 +25,7 @@ class GyroscopeTest : public ::testing::Test {
     const std::string urdf_name =
         FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
     multibody::Parser parser(plant_);
-    parser.AddAllModelsFromFile(urdf_name);
+    parser.AddModelsFromFile(urdf_name);
     plant_->Finalize();
 
     const multibody::Body<double>& arm_body = plant_->GetBodyByName("arm");

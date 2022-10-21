@@ -303,7 +303,7 @@ files.  Consider the example below which loads an acrobot model:
   const std::string relative_name =
     "drake/multibody/benchmarks/acrobot/acrobot.sdf";
   const std::string full_name = FindResourceOrThrow(relative_name);
-  parser.AddAllModelsFromFile(full_name);
+  parser.AddModelsFromFile(full_name);
 @endcode
 As in the example above, for models including visual geometry, collision
 geometry or both, the user must specify a SceneGraph for geometry handling.
@@ -312,7 +312,7 @@ examples/multibody/acrobot/run_lqr.cc.
 
 AddModelFromFile() can be invoked multiple times on the same plant in order
 to load multiple model instances.  Other methods are available on Parser
-such as AddAllModelsFromFile() which allows creating model instances per
+such as AddModelsFromFile() which allows creating model instances per
 each `<model>` tag found in the file. Please refer to each of these
 methods' documentation for further details.
 
@@ -410,12 +410,14 @@ be obtained before or after context creation through
 geometry::SceneGraphInspector APIs as outlined below. %MultibodyPlant expects
 the following properties for point contact modeling:
 
-| Group name |   Property Name  | Required |    Property Type   | Property Description |
-| :--------: | :--------------: | :------: | :----------------: | :------------------- |
-|  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
-|  material  | point_contact_stiffness |  no²  | T | Penalty method stiffness. |
-|  material  | hunt_crossley_dissipation |  no²⁴  | T | Penalty method dissipation. |
-|  material  | relaxation_time |  yes³⁴  | T | Parameter for a linear Kelvin–Voigt model of dissipation. |
+| Group name |   Property Name  | Required |    Property Type   | Property
+Description | | :--------: | :--------------: | :------: | :----------------: |
+:------------------- | |  material  | coulomb_friction |   yes¹   |
+CoulombFriction<T> | Static and Dynamic friction. | |  material  |
+point_contact_stiffness |  no²  | T | Penalty method stiffness. | |  material  |
+hunt_crossley_dissipation |  no²⁴  | T | Penalty method dissipation. | |
+material  | relaxation_time |  yes³⁴  | T | Parameter for a linear Kelvin–Voigt
+model of dissipation. |
 
 
 ¹ Collision geometry is required to be registered with a

@@ -37,7 +37,7 @@ class CartPoleTest : public ::testing::Test {
     // Make the cart_pole model.
     const std::string full_name = FindResourceOrThrow(
         "drake/examples/multibody/cart_pole/cart_pole.sdf");
-    Parser(&cart_pole_).AddAllModelsFromFile(full_name);
+    Parser(&cart_pole_).AddModelsFromFile(full_name);
 
     // Add gravity to the model.
     cart_pole_.mutable_gravity_field().set_gravity_vector(

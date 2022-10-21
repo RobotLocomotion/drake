@@ -129,7 +129,7 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// ManipulationStation<double> station;
 /// Parser parser(&station.get_mutable_multibody_plant(),
 ///                &station.get_mutable_scene_graph());
-/// parser.AddAllModelsFromFile("my.sdf", "my_model");
+/// parser.AddModelsFromFile("my.sdf", "my_model");
 /// ...
 /// // coming soon -- sugar API for adding additional objects.
 /// station.Finalize()

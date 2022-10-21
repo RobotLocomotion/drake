@@ -94,12 +94,12 @@ void AddBallPlateBodies(
   drake::multibody::Parser parser(plant);
   std::string plate_file_name = FindResourceOrThrow(
       "drake/examples/hydroelastic/ball_plate/plate_8in.sdf");
-  parser.AddAllModelsFromFile(plate_file_name);
+  parser.AddModelsFromFile(plate_file_name);
 
   // Add the floor. Assume the frame named "Floor" is in the SDFormat file.
   std::string floor_file_name =
       FindResourceOrThrow("drake/examples/hydroelastic/ball_plate/floor.sdf");
-  parser.AddAllModelsFromFile(floor_file_name);
+  parser.AddModelsFromFile(floor_file_name);
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("Floor"),
                     RigidTransformd::Identity());
 
