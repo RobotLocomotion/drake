@@ -310,7 +310,6 @@ geometry or both, the user must specify a SceneGraph for geometry handling.
 You can find a full example of the LQR controlled acrobot in
 examples/multibody/acrobot/run_lqr.cc.
 
-XXX rewrite?
 AddModelFromFile() can be invoked multiple times on the same plant in order
 to load multiple model instances.  Other methods are available on Parser
 such as AddAllModelsFromFile() which allows creating model instances per

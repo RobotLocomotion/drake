@@ -33,12 +33,8 @@ class JointSlidersTest : public ::testing::Test {
 
   void Add(const std::string& resource_path,
            const std::string& model_name = {}) {
-    Parser parser(&plant_);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // XXX rewrite?
-    parser.AddModelFromFile(FindResourceOrThrow(resource_path), model_name);
-#pragma GCC diagnostic push
+    Parser parser(model_name, &plant_);
+    parser.AddAllModelsFromFile(FindResourceOrThrow(resource_path));
   }
 
   void AddAcrobot() {
@@ -216,8 +212,8 @@ TEST_F(JointSlidersTest, DuplicatedJointNames) {
   const JointSliders<double> dut(meshcat_, &plant_);
 
   // Confirm that the names are unique.
-  const std::string alpha = "/alpha";
-  const std::string bravo = "/bravo";
+  const std::string alpha = "/alpha::acrobot";
+  const std::string bravo = "/bravo::acrobot";
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1 + alpha), 0.0);
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint2 + alpha), 0.0);
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1 + bravo), 0.0);
