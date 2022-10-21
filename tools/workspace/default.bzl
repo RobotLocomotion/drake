@@ -127,6 +127,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "ccd" not in excludes:
         ccd_repository(name = "ccd", mirrors = mirrors)
     if "cds" not in excludes:
+        # N.B. This repository is deprecated for removal on 2023-02-01.
+        # For details see https://github.com/RobotLocomotion/drake/pull/18156.
         cds_repository(name = "cds", mirrors = mirrors)
     if "clang_cindex_python3_internal" not in excludes:
         clang_cindex_python3_internal_repository(name = "clang_cindex_python3_internal", mirrors = mirrors)  # noqa
@@ -155,6 +157,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "drake_visualizer" not in excludes:
         drake_visualizer_repository(name = "drake_visualizer", mirrors = mirrors)  # noqa
     if "dreal" not in excludes:
+        # N.B. This repository is deprecated for removal on 2023-02-01.
+        # For details see https://github.com/RobotLocomotion/drake/pull/18156.
         dreal_repository(name = "dreal", mirrors = mirrors)
     if "eigen" not in excludes:
         eigen_repository(name = "eigen")
@@ -189,6 +193,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "gz_utils_internal" not in excludes:
         gz_utils_internal_repository(name = "gz_utils_internal", mirrors = mirrors)  # noqa
     if "ibex" not in excludes:
+        # N.B. This repository is deprecated for removal on 2023-02-01.
+        # For details see https://github.com/RobotLocomotion/drake/pull/18156.
         ibex_repository(name = "ibex", mirrors = mirrors)
     if "intel_realsense_ros_internal" not in excludes:
         intel_realsense_ros_internal_repository(name = "intel_realsense_ros_internal", mirrors = mirrors)  # noqa
@@ -257,6 +263,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "petsc" not in excludes:
         petsc_repository(name = "petsc", mirrors = mirrors)
     if "picosat" not in excludes:
+        # N.B. This repository is deprecated for removal on 2023-02-01.
+        # For details see https://github.com/RobotLocomotion/drake/pull/18156.
         picosat_repository(name = "picosat", mirrors = mirrors)
     if "picosha2" not in excludes:
         picosha2_repository(name = "picosha2", mirrors = mirrors)

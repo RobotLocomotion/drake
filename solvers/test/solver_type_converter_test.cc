@@ -18,14 +18,10 @@ std::optional<SolverType> successor(std::optional<SolverType> solver_type) {
     case SolverType::kClp:
       return SolverType::kCsdp;
     case SolverType::kCsdp:
-      return SolverType::kDReal;
-    case SolverType::kDReal:
       return SolverType::kEqualityConstrainedQP;
     case SolverType::kEqualityConstrainedQP:
       return SolverType::kGurobi;
     case SolverType::kGurobi:
-      return SolverType::kIbex;
-    case SolverType::kIbex:
       return SolverType::kIpopt;
     case SolverType::kIpopt:
       return SolverType::kLinearSystem;
@@ -44,6 +40,13 @@ std::optional<SolverType> successor(std::optional<SolverType> solver_type) {
     case SolverType::kSnopt:
       return SolverType::kUnrevisedLemke;
     case SolverType::kUnrevisedLemke:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      return SolverType::kDReal;
+    case SolverType::kDReal:
+      return SolverType::kIbex;
+    case SolverType::kIbex:
+#pragma GCC diagnostic pop
       return std::nullopt;
   }
   DRAKE_UNREACHABLE();
