@@ -509,26 +509,6 @@ GTEST_TEST(TestSingularHingeMatrix, DisproportionateInertiaRotatingBodiesBC) {
     "non-zero moments of inertia about joint rotation axes. "
     "Note: The inertia matrix of body bodyA about its body origin is [^]*");
 
-  // No assertion is thrown for these non-zero angles, even though angular
-  // accelerations are unusually large (hinge matrix is semi-near singular).
-  WA_revolute_jointZ.set_angle(context_ptr, 5 * M_PI/180);
-  AB_revolute_jointZ.set_angle(context_ptr, 7 * M_PI/180);
-  BC_revolute_jointZ.set_angle(context_ptr, 9 * M_PI/180);
-  DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
-
-  // Drake's angular accelerations are large and are nearly identical to those
-  // produced by MotionGenesis (MG) for this same problem. The MG simulation
-  // for this simulation fails at t = 0.0124 seconds with:
-  // qAddot = 2.6E+10   qBddot = -5.2E+10  qCddot = 2.6E+010.
-  const VectorX<double>& vdot = plant.EvalForwardDynamics(*context).get_vdot();
-  const Vector3d qddot_expected(393.28375042294266,   // qAddot
-                               -793.82369625837146,   // qBddot
-                                400.53994583542919);  // qCddot
-  constexpr double kAngularAccelerationTolerance = 1E-8;
-  EXPECT_NEAR(vdot(0), qddot_expected(0), kAngularAccelerationTolerance);
-  EXPECT_NEAR(vdot(1), qddot_expected(1), kAngularAccelerationTolerance);
-  EXPECT_NEAR(vdot(2), qddot_expected(2), kAngularAccelerationTolerance);
-
   // Verify no assertion is thrown when the initial revolute angles for WA, AB,
   // and BC are 5 degrees, 0.1, and 9 degrees, respectively, i.e., with the
   // initial AB revolute angle sufficiently far from zero.
