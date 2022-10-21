@@ -48,7 +48,7 @@ int do_main() {
       AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
   const std::string full_name = FindResourceOrThrow(
       "drake/examples/multibody/cart_pole/cart_pole.sdf");
-  Parser(&cart_pole, &scene_graph).AddAllModelsFromFile(full_name);
+  Parser(&cart_pole, &scene_graph).AddModelsFromFile(full_name);
 
   // Now the model is complete.
   cart_pole.Finalize();

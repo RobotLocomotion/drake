@@ -44,7 +44,7 @@ class CompositeParse;
 /// MJCF (MuJoCo XML) files typically contain many bodies, they will all be
 /// added as a single model instance in the @p plant.
 ///
-/// Drake Model Directives are only available via AddAllModelsFromFile. The
+/// Drake Model Directives are only available via AddModelsFromFile. The
 /// single-model methods (AddModelFromFile, AddModelFromString) cannot load
 /// model directives.
 ///
@@ -74,13 +74,15 @@ class Parser final {
   /// Creates a Parser that adds models to the given plant and (optionally)
   /// scene_graph. The model names will be within the given scope.
   ///
+  /// @param model_name_prefix A string that will be added as a scoped name
+  ///   prefix to the names of any models loaded by this parser.
   /// @param plant A pointer to a mutable MultibodyPlant object to which parsed
   ///   model(s) will be added; `plant->is_finalized()` must remain `false` for
   ///   as long as the @p plant is in used by `this`.
   /// @param scene_graph A pointer to a mutable SceneGraph object used for
   ///   geometry registration (either to model visual or contact geometry).
   ///   May be nullptr.
-  Parser(std::string_view model_scope, MultibodyPlant<double>* plant,
+  Parser(std::string_view model_name_prefix, MultibodyPlant<double>* plant,
          geometry::SceneGraph<double>* scene_graph = nullptr);
 
   /// Gets a mutable reference to the plant that will be modified by this
@@ -102,10 +104,15 @@ class Parser final {
   /// @returns The set of model instance indices for the newly added models,
   /// including nested models.
   /// @throws std::exception in case of errors.
+  std::vector<ModelInstanceIndex> AddModelsFromFile(
+      const std::string& file_name);
+
+  /// Deprecated spelling of AddModelsFromFile.
+  DRAKE_DEPRECATED("2023-04-01", "Use AddModelsFromFile() instead.")
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
       const std::string& file_name);
 
-  /// Provides same functionality as AddAllModelsFromFile, but instead parses
+  /// Provides same functionality as AddModelsFromFile, but instead parses
   /// the model description text data via @p file_contents with format dictated
   /// by @p file_type.
   ///
@@ -130,7 +137,7 @@ class Parser final {
   ///
   /// @sa http://sdformat.org/tutorials?tut=composition&ver=1.7 for details on
   /// nesting in SDFormat.
-  DRAKE_DEPRECATED("2023-04-01", "Use AddAllModelsFromFile() instead.")
+  DRAKE_DEPRECATED("2023-04-01", "Use AddModelsFromFile() instead.")
   ModelInstanceIndex AddModelFromFile(
       const std::string& file_name,
       const std::string& model_name = {});
@@ -159,7 +166,7 @@ class Parser final {
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
-  std::optional<std::string> model_scope_;
+  std::optional<std::string> model_name_prefix_;
 };
 
 }  // namespace multibody

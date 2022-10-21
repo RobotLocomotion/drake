@@ -93,7 +93,7 @@ TEST_F(InverseDynamicsControllerTest, TestTorqueWithReferencedPlant) {
   auto robot = std::make_unique<MultibodyPlant<double>>(0.0);
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(robot.get()).AddAllModelsFromFile(full_name);
+  multibody::Parser(robot.get()).AddModelsFromFile(full_name);
   robot->WeldFrames(robot->world_frame(), robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();
 
@@ -115,7 +115,7 @@ TEST_F(InverseDynamicsControllerTest, TestTorqueWithOwnedPlant) {
   auto robot = std::make_unique<MultibodyPlant<double>>(0.0);
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(robot.get()).AddAllModelsFromFile(full_name);
+  multibody::Parser(robot.get()).AddModelsFromFile(full_name);
   robot->WeldFrames(robot->world_frame(), robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();
 

@@ -18,7 +18,7 @@ multibody::ModelInstanceIndex LoadIiwa14CanonicalModel(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/sdf/"
                           "iiwa14_no_collision.sdf"));
   multibody::Parser parser(plant);
-  return parser.AddAllModelsFromFile(canonical_model_file).at(0);
+  return parser.AddModelsFromFile(canonical_model_file).at(0);
 }
 
 // Compares velocity, acceleration, effort and position limits of two given
@@ -78,7 +78,7 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
   for (auto& model_file : model_files) {
     multibody::MultibodyPlant<double> plant(0.0);
     multibody::Parser parser(&plant);
-    parser.AddAllModelsFromFile(FindResourceOrThrow(model_file));
+    parser.AddModelsFromFile(FindResourceOrThrow(model_file));
     plant.Finalize();
 
     for (int i = 0; i < canonical_plant.num_actuators(); ++i) {
@@ -117,7 +117,7 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValuesPlanarModel) {
 
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
-  parser.AddAllModelsFromFile(
+  parser.AddModelsFromFile(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
                           "planar_iiwa14_spheres_dense_elbow_collision.urdf"));
   plant.Finalize();

@@ -34,7 +34,7 @@ GTEST_TEST(SchunkWsgDriverFunctionsTest, ApplyDriverConfig) {
   const std::string filename = FindResourceOrThrow(
       "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
   const ModelInstanceIndex schunk_wsg =
-      Parser(&plant).AddAllModelsFromFile(filename).at(0);
+      Parser(&plant).AddModelsFromFile(filename).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("body", schunk_wsg));
   plant.Finalize();

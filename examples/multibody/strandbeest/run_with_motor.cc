@@ -119,7 +119,7 @@ int do_main() {
   const std::string full_name = FindResourceOrThrow(relative_name);
 
   Parser parser(&strandbeest);
-  parser.AddAllModelsFromFile(full_name);
+  parser.AddModelsFromFile(full_name);
 
   // We are done defining the model. Finalize.
   strandbeest.Finalize();

@@ -31,18 +31,18 @@ class GeometryNamesTest : public ::testing::Test {
     // A single model, single body, single geometry.
     const std::string box = FindResourceOrThrow(
         "drake/multibody/models/box.urdf");
-    parser.AddAllModelsFromFile(box);
+    parser.AddModelsFromFile(box);
 
     // A single model, single body, multiple geometries.
     const std::string bin = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/bin.sdf");
-    parser.AddAllModelsFromFile(bin);
+    parser.AddModelsFromFile(bin);
 
     // Two identical models (each one has a single body, single geometry).
     const std::string sphere = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/sphere.sdf");
-    Parser("1", plant_).AddAllModelsFromFile(sphere);
-    Parser("2", plant_).AddAllModelsFromFile(sphere);
+    Parser("1", plant_).AddModelsFromFile(sphere);
+    Parser("2", plant_).AddModelsFromFile(sphere);
 
     // Build everything.
     plant_->Finalize();

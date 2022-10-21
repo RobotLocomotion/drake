@@ -26,7 +26,7 @@ int do_main(int argc, char* argv[]) {
   Parser parser{&plant};
 
   drake::log()->info("parsing {}", argv[1]);
-  std::vector<ModelInstanceIndex> models = parser.AddAllModelsFromFile(argv[1]);
+  std::vector<ModelInstanceIndex> models = parser.AddModelsFromFile(argv[1]);
   drake::log()->info("Parsed {} models.", models.size());
   return models.empty();
 }

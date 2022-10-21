@@ -62,7 +62,7 @@ SpatialInertia<double> CalcGripperSpatialInertia(
   // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
   MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
-  parser.AddAllModelsFromFile(wsg_sdf_path);
+  parser.AddModelsFromFile(wsg_sdf_path);
   plant.Finalize();
 
   // Create a default context which should contain a default state in which all
@@ -124,7 +124,7 @@ multibody::ModelInstanceIndex AddAndWeldModelFrom(
     const RigidTransform<double>& X_PC, MultibodyPlant<T>* plant) {
   multibody::Parser parser(model_name_prefix, plant);
   const multibody::ModelInstanceIndex new_model =
-      parser.AddAllModelsFromFile(model_path).at(0);
+      parser.AddModelsFromFile(model_path).at(0);
 
   const auto& child_frame = plant->GetFrameByName(child_frame_name, new_model);
   plant->WeldFrames(parent, child_frame, X_PC);
@@ -197,8 +197,7 @@ template <typename T>
 void ManipulationStation<T>::AddManipulandFromFile(
     const std::string& model_file, const RigidTransform<double>& X_WObject) {
   multibody::Parser parser(plant_);
-  const auto models =
-      parser.AddAllModelsFromFile(FindResourceOrThrow(model_file));
+  const auto models = parser.AddModelsFromFile(FindResourceOrThrow(model_file));
   DRAKE_DEMAND(!models.empty());
   const auto model_index = models[0];
   const auto indices = plant_->GetBodyIndices(model_index);
@@ -422,7 +421,7 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   multibody::Parser parser(owned_controller_plant_.get());
 
   const auto controller_iiwa_model =
-      parser.AddAllModelsFromFile(iiwa_model_.model_path).at(0);
+      parser.AddModelsFromFile(iiwa_model_.model_path).at(0);
 
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->world_frame(),

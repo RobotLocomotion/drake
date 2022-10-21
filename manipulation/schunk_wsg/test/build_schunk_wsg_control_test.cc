@@ -35,7 +35,7 @@ class BuildSchunkWsgControlTest : public ::testing::Test {
     Parser parser{sim_plant_};
     const std::string wsg_file = FindResourceOrThrow(
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
-    wsg_instance_ = parser.AddAllModelsFromFile(wsg_file).at(0);
+    wsg_instance_ = parser.AddModelsFromFile(wsg_file).at(0);
 
     // Weld the gripper to the world frame.
     sim_plant_->WeldFrames(sim_plant_->world_frame(),

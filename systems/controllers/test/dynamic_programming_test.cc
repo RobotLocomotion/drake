@@ -213,7 +213,7 @@ GTEST_TEST(FittedValueIteration, MultibodyPlant) {
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
 
   multibody::Parser(mbp, scene_graph)
-      .AddAllModelsFromFile(
+      .AddModelsFromFile(
           FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"));
   mbp->Finalize();
 

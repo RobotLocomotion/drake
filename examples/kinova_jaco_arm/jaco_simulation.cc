@@ -66,7 +66,7 @@ int DoMain() {
 
   const multibody::ModelInstanceIndex jaco_id =
       Parser(&jaco_plant)
-          .AddAllModelsFromFile(FindResourceOrThrow(kUrdfPath))
+          .AddModelsFromFile(FindResourceOrThrow(kUrdfPath))
           .at(0);
   jaco_plant.WeldFrames(jaco_plant.world_frame(),
                         jaco_plant.GetFrameByName("base"));
