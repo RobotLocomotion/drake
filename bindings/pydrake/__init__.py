@@ -35,8 +35,31 @@ except ImportError:
     pass
 
 # We specifically load `common` prior to loading any other pydrake modules,
-# in order to get assertion configuration done as early as possible.
-from . import common
+# in order to a) get assertion configuration done as early as possible, and b)
+# detect whether we are able to load the shared libraries.
+try:
+    from . import common
+except ImportError as e:
+    if ('/pydrake/' in e.path and 'cannot open shared object file' in e.msg):
+        message = f'''
+Drake failed to load a required library. This could indicate an installation
+problem, or that your system is missing required distro-provided packages.
+Please refer to the installation instructions to ensure that all required
+dependencies are installed.
+
+For more information, please see:
+    '''
+
+        doc = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                           'INSTALLATION')
+        if os.path.exists(doc):
+            message += f'{doc}\n'
+        else:
+            message += 'https://drake.mit.edu/installation.html\n'
+
+        print(message)
+
+    raise
 
 __all__ = ['common', 'getDrakePath']
 
