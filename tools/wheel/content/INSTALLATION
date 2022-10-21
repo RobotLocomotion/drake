@@ -1,4 +1,3 @@
-Drake requires certain basic runtime libraries from the host Linux distribution.
 
 For Ubuntu 20.04, install these additional libraries:
 
