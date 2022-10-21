@@ -2865,6 +2865,7 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
   Parser parser(plant_.get());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // XXX rewrite?
   multibody::ModelInstanceIndex arm1 = parser.AddModelFromFile(
       FindResourceOrThrow(kSdfPath), "arm1");
   multibody::ModelInstanceIndex arm2 = parser.AddModelFromFile(

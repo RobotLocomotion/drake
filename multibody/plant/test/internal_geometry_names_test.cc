@@ -43,7 +43,7 @@ class GeometryNamesTest : public ::testing::Test {
         "drake/examples/manipulation_station/models/sphere.sdf");
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // XXX rewrite?15~
+    // XXX rewrite?
     parser.AddModelFromFile(sphere, "sphere1");
     parser.AddModelFromFile(sphere, "sphere2");
 #pragma GCC diagnostic pop
