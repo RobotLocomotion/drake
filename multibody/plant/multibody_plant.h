@@ -303,13 +303,14 @@ files.  Consider the example below which loads an acrobot model:
   const std::string relative_name =
     "drake/multibody/benchmarks/acrobot/acrobot.sdf";
   const std::string full_name = FindResourceOrThrow(relative_name);
-  parser.AddModelFromFile(full_name);
+  parser.AddAllModelsFromFile(full_name);
 @endcode
 As in the example above, for models including visual geometry, collision
 geometry or both, the user must specify a SceneGraph for geometry handling.
 You can find a full example of the LQR controlled acrobot in
 examples/multibody/acrobot/run_lqr.cc.
 
+XXX rewrite?
 AddModelFromFile() can be invoked multiple times on the same plant in order
 to load multiple model instances.  Other methods are available on Parser
 such as AddAllModelsFromFile() which allows creating model instances per

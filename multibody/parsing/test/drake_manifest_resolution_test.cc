@@ -39,7 +39,7 @@ TEST_P(DrakeManifestResolutionTest, ResolvesMeshUris) {
   const int default_num_geometries = inspector.num_geometries();
 
   // Check to ensure model is parsable.
-  // The call to AddModelFromFile should throw an exception if any of the
+  // The call to AddAllModelsFromFile should throw an exception if any of the
   // mesh URIs in the SDF model could not be resolved or loaded.
   EXPECT_NO_THROW(Parser(&plant).AddAllModelsFromFile(filename));
 

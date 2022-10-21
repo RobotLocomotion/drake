@@ -65,7 +65,7 @@ class IiwaPositionConstraintFixture : public benchmark::Fixture {
     DRAKE_DEMAND(ad_plant_ != nullptr);
     ad_context_ = ad_plant_->CreateDefaultContext();
     const ModelInstanceIndex ad_first_iiwa =
-        ad_plant_->GetModelInstanceByName("iiwa0");
+        ad_plant_->GetModelInstanceByName("iiwa0::iiwa14");
     ad_constraint_ = std::make_unique<PositionConstraint>(
         ad_plant_.get(),
         ad_plant_->GetFrameByName("iiwa_link_7", ad_first_iiwa), p_AQ_lower,

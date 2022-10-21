@@ -74,6 +74,7 @@ class TestParsing(unittest.TestCase):
         urdf_file = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.urdf")
         for dut, file_name, model_name, result_dim in (
+                # XXX rewrite?
                 # (Parser.AddModelFromFile, sdf_file, None, int),
                 # (Parser.AddModelFromFile, sdf_file, "", int),
                 # (Parser.AddModelFromFile, sdf_file, "a", int),

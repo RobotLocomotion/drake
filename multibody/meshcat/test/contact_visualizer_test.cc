@@ -112,7 +112,8 @@ class ContactVisualizerTest : public ::testing::Test {
     diagram_->Publish(*context_);
     if (expect_geometry_names) {
       EXPECT_TRUE(meshcat_->HasPath(
-          "contact_forces/point/1::sphere.base_link+2::sphere.base_link.bonus"));
+          "contact_forces/point/1::sphere.base_link+"
+          "2::sphere.base_link.bonus"));
     } else {
       EXPECT_TRUE(meshcat_->HasPath(
           "contact_forces/point/1::sphere.base_link+2::sphere.base_link"));
