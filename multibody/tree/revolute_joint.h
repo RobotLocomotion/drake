@@ -364,7 +364,8 @@ class RevoluteJoint final : public Joint<T> {
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
-      const internal::MultibodyTree<ToScalar>& tree_clone) const;
+      const internal::MultibodyElementAccessor<ToScalar, T>&
+          element_accessor) const;
 
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
   Vector3<double> axis_;

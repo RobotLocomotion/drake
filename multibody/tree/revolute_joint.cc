@@ -45,11 +45,12 @@ const std::string& RevoluteJoint<T>::type_name() const {
 template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Joint<ToScalar>> RevoluteJoint<T>::TemplatedDoCloneToScalar(
-    const internal::MultibodyTree<ToScalar>& tree_clone) const {
+    const internal::MultibodyElementAccessor<ToScalar, T>&
+        element_accessor) const {
   const Frame<ToScalar>& frame_on_parent_body_clone =
-      tree_clone.get_variant(this->frame_on_parent());
+      element_accessor.get_variant(this->frame_on_parent());
   const Frame<ToScalar>& frame_on_child_body_clone =
-      tree_clone.get_variant(this->frame_on_child());
+      element_accessor.get_variant(this->frame_on_child());
 
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<RevoluteJoint<ToScalar>>(
@@ -68,19 +69,19 @@ std::unique_ptr<Joint<ToScalar>> RevoluteJoint<T>::TemplatedDoCloneToScalar(
 template <typename T>
 std::unique_ptr<Joint<double>> RevoluteJoint<T>::DoCloneToScalar(
     const internal::MultibodyTree<double>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+  return TemplatedDoCloneToScalar(tree_clone.get_element_accessor<T>());
 }
 
 template <typename T>
 std::unique_ptr<Joint<AutoDiffXd>> RevoluteJoint<T>::DoCloneToScalar(
     const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+  return TemplatedDoCloneToScalar(tree_clone.get_element_accessor<T>());
 }
 
 template <typename T>
 std::unique_ptr<Joint<symbolic::Expression>> RevoluteJoint<T>::DoCloneToScalar(
     const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+  return TemplatedDoCloneToScalar(tree_clone.get_element_accessor<T>());
 }
 
 // N.B. Due to esoteric linking errors on Mac (see #9345) involving
