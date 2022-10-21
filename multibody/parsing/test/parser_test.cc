@@ -162,7 +162,7 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
         ".* always an error.*");
   }
 }
-#pragma GCC diagnostic push
+#pragma GCC diagnostic pop
 
 // Try loading a file with two <model> elements, but without a <world>.
 // This should always result in an error. For an example of a valid <world>
@@ -340,17 +340,25 @@ GTEST_TEST(FileParserTest, StrictParsing) {
     </robot>)""";
   std::string warning_pattern = ".*version.*ignored.*";
 
-  MultibodyPlant<double> plant(0.0);
-  geometry::SceneGraph<double> scene_graph;
-  Parser parser(&plant, &scene_graph);
+  {
+    // Lax parser does not throw on warnings.
+    MultibodyPlant<double> plant(0.0);
+    geometry::SceneGraph<double> scene_graph;
+    Parser parser(&plant, &scene_graph);
+    EXPECT_NO_THROW(
+        parser.AddModelsFromString(model_provokes_warning, "urdf"));
+  }
 
-  EXPECT_NO_THROW(
-      parser.AddModelFromString(model_provokes_warning, "urdf", "lax"));
-
-  parser.SetStrictParsing();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      parser.AddModelFromString(model_provokes_warning, "urdf", "strict"),
-      warning_pattern);
+  {
+    // Strict parser *does* throw on warnings.
+    MultibodyPlant<double> plant(0.0);
+    geometry::SceneGraph<double> scene_graph;
+    Parser parser(&plant, &scene_graph);
+    parser.SetStrictParsing();
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        parser.AddModelsFromString(model_provokes_warning, "urdf"),
+        warning_pattern);
+  }
 }
 
 }  // namespace
