@@ -82,7 +82,7 @@ class MultibodyGraph {
 
   /* Returns the name we recognize as the World (or Ground) body. This is
   the name that was provided in the first AddBody() call.
-  In Drake, MultibodyPlant names it the "WorldBody".
+  In Drake, MultibodyPlant names it the "world".
   @throws std::exception iff AddBody() was not called even once yet. */
   const std::string& world_body_name() const;
 

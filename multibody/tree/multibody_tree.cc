@@ -71,7 +71,7 @@ MultibodyTree<T>::MultibodyTree() {
   // `world_model_instance()` hardcodes the returned index.  Make sure it's
   // correct.
   DRAKE_DEMAND(world_instance == world_model_instance());
-  world_body_ = &AddRigidBody("WorldBody", world_model_instance(),
+  world_body_ = &AddRigidBody("world", world_model_instance(),
                               SpatialInertia<double>());
 
   // `default_model_instance()` hardcodes the returned index.  Make sure it's
