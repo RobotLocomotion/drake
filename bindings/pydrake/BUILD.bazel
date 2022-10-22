@@ -769,7 +769,6 @@ PYI_FILES = [
     "pydrake/trajectories.pyi",
     "pydrake/tutorials.pyi",
     "pydrake/visualization/__init__.pyi",
-    "pydrake/visualization/all.pyi",
     "pydrake/visualization/meldis.pyi",
     "pydrake/visualization/plotting.pyi",
 ]
