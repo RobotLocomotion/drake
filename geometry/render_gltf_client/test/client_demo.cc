@@ -43,13 +43,13 @@
    - (optional) Confirm that occluding *transparent* objects are rendered the
      same. */
 
+#include <filesystem>
 #include <memory>
 #include <utility>
 
 #include <fmt/format.h>
 #include <gflags/gflags.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/drake_visualizer.h"
@@ -165,7 +165,8 @@ bool IsValidSaveDirectory(const std::string& save_dir) {
   if (save_dir.empty())
     return false;
 
-  if (!filesystem::exists(save_dir) || !filesystem::is_directory(save_dir)) {
+  if (!std::filesystem::exists(save_dir) ||
+      !std::filesystem::is_directory(save_dir)) {
     throw std::logic_error(fmt::format(
         "Provided save_dir {} is invalid", save_dir));
   }
@@ -235,7 +236,8 @@ int DoMain() {
   }
 
   const std::string filename =
-      (filesystem::path(FLAGS_save_dir) / "{image_type}_{count:03}").string();
+      (std::filesystem::path(FLAGS_save_dir) / "{image_type}_{count:03}").
+          string();
 
   if (FLAGS_color) {
     const auto& port =

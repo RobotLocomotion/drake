@@ -1,8 +1,9 @@
 #include "drake/multibody/parsing/scoped_names.h"
 
+#include <filesystem>
+
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 

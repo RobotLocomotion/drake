@@ -83,9 +83,7 @@ drake_cc_library_ubuntu_only(
         "//geometry/render:render_engine",
         "//systems/sensors:image",
     ],
-    deps = [
-        "//common:filesystem",
-    ],
+    deps = [],
 )
 
 drake_cc_library(
@@ -185,7 +183,6 @@ drake_cc_library_ubuntu_only(
         ":internal_opengl_context",
     ],
     deps = [
-        "//common:filesystem",
         "@vtk//:vtkIOImage",
     ],
 )

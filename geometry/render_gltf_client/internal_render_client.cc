@@ -1,5 +1,6 @@
 #include "drake/geometry/render_gltf_client/internal_render_client.h"
 
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <string>
@@ -15,7 +16,6 @@
 #include <vtkPNGReader.h>
 #include <vtkTIFFReader.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/render_gltf_client/internal_http_service_curl.h"
@@ -27,6 +27,8 @@ namespace internal {
 
 namespace {
 
+namespace fs = std::filesystem;
+
 using drake::geometry::render::ClippingRange;
 using drake::geometry::render::DepthRange;
 using drake::geometry::render::RenderCameraCore;
@@ -34,7 +36,6 @@ using drake::systems::sensors::CameraInfo;
 using drake::systems::sensors::ImageDepth32F;
 using drake::systems::sensors::ImageLabel16I;
 using drake::systems::sensors::ImageRgba8U;
-namespace fs = drake::filesystem;
 
 /* Adds field_name = field_data to the map, assumes data_map does **not**
  already have the key `field_name`. */

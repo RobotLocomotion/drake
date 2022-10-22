@@ -1,12 +1,12 @@
 #include "drake/multibody/parsing/parser.h"
 
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -314,11 +314,11 @@ GTEST_TEST(FileParserTest, PackageMapTest) {
   // Copy the relevant files to the temporary directory.
   const std::string sdf_path = temp_dir + "/sdfs";
   const std::string mesh_path = temp_dir + "/meshes";
-  filesystem::create_directory({sdf_path});
-  filesystem::create_directory({mesh_path});
-  filesystem::copy(full_package_filename, temp_dir + "/package.xml");
-  filesystem::copy(full_sdf_filename, sdf_path + "/box.sdf");
-  filesystem::copy(full_obj_filename, mesh_path + "/box.obj");
+  std::filesystem::create_directory({sdf_path});
+  std::filesystem::create_directory({mesh_path});
+  std::filesystem::copy(full_package_filename, temp_dir + "/package.xml");
+  std::filesystem::copy(full_sdf_filename, sdf_path + "/box.sdf");
+  std::filesystem::copy(full_obj_filename, mesh_path + "/box.obj");
 
   // Attempt to read in the SDF file without setting the package map first.
   const std::string new_sdf_filename = sdf_path + "/box.sdf";

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
 #include <initializer_list>
 #include <optional>
 #include <regex>
@@ -14,13 +15,14 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 
 namespace drake {
 namespace multibody {
+
+namespace fs = std::filesystem;
 
 using std::runtime_error;
 using std::string;
@@ -170,7 +172,7 @@ namespace {
 // Returns the parent directory of @p directory.
 string GetParentDirectory(const string& directory) {
   DRAKE_DEMAND(!directory.empty());
-  return filesystem::path(directory).parent_path().string();
+  return fs::path(directory).parent_path().string();
 }
 
 // Removes leading and trailing whitespace and line breaks from a string.
@@ -242,7 +244,7 @@ bool PackageMap::AddPackageIfNew(const string& package_name,
   if (!Contains(package_name)) {
     drake::log()->trace(
         "PackageMap: Adding package://{}: {}", package_name, path);
-    if (!filesystem::is_directory(path)) {
+    if (!fs::is_directory(path)) {
       throw std::runtime_error(
           "Could not add package://" + package_name + " to the search path "
           "because directory " + path + " does not exist");
@@ -251,7 +253,7 @@ bool PackageMap::AddPackageIfNew(const string& package_name,
   } else {
     // Don't warn if we've found the same path with a different spelling.
     const PackageData existing_data = map_.at(package_name);
-    if (!filesystem::equivalent(existing_data.path, path)) {
+    if (!fs::equivalent(existing_data.path, path)) {
       drake::log()->warn(
           "PackageMap is ignoring newly-found path \"{}\" for package \"{}\""
           " and will continue using the previously-known path at \"{}\".",
@@ -271,13 +273,13 @@ PackageMap::PackageMap(std::initializer_list<std::string> manifest_paths) {
 void PackageMap::CrawlForPackages(const string& path, bool stop_at_package,
     const std::vector<std::string_view>& stop_markers) {
   DRAKE_DEMAND(!path.empty());
-  filesystem::path dir = filesystem::path(path).lexically_normal();
+  fs::path dir = fs::path(path).lexically_normal();
   if (std::any_of(stop_markers.begin(), stop_markers.end(),
-      [dir](std::string_view name){return filesystem::exists(dir / name);})) {
+      [dir](std::string_view name){ return fs::exists(dir / name); })) {
     return;
   }
-  filesystem::path manifest = dir / "package.xml";
-  if (filesystem::exists(manifest)) {
+  fs::path manifest = dir / "package.xml";
+  if (fs::exists(manifest)) {
     const auto [package_name, deprecated_message] =
         ParsePackageManifest(manifest.string());
     const string package_path = dir.string();
@@ -289,7 +291,7 @@ void PackageMap::CrawlForPackages(const string& path, bool stop_at_package,
     }
   }
   std::error_code ec;
-  filesystem::directory_iterator iter(dir, ec);
+  fs::directory_iterator iter(dir, ec);
   if (ec) {
     log()->warn("Unable to open directory: {}", path);
     return;

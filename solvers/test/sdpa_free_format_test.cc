@@ -1,12 +1,12 @@
 #include "drake/solvers/sdpa_free_format.h"
 
+#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <utility>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -1088,7 +1088,7 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA1) {
 
   const std::string file_name = temp_directory() + "/sdpa";
   EXPECT_TRUE(GenerateSDPA(prog, file_name));
-  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
+  EXPECT_TRUE(std::filesystem::exists({file_name + ".dat-s"}));
 
   std::ifstream infile(file_name + ".dat-s");
   ASSERT_TRUE(infile.is_open());
@@ -1147,7 +1147,7 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA_remove_free_variables_two_slack) {
   const std::string file_name = temp_directory() + "/sdpa_free1";
   EXPECT_TRUE(GenerateSDPA(prog, file_name,
                            RemoveFreeVariableMethod::kTwoSlackVariables));
-  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
+  EXPECT_TRUE(std::filesystem::exists({file_name + ".dat-s"}));
 
   std::ifstream infile(file_name + ".dat-s");
   ASSERT_TRUE(infile.is_open());
@@ -1194,7 +1194,7 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA_remove_free_variables_null_space) {
   const std::string file_name = temp_directory() + "/sdpa_free2";
   EXPECT_TRUE(GenerateSDPA(prog, file_name,
                            RemoveFreeVariableMethod::kNullspace));
-  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
+  EXPECT_TRUE(std::filesystem::exists({file_name + ".dat-s"}));
   std::ifstream infile(file_name + ".dat-s");
   ASSERT_TRUE(infile.is_open());
   std::string line;
@@ -1227,7 +1227,7 @@ GTEST_TEST(SdpaFreeFormatTest,
   const std::string file_name = temp_directory() + "/sdpa_free3";
   EXPECT_TRUE(GenerateSDPA(prog, file_name,
                            RemoveFreeVariableMethod::kLorentzConeSlack));
-  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
+  EXPECT_TRUE(std::filesystem::exists({file_name + ".dat-s"}));
 
   std::ifstream infile(file_name + ".dat-s");
   ASSERT_TRUE(infile.is_open());

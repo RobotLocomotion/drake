@@ -1078,7 +1078,6 @@ drake_cc_variant_library(
     ],
     deps_always = [
         ":mathematical_program",
-        "//common:filesystem",
         "//common:scope_exit",
     ],
     deps_enabled = [
@@ -1215,7 +1214,6 @@ drake_cc_googletest(
         ":csdp_solver_internal",
         ":csdp_test_examples",
         ":sdpa_free_format",
-        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -1331,7 +1329,6 @@ drake_cc_googletest(
         ":mixed_integer_optimization_util",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
-        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -1394,7 +1391,6 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
-        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
     ] + select({
@@ -1504,7 +1500,6 @@ drake_cc_googletest(
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
         ":sos_examples",
-        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -1713,7 +1708,6 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":snopt_solver",
-        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",

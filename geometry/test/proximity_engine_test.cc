@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity_engine.h"
 
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <unordered_map>
 #include <utility>
@@ -9,7 +10,6 @@
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -672,10 +672,10 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
         ".*only OBJs with a single object.*");
   }
 
-  const filesystem::path temp_dir = temp_directory();
+  const std::filesystem::path temp_dir = temp_directory();
   // An empty file.
   {
-    const filesystem::path file = temp_dir / "empty.obj";
+    const std::filesystem::path file = temp_dir / "empty.obj";
     std::ofstream f(file.string());
     f.close();
     Convex convex{file.string(), 1.0};
@@ -685,7 +685,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
   }
 
   // The file is not an OBJ.
-  { const filesystem::path file = temp_dir / "not_an_obj.txt";
+  { const std::filesystem::path file = temp_dir / "not_an_obj.txt";
     std::ofstream f(file.string());
     f << "I'm not a valid obj\n";
     f.close();

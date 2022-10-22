@@ -1,12 +1,12 @@
 #include "drake/multibody/parsing/detail_path_utils.h"
 
+#include <filesystem>
 #include <fstream>
 #include <string>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/unused.h"
 
@@ -69,7 +69,8 @@ GTEST_TEST(ResoluveUriUncheckedTest, NormalizedPath) {
       "drake/multibody/parsing/test/"
       "package_map_test_packages/package_map_test_package_a/"
       "sdf/test_model.sdf");
-  const string root_dir = filesystem::path(target_file).parent_path().string();
+  const string root_dir =
+      std::filesystem::path(target_file).parent_path().string();
 
   // Case: Simple concatenation would produce /fake/root/./file.txt.
   EXPECT_EQ(ResolveGoodUri("./test_model.sdf", package_map, root_dir),

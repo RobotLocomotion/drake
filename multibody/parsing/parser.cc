@@ -1,9 +1,9 @@
 #include "drake/multibody/parsing/parser.h"
 
+#include <filesystem>
 #include <optional>
 #include <set>
 
-#include "drake/common/filesystem.h"
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_composite_parse.h"

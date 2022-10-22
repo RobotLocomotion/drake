@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/process_model_directives.h"
 
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <sstream>
@@ -7,7 +8,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
@@ -37,7 +37,7 @@ const char* const kTestDir =
 // has it and can resolve package://process_model_directives_test urls.
 std::unique_ptr<Parser> make_parser(MultibodyPlant<double>* plant) {
   auto parser = std::make_unique<Parser>(plant);
-  const drake::filesystem::path abspath_xml = FindResourceOrThrow(
+  const std::filesystem::path abspath_xml = FindResourceOrThrow(
       std::string(kTestDir) + "/package.xml");
   parser->package_map().AddPackageXml(abspath_xml.string());
   return parser;

@@ -1,5 +1,6 @@
 #include "drake/geometry/render_gltf_client/internal_render_engine_gltf_client.h"
 
+#include <filesystem>
 #include <fstream>
 #include <set>
 #include <vector>
@@ -8,7 +9,6 @@
 #include <vtkCamera.h>
 #include <vtkMatrix4x4.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -21,7 +21,7 @@ namespace geometry {
 namespace render_gltf_client {
 namespace internal {
 
-namespace fs = drake::filesystem;
+namespace fs = std::filesystem;
 
 using Eigen::Matrix3d;
 using Eigen::Matrix4d;

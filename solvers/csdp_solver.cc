@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <csetjmp>
 #include <cstdlib>
+#include <filesystem>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -15,7 +16,6 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseQR>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/csdp_solver_internal.h"
@@ -430,7 +430,7 @@ std::string MaybeWriteCsdpParams(const SolverOptions& options) {
   const char* dir = std::getenv("TEST_TMPDIR");
   if (!dir) { dir = std::getenv("TMPDIR"); }
   if (!dir) { dir = "/tmp"; }
-  filesystem::path path_template(dir);
+  std::filesystem::path path_template(dir);
   path_template.append("robotlocomotion_drake_XXXXXX");
   std::string result = path_template;
   int fd = ::mkstemp(result.data());

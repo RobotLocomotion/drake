@@ -1,16 +1,18 @@
 #include "drake/common/temp_directory.h"
 
 #include <cstdlib>
+#include <filesystem>
 #include <string>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/filesystem.h"
 
 namespace drake {
 namespace {
+
+namespace fs = std::filesystem;
 
 GTEST_TEST(TempDirectoryTest, TestTmpdirSet) {
   const char* test_tmpdir = std::getenv("TEST_TMPDIR");
@@ -18,7 +20,7 @@ GTEST_TEST(TempDirectoryTest, TestTmpdirSet) {
 
   const std::string temp_directory_with_test_tmpdir_set = temp_directory();
   EXPECT_NE('/', temp_directory_with_test_tmpdir_set.back());
-  filesystem::path temp_path(temp_directory_with_test_tmpdir_set);
+  fs::path temp_path(temp_directory_with_test_tmpdir_set);
   EXPECT_EQ(std::string(test_tmpdir), temp_path.parent_path().string());
   EXPECT_THAT(temp_path.filename().string(),
               testing::MatchesRegex("robotlocomotion_drake_[^/]{6}$"));
@@ -43,7 +45,7 @@ GTEST_TEST(TempDirectoryTest, TestTmpdirUnset) {
   }
 
   // Check the expected result.
-  filesystem::path expected_prefix(test_tmpdir);
+  fs::path expected_prefix(test_tmpdir);
   expected_prefix.append("robotlocomotion_drake_");
   EXPECT_THAT(temp_directory_result,
               ::testing::StartsWith(expected_prefix.string()));
@@ -63,7 +65,7 @@ GTEST_TEST(TempDirectoryTest, TestTmpdirTrailingSlash) {
   DRAKE_DEMAND(::setenv("TEST_TMPDIR", test_tmpdir, 1) == 0);
 
   // Check the expected result.
-  filesystem::path expected_prefix(test_tmpdir);
+  fs::path expected_prefix(test_tmpdir);
   expected_prefix.append("robotlocomotion_drake_");
   EXPECT_THAT(temp_directory_result,
               testing::Not(testing::EndsWith("/")));

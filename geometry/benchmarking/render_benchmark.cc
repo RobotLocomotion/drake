@@ -1,12 +1,12 @@
 #include <unistd.h>
 
+#include <filesystem>
 #include <iostream>
 
 #include "fmt/format.h"
 #include <benchmark/benchmark.h>
 #include <gflags/gflags.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/geometry/render_gl/factory.h"
 #include "drake/geometry/render_vtk/factory.h"
 #include "drake/systems/sensors/image_writer.h"
@@ -200,7 +200,7 @@ class RenderBenchmark : public benchmark::Fixture {
                                      const benchmark::State& state,
                                      const std::string& format) {
     DRAKE_DEMAND(!FLAGS_save_image_path.empty());
-    filesystem::path save_path = FLAGS_save_image_path;
+    std::filesystem::path save_path = FLAGS_save_image_path;
     const auto [sphere_count, camera_count, width, height] = ReadState(state);
     return save_path.append(fmt::format("{}_{}_{}_{}_{}.{}", test_name,
                                         sphere_count, camera_count, width,

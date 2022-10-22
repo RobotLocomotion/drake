@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
+#include <filesystem>
 #include <memory>
 #include <regex>
 #include <sstream>
@@ -9,7 +10,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
@@ -191,7 +191,7 @@ TEST_F(SdfParserTest, PackageMapSpecified) {
 
   const std::string full_sdf_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/sdfs/box.sdf");
-  filesystem::path package_path = full_sdf_filename;
+  std::filesystem::path package_path = full_sdf_filename;
   package_path = package_path.parent_path();
   package_path = package_path.parent_path();
 
@@ -721,7 +721,8 @@ TEST_F(SdfParserTest, IncludeTags) {
   ASSERT_EQ(plant_.num_bodies(), 1);
   ASSERT_EQ(plant_.num_joints(), 0);
 
-  package_map_.PopulateFromFolder(filesystem::path(full_name).parent_path());
+  package_map_.PopulateFromFolder(
+      std::filesystem::path(full_name).parent_path());
   AddModelsFromSdfFile(full_name);
   plant_.Finalize();
 
@@ -2380,7 +2381,7 @@ TEST_F(SdfParserTest, CollisionFilterGroupParsingTest) {
 
   // Read in the SDF file.
   package_map_.PopulateFromFolder(
-      filesystem::path(full_sdf_filename).parent_path());
+      std::filesystem::path(full_sdf_filename).parent_path());
   AddModelFromSdfFile(full_sdf_filename, "");
 
   // Get geometry ids for all the bodies.
@@ -2531,7 +2532,8 @@ TEST_F(SdfParserTest, MergeInclude) {
   ASSERT_EQ(plant_.num_bodies(), 1);
   ASSERT_EQ(plant_.num_joints(), 0);
 
-  package_map_.PopulateFromFolder(filesystem::path(full_name).parent_path());
+  package_map_.PopulateFromFolder(
+      std::filesystem::path(full_name).parent_path());
   AddModelsFromSdfFile(full_name);
   plant_.Finalize();
 

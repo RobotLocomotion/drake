@@ -1,7 +1,8 @@
 #include "drake/multibody/parsing/detail_common.h"
 
+#include <filesystem>
+
 #include "drake/common/drake_assert.h"
-#include "drake/common/filesystem.h"
 
 namespace drake {
 namespace multibody {
@@ -33,21 +34,21 @@ const std::string& DataSource::contents() const {
 
 std::string DataSource::GetAbsolutePath() const {
   if (IsFilename()) {
-    return filesystem::absolute(*data_).native();
+    return std::filesystem::absolute(*data_).native();
   }
   return "";
 }
 
 std::string DataSource::GetRootDir() const {
   if (IsFilename()) {
-    return filesystem::absolute(*data_).parent_path().native();
+    return std::filesystem::absolute(*data_).parent_path().native();
   }
   return "";
 }
 
 std::string DataSource::GetStem() const {
   if (IsFilename()) {
-    filesystem::path p{*data_};
+    std::filesystem::path p{*data_};
     return p.stem();
   }
   return kContentsPseudoStem;

@@ -1,6 +1,7 @@
 #include "drake/geometry/render_gltf_client/internal_render_client.h"
 
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <memory>
@@ -11,7 +12,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -24,7 +24,7 @@ namespace geometry {
 namespace render_gltf_client {
 namespace internal {
 
-namespace fs = drake::filesystem;
+namespace fs = std::filesystem;
 
 using Params = RenderEngineGltfClientParams;
 using geometry::render::ClippingRange;

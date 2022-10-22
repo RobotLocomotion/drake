@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 
+#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <stdexcept>
@@ -9,7 +10,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -496,7 +496,7 @@ TEST_F(UrdfParserTest, PackageMapSpecified) {
 
   const std::string full_urdf_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf");
-  filesystem::path package_path = full_urdf_filename;
+  std::filesystem::path package_path = full_urdf_filename;
   package_path = package_path.parent_path();
   package_path = package_path.parent_path();
 

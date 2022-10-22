@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include <filesystem>
 #include <regex>
 #include <string>
 #include <utility>
@@ -13,8 +14,6 @@
 #include <vtkPNGWriter.h>
 #include <vtkSmartPointer.h>
 #include <vtkTIFFWriter.h>
-
-#include "drake/common/filesystem.h"
 
 namespace drake {
 namespace systems {
@@ -233,9 +232,9 @@ std::string ImageWriter::DirectoryFromFormat(const std::string& format,
 
 ImageWriter::FolderState ImageWriter::ValidateDirectory(
     const std::string& file_path_str) {
-  filesystem::path file_path(file_path_str);
-  if (filesystem::exists(file_path)) {
-    if (filesystem::is_directory(file_path)) {
+  std::filesystem::path file_path(file_path_str);
+  if (std::filesystem::exists(file_path)) {
+    if (std::filesystem::is_directory(file_path)) {
       if (::access(file_path.string().c_str(), W_OK) == 0) {
         return FolderState::kValid;
       } else {

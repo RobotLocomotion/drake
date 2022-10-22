@@ -337,15 +337,6 @@ drake_cc_library(
     visibility = ["//tools/install/libdrake:__pkg__"],
 )
 
-# The drake::filesystem support is intended ONLY for use within Drake's *.cc
-# files -- it is not a public dependency of Drake, so we mark it internal.
-drake_cc_library(
-    name = "filesystem",
-    hdrs = ["filesystem.h"],
-    internal = True,
-    visibility = ["//:__subpackages__"],
-)
-
 drake_cc_library(
     name = "find_runfiles",
     srcs = ["find_runfiles.cc"],
@@ -353,7 +344,6 @@ drake_cc_library(
     interface_deps = [],
     deps = [
         ":essential",
-        ":filesystem",
         "@bazel_tools//tools/cpp/runfiles",
     ],
 )
@@ -381,7 +371,6 @@ drake_cc_library(
     ],
     deps = [
         ":drake_marker_shared_library",
-        ":filesystem",
         ":find_runfiles",
     ],
 )
@@ -396,7 +385,6 @@ drake_cc_library(
     visibility = ["//tools/install/libdrake:__pkg__"],
     interface_deps = [],
     deps = [
-        ":filesystem",
         ":find_resource",
     ],
 )
@@ -497,9 +485,7 @@ drake_cc_library(
     interface_deps = [
         ":essential",
     ],
-    deps = [
-        ":filesystem",
-    ],
+    deps = [],
 )
 
 # This is a Drake-internal utility for use only as a direct dependency
@@ -921,21 +907,12 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "filesystem_test",
-    deps = [
-        ":filesystem",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "find_resource_test",
     data = [
         "test/find_resource_test_data.txt",
     ],
     deps = [
         ":drake_path",
-        ":filesystem",
         ":find_resource",
         "//common/test_utilities:expect_no_throw",
     ],
@@ -969,7 +946,6 @@ drake_cc_googletest(
         "test/find_resource_test_data.txt",
     ],
     deps = [
-        ":filesystem",
         ":find_runfiles",
         ":temp_directory",
         "//common/test_utilities:expect_throws_message",
@@ -1073,7 +1049,6 @@ drake_cc_googletest(
     # changes from one accidentally polluting the others.
     shard_count = 3,
     deps = [
-        ":filesystem",
         ":temp_directory",
     ],
 )

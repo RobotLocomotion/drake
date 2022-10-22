@@ -1,12 +1,12 @@
 #include "drake/geometry/render_gl/internal_render_engine_gl.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <optional>
 #include <utility>
 
 #include <fmt/format.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 
@@ -576,7 +576,7 @@ void RenderEngineGl::ImplementMesh(const OpenGlGeometry& geometry,
   // can't and don't want to change the underlying properties because they are
   // visible to the user.
   if (!temp_props.HasProperty("phong", "diffuse_map")) {
-    filesystem::path file_path(file_name);
+    std::filesystem::path file_path(file_name);
     const string png_name = file_path.replace_extension(".png").string();
     temp_props.AddProperty("phong", "diffuse_map", png_name);
   }

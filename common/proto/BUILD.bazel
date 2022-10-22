@@ -63,7 +63,6 @@ drake_cc_library(
     interface_deps = [],
     deps = [
         "//common:essential",
-        "//common:filesystem",
     ],
 )
 

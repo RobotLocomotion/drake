@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <cstdio>
+#include <filesystem>
 #include <string_view>
 #include <utility>
 
@@ -10,7 +11,6 @@
 #include <vtkMatrix4x4.h>
 #include <vtkVersionMacros.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
 
@@ -19,7 +19,8 @@ namespace geometry {
 namespace render_gltf_client {
 namespace internal {
 
-namespace fs = drake::filesystem;
+namespace fs = std::filesystem;
+
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
 using geometry::render::RenderCameraCore;

@@ -1,9 +1,10 @@
 #include "drake/common/find_runfiles.h"
 
+#include <filesystem>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/text_logging.h"
@@ -17,7 +18,7 @@ GTEST_TEST(FindRunfilesTest, AcceptanceTest) {
       "drake/common/test/find_resource_test_data.txt");
   drake::log()->debug("result.abspath: {}", result.abspath);
   EXPECT_GT(result.abspath.size(), 0);
-  EXPECT_TRUE(filesystem::is_regular_file({result.abspath}));
+  EXPECT_TRUE(std::filesystem::is_regular_file({result.abspath}));
   EXPECT_EQ(result.error, "");
 }
 
