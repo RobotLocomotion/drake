@@ -1,9 +1,10 @@
-import pydrake.visualization.plotting as mut
+import pydrake.visualization as mut
 
 import matplotlib.pyplot as plt
 import numpy as np
 import unittest
 
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.symbolic import Variable
 
 
@@ -62,3 +63,14 @@ class TestMatplotlibUtil(unittest.TestCase):
         for i in range(np.size(xys, 0)):
             env = {x[0]: xys[i, 0], x[1]: xys[i, 1]}
             np.testing.assert_almost_equal(V.Evaluate(env), 1., 1e-5)
+
+    def test_deprecated(self):
+        fig, ax = plt.subplots()
+        import pydrake.visualization.plotting as old
+        A = np.diag([1.0, 2.0])
+        x = np.array([Variable("x0"), Variable("x1")])
+        e = x.dot(A).dot(x)
+        with catch_drake_warnings(expected_count=1):
+            old.plot_sublevelset_quadratic(ax=ax, A=A)
+        with catch_drake_warnings(expected_count=1):
+            old.plot_sublevelset_expression(ax=ax, e=e)

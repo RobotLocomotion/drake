@@ -49,4 +49,4 @@ from .manipulation.all import *
 from .multibody.all import *
 from .solvers.all import *
 from .systems.all import *
-from .visualization.all import *
+from .visualization import *
