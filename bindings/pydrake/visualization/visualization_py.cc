@@ -13,11 +13,13 @@ Bindings for Visualization.
   py::module::import("pydrake.geometry");
   py::module::import("pydrake.multibody");
   py::module::import("pydrake.systems");
+  py::module::import("pydrake.systems.sensors");
 
   // The order of these calls matters. Some modules rely on prior definitions.
   internal::DefineVisualizationConfig(m);
 
   py::module::import("pydrake.visualization.meldis");
+  py::module::import("pydrake.visualization._video");
   ExecuteExtraPythonCode(m, true);
 }
 

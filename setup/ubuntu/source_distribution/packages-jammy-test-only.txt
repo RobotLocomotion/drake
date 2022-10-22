@@ -7,6 +7,7 @@ python3-dbg
 python3-flask
 python3-nbconvert
 python3-nbformat
+python3-opencv
 python3-pandas
 python3-psutil
 python3-requests
