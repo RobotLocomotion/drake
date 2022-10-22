@@ -49,6 +49,7 @@ drake_pybind_library(
         "all.py",
         "meldis.py",
         "plotting.py",
+        "video.py",
     ],
 )
 
@@ -93,6 +94,14 @@ drake_py_unittest(
     name = "plotting_test",
     deps = [
         ":visualization",
+    ],
+)
+
+drake_py_unittest(
+    name = "video_test",
+    deps = [
+        ":visualization",
+        "//bindings/pydrake/systems",
     ],
 )
 
