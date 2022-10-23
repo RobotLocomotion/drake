@@ -5,12 +5,13 @@ namespace drake {
 namespace geometry {
 namespace render_gltf_client {
 
-/** @defgroup render_engine_gltf_client_server_api (Experimental) glTF Render Client-Server API
+/** @defgroup render_engine_gltf_client_server_api glTF Render Client-Server API
     @ingroup render_engines
 
-@experimental
-Currently, the content of this page is primarily for facilitating code reviews
-and is subject to change during upcoming pull requests.
+@warning This feature is currently in "beta testing" and may change without any
+deprecation notice ahead of time.
+
+<h2 id="overview">Overview</h2>
 
 Drake offers built-in renderers (RenderEngineVtk, RenderEngineGl), but in some
 cases users may want to use their own custom rendering implementations.  One way
@@ -18,7 +19,6 @@ to accomplish that is to subclass RenderEngine with a custom implementation and
 link that into Drake, but sometimes that leads to linker compatibility problems.
 Thus, we also offer another option: rendering using a remote procedure call
 (RPC). This document specifies the network API for servicing those requests.
-<hr>
 
 The [glTF][glTF] render server API consists of two components: a client, and a
 server. The client generates and transmits glTF scene files to the server, which
@@ -28,10 +28,22 @@ server must respond with images of a certain type and dimension (width and
 height), but is otherwise free to produce any rendering desired in however much
 time it needs to render.
 
+The primary design goal for this RPC architecture is for batch-mode dataset
+generation (e.g., for machine learning), not for realtime simulation.
+We transmit the entire scene its entirety for each RPC request; the protocol
+does not support incremental changes to the scene.
+
+The server is welcome to add in fixed scene elements beyond what's transmitted
+(e.g., the server could add in a building's walls and floor, rather than having
+the client transmit that same immutable geometry in every RPC).  However, for
+anything dynamic the design intent is that every RPC call is comprehensive on
+its own.
+
 [glTF]: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html
 
 <b>Contents</b>:
 
+- [Overview](#overview)
 - [Server API](#server-api)
     - [Render Endpoint](#render-endpoint)
     - [Render Endpoint `<form>` Data](#render-endpoint-form-data)
