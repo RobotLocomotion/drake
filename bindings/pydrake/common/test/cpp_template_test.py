@@ -43,6 +43,8 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(str(template), "<TemplateBase {}.BaseTpl>".format(
             _TEST_MODULE))
 
+        self.assertEqual(template.get_module_name(), _TEST_MODULE)
+
         # Single arguments.
         template.add_instantiation(int, 1)
         self.assertEqual(template[int], 1)
@@ -95,6 +97,19 @@ class TestCppTemplate(unittest.TestCase):
         else:
             pickle_error = "can't pickle module objects"
         self.assertIn(pickle_error, str(cm.exception))
+
+    def test_base_negative(self):
+
+        class ParentScope:
+            pass
+
+        template = m.TemplateBase("NestedTemplate", scope=ParentScope)
+        with self.assertRaises(RuntimeError) as cm:
+            template.get_module_name()
+        self.assertIn(
+            "Unable to resolve `get_module_name` for a scope that is not a "
+            "module",
+            str(cm.exception))
 
     def test_deprecation(self):
         template = m.TemplateBase("BaseTpl")
