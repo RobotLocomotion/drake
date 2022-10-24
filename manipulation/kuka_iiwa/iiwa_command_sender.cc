@@ -6,6 +6,7 @@ namespace kuka_iiwa {
 
 IiwaCommandSender::IiwaCommandSender(int num_joints)
     : num_joints_(num_joints) {
+  this->DeclareInputPort("time_measured", systems::kVectorValued, 1);
   this->DeclareInputPort(
       "position", systems::kVectorValued, num_joints_);
   this->DeclareInputPort(
@@ -17,21 +18,28 @@ IiwaCommandSender::IiwaCommandSender(int num_joints)
 IiwaCommandSender::~IiwaCommandSender() = default;
 
 using InPort = systems::InputPort<double>;
-const InPort& IiwaCommandSender::get_position_input_port() const {
+const InPort& IiwaCommandSender::get_time_measured_input_port() const {
   return LeafSystem<double>::get_input_port(0);
 }
-const InPort& IiwaCommandSender::get_torque_input_port() const {
+const InPort& IiwaCommandSender::get_position_input_port() const {
   return LeafSystem<double>::get_input_port(1);
+}
+const InPort& IiwaCommandSender::get_torque_input_port() const {
+  return LeafSystem<double>::get_input_port(2);
 }
 
 void IiwaCommandSender::CalcOutput(
     const systems::Context<double>& context, lcmt_iiwa_command* output) const {
+  const double time_measured =
+      get_time_measured_input_port().HasValue(context)
+          ? get_time_measured_input_port().Eval(context)[0]
+          : context.get_time();
   const auto& position = get_position_input_port().Eval(context);
   const bool has_torque = get_torque_input_port().HasValue(context);
   const int num_torques = has_torque ? num_joints_ : 0;
 
   lcmt_iiwa_command& command = *output;
-  command.utime = context.get_time() * 1e6;
+  command.utime = time_measured * 1e6;
   command.num_joints = num_joints_;
   command.joint_position.resize(num_joints_);
   for (int i = 0; i < num_joints_; ++i) {

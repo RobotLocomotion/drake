@@ -10,6 +10,7 @@ using drake::systems::kVectorValued;
 IiwaStatusSender::IiwaStatusSender(int num_joints)
     : num_joints_(num_joints),
       zero_vector_(Eigen::VectorXd::Zero(num_joints)) {
+  DeclareInputPort("time_measured", kVectorValued, 1);
   DeclareInputPort("position_commanded", kVectorValued, num_joints_);
   DeclareInputPort("position_measured", kVectorValued, num_joints_);
   DeclareInputPort("velocity_estimated", kVectorValued, num_joints_);
@@ -22,23 +23,26 @@ IiwaStatusSender::IiwaStatusSender(int num_joints)
 IiwaStatusSender::~IiwaStatusSender() = default;
 
 using InPort = systems::InputPort<double>;
-const InPort& IiwaStatusSender::get_position_commanded_input_port() const {
+const InPort& IiwaStatusSender::get_time_measured_input_port() const {
   return LeafSystem<double>::get_input_port(0);
 }
-const InPort& IiwaStatusSender::get_position_measured_input_port() const {
+const InPort& IiwaStatusSender::get_position_commanded_input_port() const {
   return LeafSystem<double>::get_input_port(1);
 }
-const InPort& IiwaStatusSender::get_velocity_estimated_input_port() const {
+const InPort& IiwaStatusSender::get_position_measured_input_port() const {
   return LeafSystem<double>::get_input_port(2);
 }
-const InPort& IiwaStatusSender::get_torque_commanded_input_port() const {
+const InPort& IiwaStatusSender::get_velocity_estimated_input_port() const {
   return LeafSystem<double>::get_input_port(3);
 }
-const InPort& IiwaStatusSender::get_torque_measured_input_port() const {
+const InPort& IiwaStatusSender::get_torque_commanded_input_port() const {
   return LeafSystem<double>::get_input_port(4);
 }
-const InPort& IiwaStatusSender::get_torque_external_input_port() const {
+const InPort& IiwaStatusSender::get_torque_measured_input_port() const {
   return LeafSystem<double>::get_input_port(5);
+}
+const InPort& IiwaStatusSender::get_torque_external_input_port() const {
+  return LeafSystem<double>::get_input_port(6);
 }
 
 namespace {
@@ -82,6 +86,10 @@ Eigen::Ref<const Eigen::VectorXd> EvalFirstConnected(
 
 void IiwaStatusSender::CalcOutput(
     const Context<double>& context, lcmt_iiwa_status* output) const {
+  const double time_measured =
+      get_time_measured_input_port().HasValue(context)
+          ? get_time_measured_input_port().Eval(context)[0]
+          : context.get_time();
   const auto& position_commanded =
       get_position_commanded_input_port().Eval(context);
   const auto& position_measured =
@@ -102,7 +110,7 @@ void IiwaStatusSender::CalcOutput(
       get_torque_external_input_port());
 
   lcmt_iiwa_status& status = *output;
-  status.utime = context.get_time() * 1e6;
+  status.utime = time_measured * 1e6;
   status.num_joints = num_joints_;
   status.joint_position_measured.resize(num_joints_, 0);
   status.joint_velocity_estimated.resize(num_joints_, 0);
