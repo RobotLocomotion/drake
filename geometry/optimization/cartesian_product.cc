@@ -39,18 +39,12 @@ int sum_ambient_dimensions(const ConvexSets& sets) {
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets)
     : ConvexSet(&ConvexSetCloner<CartesianProduct>,
-                       sum_ambient_dimensions(sets)),
-      sets_{sets} {
-  for (const auto& s : sets_) {
-    DRAKE_DEMAND(s->IsBounded());
-  }
-}
+                sum_ambient_dimensions(sets)),
+      sets_{sets} {}
 
 CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
     : ConvexSet(&ConvexSetCloner<CartesianProduct>,
                 setA.ambient_dimension() + setB.ambient_dimension()) {
-  DRAKE_DEMAND(setA.IsBounded());
-  DRAKE_DEMAND(setB.IsBounded());
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
 }
@@ -64,9 +58,6 @@ CartesianProduct::CartesianProduct(const ConvexSets& sets,
   DRAKE_DEMAND(A_->rows() == b_->rows());
   DRAKE_DEMAND(A_->rows() == sum_ambient_dimensions(sets));
   DRAKE_DEMAND(A_->colPivHouseholderQr().rank() == A_->cols());
-  for (const auto& s : sets_) {
-    DRAKE_DEMAND(s->IsBounded());
-  }
 }
 
 CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
@@ -105,8 +96,12 @@ const ConvexSet& CartesianProduct::factor(int index) const {
 }
 
 bool CartesianProduct::DoIsBounded() const {
-  // Note: The constructor enforces that A_ is full column rank, and that all
-  // sets are bounded.
+  // Note: The constructor enforces that A_ is full column rank.
+  for (const auto& s : sets_) {
+    if (!s->IsBounded()) {
+      return false;
+    }
+  }
   return true;
 }
 
