@@ -201,39 +201,6 @@ instructions to obtain a username and password.
    3. Confirm that all of the uploads succeeded without any error messages in
       your terminal.
 
-## Post-release follow up
-
-1. Open the [tagged workspace](https://github.com/RobotLocomotion/drake/tree/v1.N.0/tools/workspace)
-   (editing that URL to have the correct value for ``N``) and ensure that
-   certain Drake-owned externals have sufficient tags:
-   1. Open ``common_robotics_utilities/repository.bzl`` and find the ``commit =`` used.
-      1. Open
-         [ToyotaResearchInstitute/common_robotics_utilities](https://github.com/ToyotaResearchInstitute/common_robotics_utilities/releases)
-         and check whether that commit already has an associated release tag.
-      2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
-         the 8-digit datestamp associated with the ``commit`` in question (i.e.,
-         four digit year, two digit month, two digit day).
-   2. Open ``models_internal/repository.bzl`` and find the ``commit =`` used.
-      1. Open
-         [RobotLocomotion/models](https://github.com/RobotLocomotion/models/releases)
-         and check whether that commit already has an associated release tag.
-      2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
-         the 8-digit datestamp associated with the ``commit`` in question (i.e.,
-         four digit year, two digit month, two digit day).
-   3. Open ``optitrack_driver/repository.bzl`` and find the ``commit =`` used.
-      1. Open
-         [RobotLocomotion/optitrack-driver](https://github.com/RobotLocomotion/optitrack-driver/releases)
-         and check whether that commit already has an associated release tag.
-      2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
-         the 8-digit datestamp associated with the ``commit`` in question (i.e.,
-         four digit year, two digit month, two digit day).
-   4. Open ``styleguide/repository.bzl`` and find the ``commit =`` used.
-      1. Open [RobotLocomotion/styleguide](https://github.com/RobotLocomotion/styleguide/releases)
-         and check whether that commit already has an associated release tag.
-      2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
-         the 8-digit datestamp associated with the ``commit`` in question (i.e.,
-         four digit year, two digit month, two digit day).
-
 ## Post-release tutorials updates
 
 Upgrade our Deepnote-hosted tutorials to the latest release.  This requires
