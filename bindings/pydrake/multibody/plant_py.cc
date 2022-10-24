@@ -19,6 +19,7 @@
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
+#include "drake/multibody/plant/externally_applied_spatial_force_multiplexer.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
@@ -1153,7 +1154,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
   // ExternallyAppliedSpatialForce
   {
-    using Class = multibody::ExternallyAppliedSpatialForce<T>;
+    using Class = ExternallyAppliedSpatialForce<T>;
     constexpr auto& cls_doc = doc.ExternallyAppliedSpatialForce;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "ExternallyAppliedSpatialForce", param, cls_doc.doc);
@@ -1167,6 +1168,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
+  }
+
+  // ExternallyAppliedSpatialForceMultiplexer
+  {
+    using Class = ExternallyAppliedSpatialForceMultiplexer<T>;
+    constexpr auto& cls_doc = doc.ExternallyAppliedSpatialForceMultiplexer;
+    auto cls = DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(
+        m, "ExternallyAppliedSpatialForceMultiplexer", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<int>(), py::arg("num_inputs"), cls_doc.ctor.doc);
   }
 
   // Propeller

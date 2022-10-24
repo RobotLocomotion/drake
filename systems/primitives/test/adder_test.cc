@@ -10,8 +10,6 @@
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
-using std::make_unique;
-
 namespace drake {
 namespace systems {
 namespace {
@@ -19,7 +17,7 @@ namespace {
 class AdderTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    adder_.reset(new Adder<double>(2 /* inputs */, 3 /* size */));
+    adder_ = std::make_unique<Adder<double>>(2 /* inputs */, 3 /* size */);
     context_ = adder_->CreateDefaultContext();
     input0_ = Eigen::VectorXd(3 /* size */);
     input1_ = Eigen::VectorXd(3 /* size */);
@@ -64,6 +62,7 @@ TEST_F(AdderTest, AddTwoVectors) {
 // Tests that Adder allocates no state variables in the context_.
 TEST_F(AdderTest, AdderIsStateless) {
   EXPECT_EQ(0, context_->num_continuous_states());
+  EXPECT_EQ(0, context_->num_discrete_state_groups());
 }
 
 // Asserts that adders have direct-feedthrough from all inputs to the output.

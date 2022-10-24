@@ -66,6 +66,7 @@ from pydrake.multibody.plant import (
     ContactResultsToLcmSystem,
     CoulombFriction_,
     ExternallyAppliedSpatialForce_,
+    ExternallyAppliedSpatialForceMultiplexer_,
     MultibodyPlant,
     MultibodyPlant_,
     MultibodyPlantConfig,
@@ -2359,14 +2360,20 @@ class TestPlant(unittest.TestCase):
             body=plant.GetBodyByName("body1"))
         self.assertIsInstance(id_, GeometryId)
 
+    @numpy_compare.check_all_types
+    def test_externally_applied_spatial_force_multiplexer(self, T):
+        system = ExternallyAppliedSpatialForceMultiplexer_[T](num_inputs=2)
+        self.assertIsInstance(system, LeafSystem_[T])
+
     def test_propeller(self):
         plant = MultibodyPlant_[float](time_step=0.0)
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
+        body = plant.GetBodyByName("Link1")
 
-        info = PropellerInfo(body_index=BodyIndex(1),
+        info = PropellerInfo(body_index=body.index(),
                              X_BP=RigidTransform_[float](),
                              thrust_ratio=1.0,
                              moment_ratio=0.1)
@@ -2374,7 +2381,7 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(info.moment_ratio, 0.1)
         copy.copy(info)
 
-        prop = Propeller_[float](body_index=BodyIndex(1),
+        prop = Propeller_[float](body_index=body.index(),
                                  X_BP=RigidTransform_[float](),
                                  thrust_ratio=1.0,
                                  moment_ratio=0.1)

@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":coulomb_friction",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
+        ":externally_applied_spatial_force_multiplexer",
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
@@ -330,6 +331,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "externally_applied_spatial_force_multiplexer",
+    srcs = ["externally_applied_spatial_force_multiplexer.cc"],
+    hdrs = ["externally_applied_spatial_force_multiplexer.h"],
+    deps = [
+        ":externally_applied_spatial_force",
+        "//common:default_scalars",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "calc_distance_and_time_derivative",
     srcs = ["calc_distance_and_time_derivative.cc"],
     hdrs = ["calc_distance_and_time_derivative.h"],
@@ -512,6 +524,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "externally_applied_spatial_force_multiplexer_test",
+    deps = [
+        ":externally_applied_spatial_force_multiplexer",
+        "//systems/framework/test_utilities",
     ],
 )
 
