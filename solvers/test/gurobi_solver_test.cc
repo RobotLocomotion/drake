@@ -1,11 +1,11 @@
 #include "drake/solvers/gurobi_solver.h"
 
+#include <filesystem>
 #include <limits>
 #include <thread>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -398,10 +398,10 @@ GTEST_TEST(GurobiTest, LogFile) {
     {
       SolverOptions solver_options;
       const std::string log_file = temp_directory() + "/gurobi.log";
-      EXPECT_FALSE(filesystem::exists({log_file}));
+      EXPECT_FALSE(std::filesystem::exists({log_file}));
       solver_options.SetOption(solver.id(), "LogFile", log_file);
       auto result = solver.Solve(prog, {}, solver_options);
-      EXPECT_TRUE(filesystem::exists({log_file}));
+      EXPECT_TRUE(std::filesystem::exists({log_file}));
     }
 
     // Set log file through CommonSolverOptions.
@@ -409,11 +409,11 @@ GTEST_TEST(GurobiTest, LogFile) {
       SolverOptions solver_options;
       const std::string log_file_common =
           temp_directory() + "/gurobi_common.log";
-      EXPECT_FALSE(filesystem::exists({log_file_common}));
+      EXPECT_FALSE(std::filesystem::exists({log_file_common}));
       solver_options.SetOption(CommonSolverOption::kPrintFileName,
                                log_file_common);
       solver.Solve(prog, {}, solver_options);
-      EXPECT_TRUE(filesystem::exists({log_file_common}));
+      EXPECT_TRUE(std::filesystem::exists({log_file_common}));
     }
 
     // Also set to log to console. We can't test the console output but this
@@ -436,11 +436,11 @@ GTEST_TEST(GurobiTest, LogFile) {
                                log_file_common);
       const std::string log_file = temp_directory() + "/gurobi2.log";
       solver_options.SetOption(solver.id(), "LogFile", log_file);
-      EXPECT_FALSE(filesystem::exists({log_file}));
-      EXPECT_FALSE(filesystem::exists({log_file_common}));
+      EXPECT_FALSE(std::filesystem::exists({log_file}));
+      EXPECT_FALSE(std::filesystem::exists({log_file_common}));
       auto result = solver.Solve(prog, {}, solver_options);
-      EXPECT_TRUE(filesystem::exists({log_file}));
-      EXPECT_FALSE(filesystem::exists({log_file_common}));
+      EXPECT_TRUE(std::filesystem::exists({log_file}));
+      EXPECT_FALSE(std::filesystem::exists({log_file_common}));
     }
   }
 }
@@ -460,9 +460,9 @@ GTEST_TEST(GurobiTest, WriteModel) {
     // Setting GRBwrite to "" and make sure calling Solve doesn't cause error.
     solver.Solve(prog, {}, options);
     options.SetOption(solver.id(), "GRBwrite", model_file);
-    EXPECT_FALSE(filesystem::exists({model_file}));
+    EXPECT_FALSE(std::filesystem::exists({model_file}));
     const auto result = solver.Solve(prog, {}, options);
-    EXPECT_TRUE(filesystem::exists({model_file}));
+    EXPECT_TRUE(std::filesystem::exists({model_file}));
     options.SetOption(solver.id(), "GRBwrite", "foo.wrong_extension");
     DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options),
                                 ".* setting GRBwrite to foo.wrong_extension.*");
@@ -482,9 +482,9 @@ GTEST_TEST(GurobiTest, ComputeIIS) {
     options.SetOption(solver.id(), "GRBcomputeIIS", 1);
     const std::string ilp_file = temp_directory() + "/gurobi_model.ilp";
     options.SetOption(solver.id(), "GRBwrite", ilp_file);
-    EXPECT_FALSE(filesystem::exists({ilp_file}));
+    EXPECT_FALSE(std::filesystem::exists({ilp_file}));
     auto result = solver.Solve(prog, {}, options);
-    EXPECT_TRUE(filesystem::exists({ilp_file}));
+    EXPECT_TRUE(std::filesystem::exists({ilp_file}));
     // Set GRBcomputeIIS to a wrong value.
     options.SetOption(solver.id(), "GRBcomputeIIS", 100);
     DRAKE_EXPECT_THROWS_MESSAGE(

@@ -1,6 +1,7 @@
 #include "drake/common/find_resource.h"
 
 #include <cstdlib>
+#include <filesystem>
 #include <utility>
 #include <vector>
 
@@ -8,7 +9,6 @@
 
 #include "drake/common/drake_marker.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/find_loaded_library.h"
 #include "drake/common/find_runfiles.h"
 #include "drake/common/never_destroyed.h"
@@ -18,6 +18,8 @@ using std::getenv;
 using std::string;
 
 namespace drake {
+
+namespace fs = std::filesystem;
 
 using Result = FindResourceResult;
 
@@ -126,11 +128,11 @@ Result CheckAndMakeResult(
   DRAKE_DEMAND(!root_description.empty());
   DRAKE_DEMAND(!root.empty());
   DRAKE_DEMAND(!resource_path.empty());
-  DRAKE_DEMAND(filesystem::is_directory({root}));
+  DRAKE_DEMAND(fs::is_directory({root}));
   DRAKE_DEMAND(IsRelativePath(resource_path));
 
   // Check for the sentinel.
-  if (!filesystem::is_regular_file({root + "/" + kSentinelRelpath})) {
+  if (!fs::is_regular_file({root + "/" + kSentinelRelpath})) {
     return Result::make_error(resource_path, fmt::format(
         "Could not find Drake resource_path '{}' because {} specified a "
         "resource root of '{}' but that root did not contain the expected "
@@ -140,7 +142,7 @@ Result CheckAndMakeResult(
 
   // Check for the resource_path.
   const string abspath = root + '/' + resource_path;
-  if (!filesystem::is_regular_file({abspath})) {
+  if (!fs::is_regular_file({abspath})) {
     return Result::make_error(resource_path, fmt::format(
         "Could not find Drake resource_path '{}' because {} specified a "
         "resource root of '{}' but that root did not contain the expected "
@@ -163,19 +165,19 @@ std::optional<string> MaybeGetEnvironmentResourceRoot() {
     return std::nullopt;
   }
   const std::string root{env_value};
-  if (!filesystem::is_directory({root})) {
+  if (!fs::is_directory({root})) {
     static const logging::Warn log_once(
         "FindResource ignoring {}='{}' because it does not exist.",
         env_name, env_value);
     return std::nullopt;
   }
-  if (!filesystem::is_directory({root + "/drake"})) {
+  if (!fs::is_directory({root + "/drake"})) {
     static const logging::Warn log_once(
         "FindResource ignoring {}='{}' because it does not contain a 'drake' "
         "subdirectory.", env_name, env_value);
     return std::nullopt;
   }
-  if (!filesystem::is_regular_file({root + "/" + kSentinelRelpath})) {
+  if (!fs::is_regular_file({root + "/" + kSentinelRelpath})) {
     static const logging::Warn log_once(
         "FindResource ignoring {}='{}' because it does not contain the "
         "expected sentinel file '{}'.", env_name, env_value, kSentinelRelpath);
@@ -193,7 +195,7 @@ std::optional<string> MaybeGetInstallResourceRoot() {
   std::optional<string> libdrake_dir = LoadedLibraryPath("libdrake_marker.so");
   if (libdrake_dir) {
     const string root = *libdrake_dir + "/../share";
-    if (filesystem::is_directory({root})) {
+    if (fs::is_directory({root})) {
       return root;
     } else {
       log()->debug("FindResource ignoring CMake install candidate '{}' "

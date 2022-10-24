@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
 
 #include <fmt/format.h>
 #include <vtkImageData.h>
@@ -10,7 +11,6 @@
 #include <vtkPNGReader.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/filesystem.h"
 
 namespace drake {
 namespace geometry {
@@ -40,7 +40,8 @@ std::optional<GLuint> TextureLibrary::GetTextureId(
 
   // Exit quickly if the file doesn't exist or is a directory.
   // Otherwise, vtkPNGReader spams stdout.
-  if (!filesystem::exists(file_name) || filesystem::is_directory(file_name)) {
+  if (!std::filesystem::exists(file_name) ||
+      std::filesystem::is_directory(file_name)) {
     return std::nullopt;
   }
 

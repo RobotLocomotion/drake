@@ -473,7 +473,6 @@ drake_cc_library(
         "//perception:point_cloud",
     ],
     deps = [
-        "//common:filesystem",
         "//common:find_resource",
         "//common:scope_exit",
         "//common:unused",
@@ -662,7 +661,6 @@ drake_cc_googletest(
     deps = [
         ":proximity_engine",
         ":shape_specification",
-        "//common:filesystem",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",

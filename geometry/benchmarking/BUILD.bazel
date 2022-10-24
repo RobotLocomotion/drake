@@ -34,7 +34,6 @@ drake_cc_googlebench_binary(
     test_tags = vtk_test_tags(),
     deps = [
         "//common:add_text_logging_gflags",
-        "//common:filesystem",
         "//geometry/render",
         "//geometry/render_gl",
         "//geometry/render_vtk",

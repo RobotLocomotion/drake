@@ -8,11 +8,12 @@
 #include <mach-o/dyld.h>
 #endif
 
+#include <filesystem>
+
 #include "fmt/format.h"
 #include "tools/cpp/runfiles/runfiles.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
 
@@ -20,6 +21,8 @@ using bazel::tools::cpp::runfiles::Runfiles;
 
 namespace drake {
 namespace {
+
+namespace fs = std::filesystem;
 
 // Replace `nullptr` with `"nullptr",` or else just return `arg` unchanged.
 const char* nullable_to_string(const char* arg) {
@@ -64,14 +67,14 @@ RunfilesSingleton Create() {
     argv0 = argv0.c_str();  // Remove trailing nil bytes.
     drake::log()->debug("_NSGetExecutablePath = {}", argv0);
 #else
-    const std::string& argv0 = filesystem::read_symlink({
+    const std::string& argv0 = fs::read_symlink({
         "/proc/self/exe"}).string();
     drake::log()->debug("readlink(/proc/self/exe) = {}", argv0);
 #endif
     result.runfiles.reset(Runfiles::Create(argv0, &bazel_error));
   }
   drake::log()->debug("FindRunfile mechanism = {}", mechanism);
-  drake::log()->debug("cwd = {}", filesystem::current_path());
+  drake::log()->debug("cwd = {}", fs::current_path());
 
   // If there were runfiles, identify the RUNFILES_DIR.
   if (result.runfiles) {
@@ -82,8 +85,8 @@ RunfilesSingleton Create() {
         // `bazel-bin/target`.
         // TODO(eric.cousineau): Show this in Drake itself. This behavior was
         // encountered in Anzu issue 5653, in a Python binary.
-        filesystem::path path = key_value.second;
-        path = filesystem::absolute(path);
+        fs::path path = key_value.second;
+        path = fs::absolute(path);
         path = path.lexically_normal();
         result.runfiles_dir = path.string();
         break;
@@ -93,7 +96,7 @@ RunfilesSingleton Create() {
     if (result.runfiles_dir.empty()) {
       bazel_error = "RUNFILES_DIR was not provided by the Runfiles object";
       result.runfiles.reset();
-    } else if (!filesystem::is_directory({result.runfiles_dir})) {
+    } else if (!fs::is_directory({result.runfiles_dir})) {
       bazel_error = fmt::format(
           "RUNFILES_DIR '{}' does not exist", result.runfiles_dir);
       result.runfiles.reset();
@@ -163,8 +166,8 @@ RlocationOrError FindRunfile(const std::string& resource_path) {
   // Locate the file on the manifest and in the directory.
   const std::string by_man = singleton.runfiles->Rlocation(resource_path);
   const std::string by_dir = singleton.runfiles_dir + "/" + resource_path;
-  const bool by_man_ok = filesystem::is_regular_file({by_man});
-  const bool by_dir_ok = filesystem::is_regular_file({by_dir});
+  const bool by_man_ok = fs::is_regular_file({by_man});
+  const bool by_dir_ok = fs::is_regular_file({by_dir});
   drake::log()->debug(
       "FindRunfile found by-manifest '{}' ({}) and by-directory '{}' ({})",
       by_man, by_man_ok ? "good" : "bad", by_dir, by_dir_ok ? "good" : "bad");

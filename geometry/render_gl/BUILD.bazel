@@ -73,18 +73,15 @@ drake_cc_library_ubuntu_only(
         "internal_buffer_dim.h",
         "internal_render_engine_gl.h",
     ],
-    interface_deps = [
+    deps = [
         ":internal_opengl_context",
         ":internal_opengl_geometry",
-        ":render_engine_gl_params",
         ":internal_shader_program",
         ":internal_shape_meshes",
         ":internal_texture_library",
+        ":render_engine_gl_params",
         "//geometry/render:render_engine",
         "//systems/sensors:image",
-    ],
-    deps = [
-        "//common:filesystem",
     ],
 )
 
@@ -185,7 +182,6 @@ drake_cc_library_ubuntu_only(
         ":internal_opengl_context",
     ],
     deps = [
-        "//common:filesystem",
         "@vtk//:vtkIOImage",
     ],
 )

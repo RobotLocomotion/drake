@@ -59,7 +59,6 @@ drake_cc_library(
         "//common:essential",
     ],
     deps = [
-        "//common:filesystem",
         "@fmt",
     ],
 )
@@ -74,7 +73,6 @@ drake_cc_library(
         ":internal_http_service",
     ],
     deps = [
-        "//common:filesystem",
         "//common:unused",
         "@curl_internal//:libcurl",
         "@fmt",
@@ -95,7 +93,6 @@ drake_cc_library(
         ":internal_http_service",
         ":internal_http_service_curl",
         ":render_engine_gltf_client_params",
-        "//common:filesystem",
         "//common:temp_directory",
         "//geometry/render:render_camera",
         "//geometry/render:render_engine",
@@ -117,7 +114,6 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":internal_render_client",
-        "//common:filesystem",
         "//geometry/render:render_camera",
         "//geometry/render_vtk:internal_render_engine_vtk",
         "//systems/sensors:image",
@@ -148,7 +144,6 @@ drake_cc_googletest(
     name = "internal_http_service_test",
     deps = [
         ":internal_http_service",
-        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
@@ -159,7 +154,6 @@ drake_cc_googletest(
     name = "internal_http_service_curl_test",
     deps = [
         ":internal_http_service_curl",
-        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -208,7 +202,6 @@ drake_cc_googletest(
     deps = [
         ":internal_render_engine_gltf_client",
         ":internal_sample_image_data",
-        "//common:filesystem",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -229,7 +222,6 @@ drake_cc_binary(
     testonly = True,
     srcs = ["test/server_vtk_backend.cc"],
     deps = [
-        "//common:filesystem",
         "//geometry/render:render_label",
         "//geometry/render/shaders:depth_shaders",
         "//geometry/render_vtk:factory",
@@ -256,7 +248,6 @@ drake_cc_binary(
     ],
     deps = [
         ":factory",
-        "//common:filesystem",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//geometry/render_vtk",
