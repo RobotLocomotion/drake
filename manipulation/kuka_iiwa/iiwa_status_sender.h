@@ -15,8 +15,11 @@ namespace kuka_iiwa {
 /// send the message, the output of this system should be connected to a
 /// systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>().
 ///
-/// This system has many vector-valued input ports, each of which has exactly
-/// num_joints elements.
+/// This system has many vector-valued input ports, most of which have exactly
+/// num_joints elements. The exception is `time_measured` which is the
+/// one-dimensional time in seconds to set as the message timestamp (i.e. the
+/// time inputed will be converted to microseconds and sent to the hardware). It
+/// is optional and if unset, the context time is used.
 ///
 /// - `position_commanded`: the most recently received position command.
 /// - `position_measured`: the plant's current position.
@@ -44,12 +47,13 @@ namespace kuka_iiwa {
 /// - torque_commanded
 /// - torque_measured
 /// - torque_external
+/// - time_measured
 /// output_ports:
 /// - lcmt_iiwa_status
 /// @endsystem
 ///
-/// The ports `velocity_estimated`, `torque_measured`, and `torque_external`
-/// may be left unconnected, as detailed above.
+/// The ports `velocity_estimated`, `torque_measured`, `torque_external`, and
+/// `time_measured` may be left unconnected, as detailed above.
 ///
 /// @see `lcmt_iiwa_status.lcm` for additional documentation.
 class IiwaStatusSender final : public systems::LeafSystem<double> {
@@ -61,6 +65,7 @@ class IiwaStatusSender final : public systems::LeafSystem<double> {
 
   /// @name Named accessors for this System's input and output ports.
   //@{
+  const systems::InputPort<double>& get_time_measured_input_port() const;
   const systems::InputPort<double>& get_position_commanded_input_port() const;
   const systems::InputPort<double>& get_position_measured_input_port() const;
   const systems::InputPort<double>& get_velocity_estimated_input_port() const;

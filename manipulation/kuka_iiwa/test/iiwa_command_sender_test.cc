@@ -11,8 +11,8 @@ namespace manipulation {
 namespace kuka_iiwa {
 namespace {
 
-using Eigen::VectorXd;
 using drake::test::LimitMalloc;
+using Eigen::VectorXd;
 
 constexpr int N = kIiwaArmNumJoints;
 
@@ -32,6 +32,8 @@ class IiwaCommandSenderTest : public testing::Test {
   std::unique_ptr<systems::Context<double>> context_ptr_;
   systems::Context<double>& context_;
 
+  const Vector1d time_{Vector1d(1.2)};
+
   const VectorXd q0_{VectorXd::LinSpaced(N, 0.1, 0.2)};
   const std::vector<double> std_q0_{q0_.data(), q0_.data() + q0_.size()};
 
@@ -41,11 +43,14 @@ class IiwaCommandSenderTest : public testing::Test {
 
 TEST_F(IiwaCommandSenderTest, AcceptanceTest) {
   dut_.get_position_input_port().FixValue(&context_, q0_);
+  EXPECT_EQ(output().utime, 0);
   EXPECT_EQ(output().num_joints, N);
   EXPECT_EQ(output().joint_position, std_q0_);
   EXPECT_EQ(output().num_torques, 0);
 
+  dut_.get_time_measured_input_port().FixValue(&context_, time_);
   dut_.get_torque_input_port().FixValue(&context_, t0_);
+  EXPECT_EQ(output().utime, time_[0] * 1e6);
   EXPECT_EQ(output().num_joints, N);
   EXPECT_EQ(output().joint_position, std_q0_);
   EXPECT_EQ(output().num_torques, N);
@@ -70,6 +75,17 @@ TEST_F(IiwaCommandSenderTest, MallocTest) {
   auto& tau = dut_.get_torque_input_port().FixValue(&context_, t0_);
   output();
   tau.GetMutableVectorData<double>();
+
+  // Recompute the output. No heap changes are allowed.
+  {
+    LimitMalloc guard;
+    output();
+  }
+
+  // Add time_measured, re-initialize, and then invalidate the cached output.
+  auto& utime = dut_.get_time_measured_input_port().FixValue(&context_, time_);
+  output();
+  utime.GetMutableVectorData<double>();
 
   // Recompute the output. No heap changes are allowed.
   {

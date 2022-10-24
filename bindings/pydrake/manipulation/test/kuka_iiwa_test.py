@@ -36,6 +36,8 @@ class TestKukaIiwa(unittest.TestCase):
 
         command_send = mut.IiwaCommandSender()
         self.assertIsInstance(
+            command_send.get_time_measured_input_port(), InputPort)
+        self.assertIsInstance(
             command_send.get_position_input_port(), InputPort)
         self.assertIsInstance(
             command_send.get_torque_input_port(), InputPort)
@@ -57,6 +59,8 @@ class TestKukaIiwa(unittest.TestCase):
             status_rec.get_torque_external_output_port(), OutputPort)
 
         status_send = mut.IiwaStatusSender()
+        self.assertIsInstance(
+            status_send.get_time_measured_input_port(), InputPort)
         self.assertIsInstance(
             status_send.get_position_commanded_input_port(), InputPort)
         self.assertIsInstance(
