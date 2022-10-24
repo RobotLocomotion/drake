@@ -116,6 +116,21 @@ class TemplateBase:
             ("{}: incompatible function arguments for template: No "
              "compatible instantiations").format(self.name))
 
+    def get_module_name(self):
+        """
+        Returns module name of the given template instance.
+
+        This is comparable to __module__ for a generic type instance.
+        See drake#18168 for example workflow.
+        """
+        if isinstance(self._scope, types.ModuleType):
+            return self._scope.__name__
+        else:
+            raise RuntimeError(
+                f"Unable to resolve `get_module_name` for the following "
+                f"scope: {self._scope}"
+            )
+
     # Unique token to signify that this instantiation is deferred when using
     # `add_instantiations` or `define`. The instantiation function will not be
     # called until the specific instantiation is requested. To illustrate, the

@@ -43,6 +43,8 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(str(template), "<TemplateBase {}.BaseTpl>".format(
             _TEST_MODULE))
 
+        self.assertEqual(template.get_module_name(), _TEST_MODULE)
+
         # Single arguments.
         template.add_instantiation(int, 1)
         self.assertEqual(template[int], 1)

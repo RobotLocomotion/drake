@@ -12,6 +12,13 @@ from pydrake.common.test.value_test_util import (
 
 
 class TestValue(unittest.TestCase):
+    def test_module(self):
+        # Note that __module__ is not what you expect.
+        self.assertEqual(Value.__module__, "pydrake.common.cpp_template")
+        # Instead, `get_module_name()` is what you want for instances of type
+        # TemplateBase.
+        self.assertEqual(Value.get_module_name(), "pydrake.common.value")
+
     def test_abstract_value_type_conversion(self):
         """Tests type-conversion types (passed by value, not reference)."""
         expected = "Hello world"
