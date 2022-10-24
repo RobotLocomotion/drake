@@ -649,11 +649,16 @@ class RotationMatrix {
     return kInternalToleranceForOrthonormality;
   }
 
+  /// Returns a RollPitchYaw that represents `this` %RotationMatrix, with
+  /// roll-pitch-yaw angles `[r, p, y]` in the range
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`.
+  /// @note This new high-accuracy algorithm avoids numerical round-off issues
+  /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
+  RollPitchYaw<T> ToRollPitchYaw() const { return RollPitchYaw(*this); }
+
   /// Returns a quaternion q that represents `this` %RotationMatrix.  Since the
   /// quaternion `q` and `-q` represent the same %RotationMatrix, this method
   /// chooses to return a canonical quaternion, i.e., with q(0) >= 0.
-  /// @note There is a constructor in the RollPitchYaw class that converts
-  /// a rotation matrix to roll-pitch-yaw angles.
   Eigen::Quaternion<T> ToQuaternion() const { return ToQuaternion(R_AB_); }
 
   /// Returns a unit quaternion q associated with the 3x3 matrix M.  Since the

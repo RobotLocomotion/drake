@@ -941,6 +941,23 @@ GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
   }
 }
 
+// Tests RotationMatrix::ToRollPitchYaw() is exactly the same as the constructor
+// RollPitchYaw(RotationMatrix).
+GTEST_TEST(RotationMatrixTest, ToRollPitchYaw) {
+  // Create a somewhat arbitrary RotationMatrix.
+  const double r(0.5), p(0.4), y(0.3);
+  const RollPitchYaw<double> rpy(r, p, y);
+  const RotationMatrix<double> R_AB(rpy);
+
+  // Ensure R_AB.ToRollPitchYaw() is exactly the same as RollPitchYaw(R_AB).
+  const RollPitchYaw<double> roll_pitch_yaw = R_AB.ToRollPitchYaw();
+  const RollPitchYaw<double> roll_pitch_yaw_expected(R_AB);
+  EXPECT_TRUE(roll_pitch_yaw.IsNearlyEqualTo(roll_pitch_yaw_expected, 0));
+
+  // Ensure roll_pitch_yaw is nearly the same as rpy (to within 2 bits).
+  constexpr double kTolerance = 2 * std::numeric_limits<double>::epsilon();;
+  EXPECT_TRUE(roll_pitch_yaw.IsNearlyEqualTo(rpy, kTolerance));
+}
 
 class RotationMatrixConversionTests : public ::testing::Test {
  protected:
