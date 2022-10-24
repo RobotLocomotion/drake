@@ -8,8 +8,8 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
-    BodyNode<T>::CalcHingeMatrixFactorization(
+const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
+    BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
     const systems::Context<T>& context,
     const MatrixUpTo6<T>& D_B,
     ArticulatedBodyInertiaCache<T>* abic) const {
@@ -29,7 +29,7 @@ math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
       MatrixUpTo6<T>(D_B.template selfadjointView<Eigen::Lower>()));
 
   // Ensure D_B (the articulated body hinge inertia matrix) is positive definite
-  // (which means that all its eigenvalues are positive). If it is not postive
+  // (which means that all its eigenvalues are positive). If it is not positive
   // definite, the matrix may be non-physical, e.g., it has a zero moment of
   // inertia for an axis about which rotation is permitted.
   // Example: The 1x1 hinge matrix D_B = [3.3] is positive definite whereas
@@ -40,8 +40,8 @@ math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
     const Mobilizer<T>& mobilizer = get_mobilizer();
     const Body<T>& inboard_body = mobilizer.inboard_body();
     const Body<T>& outboard_body = mobilizer.outboard_body();
-    DRAKE_DEMAND(&(body()) == &outboard_body);
-    DRAKE_DEMAND(&(parent_body()) == &inboard_body);
+    DRAKE_DEMAND(&body() == &outboard_body);
+    DRAKE_DEMAND(&parent_body() == &inboard_body);
     const std::string& inboard_body_name = inboard_body.name();
     const std::string& outboard_body_name = outboard_body.name();
     std::stringstream message;
@@ -67,6 +67,7 @@ math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
     }
     throw std::runtime_error(message.str());
   }
+
   return llt_D_B;
 }
 
