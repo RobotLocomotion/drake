@@ -97,6 +97,7 @@ drake_cc_library(
         "multibody_plant.cc",
         "physical_model.cc",
         "sap_driver.cc",
+        "tamsi_driver.cc",
     ],
     hdrs = [
         "compliant_contact_manager.h",
@@ -110,6 +111,7 @@ drake_cc_library(
         "physical_model.h",
         "sap_driver.h",
         "scalar_convertible_component.h",
+        "tamsi_driver.h",
     ],
     visibility = ["//visibility:private"],
     deps = [

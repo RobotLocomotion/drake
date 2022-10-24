@@ -29,7 +29,6 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/physical_model.h"
-#include "drake/multibody/plant/tamsi_solver.h"
 #include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
@@ -1739,26 +1738,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return contact_surface_representation_;
   }
 
-  /// <!-- TODO(xuchenhan-tri): Remove SetContactSolver() once
-  /// SetDiscreteUpdateManager() stabilizes. -->
-  ///
-  /// For use only by advanced developers wanting to try out their custom
-  /// contact solvers.
-  ///
-  /// @experimental
-  ///
-  /// @param solver The contact solver to be used for simulations of discrete
-  /// models with frictional contact. Discrete updates will use this solver
-  /// after this call.
-  /// @pre solver != nullptr.
-  /// @note `this` MultibodyPlant will no longer support scalar conversion to or
-  /// from symbolic::Expression after a call to this method.
-  void SetContactSolver(
-      std::unique_ptr<contact_solvers::internal::ContactSolver<T>> solver) {
-    DRAKE_DEMAND(solver != nullptr);
-    contact_solver_ = std::move(solver);
-  }
-
   /// For use only by advanced developers wanting to try out their custom time
   /// stepping strategies, including contact resolution.
   ///
@@ -1881,6 +1860,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void set_stiction_tolerance(
       double v_stiction = MultibodyPlantConfig{}.stiction_tolerance) {
     friction_model_.set_stiction_tolerance(v_stiction);
+  }
+
+  /// @returns the sticiton tolerance parameter, in m/s.
+  /// @see set_stiction_tolerance.
+  double stiction_tolerance() const {
+    return friction_model_.stiction_tolerance();
   }
   /// @} <!-- Contact modeling -->
 
@@ -4361,7 +4346,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex contact_solver_results;
-    systems::CacheIndex contact_solver_scratch;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
@@ -4524,8 +4508,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                              MultibodyForces<T>* forces) const override;
 
   // Discrete system version of CalcForwardDynamics(). This method does not use
-  // O(n) forward dynamics but the discrete TAMSI solver, for further details
-  // please refer to @ref castro_etal_2019 "[Castro et al., 2019]"
+  // O(n) forward dynamics but a discrete solver according to the discrete
+  // contact solver specified.
+  // @see get_discrete_contact_solver().
   void DoCalcForwardDynamicsDiscrete(
       const drake::systems::Context<T>& context,
       internal::AccelerationKinematicsCache<T>* ac) const override;
@@ -4548,19 +4533,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context0,
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
       drake::systems::DiscreteValues<T>* updates) const override;
-
-  // Helper method used within DoCalcDiscreteVariableUpdates() to update
-  // generalized velocities from previous step value v0 to next step value v.
-  // This helper uses num_substeps within a time interval of duration dt
-  // to perform the update using a step size dt_substep = dt/num_substeps.
-  // During the time span dt the problem data M, Jn, Jt and minus_tau, are
-  // approximated to be constant, a first order approximation.
-  TamsiSolverResult SolveUsingSubStepping(
-      TamsiSolver<T>* tamsi_solver,
-      int num_substeps, const MatrixX<T>& M0, const MatrixX<T>& Jn,
-      const MatrixX<T>& Jt, const VectorX<T>& minus_tau,
-      const VectorX<T>& stiffness, const VectorX<T>& damping,
-      const VectorX<T>& mu, const VectorX<T>& v0, const VectorX<T>& fn0) const;
 
   // This method performs the computation of the impulses to advance the state
   // stored in `context0` in time.
@@ -4629,19 +4601,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context,
       internal::HydroelasticFallbackCacheData<T>* data) const;
 
-  // Depending on the ContactModel, this method performs point contact and
-  // hydroelastic queries and prepares the results in the form of a list of
-  // DiscreteContactPair to be consumed by our discrete solvers.
-  // TODO(amcastro-tri): consider adding a separate unit test for this method.
-  void CalcDiscreteContactPairs(
-      const systems::Context<T>&,
-      std::vector<internal::DiscreteContactPair<T>>*) const;
-
   // Eval version of the method CalcDiscreteContactPairs().
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.discrete_contact_pairs)
-        .template Eval<std::vector<internal::DiscreteContactPair<T>>>(context);
+    return discrete_update_manager_->EvalDiscreteContactPairs(context);
   }
 
   // Helper method to fill in the ContactResults given the current context when
@@ -4824,15 +4787,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       std::vector<geometry::PenetrationAsPointPair<T>>*) const;
 
-  // This helper method combines the friction properties for each pair of
-  // contact points in `point_pairs` according to
-  // CalcContactFrictionFromSurfaceProperties().
-  // The i-th entry in the returned std::vector corresponds to the combined
-  // friction properties for the i-th point pair in `point_pairs`.
-  std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
-      const drake::systems::Context<T>& context,
-      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const;
-
   // (Advanced) Helper method to compute contact forces in the normal direction
   // using a penalty method.
   void CalcAndAddContactForcesByPenaltyMethod(
@@ -4961,19 +4915,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                               joint.child_body().index());
   }
 
-  // Helper to invoke our TamsiSolver. This method and `CallContactSolver()` are
-  // disjoint methods. One should only use one or the other, but not both.
-  void CallTamsiSolver(
-      TamsiSolver<T>* tamsi_solver,
-      const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
-      const VectorX<T>& minus_tau, const VectorX<T>& fn0, const MatrixX<T>& Jn,
-      const MatrixX<T>& Jt, const VectorX<T>& stiffness,
-      const VectorX<T>& damping, const VectorX<T>& mu,
-      contact_solvers::internal::ContactSolverResults<T>* results) const;
-
-  // Helper to invoke ContactSolver when one is available. This method and
-  // `CallTamsiSolver()` are disjoint methods. One should only use one or the
-  // other, but not both.
+  // Helper to invoke ContactSolver when one is available. Otherwise a discrete
+  // MultibodyPlant uses a DiscreteUpdateManager by default to advance its
+  // discrete dynamics forward in time.
   void CallContactSolver(
       contact_solvers::internal::ContactSolver<T>* contact_solver,
       const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
@@ -5182,11 +5126,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // time_step_ corresponds to the period of those updates. Otherwise, if the
   // plant is modeled as a continuous system, it is exactly zero.
   double time_step_{0};
-
-  // TODO(xuchenhan-tri): Entirely remove the contact_solver_ back door by the
-  // newer design using DiscreteUpdateManager. When not the nullptr, this is the
-  // solver to be used for discrete updates.
-  std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
 
   // When not the nullptr, this manager class is used to advance discrete
   // states.
