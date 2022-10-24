@@ -82,6 +82,12 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.CalcForceElementsContribution(context, forces);
   }
 
+  static const geometry::QueryObject<T>& EvalGeometryQueryInput(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      std::string_view caller) {
+    return plant.EvalGeometryQueryInput(context, caller);
+  }
+
   // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
   //  geometries.
   /* Returns the per-body arrays of collision geometries indexed by BodyIndex
@@ -107,6 +113,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
   static const std::vector<internal::CouplerConstraintSpecs<T>>&
   coupler_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.coupler_constraints_specs_;
+  }
+
+  static const std::vector<int>& EvalJointLockingIndices(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
+    return plant.EvalJointLockingIndices(context);
   }
 };
 }  // namespace internal

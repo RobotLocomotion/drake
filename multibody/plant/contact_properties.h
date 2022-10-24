@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity_properties.h"
@@ -18,6 +20,22 @@ namespace internal {
 template <typename T>
 T GetPointContactStiffness(geometry::GeometryId id, double default_value,
                            const geometry::SceneGraphInspector<T>& inspector);
+
+/* Returns the Hunt & Crossley dissipation parameter stored in group
+ geometry::internal::kMaterialGroup with property
+ geometry::internal::kHcDissipation for the specified geometry.
+ If the dissipation property is absent, it returns the supplied default value.
+ @pre id is a valid GeometryId in the inspector that has proximity properties.
+ @pre default_value >= 0. */
+template <typename T>
+T GetHuntCrossleyDissipation(geometry::GeometryId id, double default_value,
+                             const geometry::SceneGraphInspector<T>& inspector);
+
+template <typename T>
+T GetCombinedHuntCrossleyDissipation(
+    geometry::GeometryId id_A, geometry::GeometryId id_B, const T& stiffness_A,
+    const T& stiffness_B, double default_dissipation,
+    const geometry::SceneGraphInspector<T>& inspector);
 
 /* Returns the dissipation time constant stored in group
  geometry::internal::kMaterialGroup with property
