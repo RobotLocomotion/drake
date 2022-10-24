@@ -67,7 +67,13 @@ env/bin/pip install --upgrade pip
 env/bin/pip install drake
 ```
 
-(2) Drake requires certain basic runtime libraries from the host linux distribution.
+(2) Drake requires certain basic runtime libraries
+from the host Linux distribution.
+
+<!-- TODO(mwoehlke-kitware)
+On or after 2022-12-01 (once Drake 1.10.0 is released),
+remove these instructions and point to INSTALLATION instead.
+-->
 
 For Ubuntu 20.04, install these additional libraries:
 
