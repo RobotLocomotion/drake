@@ -466,8 +466,6 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     }
 
     time_step_ = other.time_step_;
-    // TODO(xuchenhan-tri): Remove contact_solver_ all together.
-    contact_solver_ = nullptr;
     // discrete_update_manager_ is copied below after FinalizePlantOnly().
 
     // Copy over physical_models_.
@@ -2702,34 +2700,26 @@ void MultibodyPlant<T>::CalcContactSolverResults(
   contact_solvers::internal::ContactSolverResults<T> results_unlocked;
   results_unlocked.Resize(indices.size(), num_contacts);
 
-  if (contact_solver_ != nullptr) {
-    CallContactSolver(contact_solver_.get(), context0.get_time(), v0_unlocked,
-                      M0_unlocked, minus_tau_unlocked, phi0, Jc_unlocked,
-                      stiffness, damping, mu, &results_unlocked);
-  } else {
-    systems::CacheEntryValue& value =
-        this->get_cache_entry(cache_indexes_.contact_solver_scratch)
-        .get_mutable_cache_entry_value(context0);
-    auto& tamsi_solver =
-        value.GetMutableValueOrThrow<TamsiSolver<T>>();
-    if (tamsi_solver.get_solver_parameters().stiction_tolerance !=
-        friction_model_.stiction_tolerance()) {
-      // Set the stiction tolerance according to the values set by users with
-      // set_stiction_tolerance().
-      TamsiSolverParameters solver_parameters;
-      solver_parameters.stiction_tolerance =
-          friction_model_.stiction_tolerance();
-      tamsi_solver.set_solver_parameters(solver_parameters);
-    }
-
-    // TAMSI is initialized with num_velocities(). Resize the internal solver
-    // workspace if needed.
-    tamsi_solver.ResizeIfNeeded(indices.size());
-
-    CallTamsiSolver(&tamsi_solver, context0.get_time(), v0_unlocked,
-                    M0_unlocked, minus_tau_unlocked, fn0, Jn_unlocked,
-                    Jt_unlocked, stiffness, damping, mu, &results_unlocked);
+  systems::CacheEntryValue& value =
+      this->get_cache_entry(cache_indexes_.contact_solver_scratch)
+          .get_mutable_cache_entry_value(context0);
+  auto& tamsi_solver = value.GetMutableValueOrThrow<TamsiSolver<T>>();
+  if (tamsi_solver.get_solver_parameters().stiction_tolerance !=
+      friction_model_.stiction_tolerance()) {
+    // Set the stiction tolerance according to the values set by users with
+    // set_stiction_tolerance().
+    TamsiSolverParameters solver_parameters;
+    solver_parameters.stiction_tolerance = friction_model_.stiction_tolerance();
+    tamsi_solver.set_solver_parameters(solver_parameters);
   }
+
+  // TAMSI is initialized with num_velocities(). Resize the internal solver
+  // workspace if needed.
+  tamsi_solver.ResizeIfNeeded(indices.size());
+
+  CallTamsiSolver(&tamsi_solver, context0.get_time(), v0_unlocked, M0_unlocked,
+                  minus_tau_unlocked, fn0, Jn_unlocked, Jt_unlocked, stiffness,
+                  damping, mu, &results_unlocked);
 
   // Joint locking: expand reduced outputs.
   results->v_next = ExpandRows(results_unlocked.v_next,
@@ -2845,96 +2835,6 @@ void MultibodyPlant<T>::CallTamsiSolver(
   results->vn = tamsi_solver->get_normal_velocities();
   results->vt = tamsi_solver->get_tangential_velocities();
   results->tau_contact = tamsi_solver->get_generalized_contact_forces();
-}
-
-template <>
-void MultibodyPlant<symbolic::Expression>::CallContactSolver(
-    contact_solvers::internal::ContactSolver<symbolic::Expression>*,
-    const symbolic::Expression&, const VectorX<symbolic::Expression>&,
-    const MatrixX<symbolic::Expression>&, const VectorX<symbolic::Expression>&,
-    const VectorX<symbolic::Expression>&, const MatrixX<symbolic::Expression>&,
-    const VectorX<symbolic::Expression>&, const VectorX<symbolic::Expression>&,
-    const VectorX<symbolic::Expression>&,
-    contact_solvers::internal::ContactSolverResults<symbolic::Expression>*)
-    const {
-  throw std::logic_error(
-      "This method doesn't support T = symbolic::Expression.");
-}
-
-template <typename T>
-void MultibodyPlant<T>::CallContactSolver(
-    contact_solvers::internal::ContactSolver<T>* contact_solver,
-    const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
-    const VectorX<T>& minus_tau, const VectorX<T>& phi0, const MatrixX<T>& Jc,
-    const VectorX<T>& stiffness, const VectorX<T>& damping,
-    const VectorX<T>& mu,
-    contact_solvers::internal::ContactSolverResults<T>* results) const {
-  // Tolerance larger than machine epsilon by an arbitrary factor. Just large
-  // enough so that entries close to machine epsilon, due to round-off errors,
-  // still get pruned.
-  const double kPruneTolerance = 20 * std::numeric_limits<double>::epsilon();
-  // TODO(amcastro-tri): Here MultibodyPlant should provide an actual O(n)
-  // operator per #12210.
-  const Eigen::SparseMatrix<T> Jc_sparse = Jc.sparseView(kPruneTolerance);
-  const contact_solvers::internal::SparseLinearOperator<T> Jc_op("Jc",
-                                                                 &Jc_sparse);
-
-  class MassMatrixInverseOperator
-      : public contact_solvers::internal::LinearOperator<T> {
-   public:
-    MassMatrixInverseOperator(const std::string& name, const MatrixX<T>* M)
-        : contact_solvers::internal::LinearOperator<T>(name), M_ldlt_{*M} {
-      DRAKE_DEMAND(M != nullptr);
-      nv_ = M->rows();
-      // TODO(sherm1) Eliminate heap allocation.
-      tmp_.resize(nv_);
-    }
-    ~MassMatrixInverseOperator() = default;
-
-    int rows() const { return nv_; }
-    int cols() const { return nv_; }
-
-   private:
-    void DoMultiply(const Eigen::Ref<const Eigen::SparseVector<T>>& x,
-                    Eigen::SparseVector<T>* y) const final {
-      tmp_ = VectorX<T>(x);
-      *y = M_ldlt_.Solve(tmp_).sparseView();
-    }
-    void DoMultiply(const Eigen::Ref<const VectorX<T>>& x,
-                    VectorX<T>* y) const final {
-      *y = M_ldlt_.Solve(x);
-    }
-    int nv_;
-    mutable VectorX<T> tmp_;  // temporary workspace.
-    math::LinearSolver<Eigen::LDLT, MatrixX<T>> M_ldlt_;
-  };
-  MassMatrixInverseOperator Minv_op("Minv", &M0);
-
-  // Perform the "predictor" step, in the absence of contact forces. See
-  // ContactSolver's class documentation for details.
-  // TODO(amcastro-tri): here the predictor step could be implicit in tau so
-  // that for instance we'd be able do deal with force elements implicitly.
-  const int nv = num_velocities();
-  VectorX<T> v_star(nv);  // TODO(sherm1) Eliminate heap allocation.
-  Minv_op.Multiply(minus_tau, &v_star);  // v_star = -M⁻¹⋅τ
-  v_star *= -time_step();                // v_star = dt⋅M⁻¹⋅τ
-  v_star += v0;                          // v_star = v₀ + dt⋅M⁻¹⋅τ
-
-  contact_solvers::internal::SystemDynamicsData<T> dynamics_data(&Minv_op,
-                                                                 &v_star);
-  contact_solvers::internal::PointContactData<T> contact_data(
-      &phi0, &Jc_op, &stiffness, &damping, &mu);
-  const contact_solvers::internal::ContactSolverStatus info =
-      contact_solver->SolveWithGuess(time_step(), dynamics_data, contact_data,
-                                    v0, &*results);
-
-  if (info != contact_solvers::internal::ContactSolverStatus::kSuccess) {
-    const std::string msg = fmt::format(
-        "MultibodyPlant's contact solver of type '{}' failed to converge at "
-        "simulation time = {} with discrete update period = {}.",
-        NiceTypeName::Get(*contact_solver_), time0, time_step());
-    throw std::runtime_error(msg);
-  }
 }
 
 template <typename T>

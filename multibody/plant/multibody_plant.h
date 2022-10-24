@@ -1739,26 +1739,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return contact_surface_representation_;
   }
 
-  /// <!-- TODO(xuchenhan-tri): Remove SetContactSolver() once
-  /// SetDiscreteUpdateManager() stabilizes. -->
-  ///
-  /// For use only by advanced developers wanting to try out their custom
-  /// contact solvers.
-  ///
-  /// @experimental
-  ///
-  /// @param solver The contact solver to be used for simulations of discrete
-  /// models with frictional contact. Discrete updates will use this solver
-  /// after this call.
-  /// @pre solver != nullptr.
-  /// @note `this` MultibodyPlant will no longer support scalar conversion to or
-  /// from symbolic::Expression after a call to this method.
-  void SetContactSolver(
-      std::unique_ptr<contact_solvers::internal::ContactSolver<T>> solver) {
-    DRAKE_DEMAND(solver != nullptr);
-    contact_solver_ = std::move(solver);
-  }
-
   /// For use only by advanced developers wanting to try out their custom time
   /// stepping strategies, including contact resolution.
   ///
@@ -4973,25 +4953,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                               joint.child_body().index());
   }
 
-  // Helper to invoke our TamsiSolver. This method and `CallContactSolver()` are
-  // disjoint methods. One should only use one or the other, but not both.
+  // Helper to invoke our TamsiSolver.
   void CallTamsiSolver(
-      TamsiSolver<T>* tamsi_solver,
-      const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
-      const VectorX<T>& minus_tau, const VectorX<T>& fn0, const MatrixX<T>& Jn,
-      const MatrixX<T>& Jt, const VectorX<T>& stiffness,
+      TamsiSolver<T>* tamsi_solver, const T& time0, const VectorX<T>& v0,
+      const MatrixX<T>& M0, const VectorX<T>& minus_tau, const VectorX<T>& fn0,
+      const MatrixX<T>& Jn, const MatrixX<T>& Jt, const VectorX<T>& stiffness,
       const VectorX<T>& damping, const VectorX<T>& mu,
-      contact_solvers::internal::ContactSolverResults<T>* results) const;
-
-  // Helper to invoke ContactSolver when one is available. This method and
-  // `CallTamsiSolver()` are disjoint methods. One should only use one or the
-  // other, but not both.
-  void CallContactSolver(
-      contact_solvers::internal::ContactSolver<T>* contact_solver,
-      const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
-      const VectorX<T>& minus_tau, const VectorX<T>& phi0, const MatrixX<T>& Jc,
-      const VectorX<T>& stiffness, const VectorX<T>& damping,
-      const VectorX<T>& mu,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
 
   // Removes `this` MultibodyPlant's ability to convert to the scalar types
@@ -5195,11 +5162,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // plant is modeled as a continuous system, it is exactly zero.
   double time_step_{0};
 
-  // TODO(xuchenhan-tri): Entirely remove the contact_solver_ back door by the
-  // newer design using DiscreteUpdateManager. When not the nullptr, this is the
-  // solver to be used for discrete updates.
-  std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
-
   // When not the nullptr, this manager class is used to advance discrete
   // states.
   // TODO(amcastro-tri): migrate the entirety of computations related to contact
@@ -5384,16 +5346,6 @@ template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
     const systems::Context<symbolic::Expression>&,
     internal::HydroelasticFallbackCacheData<symbolic::Expression>*) const;
-template <>
-void MultibodyPlant<symbolic::Expression>::CallContactSolver(
-    contact_solvers::internal::ContactSolver<symbolic::Expression>*,
-    const symbolic::Expression&, const VectorX<symbolic::Expression>&,
-    const MatrixX<symbolic::Expression>&, const VectorX<symbolic::Expression>&,
-    const VectorX<symbolic::Expression>&, const MatrixX<symbolic::Expression>&,
-    const VectorX<symbolic::Expression>&, const VectorX<symbolic::Expression>&,
-    const VectorX<symbolic::Expression>&,
-    contact_solvers::internal::ContactSolverResults<symbolic::Expression>*)
-    const;
 #endif
 
 }  // namespace multibody
