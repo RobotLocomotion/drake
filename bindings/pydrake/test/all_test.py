@@ -194,9 +194,9 @@ class TestAll(unittest.TestCase):
             "Image",
             # visualization
             "AddDefaultVisualization",
-            # - meldis
+            # - _meldis
             "Meldis",
-            # - plotting
+            # - _plotting
             "plot_sublevelset_quadratic",
         )
         # Ensure each symbol is exposed as globals from the above import

@@ -10,10 +10,9 @@ You can also visualize the LCM test data like so:
         TestMeldis.test_contact_applet_hydroelastic
 """
 
-import pydrake.visualization.meldis as mut
+import pydrake.visualization as mut
 
 import unittest
-
 from drake import (
     lcmt_viewer_geometry_data,
     lcmt_viewer_link_data,
@@ -21,6 +20,9 @@ from drake import (
 
 from pydrake.common import (
     FindResourceOrThrow,
+)
+from pydrake.common.test_utilities.deprecation import (
+    catch_drake_warnings,
 )
 from pydrake.geometry import (
     DrakeVisualizer,
@@ -248,3 +250,8 @@ class TestMeldis(unittest.TestCase):
 
         # After the handlers are called, we have the expected meshcat path.
         self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
+
+    def test_deprecation(self):
+        import pydrake.visualization.meldis as old
+        with catch_drake_warnings(expected_count=1):
+            old.Meldis(meshcat_port=None)
