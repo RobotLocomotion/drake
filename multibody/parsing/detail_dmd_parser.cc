@@ -1,9 +1,9 @@
 #include "drake/multibody/parsing/detail_dmd_parser.h"
 
+#include <filesystem>
 #include <memory>
 #include <set>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/scoped_names.h"
@@ -11,8 +11,6 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-
-namespace fs = drake::filesystem;
 
 using parsing::ModelDirectives;
 using parsing::ModelInstanceInfo;
@@ -197,7 +195,7 @@ ModelDirectives LoadModelDirectives(const DataSource& data_source) {
     const std::string& filename = data_source.filename();
     drake::log()->debug("LoadModelDirectives: {}", filename);
 
-    if (!fs::exists({filename})) {
+    if (!std::filesystem::exists({filename})) {
       throw std::runtime_error(
           fmt::format("No such file {} during LoadModelDirectives", filename));
     }

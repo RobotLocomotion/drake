@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_sdf_geometry.h"
 
+#include <filesystem>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -12,7 +13,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -817,7 +817,7 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
   const std::string file_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/urdf_parser_test/empty.png");
   const std::string root_dir =
-      filesystem::path(file_path).parent_path().string();
+      std::filesystem::path(file_path).parent_path().string();
 
   // Case: No material defined -- empty illustration properties.
   {

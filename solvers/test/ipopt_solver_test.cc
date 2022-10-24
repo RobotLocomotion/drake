@@ -1,8 +1,9 @@
 #include "drake/solvers/ipopt_solver.h"
 
+#include <filesystem>
+
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -268,7 +269,7 @@ GTEST_TEST(IpoptSolverTest, PrintToFile) {
   prog.AddLinearCost(x(0));
 
   const std::string filename = temp_directory() + "/ipopt.log";
-  EXPECT_FALSE(filesystem::exists({filename}));
+  EXPECT_FALSE(std::filesystem::exists({filename}));
   SolverOptions solver_options;
   solver_options.SetOption(CommonSolverOption::kPrintFileName, filename);
 
@@ -276,7 +277,7 @@ GTEST_TEST(IpoptSolverTest, PrintToFile) {
   if (solver.is_available()) {
     const auto result = solver.Solve(prog, {}, solver_options);
     EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(filesystem::exists({filename}));
+    EXPECT_TRUE(std::filesystem::exists({filename}));
   }
 }
 

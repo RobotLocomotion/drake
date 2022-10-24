@@ -61,7 +61,6 @@ drake_cc_library(
     ],
     deps = [
         "//common",
-        "//common:filesystem",
         "@tinyxml2_internal//:tinyxml2",
     ],
 )
@@ -94,7 +93,6 @@ drake_cc_library(
         ":scoped_names",
         "//common:diagnostic_policy",
         "//common:essential",
-        "//common:filesystem",
         "//geometry:proximity_properties",
         "//math:geometric_transform",
         "//multibody/plant",
@@ -168,7 +166,6 @@ drake_cc_library(
         ":detail_misc",
         ":detail_parsing_workspace",
         ":scoped_names",
-        "//common:filesystem",
         "@fmt",
         "@tinyxml2_internal//:tinyxml2",
     ],
@@ -259,7 +256,6 @@ drake_cc_library(
     deps = [
         ":detail_parsing_workspace",
         ":detail_select_parser",
-        "//common:filesystem",
     ],
 )
 
@@ -302,7 +298,6 @@ drake_cc_library(
         ":detail_parsing_workspace",
         ":scoped_names",
         "//common:diagnostic_policy",
-        "//common:filesystem",
         "//common:find_resource",
     ],
 )
@@ -390,7 +385,6 @@ drake_cc_googletest(
     ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":parser",
-        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -412,7 +406,6 @@ drake_cc_googletest(
     deps = [
         ":process_model_directives",
         ":scoped_names",
-        "//common:filesystem",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -425,7 +418,6 @@ drake_cc_googletest(
     deps = [
         ":parser",
         ":scoped_names",
-        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -464,7 +456,6 @@ drake_cc_googletest(
     deps = [
         ":detail_sdf_parser",
         ":diagnostic_policy_test_base",
-        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -481,7 +472,6 @@ drake_cc_googletest(
     deps = [
         ":detail_urdf_parser",
         ":diagnostic_policy_test_base",
-        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
         "//multibody/benchmarks/acrobot",
@@ -507,7 +497,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_sdf_geometry",
-        "//common:filesystem",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
@@ -534,7 +523,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":package_map",
-        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -559,7 +547,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_misc",
-        "//common:filesystem",
         "//common/test_utilities",
     ],
 )

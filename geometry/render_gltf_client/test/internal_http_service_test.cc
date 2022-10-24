@@ -1,11 +1,11 @@
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
 
+#include <filesystem>
 #include <fstream>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -16,7 +16,7 @@ namespace render_gltf_client {
 namespace internal {
 namespace {
 
-namespace fs = drake::filesystem;
+namespace fs = std::filesystem;
 
 // A concrete implementation of HttpService that does nothing.
 class EmptyService : public HttpService {

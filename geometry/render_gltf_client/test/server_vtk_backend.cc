@@ -13,6 +13,7 @@ The program serves as a working example and is used in conjunction with other
 programs for the glTF Render Client-Server integration test. */
 
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <string>
 
@@ -34,7 +35,6 @@ programs for the glTF Render Client-Server integration test. */
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
@@ -77,8 +77,8 @@ static bool ValidateInputPath(const char*, const std::string& path) {
     drake::log()->debug("Input path is not specified");
     return false;
   }
-  const drake::filesystem::path input_path{path};
-  if (!drake::filesystem::exists(path) || input_path.extension() != ".gltf") {
+  const std::filesystem::path input_path{path};
+  if (!std::filesystem::exists(path) || input_path.extension() != ".gltf") {
     drake::log()->debug("Invalid input path: {}", path);
     return false;
   }
@@ -93,9 +93,9 @@ static bool ValidateOutputPath(const char*, const std::string& path) {
     drake::log()->debug("Output path is not specified");
     return false;
   }
-  const drake::filesystem::path output_path{path};
+  const std::filesystem::path output_path{path};
   const std::string ext{output_path.extension()};
-  if (drake::filesystem::exists(output_path) ||
+  if (std::filesystem::exists(output_path) ||
       (ext != ".png" && ext != ".tiff")) {
     drake::log()->debug("Invalid output path: {}", path);
     return false;
@@ -148,12 +148,12 @@ ColorD GetColorDFromLabel(const RenderLabel& label) {
 bool ValidateOutputExtension() {
   if (FLAGS_image_type == "depth") {
     // TODO(svenevs): Add support for 16U PNG depth images.
-    if (drake::filesystem::path(FLAGS_output_path).extension() == ".png") {
+    if (std::filesystem::path(FLAGS_output_path).extension() == ".png") {
       drake::log()->debug("Depth images must have a .tiff extension.");
       return false;
     }
   } else {
-    const drake::filesystem::path output_path{FLAGS_output_path};
+    const std::filesystem::path output_path{FLAGS_output_path};
     if (output_path.extension() != ".png") {
       drake::log()->debug("Color and label images must have a .png extension.");
       return false;

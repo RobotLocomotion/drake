@@ -1,6 +1,7 @@
 #include "drake/common/drake_path.h"
 
-#include "drake/common/filesystem.h"
+#include <filesystem>
+
 #include "drake/common/find_resource.h"
 
 // N.B. This code is unit tested in test/find_resource_test.cc.
@@ -15,7 +16,7 @@ std::optional<std::string> MaybeGetDrakePath() {
   if (find_result.get_error_message()) {
     return std::nullopt;
   }
-  filesystem::path sentinel_path(find_result.get_absolute_path_or_throw());
+  std::filesystem::path sentinel_path(find_result.get_absolute_path_or_throw());
 
   // Take the dirname of sentinel_path, so that we have a folder where looking
   // up "drake/foo/bar.urdf" makes sense.
