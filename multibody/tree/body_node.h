@@ -1059,8 +1059,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       D_B.diagonal() += diagonal_inertias.segment(this->velocity_start(), nv);
 
       // Compute the LLT factorization of D_B as llt_D_B.
-      math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
-          CalcHingeMatrixFactorization(context, D_B, abic);
+      const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
+        CalcArticulatedBodyHingeInertiaMatrixFactorization(context, D_B, abic);
 
       // Compute the Kalman gain, g_PB_W, using (6).
       Matrix6xUpTo6<T>& g_PB_W = get_mutable_g_PB_W(abic);
@@ -1636,18 +1636,18 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return abic->get_mutable_llt_D_B(topology_.index);
   }
 
-  // Returns a mutable version of the LLT factorization of the articulated
-  // rigid body's hinge matrix.
-  // param[in] context Contains the state of the multibody system and is only
-  //   used if factorization fails and an assertion is thrown which contains
-  //   mass and/or inertia properties of this body node's outboard body.
+  // Returns LLT factorization of articulated rigid body's hinge inertia matrix.
+  // param[in] context Contains the state of the multibody system. The context
+  //   is only used if factorization fails in which case an assertion is thrown.
+  //   The assertion message contains mass and/or inertia properties of this
+  //   body node's outboard body.
   // param[in] D_B Articulated rigid body hinge matrix.
   // param[in] abic Efficient access to articulated body inertia cache.
   // @throws an exception if D_B is not positive definite or is near-singular.
-  math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& CalcHingeMatrixFactorization(
-    const systems::Context<T>& context,
-    const MatrixUpTo6<T>& D_B,
-    ArticulatedBodyInertiaCache<T>* abic) const;
+  const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
+  CalcArticulatedBodyHingeInertiaMatrixFactorization(
+      const systems::Context<T>& context, const MatrixUpTo6<T>& D_B,
+      ArticulatedBodyInertiaCache<T>* abic) const;
 
   // Returns a const reference to the Kalman gain `g_PB_W` of the body.
   const Matrix6xUpTo6<T>& get_g_PB_W(
