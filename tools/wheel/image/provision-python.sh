@@ -35,7 +35,8 @@ ln -s ${PREFIX}/include/${PYTHON}m /usr/local/include/
 ln -s /usr/local/bin/python /usr/bin/python
 
 # TODO(jwnimmer-tri): Should these be version-pinned? What's the process for
-# keeping them up to date if they are?
+# keeping them up to date if they are? For now we pin auditwheel because the
+# most recent 5.2.0 is not compatible with our current patchelf.
 pip install \
     lxml \
     matplotlib \
@@ -44,4 +45,4 @@ pip install \
     semantic-version \
     setuptools \
     wheel \
-    auditwheel
+    auditwheel==5.1.2

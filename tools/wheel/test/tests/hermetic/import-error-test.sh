@@ -19,4 +19,4 @@ EOF
 trap 'cat out' ERR
 
 grep -q 'Drake failed to load a required library' out
-grep -q '/pydrake/INSTALLATION' out
+grep -q 'apt.*install' out
