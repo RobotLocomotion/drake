@@ -109,11 +109,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.IsExactlyIdentity.doc)
         .def("IsNearlyIdentity", &Class::IsNearlyIdentity,
             py::arg("translation_tolerance"), cls_doc.IsNearlyIdentity.doc)
+        .def("IsExactlyEqualTo", &Class::IsExactlyEqualTo, py::arg("other"),
+            cls_doc.IsExactlyEqualTo.doc)
         .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
             py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
         .def("InvertAndCompose", &Class::InvertAndCompose, py::arg("other"),
             cls_doc.InvertAndCompose.doc)
+        .def("GetMaximumAbsoluteDifference",
+            &Class::GetMaximumAbsoluteDifference, py::arg("other"),
+            cls_doc.GetMaximumAbsoluteDifference.doc)
+        .def("GetMaximumAbsoluteTranslationDifference",
+            &Class::GetMaximumAbsoluteTranslationDifference, py::arg("other"),
+            cls_doc.GetMaximumAbsoluteTranslationDifference.doc)
         .def(
             "multiply",
             [](const Class* self, const Class& other) { return *self * other; },
@@ -145,8 +153,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, cls_doc.cast.doc);
-    // .def("IsNearlyEqualTo", ...)
-    // .def("IsExactlyEqualTo", ...)
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
