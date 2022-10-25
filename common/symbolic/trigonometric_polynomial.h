@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/rational_function.h"
 
@@ -116,12 +117,13 @@ symbolic::RationalFunction SubstituteStereographicProjectionImpl(
 /**
  * Substitutes the variables representing sine and cosine functions with their
  * stereographic projection.
- * If e is a multilinear polynomial of cosθ and sinθ,
+ * If e is a multilinear polynomial whose indeterminates include cosθ and sinθ,
  * and no cosθᵢ and sinθᵢ appear in the same monomial, then we replace cosθᵢ
  * with (1-tᵢ²)/(1+tᵢ²), and sinθᵢ with 2tᵢ/(1+tᵢ²), and get a rational
- * polynomial of t.
- * If the input expression doesn't contain the sine and cosine functions, then
- * the returned rational has denominator being 1.
+ * polynomial. The indeterminates of this rational polynomial is t together with
+ * the indeterminates in `e` that are not cosθ or sinθ. If the input expression
+ * doesn't contain the sine and cosine functions, then the returned rational has
+ * denominator being 1.
  * @param e The symbolic polynomial to be substituted. Note that e has to be a
  * multilinear polynomial of variables in `sin_cos`, namely e.indeterminates()
  * is a subset of all the variables in `sin_cos`, and no sin_cos[i].s and
@@ -136,8 +138,8 @@ symbolic::RationalFunction SubstituteStereographicProjectionImpl(
  * tan(θᵢ/2).
  * @pre t.rows() == sin_cos.size()
  * @return e_rational The rational polynomial of e after replacement. The
- * indeterminates of the polynomials are `t`.
- * Example
+ * indeterminates of the polynomials are `t` together with the indeterminates in
+ * `e` that are not cosθ or sinθ. Example
  * @verbatim
  * std::vector<SinCos> sin_cos;
  * sin_cos.emplace_back(symbolic::Variable("s0"), symbolic::Variable("c0"));
@@ -157,38 +159,9 @@ symbolic::RationalFunction SubstituteStereographicProjectionImpl(
     const symbolic::Polynomial& e, const std::vector<SinCos>& sin_cos,
     const VectorX<symbolic::Variable>& t);
 
-/**
- * Substitutes sine and cosine function with their stereographic projection.
- * If e is a multilinear polynomial of cosθ and sinθ, and no
- * cosθᵢ and sinθᵢ appear in the same monomial, then we replace
- * cosθᵢ with (1-tᵢ²)/(1+tᵢ²), and sinθᵢ with 2tᵢ/(1+tᵢ²), and get a rational
- * polynomial of t.
- * If the input expression doesn't contain the sine and cosine functions, then
- * the returned rational has denominator being 1.
- * @param e The symbolic expression to be substituted. Note that e has to be a
- * multilinear polynomial of cosθ and sinθ, and no cosθᵢ and sinθᵢ appear in the
- * same monomial. Namely that e can be cosθ₁sinθ₂ + sinθ₂ or t₁cosθ₁sinθ₂ +
- * sinθ₂ (note that t can also appear in e), but cannot be sinθ₁cosθ₁ (where
- * sinθ₁ and cosθ₁ appear in the same monomial) or sin²θ₁ (where the degree or
- * sinθ₁ is larger than 1).
- * @param subs Correspond each θᵢ to tᵢ, we will replace cosθᵢ with
- * (1-tᵢ²)/(1+tᵢ²), and sinθᵢ with 2tᵢ/(1+tᵢ²)
- * @return e_rational The rational polynomial after replacing cosθᵢ with
- * (1-tᵢ²)/(1+tᵢ²), and sinθᵢ with 2tᵢ/(1+tᵢ²). The indeterminates of the
- * rational polynomials are t.
- *
- * Example
- * @verbatim
- * const symbolic::Variable theta1("theta1");
- * const symbolic::Variable theta2("theta1");
- * const symbolic::Variable t1{"t1");
- * const symbolic::Variable t2{"t2");
- * const auto e_rational = SubstituteStereographicProjection(t1 *
- *     sin(theta1)*cos(theta2) + 1, {{theta1, t1}, {theta2, t2}});
- * // The result of e_rational is
- * // (2t₁²(1−t₂²) + (1+t₁²)(1+t₂²)) / ((1+t₁²)(1+t₂²))
- * @endverbatim
- */
+DRAKE_DEPRECATED("2023-02-01",
+                 "Use the other SubstituteStereographicProjection which passes "
+                 "e as a symbolic::Polynomial")
 [[nodiscard]] symbolic::RationalFunction SubstituteStereographicProjection(
     const symbolic::Expression& e,
     const std::unordered_map<symbolic::Variable, symbolic::Variable>& subs);

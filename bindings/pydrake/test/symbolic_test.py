@@ -9,6 +9,7 @@ import numpy as np
 
 import pydrake.symbolic as sym
 import pydrake.common
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 import pydrake.math as drake_math
 from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
 from pydrake.common.containers import EqualToDict
@@ -2280,7 +2281,10 @@ class TestStereographicSubstitution(unittest.TestCase):
             sym.Polynomial((1+ty*ty)*(1+tx*tx)).Expand()))
 
         e = 2 * np.sin(x) + np.sin(y) * np.cos(x)
-        r = sym.SubstituteStereographicProjection(e=e, subs={x: tx, y: ty})
+        # The following method is deprecated, to be removed on or after
+        # 2023-02-01.
+        with catch_drake_warnings(expected_count=1):
+            r = sym.SubstituteStereographicProjection(e=e, subs={x: tx, y: ty})
         self.assertTrue(r.numerator().Expand().EqualTo(
             sym.Polynomial(4*tx*(1+ty*ty) + 2*ty * (1-tx*tx)).Expand()))
         self.assertTrue(r.denominator().Expand().EqualTo(
