@@ -137,6 +137,10 @@ cp \
     "$resource_root/image/setup.py" \
     "/opt/drake-wheel-build/wheel/setup.py"
 
+cp -R \
+    "$resource_root/content" \
+    "/opt/drake-wheel-content"
+
 export DRAKE_VERSION="$1"
 
 "$resource_root/image/build-wheel.sh"
