@@ -5,8 +5,12 @@
 #include "drake/common/symbolic/rational_function.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/rational/test/rational_forward_kinematics_test_utilities.h"
 #include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -161,6 +165,133 @@ GTEST_TEST(RationalForwardKinematicsTest, CalcBodyPosesForDualArmIiwa) {
   CheckBodyKinematics(dut, q_val, q_star_val, s_val, world_index);
 }
 
+// Construct a plant with weld, revolute and prismatic joints.
+// The kinematic structure is
+// revolute - body7 - weld - body8
+//   |
+// world - revolute - body0 - prismatic - body1 - weld - body2
+//                       |
+//                    revolute
+//                       |
+// body4 - prismatic - body3 - revolute - body5 - revolute - body6
+class KinematicTreeTest : public testing::Test {
+ public:
+  KinematicTreeTest() : plant_{new MultibodyPlant<double>{0.}} {
+    AddBodyWithJoint<RevoluteJoint>(
+        "body0", world_index(), "joint0",
+        math::RigidTransformd(math::RollPitchYawd(0.2, 0.1, 0.5),
+                              Eigen::Vector3d(0.2, 0.5, 0.1)),
+        math::RigidTransformd(math::RollPitchYawd(-0.5, 0.1, 0.4),
+                              Eigen::Vector3d(0.1, 0.3, 0.2)),
+        Eigen::Vector3d(0, 1 / std::sqrt(2), 1 / std::sqrt(2)));
+    AddBodyWithJoint<PrismaticJoint>(
+        "body1", body_indices_[0], "joint1",
+        math::RigidTransformd(math::RollPitchYawd(0.1, 0.2, 0.3),
+                              Eigen::Vector3d(0.2, 0.4, -0.1)),
+        math::RigidTransformd(math::RollPitchYawd(-0.1, 0.5, 0.3),
+                              Eigen::Vector3d(0.2, 0.5, -0.1)),
+        Eigen::Vector3d(1.0 / 3, 2.0 / 3, -2. / 3));
+    AddBodyWithJoint<WeldJoint>(
+        "body2", body_indices_[1], "joint2",
+        math::RigidTransformd(math::RollPitchYawd(0.2, -0.1, 0.5),
+                              Eigen::Vector3d(0.4, -0.1, 0.2)),
+        math::RigidTransformd(math::RollPitchYawd(-0.1, 0.5, 0.3),
+                              Eigen::Vector3d(0.2, 0.4, 0.3)),
+        math::RigidTransformd(math::RollPitchYawd(0.5, 0.3, -0.2),
+                              Eigen::Vector3d(0.2, 0.1, 0.4)));
+    AddBodyWithJoint<RevoluteJoint>(
+        "body3", body_indices_[0], "joint3",
+        math::RigidTransformd(math::RollPitchYawd(0.2, -0.5, 0.3),
+                              Eigen::Vector3d(0.2, -0.1, 1.5)),
+        math::RigidTransformd(math::RollPitchYawd(0.4, 0.2, 0.5),
+                              Eigen::Vector3d(0.4, -0.2, 1.1)),
+        Eigen::Vector3d::UnitX());
+    AddBodyWithJoint<PrismaticJoint>(
+        "body4", body_indices_[3], "joint4",
+        math::RigidTransformd(math::RollPitchYawd(0.2, 0.1, 0.5),
+                              Eigen::Vector3d(0.5, -0.3, 1.1)),
+        math::RigidTransformd(math::RollPitchYawd(0.2, -0.1, 0.5),
+                              Eigen::Vector3d(0, 0.1, -0.2)),
+        Eigen::Vector3d::UnitY());
+    AddBodyWithJoint<RevoluteJoint>(
+        "body5", body_indices_[3], "joint5",
+        math::RigidTransformd(math::RollPitchYawd(0.1, 0.4, 0.5),
+                              Eigen::Vector3d(0.2, 0.4, 0.1)),
+        math::RigidTransformd(math::RollPitchYawd(0.3, 0.1, -0.5),
+                              Eigen::Vector3d(0.2, 0.5, -0.1)),
+        Eigen::Vector3d::UnitX());
+    AddBodyWithJoint<RevoluteJoint>(
+        "body6", body_indices_[5], "joint6",
+        math::RigidTransformd(math::RollPitchYawd(1.1, 0.4, -0.5),
+                              Eigen::Vector3d(0.4, -0.4, 0.1)),
+        math::RigidTransformd(math::RollPitchYawd(0.7, -0.1, -0.5),
+                              Eigen::Vector3d(0.2, 0.5, -0.1)),
+        Eigen::Vector3d::UnitY());
+    AddBodyWithJoint<RevoluteJoint>(
+        "body7", world_index(), "joint7",
+        math::RigidTransformd(math::RollPitchYawd(0.1, -0.4, -0.5),
+                              Eigen::Vector3d(0.2, -0.5, 0.1)),
+        math::RigidTransformd(math::RollPitchYawd(0.1, -0.3, -0.5),
+                              Eigen::Vector3d(0.2, 0.5, -1.1)),
+        Eigen::Vector3d::UnitY());
+    AddBodyWithJoint<WeldJoint>(
+        "body8", body_indices_[7], "joint8",
+        math::RigidTransformd(math::RollPitchYawd(0.2, -0.4, -0.5),
+                              Eigen::Vector3d(0.2, 0.5, 0.1)),
+        math::RigidTransformd(math::RollPitchYawd(0.3, -0.1, -0.5),
+                              Eigen::Vector3d(0.2, 0.5, -1.1)),
+        math::RigidTransformd(math::RollPitchYawd(0.1, -1.1, -0.3),
+                              Eigen::Vector3d(0.2, 0.3, -1.2)));
+    plant_->Finalize();
+  }
+
+ protected:
+  template <template <typename> class JointType, typename... Args>
+  void AddBodyWithJoint(const std::string& body_name,
+                        const BodyIndex parent_index,
+                        const std::string& joint_name,
+                        const std::optional<math::RigidTransform<double>>& X_PF,
+                        const std::optional<math::RigidTransform<double>>& X_BM,
+                        Args&&... args) {
+    const SpatialInertia<double> spatial_inertia(
+        1, Eigen::Vector3d::Zero(),
+        UnitInertia<double>(0.01, 0.01, 0.01, 0, 0, 0));
+    body_indices_.push_back(
+        plant_->AddRigidBody(body_name, spatial_inertia).index());
+    plant_->AddJoint<JointType>(joint_name, plant_->get_body(parent_index),
+                                X_PF, plant_->get_body(body_indices_.back()),
+                                X_BM, std::forward<Args>(args)...);
+  }
+
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  std::vector<BodyIndex> body_indices_;
+};
+
+TEST_F(KinematicTreeTest, CalcBodyPoses) {
+  RationalForwardKinematics dut(plant_.get());
+  EXPECT_EQ(dut.s().rows(), plant_->num_positions());
+
+  // q_val = 0 and q* = 0.
+  CheckBodyKinematics(dut, Eigen::VectorXd::Zero(plant_->num_positions()),
+                      Eigen::VectorXd::Zero(plant_->num_positions()),
+                      Eigen::VectorXd::Zero(plant_->num_positions()),
+                      world_index());
+  // q_val = 0, q* = 0, express pose in body1.
+  CheckBodyKinematics(dut, Eigen::VectorXd::Zero(plant_->num_positions()),
+                      Eigen::VectorXd::Zero(plant_->num_positions()),
+                      Eigen::VectorXd::Zero(plant_->num_positions()),
+                      body_indices_[1]);
+
+  // q_val != 0, q* != 0, express pose in body 2.
+  Eigen::VectorXd q_val(plant_->num_positions());
+  Eigen::VectorXd q_star_val(plant_->num_positions());
+  for (int i = 0; i < q_val.rows(); ++i) {
+    q_val(i) = 0.003 * i * (i + 1) - 0.1 * i;
+    q_star_val(i) = 0.001 * i * (i - 1) + 0.2 * i;
+  }
+  Eigen::VectorXd s_val = dut.ComputeSValue(q_val, q_star_val);
+  CheckBodyKinematics(dut, q_val, q_star_val, s_val, body_indices_[2]);
+}
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
