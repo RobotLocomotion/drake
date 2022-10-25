@@ -1480,7 +1480,9 @@ drake_cc_optional_googletest(
     deps = [
         ":mosek_solver",
         ":mosek_solver_internal",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
+        "//math:quadratic_form",
         "@mosek",
     ],
 )

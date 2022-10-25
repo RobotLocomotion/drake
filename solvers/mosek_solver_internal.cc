@@ -522,6 +522,103 @@ MSKrescodee MosekSolverProgram::AddBoundingBoxConstraints(
   return rescode;
 }
 
+MSKrescodee MosekSolverProgram::AddAffineConeConstraint(
+    const MathematicalProgram& prog, const Eigen::SparseMatrix<double>& A,
+    const Eigen::SparseMatrix<double>& B,
+    const VectorX<symbolic::Variable>& decision_vars,
+    const std::vector<MSKint32t>& slack_vars_mosek_indices,
+    const Eigen::VectorXd& c, MSKconetypee cone_type, MSKint64t* acc_index) {
+  MSKrescodee rescode = MSK_RES_OK;
+  std::vector<MSKint32t> F_subi;
+  std::vector<MSKint32t> F_subj;
+  std::vector<MSKrealt> F_valij;
+  std::vector<std::unordered_map<
+      MSKint64t, std::pair<std::vector<MSKint64t>, std::vector<MSKrealt>>>>
+      bar_F;
+  // Get the dimension of this affine expression.
+  const int afe_dim = A.rows();
+  this->ParseLinearExpression(prog, A, B, decision_vars,
+                              slack_vars_mosek_indices, &F_subi, &F_subj,
+                              &F_valij, &bar_F);
+  // Get the total number of affine expressions.
+  MSKint64t num_afe{0};
+  rescode = MSK_getnumafe(task_, &num_afe);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  rescode = MSK_appendafes(task_, afe_dim);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  // Now increase F_subi by num_afe and add F matrix to Mosek affine
+  // expressions.
+  std::vector<MSKint64t> F_subi_increased(F_subi.size());
+  for (int i = 0; i < static_cast<int>(F_subi.size()); ++i) {
+    F_subi_increased[i] = F_subi[i] + num_afe;
+  }
+  rescode = MSK_putafefentrylist(task_, F_subi_increased.size(),
+                                 F_subi_increased.data(), F_subj.data(),
+                                 F_valij.data());
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  // Add g vector.
+  rescode = MSK_putafegslice(task_, num_afe, num_afe + afe_dim, c.data());
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  // Now handle the part in the affine expression that involves the mosek matrix
+  // variables.
+  // bar_F is non-empty only if this affine expression involves the mosek matrix
+  // variables. We need to check if bar_F is non-empty, so that we can call
+  // bar_F[i] in the inner loop.
+  if (!bar_F.empty()) {
+    for (int i = 0; i < afe_dim; ++i) {
+      for (const auto& [j, sub_weights] : bar_F[i]) {
+        const std::vector<MSKint64t>& sub = sub_weights.first;
+        rescode = MSK_putafebarfentry(task_, num_afe + i, j, sub.size(),
+                                      sub.data(), sub_weights.second.data());
+        if (rescode != MSK_RES_OK) {
+          return rescode;
+        }
+      }
+    }
+  }
+  // Create the domain.
+  MSKint64t dom_idx;
+  switch (cone_type) {
+    case MSK_CT_QUAD: {
+      rescode = MSK_appendquadraticconedomain(task_, afe_dim, &dom_idx);
+      break;
+    }
+    case MSK_CT_RQUAD: {
+      rescode = MSK_appendrquadraticconedomain(task_, afe_dim, &dom_idx);
+      break;
+    }
+    case MSK_CT_PEXP: {
+      rescode = MSK_appendprimalexpconedomain(task_, &dom_idx);
+      break;
+    }
+    default: {
+      throw std::runtime_error("MosekSolverProgram: unsupported cone type.");
+    }
+  }
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  // Obtain the affine cone index.
+  rescode = MSK_getnumacc(task_, acc_index);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  // Add the actual affine cone constraint.
+  rescode = MSK_appendaccseq(task_, dom_idx, afe_dim, num_afe, nullptr);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  return rescode;
+}
+
 MSKrescodee MosekSolverProgram::AddPositiveSemidefiniteConstraints(
     const MathematicalProgram& prog,
     std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>*
@@ -715,12 +812,7 @@ MSKrescodee MosekSolverProgram::AddQuadraticCostAsLinearCost(
   // a linear cost with a rotated Lorentz cone constraint. To do so, we
   // introduce a slack variable s, with the rotated Lorentz cone constraint
   // 2s >= | L * quadratic_vars|²,
-  // where L'L = Q. We then minimize s. In Mosek, we
-  // add new variables z, such that
-  // z[0] = 1
-  // z[1] = s
-  // z[2:] = L * quadratic_vars
-  // And z is in the rotated Lorentz cone.
+  // where L'L = Q. We then minimize s.
   MSKrescodee rescode = MSK_RES_OK;
   // Unfortunately the sparse Cholesky decomposition in Eigen requires GPL
   // license, which is incompatible with Drake's license, so we convert the
@@ -733,51 +825,51 @@ MSKrescodee MosekSolverProgram::AddQuadraticCostAsLinearCost(
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
-  const int num_z = L.rows() + 2;
-  rescode = MSK_appendvars(task_, num_z);
+  // Add a new variable s.
+  rescode = MSK_appendvars(task_, 1);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
-  std::vector<MSKint32t> new_var_indices(num_z);
-  for (int i = 0; i < num_z; ++i) {
-    new_var_indices[i] = num_mosek_vars + i;
-    if (i >= 1) {
-      rescode = MSK_putvarbound(task_, new_var_indices[i], MSK_BK_FR,
-                                -MSK_INFINITY, MSK_INFINITY);
-      if (rescode != MSK_RES_OK) {
-        return rescode;
-      }
-    }
-  }
-  // Add the constraint z(0) = 1
-  rescode = MSK_putvarbound(task_, new_var_indices[0], MSK_BK_FX, 1., 1.);
+  const MSKint32t s_index = num_mosek_vars;
+  // Put bound on s as s >= 0.
+  rescode = MSK_putvarbound(task_, s_index, MSK_BK_FR, 0, MSK_INFINITY);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
-  // Add the rotated Lorentz cone constraint.
+  // Add the constraint that
+  // [  1] = [0 0] * [s] + [1]
+  // [  s] = [1 0]   [x]   [0]
+  // [L*x]   [0 L]         [0]
+  // is in the rotated Lorentz cone, where we denote x = quadratic_vars.
+  // First add the affine expression
+  // [0 0] * [s] + [1]
+  // [1 0] * [x]   [0]
+  // [0 L]         [0]
+  // L_bar = [0]
+  //         [0]
+  //         [L]
+  Eigen::MatrixXd L_bar = Eigen::MatrixXd::Zero(L.rows() + 2, L.cols());
+  L_bar.bottomRows(L.rows()) = L;
+  const Eigen::SparseMatrix<double> L_bar_sparse = L_bar.sparseView();
+  // s_coeff = [0;1;...;0]
+  Eigen::SparseMatrix<double> s_coeff(L.rows() + 2, 1);
+  std::array<Eigen::Triplet<double>, 1> s_coeff_triplets;
+  s_coeff_triplets[0] = Eigen::Triplet<double>(1, 0, 1);
+  s_coeff.setFromTriplets(s_coeff_triplets.begin(), s_coeff_triplets.end());
+  MSKint64t acc_index;
+  // g = [1;0;0;...;0]
+  Eigen::VectorXd g = Eigen::VectorXd::Zero(L.rows() + 2);
+  g(0) = 1;
+  std::vector<MSKint32t> slack_vars(1);
+  slack_vars[0] = s_index;
   rescode =
-      MSK_appendcone(task_, MSK_CT_RQUAD, 0.0, num_z, new_var_indices.data());
+      this->AddAffineConeConstraint(prog, L_bar_sparse, s_coeff, quadratic_vars,
+                                    slack_vars, g, MSK_CT_RQUAD, &acc_index);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
-  // Now add the linear constraint
-  // z[2:] = L * quadratic_vars
-  std::vector<MSKint32t> z2_mosek_indices(L.rows());
-  for (int i = 0; i < L.rows(); ++i) {
-    z2_mosek_indices[i] = new_var_indices[i + 2];
-  }
-  Eigen::SparseMatrix<double> B_sparse(L.rows(), L.rows());
-  B_sparse.setIdentity();
-  rescode = AddLinearConstraintToMosek(
-      prog, -L.sparseView(), B_sparse, Eigen::VectorXd::Zero(L.rows()),
-      Eigen::VectorXd::Zero(L.rows()), quadratic_vars, z2_mosek_indices,
-      LinearConstraintBoundType::kEquality);
-  if (rescode != MSK_RES_OK) {
-    return rescode;
-  }
-
-  // Now add the linear cost on s = z[1]
-  rescode = MSK_putcj(task_, new_var_indices[1], 1.);
+  // Now add the linear cost on s
+  rescode = MSK_putcj(task_, s_index, 1.);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
