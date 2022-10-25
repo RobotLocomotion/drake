@@ -59,11 +59,11 @@ std::unique_ptr<systems::Diagram<T>> ConstructDiagram(
   const std::string gripper_path =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
   multibody::Parser parser(*plant, *scene_graph);
-  parser.AddModelsFromFile(gripper_path);
+  parser.AddModels(gripper_path);
   examples::planar_gripper::WeldGripperFrames(*plant);
   const std::string brick_path =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_brick.sdf");
-  parser.AddModelsFromFile(brick_path);
+  parser.AddModels(brick_path);
   (*plant)->WeldFrames((*plant)->world_frame(),
                        (*plant)->GetFrameByName("brick_base"),
                        math::RigidTransformd());

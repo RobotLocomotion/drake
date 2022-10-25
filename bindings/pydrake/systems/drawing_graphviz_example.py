@@ -32,7 +32,7 @@ file_name = FindResourceOrThrow(
 builder = DiagramBuilder()
 cart_pole, scene_graph = AddMultibodyPlantSceneGraph(
     builder=builder, time_step=0.0)
-Parser(plant=cart_pole).AddModelsFromFile(file_name)
+Parser(plant=cart_pole).AddModels(file_name)
 
 plt.figure(figsize=(11, 8.5), dpi=300)
 plot_graphviz(cart_pole.GetTopologyGraphvizString())

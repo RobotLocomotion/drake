@@ -34,7 +34,7 @@ class JointSlidersTest : public ::testing::Test {
   void Add(const std::string& resource_path,
            const std::string& model_name = {}) {
     Parser parser(model_name, &plant_);
-    parser.AddModelsFromFile(FindResourceOrThrow(resource_path));
+    parser.AddModels(FindResourceOrThrow(resource_path));
   }
 
   void AddAcrobot() {

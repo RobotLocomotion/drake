@@ -55,7 +55,7 @@ class MakeArmControllerModelTest : public ::testing::Test {
   // Adds an Iiwa model into `sim_plant_` and returns its ModelInstanceInfo.
   ModelInstanceInfo AddIiwaModel() {
     const ModelInstanceIndex iiwa7_instance =
-        Parser(sim_plant_).AddModelsFromFile(iiwa7_model_path_).at(0);
+        Parser(sim_plant_).AddModels(iiwa7_model_path_).at(0);
     return {.model_name = sim_plant_->GetModelInstanceName(iiwa7_instance),
             .model_path = iiwa7_model_path_,
             .child_frame_name = "iiwa_link_0",
@@ -65,7 +65,7 @@ class MakeArmControllerModelTest : public ::testing::Test {
   // Adds a Wsg model into `sim_plant_` and returns its ModelInstanceInfo.
   ModelInstanceInfo AddWsgModel() {
     const ModelInstanceIndex wsg_instance =
-        Parser(sim_plant_).AddModelsFromFile(wsg_model_path_).at(0);
+        Parser(sim_plant_).AddModels(wsg_model_path_).at(0);
     return {.model_name = sim_plant_->GetModelInstanceName(wsg_instance),
             .model_path = wsg_model_path_,
             .child_frame_name = "body",

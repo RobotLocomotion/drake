@@ -77,7 +77,7 @@ GTEST_TEST(SchunkWsgPositionControllerTest, SimTest) {
   const std::string wsg_sdf_path = FindResourceOrThrow(
       "drake/manipulation/models/"
       "wsg_50_description/sdf/schunk_wsg_50.sdf");
-  const auto wsg_model = Parser(wsg).AddModelsFromFile(wsg_sdf_path).at(0);
+  const auto wsg_model = Parser(wsg).AddModels(wsg_sdf_path).at(0);
   wsg->WeldFrames(wsg->world_frame(), wsg->GetFrameByName("body", wsg_model),
                   math::RigidTransformd::Identity());
   wsg->Finalize();

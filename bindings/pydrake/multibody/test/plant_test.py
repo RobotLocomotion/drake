@@ -270,7 +270,7 @@ class TestPlant(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f = MultibodyPlant_[float](time_step=0.01)
-        model_instance = Parser(plant_f).AddModelsFromFile(file_name)[0]
+        model_instance = Parser(plant_f).AddModels(file_name)[0]
         self.assertIsInstance(model_instance, ModelInstanceIndex)
         check_repr(model_instance, "ModelInstanceIndex(2)")
         plant_f.Finalize()
@@ -829,7 +829,7 @@ class TestPlant(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        instance = Parser(plant_f).AddModelsFromFile(file_name)[0]
+        instance = Parser(plant_f).AddModels(file_name)[0]
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         context = plant.CreateDefaultContext()
@@ -1003,7 +1003,7 @@ class TestPlant(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        instance = Parser(plant_f).AddModelsFromFile(file_name)[0]
+        instance = Parser(plant_f).AddModels(file_name)[0]
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         context = plant.CreateDefaultContext()
@@ -1115,9 +1115,9 @@ class TestPlant(unittest.TestCase):
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f = MultibodyPlant_[float](time_step=2e-3)
         parser = Parser(plant_f)
-        iiwa_model = parser.AddModelsFromFile(
+        iiwa_model = parser.AddModels(
             file_name=iiwa_sdf_path)[0]
-        gripper_model = parser.AddModelsFromFile(
+        gripper_model = parser.AddModels(
             file_name=wsg50_sdf_path)[0]
         plant_f.Finalize()
         plant = to_type(plant_f, T)
@@ -1228,7 +1228,7 @@ class TestPlant(unittest.TestCase):
         plant_f = builder_f.AddSystem(MultibodyPlant_[float](0.0))
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/free_body/uniform_solid_cylinder.urdf")
-        Parser(plant_f).AddModelsFromFile(file_name)
+        Parser(plant_f).AddModels(file_name)
         plant_f.Finalize()
 
         # These connections will fail if the port output types
@@ -1278,9 +1278,9 @@ class TestPlant(unittest.TestCase):
         plant_f = MultibodyPlant_[float](0.0)
         parser = Parser(plant_f)
 
-        iiwa_model = parser.AddModelsFromFile(
+        iiwa_model = parser.AddModels(
             file_name=iiwa_sdf_path)[0]
-        gripper_model = parser.AddModelsFromFile(
+        gripper_model = parser.AddModels(
             file_name=wsg50_sdf_path)[0]
 
         # Weld the base of arm and gripper to reduce the number of states.
@@ -1427,8 +1427,8 @@ class TestPlant(unittest.TestCase):
         plant_f = MultibodyPlant_[float](timestep)
         parser = Parser(plant_f)
 
-        iiwa_model = parser.AddModelsFromFile(file_name=iiwa_sdf_path)[0]
-        gripper_model = parser.AddModelsFromFile(
+        iiwa_model = parser.AddModels(file_name=iiwa_sdf_path)[0]
+        gripper_model = parser.AddModels(
             file_name=wsg50_sdf_path)[0]
 
         # Weld the base of arm and gripper to reduce the number of states.
@@ -1537,7 +1537,7 @@ class TestPlant(unittest.TestCase):
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
         # Use floating base to effectively add a quaternion in the generalized
         # quaternion.
-        iiwa_model = Parser(plant=plant_f).AddModelsFromFile(
+        iiwa_model = Parser(plant=plant_f).AddModels(
             file_name=iiwa_sdf_path)[0]
         plant_f.Finalize()
         plant = to_type(plant_f, T)
@@ -2036,7 +2036,7 @@ class TestPlant(unittest.TestCase):
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
 
         parser = Parser(plant)
-        gripper_model = parser.AddModelsFromFile(
+        gripper_model = parser.AddModels(
             file_name=wsg50_sdf_path)[0]
 
         # Add coupler constraint.
@@ -2065,7 +2065,7 @@ class TestPlant(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f = MultibodyPlant_[float](0.0)
-        Parser(plant_f).AddModelsFromFile(file_name)
+        Parser(plant_f).AddModels(file_name)
         # Getting ready for when we set foot on Mars :-).
         gravity_vector = np.array([0.0, 0.0, -3.71])
         plant_f.mutable_gravity_field().set_gravity_vector(gravity_vector)
@@ -2221,7 +2221,7 @@ class TestPlant(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant_[float](0.0)
 
-        Parser(plant).AddModelsFromFile(file_name)
+        Parser(plant).AddModels(file_name)
         plant.Finalize()
         plant.set_penetration_allowance(penetration_allowance=0.0001)
         plant.set_stiction_tolerance(v_stiction=0.001)
@@ -2243,7 +2243,7 @@ class TestPlant(unittest.TestCase):
             "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
         builder = DiagramBuilder_[float]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-        Parser(plant).AddModelsFromFile(file_name)
+        Parser(plant).AddModels(file_name)
         plant.Finalize()
         self.assertGreater(
             len(plant.GetCollisionGeometriesForBody(
@@ -2266,7 +2266,7 @@ class TestPlant(unittest.TestCase):
         plant_f, scene_graph_f = AddMultibodyPlantSceneGraph(builder_f, 0.0)
         parser = Parser(plant=plant_f, scene_graph=scene_graph_f)
 
-        parser.AddModelsFromFile(
+        parser.AddModels(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
         plant_f.Finalize()
@@ -2293,7 +2293,7 @@ class TestPlant(unittest.TestCase):
         # supported across all nonsymbolic scalar types (double, autodiffxd).
         # If two_bodies.sdf were to change to unsupported geometries, this
         # test would break.
-        parser.AddModelsFromFile(
+        parser.AddModels(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
         plant_f.Finalize()
@@ -2362,7 +2362,7 @@ class TestPlant(unittest.TestCase):
         plant = MultibodyPlant_[float](time_step=0.0)
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        Parser(plant).AddModelsFromFile(file_name)
+        Parser(plant).AddModels(file_name)
         plant.Finalize()
 
         info = PropellerInfo(body_index=BodyIndex(1),
@@ -2390,7 +2390,7 @@ class TestPlant(unittest.TestCase):
     def test_wing(self):
         builder = DiagramBuilder()
         plant = builder.AddSystem(MultibodyPlant(0.0))
-        Parser(plant).AddModelsFromFile(
+        Parser(plant).AddModels(
             FindResourceOrThrow("drake/multibody/models/box.urdf"))
         plant.Finalize()
 
@@ -2437,7 +2437,7 @@ class TestPlant(unittest.TestCase):
     def _check_hydroelastic_contact_results(self, time_step):
         builder = DiagramBuilder_[float]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step)
-        Parser(plant).AddModelsFromFile(
+        Parser(plant).AddModels(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/hydroelastic.sdf"))
         plant.set_contact_model(ContactModel.kHydroelastic)

@@ -20,7 +20,7 @@ ConstraintRelaxingIk::ConstraintRelaxingIk(
     const std::string& end_effector_link_name)
     : rand_generator_(kDefaultRandomSeed),
       plant_(0) {
-  auto models = multibody::Parser(&plant_).AddModelsFromFile(model_path);
+  auto models = multibody::Parser(&plant_).AddModels(model_path);
   DRAKE_DEMAND(!models.empty());
   const auto model_instance = models[0];
 

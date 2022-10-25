@@ -256,7 +256,7 @@ Open up your browser to the URL above.
     // Add the hydroelastic spheres and joints between them.
     const std::string hydro_sdf =
         FindResourceOrThrow("drake/multibody/meshcat/test/hydroelastic.sdf");
-    parser.AddModelsFromFile(hydro_sdf);
+    parser.AddModels(hydro_sdf);
     const auto& body1 = plant.GetBodyByName("body1");
     plant.AddJoint<multibody::PrismaticJoint>("body1", plant.world_body(),
                                               std::nullopt, body1, std::nullopt,
@@ -297,11 +297,11 @@ Open up your browser to the URL above.
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
     multibody::Parser parser(&plant);
-    parser.AddModelsFromFile(
+    parser.AddModels(
         FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
                             "iiwa14_spheres_collision.urdf"));
     plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
-    parser.AddModelsFromFile(FindResourceOrThrow(
+    parser.AddModels(FindResourceOrThrow(
         "drake/examples/kuka_iiwa_arm/models/table/"
         "extra_heavy_duty_table_surface_only_collision.sdf"));
     const double table_height = 0.7645;

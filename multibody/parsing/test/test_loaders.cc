@@ -13,7 +13,7 @@ void LoadFromSdf(
     geometry::SceneGraph<double>* scene_graph) {
   const std::string sdf_path = FindResourceOrThrow(base_name + ".sdf");
   Parser parser(plant, scene_graph);
-  parser.AddModelsFromFile(sdf_path);
+  parser.AddModels(sdf_path);
 }
 
 void LoadFromUrdf(
@@ -22,7 +22,7 @@ void LoadFromUrdf(
     geometry::SceneGraph<double>* scene_graph) {
   const std::string urdf_path = FindResourceOrThrow(base_name + ".urdf");
   Parser parser(plant, scene_graph);
-  parser.AddModelsFromFile(urdf_path);
+  parser.AddModels(urdf_path);
 }
 
 std::ostream& operator<<(std::ostream& os, const ModelLoadFunction& func) {

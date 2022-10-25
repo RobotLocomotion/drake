@@ -25,7 +25,7 @@ class AccelerometerTest : public ::testing::Test {
     const std::string urdf_name =
         FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
     multibody::Parser parser(plant_);
-    parser.AddModelsFromFile(urdf_name);
+    parser.AddModels(urdf_name);
     plant_->Finalize();
 
     // Connect a pendulum to the accelerometer.

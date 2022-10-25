@@ -22,7 +22,7 @@ std::unique_ptr<multibody::MultibodyPlant<double>> MakeIiwa(void) {
   const std::string filename = FindResourceOrThrow(
       "drake/manipulation/models/"
       "iiwa_description/sdf/iiwa14_no_collision.sdf");
-  parser.AddModelsFromFile(filename);
+  parser.AddModels(filename);
   robot->WeldFrames(robot->world_frame(), robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();
   return robot;

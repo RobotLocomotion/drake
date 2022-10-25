@@ -37,7 +37,7 @@ class IiwaPositionConstraintFixture : public benchmark::Fixture {
       const auto index_string = fmt::format("iiwa{}", i);
       multibody::Parser parser{index_string, plant_.get()};
       const ModelInstanceIndex model_instance =
-          parser.AddModelsFromFile(iiwa_path).at(0);
+          parser.AddModels(iiwa_path).at(0);
       plant_->WeldFrames(plant_->world_frame(),
                          plant_->GetFrameByName("iiwa_link_0", model_instance));
     }

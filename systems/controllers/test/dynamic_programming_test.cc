@@ -213,8 +213,7 @@ GTEST_TEST(FittedValueIteration, MultibodyPlant) {
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
 
   multibody::Parser(mbp, scene_graph)
-      .AddModelsFromFile(
-          FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"));
+      .AddModels(FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"));
   mbp->Finalize();
 
   // Export an input that we don't need, and export it first, just to test the

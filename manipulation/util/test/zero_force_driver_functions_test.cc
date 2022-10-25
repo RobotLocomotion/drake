@@ -24,7 +24,7 @@ GTEST_TEST(ZeroForceDriverFunctionsTest, SmokeTest) {
       AddMultibodyPlant(MultibodyPlantConfig{}, &builder);
   const std::string filename = FindResourceOrThrow(
       "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
-  Parser(&plant).AddModelsFromFile(filename);
+  Parser(&plant).AddModels(filename);
   plant.Finalize();
 
   // Apply zero actuation input.

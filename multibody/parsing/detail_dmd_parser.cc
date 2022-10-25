@@ -236,7 +236,7 @@ std::optional<ModelInstanceIndex> DmdParserWrapper::AddModel(
   workspace.diagnostic.Error(fmt::format(
       "'{}' is a model directives data source; it is always an error to pass"
       " a model directives source to a single-model parser method. Use"
-      " AddModelsFromFile() instead.",
+      " AddModels() instead.",
       display_source));
   return {};
 }

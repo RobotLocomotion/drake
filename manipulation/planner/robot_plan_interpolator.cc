@@ -40,7 +40,7 @@ RobotPlanInterpolator::RobotPlanInterpolator(
     : plan_input_port_(this->DeclareAbstractInputPort(
           "plan", Value<lcmt_robot_plan>()).get_index()),
       interp_type_(interp_type) {
-  multibody::Parser(&plant_).AddModelsFromFile(model_path);
+  multibody::Parser(&plant_).AddModels(model_path);
 
   // Search for any bodies with no parent.  We'll weld those to the world.
   std::set<BodyIndex> parent_bodies;

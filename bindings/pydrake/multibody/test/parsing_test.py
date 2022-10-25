@@ -76,7 +76,7 @@ class TestParsing(unittest.TestCase):
         for file_name in (sdf_file, urdf_file):
             plant = MultibodyPlant(time_step=0.01)
             parser = Parser(plant=plant)
-            result = parser.AddModelsFromFile(file_name=file_name)
+            result = parser.AddModels(file_name=file_name)
             self.assertIsInstance(result, list)
             self.assertIsInstance(result[0], ModelInstanceIndex)
         for file_name, model_name in (

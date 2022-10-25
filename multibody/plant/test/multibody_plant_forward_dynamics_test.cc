@@ -162,7 +162,7 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
   const std::string model_path =
       FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
   Parser parser(&plant);
-  auto atlas_instance = parser.AddModelsFromFile(model_path).at(0);
+  auto atlas_instance = parser.AddModels(model_path).at(0);
   plant.Finalize();
 
   // Create a context and store an arbitrary configuration.
@@ -246,7 +246,7 @@ std::unique_ptr<systems::LinearSystem<double>> MakeLinearizedCartPole(
       "drake/examples/multibody/cart_pole/cart_pole.sdf");
 
   MultibodyPlant<double> plant(time_step);
-  Parser(&plant).AddModelsFromFile(sdf_file);
+  Parser(&plant).AddModels(sdf_file);
   plant.Finalize();
 
   auto context = plant.CreateDefaultContext();

@@ -180,7 +180,7 @@ class RobotPlanRunner {
 
 int do_main() {
   multibody::MultibodyPlant<double> plant(0.0);
-  multibody::Parser(&plant).AddModelsFromFile(
+  multibody::Parser(&plant).AddModels(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
                           "iiwa14_no_collision.urdf"));
   plant.WeldFrames(plant.world_frame(),

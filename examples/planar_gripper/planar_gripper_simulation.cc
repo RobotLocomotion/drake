@@ -243,14 +243,14 @@ int DoMain() {
   const std::string full_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
   const ModelInstanceIndex gripper_index =
-      Parser(&plant).AddModelsFromFile(full_name).at(0);
+      Parser(&plant).AddModels(full_name).at(0);
   WeldGripperFrames<double>(&plant);
 
   // Adds the brick to be manipulated.
   const std::string brick_file_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_brick.sdf");
   const ModelInstanceIndex brick_index =
-      Parser(&plant).AddModelsFromFile(brick_file_name).at(0);
+      Parser(&plant).AddModels(brick_file_name).at(0);
 
   // When the planar-gripper is welded via WeldGripperFrames(), motion always
   // lies in the world Y-Z plane (because the planar-gripper frame is aligned
@@ -277,7 +277,7 @@ int DoMain() {
 
   // Create the controlled plant. Contains only the fingers (no bricks).
   MultibodyPlant<double> control_plant(FLAGS_time_step);
-  Parser(&control_plant).AddModelsFromFile(full_name);
+  Parser(&control_plant).AddModels(full_name);
   WeldGripperFrames<double>(&control_plant);
 
   // Adds a thin floor that can provide friction against the brick.

@@ -66,7 +66,7 @@ int DoMain() {
   const std::string urdf =
       (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kModelPath));
   auto iiwa_instance =
-      multibody::Parser(&plant, &scene_graph).AddModelsFromFile(urdf).at(0);
+      multibody::Parser(&plant, &scene_graph).AddModels(urdf).at(0);
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
   plant.Finalize();
 

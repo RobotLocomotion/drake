@@ -187,7 +187,7 @@ class TestContactWrenchFromForceInWorldFrameEvaluator(unittest.TestCase):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(
             builder, MultibodyPlant(time_step=0.01))
-        Parser(plant).AddModelsFromFile(FindResourceOrThrow(
+        Parser(plant).AddModels(FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
         plant.Finalize()
         diagram = builder.Build()
@@ -236,7 +236,7 @@ class TestToppra(unittest.TestCase):
         file_path = FindResourceOrThrow(
             "drake/manipulation/models/iiwa_description/iiwa7/"
             "iiwa7_no_collision.sdf")
-        iiwa_id = Parser(plant).AddModelsFromFile(file_path)[0]
+        iiwa_id = Parser(plant).AddModels(file_path)[0]
         plant.WeldFrames(plant.world_frame(),
                          plant.GetFrameByName("iiwa_link_0", iiwa_id))
         plant.Finalize()

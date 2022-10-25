@@ -64,7 +64,7 @@ void DoMain() {
     full_name = FindResourceOrThrow("drake/manipulation/models/"
       "allegro_hand_description/sdf/allegro_hand_description_left.sdf");
 
-  multibody::Parser(&plant).AddModelsFromFile(full_name);
+  multibody::Parser(&plant).AddModels(full_name);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");

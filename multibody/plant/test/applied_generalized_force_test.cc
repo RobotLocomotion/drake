@@ -37,8 +37,8 @@ class MultibodyPlantGeneralizedAppliedForceTest
     plant_ = builder.AddSystem<MultibodyPlant<double>>(dt);
 
     // Add the model twice.
-    auto iiwa1 = Parser("1", plant_).AddModelsFromFile(full_name).at(0);
-    auto iiwa2 = Parser("2", plant_).AddModelsFromFile(full_name).at(0);
+    auto iiwa1 = Parser("1", plant_).AddModels(full_name).at(0);
+    auto iiwa2 = Parser("2", plant_).AddModels(full_name).at(0);
     plant_->WeldFrames(plant_->world_frame(),
                        plant_->GetFrameByName("iiwa_link_0", iiwa1));
     plant_->WeldFrames(plant_->world_frame(),

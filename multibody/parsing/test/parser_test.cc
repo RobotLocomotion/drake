@@ -39,21 +39,21 @@ GTEST_TEST(FileParserTest, BasicTest) {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     EXPECT_EQ(&dut.plant(), &plant);
-    EXPECT_EQ(dut.AddModelsFromFile(sdf_name).size(), 1);
+    EXPECT_EQ(dut.AddModels(sdf_name).size(), 1);
   }
 
   // Load from URDF using plural method.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    EXPECT_EQ(dut.AddModelsFromFile(urdf_name).size(), 1);
+    EXPECT_EQ(dut.AddModels(urdf_name).size(), 1);
   }
 
   // Load from XML using plural method.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const std::vector<ModelInstanceIndex> ids = dut.AddModelsFromFile(xml_name);
+    const std::vector<ModelInstanceIndex> ids = dut.AddModels(xml_name);
     EXPECT_EQ(ids.size(), 1);
     EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
   }
@@ -62,7 +62,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const std::vector<ModelInstanceIndex> ids = dut.AddModelsFromFile(dmd_name);
+    const std::vector<ModelInstanceIndex> ids = dut.AddModels(dmd_name);
     EXPECT_EQ(ids.size(), 1);
     EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
   }
@@ -154,7 +154,7 @@ GTEST_TEST(FileParserTest, MultiModelErrorsTest) {
   {
     MultibodyPlant<double> plant(0.0);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        Parser(&plant).AddModelsFromFile(sdf_name),
+        Parser(&plant).AddModels(sdf_name),
         R"([\s\S]*Root object can only contain one model.*)");
   }
 
@@ -206,7 +206,7 @@ GTEST_TEST(FileParserTest, MultiModelViaWorldIncludesTest) {
       "world_with_directly_nested_models.sdf");
   MultibodyPlant<double> plant(0.0);
   const std::vector<ModelInstanceIndex> models =
-      Parser(&plant).AddModelsFromFile(sdf_name);
+      Parser(&plant).AddModels(sdf_name);
   const std::vector<std::string> model_names_actual =
       GetModelInstanceNames(plant, models);
   const std::vector<std::string> model_names_expected = {
@@ -227,7 +227,7 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
       Parser(&plant).AddModelFromFile("acrobot.foo"),
       ".*file.*\\.foo.* is not.*recognized.*");
 #pragma GCC diagnostic pop
-  DRAKE_EXPECT_THROWS_MESSAGE(Parser(&plant).AddModelsFromFile("acrobot.foo"),
+  DRAKE_EXPECT_THROWS_MESSAGE(Parser(&plant).AddModels("acrobot.foo"),
                               ".*file.*\\.foo.* is not.*recognized.*");
 
   // Uppercase extensions are accepted (i.e., still call the underlying SDF or

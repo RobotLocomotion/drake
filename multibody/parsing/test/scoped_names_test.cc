@@ -16,7 +16,7 @@ GTEST_TEST(ScopedNamesTest, GetScopedFrameByName) {
 
   MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);
-  parser.AddModelsFromFile(full_name);
+  parser.AddModels(full_name);
   plant.Finalize();
 
   ASSERT_EQ(

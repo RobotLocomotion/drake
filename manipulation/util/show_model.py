@@ -193,7 +193,7 @@ class ModelVisualizer:
         Args:
           filename: the name of a file containing one or more models.
         """
-        self._parser.AddModelsFromFile(filename)
+        self._parser.AddModels(filename)
 
     def Finalize(self, position=None):
         """

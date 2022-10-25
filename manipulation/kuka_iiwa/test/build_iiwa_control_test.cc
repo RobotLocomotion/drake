@@ -50,7 +50,7 @@ class BuildIiwaControlTest : public ::testing::Test {
         "drake/manipulation/models/iiwa_description/iiwa7"
         "/iiwa7_no_collision.sdf");
     const ModelInstanceIndex iiwa7_instance =
-        parser.AddModelsFromFile(iiwa7_model_path).at(0);
+        parser.AddModels(iiwa7_model_path).at(0);
     const std::string iiwa7_model_name =
         sim_plant_->GetModelInstanceName(iiwa7_instance);
 
