@@ -25,6 +25,21 @@ GTEST_TEST(RotationMatrix, DefaultRotationMatrixIsIdentity) {
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
+GTEST_TEST(RotationMatrix, CheckMatrixTypes) {
+  RotationMatrix<double> Rd;
+  RotationMatrix<symbolic::Expression> Rx;
+  RotationMatrix<AutoDiffXd> Rad;
+
+  // For double and Expression we expect returning an Eigen matrix to be free,
+  // so matrix() should return the same reference as raw_matrix().
+  EXPECT_EQ(&Rd.matrix(), &Rd.raw_matrix());
+  EXPECT_EQ(&Rx.matrix(), &Rx.raw_matrix());
+  const auto& eigen_matrix = Rad.matrix();  // avoid address-of-temp warning
+  EXPECT_NE(static_cast<const void*>(&eigen_matrix),
+            static_cast<const void*>(&Rad.raw_matrix()));
+  EXPECT_TRUE(RotationMatrix<AutoDiffXd>(eigen_matrix).IsExactlyEqualTo(Rad));
+}
+
 // Test constructing a RotationMatrix from a Matrix3.
 GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
   const double cos_theta = std::cos(0.5);

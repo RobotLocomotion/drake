@@ -121,42 +121,53 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
   // the +a direction and since unit vector a has two zero elements, it is
   // clear uₘᵢₙ = 0 results in w having two zero elements and w(i) = 1.
 
-  // Instantiate the final rotation matrix and write directly to it instead of
-  // creating temporary values and subsequently copying.
+  // Instantiate the final rotation matrix and write directly to it if
+  // possible, rather than writing to a temp and copying.
   RotationMatrix<T> R_AB(internal::DoNotInitializeMemberFields{});
-  R_AB.R_AB_.col(axis_index) = u_A;
 
-  // The auto keyword below improves efficiency by allowing an intermediate
-  // eigen type to use a column as a temporary - avoids copy.
-  auto v = R_AB.R_AB_.col((axis_index + 1) % 3);
-  auto w = R_AB.R_AB_.col((axis_index + 2) % 3);
+  auto set_from_unit_vector = [&](Matrix3<T>* R) {
+    R->col(axis_index) = u_A;
 
-  // Indices i, j, k are in cyclical order: 0, 1, 2 or 1, 2, 0 or 2, 0, 1 and
-  // are used to cleverly implement the previous patterns (above) for v and w.
-  // The value of the index i is determined by identifying uₘᵢₙ = u_A(i),
-  // the element of u_A with smallest absolute value.
-  int i;
-  u_A.cwiseAbs().minCoeff(&i);  // uₘᵢₙ = u_A(i).
-  const int j = (i + 1) % 3;
-  const int k = (j + 1) % 3;
+    // The auto keyword below improves efficiency by allowing an intermediate
+    // eigen type to use a column as a temporary - avoids copy.
+    auto v = R->col((axis_index + 1) % 3);
+    auto w = R->col((axis_index + 2) % 3);
 
-  // uₘᵢₙ is the element of the unit vector u with smallest absolute value,
-  // hence uₘᵢₙ² has the range 0 ≤ uₘᵢₙ² ≤ 1/3.  Thus for √(1 - uₘᵢₙ²), the
-  // argument (1 - uₘᵢₙ²) has range 2/3 ≤ (1 - uₘᵢₙ²) ≤ 1.0.
-  // Hence, √(1 - uₘᵢₙ²) should not encounter √(0) or √(negative_number).
-  // Since √(0) cannot occur, the calculation √(1 - uₘᵢₙ²) is safe for type
-  // T = AutoDiffXd because we avoid NaN in derivative calculations.
-  // Reminder: ∂(√(x)/∂x = 0.5/√(x) will not have a NaN if x > 0.
-  using std::sqrt;
-  const T mag_a_x_u = sqrt(1 - u_A(i) * u_A(i));  // |a x u| = √(1 - uₘᵢₙ²)
-  const T r = 1 / mag_a_x_u;
-  const T s = -r * u_A(i);
-  v(i) = 0;
-  v(j) = -r * u_A(k);
-  v(k) = r * u_A(j);
-  w(i) = mag_a_x_u;   // w(i) is the most positive component of w.
-  w(j) = s * u_A(j);  // w(j) = w(k) = 0 if uₘᵢₙ (that is, u_A(i)) is zero.
-  w(k) = s * u_A(k);
+    // Indices i, j, k are in cyclical order: 0, 1, 2 or 1, 2, 0 or 2, 0, 1 and
+    // are used to cleverly implement the previous patterns (above) for v and w.
+    // The value of the index i is determined by identifying uₘᵢₙ = u_A(i),
+    // the element of u_A with smallest absolute value.
+    int i;
+    u_A.cwiseAbs().minCoeff(&i);  // uₘᵢₙ = u_A(i).
+    const int j = (i + 1) % 3;
+    const int k = (j + 1) % 3;
+
+    // uₘᵢₙ is the element of the unit vector u with smallest absolute value,
+    // hence uₘᵢₙ² has the range 0 ≤ uₘᵢₙ² ≤ 1/3.  Thus for √(1 - uₘᵢₙ²), the
+    // argument (1 - uₘᵢₙ²) has range 2/3 ≤ (1 - uₘᵢₙ²) ≤ 1.0.
+    // Hence, √(1 - uₘᵢₙ²) should not encounter √(0) or √(negative_number).
+    // Since √(0) cannot occur, the calculation √(1 - uₘᵢₙ²) is safe for type
+    // T = AutoDiffXd because we avoid NaN in derivative calculations.
+    // Reminder: ∂(√(x)/∂x = 0.5/√(x) will not have a NaN if x > 0.
+    using std::sqrt;
+    const T mag_a_x_u = sqrt(1 - u_A(i) * u_A(i));  // |a x u| = √(1 - uₘᵢₙ²)
+    const T r = 1 / mag_a_x_u;
+    const T s = -r * u_A(i);
+    v(i) = 0;
+    v(j) = -r * u_A(k);
+    v(k) = r * u_A(j);
+    w(i) = mag_a_x_u;   // w(i) is the most positive component of w.
+    w(j) = s * u_A(j);  // w(j) = w(k) = 0 if uₘᵢₙ (that is, u_A(i)) is zero.
+    w(k) = s * u_A(k);
+  };
+
+  if constexpr (!using_diff_matrix) {
+    set_from_unit_vector(&R_AB.R_AB_);
+  } else {
+    Matrix3<T> R_temp;
+    set_from_unit_vector(&R_temp);
+    R_AB.R_AB_ = R_temp;  // An expensive conversion.
+  }
 
   return R_AB;
 }
