@@ -23,8 +23,11 @@ template <typename T>
 class DeformableModel;
 
 /* Variant over const pointers to all PhysicalModel. */
+// N.B. For testing, we allow std::monostate to indicate an "empty model" in the
+// return from PhysicalModel::DoToPhysicalModelPointerVariant().
 template <typename T>
-using PhysicalModelPointerVariant = std::variant<const DeformableModel<T>*>;
+using PhysicalModelPointerVariant =
+    std::variant<const DeformableModel<T>*, std::monostate>;
 
 /* PhysicalModel provides the functionalities to extend the type of
  physical model of MultibodyPlant. Developers can derive from this

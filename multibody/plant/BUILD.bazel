@@ -35,6 +35,7 @@ drake_cc_package_library(
         ":multibody_plant_core",
         ":point_pair_contact_info",
         ":propeller",
+        ":slicing_and_indexing",
         ":tamsi_solver",
         ":wing",
     ],
@@ -92,6 +93,7 @@ drake_cc_library(
         "compliant_contact_manager.cc",
         "deformable_driver.cc",
         "deformable_model.cc",
+        "dense_solver_driver.cc",
         "discrete_update_manager.cc",
         "make_discrete_update_manager.cc",
         "multibody_plant.cc",
@@ -102,6 +104,7 @@ drake_cc_library(
         "compliant_contact_manager.h",
         "deformable_driver.h",
         "deformable_model.h",
+        "dense_solver_driver.h",
         "discrete_update_manager.h",
         "make_discrete_update_manager.h",
         "multibody_plant.h",
@@ -123,6 +126,7 @@ drake_cc_library(
         ":externally_applied_spatial_force",
         ":hydroelastic_traction",
         ":multibody_plant_config",
+        ":slicing_and_indexing",
         ":tamsi_solver",
         "//common:default_scalars",
         "//common:essential",
@@ -374,6 +378,16 @@ drake_cc_library(
         ":multibody_plant_config",
         ":multibody_plant_core",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_library(
+    name = "slicing_and_indexing",
+    srcs = ["slicing_and_indexing.cc"],
+    hdrs = ["slicing_and_indexing.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
