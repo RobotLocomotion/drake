@@ -49,7 +49,7 @@ Parser::Parser(std::string_view model_name_prefix,
   diagnostic_policy_.SetActionForWarnings(warnings_maybe_strict);
 }
 
-std::vector<ModelInstanceIndex> Parser::AddModelsFromFile(
+std::vector<ModelInstanceIndex> Parser::AddModels(
     const std::string& file_name) {
   DataSource data_source(DataSource::kFilename, &file_name);
   ParserInterface& parser = SelectParser(diagnostic_policy_, file_name);
@@ -60,7 +60,7 @@ std::vector<ModelInstanceIndex> Parser::AddModelsFromFile(
 
 std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
     const std::string& file_name) {
-  return AddModelsFromFile(file_name);
+  return AddModels(file_name);
 }
 
 std::vector<ModelInstanceIndex> Parser::AddModelsFromString(

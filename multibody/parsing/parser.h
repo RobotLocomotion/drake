@@ -44,7 +44,7 @@ class CompositeParse;
 /// MJCF (MuJoCo XML) files typically contain many bodies, they will all be
 /// added as a single model instance in the @p plant.
 ///
-/// Drake Model Directives are only available via AddModelsFromFile. The
+/// Drake Model Directives are only available via AddModels. The
 /// single-model methods (AddModelFromFile, AddModelFromString) cannot load
 /// model directives.
 ///
@@ -104,15 +104,14 @@ class Parser final {
   /// @returns The set of model instance indices for the newly added models,
   /// including nested models.
   /// @throws std::exception in case of errors.
-  std::vector<ModelInstanceIndex> AddModelsFromFile(
-      const std::string& file_name);
+  std::vector<ModelInstanceIndex> AddModels(const std::string& file_name);
 
-  /// Deprecated spelling of AddModelsFromFile.
-  DRAKE_DEPRECATED("2023-04-01", "Use AddModelsFromFile() instead.")
+  /// Deprecated spelling of AddModels.
+  DRAKE_DEPRECATED("2023-04-01", "Use AddModels() instead.")
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
       const std::string& file_name);
 
-  /// Provides same functionality as AddModelsFromFile, but instead parses
+  /// Provides same functionality as AddModels, but instead parses
   /// the model description text data via @p file_contents with format dictated
   /// by @p file_type.
   ///
@@ -137,7 +136,7 @@ class Parser final {
   ///
   /// @sa http://sdformat.org/tutorials?tut=composition&ver=1.7 for details on
   /// nesting in SDFormat.
-  DRAKE_DEPRECATED("2023-04-01", "Use AddModelsFromFile() instead.")
+  DRAKE_DEPRECATED("2023-04-01", "Use AddModels() instead.")
   ModelInstanceIndex AddModelFromFile(
       const std::string& file_name,
       const std::string& model_name = {});

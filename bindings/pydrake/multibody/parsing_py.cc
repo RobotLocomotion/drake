@@ -80,8 +80,8 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.plant.doc)
         .def("package_map", &Class::package_map, py_rvp::reference_internal,
             cls_doc.package_map.doc)
-        .def("AddModelsFromFile", &Class::AddModelsFromFile,
-            py::arg("file_name"), cls_doc.AddModelsFromFile.doc)
+        .def("AddModels", &Class::AddModels, py::arg("file_name"),
+            cls_doc.AddModels.doc)
         .def("AddModelsFromString", &Class::AddModelsFromString,
             py::arg("file_contents"), py::arg("file_type"),
             cls_doc.AddModelsFromString.doc)
