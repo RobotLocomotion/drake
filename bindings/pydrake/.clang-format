@@ -1,24 +1,5 @@
 # -*- yaml -*-
 
-# This portion of the file contains settings that are local to the
-# //bindings/... code, rather than all of Drake.
-
-# When a function signature's parameters or a function call's arguments need to
-# wrap onto another line, indent by four spaces -- do not whitespace castle all
-# the way over to the open-paren.
-AlignAfterOpenBracket: DontAlign
-
-# Try to fit onto a single line:
-# - functions with an empty body, or
-# - member functions defined inside a class;
-# everything else (e.g., free functions) are forced onto multiple lines.
-AllowShortFunctionsOnASingleLine: Inline
-
-# -----------------------------------------------------------------------------
-# The contents of the root dotfile should be exactly copied below this point.
-# -----------------------------------------------------------------------------
-# -*- yaml -*-
-
 # This file determines clang-format's style settings; for details, refer to
 # http://clang.llvm.org/docs/ClangFormatStyleOptions.html
 
@@ -29,6 +10,23 @@ Language: Cpp
 # Force pointers to the type for C++.
 DerivePointerAlignment: false
 PointerAlignment: Left
+
+# Function parameters will either all be on the same line or will have one line
+# each.
+BinPackParameters: false
+
+# When a function signature's parameters or a function call's arguments need to
+# wrap onto another line, indent by four spaces -- do not whitespace castle all
+# the way over to the open-paren (sometimes placing all of the code smashed up
+# against the 80-column right margin).
+AlignAfterOpenBracket: DontAlign
+
+# Compress functions onto a single line (when they fit) iff they are defined
+# inline (inside a of class).
+AllowShortFunctionsOnASingleLine: InlineOnly
+
+# Compress lambdas onto a single line iff they are empty.
+AllowShortLambdasOnASingleLine: Empty
 
 # Specify the #include statement order.  This implements the order mandated by
 # the Google C++ Style Guide: related header, C headers, C++ headers, library
@@ -63,3 +61,11 @@ IncludeCategories:
   # Other libraries' h files (with quotes).
   - Regex:    '^"'
     Priority: 40
+
+# -----------------------------------------------------------------------------
+# Hereafter are the pydrake-specific override settings.
+# -----------------------------------------------------------------------------
+
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLambdasOnASingleLine: All
+BinPackParameters: true

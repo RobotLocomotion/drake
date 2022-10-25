@@ -42,8 +42,7 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
   // Also subscribe via SubscribeAllChannels
   bool multichannel_received = false;
   r_log->SubscribeAllChannels(
-      [&multichannel_received](
-          std::string_view channel, const void*, int) {
+      [&multichannel_received](std::string_view channel, const void*, int) {
         EXPECT_EQ(channel, "test_channel");
         EXPECT_FALSE(multichannel_received);
         multichannel_received = true;

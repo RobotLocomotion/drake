@@ -205,8 +205,8 @@ class Sample final : public drake::systems::BasicVector<T> {
     return result;
   }
 
-  void GetElementBounds(Eigen::VectorXd* lower,
-                        Eigen::VectorXd* upper) const final {
+  void GetElementBounds(
+      Eigen::VectorXd* lower, Eigen::VectorXd* upper) const final {
     const double kInf = std::numeric_limits<double>::infinity();
     *lower = Eigen::Matrix<double, 4, 1>::Constant(-kInf);
     *upper = Eigen::Matrix<double, 4, 1>::Constant(kInf);

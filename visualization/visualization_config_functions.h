@@ -83,8 +83,7 @@ or else the provided `scene_graph` is non-null.
 @see drake::visualization::AddDefaultVisualization()
 @see drake::multibody::AddMultibodyPlant()
 @see drake::systems::lcm::ApplyLcmBusConfig() */
-void ApplyVisualizationConfig(
-    const VisualizationConfig& config,
+void ApplyVisualizationConfig(const VisualizationConfig& config,
     systems::DiagramBuilder<double>* builder,
     const systems::lcm::LcmBuses* lcm_buses = nullptr,
     const multibody::MultibodyPlant<double>* plant = nullptr,
@@ -127,8 +126,8 @@ void AddDefaultVisualization(systems::DiagramBuilder<double>* builder);
 namespace internal {
 
 // (For unit testing only.)
-std::vector<geometry::DrakeVisualizerParams>
-ConvertVisualizationConfigToParams(const VisualizationConfig&);
+std::vector<geometry::DrakeVisualizerParams> ConvertVisualizationConfigToParams(
+    const VisualizationConfig&);
 
 }  // namespace internal
 }  // namespace visualization

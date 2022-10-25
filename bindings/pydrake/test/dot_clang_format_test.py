@@ -15,10 +15,8 @@ class TestDotfile(unittest.TestCase):
 
         # The bindings file should be longer.
         self.assertGreater(len(bindings_contents), len(root_contents))
-        offset = len(bindings_contents) - len(root_contents)
-        assert offset > 0
 
-        # Every line in root should appear in bindings.
+        # The bindings config only ever appends to the root settings.
         self.assertMultiLineEqual(
             "".join(root_contents),
-            "".join(bindings_contents[offset:]))
+            "".join(bindings_contents[:len(root_contents)]))
