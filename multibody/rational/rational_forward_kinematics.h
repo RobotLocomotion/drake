@@ -36,7 +36,10 @@ namespace multibody {
  q* is the variable θ*. Note that the stereographic projection has a
  singularity at θ = θ* ± π, as s = tan(Δθ/2)=tan(±π/2) is ±infinity.
 
- Currently we only support robots with revolute and weld joints.
+ For prismatic joint, we define s = d - d*, where d is the displacement of the
+ joint, and d* is the joint value in q*.
+
+ Currently we only support robots with revolute, prismatic and weld joints.
 
  Throughout this file, we use the following convention
  1. q denotes the generalized position of the entire robot. It includes the
@@ -108,7 +111,9 @@ class RationalForwardKinematics {
 
   const MultibodyPlant<double>& plant() const { return plant_; }
 
-  const VectorX<symbolic::Variable>& s() const { return s_; }
+  Eigen::Map<const VectorX<symbolic::Variable>> s() const {
+    return Eigen::Map<const VectorX<symbolic::Variable>>(s_.data(), s_.size());
+  }
 
  private:
   /* Computes the pose of a body, connected to its parent body through a
@@ -149,6 +154,14 @@ class RationalForwardKinematics {
                                      const math::RigidTransformd& X_MC,
                                      const Pose<T>& X_AP) const;
 
+  // Computes the pose of the link, connected to its parent link through a
+  // prismatic joint. The displacement of the prismatic joint is d_star + s
+  // along `axis_F`.
+  template <typename T>
+  Pose<T> CalcPrismaticJointChildLinkPose(
+      const Eigen::Ref<const Eigen::Vector3d>& axis_F,
+      const math::RigidTransformd& X_PF, const math::RigidTransformd& X_MC,
+      const Pose<T>& X_AP, double d_star, const symbolic::Variable& d) const;
   /* Given the pose of the parent frame X_AP measured in a frame A, calculates
    the pose of `child` measured as expressed in frame A as a multilinear
    polynomial, with indeterminates being s. s includes s_q and c_q for
@@ -177,7 +190,7 @@ class RationalForwardKinematics {
   const MultibodyPlant<double>& plant_;
   // The variables used in computing the pose as rational functions. s_ are the
   // indeterminates in the rational functions.
-  VectorX<symbolic::Variable> s_;
+  std::vector<symbolic::Variable> s_;
   // Each s(i) is associated with a mobilizer.
   std::unordered_map<symbolic::Variable::Id, internal::MobilizerIndex>
       map_s_to_mobilizer_;
@@ -191,19 +204,19 @@ class RationalForwardKinematics {
   // include s for the revolute joint, it doesn't include s for other joint
   // types (like prismatic joints). See map_s_index_to_angle_index_ and
   // map_angle_to_s_index_ below for how to relate s_angles_ to s.
-  VectorX<symbolic::Variable> s_angles_;
+  std::vector<symbolic::Variable> s_angles_;
   std::vector<symbolic::SinCos> sin_cos_;
   VectorX<symbolic::Polynomial> one_plus_s_angles_squared_;
   VectorX<symbolic::Polynomial> two_s_angles_;
   VectorX<symbolic::Polynomial> one_minus_s_angles_squared_;
 
-  VectorX<symbolic::Variable> cos_delta_;
-  VectorX<symbolic::Variable> sin_delta_;
+  std::vector<symbolic::Variable> cos_delta_;
+  std::vector<symbolic::Variable> sin_delta_;
   // s_ could contain both prismatic s and revolute s.
-  // TODO(hongkai.dai): support prismatic joint.
   // s_angles_[map_s_index_to_angle_index_[i]] = s_[i]
   std::unordered_map<int, int> map_s_index_to_angle_index_;
   symbolic::Variables s_variables_;
+  symbolic::Variables s_angle_variables_;
 };
 }  // namespace multibody
 }  // namespace drake
