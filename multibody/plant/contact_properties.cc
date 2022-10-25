@@ -29,6 +29,30 @@ T GetPointContactStiffness(geometry::GeometryId id, double default_value,
 }
 
 template <typename T>
+T GetHuntCrossleyDissipation(
+    geometry::GeometryId id, double default_value,
+    const geometry::SceneGraphInspector<T>& inspector) {
+  DRAKE_DEMAND(default_value >= 0.0);
+  const geometry::ProximityProperties* prop =
+      inspector.GetProximityProperties(id);
+  DRAKE_DEMAND(prop != nullptr);
+  return prop->template GetPropertyOrDefault<T>(
+      geometry::internal::kMaterialGroup, geometry::internal::kHcDissipation,
+      default_value);
+}
+
+template <typename T>
+T GetCombinedHuntCrossleyDissipation(
+    geometry::GeometryId id_A, geometry::GeometryId id_B, const T& stiffness_A,
+    const T& stiffness_B, double default_dissipation,
+    const geometry::SceneGraphInspector<T>& inspector) {
+  const T dA = GetHuntCrossleyDissipation(id_A, default_dissipation, inspector);
+  const T dB = GetHuntCrossleyDissipation(id_B, default_dissipation, inspector);
+  return safe_divide(stiffness_B, stiffness_A + stiffness_B) * dA +
+         safe_divide(stiffness_A, stiffness_A + stiffness_B) * dB;
+}
+
+template <typename T>
 T GetDissipationTimeConstant(geometry::GeometryId id, double default_value,
                              const geometry::SceneGraphInspector<T>& inspector,
                              std::string_view body_name) {
@@ -98,11 +122,12 @@ double GetCombinedDynamicCoulombFriction(
       .dynamic_friction();
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     (&GetPointContactStiffness<T>, &GetDissipationTimeConstant<T>,
      &GetCoulombFriction<T>, &GetCombinedPointContactStiffness<T>,
      &GetCombinedDissipationTimeConstant<T>,
-     &GetCombinedDynamicCoulombFriction<T>))
+     &GetCombinedDynamicCoulombFriction<T>,
+     &GetCombinedHuntCrossleyDissipation<T>))
 
 }  // namespace internal
 }  // namespace multibody
