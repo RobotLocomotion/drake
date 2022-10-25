@@ -52,6 +52,157 @@ void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
 }
 }  // namespace
 
+namespace internal {
+
+Matrix3dWithDerivatives::Matrix3dWithDerivatives(const Matrix3<AutoDiffXd>& M) {
+  int num_derivatives = 0;
+  for (int row = 0; row < 3; ++row) {
+    for (int col = 0; col < 3; ++col) {
+      value_(row, col) = M(row, col).value();
+      if (num_derivatives == 0) {
+        num_derivatives = M(row, col).derivatives().size();
+      } else {
+        // TODO(russt): Should this be debug-only?
+        DRAKE_THROW_UNLESS(num_derivatives ==
+                            M(row, col).derivatives().size());
+      }
+    }
+  }
+
+  derivatives_.resize(num_derivatives);
+  for (int deriv=0; deriv < num_derivatives; ++deriv) {
+    bool has_value = false;
+    for (int row = 0; row < 3; ++row) {
+      for (int col = 0; col < 3; ++col) {
+        double d = M(row, col).derivatives()[deriv];
+        if (d != 0.0) {
+          if (!has_value) {
+            derivatives_[deriv] = Eigen::Matrix3d::Zero();
+            has_value = true;
+          }
+          derivatives_[deriv]->operator()(row, col) = d;
+        }
+      }
+    }
+  }
+}
+
+Matrix3<AutoDiffXd> Matrix3dWithDerivatives::ToAutoDiffXd() const {
+  Matrix3<AutoDiffXd> M = value_.cast<AutoDiffXd>();
+  for (int row = 0; row < 3; ++row) {
+    for (int col = 0; col < 3; ++col) {
+      for (int deriv = 0; deriv < static_cast<int>(derivatives_.size());
+            ++deriv) {
+        if (!derivatives_[deriv]) continue;
+        if (M(row, col).derivatives().size() == 0) {
+          M(row, col).derivatives() =
+              Eigen::VectorXd::Zero(derivatives_.size());
+        }
+        M(row, col).derivatives()(deriv) =
+            derivatives_[deriv]->operator()(row, col);
+      }
+    }
+  }
+  return M;
+}
+
+Matrix3dWithDerivatives Matrix3dWithDerivatives::transpose() const {
+  Matrix3dWithDerivatives ret;
+  ret.value_ = value_.transpose();
+  ret.derivatives_.resize(derivatives_.size());
+  for (int i=0; i<static_cast<int>(derivatives_.size()); ++i) {
+    if (derivatives_[i]) {
+      *ret.derivatives_[i] = derivatives_[i]->transpose();
+    }
+  }
+  return ret;
+}
+
+Matrix3dWithDerivatives Matrix3dWithDerivatives::operator*(
+    const Matrix3dWithDerivatives& other) const {
+  Matrix3dWithDerivatives M;
+  M.value_ = value_ * other.value_;
+  int num_derivatives = derivatives_.size();
+  if (other.derivatives_.size() > 0) {
+    if (num_derivatives) {
+      DRAKE_THROW_UNLESS(other.derivatives_.size() == derivatives_.size());
+    } else {
+      num_derivatives = other.derivatives_.size();
+    }
+  }
+  M.derivatives_.resize(num_derivatives);
+  for (int i=0; i<num_derivatives; ++i) {
+    if (derivatives_.size() > 0 && derivatives_[i] &&
+        other.derivatives_.size() > 0 && other.derivatives_[i]) {
+      M.derivatives_[i] = (*derivatives_[i]) * other.value_ +
+                          value_ * (*other.derivatives_[i]);
+    } else if (derivatives_.size() > 0 && derivatives_[i]) {
+      M.derivatives_[i] = (*derivatives_[i]) * other.value_;
+    } else if (other.derivatives_.size() > 0 && other.derivatives_[i]) {
+      M.derivatives_[i] = value_ * (*other.derivatives_[i]);
+    }
+  }
+  return M;
+}
+
+Vector3<AutoDiffXd> Matrix3dWithDerivatives::operator*(const Vector3<AutoDiffXd>& v_B) const {
+  Vector3<AutoDiffXd> ret(value_ * v_B);
+  Eigen::Vector3d v_B_value{v_B[0].value(), v_B[1].value(), v_B[2].value()};
+  for (int row=0; row<3; ++row) {
+    if (ret[row].derivatives().size() == 0) {
+      ret[row].derivatives() = Eigen::RowVectorXd::Zero(derivatives_.size());
+    }
+  }
+  for (int i=0; i<static_cast<int>(derivatives_.size()); ++i) {
+    if (derivatives_[i]) {
+      for (int row=0; row<3; ++row) {
+        ret[row].derivatives()[i] += derivatives_[i]->row(row).dot(v_B_value);
+      }
+    }
+  }
+  return ret;
+}
+
+bool Matrix3dWithDerivatives::IsExactlyIdentity() const {
+  if (value_ != Eigen::Matrix3d::Identity()) {
+    return false;
+  }
+  for (const auto& d : derivatives_) {
+    if (d) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool IsNearlyEqualTo(const Matrix3dWithDerivatives& m1,
+                     const Matrix3dWithDerivatives& m2,
+                     double tolerance) {
+  if (m1.derivatives_.size() != m2.derivatives_.size()) {
+    return false;
+  }
+  if ((m1.value_ - m2.value_).template lpNorm<Eigen::Infinity>() > tolerance) {
+    return false;
+  }
+  for (int i = 0; i < static_cast<int>(m1.derivatives_.size()); ++i) {
+    if (m1.derivatives_[i] != m2.derivatives_[i]) {
+      return false;
+    }
+    if ((*m1.derivatives_[i] - *m2.derivatives_[i])
+            .template lpNorm<Eigen::Infinity>() > tolerance) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool operator==(const Matrix3dWithDerivatives& m1,
+                const Matrix3dWithDerivatives& m2) {
+  return IsNearlyEqualTo(m1, m2, 0.0);
+}
+
+}  // namespace internal
+
 template <typename T>
 RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
     const Vector3<T>& u_A, int axis_index) {
@@ -123,13 +274,13 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
 
   // Instantiate the final rotation matrix and write directly to it instead of
   // creating temporary values and subsequently copying.
-  RotationMatrix<T> R_AB(internal::DoNotInitializeMemberFields{});
-  R_AB.R_AB_.col(axis_index) = u_A;
+  Matrix3<T> R_AB;
+  R_AB.col(axis_index) = u_A;
 
   // The auto keyword below improves efficiency by allowing an intermediate
   // eigen type to use a column as a temporary - avoids copy.
-  auto v = R_AB.R_AB_.col((axis_index + 1) % 3);
-  auto w = R_AB.R_AB_.col((axis_index + 2) % 3);
+  auto v = R_AB.col((axis_index + 1) % 3);
+  auto w = R_AB.col((axis_index + 2) % 3);
 
   // Indices i, j, k are in cyclical order: 0, 1, 2 or 1, 2, 0 or 2, 0, 1 and
   // are used to cleverly implement the previous patterns (above) for v and w.
@@ -158,7 +309,7 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
   w(j) = s * u_A(j);  // w(j) = w(k) = 0 if uₘᵢₙ (that is, u_A(i)) is zero.
   w(k) = s * u_A(k);
 
-  return R_AB;
+  return RotationMatrix<T>(R_AB);
 }
 
 template <typename T>
