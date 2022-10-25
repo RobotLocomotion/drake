@@ -415,6 +415,29 @@ class RigidTransform {
         rotation().IsNearlyIdentity();
   }
 
+  /// Returns true if `this` is exactly equal to `other`.
+  /// @param[in] other %RigidTransform to compare to `this`.
+  /// @returns `true` if each element of `this` is exactly equal to the
+  /// corresponding element of `other`.
+  boolean<T> IsExactlyEqualTo(const RigidTransform<T>& other) const {
+    return rotation().IsExactlyEqualTo(other.rotation()) &&
+           translation() == other.translation();
+  }
+
+  /// Compares each element of `this` to the corresponding element of `other`
+  /// to check if they are the same to within a specified `tolerance`.
+  /// @param[in] other %RigidTransform to compare to `this`.
+  /// @param[in] tolerance maximum allowable absolute difference between the
+  /// elements in `this` and `other`.
+  /// @returns `true` if `‖this.matrix() - other.matrix()‖∞ <= tolerance`.
+  /// @note Consider scaling tolerance with the largest of magA and magB, where
+  /// magA and magB denoted the magnitudes of `this` position vector and `other`
+  /// position vectors, respectively.
+  boolean<T> IsNearlyEqualTo(const RigidTransform<T>& other,
+                             double tolerance) const {
+    return GetMaximumAbsoluteDifference(other) <= tolerance;
+  }
+
   /// Returns X_BA = X_AB⁻¹, the inverse of `this` %RigidTransform.
   /// @note The inverse of %RigidTransform X_AB is X_BA, which contains the
   /// rotation matrix R_BA = R_AB⁻¹ = R_ABᵀ and the position vector `p_BoAo_B_`
@@ -426,6 +449,51 @@ class RigidTransform {
     // @internal This method's name was chosen to mimic Eigen's inverse().
     const RotationMatrix<T> R_BA = R_AB_.inverse();
     return RigidTransform<T>(R_BA, R_BA * (-p_AoBo_A_));
+  }
+
+  /// Calculates the product of `this` inverted and another %RigidTransform.
+  /// If you consider `this` to be the transform X_AB, and `other` to be
+  /// X_AC, then this method returns X_BC = X_AB⁻¹ * X_AC. For T==double, this
+  /// method can be _much_ faster than inverting first and then performing the
+  /// composition, because it can take advantage of the special structure of
+  /// a rigid transform to avoid unnecessary memory and floating point
+  /// operations. On some platforms it can use SIMD instructions for further
+  /// speedups.
+  /// @param[in] other %RigidTransform that post-multiplies `this` inverted.
+  /// @retval X_BC where X_BC = this⁻¹ * other.
+  /// @note It is possible (albeit improbable) to create an invalid rigid
+  /// transform by accumulating round-off error with a large number of
+  /// multiplies.
+  RigidTransform<T> InvertAndCompose(const RigidTransform<T>& other) const {
+    const RigidTransform<T>& X_AC = other;  // Nicer name.
+    RigidTransform<T> X_BC(internal::DoNotInitializeMemberFields{});
+    if constexpr (std::is_same_v<T, double>) {
+      internal::ComposeXinvX(*this, X_AC, &X_BC);
+    } else {
+      const RigidTransform<T> X_BA = inverse();
+      X_BC = X_BA * X_AC;
+    }
+    return X_BC;
+  }
+
+  /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
+  /// value of the difference between the elements of `this` and `other`).
+  /// @param[in] other %RigidTransform to subtract from `this`.
+  /// @returns ‖`this` - `other`‖∞
+  T GetMaximumAbsoluteDifference(const RigidTransform<T>& other) const {
+    const Eigen::Matrix<T, 3, 4> diff = GetAsMatrix34() - other.GetAsMatrix34();
+    return diff.template lpNorm<Eigen::Infinity>();
+  }
+
+  /// Returns the maximum absolute value of the difference in the position
+  /// vectors (translation) in `this` and `other`.  In other words, returns
+  /// the infinity norm of the difference in the position vectors.
+  /// @param[in] other %RigidTransform whose position vector is subtracted from
+  /// the position vector in `this`.
+  T GetMaximumAbsoluteTranslationDifference(
+      const RigidTransform<T>& other) const {
+    const Vector3<T> p_difference = translation() - other.translation();
+    return p_difference.template lpNorm<Eigen::Infinity>();
   }
 
   /// In-place multiply of `this` %RigidTransform `X_AB` by `other`
@@ -453,31 +521,6 @@ class RigidTransform {
       X_AC.set(rotation() * other.rotation(), *this * other.translation());
     }
     return X_AC;
-  }
-
-  /// Calculates the product of `this` inverted and another %RigidTransform.
-  /// If you consider `this` to be the transform X_AB, and `other` to be
-  /// X_AC, then this method returns X_BC = X_AB⁻¹ * X_AC. For T==double, this
-  /// method can be _much_ faster than inverting first and then performing the
-  /// composition, because it can take advantage of the special structure of
-  /// a rigid transform to avoid unnecessary memory and floating point
-  /// operations. On some platforms it can use SIMD instructions for further
-  /// speedups.
-  /// @param[in] other %RigidTransform that post-multiplies `this` inverted.
-  /// @retval X_BC where X_BC = this⁻¹ * other.
-  /// @note It is possible (albeit improbable) to create an invalid rigid
-  /// transform by accumulating round-off error with a large number of
-  /// multiplies.
-  RigidTransform<T> InvertAndCompose(const RigidTransform<T>& other) const {
-    const RigidTransform<T>& X_AC = other;  // Nicer name.
-    RigidTransform<T> X_BC(internal::DoNotInitializeMemberFields{});
-    if constexpr (std::is_same_v<T, double>) {
-      internal::ComposeXinvX(*this, X_AC, &X_BC);
-    } else {
-      const RigidTransform<T> X_BA = inverse();
-      X_BC = X_BA * X_AC;
-    }
-    return X_BC;
   }
 
   /// Multiplies `this` %RigidTransform `X_AB` by the translation-only transform
@@ -579,49 +622,6 @@ class RigidTransform {
       p_AoQ_A.col(i) = translation() + p_BoQ_A.col(i);
 
     return p_AoQ_A;
-  }
-
-  /// Compares each element of `this` to the corresponding element of `other`
-  /// to check if they are the same to within a specified `tolerance`.
-  /// @param[in] other %RigidTransform to compare to `this`.
-  /// @param[in] tolerance maximum allowable absolute difference between the
-  /// elements in `this` and `other`.
-  /// @returns `true` if `‖this.matrix() - other.matrix()‖∞ <= tolerance`.
-  /// @note Consider scaling tolerance with the largest of magA and magB, where
-  /// magA and magB denoted the magnitudes of `this` position vector and `other`
-  /// position vectors, respectively.
-  boolean<T> IsNearlyEqualTo(const RigidTransform<T>& other,
-                             double tolerance) const {
-    return GetMaximumAbsoluteDifference(other) <= tolerance;
-  }
-
-  /// Returns true if `this` is exactly equal to `other`.
-  /// @param[in] other %RigidTransform to compare to `this`.
-  /// @returns `true` if each element of `this` is exactly equal to the
-  /// corresponding element of `other`.
-  boolean<T> IsExactlyEqualTo(const RigidTransform<T>& other) const {
-    return rotation().IsExactlyEqualTo(other.rotation()) &&
-           translation() == other.translation();
-  }
-
-  /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
-  /// value of the difference between the elements of `this` and `other`).
-  /// @param[in] other %RigidTransform to subtract from `this`.
-  /// @returns ‖`this` - `other`‖∞
-  T GetMaximumAbsoluteDifference(const RigidTransform<T>& other) const {
-    const Eigen::Matrix<T, 3, 4> diff = GetAsMatrix34() - other.GetAsMatrix34();
-    return diff.template lpNorm<Eigen::Infinity>();
-  }
-
-  /// Returns the maximum absolute value of the difference in the position
-  /// vectors (translation) in `this` and `other`.  In other words, returns
-  /// the infinity norm of the difference in the position vectors.
-  /// @param[in] other %RigidTransform whose position vector is subtracted from
-  /// the position vector in `this`.
-  T GetMaximumAbsoluteTranslationDifference(
-      const RigidTransform<T>& other) const {
-    const Vector3<T> p_difference = translation() - other.translation();
-    return p_difference.template lpNorm<Eigen::Infinity>();
   }
 
  private:
