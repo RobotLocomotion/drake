@@ -111,9 +111,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("translation_tolerance"), cls_doc.IsNearlyIdentity.doc)
         .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
             py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
+        .def("IsExactlyEqualTo", &Class::IsExactlyEqualTo, py::arg("other"),
+            cls_doc.IsExactlyEqualTo.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
         .def("InvertAndCompose", &Class::InvertAndCompose, py::arg("other"),
             cls_doc.InvertAndCompose.doc)
+        .def("GetMaximumAbsoluteDifference",
+            &Class::GetMaximumAbsoluteDifference, py::arg("other"),
+            cls_doc.GetMaximumAbsoluteDifference.doc)
+        .def("GetMaximumAbsoluteTranslationDifference",
+            &Class::GetMaximumAbsoluteTranslationDifference, py::arg("other"),
+            cls_doc.GetMaximumAbsoluteTranslationDifference.doc)
         .def(
             "multiply",
             [](const Class* self, const Class& other) { return *self * other; },

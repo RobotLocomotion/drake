@@ -162,12 +162,18 @@ class TestMath(unittest.TestCase):
             X.multiply(other=RigidTransform()), RigidTransform)
         self.assertIsInstance(
             X.InvertAndCompose(other=RigidTransform()), RigidTransform)
+        self.assertIsInstance(
+            X.GetMaximumAbsoluteDifference(other=RigidTransform()), T)
+        self.assertIsInstance(
+            X.GetMaximumAbsoluteTranslationDifference(
+                other=RigidTransform()), T)
         self.assertIsInstance(X @ RigidTransform(), RigidTransform)
         self.assertIsInstance(X @ [0, 0, 0], np.ndarray)
         if T != Expression:
             self.assertTrue(X.IsExactlyIdentity())
             self.assertTrue(X.IsNearlyIdentity(translation_tolerance=0))
             self.assertTrue(X.IsNearlyEqualTo(other=X, tolerance=0))
+            self.assertTrue(X.IsExactlyEqualTo(other=X))
         # - Test shaping (#13885).
         v = np.array([0., 0., 0.])
         vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
