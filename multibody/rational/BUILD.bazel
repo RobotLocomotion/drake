@@ -1,16 +1,17 @@
 # -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
-    "drake_cc_test",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visibility:public"],
+)
 
 drake_cc_package_library(
     name = "rational",
@@ -23,9 +24,11 @@ drake_cc_package_library(
 drake_cc_library(
     name = "rational_forward_kinematics",
     srcs = [
+        "rational_forward_kinematics.cc",
         "rational_forward_kinematics_internal.cc",
     ],
     hdrs = [
+        "rational_forward_kinematics.h",
         "rational_forward_kinematics_internal.h",
     ],
     deps = [
@@ -36,7 +39,6 @@ drake_cc_library(
     ],
 )
 
-# === test/ ===
 drake_cc_library(
     name = "rational_forward_kinematics_test_utilities",
     testonly = 1,
@@ -63,6 +65,17 @@ drake_cc_googletest(
     deps = [
         ":rational_forward_kinematics",
         ":rational_forward_kinematics_test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rational_forward_kinematics_test",
+    timeout = "moderate",
+    deps = [
+        ":rational_forward_kinematics",
+        ":rational_forward_kinematics_test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
