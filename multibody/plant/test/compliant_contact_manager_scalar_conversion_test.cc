@@ -43,20 +43,21 @@ TYPED_TEST(CompliantContactManagerScalarConversionTest, ToAutoDiffXd) {
 TYPED_TEST(CompliantContactManagerScalarConversionTest, ToSymbolic) {
   using T = TypeParam;
   CompliantContactManager<T> source;
-  EXPECT_FALSE(source.is_cloneable_to_symbolic());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      source.template CloneToScalar<symbolic::Expression>(),
-      ".*symbolic.*not supported.*");
+  EXPECT_TRUE(source.is_cloneable_to_symbolic());
+  std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>> clone =
+      source.template CloneToScalar<symbolic::Expression>();
+  ASSERT_NE(clone, nullptr);
 }
 
 constexpr double kTimeStep = 0.001;
 
 // Constructs a plant with a free rigid body and uses the SAP solver.
 template <typename T>
-std::unique_ptr<MultibodyPlant<T>> MakePlant() {
+std::unique_ptr<MultibodyPlant<T>> MakePlant(
+    DiscreteContactSolver solver_type) {
   auto plant = std::make_unique<MultibodyPlant<T>>(kTimeStep);
   plant->AddRigidBody("Body", SpatialInertia<double>::MakeUnitary());
-  plant->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant->set_discrete_contact_solver(solver_type);
   plant->Finalize();
   return plant;
 }
@@ -65,8 +66,8 @@ std::unique_ptr<MultibodyPlant<T>> MakePlant() {
 // conversion from T to U, and that simulations results for models without
 // constraints stay the same.
 template <typename T, typename U>
-void TestPlantConversion() {
-  std::unique_ptr<MultibodyPlant<T>> source_plant = MakePlant<T>();
+void TestPlantConversion(DiscreteContactSolver solver_type) {
+  std::unique_ptr<MultibodyPlant<T>> source_plant = MakePlant<T>(solver_type);
   auto source_context = source_plant->CreateDefaultContext();
   const VectorX<T> initial_state =
       source_plant->GetPositionsAndVelocities(*source_context);
@@ -90,12 +91,17 @@ void TestPlantConversion() {
   EXPECT_TRUE(CompareMatrices(dest_final_state, source_final_state));
 }
 
-// We only tests the conversion between double and AutoDiffXd because
-// CompliantContactManager doesn't support symbolic.
-GTEST_TEST(CompliantContactManagerScalarConversionTest, PlantConversion) {
-  TestPlantConversion<double, AutoDiffXd>();
-  TestPlantConversion<AutoDiffXd, double>();
+GTEST_TEST(CompliantContactManagerScalarConversionTest, PlantConversionSap) {
+  TestPlantConversion<double, AutoDiffXd>(DiscreteContactSolver::kSap);
+  TestPlantConversion<AutoDiffXd, double>(DiscreteContactSolver::kSap);
 }
+
+GTEST_TEST(CompliantContactManagerScalarConversionTest, PlantConversionTamsi) {
+  TestPlantConversion<double, AutoDiffXd>(DiscreteContactSolver::kTamsi);
+  TestPlantConversion<AutoDiffXd, double>(DiscreteContactSolver::kTamsi);
+}
+
+// TODO(amcastro-tri): Consider adding tests for symbolic::Expression here.
 
 }  // namespace internal
 }  // namespace multibody
