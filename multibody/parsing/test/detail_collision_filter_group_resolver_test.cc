@@ -116,13 +116,13 @@ TEST_F(CollisionFilterGroupResolverTest, OutOfParseBodyGlobal) {
   AddBody("stuff", {});
   resolver_.AddGroup(diagnostic_policy_, "a", {
       "DefaultModelInstance::stuff",
-      "WorldModelInstance::WorldBody",
+      "WorldModelInstance::world",
       "stuff",
     },
     {});
   EXPECT_THAT(TakeError(), MatchesRegex(".*'DefaultModelInstance::stuff'"
                                         ".*outside the current parse"));
-  EXPECT_THAT(TakeError(), MatchesRegex(".*'WorldModelInstance::WorldBody'"
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'WorldModelInstance::world'"
                                         ".*outside the current parse"));
   // Ensure that unqualified bodies names at global scope aren't looked up in
   // the default model inadvertently.

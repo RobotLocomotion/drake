@@ -685,7 +685,7 @@ GTEST_TEST(MujocoParser, Joint) {
       plant.GetBodyByName("weld").EvalPoseInWorld(*context).IsNearlyEqualTo(
           X_WB, 1e-14));
   const WeldJoint<double>& weld_joint =
-      plant.GetJointByName<WeldJoint>("WorldBody_welds_to_weld");
+      plant.GetJointByName<WeldJoint>("world_welds_to_weld");
   EXPECT_TRUE(weld_joint.X_FM().IsNearlyEqualTo(X_WB, 1e-14));
 }
 

@@ -1027,7 +1027,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetBodyFrameIdOrThrow(world_index()),
       /* Verify this method is throwing for the right reasons. */
-      "Body 'WorldBody' does not have geometry registered with it.");
+      "Body 'world' does not have geometry registered with it.");
 
   // Similarly, the "optional" variant should return a null opt.
   std::optional<FrameId> undefined_id =
