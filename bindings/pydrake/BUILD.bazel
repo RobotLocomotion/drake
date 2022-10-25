@@ -770,6 +770,7 @@ PYI_FILES = [
     "pydrake/tutorials.pyi",
     "pydrake/visualization/__init__.pyi",
     "pydrake/visualization/meldis.pyi",
+    "pydrake/visualization/model_visualizer.pyi",
     "pydrake/visualization/plotting.pyi",
 ]
 

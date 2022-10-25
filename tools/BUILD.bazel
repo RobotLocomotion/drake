@@ -53,6 +53,11 @@ alias(
     actual = "//bindings/pydrake/visualization:meldis",
 )
 
+alias(
+    name = "model_visualizer",
+    actual = "//bindings/pydrake/visualization:model_visualizer",
+)
+
 # === config_setting rules ===
 
 # When this is set, a Drake build will promote some warnings to errors.

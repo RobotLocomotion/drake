@@ -124,10 +124,7 @@ drake_py_binary(
     name = "show_model",
     srcs = ["show_model.py"],
     data = ["//manipulation/models/jaco_description:models"],
-    deps = [
-        ":module_py",
-        "//bindings/pydrake",
-    ],
+    deps = ["//bindings/pydrake"],
 )
 
 drake_py_binary(
@@ -227,19 +224,6 @@ filegroup(
     srcs = [
         ":test/simple_nested_model.sdf",
         ":test/simple_world_with_two_models.sdf",
-    ],
-)
-
-drake_py_unittest(
-    name = "show_model_test",
-    data = [
-        ":show_model",
-        ":test_models",
-        "//multibody/benchmarks/acrobot:models",
-    ],
-    deps = [
-        ":show_model",
-        "@bazel_tools//tools/python/runfiles",
     ],
 )
 
