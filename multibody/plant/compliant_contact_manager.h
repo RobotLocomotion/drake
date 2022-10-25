@@ -133,6 +133,12 @@ class CompliantContactManager final
   // @pre model != nullptr.
   void ExtractConcreteModel(const DeformableModel<T>* model);
 
+  // For testing purposes only, we provide a default no-op implementation on
+  // arbitrary models of unknown concrete model type. Otherwise, for the closed
+  // list of models forward declared in physical_model.h, we must provide a
+  // concrete override of this method.
+  void ExtractConcreteModel(const multibody::internal::PhysicalModel<T>*) {}
+
   void DeclareCacheEntries() final;
 
   // TODO(amcastro-tri): implement these APIs according to #16955.

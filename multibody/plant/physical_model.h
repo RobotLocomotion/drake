@@ -22,9 +22,15 @@ namespace internal {
 template <typename T>
 class DeformableModel;
 
-/* Variant over const pointers to all PhysicalModel. */
 template <typename T>
-using PhysicalModelPointerVariant = std::variant<const DeformableModel<T>*>;
+class PhysicalModel;
+
+/* Variant over const pointers to all PhysicalModel. */
+// N.B. For testing purposes only, we allow variants on a PhysicalModel outside
+// the closed list of concrete models forward declared above.
+template <typename T>
+using PhysicalModelPointerVariant =
+    std::variant<const DeformableModel<T>*, const PhysicalModel<T>*>;
 
 /* PhysicalModel provides the functionalities to extend the type of
  physical model of MultibodyPlant. Developers can derive from this

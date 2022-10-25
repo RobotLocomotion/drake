@@ -59,11 +59,11 @@ class DummyModel final : public PhysicalModel<T> {
   template <typename U>
   friend class DummyModel;
 
-  /* A dummy stub for PhysicalModelPointerVariant. */
+  /* A dummy stub for PhysicalModelPointerVariant. Unless for testing purposes,
+   managers in general will not know what to do with a concrete model of type
+   DummyModel, and the call to ExtractConcreteModel() will be a no-op. */
   PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant() const final {
-    throw std::logic_error(
-        "DummyModel is used for unit testing only, and is not included in "
-        "PhysicalModelPointerVariant.");
+    return PhysicalModelPointerVariant<T>(this);
   }
 
   std::unique_ptr<PhysicalModel<double>> CloneToDouble() const final {
