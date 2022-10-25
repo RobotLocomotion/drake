@@ -80,15 +80,26 @@ bool IsWeld(const internal::Mobilizer<double>& mobilizer) {
   }
   return is_weld;
 }
+
+bool IsPrismatic(const internal::Mobilizer<double>& mobilizer) {
+  const bool is_prismatic =
+      (mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1 &&
+       !mobilizer.can_rotate() && mobilizer.can_translate());
+  if (is_prismatic) {
+    DRAKE_THROW_UNLESS(
+        dynamic_cast<const internal::PrismaticMobilizer<double>*>(&mobilizer) !=
+        nullptr);
+  }
+  return is_prismatic;
+}
 }  // namespace
 
 RationalForwardKinematics::RationalForwardKinematics(
     const MultibodyPlant<double>* plant)
     : plant_(*plant) {
   DRAKE_DEMAND(plant != nullptr);
-  int num_s = 0;
   const internal::MultibodyTree<double>& tree = GetInternalTree(plant_);
-  // Initializer map_mobilizer_to_s_index_ to -1, where -1 indicates "no s
+  // Initialize map_mobilizer_to_s_index_ to -1, where -1 indicates "no s
   // variable".
   map_mobilizer_to_s_index_ = std::vector<int>(tree.num_mobilizers(), -1);
   for (BodyIndex body_index(1); body_index < plant_.num_bodies();
@@ -98,45 +109,47 @@ RationalForwardKinematics::RationalForwardKinematics(
     const internal::Mobilizer<double>* mobilizer =
         &(tree.get_mobilizer(body_topology.inboard_mobilizer));
     if (IsRevolute(*mobilizer)) {
-      const symbolic::Variable s_angle(fmt::format("s[{}]", num_s));
-      s_.conservativeResize(s_.rows() + 1);
-      s_angles_.conservativeResize(s_angles_.rows() + 1);
-      cos_delta_.conservativeResize(cos_delta_.rows() + 1);
-      sin_delta_.conservativeResize(sin_delta_.rows() + 1);
-      s_(s_.rows() - 1) = s_angle;
-      s_angles_(s_angles_.rows() - 1) = s_angle;
-      cos_delta_(cos_delta_.rows() - 1) = symbolic::Variable(
-          fmt::format("cos_delta[{}]", cos_delta_.rows() - 1));
-      sin_delta_(sin_delta_.rows() - 1) = symbolic::Variable(
-          fmt::format("sin_delta[{}]", sin_delta_.rows() - 1));
-      sin_cos_.emplace_back(sin_delta_(sin_delta_.rows() - 1),
-                            cos_delta_(cos_delta_.rows() - 1));
-      num_s += 1;
-      map_s_index_to_angle_index_.emplace(s_.rows() - 1, s_angles_.rows() - 1);
-      map_s_to_mobilizer_.emplace(s_(s_.rows() - 1).get_id(),
-                                  mobilizer->index());
-      map_mobilizer_to_s_index_[mobilizer->index()] = s_.rows() - 1;
+      const symbolic::Variable s_angle(fmt::format("s[{}]", s_.size()));
+      s_.push_back(s_angle);
+      s_angles_.push_back(s_angle);
+      cos_delta_.emplace_back(
+          fmt::format("cos_delta[{}]", cos_delta_.size() - 1));
+      sin_delta_.emplace_back(
+          fmt::format("sin_delta[{}]", cos_delta_.size() - 1));
+      sin_cos_.emplace_back(sin_delta_.back(), cos_delta_.back());
+      map_s_index_to_angle_index_.emplace(s_.size() - 1, s_angles_.size() - 1);
+      map_s_to_mobilizer_.emplace(s_.back().get_id(), mobilizer->index());
+      map_mobilizer_to_s_index_[mobilizer->index()] = s_.size() - 1;
     } else if (IsWeld(*mobilizer)) {
-      // Do nothing for the welded joint.
+      // Do nothing for a weld joint.
+    } else if (IsPrismatic(*mobilizer)) {
+      s_.emplace_back("s[" + std::to_string(s_.size()) + "]");
+      map_mobilizer_to_s_index_[mobilizer->index()] = s_.size() - 1;
+      map_s_to_mobilizer_.emplace(s_.back().get_id(), mobilizer->index());
     } else {
       throw std::runtime_error(
           "RationalForwardKinematics: encountered an unidentified, unsupported "
-          "Joint type; only weld and revolute joints are supported");
+          "Joint type; only weld, revolute and prismatic joints are "
+          "supported.");
     }
   }
   const symbolic::Monomial monomial_one{};
-  one_plus_s_angles_squared_.resize(s_angles_.rows());
-  two_s_angles_.resize(s_angles_.rows());
-  one_minus_s_angles_squared_.resize(s_angles_.rows());
-  for (int i = 0; i < s_angles_.rows(); ++i) {
+  one_plus_s_angles_squared_.resize(s_angles_.size());
+  two_s_angles_.resize(s_angles_.size());
+  one_minus_s_angles_squared_.resize(s_angles_.size());
+  for (int i = 0; i < static_cast<int>(s_angles_.size()); ++i) {
     one_minus_s_angles_squared_(i) = symbolic::Polynomial(
-        {{monomial_one, 1}, {symbolic::Monomial(s_angles_(i), 2), -1}});
+        {{monomial_one, 1}, {symbolic::Monomial(s_angles_[i], 2), -1}});
     two_s_angles_(i) =
-        symbolic::Polynomial({{symbolic::Monomial(s_angles_(i), 1), 2}});
+        symbolic::Polynomial({{symbolic::Monomial(s_angles_[i], 1), 2}});
     one_plus_s_angles_squared_(i) = symbolic::Polynomial(
-        {{monomial_one, 1}, {symbolic::Monomial(s_angles_(i), 2), 1}});
+        {{monomial_one, 1}, {symbolic::Monomial(s_angles_[i], 2), 1}});
   }
-  s_variables_ = symbolic::Variables(s_);
+  s_angle_variables_ =
+      symbolic::Variables(Eigen::Map<const VectorX<symbolic::Variable>>(
+          s_angles_.data(), s_angles_.size()));
+  s_variables_ = symbolic::Variables(
+      Eigen::Map<const VectorX<symbolic::Variable>>(s_.data(), s_.size()));
 }
 
 RationalForwardKinematics::Pose<symbolic::Polynomial>
@@ -161,8 +174,11 @@ RationalForwardKinematics::ConvertMultilinearPolynomialToRationalFunction(
     const symbolic::Polynomial& e) const {
   const symbolic::RationalFunction e_rational =
       symbolic::internal::SubstituteStereographicProjectionImpl(
-          e, sin_cos_, s_angles_, s_variables_, one_plus_s_angles_squared_,
-          two_s_angles_, one_minus_s_angles_squared_);
+          e, sin_cos_,
+          Eigen::Map<const VectorX<symbolic::Variable>>(s_angles_.data(),
+                                                        s_angles_.size()),
+          s_variables_, one_plus_s_angles_squared_, two_s_angles_,
+          one_minus_s_angles_squared_);
   return e_rational;
 }
 
@@ -173,12 +189,15 @@ Eigen::VectorXd RationalForwardKinematics::ComputeSValue(
   for (int i = 0; i < s_val.size(); ++i) {
     const internal::Mobilizer<double>& mobilizer =
         GetInternalTree(plant_).get_mobilizer(
-            map_s_to_mobilizer_.at(s_(i).get_id()));
+            map_s_to_mobilizer_.at(s_[i].get_id()));
     // the mobilizer cannot be a weld joint since weld joint doesn't introduce a
     // variable into s_.
     if (IsRevolute(mobilizer)) {
       const int q_index = mobilizer.position_start_in_q();
       s_val(i) = std::tan((q_val(q_index) - q_star_val(q_index)) / 2);
+    } else if (IsPrismatic(mobilizer)) {
+      const int q_index = mobilizer.position_start_in_q();
+      s_val(i) = q_val(q_index) - q_star_val(q_index);
     } else {
       // Successful construction guarantees nothing but supported mobilizer
       // types.
@@ -235,6 +254,27 @@ RationalForwardKinematics::CalcWeldJointChildBodyPose(
   return CalcChildPose(R_AP, p_AP, X_PF, X_MC, R_FM, p_FM);
 }
 
+template <typename T>
+RationalForwardKinematics::Pose<T>
+RationalForwardKinematics::CalcPrismaticJointChildLinkPose(
+    const Eigen::Ref<const Eigen::Vector3d>& axis_F,
+    const math::RigidTransformd& X_PF, const math::RigidTransformd& X_MC,
+    const Pose<T>& X_AP, double d_star, const symbolic::Variable& d) const {
+  const symbolic::Polynomial poly_one(1);
+  const symbolic::Polynomial poly_zero(0);
+  Matrix3<symbolic::Polynomial> R_FM;
+  // clang-format off
+  R_FM << poly_one, poly_zero, poly_zero,
+          poly_zero, poly_one, poly_zero,
+          poly_zero, poly_zero, poly_one;
+  // clang-format on
+  const Vector3<symbolic::Polynomial> p_FM =
+      axis_F * symbolic::Polynomial(d_star + d);
+  const Matrix3<T>& R_AP = X_AP.rotation;
+  const Vector3<T>& p_AP = X_AP.position;
+  return CalcChildPose(R_AP, p_AP, X_PF, X_MC, R_FM, p_FM);
+}
+
 RationalForwardKinematics::Pose<symbolic::Polynomial>
 RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
     const Eigen::Ref<const Eigen::VectorXd>& q_star, BodyIndex parent,
@@ -273,42 +313,53 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
   }
   const internal::Mobilizer<double>* mobilizer =
       &(tree.get_mobilizer(mobilizer_index));
+  math::RigidTransformd X_PF, X_MC;
+  if (!is_order_reversed) {
+    X_PF = mobilizer->inboard_frame().GetFixedPoseInBodyFrame();
+    X_MC = mobilizer->outboard_frame().GetFixedPoseInBodyFrame().inverse();
+  } else {
+    X_PF = mobilizer->outboard_frame().GetFixedPoseInBodyFrame();
+    X_MC = mobilizer->inboard_frame().GetFixedPoseInBodyFrame().inverse();
+  }
   if (IsRevolute(*mobilizer)) {
     // A revolute joint.
     const internal::RevoluteMobilizer<double>* revolute_mobilizer =
-        dynamic_cast<const internal::RevoluteMobilizer<double>*>(mobilizer);
+        static_cast<const internal::RevoluteMobilizer<double>*>(mobilizer);
     const int s_index = map_mobilizer_to_s_index_[mobilizer->index()];
     const int q_index = revolute_mobilizer->position_start_in_q();
     const int s_angle_index = map_s_index_to_angle_index_.at(s_index);
     Eigen::Vector3d axis_F;
-    math::RigidTransformd X_PF, X_MC;
     if (!is_order_reversed) {
       axis_F = revolute_mobilizer->revolute_axis();
-      const Frame<double>& frame_F = mobilizer->inboard_frame();
-      const Frame<double>& frame_M = mobilizer->outboard_frame();
-      X_PF = frame_F.GetFixedPoseInBodyFrame();
-      X_MC = frame_M.GetFixedPoseInBodyFrame();
     } else {
       // By negating the revolute axis, we know that R(a, θ)⁻¹ = R(-a, θ)
       axis_F = -revolute_mobilizer->revolute_axis();
-      X_PF = mobilizer->outboard_frame().GetFixedPoseInBodyFrame().inverse();
-      X_MC = mobilizer->inboard_frame().GetFixedPoseInBodyFrame().inverse();
     }
     return CalcRevoluteJointChildBodyPoseAsMultilinearPolynomial(
-        axis_F, X_PF, X_MC, X_AP, q_star(q_index), cos_delta_(s_angle_index),
-        sin_delta_(s_angle_index));
+        axis_F, X_PF, X_MC, X_AP, q_star(q_index), cos_delta_[s_angle_index],
+        sin_delta_[s_angle_index]);
+  } else if (IsPrismatic(*mobilizer)) {
+    // A prismatic joint.
+    const internal::PrismaticMobilizer<double>* prismatic_mobilizer =
+        static_cast<const internal::PrismaticMobilizer<double>*>(mobilizer);
+    const int s_index =
+        map_mobilizer_to_s_index_.at(prismatic_mobilizer->index());
+    Eigen::Vector3d axis_F;
+    if (!is_order_reversed) {
+      axis_F = prismatic_mobilizer->translation_axis();
+    } else {
+      axis_F = -prismatic_mobilizer->translation_axis();
+    }
+    return CalcPrismaticJointChildLinkPose(axis_F, X_PF, X_MC, X_AP,
+                                           q_star(s_index), s_[s_index]);
   } else if (IsWeld(*mobilizer)) {
     const internal::WeldMobilizer<double>* weld_mobilizer =
-        dynamic_cast<const internal::WeldMobilizer<double>*>(mobilizer);
-    math::RigidTransformd X_FM, X_PF, X_MC;
+        static_cast<const internal::WeldMobilizer<double>*>(mobilizer);
+    math::RigidTransformd X_FM;
     if (!is_order_reversed) {
       X_FM = weld_mobilizer->get_X_FM();
-      X_PF = mobilizer->inboard_frame().GetFixedPoseInBodyFrame();
-      X_MC = mobilizer->outboard_frame().GetFixedPoseInBodyFrame();
     } else {
       X_FM = weld_mobilizer->get_X_FM().inverse();
-      X_PF = mobilizer->outboard_frame().GetFixedPoseInBodyFrame().inverse();
-      X_MC = mobilizer->inboard_frame().GetFixedPoseInBodyFrame().inverse();
     }
     return CalcWeldJointChildBodyPose(X_FM, X_PF, X_MC, X_AP);
   }
