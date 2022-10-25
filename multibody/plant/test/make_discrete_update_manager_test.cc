@@ -22,18 +22,31 @@ GTEST_TEST(MakeDiscreteUpdateManagerTest, Sap) {
   EXPECT_TRUE(is_dynamic_castable<CompliantContactManager<AutoDiffXd>>(
       autodiff_manager));
 
-  DRAKE_EXPECT_THROWS_MESSAGE(MakeDiscreteUpdateManager<symbolic::Expression>(
-                                  DiscreteContactSolver::kSap),
-                              "SAP.*not supported.*symbolic::Expression.");
+  std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>>
+      symbolic_manager = MakeDiscreteUpdateManager<symbolic::Expression>(
+          DiscreteContactSolver::kSap);
+  EXPECT_TRUE(
+      is_dynamic_castable<CompliantContactManager<symbolic::Expression>>(
+          symbolic_manager));
 }
 
 GTEST_TEST(MakeDiscreteUpdateManagerTest, Tamsi) {
-  EXPECT_EQ(nullptr,
-            MakeDiscreteUpdateManager<double>(DiscreteContactSolver::kTamsi));
-  EXPECT_EQ(nullptr, MakeDiscreteUpdateManager<AutoDiffXd>(
-                         DiscreteContactSolver::kTamsi));
-  EXPECT_EQ(nullptr, MakeDiscreteUpdateManager<symbolic::Expression>(
-                         DiscreteContactSolver::kTamsi));
+  std::unique_ptr<DiscreteUpdateManager<double>> double_manager =
+      MakeDiscreteUpdateManager<double>(DiscreteContactSolver::kTamsi);
+  EXPECT_TRUE(
+      is_dynamic_castable<CompliantContactManager<double>>(double_manager));
+
+  std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>> autodiff_manager =
+      MakeDiscreteUpdateManager<AutoDiffXd>(DiscreteContactSolver::kTamsi);
+  EXPECT_TRUE(is_dynamic_castable<CompliantContactManager<AutoDiffXd>>(
+      autodiff_manager));
+
+  std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>>
+      symbolic_manager = MakeDiscreteUpdateManager<symbolic::Expression>(
+          DiscreteContactSolver::kTamsi);
+  EXPECT_TRUE(
+      is_dynamic_castable<CompliantContactManager<symbolic::Expression>>(
+          symbolic_manager));
 }
 
 }  // namespace

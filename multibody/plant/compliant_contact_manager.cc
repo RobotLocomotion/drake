@@ -13,6 +13,7 @@
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/multibody/plant/contact_properties.h"
+#include "drake/multibody/plant/dense_solver_driver.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
@@ -47,8 +48,14 @@ CompliantContactManager<T>::~CompliantContactManager() = default;
 template <typename T>
 void CompliantContactManager<T>::set_sap_solver_parameters(
     const contact_solvers::internal::SapSolverParameters& parameters) {
-  DRAKE_DEMAND(sap_driver_ != nullptr);
-  sap_driver_->set_sap_solver_parameters(parameters);
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    DRAKE_DEMAND(sap_driver_ != nullptr);
+    sap_driver_->set_sap_solver_parameters(parameters);
+  } else {
+    throw std::logic_error(
+        "We do not provide SAP support T = symbolic::Expression. Therefore "
+        "this method cannot be called.");
+  }
 }
 
 template <typename T>
@@ -95,7 +102,10 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
     }
   }
 
-  if (sap_driver_ != nullptr) sap_driver_->DeclareCacheEntries(this);
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    if (sap_driver_ != nullptr) sap_driver_->DeclareCacheEntries(this);
+  }
+  if (tamsi_driver_ != nullptr) tamsi_driver_->DeclareCacheEntries(this);
 }
 
 template <typename T>
@@ -205,6 +215,17 @@ CompliantContactManager<T>::CalcContactKinematics(
   return contact_kinematics;
 }
 
+template <>
+void CompliantContactManager<symbolic::Expression>::CalcDiscreteContactPairs(
+    const drake::systems::Context<symbolic::Expression>&,
+    std::vector<DiscreteContactPair<symbolic::Expression>>*) const {
+  // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
+  //  as long as there are no collisions.
+  throw std::domain_error(
+      fmt::format("This method doesn't support T = {}.",
+                  NiceTypeName::Get<symbolic::Expression>()));
+}
+
 template <typename T>
 void CompliantContactManager<T>::CalcDiscreteContactPairs(
     const systems::Context<T>& context,
@@ -291,6 +312,13 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
         pair.id_B, this->default_contact_stiffness(), inspector);
     const T k = GetCombinedPointContactStiffness(
         pair.id_A, pair.id_B, this->default_contact_stiffness(), inspector);
+
+    // Hunt & Crossley dissipation. Used by TAMSI, ignored by SAP.
+    const T d = GetCombinedHuntCrossleyDissipation(
+        pair.id_A, pair.id_B, kA, kB, this->default_contact_dissipation(),
+        inspector);
+
+    // Dissipation time scale. Used by SAP, ignored by TAMSI.
     const double default_dissipation_time_constant = 0.1;
     const T tau = GetCombinedDissipationTimeConstant(
         pair.id_A, pair.id_B, default_dissipation_time_constant, body_A.name(),
@@ -306,15 +334,24 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
     const Vector3<T> p_WC = wA * pair.p_WCa + wB * pair.p_WCb;
 
     const T phi0 = -pair.depth;
-    const T fn0 = NAN;  // not used.
-    const T d = NAN;    // not used.
+    const T fn0 = k * pair.depth;  // Used by TAMSI, ignored by SAP.
     contact_pairs.push_back(
         {pair.id_A, pair.id_B, p_WC, pair.nhat_BA_W, phi0, fn0, k, d, tau, mu});
   }
 }
 
-// Most of the calculation in this function should be the same as in
-// MultibodyPlant<T>::CalcDiscreteContactPairs().
+template <>
+void CompliantContactManager<symbolic::Expression>::
+    AppendDiscreteContactPairsForHydroelasticContact(
+        const drake::systems::Context<symbolic::Expression>&,
+        std::vector<DiscreteContactPair<symbolic::Expression>>*) const {
+  // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
+  //  as long as there are no collisions.
+  throw std::domain_error(
+      fmt::format("This method doesn't support T = {}.",
+                  NiceTypeName::Get<symbolic::Expression>()));
+}
+
 template <typename T>
 void CompliantContactManager<T>::
     AppendDiscreteContactPairsForHydroelasticContact(
@@ -531,12 +568,16 @@ template <typename T>
 void CompliantContactManager<T>::DoCalcContactSolverResults(
     const systems::Context<T>& context,
     ContactSolverResults<T>* contact_results) const {
-  // TODO(amcastro-tri): Remove this DRAKE_DEMAND when other solvers are
-  // supported.
-  DRAKE_DEMAND(plant().get_discrete_contact_solver() ==
-                   DiscreteContactSolver::kSap &&
-               sap_driver_ != nullptr);
-  sap_driver_->CalcContactSolverResults(context, contact_results);
+  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap)
+    DRAKE_DEMAND(sap_driver_ != nullptr);
+  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi)
+    DRAKE_DEMAND(tamsi_driver_ != nullptr);
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    if (sap_driver_ != nullptr)
+      sap_driver_->CalcContactSolverResults(context, contact_results);
+  }
+  if (tamsi_driver_ != nullptr)
+    tamsi_driver_->CalcContactSolverResults(context, contact_results);
 }
 
 template <typename T>
@@ -606,12 +647,22 @@ void CompliantContactManager<T>::ExtractModelInfo() {
     joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
   }
 
-  // TODO(amcastro-tri): Remove this DRAKE_DEMAND when other solvers are
-  // supported.
-  DRAKE_DEMAND(plant().get_discrete_contact_solver() ==
-                   DiscreteContactSolver::kSap &&
-               sap_driver_ == nullptr);
-  sap_driver_ = std::make_unique<SapDriver<T>>(this);
+  DRAKE_DEMAND(sap_driver_ == nullptr && tamsi_driver_ == nullptr);
+
+  switch (plant().get_discrete_contact_solver()) {
+    case DiscreteContactSolver::kSap:
+      if constexpr (std::is_same_v<T, symbolic::Expression>) {
+        throw std::runtime_error(
+            "SAP solver is not supported for scalar type T = "
+            "symbolic::Expression.");
+      } else {
+        sap_driver_ = std::make_unique<SapDriver<T>>(this);
+      }
+      break;
+    case DiscreteContactSolver::kTamsi:
+      tamsi_driver_ = std::make_unique<DenseSolverDriver<T>>(this);
+      break;
+  }
 
   // Collect information from each PhysicalModel owned by the plant.
   const std::vector<std::unique_ptr<multibody::internal::PhysicalModel<T>>>&
@@ -674,5 +725,5 @@ void CompliantContactManager<T>::DoCalcAccelerationKinematicsCache(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::CompliantContactManager);
