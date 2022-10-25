@@ -56,6 +56,9 @@ PYBIND11_MODULE(kuka_iiwa, m) {
     py::class_<Class, LeafSystem<double>>(m, "IiwaCommandSender", cls_doc.doc)
         .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
             cls_doc.ctor.doc)
+        .def("get_time_measured_input_port",
+            &Class::get_time_measured_input_port, py_rvp::reference_internal,
+            cls_doc.get_time_measured_input_port.doc)
         .def("get_position_input_port", &Class::get_position_input_port,
             py_rvp::reference_internal, cls_doc.get_position_input_port.doc)
         .def("get_torque_input_port", &Class::get_torque_input_port,
@@ -101,6 +104,9 @@ PYBIND11_MODULE(kuka_iiwa, m) {
     py::class_<Class, LeafSystem<double>>(m, "IiwaStatusSender", cls_doc.doc)
         .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
             cls_doc.ctor.doc)
+        .def("get_time_measured_input_port",
+            &Class::get_time_measured_input_port, py_rvp::reference_internal,
+            cls_doc.get_time_measured_input_port.doc)
         .def("get_position_commanded_input_port",
             &Class::get_position_commanded_input_port,
             py_rvp::reference_internal,

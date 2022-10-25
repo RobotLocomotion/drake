@@ -48,6 +48,7 @@ class IiwaStatusSenderTest : public testing::Test {
 };
 
 TEST_F(IiwaStatusSenderTest, AcceptanceTest) {
+  const VectorXd time_measured = Vector1d(1.2);
   const VectorXd q0_commanded = VectorXd::LinSpaced(N, 0.1, 0.2);
   const VectorXd q0_measured = VectorXd::LinSpaced(N, 0.11, 0.22);
   const VectorXd v0_estimated = VectorXd::LinSpaced(N, 0.2, 0.3);
@@ -64,15 +65,18 @@ TEST_F(IiwaStatusSenderTest, AcceptanceTest) {
   EXPECT_EQ(output().joint_position_measured, as_vector(q0_measured));
   EXPECT_EQ(output().joint_torque_commanded, as_vector(t0_commanded));
   // ... and some outputs have default values.
+  EXPECT_EQ(output().utime, 0);
   EXPECT_EQ(output().joint_velocity_estimated, std::vector<double>(N, 0.0));
   EXPECT_EQ(output().joint_torque_measured, as_vector(t0_commanded));
   EXPECT_EQ(output().joint_torque_external, std::vector<double>(N, 0.0));
 
   // Fix all of the inputs ...
+  Fix(dut_.get_time_measured_input_port(), time_measured);
   Fix(dut_.get_velocity_estimated_input_port(), v0_estimated);
   Fix(dut_.get_torque_measured_input_port(), t0_measured);
   Fix(dut_.get_torque_external_input_port(), t0_external);
   // ... so all outputs have values.
+  EXPECT_EQ(output().utime, time_measured[0] * 1e6);
   EXPECT_EQ(output().joint_position_commanded, as_vector(q0_commanded));
   EXPECT_EQ(output().joint_position_measured, as_vector(q0_measured));
   EXPECT_EQ(output().joint_torque_commanded, as_vector(t0_commanded));
