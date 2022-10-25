@@ -8,6 +8,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -556,16 +557,22 @@ PYBIND11_MODULE(symbolic, m) {
         return symbolic::SubstituteStereographicProjection(e, sin_cos, t);
       },
       py::arg("e"), py::arg("sin_cos"), py::arg("t"),
-      doc.SubstituteStereographicProjection.doc_3args);
+      doc.SubstituteStereographicProjection.doc);
 
-  m.def(
-      "SubstituteStereographicProjection",
-      [](const Expression& e, const std::unordered_map<symbolic::Variable,
-                                  symbolic::Variable>& subs) {
-        return symbolic::SubstituteStereographicProjection(e, subs);
-      },
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("SubstituteStereographicProjection",
+      WrapDeprecated(
+          "2023-02-01, use the other SubstituteStereographicProjection which "
+          "passes e as a sym.Polynomial",
+          [](const Expression& e, const std::unordered_map<symbolic::Variable,
+                                      symbolic::Variable>& subs) {
+            return symbolic::SubstituteStereographicProjection(e, subs);
+          }),
       py::arg("e"), py::arg("subs"),
-      doc.SubstituteStereographicProjection.doc_2args);
+      "2023-02-01, use the other SubstituteStereographicProjection which "
+      "passes e as a sym.Polynomial");
+#pragma GCC diagnostic pop
 
   {
     constexpr auto& cls_doc = doc.FormulaKind;
