@@ -153,6 +153,14 @@ struct Impl {
           m, "BsplineTrajectory", param, cls_doc.doc);
       cls  // BR
           .def(py::init<>())
+          // This overload will match 2d numpy arrays before
+          // std::vector<MatrixX<T>>; we want to treat these as one vector of
+          // control points per column.
+          .def(py::init([](math::BsplineBasis<T> basis,
+                            std::vector<std::vector<T>> control_points) {
+            return Class(basis, MakeEigenFromRowMajorVectors(control_points));
+          }),
+              py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
           .def(py::init<math::BsplineBasis<T>, std::vector<MatrixX<T>>>(),
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
           .def("Clone", &Class::Clone, cls_doc.Clone.doc)

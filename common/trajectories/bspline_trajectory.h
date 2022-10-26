@@ -129,7 +129,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   Serialize(Archive* a) {
     a->Visit(MakeNameValue("basis", &basis_));
     a->Visit(MakeNameValue("control_points", &control_points_));
-    DRAKE_THROW_UNLESS(CheckInvariants());
+    CheckInvariants();
   }
 
  private:
@@ -140,7 +140,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
       int derivative_order) const override;
 
-  bool CheckInvariants() const;
+  void CheckInvariants() const;
 
   math::BsplineBasis<T> basis_;
   std::vector<MatrixX<T>> control_points_;
