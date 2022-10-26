@@ -45,6 +45,7 @@ drake_cc_library(
         ":trajectory",
         "//common:default_scalars",
         "//common:essential",
+        "//math:matrix_util",
     ],
 )
 
@@ -85,6 +86,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:polynomial",
+        "//math:matrix_util",
         "@fmt",
     ],
 )
