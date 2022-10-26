@@ -10,7 +10,7 @@ namespace drake {
 namespace multibody {
 
 /**
-Combines multiple lists of externally applied spatial forces.
+Combines multiple std::vector<>'s of ExternallyAppliedSpatialForce<T>.
 
 @system
 name: ExternallyAppliedSpatialForceListMultiplexer
