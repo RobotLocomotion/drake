@@ -7,25 +7,12 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/math/matrix_util.h"
 
 namespace drake {
 namespace trajectories {
 
-namespace {
-
-// Helper method to go from the Eigen entry points to the std::vector versions.
-// Copies each column of mat to an element of the returned std::vector.
-template <typename T>
-std::vector<MatrixX<T>> ColsToStdVector(
-    const Eigen::Ref<const MatrixX<T>>& mat) {
-  std::vector<MatrixX<T>> vec(mat.cols());
-  for (int i = 0; i < mat.cols(); i++) {
-    vec[i] = mat.col(i);
-  }
-  return vec;
-}
-
-}  // end namespace
+using math::EigenToStdVector;
 
 template <typename T>
 DiscreteTimeTrajectory<T>::DiscreteTimeTrajectory(
@@ -34,7 +21,7 @@ DiscreteTimeTrajectory<T>::DiscreteTimeTrajectory(
     const double time_comparison_tolerance)
     : DiscreteTimeTrajectory(
           std::vector<T>(times.data(), times.data() + times.size()),
-          ColsToStdVector(values), time_comparison_tolerance) {}
+          EigenToStdVector(values), time_comparison_tolerance) {}
 
 template <typename T>
 DiscreteTimeTrajectory<T>::DiscreteTimeTrajectory(
