@@ -84,11 +84,10 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
   // We'll monitor which LCM channel names appear.
   DrakeLcm drake_lcm;
   std::set<std::string> observed_channels;
-  drake_lcm.SubscribeAllChannels([&observed_channels](std::string_view channel,
-                                                      const void* /* buffer */,
-                                                      int /* size */) {
-    observed_channels.emplace(channel);
-  });
+  drake_lcm.SubscribeAllChannels(
+      [&](std::string_view channel, const void* /* buffer */, int /* size */) {
+        observed_channels.emplace(channel);
+      });
   LcmBuses lcm_buses;
   lcm_buses.Add("default", &drake_lcm);
 

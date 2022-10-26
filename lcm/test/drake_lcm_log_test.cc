@@ -17,7 +17,7 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
   auto w_log = std::make_unique<DrakeLcmLog>("test.log", true);
   const std::string channel_name("test_channel");
 
-  drake::lcmt_drake_signal msg{};
+  lcmt_drake_signal msg{};
   msg.dim = 1;
   msg.val.push_back(0.1);
   msg.coord.push_back("test");
@@ -31,12 +31,12 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
   auto r_log = std::make_unique<DrakeLcmLog>("test.log", false);
 
   // Add multiple subscribers to the same channel.
-  std::vector<drake::lcmt_drake_signal> messages(3, drake::lcmt_drake_signal{});
+  std::vector<lcmt_drake_signal> messages(3, lcmt_drake_signal{});
   for (int i = 0; i < 3; i++) {
-    Subscribe<drake::lcmt_drake_signal>(r_log.get(), channel_name,
-                                        [i, &messages](const auto& message) {
-                                          messages[i] = message;
-                                        });
+    Subscribe(r_log.get(), channel_name,
+              std::function{[i, &messages](const lcmt_drake_signal& message) {
+                messages[i] = message;
+              }});
   }
 
   // Also subscribe via SubscribeAllChannels
