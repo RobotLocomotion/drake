@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/externally_applied_spatial_force_list_multiplexer.h"
+#include "drake/multibody/plant/externally_applied_spatial_force_multiplexer.h"
 
 #include <algorithm>
 
