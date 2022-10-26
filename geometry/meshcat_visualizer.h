@@ -64,7 +64,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   template <typename U>
   explicit MeshcatVisualizer(const MeshcatVisualizer<U>& other);
 
-  /** Calls Meschat::Delete(std::string path), with the path set to
+  /** Calls Meshcat::Delete(std::string path), with the path set to
    MeshcatVisualizerParams::prefix.  Since this visualizer will only ever add
    geometry under this prefix, this will remove all geometry/transforms added
    by the visualizer, or by a previous instance of this visualizer using the

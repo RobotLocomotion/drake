@@ -50,7 +50,7 @@ struct ContactVisualizerParams {
    "Meshcat paths" for details. */
   std::string prefix{"contact_forces"};
 
-  /** Determines whether to send a Meschat::Delete(prefix) message on an
+  /** Determines whether to send a Meshcat::Delete(prefix) message on an
    initialization event to remove any visualizations e.g. from a previous
    simulation. See @ref declare_initialization_events "Declare initialization
    events" for more information. */
