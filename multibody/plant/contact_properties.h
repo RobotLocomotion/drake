@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity_properties.h"
@@ -18,6 +20,59 @@ namespace internal {
 template <typename T>
 T GetPointContactStiffness(geometry::GeometryId id, double default_value,
                            const geometry::SceneGraphInspector<T>& inspector);
+
+/* Returns the hydroelastic modulus stored in group
+ geometry::internal::kHydroGroup with property geometry::internal::kElastic for
+ the specified geometry.
+
+ This method returns infinity for geometries with value
+ geometry::internal::HydroelasticType::kRigid for the property
+ geometry::internal::kComplianceType.
+
+ If not defined rigid and if the hydroelastic modulus is absent, it returns the
+ supplied default value.
+
+ @pre id is a valid GeometryId in the inspector that has proximity properties.
+ @pre default_value >= 0. */
+template <typename T>
+T GetHydroelasticModulus(geometry::GeometryId id, double default_value,
+                         const geometry::SceneGraphInspector<T>& inspector);
+
+/* Returns the Hunt & Crossley dissipation parameter stored in group
+ geometry::internal::kMaterialGroup with property
+ geometry::internal::kHcDissipation for the specified geometry.
+ If the dissipation property is absent, it returns the supplied default value.
+ @pre id is a valid GeometryId in the inspector that has proximity properties.
+ @pre default_value >= 0. */
+template <typename T>
+T GetHuntCrossleyDissipation(geometry::GeometryId id, double default_value,
+                             const geometry::SceneGraphInspector<T>& inspector);
+
+/* Returns the combined Hunt & Crossley dissipation of geometries A and B.
+ Denoting with k₁ and k₂ the `stiffness_A` and `stiffness_B` respectively, and
+ with d₁ and d₂ the Hunt & Crossley dissipation coefficients for geometries A
+ and B respectively, this method computes the combined dissipation according to
+ the rule:
+   d = k₂/(k₁+k₂)⋅d₁ + k₁/(k₁+k₂)⋅d₂
+ This method requires both values of stiffness coefficients to be positive
+ or zero, and it allows one, but only one value, to be infinite. That
+ is, one of the geometries can be rigid but not both. For such case, the
+ combined dissipation corresponds to the mathematical limit in the expression
+ above, i.e., it is the dissipation of the non-rigid geometry.
+ If both values of stiffness are zero, zero dissipation is returned.
+
+ @pre stiffness_A >= 0. It can have the value infinity, indicating a rigid
+ geometry A.
+ @pre stiffness_B >= 0. It can have the value infinity, indicating a rigid
+ geometry B.
+ @pre At least one of A or B is non-rigid.
+ @pre default_dissipation >= 0. Default value of dissipation for both geometries
+ in case no value was assigned in the proximity properties. */
+template <typename T>
+T GetCombinedHuntCrossleyDissipation(
+    geometry::GeometryId id_A, geometry::GeometryId id_B, const T& stiffness_A,
+    const T& stiffness_B, double default_dissipation,
+    const geometry::SceneGraphInspector<T>& inspector);
 
 /* Returns the dissipation time constant stored in group
  geometry::internal::kMaterialGroup with property
