@@ -2,22 +2,20 @@ import subprocess
 import textwrap
 import unittest
 
-from bazel_tools.tools.python.runfiles import runfiles
+from pydrake.common import FindResourceOrThrow
+import pydrake.visualization as mut
 
-from drake.manipulation.util.show_model import ModelVisualizer
 
-
-class TestShowModel(unittest.TestCase):
-    """Tests the show_model script as a subprocess."""
+class TestModelVisualizerSubprocess(unittest.TestCase):
+    """Tests the model_visualizer script as a subprocess."""
 
     def setUp(self):
-        self.manifest = runfiles.Create()
-        self.dut = self.manifest.Rlocation(
-            "drake/manipulation/util/show_model")
+        self.dut = FindResourceOrThrow(
+            "drake/bindings/pydrake/visualization/model_visualizer")
 
     def model_file(self, model_runpath):
         """Get a model file from a runpath."""
-        return self.manifest.Rlocation(model_runpath)
+        return FindResourceOrThrow(model_runpath)
 
     def test_show(self):
         """Test that show_model doesn't crash."""
@@ -80,6 +78,36 @@ class TestModelVisualizer(unittest.TestCase):
 
     def test_model_in_buffer(self):
         """Tests the ModelVisualizer using a model in a string buffer."""
-        dut = ModelVisualizer(visualize_frames=True)
+        dut = mut.ModelVisualizer(visualize_frames=True)
         dut.parser.AddModelsFromString(self.SAMPLE_OBJ, 'sdf')
         dut.Run(position=[1, 0, 0, 0, 0, 0, 0], loop_once=True)
+
+    def test_model_in_file(self):
+        """Tests the ModelVisualizer using a model in a file."""
+        model_runpaths = [
+            # Simple SDFormat file.
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf",
+            # Simple URDF file.
+            "drake/multibody/benchmarks/acrobot/acrobot.urdf",
+            # Nested SDFormat file.
+            "drake/manipulation/util/test/simple_nested_model.sdf",
+            # SDFormat world file with multiple models.
+            "drake/manipulation/util/test/simple_world_with_two_models.sdf",
+        ]
+        for model_runpath in model_runpaths:
+            dut = mut.ModelVisualizer(visualize_frames=True)
+            dut.AddModels(FindResourceOrThrow(model_runpath))
+            dut.Run(loop_once=True)
+
+    def test_methods_and_multiple_models(self):
+        dut = mut.ModelVisualizer()
+
+        # Check that models can be added multiple times without error.
+        dut.parser.AddModelsFromString(self.SAMPLE_OBJ, 'sdf')
+
+        sample2 = self.SAMPLE_OBJ.replace('name="cylinder"',
+                                          'name="cylinder2"')
+        dut.parser.AddModelsFromString(sample2, 'sdf')
+
+        dut.Finalize(position=[1, 0, 0, 0, 0, 0, 0] * 2)
+        dut.Run(loop_once=True)
