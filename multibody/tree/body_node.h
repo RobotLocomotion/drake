@@ -1059,8 +1059,10 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       D_B.diagonal() += diagonal_inertias.segment(this->velocity_start(), nv);
 
       // Compute the LLT factorization of D_B as llt_D_B.
-      const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
-        CalcArticulatedBodyHingeInertiaMatrixFactorization(context, D_B, abic);
+      math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
+        get_mutable_llt_D_B(abic);
+      CalcArticulatedBodyHingeInertiaMatrixFactorization(context, D_B,
+          &llt_D_B);
 
       // Compute the Kalman gain, g_PB_W, using (6).
       Matrix6xUpTo6<T>& g_PB_W = get_mutable_g_PB_W(abic);
@@ -1637,17 +1639,18 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   }
 
   // Returns LLT factorization of articulated rigid body's hinge inertia matrix.
-  // param[in] context Contains the state of the multibody system. The context
-  //   is only used if factorization fails in which case an assertion is thrown.
-  //   The assertion message contains mass and/or inertia properties of this
+  // @param[in] context Contains the state of the multibody system. The context
+  //   is only used if factorization fails in which case an exception is thrown.
+  //   The exception message contains mass and/or inertia properties of this
   //   body node's outboard body.
-  // param[in] D_B Articulated rigid body hinge matrix.
-  // param[in] abic Efficient access to articulated body inertia cache.
+  // @param[in] D_B Articulated rigid body hinge matrix.
+  // @param[in, out] llt_D_B Stores the LLT factorization of D_B.
   // @throws an exception if D_B is not positive definite or is near-singular.
-  const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
-  CalcArticulatedBodyHingeInertiaMatrixFactorization(
-      const systems::Context<T>& context, const MatrixUpTo6<T>& D_B,
-      ArticulatedBodyInertiaCache<T>* abic) const;
+  // @throws if llt_D_B is nullptr.
+  void CalcArticulatedBodyHingeInertiaMatrixFactorization(
+      const systems::Context<T>& context,
+      const MatrixUpTo6<T>& D_B,
+      math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>* llt_D_B) const;
 
   // Returns a const reference to the Kalman gain `g_PB_W` of the body.
   const Matrix6xUpTo6<T>& get_g_PB_W(

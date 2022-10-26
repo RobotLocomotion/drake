@@ -8,12 +8,11 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
-    BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
+void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
     const systems::Context<T>& context,
     const MatrixUpTo6<T>& D_B,
-    ArticulatedBodyInertiaCache<T>* abic) const {
-  DRAKE_THROW_UNLESS(abic != nullptr);
+    math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>* llt_D_B) const {
+  DRAKE_THROW_UNLESS(llt_D_B != nullptr);
 
   // Compute the LLT factorization of D_B as llt_D_B.
   // Note: Eigen benchmarks for various matrix factorizations are here:
@@ -23,9 +22,7 @@ const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
   // LDLT 1.3x, PartialPivLU 1.5x, FullPivLU = 1.9x, HouseholderQR 3.5x,
   // CompleteOrthogonalDecomposition 4.3x, FullPivHouseholderQR 4.3x,
   // JacobiSVD 18.6x, BDCSVD 19.7x.
-  math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
-      get_mutable_llt_D_B(abic);
-  llt_D_B = math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>(
+  *llt_D_B = math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>(
       MatrixUpTo6<T>(D_B.template selfadjointView<Eigen::Lower>()));
 
   // Ensure D_B (the articulated body hinge inertia matrix) is positive definite
@@ -35,7 +32,16 @@ const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
   // Example: The 1x1 hinge matrix D_B = [3.3] is positive definite whereas
   // D_B = [0] or D_B = [-1E-22] are not positive definite.
   // If factorization fails, throw an assertion.
-  if (llt_D_B.eigen_linear_solver().info() != Eigen::Success) {
+  // TODO(Mitiguy) Improve robustness of the test for a positive definite D_B.
+  //  LLT factorization is not a reliable test of near-singular matrices.
+  //  If LLT fails, we _know_ that D_B is not reliably positive-definite.
+  //  However, if LLT succeeds, D_B may be near-singular. It would be ideal to
+  //  have a fast check for near-singular cases. One mathematically rigorous
+  //  technique that was tested was to do a 2ⁿᵈ LLT factorization on (D_B - ε I)
+  //  where ε is a prudently chosen small number and I is the identity matrix.
+  //  If the LLT of (D_B - ε I) is not positive definite and the LLT of D_B is
+  //  positive definite, we _know_ D_B is near singular.
+  if (llt_D_B->eigen_linear_solver().info() != Eigen::Success) {
     // Create a meaningful message the helps the user as much as possible.
     const Mobilizer<T>& mobilizer = get_mobilizer();
     const Body<T>& inboard_body = mobilizer.inboard_body();
@@ -67,8 +73,6 @@ const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>&
     }
     throw std::runtime_error(message.str());
   }
-
-  return llt_D_B;
 }
 
 }  // namespace internal
