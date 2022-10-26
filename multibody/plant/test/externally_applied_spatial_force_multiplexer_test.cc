@@ -26,15 +26,14 @@ class ExternallyAppliedSpatialForceMultiplexerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     system_ =
-        std::make_unique<
-            ExternallyAppliedSpatialForceListMultiplexer<double>>(2);
+        std::make_unique<ExternallyAppliedSpatialForceMultiplexer<double>>(2);
     context_ = system_->CreateDefaultContext();
 
     input0_ = {MakeDummyForce(BodyIndex{0}), MakeDummyForce(BodyIndex{1})};
     input1_ = {MakeDummyForce(BodyIndex{1}), MakeDummyForce(BodyIndex{2})};
   }
 
-  std::unique_ptr<ExternallyAppliedSpatialForceListMultiplexer<double>> system_;
+  std::unique_ptr<ExternallyAppliedSpatialForceMultiplexer<double>> system_;
   std::unique_ptr<systems::Context<double>> context_;
   ListType input0_;
   ListType input1_;

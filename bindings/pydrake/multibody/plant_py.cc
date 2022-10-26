@@ -1170,12 +1170,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
     AddValueInstantiation<std::vector<Class>>(m);
   }
 
-  // ExternallyAppliedSpatialForceListMultiplexer
+  // ExternallyAppliedSpatialForceMultiplexer
   {
-    using Class = ExternallyAppliedSpatialForceListMultiplexer<T>;
-    constexpr auto& cls_doc = doc.ExternallyAppliedSpatialForceListMultiplexer;
+    using Class = ExternallyAppliedSpatialForceMultiplexer<T>;
+    constexpr auto& cls_doc = doc.ExternallyAppliedSpatialForceMultiplexer;
     auto cls = DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(
-        m, "ExternallyAppliedSpatialForceListMultiplexer", param, cls_doc.doc);
+        m, "ExternallyAppliedSpatialForceMultiplexer", param, cls_doc.doc);
     cls  // BR
         .def(py::init<int>(), py::arg("num_inputs"), cls_doc.ctor.doc);
   }

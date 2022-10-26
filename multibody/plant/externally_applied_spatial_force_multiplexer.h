@@ -13,7 +13,7 @@ namespace multibody {
 Combines multiple std::vector<>'s of ExternallyAppliedSpatialForce<T>.
 
 @system
-name: ExternallyAppliedSpatialForceListMultiplexer
+name: ExternallyAppliedSpatialForceMultiplexer
 input_ports:
 - u0
 - ...
@@ -25,10 +25,10 @@ output_ports:
 @tparam default_scalar
 */
 template <typename T>
-class ExternallyAppliedSpatialForceListMultiplexer final
+class ExternallyAppliedSpatialForceMultiplexer final
     : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternallyAppliedSpatialForceListMultiplexer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternallyAppliedSpatialForceMultiplexer)
 
   using ValueType = ExternallyAppliedSpatialForce<T>;
   using ListType = std::vector<ValueType>;
@@ -37,14 +37,14 @@ class ExternallyAppliedSpatialForceListMultiplexer final
   Constructor.
   @param num_inputs Number of input ports to be added.
   */
-  explicit ExternallyAppliedSpatialForceListMultiplexer(int num_inputs);
 
+  explicit ExternallyAppliedSpatialForceMultiplexer(int num_inputs);
   /**
   Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   */
   template <typename U>
-  explicit ExternallyAppliedSpatialForceListMultiplexer(
-      const ExternallyAppliedSpatialForceListMultiplexer<U>& other);
+  explicit ExternallyAppliedSpatialForceMultiplexer(
+      const ExternallyAppliedSpatialForceMultiplexer<U>& other);
 
  private:
   // This is the calculator for the output port.
