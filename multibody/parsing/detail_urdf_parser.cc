@@ -30,6 +30,7 @@
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 
@@ -556,6 +557,30 @@ void UrdfParser::ParseJoint(
     }
     plant->AddJoint<PlanarJoint>(name, *parent_body, X_PJ,
                                  *child_body, std::nullopt, damping_vec);
+  } else if (type.compare("screw") == 0) {
+    throw_on_custom_joint(true);
+    ParseJointDynamics(node, &damping);
+    // Parse screw thread pitch
+    double screw_thread_pitch;
+    XMLElement* screw_thread_pitch_node =
+        node->FirstChildElement("drake:screw_thread_pitch");
+    if (screw_thread_pitch_node) {
+      if (!ParseScalarAttribute(screw_thread_pitch_node, "value",
+                                &screw_thread_pitch)) {
+        Error(*screw_thread_pitch_node,
+              fmt::format("Joint {}'s drake:screw_thread_pitch does not have"
+                          " a \"value\" attribute.", name));
+        return;
+      }
+    } else {
+        Error(*node,
+              fmt::format("Joint {} does not have a"
+                          " \"drake:screw_thread_pitch\" element.", name));
+        return;
+    }
+    plant->AddJoint<ScrewJoint>(name, *parent_body, X_PJ, *child_body,
+                                std::nullopt, axis, screw_thread_pitch,
+                                damping);
   } else if (type.compare("universal") == 0) {
     throw_on_custom_joint(true);
     ParseJointDynamics(node, &damping);
