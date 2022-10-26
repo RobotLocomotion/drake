@@ -32,9 +32,8 @@ Message DecodeLcmMessage(const std::vector<uint8_t>& bytes) {
   Message message{};
   const size_t size_decoded = message.decode(bytes.data(), 0, bytes.size());
   if (size_decoded != bytes.size()) {
-    throw std::runtime_error(
-        "Error decoding message of type '" + NiceTypeName::Get<Message>()
-        + "'");
+    throw std::runtime_error("Error decoding message of type '" +
+                             NiceTypeName::Get<Message>() + "'");
   }
   return message;
 }

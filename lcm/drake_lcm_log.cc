@@ -26,8 +26,9 @@ class DrakeLcmLog::Impl {
   const ::lcm::LogEvent* next_event_{nullptr};
 };
 
-DrakeLcmLog::DrakeLcmLog(const std::string& file_name, bool is_write,
-                         bool overwrite_publish_time_with_system_clock)
+DrakeLcmLog::DrakeLcmLog(const std::string& file_name,
+    bool is_write,
+    bool overwrite_publish_time_with_system_clock)
     : is_write_(is_write),
       overwrite_publish_time_with_system_clock_(
           overwrite_publish_time_with_system_clock),
@@ -50,8 +51,10 @@ std::string DrakeLcmLog::get_lcm_url() const {
   return url_;
 }
 
-void DrakeLcmLog::Publish(const std::string& channel, const void* data,
-                          int data_size, std::optional<double> time_sec) {
+void DrakeLcmLog::Publish(const std::string& channel,
+    const void* data,
+    int data_size,
+    std::optional<double> time_sec) {
   if (!is_write_) {
     throw std::logic_error("Publish is only available for log saving.");
   }
@@ -139,9 +142,8 @@ void DrakeLcmLog::DispatchMessageAndAdvanceLog(double current_time) {
     const HandlerFunction& handler = iter->second;
     handler(next_event.data, next_event.datalen);
   }
-  for (const MultichannelHandlerFunction& handler :
-           impl_->multichannel_subscriptions_) {
-    handler(next_event.channel, next_event.data, next_event.datalen);
+  for (const auto& multi_handler : impl_->multichannel_subscriptions_) {
+    multi_handler(next_event.channel, next_event.data, next_event.datalen);
   }
 
   // Advance log.

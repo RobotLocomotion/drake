@@ -80,8 +80,7 @@ TEST_F(DrakeLcmInterfaceTest, DefaultErrorHandlingTest) {
   corrupt_bytes.at(0) = 0;
   lcm_.Publish(channel_, corrupt_bytes.data(), corrupt_bytes.size(), {});
   DRAKE_EXPECT_THROWS_MESSAGE(
-      lcm_.HandleSubscriptions(0),
-      "Error decoding message on NAME");
+      lcm_.HandleSubscriptions(0), "Error decoding message on NAME");
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, Message{}));
   received = {};
 
@@ -111,8 +110,7 @@ TEST_F(DrakeLcmInterfaceTest, HandlerExceptionTest) {
   const Message empty{};
   Publish(&lcm_, channel_, empty);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      lcm_.HandleSubscriptions(0),
-      ".*callback.*dim > 0.*failed.*");
+      lcm_.HandleSubscriptions(0), ".*callback.*dim > 0.*failed.*");
 
   // We can still publish successfully.
   sample_.val.at(0) = 2.0;
@@ -126,11 +124,14 @@ TEST_F(DrakeLcmInterfaceTest, CustomErrorHandlingTest) {
   // Subscribe using the helper free-function, using default error-handling.
   Message received{};
   bool error = false;
-  Subscribe<Message>(&lcm_, channel_, [&](const Message& message) {
-    received = message;
-  }, [&]() {
-    error = true;
-  });
+  Subscribe<Message>(
+      &lcm_, channel_,
+      [&](const Message& message) {
+        received = message;
+      },
+      [&]() {
+        error = true;
+      });
 
   // Publish successfully.
   lcm_.Publish(channel_, sample_bytes_.data(), sample_bytes_.size(), {});

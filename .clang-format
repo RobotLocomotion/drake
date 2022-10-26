@@ -11,6 +11,23 @@ Language: Cpp
 DerivePointerAlignment: false
 PointerAlignment: Left
 
+# Function parameters will either all be on the same line or will have one line
+# each.
+BinPackParameters: false
+
+# When a function signature's parameters or a function call's arguments need to
+# wrap onto another line, indent by four spaces -- do not whitespace castle all
+# the way over to the open-paren (sometimes placing all of the code smashed up
+# against the 80-column right margin).
+AlignAfterOpenBracket: DontAlign
+
+# Compress functions onto a single line (when they fit) iff they are defined
+# inline (inside a of class).
+AllowShortFunctionsOnASingleLine: InlineOnly
+
+# Compress lambdas onto a single line iff they are empty.
+AllowShortLambdasOnASingleLine: Empty
+
 # Specify the #include statement order.  This implements the order mandated by
 # the Google C++ Style Guide: related header, C headers, C++ headers, library
 # headers, and finally the project headers.
