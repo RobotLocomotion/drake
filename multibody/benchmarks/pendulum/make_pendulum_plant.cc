@@ -16,10 +16,11 @@ using geometry::FrameId;
 using geometry::SceneGraph;
 using geometry::Sphere;
 
-std::unique_ptr<MultibodyPlant<double>>
-MakePendulumPlant(const PendulumParameters& params,
-                  SceneGraph<double>* scene_graph) {
-  auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
+std::unique_ptr<MultibodyPlant<double>> MakePendulumPlant(
+    const PendulumParameters& params, double time_step,
+    SceneGraph<double>* scene_graph) {
+  DRAKE_DEMAND(time_step > 0.0);
+  auto plant = std::make_unique<MultibodyPlant<double>>(time_step);  
 
   // Position of the com of the pendulum's body (in this case a point mass) in
   // the body's frame. The body's frame's origin Bo is defined to be at the
@@ -68,6 +69,34 @@ MakePendulumPlant(const PendulumParameters& params,
   // Gravity acting in the -z direction.
   plant->mutable_gravity_field().set_gravity_vector(
       -params.g() * Vector3d::UnitZ());
+
+  // When modeled as a discrete system, add a second pendulum modeled using
+  // a distance constraint.
+  if (time_step > 0.0) {    
+    plant->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+
+    // Unlike body 1, body 2's origin is defined to be coincident with the
+    // position of the point mass.
+    UnitInertia<double> G_B2 =
+        UnitInertia<double>::SolidSphere(0.005);
+    SpatialInertia<double> M_B2(params.m(), Vector3<double>::Zero(), G_B2);
+
+    const RigidBody<double>& point_mass2 =
+        plant->AddRigidBody(params.body_name() + "2", M_B2);
+    // Distance is zero because Bo is already defined with an offset from the
+    // point point mass by the pendulum's length.
+    plant->AddDistanceConstraint(plant->world_body(), point_mass2,
+                                 Vector3<double>::Zero(),
+                                 Vector3<double>::Zero(), params.l());
+
+    if (scene_graph != nullptr) {
+      const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
+      // Sphere on body B2.
+      plant->RegisterVisualGeometry(
+          point_mass2, math::RigidTransformd::Identity(),
+          Sphere(params.point_mass_radius()), point_mass2.name(), red);
+    }
+  }
 
   plant->Finalize();
 

@@ -102,6 +102,7 @@ class PendulumParameters {
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<MultibodyPlant<double>> MakePendulumPlant(
     const PendulumParameters& default_parameters = PendulumParameters(),
+    double time_step = 0.0,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace pendulum

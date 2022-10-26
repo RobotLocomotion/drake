@@ -485,6 +485,8 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
       physical_models_.emplace_back(std::move(cloned_model));
     }
 
+    // TODO: review this logic now that we always have a scalar convertible
+    // manager.
     // Copy over coupler_constraints_specs_;
     DRAKE_DEMAND(coupler_constraints_specs_.empty());
     // symbolic::Expression doesn't support constraints. If the source is
@@ -499,8 +501,12 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
            other.coupler_constraints_specs_) {
         coupler_constraints_specs_.push_back(spec);
       }
+      for (const internal::DistanceConstraintSpecs<U>& spec :
+           other.distance_constraints_specs_) {
+        distance_constraints_specs_.push_back(spec);
+      }
     } else {
-      DRAKE_DEMAND(other.coupler_constraints_specs_.empty());
+      DRAKE_DEMAND(other.distance_constraints_specs_.empty());
     }
     // cache_indexes_ is set in DeclareCacheEntries() in
     // DeclareStateCacheAndPorts() in FinalizePlantOnly().
@@ -564,6 +570,48 @@ ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
 
   coupler_constraints_specs_.push_back(internal::CouplerConstraintSpecs<T>{
       joint0.index(), joint1.index(), gear_ratio, offset});
+
+  return constraint_index;
+}
+
+template <typename T>
+ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
+    const Body<T>& body_A, const Body<T>& body_B, const Vector3<T>& p_AP,
+    const Vector3<T>& p_BQ, const T& distance, const T& stiffness,
+    const T& damping) {
+  // N.B. The manager is setup at Finalize() and therefore we must require
+  // constraints to be added pre-finalize.
+  DRAKE_MBP_THROW_IF_FINALIZED();
+
+  if (!is_discrete()) {
+    throw std::runtime_error(
+        "Currently coupler constraints are only supported for discrete "
+        "MultibodyPlant models.");
+  }
+
+  // TODO: move these checks to the CompliantContactManager.
+
+  // TAMSI does not support coupler constraints. For all other solvers, we let
+  // the discrete update manger to throw an exception at finalize time.
+  if (contact_solver_enum_ == DiscreteContactSolver::kTamsi) {
+    throw std::runtime_error(
+        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
+        "does not support coupler constraints. Use "
+        "set_discrete_contact_solver() to set a different solver type.");
+  }
+
+  // TODO: throw exceptions to the user.
+  // To constraint two points to be coincident we need a 3-dof ball constraint,
+  // the 1-dof distance constraint is singular in this case.
+  DRAKE_DEMAND(distance > 0.0);
+  DRAKE_DEMAND(stiffness >= 0.0);
+  DRAKE_DEMAND(damping >= 0.0);
+
+  const ConstraintIndex constraint_index(num_constraints());
+
+  distance_constraints_specs_.push_back(
+      internal::DistanceConstraintSpecs<T>{body_A.index(), body_B.index(), p_AP,
+                                          p_BQ, distance, stiffness, damping});
 
   return constraint_index;
 }

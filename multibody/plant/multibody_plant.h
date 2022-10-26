@@ -1195,7 +1195,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @{
 
   /// Returns the total number of constraints specified by the user.
-  int num_constraints() const { return coupler_constraints_specs_.size(); }
+  int num_constraints() const {
+    return coupler_constraints_specs_.size() +
+           distance_constraints_specs_.size();
+  }
 
   /// Defines a holonomic constraint between two single-dof joints `joint0`
   /// and `joint1` with positions q₀ and q₁, respectively, such that q₀ = ρ⋅q₁ +
@@ -1219,6 +1222,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                        const Joint<T>& joint1,
                                        const T& gear_ratio,
                                        const T& offset = 0.0);
+
+  ConstraintIndex AddDistanceConstraint(
+      const Body<T>& body_A, const Body<T>& body_B, const Vector3<T>& p_AP,
+      const Vector3<T>& p_BQ, const T& distance,
+      const T& stiffness = std::numeric_limits<double>::infinity(),
+      const T& damping = 0.0);
 
   /// <!-- TODO(xuchenhan-tri): Add getters to interrogate existing constraints.
   /// -->
@@ -5174,6 +5183,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Vector of coupler constraints specifications.
   std::vector<internal::CouplerConstraintSpecs<T>> coupler_constraints_specs_;
+
+  // Vector of distance constraints specifications.
+  std::vector<internal::DistanceConstraintSpecs<T>> distance_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

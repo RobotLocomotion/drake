@@ -3,11 +3,14 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
@@ -17,13 +20,17 @@
 
 namespace drake {
 
+using Eigen::Vector3d;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using lcm::DrakeLcm;
+using math::RigidTransformd;
+using math::RotationMatrixd;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
 using multibody::MultibodyPlant;
 using multibody::RevoluteJoint;
+using multibody::RigidBody;
 using systems::ImplicitEulerIntegrator;
 using systems::RungeKutta3Integrator;
 using systems::SemiExplicitEulerIntegrator;
@@ -37,6 +44,8 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
+DEFINE_double(time_step, 1.0e-3, "Time step in seconds.");
+
 DEFINE_string(integration_scheme, "runge_kutta3",
               "Integration scheme to be used. Available options are:"
               "'runge_kutta3','implicit_euler','semi_explicit_euler'");
@@ -48,7 +57,10 @@ int do_main() {
   scene_graph.set_name("scene_graph");
 
   // The model's parameters:
-  PendulumParameters parameters;
+  // We set zero damping on the first pendulum to make it equivalent to the
+  // second pendulum modeled with a distance constraint.
+  PendulumParameters parameters(PendulumParameters().m(),
+                                PendulumParameters().l(), 0.0 /* damping */);
 
   // Define simulation parameters:
   // Compute a reference time scale to set reasonable values for time step and
@@ -67,10 +79,13 @@ int do_main() {
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
-  MultibodyPlant<double>& pendulum =
-      *builder.AddSystem(MakePendulumPlant(parameters, &scene_graph));
+  MultibodyPlant<double>& pendulum = *builder.AddSystem(
+      MakePendulumPlant(parameters, FLAGS_time_step, &scene_graph));
   const RevoluteJoint<double>& pin =
       pendulum.GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
+  const RigidBody<double>& body2 =
+      pendulum.GetRigidBodyByName(parameters.body_name() + "2");
+  (void)         body2;  
 
   // A constant source for a zero applied torque at the pin joint.
   double applied_torque(0.0);
@@ -94,6 +109,11 @@ int do_main() {
   systems::Context<double>& pendulum_context =
       diagram->GetMutableSubsystemContext(pendulum, diagram_context.get());
   pin.set_angle(&pendulum_context,  M_PI / 3.0);
+  const Vector3d p_WB2 = -parameters.l() *
+                         (RotationMatrixd::MakeYRotation(M_PI / 3.0) *
+                         Vector3d::UnitZ());
+  pendulum.SetFreeBodyPoseInWorldFrame(&pendulum_context, body2,
+                                       RigidTransformd(p_WB2));
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
