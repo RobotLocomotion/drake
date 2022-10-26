@@ -71,7 +71,7 @@ void AssertEqual(const ListType& lhs, const ListType& rhs) {
   }
 }
 
-// Tests that the system computes the correct sum.
+// Tests that the system computes the correct output.
 TEST_F(ExternallyAppliedSpatialForceMultiplexerTest, ConcatenateTwoVectors) {
   system_->get_input_port(0).FixValue(context_.get(), input0_);
   system_->get_input_port(1).FixValue(context_.get(), input1_);
@@ -90,7 +90,7 @@ TEST_F(ExternallyAppliedSpatialForceMultiplexerTest, Stateless) {
   EXPECT_EQ(0, context_->num_discrete_state_groups());
 }
 
-// Asserts that adders have direct-feedthrough from all inputs to the output.
+// Asserts that system has direct-feedthrough from all inputs to the output.
 TEST_F(ExternallyAppliedSpatialForceMultiplexerTest, IsDirectFeedthrough) {
   EXPECT_TRUE(system_->HasAnyDirectFeedthrough());
   const int output_index = 0;
