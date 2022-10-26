@@ -19,7 +19,7 @@
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
-#include "drake/multibody/plant/externally_applied_spatial_force_multiplexer.h"
+#include "drake/multibody/plant/externally_applied_spatial_force_list_multiplexer.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
