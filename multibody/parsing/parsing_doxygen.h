@@ -182,6 +182,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_relaxation_time
 - @ref tag_drake_rigid_hydroelastic
 - @ref tag_drake_rotor_inertia
+- @ref tag_drake_screw_thread_pitch
 
 @subsection tag_drake_acceleration drake:acceleration
 
@@ -519,11 +520,13 @@ semantics are the same as for a standard joint.
 In SDFormat, the only supported `type` value is `planar`. The element must
 contain nested `drake:parent`, `drake:child`, and `drake:damping` elements.
 
-In URDF, supported `type` values are one of `ball`, `planar`, or
+In URDF, supported `type` values are one of `ball`, `planar`, `screw` or
 `universal`. The nested elements are the same as those defined by the standard
-joint element.
+joint element with the exception of the `screw` joint type, which requires
+a nested `drake:screw_thread_pitch` element.
 
-@see @ref tag_drake_parent, @ref tag_drake_child, @ref tag_drake_damping
+@see @ref tag_drake_parent, @ref tag_drake_child, @ref tag_drake_damping,
+@ref tag_drake_screw_thread_pitch
 
 @subsection tag_drake_linear_bushing_rpy drake:linear_bushing_rpy
 
