@@ -89,6 +89,7 @@ class TestSensors(unittest.TestCase):
             ImageT = mut.Image[pixel_type]
             self.assertEqual(ImageT.Traits, mut.ImageTraits[pixel_type])
             self.assertEqual(ImageT, image_type_alias)
+            ImageT()
 
             w = 640
             h = 480
