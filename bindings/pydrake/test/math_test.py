@@ -267,6 +267,9 @@ class TestMath(unittest.TestCase):
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         # - Cast.
         self.check_cast(mut.RotationMatrix_, T)
+        # - Conversion to RollPitchYaw
+        roll_pitch_yaw = R.ToRollPitchYaw()
+        self.assertIsInstance(roll_pitch_yaw, RollPitchYaw)
         # - Nontrivial quaternion.
         q = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
         R = RotationMatrix(quaternion=q)

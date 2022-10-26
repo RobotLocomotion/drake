@@ -222,6 +222,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return RotationMatrix<T>::ProjectToRotationMatrix(M);
             },
             py::arg("M"), cls_doc.ProjectToRotationMatrix.doc)
+        .def("ToRollPitchYaw", &Class::ToRollPitchYaw,
+            cls_doc.ToRollPitchYaw.doc)
         .def("ToQuaternion",
             overload_cast_explicit<Eigen::Quaternion<T>>(&Class::ToQuaternion),
             cls_doc.ToQuaternion.doc_0args)
