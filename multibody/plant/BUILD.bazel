@@ -35,6 +35,7 @@ drake_cc_package_library(
         ":multibody_plant_core",
         ":point_pair_contact_info",
         ":propeller",
+        ":slicing_and_indexing",
         ":tamsi_solver",
         ":wing",
     ],
@@ -123,6 +124,7 @@ drake_cc_library(
         ":externally_applied_spatial_force",
         ":hydroelastic_traction",
         ":multibody_plant_config",
+        ":slicing_and_indexing",
         ":tamsi_solver",
         "//common:default_scalars",
         "//common:essential",
@@ -378,6 +380,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "slicing_and_indexing",
+    srcs = ["slicing_and_indexing.cc"],
+    hdrs = ["slicing_and_indexing.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "spheres_stack",
     testonly = 1,
     srcs = [],
@@ -485,6 +497,14 @@ drake_cc_googletest(
         ":tamsi_solver_test_util",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+    ],
+)
+
+drake_cc_googletest(
+    name = "slicing_and_indexing_test",
+    deps = [
+        ":slicing_and_indexing",
+        "//common:essential",
     ],
 )
 
