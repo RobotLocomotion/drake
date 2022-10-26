@@ -1121,8 +1121,7 @@ class MathematicalProgram {
   /**
    * Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since we
    * don't take the square of the L2 norm).
-   * @note Currently no solver supports kL2NormCost, and the user will
-   * receive an error message if they add L2NormCost and call Solve().
+   * @note Currently only the SnoptSolver and IpoptSolver support kL2NormCost.
    * @pydrake_mkdoc_identifier{3args_A_b_vars}
    */
   // TODO(hongkai.dai): support L2NormCost in each solver.

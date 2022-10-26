@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/differentiable_norm.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -196,7 +197,7 @@ void L2NormCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 void L2NormCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                         AutoDiffVecXd* y) const {
   y->resize(1);
-  (*y)(0) = (A_ * x + b_).norm();
+  (*y)(0) = math::DifferentiableNorm(A_ * x + b_);
 }
 
 void L2NormCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,

@@ -832,6 +832,20 @@ void EmptyGradientProblem::CheckSolution(
 
 EmptyGradientProblem::EmptyGradientConstraint::EmptyGradientConstraint()
     : Constraint(1, 2, Vector1d(-kInf), Vector1d(0)) {}
+
+void TestL2NormCost(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+
+  prog.AddL2NormCost(Vector1d{1}, Vector1d{0}, x);
+  prog.AddBoundingBoxConstraint(0.5, 2, x);
+
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x[0]), 0.5, tol);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

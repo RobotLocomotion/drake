@@ -33,7 +33,8 @@ bool SnoptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kRotatedLorentzConeConstraint,
           ProgramAttribute::kLinearComplementarityConstraint,
           ProgramAttribute::kGenericCost, ProgramAttribute::kLinearCost,
-          ProgramAttribute::kQuadraticCost, ProgramAttribute::kCallback});
+          ProgramAttribute::kL2NormCost, ProgramAttribute::kQuadraticCost,
+          ProgramAttribute::kCallback});
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access());
 }
