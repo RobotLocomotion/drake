@@ -372,7 +372,7 @@ const char* const not_enough_control_points = R"""(
 GTEST_TEST(BsplineTrajectorySerializeTests, NotEnoughControlPointsTest) {
     DRAKE_EXPECT_THROWS_MESSAGE(
       LoadYamlString<BsplineTrajectory<double>>(not_enough_control_points),
-      ".*CheckInvariants.*");
+      ".*num_basis_functions.*");
 }
 
 }  // namespace trajectories
