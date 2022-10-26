@@ -30,6 +30,7 @@
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 
@@ -92,6 +93,7 @@ class UrdfParser {
                            std::string* type,
                            std::string* parent_link_name,
                            std::string* child_link_name);
+  void ParseScrewJointThreadPitch(XMLElement* node, double* screw_thread_pitch);
   void ParseCollisionFilterGroup(XMLElement* node);
   void ParseBody(XMLElement* node, MaterialMap* materials);
   SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
@@ -413,6 +415,27 @@ void UrdfParser::ParseJointDynamics(XMLElement* node, double* damping) {
   }
 }
 
+void UrdfParser::ParseScrewJointThreadPitch(XMLElement* node,
+                                            double* screw_thread_pitch) {
+  // Always set a value for the output-only argument, even if parsing fails.
+  *screw_thread_pitch = 0.0;
+  XMLElement* screw_thread_pitch_node =
+      node->FirstChildElement("drake:screw_thread_pitch");
+  if (screw_thread_pitch_node) {
+    if (!ParseScalarAttribute(screw_thread_pitch_node, "value",
+                              screw_thread_pitch)) {
+      Error(*screw_thread_pitch_node, "A screw joint has a"
+            " <drake:screw_thread_pitch> tag that is missing the 'value'"
+            " attribute.");
+      return;
+    }
+  } else {
+      Error(*node, "A screw joint is missing the <drake:screw_thread_pitch>"
+            " tag.");
+      return;
+  }
+}
+
 const Body<double>* UrdfParser::GetBodyForElement(
     const std::string& element_name,
     const std::string& link_name) {
@@ -556,6 +579,14 @@ void UrdfParser::ParseJoint(
     }
     plant->AddJoint<PlanarJoint>(name, *parent_body, X_PJ,
                                  *child_body, std::nullopt, damping_vec);
+  } else if (type.compare("screw") == 0) {
+    throw_on_custom_joint(true);
+    ParseJointDynamics(node, &damping);
+    double screw_thread_pitch;
+    ParseScrewJointThreadPitch(node, &screw_thread_pitch);
+    plant->AddJoint<ScrewJoint>(name, *parent_body, X_PJ, *child_body,
+                                std::nullopt, axis, screw_thread_pitch,
+                                damping);
   } else if (type.compare("universal") == 0) {
     throw_on_custom_joint(true);
     ParseJointDynamics(node, &damping);

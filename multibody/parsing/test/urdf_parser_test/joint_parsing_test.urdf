@@ -51,6 +51,12 @@ Defines a URDF model with various types of joints.
       <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
     </inertial>
   </link>
+  <link name="link9">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
+    </inertial>
+  </link>
   <joint name="fixed_joint" type="fixed">
     <parent link="world"/>
     <child link="link1"/>
@@ -101,6 +107,14 @@ Defines a URDF model with various types of joints.
     <child link="link8"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </joint>
+  <drake:joint name="screw_joint" type="screw">
+    <axis xyz="1 0 0"/>
+    <parent link="link8"/>
+    <child link="link9"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <drake:screw_thread_pitch value="0.04"/>
+    <dynamics damping="0.1"/>
+  </drake:joint>
   <!-- Normal transmission/joint, should be created with appropriate
   effort limit. -->
   <transmission>
