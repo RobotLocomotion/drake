@@ -37,8 +37,8 @@ class ExternallyAppliedSpatialForceMultiplexer final
   Constructor.
   @param num_inputs Number of input ports to be added.
   */
-
   explicit ExternallyAppliedSpatialForceMultiplexer(int num_inputs);
+
   /**
   Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   */

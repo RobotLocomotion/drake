@@ -35,7 +35,6 @@ void ExternallyAppliedSpatialForceMultiplexer<T>::CombineInputsToOutput(
     const systems::Context<T>& context,
     ListType* output) const {
   output->clear();
-  // auto iter = output->end();
   for (int i = 0; i < this->num_input_ports(); ++i) {
     const ListType& values_i =
         this->get_input_port(i).template Eval<ListType>(context);
