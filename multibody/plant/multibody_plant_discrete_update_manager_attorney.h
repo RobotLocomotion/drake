@@ -108,6 +108,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
   coupler_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.coupler_constraints_specs_;
   }
+
+  static const std::vector<internal::DistanceConstraintSpecs<T>>&
+  distance_constraints_specs(const MultibodyPlant<T>& plant) {
+    return plant.distance_constraints_specs_;
+  }
 };
 }  // namespace internal
 }  // namespace multibody

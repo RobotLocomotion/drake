@@ -5,6 +5,8 @@
 /// defined by the user through MultibodyPlant API calls. These specifications
 /// are later on used by our discrete solvers to build a model.
 
+#include <limits>
+
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
@@ -50,6 +52,50 @@ struct CouplerConstraintSpecs {
   T gear_ratio{1.0};
   // Offset Δq.
   T offset{0.0};
+};
+
+template <typename T>
+struct DistanceConstraintSpecs {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DistanceConstraintSpecs);
+
+  DistanceConstraintSpecs(BodyIndex body_A_in, const Vector3<T>& p_AP_in,
+                          BodyIndex body_B_in, const Vector3<T>& p_BQ_in,
+                          const T& distance_in, const T& stiffness_in,
+                          const T& damping_in)
+      : body_A(body_A_in),
+        p_AP(p_AP_in),
+        body_B(body_B_in),
+        p_BQ(p_BQ_in),
+        distance(distance_in),
+        stiffness(stiffness_in),
+        damping(damping_in) {}
+
+  template <typename U>
+  DistanceConstraintSpecs(const DistanceConstraintSpecs<U>& other) {
+    body_A = other.body_A;
+    body_B = other.body_B;
+    if constexpr (std::is_same_v<T, double>) {
+      p_AP = ExtractDoubleOrThrow(other.p_AP);
+      p_BQ = ExtractDoubleOrThrow(other.p_BQ);
+      distance = ExtractDoubleOrThrow(other.distance);
+      stiffness = ExtractDoubleOrThrow(other.stiffness);
+      damping = ExtractDoubleOrThrow(other.damping);
+    } else {
+      p_AP = other.p_AP;
+      p_BQ = other.p_BQ;
+      distance = other.distance;
+      stiffness = other.stiffness;
+      damping = other.damping;
+    }
+  }
+
+  BodyIndex body_A;
+  Vector3<T> p_AP;
+  BodyIndex body_B;
+  Vector3<T> p_BQ;
+  T distance{0.0};
+  T stiffness{std::numeric_limits<double>::infinity()};
+  T damping{0.0};
 };
 
 }  // namespace internal
