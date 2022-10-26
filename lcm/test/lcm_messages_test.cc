@@ -18,13 +18,11 @@ lcmt_drake_signal ModelMessage() {
 
 GTEST_TEST(LcmMessagesTest, EncodeDecodeLcmMessage) {
   lcmt_drake_signal message{};
-  EXPECT_FALSE(
-      CompareLcmtDrakeSignalMessages(message, ModelMessage()));
+  EXPECT_FALSE(CompareLcmtDrakeSignalMessages(message, ModelMessage()));
   const std::vector<uint8_t> bytes = EncodeLcmMessage(ModelMessage());
   EXPECT_GT(bytes.size(), 0);
   message = DecodeLcmMessage<lcmt_drake_signal>(bytes);
-  EXPECT_TRUE(
-      CompareLcmtDrakeSignalMessages(message, ModelMessage()));
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(message, ModelMessage()));
 }
 
 GTEST_TEST(LcmMessagesTest, DecodeLcmMessageError) {

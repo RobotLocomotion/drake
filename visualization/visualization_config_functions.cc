@@ -24,8 +24,7 @@ using systems::DiagramBuilder;
 using systems::System;
 using systems::lcm::LcmBuses;
 
-void ApplyVisualizationConfigImpl(
-    const VisualizationConfig& config,
+void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     DrakeLcmInterface* lcm,
     const MultibodyPlant<double>& plant,
     const SceneGraph<double>& scene_graph,
@@ -48,8 +47,7 @@ void ApplyVisualizationConfigImpl(
 
 }  // namespace
 
-void ApplyVisualizationConfig(
-    const VisualizationConfig& config,
+void ApplyVisualizationConfig(const VisualizationConfig& config,
     DiagramBuilder<double>* builder,
     const LcmBuses* lcm_buses,
     const MultibodyPlant<double>* plant,
@@ -69,8 +67,8 @@ void ApplyVisualizationConfig(
     plant = &builder->GetDowncastSubsystemByName<MultibodyPlant>("plant");
   }
   if (scene_graph == nullptr) {
-    scene_graph = &builder->GetDowncastSubsystemByName<SceneGraph>(
-        "scene_graph");
+    scene_graph =
+        &builder->GetDowncastSubsystemByName<SceneGraph>("scene_graph");
   }
   ApplyVisualizationConfigImpl(config, lcm, *plant, *scene_graph, builder);
 }
@@ -81,8 +79,7 @@ void AddDefaultVisualization(DiagramBuilder<double>* builder) {
 
 namespace internal {
 
-std::vector<DrakeVisualizerParams>
-ConvertVisualizationConfigToParams(
+std::vector<DrakeVisualizerParams> ConvertVisualizationConfigToParams(
     const VisualizationConfig& config) {
   std::vector<DrakeVisualizerParams> result;
 

@@ -84,11 +84,10 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
   // We'll monitor which LCM channel names appear.
   DrakeLcm drake_lcm;
   std::set<std::string> observed_channels;
-  drake_lcm.SubscribeAllChannels(
-      [&observed_channels](std::string_view channel, const void* /* buffer */,
-                           int /* size */) {
-        observed_channels.emplace(channel);
-      });
+  drake_lcm.SubscribeAllChannels([&observed_channels](std::string_view channel,
+                                     const void* /* buffer */, int /* size */) {
+    observed_channels.emplace(channel);
+  });
   LcmBuses lcm_buses;
   lcm_buses.Add("default", &drake_lcm);
 
@@ -102,13 +101,19 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
 
   // Simulate for a moment and make sure everything showed up.
   simulator.AdvanceTo(0.25);
-  while (drake_lcm.HandleSubscriptions(1) > 0) {}
-  EXPECT_THAT(observed_channels, testing::IsSupersetOf({
+  while (drake_lcm.HandleSubscriptions(1) > 0) {
+    // Loop until we're idle.
+  }
+  // clang-format off
+  const auto expected_channels = {
       "DRAKE_VIEWER_LOAD_ROBOT",
       "DRAKE_VIEWER_LOAD_ROBOT_PROXIMITY",
       "DRAKE_VIEWER_DRAW",
       "DRAKE_VIEWER_DRAW_PROXIMITY",
-      "CONTACT_RESULTS"}));
+      "CONTACT_RESULTS",
+  };
+  // clang-format on
+  EXPECT_THAT(observed_channels, testing::IsSupersetOf(expected_channels));
 }
 
 // Overall acceptance test with nothing enabled.
@@ -121,7 +126,9 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
 
   // We'll fail in case any message is transmitted.
   DrakeLcm drake_lcm;
-  drake_lcm.SubscribeAllChannels([](auto...) { GTEST_FAIL(); });
+  drake_lcm.SubscribeAllChannels([](auto...) {
+    GTEST_FAIL();
+  });
   LcmBuses lcm_buses;
   lcm_buses.Add("default", &drake_lcm);
 
@@ -151,8 +158,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, AddDefault) {
 GTEST_TEST(VisualizationConfigFunctionsTest, NoPlant) {
   DiagramBuilder<double> builder;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualization(&builder),
-      ".*does not contain.*plant.*");
+      AddDefaultVisualization(&builder), ".*does not contain.*plant.*");
 }
 
 // A missing scene_graph causes an exception.
@@ -162,8 +168,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, NoSceneGraph) {
   plant->set_name("plant");
   plant->Finalize();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualization(&builder),
-      ".*does not contain.*scene_graph.*");
+      AddDefaultVisualization(&builder), ".*does not contain.*scene_graph.*");
 }
 
 // Type confusion causes an exception.
@@ -173,8 +178,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, WrongSystemTypes) {
   plant.set_name("scene_graph");
   scene_graph.set_name("plant");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualization(&builder),
-      ".*not cast.*");
+      AddDefaultVisualization(&builder), ".*not cast.*");
 }
 
 }  // namespace

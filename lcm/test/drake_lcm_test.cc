@@ -37,8 +37,9 @@ class DrakeLcmTest : public ::testing::Test {
   }
 
   // Call step() until the `received` matches our expected message.
-  void LoopUntilDone(lcmt_drake_signal* received, int retries,
-                     const std::function<void(void)>& step) {
+  void LoopUntilDone(lcmt_drake_signal* received,
+      int retries,
+      const std::function<void(void)>& step) {
     // Try until we're either done, or we reach the retry limit.
     bool message_was_received = false;
     int count = 0;
@@ -78,12 +79,11 @@ TEST_F(DrakeLcmTest, DeferThreadTest) {
 
 TEST_F(DrakeLcmTest, EmptyChannelTest) {
   auto noop = [](const void*, int) {};
-  DRAKE_EXPECT_THROWS_MESSAGE(dut_->Subscribe("", noop),
-      ".*channel.empty.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut_->Subscribe("", noop), ".*channel.empty.*");
 
   char data[1] = {};
-  DRAKE_EXPECT_THROWS_MESSAGE(dut_->Publish("", data, 1, {}),
-      ".*channel.empty.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->Publish("", data, 1, {}), ".*channel.empty.*");
 }
 
 // Tests DrakeLcm's ability to publish an LCM message.
@@ -93,12 +93,12 @@ TEST_F(DrakeLcmTest, PublishTest) {
   const std::string channel_name = "DrakeLcmTest.PublishTest";
 
   lcmt_drake_signal received{};
-  ::lcm::LCM::HandlerFunction<lcmt_drake_signal> handler = [&received](
-      const ::lcm::ReceiveBuffer*, const std::string&,
-      const lcmt_drake_signal* new_value) {
-    DRAKE_DEMAND(new_value != nullptr);
-    received = *new_value;
-  };
+  ::lcm::LCM::HandlerFunction<lcmt_drake_signal> handler =
+      [&received](const ::lcm::ReceiveBuffer*, const std::string&,
+          const lcmt_drake_signal* new_value) {
+        DRAKE_DEMAND(new_value != nullptr);
+        received = *new_value;
+      };
   native_lcm->subscribe(channel_name, std::move(handler));
 
   LoopUntilDone(&received, 20 /* retries */, [&]() {
@@ -114,10 +114,10 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
   const std::string channel_name = "DrakeLcmTest.SubscribeTest";
 
   lcmt_drake_signal received{};
-  auto subscription = dut_->Subscribe(channel_name, [&received](
-      const void* data, int size) {
-    received.decode(data, 0, size);
-  });
+  auto subscription =
+      dut_->Subscribe(channel_name, [&received](const void* data, int size) {
+        received.decode(data, 0, size);
+      });
   subscription.reset();  // Deleting the subscription should be a no-op.
 
   int total = 0;
@@ -134,10 +134,10 @@ TEST_F(DrakeLcmTest, SubscribeTest2) {
   const std::string channel_name = "DrakeLcmTest.SubscribeTest2";
 
   lcmt_drake_signal received{};
-  auto subscription = dut_->Subscribe(channel_name, [&received](
-      const void* data, int size) {
-    received.decode(data, 0, size);
-  });
+  auto subscription =
+      dut_->Subscribe(channel_name, [&received](const void* data, int size) {
+        received.decode(data, 0, size);
+      });
   subscription->set_unsubscribe_on_delete(false);  // We shall be explicit.
   subscription.reset();
 
@@ -155,11 +155,12 @@ TEST_F(DrakeLcmTest, SubscribeAllTest) {
   const std::string channel_name = "DrakeLcmTest.SubscribeAllTest";
 
   lcmt_drake_signal received{};
-  auto subscription = dut_->SubscribeAllChannels([&received, &channel_name](
-      std::string_view channel, const void* data, int size) {
-    EXPECT_EQ(channel, channel_name);
-    received.decode(data, 0, size);
-  });
+  auto subscription = dut_->SubscribeAllChannels(
+      [&received, &channel_name](
+          std::string_view channel, const void* data, int size) {
+        EXPECT_EQ(channel, channel_name);
+        received.decode(data, 0, size);
+      });
   subscription.reset();  // Deleting the subscription should be a no-op.
 
   int total = 0;
@@ -176,11 +177,12 @@ TEST_F(DrakeLcmTest, SubscribeAllTest2) {
   const std::string channel_name = "DrakeLcmTest.SubscribeAllTest2";
 
   lcmt_drake_signal received{};
-  auto subscription = dut_->SubscribeAllChannels([&received, &channel_name](
-      std::string_view channel, const void* data, int size) {
-    EXPECT_EQ(channel, channel_name);
-    received.decode(data, 0, size);
-  });
+  auto subscription = dut_->SubscribeAllChannels(
+      [&received, &channel_name](
+          std::string_view channel, const void* data, int size) {
+        EXPECT_EQ(channel, channel_name);
+        received.decode(data, 0, size);
+      });
   subscription->set_unsubscribe_on_delete(false);  // We shall be explicit.
   subscription.reset();
 
@@ -236,10 +238,10 @@ TEST_F(DrakeLcmTest, UnsubscribeTest) {
 
   // First, confirm that the subscriber is active.
   lcmt_drake_signal received{};
-  auto subscription = dut_->Subscribe(channel_name, [&](
-      const void* data, int size) {
-    received.decode(data, 0, size);
-  });
+  auto subscription =
+      dut_->Subscribe(channel_name, [&](const void* data, int size) {
+        received.decode(data, 0, size);
+      });
   subscription->set_unsubscribe_on_delete(true);
   LoopUntilDone(&received, 20 /* retries */, [&]() {
     Publish(dut_.get(), channel_name, message_);
@@ -262,10 +264,10 @@ TEST_F(DrakeLcmTest, UnsubscribeFromMultichannelTest) {
 
   // First, confirm that the subscriber is active.
   lcmt_drake_signal received{};
-  auto subscription = dut_->SubscribeAllChannels([&](
-      std::string_view channel, const void* data, int size) {
-    received.decode(data, 0, size);
-  });
+  auto subscription = dut_->SubscribeAllChannels(
+      [&](std::string_view channel, const void* data, int size) {
+        received.decode(data, 0, size);
+      });
   subscription->set_unsubscribe_on_delete(true);
   LoopUntilDone(&received, 20 /* retries */, [&]() {
     Publish(dut_.get(), channel_name, message_);
@@ -287,10 +289,10 @@ TEST_F(DrakeLcmTest, QueueCapacityTest) {
   const std::string channel_name = "DrakeLcmTest.QueueCapacityTest";
 
   int count = 0;
-  auto subscription = dut_->Subscribe(channel_name, [&count](
-      const void* data, int size) {
-    ++count;
-  });
+  auto subscription =
+      dut_->Subscribe(channel_name, [&count](const void* data, int size) {
+        ++count;
+      });
   EXPECT_EQ(dut_->HandleSubscriptions(10 /* millis */), 0);
 
   // Send three messages, but only one comes out.
@@ -355,20 +357,20 @@ TEST_F(DrakeLcmTest, Suffix) {
 
   // Subscribe using native LCM (with the fully-qualified channel name).
   lcmt_drake_signal received_native{};
-  ::lcm::LCM::HandlerFunction<lcmt_drake_signal> handler = [&received_native](
-      const ::lcm::ReceiveBuffer*, const std::string&,
-      const lcmt_drake_signal* new_value) {
-    DRAKE_DEMAND(new_value != nullptr);
-    received_native = *new_value;
-  };
+  ::lcm::LCM::HandlerFunction<lcmt_drake_signal> handler =
+      [&received_native](const ::lcm::ReceiveBuffer*, const std::string&,
+          const lcmt_drake_signal* new_value) {
+        DRAKE_DEMAND(new_value != nullptr);
+        received_native = *new_value;
+      };
   native_lcm->subscribe("SuffixDrakeLcmTest_SUFFIX", std::move(handler));
 
   // Subscribe using Drake LCM (with the abbreviated channel name).
   lcmt_drake_signal received_drake{};
-  auto subscription = dut_->Subscribe("SuffixDrakeLcmTest", [&received_drake](
-      const void* data, int size) {
-    received_drake.decode(data, 0, size);
-  });
+  auto subscription = dut_->Subscribe(
+      "SuffixDrakeLcmTest", [&received_drake](const void* data, int size) {
+        received_drake.decode(data, 0, size);
+      });
 
   // Publish using the abbreviated channel name.
   // Check that the native subscription gets it.
@@ -402,11 +404,12 @@ TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
 
   // Check SubscribeAll, expecting to see the unadorned channel name.
   lcmt_drake_signal received_drake{};
-  auto subscription = dut_->SubscribeAllChannels([&received_drake, unadorned](
-      std::string_view channel_name, const void* data, int size) {
-    EXPECT_EQ(channel_name, unadorned);
-    received_drake.decode(data, 0, size);
-  });
+  auto subscription = dut_->SubscribeAllChannels(
+      [&received_drake, unadorned](
+          std::string_view channel_name, const void* data, int size) {
+        EXPECT_EQ(channel_name, unadorned);
+        received_drake.decode(data, 0, size);
+      });
   subscription->set_queue_capacity(30);
   const lcmt_drake_signal empty_data{};
   LoopUntilDone(&received_drake, 200 /* retries */, [&]() {
