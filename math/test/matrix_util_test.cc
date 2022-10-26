@@ -8,6 +8,9 @@
 namespace drake {
 namespace math {
 namespace test {
+
+using Eigen::MatrixXd;
+
 GTEST_TEST(TestMatrixUtil, TestIsSymmetric) {
   auto A = Eigen::Matrix3d::Zero();
   EXPECT_TRUE(IsSymmetric(A, 0.0));
@@ -82,6 +85,23 @@ GTEST_TEST(TestMatrixUtil, IsPositiveDefiniteTest) {
   // Generate a PSD matrix.
   EXPECT_FALSE(IsPositiveDefinite(
       A * Eigen::Vector3d(1., 0., 1.).asDiagonal() * A.transpose(), 1e-8));
+}
+
+GTEST_TEST(TestMatrixUtil, StdVector) {
+  MatrixXd A(3, 4);
+  A << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12;
+  std::vector<MatrixXd> vec = EigenToStdVector<double>(A);
+  EXPECT_EQ(vec.size(), 4);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(vec[i].size(), 3);
+    EXPECT_TRUE(CompareMatrices(vec[i], A.col(i)));
+  }
+  MatrixXd mat = StdVectorToEigen(vec);
+  EXPECT_TRUE(CompareMatrices(mat, A));
+
+  EXPECT_EQ(
+      EigenToStdVector<double>(Eigen::RowVector3d::LinSpaced(0.0, 1.0)).size(),
+      3);
 }
 
 }  // namespace test

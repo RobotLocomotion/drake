@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <vector>
 
 #include <Eigen/Dense>
 
@@ -151,6 +152,36 @@ bool IsPositiveDefinite(const Eigen::MatrixBase<Derived>& matrix,
   return eigensolver.eigenvalues().minCoeff() >=
          eigenvalue_tolerance * std::max(1., max_abs_eigenvalue);
 }
+
+/// Converts a MatrixX<T> into a std::vector<MatrixX<T>>, taking each column of
+/// the m-by-n matrix `mat` into an m-by-1 element of the returned std::vector.
+template <typename T>
+std::vector<MatrixX<T>> EigenToStdVector(
+    const Eigen::Ref<const MatrixX<T>>& mat) {
+  std::vector<MatrixX<T>> vec(mat.cols());
+  for (int i = 0; i < mat.cols(); ++i) {
+    vec[i] = mat.col(i);
+  }
+  return vec;
+}
+
+/// Converts a std::vector<MatrixX<T>> into a MatrixX<T>, composing each
+/// element of `vec` into a column of the returned matrix.
+///
+/// @pre all elements of `vec` must have one column and the same number of
+/// rows.
+template <typename T>
+MatrixX<T> StdVectorToEigen(const std::vector<MatrixX<T>>& vec) {
+  DRAKE_DEMAND(vec.size() > 0);
+  MatrixX<T> mat(vec[0].rows(), vec.size());
+  for (int i = 0; i < static_cast<int>(vec.size()); ++i) {
+    DRAKE_DEMAND(vec[i].rows() == mat.rows());
+    DRAKE_DEMAND(vec[i].cols() == 1);
+    mat.col(i) = vec[i];
+  }
+  return mat;
+}
+
 
 }  // namespace math
 }  // namespace drake
