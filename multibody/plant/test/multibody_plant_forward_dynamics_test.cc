@@ -338,7 +338,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslatingBody) {
   // inertia matrix = [0] which is not positive definite.
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "An internal mass matrix associated with the joint that "
-    "connects body WorldBody to body bodyA is not positive-definite. "
+    "connects body world to body bodyA is not positive-definite. "
     "Since the joint allows translation, ensure body bodyA "
     "\\(combined with other outboard bodies\\) has a reasonable non-zero mass. "
     "Note: The mass of body bodyA is 0. ");
@@ -376,7 +376,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotatingBody) {
   // inertia matrix = [0] which is not positive definite.
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "An internal mass matrix associated with the joint that "
-    "connects body WorldBody to body bodyA is not positive-definite. "
+    "connects body world to body bodyA is not positive-definite. "
     "Since the joint allows rotation, ensure body bodyA "
     "\\(combined with other outboard bodies\\) has reasonable "
     "non-zero moments of inertia about joint rotation axes. "
@@ -421,7 +421,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslating2Bodies) {
   // inertia matrix = [0] which is not positive definite.
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "An internal mass matrix associated with the joint that "
-    "connects body WorldBody to body bodyA is not positive-definite. "
+    "connects body world to body bodyA is not positive-definite. "
     "Since the joint allows translation, ensure body bodyA "
     "\\(combined with other outboard bodies\\) has a reasonable non-zero mass. "
     "Note: The mass of body bodyA is 0. ");
@@ -433,7 +433,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslating2Bodies) {
   body_B.SetMass(context.get(), mB = 1E9);
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "An internal mass matrix associated with the joint that "
-    "connects body WorldBody to body bodyA is not positive-definite. "
+    "connects body world to body bodyA is not positive-definite. "
     "Since the joint allows translation, ensure body bodyA "
     "\\(combined with other outboard bodies\\) has a reasonable non-zero mass. "
     "Note: The mass of body bodyA is 0. ");
@@ -522,7 +522,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotating3Bodies) {
   body_A.SetMass(context_ptr, mA = 0);
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "An internal mass matrix associated with the joint that "
-    "connects body WorldBody to body bodyA is not positive-definite. "
+    "connects body world to body bodyA is not positive-definite. "
     "Since the joint allows rotation, ensure body bodyA "
     "\\(combined with other outboard bodies\\) has reasonable "
     "non-zero moments of inertia about joint rotation axes. "
@@ -556,7 +556,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassInertiaFreeBody) {
   // matrix is 6 x 6 zero matrix (albeit with NaN in upper-triangular part).
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "An internal mass matrix associated with the joint that "
-    "connects body WorldBody to body bodyA is not positive-definite. "
+    "connects body world to body bodyA is not positive-definite. "
     "Since the joint allows rotation, ensure body bodyA "
     "\\(combined with other outboard bodies\\) has reasonable "
     "non-zero moments of inertia about joint rotation axes. "
