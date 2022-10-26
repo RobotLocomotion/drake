@@ -114,7 +114,7 @@ class JointSliders final : public systems::LeafSystem<T> {
   given, this function will block indefinitely.
 
   @param a keycode that will be assigned to the "Stop" button.  Setting this to
-  the empty string means no keycode. See Meschat::AddButton for details.
+  the empty string means no keycode. See Meshcat::AddButton for details.
   @default "Escape".
 
   @pre `diagram` must be a top-level (i.e., "root") diagram.

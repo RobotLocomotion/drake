@@ -2,7 +2,7 @@
 MeshCat LCM Display Server (MeLDiS)
 
 A standalone program that can display Drake visualizations in MeshCat
-by listing for LCM messages that are broadcast by the simulation.
+by listening for LCM messages that are broadcast by the simulation.
 
 This can stand in for the legacy ``drake-visualizer`` application of
 days past.
