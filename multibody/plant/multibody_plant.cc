@@ -487,20 +487,25 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 
     // Copy over coupler_constraints_specs_;
     DRAKE_DEMAND(coupler_constraints_specs_.empty());
+    DRAKE_DEMAND(distance_constraints_specs_.empty());
     // symbolic::Expression doesn't support constraints. If the source is
-    // symbolic, the coupler constraints specs are necessarily empty. If the
-    // source has non-empty coupler constraints specs, then it necessarily has
-    // the compliant contact manager, which would preclude scalar conversion to
-    // symbolic. Thus we don't need to worry about the destination being
-    // symbolic either.
+    // symbolic, the constraints specs are necessarily empty. If the source has
+    // non-empty constraints specs, then it necessarily has the compliant
+    // contact manager, which would preclude scalar conversion to symbolic. Thus
+    // we don't need to worry about the destination being symbolic either.
     if constexpr (!std::is_same_v<T, symbolic::Expression> &&
                   !std::is_same_v<U, symbolic::Expression>) {
       for (const internal::CouplerConstraintSpecs<U>& spec :
            other.coupler_constraints_specs_) {
         coupler_constraints_specs_.push_back(spec);
       }
+      for (const internal::DistanceConstraintSpecs<U>& spec :
+           other.distance_constraints_specs_) {
+        distance_constraints_specs_.push_back(spec);
+      }
     } else {
       DRAKE_DEMAND(other.coupler_constraints_specs_.empty());
+      DRAKE_DEMAND(other.distance_constraints_specs_.empty());
     }
     // cache_indexes_ is set in DeclareCacheEntries() in
     // DeclareStateCacheAndPorts() in FinalizePlantOnly().
@@ -564,6 +569,50 @@ ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
 
   coupler_constraints_specs_.push_back(internal::CouplerConstraintSpecs<T>{
       joint0.index(), joint1.index(), gear_ratio, offset});
+
+  return constraint_index;
+}
+
+template <typename T>
+ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
+    const Body<T>& body_A, const Vector3<T>& p_AP, const Body<T>& body_B,
+    const Vector3<T>& p_BQ, const T& distance, const T& stiffness,
+    const T& damping) {
+  // N.B. The manager is setup at Finalize() and therefore we must require
+  // constraints to be added pre-finalize.
+  DRAKE_MBP_THROW_IF_FINALIZED();
+
+  if (!is_discrete()) {
+    throw std::runtime_error(
+        "Currently distance constraints are only supported for discrete "
+        "MultibodyPlant models.");
+  }
+
+  // TAMSI does not support distance constraints. For all other solvers, we let
+  // the discrete update manger throw an exception at finalize time.
+  if (contact_solver_enum_ == DiscreteContactSolver::kTamsi) {
+    throw std::runtime_error(
+        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
+        "does not support distance constraints. Use "
+        "set_discrete_contact_solver(DiscreteContactSolver::kSap) to use the "
+        "SAP solver instead. For other solvers, refer to "
+        "DiscreteContactSolver.");
+  }
+
+  DRAKE_THROW_UNLESS(body_A.index() != body_B.index());
+
+  // To constrain two points to be coincident we need a 3-dof ball constraint,
+  // the 1-dof distance constraint is singular in this case. Therefore we
+  // require the distance parameter to be strictly positive.
+  DRAKE_THROW_UNLESS(distance > 0.0);
+  DRAKE_THROW_UNLESS(stiffness >= 0.0);
+  DRAKE_THROW_UNLESS(damping >= 0.0);
+
+  const ConstraintIndex constraint_index(num_constraints());
+
+  distance_constraints_specs_.push_back(
+      internal::DistanceConstraintSpecs<T>{body_A.index(), p_AP, body_B.index(),
+                                           p_BQ, distance, stiffness, damping});
 
   return constraint_index;
 }
