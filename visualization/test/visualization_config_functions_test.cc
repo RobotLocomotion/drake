@@ -85,7 +85,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
   DrakeLcm drake_lcm;
   std::set<std::string> observed_channels;
   drake_lcm.SubscribeAllChannels([&observed_channels](std::string_view channel,
-                                     const void* /* buffer */, int /* size */) {
+                                                      const void* /* buffer */,
+                                                      int /* size */) {
     observed_channels.emplace(channel);
   });
   LcmBuses lcm_buses;
@@ -157,8 +158,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, AddDefault) {
 // A missing plant causes an exception.
 GTEST_TEST(VisualizationConfigFunctionsTest, NoPlant) {
   DiagramBuilder<double> builder;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualization(&builder), ".*does not contain.*plant.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(AddDefaultVisualization(&builder),
+                              ".*does not contain.*plant.*");
 }
 
 // A missing scene_graph causes an exception.
@@ -167,8 +168,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, NoSceneGraph) {
   auto* plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
   plant->set_name("plant");
   plant->Finalize();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualization(&builder), ".*does not contain.*scene_graph.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(AddDefaultVisualization(&builder),
+                              ".*does not contain.*scene_graph.*");
 }
 
 // Type confusion causes an exception.
@@ -177,8 +178,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, WrongSystemTypes) {
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.set_name("scene_graph");
   scene_graph.set_name("plant");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualization(&builder), ".*not cast.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(AddDefaultVisualization(&builder),
+                              ".*not cast.*");
 }
 
 }  // namespace

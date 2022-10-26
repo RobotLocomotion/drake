@@ -55,9 +55,9 @@ class DrakeLcm::Impl {
   void CleanUpOldSubscriptions() {
     subscriptions_.erase(
         std::remove_if(subscriptions_.begin(), subscriptions_.end(),
-            [](const auto& weak_subscription) {
-              return weak_subscription.expired();
-            }),
+                       [](const auto& weak_subscription) {
+                         return weak_subscription.expired();
+                       }),
         subscriptions_.end());
   }
 
@@ -97,9 +97,9 @@ std::string DrakeLcm::get_lcm_url() const {
 }
 
 void DrakeLcm::Publish(const std::string& channel,
-    const void* data,
-    int data_size,
-    std::optional<double>) {
+                       const void* data,
+                       int data_size,
+                       std::optional<double>) {
   DRAKE_THROW_UNLESS(!channel.empty());
   if (impl_->channel_suffix_.empty()) {
     impl_->lcm_.publish(channel, data, data_size);
@@ -134,10 +134,10 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
     });
 
     return Create(native_instance, channel_regex,
-        [handler = std::move(single_channel_handler)](
-            std::string_view, const void* data, int size) {
-          handler(data, size);
-        });
+                  [handler = std::move(single_channel_handler)](
+                      std::string_view, const void* data, int size) {
+                    handler(data, size);
+                  });
   }
 
   static std::shared_ptr<DrakeSubscription> CreateMultichannel(
@@ -149,7 +149,8 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
     return Create(native_instance, ".*", std::move(multichannel_handler));
   }
 
-  static std::shared_ptr<DrakeSubscription> Create(::lcm::LCM* native_instance,
+  static std::shared_ptr<DrakeSubscription> Create(
+      ::lcm::LCM* native_instance,
       std::string_view channel_regex,
       MultichannelHandlerFunction handler) {
     DRAKE_DEMAND(native_instance != nullptr);
@@ -227,8 +228,8 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
 
   // The native LCM stack calls into here.
   static void NativeCallback(const ::lcm::ReceiveBuffer* buffer,
-      const std::string& channel,
-      DrakeSubscription* self) {
+                             const std::string& channel,
+                             DrakeSubscription* self) {
     DRAKE_DEMAND(buffer != nullptr);
     DRAKE_DEMAND(self != nullptr);
     self->InstanceCallback(channel, buffer);
@@ -243,8 +244,8 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
   explicit DrakeSubscription(AsIfPrivateConstructor = {}) {}
 
  private:
-  void InstanceCallback(
-      const std::string& channel, const ::lcm::ReceiveBuffer* buffer) {
+  void InstanceCallback(const std::string& channel,
+                        const ::lcm::ReceiveBuffer* buffer) {
     DRAKE_DEMAND(!weak_self_reference_.expired());
     if (user_callback_ != nullptr) {
       user_callback_(channel, buffer->data, buffer->data_size);
@@ -291,8 +292,8 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeAllChannels(
   impl_->CleanUpOldSubscriptions();
   const std::string& suffix = impl_->channel_suffix_;
   if (!suffix.empty()) {
-    handler = [&suffix, handler](
-                  std::string_view channel, const void* data, int length) {
+    handler = [&suffix, handler](std::string_view channel, const void* data,
+                                 int length) {
       // TODO(ggould-tri) Use string_view::ends_with() once we have C++20.
       if (channel.length() >= suffix.length() &&
           channel.substr(channel.length() - suffix.length()) == suffix) {

@@ -33,10 +33,10 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
   // Add multiple subscribers to the same channel.
   std::vector<drake::lcmt_drake_signal> messages(3, drake::lcmt_drake_signal{});
   for (int i = 0; i < 3; i++) {
-    Subscribe<drake::lcmt_drake_signal>(
-        r_log.get(), channel_name, [i, &messages](const auto& message) {
-          messages[i] = message;
-        });
+    Subscribe<drake::lcmt_drake_signal>(r_log.get(), channel_name,
+                                        [i, &messages](const auto& message) {
+                                          messages[i] = message;
+                                        });
   }
 
   // Also subscribe via SubscribeAllChannels

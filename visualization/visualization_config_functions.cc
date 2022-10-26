@@ -25,10 +25,10 @@ using systems::System;
 using systems::lcm::LcmBuses;
 
 void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
-    DrakeLcmInterface* lcm,
-    const MultibodyPlant<double>& plant,
-    const SceneGraph<double>& scene_graph,
-    DiagramBuilder<double>* builder) {
+                                  DrakeLcmInterface* lcm,
+                                  const MultibodyPlant<double>& plant,
+                                  const SceneGraph<double>& scene_graph,
+                                  DiagramBuilder<double>* builder) {
   // This is required due to ConnectContactResultsToDrakeVisualizer().
   DRAKE_THROW_UNLESS(plant.is_finalized());
   const std::vector<DrakeVisualizerParams> all_params =
@@ -48,14 +48,14 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
 }  // namespace
 
 void ApplyVisualizationConfig(const VisualizationConfig& config,
-    DiagramBuilder<double>* builder,
-    const LcmBuses* lcm_buses,
-    const MultibodyPlant<double>* plant,
-    const SceneGraph<double>* scene_graph,
-    DrakeLcmInterface* lcm) {
+                              DiagramBuilder<double>* builder,
+                              const LcmBuses* lcm_buses,
+                              const MultibodyPlant<double>* plant,
+                              const SceneGraph<double>* scene_graph,
+                              DrakeLcmInterface* lcm) {
   DRAKE_THROW_UNLESS(builder != nullptr);
-  lcm = FindOrCreateLcmBus(
-      lcm, lcm_buses, builder, "ApplyVisualizationConfig", config.lcm_bus);
+  lcm = FindOrCreateLcmBus(lcm, lcm_buses, builder, "ApplyVisualizationConfig",
+                           config.lcm_bus);
   DRAKE_DEMAND(lcm != nullptr);
   // N.B. The "a plant is required" precondition for ApplyVisualizationConfig
   // stems from the fact that we need to future-proof ourselves in case we

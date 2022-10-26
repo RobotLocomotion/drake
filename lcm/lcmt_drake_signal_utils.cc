@@ -8,7 +8,7 @@ namespace lcm {
 
 // Compares two `drake::lcmt_drake_signal` messages are equal.
 bool CompareLcmtDrakeSignalMessages(const lcmt_drake_signal& actual_message,
-    const lcmt_drake_signal& expected_message) {
+                                    const lcmt_drake_signal& expected_message) {
   bool result = true;
   const int n = actual_message.dim;
 

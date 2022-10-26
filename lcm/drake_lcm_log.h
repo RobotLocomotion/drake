@@ -39,8 +39,8 @@ class DrakeLcmLog : public DrakeLcmInterface {
    * @throws std::exception if unable to open file.
    */
   DrakeLcmLog(const std::string& file_name,
-      bool is_write,
-      bool overwrite_publish_time_with_system_clock = false);
+              bool is_write,
+              bool overwrite_publish_time_with_system_clock = false);
 
   ~DrakeLcmLog() override;
 
@@ -60,9 +60,9 @@ class DrakeLcmLog : public DrakeLcmInterface {
    * mode.
    */
   void Publish(const std::string& channel,
-      const void* data,
-      int data_size,
-      std::optional<double> time_sec) override;
+               const void* data,
+               int data_size,
+               std::optional<double> time_sec) override;
 
   /**
    * Subscribes @p handler to @p channel. Multiple handlers can subscribe to the

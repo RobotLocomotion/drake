@@ -38,8 +38,8 @@ class DrakeLcmTest : public ::testing::Test {
 
   // Call step() until the `received` matches our expected message.
   void LoopUntilDone(lcmt_drake_signal* received,
-      int retries,
-      const std::function<void(void)>& step) {
+                     int retries,
+                     const std::function<void(void)>& step) {
     // Try until we're either done, or we reach the retry limit.
     bool message_was_received = false;
     int count = 0;
@@ -82,8 +82,8 @@ TEST_F(DrakeLcmTest, EmptyChannelTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(dut_->Subscribe("", noop), ".*channel.empty.*");
 
   char data[1] = {};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dut_->Publish("", data, 1, {}), ".*channel.empty.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut_->Publish("", data, 1, {}),
+                              ".*channel.empty.*");
 }
 
 // Tests DrakeLcm's ability to publish an LCM message.
@@ -95,7 +95,7 @@ TEST_F(DrakeLcmTest, PublishTest) {
   lcmt_drake_signal received{};
   ::lcm::LCM::HandlerFunction<lcmt_drake_signal> handler =
       [&received](const ::lcm::ReceiveBuffer*, const std::string&,
-          const lcmt_drake_signal* new_value) {
+                  const lcmt_drake_signal* new_value) {
         DRAKE_DEMAND(new_value != nullptr);
         received = *new_value;
       };
@@ -156,8 +156,8 @@ TEST_F(DrakeLcmTest, SubscribeAllTest) {
 
   lcmt_drake_signal received{};
   auto subscription = dut_->SubscribeAllChannels(
-      [&received, &channel_name](
-          std::string_view channel, const void* data, int size) {
+      [&received, &channel_name](std::string_view channel, const void* data,
+                                 int size) {
         EXPECT_EQ(channel, channel_name);
         received.decode(data, 0, size);
       });
@@ -178,8 +178,8 @@ TEST_F(DrakeLcmTest, SubscribeAllTest2) {
 
   lcmt_drake_signal received{};
   auto subscription = dut_->SubscribeAllChannels(
-      [&received, &channel_name](
-          std::string_view channel, const void* data, int size) {
+      [&received, &channel_name](std::string_view channel, const void* data,
+                                 int size) {
         EXPECT_EQ(channel, channel_name);
         received.decode(data, 0, size);
       });
@@ -359,7 +359,7 @@ TEST_F(DrakeLcmTest, Suffix) {
   lcmt_drake_signal received_native{};
   ::lcm::LCM::HandlerFunction<lcmt_drake_signal> handler =
       [&received_native](const ::lcm::ReceiveBuffer*, const std::string&,
-          const lcmt_drake_signal* new_value) {
+                         const lcmt_drake_signal* new_value) {
         DRAKE_DEMAND(new_value != nullptr);
         received_native = *new_value;
       };
@@ -405,8 +405,8 @@ TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
   // Check SubscribeAll, expecting to see the unadorned channel name.
   lcmt_drake_signal received_drake{};
   auto subscription = dut_->SubscribeAllChannels(
-      [&received_drake, unadorned](
-          std::string_view channel_name, const void* data, int size) {
+      [&received_drake, unadorned](std::string_view channel_name,
+                                   const void* data, int size) {
         EXPECT_EQ(channel_name, unadorned);
         received_drake.decode(data, 0, size);
       });

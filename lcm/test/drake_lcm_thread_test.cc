@@ -59,8 +59,8 @@ class NativeMailbox final : public MessageMailbox {
 
  private:
   void Handle(const ::lcm::ReceiveBuffer*,
-      const std::string&,
-      const lcmt_drake_signal* message) {
+              const std::string&,
+              const lcmt_drake_signal* message) {
     DRAKE_DEMAND(message != nullptr);
     SetMessage(*message);
   }
@@ -101,8 +101,8 @@ class DrakeLcmThreadTest : public ::testing::Test {
   }
 
   // Call publish() until the mailbox matches our expected message.
-  void LoopUntilDone(
-      const MessageMailbox& mailbox, const std::function<void(void)>& publish) {
+  void LoopUntilDone(const MessageMailbox& mailbox,
+                     const std::function<void(void)>& publish) {
     // Launch a received thread until message_was_recived is done.
     std::atomic_bool message_was_received{false};
     DrakeLcm* const dut = &dut_;
