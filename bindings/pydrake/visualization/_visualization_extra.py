@@ -1,6 +1,9 @@
 from ._meldis import (
     Meldis,
 )
+from .model_visualizer import (
+    ModelVisualizer,
+)
 from ._plotting import (
     plot_sublevelset_expression,
     plot_sublevelset_quadratic,

@@ -1,53 +1,7 @@
-r"""Loads a model file (*.sdf or *.urdf) and then displays all models found
-in all available visualizers (MeshCat, meldis/drake visualizer).
-
-Joint sliders are available in visualizers that support them by clicking on
-"Open Controls" in top right corner.
-
-To have the MeshCat server automatically open in your browser, supply the
-`--open-window` flag.
-
-To build all necessary targets and see available command-line options:
-
-    cd drake
-    bazel build \
-        //tools:drake_visualizer //manipulation/util:show_model
-
-    ./bazel-bin/manipulation/util/show_model --help
-
-Example usage:
-
-    # Terminal 1
-    ./bazel-bin/tools/drake_visualizer
-
-    # Terminal 2 (wait for visualizers to start)
-    ./bazel-bin/manipulation/util/show_model \
-        --open-window \
-        --position 1 0 0 0 0 0 0 0 1 0 0 0 0 0 \
-        --find_resource \
-        drake/manipulation/models/iiwa_description/iiwa7/iiwa7_with_box_collision.sdf
-
-If your model has all of its data available in your source tree, then you can
-remove the need for `--find_resource`:
-
-    ./bazel-bin/manipulation/util/show_model \
-        --open-window \
-        ${PWD}/manipulation/models/iiwa_description/iiwa7/iiwa7_with_box_collision.sdf
-
-If the model uses package path (e.g. "package://package_name/model_sdf.obj") to
-refer to mesh files, you also have to provide the argument `--package_path`:
-    ./bazel-bin/manipulation/util/show_model \
-        --package_path multibody/parsing/test/box_package \
-        multibody/parsing/test/box_package/sdfs/box.sdf
-
-Note:
-    The output of running ``show_model`` will include the URL of the MeshCat
-server.
-
-Note:
-    If you use `bazel run` without `--find_resource`, it is highly encouraged
-that you use absolute paths, as certain models may not be prerequisites of this
-binary.
+"""
+Provides a class which can be used by user code to visualize models in Drake
+Visualizer, meldis, or MeshCat, as well as a standalone tool to visualize
+models from the command line.
 """
 
 import argparse
@@ -376,10 +330,63 @@ class ModelVisualizer:
 
 
 def main():
-    # TODO(todd.rowell) Move this file docstring elsewhere when this gets
-    # moved into pydrake.
+    r"""
+    Loads a model file (*.sdf or *.urdf) and then displays all models
+    found in all available visualizers (MeshCat, meldis/drake visualizer).
+
+    Joint sliders are available in visualizers that support them by clicking
+    on "Open Controls" in top right corner.
+
+    To have the MeshCat server automatically open in your browser, supply the
+    `--open-window` flag.
+
+    To build all necessary targets and see available command-line options:
+
+        cd drake
+        bazel build \
+            //tools:drake_visualizer \
+            //bindings/pydrake/visualization:model_visualizer
+
+        ./bazel-bin/bindings/pydrake/visualization/model_visualizer --help
+
+    Example usage:
+
+        # Terminal 1
+        ./bazel-bin/tools/drake_visualizer
+
+        # Terminal 2 (wait for visualizers to start)
+        ./bazel-bin/bindings/pydrake/visualization/model_visualizer \
+            --open-window \
+            --position 1 0 0 0 0 0 0 0 1 0 0 0 0 0 \
+            --find_resource \
+            drake/manipulation/models/iiwa_description/iiwa7/iiwa7_with_box_collision.sdf
+
+    If your model has all of its data available in your source tree, then you
+    can remove the need for `--find_resource`:
+
+        ./bazel-bin/bindings/pydrake/visualization/model_visualizer \
+            --open-window \
+            ${PWD}/manipulation/models/iiwa_description/iiwa7/iiwa7_with_box_collision.sdf
+
+    If the model uses package path
+    (e.g. "package://package_name/model_sdf.obj") to refer to mesh files, you
+    must also provide the argument `--package_path`:
+        ./bazel-bin/bindings/pydrake/visualization/model_visualizer \
+            --package_path multibody/parsing/test/box_package \
+            multibody/parsing/test/box_package/sdfs/box.sdf
+
+    Note:
+        The output of running ``show_model`` will include the URL of the
+    MeshCat server.
+
+    Note:
+        If you use `bazel run` without `--find_resource`, you are highly
+    encouraged to use absolute paths, as certain models may not be
+    prerequisites of this binary.
+    """
+
     args_parser = argparse.ArgumentParser(
-        description=__doc__,
+        description=main.__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     args_parser.add_argument(
@@ -388,7 +395,7 @@ def main():
     args_parser.add_argument(
         "--find_resource", action="store_true",
         help="Use FindResourceOrThrow to resolve the filename to a Drake "
-             "resource. Use this if the supporting data files are a generated "
+             "resource. Use this if the supporting data files are generated "
              "by Bazel (e.g. the OBJs or PNGs are in @models_internal).")
     args_parser.add_argument(
         "--package_path", type=str, default=None,
