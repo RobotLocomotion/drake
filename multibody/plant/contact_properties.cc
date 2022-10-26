@@ -1,5 +1,6 @@
 #include "drake/multibody/plant/contact_properties.h"
 
+#include <limits>
 #include <string>
 
 namespace drake {
@@ -26,6 +27,66 @@ T GetPointContactStiffness(geometry::GeometryId id, double default_value,
   return prop->template GetPropertyOrDefault<T>(
       geometry::internal::kMaterialGroup, geometry::internal::kPointStiffness,
       default_value);
+}
+
+template <typename T>
+T GetHydroelasticModulus(geometry::GeometryId id, double default_value,
+                         const geometry::SceneGraphInspector<T>& inspector) {
+  DRAKE_DEMAND(default_value >= 0.0);
+  const geometry::ProximityProperties* prop =
+      inspector.GetProximityProperties(id);
+  DRAKE_DEMAND(prop != nullptr);
+  // If the geometry is defined to be rigid, we return infinity.
+  if (prop->GetPropertyOrDefault(
+          geometry::internal::kHydroGroup, geometry::internal::kComplianceType,
+          geometry::internal::HydroelasticType::kUndefined) ==
+      geometry::internal::HydroelasticType::kRigid) {
+    return std::numeric_limits<double>::infinity();
+  }
+  return prop->GetPropertyOrDefault(geometry::internal::kHydroGroup,
+                                    geometry::internal::kElastic,
+                                    default_value);
+}
+
+template <typename T>
+T GetHuntCrossleyDissipation(
+    geometry::GeometryId id, double default_value,
+    const geometry::SceneGraphInspector<T>& inspector) {
+  DRAKE_DEMAND(default_value >= 0.0);
+  const geometry::ProximityProperties* prop =
+      inspector.GetProximityProperties(id);
+  DRAKE_DEMAND(prop != nullptr);
+  return prop->template GetPropertyOrDefault<T>(
+      geometry::internal::kMaterialGroup, geometry::internal::kHcDissipation,
+      default_value);
+}
+
+template <typename T>
+T GetCombinedHuntCrossleyDissipation(
+    geometry::GeometryId id_A, geometry::GeometryId id_B, const T& stiffness_A,
+    const T& stiffness_B, double default_dissipation,
+    const geometry::SceneGraphInspector<T>& inspector) {
+  const double kInf = std::numeric_limits<double>::infinity();
+  // Demand that at least one is compliant.
+  DRAKE_DEMAND(stiffness_A != kInf || stiffness_B != kInf);
+  DRAKE_DEMAND(stiffness_A >= 0.0);
+  DRAKE_DEMAND(stiffness_B >= 0.0);
+  DRAKE_DEMAND(default_dissipation >= 0.0);
+
+  // Return zero dissipation if both stiffness values are zero.
+  const T denom = stiffness_A + stiffness_B;
+  if (denom == 0.0) return 0.0;
+
+  // If only one object is compliant, return the dissipation for that object.
+  // N.B. Per the demand above we know at least one is compliant.
+  const T dB = GetHuntCrossleyDissipation(id_B, default_dissipation, inspector);
+  if (stiffness_A == kInf) return dB;
+  const T dA = GetHuntCrossleyDissipation(id_A, default_dissipation, inspector);
+  if (stiffness_B == kInf) return dA;
+
+  // At this point we know both geometries are compliant and at least one of
+  // them has non-zero stiffness (denom != 0).
+  return (stiffness_B / denom) * dA + (stiffness_A / denom) * dB;
 }
 
 template <typename T>
@@ -98,9 +159,11 @@ double GetCombinedDynamicCoulombFriction(
       .dynamic_friction();
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&GetPointContactStiffness<T>, &GetDissipationTimeConstant<T>,
-     &GetCoulombFriction<T>, &GetCombinedPointContactStiffness<T>,
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&GetPointContactStiffness<T>, &GetHydroelasticModulus<T>,
+     &GetHuntCrossleyDissipation<T>, &GetCombinedHuntCrossleyDissipation<T>,
+     &GetDissipationTimeConstant<T>, &GetCoulombFriction<T>,
+     &GetCombinedPointContactStiffness<T>,
      &GetCombinedDissipationTimeConstant<T>,
      &GetCombinedDynamicCoulombFriction<T>))
 
