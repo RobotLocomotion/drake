@@ -10,7 +10,7 @@ namespace drake {
 namespace multibody {
 
 /**
-Combines multiple std::vector<>'s of ExternallyAppliedSpatialForce<T>.
+Concatenates multiple std::vector<>'s of ExternallyAppliedSpatialForce<T>.
 
 @system
 name: ExternallyAppliedSpatialForceMultiplexer
@@ -19,7 +19,7 @@ input_ports:
 - ...
 - u(N-1)
 output_ports:
-- combined
+- y0
 @endsystem
 
 @tparam default_scalar
@@ -29,9 +29,6 @@ class ExternallyAppliedSpatialForceMultiplexer final
     : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternallyAppliedSpatialForceMultiplexer)
-
-  using ValueType = ExternallyAppliedSpatialForce<T>;
-  using ListType = std::vector<ValueType>;
 
   /**
   Constructor.
@@ -47,6 +44,9 @@ class ExternallyAppliedSpatialForceMultiplexer final
       const ExternallyAppliedSpatialForceMultiplexer<U>& other);
 
  private:
+  using ValueType = ExternallyAppliedSpatialForce<T>;
+  using ListType = std::vector<ValueType>;
+
   // This is the calculator for the output port.
   void CombineInputsToOutput(
       const systems::Context<T>& context, ListType* output) const;

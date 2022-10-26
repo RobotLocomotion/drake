@@ -19,7 +19,7 @@ ExternallyAppliedSpatialForceMultiplexer(int num_inputs)
           Value<ListType>());
     }
     this->DeclareAbstractOutputPort(
-        "combined",
+        systems::kUseDefaultName,
         &ExternallyAppliedSpatialForceMultiplexer<T>::CombineInputsToOutput);
   }
 
