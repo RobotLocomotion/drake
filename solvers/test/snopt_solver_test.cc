@@ -562,6 +562,11 @@ GTEST_TEST(SnoptSolverTest, TestNonconvexQP) {
   }
 }
 
+GTEST_TEST(SnoptSolverTest, TestL2NormCost) {
+  SnoptSolver solver;
+  TestL2NormCost(solver, 1e-6);
+}
+
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   SnoptSolver snopt_solver;
   if (snopt_solver.available()) {

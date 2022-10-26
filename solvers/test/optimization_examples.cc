@@ -832,6 +832,23 @@ void EmptyGradientProblem::CheckSolution(
 
 EmptyGradientProblem::EmptyGradientConstraint::EmptyGradientConstraint()
     : Constraint(1, 2, Vector1d(-kInf), Vector1d(0)) {}
+
+// min_x |x|₂ s.t. 2x₀ + x₁ ≥ 1.
+// The optimal solution is x = [2/5, 1/5].
+void TestL2NormCost(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+
+  prog.AddL2NormCost(Matrix2d::Identity(), Vector2d::Zero(), x);
+  prog.AddLinearConstraint(2*x[0] + x[1] >= 1);
+
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x[0]), 0.4, tol);
+  EXPECT_NEAR(result.GetSolution(x[1]), 0.2, tol);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

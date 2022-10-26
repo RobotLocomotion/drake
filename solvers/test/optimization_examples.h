@@ -947,6 +947,8 @@ class EmptyGradientProblem {
   Vector2<symbolic::Variable> x_;
 };
 
+void TestL2NormCost(const SolverInterface& solver, double tol);
+
 std::set<CostForm> linear_cost_form();
 
 std::set<CostForm> quadratic_cost_form();
