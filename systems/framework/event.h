@@ -257,6 +257,11 @@ class PeriodicEventData {
   /// Sets the time after zero when this event should first occur.
   void set_offset_sec(double offset_sec) { offset_sec_ = offset_sec; }
 
+  bool operator==(const PeriodicEventData& other) const {
+    return other.period_sec() == period_sec() &&
+           other.offset_sec() == offset_sec();
+  }
+
  private:
   double period_sec_{0.0};
   double offset_sec_{0.0};

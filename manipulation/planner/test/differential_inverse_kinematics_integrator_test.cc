@@ -64,7 +64,7 @@ GTEST_TEST(DifferentialInverseKinematicsIntegratorTest, BasicTest) {
   math::RigidTransformd X_WE_desired(Eigen::Vector3d(0.2, 0.0, 0.2));
   diff_ik.get_input_port(0).FixValue(diff_ik_context.get(), X_WE_desired);
   auto discrete_state = diff_ik.AllocateDiscreteVariables();
-  for (const auto& [data, events] : diff_ik.GetPeriodicEvents()) {
+  for (const auto& [data, events] : diff_ik.MapPeriodicEventsByTiming()) {
     dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
         ->handle(diff_ik, *diff_ik_context, discrete_state.get());
   }
@@ -92,7 +92,7 @@ GTEST_TEST(DifferentialInverseKinematicsIntegratorTest, BasicTest) {
   diff_ik.get_mutable_parameters().AddLinearVelocityConstraint(
       std::make_shared<solvers::LinearConstraint>(A, b, b));
   Eigen::VectorXd last_q = robot->GetPositions(*robot_context);
-  for (const auto& [data, events] : diff_ik.GetPeriodicEvents()) {
+  for (const auto& [data, events] : diff_ik.MapPeriodicEventsByTiming()) {
     dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
         ->handle(diff_ik, *diff_ik_context, discrete_state.get());
   }
@@ -211,7 +211,7 @@ GTEST_TEST(DifferentialInverseKinematicsIntegratorTest,
   // initialization event.
 
   // use_robot_state port is unset.
-  for (const auto& [data, events] : diff_ik->GetPeriodicEvents()) {
+  for (const auto& [data, events] : diff_ik->MapPeriodicEventsByTiming()) {
     dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
         ->handle(*diff_ik, diff_ik_context, discrete_state.get());
   }
@@ -222,7 +222,7 @@ GTEST_TEST(DifferentialInverseKinematicsIntegratorTest,
   diff_ik_context.FixInputPort(
       diff_ik->GetInputPort("use_robot_state").get_index(),
       Value<bool>{false});
-  for (const auto& [data, events] : diff_ik->GetPeriodicEvents()) {
+  for (const auto& [data, events] : diff_ik->MapPeriodicEventsByTiming()) {
     dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
         ->handle(*diff_ik, diff_ik_context, discrete_state.get());
   }
@@ -233,7 +233,7 @@ GTEST_TEST(DifferentialInverseKinematicsIntegratorTest,
   diff_ik_context.FixInputPort(
       diff_ik->GetInputPort("use_robot_state").get_index(),
       Value<bool>{true});
-  for (const auto& [data, events] : diff_ik->GetPeriodicEvents()) {
+  for (const auto& [data, events] : diff_ik->MapPeriodicEventsByTiming()) {
     dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
         ->handle(*diff_ik, diff_ik_context, discrete_state.get());
   }

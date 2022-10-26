@@ -448,15 +448,20 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const;
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> DoGetPeriodicEvents() const override;
+           PeriodicEventDataComparator>
+  DoMapPeriodicEventsByTiming(const Context<T>& context) const final;
+
+  void DoGetPeriodicEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
 
   void DoGetPerStepEvents(
       const Context<T>& context,
-      CompositeEventCollection<T>* event_info) const override;
+      CompositeEventCollection<T>* event_info) const final;
 
   void DoGetInitializationEvents(
       const Context<T>& context,
-      CompositeEventCollection<T>* event_info) const override;
+      CompositeEventCollection<T>* event_info) const final;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final;

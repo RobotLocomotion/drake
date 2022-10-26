@@ -261,19 +261,19 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
 
     // None of these should have a unique periodic event.
     EXPECT_FALSE(d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys1upd.GetPeriodicEvents().size(), i + 1);
+    EXPECT_EQ(d_sys1upd.MapPeriodicEventsByTiming().size(), i + 1);
     EXPECT_FALSE(d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys2upd.GetPeriodicEvents().size(), i + 1);
+    EXPECT_EQ(d_sys2upd.MapPeriodicEventsByTiming().size(), i + 1);
     EXPECT_FALSE(d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_bothupd.GetPeriodicEvents().size(), 2 * (i + 1));
+    EXPECT_EQ(d_bothupd.MapPeriodicEventsByTiming().size(), 2 * (i + 1));
     EXPECT_FALSE(d_both_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_both_last.GetPeriodicEvents().size(), 2);
+    EXPECT_EQ(d_both_last.MapPeriodicEventsByTiming().size(), 2);
 
     // All of these should have a unique periodic event.
     EXPECT_TRUE(d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys1_last.GetPeriodicEvents().size(), 1);
+    EXPECT_EQ(d_sys1_last.MapPeriodicEventsByTiming().size(), 1);
     EXPECT_TRUE(d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    EXPECT_EQ(d_sys2_last.GetPeriodicEvents().size(), 1);
+    EXPECT_EQ(d_sys2_last.MapPeriodicEventsByTiming().size(), 1);
   }
 }
 
@@ -3251,11 +3251,10 @@ GTEST_TEST(MyEventTest, MyEventTestLeaf) {
     EXPECT_EQ(events->get_system_id(), context->get_system_id());
 
     // If period is zero, we still need to evaluate the per step events.
-    double time = dut.CalcNextUpdateTime(*context, periodic_events.get());
+    dut.GetPeriodicEvents(*context, periodic_events.get());
     dut.GetPerStepEvents(*context, per_step_events.get());
     events->AddToEnd(*periodic_events);
     events->AddToEnd(*per_step_events);
-    context->SetTime(time);
     dut.Publish(*context, events->get_publish_events());
 
     EXPECT_EQ(dut.get_periodic_count(), period > 0 ? 1 : 0);
@@ -3295,12 +3294,14 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
 
   auto context = dut->CreateDefaultContext();
 
+  // Returns only the events that trigger at 0.1s.
   double time = dut->CalcNextUpdateTime(*context, periodic_events.get());
   dut->GetPerStepEvents(*context, per_step_events.get());
 
   events->AddToEnd(*periodic_events);
   events->AddToEnd(*per_step_events);
 
+  // FYI time not actually needed here; events to handle already selected.
   context->SetTime(time);
   dut->Publish(*context, events->get_publish_events());
 
@@ -3318,8 +3319,26 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   EXPECT_EQ(sys[3]->get_periodic_count(), 1);
   EXPECT_EQ(sys[3]->get_per_step_count(), 0);
 
-  // Sys4 has only a per-step event, it gets triggered because we're taking a
-  // step.
+  // Sys4 has only a per-step publish event, it got triggered by the explicit
+  // Publish() call above.
+  EXPECT_EQ(sys[4]->get_periodic_count(), 0);
+  EXPECT_EQ(sys[4]->get_per_step_count(), 1);
+
+  // Next, re-use this Diagram using GetPeriodicEvents() rather than
+  // CalcNextUpdateTime(). periodic_events should get cleared first so that
+  // it doesn't contain the ones leftover from the CalcNextUpdateTime() call.
+  // (If it doesn't get cleared some of the counts will be incremented twice.)
+  dut->GetPeriodicEvents(*context, periodic_events.get());
+  dut->Publish(*context, periodic_events->get_publish_events());
+
+  EXPECT_EQ(sys[0]->get_periodic_count(), 1);
+  EXPECT_EQ(sys[0]->get_per_step_count(), 0);
+  EXPECT_EQ(sys[1]->get_periodic_count(), 2);
+  EXPECT_EQ(sys[1]->get_per_step_count(), 0);
+  EXPECT_EQ(sys[2]->get_periodic_count(), 2);
+  EXPECT_EQ(sys[2]->get_per_step_count(), 0);
+  EXPECT_EQ(sys[3]->get_periodic_count(), 2);
+  EXPECT_EQ(sys[3]->get_per_step_count(), 0);
   EXPECT_EQ(sys[4]->get_periodic_count(), 0);
   EXPECT_EQ(sys[4]->get_per_step_count(), 1);
 }
