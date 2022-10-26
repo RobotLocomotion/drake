@@ -27,8 +27,8 @@ class DrakeLcmLog::Impl {
 };
 
 DrakeLcmLog::DrakeLcmLog(const std::string& file_name,
-    bool is_write,
-    bool overwrite_publish_time_with_system_clock)
+                         bool is_write,
+                         bool overwrite_publish_time_with_system_clock)
     : is_write_(is_write),
       overwrite_publish_time_with_system_clock_(
           overwrite_publish_time_with_system_clock),
@@ -52,9 +52,9 @@ std::string DrakeLcmLog::get_lcm_url() const {
 }
 
 void DrakeLcmLog::Publish(const std::string& channel,
-    const void* data,
-    int data_size,
-    std::optional<double> time_sec) {
+                          const void* data,
+                          int data_size,
+                          std::optional<double> time_sec) {
   if (!is_write_) {
     throw std::logic_error("Publish is only available for log saving.");
   }

@@ -24,8 +24,8 @@ class DrakeSubscriptionInterface;
 
 namespace internal {
 // Used by the drake::lcm::Subscribe() free function to report errors.
-void OnHandleSubscriptionsError(
-    DrakeLcmInterface* lcm, const std::string& error_message);
+void OnHandleSubscriptionsError(DrakeLcmInterface* lcm,
+                                const std::string& error_message);
 }  // namespace internal
 
 /**
@@ -93,9 +93,9 @@ class DrakeLcmInterface {
    * If unknown, use nullopt or a default-constructed optional.
    */
   virtual void Publish(const std::string& channel,
-      const void* data,
-      int data_size,
-      std::optional<double> time_sec) = 0;
+                       const void* data,
+                       int data_size,
+                       std::optional<double> time_sec) = 0;
 
   /**
    * Most users should use the drake::lcm::Subscribe() free function or the
@@ -210,9 +210,9 @@ class DrakeSubscriptionInterface {
  */
 template <typename Message>
 void Publish(DrakeLcmInterface* lcm,
-    const std::string& channel,
-    const Message& message,
-    std::optional<double> time_sec = {}) {
+             const std::string& channel,
+             const Message& message,
+             std::optional<double> time_sec = {}) {
   DRAKE_THROW_UNLESS(lcm != nullptr);
   const std::vector<uint8_t> bytes = EncodeLcmMessage(message);
   lcm->Publish(channel, bytes.data(), bytes.size(), time_sec);
@@ -244,7 +244,8 @@ void Publish(DrakeLcmInterface* lcm,
  * handler might be invoked on a different thread than this function.
  */
 template <typename Message>
-std::shared_ptr<DrakeSubscriptionInterface> Subscribe(DrakeLcmInterface* lcm,
+std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
+    DrakeLcmInterface* lcm,
     const std::string& channel,
     std::function<void(const Message&)> handler,
     std::function<void()> on_error = {}) {
@@ -260,7 +261,7 @@ std::shared_ptr<DrakeSubscriptionInterface> Subscribe(DrakeLcmInterface* lcm,
         // throw once it's safe (i.e., once C code is no longer on the stack).
         internal::OnHandleSubscriptionsError(
             lcm, fmt::format("Error from message handler callback on {}: {}",
-                     channel, e.what()));
+                             channel, e.what()));
       }
     } else if (on_error) {
       on_error();
@@ -296,8 +297,8 @@ class Subscriber final {
    * exception will be thrown instead.
    */
   Subscriber(DrakeLcmInterface* lcm,
-      const std::string& channel,
-      std::function<void()> on_error = {}) {
+             const std::string& channel,
+             std::function<void()> on_error = {}) {
     subscription_ = drake::lcm::Subscribe<Message>(
         lcm, channel,
         [data = data_](const Message& message) {
@@ -345,8 +346,8 @@ class Subscriber final {
 /// with a timeout value of `timeout_millis`, until `finished()` returns true.
 /// Returns the total number of messages handled.
 int LcmHandleSubscriptionsUntil(DrakeLcmInterface* lcm,
-    const std::function<bool(void)>& finished,
-    int timeout_millis = 100);
+                                const std::function<bool(void)>& finished,
+                                int timeout_millis = 100);
 
 }  // namespace lcm
 }  // namespace drake

@@ -15,12 +15,6 @@ PointerAlignment: Left
 # each.
 BinPackParameters: false
 
-# When a function signature's parameters or a function call's arguments need to
-# wrap onto another line, indent by four spaces -- do not whitespace castle all
-# the way over to the open-paren (sometimes placing all of the code smashed up
-# against the 80-column right margin).
-AlignAfterOpenBracket: DontAlign
-
 # Compress functions onto a single line (when they fit) iff they are defined
 # inline (inside a of class).
 AllowShortFunctionsOnASingleLine: InlineOnly
