@@ -466,11 +466,13 @@ void GetNonlinearCostNonzeroGradientIndices(
  */
 std::set<int> GetAllNonlinearCostNonzeroGradientIndices(
     const MathematicalProgram& prog) {
-  // The nonlinear costs include the quadratic and generic costs. Linear costs
-  // are not included. In the future if we support more costs (like polynomial
-  // costs), we should add it here.
+  // The nonlinear costs include the quadratic, L2, and generic costs. Linear
+  // costs are not included. In the future if we support more costs (like
+  // polynomial costs), we should add it here.
   std::set<int> cost_gradient_indices;
   GetNonlinearCostNonzeroGradientIndices(prog, prog.quadratic_costs(),
+                                         &cost_gradient_indices);
+  GetNonlinearCostNonzeroGradientIndices(prog, prog.l2norm_costs(),
                                          &cost_gradient_indices);
   GetNonlinearCostNonzeroGradientIndices(prog, prog.generic_costs(),
                                          &cost_gradient_indices);
@@ -532,6 +534,9 @@ void EvaluateAllNonlinearCosts(
   std::vector<double> cost_gradients(prog.num_vars(), 0);
   // Quadratic costs.
   EvaluateAndAddNonlinearCosts(prog, prog.quadratic_costs(), xvec, &(F[0]),
+                               &cost_gradients);
+  // L2Norm costs.
+  EvaluateAndAddNonlinearCosts(prog, prog.l2norm_costs(), xvec, &(F[0]),
                                &cost_gradients);
   // Generic costs.
   EvaluateAndAddNonlinearCosts(prog, prog.generic_costs(), xvec, &(F[0]),

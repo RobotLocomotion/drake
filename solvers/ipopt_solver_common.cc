@@ -31,7 +31,8 @@ bool IpoptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kLorentzConeConstraint,
           ProgramAttribute::kRotatedLorentzConeConstraint,
           ProgramAttribute::kGenericCost, ProgramAttribute::kLinearCost,
-          ProgramAttribute::kQuadraticCost, ProgramAttribute::kCallback});
+          ProgramAttribute::kL2NormCost, ProgramAttribute::kQuadraticCost,
+          ProgramAttribute::kCallback});
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access());
 }
