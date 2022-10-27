@@ -1644,7 +1644,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   //   The exception message contains mass and/or inertia properties of this
   //   body node's outboard body.
   // @param[in] D_B Articulated rigid body hinge matrix.
-  // @param[in, out] llt_D_B Stores the LLT factorization of D_B.
+  // @param[out] llt_D_B Stores the LLT factorization of D_B.
   // @throws an exception if D_B is not positive definite or is near-singular.
   // @throws if llt_D_B is nullptr.
   void CalcArticulatedBodyHingeInertiaMatrixFactorization(
