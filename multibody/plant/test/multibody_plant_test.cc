@@ -3665,8 +3665,8 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
 
   const RigidTransform<AutoDiffXd> X_link1_Ei(-l1_ad * Vector3d::UnitZ());
 
-  elbow_joint_parent_frame.SetPoseInBodyFrame(context_autodiff.get(),
-                                              X_link1_Ei);
+  elbow_joint_parent_frame.SetPoseInParentFrame(context_autodiff.get(),
+                                                X_link1_Ei);
 
   // Take the derivative of the mass matrix w.r.t. length.
   Matrix2<AutoDiffXd> mass_matrix;
@@ -3783,7 +3783,16 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameParameters) {
   const RotationMatrixd R_WF_new = RotationMatrixd::MakeXRotation(3);
   const RigidTransformd X_WF_new(R_WF_new, p_WF_new);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   frame_F.SetPoseInBodyFrame(context.get(), X_WF_new);
+  const math::RigidTransform<double> X_WF_stored =
+      frame_F.GetPoseInParentFrame(*context.get());
+  EXPECT_TRUE(CompareMatrices(X_WF_new.GetAsMatrix34(),
+                              X_WF_stored.GetAsMatrix34()));
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+
+  frame_F.SetPoseInParentFrame(context.get(), X_WF_new);
 
   const RigidTransformd& X_WF_context_new =
       frame_F.CalcPoseInBodyFrame(*context);
