@@ -56,6 +56,12 @@ struct IrisOptions {
   counter-example requested before moving on to the next constraint. */
   int num_collision_infeasible_samples{5};
 
+  /** For IRIS in configuration space, it can be beneficial to not only specify
+  task-space obstacles (passed in through the plant) but also obstacles that are
+  defined by convex sets in the configuration space. This option can be used to
+  pass in such configuration space obstacles. */
+  ConvexSets configuration_obstacles{};
+
   /** By default, IRIS in configuration space certifies regions for collision
   avoidance constraints and joint limits. This option can be used to pass
   additional constraints that should be satisfied by the IRIS region. We accept

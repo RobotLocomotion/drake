@@ -276,55 +276,65 @@ void DefineGeometryOptimization(py::module m) {
     py::implicitly_convertible<VPolytope, copyable_unique_ptr<ConvexSet>>();
   }
 
-  py::class_<IrisOptions>(m, "IrisOptions", doc.IrisOptions.doc)
-      .def(py::init<>(), doc.IrisOptions.ctor.doc)
-      .def_readwrite("require_sample_point_is_contained",
-          &IrisOptions::require_sample_point_is_contained,
-          doc.IrisOptions.require_sample_point_is_contained.doc)
-      .def_readwrite("iteration_limit", &IrisOptions::iteration_limit,
-          doc.IrisOptions.iteration_limit.doc)
-      .def_readwrite("termination_threshold",
-          &IrisOptions::termination_threshold,
-          doc.IrisOptions.termination_threshold.doc)
-      .def_readwrite("relative_termination_threshold",
-          &IrisOptions::relative_termination_threshold,
-          doc.IrisOptions.relative_termination_threshold.doc)
-      .def_readwrite("configuration_space_margin",
-          &IrisOptions::configuration_space_margin,
-          doc.IrisOptions.configuration_space_margin.doc)
-      .def_readwrite("num_collision_infeasible_samples",
-          &IrisOptions::num_collision_infeasible_samples,
-          doc.IrisOptions.num_collision_infeasible_samples.doc)
-      .def_readwrite("prog_with_additional_constraints",
-          &IrisOptions::prog_with_additional_constraints,
-          doc.IrisOptions.prog_with_additional_constraints.doc)
-      .def_readwrite("num_additional_constraint_infeasible_samples",
-          &IrisOptions::num_additional_constraint_infeasible_samples,
-          doc.IrisOptions.num_additional_constraint_infeasible_samples.doc)
-      .def_readwrite("random_seed", &IrisOptions::random_seed,
-          doc.IrisOptions.random_seed.doc)
-      .def("__repr__", [](const IrisOptions& self) {
-        return py::str(
-            "IrisOptions("
-            "require_sample_point_is_contained={}, "
-            "iteration_limit={}, "
-            "termination_threshold={}, "
-            "relative_termination_threshold={}, "
-            "configuration_space_margin={}, "
-            "num_collision_infeasible_samples={}, "
-            "prog_with_additional_constraints {}, "
-            "num_additional_constraint_infeasible_samples={}, "
-            "random_seed={}"
-            ")")
-            .format(self.require_sample_point_is_contained,
-                self.iteration_limit, self.termination_threshold,
-                self.relative_termination_threshold,
-                self.configuration_space_margin,
-                self.num_collision_infeasible_samples,
-                self.prog_with_additional_constraints ? "is set" : "is not set",
-                self.num_additional_constraint_infeasible_samples,
-                self.random_seed);
-      });
+  {
+    const auto& cls_doc = doc.IrisOptions;
+    py::class_<IrisOptions> iris_options(m, "IrisOptions", cls_doc.doc);
+    iris_options.def(py::init<>(), cls_doc.ctor.doc)
+        .def_readwrite("require_sample_point_is_contained",
+            &IrisOptions::require_sample_point_is_contained,
+            cls_doc.require_sample_point_is_contained.doc)
+        .def_readwrite("iteration_limit", &IrisOptions::iteration_limit,
+            cls_doc.iteration_limit.doc)
+        .def_readwrite("termination_threshold",
+            &IrisOptions::termination_threshold,
+            cls_doc.termination_threshold.doc)
+        .def_readwrite("relative_termination_threshold",
+            &IrisOptions::relative_termination_threshold,
+            cls_doc.relative_termination_threshold.doc)
+        .def_readwrite("configuration_space_margin",
+            &IrisOptions::configuration_space_margin,
+            cls_doc.configuration_space_margin.doc)
+        .def_readwrite("num_collision_infeasible_samples",
+            &IrisOptions::num_collision_infeasible_samples,
+            cls_doc.num_collision_infeasible_samples.doc)
+        .def_readwrite("configuration_obstacles",
+            &IrisOptions::configuration_obstacles,
+            cls_doc.configuration_obstacles.doc)
+        .def_readwrite("num_additional_constraint_infeasible_samples",
+            &IrisOptions::num_additional_constraint_infeasible_samples,
+            cls_doc.num_additional_constraint_infeasible_samples.doc)
+        .def_readwrite(
+            "random_seed", &IrisOptions::random_seed, cls_doc.random_seed.doc)
+        .def("__repr__", [](const IrisOptions& self) {
+          return py::str(
+              "IrisOptions("
+              "require_sample_point_is_contained={}, "
+              "iteration_limit={}, "
+              "termination_threshold={}, "
+              "relative_termination_threshold={}, "
+              "configuration_space_margin={}, "
+              "num_collision_infeasible_samples={}, "
+              "configuration_obstacles {}, "
+              "prog_with_additional_constraints {}, "
+              "num_additional_constraint_infeasible_samples={}, "
+              "random_seed={}"
+              ")")
+              .format(self.require_sample_point_is_contained,
+                  self.iteration_limit, self.termination_threshold,
+                  self.relative_termination_threshold,
+                  self.configuration_space_margin,
+                  self.num_collision_infeasible_samples,
+                  self.configuration_obstacles,
+                  self.prog_with_additional_constraints ? "is set"
+                                                        : "is not set",
+                  self.num_additional_constraint_infeasible_samples,
+                  self.random_seed);
+        });
+
+    DefReadWriteKeepAlive(&iris_options, "prog_with_additional_constraints",
+        &IrisOptions::prog_with_additional_constraints,
+        cls_doc.prog_with_additional_constraints.doc);
+  }
 
   m.def("Iris", &Iris, py::arg("obstacles"), py::arg("sample"),
       py::arg("domain"), py::arg("options") = IrisOptions(), doc.Iris.doc);
