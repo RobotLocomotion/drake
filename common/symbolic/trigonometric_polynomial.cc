@@ -400,18 +400,6 @@ Expression Substitute(const Expression& e, const SinCosSubstitution& subs) {
   return SinCosVisitor(subs).Substitute(e);
 }
 
-namespace {
-bool CheckPolynomialIndeterminatesAreSinCos(
-    const symbolic::Polynomial& e_poly, const std::vector<SinCos>& sin_cos) {
-  symbolic::Variables sin_cos_vars;
-  for (const auto& sc : sin_cos) {
-    sin_cos_vars.insert(sc.s);
-    sin_cos_vars.insert(sc.c);
-  }
-  return e_poly.indeterminates().IsSubsetOf(sin_cos_vars);
-}
-}  // namespace
-
 namespace internal {
 symbolic::RationalFunction SubstituteStereographicProjectionImpl(
     const symbolic::Polynomial& e_poly, const std::vector<SinCos>& sin_cos,
@@ -423,63 +411,103 @@ symbolic::RationalFunction SubstituteStereographicProjectionImpl(
   DRAKE_DEMAND(one_plus_t_angles_squared.size() == t.rows());
   DRAKE_DEMAND(two_t_angles.size() == t.rows());
   DRAKE_DEMAND(one_minus_t_angles_squared.size() == t.rows());
-  DRAKE_DEMAND(CheckPolynomialIndeterminatesAreSinCos(e_poly, sin_cos));
-  // First find the angles whose cos or sin appear in the polynomial. This
-  // will determine the denominator of the rational function.
-  std::set<int> angle_indices;
-  for (const auto& pair : e_poly.monomial_to_coefficient_map()) {
-    // Also check that this monomial can't contain both cos_vars(i) and
-    // sin_vars(i).
-    for (int i = 0; i < static_cast<int>(sin_cos.size()); ++i) {
-      const auto& sin_var = sin_cos[i].s;
-      const auto& cos_var = sin_cos[i].c;
-      const int angle_degree =
-          pair.first.degree(cos_var) + pair.first.degree(sin_var);
-      DRAKE_DEMAND(angle_degree <= 1);
-      if (angle_degree == 1) {
-        angle_indices.insert(i);
-      }
+
+  symbolic::Variables sin_cos_vars;
+  for (const auto& sc : sin_cos) {
+    sin_cos_vars.insert(sc.s);
+    sin_cos_vars.insert(sc.c);
+  }
+  // We also group the variables in e_poly.indeterminates() that are not in
+  // sin_cos_vars to non_sin_cos_vars.
+  symbolic::Variables non_sin_cos_vars;
+  for (const auto& var : e_poly.indeterminates()) {
+    if (sin_cos_vars.find(var) == sin_cos_vars.end()) {
+      non_sin_cos_vars.insert(var);
     }
   }
-  if (angle_indices.empty()) {
-    return symbolic::RationalFunction(
-        symbolic::Polynomial(e_poly.ToExpression(), t_set));
-  }
-  const symbolic::Monomial monomial_one{};
-  symbolic::Polynomial denominator{1};
-  for (int angle_index : angle_indices) {
-    // denominator *= (1 + t(angle_index)^2)
-    denominator *= one_plus_t_angles_squared[angle_index];
-  }
-  symbolic::Polynomial numerator{};
-
-  for (const auto& [monomial, coeff] : e_poly.monomial_to_coefficient_map()) {
-    // If the monomial contains cos_vars(i), then replace cos_vars(i) with
-    // 1 - t(i) * t(i).
-    // If the monomial contains sin_vars(i), then replace sin_vars(i) with
-    // 2 * t(i).
-    // Otherwise, multiplies with 1 + t(i) * t(i)
-
-    // The coefficient could contain "t_set", (the indeterminates for e are
-    // cos_vars and sin_vars). Hence we first need to write the coefficient
-    // as a polynomial of indeterminates intersect(t_set, coeff.variables()).
-    symbolic::Polynomial numerator_term(
-        coeff, symbolic::intersect(t_set, coeff.GetVariables()));
+  if (non_sin_cos_vars.empty()) {
+    // e_poly.indeterminates() is a subset of sin_cos_vars.
+    // First find the angles whose cos or sin appear in the polynomial. This
+    // will determine the denominator of the rational function.
+    std::set<int> angle_indices;
+    for (const auto& pair : e_poly.monomial_to_coefficient_map()) {
+      // Also check that this monomial can't contain both cos_vars(i) and
+      // sin_vars(i).
+      for (int i = 0; i < static_cast<int>(sin_cos.size()); ++i) {
+        const auto& sin_var = sin_cos[i].s;
+        const auto& cos_var = sin_cos[i].c;
+        const int angle_degree =
+            pair.first.degree(cos_var) + pair.first.degree(sin_var);
+        DRAKE_DEMAND(angle_degree <= 1);
+        if (angle_degree == 1) {
+          angle_indices.insert(i);
+        }
+      }
+    }
+    if (angle_indices.empty()) {
+      return symbolic::RationalFunction(
+          symbolic::Polynomial(e_poly.ToExpression(), t_set));
+    }
+    const symbolic::Monomial monomial_one{};
+    symbolic::Polynomial denominator{1};
     for (int angle_index : angle_indices) {
-      const auto& sin_var = sin_cos[angle_index].s;
-      const auto& cos_var = sin_cos[angle_index].c;
-      if (monomial.degree(cos_var) > 0) {
-        numerator_term *= one_minus_t_angles_squared[angle_index];
-      } else if (monomial.degree(sin_var) > 0) {
-        numerator_term *= two_t_angles[angle_index];
-      } else {
-        numerator_term *= one_plus_t_angles_squared[angle_index];
-      }
+      // denominator *= (1 + t(angle_index)^2)
+      denominator *= one_plus_t_angles_squared[angle_index];
     }
-    numerator += numerator_term;
-  }
+    symbolic::Polynomial numerator{};
 
-  return symbolic::RationalFunction(numerator, denominator);
+    for (const auto& [monomial, coeff] : e_poly.monomial_to_coefficient_map()) {
+      // If the monomial contains cos_vars(i), then replace cos_vars(i) with
+      // 1 - t(i) * t(i).
+      // If the monomial contains sin_vars(i), then replace sin_vars(i) with
+      // 2 * t(i).
+      // Otherwise, multiplies with 1 + t(i) * t(i)
+
+      // The coefficient could contain "t_set", (the indeterminates for e are
+      // cos_vars and sin_vars). Hence we first need to write the coefficient
+      // as a polynomial of indeterminates intersect(t_set, coeff.variables()).
+      symbolic::Polynomial numerator_term(
+          coeff, symbolic::intersect(t_set, coeff.GetVariables()));
+      for (int angle_index : angle_indices) {
+        const auto& sin_var = sin_cos[angle_index].s;
+        const auto& cos_var = sin_cos[angle_index].c;
+        if (monomial.degree(cos_var) > 0) {
+          numerator_term *= one_minus_t_angles_squared[angle_index];
+        } else if (monomial.degree(sin_var) > 0) {
+          numerator_term *= two_t_angles[angle_index];
+        } else {
+          numerator_term *= one_plus_t_angles_squared[angle_index];
+        }
+      }
+      numerator += numerator_term;
+    }
+
+    return symbolic::RationalFunction(numerator, denominator);
+  } else {
+    // The indeterminates of e_poly contains sin/cos and other indeterminates.
+    // I parse e_poly as a polynomial of only sin_cos_vars, and then convert
+    // this new polynomial to a rational function; finally I reparse this new
+    // rational function with indeterminates t + non_sin_cos_vars.
+    const symbolic::Polynomial e_poly_reparse(e_poly.ToExpression(),
+                                              sin_cos_vars);
+    const symbolic::RationalFunction e_rational_reparse =
+        SubstituteStereographicProjectionImpl(
+            e_poly_reparse, sin_cos, t, t_set, one_plus_t_angles_squared,
+            two_t_angles, one_minus_t_angles_squared);
+    // indeterminates is the union of non_sin_cos_vars and t_set.
+    symbolic::Variables indeterminates = non_sin_cos_vars;
+    for (const auto& var : t_set) {
+      indeterminates.insert(var);
+    }
+
+    const symbolic::Polynomial numerator(
+        e_rational_reparse.numerator().ToExpression(), indeterminates);
+    // We know that the indeterminates in e_rational_reparse.denominator() are
+    // all in t_set, already a subset of `indeterminates`, so we do not need to
+    // rebuild this polynomial with `indeterminates`.
+    return symbolic::RationalFunction(numerator,
+                                      e_rational_reparse.denominator());
+  }
 }
 }  // namespace internal
 
