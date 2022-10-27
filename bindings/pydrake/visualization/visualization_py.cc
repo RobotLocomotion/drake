@@ -18,6 +18,7 @@ Bindings for Visualization.
   internal::DefineVisualizationConfig(m);
 
   py::module::import("pydrake.visualization.meldis");
+  py::module::import("pydrake.visualization.model_visualizer");
   ExecuteExtraPythonCode(m, true);
 }
 

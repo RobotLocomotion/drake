@@ -196,6 +196,8 @@ class TestAll(unittest.TestCase):
             "AddDefaultVisualization",
             # - _meldis
             "Meldis",
+            # -  model_visualizer
+            "ModelVisualizer",
             # - _plotting
             "plot_sublevelset_quadratic",
         )
