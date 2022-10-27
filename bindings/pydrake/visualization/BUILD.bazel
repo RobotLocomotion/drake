@@ -53,6 +53,7 @@ drake_pybind_library(
         "_meldis.py",
         "_model_visualizer.py",
         "_plotting.py",
+        "_video.py",
         "_visualization_extra.py",
     ],
 )
@@ -117,6 +118,14 @@ drake_py_unittest(
     deps = [
         ":visualization",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "video_test",
+    deps = [
+        ":visualization",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 

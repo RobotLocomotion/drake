@@ -144,6 +144,7 @@ PYBIND11_MODULE(sensors, m) {
       py::class_<ImageT> image(m, TemporaryClassName<ImageT>().c_str());
       AddTemplateClass(m, "Image", image, py_param);
       image  // BR
+          .def(py::init<>(), doc.Image.ctor.doc_0args)
           .def(py::init<int, int>(), py::arg("width"), py::arg("height"),
               doc.Image.ctor.doc_2args)
           .def(py::init<int, int, T>(), py::arg("width"), py::arg("height"),
