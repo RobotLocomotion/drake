@@ -1927,11 +1927,18 @@ class TestPlant(unittest.TestCase):
         context = plant.CreateDefaultContext()
 
         X_PF = RigidTransform_[T](p=[1., 2., 3.])
-        frame.SetPoseInBodyFrame(context=context, X_PF=X_PF)
-
+        frame.SetPoseInParentFrame(context=context, X_PF=X_PF)
         numpy_compare.assert_float_equal(
-            frame.CalcPoseInBodyFrame(context).GetAsMatrix34(),
+            frame.GetPoseInParentFrame(context).GetAsMatrix34(),
             numpy_compare.to_float(X_PF.GetAsMatrix34()))
+
+        # TODO(2023-02-01) Remove with completion of deprecation.
+        with catch_drake_warnings(expected_count=1) as w:
+            frame.SetPoseInBodyFrame(context=context, X_PF=X_PF)
+            numpy_compare.assert_float_equal(
+                frame.CalcPoseInBodyFrame(context).GetAsMatrix34(),
+                numpy_compare.to_float(X_PF.GetAsMatrix34()))
+        self.assertIn("2023-02-01", str(w[0].message))
 
     @numpy_compare.check_all_types
     def test_frame_context_methods(self, T):
