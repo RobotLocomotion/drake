@@ -71,6 +71,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rational_forward_kinematics_test",
     timeout = "moderate",
+    shard_count = 4,
     deps = [
         ":rational_forward_kinematics",
         ":rational_forward_kinematics_test_utilities",

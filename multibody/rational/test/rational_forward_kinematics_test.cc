@@ -68,7 +68,7 @@ void CheckBodyKinematics(const RationalForwardKinematics& dut,
   }
 }
 
-TEST_F(FinalizedIiwaTest, CalcBodyPoses) {
+TEST_F(FinalizedIiwaTest, CalcBodyPose1) {
   RationalForwardKinematics dut(iiwa_.get());
   constexpr int kNumJoints = 7;
   EXPECT_EQ(dut.s().rows(), kNumJoints);
@@ -83,7 +83,12 @@ TEST_F(FinalizedIiwaTest, CalcBodyPoses) {
                         Eigen::VectorXd::Zero(kNumJoints),
                         Eigen::VectorXd::Zero(kNumJoints), iiwa_link_[i]);
   }
+}
 
+TEST_F(FinalizedIiwaTest, CalcBodyPose2) {
+  RationalForwardKinematics dut(iiwa_.get());
+  constexpr int kNumJoints = 7;
+  EXPECT_EQ(dut.s().rows(), kNumJoints);
   // Non-zero q_val and zero q_star_val.
   Eigen::VectorXd q_val(kNumJoints);
   // arbitrary value
@@ -96,11 +101,18 @@ TEST_F(FinalizedIiwaTest, CalcBodyPoses) {
     CheckBodyKinematics(dut, q_val, Eigen::VectorXd::Zero(kNumJoints), s_val,
                         iiwa_link_[i]);
   }
+}
 
-  // Non-zero q_val and non-zero q_star_val.
+TEST_F(FinalizedIiwaTest, CalcBodyPose3) {
+  RationalForwardKinematics dut(iiwa_.get());
+  constexpr int kNumJoints = 7;
+  EXPECT_EQ(dut.s().rows(), kNumJoints);
+  Eigen::VectorXd q_val(kNumJoints);
   Eigen::VectorXd q_star_val(kNumJoints);
+  // Non-zero q_val and non-zero q_star_val.
+  q_val << 0.2, 0.3, 0.5, -0.1, 1.2, 2.3, -0.5;
   q_star_val << 1.2, -0.4, 0.3, -0.5, 0.4, 1, 0.2;
-  s_val = ((q_val - q_star_val) / 2).array().tan().matrix();
+  const Eigen::VectorXd s_val = dut.ComputeSValue(q_val, q_star_val);
   CheckBodyKinematics(dut, q_val, q_star_val, s_val, world_);
   // Compute the pose in the iiwa_link[i]'s frame.
   for (int i = 0; i < 8; ++i) {
@@ -152,11 +164,6 @@ GTEST_TEST(RationalForwardKinematicsTest, CalcBodyPosesForDualArmIiwa) {
   q_right_star.setZero();
   q_left << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
   q_right << -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7;
-  s_val = calc_s_val(q_left, q_right, q_left_star, q_right_star);
-  CheckBodyKinematics(dut, q_val, q_star_val, s_val, world_index);
-
-  q_left_star << -0.2, 1.2, 0.3, 0.4, -2.1, 2.2, 2.3;
-  q_right_star << 0.1, 0.2, 0.5, 1.1, -0.3, -0.2, 2.1;
   s_val = calc_s_val(q_left, q_right, q_left_star, q_right_star);
   CheckBodyKinematics(dut, q_val, q_star_val, s_val, world_index);
 }
