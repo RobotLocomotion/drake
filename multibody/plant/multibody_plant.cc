@@ -26,6 +26,7 @@
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/make_discrete_update_manager.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
@@ -257,103 +258,6 @@ std::string GetScopedName(
   } else {
     return name;
   }
-}
-
-// TODO(rpoyner-tri): the Select*() and Expand*() functions below can be
-// removed and replaced with arbitrary indexing once Eigen 3.4 is our minimum
-// required version.
-
-// Valid index arrays are no larger than max_size, are sorted, and contain
-// entries in the range [0, max_size).
-void DemandIndicesValid(const std::vector<int>& indices, int max_size) {
-  DRAKE_DEMAND(static_cast<int>(indices.size()) <= max_size);
-  if (indices.empty()) { return; }
-
-  // Only do the expensive check in debug builds.
-  DRAKE_ASSERT(std::is_sorted(indices.begin(), indices.end()));
-  DRAKE_DEMAND(indices[0] >= 0);
-  DRAKE_DEMAND(indices[indices.size() - 1] < max_size);
-}
-
-// Make a new, possibly smaller square matrix from square matrix @p M, by
-// selecting the rows and columns indexed by @p indices.
-template <typename T>
-MatrixX<T> SelectRowsCols(const MatrixX<T>& M,
-                          const std::vector<int>& indices) {
-  DRAKE_DEMAND(M.rows() == M.cols());
-  DRAKE_ASSERT_VOID(DemandIndicesValid(indices, M.rows()));
-  const int selected_count = indices.size();
-  if (selected_count == M.rows()) {
-    return M;
-  }
-  MatrixX<T> result(selected_count, selected_count);
-
-  for (int i = 0; i < result.rows(); ++i) {
-    for (int j = 0; j < result.cols(); ++j) {
-      result(i, j) = M(indices[i], indices[j]);
-    }
-  }
-  return result;
-}
-
-// Make a new, possibly smaller matrix from matrix M, by selecting the columns
-// indexed by @p indices.
-template <typename T>
-MatrixX<T> SelectCols(const MatrixX<T>& M,
-                      const std::vector<int>& indices) {
-  DRAKE_ASSERT_VOID(DemandIndicesValid(indices, M.cols()));
-  const int selected_count = indices.size();
-  if (selected_count == M.cols()) {
-    return M;
-  }
-  MatrixX<T> result(M.rows(), selected_count);
-
-  for (int i = 0; i < result.cols(); ++i) {
-    result.col(i) = M.col(indices[i]);
-  }
-  return result;
-}
-
-// Make a new, possibly smaller vector from vector @p v, by selecting the rows
-// indexed by @p indices.
-template <typename T>
-VectorX<T> SelectRows(const VectorX<T>& v,
-                      const std::vector<int>& indices) {
-  const int selected_count = indices.size();
-  if (selected_count == v.rows()) {
-    return v;
-  }
-  VectorX<T> result(selected_count);
-
-  for (int i = 0; i < result.rows(); ++i) {
-    result(i) = v(indices[i]);
-  }
-  return result;
-}
-
-// Make a new, possibly larger vector of size @p rows_out, by copying rows
-// of @p v to rows indexed by @p indices. New rows are filled with zeros.
-template <typename T>
-VectorX<T> ExpandRows(const VectorX<T>& v, int rows_out,
-                       const std::vector<int>& indices) {
-  DRAKE_ASSERT(static_cast<int>(indices.size()) == v.rows());
-  DRAKE_ASSERT(rows_out >= v.rows());
-  DRAKE_ASSERT_VOID(DemandIndicesValid(indices, rows_out));
-  if (rows_out == v.rows()) {
-    return v;
-  }
-  VectorX<T> result(rows_out);
-
-  int index_cursor = 0;
-  for (int i = 0; i < result.rows(); ++i) {
-    if (index_cursor >= v.rows() || i < indices[index_cursor]) {
-      result(i) = 0.;
-    } else {
-      result(indices[index_cursor]) = v(index_cursor);
-      ++index_cursor;
-    }
-  }
-  return result;
 }
 
 }  // namespace
@@ -2689,13 +2593,13 @@ void MultibodyPlant<T>::CalcContactSolverResults(
   }
 
   // Joint locking: reduce solver inputs.
-  MatrixX<T> M0_unlocked = SelectRowsCols(M0, indices);
-  VectorX<T> minus_tau_unlocked = SelectRows(minus_tau, indices);
-  MatrixX<T> Jn_unlocked = SelectCols(contact_jacobians.Jn, indices);
-  MatrixX<T> Jt_unlocked = SelectCols(contact_jacobians.Jt, indices);
-  MatrixX<T> Jc_unlocked = SelectCols(contact_jacobians.Jc, indices);
+  MatrixX<T> M0_unlocked = internal::SelectRowsCols(M0, indices);
+  VectorX<T> minus_tau_unlocked = internal::SelectRows(minus_tau, indices);
+  MatrixX<T> Jn_unlocked = internal::SelectCols(contact_jacobians.Jn, indices);
+  MatrixX<T> Jt_unlocked = internal::SelectCols(contact_jacobians.Jt, indices);
+  MatrixX<T> Jc_unlocked = internal::SelectCols(contact_jacobians.Jc, indices);
 
-  VectorX<T> v0_unlocked = SelectRows(v0, indices);
+  VectorX<T> v0_unlocked = internal::SelectRows(v0, indices);
 
   contact_solvers::internal::ContactSolverResults<T> results_unlocked;
   results_unlocked.Resize(indices.size(), num_contacts);
@@ -2722,8 +2626,8 @@ void MultibodyPlant<T>::CalcContactSolverResults(
                   damping, mu, &results_unlocked);
 
   // Joint locking: expand reduced outputs.
-  results->v_next = ExpandRows(results_unlocked.v_next,
-                                num_velocities(), indices);
+  results->v_next =
+      internal::ExpandRows(results_unlocked.v_next, num_velocities(), indices);
   results->tau_contact =
       contact_jacobians.Jn.transpose() * results_unlocked.fn +
       contact_jacobians.Jt.transpose() * results_unlocked.ft;
@@ -2768,7 +2672,7 @@ void MultibodyPlant<T>::CalcJointLockingIndices(
   // Sort the unlocked indices to keep the original DOF ordering established by
   // the plant stable.
   std::sort(indices.begin(), indices.end());
-  DemandIndicesValid(indices, num_velocities());
+  internal::DemandIndicesValid(indices, num_velocities());
   DRAKE_DEMAND(static_cast<int>(indices.size()) == unlocked_cursor);
 }
 
