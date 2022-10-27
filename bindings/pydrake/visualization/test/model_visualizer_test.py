@@ -98,7 +98,7 @@ class TestModelVisualizer(unittest.TestCase):
         triad_radius = 0.02
         triad_opacity = 0.5
         publish_contacts = False
-        browser_new = True
+        browser_new = False
         pyplot = True
 
         dut = mut.ModelVisualizer(
