@@ -91,6 +91,9 @@ unset(_apple_soname_prologue)
 set(drake_LIBRARIES "drake::drake")
 set(drake_INCLUDE_DIRS "")
 
+set(drake_PYTHON_DIR "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/@PYTHON_SITE_PACKAGES_RELPATH@")
+# Allow users to easily check Drake's expected CPython version.
+set(drake_PYTHON_VERSION "@PYTHON_VERSION@")
 
 unset(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX)
 unset(CMAKE_IMPORT_FILE_VERSION)
