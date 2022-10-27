@@ -15,6 +15,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":bspline_trajectory",
+        ":composite_trajectory",
         ":discrete_time_trajectory",
         ":path_parameterized_trajectory",
         ":piecewise_polynomial",
@@ -33,6 +34,15 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "composite_trajectory",
+    srcs = ["composite_trajectory.cc"],
+    hdrs = ["composite_trajectory.h"],
+    deps = [
+        ":trajectory",
     ],
 )
 
@@ -147,6 +157,14 @@ drake_cc_googletest(
     deps = [
         ":trajectory",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "composite_trajectory_test",
+    deps = [
+        ":composite_trajectory",
+        # "//common/test_utilities:expect_throws_message",
     ],
 )
 
