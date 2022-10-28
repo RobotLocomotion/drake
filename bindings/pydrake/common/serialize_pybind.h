@@ -254,6 +254,7 @@ void DefAttributesUsingSerialize(PyClass* ppy_class) {
   internal::DefAttributesArchive<PyClass, void> archive(
       ppy_class, &prototype, nullptr);
   prototype.Serialize(&archive);
+  archive.Finished();
 }
 
 namespace internal {

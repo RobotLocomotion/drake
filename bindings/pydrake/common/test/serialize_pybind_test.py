@@ -58,6 +58,11 @@ class TestSerializePybind(unittest.TestCase):
         self.assertEqual(inspect.getdoc(MyData2.some_vector),
                          "Field docstring for a vector.")
 
+        fields = getattr(MyData1, "__fields__")
+        self.assertSequenceEqual([(x.name, x.type) for x in fields], (
+            ("quux", float),
+        ))
+
     def test_attributes_using_serialize_types(self):
         """Probes the details of DefAttributesUsingSerialize all of the
         possible types of fields.
