@@ -312,7 +312,7 @@ examples/multibody/acrobot/run_lqr.cc.
 
 AddModelFromFile() can be invoked multiple times on the same plant in order
 to load multiple model instances.  Other methods are available on Parser
-such as AddAllModelsFromFile() which allows creating model instances per
+such as AddModels() which allows creating model instances per
 each `<model>` tag found in the file. Please refer to each of these
 methods' documentation for further details.
 
