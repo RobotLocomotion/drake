@@ -55,6 +55,13 @@ GTEST_TEST(ShapeToStringTest, Mesh) {
   EXPECT_EQ(reifier.string(), "Mesh(s: 1.5, path: path/to/file)");
 }
 
+GTEST_TEST(ShapeToStringTest, MeshcatCone) {
+  ShapeToString reifier;
+  MeshcatCone c(1.5, 0.25, 0.5);
+  c.Reify(&reifier);
+  EXPECT_EQ(reifier.string(), "MeshcatCone(height: 1.5, a: 0.25, b: 0.5)");
+}
+
 GTEST_TEST(ShapeToStringTest, Sphere) {
   ShapeToString reifier;
   Sphere s(1.25);

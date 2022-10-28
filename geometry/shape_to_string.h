@@ -34,6 +34,7 @@ class ShapeToString final : public ShapeReifier {
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) final;
   void ImplementGeometry(const HalfSpace& half_space, void* user_data) final;
   void ImplementGeometry(const Mesh& mesh, void* user_data) final;
+  void ImplementGeometry(const MeshcatCone& cone, void* user_data) final;
   void ImplementGeometry(const Sphere& sphere, void* user_data) final;
 
   //@}

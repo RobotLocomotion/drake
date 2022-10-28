@@ -38,6 +38,11 @@ void ShapeToString::ImplementGeometry(const Mesh& mesh, void*) {
   string_ = fmt::format("Mesh(s: {}, path: {})", mesh.scale(), mesh.filename());
 }
 
+void ShapeToString::ImplementGeometry(const MeshcatCone& cone, void*) {
+  string_ = fmt::format("MeshcatCone(height: {}, a: {}, b: {})", cone.height(),
+                        cone.a(), cone.b());
+}
+
 void ShapeToString::ImplementGeometry(const Sphere& sphere, void*) {
   string_ = fmt::format("Sphere(r: {})", sphere.radius());
 }

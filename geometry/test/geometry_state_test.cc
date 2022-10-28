@@ -244,6 +244,8 @@ class ShapeMatcher final : public ShapeReifier {
     }
   }
 
+  // TODO(SeanCurtis-TRI): Why are we missing ellipsoid and meshcat cone?
+
   void ImplementGeometry(const HalfSpace& half_space, void*) final {
     // Halfspace has no parameters; so no further testing is necessary.
     IsExpectedType(half_space);
