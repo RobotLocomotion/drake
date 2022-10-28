@@ -627,6 +627,25 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("MakeActuationMatrix", &Class::MakeActuationMatrix,
             cls_doc.MakeActuationMatrix.doc)
         .def(
+            "MakeActuatorSelectorMatrix",
+            [](const Class* self, const std::vector<JointActuatorIndex>&
+                                      user_to_actuator_index_map) {
+              return self->MakeActuatorSelectorMatrix(
+                  user_to_actuator_index_map);
+            },
+            py::arg("user_to_actuator_index_map"),
+            cls_doc.MakeActuatorSelectorMatrix
+                .doc_1args_user_to_actuator_index_map)
+        .def(
+            "MakeActuatorSelectorMatrix",
+            [](const Class* self,
+                const std::vector<JointIndex>& user_to_joint_index_map) {
+              return self->MakeActuatorSelectorMatrix(user_to_joint_index_map);
+            },
+            py::arg("user_to_joint_index_map"),
+            cls_doc.MakeActuatorSelectorMatrix
+                .doc_1args_user_to_joint_index_map)
+        .def(
             "MapVelocityToQDot",
             [](const Class* self, const Context<T>& context,
                 const Eigen::Ref<const VectorX<T>>& v) {
