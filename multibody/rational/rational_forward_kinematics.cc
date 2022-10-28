@@ -117,6 +117,8 @@ RationalForwardKinematics::RationalForwardKinematics(
       sin_delta_.emplace_back(
           fmt::format("sin_delta[{}]", cos_delta_.size() - 1));
       sin_cos_.emplace_back(sin_delta_.back(), cos_delta_.back());
+      sin_cos_set_.insert(sin_delta_.back());
+      sin_cos_set_.insert(cos_delta_.back());
       map_s_index_to_angle_index_.emplace(s_.size() - 1, s_angles_.size() - 1);
       map_s_to_mobilizer_.emplace(s_.back().get_id(), mobilizer->index());
       map_mobilizer_to_s_index_[mobilizer->index()] = s_.size() - 1;
@@ -174,7 +176,7 @@ RationalForwardKinematics::ConvertMultilinearPolynomialToRationalFunction(
     const symbolic::Polynomial& e) const {
   const symbolic::RationalFunction e_rational =
       symbolic::internal::SubstituteStereographicProjectionImpl(
-          e, sin_cos_,
+          e, sin_cos_, sin_cos_set_,
           Eigen::Map<const VectorX<symbolic::Variable>>(s_angles_.data(),
                                                         s_angles_.size()),
           s_variables_, one_plus_s_angles_squared_, two_s_angles_,
