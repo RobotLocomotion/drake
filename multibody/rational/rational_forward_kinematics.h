@@ -206,6 +206,7 @@ class RationalForwardKinematics {
   // map_angle_to_s_index_ below for how to relate s_angles_ to s.
   std::vector<symbolic::Variable> s_angles_;
   std::vector<symbolic::SinCos> sin_cos_;
+  symbolic::Variables sin_cos_set_;
   VectorX<symbolic::Polynomial> one_plus_s_angles_squared_;
   VectorX<symbolic::Polynomial> two_s_angles_;
   VectorX<symbolic::Polynomial> one_minus_s_angles_squared_;
