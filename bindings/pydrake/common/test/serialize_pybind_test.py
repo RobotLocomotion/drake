@@ -43,6 +43,12 @@ class TestSerializePybind(unittest.TestCase):
         self.assertEqual(dut.quux, -1.0)
         self.assertEqual(inspect.getdoc(MyData1.quux), "")
 
+        # Test fields.
+        fields = getattr(MyData1, "__fields__")
+        self.assertSequenceEqual([(x.name, x.type) for x in fields], (
+            ("quux", float),
+        ))
+
     def test_attributes_using_serialize_with_docs(self):
         """Tests the DefAttributesUsingSerialize overload WITH docstrings.
         """
@@ -57,6 +63,8 @@ class TestSerializePybind(unittest.TestCase):
                          "Field docstring for a double.")
         self.assertEqual(inspect.getdoc(MyData2.some_vector),
                          "Field docstring for a vector.")
+
+        # N.B. Fields are tested below.
 
     def test_attributes_using_serialize_types(self):
         """Probes the details of DefAttributesUsingSerialize all of the
