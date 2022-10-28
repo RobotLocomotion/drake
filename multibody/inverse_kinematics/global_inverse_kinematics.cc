@@ -78,16 +78,28 @@ GlobalInverseKinematics::GlobalInverseKinematics(
   // This dummy_plant_context is used to compute the pose of a body welded to
   // the world.
   auto dummy_plant_context = plant_.CreateDefaultContext();
+  // First go through each body to assign the pose variables.
   for (BodyIndex body_idx{1}; body_idx < num_bodies; ++body_idx) {
     const Body<double>& body = plant_.get_body(body_idx);
     const string body_R_name = body.name() + "_R";
     const string body_pos_name = body.name() + "_pos";
     p_WBo_[body_idx] = prog_.NewContinuousVariables<3>(body_pos_name);
+    if (weld_to_world_body_index_set.count(body_idx) > 0) {
+      // This body is welded to the world.
+      R_WB_[body_idx] = prog_.NewContinuousVariables<3, 3>(body_R_name);
+    } else {
+      // This body is not rigidly fixed to the world.
+      R_WB_[body_idx] = solvers::NewRotationMatrixVars(&prog_, body_R_name);
+    }
+  }
+  // Now go through each body to add the kinematic constraint between each body
+  // and its parent.
+  for (BodyIndex body_idx{1}; body_idx < num_bodies; ++body_idx) {
+    const Body<double>& body = plant_.get_body(body_idx);
     // If the body is fixed to the world, then fix the decision variables on
     // the body position and orientation.
     if (weld_to_world_body_index_set.count(body_idx) > 0) {
       // This body is welded to the world.
-      R_WB_[body_idx] = prog_.NewContinuousVariables<3, 3>(body_R_name);
       const math::RigidTransformd X_WB = plant_.CalcRelativeTransform(
           *dummy_plant_context, plant_.world_frame(), body.body_frame());
       // TODO(hongkai.dai): clean up this for loop using
@@ -101,8 +113,6 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                                      p_WBo_[body_idx]);
     } else {
       // This body is not rigidly fixed to the world.
-      R_WB_[body_idx] = solvers::NewRotationMatrixVars(&prog_, body_R_name);
-
       if (!options.linear_constraint_only) {
         solvers::AddRotationMatrixOrthonormalSocpConstraint(&prog_,
                                                             R_WB_[body_idx]);
