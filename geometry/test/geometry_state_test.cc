@@ -220,9 +220,21 @@ class ShapeMatcher final : public ShapeReifier {
   // Shape reifier implementations.
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Sphere& sphere, void*) final {
-    if (IsExpectedType(sphere)) {
-      TestShapeParameters(sphere);
+  void ImplementGeometry(const Box& box, void*) final {
+    if (IsExpectedType(box)) {
+      TestShapeParameters(box);
+    }
+  }
+
+  void ImplementGeometry(const Capsule& capsule, void*) final {
+    if (IsExpectedType(capsule)) {
+      TestShapeParameters(capsule);
+    }
+  }
+
+  void ImplementGeometry(const Convex& convex, void*) final {
+    if (IsExpectedType(convex)) {
+      TestShapeParameters(convex);
     }
   }
 
@@ -237,27 +249,15 @@ class ShapeMatcher final : public ShapeReifier {
     IsExpectedType(half_space);
   }
 
-  void ImplementGeometry(const Box& box, void*) final {
-    if (IsExpectedType(box)) {
-      TestShapeParameters(box);
-    }
-  }
-
-  void ImplementGeometry(const Capsule& capsule, void*) final {
-    if (IsExpectedType(capsule)) {
-      TestShapeParameters(capsule);
-    }
-  }
-
   void ImplementGeometry(const Mesh& mesh, void*) final {
     if (IsExpectedType(mesh)) {
       TestShapeParameters(mesh);
     }
   }
 
-  void ImplementGeometry(const Convex& convex, void*) final {
-    if (IsExpectedType(convex)) {
-      TestShapeParameters(convex);
+  void ImplementGeometry(const Sphere& sphere, void*) final {
+    if (IsExpectedType(sphere)) {
+      TestShapeParameters(sphere);
     }
   }
 

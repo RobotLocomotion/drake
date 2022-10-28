@@ -73,14 +73,6 @@ DeformableContact<double> Geometries::ComputeDeformableContact() const {
   return result;
 }
 
-void Geometries::ImplementGeometry(const Sphere& sphere, void* user_data) {
-  AddRigidGeometry(sphere, *static_cast<ReifyData*>(user_data));
-}
-
-void Geometries::ImplementGeometry(const Cylinder& cylinder, void* user_data) {
-  AddRigidGeometry(cylinder, *static_cast<ReifyData*>(user_data));
-}
-
 void Geometries::ImplementGeometry(const Box& box, void* user_data) {
   AddRigidGeometry(box, *static_cast<ReifyData*>(user_data));
 }
@@ -89,17 +81,17 @@ void Geometries::ImplementGeometry(const Capsule& capsule, void* user_data) {
   AddRigidGeometry(capsule, *static_cast<ReifyData*>(user_data));
 }
 
+void Geometries::ImplementGeometry(const Convex& convex, void* user_data) {
+  AddRigidGeometry(convex, *static_cast<ReifyData*>(user_data));
+}
+
+void Geometries::ImplementGeometry(const Cylinder& cylinder, void* user_data) {
+  AddRigidGeometry(cylinder, *static_cast<ReifyData*>(user_data));
+}
+
 void Geometries::ImplementGeometry(const Ellipsoid& ellipsoid,
                                    void* user_data) {
   AddRigidGeometry(ellipsoid, *static_cast<ReifyData*>(user_data));
-}
-
-void Geometries::ImplementGeometry(const Mesh& mesh, void* user_data) {
-  AddRigidGeometry(mesh, *static_cast<ReifyData*>(user_data));
-}
-
-void Geometries::ImplementGeometry(const Convex& convex, void* user_data) {
-  AddRigidGeometry(convex, *static_cast<ReifyData*>(user_data));
 }
 
 void Geometries::ImplementGeometry(const HalfSpace&, void*) {
@@ -109,11 +101,19 @@ void Geometries::ImplementGeometry(const HalfSpace&, void*) {
       "be reported.");
 }
 
+void Geometries::ImplementGeometry(const Mesh& mesh, void* user_data) {
+  AddRigidGeometry(mesh, *static_cast<ReifyData*>(user_data));
+}
+
 void Geometries::ImplementGeometry(const MeshcatCone&, void*) {
   static const logging::Warn log_once(
       "Rigid (non-deformable) Meshcat cones are not currently supported for "
       "deformable contact; registration is allowed, but no contact data will "
       "be reported.");
+}
+
+void Geometries::ImplementGeometry(const Sphere& sphere, void* user_data) {
+  AddRigidGeometry(sphere, *static_cast<ReifyData*>(user_data));
 }
 
 template <typename ShapeType>

@@ -101,46 +101,6 @@ class Shape {
   std::function<void(const Shape&, ShapeReifier*, void*)> reifier_;
 };
 
-/** Definition of sphere. It is centered in its canonical frame with the
- given radius. */
-class Sphere final : public Shape {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere)
-
-  /** Constructs a sphere with the given `radius`.
-   @throws std::exception if `radius` is negative. Note that a zero radius is
-   considered valid. */
-  explicit Sphere(double radius);
-
-  double radius() const { return radius_; }
-
- private:
-  double radius_{};
-};
-
-/** Definition of a cylinder. It is centered in its canonical frame with the
- length of the cylinder parallel with the frame's z-axis. */
-class Cylinder final : public Shape {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder)
-
-  /** Constructs a cylinder with the given `radius` and `length`.
-   @throws std::exception if `radius` or `length` are not strictly positive.
-   */
-  Cylinder(double radius, double length);
-
-  /** Constructs a cylinder with a vector of measures: radius and length.
-   @throws std::exception if the measures are not strictly positive. */
-  explicit Cylinder(const Vector2<double>& measures);
-
-  double radius() const { return radius_; }
-  double length() const { return length_; }
-
- private:
-  double radius_{};
-  double length_{};
-};
-
 /** Definition of a box. The box is centered on the origin of its canonical
  frame with its dimensions aligned with the frame's axes. The size of the box
  is given by three sizes. */
@@ -199,6 +159,67 @@ class Capsule final : public Shape {
   /** Constructs a capsule with a vector of measures: radius and length.
    @throws std::exception if the measures are not strictly positive. */
   explicit Capsule(const Vector2<double>& measures);
+
+  double radius() const { return radius_; }
+  double length() const { return length_; }
+
+ private:
+  double radius_{};
+  double length_{};
+};
+
+/** Definition of a *convex* surface mesh.
+
+ The mesh is defined in a canonical frame C, implicit in the file parsed. Upon
+ loading it in SceneGraph it can be scaled around the origin of C by a given
+ `scale` amount. */
+class Convex final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex)
+
+  /** Constructs a convex shape specification from the file located at the
+   given _absolute_ file path. Optionally uniformly scaled by the given scale
+   factor.
+   @param absolute_filename     The file name with absolute path. We only
+                                support an .obj file with only one polyhedron.
+                                We assume that the polyhedron is convex.
+   @param scale                 An optional scale to coordinates.
+
+   @throws std::exception       if the .obj file doesn't define a single object.
+                                This can happen if it is empty, if there are
+                                multiple object-name statements (e.g.,
+                                "o object_name"), or if there are faces defined
+                                outside a single object-name statement.
+   @throws std::exception       if |scale| < 1e-8. Note that a negative scale is
+                                considered valid. We want to preclude scales
+                                near zero but recognise that scale is a
+                                convenience tool for "tweaking" models. 8 orders
+                                of magnitude should be plenty without
+                                considering revisiting the model itself. */
+  explicit Convex(const std::string& absolute_filename, double scale = 1.0);
+
+  const std::string& filename() const { return filename_; }
+  double scale() const { return scale_; }
+
+ private:
+  std::string filename_;
+  double scale_{};
+};
+
+/** Definition of a cylinder. It is centered in its canonical frame with the
+ length of the cylinder parallel with the frame's z-axis. */
+class Cylinder final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder)
+
+  /** Constructs a cylinder with the given `radius` and `length`.
+   @throws std::exception if `radius` or `length` are not strictly positive.
+   */
+  Cylinder(double radius, double length);
+
+  /** Constructs a cylinder with a vector of measures: radius and length.
+   @throws std::exception if the measures are not strictly positive. */
+  explicit Cylinder(const Vector2<double>& measures);
 
   double radius() const { return radius_; }
   double length() const { return length_; }
@@ -303,44 +324,6 @@ class Mesh final : public Shape {
   double scale_{};
 };
 
-/** Definition of a *convex* surface mesh.
-
- The mesh is defined in a canonical frame C, implicit in the file parsed. Upon
- loading it in SceneGraph it can be scaled around the origin of C by a given
- `scale` amount. */
-class Convex final : public Shape {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex)
-
-  /** Constructs a convex shape specification from the file located at the
-   given _absolute_ file path. Optionally uniformly scaled by the given scale
-   factor.
-   @param absolute_filename     The file name with absolute path. We only
-                                support an .obj file with only one polyhedron.
-                                We assume that the polyhedron is convex.
-   @param scale                 An optional scale to coordinates.
-
-   @throws std::exception       if the .obj file doesn't define a single object.
-                                This can happen if it is empty, if there are
-                                multiple object-name statements (e.g.,
-                                "o object_name"), or if there are faces defined
-                                outside a single object-name statement.
-   @throws std::exception       if |scale| < 1e-8. Note that a negative scale is
-                                considered valid. We want to preclude scales
-                                near zero but recognise that scale is a
-                                convenience tool for "tweaking" models. 8 orders
-                                of magnitude should be plenty without
-                                considering revisiting the model itself. */
-  explicit Convex(const std::string& absolute_filename, double scale = 1.0);
-
-  const std::string& filename() const { return filename_; }
-  double scale() const { return scale_; }
-
- private:
-  std::string filename_;
-  double scale_{};
-};
-
 // TODO(russt): Rename this to `Cone` if/when it is supported by more of the
 // geometry engine.
 /** Definition of a cone. Its point is at the origin, its height extends in the
@@ -377,6 +360,23 @@ class MeshcatCone final : public Shape {
   double height_{};
   double a_{};
   double b_{};
+};
+
+/** Definition of sphere. It is centered in its canonical frame with the
+ given radius. */
+class Sphere final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere)
+
+  /** Constructs a sphere with the given `radius`.
+   @throws std::exception if `radius` is negative. Note that a zero radius is
+   considered valid. */
+  explicit Sphere(double radius);
+
+  double radius() const { return radius_; }
+
+ private:
+  double radius_{};
 };
 
 /** The interface for converting shape descriptions to real shapes. Any entity
@@ -432,15 +432,15 @@ class ShapeReifier {
  public:
   virtual ~ShapeReifier();
 
-  virtual void ImplementGeometry(const Sphere& sphere, void* user_data);
-  virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data);
-  virtual void ImplementGeometry(const HalfSpace& half_space, void* user_data);
   virtual void ImplementGeometry(const Box& box, void* user_data);
   virtual void ImplementGeometry(const Capsule& capsule, void* user_data);
-  virtual void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data);
-  virtual void ImplementGeometry(const Mesh& mesh, void* user_data);
   virtual void ImplementGeometry(const Convex& convex, void* user_data);
+  virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data);
+  virtual void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data);
+  virtual void ImplementGeometry(const HalfSpace& half_space, void* user_data);
+  virtual void ImplementGeometry(const Mesh& mesh, void* user_data);
   virtual void ImplementGeometry(const MeshcatCone& cone, void* user_data);
+  virtual void ImplementGeometry(const Sphere& sphere, void* user_data);
 
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
@@ -471,15 +471,15 @@ class ShapeName final : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Sphere&, void*) final;
-  void ImplementGeometry(const Cylinder&, void*) final;
-  void ImplementGeometry(const HalfSpace&, void*) final;
   void ImplementGeometry(const Box&, void*) final;
   void ImplementGeometry(const Capsule&, void*) final;
-  void ImplementGeometry(const Ellipsoid&, void*) final;
-  void ImplementGeometry(const Mesh&, void*) final;
   void ImplementGeometry(const Convex&, void*) final;
+  void ImplementGeometry(const Cylinder&, void*) final;
+  void ImplementGeometry(const Ellipsoid&, void*) final;
+  void ImplementGeometry(const HalfSpace&, void*) final;
+  void ImplementGeometry(const Mesh&, void*) final;
   void ImplementGeometry(const MeshcatCone&, void*) final;
+  void ImplementGeometry(const Sphere&, void*) final;
 
   //@}
 

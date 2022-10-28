@@ -118,14 +118,14 @@ class RenderEngineVtk : public RenderEngine,
   /** @name    Shape reification  */
   //@{
   using RenderEngine::ImplementGeometry;
-  void ImplementGeometry(const Sphere& sphere, void* user_data) override;
-  void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
-  void ImplementGeometry(const HalfSpace& half_space, void* user_data) override;
   void ImplementGeometry(const Box& box, void* user_data) override;
   void ImplementGeometry(const Capsule& capsule, void* user_data) override;
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override;
-  void ImplementGeometry(const Mesh& mesh, void* user_data) override;
   void ImplementGeometry(const Convex& convex, void* user_data) override;
+  void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override;
+  void ImplementGeometry(const HalfSpace& half_space, void* user_data) override;
+  void ImplementGeometry(const Mesh& mesh, void* user_data) override;
+  void ImplementGeometry(const Sphere& sphere, void* user_data) override;
   //@}
 
   /** @name    Access the default properties
