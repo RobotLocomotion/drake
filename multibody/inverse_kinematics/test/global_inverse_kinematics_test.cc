@@ -194,6 +194,34 @@ TEST_F(KukaTest, ReachableWithCost) {
   }
 }
 
+TEST_F(ToyTest, Test) {
+  GlobalInverseKinematics::Options global_ik_options;
+  GlobalInverseKinematics global_ik(*plant_, global_ik_options);
+
+  // Test an arbitrary configuration. Set the body position and orientation to
+  // the pose at this configuration, and make sure that global IK is feasible.
+  auto context = plant_->CreateDefaultContext();
+  const Eigen::Vector2d q(0.5, 1);
+  plant_->SetPositions(context.get(), q);
+  for (BodyIndex body_index{1}; body_index < plant_->num_bodies();
+       ++body_index) {
+    const auto X_WB = plant_->CalcRelativeTransform(
+        *context, plant_->world_frame(),
+        plant_->get_body(body_index).body_frame());
+    global_ik.get_mutable_prog()->AddBoundingBoxConstraint(
+        X_WB.rotation().matrix(), X_WB.rotation().matrix(),
+        global_ik.body_rotation_matrix(body_index));
+    global_ik.get_mutable_prog()->AddBoundingBoxConstraint(
+        X_WB.translation(), X_WB.translation(),
+        global_ik.body_position(body_index));
+  }
+  solvers::GurobiSolver gurobi_solver;
+  if (gurobi_solver.available()) {
+    const auto result = gurobi_solver.Solve(global_ik.prog());
+    EXPECT_TRUE(result.is_success());
+  }
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
