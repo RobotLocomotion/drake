@@ -162,7 +162,7 @@ class DefAttributesArchive {
           std::is_base_of_v<py::detail::type_caster_generic,
               py::detail::make_caster<T>>;
       if constexpr (is_registered_type) {
-        return py::type::of<T>();
+        return py::type::of<py::detail::intrinsic_t<T>>();
       } else {
         return CannotIdentifySchemaType<T>();
       }

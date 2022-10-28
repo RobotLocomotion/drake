@@ -34,6 +34,7 @@ struct MyData2 {
     a->Visit(DRAKE_NVP(some_vector));
     a->Visit(DRAKE_NVP(some_map));
     a->Visit(DRAKE_NVP(some_variant));
+    a->Visit(DRAKE_NVP(some_pointer));
   }
   bool some_bool{};
   int some_int{};
@@ -46,6 +47,7 @@ struct MyData2 {
   std::vector<double> some_vector;
   std::map<std::string, double> some_map;
   std::variant<double, MyData1> some_variant;
+  const MyData1* some_pointer{};
 };
 
 // This is a manually-created mock up of part of what mkdoc would produce for
@@ -66,7 +68,8 @@ struct MyData2Docs {
         std::make_pair("some_optional", "Field docstring for a optional."),
         std::make_pair("some_vector", "Field docstring for a vector."),
         std::make_pair("some_map", "Field docstring for a map."),
-        std::make_pair("some_variant", "Field docstring for a variant.")};
+        std::make_pair("some_variant", "Field docstring for a variant."),
+        std::make_pair("some_pointer", "Field docstring for a pointer.")};
   }
 };
 
