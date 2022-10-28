@@ -298,5 +298,8 @@ drake_py_unittest(
 )
 
 add_lint_tests(
-    python_lint_extra_srcs = ["build_components_refresh.py"],
+    python_lint_extra_srcs = [
+        "build_components_refresh.py",
+        "test/drake_python_dir_install_test.py",
+    ],
 )
