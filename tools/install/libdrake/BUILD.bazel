@@ -113,6 +113,7 @@ cc_library(
 install(
     name = "install",
     install_tests = [
+        "test/drake_python_dir_install_test.py",
         "test/find_package_drake_install_test.py",
         "test/snopt_visibility_install_test.py",
         "test/rpath_install_test.py",
