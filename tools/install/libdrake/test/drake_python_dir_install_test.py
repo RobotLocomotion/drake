@@ -9,7 +9,7 @@ import install_test_helper
 
 class DrakePythonDirInstallTest(unittest.TestCase):
     def test_drake_python_dir(self):
-        cmake_source_dir = install_test_helper.create_temporary_dir("src")
+        cmake_source_dir = install_test_helper.create_temporary_dir("pydir_src")
 
         cmake_prefix_path = install_test_helper.get_install_dir()
 
@@ -46,7 +46,7 @@ class DrakePythonDirInstallTest(unittest.TestCase):
         with open(cmake_filename, "w") as f:
             f.write(textwrap.dedent(cmake_content))
 
-        cmake_binary_dir = install_test_helper.create_temporary_dir("build")
+        cmake_binary_dir = install_test_helper.create_temporary_dir("pydir_build")
 
         subprocess.check_call(["cmake", cmake_source_dir],
                               cwd=cmake_binary_dir)
