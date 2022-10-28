@@ -21,7 +21,8 @@ class DrakePythonDirInstallTest(unittest.TestCase):
 
             # Sanity check
             execute_process(
-              COMMAND {python_exe} -c "import pydrake"
+              COMMAND ${{CMAKE_COMMAND}} -E env PYTHONPATH=""
+                {python_exe} -c "import pydrake"
               ERROR_QUIET
               RESULT_VARIABLE _IMPORT_RESULT)
             if(0 EQUAL _IMPORT_RESULT)
