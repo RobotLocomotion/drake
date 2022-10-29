@@ -58,8 +58,6 @@ const std::string& GetUrlContent(std::string_view url_path) {
       LoadResource("drake/geometry/meshcat.js"));
   static const drake::never_destroyed<std::string> stats_js(
       LoadResource("drake/geometry/stats.min.js"));
-  static const drake::never_destroyed<std::string> msgpack_lite_js(
-      LoadResource("drake/geometry/msgpack.min.js"));
   static const drake::never_destroyed<std::string> meshcat_ico(
       LoadResource("drake/geometry/meshcat.ico"));
   static const drake::never_destroyed<std::string> meshcat_html(
@@ -75,9 +73,6 @@ const std::string& GetUrlContent(std::string_view url_path) {
   }
   if (url_path == "/stats.min.js") {
     return stats_js.access();
-  }
-  if (url_path == "/msgpack.min.js") {
-    return msgpack_lite_js.access();
   }
   if (url_path == "/favicon.ico") {
     return meshcat_ico.access();
@@ -1474,7 +1469,6 @@ class Meshcat::Impl {
     std::vector<std::pair<std::string, std::string>> js_paths{
         {" src=\"meshcat.js\"", "/meshcat.js"},
         {" src=\"stats.min.js\"", "/stats.min.js"},
-        {" src=\"msgpack.min.js\"", "/msgpack.min.js"},
     };
 
     for (const auto& [src_link, url] : js_paths) {

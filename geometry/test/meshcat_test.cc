@@ -931,7 +931,6 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   // Confirm that the js source links were replaced.
   EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
   EXPECT_THAT(html, ::testing::Not(HasSubstr("stats.min.js")));
-  EXPECT_THAT(html, ::testing::Not(HasSubstr("msgpack.min.js")));
   // The static html replaces the javascript web socket connection code with
   // direct invocation of MeshCat with all of the data. We'll confirm that
   // this appears to have happened by testing for the presence of the injected
