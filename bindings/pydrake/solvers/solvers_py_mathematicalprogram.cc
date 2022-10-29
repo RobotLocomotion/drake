@@ -458,14 +458,13 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .value("kLCP", ProgramType::kLCP, doc.ProgramType.kLCP.doc)
       .value("kUnknown", ProgramType::kUnknown, doc.ProgramType.kUnknown.doc);
 
-  py::enum_<SolverType>(m, "SolverType", doc.SolverType.doc)
+  py::enum_<SolverType> solver_type(m, "SolverType", doc.SolverType.doc);
+  solver_type  // BR
       .value("kClp", SolverType::kClp, doc.SolverType.kClp.doc)
       .value("kCsdp", SolverType::kCsdp, doc.SolverType.kCsdp.doc)
-      .value("kDReal", SolverType::kDReal, doc.SolverType.kDReal.doc)
       .value("kEqualityConstrainedQP", SolverType::kEqualityConstrainedQP,
           doc.SolverType.kEqualityConstrainedQP.doc)
       .value("kGurobi", SolverType::kGurobi, doc.SolverType.kGurobi.doc)
-      .value("kIbex", SolverType::kIbex, doc.SolverType.kIbex.doc)
       .value("kIpopt", SolverType::kIpopt, doc.SolverType.kIpopt.doc)
       .value("kLinearSystem", SolverType::kLinearSystem,
           doc.SolverType.kLinearSystem.doc)
@@ -475,6 +474,13 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .value("kOsqp", SolverType::kOsqp, doc.SolverType.kOsqp.doc)
       .value("kScs", SolverType::kScs, doc.SolverType.kScs.doc)
       .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  solver_type  // BR
+      .value("kDReal", SolverType::kDReal, "(Deprecated.)")
+      .value("kIbex", SolverType::kIbex, "(Deprecated.)");
+#pragma GCC diagnostic pop
 
   // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
   py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)

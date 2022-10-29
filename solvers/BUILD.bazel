@@ -1294,6 +1294,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "dreal_solver_test",
     timeout = "moderate",
+    copts = ["-Wno-deprecated-declarations"],
     # For most of floating-point operations, Valgrind core only supports the
     # IEEE default mode (round to nearest) while dReal uses to +infinity
     # and to -infinity rounding modes intensively to maintain conservative
@@ -1348,6 +1349,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "ibex_solver_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":generic_trivial_constraint",
         ":generic_trivial_cost",

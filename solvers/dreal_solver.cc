@@ -16,6 +16,9 @@
 #include "drake/common/text_logging.h"
 #include "drake/solvers/mathematical_program.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace drake {
 namespace solvers {
 
@@ -603,3 +606,5 @@ void DrealSolver::DoSolve(
 
 }  // namespace solvers
 }  // namespace drake
+
+#pragma GCC diagnostic pop
