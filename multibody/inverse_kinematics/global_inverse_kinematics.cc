@@ -48,6 +48,28 @@ std::unordered_set<BodyIndex> GetWeldToWorldBodyIndexSet(
   }
   return weld_to_world_body_index_set;
 }
+
+bool IsWeld(const Joint<double>& joint) {
+  const bool is_weld = !joint.can_rotate() && !joint.can_translate() &&
+                       joint.num_positions() == 0 &&
+                       joint.num_velocities() == 0;
+  if (is_weld) {
+    DRAKE_THROW_UNLESS(dynamic_cast<const WeldJoint<double>*>(&joint) !=
+                       nullptr);
+  }
+  return is_weld;
+}
+
+bool IsRevolute(const Joint<double>& joint) {
+  const bool is_revolute = joint.can_rotate() && !joint.can_translate() &&
+                           joint.num_positions() == 1 &&
+                           joint.num_velocities() == 1;
+  if (is_revolute) {
+    DRAKE_THROW_UNLESS(dynamic_cast<const RevoluteJoint<double>*>(&joint) !=
+                       nullptr);
+  }
+  return is_revolute;
+}
 }  // namespace
 
 GlobalInverseKinematics::GlobalInverseKinematics(
@@ -128,9 +150,9 @@ GlobalInverseKinematics::GlobalInverseKinematics(
             joint->frame_on_parent().GetFixedPoseInBodyFrame();
         const RigidTransformd X_CJc =
             joint->frame_on_child().GetFixedPoseInBodyFrame();
-        if (dynamic_cast<const WeldJoint<double>*>(joint) != nullptr) {
+        if (IsWeld(*joint)) {
           const WeldJoint<double>* weld_joint =
-              dynamic_cast<const WeldJoint<double>*>(joint);
+              static_cast<const WeldJoint<double>*>(joint);
 
           const RigidTransformd X_JpJc = weld_joint->X_FM();
           const RigidTransformd X_PC =
@@ -155,10 +177,9 @@ GlobalInverseKinematics::GlobalInverseKinematics(
             prog_.AddLinearEqualityConstraint(orient_invariance.col(i),
                                               Vector3d::Zero());
           }
-        } else if (dynamic_cast<const RevoluteJoint<double>*>(joint) !=
-                   nullptr) {
+        } else if (IsRevolute(*joint)) {
           const RevoluteJoint<double>* revolute_joint =
-              dynamic_cast<const RevoluteJoint<double>*>(joint);
+              static_cast<const RevoluteJoint<double>*>(joint);
           // Adding mixed-integer constraint will add binary variables into
           // the program.
           rotation_generator.AddToProgram(R_WB_[body_idx], &prog_);
