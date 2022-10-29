@@ -741,7 +741,8 @@ GTEST_TEST(MeshcatTest, SetPerspectiveCamera) {
           "fov": 82.0,
           "aspect": 1.5,
           "near": 0.01,
-          "far": 100
+          "far": 100,
+          "zoom": 1.0
         }
       }
     })""");
