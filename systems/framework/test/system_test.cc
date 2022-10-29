@@ -18,6 +18,7 @@
 #include "drake/systems/framework/leaf_output_port.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
+#include "drake/systems/primitives/adder.h"
 
 namespace drake {
 namespace systems {
@@ -274,6 +275,16 @@ class TestSystem : public TestSystemBase<double> {
   mutable std::vector<int> published_numbers_;
   mutable std::vector<int> updated_numbers_;
 };
+
+// Tests that CloneSystem() works for a System with no inputs or outputs.
+GTEST_TEST(SystemExtrasTest, CloneSystem) {
+  Adder<double> adder(1, 1);
+  adder.set_name("my_adder");
+
+  std::unique_ptr<Adder<double>> adder_clone =
+    adder.CloneSystem(adder);
+  EXPECT_EQ(adder_clone->get_name(), "my_adder");
+}
 
 class SystemTest : public ::testing::Test {
  protected:

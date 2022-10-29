@@ -1004,6 +1004,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities",
+        "//systems/primitives:adder",
     ],
 )
 

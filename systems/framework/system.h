@@ -261,6 +261,22 @@ class System : public SystemBase {
     return this->get_cache_entry(time_derivatives_cache_index_);
   }
 
+//----------------------------------------------------------------------------
+/** @name                     CloneSystem
+ * This method clones the system and returns a unique pointer to the
+ * clone. The clone is a deep copy of the original system, including
+ * all of its state, parameters, and input ports. The clone is not
+ * connected to the original system in any way. The clone is done using
+ * hacky workaround - converts to AutoDiff and then back to double.
+ * This is not a good solution, but it works for now. */
+template <typename SystemType>
+std::unique_ptr<SystemType> CloneSystem(const SystemType& system) {
+  // Cast here because SFINAE is ugly and not strictly necessary.
+  const drake::systems::System<double>& base = system;
+  return dynamic_pointer_cast<SystemType>(
+        base.ToAutoDiffXd()->ToScalarType<double>());
+}
+
   /** Returns a reference to the cached value of the potential energy (PE),
   evaluating first if necessary using CalcPotentialEnergy().
 
