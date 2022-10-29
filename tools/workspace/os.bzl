@@ -163,11 +163,10 @@ def _determine_macos(repository_ctx):
     if sw_vers.error != None:
         return _make_result(error = error_prologue + sw_vers.error)
 
-    major_minor_versions = sw_vers.stdout.strip().split(".")[:2]
-    if int(major_minor_versions[0]) < 11:
-        macos_release = ".".join(major_minor_versions)
-    else:
-        macos_release = major_minor_versions[0]
+    # Match supported macOS release(s).
+    (macos_release,) = sw_vers.stdout.strip().split(".")[:1]
+    if macos_release not in ["11", "12"]:
+        print("WARNING: unsupported macOS '%s'" % macos_release)
 
     # Check which arch we should be using.
     arch_result = exec_using_which(repository_ctx, ["/usr/bin/arch"])
@@ -177,18 +176,11 @@ def _determine_macos(repository_ctx):
     else:
         homebrew_prefix = "/usr/local"
 
-    # Match supported macOS release(s).
-    if macos_release in ["11", "12"]:
-        return _make_result(
-            macos_release = macos_release,
-            is_wheel = is_macos_wheel,
-            homebrew_prefix = homebrew_prefix,
-            macos_arch_result = macos_arch_result,
-        )
-
-    # Nothing matched.
     return _make_result(
-        error = error_prologue + "unsupported macOS '%s'" % macos_release,
+        macos_release = macos_release,
+        is_wheel = is_macos_wheel,
+        homebrew_prefix = homebrew_prefix,
+        macos_arch_result = macos_arch_result,
     )
 
 def determine_os(repository_ctx):
