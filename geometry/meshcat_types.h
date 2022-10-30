@@ -551,7 +551,7 @@ struct pack<drake::geometry::Meshcat::PerspectiveCamera> {
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
       msgpack::packer<Stream>& o,
       const drake::geometry::Meshcat::PerspectiveCamera& v) const {
-    o.pack_map(5);
+    o.pack_map(6);
     o.pack("type");
     o.pack("PerspectiveCamera");
     o.pack("fov");
