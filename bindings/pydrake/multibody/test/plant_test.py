@@ -65,6 +65,7 @@ from pydrake.multibody.plant import (
     ContactResults_,
     ContactResultsToLcmSystem,
     CoulombFriction_,
+    DiscreteContactSolver,
     ExternallyAppliedSpatialForce_,
     ExternallyAppliedSpatialForceMultiplexer_,
     MultibodyPlant,
@@ -2201,6 +2202,16 @@ class TestPlant(unittest.TestCase):
         for model in models:
             plant.set_contact_model(model)
             self.assertEqual(plant.get_contact_model(), model)
+
+    def test_discrete_contact_solver(self):
+        plant = MultibodyPlant_[float](0.1)
+        models = [
+            DiscreteContactSolver.kTamsi,
+            DiscreteContactSolver.kSap,
+        ]
+        for model in models:
+            plant.set_discrete_contact_solver(model)
+            self.assertEqual(plant.get_discrete_contact_solver(), model)
 
     def test_contact_surface_representation(self):
         for time_step in [0.0, 0.1]:
