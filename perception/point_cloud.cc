@@ -1,12 +1,14 @@
 #include "drake/perception/point_cloud.h"
 
 #include <algorithm>
+#include <atomic>
 #include <functional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include <common_robotics_utilities/dynamic_spatial_hashed_voxel_grid.hpp>
+#include <common_robotics_utilities/openmp_helpers.hpp>
 #include <common_robotics_utilities/voxel_grid.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -410,7 +412,8 @@ PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
   return new_cloud;
 }
 
-PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
+PointCloud PointCloud::VoxelizedDownSample(
+    const double voxel_size, const bool parallelize) const {
   // This is a simple, narrow, no-frills implementation of the
   // voxel_down_sample algorithm in Open3d and/or the down-sampling by a
   // VoxelGrid filter in PCL.
@@ -446,15 +449,9 @@ PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
   PointCloud down_sampled(
       dynamic_voxel_grid.GetImmutableInternalChunks().size(), fields());
 
-  // Iterate through the map populating the elements of the down_sampled cloud.
-  // TODO(russt): Consider using OpenMP. Sample code from calderpg-tri provided
-  // during review of #17885.
-  int index_in_down_sampled = 0;
-  for (const auto& [chunk_region, chunk] :
-          dynamic_voxel_grid.GetImmutableInternalChunks()) {
-    unused(chunk_region);
-    const std::vector<int>& indices_in_this =
-        chunk.GetIndexImmutable({0, 0, 0}).Value();
+  // Helper lambda to process a single voxel cell.
+  const auto process_voxel = [this, &down_sampled](
+      int index_in_down_sampled, const std::vector<int>& indices_in_this) {
     // Use doubles instead of floats for accumulators to avoid round-off errors.
     Eigen::Vector3d xyz{Eigen::Vector3d::Zero()};
     Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
@@ -494,13 +491,55 @@ PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
       down_sampled.mutable_descriptors().col(index_in_down_sampled) =
           (descriptor / num_descriptors).cast<D>();
     }
-    ++index_in_down_sampled;
+  };
+
+  // Since the parallel form imposes additional overhead, only use it when
+  // multiple OpenMP threads are available.
+  const bool can_execute_in_parallel =
+      common_robotics_utilities::openmp_helpers::GetNumOmpThreads() > 1;
+  const bool operate_in_parallel = parallelize && can_execute_in_parallel;
+
+  // Iterate through the map populating the elements of the down_sampled cloud.
+  if (operate_in_parallel) {
+    // Flatten voxel cells to allow parallel processing.
+    std::vector<const std::vector<int>*> voxel_indices;
+    voxel_indices.reserve(
+        dynamic_voxel_grid.GetImmutableInternalChunks().size());
+    for (const auto& [chunk_region, chunk] :
+            dynamic_voxel_grid.GetImmutableInternalChunks()) {
+      unused(chunk_region);
+      const std::vector<int>& indices_in_this =
+          chunk.GetIndexImmutable({0, 0, 0}).Value();
+      voxel_indices.emplace_back(&indices_in_this);
+    }
+
+    // Process voxels in parallel.
+#if defined(_OPENMP)
+#pragma omp parallel for
+#endif
+    for (int index_in_down_sampled = 0;
+         index_in_down_sampled < static_cast<int>(voxel_indices.size());
+         ++index_in_down_sampled) {
+      process_voxel(
+          index_in_down_sampled, *voxel_indices[index_in_down_sampled]);
+    }
+  } else {
+    int index_in_down_sampled = 0;
+    for (const auto& [chunk_region, chunk] :
+            dynamic_voxel_grid.GetImmutableInternalChunks()) {
+      unused(chunk_region);
+      const std::vector<int>& indices_in_this =
+          chunk.GetIndexImmutable({0, 0, 0}).Value();
+      process_voxel(index_in_down_sampled, indices_in_this);
+      ++index_in_down_sampled;
+    }
   }
 
   return down_sampled;
 }
 
-bool PointCloud::EstimateNormals(double radius, int num_closest) {
+bool PointCloud::EstimateNormals(
+    const double radius, const int num_closest, const bool parallelize) {
   DRAKE_DEMAND(radius > 0);
   DRAKE_DEMAND(num_closest >= 3);
   DRAKE_THROW_UNLESS(has_xyzs());
@@ -538,11 +577,9 @@ bool PointCloud::EstimateNormals(double radius, int num_closest) {
   }
 
   // Iterate through all points and compute their normals.
-  // TODO(russt): Make an OpenMP implementation of this.
-  Eigen::Vector3d mean;
-  Eigen::Matrix3d covariance;
+  std::atomic<bool> all_points_have_at_least_three_neighbors(true);
 
-  bool all_points_have_at_least_three_neighbors = true;
+  CRU_OMP_PARALLEL_FOR_IF(parallelize)
   for (int i = 0; i < size_; ++i) {
     // Search for points within radius, and keep the num_closest points.
     const auto offsets = {-radius, 0.0, radius};
@@ -578,48 +615,50 @@ bool PointCloud::EstimateNormals(double radius, int num_closest) {
       }
     }
 
-    // Compute the covariance matrix.
-    {
-      int count = 0;
-      mean.setZero();
+    // Compute the mean.
+    Eigen::Vector3d mean = Eigen::Vector3d::Zero();
+    int count = 0;
 
-      for (const auto& [index, point_squared_distance] : k_closest_points) {
-        unused(point_squared_distance);
-        // Skip invalid point with index < 0.
-        if (index >= 0) {
-          ++count;
-          mean += xyz(index).cast<double>();
-        }
-      }
-
-      if (count < 3) {
-        all_points_have_at_least_three_neighbors = false;
-      }
-      if (count < 2) {
-        mutable_normal(i) = Eigen::Vector3f::Constant(kNaN);
-        continue;
-      }
-
-      mean /= count;
-      covariance.setZero();
-
-      for (const auto& [index, point_squared_distance] : k_closest_points) {
-        unused(point_squared_distance);
-        // Skip invalid point with index < 0.
-        if (index >= 0) {
-          const Eigen::VectorXd x_minus_mean = xyz(index).cast<double>() - mean;
-          covariance += x_minus_mean * x_minus_mean.transpose();
-        }
+    for (const auto& [index, point_squared_distance] : k_closest_points) {
+      unused(point_squared_distance);
+      // Skip invalid point with index < 0.
+      if (index >= 0) {
+        ++count;
+        mean += xyz(index).cast<double>();
       }
     }
 
-    // TODO(russt): Open3d implements a "FastEigen3x3" for an optimized version
-    // of this. We probably should, too.
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver;
-    solver.computeDirect(covariance, Eigen::ComputeEigenvectors);
-    mutable_normal(i) = solver.eigenvectors().col(0).cast<float>();
+    if (count < 3) {
+      all_points_have_at_least_three_neighbors.store(false);
+    }
+
+    // Only compute normals if enough neighboring points were found.
+    if (count >= 2) {
+      // Finish computing mean.
+      mean /= count;
+
+      // Compute the covariance matrix.
+      Eigen::Matrix3d covariance = Eigen::Matrix3d::Zero();
+
+      for (const auto& [index, point_squared_distance] : k_closest_points) {
+        unused(point_squared_distance);
+        // Skip invalid point with index < 0.
+        if (index >= 0) {
+          const Eigen::Vector3d x_minus_mean = xyz(index).cast<double>() - mean;
+          covariance += x_minus_mean * x_minus_mean.transpose();
+        }
+      }
+
+      // TODO(russt): Open3d implements a "FastEigen3x3" for an optimized
+      // version of this. We probably should, too.
+      Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver;
+      solver.computeDirect(covariance, Eigen::ComputeEigenvectors);
+      mutable_normal(i) = solver.eigenvectors().col(0).cast<float>();
+    } else {
+      mutable_normal(i) = Eigen::Vector3f::Constant(kNaN);
+    }
   }
-  return all_points_have_at_least_three_neighbors;
+  return all_points_have_at_least_three_neighbors.load();
 }
 
 }  // namespace perception

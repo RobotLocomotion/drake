@@ -450,7 +450,7 @@ GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
   cloud.mutable_descriptors().setRandom();
 
   // Down-sample so that each occupied octant returns one point.
-  PointCloud down_sampled = cloud.VoxelizedDownSample(1.0);
+  PointCloud down_sampled = cloud.VoxelizedDownSample(1.0, ENABLE_PARALLEL_OPS);
   EXPECT_EQ(down_sampled.size(), 3);
 
   auto CheckHasPointAveragedFrom =
@@ -505,7 +505,7 @@ GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
   // Check that voxels with only NaN normals still return NaN.
   cloud.mutable_normal(0)[1] = std::numeric_limits<float>::quiet_NaN();
 
-  down_sampled = cloud.VoxelizedDownSample(1.0);
+  down_sampled = cloud.VoxelizedDownSample(1.0, ENABLE_PARALLEL_OPS);
   EXPECT_EQ(down_sampled.size(), 3);
   CheckHasPointAveragedFrom({5});
 
@@ -540,7 +540,7 @@ GTEST_TEST(PointCloudTest, EstimateNormalsPlane) {
   cloud.mutable_xyzs().transpose() << 0, 0, 0, 0, 0, 1, 0, 1, 1;
 
   EXPECT_FALSE(cloud.has_normals());
-  cloud.EstimateNormals(10, 3);
+  cloud.EstimateNormals(10, 3, ENABLE_PARALLEL_OPS);
   EXPECT_TRUE(cloud.has_normals());
 
   double kTol = 1e-6;
@@ -550,13 +550,13 @@ GTEST_TEST(PointCloudTest, EstimateNormalsPlane) {
 
   cloud.mutable_xyzs().transpose() << 0, 0, 0, 1, 0, 0, 1, 0, 1;
 
-  cloud.EstimateNormals(10, 3);
+  cloud.EstimateNormals(10, 3, ENABLE_PARALLEL_OPS);
   for (int i = 0; i < 3; ++i) {
     CheckNormal(cloud.normal(i), Vector3f{0, 1, 0}, kTol);
   }
 
   cloud.mutable_xyzs().transpose() << 0, 0, 0, 1, 0, 0, 0, 1, 1;
-  cloud.EstimateNormals(10, 3);
+  cloud.EstimateNormals(10, 3, ENABLE_PARALLEL_OPS);
   for (int i = 0; i < 3; ++i) {
     CheckNormal(cloud.normal(i),
                 Vector3f{0, 1.0 / std::sqrt(2.0), -1.0 / std::sqrt(2.0)}, kTol);
@@ -579,7 +579,7 @@ GTEST_TEST(PointCloudTest, EstimateNormalsSphere) {
     cloud.mutable_xyz(i).normalize();
   }
 
-  cloud.EstimateNormals(0.1, 30);
+  cloud.EstimateNormals(0.1, 30, ENABLE_PARALLEL_OPS);
 
   double kTol = 1e-3;  // This will be loose unless kSize gets very large.
   for (int i = 0; i < kSize; ++i) {
@@ -596,7 +596,7 @@ GTEST_TEST(PointCloudTest, EstimateNormalsTwoPoints) {
     0, 0, 0,
     1, 1, 0;
   // clang-format on
-  cloud.EstimateNormals(10, 3);
+  cloud.EstimateNormals(10, 3, ENABLE_PARALLEL_OPS);
 
   double kTolerance = 1e-6;
   for (int i = 0; i < 2; ++i) {
