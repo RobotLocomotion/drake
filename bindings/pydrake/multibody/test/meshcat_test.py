@@ -7,8 +7,9 @@ from pydrake.multibody.meshcat import (
 )
 
 import copy
-import os
 import unittest
+
+import numpy as np
 
 from pydrake.common import (
     FindResourceOrThrow,
@@ -25,7 +26,6 @@ from pydrake.multibody.parsing import (
 )
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
-    MultibodyPlant,
 )
 from pydrake.systems.framework import (
     DiagramBuilder,
@@ -128,7 +128,10 @@ class TestMeshcat(unittest.TestCase):
         # The Run function doesn't crash.
         builder.AddSystem(dut)
         diagram = builder.Build()
-        dut.Run(diagram=diagram, timeout=1.0, stop_button_keycode="ArrowLeft")
+        q = dut.Run(diagram=diagram,
+                    timeout=1.0,
+                    stop_button_keycode="ArrowLeft")
+        np.testing.assert_equal(q, [0, 0])
 
         # The SetPositions function doesn't crash (Acrobot has two positions).
         dut.SetPositions(q=[1, 2])

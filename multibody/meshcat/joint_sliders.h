@@ -117,14 +117,17 @@ class JointSliders final : public systems::LeafSystem<T> {
   the empty string means no keycode. See Meshcat::AddButton for details.
   @default "Escape".
 
+  @returns the output of plant.GetPositions() given the most recently published
+  value of the plant Context.
+
   @pre `diagram` must be a top-level (i.e., "root") diagram.
   @pre `diagram` must contain this JointSliders system.
   @pre `diagram` must contain the `plant` that was passed into this
   JointSliders system's constructor.
   */
-  void Run(const systems::Diagram<T>& diagram,
-           std::optional<double> timeout = std::nullopt,
-           std::string stop_button_keycode = "Escape") const;
+  Eigen::VectorXd Run(const systems::Diagram<T>& diagram,
+                      std::optional<double> timeout = std::nullopt,
+                      std::string stop_button_keycode = "Escape") const;
 
   /** Sets all robot positions (corresponding to joint positions and potentially
   positions not associated with any joint) to the values in `q`.  The meshcat
