@@ -42,7 +42,6 @@ drake_cc_library(
     deps = [
         "//common:unused",
         "@common_robotics_utilities",
-        "@nanoflann_internal//:nanoflann",
     ],
 )
 
