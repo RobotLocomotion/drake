@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include <common_robotics_utilities/dynamic_spatial_hashed_voxel_grid.hpp>
+#include <common_robotics_utilities/voxel_grid.hpp>
 #include <drake_vendor/nanoflann.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -409,58 +411,51 @@ PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
   return new_cloud;
 }
 
-namespace {
-
-// Hash function for Eigen::Vector3i
-// implemented as in boost::hash_combine.
-struct Vector3iHash {
-  std::size_t operator()(const Eigen::Vector3i& index) const {
-    size_t hash = 0;
-    const auto add_to_hash = [&hash] (int value) {
-      hash ^= std::hash<int>{}(value) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-    };
-    add_to_hash(index.x());
-    add_to_hash(index.y());
-    add_to_hash(index.z());
-    return hash;
-  }
-};
-
-}  // namespace
-
 PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
   // This is a simple, narrow, no-frills implementation of the
   // voxel_down_sample algorithm in Open3d and/or the down-sampling by a
   // VoxelGrid filter in PCL.
   DRAKE_THROW_UNLESS(has_xyzs());
   DRAKE_THROW_UNLESS(voxel_size > 0);
-  Eigen::Vector3f lower_xyz =
-      Eigen::Vector3f::Constant(std::numeric_limits<float>::infinity());
+
+  // Create a dynamic-spatial-hashed voxel grid to bin points.
+  const common_robotics_utilities::voxel_grid::GridSizes chunk_sizes(
+      voxel_size, INT64_C(1), INT64_C(1), INT64_C(1));
+  const std::vector<int> default_chunk_value;
+  const size_t num_expected_chunks = static_cast<size_t>(size_ / 8);
+  common_robotics_utilities::voxel_grid::
+      DynamicSpatialHashedVoxelGrid<std::vector<int>> dynamic_voxel_grid(
+          chunk_sizes, default_chunk_value, num_expected_chunks);
+
+  // Add points into the voxel grid.
   for (int i = 0; i < size_; ++i) {
     if (xyz(i).array().isFinite().all()) {
-      lower_xyz[0] = std::min(xyz(i)[0], lower_xyz[0]);
-      lower_xyz[1] = std::min(xyz(i)[1], lower_xyz[1]);
-      lower_xyz[2] = std::min(xyz(i)[2], lower_xyz[2]);
+      auto chunk_query =
+          dynamic_voxel_grid.GetLocationMutable3d(xyz(i).cast<double>());
+      if (chunk_query) {
+        chunk_query.Value().emplace_back(i);
+      } else {
+        dynamic_voxel_grid.SetLocation3d(
+            xyz(i).cast<double>(),
+            common_robotics_utilities::voxel_grid::DSHVGSetType::SET_CHUNK,
+            {i});
+      }
     }
   }
 
-  // Create a map from voxel coordinate to a set of points.
-  std::unordered_map<Eigen::Vector3i, std::vector<int>, Vector3iHash>
-      voxel_map;
-  for (int i = 0; i < size_; ++i) {
-    if (xyz(i).array().isFinite().all()) {
-      voxel_map[((xyz(i) - lower_xyz) / voxel_size).cast<int>()].emplace_back(
-          i);
-    }
-  }
-  PointCloud down_sampled(voxel_map.size(), fields());
+  // Initialize downsampled cloud.
+  PointCloud down_sampled(
+      dynamic_voxel_grid.GetImmutableInternalChunks().size(), fields());
 
   // Iterate through the map populating the elements of the down_sampled cloud.
   // TODO(russt): Consider using OpenMP. Sample code from calderpg-tri provided
   // during review of #17885.
   int index_in_down_sampled = 0;
-  for (const auto& [coordinates, indices_in_this] : voxel_map) {
-    unused(coordinates);
+  for (const auto& [chunk_region, chunk] :
+          dynamic_voxel_grid.GetImmutableInternalChunks()) {
+    unused(chunk_region);
+    const std::vector<int>& indices_in_this =
+        chunk.GetIndexImmutable({0, 0, 0}).Value();
     // Use doubles instead of floats for accumulators to avoid round-off errors.
     Eigen::Vector3d xyz{Eigen::Vector3d::Zero()};
     Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
