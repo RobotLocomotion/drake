@@ -8,6 +8,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/unused.h"
 
@@ -247,9 +248,9 @@ void JointSliders<T>::CalcOutput(
 }
 
 template <typename T>
-void JointSliders<T>::Run(const Diagram<T>& diagram,
-                          std::optional<double> timeout,
-                          std::string stop_button_keycode) const {
+Eigen::VectorXd JointSliders<T>::Run(const Diagram<T>& diagram,
+                                std::optional<double> timeout,
+                                std::string stop_button_keycode) const {
   // Make a context and create reference shortcuts to some pieces of it.
   // TODO(jwnimmer-tri) If the user has forgotten to add the plant or sliders
   // to the diagram, our error message here is awful. Ideally, we should be
@@ -277,6 +278,10 @@ void JointSliders<T>::Run(const Diagram<T>& diagram,
   using Duration = std::chrono::duration<double>;
   const auto start_time = Clock::now();
 
+  // Set the context to the initial slider values.
+  plant_->SetPositions(&plant_context,
+                       this->get_output_port().Eval(sliders_context));
+
   // Loop until the button is clicked, or the timeout (when given) is reached.
   diagram.Publish(diagram_context);
   while (meshcat_->GetButtonClicks(kButtonName) < 1) {
@@ -299,6 +304,8 @@ void JointSliders<T>::Run(const Diagram<T>& diagram,
     plant_->SetPositions(&plant_context, new_positions);
     diagram.Publish(diagram_context);
   }
+
+  return ExtractDoubleOrThrow(plant_->GetPositions(plant_context).eval());
 }
 
 template <typename T>
