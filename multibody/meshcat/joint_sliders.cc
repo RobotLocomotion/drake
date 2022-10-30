@@ -247,9 +247,9 @@ void JointSliders<T>::CalcOutput(
 }
 
 template <typename T>
-void JointSliders<T>::Run(const Diagram<T>& diagram,
-                          std::optional<double> timeout,
-                          std::string stop_button_keycode) const {
+VectorX<T> JointSliders<T>::Run(const Diagram<T>& diagram,
+                                std::optional<double> timeout,
+                                std::string stop_button_keycode) const {
   // Make a context and create reference shortcuts to some pieces of it.
   // TODO(jwnimmer-tri) If the user has forgotten to add the plant or sliders
   // to the diagram, our error message here is awful. Ideally, we should be
@@ -299,6 +299,8 @@ void JointSliders<T>::Run(const Diagram<T>& diagram,
     plant_->SetPositions(&plant_context, new_positions);
     diagram.Publish(diagram_context);
   }
+
+  return plant_->GetPositions(plant_context);
 }
 
 template <typename T>

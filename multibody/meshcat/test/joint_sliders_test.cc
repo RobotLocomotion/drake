@@ -281,7 +281,8 @@ TEST_F(JointSlidersTest, Run) {
 
   // Run for a while.
   const double timeout = 1.0;
-  dut->Run(*diagram, timeout);
+  Eigen::VectorXd q = dut->Run(*diagram, timeout);
+  EXPECT_TRUE(CompareMatrices(q, Vector2d{0, 0}));
 
   // Note: the stop button is deleted on timeout, so we cannot easily check
   // that it was created correctly here.
@@ -295,7 +296,8 @@ TEST_F(JointSlidersTest, Run) {
   meshcat_->SetSliderValue(kAcrobotJoint1, 0.25);
 
   // Run for a while (with a non-default stop_button_keycode).
-  dut->Run(*diagram, timeout, "KeyP");
+  q = dut->Run(*diagram, timeout, "KeyP");
+  EXPECT_TRUE(CompareMatrices(q, Vector2d{0.25, 0}));
 
   // Check that the slider's transform had any effect, i.e., that the
   // MeshcatVisualizer::Publish was called.
