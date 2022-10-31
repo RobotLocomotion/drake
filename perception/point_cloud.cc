@@ -10,6 +10,7 @@
 #include <common_robotics_utilities/dynamic_spatial_hashed_voxel_grid.hpp>
 #include <common_robotics_utilities/openmp_helpers.hpp>
 #include <common_robotics_utilities/voxel_grid.hpp>
+#include <drake_vendor/nanoflann.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
@@ -551,112 +552,71 @@ bool PointCloud::EstimateNormals(
     storage_->UpdateFields(fields_);
   }
 
-  // Create a dynamic-spatial-hashed voxel grid to bin points for KNN.
-  const common_robotics_utilities::voxel_grid::GridSizes chunk_sizes(
-      radius, INT64_C(1), INT64_C(1), INT64_C(1));
-  const std::vector<int> default_chunk_value;
-  const size_t num_expected_chunks = static_cast<size_t>(size_ / 8);
-  common_robotics_utilities::voxel_grid::
-      DynamicSpatialHashedVoxelGrid<std::vector<int>> dynamic_voxel_grid(
-          chunk_sizes, default_chunk_value, num_expected_chunks);
-
-  // Add points into the voxel grid.
-  for (int i = 0; i < size_; ++i) {
-    if (xyz(i).array().isFinite().all()) {
-      auto chunk_query =
-          dynamic_voxel_grid.GetLocationMutable3d(xyz(i).cast<double>());
-      if (chunk_query) {
-        chunk_query.Value().emplace_back(i);
-      } else {
-        dynamic_voxel_grid.SetLocation3d(
-            xyz(i).cast<double>(),
-            common_robotics_utilities::voxel_grid::DSHVGSetType::SET_CHUNK,
-            {i});
-      }
-    }
-  }
+  const Eigen::MatrixX3f data = xyzs().transpose();
+  nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixX3f, 3,
+                                      nanoflann::metric_L2_Simple>
+      kd_tree(3, data);
 
   // Iterate through all points and compute their normals.
   std::atomic<bool> all_points_have_at_least_three_neighbors(true);
 
   CRU_OMP_PARALLEL_FOR_IF(parallelize)
   for (int i = 0; i < size_; ++i) {
-    // Search for points within radius, and keep the num_closest points.
-    const auto offsets = {-radius, 0.0, radius};
-    std::vector<std::pair<int, double>> k_closest_points(
-        num_closest, {-1, std::numeric_limits<double>::infinity()});
+    VectorX<Eigen::Index> indices(num_closest);
+    Eigen::VectorXf distances(num_closest);
 
-    const Eigen::Vector3f point = xyz(i);
-    for (const double x_offset : offsets) {
-      for (const double y_offset : offsets) {
-        for (const double z_offset : offsets) {
-          const auto query = dynamic_voxel_grid.GetLocationImmutable(
-              point.x() + x_offset, point.y() + y_offset, point.z() + z_offset);
-          if (query) {
-            for (int index : query.Value()) {
-              const Eigen::Vector3f other_point = xyz(index);
-              const double point_squared_distance =
-                  (other_point - point).squaredNorm();
-              if (point_squared_distance <= squared_radius) {
-                auto farthest_point = std::max_element(
-                    k_closest_points.begin(), k_closest_points.end(),
-                    [](const std::pair<int, double>& p1,
-                       const std::pair<int, double>& p2) {
-                      return p1.second < p2.second;
-                    });
-                if (farthest_point->second > point_squared_distance) {
-                  farthest_point->first = index;
-                  farthest_point->second = point_squared_distance;
-                }
-              }
-            }
-          }
-        }
-      }
+    // With nanoflann, I can either search for the num_closest and
+    // take the ones closer than radius, or search for all points closer than
+    // radius and keep the num_closest.
+    const int num_neighbors = kd_tree.index->knnSearch(
+        xyz(i).data(), num_closest, indices.data(), distances.data());
+
+    if (num_neighbors < 3) {
+      all_points_have_at_least_three_neighbors = false;
     }
 
-    // Compute the mean.
-    Eigen::Vector3d mean = Eigen::Vector3d::Zero();
-    int count = 0;
+    if (num_neighbors < 2) {
+      mutable_normal(i) = Eigen::Vector3f::Constant(kNaN);
+      continue;
+    }
 
-    for (const auto& [index, point_squared_distance] : k_closest_points) {
-      unused(point_squared_distance);
-      // Skip invalid point with index < 0.
-      if (index >= 0) {
+    // Compute the covariance matrix.
+    int count = 0;
+    Eigen::Vector3d mean = Eigen::Vector3d::Zero();
+
+    for (int j = 0; j < num_neighbors; ++j) {
+      if (distances[j] <= squared_radius) {
         ++count;
-        mean += xyz(index).cast<double>();
+        mean += xyz(indices[j]).cast<double>();
       }
     }
 
     if (count < 3) {
-      all_points_have_at_least_three_neighbors.store(false);
+      all_points_have_at_least_three_neighbors = false;
     }
 
-    // Only compute normals if enough neighboring points were found.
-    if (count >= 2) {
-      // Finish computing mean.
-      mean /= count;
-
-      // Compute the covariance matrix.
-      Eigen::Matrix3d covariance = Eigen::Matrix3d::Zero();
-
-      for (const auto& [index, point_squared_distance] : k_closest_points) {
-        unused(point_squared_distance);
-        // Skip invalid point with index < 0.
-        if (index >= 0) {
-          const Eigen::Vector3d x_minus_mean = xyz(index).cast<double>() - mean;
-          covariance += x_minus_mean * x_minus_mean.transpose();
-        }
-      }
-
-      // TODO(russt): Open3d implements a "FastEigen3x3" for an optimized
-      // version of this. We probably should, too.
-      Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver;
-      solver.computeDirect(covariance, Eigen::ComputeEigenvectors);
-      mutable_normal(i) = solver.eigenvectors().col(0).cast<float>();
-    } else {
+    if (count < 2) {
       mutable_normal(i) = Eigen::Vector3f::Constant(kNaN);
+      continue;
     }
+
+    mean /= count;
+
+    Eigen::Matrix3d covariance = Eigen::Matrix3d::Zero();
+
+    for (int j = 0; j < num_neighbors; ++j) {
+      if (distances[j] <= squared_radius) {
+        const Eigen::VectorXd x_minus_mean =
+            xyz(indices[j]).cast<double>() - mean;
+        covariance += x_minus_mean * x_minus_mean.transpose();
+      }
+    }
+
+    // TODO(russt): Open3d implements a "FastEigen3x3" for an optimized version
+    // of this. We probably should, too.
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver;
+    solver.computeDirect(covariance, Eigen::ComputeEigenvectors);
+    mutable_normal(i) = solver.eigenvectors().col(0).cast<float>();
   }
   return all_points_have_at_least_three_neighbors.load();
 }
