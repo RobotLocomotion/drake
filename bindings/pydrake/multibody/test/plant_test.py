@@ -2112,6 +2112,16 @@ class TestPlant(unittest.TestCase):
         B = plant.MakeActuationMatrix()
         numpy_compare.assert_float_equal(B, np.array([[0.], [1.]]))
 
+        sample_actuator = plant.GetJointActuatorByName("ElbowJoint")
+        Ba = plant.MakeActuatorSelectorMatrix(
+            user_to_actuator_index_map=[sample_actuator.index()])
+        numpy_compare.assert_float_equal(Ba, np.array([[1.]]))
+
+        sample_joint = plant.GetJointByName("ElbowJoint")
+        Bj = plant.MakeActuatorSelectorMatrix(
+            user_to_joint_index_map=[sample_joint.index()])
+        numpy_compare.assert_float_equal(Bj, np.array([[1.]]))
+
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
         copy.copy(forces)
