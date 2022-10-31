@@ -187,6 +187,16 @@ TEST_F(BoxedCellTest, CopyAssignCellOntoCell) {
   EXPECT_EQ(dut.cell().use_count(), 1);
 }
 
+TEST_F(BoxedCellTest, CopyAssignCellOntoSelf) {
+  BoxedCell dut;
+  dut.SetSharedCell(MakeVarCell());
+  BoxedCell& self = dut;
+  dut = self;
+  EXPECT_EQ(dut.get_kind(), ExpressionKind::Var);
+  EXPECT_TRUE(dut.trivially_equals(dut));
+  EXPECT_EQ(dut.cell().use_count(), 1);
+}
+
 TEST_F(BoxedCellTest, CopyAssignCellOntoConstant) {
   auto original = std::make_unique<BoxedCell>();
   original->SetSharedCell(MakeVarCell());

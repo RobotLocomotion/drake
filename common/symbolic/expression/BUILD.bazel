@@ -177,6 +177,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "sparse_test",
+    deps = [
+        ":expression",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "substitution_test",
     deps = [
         ":expression",
