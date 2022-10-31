@@ -82,6 +82,8 @@ class TestParsing(unittest.TestCase):
                 (Parser.AddModelFromFile, urdf_file, "a", int),
                 (Parser.AddAllModelsFromFile, sdf_file, None, list),
                 (Parser.AddAllModelsFromFile, urdf_file, None, list),
+                (Parser.AddModels, sdf_file, None, list),
+                (Parser.AddModels, urdf_file, None, list),
                 ):
             plant = MultibodyPlant(time_step=0.01)
             parser = Parser(plant=plant)

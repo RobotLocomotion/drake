@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -43,9 +44,9 @@ class CompositeParse;
 /// MJCF (MuJoCo XML) files typically contain many bodies, they will all be
 /// added as a single model instance in the @p plant.
 ///
-/// Drake Model Directives are only available via AddAllModelsFromFile. The
-/// single-model methods (AddModelFromFile, AddModelFromString) cannot load
-/// model directives.
+/// Drake Model Directives are only available via AddModels or
+/// AddModelsFromString. The single-model methods (AddModelFromFile,
+/// AddModelFromString) cannot load model directives.
 ///
 /// For more documentation of Drake-specific treatment of these input formats,
 /// see @ref multibody_parsing.
@@ -90,10 +91,15 @@ class Parser final {
   /// @returns The set of model instance indices for the newly added models,
   /// including nested models.
   /// @throws std::exception in case of errors.
+  std::vector<ModelInstanceIndex> AddModels(
+      const std::filesystem::path& file_name);
+
+  // TODO(rpoyner-tri): deprecate on or after 2023-01.
+  /// Legacy spelling of AddModels.
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
       const std::string& file_name);
 
-  /// Provides same functionality as AddAllModelsFromFile, but instead parses
+  /// Provides same functionality as AddModels, but instead parses
   /// the model description text data via @p file_contents with format dictated
   /// by @p file_type.
   ///

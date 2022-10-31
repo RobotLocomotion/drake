@@ -33,7 +33,7 @@ BENCHMARK_F(HomecartGlobalIkBenchmark, PostureCost)(benchmark::State& state) {  
   geometry::SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   multibody::Parser parser(&plant);
-  parser.AddAllModelsFromFile(
+  parser.AddModels(
       FindResourceOrThrow("drake/manipulation/models/tri_homecart/"
                           "homecart_no_grippers.dmd.yaml"));
   plant.Finalize();

@@ -76,8 +76,18 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.plant.doc)
         .def("package_map", &Class::package_map, py_rvp::reference_internal,
             cls_doc.package_map.doc)
+        // TODO(rpoyner-tri): deprecate on or after 2023-01.
         .def("AddAllModelsFromFile", &Class::AddAllModelsFromFile,
             py::arg("file_name"), cls_doc.AddAllModelsFromFile.doc)
+        .def(
+            "AddModels",
+            // Pybind11 won't implicitly convert strings to
+            // std::filesystem::path, but C++ will. Use a lambda to avoid wider
+            // disruptions in python bindings.
+            [](Parser& self, const std::string& file_name) {
+              return self.AddModels(file_name);
+            },
+            py::arg("file_name"), cls_doc.AddModels.doc)
         .def("AddModelsFromString", &Class::AddModelsFromString,
             py::arg("file_contents"), py::arg("file_type"),
             cls_doc.AddModelsFromString.doc)

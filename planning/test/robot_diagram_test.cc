@@ -21,9 +21,9 @@ using systems::System;
 
 std::unique_ptr<RobotDiagramBuilder<double>> MakeSampleDut() {
   auto builder = std::make_unique<RobotDiagramBuilder<double>>();
-  builder->mutable_parser().AddAllModelsFromFile(FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_spheres_dense_collision.urdf"));
+  builder->mutable_parser().AddModels(
+      FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
+                          "iiwa14_spheres_dense_collision.urdf"));
   return builder;
 }
 
