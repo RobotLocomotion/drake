@@ -67,6 +67,7 @@ TEST_F(JacoStatusReceiverTest, ZeroOutputTest) {
 }
 
 TEST_F(JacoStatusReceiverTest, AcceptanceTest) {
+  const int utime = 1661199485;
   const VectorXd q0 = VectorXd::LinSpaced(N, 0.2, 0.3);
   const VectorXd v0 = VectorXd::LinSpaced(N, 0.3, 0.4);
   const VectorXd f_q0 = VectorXd::LinSpaced(N_F, 1.2, 1.3);
@@ -78,7 +79,7 @@ TEST_F(JacoStatusReceiverTest, AcceptanceTest) {
   const VectorXd f_t_ext0 = VectorXd::LinSpaced(N_F, 1.5, 1.6);
   const VectorXd f_current0 = VectorXd::LinSpaced(N_F, 1.6, 1.7);
 
-  status_.utime = 1;
+  status_.utime = utime;
   status_.num_joints = N;
   status_.num_fingers = N_F;
   Copy(q0, &status_.joint_position);
@@ -102,6 +103,9 @@ TEST_F(JacoStatusReceiverTest, AcceptanceTest) {
   velocity_expected.head(N) = v0;
   velocity_expected.tail(N_F) = f_v0 * kFingerSdkToUrdf;
 
+  EXPECT_TRUE(
+      CompareMatrices(dut_.get_time_measured_output_port().Eval(context_),
+                      Vector1d(utime) / 1e6));
   EXPECT_TRUE(CompareMatrices(
       dut_.get_position_measured_output_port().Eval(context_),
       position_expected));

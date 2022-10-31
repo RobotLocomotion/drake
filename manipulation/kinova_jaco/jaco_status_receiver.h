@@ -20,19 +20,22 @@ namespace kinova_jaco {
 /// This system has one abstract-valued input port of type lcmt_jaco_status.
 ///
 /// This system has many vector-valued output ports.  All output ports are of
-/// size num_joints + num_fingers.  The ports will output zeros until an input
-/// message is received.  Finger velocities will be translated from the values
-/// used by the Kinova SDK to values appropriate for the finger joints in the
-/// Jaco description (see jaco_constants.h.)
+/// size num_joints + num_fingers.  The exception is `time_measured`, which
+/// has a one-dimensional measured time output in seconds, i.e., the timestamp
+/// from the hardware in microseconds converted into seconds.  The ports will
+/// output zeros until an input message is received.  Finger velocities will
+/// be translated from the values used by the Kinova SDK to values appropriate
+/// for the finger joints in the Jaco description (see jaco_constants.h.)
 //
 /// @system
 /// name: JacoStatusReceiver
 /// input_ports:
 /// - lcmt_jaco_status
 /// output_ports:
-/// - position
-/// - velocity
-/// - torque
+/// - time_measured
+/// - position_measured
+/// - velocity_measured
+/// - torque_measured
 /// - torque_external
 /// - current
 /// @endsystem
@@ -47,6 +50,9 @@ class JacoStatusReceiver : public systems::LeafSystem<double> {
 
   /// @name Named accessors for this System's input and output ports.
   //@{
+  const systems::OutputPort<double>& get_time_measured_output_port() const {
+    return *time_measured_output_;
+  }
   const systems::OutputPort<double>& get_position_measured_output_port() const {
     return *position_measured_output_;
   }
@@ -65,17 +71,19 @@ class JacoStatusReceiver : public systems::LeafSystem<double> {
   //@}
 
  private:
-  void CalcStateOutput(const systems::Context<double>&,
-                       systems::BasicVector<double>*) const;
   template <std::vector<double> drake::lcmt_jaco_status::*,
             std::vector<double> drake::lcmt_jaco_status::*,
             int>
   void CalcJointOutput(const systems::Context<double>&,
                        systems::BasicVector<double>*) const;
 
+  void CalcTimeOutput(const systems::Context<double>&,
+                      systems::BasicVector<double>*) const;
+
   const int num_joints_;
   const int num_fingers_;
   const systems::InputPort<double>* message_input_{};
+  const systems::OutputPort<double>* time_measured_output_{};
   const systems::OutputPort<double>* position_measured_output_{};
   const systems::OutputPort<double>* velocity_measured_output_{};
   const systems::OutputPort<double>* torque_measured_output_{};

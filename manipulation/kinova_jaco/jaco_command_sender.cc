@@ -15,6 +15,7 @@ JacoCommandSender::JacoCommandSender(int num_joints, int num_fingers)
       "position", kVectorValued, num_joints_ + num_fingers_);
   velocity_input_ = &DeclareInputPort(
       "velocity", kVectorValued, num_joints_ + num_fingers_);
+  time_input_ = &DeclareInputPort("time", kVectorValued, 1);
 
   this->DeclareAbstractOutputPort(
       "lcmt_jaco_command", &JacoCommandSender::CalcOutput);
@@ -23,7 +24,12 @@ JacoCommandSender::JacoCommandSender(int num_joints, int num_fingers)
 void JacoCommandSender::CalcOutput(
     const systems::Context<double>& context, lcmt_jaco_command* output) const {
 
-  output->utime = context.get_time() * 1e6;
+  if (time_input_->HasValue(context)) {
+    output->utime = time_input_->Eval(context)[0] * 1e6;
+  } else {
+    output->utime = context.get_time() * 1e6;
+  }
+
   output->num_joints = num_joints_;
   output->joint_position.resize(num_joints_);
   output->joint_velocity.resize(num_joints_);
