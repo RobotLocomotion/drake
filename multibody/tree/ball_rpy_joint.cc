@@ -3,7 +3,6 @@
 #include <memory>
 #include <stdexcept>
 
-#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -11,10 +10,13 @@ namespace multibody {
 
 template <typename T>
 template <typename ToScalar>
-std::unique_ptr<BallRpyJoint<ToScalar>>
-BallRpyJoint<T>::TemplatedDoCloneToScalar(
-    const Frame<ToScalar>& frame_on_parent_body_clone,
-    const Frame<ToScalar>& frame_on_child_body_clone) const {
+std::unique_ptr<Joint<ToScalar>> BallRpyJoint<T>::TemplatedDoCloneToScalar(
+    const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+  const Frame<ToScalar>& frame_on_parent_body_clone =
+      handle.get_variant(this->frame_on_parent());
+  const Frame<ToScalar>& frame_on_child_body_clone =
+      handle.get_variant(this->frame_on_child());
+
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<BallRpyJoint<ToScalar>>(
       this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,
@@ -31,43 +33,24 @@ BallRpyJoint<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
-template <typename ToScalar>
-std::unique_ptr<Joint<ToScalar>> BallRpyJoint<T>::TemplatedDoCloneToScalar(
-    const internal::MultibodyTree<ToScalar>& tree_clone) const {
-  const Frame<ToScalar>& frame_on_parent_body_clone =
-      tree_clone.get_variant(this->frame_on_parent());
-  const Frame<ToScalar>& frame_on_child_body_clone =
-      tree_clone.get_variant(this->frame_on_child());
-
-  return TemplatedDoCloneToScalar(frame_on_parent_body_clone,
-                                  frame_on_child_body_clone);
-}
-
-template <typename T>
 std::unique_ptr<Joint<double>> BallRpyJoint<T>::DoCloneToScalar(
-    const internal::MultibodyTree<double>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<double, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<Joint<AutoDiffXd>> BallRpyJoint<T>::DoCloneToScalar(
-    const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<Joint<symbolic::Expression>> BallRpyJoint<T>::DoCloneToScalar(
-    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+    const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
-template <typename T>
-const Joint<T>& BallRpyJoint<T>::DoCloneTo(
-    internal::MultibodyTree<T>* tree, const Frame<T>& dest_frame_on_parent,
-    const Frame<T>& dest_frame_on_child) const {
-  return tree->AddJoint(TemplatedDoCloneToScalar(dest_frame_on_parent,
-                                                 dest_frame_on_child));
-}
 // N.B. Due to esoteric linking errors on Mac (see #9345) involving
 // `MobilizerImpl`, we must place this implementation in the source file, not
 // in the header file.

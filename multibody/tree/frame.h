@@ -581,8 +581,8 @@ class Frame : public FrameBase<T> {
   /// @sa MultibodyTree::CloneToScalar()
   template <typename ToScalar>
   std::unique_ptr<Frame<ToScalar>> CloneToScalar(
-      const internal::MultibodyTree<ToScalar>& tree_clone) const {
-    return DoCloneToScalar(tree_clone);
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+    return DoCloneToScalar(handle);
   }
 
  protected:
@@ -614,14 +614,16 @@ class Frame : public FrameBase<T> {
 
   /// Clones this %Frame (templated on T) to a frame templated on `double`.
   virtual std::unique_ptr<Frame<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const = 0;
+      const internal::MultibodyElementAccessor<double, T>& handle) const = 0;
 
   /// Clones this %Frame (templated on T) to a frame templated on AutoDiffXd.
   virtual std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const = 0;
 
   virtual std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const = 0;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const = 0;
   /// @}
 
  private:

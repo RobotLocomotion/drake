@@ -338,7 +338,7 @@ template <typename T>
 template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>
 LinearBushingRollPitchYaw<T>::TemplatedDoCloneToScalar(
-    const internal::MultibodyTree<ToScalar>&) const {
+    const internal::MultibodyElementAccessor<ToScalar, T>&) const {
   const Vector3<double>& k012 = torque_stiffness_constants();
   const Vector3<double>& d012 = torque_damping_constants();
   const Vector3<double>& kxyz = force_stiffness_constants();
@@ -356,22 +356,23 @@ LinearBushingRollPitchYaw<T>::TemplatedDoCloneToScalar(
 template <typename T>
 std::unique_ptr<ForceElement<double>>
 LinearBushingRollPitchYaw<T>::DoCloneToScalar(
-    const internal::MultibodyTree<double>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<double, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<AutoDiffXd>>
 LinearBushingRollPitchYaw<T>::DoCloneToScalar(
-    const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<symbolic::Expression>>
 LinearBushingRollPitchYaw<T>::DoCloneToScalar(
-    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+    const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 }  // namespace multibody

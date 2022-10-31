@@ -254,8 +254,8 @@ class JointActuator final
   // MultibodyTree::CloneToScalar().
   template <typename ToScalar>
   std::unique_ptr<JointActuator<ToScalar>> CloneToScalar(
-  const internal::MultibodyTree<ToScalar>& cloned_tree) const {
-    return DoCloneToScalar(cloned_tree);
+  const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+    return DoCloneToScalar(handle);
   }
   /// @endcond
 
@@ -276,15 +276,16 @@ class JointActuator final
   // Helper to clone an actuator (templated on T) to an actuator templated on
   // `double`.
   std::unique_ptr<JointActuator<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const;
+      const internal::MultibodyElementAccessor<double, T>& handle) const;
 
   // Helper to clone an actuator (templated on T) to an actuator templated on
   // `AutoDiffXd`.
   std::unique_ptr<JointActuator<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const;
 
   std::unique_ptr<JointActuator<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>& tree_clone) const;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>&
+          handle) const;
 
   // Implementation for MultibodyElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each actuator retrieves its topology

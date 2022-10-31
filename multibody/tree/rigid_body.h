@@ -340,19 +340,20 @@ class RigidBody : public Body<T> {
 
  protected:
   std::unique_ptr<Body<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const final {
-    return TemplatedDoCloneToScalar(tree_clone);
+      const internal::MultibodyElementAccessor<double, T>& handle) const final {
+    return TemplatedDoCloneToScalar(handle);
   }
 
   std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const final {
-    return TemplatedDoCloneToScalar(tree_clone);
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const final {
+    return TemplatedDoCloneToScalar(handle);
   }
 
   std::unique_ptr<Body<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>& tree_clone) const
-      final {
-    return TemplatedDoCloneToScalar(tree_clone);
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const final {
+    return TemplatedDoCloneToScalar(handle);
   }
 
   // Implementation for MultibodyElement::DoDeclareParameters().
@@ -371,8 +372,8 @@ class RigidBody : public Body<T> {
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(
-      const internal::MultibodyTree<ToScalar>& tree_clone) const {
-    unused(tree_clone);
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+    unused(handle);
     return std::make_unique<RigidBody<ToScalar>>(
         this->name(), default_spatial_inertia_);
   }

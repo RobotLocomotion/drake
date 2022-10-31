@@ -204,13 +204,15 @@ class DoorHinge final : public ForceElement<T> {
       MultibodyForces<T>* forces) const override;
 
   std::unique_ptr<ForceElement<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>&) const override;
+      const internal::MultibodyElementAccessor<double, T>& handle) const override;
 
   std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>&) const override;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const override;
 
   std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const override;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>&)
+      const override;
 
  private:
   // For unit test only.
@@ -224,7 +226,7 @@ class DoorHinge final : public ForceElement<T> {
 
   template <typename ToScalar>
   std::unique_ptr<ForceElement<ToScalar>> TemplatedClone(
-      const internal::MultibodyTree<ToScalar>&) const;
+      const internal::MultibodyElementAccessor<ToScalar, T>&) const;
 
   const JointIndex joint_index_;
   const DoorHingeConfig config_;

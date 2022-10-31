@@ -144,6 +144,7 @@ drake_cc_library(
         ":detail_misc",
         ":scoped_names",
         "//multibody/plant",
+        "//multibody/tree",
     ],
 )
 

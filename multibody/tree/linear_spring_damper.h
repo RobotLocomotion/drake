@@ -106,19 +106,21 @@ class LinearSpringDamper final : public ForceElement<T> {
       MultibodyForces<T>* forces) const override;
 
   std::unique_ptr<ForceElement<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<double, T>& handle) const override;
 
   std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const override;
 
   std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const override;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>&)
+      const override;
 
  private:
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<ForceElement<ToScalar>> TemplatedDoCloneToScalar(
-      const internal::MultibodyTree<ToScalar>& tree_clone) const;
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const;
 
   // To avoid a division by zero when computing a normalized vector from point P
   // on body A to point Q on body B as length of the spring approaches zero,

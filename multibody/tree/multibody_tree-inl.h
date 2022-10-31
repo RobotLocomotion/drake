@@ -394,10 +394,12 @@ ModelInstanceIndex MultibodyTree<T>::AddModelInstance(const std::string& name) {
 
 template <typename T>
 template <typename FromScalar>
-Frame<T>* MultibodyTree<T>::CloneFrameAndAdd(const Frame<FromScalar>& frame) {
+Frame<T>* MultibodyTree<T>::CloneFrameAndAdd(
+    const Frame<FromScalar>& frame,
+    const internal::MultibodyElementAccessor<T, FromScalar>& handle) {
   FrameIndex frame_index = frame.index();
 
-  auto frame_clone = frame.CloneToScalar(*this);
+  auto frame_clone = frame.CloneToScalar(handle);
   frame_clone->set_parent_tree(this, frame_index);
   frame_clone->set_model_instance(frame.model_instance());
 
@@ -413,11 +415,13 @@ Frame<T>* MultibodyTree<T>::CloneFrameAndAdd(const Frame<FromScalar>& frame) {
 
 template <typename T>
 template <typename FromScalar>
-Body<T>* MultibodyTree<T>::CloneBodyAndAdd(const Body<FromScalar>& body) {
+Body<T>* MultibodyTree<T>::CloneBodyAndAdd(
+    const Body<FromScalar>& body,
+    const internal::MultibodyElementAccessor<T, FromScalar>& handle) {
   const BodyIndex body_index = body.index();
   const FrameIndex body_frame_index = body.body_frame().index();
 
-  auto body_clone = body.CloneToScalar(*this);
+  auto body_clone = body.CloneToScalar(handle);
   body_clone->set_parent_tree(this, body_index);
   body_clone->set_model_instance(body.model_instance());
   // MultibodyTree can access selected private methods in Body through its
@@ -443,9 +447,10 @@ Body<T>* MultibodyTree<T>::CloneBodyAndAdd(const Body<FromScalar>& body) {
 template <typename T>
 template <typename FromScalar>
 Mobilizer<T>* MultibodyTree<T>::CloneMobilizerAndAdd(
-    const Mobilizer<FromScalar>& mobilizer) {
+    const Mobilizer<FromScalar>& mobilizer,
+    const internal::MultibodyElementAccessor<T, FromScalar>& handle) {
   MobilizerIndex mobilizer_index = mobilizer.index();
-  auto mobilizer_clone = mobilizer.CloneToScalar(*this);
+  auto mobilizer_clone = mobilizer.CloneToScalar(handle);
   mobilizer_clone->set_parent_tree(this, mobilizer_index);
   mobilizer_clone->set_model_instance(mobilizer.model_instance());
   Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
@@ -456,9 +461,10 @@ Mobilizer<T>* MultibodyTree<T>::CloneMobilizerAndAdd(
 template <typename T>
 template <typename FromScalar>
 void MultibodyTree<T>::CloneForceElementAndAdd(
-    const ForceElement<FromScalar>& force_element) {
+    const ForceElement<FromScalar>& force_element,
+    const internal::MultibodyElementAccessor<T, FromScalar>& handle) {
   ForceElementIndex force_element_index = force_element.index();
-  auto force_element_clone = force_element.CloneToScalar(*this);
+  auto force_element_clone = force_element.CloneToScalar(handle);
   force_element_clone->set_parent_tree(this, force_element_index);
   force_element_clone->set_model_instance(force_element.model_instance());
   owned_force_elements_.push_back(std::move(force_element_clone));
@@ -466,9 +472,11 @@ void MultibodyTree<T>::CloneForceElementAndAdd(
 
 template <typename T>
 template <typename FromScalar>
-Joint<T>* MultibodyTree<T>::CloneJointAndAdd(const Joint<FromScalar>& joint) {
+Joint<T>* MultibodyTree<T>::CloneJointAndAdd(
+    const Joint<FromScalar>& joint,
+    const internal::MultibodyElementAccessor<T, FromScalar>& handle) {
   JointIndex joint_index = joint.index();
-  auto joint_clone = joint.CloneToScalar(this);
+  auto joint_clone = joint.CloneToScalar(handle);
   joint_clone->set_parent_tree(this, joint_index);
   joint_clone->set_model_instance(joint.model_instance());
   owned_joints_.push_back(std::move(joint_clone));
@@ -478,10 +486,11 @@ Joint<T>* MultibodyTree<T>::CloneJointAndAdd(const Joint<FromScalar>& joint) {
 template <typename T>
 template <typename FromScalar>
 void MultibodyTree<T>::CloneActuatorAndAdd(
-    const JointActuator<FromScalar>& actuator) {
+    const JointActuator<FromScalar>& actuator,
+    const internal::MultibodyElementAccessor<T, FromScalar>& handle) {
   JointActuatorIndex actuator_index = actuator.index();
   std::unique_ptr<JointActuator<T>> actuator_clone =
-      actuator.CloneToScalar(*this);
+      actuator.CloneToScalar(handle);
   actuator_clone->set_parent_tree(this, actuator_index);
   actuator_clone->set_model_instance(actuator.model_instance());
   owned_actuators_.push_back(std::move(actuator_clone));

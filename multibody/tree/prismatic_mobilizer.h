@@ -169,13 +169,15 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       EigenPtr<MatrixX<T>> Nplus) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const final;
+      const internal::MultibodyElementAccessor<double, T>& handle) const final;
 
   std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const final;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const final;
 
   std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
-      const MultibodyTree<symbolic::Expression>& tree_clone) const final;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const final;
 
  private:
   typedef MobilizerImpl<T, 1, 1> MobilizerBase;
@@ -191,7 +193,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const;
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const;
 
   // Default axis expressed in the inboard frame F. It is a unit vector.
   Vector3<double> axis_F_;

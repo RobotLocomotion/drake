@@ -184,13 +184,16 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<double, T>& handle)
+      const override;
 
   std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const override;
 
   std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
-      const MultibodyTree<symbolic::Expression>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const override;
 
  private:
   typedef MobilizerImpl<T, 3, 3> MobilizerBase;
@@ -206,7 +209,7 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
   /* Helper method to make a clone templated on ToScalar. */
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const;
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const;
 };
 
 }  // namespace internal

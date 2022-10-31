@@ -134,14 +134,17 @@ class FixedOffsetFrame final : public Frame<T> {
 
   /// @pre The parent frame to this frame already has a clone in `tree_clone`.
   std::unique_ptr<Frame<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<double, T>& handle)
+      const override;
 
   /// @pre The parent frame to this frame already has a clone in `tree_clone`.
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const override;
 
   std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const override;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const override;
   /// @}
 
  private:
@@ -160,7 +163,7 @@ class FixedOffsetFrame final : public Frame<T> {
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Frame<ToScalar>> TemplatedDoCloneToScalar(
-      const internal::MultibodyTree<ToScalar>& tree_clone) const;
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const;
 
   // The frame to which this frame is attached.
   const Frame<T>& parent_frame_;

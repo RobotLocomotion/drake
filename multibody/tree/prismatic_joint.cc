@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -12,8 +11,12 @@ template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Joint<ToScalar>>
 PrismaticJoint<T>::TemplatedDoCloneToScalar(
-      const Frame<ToScalar>& frame_on_parent_body_clone,
-      const Frame<ToScalar>& frame_on_child_body_clone) const {
+    const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+  const Frame<ToScalar>& frame_on_parent_body_clone =
+      handle.get_variant(this->frame_on_parent());
+  const Frame<ToScalar>& frame_on_child_body_clone =
+      handle.get_variant(this->frame_on_child());
+
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<PrismaticJoint<ToScalar>>(
       this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,
@@ -29,43 +32,22 @@ PrismaticJoint<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
-template <typename ToScalar>
-std::unique_ptr<Joint<ToScalar>>
-PrismaticJoint<T>::TemplatedDoCloneToScalar(
-    const internal::MultibodyTree<ToScalar>& tree_clone) const {
-  const Frame<ToScalar>& frame_on_parent_body_clone =
-      tree_clone.get_variant(this->frame_on_parent());
-  const Frame<ToScalar>& frame_on_child_body_clone =
-      tree_clone.get_variant(this->frame_on_child());
-
-  return TemplatedDoCloneToScalar(frame_on_parent_body_clone,
-                                  frame_on_child_body_clone);
-}
-
-template <typename T>
 std::unique_ptr<Joint<double>> PrismaticJoint<T>::DoCloneToScalar(
-    const internal::MultibodyTree<double>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<double, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<Joint<AutoDiffXd>> PrismaticJoint<T>::DoCloneToScalar(
-    const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<Joint<symbolic::Expression>> PrismaticJoint<T>::DoCloneToScalar(
-    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
-}
-
-template <typename T>
-const Joint<T>& PrismaticJoint<T>::DoCloneTo(
-    internal::MultibodyTree<T>* tree, const Frame<T>& dest_frame_on_parent,
-    const Frame<T>& dest_frame_on_child) const {
-  return tree->AddJoint(TemplatedDoCloneToScalar(dest_frame_on_parent,
-                                                 dest_frame_on_child));
+    const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+    const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 }  // namespace multibody

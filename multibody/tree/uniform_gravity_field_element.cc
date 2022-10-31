@@ -172,14 +172,14 @@ T UniformGravityFieldElement<T>::CalcNonConservativePower(
 template <typename T>
 std::unique_ptr<ForceElement<double>>
 UniformGravityFieldElement<T>::DoCloneToScalar(
-    const internal::MultibodyTree<double>&) const {
+    const internal::MultibodyElementAccessor<double, T>&) const {
   return std::make_unique<UniformGravityFieldElement<double>>(gravity_vector());
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<AutoDiffXd>>
 UniformGravityFieldElement<T>::DoCloneToScalar(
-    const internal::MultibodyTree<AutoDiffXd>&) const {
+    const internal::MultibodyElementAccessor<AutoDiffXd, T>&) const {
   return std::make_unique<UniformGravityFieldElement<AutoDiffXd>>(
       gravity_vector());
 }
@@ -187,7 +187,7 @@ UniformGravityFieldElement<T>::DoCloneToScalar(
 template <typename T>
 std::unique_ptr<ForceElement<symbolic::Expression>>
 UniformGravityFieldElement<T>::DoCloneToScalar(
-    const internal::MultibodyTree<symbolic::Expression>&) const {
+    const internal::MultibodyElementAccessor<symbolic::Expression, T>&) const {
   return std::make_unique<UniformGravityFieldElement<symbolic::Expression>>(
       gravity_vector());
 }

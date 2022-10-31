@@ -107,17 +107,16 @@ class WeldJoint final : public Joint<T> {
   MakeImplementationBlueprint() const override;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<double, T>& handle)
+      const override;
 
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const override;
 
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&x) const override;
-
-  const Joint<T>& DoCloneTo(internal::MultibodyTree<T>* tree,
-                            const Frame<T>& dest_frame_on_parent,
-                            const Frame<T>& dest_frame_on_child) const override;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const override;
 
   // Make WeldJoint templated on every other scalar type a friend of
   // WeldJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
@@ -149,13 +148,7 @@ class WeldJoint final : public Joint<T> {
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
-      const internal::MultibodyTree<ToScalar>& tree_clone) const;
-
-  // Helper method to make a clone templated on ToScalar.
-  template <typename ToScalar>
-  std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
-      const Frame<ToScalar>& frame_on_parent_body_clone,
-      const Frame<ToScalar>& frame_on_child_body_clone) const;
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const;
 
   // The pose of frame M in F.
   const math::RigidTransform<double> X_FM_;

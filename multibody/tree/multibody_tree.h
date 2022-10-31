@@ -69,6 +69,119 @@ template <typename T> class ModelInstance;
 template <typename T> class Mobilizer;
 template <typename T> class QuaternionFloatingMobilizer;
 
+// Compile-time reifier of sorts.
+template <typename ToScalar, typename FromScalar>
+class MultibodyElementAccessor {
+ public:
+  virtual ~MultibodyElementAccessor() = default;
+
+  template <template <typename> class MultibodyElement>
+  const MultibodyElement<ToScalar>& get_variant(
+      const MultibodyElement<FromScalar>& element) const {
+    if constexpr (std::is_base_of_v<Frame<ToScalar>,
+                                    MultibodyElement<ToScalar>>) {
+      return dynamic_cast<const MultibodyElement<ToScalar>&>(
+          DoGetFrame(element));
+    } else if constexpr (std::is_base_of_v<Body<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return dynamic_cast<const MultibodyElement<ToScalar>&>(
+          DoGetBody(element));
+    } else if constexpr (std::is_base_of_v<Joint<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return dynamic_cast<const MultibodyElement<ToScalar>&>(
+          DoGetJoint(element));
+    } else if constexpr (std::is_base_of_v<Mobilizer<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return dynamic_cast<const MultibodyElement<ToScalar>&>(
+          DoGetMobilizer(element));
+    }
+  }
+
+  template <template <typename> class MultibodyElement>
+  MultibodyElement<ToScalar>& get_mutable_variant(
+      const MultibodyElement<FromScalar>& element) const {
+    if constexpr (std::is_base_of_v<Frame<ToScalar>,
+                                    MultibodyElement<ToScalar>>) {
+      return dynamic_cast<MultibodyElement<ToScalar>&>(
+          DoGetMutableFrame(element));
+    } else if constexpr (std::is_base_of_v<Body<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return dynamic_cast<MultibodyElement<ToScalar>&>(
+          DoGetMutableBody(element));
+    } else if constexpr (std::is_base_of_v<Joint<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return dynamic_cast<MultibodyElement<ToScalar>&>(
+          DoGetMutableJoint(element));
+    } else if constexpr (std::is_base_of_v<Mobilizer<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return dynamic_cast<MultibodyElement<ToScalar>&>(
+          DoGetMutableMobilizer(element));
+    }
+  }
+
+ protected:
+  virtual const Frame<ToScalar>& DoGetFrame(
+      const Frame<FromScalar>& element) const = 0;
+
+  virtual const Body<ToScalar>& DoGetBody(
+      const Body<FromScalar>& element) const = 0;
+
+  virtual const Joint<ToScalar>& DoGetJoint(
+      const Joint<FromScalar>& element) const = 0;
+
+  virtual const Mobilizer<ToScalar>& DoGetMobilizer(
+      const Mobilizer<FromScalar>& element) const = 0;
+
+  virtual Frame<ToScalar>& DoGetMutableFrame(
+      const Frame<FromScalar>& element) = 0;
+
+  virtual Body<ToScalar>& DoGetMutableBody(
+      const Body<FromScalar>& element) = 0;
+
+  virtual Joint<ToScalar>& DoGetMutableJoint(
+      const Joint<FromScalar>& element) = 0;
+
+  virtual Mobilizer<ToScalar>& DoGetMutableMobilizer(
+      const Mobilizer<FromScalar>& element) const = 0;
+};
+
+template <typename ToScalar, typename FromScalar>
+class DefaultElementAccessor
+    : public MultibodyElementAccessor<ToScalar, FromScalar> {
+ public:
+  explicit DefaultElementAccessor(MultibodyTree<ToScalar>* owner)
+      : owner_(owner) {
+    DRAKE_DEMAND(owner_ != nullptr);
+  }
+
+ protected:
+  const Frame<ToScalar>& DoGetFrame(
+      const Frame<FromScalar>& other) const override;
+
+  const Body<ToScalar>& DoGetBody(const Body<FromScalar>& other) const override;
+
+  const Joint<ToScalar>& DoGetJoint(
+      const Joint<FromScalar>& other) const override;
+
+  const Mobilizer<ToScalar>& DoGetMobilizer(
+      const Mobilizer<FromScalar>& other) const override;
+
+  Frame<ToScalar>& DoGetMutableFrame(
+      const Frame<FromScalar>& other) override;
+
+  Body<ToScalar>& DoGetMutableBody(
+      const Body<FromScalar>& other) override;
+
+  Joint<ToScalar>& DoGetMutableJoint(
+      const Joint<FromScalar>& other) override;
+
+  Mobilizer<ToScalar>& DoGetMutableMobilizer(
+      const Mobilizer<FromScalar>& other) const override;
+
+ private:
+  MultibodyTree<ToScalar>* owner_{};
+};
+
 // %MultibodyTree provides a representation for a physical system consisting of
 // a collection of interconnected rigid and deformable bodies. As such, it owns
 // and manages each of the elements that belong to this physical system.
@@ -80,6 +193,11 @@ template <typename T>
 class MultibodyTree {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTree)
+
+  template <typename FromScalar>
+  DefaultElementAccessor<T, FromScalar> get_default_element_accessor() {
+    return DefaultElementAccessor<T, FromScalar>(this);
+  }
 
   // Creates a MultibodyTree containing only a **world** body and a
   // UniformGravityFieldElement.
@@ -686,6 +804,11 @@ class MultibodyTree {
 
   // See MultibodyPlant method.
   const Mobilizer<T>& get_mobilizer(MobilizerIndex mobilizer_index) const {
+    DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
+    return *owned_mobilizers_[mobilizer_index];
+  }
+
+  Mobilizer<T>& get_mutable_mobilizer(MobilizerIndex mobilizer_index) {
     DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
     return *owned_mobilizers_[mobilizer_index];
   }
@@ -2123,21 +2246,12 @@ class MultibodyTree {
   // method is invoked.
   // @{
 
-  // SFINAE overload for Frame<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of_v<Frame<T>, MultibodyElement<T>>,
-                   const MultibodyElement<T>&> get_variant(
+  const MultibodyElement<T>& get_variant(
       const MultibodyElement<Scalar>& element) const {
-    return get_frame_variant(element);
+    return get_default_element_accessor<Scalar>().get_variant(element);
   }
 
-  // SFINAE overload for Body<T> elements.
-  template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of_v<Body<T>, MultibodyElement<T>>,
-                   const MultibodyElement<T>&> get_variant(
-      const MultibodyElement<Scalar>& element) const {
-    return get_body_variant(element);
-  }
 
   // SFINAE overload for Mobilizer<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
@@ -2221,12 +2335,13 @@ class MultibodyTree {
           " a MultibodyTree.");
     }
     auto tree_clone = std::make_unique<MultibodyTree<ToScalar>>();
+    auto handle = tree_clone->template get_default_element_accessor<T>();
 
     tree_clone->frames_.resize(num_frames());
     // Skipping the world body at body_index = 0.
     for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
       const Body<T>& body = get_body(body_index);
-      tree_clone->CloneBodyAndAdd(body);
+      tree_clone->CloneBodyAndAdd(body, handle);
     }
 
     // Frames are cloned in their index order, that is, in the exact same order
@@ -2234,20 +2349,20 @@ class MultibodyTree {
     // creation of the parent frame first, this traversal guarantees that parent
     // body frames are created before their child frames.
     for (const auto& frame : owned_frames_) {
-      tree_clone->CloneFrameAndAdd(*frame);
+      tree_clone->CloneFrameAndAdd(*frame, handle);
     }
 
     for (const auto& mobilizer : owned_mobilizers_) {
       // This call assumes that tree_clone already contains all the cloned
       // frames.
-      tree_clone->CloneMobilizerAndAdd(*mobilizer);
+      tree_clone->CloneMobilizerAndAdd(*mobilizer, handle);
     }
 
     // Throw away the default constructed gravity element.
     tree_clone->owned_force_elements_.clear();
     tree_clone->gravity_field_ = nullptr;
     for (const auto& force_element : owned_force_elements_) {
-      tree_clone->CloneForceElementAndAdd(*force_element);
+      tree_clone->CloneForceElementAndAdd(*force_element, handle);
     }
 
     DRAKE_DEMAND(tree_clone->num_force_elements() > 0);
@@ -2261,11 +2376,11 @@ class MultibodyTree {
     // that the clones of their dependencies are guaranteed to be available.
     // DO NOT change this order!!!
     for (const auto& joint : owned_joints_) {
-      tree_clone->CloneJointAndAdd(*joint);
+      tree_clone->CloneJointAndAdd(*joint, handle);
     }
 
     for (const auto& actuator : owned_actuators_) {
-      tree_clone->CloneActuatorAndAdd(*actuator);
+      tree_clone->CloneActuatorAndAdd(*actuator, handle);
     }
 
     // We can safely make a deep copy here since the original multibody tree is
@@ -2841,7 +2956,9 @@ class MultibodyTree {
 
   // Helper method to create a clone of `frame` and add it to `this` tree.
   template <typename FromScalar>
-  Frame<T>* CloneFrameAndAdd(const Frame<FromScalar>& frame);
+  Frame<T>* CloneFrameAndAdd(
+      const Frame<FromScalar>& frame,
+      const internal::MultibodyElementAccessor<T, FromScalar>& handle);
 
   // Helper method to create a clone of `body` and add it to `this` tree.
   // Because this method is only invoked in a controlled manner from within
@@ -2849,61 +2966,35 @@ class MultibodyTree {
   // `owned_bodies_` will occupy the same position as its corresponding Body
   // in the source variant `body`.
   template <typename FromScalar>
-  Body<T>* CloneBodyAndAdd(const Body<FromScalar>& body);
+  Body<T>* CloneBodyAndAdd(
+      const Body<FromScalar>& body,
+      const internal::MultibodyElementAccessor<T, FromScalar>& handle);
 
   // Helper method to create a clone of `mobilizer` and add it to `this` tree.
   template <typename FromScalar>
-  Mobilizer<T>* CloneMobilizerAndAdd(const Mobilizer<FromScalar>& mobilizer);
+  Mobilizer<T>* CloneMobilizerAndAdd(
+      const Mobilizer<FromScalar>& mobilizer,
+      const internal::MultibodyElementAccessor<T, FromScalar>& handle);
 
   // Helper method to create a clone of `force_element` and add it to `this`
   // tree.
   template <typename FromScalar>
   void CloneForceElementAndAdd(
-      const ForceElement<FromScalar>& force_element);
+      const ForceElement<FromScalar>& force_element,
+      const internal::MultibodyElementAccessor<T, FromScalar>& handle);
 
   // Helper method to create a clone of `joint` and add it to `this` tree.
   template <typename FromScalar>
-  Joint<T>* CloneJointAndAdd(const Joint<FromScalar>& joint);
+  Joint<T>* CloneJointAndAdd(
+      const Joint<FromScalar>& joint,
+      const internal::MultibodyElementAccessor<T, FromScalar>& handle);
 
   // Helper method to create a clone of `actuator` (which is templated on
   // FromScalar) and add it to `this` tree (templated on T).
   template <typename FromScalar>
   void CloneActuatorAndAdd(
-      const JointActuator<FromScalar>& actuator);
-
-  // Helper method to retrieve the corresponding Frame<T> variant to a Frame in
-  // a MultibodyTree variant templated on Scalar.
-  template <template <typename> class FrameType, typename Scalar>
-  const FrameType<T>& get_frame_variant(const FrameType<Scalar>& frame) const {
-    static_assert(std::is_base_of_v<Frame<T>, FrameType<T>>,
-                  "FrameType<T> must be a sub-class of Frame<T>.");
-    // TODO(amcastro-tri):
-    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
-    //   MultibodyTree. That will require the tree to have some sort of id.
-    FrameIndex frame_index = frame.index();
-    DRAKE_DEMAND(frame_index < num_frames());
-    const FrameType<T>* frame_variant =
-        dynamic_cast<const FrameType<T>*>(frames_[frame_index]);
-    DRAKE_DEMAND(frame_variant != nullptr);
-    return *frame_variant;
-  }
-
-  // Helper method to retrieve the corresponding Body<T> variant to a Body in a
-  // MultibodyTree variant templated on Scalar.
-  template <template <typename> class BodyType, typename Scalar>
-  const BodyType<T>& get_body_variant(const BodyType<Scalar>& body) const {
-    static_assert(std::is_base_of_v<Body<T>, BodyType<T>>,
-                  "BodyType<T> must be a sub-class of Body<T>.");
-    // TODO(amcastro-tri):
-    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
-    //   MultibodyTree. That will require the tree to have some sort of id.
-    BodyIndex body_index = body.index();
-    DRAKE_DEMAND(body_index < num_bodies());
-    const BodyType<T>* body_variant =
-        dynamic_cast<const BodyType<T>*>(owned_bodies_[body_index].get());
-    DRAKE_DEMAND(body_variant != nullptr);
-    return *body_variant;
-  }
+      const JointActuator<FromScalar>& actuator,
+      const internal::MultibodyElementAccessor<T, FromScalar>& handle);
 
   // Helper method to retrieve the corresponding Mobilizer<T> variant to a Body
   // in a MultibodyTree variant templated on Scalar.
@@ -3068,3 +3159,15 @@ class MultibodyTree {
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::MultibodyTree)
+
+extern template class ::drake::multibody::internal::DefaultElementAccessor<double, double>;
+extern template class ::drake::multibody::internal::DefaultElementAccessor<double, ::drake::AutoDiffXd>;
+extern template class ::drake::multibody::internal::DefaultElementAccessor<double, ::drake::symbolic::Expression>;
+
+extern template class ::drake::multibody::internal::DefaultElementAccessor<::drake::AutoDiffXd, double>;
+extern template class ::drake::multibody::internal::DefaultElementAccessor<::drake::AutoDiffXd, ::drake::AutoDiffXd>;
+extern template class ::drake::multibody::internal::DefaultElementAccessor<::drake::AutoDiffXd, ::drake::symbolic::Expression>;
+
+extern template class ::drake::multibody::internal::DefaultElementAccessor<::drake::symbolic::Expression, double>;
+extern template class ::drake::multibody::internal::DefaultElementAccessor<::drake::symbolic::Expression, ::drake::AutoDiffXd>;
+extern template class ::drake::multibody::internal::DefaultElementAccessor<::drake::symbolic::Expression, ::drake::symbolic::Expression>;

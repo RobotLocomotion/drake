@@ -66,13 +66,15 @@ class RevoluteSpring final : public ForceElement<T> {
       MultibodyForces<T>* forces) const override;
 
   std::unique_ptr<ForceElement<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<double, T>& handle) const override;
 
   std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const override;
 
   std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const override;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>&)
+      const override;
 
  private:
   // Allow different specializations to access each other's private data for
@@ -85,7 +87,7 @@ class RevoluteSpring final : public ForceElement<T> {
   // Helper method to make a clone templated on ToScalar().
   template <typename ToScalar>
   std::unique_ptr<ForceElement<ToScalar>> TemplatedDoCloneToScalar(
-      const internal::MultibodyTree<ToScalar>& tree_clone) const;
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const;
 
   const JointIndex joint_index_;
   double nominal_angle_;

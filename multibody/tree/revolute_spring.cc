@@ -82,7 +82,7 @@ template <typename T>
 template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>
 RevoluteSpring<T>::TemplatedDoCloneToScalar(
-    const internal::MultibodyTree<ToScalar>&) const {
+    const internal::MultibodyElementAccessor<ToScalar, T>&) const {
   // N.B. We can't use std::make_unique here since this constructor is private
   // to std::make_unique.
   // N.B. We use the private constructor since it doesn't rely on a valid joint
@@ -95,21 +95,22 @@ RevoluteSpring<T>::TemplatedDoCloneToScalar(
 
 template <typename T>
 std::unique_ptr<ForceElement<double>> RevoluteSpring<T>::DoCloneToScalar(
-    const internal::MultibodyTree<double>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<double, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<AutoDiffXd>> RevoluteSpring<T>::DoCloneToScalar(
-    const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<symbolic::Expression>>
 RevoluteSpring<T>::DoCloneToScalar(
-    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<symbolic::Expression, T>&
+        handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 }  // namespace multibody

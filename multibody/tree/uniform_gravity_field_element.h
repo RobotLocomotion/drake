@@ -98,13 +98,15 @@ class UniformGravityFieldElement : public ForceElement<T> {
       MultibodyForces<T>* forces) const final;
 
   std::unique_ptr<ForceElement<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<double, T>& handle) const override;
 
   std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const override;
 
   std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const override;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>&)
+      const override;
 
  private:
   Vector3<double> g_W_;

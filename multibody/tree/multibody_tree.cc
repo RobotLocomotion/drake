@@ -3463,9 +3463,72 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
   }
   return base_body_index;
 }
+
+template <typename ToScalar, typename FromScalar>
+const Body<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetBody(
+    const Body<FromScalar>& other) const {
+  return owner_->get_body(other.index());
+}
+
+template <typename ToScalar, typename FromScalar>
+const Frame<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetFrame(
+    const Frame<FromScalar>& other) const {
+  return owner_->get_frame(other.index());
+}
+
+template <typename ToScalar, typename FromScalar>
+const Joint<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetJoint(
+    const Joint<FromScalar>& other) const {
+  return owner_->get_joint(other.index());
+}
+
+template <typename ToScalar, typename FromScalar>
+const Mobilizer<ToScalar>&
+DefaultElementAccessor<ToScalar, FromScalar>::DoGetMobilizer(
+    const Mobilizer<FromScalar>& other) const {
+  return owner_->get_mobilizer(other.index());
+}
+
+template <typename ToScalar, typename FromScalar>
+Body<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableBody(
+    const Body<FromScalar>& other) {
+  return owner_->get_mutable_body(other.index());
+}
+
+template <typename ToScalar, typename FromScalar>
+Frame<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableFrame(
+    const Frame<FromScalar>& other) {
+  return owner_->get_mutable_frame(other.index());
+}
+
+template <typename ToScalar, typename FromScalar>
+Joint<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableJoint(
+    const Joint<FromScalar>& other) {
+  return owner_->get_mutable_joint(other.index());
+}
+
+template <typename ToScalar, typename FromScalar>
+Mobilizer<ToScalar>&
+DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableMobilizer(
+    const Mobilizer<FromScalar>& other) const {
+  return owner_->get_mutable_mobilizer(other.index());
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::MultibodyTree)
+
+template class ::drake::multibody::internal::DefaultElementAccessor<double, double>;
+template class ::drake::multibody::internal::DefaultElementAccessor<double, ::drake::AutoDiffXd>;
+template class ::drake::multibody::internal::DefaultElementAccessor<double, ::drake::symbolic::Expression>;
+
+template class ::drake::multibody::internal::DefaultElementAccessor<::drake::AutoDiffXd, double>;
+template class ::drake::multibody::internal::DefaultElementAccessor<::drake::AutoDiffXd, ::drake::AutoDiffXd>;
+template class ::drake::multibody::internal::DefaultElementAccessor<::drake::AutoDiffXd, ::drake::symbolic::Expression>;
+
+template class ::drake::multibody::internal::DefaultElementAccessor<::drake::symbolic::Expression, double>;
+template class ::drake::multibody::internal::DefaultElementAccessor<::drake::symbolic::Expression, ::drake::AutoDiffXd>;
+template class ::drake::multibody::internal::DefaultElementAccessor<::drake::symbolic::Expression, ::drake::symbolic::Expression>;

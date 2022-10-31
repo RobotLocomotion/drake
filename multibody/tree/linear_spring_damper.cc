@@ -141,11 +141,11 @@ template <typename T>
 template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>
 LinearSpringDamper<T>::TemplatedDoCloneToScalar(
-    const internal::MultibodyTree<ToScalar>& tree_clone) const {
+    const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
   const Body<ToScalar>& bodyA_clone =
-      tree_clone.get_body(bodyA().index());
+      handle.get_variant(bodyA());
   const Body<ToScalar>& bodyB_clone =
-      tree_clone.get_body(bodyB().index());
+      handle.get_variant(bodyB());
 
   // Make the LinearSpringDamper<T> clone.
   auto spring_damper_clone = std::make_unique<LinearSpringDamper<ToScalar>>(
@@ -158,22 +158,23 @@ LinearSpringDamper<T>::TemplatedDoCloneToScalar(
 template <typename T>
 std::unique_ptr<ForceElement<double>>
 LinearSpringDamper<T>::DoCloneToScalar(
-    const internal::MultibodyTree<double>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<double, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<AutoDiffXd>>
 LinearSpringDamper<T>::DoCloneToScalar(
-    const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<symbolic::Expression>>
 LinearSpringDamper<T>::DoCloneToScalar(
-    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<symbolic::Expression, T>&
+        handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>

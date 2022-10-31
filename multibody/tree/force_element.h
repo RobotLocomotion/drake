@@ -156,8 +156,8 @@ class ForceElement : public
   // MultibodyTree::CloneToScalar().
   template <typename ToScalar>
   std::unique_ptr<ForceElement<ToScalar>> CloneToScalar(
-  const internal::MultibodyTree<ToScalar>& cloned_tree) const {
-    return DoCloneToScalar(cloned_tree);
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+    return DoCloneToScalar(handle);
   }
   /// @endcond
 
@@ -233,15 +233,17 @@ class ForceElement : public
   /// Clones this %ForceElement (templated on T) to a mobilizer templated on
   /// `double`.
   virtual std::unique_ptr<ForceElement<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const = 0;
+      const internal::MultibodyElementAccessor<double, T>& handle) const = 0;
 
   /// Clones this %ForceElement (templated on T) to a mobilizer templated on
   /// AutoDiffXd.
   virtual std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const = 0;
 
   virtual std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const = 0;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const = 0;
   /// @}
 
  private:

@@ -180,7 +180,7 @@ T DoorHinge<T>::CalcHingeStoredEnergy(const T& angle) const {
 template <typename T>
 template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>> DoorHinge<T>::TemplatedClone(
-    const MultibodyTree<ToScalar>&) const {
+    const internal::MultibodyElementAccessor<ToScalar, T>&) const {
   // N.B. We can't use std::make_unique here since this constructor is private
   // to std::make_unique.
   // N.B. We use the private constructor since it doesn't rely on a valid joint
@@ -193,20 +193,20 @@ std::unique_ptr<ForceElement<ToScalar>> DoorHinge<T>::TemplatedClone(
 
 template <typename T>
 std::unique_ptr<ForceElement<double>> DoorHinge<T>::DoCloneToScalar(
-    const MultibodyTree<double>& tree_clone) const {
-  return TemplatedClone(tree_clone);
+    const internal::MultibodyElementAccessor<double, T>& handle) const {
+  return TemplatedClone(handle);
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<AutoDiffXd>> DoorHinge<T>::DoCloneToScalar(
-    const MultibodyTree<AutoDiffXd>& tree_clone) const {
-  return TemplatedClone(tree_clone);
+    const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const {
+  return TemplatedClone(handle);
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<Expression>> DoorHinge<T>::DoCloneToScalar(
-    const MultibodyTree<Expression>& tree_clone) const {
-  return TemplatedClone(tree_clone);
+    const internal::MultibodyElementAccessor<Expression, T>& handle) const {
+  return TemplatedClone(handle);
 }
 
 }  // namespace multibody

@@ -260,8 +260,10 @@ class MultibodyPlantElements {
       collision_filter_pairs_;
 };
 
-using FrameNameRemapFunction = std::function<std::string(
-    const MultibodyPlant<double>& plant_src, const Frame<double>&)>;
+using FrameNameRemapFunction = std::function<std::string(const Frame<double>&)>;
+
+// Forward declaration
+class SubgraphElementAccessor;
 
 class MultibodyPlantElementsMap {
  public:
@@ -292,9 +294,9 @@ class MultibodyPlantElementsMap {
   void CopyBody(const Body<double>* src);
 
   void CopyFrame(const Frame<double>* src,
-                 FrameNameRemapFunction frame_name_remap);
+                 const SubgraphElementAccessor& handle);
 
-  void CopyJoint(const Joint<double>* src);
+  void CopyJoint(const Joint<double>* src, const SubgraphElementAccessor& handle);
 
   void CopyJointActuator(const JointActuator<double>* src);
 
@@ -400,8 +402,7 @@ ModelInstanceIndex ModelInstanceRemapSameName(
     const MultibodyPlant<double>& plant_src,
     ModelInstanceIndex model_instance_src, MultibodyPlant<double>* plant_dest);
 
-std::string FrameNameRenameSameName(const MultibodyPlant<double>&,
-                                    const Frame<double>& frame);
+std::string FrameNameRenameSameName(const Frame<double>& frame);
 
 class MultibodyPlantSubgraph {
  public:

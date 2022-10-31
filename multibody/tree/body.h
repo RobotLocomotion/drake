@@ -111,13 +111,16 @@ class BodyFrame final : public Frame<T> {
  protected:
   // Frame<T>::DoCloneToScalar() overrides.
   std::unique_ptr<Frame<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<double, T>& handle)
+      const override;
 
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const override;
 
   std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const override;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const override;
 
  private:
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
@@ -139,7 +142,7 @@ class BodyFrame final : public Frame<T> {
   // DoCloneToScalar().
   template <typename ToScalar>
   std::unique_ptr<Frame<ToScalar>> TemplatedDoCloneToScalar(
-      const internal::MultibodyTree<ToScalar>& tree_clone) const;
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const;
 };
 
 /// @cond
@@ -471,8 +474,8 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   /// @sa MultibodyTree::CloneToScalar()
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> CloneToScalar(
-  const internal::MultibodyTree<ToScalar>& tree_clone) const {
-    return DoCloneToScalar(tree_clone);
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+    return DoCloneToScalar(handle);
   }
 
  protected:
@@ -500,15 +503,16 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
 
   /// Clones this %Body (templated on T) to a body templated on `double`.
   virtual std::unique_ptr<Body<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const = 0;
+      const internal::MultibodyElementAccessor<double, T>& handle) const = 0;
 
   /// Clones this %Body (templated on T) to a body templated on AutoDiffXd.
   virtual std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const = 0;
 
   /// Clones this %Body (templated on T) to a body templated on Expression.
   virtual std::unique_ptr<Body<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const = 0;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const = 0;
 
   /// @}
 

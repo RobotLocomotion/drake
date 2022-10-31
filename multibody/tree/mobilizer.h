@@ -624,8 +624,8 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   // @sa MultibodyTree::CloneToScalar()
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> CloneToScalar(
-      const MultibodyTree<ToScalar>& cloned_tree) const {
-    return DoCloneToScalar(cloned_tree);
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+    return DoCloneToScalar(handle);
   }
 
   // For MultibodyTree internal use only.
@@ -657,17 +657,19 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   // @pre Inboard and outboard frames for this mobilizer already have a clone
   // in `tree_clone`.
   virtual std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const = 0;
+      const internal::MultibodyElementAccessor<double, T>& handle) const = 0;
 
   // Clones this %Mobilizer (templated on T) to a mobilizer templated on
   // AutoDiffXd.
   // @pre Inboard and outboard frames for this mobilizer already have a clone
   // in `tree_clone`.
   virtual std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const = 0;
 
   virtual std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
-      const MultibodyTree<symbolic::Expression>& tree_clone) const = 0;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const = 0;
   // @}
 
  private:

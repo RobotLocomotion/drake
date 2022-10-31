@@ -491,24 +491,18 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   // MultibodyTree::CloneToScalar().
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
-      internal::MultibodyTree<ToScalar>* tree_clone) const {
-    std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
+      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+    std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(handle);
 
     std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
         implementation_clone =
-        this->get_implementation().template CloneToScalar<ToScalar>(tree_clone);
+        this->get_implementation().template CloneToScalar<ToScalar>(handle);
     joint_clone->OwnImplementation(std::move(implementation_clone));
 
     return joint_clone;
   }
 #endif
   // End of hidden Doxygen section.
-
-  const Joint<T>& CloneTo(internal::MultibodyTree<T>* tree,
-                          const Frame<T>& dest_frame_on_parent,
-                          const Frame<T>& dest_frame_on_child) const {
-    return DoCloneTo(tree, dest_frame_on_parent, dest_frame_on_child);
-  }
 
  protected:
   /// (Advanced) Structure containing all the information needed to build the
@@ -552,12 +546,13 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     // implementation to the appropriate scalar type.
     template <typename ToScalar>
     std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
-    CloneToScalar(internal::MultibodyTree<ToScalar>* tree_clone) const {
+    CloneToScalar(
+        const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
       auto implementation_clone =
           std::make_unique<typename Joint<ToScalar>::JointImplementation>();
       for (const internal::Mobilizer<T>* mobilizer : mobilizers_) {
         internal::Mobilizer<ToScalar>* mobilizer_clone =
-            &tree_clone->get_mutable_variant(*mobilizer);
+            &handle.get_mutable_variant(*mobilizer);
         implementation_clone->mobilizers_.push_back(mobilizer_clone);
       }
       return implementation_clone;
@@ -671,19 +666,17 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// @{
   /// Clones this %Joint (templated on T) to a joint templated on `double`.
   virtual std::unique_ptr<Joint<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const = 0;
+      const internal::MultibodyElementAccessor<double, T>& handle) const = 0;
 
   /// Clones this %Joint (templated on T) to a joint templated on AutoDiffXd.
   virtual std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const = 0;
 
   virtual std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const = 0;
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const = 0;
   /// @}
-
-  virtual const Joint<T>& DoCloneTo(
-      internal::MultibodyTree<T>* tree, const Frame<T>& dest_frame_on_parent,
-      const Frame<T>& dest_frame_on_child) const = 0;
 
   /// This method must be implemented by derived classes in order to provide
   /// JointImplementationBuilder a BluePrint of their internal implementation

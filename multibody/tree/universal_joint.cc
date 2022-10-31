@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -10,10 +9,13 @@ namespace multibody {
 
 template <typename T>
 template <typename ToScalar>
-std::unique_ptr<UniversalJoint<ToScalar>>
-UniversalJoint<T>::TemplatedDoCloneToScalar(
-    const Frame<ToScalar>& frame_on_parent_body_clone,
-    const Frame<ToScalar>& frame_on_child_body_clone) const {
+std::unique_ptr<Joint<ToScalar>> UniversalJoint<T>::TemplatedDoCloneToScalar(
+    const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+  const Frame<ToScalar>& frame_on_parent_body_clone =
+      handle.get_variant(this->frame_on_parent());
+  const Frame<ToScalar>& frame_on_child_body_clone =
+      handle.get_variant(this->frame_on_child());
+
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<UniversalJoint<ToScalar>>(
       this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,
@@ -28,43 +30,24 @@ UniversalJoint<T>::TemplatedDoCloneToScalar(
 
   return joint_clone;
 }
-template <typename T>
-template <typename ToScalar>
-std::unique_ptr<Joint<ToScalar>> UniversalJoint<T>::TemplatedDoCloneToScalar(
-    const internal::MultibodyTree<ToScalar>& tree_clone) const {
-  const Frame<ToScalar>& frame_on_parent_body_clone =
-      tree_clone.get_variant(this->frame_on_parent());
-  const Frame<ToScalar>& frame_on_child_body_clone =
-      tree_clone.get_variant(this->frame_on_child());
-
-  return TemplatedDoCloneToScalar(frame_on_parent_body_clone,
-                                  frame_on_child_body_clone);
-}
 
 template <typename T>
 std::unique_ptr<Joint<double>> UniversalJoint<T>::DoCloneToScalar(
-    const internal::MultibodyTree<double>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<double, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<Joint<AutoDiffXd>> UniversalJoint<T>::DoCloneToScalar(
-    const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<Joint<symbolic::Expression>> UniversalJoint<T>::DoCloneToScalar(
-    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
-}
-
-template <typename T>
-const Joint<T>& UniversalJoint<T>::DoCloneTo(
-    internal::MultibodyTree<T>* tree, const Frame<T>& dest_frame_on_parent,
-    const Frame<T>& dest_frame_on_child) const {
-  return tree->AddJoint(TemplatedDoCloneToScalar(dest_frame_on_parent,
-                                                 dest_frame_on_child));
+    const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+    const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 // N.B. Due to esoteric linking errors on Mac (see #9345) involving

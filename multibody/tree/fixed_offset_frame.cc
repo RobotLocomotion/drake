@@ -27,30 +27,31 @@ FixedOffsetFrame<T>::FixedOffsetFrame(const std::string& name, const Body<T>& B,
 template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Frame<ToScalar>> FixedOffsetFrame<T>::TemplatedDoCloneToScalar(
-    const internal::MultibodyTree<ToScalar>& tree_clone) const {
+    const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
   const Frame<ToScalar>& parent_frame_clone =
-      tree_clone.get_variant(parent_frame_);
+      handle.get_variant(parent_frame_);
   return std::make_unique<FixedOffsetFrame<ToScalar>>(
       this->name(), parent_frame_clone, X_PF_);
 }
 
 template <typename T>
 std::unique_ptr<Frame<double>> FixedOffsetFrame<T>::DoCloneToScalar(
-    const internal::MultibodyTree<double>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+      const internal::MultibodyElementAccessor<double, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<Frame<AutoDiffXd>> FixedOffsetFrame<T>::DoCloneToScalar(
-    const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 template <typename T>
 std::unique_ptr<Frame<symbolic::Expression>>
 FixedOffsetFrame<T>::DoCloneToScalar(
-    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
-  return TemplatedDoCloneToScalar(tree_clone);
+    const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+    const {
+  return TemplatedDoCloneToScalar(handle);
 }
 
 }  // namespace multibody
