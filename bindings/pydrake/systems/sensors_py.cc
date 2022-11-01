@@ -334,11 +334,11 @@ PYBIND11_MODULE(sensors, m) {
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("image_array_t_input_port", &Class::image_array_t_input_port,
-             py_rvp::reference_internal, cls_doc.image_array_t_input_port.doc)
+            py_rvp::reference_internal, cls_doc.image_array_t_input_port.doc)
         .def("color_image_output_port", &Class::color_image_output_port,
-             py_rvp::reference_internal, cls_doc.color_image_output_port.doc)
+            py_rvp::reference_internal, cls_doc.color_image_output_port.doc)
         .def("depth_image_output_port", &Class::depth_image_output_port,
-             py_rvp::reference_internal, cls_doc.depth_image_output_port.doc);
+            py_rvp::reference_internal, cls_doc.depth_image_output_port.doc);
   }
 
   {
