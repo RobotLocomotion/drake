@@ -287,6 +287,7 @@ GTEST_TEST(MultibodyPlantTest, CartPoleLinearization) {
 // Helper function to create a uniform-density cube B and add it to a plant.
 // @param[in] plant MultibodyPlant to which body B is added.
 // @param[in] body_name name of the body that is being added to the plant.
+// @param[in] mass mass of the body that is being added to the plant.
 // @param[in] length length, width, and depth of the cube-shaped body.
 // @param[in] skip_validity_check setting which is `true` to skip the validity
 //  check on the new body B's spatial inertia, which ensures an exception is not
@@ -313,13 +314,24 @@ const RigidBody<double>& AddCubicalLink(
 
 // Verify an exception is thrown for a forward dynamic analysis of a single
 // zero-mass body that is allowed to translate due to a prismatic joint.
+// This is the first of 5 tests. Two tests use a single body that is connected
+// to world by a one degree-of-freedom joint. The 1st of these two test uses a
+// prismatic (translational) joint whereas the 2nd test uses a revolute joint.
+// Tests 3 and 4 use multiple bodies with multiple degree of freedom (albeit
+// with each joint being a single degree of freedom). Test 3 uses prismatic
+// joints whereas test 4 uses revolute joint. Test 5 uses a single rigid body
+// that connects to the world with a 6 degree-of-freedom "free-joint" and hence
+// involves a 6 x 6 articulated body hinge inertia matrix (tests 1, 2, 3, 4 only
+// involve a 1 x 1 matrix). Tests 3 and 4 allow investigation of articulated
+// body hinge matrices that involve somethingother than solely most distal
+// body/joint in a multibody tree topology.
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslatingBody) {
-  // Create a plant with discrete_update_period = 0 to set a continuous model
-  // that uses the Articulated Body Algorithm (ABA) for forward dynamics.
-  const double discrete_update_period = 0;
-  MultibodyPlant<double> plant(discrete_update_period);
+  // Create a plant with constructor argument = 0 so a continuous model [and
+  // hence the Articulated Body Algorithm (ABA) for forward dynamics] is used.
+  const double signal_for_continuous_model = 0;
+  MultibodyPlant<double> plant(signal_for_continuous_model);
 
-  double mA = 0;  // Mass of link A.
+  const double mA = 0;  // Mass of link A.
   const double length = 3;  // Length of uniform-density link (arbitrary > 0).
   const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
 
@@ -345,19 +357,19 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslatingBody) {
 
   // Verify no assertion is thrown if mA = 1E-4 since articulated body hinge
   // inertia matrix = [1E-4] which is positive definite (and far from singular).
-  body_A.SetMass(context.get(), mA = 1E-4);
+  body_A.SetMass(context.get(), 1E-4);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 }
 
 // Verify an exception is thrown for a forward dynamic analysis of a single
 // zero-inertia body that is allowed to rotate due to a revolute joint.
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotatingBody) {
-  // Create a plant with discrete_update_period = 0 to set a continuous model
-  // that uses the Articulated Body Algorithm (ABA) for forward dynamics.
-  const double discrete_update_period = 0;
-  MultibodyPlant<double> plant(discrete_update_period);
+  // Create a plant with constructor argument = 0 so a continuous model [and
+  // hence the Articulated Body Algorithm (ABA) for forward dynamics] is used.
+  const double signal_for_continuous_model = 0;
+  MultibodyPlant<double> plant(signal_for_continuous_model);
 
-  double mA = 0;  // Mass of link A.
+  const double mA = 0;  // Mass of link A.
   const double length = 1;  // Length of uniform-density link (arbitrary > 0).
   const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
 
@@ -379,12 +391,12 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotatingBody) {
     "connects body world to body bodyA is not positive-definite. "
     "Since the joint allows rotation, ensure body bodyA "
     "\\(combined with other outboard bodies\\) has reasonable "
-    "non-zero moments of inertia about joint rotation axes. "
+    "non-zero moments of inertia about the joint rotation axes. "
     "Note: The inertia matrix of body bodyA about its body origin is [^]*");
 
   // Verify no assertion is thrown if mA = 1E-4 since articulated body hinge
   // inertia matrix is positive definite (and far from singular).
-  body_A.SetMass(context.get(), mA = 1E-4);
+  body_A.SetMass(context.get(), 1E-4);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 }
 
@@ -392,12 +404,12 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotatingBody) {
 // sequential rigid bodies A and B that translate in the same direction, where
 // body A's mass is zero and body B's mass is large and positive.
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslating2Bodies) {
-  // Create a plant with discrete_update_period = 0 to set a continuous model
-  // that uses the Articulated Body Algorithm (ABA) for forward dynamics.
-  const double discrete_update_period = 0;
-  MultibodyPlant<double> plant(discrete_update_period);
+  // Create a plant with constructor argument = 0 so a continuous model [and
+  // hence the Articulated Body Algorithm (ABA) for forward dynamics] is used.
+  const double signal_for_continuous_model = 0;
+  MultibodyPlant<double> plant(signal_for_continuous_model);
 
-  double mA = 0, mB = 1;    // Mass of links A, B.
+  const double mA = 0, mB = 1;  // Mass of links A, B.
   const double length = 1;  // Length of uniform-density link (arbitrary > 0).
   const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddCubicalLink(&plant, "bodyB", mB, length);
@@ -430,7 +442,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslating2Bodies) {
   // inertia matrix ≈ [-2.38419e-07] which is not positive definite.
   // TODO(Mitiguy) It seems surprising that the matrix ≠ [0] since mA = 0.
   //  Explain why matrix is ≈ 10⁸ * machine epsilon distant from [0].
-  body_B.SetMass(context.get(), mB = 1E9);
+  body_B.SetMass(context.get(), 1E9);
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "An internal mass matrix associated with the joint that "
     "connects body world to body bodyA is not positive-definite. "
@@ -440,7 +452,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslating2Bodies) {
 
   // Verify no assertion is thrown if mA = 1E-3, mB = 1E9 since articulated body
   // hinge inertia matrix is positive definite (and far from singular).
-  body_A.SetMass(context.get(), mA = 1E-3);
+  body_A.SetMass(context.get(), 1E-3);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 }
 
@@ -449,17 +461,17 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslating2Bodies) {
 // parallel to the world's Z-direction. Verify an exception is thrown if body
 // C's mass and inertia are zero or bodies A and B's mass and inertia are zero.
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotating3Bodies) {
-  // Create a plant with discrete_update_period = 0 to set a continuous model
-  // that uses the Articulated Body Algorithm (ABA) for forward dynamics.
-  const double discrete_update_period = 0;
-  MultibodyPlant<double> plant(discrete_update_period);
+  // Create a plant with constructor argument = 0 so a continuous model [and
+  // hence the Articulated Body Algorithm (ABA) for forward dynamics] is used.
+  const double signal_for_continuous_model = 0;
+  MultibodyPlant<double> plant(signal_for_continuous_model);
 
   // World X is vertically downward and world Y is horizontally-right.
   plant.mutable_gravity_field().set_gravity_vector(Vector3d(9.8, 0, 0));
 
   // Create the bodies in the triple pendulum.
   // Reminder: Cubical link B has p_BoBcm_B = [length/2, 0, 0].
-  double mA = 1, mB = 1, mC = 0;  // Mass of links A, B, C.
+  const double mA = 1, mB = 1, mC = 0;  // Mass of links A, B, C.
   const double length = 0.2;      // Length of uniform-density links A, B, C.
   const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
   const RigidBody<double>& body_B = AddCubicalLink(&plant, "bodyB", mB, length);
@@ -504,13 +516,13 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotating3Bodies) {
     "connects body bodyB to body bodyC is not positive-definite. "
     "Since the joint allows rotation, ensure body bodyC "
     "\\(combined with other outboard bodies\\) has reasonable "
-    "non-zero moments of inertia about joint rotation axes. "
+    "non-zero moments of inertia about the joint rotation axes. "
     "Note: The inertia matrix of body bodyC about its body origin is [^]*");
 
   // Verify no assertion is thrown if mA = 1, mB = 0, mC = 1.
-  body_A.SetMass(context_ptr, mA = 1);
-  body_B.SetMass(context_ptr, mB = 0);
-  body_C.SetMass(context_ptr, mC = 1);
+  body_A.SetMass(context_ptr, 1);
+  body_B.SetMass(context_ptr, 0);
+  body_C.SetMass(context_ptr, 1);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 
   // Verify proper assertion is thrown if mA = mB = 0, mC = 1 since articulated
@@ -519,13 +531,13 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotating3Bodies) {
   //  since the articulated body hinge inertia matrix ≈ [1.582e-17].
   //  The tests herein were chosen because they worked -- based on computation
   //  in computer hardware available from CI (Continuous Integration) testing.
-  body_A.SetMass(context_ptr, mA = 0);
+  body_A.SetMass(context_ptr, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
     "An internal mass matrix associated with the joint that "
     "connects body world to body bodyA is not positive-definite. "
     "Since the joint allows rotation, ensure body bodyA "
     "\\(combined with other outboard bodies\\) has reasonable "
-    "non-zero moments of inertia about joint rotation axes. "
+    "non-zero moments of inertia about the joint rotation axes. "
     "Note: The inertia matrix of body bodyA about its body origin is [^]*");
 
   // Verify no assertion is thrown if the initial revolute angles for WA and BC
@@ -537,12 +549,12 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotating3Bodies) {
 // Verify an exception is thrown for a forward dynamic analysis of a single
 // zero-mass, zero-inertia free body (both translates and rotates).
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassInertiaFreeBody) {
-  // Create a plant with discrete_update_period = 0 to set a continuous model
-  // that uses the Articulated Body Algorithm (ABA) for forward dynamics.
-  const double discrete_update_period = 0;
-  MultibodyPlant<double> plant(discrete_update_period);
+  // Create a plant with constructor argument = 0 so a continuous model [and
+  // hence the Articulated Body Algorithm (ABA) for forward dynamics] is used.
+  const double signal_for_continuous_model = 0;
+  MultibodyPlant<double> plant(signal_for_continuous_model);
 
-  double mA = 0;  // Mass of link A.
+  const double mA = 0;  // Mass of link A.
   const double length = 0.3;  // Length of uniform-density link (arbitrary > 0).
   const RigidBody<double>& body_A = AddCubicalLink(&plant, "bodyA", mA, length);
 
@@ -559,12 +571,12 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassInertiaFreeBody) {
     "connects body world to body bodyA is not positive-definite. "
     "Since the joint allows rotation, ensure body bodyA "
     "\\(combined with other outboard bodies\\) has reasonable "
-    "non-zero moments of inertia about joint rotation axes. "
+    "non-zero moments of inertia about the joint rotation axes. "
     "Note: The inertia matrix of body bodyA about its body origin is [^]*");
 
   // Verify no assertion is thrown if mA = 1E-4 since articulated body hinge
   // inertia matrix is positive definite (and far from singular).
-  body_A.SetMass(context.get(), mA = 1E-4);
+  body_A.SetMass(context.get(), 1E-4);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 }
 

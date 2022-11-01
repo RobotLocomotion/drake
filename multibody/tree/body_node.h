@@ -1638,15 +1638,13 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return abic->get_mutable_llt_D_B(topology_.index);
   }
 
-  // Returns LLT factorization of articulated rigid body's hinge inertia matrix.
+  // Forms LLT factorization of articulated rigid body's hinge inertia matrix.
   // @param[in] context Contains the state of the multibody system. The context
-  //   is only used if factorization fails in which case an exception is thrown.
-  //   The exception message contains mass and/or inertia properties of this
-  //   body node's outboard body.
+  //   is only used if factorization fails and an exception is thrown.
   // @param[in] D_B Articulated rigid body hinge matrix.
   // @param[out] llt_D_B Stores the LLT factorization of D_B.
   // @throws an exception if D_B is not positive definite or is near-singular.
-  // @throws if llt_D_B is nullptr.
+  // @pre llt_D_B is not nullptr.
   void CalcArticulatedBodyHingeInertiaMatrixFactorization(
       const systems::Context<T>& context,
       const MatrixUpTo6<T>& D_B,

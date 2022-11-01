@@ -59,7 +59,7 @@ void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
         CalcSpatialInertiaInBodyFrame(context).CalcRotationalInertia();
       message << "Since the joint allows rotation, ensure body "
               << outboard_body_name << " (combined with other outboard bodies) "
-                 "has reasonable non-zero moments of inertia about joint "
+                 "has reasonable non-zero moments of inertia about the joint "
                  "rotation axes. Note: The inertia matrix of body "
               << outboard_body_name << " about its body origin is "
               << I_BBo_B << ". ";

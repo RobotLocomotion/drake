@@ -674,7 +674,6 @@ drake_cc_googletest(
         ":kuka_iiwa_model_tests",
         ":plant",
         "//common/test_utilities",
-        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
         "//systems/primitives:linear_system",
     ],
