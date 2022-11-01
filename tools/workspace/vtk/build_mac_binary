@@ -1,0 +1,85 @@
+#!/bin/bash
+
+# This shell script and some files in vtk/image (for docker) are used by
+# the project maintainers to create the precompiled vtk binaries that are
+# downloaded during the build. They are neither called during the build nor
+# expected to be called by most developers or users of the project.
+
+set -euxo pipefail
+
+if ! command -v xcrun >/dev/null 2>&1; then
+    echo '`xcrun` command not found, is Xcode installed?' >&2
+    exit 1
+fi
+
+macosx_sysroot="$(xcrun -sdk macosx -show-sdk-path)"
+# TODO(svenevs): this should fail if it points to "command line tools"
+# Must point to Contents/Developer under an Xcode.app like folder.
+
+this_file_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+vtk_args_path="${this_file_dir}/image/vtk-args"
+
+if ! [[ -f "${vtk_args_path}" ]]; then
+    echo "Could not find 'vtk-args' file ${vtk_args_path}." >&2
+    exit 1
+fi
+
+# See also: image/build-vtk.sh.  Extract all CMake / VTK configure arguments
+# from image/vtk-args, accumulating with `-D` in front for use on the command
+# line removing any comment lines that start with '#'.
+index=0
+vtk_cmake_args=()
+while IFS='' read -r line || [[ -n "${line}" ]]; do
+    arg="$(sed -e '/^#/d' -e 's/^/-D/' <<< "${line}")"
+    # If the line was commented out, arg will be the empty string.
+    if ! [[ -z "${arg}" ]]; then
+        vtk_cmake_args[index++]="${arg}"
+    fi
+done < "${vtk_args_path}"
+vtk_cmake_args+=("-DVTK_USE_COCOA:BOOL=ON")
+
+# TODO(svenevs): unify this with image/build-vtk.sh.
+readonly VTK_VERSION="d706250a1422ae1e7ece0fa09a510186769a5fec"
+
+# Directory to contain our source and build trees.
+container="${this_file_dir}/mac_binary_build"
+build_dir="${container}/build"
+install_dir="${container}/install"
+rm -rf "${container}"
+mkdir -p "${container}"
+cd "${container}"
+
+git clone https://gitlab.kitware.com/vtk/vtk.git src
+src_dir="${container}/src"
+git -C "${src_dir}" checkout "${VTK_VERSION}"
+
+# TODO(svenevs): macOS install rpath concerns.
+# -DCMAKE_INSTALL_NAME_DIR:STRING=/opt/homebrew/Cellar/vtk@9.1.0/9.1.0_4/lib
+# -DCMAKE_INSTALL_RPATH:STRING=/opt/homebrew/Cellar/vtk@9.1.0/9.1.0_4/lib
+cmake \
+    -G Ninja \
+    -Wno-dev \
+    -DCMAKE_INSTALL_PREFIX="${install_dir}" \
+    -DCMAKE_BUILD_TYPE:STRING=Release \
+    -DCMAKE_CXX_STANDARD:STRING=20 \
+    "-DCMAKE_OSX_ARCHITECTURES:STRING='$(arch)'" \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_FIND_FRAMEWORK=LAST \
+    -DCMAKE_OSX_SYSROOT="${macosx_sysroot}" \
+    -DCMAKE_C_COMPILER="$(xcrun -sdk macosx -find gcc)" \
+    -DCMAKE_CXX_COMPILER="$(xcrun -sdk macosx -find g++)" \
+    "${vtk_cmake_args[@]}" \
+    -B "${build_dir}" \
+    -S "${src_dir}"
+
+cd "${build_dir}"
+ninja install/strip
+
+readonly archive=drake-vtk-mac.tar.gz
+cd "${install_dir}"
+
+tar czf "${archive}" -- *
+shasum --algorithm 256 "${archive}" | tee "${archive}.sha256"
+
+mv "${archive}" "${this_file_dir}"
+mv "${archive}.sha256" "${this_file_dir}"
