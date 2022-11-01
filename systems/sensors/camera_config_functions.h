@@ -67,7 +67,7 @@ void ApplyCameraConfig(const CameraConfig& config,
                        geometry::SceneGraph<double>* scene_graph = nullptr,
                        drake::lcm::DrakeLcmInterface* lcm = nullptr);
 
-DRAKE_DEPRECATED("2022-02-01", "Use the LcmBuses-related overload instead.")
+DRAKE_DEPRECATED("2023-02-01", "Use the LcmBuses-related overload instead.")
 void ApplyCameraConfig(const CameraConfig& config,
                        multibody::MultibodyPlant<double>* plant,
                        DiagramBuilder<double>* builder,
