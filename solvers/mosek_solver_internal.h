@@ -223,18 +223,6 @@ class MosekSolverProgram {
                          std::pair<ConstraintDualIndices,
                                    ConstraintDualIndices>>* dual_indices);
 
-  /**
-   Adds the constraint that A * decision_vars + B * slack_vars + c is in an
-   affine cone.
-   @param[out] acc_index The index of the newly added affine cone.
-   */
-  MSKrescodee AddAffineConeConstraint(
-      const MathematicalProgram& prog, const Eigen::SparseMatrix<double>& A,
-      const Eigen::SparseMatrix<double>& B,
-      const VectorX<symbolic::Variable>& decision_vars,
-      const std::vector<MSKint32t>& slack_vars_mosek_indices,
-      const Eigen::VectorXd& c, MSKconetypee cone_type, MSKint64t* acc_index);
-
   /*
    * This is the helper function to add three types of conic constraints
    * 1. A Lorentz cone constraint:
@@ -421,51 +409,116 @@ MSKrescodee MosekSolverProgram::AddConeConstraints(
   const bool is_rotated_cone = std::is_same_v<C, RotatedLorentzConeConstraint>;
   MSKrescodee rescode = MSK_RES_OK;
   for (auto const& binding : cone_constraints) {
-    MSKint64t acc_index;
+    // First compute the affine expression conic constraint.
+    std::vector<MSKint32t> F_subi;
+    std::vector<MSKint32t> F_subj;
+    std::vector<MSKrealt> F_valij;
+    std::vector<std::unordered_map<
+        MSKint64t, std::pair<std::vector<MSKint64t>, std::vector<MSKrealt>>>>
+        bar_F;
+    // Get the dimension of this affine expression.
+    const int afe_dim = binding.evaluator()->A().rows();
+    this->ParseLinearExpression(
+        prog, binding.evaluator()->A(), Eigen::SparseMatrix<double>(afe_dim, 0),
+        binding.variables(), {}, &F_subi, &F_subj, &F_valij, &bar_F);
+    // Get the total number of affine expressions.
+    MSKint64t num_afe{0};
+    rescode = MSK_getnumafe(task_, &num_afe);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    rescode = MSK_appendafes(task_, afe_dim);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Drake's RotatedLorentzConeConstraint imposes z₀ * z₁ ≥ z₂² + z₃² + ...
+    // zₙ₋₁² where z = A*x + b, while Mosek's rotated Lorentz cone imposes 2 *
+    // z₀ * z₁ ≥ z₂² + z₃² + ... zₙ₋₁² (notice the factor of 2). Hence we will
+    // change the coefficients of F and g in the affine expression.
     if (is_rotated_cone) {
-      // Drake's RotatedLorentzConeConstraint imposes z₀ * z₁ ≥ z₂² + z₃² + ...
-      // zₙ₋₁² where z being an affine expression of x, while Mosek's rotated
-      // quadratic cone imposes 2 * z₀ * z₁ ≥ z₂² + z₃² + ... zₙ₋₁² (notice the
-      // factor of 2). Hence we will impose the constraint that  the vector
-      // ⌈0.5*(A.row(0)*x + b(0))⌉
-      // |     A.row(1)*x + b(1) |
-      // |           ...         |
-      // ⌊  A.row(n-1)*x + b(n-1)⌋
-      // is in Mosek's rotated quadratic cone. Namely we multiply 0.5 to the
-      // first row of A, b.
-      Eigen::SparseMatrix<double> A = binding.evaluator()->A();
-      for (int k = 0; k < A.outerSize(); ++k) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it) {
-          if (it.row() == 0) {
-            it.valueRef() *= 0.5;
-          }
+      for (int i = 0; i < static_cast<int>(F_subi.size()); ++i) {
+        if (F_subi[i] == 0) {
+          F_valij[i] *= 0.5;
         }
       }
-      Eigen::VectorXd b = binding.evaluator()->b();
-      b(0) *= 0.5;
-      rescode = this->AddAffineConeConstraint(
-          prog, A, Eigen::SparseMatrix<double>(A.rows(), 0),
-          binding.variables(), {}, b, MSK_CT_RQUAD, &acc_index);
+      rescode = MSK_putafeg(task_, num_afe, binding.evaluator()->b()(0) / 2);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+      rescode = MSK_putafegslice(task_, num_afe + 1, num_afe + afe_dim,
+                                 binding.evaluator()->b().data() + 1);
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
     } else {
-      MSKconetypee cone_type;
-      if (std::is_same_v<C, LorentzConeConstraint>) {
-        cone_type = MSK_CT_QUAD;
-      } else if (std::is_same_v<C, ExponentialConeConstraint>) {
-        cone_type = MSK_CT_PEXP;
-      }
-      rescode = this->AddAffineConeConstraint(
-          prog, binding.evaluator()->A(),
-          Eigen::SparseMatrix<double>(binding.evaluator()->A().rows(), 0),
-          binding.variables(), {}, binding.evaluator()->b(), cone_type,
-          &acc_index);
+      rescode = MSK_putafegslice(task_, num_afe, num_afe + afe_dim,
+                                 binding.evaluator()->b().data());
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
     }
-    acc_indices->emplace(binding, acc_index);
+    // Now increase F_subi by num_afe and add F matrix to Mosek affine
+    // expressions.
+    std::vector<MSKint64t> F_subi_increased(F_subi.size());
+    for (int i = 0; i < static_cast<int>(F_subi.size()); ++i) {
+      F_subi_increased[i] = F_subi[i] + num_afe;
+    }
+    rescode = MSK_putafefentrylist(task_, F_subi_increased.size(),
+                                   F_subi_increased.data(), F_subj.data(),
+                                   F_valij.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    if (!bar_F.empty()) {
+      for (int i = 0; i < afe_dim; ++i) {
+        for (const auto& [j, sub_weights] : bar_F[i]) {
+          const std::vector<MSKint64t>& sub = sub_weights.first;
+          if (is_rotated_cone && i == 0) {
+            // For rotated Lorentz cone, we multiply the first entry in the
+            // affine expression by 0.5, since Mosek's rotated Lorentz cone has
+            // a factor of 2.
+            std::vector<MSKrealt> weights = sub_weights.second;
+            for (auto& weight : weights) {
+              weight *= 0.5;
+            }
+            rescode = MSK_putafebarfentry(task_, num_afe + i, j, sub.size(),
+                                          sub.data(), weights.data());
+          } else {
+            rescode =
+                MSK_putafebarfentry(task_, num_afe + i, j, sub.size(),
+                                    sub.data(), sub_weights.second.data());
+          }
+          if (rescode != MSK_RES_OK) {
+            return rescode;
+          }
+        }
+      }
+    }
+
+    // Create the domain.
+    MSKint64t dom_idx;
+    if (std::is_same_v<C, LorentzConeConstraint>) {
+      rescode = MSK_appendquadraticconedomain(task_, afe_dim, &dom_idx);
+    } else if (std::is_same_v<C, RotatedLorentzConeConstraint>) {
+      rescode = MSK_appendrquadraticconedomain(task_, afe_dim, &dom_idx);
+    } else if (std::is_same_v<C, ExponentialConeConstraint>) {
+      rescode = MSK_appendprimalexpconedomain(task_, &dom_idx);
+    }
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    MSKint64t num_acc;
+    rescode = MSK_getnumacc(task_, &num_acc);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Add the actual affine cone constraint.
+    rescode = MSK_appendaccseq(task_, dom_idx, afe_dim, num_afe, nullptr);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+
+    acc_indices->emplace(binding, num_acc);
   }
   return rescode;
 }

@@ -1,12 +1,8 @@
 #include "drake/solvers/mosek_solver_internal.h"
 
-#include <limits>
-
 #include <gtest/gtest.h>
 
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
-#include "drake/math/quadratic_form.h"
 #include "drake/solvers/mosek_solver.h"
 
 namespace drake {
@@ -14,18 +10,6 @@ namespace solvers {
 namespace internal {
 using BarFType = std::vector<std::unordered_map<
     MSKint64t, std::pair<std::vector<MSKint64t>, std::vector<MSKrealt>>>>;
-
-// By default, the newly appended variables in Mosek are fixed to 0. Hence,
-// their bounds need to be explicitly set to -inf and inf.
-void AppendFreeVariable(MSKtask_t task, int num_vars) {
-  int num_existing_vars;
-  MSK_getnumvar(task, &num_existing_vars);
-  MSK_appendvars(task, num_vars);
-  for (int i = 0; i < num_vars; ++i) {
-    MSK_putvarbound(task, num_existing_vars + i, MSK_BK_FR, -MSK_INFINITY,
-                    MSK_INFINITY);
-  }
-}
 
 void CheckParseLinearExpression(
     const MosekSolverProgram& dut, const MathematicalProgram& prog,
@@ -133,8 +117,8 @@ GTEST_TEST(ParseLinearExpression, Test1) {
   MSKenv_t env;
   MSK_makeenv(&env, nullptr);
   MosekSolverProgram dut(prog, env);
-  AppendFreeVariable(
-      dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size());
+  MSK_appendvars(dut.task(),
+                 dut.decision_variable_to_mosek_nonmatrix_variable().size());
 
   std::vector<MSKint32t> F_subi;
   std::vector<MSKint32t> F_subj;
@@ -216,9 +200,9 @@ GTEST_TEST(ParseLinearExpression, Test3) {
   std::vector<MSKint32t> bar_var_dimension = {2, 3, 4};
   MSK_appendbarvars(dut.task(), 3, bar_var_dimension.data());
   const int num_slack_vars = 3;
-  AppendFreeVariable(
-      dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size() +
-                      num_slack_vars);
+  MSK_appendvars(dut.task(),
+                 dut.decision_variable_to_mosek_nonmatrix_variable().size() +
+                     num_slack_vars);
   std::vector<MSKint32t> slack_vars_mosek_indices = {
       static_cast<int>(
           dut.decision_variable_to_mosek_nonmatrix_variable().size()) +
@@ -247,14 +231,10 @@ GTEST_TEST(ParseLinearExpression, Test3) {
 }
 
 /**
- * @param slack_vars Mosek can create variables that are not
- * prog.decision_variables(). We call them "slack variables". `slack_vars` maps
- * the index of the variables in Mosek to its symbolic form. Returns all of the
- * affine expressions stored inside dut.task().
+ * Returns all of the affine expressions stored inside dut.task().
  */
 VectorX<symbolic::Expression> GetAffineExpression(
-    const MathematicalProgram& prog, const MosekSolverProgram& dut,
-    const std::unordered_map<MSKint32t, symbolic::Variable>& slack_vars) {
+    const MathematicalProgram& prog, const MosekSolverProgram& dut) {
   // First set up mosek variable.
   int num_mosek_vars;
   MSK_getnumvar(dut.task(), &num_mosek_vars);
@@ -284,7 +264,7 @@ VectorX<symbolic::Expression> GetAffineExpression(
   }
   for (int i = 0; i < mosek_vars.rows(); ++i) {
     if (mosek_vars(i).is_dummy()) {
-      mosek_vars(i) = slack_vars.at(i);
+      mosek_vars(i) = symbolic::Variable("unused_slack");
     }
   }
   MSKint64t afe_f_nnz;
@@ -357,8 +337,8 @@ GTEST_TEST(AddConeConstraings, Test1) {
   MSKenv_t env;
   MSK_makeenv(&env, nullptr);
   MosekSolverProgram dut(prog, env);
-  AppendFreeVariable(
-      dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size());
+  MSK_appendvars(dut.task(),
+                 dut.decision_variable_to_mosek_nonmatrix_variable().size());
   std::unordered_map<Binding<LorentzConeConstraint>, MSKint64t> acc_indices;
   auto rescode = dut.AddConeConstraints(prog, prog.lorentz_cone_constraints(),
                                         &acc_indices);
@@ -392,7 +372,7 @@ GTEST_TEST(AddConeConstraings, Test1) {
   EXPECT_EQ(afe_f_nnz, constraint1.evaluator()->A().nonZeros() +
                            constraint2.evaluator()->A().nonZeros());
   const VectorX<symbolic::Expression> affine_expressions =
-      GetAffineExpression(prog, dut, {});
+      GetAffineExpression(prog, dut);
   VectorX<symbolic::Expression> affine_expressions_expected(7);
   affine_expressions_expected.head<4>() = A1 * x.tail<2>() + b1;
   affine_expressions_expected.tail<3>() = A2 * x.head<2>() + b2;
@@ -429,8 +409,8 @@ GTEST_TEST(AddConeConstraints, Test2) {
   MSKenv_t env;
   MSK_makeenv(&env, nullptr);
   MosekSolverProgram dut(prog, env);
-  AppendFreeVariable(
-      dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size());
+  MSK_appendvars(dut.task(),
+                 dut.decision_variable_to_mosek_nonmatrix_variable().size());
   std::vector<MSKint32t> bar_var_dimension = {3, 4};
   MSK_appendbarvars(dut.task(), 2, bar_var_dimension.data());
   std::unordered_map<Binding<RotatedLorentzConeConstraint>, MSKint64t>
@@ -455,7 +435,7 @@ GTEST_TEST(AddConeConstraints, Test2) {
   }
   // Check affine expressions in Mosek.
   const VectorX<symbolic::Expression> affine_expressions =
-      GetAffineExpression(prog, dut, {});
+      GetAffineExpression(prog, dut);
   VectorX<symbolic::Expression> affine_expressions_expected(A1.rows() +
                                                             A2.rows());
   affine_expressions_expected.head(A1.rows()) =
@@ -469,97 +449,6 @@ GTEST_TEST(AddConeConstraints, Test2) {
     EXPECT_PRED2(symbolic::test::ExprEqual, affine_expressions(i).Expand(),
                  affine_expressions_expected(i).Expand());
   }
-
-  MSK_deleteenv(&env);
-}
-
-GTEST_TEST(AddQuadraticCostAsLinearCost, Test) {
-  // Test AddQuadraticCostAsLinearCost.
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2>();
-  MSKenv_t env;
-  MSK_makeenv(&env, nullptr);
-  MosekSolverProgram dut(prog, env);
-  AppendFreeVariable(dut.task(), x.rows());
-
-  Eigen::Matrix2d Q;
-  Q << 1, 2, 2, 5;
-  Eigen::SparseMatrix<double> Q_sparse = Q.sparseView();
-
-  MSKrescodee rescode = dut.AddQuadraticCostAsLinearCost(Q_sparse, x, prog);
-  ASSERT_EQ(rescode, MSK_RES_OK);
-  MSKint32t num_vars;
-  MSK_getnumvar(dut.task(), &num_vars);
-  EXPECT_EQ(num_vars, x.rows() + 1);
-
-  MSKint64t num_acc;
-  MSK_getnumacc(dut.task(), &num_acc);
-  EXPECT_EQ(num_acc, 1);
-
-  MSKint64t num_afe;
-  MSK_getnumafe(dut.task(), &num_afe);
-  EXPECT_EQ(num_afe, Q.rows() + 2);
-
-  MSKdomaintypee domain_type;
-  MSK_getdomaintype(dut.task(), 0, &domain_type);
-  EXPECT_EQ(domain_type, MSK_DOMAIN_RQUADRATIC_CONE);
-
-  // Check cost.
-  Eigen::VectorXd c(x.rows() + 1);
-  MSK_getc(dut.task(), c.data());
-  EXPECT_TRUE(
-      CompareMatrices(c.head(x.rows()), Eigen::VectorXd::Zero(x.rows())));
-  EXPECT_EQ(c(c.rows() - 1), 1);
-
-  // Check the affine expression.
-  const Eigen::MatrixXd L = math::DecomposePSDmatrixIntoXtransposeTimesX(
-      Q, std::numeric_limits<double>::epsilon());
-  std::unordered_map<MSKint32t, symbolic::Variable> slack_vars;
-  symbolic::Variable s("s");
-  slack_vars.emplace(x.rows(), s);
-  VectorX<symbolic::Expression> affine_expressions =
-      GetAffineExpression(prog, dut, slack_vars);
-  EXPECT_PRED2(symbolic::test::ExprEqual,
-               (2 * affine_expressions(0) * affine_expressions(1)).Expand(),
-               2 * s);
-  // The sum-of-squares for affine_expressions(i), i> 1 is x'*Q*x.
-  EXPECT_PRED3(symbolic::test::PolynomialEqual,
-               symbolic::Polynomial(
-                   affine_expressions.tail(affine_expressions.rows() - 2)
-                       .array()
-                       .square()
-                       .sum()),
-               symbolic::Polynomial(x.cast<symbolic::Expression>().dot(Q * x)),
-               1E-10);
-
-  // Add an arbitrary linear cost.
-  const Eigen::SparseMatrix<double> linear_coeff =
-      Eigen::Vector2d(1, 2).sparseView();
-  dut.AddLinearCost(linear_coeff, x, prog);
-  MSK_getc(dut.task(), c.data());
-  EXPECT_TRUE(CompareMatrices(c.head(x.rows()), linear_coeff.toDense()));
-  EXPECT_EQ(c(c.rows() - 1), 1);
-
-  MSKrescodee terminal_code;
-  MSK_optimizetrm(dut.task(), &terminal_code);
-
-  MSKsoltypee solution_type = MSK_SOL_ITR;
-
-  MSKsolstae solution_status;
-  MSK_getsolsta(dut.task(), solution_type, &solution_status);
-  EXPECT_EQ(solution_status, MSK_SOL_STA_OPTIMAL);
-
-  Eigen::VectorXd acc_val(2 + Q.rows());
-  MSK_evaluateacc(dut.task(), solution_type, 0, acc_val.data());
-  Eigen::Vector3d mosek_var_sol;
-  MSK_getxx(dut.task(), solution_type, mosek_var_sol.data());
-  const Eigen::Vector2d x_sol = mosek_var_sol.head<2>();
-  const double s_sol = mosek_var_sol(2);
-  // Check the cost value.
-  EXPECT_NEAR(0.5 * x_sol.dot(Q * x_sol), s_sol, 1E-8);
-  // Check the optimality condition, the gradient of the cost is 0.
-  EXPECT_TRUE(CompareMatrices(Q * x_sol + linear_coeff.toDense(),
-                              Eigen::VectorXd::Zero(x.rows()), 1E-10));
 
   MSK_deleteenv(&env);
 }
