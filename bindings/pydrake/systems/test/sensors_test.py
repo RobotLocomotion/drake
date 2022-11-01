@@ -265,7 +265,7 @@ class TestSensors(unittest.TestCase):
     def _check_output(self, value):
         self.assertIsInstance(value, OutputPort)
 
-    def test_image_to_lcm_image_array_t(self):
+    def test_image_to_lcm_image_array_basic(self):
         # Test nominal constructor.
         dut = mut.ImageToLcmImageArrayT(
             color_frame_name="color", depth_frame_name="depth",
@@ -278,6 +278,7 @@ class TestSensors(unittest.TestCase):
                 dut.image_array_t_msg_output_port(),):
             self._check_output(port)
 
+    def test_image_to_lcm_image_array_custom(self):
         # Test custom constructor, test functionality (up to getting abstract
         # value).
         dut = mut.ImageToLcmImageArrayT(do_compress=False)
@@ -298,7 +299,7 @@ class TestSensors(unittest.TestCase):
         # `lcm_py_bind_cpp_serializers.h` for more information.
         self.assertIsInstance(output.get_data(0), AbstractValue)
 
-    def test_lcm_image_array_to_images(self):
+    def test_lcm_image_array_to_images_basic(self):
         dut = mut.LcmImageArrayToImages()
         for port in (
                 dut.image_array_t_input_port(),):
