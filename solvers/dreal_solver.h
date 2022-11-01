@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/solvers/solver_base.h"
@@ -12,28 +13,26 @@
 namespace drake {
 namespace solvers {
 
+/// (Deprecated.) dReal support is being withdrawn from Drake; for details, see
+/// https://github.com/RobotLocomotion/drake/pull/18156. This class will be
+/// removed from Drake on or after 2023-02-01.
+///
 /// An implementation of SolverInterface for the dReal4 solver
 /// (https://github.com/dreal/dreal4).
-///
-/// Currently this implementation supports the following options:
-///  * precision <double>: This value is used as a termination condition. When
-///                        the ICP algorithm finds an interval box whose width
-///                        is smaller than this value, it concludes that the
-///                        query is delta-satisfiable and provides the interval
-///                        box as a witness. Default value = 0.001.
-///
-///  * use_local_optimization <bool>: Use local-optimization algorithms in
-///                                   solving exists-forall problem. For now,
-///                                   the solver is using NLopt. See
-///                                   https://link.springer.com/chapter/10.1007%2F978-3-319-96142-2_15
-///                                   for details. Default value = True.
-///
-/// To see the full list of dReal4 options, visit
-/// https://github.com/dreal/dreal4#command-line-options.
-class DrealSolver final : public SolverBase {
+class DRAKE_DEPRECATED("2023-02-01",
+    "dReal support is being withdrawn from Drake; for details, see "
+    "https://github.com/RobotLocomotion/drake/pull/18156")
+DrealSolver final : public SolverBase {
  public:
+  /// (Deprecated.) dReal support is being withdrawn from Drake; for details,
+  /// see https://github.com/RobotLocomotion/drake/pull/18156. This class will
+  /// be removed from Drake on or after 2023-02-01.
+  ///
   /// Class representing an interval of doubles.
-  class Interval {
+  class DRAKE_DEPRECATED("2023-02-01",
+      "dReal support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
+  Interval {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Interval)
 
@@ -62,9 +61,17 @@ class DrealSolver final : public SolverBase {
     double high_{};
   };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  /// (Deprecated.) dReal support is being withdrawn from Drake; for details,
+  /// see https://github.com/RobotLocomotion/drake/pull/18156. This class will
+  /// be removed from Drake on or after 2023-02-01.
   using IntervalBox = std::unordered_map<symbolic::Variable, Interval>;
+#pragma GCC diagnostic pop
 
-  /// Indicates whether to use dReal's --local-optimization option or not.
+  /// (Deprecated.) dReal support is being withdrawn from Drake; for details,
+  /// see https://github.com/RobotLocomotion/drake/pull/18156. This class will
+  /// be removed from Drake on or after 2023-02-01.
   enum class LocalOptimization {
     kUse,     ///< Use "--local-optimization" option.
     kNotUse,  ///< Do not use "--local-optimization" option.
@@ -72,28 +79,23 @@ class DrealSolver final : public SolverBase {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrealSolver)
 
+  DRAKE_DEPRECATED("2023-02-01",
+      "dReal support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   DrealSolver();
+
   ~DrealSolver() final;
 
-  /// Checks the satisfiability of a given formula @p f with a given precision
-  /// @p delta.
-  ///
-  /// @returns a model, a mapping from a variable to an interval, if @p f is
-  /// δ-satisfiable.
-  /// @returns a nullopt, if @p is unsatisfiable.
+  DRAKE_DEPRECATED("2023-02-01",
+      "dReal support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   static std::optional<IntervalBox> CheckSatisfiability(
       const symbolic::Formula& f,
       double delta);
 
-  /// Finds a solution to minimize @p objective function while satisfying a
-  /// given @p constraint using @p delta. When @p local_optimization is
-  /// Localoptimization::kUse, enable "--local-optimization" dReal option which
-  /// uses NLopt's local-optimization algorithms to refine counterexamples in
-  /// the process of global optimization.
-  ///
-  /// @returns a model, a mapping from a variable to an interval, if a solution
-  /// exists.
-  /// @returns nullopt, if there is no solution.
+  DRAKE_DEPRECATED("2023-02-01",
+      "dReal support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   static std::optional<IntervalBox> Minimize(
       const symbolic::Expression& objective,
       const symbolic::Formula& constraint,
@@ -102,9 +104,21 @@ class DrealSolver final : public SolverBase {
 
   /// @name Static versions of the instance methods with similar names.
   //@{
+  DRAKE_DEPRECATED("2023-02-01",
+      "dReal support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   static SolverId id();
+  DRAKE_DEPRECATED("2023-02-01",
+      "dReal support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   static bool is_available();
+  DRAKE_DEPRECATED("2023-02-01",
+      "dReal support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   static bool is_enabled();
+  DRAKE_DEPRECATED("2023-02-01",
+      "dReal support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
   //@}
 

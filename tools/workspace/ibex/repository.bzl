@@ -2,13 +2,14 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
+# N.B. This repository is deprecated for removal on 2023-02-01.
+# For details see https://github.com/RobotLocomotion/drake/pull/18156.
+
 def ibex_repository(
         name,
         mirrors = None):
     github_archive(
         name = name,
-        # TODO(jwnimmer-tri) Switch to upstream ibex-lib (using local patch
-        # files if necessary).
         repository = "dreal-deps/ibex-lib",
         # As discussed in #15872, we need ibex < 2.8.7 for CLP support.
         commit = "115e12323529d524786c1a744f5ffce04f4783b5",  # ibex-2.8.6_4

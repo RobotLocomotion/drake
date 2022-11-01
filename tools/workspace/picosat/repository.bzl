@@ -2,8 +2,8 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-# TODO(jwnimmer-tri) For easier ugprades, stop using the dreal-deps mirror and
-# switch to using the upstream archive at http://fmv.jku.at/picosat/.
+# N.B. This repository is deprecated for removal on 2023-02-01.
+# For details see https://github.com/RobotLocomotion/drake/pull/18156.
 
 def picosat_repository(
         name,
