@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="user_cursor">
+    <link name="user_cursor">
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy> 0 </ixy>
+          <ixz> 0 </ixz>
+          <iyy>0.1</iyy>
+          <iyz> 0 </iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.075 0.075 0.05</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.075 0.075 0.05</size>
+          </box>
+        </geometry>
+        <!-- N.B. Naively estimated properties. -->
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:hunt_crossley_dissipation>1.25</drake:hunt_crossley_dissipation>
+          <drake:mesh_resolution_hint>0.005</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
