@@ -286,9 +286,8 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   EXPECT_FALSE(meshcat.GetPackedObject("box").empty());
   meshcat.SetObject("ellipsoid", Ellipsoid(.25, .25, .5), Rgba(1., 0, 1, 1));
   EXPECT_FALSE(meshcat.GetPackedObject("ellipsoid").empty());
-  // Capsules are not supported yet; this should only log a warning.
   meshcat.SetObject("capsule", Capsule(.25, .5));
-  EXPECT_TRUE(meshcat.GetPackedObject("capsule").empty());
+  EXPECT_FALSE(meshcat.GetPackedObject("capsule").empty());
   meshcat.SetObject(
       "mesh", Mesh(FindResourceOrThrow(
                        "drake/geometry/render/test/meshes/box.obj"),
