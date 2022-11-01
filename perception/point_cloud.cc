@@ -421,11 +421,16 @@ PointCloud PointCloud::VoxelizedDownSample(
   DRAKE_THROW_UNLESS(has_xyzs());
   DRAKE_THROW_UNLESS(voxel_size > 0);
 
-  // Create a dynamic-spatial-hashed voxel grid to bin points.
+  // Create a dynamic-spatial-hashed voxel grid (DSHVG) to bin points. While a
+  // DSHVG usually has each dynamic "chunk" contain multiple voxels, by setting
+  // the chunk size to (voxel_size, 1, 1, 1) each chunk contain a single voxel
+  // and the whole DSHVG behaves as a sparse voxel grid.
   const common_robotics_utilities::voxel_grid::GridSizes chunk_sizes(
       voxel_size, INT64_C(1), INT64_C(1), INT64_C(1));
   const std::vector<int> default_chunk_value;
-  const size_t num_expected_chunks = static_cast<size_t>(size_ / 8);
+  // By providing an initial estimated number of chunks, we reduce reallocation
+  // and rehashing in the DSHVG.
+  const size_t num_expected_chunks = static_cast<size_t>(size_ / 16);
   common_robotics_utilities::voxel_grid::
       DynamicSpatialHashedVoxelGrid<std::vector<int>> dynamic_voxel_grid(
           chunk_sizes, default_chunk_value, num_expected_chunks);
@@ -436,8 +441,12 @@ PointCloud PointCloud::VoxelizedDownSample(
       auto chunk_query =
           dynamic_voxel_grid.GetLocationMutable3d(xyz(i).cast<double>());
       if (chunk_query) {
+        // If the containing chunk has already been allocated, add the current
+        // point index directly.
         chunk_query.Value().emplace_back(i);
       } else {
+        // If the containing chunk hasn't already been allocated, create a new
+        // chunk containing the current point index.
         dynamic_voxel_grid.SetLocation3d(
             xyz(i).cast<double>(),
             common_robotics_utilities::voxel_grid::DSHVGSetType::SET_CHUNK,
@@ -500,7 +509,11 @@ PointCloud PointCloud::VoxelizedDownSample(
       common_robotics_utilities::openmp_helpers::GetNumOmpThreads() > 1;
   const bool operate_in_parallel = parallelize && can_execute_in_parallel;
 
-  // Iterate through the map populating the elements of the down_sampled cloud.
+  // Since we specify chunks contain a single voxel, a chunk's lone voxel can be
+  // retrieved with index (0, 0, 0).
+  const common_robotics_utilities::voxel_grid::GridIndex kSingleVoxel(0, 0, 0);
+
+  // Populate the elements of the down_sampled cloud.
   if (operate_in_parallel) {
     // Flatten voxel cells to allow parallel processing.
     std::vector<const std::vector<int>*> voxel_indices;
@@ -510,11 +523,11 @@ PointCloud PointCloud::VoxelizedDownSample(
             dynamic_voxel_grid.GetImmutableInternalChunks()) {
       unused(chunk_region);
       const std::vector<int>& indices_in_this =
-          chunk.GetIndexImmutable({0, 0, 0}).Value();
+          chunk.GetIndexImmutable(kSingleVoxel).Value();
       voxel_indices.emplace_back(&indices_in_this);
     }
 
-    // Process voxels in parallel.
+    // Process voxel cells in parallel.
 #if defined(_OPENMP)
 #pragma omp parallel for
 #endif
@@ -530,7 +543,7 @@ PointCloud PointCloud::VoxelizedDownSample(
             dynamic_voxel_grid.GetImmutableInternalChunks()) {
       unused(chunk_region);
       const std::vector<int>& indices_in_this =
-          chunk.GetIndexImmutable({0, 0, 0}).Value();
+          chunk.GetIndexImmutable(kSingleVoxel).Value();
       process_voxel(index_in_down_sampled, indices_in_this);
       ++index_in_down_sampled;
     }
@@ -565,9 +578,11 @@ bool PointCloud::EstimateNormals(
     VectorX<Eigen::Index> indices(num_closest);
     Eigen::VectorXf distances(num_closest);
 
-    // With nanoflann, I can either search for the num_closest and
-    // take the ones closer than radius, or search for all points closer than
-    // radius and keep the num_closest.
+    // nanoflann allows two types of queries:
+    // 1. search for the num_closest points, and then keep those within radius
+    // 2. search for points within radius, and then keep the num_closest
+    // for dense clouds where the number of points within radius would be high,
+    // approach (1) is considerably faster.
     const int num_neighbors = kd_tree.index->knnSearch(
         xyz(i).data(), num_closest, indices.data(), distances.data());
 

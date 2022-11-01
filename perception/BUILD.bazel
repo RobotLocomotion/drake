@@ -92,11 +92,13 @@ drake_cc_googletest(
     name = "point_cloud_test_serial",
     srcs = ["test/point_cloud_test.cc"],
     defines = ["ENABLE_PARALLEL_OPS=false"],
+    env = {"OMP_NUM_THREADS": "1"},
     deps = [
         ":point_cloud",
         "//common:random",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+        "@common_robotics_utilities",
     ],
 )
 
@@ -104,11 +106,14 @@ drake_cc_googletest(
     name = "point_cloud_test_parallel",
     srcs = ["test/point_cloud_test.cc"],
     defines = ["ENABLE_PARALLEL_OPS=true"],
+    env = {"OMP_NUM_THREADS": "2"},
+    tags = ["cpu:2"],
     deps = [
         ":point_cloud",
         "//common:random",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+        "@common_robotics_utilities",
     ],
 )
 

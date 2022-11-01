@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 
+#include <common_robotics_utilities/openmp_helpers.hpp>
 #include <gtest/gtest.h>
 
 #include "drake/common/random.h"
@@ -52,6 +53,23 @@ struct check_helper<uint8_t> {
     }
   }
 };
+
+GTEST_TEST(PointCloudTest, TestExpectedNumThreads) {
+#if defined(_OPENMP)
+  constexpr bool has_openmp = true;
+#else
+  constexpr bool has_openmp = false;
+#endif
+
+  const int num_omp_threads =
+      common_robotics_utilities::openmp_helpers::GetNumOmpThreads();
+
+  if (has_openmp && ENABLE_PARALLEL_OPS) {
+    EXPECT_EQ(num_omp_threads, 2);
+  } else {
+    EXPECT_EQ(num_omp_threads, 1);
+  }
+}
 
 GTEST_TEST(PointCloudTest, Basic) {
   const int count = 5;
