@@ -1219,6 +1219,52 @@ TEST_F(SdfParserTest, JointActuatorParsingTest) {
   EXPECT_TRUE(CompareMatrices(plant_.GetEffortUpperLimits(), effort_limits));
 }
 
+// Verifies that the SDF parser parses the prismatic spring parameters
+// correctly.
+TEST_F(SdfParserTest, PrismaticSpringParsingTest) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "prismatic_spring_parsing_test.sdf");
+
+  // Reads in the SDF file.
+  AddModelFromSdfFile(full_name, "");
+  plant_.Finalize();
+
+  // Plant should have a UniformGravityFieldElement by default.
+  // Our test contains two joints that have nonzero stiffness
+  // and two joints that have zero stiffness. We only add a
+  // spring for nonzero stiffness, so only two spring forces
+  // should have been added.
+  constexpr int kNumSpringForces = 2;
+  DRAKE_DEMAND(plant_.num_force_elements() == kNumSpringForces + 1);
+
+  // In these two tests, we verify that the generalized forces are
+  // correct for both springs. The first spring has a nonzero reference
+  // of 1.0 meters so should have nonzero force. The second spring
+  // has a zero reference, so it should have no applied force.
+  MultibodyForces<double> forces(plant_);
+  auto context = plant_.CreateDefaultContext();
+  constexpr int kGeneralizedForcesSize = 10;
+  Matrix2X<double> expected_generalized_forces(kNumSpringForces,
+                                               kGeneralizedForcesSize);
+  expected_generalized_forces << 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0;
+  for (int i = 0; i < kNumSpringForces; ++i) {
+    // The ForceElement at index zero is gravity, so we skip that index.
+    const ForceElementIndex force_index(i + 1);
+    const auto& nonzero_reference = plant_.GetForceElement(force_index);
+    forces.SetZero();
+    nonzero_reference.CalcAndAddForceContribution(
+        *context, plant_.EvalPositionKinematics(*context),
+        plant_.EvalVelocityKinematics(*context), &forces);
+
+    const VectorX<double>& generalized_forces = forces.generalized_forces();
+    EXPECT_TRUE(CompareMatrices(generalized_forces,
+                                expected_generalized_forces.row(i).transpose(),
+                                kEps, MatrixCompareType::relative));
+  }
+}
+
 // Verifies that the SDF parser parses the revolute spring parameters correctly.
 TEST_F(SdfParserTest, RevoluteSpringParsingTest) {
   const std::string full_name = FindResourceOrThrow(
