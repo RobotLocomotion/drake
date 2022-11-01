@@ -286,10 +286,9 @@ drake_cc_library(
     hdrs = ["fast_pose_composition_functions_avx2_fma.h"],
     copts = select({
         "//tools/cc_toolchain:apple": [],
-        "@platforms//cpu:x86_64": [
+        "//conditions:default": [
             "-march=broadwell",
         ],
-        "//conditions:default": [],
     }),
     deps = [],
 )
