@@ -1,21 +1,15 @@
 # Basic build configuration.
 CMAKE_BUILD_TYPE:STRING=Release
-BUILD_SHARED_LIBS:BOOL=ON
+BUILD_SHARED_LIBS:BOOL=OFF
 CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
-CMAKE_CXX_STANDARD:STRING=17
-CMAKE_INSTALL_PREFIX:PATH=/opt/vtk
 # VTK by default installs license files to `share/licenses/PROJECT_NAME`, we
 # want the license files to end up in `share/doc/PROJECT_NAME`.
-CMAKE_INSTALL_LICENSEDIR:STRING=share/doc/vtk-9.1
-CMAKE_C_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-deprecated-declarations'
-CMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-deprecated-declarations'
-CMAKE_EXE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro'
-CMAKE_MODULE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro'
-CMAKE_SHARED_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro'
+CMAKE_INSTALL_LICENSEDIR:STRING=share/doc/vtk-9.2
 # VTK-specific build configuration.
 BUILD_TESTING:BOOL=OFF
 VTK_ENABLE_WRAPPING:BOOL=OFF
 VTK_WRAP_PYTHON:BOOL=OFF
+VTK_ABI_NAMESPACE_NAME:STRING='drake_vtk __attribute__ ((visibility ("hidden")))'
 # Third party libraries.
 VTK_BUILD_ALL_MODULES:BOOL=OFF
 VTK_GROUP_ENABLE_Imaging:STRING=YES
