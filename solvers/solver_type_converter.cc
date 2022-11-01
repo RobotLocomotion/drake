@@ -26,14 +26,10 @@ SolverId SolverTypeConverter::TypeToId(SolverType solver_type) {
       return ClpSolver::id();
     case SolverType::kCsdp:
       return CsdpSolver::id();
-    case SolverType::kDReal:
-      return DrealSolver::id();
     case SolverType::kEqualityConstrainedQP:
       return EqualityConstrainedQPSolver::id();
     case SolverType::kGurobi:
       return GurobiSolver::id();
-    case SolverType::kIbex:
-      return IbexSolver::id();
     case SolverType::kIpopt:
       return IpoptSolver::id();
     case SolverType::kLinearSystem:
@@ -52,6 +48,13 @@ SolverId SolverTypeConverter::TypeToId(SolverType solver_type) {
       return ScsSolver::id();
     case SolverType::kUnrevisedLemke:
       return UnrevisedLemkeSolverId::id();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    case SolverType::kDReal:
+      return DrealSolver::id();
+    case SolverType::kIbex:
+      return IbexSolver::id();
+#pragma GCC diagnostic pop
   }
   DRAKE_UNREACHABLE();
 }
@@ -61,14 +64,10 @@ std::optional<SolverType> SolverTypeConverter::IdToType(SolverId solver_id) {
     return SolverType::kClp;
   } else if (solver_id == CsdpSolver::id()) {
     return SolverType::kCsdp;
-  } else if (solver_id == DrealSolver::id()) {
-    return SolverType::kDReal;
   } else if (solver_id == EqualityConstrainedQPSolver::id()) {
     return SolverType::kEqualityConstrainedQP;
   } else if (solver_id == GurobiSolver::id()) {
     return SolverType::kGurobi;
-  } else if (solver_id == IbexSolver::id()) {
-    return SolverType::kIbex;
   } else if (solver_id == IpoptSolver::id()) {
     return SolverType::kIpopt;
   } else if (solver_id == LinearSystemSolver::id()) {
@@ -87,6 +86,13 @@ std::optional<SolverType> SolverTypeConverter::IdToType(SolverId solver_id) {
     return SolverType::kScs;
   } else if (solver_id == UnrevisedLemkeSolverId::id()) {
     return SolverType::kUnrevisedLemke;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  } else if (solver_id == DrealSolver::id()) {
+    return SolverType::kDReal;
+  } else if (solver_id == IbexSolver::id()) {
+    return SolverType::kIbex;
+#pragma GCC diagnostic pop
   } else {
     return std::nullopt;
   }

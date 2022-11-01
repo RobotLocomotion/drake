@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.ibex import IbexSolver
 
@@ -14,8 +15,11 @@ class TestIbexSolver(unittest.TestCase):
         prog.AddBoundingBoxConstraint(-1., 1., x[0])
         prog.AddBoundingBoxConstraint(-1., 1., x[1])
         prog.AddCost(x[0] - x[1])
-        solver = IbexSolver()
-        self.assertEqual(solver.solver_id(), IbexSolver.id())
+        with catch_drake_warnings(expected_count=1):
+            solver = IbexSolver()
+        with catch_drake_warnings(expected_count=1):
+            ibex_id = IbexSolver.id()
+        self.assertEqual(solver.solver_id(), ibex_id)
 
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_id().name(), "IBEX")
@@ -29,5 +33,6 @@ class TestIbexSolver(unittest.TestCase):
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when Ibex is disabled."""
-        solver = IbexSolver()
+        with catch_drake_warnings(expected_count=1):
+            solver = IbexSolver()
         self.assertFalse(solver.available())

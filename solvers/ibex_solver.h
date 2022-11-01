@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/solver_base.h"
@@ -8,6 +9,10 @@
 
 namespace drake {
 namespace solvers {
+/// (Deprecated.) IBEX support is being withdrawn from Drake; for details, see
+/// https://github.com/RobotLocomotion/drake/pull/18156. This class will be
+/// removed from Drake on or after 2023-02-01.
+///
 /// An implementation of SolverInterface for the IBEX solver
 /// (http://www.ibex-lib.org).
 ///
@@ -41,11 +46,18 @@ namespace solvers {
 ///  - timeout <double>: Timeout (time in seconds). 0.0 indicates +∞.
 ///
 /// See http://www.ibex-lib.org/doc/optim.html#options for more information.
-class IbexSolver final : public SolverBase {
+class DRAKE_DEPRECATED("2023-02-01",
+    "IBEX support is being withdrawn from Drake; for details, see "
+    "https://github.com/RobotLocomotion/drake/pull/18156")
+IbexSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IbexSolver)
 
+  DRAKE_DEPRECATED("2023-02-01",
+      "IBEX support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   IbexSolver();
+
   ~IbexSolver() final;
 
   // A using-declaration adds these methods into our class's Doxygen.
@@ -53,9 +65,21 @@ class IbexSolver final : public SolverBase {
 
   /// @name Static versions of the instance methods with similar names.
   //@{
+  DRAKE_DEPRECATED("2023-02-01",
+      "IBEX support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   static SolverId id();
+  DRAKE_DEPRECATED("2023-02-01",
+      "IBEX support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   static bool is_available();
+  DRAKE_DEPRECATED("2023-02-01",
+      "IBEX support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   static bool is_enabled();
+  DRAKE_DEPRECATED("2023-02-01",
+      "IBEX support is being withdrawn from Drake; for details, see "
+      "https://github.com/RobotLocomotion/drake/pull/18156")
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
   //@}
 

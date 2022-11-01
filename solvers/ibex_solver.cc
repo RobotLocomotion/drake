@@ -10,6 +10,9 @@
 #include "drake/common/text_logging.h"
 #include "drake/solvers/ibex_converter.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace drake {
 namespace solvers {
 
@@ -373,3 +376,5 @@ void IbexSolver::DoSolve(const MathematicalProgram& prog,
 
 }  // namespace solvers
 }  // namespace drake
+
+#pragma GCC diagnostic pop
