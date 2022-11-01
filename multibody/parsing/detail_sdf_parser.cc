@@ -33,6 +33,7 @@
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_spring.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/screw_joint.h"
@@ -502,6 +503,40 @@ void AddJointActuatorFromSpecification(
 }
 
 // Extracts the spring stiffness and the spring reference from a joint
+// specification and adds a prismatic spring force element with the
+// corresponding spring reference if the spring stiffness is nonzero.
+// Only available for "prismatic" joints. The units for spring
+// reference is meter and the units for spring stiffness is N/m.
+void AddPrismaticSpringFromSpecification(const DiagnosticPolicy& diagnostic,
+                                         const sdf::Joint& joint_spec,
+                                         const PrismaticJoint<double>& joint,
+                                         MultibodyPlant<double>* plant) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::PRISMATIC);
+
+  // Axis specification.
+  const sdf::JointAxis* axis = joint_spec.Axis();
+  if (axis == nullptr) {
+    diagnostic.Error(fmt::format("An axis must be specified for joint '{}'.",
+                                 joint_spec.Name()));
+  }
+
+  const double spring_reference = axis->SpringReference();
+  const double spring_stiffness = axis->SpringStiffness();
+
+  // We add a force element if stiffness is positive, report error
+  // if the stiffness is negative, and pass if the stiffness is zero
+  if (spring_stiffness > 0) {
+    plant->AddForceElement<PrismaticSpring>(
+      joint, spring_reference, spring_stiffness);
+  } else if (spring_stiffness < 0) {
+    diagnostic.Error(fmt::format(
+        "The stiffness specified for joint '{}' must be non-negative.",
+        joint_spec.Name()));
+  }
+}
+
+// Extracts the spring stiffness and the spring reference from a joint
 // specification and adds a revolute spring force element with the
 // corresponding spring reference if the spring stiffness is nonzero.
 // Only available for "revolute" and "continuous" joints. The units for spring
@@ -684,6 +719,7 @@ void AddJointFromSpecification(
       plant->get_mutable_joint(joint.index()).set_acceleration_limits(
           Vector1d(-acceleration_limit), Vector1d(acceleration_limit));
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
+      AddPrismaticSpringFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::REVOLUTE: {
