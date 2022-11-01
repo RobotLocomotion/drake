@@ -1,8 +1,31 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(pip-drake-dependencies)
 
-include(ExternalProject)
+# See: https://cmake.org/cmake/help/latest/policy/CMP0135.html
+if(POLICY CMP0135)
+  cmake_policy(SET CMP0135 NEW)
+endif()
 
+# Enable checking for `if(APPLE_ARM64)`, needed by some projects.
+if(APPLE)
+  execute_process(
+      COMMAND "/usr/bin/arch"
+      RESULT_VARIABLE APPLE_ARCHITECTURE_RESULT_VARIABLE
+      OUTPUT_VARIABLE APPLE_ARCHITECTURE
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(NOT APPLE_ARCHITECTURE_RESULT_VARIABLE EQUAL 0)
+    message(FATAL_ERROR "Unable to detect Apple architecture via /usr/bin/arch")
+  endif()
+  if(APPLE_ARCHITECTURE STREQUAL "arm64")
+    set(APPLE_ARM64 ON)
+  else()
+    set(APPLE_ARM64 OFF)
+  endif()
+else()
+  set(APPLE_ARM64 OFF)
+endif()
+
+include(ExternalProject)
 include(projects.cmake)
 message(STATUS "zlib: ${zlib_url}")
 
@@ -30,6 +53,13 @@ set (COMMON_CMAKE_ARGS
     -DCMAKE_PREFIX_PATH:PATH=${CMAKE_INSTALL_PREFIX}
     -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}
     )
+if(APPLE)
+  if(APPLE_ARM64)
+    list(APPEND COMMON_CMAKE_ARGS "-DCMAKE_OSX_ARCHITECTURES=arm64")
+  else()
+    list(APPEND COMMON_CMAKE_ARGS "-DCMAKE_OSX_ARCHITECTURES=x86_64")
+  endif()
+endif()
 
 function(extract_license PROJECT)
     set(command "")
