@@ -5,7 +5,6 @@
 #include <unordered_map>
 #include <utility>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/polynomial.h"
@@ -134,52 +133,6 @@ int DecomposeAffineExpression(
     const symbolic::Expression& e,
     const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
     EigenPtr<Eigen::RowVectorXd> coeffs, double* constant_term);
-
-/** Decomposes an affine combination @p e = c0 + c1 * v1 + ... cn * vn into the
-following:
-
-     constant term      : c0
-     coefficient vector : [c1, ..., cn]
-     variable vector    : [v1, ..., vn]
-
-Then, it extracts the coefficient and the constant term. A map from variable ID
-to int, @p map_var_to_index, is used to decide a variable's index in a linear
-combination.
-
-\pre
-1. @c coeffs is a row vector of double, whose length matches with the size of
-   @c map_var_to_index.
-2. e.is_polynomial() is true.
-3. e is an affine expression.
-
-@tparam Derived An Eigen row vector type with Derived::Scalar == double.
-@param[in] e The symbolic affine expression
-@param[in] map_var_to_index A mapping from variable ID to variable index, such
-that map_var_to_index[vi.get_ID()] = i.
-@param[out] coeffs A row vector. coeffs(i) = ci.
-@param[out] constant_term c0 in the equation above.
-@return num_variable. Number of variables in the expression. 2 * x(0) + 3 has 1
-variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable. */
-template <typename Derived>
-DRAKE_DEPRECATED("2022-11-01",
-                 "Use the overloaded DecomposeAffineExpression which takes "
-                 "coeffs as a pointer.")
-typename std::enable_if_t<
-    std::is_same_v<typename Derived::Scalar, double>,
-    int> DecomposeAffineExpression(const symbolic::Expression& e,
-                                   const std::unordered_map<
-                                       symbolic::Variable::Id, int>&
-                                       map_var_to_index,
-                                   const Eigen::MatrixBase<Derived>& coeffs,
-                                   double* constant_term) {
-  Eigen::MatrixBase<Derived>& coeffs_ref =
-      const_cast<Eigen::MatrixBase<Derived>&>(coeffs);
-  Eigen::RowVectorXd coeffs_row(coeffs.cols());
-  const int num_vars = DecomposeAffineExpression(e, map_var_to_index,
-                                                 &coeffs_row, constant_term);
-  coeffs_ref = coeffs_row;
-  return num_vars;
-}
 
 /** Given a vector of Expressions @p f and a list of @p parameters we define
 all additional variables in @p f to be a vector of "non-parameter variables",
