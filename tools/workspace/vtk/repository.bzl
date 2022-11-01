@@ -33,7 +33,7 @@ Argument:
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-VTK_MAJOR_MINOR_VERSION = "9.1"
+VTK_MAJOR_MINOR_VERSION = "9.2"
 
 VTK_MAJOR_MINOR_PATCH_VERSION = "{}.0".format(VTK_MAJOR_MINOR_VERSION)
 
@@ -79,7 +79,7 @@ def _vtk_cc_library(
             ]
     elif os_result.is_ubuntu:
         if not header_only:
-            srcs = ["lib/lib{}-{}.so.1".format(name, VTK_MAJOR_MINOR_VERSION)]
+            srcs = ["lib/lib{}-{}.a".format(name, VTK_MAJOR_MINOR_VERSION)]
     elif os_result.is_manylinux or os_result.is_macos_wheel:
         if not header_only:
             # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
@@ -118,11 +118,12 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "20.04":
-            archive = "vtk-9.1.0-3-focal-x86_64.tar.gz"
-            sha256 = "0a899323e7927a7b3e09d1be35bf70df9630f4eba56b9af93c59401cefa227c5"  # noqa
+            # TODO(svenevs): change our naming scheme (commit vs version)?
+            archive = "vtk-9.2.0-1-focal-x86_64.tar.gz"
+            sha256 = "5dbfeaed79c9762fb44f09f87d8eddc6b3b42ed1a8169d87292bf495c04494ad"  # noqa
         elif os_result.ubuntu_release == "22.04":
-            archive = "vtk-9.1.0-3-jammy-x86_64.tar.gz"
-            sha256 = "6ec65fa079f1278f759afd7abea8539b9e2f19ba9056267ae6484c681d3debd1"  # noqa
+            archive = "vtk-9.2.0-1-jammy-x86_64.tar.gz"
+            sha256 = "f6db640b1564b66afa80a933b9d65472c26057460d50452d69e0e53bfde9cb28"  # noqa
         else:
             fail("Operating system is NOT supported {}".format(os_result))
 
@@ -204,14 +205,28 @@ licenses([
     if not os_result.is_macos:
         file_content += _vtk_cc_library(os_result, "vtkpugixml")
 
+    vtksys_hdrs = [
+        "vtksys/Configure.h",
+        "vtksys/Configure.hxx",
+        "vtksys/Status.hxx",
+        "vtksys/SystemTools.hxx",
+    ]
     if os_result.is_manylinux:
         file_content += _vtk_cc_library(
             os_result,
             "vtksys",
+            hdrs = vtksys_hdrs,
             linkopts = ["-ldl"],
         )
     else:
-        file_content += _vtk_cc_library(os_result, "vtksys")
+        file_content += _vtk_cc_library(
+            os_result,
+            "vtksys",
+            hdrs = vtksys_hdrs,
+            # TODO(svenevs): this may or may not be needed for macOS.  If not,
+            # above if should allow for ubuntu or manylinux and remove here.
+            linkopts = ["-ldl"],
+        )
 
     ###########################################################################
     # VTK "Public" Libraries (See: tools/workspace/vtk/README.md)
@@ -241,6 +256,7 @@ licenses([
         "vtkCommonCore",
         hdrs = [
             "vtkABI.h",
+            "vtkABINamespace.h",
             "vtkAOSDataArrayTemplate.h",
             "vtkAbstractArray.h",
             "vtkAssume.h",
@@ -251,6 +267,7 @@ licenses([
             "vtkCommand.h",
             "vtkCommonCoreModule.h",
             "vtkCompiler.h",
+            "vtkEventData.h",
             "vtkDataArray.h",
             "vtkDataArrayAccessor.h",
             "vtkDataArrayMeta.h",
@@ -362,6 +379,7 @@ licenses([
             "vtkPolyData.h",
             "vtkPolyDataInternals.h",
             "vtkRect.h",
+            "vtkSelection.h",
             "vtkStructuredData.h",
             "vtkVector.h",
         ],
@@ -500,6 +518,21 @@ licenses([
             ":vtkCommonExecutionModel",
             ":vtkFiltersCore",
             ":vtksys",
+        ],
+    )
+
+    # Indirect dependency: omit headers.
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkFiltersHyperTree",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMisc",
+            ":vtkCommonSystem",
+            ":vtkFiltersCore",
+            ":vtkFiltersGeneral",
         ],
     )
 
@@ -844,6 +877,24 @@ licenses([
             ":vtkFiltersGeneral",
             ":vtkRenderingCore",
         ],
+        linkopts = ["-lfreetype"],
+    )
+
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkRenderingHyperTreeGrid",
+        hdrs = [
+            "vtkRenderingHyperTreeGridModule.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
+            ":vtkFiltersHybrid",
+            ":vtkFiltersHyperTree",
+            ":vtkRenderingCore",
+        ],
     )
 
     vtk_rendering_ui_hdrs = [
@@ -853,21 +904,22 @@ licenses([
     if not os_result.is_macos and not os_result.is_macos_wheel:
         vtk_rendering_ui_hdrs.append("vtkXRenderWindowInteractor.h")
 
+    vtk_rendering_ui_deps = [":vtkRenderingCore"]
     if os_result.is_macos_wheel:
         # Normally this would be a private dependency, but no such thing when
         # VTK is built static.
-        vtk_ui_linkopts = ["-framework Cocoa"]
+        vtk_rendering_ui_linkopts = ["-framework Cocoa"]
     else:
-        vtk_ui_linkopts = []
+        # TODO(svenevs): should this be getting added for wheel?
+        vtk_rendering_ui_linkopts = []
+        vtk_rendering_ui_deps.append("@x11")
 
     file_content += _vtk_cc_library(
         os_result,
         "vtkRenderingUI",
         hdrs = vtk_rendering_ui_hdrs,
-        deps = [
-            ":vtkRenderingCore",
-        ],
-        linkopts = vtk_ui_linkopts,
+        deps = vtk_rendering_ui_deps,
+        linkopts = vtk_rendering_ui_linkopts,
     )
 
     # Indirect dependency: omit headers.
@@ -922,7 +974,9 @@ licenses([
             ":vtkCommonSystem",
             ":vtkCommonTransforms",
             ":vtkFiltersGeneral",
+            ":vtkIOImage",
             ":vtkRenderingCore",
+            ":vtkRenderingHyperTreeGrid",
             ":vtkRenderingUI",
             ":vtksys",
             vtk_glew_library,

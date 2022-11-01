@@ -14,7 +14,7 @@ FROM ${PLATFORM} AS base
 ADD image/provision.sh /image/
 ADD image/prereqs /image/
 
-RUN /image/provision.sh
+# RUN /image/provision.sh
 
 # -----------------------------------------------------------------------------
 # Build VTK.
@@ -27,6 +27,6 @@ ADD image/vtk-args /vtk/
 
 RUN /image/build-vtk.sh
 
-ADD image/package.sh /image/
+# ADD image/package.sh /image/
 
-RUN /image/package.sh
+# RUN /image/package.sh
