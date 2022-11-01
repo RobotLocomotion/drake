@@ -274,7 +274,9 @@ class TestSensors(unittest.TestCase):
                 dut.color_image_input_port(), dut.depth_image_input_port(),
                 dut.label_image_input_port()):
             self._check_input(port)
-        self._check_output(dut.image_array_t_msg_output_port())
+        for port in (
+                dut.image_array_t_msg_output_port(),):
+            self._check_output(port)
 
         # Test custom constructor, test functionality (up to getting abstract
         # value).
@@ -295,6 +297,16 @@ class TestSensors(unittest.TestCase):
         # N.B. This Value[] is a C++ LCM object. See
         # `lcm_py_bind_cpp_serializers.h` for more information.
         self.assertIsInstance(output.get_data(0), AbstractValue)
+
+    def test_lcm_image_array_to_images(self):
+        dut = mut.LcmImageArrayToImages()
+        for port in (
+                dut.image_array_t_input_port(),):
+            self._check_input(port)
+        for port in (
+                dut.color_image_output_port(),
+                dut.depth_image_output_port()):
+            self._check_output(port)
 
     def test_rgbd_sensor(self):
         def check_ports(system):
