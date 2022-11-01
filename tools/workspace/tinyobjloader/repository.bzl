@@ -8,8 +8,8 @@ def tinyobjloader_repository(
     github_archive(
         name = name,
         repository = "tinyobjloader/tinyobjloader",
-        commit = "a1e8bad32e1ccd26a7936c5354ecf856aec2cf59",
-        sha256 = "1b23bb6feb24cc3faac8a31c8470d268a679be89f7761d6fb488897b2606ca33",  # noqa
+        commit = "5790ebd9eb466bc1ebe8ed5c5a55ee642b6f24bc",
+        sha256 = "aa8b4f53bf400b025499bf48296233e2614ff8f5ce2d36fdc3902168cee4a04f",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
         patches = [
