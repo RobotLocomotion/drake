@@ -328,11 +328,10 @@ const RigidBody<double>& AddCubicalLink(
 // smaller than translating bodies, both translational and rotational joints are
 // tested. Test 5 uses a single rigid body that connects to the world with a 6
 // degree-of-freedom "free-joint" and hence involves a 6 x 6 articulated body
-// hinge inertia matrix (tests 1, 2, 3, 4 only involve a 1 x 1 matrix, which is
-// why test 5 is used).
+// hinge inertia matrix (whereas tests 1, 2, 3, 4 only involve a 1 x 1 matrix).
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslatingBody) {
-  // Create a plant with constructor argument = 0 so a continuous model [and
-  // hence the Articulated Body Algorithm (ABA) for forward dynamics] is used.
+  // Create a plant with constructor argument = 0 to signal use of a continuous
+  // model (and hence the Articulated Body Algorithm for forward dynamics).
   const double signal_for_continuous_model = 0;
   MultibodyPlant<double> plant(signal_for_continuous_model);
 
@@ -369,8 +368,8 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslatingBody) {
 // Verify an exception is thrown for a forward dynamic analysis of a single
 // zero-inertia body that is allowed to rotate due to a revolute joint.
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotatingBody) {
-  // Create a plant with constructor argument = 0 so a continuous model [and
-  // hence the Articulated Body Algorithm (ABA) for forward dynamics] is used.
+  // Create a plant with constructor argument = 0 to signal use of a continuous
+  // model (and hence the Articulated Body Algorithm for forward dynamics).
   const double signal_for_continuous_model = 0;
   MultibodyPlant<double> plant(signal_for_continuous_model);
 
@@ -409,8 +408,8 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotatingBody) {
 // sequential rigid bodies A and B that translate in the same direction, where
 // body A's mass is zero and body B's mass is large and positive.
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslating2Bodies) {
-  // Create a plant with constructor argument = 0 so a continuous model [and
-  // hence the Articulated Body Algorithm (ABA) for forward dynamics] is used.
+  // Create a plant with constructor argument = 0 to signal use of a continuous
+  // model (and hence the Articulated Body Algorithm for forward dynamics).
   const double signal_for_continuous_model = 0;
   MultibodyPlant<double> plant(signal_for_continuous_model);
 
@@ -466,8 +465,8 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslating2Bodies) {
 // parallel to the world's Z-direction. Verify an exception is thrown if body
 // C's mass and inertia are zero or bodies A and B's mass and inertia are zero.
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotating3Bodies) {
-  // Create a plant with constructor argument = 0 so a continuous model [and
-  // hence the Articulated Body Algorithm (ABA) for forward dynamics] is used.
+  // Create a plant with constructor argument = 0 to signal use of a continuous
+  // model (and hence the Articulated Body Algorithm for forward dynamics).
   const double signal_for_continuous_model = 0;
   MultibodyPlant<double> plant(signal_for_continuous_model);
 
@@ -554,8 +553,8 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotating3Bodies) {
 // Verify an exception is thrown for a forward dynamic analysis of a single
 // zero-mass, zero-inertia free body (both translates and rotates).
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassInertiaFreeBody) {
-  // Create a plant with constructor argument = 0 so a continuous model [and
-  // hence the Articulated Body Algorithm (ABA) for forward dynamics] is used.
+  // Create a plant with constructor argument = 0 to signal use of a continuous
+  // model (and hence the Articulated Body Algorithm for forward dynamics).
   const double signal_for_continuous_model = 0;
   MultibodyPlant<double> plant(signal_for_continuous_model);
 
