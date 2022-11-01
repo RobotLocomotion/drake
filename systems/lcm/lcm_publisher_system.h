@@ -31,7 +31,9 @@ namespace lcm {
  *
  * If you connect to `should_publish`, then providing a value of `true` means
  * that the message will be published (same as not being connected). If you
- * provide a value of `false`, then the message will not be published.
+ * provide a value of `false`, then the message will not be published. This
+ * port is only used to determine whether to publish or not based on existing
+ * events. This does not provide witness / edge-trigger semantics.
  *
  * @note You should generally provide an LCM interface yourself, since there
  * should normally be just one of these typically-heavyweight objects per
@@ -200,6 +202,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * You can only call this method once.
    * @throws std::exception if called a second time.
    *
+   * @note These event's semantics are unaffected by the `should_publish` port.
    * @pre The publisher function may not be null.
    */
   void AddInitializationMessage(
