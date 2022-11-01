@@ -10,13 +10,30 @@
 
 namespace drake {
 namespace math {
-
-namespace  {
+namespace {
 using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Matrix34d = Eigen::Matrix<double, 3, 4>;
 
-GTEST_TEST(TestFastPoseCompositionFunctions, UsingAVX) {
+#if defined(__APPLE__)
+constexpr bool kApple = true;
+#else
+constexpr bool kApple = false;
+#endif
+
+// Checks that our logic for detecting AVX at runtime works as expected.
+GTEST_TEST(TestFastPoseCompositionFunctions, AvxDetection) {
+  if (!kApple) {
+    // On Drake's Ubuntu CI we should always have AVX available (Drake CI only
+    // covers x64_64 builds, no arm64 yet). If we ever do add arm64 in CI, then
+    // we'll need to amend this condition.
+    EXPECT_EQ(internal::AvxSupported(), true);
+  }
+}
+
+// The "using portable" and "has avx" should be opposites so long as AVX is the
+// only accelerated option.
+GTEST_TEST(TestFastPoseCompositionFunctions, UsingPortable) {
   EXPECT_NE(
       internal::IsUsingPortableCompositionFunctions(),
       internal::AvxSupported());

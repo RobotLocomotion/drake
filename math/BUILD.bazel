@@ -277,18 +277,19 @@ drake_cc_library(
 )
 
 # This should be compiled with Intel AVX2 and FMA enabled if possible.
-# Currently (March 2021) we can't do that on Apple even if it is Intel-based
-# due to our old Mac CI machines. Compiling for Broadwell (or later) gets
-# those instructions.
+# Compiling for Broadwell (or later) gets those instructions. On macOS,
+# we opt-out of this feature (even for Apple hardware that supports it)
+# to reduce our test matrix burden for the deprecated architecture.
 drake_cc_library(
     name = "fast_pose_composition_functions_avx2_fma",
     srcs = ["fast_pose_composition_functions_avx2_fma.cc"],
     hdrs = ["fast_pose_composition_functions_avx2_fma.h"],
     copts = select({
         "//tools/cc_toolchain:apple": [],
-        "//conditions:default": [
+        "@platforms//cpu:x86_64": [
             "-march=broadwell",
         ],
+        "//conditions:default": [],
     }),
     deps = [],
 )
