@@ -931,7 +931,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // - Prismatic: [0 0 0 x y z]
   // - Ball: 3x3 blocks of zeroes.
   void CalcArticulatedBodyInertiaCache_TipToBase(
-      const systems::Context<T>& context,
+      const systems::Context<T>&,
       const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       const SpatialInertia<T>& M_B_W,
@@ -1061,8 +1061,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Compute the LLT factorization of D_B as llt_D_B.
       math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
         get_mutable_llt_D_B(abic);
-      CalcArticulatedBodyHingeInertiaMatrixFactorization(context, D_B,
-          &llt_D_B);
+      CalcArticulatedBodyHingeInertiaMatrixFactorization(D_B, &llt_D_B);
 
       // Compute the Kalman gain, g_PB_W, using (6).
       Matrix6xUpTo6<T>& g_PB_W = get_mutable_g_PB_W(abic);
@@ -1638,15 +1637,12 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return abic->get_mutable_llt_D_B(topology_.index);
   }
 
-  // Forms LLT factorization of articulated rigid body's hinge inertia matrix.
-  // @param[in] context Contains the state of the multibody system. The context
-  //   is only used if factorization fails and an exception is thrown.
+  // Forms LLT factorization of articulated rigid body's hinge inertia matrix..
   // @param[in] D_B Articulated rigid body hinge matrix.
   // @param[out] llt_D_B Stores the LLT factorization of D_B.
   // @throws an exception if D_B is not positive definite or is near-singular.
   // @pre llt_D_B is not nullptr.
   void CalcArticulatedBodyHingeInertiaMatrixFactorization(
-      const systems::Context<T>& context,
       const MatrixUpTo6<T>& D_B,
       math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>* llt_D_B) const;
 

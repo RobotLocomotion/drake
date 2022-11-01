@@ -9,7 +9,6 @@ namespace internal {
 
 template <typename T>
 void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
-    const systems::Context<T>& context,
     const MatrixUpTo6<T>& D_B,
     math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>* llt_D_B) const {
   DRAKE_THROW_UNLESS(llt_D_B != nullptr);
@@ -55,21 +54,15 @@ void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
                "connects body " << inboard_body_name << " to body "
                << outboard_body_name << " is not positive-definite. ";
     if (mobilizer.can_rotate()) {
-      const RotationalInertia<T> I_BBo_B = outboard_body.
-        CalcSpatialInertiaInBodyFrame(context).CalcRotationalInertia();
       message << "Since the joint allows rotation, ensure body "
               << outboard_body_name << " (combined with other outboard bodies) "
                  "has reasonable non-zero moments of inertia about the joint "
-                 "rotation axes. Note: The inertia matrix of body "
-              << outboard_body_name << " about its body origin is \n"
-              << I_BBo_B << ". ";
+                 "rotation axes.";
     }
     if (mobilizer.can_translate()) {
-      const T outboard_body_mass = outboard_body.get_mass(context);
       message << "Since the joint allows translation, ensure body "
               << outboard_body_name << " (combined with other outboard bodies) "
-                 "has a reasonable non-zero mass. Note: The mass of body "
-              << outboard_body_name << " is " << outboard_body_mass << ". ";
+                 "has a reasonable non-zero mass.";
     }
     throw std::runtime_error(message.str());
   }

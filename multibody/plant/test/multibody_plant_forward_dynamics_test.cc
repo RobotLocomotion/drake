@@ -312,28 +312,34 @@ const RigidBody<double>& AddCubicalLink(
   return plant->AddRigidBody(body_name, M_BBo_B);
 }
 
-// Verify an exception is thrown for a forward dynamic analysis of a single
-// zero-mass body that is allowed to translate due to a prismatic joint.
-// This is the first of 5 tests. Two tests use a single body that is connected
-// to world by a one degree-of-freedom joint. The 1ˢᵗ of these two test uses a
-// prismatic (translational) joint whereas the 2ⁿᵈ test uses a revolute joint.
-// These first two tests ensure an exception is thrown for a single body that
-// is either translating or rotating and at the end of a topological chain.
+// ----------------------------------------------------------------------------
+// There are 5 tests below whose purpose is to improving MultibodyPlant feedback
+// for invalid mass/inertia properties. The tests below uses forward dynamics in
+// continuous mode and test whether an exception is thrown for invalid
+// mass/inertia properties that are detected in the Articulated Body Algorithm.
+// The first two tests use a single body that is connected to world by a one
+// degree-of-freedom joint. The 1ˢᵗ test uses a prismatic (translational) joint
+// whereas the 2ⁿᵈ test uses a revolute joint. These first two tests ensure an
+// exception is thrown for a single body that is either translating or rotating
+// and is at the end of a topological chain.
 // Tests 3 and 4 use multiple bodies with multiple degree of freedom (albeit
 // with each joint being a single degree of freedom). Test 3 uses prismatic
-// joints whereas test 4 uses revolute joint. Tests 3 and 4 ensure an exception
-// is thrown for a multi-body system, regardless of whether or not the
-// problematic joint is the last in a topological chain or bodies. Also, since
-// the expected tolerances for rotating bodies are several orders of magnitude
-// smaller than translating bodies, both translational and rotational joints are
-// tested. Test 5 uses a single rigid body that connects to the world with a 6
+// joints whereas test 4 uses revolute joints. Tests 3 and 4 ensure an exception
+// can be regardless of whether or not the problematic joint is the last in a
+// topological chain of bodies. Also, since the expected tolerances for rotating
+// bodies are several orders of magnitude smaller than translating bodies, both
+// translational and rotational joints are tested.
+// Test 5 uses a single rigid body that connects to the world with a 6
 // degree-of-freedom "free-joint" and hence involves a 6 x 6 articulated body
 // hinge inertia matrix (whereas tests 1, 2, 3, 4 only involve a 1 x 1 matrix).
+// ----------------------------------------------------------------------------
+
+// Verify an exception is thrown for a forward dynamic analysis of a single
+// zero-mass body that is allowed to translate due to a prismatic joint.
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslatingBody) {
   // Create a plant with constructor argument = 0 to signal use of a continuous
   // model (and hence the Articulated Body Algorithm for forward dynamics).
-  const double signal_for_continuous_model = 0;
-  MultibodyPlant<double> plant(signal_for_continuous_model);
+  MultibodyPlant<double> plant(0.0);
 
   const double mA = 0;  // Mass of link A.
   const double length = 3;  // Length of uniform-density link (arbitrary > 0).
@@ -356,8 +362,8 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslatingBody) {
     "An internal mass matrix associated with the joint that "
     "connects body world to body bodyA is not positive-definite. "
     "Since the joint allows translation, ensure body bodyA "
-    "\\(combined with other outboard bodies\\) has a reasonable non-zero mass. "
-    "Note: The mass of body bodyA is 0. ");
+    "\\(combined with other outboard bodies\\) "
+    "has a reasonable non-zero mass.");
 
   // Verify no assertion is thrown if mA = 1E-4 since articulated body hinge
   // inertia matrix = [1E-4] which is positive definite (and far from singular).
@@ -370,8 +376,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslatingBody) {
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotatingBody) {
   // Create a plant with constructor argument = 0 to signal use of a continuous
   // model (and hence the Articulated Body Algorithm for forward dynamics).
-  const double signal_for_continuous_model = 0;
-  MultibodyPlant<double> plant(signal_for_continuous_model);
+  MultibodyPlant<double> plant(0.0);
 
   const double mA = 0;  // Mass of link A.
   const double length = 1;  // Length of uniform-density link (arbitrary > 0).
@@ -395,8 +400,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotatingBody) {
     "connects body world to body bodyA is not positive-definite. "
     "Since the joint allows rotation, ensure body bodyA "
     "\\(combined with other outboard bodies\\) has reasonable "
-    "non-zero moments of inertia about the joint rotation axes. "
-    "Note: The inertia matrix of body bodyA about its body origin is [^]*");
+    "non-zero moments of inertia about the joint rotation axes[^]*");
 
   // Verify no assertion is thrown if mA = 1E-4 since articulated body hinge
   // inertia matrix is positive definite (and far from singular).
@@ -410,8 +414,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotatingBody) {
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslating2Bodies) {
   // Create a plant with constructor argument = 0 to signal use of a continuous
   // model (and hence the Articulated Body Algorithm for forward dynamics).
-  const double signal_for_continuous_model = 0;
-  MultibodyPlant<double> plant(signal_for_continuous_model);
+  MultibodyPlant<double> plant(0.0);
 
   const double mA = 0, mB = 1;  // Mass of links A, B.
   const double length = 1;  // Length of uniform-density link (arbitrary > 0).
@@ -436,26 +439,22 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslating2Bodies) {
   // Verify assertion is thrown if mA = 0, mB = 1 since articulated body hinge
   // inertia matrix = [0] which is not positive definite.
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
-    "An internal mass matrix associated with the joint that "
-    "connects body world to body bodyA is not positive-definite. "
-    "Since the joint allows translation, ensure body bodyA "
-    "\\(combined with other outboard bodies\\) has a reasonable non-zero mass. "
-    "Note: The mass of body bodyA is 0. ");
+    "An internal mass matrix .+ body world to body bodyA "
+    "is not positive-definite. .+ allows translation,[^]*");
 
   // Verify assertion is thrown if mA = 0, mB = 1E9 since articulated body hinge
   // inertia matrix ≈ [-2.38419e-07] which is not positive definite.
+  // Note: Mathematically, if mA = 0, any real value of mB should still throw..
   // TODO(Mitiguy) It seems surprising that the matrix ≠ [0] since mA = 0.
   //  Explain why matrix is ≈ 10⁸ * machine epsilon distant from [0].
   body_B.SetMass(context.get(), 1E9);
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
-    "An internal mass matrix associated with the joint that "
-    "connects body world to body bodyA is not positive-definite. "
-    "Since the joint allows translation, ensure body bodyA "
-    "\\(combined with other outboard bodies\\) has a reasonable non-zero mass. "
-    "Note: The mass of body bodyA is 0. ");
+    "An internal mass matrix .+ body world to body bodyA "
+    "is not positive-definite. .+ allows translation,[^]*");
 
   // Verify no assertion is thrown if mA = 1E-3, mB = 1E9 since articulated body
-  // hinge inertia matrix is positive definite (and far from singular).
+  // hinge inertia matrix is positive definite (and far enough from singular).
+  // Note: mA = 1E-3 was chosen from empirical numerical testing with LLT.
   body_A.SetMass(context.get(), 1E-3);
   DRAKE_EXPECT_NO_THROW(plant.EvalForwardDynamics(*context))
 }
@@ -467,8 +466,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslating2Bodies) {
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotating3Bodies) {
   // Create a plant with constructor argument = 0 to signal use of a continuous
   // model (and hence the Articulated Body Algorithm for forward dynamics).
-  const double signal_for_continuous_model = 0;
-  MultibodyPlant<double> plant(signal_for_continuous_model);
+  MultibodyPlant<double> plant(0.0);
 
   // World X is vertically downward and world Y is horizontally-right.
   plant.mutable_gravity_field().set_gravity_vector(Vector3d(9.8, 0, 0));
@@ -516,12 +514,8 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotating3Bodies) {
   // Verify proper assertion is thrown if mA = mB = 1, mc = 0 since articulated
   // body hinge inertia matrix = [0] which is not positive definite.
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
-    "An internal mass matrix associated with the joint that "
-    "connects body bodyB to body bodyC is not positive-definite. "
-    "Since the joint allows rotation, ensure body bodyC "
-    "\\(combined with other outboard bodies\\) has reasonable "
-    "non-zero moments of inertia about the joint rotation axes. "
-    "Note: The inertia matrix of body bodyC about its body origin is [^]*");
+    "An internal mass matrix .+ body bodyB to body bodyC "
+    "is not positive-definite. .+ allows rotation,[^]*");
 
   // Verify no assertion is thrown if mA = 1, mB = 0, mC = 1.
   body_A.SetMass(context_ptr, 1);
@@ -537,12 +531,8 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotating3Bodies) {
   //  in computer hardware available from CI (Continuous Integration) testing.
   body_A.SetMass(context_ptr, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
-    "An internal mass matrix associated with the joint that "
-    "connects body world to body bodyA is not positive-definite. "
-    "Since the joint allows rotation, ensure body bodyA "
-    "\\(combined with other outboard bodies\\) has reasonable "
-    "non-zero moments of inertia about the joint rotation axes. "
-    "Note: The inertia matrix of body bodyA about its body origin is [^]*");
+    "An internal mass matrix .+ body world to body bodyA "
+    "is not positive-definite. .+ allows rotation,[^]*");
 
   // Verify no assertion is thrown if the initial revolute angles for WA and BC
   // are each 0 degrees and AB's initial revolute angle is far-enough from zero.
@@ -555,8 +545,7 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroInertiaRotating3Bodies) {
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassInertiaFreeBody) {
   // Create a plant with constructor argument = 0 to signal use of a continuous
   // model (and hence the Articulated Body Algorithm for forward dynamics).
-  const double signal_for_continuous_model = 0;
-  MultibodyPlant<double> plant(signal_for_continuous_model);
+  MultibodyPlant<double> plant(0.0);
 
   const double mA = 0;  // Mass of link A.
   const double length = 0.3;  // Length of uniform-density link (arbitrary > 0).
@@ -571,12 +560,8 @@ GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassInertiaFreeBody) {
   // Verify assertion is thrown if mA = 0 since articulated body hinge inertia
   // matrix is 6 x 6 zero matrix (albeit with NaN in upper-triangular part).
   DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalForwardDynamics(*context),
-    "An internal mass matrix associated with the joint that "
-    "connects body world to body bodyA is not positive-definite. "
-    "Since the joint allows rotation, ensure body bodyA "
-    "\\(combined with other outboard bodies\\) has reasonable "
-    "non-zero moments of inertia about the joint rotation axes. "
-    "Note: The inertia matrix of body bodyA about its body origin is [^]*");
+    "An internal mass matrix .+ body world to body bodyA "
+    "is not positive-definite. .+ allows rotation,[^]*");
 
   // Verify no assertion is thrown if mA = 1E-4 since articulated body hinge
   // inertia matrix is positive definite (and far from singular).
