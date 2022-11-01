@@ -10,13 +10,24 @@
 
 namespace drake {
 namespace math {
-
-namespace  {
+namespace {
 using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Matrix34d = Eigen::Matrix<double, 3, 4>;
 
+#if defined(__APPLE__)
+constexpr bool kApple = true;
+#else
+constexpr bool kApple = false;
+#endif
+
 GTEST_TEST(TestFastPoseCompositionFunctions, UsingAVX) {
+  // In Drake CI, Apple builds should NOT have AVX enabled (even on x86_64
+  // macOS machines) but everything else SHOULD have AVX enabled.
+  EXPECT_EQ(internal::AvxSupported(), !kApple);
+
+  // The "using portable" and "has avx" will be opposites so long as AVX is the
+  // only accelerated option.
   EXPECT_NE(
       internal::IsUsingPortableCompositionFunctions(),
       internal::AvxSupported());
