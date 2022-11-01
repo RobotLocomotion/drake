@@ -770,7 +770,11 @@ PYBIND11_MODULE(symbolic, m) {
       .def("EvenDegreeMonomialBasis", &symbolic::EvenDegreeMonomialBasis,
           py::arg("vars"), py::arg("degree"), doc.EvenDegreeMonomialBasis.doc)
       .def("OddDegreeMonomialBasis", &symbolic::OddDegreeMonomialBasis,
-          py::arg("vars"), py::arg("degree"), doc.OddDegreeMonomialBasis.doc);
+          py::arg("vars"), py::arg("degree"), doc.OddDegreeMonomialBasis.doc)
+      .def("CalcMonomialBasisOrderUpToOne",
+          &symbolic::CalcMonomialBasisOrderUpToOne, py::arg("x"),
+          py::arg("sort_monomial") = false,
+          doc.CalcMonomialBasisOrderUpToOne.doc);
 
   using symbolic::Polynomial;
 
