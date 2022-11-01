@@ -315,16 +315,21 @@ const RigidBody<double>& AddCubicalLink(
 // Verify an exception is thrown for a forward dynamic analysis of a single
 // zero-mass body that is allowed to translate due to a prismatic joint.
 // This is the first of 5 tests. Two tests use a single body that is connected
-// to world by a one degree-of-freedom joint. The 1st of these two test uses a
-// prismatic (translational) joint whereas the 2nd test uses a revolute joint.
+// to world by a one degree-of-freedom joint. The 1ˢᵗ of these two test uses a
+// prismatic (translational) joint whereas the 2ⁿᵈ test uses a revolute joint.
+// These first two tests ensure an exception is thrown for a single body that
+// is either translating or rotating and at the end of a topological chain.
 // Tests 3 and 4 use multiple bodies with multiple degree of freedom (albeit
 // with each joint being a single degree of freedom). Test 3 uses prismatic
-// joints whereas test 4 uses revolute joint. Test 5 uses a single rigid body
-// that connects to the world with a 6 degree-of-freedom "free-joint" and hence
-// involves a 6 x 6 articulated body hinge inertia matrix (tests 1, 2, 3, 4 only
-// involve a 1 x 1 matrix). Tests 3 and 4 allow investigation of articulated
-// body hinge matrices that involve somethingother than solely most distal
-// body/joint in a multibody tree topology.
+// joints whereas test 4 uses revolute joint. Tests 3 and 4 ensure an exception
+// is thrown for a multi-body system, regardless of whether or not the
+// problematic joint is the last in a topological chain or bodies. Also, since
+// the expected tolerances for rotating bodies are several orders of magnitude
+// smaller than translating bodies, both translational and rotational joints are
+// tested. Test 5 uses a single rigid body that connects to the world with a 6
+// degree-of-freedom "free-joint" and hence involves a 6 x 6 articulated body
+// hinge inertia matrix (tests 1, 2, 3, 4 only involve a 1 x 1 matrix, which is
+// why test 5 is used).
 GTEST_TEST(TestHingeInertiaMatrix, ThrowErrorForZeroMassTranslatingBody) {
   // Create a plant with constructor argument = 0 so a continuous model [and
   // hence the Articulated Body Algorithm (ABA) for forward dynamics] is used.

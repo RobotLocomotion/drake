@@ -61,7 +61,7 @@ void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
               << outboard_body_name << " (combined with other outboard bodies) "
                  "has reasonable non-zero moments of inertia about the joint "
                  "rotation axes. Note: The inertia matrix of body "
-              << outboard_body_name << " about its body origin is "
+              << outboard_body_name << " about its body origin is \n"
               << I_BBo_B << ". ";
     }
     if (mobilizer.can_translate()) {
