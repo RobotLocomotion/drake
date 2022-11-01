@@ -222,6 +222,7 @@ drake_pybind_library(
         ":lcm_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = [
         "lcm_py.cc",

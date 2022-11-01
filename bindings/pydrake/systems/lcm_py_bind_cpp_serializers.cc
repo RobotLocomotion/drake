@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/systems/lcm_py_bind_cpp_serializers.h"
 
 #include "drake/bindings/pydrake/systems/lcm_pybind.h"
@@ -85,7 +86,11 @@ void BindCppSerializers() {
   BindCppSerializer<drake::lcmt_iiwa_status>("drake");
   BindCppSerializer<drake::lcmt_iiwa_status_telemetry>("drake");
   BindCppSerializer<drake::lcmt_image>("drake");
+
   BindCppSerializer<drake::lcmt_image_array>("drake");
+  py::module m = py::module::import("drake");
+  AddValueInstantiation<drake::lcmt_image_array>(m);
+
   BindCppSerializer<drake::lcmt_jaco_command>("drake");
   BindCppSerializer<drake::lcmt_jaco_status>("drake");
   BindCppSerializer<drake::lcmt_panda_command>("drake");
