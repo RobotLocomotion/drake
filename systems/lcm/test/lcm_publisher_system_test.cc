@@ -198,6 +198,33 @@ GTEST_TEST(LcmPublisherSystemTest, TestForcedPublishTrigger) {
   EXPECT_EQ(sub.count(), force_publish_count);
 }
 
+// Test that connecting to optional `should_publish` menas that we now directly
+// control publishing.
+GTEST_TEST(LcmPublisherSystemTest, TestShouldPublishPort) {
+  lcm::DrakeLcm interface;
+  const std::string channel_name = "channel_name";
+  Subscriber sub(&interface, channel_name);
+
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(
+      channel_name, &interface);
+
+  unique_ptr<Context<double>> context = dut->AllocateContext();
+  dut->get_input_port().FixValue(context.get(), lcmt_drake_signal{});
+
+  // Positive case.
+  dut->get_should_publish_input_port().FixValue(context.get(), true);
+  dut->Publish(*context);
+  interface.HandleSubscriptions(0);
+  EXPECT_EQ(sub.count(), 1);
+
+  sub.clear();
+  // Negative case.
+  dut->get_should_publish_input_port().FixValue(context.get(), false);
+  dut->Publish(*context);
+  interface.HandleSubscriptions(0);
+  EXPECT_EQ(sub.count(), 0);
+}
+
 class TimeMessageSystem final : public LeafSystem<double> {
  public:
   TimeMessageSystem() {
@@ -225,7 +252,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   auto source = builder.AddSystem<TimeMessageSystem>();
   auto dut = builder.AddSystem(LcmPublisherSystem::Make<lcmt_drake_signal>(
       channel_name, &interface, kPublishPeriod));
-  builder.Connect(*source, *dut);
+  builder.Connect(source->get_output_port(), dut->get_input_port());
   auto diagram = builder.Build();
 
   // Prepares to integrate.
