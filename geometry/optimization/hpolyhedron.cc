@@ -528,13 +528,6 @@ HPolyhedron::DoToShapeWithPose() const {
       "class (to support in-memory mesh data, or file I/O).");
 }
 
-void HPolyhedron::ImplementGeometry(const HalfSpace&, void* data) {
-  auto* Ab = static_cast<std::pair<MatrixXd, VectorXd>*>(data);
-  // z <= 0.0.
-  Ab->first = Eigen::RowVector3d{0.0, 0.0, 1.0};
-  Ab->second = Vector1d{0.0};
-}
-
 void HPolyhedron::ImplementGeometry(const Box& box, void* data) {
   Eigen::Matrix<double, 6, 3> A;
   A << Eigen::Matrix3d::Identity(), -Eigen::Matrix3d::Identity();
@@ -546,6 +539,13 @@ void HPolyhedron::ImplementGeometry(const Box& box, void* data) {
   auto* Ab = static_cast<std::pair<MatrixXd, VectorXd>*>(data);
   Ab->first = A;
   Ab->second = b;
+}
+
+void HPolyhedron::ImplementGeometry(const HalfSpace&, void* data) {
+  auto* Ab = static_cast<std::pair<MatrixXd, VectorXd>*>(data);
+  // z <= 0.0.
+  Ab->first = Eigen::RowVector3d{0.0, 0.0, 1.0};
+  Ab->second = Vector1d{0.0};
 }
 
 HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {

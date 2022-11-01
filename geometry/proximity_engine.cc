@@ -438,12 +438,38 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         shape, data.id, data.properties, data.X_WG);
   }
 
-  void ImplementGeometry(const Sphere& sphere, void* user_data) override {
+  void ImplementGeometry(const Box& box, void* user_data) override {
+    auto fcl_box = make_shared<fcl::Boxd>(box.size());
+    TakeShapeOwnership(fcl_box, user_data);
+    ProcessHydroelastic(box, user_data);
+    ProcessGeometriesForDeformableContact(box, user_data);
+  }
+
+  void ImplementGeometry(const Capsule& capsule, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
-    auto fcl_sphere = make_shared<fcl::Sphered>(sphere.radius());
-    TakeShapeOwnership(fcl_sphere, user_data);
-    ProcessHydroelastic(sphere, user_data);
-    ProcessGeometriesForDeformableContact(sphere, user_data);
+    auto fcl_capsule =
+        make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
+    TakeShapeOwnership(fcl_capsule, user_data);
+    ProcessHydroelastic(capsule, user_data);
+    ProcessGeometriesForDeformableContact(capsule, user_data);
+  }
+
+  void ImplementGeometry(const Convex& convex, void* user_data) override {
+    // Don't bother triangulating; Convex supports polygons.
+    const auto [vertices, faces, num_faces] =
+        ReadObjFile(convex.filename(), convex.scale(), false /* triangulate */);
+
+    // Create fcl::Convex.
+    auto fcl_convex = make_shared<fcl::Convexd>(vertices, num_faces, faces);
+
+    TakeShapeOwnership(fcl_convex, user_data);
+    ProcessHydroelastic(convex, user_data);
+    ProcessGeometriesForDeformableContact(convex, user_data);
+
+    // TODO(DamrongGuoy): Per f2f with SeanCurtis-TRI, we want ProximityEngine
+    // to own vertices and face by a map from filename.  This way we won't have
+    // to read the same file again and again when we create multiple Convex
+    // objects from the same file.
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override {
@@ -471,22 +497,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_half_space, user_data);
     ProcessHydroelastic(half_space, user_data);
     ProcessGeometriesForDeformableContact(half_space, user_data);
-  }
-
-  void ImplementGeometry(const Box& box, void* user_data) override {
-    auto fcl_box = make_shared<fcl::Boxd>(box.size());
-    TakeShapeOwnership(fcl_box, user_data);
-    ProcessHydroelastic(box, user_data);
-    ProcessGeometriesForDeformableContact(box, user_data);
-  }
-
-  void ImplementGeometry(const Capsule& capsule, void* user_data) override {
-    // Note: Using `shared_ptr` because of FCL API requirements.
-    auto fcl_capsule =
-        make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
-    TakeShapeOwnership(fcl_capsule, user_data);
-    ProcessHydroelastic(capsule, user_data);
-    ProcessGeometriesForDeformableContact(capsule, user_data);
   }
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
@@ -547,22 +557,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     ProcessGeometriesForDeformableContact(mesh, user_data);
   }
 
-  void ImplementGeometry(const Convex& convex, void* user_data) override {
-    // Don't bother triangulating; Convex supports polygons.
-    const auto [vertices, faces, num_faces] =
-        ReadObjFile(convex.filename(), convex.scale(), false /* triangulate */);
-
-    // Create fcl::Convex.
-    auto fcl_convex = make_shared<fcl::Convexd>(vertices, num_faces, faces);
-
-    TakeShapeOwnership(fcl_convex, user_data);
-    ProcessHydroelastic(convex, user_data);
-    ProcessGeometriesForDeformableContact(convex, user_data);
-
-    // TODO(DamrongGuoy): Per f2f with SeanCurtis-TRI, we want ProximityEngine
-    // to own vertices and face by a map from filename.  This way we won't have
-    // to read the same file again and again when we create multiple Convex
-    // objects from the same file.
+  void ImplementGeometry(const Sphere& sphere, void* user_data) override {
+    // Note: Using `shared_ptr` because of FCL API requirements.
+    auto fcl_sphere = make_shared<fcl::Sphered>(sphere.radius());
+    TakeShapeOwnership(fcl_sphere, user_data);
+    ProcessHydroelastic(sphere, user_data);
+    ProcessGeometriesForDeformableContact(sphere, user_data);
   }
 
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(

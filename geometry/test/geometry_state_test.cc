@@ -220,23 +220,6 @@ class ShapeMatcher final : public ShapeReifier {
   // Shape reifier implementations.
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Sphere& sphere, void*) final {
-    if (IsExpectedType(sphere)) {
-      TestShapeParameters(sphere);
-    }
-  }
-
-  void ImplementGeometry(const Cylinder& cylinder, void*) final {
-    if (IsExpectedType(cylinder)) {
-      TestShapeParameters(cylinder);
-    }
-  }
-
-  void ImplementGeometry(const HalfSpace& half_space, void*) final {
-    // Halfspace has no parameters; so no further testing is necessary.
-    IsExpectedType(half_space);
-  }
-
   void ImplementGeometry(const Box& box, void*) final {
     if (IsExpectedType(box)) {
       TestShapeParameters(box);
@@ -249,15 +232,34 @@ class ShapeMatcher final : public ShapeReifier {
     }
   }
 
+  void ImplementGeometry(const Convex& convex, void*) final {
+    if (IsExpectedType(convex)) {
+      TestShapeParameters(convex);
+    }
+  }
+
+  void ImplementGeometry(const Cylinder& cylinder, void*) final {
+    if (IsExpectedType(cylinder)) {
+      TestShapeParameters(cylinder);
+    }
+  }
+
+  // TODO(SeanCurtis-TRI): Why are we missing ellipsoid and meshcat cone?
+
+  void ImplementGeometry(const HalfSpace& half_space, void*) final {
+    // Halfspace has no parameters; so no further testing is necessary.
+    IsExpectedType(half_space);
+  }
+
   void ImplementGeometry(const Mesh& mesh, void*) final {
     if (IsExpectedType(mesh)) {
       TestShapeParameters(mesh);
     }
   }
 
-  void ImplementGeometry(const Convex& convex, void*) final {
-    if (IsExpectedType(convex)) {
-      TestShapeParameters(convex);
+  void ImplementGeometry(const Sphere& sphere, void*) final {
+    if (IsExpectedType(sphere)) {
+      TestShapeParameters(sphere);
     }
   }
 

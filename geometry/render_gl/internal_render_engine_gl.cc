@@ -501,25 +501,6 @@ void RenderEngineGl::UpdateViewpoint(const RigidTransformd& X_WR) {
   X_CW_ = X_WR.inverse();
 }
 
-void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
-  OpenGlGeometry geometry = GetSphere();
-  const double r = sphere.radius();
-  ImplementGeometry(geometry, user_data, Vector3d(r, r, r));
-}
-
-void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
-                                       void* user_data) {
-  OpenGlGeometry geometry = GetCylinder();
-  const double r = cylinder.radius();
-  const double l = cylinder.length();
-  ImplementGeometry(geometry, user_data, Vector3d(r, r, l));
-}
-
-void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
-  OpenGlGeometry geometry = GetHalfSpace();
-  ImplementGeometry(geometry, user_data, Vector3d(1, 1, 1));
-}
-
 void RenderEngineGl::ImplementGeometry(const Box& box, void* user_data) {
   OpenGlGeometry geometry = GetBox();
   ImplementGeometry(geometry, user_data,
@@ -538,11 +519,30 @@ void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
   ImplementGeometry(geometry, user_data, Vector3d::Ones());
 }
 
+void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
+  OpenGlGeometry geometry = GetMesh(convex.filename());
+  ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * convex.scale(),
+                convex.filename());
+}
+
+void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
+                                       void* user_data) {
+  OpenGlGeometry geometry = GetCylinder();
+  const double r = cylinder.radius();
+  const double l = cylinder.length();
+  ImplementGeometry(geometry, user_data, Vector3d(r, r, l));
+}
+
 void RenderEngineGl::ImplementGeometry(const Ellipsoid& ellipsoid,
                                        void* user_data) {
   OpenGlGeometry geometry = GetSphere();
   ImplementGeometry(geometry, user_data,
                     Vector3d(ellipsoid.a(), ellipsoid.b(), ellipsoid.c()));
+}
+
+void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
+  OpenGlGeometry geometry = GetHalfSpace();
+  ImplementGeometry(geometry, user_data, Vector3d(1, 1, 1));
 }
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
@@ -551,10 +551,10 @@ void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
                 mesh.filename());
 }
 
-void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
-  OpenGlGeometry geometry = GetMesh(convex.filename());
-  ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * convex.scale(),
-                convex.filename());
+void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
+  OpenGlGeometry geometry = GetSphere();
+  const double r = sphere.radius();
+  ImplementGeometry(geometry, user_data, Vector3d(r, r, r));
 }
 
 void RenderEngineGl::ImplementMesh(const OpenGlGeometry& geometry,

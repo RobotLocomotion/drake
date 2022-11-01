@@ -36,11 +36,41 @@ Shape::Shape(ShapeTag<S>) {
   };
 }
 
-Sphere::Sphere(double radius)
-    : Shape(ShapeTag<Sphere>()), radius_(radius) {
-  if (radius < 0) {
+Box::Box(double width, double depth, double height)
+    : Shape(ShapeTag<Box>()),
+      size_(width, depth, height) {
+  if (width <= 0 || depth <= 0 || height <= 0) {
     throw std::logic_error(
-        fmt::format("Sphere radius should be >= 0 (was {}).", radius));
+        fmt::format("Box width, depth, and height should all be > 0 (were {}, "
+                    "{}, and {}, respectively).",
+                    width, depth, height));
+  }
+}
+
+Box::Box(const Vector3<double>& measures)
+    : Box(measures(0), measures(1), measures(2)) {}
+
+Box Box::MakeCube(double edge_size) {
+  return Box(edge_size, edge_size, edge_size);
+}
+
+Capsule::Capsule(double radius, double length)
+    : Shape(ShapeTag<Capsule>()), radius_(radius), length_(length) {
+  if (radius <= 0 || length <= 0) {
+    throw std::logic_error(
+        fmt::format("Capsule radius and length should both be > 0 (were {} "
+                    "and {}, respectively).",
+                    radius, length));
+  }
+}
+
+Capsule::Capsule(const Vector2<double>& measures)
+    : Capsule(measures(0), measures(1)) {}
+
+Convex::Convex(const std::string& absolute_filename, double scale)
+    : Shape(ShapeTag<Convex>()), filename_(absolute_filename), scale_(scale) {
+  if (std::abs(scale) < 1e-8) {
+    throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
 }
 
@@ -58,6 +88,19 @@ Cylinder::Cylinder(double radius, double length)
 
 Cylinder::Cylinder(const Vector2<double>& measures)
     : Cylinder(measures(0), measures(1)) {}
+
+Ellipsoid::Ellipsoid(double a, double b, double c)
+    : Shape(ShapeTag<Ellipsoid>()), radii_(a, b, c) {
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw std::logic_error(
+        fmt::format("Ellipsoid lengths of principal semi-axes a, b, and c "
+                    "should all be > 0 (were {}, {}, and {}, respectively).",
+                    a, b, c));
+  }
+}
+
+Ellipsoid::Ellipsoid(const Vector3<double>& measures)
+    : Ellipsoid(measures(0), measures(1), measures(2)) {}
 
 HalfSpace::HalfSpace() : Shape(ShapeTag<HalfSpace>()) {}
 
@@ -92,61 +135,10 @@ RigidTransform<double> HalfSpace::MakePose(const Vector3<double>& Hz_dir_F,
   return RigidTransform<double>(R_FH, p_FH);
 }
 
-Box::Box(double width, double depth, double height)
-    : Shape(ShapeTag<Box>()),
-      size_(width, depth, height) {
-  if (width <= 0 || depth <= 0 || height <= 0) {
-    throw std::logic_error(
-        fmt::format("Box width, depth, and height should all be > 0 (were {}, "
-                    "{}, and {}, respectively).",
-                    width, depth, height));
-  }
-}
-
-Box::Box(const Vector3<double>& measures)
-    : Box(measures(0), measures(1), measures(2)) {}
-
-Box Box::MakeCube(double edge_size) {
-  return Box(edge_size, edge_size, edge_size);
-}
-
-Capsule::Capsule(double radius, double length)
-    : Shape(ShapeTag<Capsule>()), radius_(radius), length_(length) {
-  if (radius <= 0 || length <= 0) {
-    throw std::logic_error(
-        fmt::format("Capsule radius and length should both be > 0 (were {} "
-                    "and {}, respectively).",
-                    radius, length));
-  }
-}
-
-Capsule::Capsule(const Vector2<double>& measures)
-    : Capsule(measures(0), measures(1)) {}
-
-Ellipsoid::Ellipsoid(double a, double b, double c)
-    : Shape(ShapeTag<Ellipsoid>()), radii_(a, b, c) {
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw std::logic_error(
-        fmt::format("Ellipsoid lengths of principal semi-axes a, b, and c "
-                    "should all be > 0 (were {}, {}, and {}, respectively).",
-                    a, b, c));
-  }
-}
-
-Ellipsoid::Ellipsoid(const Vector3<double>& measures)
-    : Ellipsoid(measures(0), measures(1), measures(2)) {}
-
 Mesh::Mesh(const std::string& absolute_filename, double scale)
     : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
-  }
-}
-
-Convex::Convex(const std::string& absolute_filename, double scale)
-    : Shape(ShapeTag<Convex>()), filename_(absolute_filename), scale_(scale) {
-  if (std::abs(scale) < 1e-8) {
-    throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
 }
 
@@ -163,19 +155,15 @@ MeshcatCone::MeshcatCone(double height, double a, double b)
 MeshcatCone::MeshcatCone(const Vector3<double>& measures)
     : MeshcatCone(measures(0), measures(1), measures(2)) {}
 
+Sphere::Sphere(double radius)
+    : Shape(ShapeTag<Sphere>()), radius_(radius) {
+  if (radius < 0) {
+    throw std::logic_error(
+        fmt::format("Sphere radius should be >= 0 (was {}).", radius));
+  }
+}
+
 ShapeReifier::~ShapeReifier() = default;
-
-void ShapeReifier::ImplementGeometry(const Sphere&, void*) {
-  ThrowUnsupportedGeometry("Sphere");
-}
-
-void ShapeReifier::ImplementGeometry(const Cylinder&, void*) {
-  ThrowUnsupportedGeometry("Cylinder");
-}
-
-void ShapeReifier::ImplementGeometry(const HalfSpace&, void*) {
-  ThrowUnsupportedGeometry("HalfSpace");
-}
 
 void ShapeReifier::ImplementGeometry(const Box&, void*) {
   ThrowUnsupportedGeometry("Box");
@@ -185,19 +173,32 @@ void ShapeReifier::ImplementGeometry(const Capsule&, void*) {
   ThrowUnsupportedGeometry("Capsule");
 }
 
-void ShapeReifier::ImplementGeometry(const Ellipsoid&, void*) {
-  ThrowUnsupportedGeometry("Ellipsoid");
-}
-void ShapeReifier::ImplementGeometry(const Mesh&, void*) {
-  ThrowUnsupportedGeometry("Mesh");
-}
-
 void ShapeReifier::ImplementGeometry(const Convex&, void*) {
   ThrowUnsupportedGeometry("Convex");
 }
 
+void ShapeReifier::ImplementGeometry(const Cylinder&, void*) {
+  ThrowUnsupportedGeometry("Cylinder");
+}
+
+void ShapeReifier::ImplementGeometry(const Ellipsoid&, void*) {
+  ThrowUnsupportedGeometry("Ellipsoid");
+}
+
+void ShapeReifier::ImplementGeometry(const HalfSpace&, void*) {
+  ThrowUnsupportedGeometry("HalfSpace");
+}
+
+void ShapeReifier::ImplementGeometry(const Mesh&, void*) {
+  ThrowUnsupportedGeometry("Mesh");
+}
+
 void ShapeReifier::ImplementGeometry(const MeshcatCone&, void*) {
   ThrowUnsupportedGeometry("MeshcatCone");
+}
+
+void ShapeReifier::ImplementGeometry(const Sphere&, void*) {
+  ThrowUnsupportedGeometry("Sphere");
 }
 
 void ShapeReifier::ThrowUnsupportedGeometry(const std::string& shape_name) {
@@ -211,18 +212,6 @@ ShapeName::ShapeName(const Shape& shape) {
 
 ShapeName::~ShapeName() = default;
 
-void ShapeName::ImplementGeometry(const Sphere&, void*) {
-  string_ = "Sphere";
-}
-
-void ShapeName::ImplementGeometry(const Cylinder&, void*) {
-  string_ = "Cylinder";
-}
-
-void ShapeName::ImplementGeometry(const HalfSpace&, void*) {
-  string_ = "HalfSpace";
-}
-
 void ShapeName::ImplementGeometry(const Box&, void*) {
   string_ = "Box";
 }
@@ -231,20 +220,32 @@ void ShapeName::ImplementGeometry(const Capsule&, void*) {
   string_ = "Capsule";
 }
 
+void ShapeName::ImplementGeometry(const Convex&, void*) {
+  string_ = "Convex";
+}
+
+void ShapeName::ImplementGeometry(const Cylinder&, void*) {
+  string_ = "Cylinder";
+}
+
 void ShapeName::ImplementGeometry(const Ellipsoid&, void*) {
   string_ = "Ellipsoid";
+}
+
+void ShapeName::ImplementGeometry(const HalfSpace&, void*) {
+  string_ = "HalfSpace";
 }
 
 void ShapeName::ImplementGeometry(const Mesh&, void*) {
   string_ = "Mesh";
 }
 
-void ShapeName::ImplementGeometry(const Convex&, void*) {
-  string_ = "Convex";
-}
-
 void ShapeName::ImplementGeometry(const MeshcatCone&, void*) {
   string_ = "MeshcatCone";
+}
+
+void ShapeName::ImplementGeometry(const Sphere&, void*) {
+  string_ = "Sphere";
 }
 
 std::ostream& operator<<(std::ostream& out, const ShapeName& name) {
@@ -259,15 +260,6 @@ class CalcVolumeReifier final : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Sphere& sphere, void*) final {
-    volume_ = 4.0 / 3.0 * M_PI * std::pow(sphere.radius(), 3);
-  }
-  void ImplementGeometry(const Cylinder& cylinder, void*) final {
-    volume_ = M_PI * std::pow(cylinder.radius(), 2) * cylinder.length();
-  }
-  void ImplementGeometry(const HalfSpace&, void*) final {
-    volume_ = std::numeric_limits<double>::infinity();
-  }
   void ImplementGeometry(const Box& box, void*) final {
     volume_ = box.width() * box.depth() * box.height();
   }
@@ -275,11 +267,20 @@ class CalcVolumeReifier final : public ShapeReifier {
     volume_ = M_PI * std::pow(capsule.radius(), 2) * capsule.length() +
          4.0 / 3.0 * M_PI * std::pow(capsule.radius(), 3);
   }
+  void ImplementGeometry(const Cylinder& cylinder, void*) final {
+    volume_ = M_PI * std::pow(cylinder.radius(), 2) * cylinder.length();
+  }
   void ImplementGeometry(const Ellipsoid& ellipsoid, void*) final {
     volume_ = 4.0 / 3.0 * M_PI * ellipsoid.a() * ellipsoid.b() * ellipsoid.c();
   }
+  void ImplementGeometry(const HalfSpace&, void*) final {
+    volume_ = std::numeric_limits<double>::infinity();
+  }
   void ImplementGeometry(const MeshcatCone& cone, void*) final {
     volume_ = 1.0 / 3.0 * M_PI * cone.a() * cone.b() * cone.height();
+  }
+  void ImplementGeometry(const Sphere& sphere, void*) final {
+    volume_ = 4.0 / 3.0 * M_PI * std::pow(sphere.radius(), 3);
   }
 
   double volume() const { return volume_; }

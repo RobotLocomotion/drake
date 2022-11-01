@@ -267,76 +267,6 @@ class MeshcatShapeReifier : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Sphere& sphere, void* data) override {
-    DRAKE_DEMAND(data != nullptr);
-    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    lumped.object = internal::MeshData();
-
-    auto geometry = std::make_unique<internal::SphereGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
-    geometry->radius = sphere.radius();
-    lumped.geometry = std::move(geometry);
-  }
-
-  void ImplementGeometry(const Cylinder& cylinder, void* data) override {
-    DRAKE_DEMAND(data != nullptr);
-    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    auto& mesh = lumped.object.emplace<internal::MeshData>();
-
-    auto geometry = std::make_unique<internal::CylinderGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
-    geometry->radiusBottom = cylinder.radius();
-    geometry->radiusTop = cylinder.radius();
-    geometry->height = cylinder.length();
-    lumped.geometry = std::move(geometry);
-
-    // Meshcat cylinders have their long axis in y.
-    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
-        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0))
-            .GetAsMatrix4();
-  }
-
-  void ImplementGeometry(const HalfSpace&, void*) override {
-    // TODO(russt): Use PlaneGeometry with fields width, height,
-    // widthSegments, heightSegments
-    drake::log()->warn("Meshcat does not display HalfSpace geometry (yet).");
-  }
-
-  void ImplementGeometry(const Box& box, void* data) override {
-    DRAKE_DEMAND(data != nullptr);
-    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    lumped.object = internal::MeshData();
-
-    auto geometry = std::make_unique<internal::BoxGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
-    geometry->width = box.width();
-    // Three.js uses height for the y axis; Drake uses depth.
-    geometry->height = box.depth();
-    geometry->depth = box.height();
-    lumped.geometry = std::move(geometry);
-  }
-
-  void ImplementGeometry(const Capsule&, void*) override {
-    drake::log()->warn("Meshcat does not display Capsule geometry (yet).");
-  }
-
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void* data) override {
-    // Implemented as a Sphere stretched by a diagonal transform.
-    DRAKE_DEMAND(data != nullptr);
-    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    auto& mesh = lumped.object.emplace<internal::MeshData>();
-
-    auto geometry = std::make_unique<internal::SphereGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
-    geometry->radius = 1;
-    lumped.geometry = std::move(geometry);
-
-    Eigen::Map<Eigen::Matrix4d> matrix(mesh.matrix);
-    matrix(0, 0) = ellipsoid.a();
-    matrix(1, 1) = ellipsoid.b();
-    matrix(2, 2) = ellipsoid.c();
-  }
-
   template <typename T>
   void ImplementMesh(const T& mesh, void* data) {
     DRAKE_DEMAND(data != nullptr);
@@ -466,11 +396,70 @@ class MeshcatShapeReifier : public ShapeReifier {
     }
     }
 
-  void ImplementGeometry(const Mesh& mesh, void* data) override {
-    ImplementMesh(mesh, data);
+  void ImplementGeometry(const Box& box, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
+    lumped.object = internal::MeshData();
+
+    auto geometry = std::make_unique<internal::BoxGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->width = box.width();
+    // Three.js uses height for the y axis; Drake uses depth.
+    geometry->height = box.depth();
+    geometry->depth = box.height();
+    lumped.geometry = std::move(geometry);
+  }
+
+  void ImplementGeometry(const Capsule&, void*) override {
+    drake::log()->warn("Meshcat does not display Capsule geometry (yet).");
   }
 
   void ImplementGeometry(const Convex& mesh, void* data) override {
+    ImplementMesh(mesh, data);
+  }
+
+  void ImplementGeometry(const Cylinder& cylinder, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
+
+    auto geometry = std::make_unique<internal::CylinderGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radiusBottom = cylinder.radius();
+    geometry->radiusTop = cylinder.radius();
+    geometry->height = cylinder.length();
+    lumped.geometry = std::move(geometry);
+
+    // Meshcat cylinders have their long axis in y.
+    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
+        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0))
+            .GetAsMatrix4();
+  }
+
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* data) override {
+    // Implemented as a Sphere stretched by a diagonal transform.
+    DRAKE_DEMAND(data != nullptr);
+    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
+
+    auto geometry = std::make_unique<internal::SphereGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radius = 1;
+    lumped.geometry = std::move(geometry);
+
+    Eigen::Map<Eigen::Matrix4d> matrix(mesh.matrix);
+    matrix(0, 0) = ellipsoid.a();
+    matrix(1, 1) = ellipsoid.b();
+    matrix(2, 2) = ellipsoid.c();
+  }
+
+  void ImplementGeometry(const HalfSpace&, void*) override {
+    // TODO(russt): Use PlaneGeometry with fields width, height,
+    // widthSegments, heightSegments
+    drake::log()->warn("Meshcat does not display HalfSpace geometry (yet).");
+  }
+
+  void ImplementGeometry(const Mesh& mesh, void* data) override {
     ImplementMesh(mesh, data);
   }
 
@@ -494,6 +483,17 @@ class MeshcatShapeReifier : public ShapeReifier {
         RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0),
                         Eigen::Vector3d{0, 0, cone.height() / 2.0})
             .GetAsMatrix4();
+  }
+
+  void ImplementGeometry(const Sphere& sphere, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
+    lumped.object = internal::MeshData();
+
+    auto geometry = std::make_unique<internal::SphereGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radius = sphere.radius();
+    lumped.geometry = std::move(geometry);
   }
 
  private:

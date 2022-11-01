@@ -55,14 +55,14 @@ class DummyRenderEngine : public render::RenderEngine {
   using render::RenderEngine::RenderLabelImage;
 
   using RenderEngine::ImplementGeometry;
-  void ImplementGeometry(const Sphere& sphere, void* user_data) override {}
-  void ImplementGeometry(const Cylinder& cylinder, void* user_data) override {}
-  void ImplementGeometry(const HalfSpace& half_space,
-                         void* user_data) override {}
-  void ImplementGeometry(const Box& box, void* user_data) override {}
-  void ImplementGeometry(const Capsule& capsule, void* user_data) override {}
-  void ImplementGeometry(const Mesh& mesh, void* user_data) override {}
-  void ImplementGeometry(const Convex& convex, void* user_data) override {}
+  void ImplementGeometry(const Box&, void*) override {}
+  void ImplementGeometry(const Capsule&, void*) override {}
+  void ImplementGeometry(const Convex&, void*) override {}
+  void ImplementGeometry(const Cylinder&, void*) override {}
+  void ImplementGeometry(const HalfSpace&, void*) override {}
+  void ImplementGeometry(const Mesh&, void*) override {}
+  void ImplementGeometry(const MeshcatCone&, void*) override {}
+  void ImplementGeometry(const Sphere&, void*) override {}
   //@}
 
   /* @name  Functions for supporting tests.  */

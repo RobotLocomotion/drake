@@ -132,10 +132,19 @@ void RenderEngineVtk::UpdateViewpoint(const RigidTransformd& X_WC) {
   }
 }
 
-void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
-  vtkNew<vtkTexturedSphereSource> vtk_sphere;
-  SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
-  ImplementGeometry(vtk_sphere.GetPointer(), user_data);
+void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
+  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  ImplementGeometry(CreateVtkBox(box, data->properties).GetPointer(),
+                    user_data);
+}
+
+void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
+                                        void* user_data) {
+  ImplementGeometry(CreateVtkCapsule(capsule).GetPointer(), user_data);
+}
+
+void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
+  ImplementObj(convex.filename(), convex.scale(), user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
@@ -152,6 +161,11 @@ void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
   ImplementGeometry(transform_filter.GetPointer(), user_data);
 }
 
+void RenderEngineVtk::ImplementGeometry(const Ellipsoid& ellipsoid,
+                                        void* user_data) {
+  ImplementGeometry(CreateVtkEllipsoid(ellipsoid).GetPointer(), user_data);
+}
+
 void RenderEngineVtk::ImplementGeometry(const HalfSpace&,
                                         void* user_data) {
   vtkSmartPointer<vtkPlaneSource> vtk_plane = CreateSquarePlane(kTerrainSize);
@@ -159,28 +173,14 @@ void RenderEngineVtk::ImplementGeometry(const HalfSpace&,
   ImplementGeometry(vtk_plane.GetPointer(), user_data);
 }
 
-void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
-  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  ImplementGeometry(CreateVtkBox(box, data->properties).GetPointer(),
-                    user_data);
-}
-
-void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
-                                        void* user_data) {
-  ImplementGeometry(CreateVtkCapsule(capsule).GetPointer(), user_data);
-}
-
-void RenderEngineVtk::ImplementGeometry(const Ellipsoid& ellipsoid,
-                                        void* user_data) {
-  ImplementGeometry(CreateVtkEllipsoid(ellipsoid).GetPointer(), user_data);
-}
-
 void RenderEngineVtk::ImplementGeometry(const Mesh& mesh, void* user_data) {
   ImplementObj(mesh.filename(), mesh.scale(), user_data);
 }
 
-void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
-  ImplementObj(convex.filename(), convex.scale(), user_data);
+void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
+  vtkNew<vtkTexturedSphereSource> vtk_sphere;
+  SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
+  ImplementGeometry(vtk_sphere.GetPointer(), user_data);
 }
 
 bool RenderEngineVtk::DoRegisterVisual(

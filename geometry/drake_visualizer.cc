@@ -383,10 +383,37 @@ class ShapeToLcm : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Sphere& sphere, void*) override {
-    geometry_data_.type = geometry_data_.SPHERE;
-    geometry_data_.num_float_data = 1;
-    geometry_data_.float_data.push_back(static_cast<float>(sphere.radius()));
+  void ImplementGeometry(const Box& box, void*) override {
+    geometry_data_.type = geometry_data_.BOX;
+    geometry_data_.num_float_data = 3;
+    // Box width, depth, and height.
+    geometry_data_.float_data.push_back(static_cast<float>(box.width()));
+    geometry_data_.float_data.push_back(static_cast<float>(box.depth()));
+    geometry_data_.float_data.push_back(static_cast<float>(box.height()));
+  }
+
+  void ImplementGeometry(const Capsule& capsule, void*) override {
+    geometry_data_.type = geometry_data_.CAPSULE;
+    geometry_data_.num_float_data = 2;
+    geometry_data_.float_data.push_back(static_cast<float>(capsule.radius()));
+    geometry_data_.float_data.push_back(static_cast<float>(capsule.length()));
+  }
+
+  // For visualization, Convex is the same as Mesh.
+  void ImplementGeometry(const Convex& mesh, void*) override {
+    geometry_data_.type = geometry_data_.MESH;
+    geometry_data_.num_float_data = 3;
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.string_data = mesh.filename();
+  }
+
+  void ImplementGeometry(const Cylinder& cylinder, void*) override {
+    geometry_data_.type = geometry_data_.CYLINDER;
+    geometry_data_.num_float_data = 2;
+    geometry_data_.float_data.push_back(static_cast<float>(cylinder.radius()));
+    geometry_data_.float_data.push_back(static_cast<float>(cylinder.length()));
   }
 
   void ImplementGeometry(const Ellipsoid& ellipsoid, void*) override {
@@ -395,13 +422,6 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.a()));
     geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.b()));
     geometry_data_.float_data.push_back(static_cast<float>(ellipsoid.c()));
-  }
-
-  void ImplementGeometry(const Cylinder& cylinder, void*) override {
-    geometry_data_.type = geometry_data_.CYLINDER;
-    geometry_data_.num_float_data = 2;
-    geometry_data_.float_data.push_back(static_cast<float>(cylinder.radius()));
-    geometry_data_.float_data.push_back(static_cast<float>(cylinder.length()));
   }
 
   void ImplementGeometry(const HalfSpace&, void*) override {
@@ -423,22 +443,6 @@ class ShapeToLcm : public ShapeReifier {
     X_PG_ = X_PG_ * box_xform;
   }
 
-  void ImplementGeometry(const Box& box, void*) override {
-    geometry_data_.type = geometry_data_.BOX;
-    geometry_data_.num_float_data = 3;
-    // Box width, depth, and height.
-    geometry_data_.float_data.push_back(static_cast<float>(box.width()));
-    geometry_data_.float_data.push_back(static_cast<float>(box.depth()));
-    geometry_data_.float_data.push_back(static_cast<float>(box.height()));
-  }
-
-  void ImplementGeometry(const Capsule& capsule, void*) override {
-    geometry_data_.type = geometry_data_.CAPSULE;
-    geometry_data_.num_float_data = 2;
-    geometry_data_.float_data.push_back(static_cast<float>(capsule.radius()));
-    geometry_data_.float_data.push_back(static_cast<float>(capsule.length()));
-  }
-
   void ImplementGeometry(const Mesh& mesh, void*) override {
     geometry_data_.type = geometry_data_.MESH;
     geometry_data_.num_float_data = 3;
@@ -448,14 +452,10 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.string_data = mesh.filename();
   }
 
-  // For visualization, Convex is the same as Mesh.
-  void ImplementGeometry(const Convex& mesh, void*) override {
-    geometry_data_.type = geometry_data_.MESH;
-    geometry_data_.num_float_data = 3;
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.string_data = mesh.filename();
+  void ImplementGeometry(const Sphere& sphere, void*) override {
+    geometry_data_.type = geometry_data_.SPHERE;
+    geometry_data_.num_float_data = 1;
+    geometry_data_.float_data.push_back(static_cast<float>(sphere.radius()));
   }
 
  private:

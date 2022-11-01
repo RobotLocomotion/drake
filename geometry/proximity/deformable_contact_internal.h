@@ -115,15 +115,15 @@ class Geometries final : public ShapeReifier {
     const ProximityProperties& properties;
   };
 
-  void ImplementGeometry(const Sphere& sphere, void* user_data) override;
-  void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
   void ImplementGeometry(const Box& box, void* user_data) override;
   void ImplementGeometry(const Capsule& capsule, void* user_data) override;
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override;
-  void ImplementGeometry(const Mesh& mesh, void* user_data) override;
   void ImplementGeometry(const Convex& convex, void* user_data) override;
+  void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override;
   void ImplementGeometry(const HalfSpace& half_space, void* user_data) override;
+  void ImplementGeometry(const Mesh& mesh, void* user_data) override;
   void ImplementGeometry(const MeshcatCone& cone, void* user_data) override;
+  void ImplementGeometry(const Sphere& sphere, void* user_data) override;
 
   /* Makes a rigid (non-deformable) geometry from a supported shape type using
    the given `data`. */
