@@ -120,6 +120,7 @@ drake_cc_library(
         "planar_mobilizer.cc",
         "prismatic_joint.cc",
         "prismatic_mobilizer.cc",
+        "prismatic_spring.cc",
         "quaternion_floating_joint.cc",
         "quaternion_floating_mobilizer.cc",
         "revolute_joint.cc",
@@ -163,6 +164,7 @@ drake_cc_library(
         "planar_mobilizer.h",
         "prismatic_joint.h",
         "prismatic_mobilizer.h",
+        "prismatic_spring.h",
         "quaternion_floating_joint.h",
         "quaternion_floating_mobilizer.h",
         "revolute_joint.h",
@@ -566,6 +568,15 @@ drake_cc_googletest(
         "//multibody/plant",
         "//systems/analysis:initial_value_problem",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "prismatic_spring_test",
+    deps = [
+        ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework:context",
     ],
 )
 

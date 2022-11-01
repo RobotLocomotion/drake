@@ -29,6 +29,7 @@
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_spring.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -801,6 +802,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("free_length", &Class::free_length, cls_doc.free_length.doc)
         .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc)
         .def("damping", &Class::damping, cls_doc.damping.doc);
+  }
+
+  {
+    using Class = PrismaticSpring<T>;
+    constexpr auto& cls_doc = doc.PrismaticSpring;
+    auto cls = DefineTemplateClassWithDefault<Class, ForceElement<T>>(
+        m, "PrismaticSpring", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const PrismaticJoint<T>&, double, double>(),
+            py::arg("joint"), py::arg("nominal_position"), py::arg("stiffness"),
+            cls_doc.ctor.doc)
+        .def("joint", &Class::joint, py_rvp::reference_internal,
+            cls_doc.joint.doc)
+        .def("nominal_position", &Class::nominal_position,
+            cls_doc.nominal_position.doc)
+        .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc);
   }
 
   {
