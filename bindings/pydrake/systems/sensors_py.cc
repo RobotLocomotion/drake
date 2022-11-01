@@ -19,9 +19,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/sensors/camera_config_functions.h"
 #include "drake/systems/sensors/camera_info.h"
-#include "drake/systems/sensors/lcm_image_array_to_images.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
+#include "drake/systems/sensors/lcm_image_array_to_images.h"
 #include "drake/systems/sensors/pixel_types.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
 
