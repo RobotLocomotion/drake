@@ -19,6 +19,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/sensors/camera_config_functions.h"
 #include "drake/systems/sensors/camera_info.h"
+#include "drake/systems/sensors/lcm_image_array_to_images.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 #include "drake/systems/sensors/pixel_types.h"
@@ -323,6 +324,21 @@ PYBIND11_MODULE(sensors, m) {
                   t[2].cast<double>(), t[3].cast<double>(), t[4].cast<double>(),
                   t[5].cast<double>());
             }));
+  }
+
+  {
+    using Class = LcmImageArrayToImages;
+    constexpr auto& cls_doc = doc.LcmImageArrayToImages;
+    py::class_<Class, LeafSystem<double>> cls(
+        m, "LcmImageArrayToImages", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), "asdf")
+        .def("image_array_t_input_port", &Class::image_array_t_input_port,
+             py_rvp::reference_internal, cls_doc.image_array_t_input_port.doc)
+        .def("color_image_output_port", &Class::color_image_output_port,
+             py_rvp::reference_internal, cls_doc.color_image_output_port.doc)
+        .def("depth_image_output_port", &Class::depth_image_output_port,
+             py_rvp::reference_internal, cls_doc.depth_image_output_port.doc);
   }
 
   {
