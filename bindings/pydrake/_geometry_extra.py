@@ -7,7 +7,6 @@ import subprocess
 import sys
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.deprecation import deprecated_callable as _deprecated
 
 
 def _is_listening(port):
@@ -72,35 +71,3 @@ def StartMeshcat():
     if "DEEPNOTE_PROJECT_ID" in os.environ:
         return _start_meshcat_deepnote()
     return Meshcat()
-
-
-@_deprecated(
-    "MeshcatVisualizerCpp has been renamed to MeshcatVisualizer.",
-    date="2022-11-01")
-def MeshcatVisualizerCpp(*args, **kwargs):
-    return MeshcatVisualizer(*args, **kwargs)
-
-
-@_deprecated(
-    "MeshcatVisualizerCpp has been renamed to MeshcatVisualizer.",
-    date="2022-11-01")
-def _AddToBuilder(*args, **kwargs):
-    return MeshcatVisualizer.AddToBuilder(*args, **kwargs)
-
-
-MeshcatVisualizerCpp.AddToBuilder = _AddToBuilder
-
-
-@_deprecated(
-    "MeshcatPointCloudVisualizerCpp has been renamed to "
-    "MeshcatPointCloudVisualizer.",
-    date="2022-11-01")
-def MeshcatPointCloudVisualizerCpp(*args, **kwargs):
-    return MeshcatPointCloudVisualizer(*args, **kwargs)
-
-
-# For the template classes, it's not easy to add a deprecation message.
-# We'll rely on the default names above (no underscore) to provide one,
-# along with the release notes.
-MeshcatVisualizerCpp_ = MeshcatVisualizer_
-MeshcatPointCloudVisualizerCpp_ = MeshcatPointCloudVisualizer_

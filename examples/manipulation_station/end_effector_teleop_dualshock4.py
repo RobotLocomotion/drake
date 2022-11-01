@@ -17,7 +17,7 @@ from pydrake.common.value import AbstractValue
 from pydrake.examples import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
-from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizerCpp
+from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsIntegrator,
@@ -372,7 +372,7 @@ def main():
         DrakeVisualizer.AddToBuilder(builder, query_port)
         if args.meshcat:
             meshcat = Meshcat()
-            MeshcatVisualizerCpp.AddToBuilder(
+            MeshcatVisualizer.AddToBuilder(
                 builder=builder,
                 query_object_port=query_port,
                 meshcat=meshcat)
