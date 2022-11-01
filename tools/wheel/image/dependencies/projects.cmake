@@ -32,16 +32,15 @@ set(xz_md5 "0d270c997aff29708c74d53f599ef717")
 list(APPEND ALL_PROJECTS xz)
 
 # libjpeg-turbo
-set(libjpeg-turbo_version 1.4.0)
-set(libjpeg-turbo_url "http://sourceforge.net/projects/libjpeg-turbo/files/libjpeg-turbo-${libjpeg-turbo_version}.tar.gz")
-set(libjpeg-turbo_md5 "039153dabe61e1ac8d9323b5522b56b0")
+set(libjpeg-turbo_version 2.1.4)
+set(libjpeg-turbo_url "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/${libjpeg-turbo_version}.tar.gz")
+set(libjpeg-turbo_md5 "357dc26a802c34387512a42697846d16")
 list(APPEND ALL_PROJECTS libjpeg-turbo)
 
 # png
-set(png_version 1.6.19)
-set(png_archive_version 16)
-set(png_url "http://sourceforge.net/projects/libpng/files/libpng${png_archive_version}/older-releases/${png_version}/libpng-${png_version}.tar.gz")
-set(png_md5 "3121bdc77c365a87e054b9f859f421fe")
+set(png_version 1.6.38)
+set(png_url "https://downloads.sourceforge.net/project/libpng/libpng16/${png_version}/libpng-${png_version}.tar.xz")
+set(png_md5 "122e6b7837811698563083b352bc8ca2")
 list(APPEND ALL_PROJECTS png)
 
 # libtiff
