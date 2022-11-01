@@ -97,10 +97,10 @@ class FixedOffsetFrame final : public Frame<T> {
                                     .template block<3, 3>(0, 0)));
   }
 
-  /// Sets the rigid transform that relates the parent frame to `this` frame.
+  /// Sets the pose of `this` frame F in its parent frame P.
   /// @param[in] context contains the state of the multibody plant.
-  /// @param[in] X_PF Rigid transform that contains the pose (orientation and
-  ///   position vector) from the parent frame P to `this` frame F.
+  /// @param[in] X_PF Rigid transform that characterizes `this` frame F's pose
+  ///   (orientation and position) in its parent frame P.
   void SetPoseInParentFrame(systems::Context<T>* context,
                             const math::RigidTransform<T>& X_PF) const {
     systems::BasicVector<T>& X_PF_parameter =
@@ -109,8 +109,8 @@ class FixedOffsetFrame final : public Frame<T> {
         Eigen::Map<const VectorX<T>>(X_PF.GetAsMatrix34().data(), 12, 1));
   }
 
-  /// Returns the rigid transform X_PF that relates the parent frame P to
-  /// `this` frame F.
+  /// Returns the rigid transform X_PF that characterizes `this` frame F's pose
+  /// in its parent frame P.
   /// @param[in] context contains the state of the multibody plant.
   math::RigidTransform<T> GetPoseInParentFrame(
       const systems::Context<T>& context) const {
@@ -120,8 +120,8 @@ class FixedOffsetFrame final : public Frame<T> {
             X_PF_parameter.get_value().data()));
   }
 
-  DRAKE_DEPRECATED("2023-02-01", "SetPoseInBodyFrame() has been superseded by "
-                                 "SetPoseInParentFrame().")
+  DRAKE_DEPRECATED("2023-02-01", "SetPoseInBodyFrame() was incorrectly named "
+                   "so it has been replaced by SetPoseInParentFrame().")
   void SetPoseInBodyFrame(systems::Context<T>* context,
                           const math::RigidTransform<T>& X_PF) const {
     return SetPoseInParentFrame(context, X_PF);
