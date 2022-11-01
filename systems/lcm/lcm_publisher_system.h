@@ -29,6 +29,13 @@ namespace lcm {
  * to happen on a per-step or periodic basis. Publishing "by force", through
  * `LcmPublisherSystem::Publish(const Context&)`, is also enabled.
  *
+ * If you connect to `should_publish`, then providing a value of `true` means
+ * that the message will be published (same as `should_publish` not being
+ * connected). If you provide a value of `false`, then the message will not be
+ * published. This port is only used to determine whether to publish or not
+ * based on existing events. This does not provide witness / edge-trigger
+ * semantics.
+ *
  * @note You should generally provide an LCM interface yourself, since there
  * should normally be just one of these typically-heavyweight objects per
  * program. However, if you're sure there isn't any other need for an LCM
@@ -39,6 +46,7 @@ namespace lcm {
  * name: LcmPublisherSystem
  * input_ports:
  * - lcm_message
+ * - should_publish (optional)
  * @endsystem
  *
  * @ingroup message_passing
@@ -195,6 +203,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * You can only call this method once.
    * @throws std::exception if called a second time.
    *
+   * @note This event's semantics are unaffected by the `should_publish` port.
    * @pre The publisher function may not be null.
    */
   void AddInitializationMessage(
@@ -225,6 +234,30 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   double get_publish_period() const;
 
+  using LeafSystem<double>::get_input_port;
+
+  /**
+   * Returns same port as get_lcm_message_input_port() (for backwards
+   * compatibility).
+   */
+  const InputPort<double>& get_input_port() const {
+    return get_input_port(lcm_message_input_port_);
+  }
+
+  /**
+   * Port for providing Value<LcmMessage>.
+   */
+  const InputPort<double>& get_lcm_message_input_port() const {
+    return get_input_port(lcm_message_input_port_);
+  }
+
+  /**
+   * Optional port for providing Value<bool>.
+   */
+  const InputPort<double>& get_should_publish_input_port() const {
+    return get_input_port(should_publish_input_port_);
+  }
+
  private:
   EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
 
@@ -248,6 +281,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
   drake::lcm::DrakeLcmInterface* const lcm_;
 
   const double publish_period_;
+
+  systems::InputPortIndex lcm_message_input_port_;
+  systems::InputPortIndex should_publish_input_port_;
 };
 
 }  // namespace lcm
