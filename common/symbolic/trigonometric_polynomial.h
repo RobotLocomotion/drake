@@ -95,6 +95,7 @@ namespace internal {
  beforehand and then call SubstituteStereographicProjectionImpl() repeatedly.
  @param e_poly The polynomial before substitution.
  @param sin_cos The sin and cos variables in e_poly to be replaced.
+ @param sin_cos_set The set including all variables in `sin_cos`.
  @param t We will replace sin and cos functions as rational functions of t.
  @param t_set The set of variables @p t.
  @param one_plus_t_angles_squared 1+t²
@@ -108,6 +109,7 @@ namespace internal {
  */
 symbolic::RationalFunction SubstituteStereographicProjectionImpl(
     const symbolic::Polynomial& e_poly, const std::vector<SinCos>& sin_cos,
+    const symbolic::Variables& sin_cos_set,
     const VectorX<symbolic::Variable>& t, const symbolic::Variables& t_set,
     const VectorX<symbolic::Polynomial>& one_plus_t_angles_squared,
     const VectorX<symbolic::Polynomial>& two_t_angles,
@@ -117,33 +119,15 @@ symbolic::RationalFunction SubstituteStereographicProjectionImpl(
 /**
  * Substitutes the variables representing sine and cosine functions with their
  * stereographic projection.
- * For the moment, we put the following requirement on `e`:
- * If the indeterminates of `e` include cosθ and sinθ, then e is a multilinear
- * polynomial of cosθ and sinθ, in which cosθᵢ and sinθᵢ do not appear in the
- * same monomial for any i.
- * When this requirement is satisfied, we replace cosθᵢ
- * with (1-tᵢ²)/(1+tᵢ²), and sinθᵢ with 2tᵢ/(1+tᵢ²), and get a rational
- * polynomial. The indeterminates of this rational polynomial are t together
- * with the indeterminates in `e` that are not cosθ or sinθ. If the input
- * expression doesn't contain the sine and cosine functions, then the returned
- * rational has denominator being 1. Notice that the indeterminates of `e` can
- * include variables other than cosθ and sinθ, and we impose no requirements on
- * these variables that are not cosθ or sinθ.
+ * We replace cosθᵢ with (1-tᵢ²)/(1+tᵢ²), and sinθᵢ with 2tᵢ/(1+tᵢ²), and get a
+ * rational polynomial. The indeterminates of this rational polynomial are t
+ * together with the indeterminates in `e` that are not cosθ or sinθ. If the
+ * input expression doesn't contain the sine and cosine functions, then the
+ * returned rational has denominator being 1. Notice that the indeterminates of
+ * `e` can include variables other than cosθ and sinθ, and we impose no
+ * requirements on these variables that are not cosθ or sinθ.
  *
- * For example,
- * e = x²ysinθ₁cosθ₂ + 3xsinθ₂cosθ₃ is a valid input.
- * e = sinθ₁cosθ₁ + 1 is not valid because both an sinθ₁ and cosθ₁ appear in the
- * same monomial.
- * e = sin²θ₁ is not a valid input because it is quadratic in sinθ₁.
- *
- * @param e The symbolic polynomial to be substituted. Note that e has to be a
- * multilinear polynomial of variables in `sin_cos`, namely inside each monomial
- * m, m.degree(sin_cos[i].c) <= 1, m.degree(sin_cos[i].s) <= 1, and no
- * sin_cos[i].s and sin_cos[i].c appear in the same monomial. Namely that e can
- * be sin_cos[0].s * sin_cos[1].c + 1  or t[0]*sin_cos[0].s * sin_cos[1].c + 1
- * (note t can also appear in e), but cannot be sin_cos[0].s * sin_cos[0].c
- * (where sin_cos[0].s and sin_cos[0].c appear in the same monomial) or
- * pow(sin_cos[0].s, 2) (where the degree or sin_cos[0].s is larger than 1).
+ * @param e The symbolic polynomial to be substituted.
  * @param sin_cos sin_cos(i) is the pair of variables (sᵢ, cᵢ), (where sᵢ=sinθᵢ,
  * cᵢ=cosθᵢ) as documented above.
  * @param t New variables to express cos and sin as rationals of t. tᵢ =
@@ -167,8 +151,6 @@ symbolic::RationalFunction SubstituteStereographicProjectionImpl(
  * //        ((1+t0*t0)*(1+t1*t1))
  * @endverbatim
  */
-// TODO(hongkai.dai): relax the requirements on `e`, such that we can handle any
-// `e` being a polynomial function of cosθ an sinθ.
 [[nodiscard]] symbolic::RationalFunction SubstituteStereographicProjection(
     const symbolic::Polynomial& e, const std::vector<SinCos>& sin_cos,
     const VectorX<symbolic::Variable>& t);
