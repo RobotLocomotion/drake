@@ -35,6 +35,7 @@ drake_cc_library(
         "//common/symbolic:expression",
         "//common/symbolic:polynomial",
         "//common/symbolic:rational_function",
+        "//common/symbolic:trigonometric_polynomial",
         "//multibody/plant",
     ],
 )
