@@ -29,6 +29,8 @@ class JacoCommandSenderTestBase : public testing::Test {
   JacoCommandSender dut_;
   std::unique_ptr<systems::Context<double>> context_ptr_;
   systems::Context<double>& context_;
+
+  const Vector1d time_{Vector1d(1.2)};
 };
 
 class JacoCommandSenderTest : public JacoCommandSenderTestBase {
@@ -56,6 +58,7 @@ TEST_F(JacoCommandSenderTest, AcceptanceTestWithFingers) {
   dut_.get_position_input_port().FixValue(&context_, q0);
   dut_.get_velocity_input_port().FixValue(&context_, v0);
 
+  EXPECT_EQ(output().utime, 0);
   EXPECT_EQ(output().num_joints, kJacoDefaultArmNumJoints);
   EXPECT_EQ(output().joint_position, ToStdVec(q0.head(N)));
   EXPECT_EQ(output().joint_velocity, ToStdVec(v0.head(N)));
@@ -64,6 +67,10 @@ TEST_F(JacoCommandSenderTest, AcceptanceTestWithFingers) {
             ToStdVec(q0.tail(N_F) * kFingerUrdfToSdk));
   EXPECT_EQ(output().finger_velocity,
             ToStdVec(v0.tail(N_F) * kFingerUrdfToSdk));
+
+
+  dut_.get_time_input_port().FixValue(&context_, time_);
+  EXPECT_EQ(output().utime, time_[0] * 1e6);
 }
 
 TEST_F(JacoCommandSenderNoFingersTest, AcceptanceNoFingers) {

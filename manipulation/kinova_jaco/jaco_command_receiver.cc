@@ -55,6 +55,10 @@ JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
       "velocity", num_joints + num_fingers,
       &JacoCommandReceiver::CalcVelocityOutput,
       {groomed_input_->ticket()});
+
+  time_output_ = &DeclareVectorOutputPort(
+      "time", 1, &JacoCommandReceiver::CalcTimeOutput,
+      {groomed_input_->ticket()});
 }
 
 void JacoCommandReceiver::CalcPositionMeasuredOrZero(
@@ -217,6 +221,12 @@ void JacoCommandReceiver::CalcVelocityOutput(
   }
 
   output->SetFromVector(velocity);
+}
+
+void JacoCommandReceiver::CalcTimeOutput(
+    const Context<double>& context, BasicVector<double>* output) const {
+  const auto& message = groomed_input_->Eval<lcmt_jaco_command>(context);
+  (*output)[0] = static_cast<double>(message.utime) / 1e6;
 }
 
 }  // namespace kinova_jaco

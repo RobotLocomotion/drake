@@ -16,10 +16,12 @@ namespace kinova_jaco {
 /// connected to a
 /// systems::lcm::LcmPublisherSystem::Make<lcmt_jaco_command>().
 ///
-/// This system has two vector-valued input ports containing the desired
-/// position and velocity.  Finger velocities will be translated to the values
-/// used by the Kinova SDK from values appropriate for the finger joints in
-/// the Jaco description (see jaco_constants.h).
+/// This system has two mandatory vector-valued input ports containing the
+/// desired position and velocity, and an optional vector-valued input port
+/// for the command timestamp.  If the time input port is not connected, the
+/// context time will be used.  Finger velocities will be translated to the
+/// values used by the Kinova SDK from values appropriate for the finger
+/// joints in the Jaco description (see jaco_constants.h).
 ///
 /// This system has one abstract-valued output port of type lcmt_jaco_command.
 ///
@@ -28,6 +30,7 @@ namespace kinova_jaco {
 /// input_ports:
 /// - position
 /// - velocity
+/// - time (optional)
 /// output_ports:
 /// - lcmt_jaco_command
 /// @endsystem
@@ -47,6 +50,10 @@ class JacoCommandSender : public systems::LeafSystem<double> {
     return *velocity_input_;
   }
 
+  const systems::InputPort<double>& get_time_input_port() const {
+    return *time_input_;
+  }
+
  private:
   void CalcOutput(const systems::Context<double>&, lcmt_jaco_command*) const;
 
@@ -54,6 +61,7 @@ class JacoCommandSender : public systems::LeafSystem<double> {
   const int num_fingers_;
   const systems::InputPort<double>* position_input_{};
   const systems::InputPort<double>* velocity_input_{};
+  const systems::InputPort<double>* time_input_{};
 };
 
 }  // namespace kinova_jaco
