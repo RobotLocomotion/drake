@@ -36,12 +36,47 @@
       }
     }
 
+    const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+
+    // See https://beej.us/blog/data/javascript-gamepad/ for a tutorial.
+    var last_gamepad = {};
+    function handle_gamepads() {
+      let gamepads = navigator.getGamepads();
+      let gamepad = {};
+      for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i] === null || !gamepads[i].connected) {
+          continue;
+        }
+
+        // Only send a subset of the available information. Also, the floating
+        // point values are not constant; they are constantly changing in the
+        // least significant digits even when the gamepad is untouched by the
+        // user. We truncate the floating point values to two significant
+        // digits to reject this noise.
+        gamepad = {
+          'index': gamepads[i].index, 
+          'button_values': gamepads[i].buttons.map(
+            a => clamp(Math.round(a.value * 100) / 100, 0, 1)), 
+          'axes': gamepads[i].axes.map(
+            a => clamp(Math.round(a * 100) / 100, -1, 1)),
+        };
+        break;  // Just take the first connected gamepad.
+      }
+      if (this.connection.readyState == WebSocket.OPEN && 
+        JSON.stringify(gamepad) !== JSON.stringify(last_gamepad)) {
+        this.connection.send(MeshCat.msgpack.encode(
+          { 'type': 'gamepad', 'name': '', 'gamepad': gamepad }));
+        last_gamepad = gamepad;
+      }
+    }
+
     function animate() {
       stats.begin();
       // convert realtime rate to percentage so it is easier to read
       realtimeRatePanel.update(latestRealtimeRate*100, 100);
       viewer.animate()
       stats.end();
+      handle_gamepads();
       requestAnimationFrame(animate);
     }
 
