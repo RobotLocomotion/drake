@@ -26,7 +26,6 @@ from pydrake.math import (
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
 )
-from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     DiagramBuilder,
     InputPort,
