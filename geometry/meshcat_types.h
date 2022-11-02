@@ -190,6 +190,29 @@ struct SphereGeometryData : public GeometryData {
   }
 };
 
+struct CapsuleGeometryData : public GeometryData {
+  // For a complete description of these parameters see:
+  // https://threejs.org/docs/#api/en/geometries/CapsuleGeometry
+  double radius{};
+  double length{};
+  double radialSegments{20};  // Number of segmented faces around the
+                              // circumference of the capsule.
+  double capSegments{10};     // Number of curve segments used to build
+                              // the caps.
+
+  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+  void msgpack_pack(msgpack::packer<std::stringstream>& o) const override {
+    o.pack_map(6);
+    o.pack("type");
+    o.pack("CapsuleGeometry");
+    PACK_MAP_VAR(o, uuid);
+    PACK_MAP_VAR(o, radius);
+    PACK_MAP_VAR(o, length);
+    PACK_MAP_VAR(o, radialSegments);
+    PACK_MAP_VAR(o, capSegments);
+  }
+};
+
 struct CylinderGeometryData : public GeometryData {
   double radiusBottom{};
   double radiusTop{};
