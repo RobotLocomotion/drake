@@ -313,7 +313,7 @@ class TestSensors(unittest.TestCase):
             lcm=lcm, channel=channel,
             lcm_type=lcmt_image_array, use_cpp_serializer=False))
         for i in range(subscriber.num_output_ports()):
-            port = dut.get_output_port(i)
+            port = subscriber.get_output_port(i)
             builder.ExportOutput(port, port.get_name())
         diagram = builder.Build()
 
@@ -331,15 +331,26 @@ class TestSensors(unittest.TestCase):
         num_messages = lcm.HandleSubscriptions(1000)
         self.assertEqual(num_messages, 1)
 
-        # Use a Simulator to invoke the update event. (Wouldn't it be nice if
-        # the Systems API was simple enough that we could apply events without
-        # calling a Simulator!)
-        simulator = Simulator(diagram, context)
-        simulator.AdvanceTo(0.00025)  # Arbitrary positive value.
+        # Receive an lcmt_image_array in Python.
+        abstract_message = diagram.get_output_port(0).Allocate()
+        subscriber.WaitForMessage(
+            old_message_count=-1, message=abstract_message, timeout=0)
+        message = abstract_message.get_value()
 
-        # Read the message back into Python.
-        actual_message = diagram.get_output_port(0).Eval(context)
-        self.assertEqual(actual_message, None)
+        # Inspect the message for correctness.
+        self.assertEqual(message.num_images, len(pixel_types))
+        for i, image in enumerate(message.images):
+            pixel_type = pixel_types[i]
+            with self.subTest(pixel_type=pixel_type):
+                self.assertEqual(image.width, 1)
+                self.assertEqual(image.height, 1)
+                expected_format = {
+                    pt.kRgba8U: lcmt_image.PIXEL_FORMAT_RGBA,
+                    pt.kDepth16U: lcmt_image.PIXEL_FORMAT_DEPTH,
+                    pt.kDepth32F: lcmt_image.PIXEL_FORMAT_DEPTH,
+                    pt.kLabel16I: lcmt_image.PIXEL_FORMAT_LABEL,
+                }[pixel_type]
+                self.assertEqual(image.pixel_format, expected_format)
 
     def test_lcm_image_array_to_images_basic(self):
         dut = mut.LcmImageArrayToImages()
