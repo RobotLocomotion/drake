@@ -156,6 +156,13 @@ drake_cc_library(
     ],
 )
 
+drake_cc_googletest(
+    name = "monomial_util_test",
+    deps = [
+        ":monomial_util",
+    ],
+)
+
 drake_cc_library(
     name = "polynomial",
     srcs = [

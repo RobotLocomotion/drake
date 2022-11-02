@@ -241,5 +241,16 @@ Eigen::Matrix<Monomial, Eigen::Dynamic, 1> EvenDegreeMonomialBasis(
 Eigen::Matrix<Monomial, Eigen::Dynamic, 1> OddDegreeMonomialBasis(
     const Variables& vars, int degree);
 
+/**
+ Generates all the monomials of `x`, such that the degree for x(i) is no larger
+ than 1 for every x(i) in `x`.
+ @param t The variables whose monomials are generated.
+ @param sort_monomial If true, the returned monomials are sorted in the graded
+ reverse lexicographic order. For example if x = (x₀, x₁) with x₀< x₁, then this
+ function returns [x₀x₁, x₁, x₀, 1]. If sort_monomial=false, then we return the
+ monomials in an arbitrary order.
+ */
+[[nodiscard]] VectorX<Monomial> CalcMonomialBasisOrderUpToOne(
+    const Variables& x, bool sort_monomial = false);
 }  // namespace symbolic
 }  // namespace drake
