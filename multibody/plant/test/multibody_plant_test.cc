@@ -3883,64 +3883,6 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
-GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameParameters) {
-  MultibodyPlant<double> plant(0.0);
-
-  const Vector3d p_WF(0, 0, 0);
-  const RotationMatrixd R_WF{};
-  const RigidTransformd X_WF(R_WF, p_WF);
-
-  const Body<double>& body = plant.AddRigidBody("B", SpatialInertia<double>{});;
-
-  const Joint<double>& weld_joint =
-      plant.AddJoint<WeldJoint>("weld_WB", plant.world_body(), X_WF, body, {},
-                                RigidTransformd::Identity());
-
-  const FixedOffsetFrame<double>& frame_F =
-      dynamic_cast<const FixedOffsetFrame<double>&>(
-          weld_joint.frame_on_parent());
-
-  plant.Finalize();
-
-  // Create a default context.
-  auto context = plant.CreateDefaultContext();
-
-  // Verify default parameters are set for the frame and that they've propagated
-  // to the welded body's pose.
-  const RigidTransformd& X_WF_context = frame_F.CalcPoseInBodyFrame(*context);
-  const math::RigidTransformd& X_WF_body =
-      plant.EvalBodyPoseInWorld(*context, body);
-
-  EXPECT_TRUE(
-      CompareMatrices(X_WF.GetAsMatrix34(), X_WF_context.GetAsMatrix34()));
-  EXPECT_TRUE(CompareMatrices(X_WF.GetAsMatrix34(), X_WF_body.GetAsMatrix34()));
-
-  // Set new parameters and verify they propagate.
-  const Vector3d p_WF_new(1, 1, 1);
-  const RotationMatrixd R_WF_new = RotationMatrixd::MakeXRotation(3);
-  const RigidTransformd X_WF_new(R_WF_new, p_WF_new);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  frame_F.SetPoseInBodyFrame(context.get(), X_WF_new);
-  const math::RigidTransform<double> X_WF_stored =
-      frame_F.GetPoseInParentFrame(*context.get());
-  EXPECT_TRUE(CompareMatrices(X_WF_new.GetAsMatrix34(),
-                              X_WF_stored.GetAsMatrix34()));
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-
-  frame_F.SetPoseInParentFrame(context.get(), X_WF_new);
-
-  const RigidTransformd& X_WF_context_new =
-      frame_F.CalcPoseInBodyFrame(*context);
-  const math::RigidTransformd& X_WF_body_new =
-      plant.EvalBodyPoseInWorld(*context, body);
-  EXPECT_TRUE(CompareMatrices(X_WF_new.GetAsMatrix34(),
-                              X_WF_context_new.GetAsMatrix34()));
-  EXPECT_TRUE(
-      CompareMatrices(X_WF_new.GetAsMatrix34(), X_WF_body_new.GetAsMatrix34()));
-}
-
 GTEST_TEST(MultibodyPlant, CombinePointContactParameters) {
   // case: k1+k2 == 0.0.
   {
