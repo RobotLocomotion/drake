@@ -167,6 +167,7 @@ Open up your browser to the URL above.
   meshcat->Flush();
   std::cout << "Done." << std::endl;
 
+
   std::cout << "Animations:\n";
   MeshcatAnimation animation;
   std::cout << "- the red sphere should move up and down in z.\n";
@@ -402,6 +403,28 @@ Open up your browser to the URL above.
             << " clicks on \"Press t Key\".\n"
             << "Got " << meshcat->GetSliderValue("SliderTest")
             << " value for SliderTest." << std::endl;
+
+  std::cout << "\n\nPress some gamepad buttons if you have one attached.\n";
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  Meshcat::Gamepad gamepad = meshcat->GetGamepad();
+  if (gamepad.index < 0) {
+    std::cout << "No gamepad activity detected.\n";
+  } else {
+    std::cout << "Last gamepad status:\n";
+    std::cout << "  gamepad index: " << gamepad.index << "\n";
+    std::cout << "  buttons: ";
+    for (auto const& value : gamepad.button_values) {
+      std::cout << value << ", ";
+    }
+    std::cout << "\n";
+    std::cout << "  axes: ";
+    for (auto const& value : gamepad.axes) {
+      std::cout << value << ", ";
+    }
+    std::cout << "\n";
+  }
 
   std::cout << "Exiting..." << std::endl;
   return 0;

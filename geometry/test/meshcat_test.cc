@@ -696,6 +696,19 @@ GTEST_TEST(MeshcatTest, DuplicateMixedControls) {
       "Meshcat already has a button named button.");
 }
 
+// Properly testing Meshcat's limited support for gamepads requires human
+// input, and is done in meshcat_manual_test. This test simply ensures the
+// entry point runs.
+GTEST_TEST(MeshcatTest, Gamepad) {
+  Meshcat meshcat;
+
+  Meshcat::Gamepad gamepad = meshcat.GetGamepad();
+  // Check the default status assuming no messages have been received:
+  EXPECT_EQ(gamepad.index, -1);
+  EXPECT_TRUE(gamepad.button_values.empty());
+  EXPECT_TRUE(gamepad.axes.empty());
+}
+
 GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
   Meshcat meshcat;
   meshcat.SetProperty("/Background", "visible", false);

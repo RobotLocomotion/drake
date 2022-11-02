@@ -441,11 +441,19 @@ struct DeleteControl {
   MSGPACK_DEFINE_MAP(type, name);
 };
 
+struct Gamepad {
+  int index;
+  std::vector<double> button_values;
+  std::vector<double> axes;
+  MSGPACK_DEFINE_MAP(index, button_values, axes);
+};
+
 struct UserInterfaceEvent {
   std::string type;
   std::string name;
   std::optional<double> value;
-  MSGPACK_DEFINE_MAP(type, name, value);
+  std::optional<internal::Gamepad> gamepad;
+  MSGPACK_DEFINE_MAP(type, name, value, gamepad);
 };
 
 }  // namespace internal
@@ -462,7 +470,6 @@ MSGPACK_ADD_ENUM(drake::geometry::MeshcatAnimation::LoopMode);
 namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 namespace adaptor {
-
 
 template <typename Scalar, int RowsAtCompileTime, int ColsAtCompileTime,
           int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime>
@@ -568,6 +575,25 @@ struct pack<drake::geometry::Meshcat::PerspectiveCamera> {
   }
 };
 
+/*
+template<>
+struct convert<drake::geometry::Meshcat::Gamepad> {
+  msgpack::object const& operator()(
+      msgpack::object const& o,
+      drake::geometry::Meshcat::Gamepad& gamepad) const {
+    if (o.type != msgpack::type::MAP) {
+      throw msgpack::type_error();
+    }
+    if (o.via.map.size != 3) {
+      throw msgpack::type_error();
+    }
+    gamepad.index = o.via.map.ptr[0].val.convert();
+    gamepad.button_values = o.via.map.ptr[1].val.convert();
+    gamepad.axes = o.via.map.ptr[2].val.convert();
+    return o;
+  }
+};
+*/
 }  // namespace adaptor
 }  // namespace MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
 }  // namespace msgpack

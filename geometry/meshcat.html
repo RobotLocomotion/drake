@@ -37,12 +37,38 @@
       }
     }
 
+    // See https://beej.us/blog/data/javascript-gamepad/ for a tutorial.
+    var last_gamepad = {};
+    function handle_gamepads() {
+      let gamepads = navigator.getGamepads();
+      let gamepad = {};
+      for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i] === null || !gamepads[i].connected) {
+            continue;
+        }
+
+        // Only send a subset of the available information.
+        gamepad = {
+          'index': gamepads[i].index, 
+          'button_values': gamepads[i].buttons.map(a => a.value), 
+          'axes': gamepads[i].axes.map(a => Math.round(a*100)/100),
+        };
+        break;  // Just take the first connected gamepad.
+      }
+      if (JSON.stringify(gamepad) !== JSON.stringify(last_gamepad)) {
+        this.connection.send(msgpack.encode(
+          { 'type': 'gamepad', 'name': '', 'gamepad': gamepad }));
+      }
+      last_gamepad = gamepad;
+    }
+
     function animate() {
       stats.begin();
       // convert realtime rate to percentage so it is easier to read
       realtimeRatePanel.update(latestRealtimeRate*100, 100);
       viewer.animate()
       stats.end();
+      handle_gamepads();
       requestAnimationFrame(animate);
     }
 

@@ -295,6 +295,7 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.DeleteSlider.doc)
         .def("DeleteAddedControls", &Class::DeleteAddedControls,
             cls_doc.DeleteAddedControls.doc)
+        .def("GetGamepad", &Class::GetGamepad, cls_doc.GetGamepad.doc)
         .def("StaticHtml", &Class::StaticHtml, cls_doc.StaticHtml.doc)
         .def("HasPath", &Class::HasPath, py::arg("path"), cls_doc.HasPath.doc);
     // Note: we intentionally do not bind the advanced methods (GetPacked...)
@@ -319,6 +320,15 @@ void DoScalarIndependentDefinitions(py::module m) {
         &orthographic_camera_cls, orthographic_camera_doc);
     DefReprUsingSerialize(&orthographic_camera_cls);
     DefCopyAndDeepCopy(&orthographic_camera_cls);
+
+    const auto& gamepad_doc = doc.Meshcat.Gamepad;
+    py::class_<Meshcat::Gamepad> gamepad_cls(
+        meshcat, "Gamepad", gamepad_doc.doc);
+    gamepad_cls  // BR
+        .def(ParamInit<Meshcat::Gamepad>());
+    DefAttributesUsingSerialize(&gamepad_cls, gamepad_doc);
+    DefReprUsingSerialize(&gamepad_cls);
+    DefCopyAndDeepCopy(&gamepad_cls);
   }
 
   // MeshcatAnimation

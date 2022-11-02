@@ -1435,6 +1435,13 @@ class Meshcat::Impl {
     }
   }
 
+  Meshcat::Gamepad GetGamepad() {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    std::lock_guard<std::mutex> lock(controls_mutex_);
+    return gamepad_;
+  }
+
   // This function is public via the PIMPL.
   std::string StaticHtml() {
     DRAKE_DEMAND(IsThread(main_thread_id_));
@@ -1807,6 +1814,14 @@ class Meshcat::Impl {
       }
       return;
     }
+    if (data.type == "gamepad" && data.gamepad.has_value()) {
+      // TODO(russt): Figure out how to do the non-invasive unpack of
+      // Meshcat::Gamepad and remove internal::Gamepad.
+      gamepad_.index = data.gamepad->index;
+      gamepad_.button_values = std::move(data.gamepad->button_values);
+      gamepad_.axes = std::move(data.gamepad->axes);
+      return;
+    }
     drake::log()->warn("Meshcat ignored a '{}' event", data.type);
     if (inject_message_fault_.load()) {
       throw std::runtime_error(
@@ -1877,6 +1892,7 @@ class Meshcat::Impl {
   std::mutex controls_mutex_;
   std::map<std::string, internal::SetButtonControl, std::less<>> buttons_{};
   std::map<std::string, internal::SetSliderControl, std::less<>> sliders_{};
+  Meshcat::Gamepad gamepad_{};
   std::vector<std::string> controls_{};  // Names of buttons and sliders in the
                                          // order they were added.
 
@@ -2171,6 +2187,10 @@ void Meshcat::DeleteSlider(std::string name) {
 
 void Meshcat::DeleteAddedControls() {
   impl().DeleteAddedControls();
+}
+
+Meshcat::Gamepad Meshcat::GetGamepad() {
+  return impl().GetGamepad();
 }
 
 std::string Meshcat::StaticHtml() {
