@@ -1420,6 +1420,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   }
 
  private:
+  friend class BodyNodeTester;
+
   // Returns the index to the parent body of the body associated with this node.
   // For the root node, corresponding to the world body, this method returns an
   // invalid body index. Attempts to using invalid indexes leads to an exception

@@ -13,6 +13,14 @@ void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
     math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>* llt_D_B) const {
   DRAKE_THROW_UNLESS(llt_D_B != nullptr);
 
+  // N.B. This code is tested in two ways:
+  //  - body_node_test.cc: test the precision of the throwing condition based on
+  //    the given hinge matrix, D_B. I.e., is this "correct"?
+  //  - multibody_plant_forward_dynamics_test.cc: test integration with the
+  //    larger multibody ecosystem (see the HingeInertiaMatrixTest fixture) to
+  //    see confirm that bad models/configurations get caught in this net. In
+  //    other words, does this test serve its intended purpose?
+
   // Compute the LLT factorization of D_B as llt_D_B.
   // Note: Eigen benchmarks for various matrix factorizations are here:
   // https://eigen.tuxfamily.org/dox/group__DenseDecompositionBenchmark.html
@@ -45,22 +53,20 @@ void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
     const Mobilizer<T>& mobilizer = get_mobilizer();
     const Body<T>& inboard_body = mobilizer.inboard_body();
     const Body<T>& outboard_body = mobilizer.outboard_body();
-    DRAKE_DEMAND(&body() == &outboard_body);
-    DRAKE_DEMAND(&parent_body() == &inboard_body);
     const std::string& inboard_body_name = inboard_body.name();
     const std::string& outboard_body_name = outboard_body.name();
     std::stringstream message;
     message << "An internal mass matrix associated with the joint that "
                "connects body " << inboard_body_name << " to body "
-               << outboard_body_name << " is not positive-definite. ";
+               << outboard_body_name << " is not positive-definite.";
     if (mobilizer.can_rotate()) {
-      message << "Since the joint allows rotation, ensure body "
+      message << " Since the joint allows rotation, ensure body "
               << outboard_body_name << " (combined with other outboard bodies) "
                  "has reasonable non-zero moments of inertia about the joint "
                  "rotation axes.";
     }
     if (mobilizer.can_translate()) {
-      message << "Since the joint allows translation, ensure body "
+      message << " Since the joint allows translation, ensure body "
               << outboard_body_name << " (combined with other outboard bodies) "
                  "has a reasonable non-zero mass.";
     }
