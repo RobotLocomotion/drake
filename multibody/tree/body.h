@@ -339,11 +339,6 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
       topology_.inboard_mobilizer).velocity_suffix(velocity_index_in_body);
   }
 
-  DRAKE_DEPRECATED("2022-11-01", "Use Body::default_mass().")
-  double get_default_mass() const {
-    return default_mass();
-  }
-
   /// Returns the default mass (not Context dependent) for `this` body.
   /// In general, a body's mass can be a Context-dependent parameter that is
   /// returned by the method get_mass(). When a body's mass is a parameter, the

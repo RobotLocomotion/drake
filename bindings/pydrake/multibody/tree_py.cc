@@ -293,14 +293,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("floating_velocity_suffix", &Class::floating_velocity_suffix,
             cls_doc.floating_velocity_suffix.doc)
         .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("get_default_mass",
-        WrapDeprecated(
-            cls_doc.get_default_mass.doc_deprecated, &Class::get_default_mass),
-        cls_doc.get_default_mass.doc_deprecated);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-    cls                     // BR
         .def("get_mass", &Class::get_mass, py::arg("context"),
             cls_doc.get_mass.doc)
         .def("CalcCenterOfMassInBodyFrame", &Class::CalcCenterOfMassInBodyFrame,
