@@ -57,7 +57,8 @@ class ModelVisualizer:
                  triad_opacity=1,
                  publish_contacts=True,
                  browser_new=False,
-                 pyplot=False):
+                 pyplot=False,
+                 meshcat=None):
         """
         Initializes a ModelVisualizer.
 
@@ -73,6 +74,9 @@ class ModelVisualizer:
             browser window.
           pyplot: a flag that will open a pyplot figure for rendering using
             PlanarSceneGraphVisualizer.
+
+          meshcat: an existing Meshcat instance to re-use instead of creating
+            a new instance. Useful in, e.g., Python notebooks.
         """
         self._visualize_frames = visualize_frames
         self._triad_length = triad_length
@@ -88,6 +92,7 @@ class ModelVisualizer:
         self._sliders = None
         self._context = None
         self._plant_context = None
+        self._meshcat = meshcat
 
         # The builder, scene_graph, and parser become invalid after Finalize().
         # The plant remains valid for this object's lifetime.
@@ -157,6 +162,16 @@ class ModelVisualizer:
         assert self._parser is not None, "Finalize has already been called."
         return self._parser
 
+    @property
+    def meshcat(self):
+        """
+        The internal Meshcat instance.
+
+        Unless a Meshcat instance was provided to the constructor, this
+        property is only valid once Finalize is called.
+        """
+        return self._meshcat
+
     def AddModels(self, filename):
         """
         Adds all models found in an input file.
@@ -218,20 +233,25 @@ class ModelVisualizer:
             builder=self._builder)
 
         # Connect to MeshCat for visualizing and interfacing w/ widgets.
-        meshcat = Meshcat()
+        if self._meshcat is not None:
+            self._meshcat.Delete()
+            self._meshcat.DeleteAddedControls()
+        else:
+            self._meshcat = Meshcat()
         # Add two visualizers: one to publish the "illustration" geometry and
         # another to publish the "collision" geometry.
         MeshcatVisualizer.AddToBuilder(
-            self._builder, self._scene_graph, meshcat,
+            self._builder, self._scene_graph, self._meshcat,
             MeshcatVisualizerParams(role=Role.kIllustration, prefix="visual"))
         MeshcatVisualizer.AddToBuilder(
-            self._builder, self._scene_graph, meshcat,
+            self._builder, self._scene_graph, self._meshcat,
             MeshcatVisualizerParams(role=Role.kProximity, prefix="collision"))
         self._sliders = self._builder.AddNamedSystem(
-            "joint_sliders", JointSliders(meshcat=meshcat, plant=self._plant))
+            "joint_sliders", JointSliders(meshcat=self._meshcat,
+                                          plant=self._plant))
 
         if self._browser_new:
-            url = meshcat.web_url()
+            url = self._meshcat.web_url()
             webbrowser.open(url=url, new=self._browser_new)
 
         # Connect to PyPlot.
@@ -254,7 +274,7 @@ class ModelVisualizer:
 
         # Disable the collision geometry at the start; it can be enabled by
         # the checkbox in the meshcat controls.
-        meshcat.SetProperty("collision", "visible", False)
+        self._meshcat.SetProperty("collision", "visible", False)
 
         self._builder = None
         self._scene_graph = None
@@ -291,23 +311,29 @@ class ModelVisualizer:
             self._diagram,
             self._sliders,
             self._context,
-            self._plant_context)])
+            self._plant_context,
+            self._meshcat)])
 
         # Wait for the user to cancel us.
+        button_name = "Stop Running"
         if not loop_once:
-            print("Use Ctrl-C to quit")
+            print(f"Use Ctrl-C or click '{button_name}' to quit")
 
         try:
+            self._meshcat.AddButton(button_name)
+
             sliders_context = self._sliders.GetMyContextFromRoot(self._context)
             while True:
                 time.sleep(1 / 32.0)
                 q = self._sliders.get_output_port().Eval(sliders_context)
                 self._plant.SetPositions(self._plant_context, q)
                 self._diagram.Publish(self._context)
-                if loop_once:
+                if loop_once or self._meshcat.GetButtonClicks(button_name) > 0:
                     return
         except KeyboardInterrupt:
             pass
+        finally:
+            self._meshcat.DeleteButton(button_name)
 
     def _add_triad(
         self,
