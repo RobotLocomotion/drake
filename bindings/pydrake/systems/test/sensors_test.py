@@ -32,16 +32,11 @@ from pydrake.systems.framework import (
     InputPort,
     OutputPort,
     )
-from pydrake.systems.lcm import (
-    LcmBuses,
-    LcmPublisherSystem,
-    LcmSubscriberSystem,
-)
+from pydrake.systems.lcm import LcmBuses, _Serializer_
 from drake import (
     lcmt_image,
     lcmt_image_array,
 )
-
 
 # Shorthand aliases, to reduce verbosity.
 pt = mut.PixelType
@@ -296,46 +291,25 @@ class TestSensors(unittest.TestCase):
             name = str(pixel_type)
             dut.DeclareImageInputPort[pixel_type](name=name)
 
-        # Wire up a way to see its output message. We need to transmit a
-        # message using C++ and then receive it using Python.
-        lcm = DrakeLcm()
-        channel = "test_image_to_lcm_image_array_custom"
-        builder = DiagramBuilder()
-        builder.AddSystem(dut)
-        for i in range(dut.num_input_ports()):
-            port = dut.get_input_port(i)
-            builder.ExportInput(port, port.get_name())
-        publisher = builder.AddSystem(LcmPublisherSystem.Make(
-            lcm=lcm, channel=channel,
-            lcm_type=lcmt_image_array, use_cpp_serializer=True))
-        builder.Connect(dut.get_output_port(), publisher.get_input_port())
-        subscriber = builder.AddSystem(LcmSubscriberSystem.Make(
-            lcm=lcm, channel=channel,
-            lcm_type=lcmt_image_array, use_cpp_serializer=False))
-        for i in range(subscriber.num_output_ports()):
-            port = subscriber.get_output_port(i)
-            builder.ExportOutput(port, port.get_name())
-        diagram = builder.Build()
-
         # Populate the input images.
-        context = diagram.CreateDefaultContext()
+        context = dut.CreateDefaultContext()
         for pixel_type in pixel_types:
             name = str(pixel_type)
-            port = diagram.GetInputPort(name)
+            port = dut.GetInputPort(name)
             self._check_input(port)
             image = mut.Image[pixel_type](width=1, height=1)
             port.FixValue(context, image)
 
-        # Transmit an lcmt_image_array in C++.
-        diagram.Publish(context)
-        num_messages = lcm.HandleSubscriptions(1000)
-        self.assertEqual(num_messages, 1)
+        # Compute the C++ message as a Value<drake::lcmt_image_array>.
+        output = dut.AllocateOutput()
+        dut.CalcOutput(context, output)
+        cxx_message = output.get_data(0)
 
-        # Receive an lcmt_image_array in Python.
-        abstract_message = diagram.get_output_port(0).Allocate()
-        subscriber.WaitForMessage(
-            old_message_count=-1, message=abstract_message, timeout=0)
-        message = abstract_message.get_value()
+        # We can't access that C++ message from Python (messages are not bound
+        # into the Value[] template class), so to inspect it we'll need to
+        # serialize down into raw bytes and then back into a Python message.
+        serializer = _Serializer_[lcmt_image_array]()
+        message = lcmt_image_array.decode(serializer.Serialize(cxx_message))
 
         # Inspect the message for correctness.
         self.assertEqual(message.num_images, len(pixel_types))
