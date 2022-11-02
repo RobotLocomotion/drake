@@ -516,7 +516,7 @@ class Meshcat {
    GUI, from the time that it was added to `this`.  If multiple browsers are
    open, then this number is the cumulative number of clicks in all browsers.
    @throws std::exception if `name` is not a registered button. */
-  int GetButtonClicks(std::string_view name);
+  int GetButtonClicks(std::string_view name) const;
 
   /** Removes the button `name` from the GUI.
    @throws std::exception if `name` is not a registered button. */
@@ -548,7 +548,7 @@ class Meshcat {
 
   /** Gets the current `value` of the slider `name`.
    @throws std::exception if `name` is not a registered slider. */
-  double GetSliderValue(std::string_view name);
+  double GetSliderValue(std::string_view name) const;
 
   /** Removes the slider `name` from the GUI.
    @throws std::exception if `name` is not a registered slider. */
@@ -558,6 +558,78 @@ class Meshcat {
    this Meshcat instance. It does *not* clear the default GUI elements set in
    the meshcat browser (e.g. for cameras and lights). */
   void DeleteAddedControls();
+
+  /** Status of a gamepad obtained from the Meshcat javascript client. */
+  struct Gamepad {
+    /** Passes this object to an Archive.
+    Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(index));
+      a->Visit(DRAKE_NVP(button_values));
+      a->Visit(DRAKE_NVP(axes));
+    }
+
+    // Descriptions of these properties were adopted from
+    // https://developer.mozilla.org/en-US/docs/Web/API/Gamepad.
+
+    /** An an integer that is auto-incremented to be unique for each device
+    currently connected to the system. If `index.has_value() == false`, then we
+    have not yet received any gamepad status from the Meshcat browser. */
+    std::optional<int> index;
+
+    /** An array of floating point values representing analog buttons, such as
+    the triggers on many modern gamepads. The values are normalized to the
+    range [0.0, 1.0], with 0.0 representing a button that is not pressed, and
+    1.0 representing a button that is fully pressed.
+
+    See https://w3c.github.io/gamepad/#dfn-standard-gamepad for the standard
+    mapping of gamepad buttons to this vector.
+    */
+    std::vector<double> button_values;
+
+    /** An array of floating point values representing e.g. analog thumbsticks.
+    Each entry in the array is a floating point value in the range -1.0 – 1.0,
+    representing the axis position from the lowest value (-1.0) to the highest
+    value (1.0).
+
+    In the standard gamepad mapping, we have:
+    - axes[0] Left stick x (negative left/positive right)
+    - axes[1] Left stick y (negative up/positive down)
+    - axes[2] Right stick x (negative left/positive right)
+    - axes[3] Right stick y (negative up/positive down)
+
+    Note that a stick that is left alone may not output all zeros.
+    https://beej.us/blog/data/javascript-gamepad/ gives some useful advice for
+    applying a deadzone to these values.
+    */
+    std::vector<double> axes;
+  };
+
+  /** Returns the status from the most recently updated gamepad data in the
+  Meshcat. See Gamepad for details on the returned values.
+
+  Note that in javascript, gamepads are not detected until users "opt-in" by
+  pressing a gamepad button or moving the thumbstick in the Meshcat window. If
+  no gamepad information is available in javascript, then no messages are sent
+  and the returned gamepad index will not have a value.
+
+  Currently Meshcat only attempts to support one gamepad. If multiple gamepads
+  are detected in the same Meshcat window, then only the status of the first
+  connected gamepad in `navigator.GetGamepads()` is returned. If multiple
+  Meshcat windows are connected to this Meshcat instance, and gamepads are
+  being used in multiple windows, then the returned status will be the most
+  recently received status message. Therefore using multiple gamepads
+  simultaneously is not recommended.
+
+  This feature is provided primarily to support applications where Drake is
+  running on a remote machine (e.g. in the cloud), and the Meshcat javascript
+  in the browser is the only code running on the local machine which has access
+  to the gamepad.
+
+  For more details on javascript support for gamepads (or to test that your
+  gamepad is working), see https://beej.us/blog/data/javascript-gamepad/. */
+  Gamepad GetGamepad() const;
 
   //@}
 

@@ -1260,7 +1260,7 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  int GetButtonClicks(std::string_view name) {
+  int GetButtonClicks(std::string_view name) const {
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = buttons_.find(name);
     if (iter == buttons_.end()) {
@@ -1382,7 +1382,7 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  double GetSliderValue(std::string_view name) {
+  double GetSliderValue(std::string_view name) const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     std::lock_guard<std::mutex> lock(controls_mutex_);
@@ -1441,6 +1441,13 @@ class Meshcat::Impl {
     for (auto iter = sliders.begin(); iter != sliders.end(); ++iter) {
       DeleteSlider(iter->first);
     }
+  }
+
+  Meshcat::Gamepad GetGamepad() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    std::lock_guard<std::mutex> lock(controls_mutex_);
+    return gamepad_;
   }
 
   // This function is public via the PIMPL.
@@ -1814,6 +1821,14 @@ class Meshcat::Impl {
       }
       return;
     }
+    if (data.type == "gamepad" && data.gamepad.has_value()) {
+      // TODO(russt): Figure out how to do the non-invasive unpack of
+      // Meshcat::Gamepad and remove internal::Gamepad.
+      gamepad_.index = data.gamepad->index;
+      gamepad_.button_values = std::move(data.gamepad->button_values);
+      gamepad_.axes = std::move(data.gamepad->axes);
+      return;
+    }
     drake::log()->warn("Meshcat ignored a '{}' event", data.type);
     if (inject_message_fault_.load()) {
       throw std::runtime_error(
@@ -1880,10 +1895,11 @@ class Meshcat::Impl {
   std::thread websocket_thread_{};
   const std::string prefix_{};
 
-  // Both threads access controls_, guarded by controls_mutex_.
-  std::mutex controls_mutex_;
+  // Both threads access the following variables, guarded by controls_mutex_.
+  mutable std::mutex controls_mutex_;
   std::map<std::string, internal::SetButtonControl, std::less<>> buttons_{};
   std::map<std::string, internal::SetSliderControl, std::less<>> sliders_{};
+  Meshcat::Gamepad gamepad_{};
   std::vector<std::string> controls_{};  // Names of buttons and sliders in the
                                          // order they were added.
 
@@ -2149,7 +2165,7 @@ void Meshcat::AddButton(std::string name, std::string keycode) {
   impl().AddButton(std::move(name), std::move(keycode));
 }
 
-int Meshcat::GetButtonClicks(std::string_view name) {
+int Meshcat::GetButtonClicks(std::string_view name) const {
   return impl().GetButtonClicks(name);
 }
 
@@ -2168,7 +2184,7 @@ void Meshcat::SetSliderValue(std::string name, double value) {
   impl().SetSliderValue(std::move(name), value);
 }
 
-double Meshcat::GetSliderValue(std::string_view name) {
+double Meshcat::GetSliderValue(std::string_view name) const {
   return impl().GetSliderValue(name);
 }
 
@@ -2178,6 +2194,10 @@ void Meshcat::DeleteSlider(std::string name) {
 
 void Meshcat::DeleteAddedControls() {
   impl().DeleteAddedControls();
+}
+
+Meshcat::Gamepad Meshcat::GetGamepad() const {
+  return impl().GetGamepad();
 }
 
 std::string Meshcat::StaticHtml() {

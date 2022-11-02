@@ -464,11 +464,21 @@ struct DeleteControl {
   MSGPACK_DEFINE_MAP(type, name);
 };
 
+// This message schema is defined by gamepad dictionary populated in
+// /drake/geometry/meshcat.html::handle_gamepads().
+struct Gamepad {
+  int index{};
+  std::vector<double> button_values;
+  std::vector<double> axes;
+  MSGPACK_DEFINE_MAP(index, button_values, axes);
+};
+
 struct UserInterfaceEvent {
   std::string type;
   std::string name;
   std::optional<double> value;
-  MSGPACK_DEFINE_MAP(type, name, value);
+  std::optional<internal::Gamepad> gamepad;
+  MSGPACK_DEFINE_MAP(type, name, value, gamepad);
 };
 
 }  // namespace internal
@@ -485,7 +495,6 @@ MSGPACK_ADD_ENUM(drake::geometry::MeshcatAnimation::LoopMode);
 namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 namespace adaptor {
-
 
 template <typename Scalar, int RowsAtCompileTime, int ColsAtCompileTime,
           int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime>
