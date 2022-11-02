@@ -560,6 +560,8 @@ drake_py_unittest(
     name = "sensors_test",
     tags = vtk_test_tags(),
     deps = [
+        ":analysis_py",
+        ":lcm_py",
         ":sensors_py",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common/test_utilities",

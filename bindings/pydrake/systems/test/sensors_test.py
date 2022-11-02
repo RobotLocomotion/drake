@@ -26,12 +26,22 @@ from pydrake.math import (
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
 )
+from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     DiagramBuilder,
     InputPort,
     OutputPort,
     )
-from pydrake.systems.lcm import LcmBuses
+from pydrake.systems.lcm import (
+    LcmBuses,
+    LcmPublisherSystem,
+    LcmSubscriberSystem,
+)
+from drake import (
+    lcmt_image,
+    lcmt_image_array,
+)
+
 
 # Shorthand aliases, to reduce verbosity.
 pt = mut.PixelType
@@ -266,7 +276,7 @@ class TestSensors(unittest.TestCase):
         self.assertIsInstance(value, OutputPort)
 
     def test_image_to_lcm_image_array_basic(self):
-        # Test nominal constructor.
+        """Tests the nominal constructor."""
         dut = mut.ImageToLcmImageArrayT(
             color_frame_name="color", depth_frame_name="depth",
             label_frame_name="label", do_compress=False)
@@ -279,25 +289,57 @@ class TestSensors(unittest.TestCase):
             self._check_output(port)
 
     def test_image_to_lcm_image_array_custom(self):
-        # Test custom constructor, test functionality (up to getting abstract
-        # value).
+        """Tests the custom constructor and runtime functionality."""
+        # Declare ports using the custom constructor.
         dut = mut.ImageToLcmImageArrayT(do_compress=False)
-        # Declare ports.
         for pixel_type in pixel_types:
             name = str(pixel_type)
             dut.DeclareImageInputPort[pixel_type](name=name)
-        context = dut.CreateDefaultContext()
+
+        # Wire up a way to see its output message. We need to transmit a
+        # message using C++ and then receive it using Python.
+        lcm = DrakeLcm()
+        channel = "test_image_to_lcm_image_array_custom"
+        builder = DiagramBuilder()
+        builder.AddSystem(dut)
+        for i in range(dut.num_input_ports()):
+            port = dut.get_input_port(i)
+            builder.ExportInput(port, port.get_name())
+        publisher = builder.AddSystem(LcmPublisherSystem.Make(
+            lcm=lcm, channel=channel,
+            lcm_type=lcmt_image_array, use_cpp_serializer=True))
+        builder.Connect(dut.get_output_port(), publisher.get_input_port())
+        subscriber = builder.AddSystem(LcmSubscriberSystem.Make(
+            lcm=lcm, channel=channel,
+            lcm_type=lcmt_image_array, use_cpp_serializer=False))
+        for i in range(subscriber.num_output_ports()):
+            port = dut.get_output_port(i)
+            builder.ExportOutput(port, port.get_name())
+        diagram = builder.Build()
+
+        # Populate the input images.
+        context = diagram.CreateDefaultContext()
         for pixel_type in pixel_types:
             name = str(pixel_type)
-            port = dut.GetInputPort(name)
+            port = diagram.GetInputPort(name)
             self._check_input(port)
             image = mut.Image[pixel_type](width=1, height=1)
             port.FixValue(context, image)
-        output = dut.AllocateOutput()
-        dut.CalcOutput(context, output)
-        # N.B. This Value[] is a C++ LCM object. See
-        # `lcm_py_bind_cpp_serializers.h` for more information.
-        self.assertIsInstance(output.get_data(0), AbstractValue)
+
+        # Transmit an lcmt_image_array in C++.
+        diagram.Publish(context)
+        num_messages = lcm.HandleSubscriptions(1000)
+        self.assertEqual(num_messages, 1)
+
+        # Use a Simulator to invoke the update event. (Wouldn't it be nice if
+        # the Systems API was simple enough that we could apply events without
+        # calling a Simulator!)
+        simulator = Simulator(diagram, context)
+        simulator.AdvanceTo(0.00025)  # Arbitrary positive value.
+
+        # Read the message back into Python.
+        actual_message = diagram.get_output_port(0).Eval(context)
+        self.assertEqual(actual_message, None)
 
     def test_lcm_image_array_to_images_basic(self):
         dut = mut.LcmImageArrayToImages()
