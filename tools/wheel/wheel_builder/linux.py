@@ -27,6 +27,8 @@ tag_base = 'pip-drake'
 # The platform alias is used for Docker tag names, and, when combined with the
 # Python version, must be unique.
 targets = (
+    # NOTE: adding or removing a python version?  Please update the artifact
+    # tallies in doc/_pages/release_playbook.md (search `Attach binaries`).
     Target(
         build_platform=Platform('ubuntu', '20.04', 'focal'),
         test_platform=None,
