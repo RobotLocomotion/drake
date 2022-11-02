@@ -292,7 +292,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.floating_position_suffix.doc)
         .def("floating_velocity_suffix", &Class::floating_velocity_suffix,
             cls_doc.floating_velocity_suffix.doc)
-        .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc);
+        .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc)
         .def("get_mass", &Class::get_mass, py::arg("context"),
             cls_doc.get_mass.doc)
         .def("CalcCenterOfMassInBodyFrame", &Class::CalcCenterOfMassInBodyFrame,
