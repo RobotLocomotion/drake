@@ -3837,7 +3837,6 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
 
   //-------------------------------------------------------------------------
   // Set new pose for fixed offset frame F and verify it propagates correctly.
-  // Herein the rotation matrix is unchanged, but position is multiplied by two.
   X_PF = RigidTransformd(RotationMatrixd::MakeZRotation(2*M_PI/3),
                          Vector3d(2, 2, 2));
   frame_F.SetPoseInParentFrame(context.get(), X_PF);
