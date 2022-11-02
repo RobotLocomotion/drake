@@ -91,7 +91,7 @@ class TestModelVisualizer(unittest.TestCase):
         """
         Tests the ModelVisualizer using a model in a string buffer.
 
-        Also tests getters.
+        Also tests getters and re-using a Meshcat instance.
         """
         visualize_frames = True
         triad_length = 0.4
@@ -117,6 +117,10 @@ class TestModelVisualizer(unittest.TestCase):
 
         dut.parser.AddModelsFromString(self.SAMPLE_OBJ, 'sdf')
         dut.Run(position=[1, 0, 0, 0, 0, 0, 0], loop_once=True)
+
+        dut2 = mut.ModelVisualizer(meshcat=dut.meshcat)
+        dut2.parser.AddModelsFromString(self.SAMPLE_OBJ, 'sdf')
+        dut.Run(loop_once=True)
 
     def test_model_in_file(self):
         """Tests the ModelVisualizer using a model in a file."""
