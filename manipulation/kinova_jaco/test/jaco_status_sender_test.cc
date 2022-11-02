@@ -62,6 +62,7 @@ TEST_F(JacoStatusSenderTest, AcceptanceTestWithFingers) {
   dut_.get_position_input_port().FixValue(&context_, q0);
   dut_.get_velocity_input_port().FixValue(&context_, v0);
 
+  EXPECT_EQ(output().utime, 0);
   EXPECT_EQ(output().num_joints, kJacoDefaultArmNumJoints);
   EXPECT_EQ(output().joint_position, ToStdVec(q0.head(N)));
   EXPECT_EQ(output().joint_velocity, ToStdVec(v0.head(N) / 2));
@@ -77,14 +78,17 @@ TEST_F(JacoStatusSenderTest, AcceptanceTestWithFingers) {
   EXPECT_EQ(output().finger_torque_external, ToStdVec(finger_zero));
   EXPECT_EQ(output().finger_current, ToStdVec(finger_zero));
 
+  const VectorXd time_measured = Vector1d(1.2);
   const VectorXd t1 = VectorXd::LinSpaced(N + N_F, 0.4, 0.5);
   const VectorXd t_ext1 = VectorXd::LinSpaced(N + N_F, 0.5, 0.6);
   const VectorXd current1 = VectorXd::LinSpaced(N + N_F, 0.6, 0.7);
 
+  dut_.get_time_measured_input_port().FixValue(&context_, time_measured);
   dut_.get_torque_input_port().FixValue(&context_, t1);
   dut_.get_torque_external_input_port().FixValue(&context_, t_ext1);
   dut_.get_current_input_port().FixValue(&context_, current1);
 
+  EXPECT_EQ(output().utime, time_measured[0] * 1e6);
   EXPECT_EQ(output().joint_torque, ToStdVec(t1.head(N)));
   EXPECT_EQ(output().joint_torque_external, ToStdVec(t_ext1.head(N)));
   EXPECT_EQ(output().joint_current, ToStdVec(current1.head(N)));
