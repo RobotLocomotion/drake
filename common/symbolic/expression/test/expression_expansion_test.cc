@@ -359,6 +359,11 @@ TEST_F(SymbolicExpansionTest, ExpandMultiplicationsWithDivisions) {
   EXPECT_TRUE(CheckExpandPreserveEvaluation(e4, 1e-8));
 }
 
+TEST_F(SymbolicExpansionTest, Rational) {
+  Expression e1{x_ * pow(1 + 1.0 / x_, 2)};
+  EXPECT_TRUE(CheckExpandIsFixpoint(e1));
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

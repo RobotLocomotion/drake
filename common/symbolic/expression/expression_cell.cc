@@ -17,6 +17,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace symbolic {
@@ -114,12 +115,26 @@ bool determine_polynomial(const Expression& base, const Expression& exponent) {
 Expression ExpandMultiplication(const Expression& e1, const Expression& e2,
                                 const Expression& e3);
 
+void AssertAlreadyExpanded(const Expression& e, int line) {
+  if constexpr (kDrakeAssertIsArmed) {
+    if (e.is_expanded()) {
+      return;
+    }
+    const Expression e2 = e.Expand();
+    if (!e.EqualTo(e2)) {
+      throw std::runtime_error(fmt::format(
+          "{}:{}: Expression '{}' was supposed to be an expansion fixpoint but"
+          " changed to '{}' after another expansion", __FILE__, line, e, e2));
+    }
+  }
+}
+
 // Helper function expanding (e1 * e2). It assumes that both of e1 and e2 are
 // already expanded.
 Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
   // Precondition: e1 and e2 are already expanded.
-  DRAKE_ASSERT(e1.EqualTo(e1.Expand()));
-  DRAKE_ASSERT(e2.EqualTo(e2.Expand()));
+  AssertAlreadyExpanded(e1, __LINE__);
+  AssertAlreadyExpanded(e2, __LINE__);
 
   if (is_addition(e1)) {
     //   (c0 + c1 * e_{1,1} + ... + c_n * e_{1, n}) * e2
@@ -185,7 +200,7 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2,
 // Helper function expanding pow(base, n). It assumes that base is expanded.
 Expression ExpandPow(const Expression& base, const int n) {
   // Precondition: base is already expanded.
-  DRAKE_ASSERT(base.EqualTo(base.Expand()));
+  AssertAlreadyExpanded(base, __LINE__);
   DRAKE_ASSERT(n >= 1);
   if (n == 1) {
     return base;
@@ -203,8 +218,8 @@ Expression ExpandPow(const Expression& base, const int n) {
 // and exponent are already expanded.
 Expression ExpandPow(const Expression& base, const Expression& exponent) {
   // Precondition: base and exponent are already expanded.
-  DRAKE_ASSERT(base.EqualTo(base.Expand()));
-  DRAKE_ASSERT(exponent.EqualTo(exponent.Expand()));
+  AssertAlreadyExpanded(base, __LINE__);
+  AssertAlreadyExpanded(exponent, __LINE__);
   if (is_multiplication(base)) {
     //   pow(c * ∏ᵢ pow(e₁ᵢ, e₂ᵢ), exponent)
     // = pow(c, exponent) * ∏ᵢ pow(e₁ᵢ, e₂ᵢ * exponent)
