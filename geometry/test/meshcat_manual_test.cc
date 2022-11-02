@@ -1,6 +1,8 @@
+#include <chrono>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <thread>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
@@ -404,6 +406,35 @@ Open up your browser to the URL above.
             << " clicks on \"Press t Key\".\n"
             << "Got " << meshcat->GetSliderValue("SliderTest")
             << " value for SliderTest." << std::endl;
+
+  std::cout << "\n\nIf you have a gamepad, then press any button to opt-in to "
+               "gamepad messages. If a gamepad is detected, the gamepad status "
+               "will be printed to the console for 5 seconds.\n";
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  Meshcat::Gamepad gamepad = meshcat->GetGamepad();
+  if (!gamepad.index) {
+    std::cout << "No gamepad activity detected.\n";
+  } else {
+    for (int i = 0; i < 5; ++i) {
+      gamepad = meshcat->GetGamepad();
+      std::cout << "Gamepad status:\n";
+      std::cout << "  gamepad index: " << *gamepad.index << "\n";
+      std::cout << "  buttons: ";
+      for (auto const& value : gamepad.button_values) {
+        std::cout << value << ", ";
+      }
+      std::cout << "\n";
+      std::cout << "  axes: ";
+      for (auto const& value : gamepad.axes) {
+        std::cout << value << ", ";
+      }
+      std::cout << "\n";
+      using std::chrono_literals;
+      std::this_thread::sleep_for(1s);
+    }
+  }
 
   std::cout << "Exiting..." << std::endl;
   return 0;
