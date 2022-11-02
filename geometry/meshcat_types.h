@@ -191,10 +191,14 @@ struct SphereGeometryData : public GeometryData {
 };
 
 struct CapsuleGeometryData : public GeometryData {
+  // For a complete description of these parameters see:
+  // https://threejs.org/docs/#api/en/geometries/CapsuleGeometry
   double radius{};
   double length{};
-  double radialSegments{50};
-  double capSegments{20};
+  double radialSegments{20};  // Number of curve segments used to build
+                              // the caps.
+  double capSegments{10};     // Number of segmented faces around the
+                              // circumference of the capsule.
 
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
   void msgpack_pack(msgpack::packer<std::stringstream>& o) const override {
