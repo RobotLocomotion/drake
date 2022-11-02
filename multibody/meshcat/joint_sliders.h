@@ -113,9 +113,9 @@ class JointSliders final : public systems::LeafSystem<T> {
   will return promptly, without waiting for the timeout. When no timeout is
   given, this function will block indefinitely.
 
-  @param a keycode that will be assigned to the "Stop" button.  Setting this to
-  the empty string means no keycode. See Meshcat::AddButton for details.
-  @default "Escape".
+  @param stop_button_keycode a keycode that will be assigned to the "Stop"
+  button.  Setting this to the empty string means no keycode. See
+  Meshcat::AddButton for details. @default "Escape".
 
   @returns the output of plant.GetPositions() given the most recently published
   value of the plant Context.
