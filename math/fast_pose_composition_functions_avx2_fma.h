@@ -1,9 +1,11 @@
 #pragma once
 
 /** @file
-Declarations for fast, low-level functions for handling objects stored in small
-matrices with known memory layouts, implemented using platform-specific SIMD
-instructions for speed. */
+Internal use only. */
+
+/* Declarations for fast, low-level functions for handling objects stored in
+small matrices with known memory layouts, implemented using platform-specific
+SIMD instructions for speed. */
 
 /* N.B. Do not include any other drake headers here because this file will be
 included by a compilation unit that may have a different opinion about whether
@@ -22,10 +24,12 @@ the class declarations:
    twelve consecutive doubles. The first nine elements comprise a 3x3
    RotationMatrix and the last three are the translation vector. */
 
+#ifndef DRAKE_DOXYGEN_CXX
 template <typename>
 class RotationMatrix;
 template <typename>
 class RigidTransform;
+#endif
 
 namespace internal {
 
