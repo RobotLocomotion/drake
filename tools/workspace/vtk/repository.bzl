@@ -845,6 +845,12 @@ licenses([
         ],
     )
 
+    # TODO(svenevs): this is clearly wrong... @freetype needed?  IIRC needed
+    # for ubuntu specifically, not sure about ubuntu/macOS wheel.
+    vtk_rendering_freetype_linkopts = ["-lfreetype"]
+    if os_result.is_macos:
+        vtk_rendering_freetype_linkopts = ["-L/opt/homebrew/lib", "-lfreetype"]
+
     file_content += _vtk_cc_library(
         os_result,
         "vtkRenderingFreeType",
@@ -857,8 +863,8 @@ licenses([
             ":vtkCommonExecutionModel",
             ":vtkFiltersGeneral",
             ":vtkRenderingCore",
-            "@libfreetype",
         ],
+        linkopts = vtk_rendering_freetype_linkopts,
     )
 
     file_content += _vtk_cc_library(
