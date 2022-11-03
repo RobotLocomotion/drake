@@ -16,6 +16,7 @@ def dreal_repository(
         mirrors = mirrors,
         patches = [
             ":patches/ibex_2.8.6.patch",
+            ":patches/platforms.patch",
             ":patches/pull283.patch",
             ":patches/warnings.patch",
         ],

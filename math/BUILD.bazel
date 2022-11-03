@@ -287,7 +287,7 @@ config_setting(
         # On macOS, we opt-out of this feature (even for Apple hardware that
         # supports it) to reduce our test matrix burden for the deprecated
         # architecture.
-        "@bazel_tools//platforms:linux",
+        "@platforms//os:linux",
     ],
 )
 
