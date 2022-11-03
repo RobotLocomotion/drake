@@ -73,6 +73,7 @@ load("@drake//tools/workspace/osqp:repository.bzl", "osqp_repository")
 load("@drake//tools/workspace/petsc:repository.bzl", "petsc_repository")
 load("@drake//tools/workspace/picosat:repository.bzl", "picosat_repository")
 load("@drake//tools/workspace/picosha2:repository.bzl", "picosha2_repository")
+load("@drake//tools/workspace/platforms:repository.bzl", "platforms_repository")  # noqa
 load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
 load("@drake//tools/workspace/python:repository.bzl", "python_repository")
@@ -268,6 +269,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         picosat_repository(name = "picosat", mirrors = mirrors)
     if "picosha2" not in excludes:
         picosha2_repository(name = "picosha2", mirrors = mirrors)
+    if "platforms" not in excludes:
+        platforms_repository(name = "platforms", mirrors = mirrors)
     if "pybind11" not in excludes:
         pybind11_repository(name = "pybind11", mirrors = mirrors)
     if "pycodestyle" not in excludes:
