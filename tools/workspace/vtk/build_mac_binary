@@ -79,7 +79,7 @@ cmake \
     -DCMAKE_OSX_SYSROOT="${macosx_sysroot}" \
     -DCMAKE_C_COMPILER="$(xcrun -sdk macosx -find gcc)" \
     -DCMAKE_CXX_COMPILER="$(xcrun -sdk macosx -find g++)" \
-    -DJPEG_ROOT="$(brew --prefix jpeg-turbo)" \
+    -DJPEG_ROOT="$(brew --prefix jpeg)" \
     "${vtk_cmake_args[@]}" \
     -B "${build_dir}" \
     -S "${src_dir}"
