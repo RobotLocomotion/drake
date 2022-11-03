@@ -35,9 +35,9 @@ filegroup(
 )
 
 filegroup(
-    name = "model_directives_to_sdf_test_files",
+    name = "model_directives_to_sdf_files",
     testonly = True,
-    data = glob(["test/model_directives_to_sdf/**"]),
+    data = glob(["test/model_directives_to_sdf_files/**"]),
     visibility = [
         "//bindings/pydrake/multibody:__pkg__",
     ],
@@ -557,7 +557,7 @@ drake_py_unittest(
     name = "model_directives_to_sdf_test",
     data = [
         ":model_directives_to_sdf.py",
-        ":model_directives_to_sdf_test_files",
+        ":model_directives_to_sdf_files",
     ],
     deps = [
         "//bindings/pydrake",

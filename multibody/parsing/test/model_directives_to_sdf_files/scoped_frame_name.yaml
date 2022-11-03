@@ -1,0 +1,24 @@
+directives:
+- add_model:
+    name: simple_model
+    file: package://model_directives_to_sdf_files/simple_model.sdf
+
+- add_frame:
+    name: sub_added_frame
+    X_PF:
+      base_frame: simple_model::frame
+      translation: [10, 20, 30]
+
+- add_model:
+    name: extra_model
+    file: package://model_directives_to_sdf_files/simple_model.sdf
+
+- add_frame:
+    name: extra_model::sub_added_frame_explicit
+    X_PF:
+      base_frame: extra_model::frame
+      translation: [10, 20, 30]
+
+- add_weld:
+    parent: simple_model::frame
+    child: sub_added_frame_explicit

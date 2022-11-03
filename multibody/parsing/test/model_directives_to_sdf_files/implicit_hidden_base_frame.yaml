@@ -1,0 +1,10 @@
+directives:
+  - add_model:
+      name: simple_model
+      file: package://model_directives_to_sdf_files/simple_model.sdf
+
+  - add_frame:
+      name: frame_name
+      X_PF:
+        # frame is inside simple_model.sdf
+        base_frame: frame

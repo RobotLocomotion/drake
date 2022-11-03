@@ -1,0 +1,16 @@
+directives:
+- add_model:
+    name: simple_model
+    file: package://model_directives_to_sdf_files/simple_model.sdf
+
+- add_frame:
+    name: frame_name
+    X_PF:
+      base_frame: simple_model::base
+      translation: [10, 20, 30]
+
+- add_frame:
+    name: frame_name
+    X_PF:
+      base_frame: frame_name
+      translation: [10, 20, 30]

@@ -102,17 +102,17 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                      metaclass=ValueParameterizedTest):
 
     files_to_test = [
-        'multibody/parsing/test/model_directives_to_sdf/'
+        'multibody/parsing/test/model_directives_to_sdf_files/'
         'inject_frames.yaml',
-        'multibody/parsing/test/model_directives_to_sdf/'
+        'multibody/parsing/test/model_directives_to_sdf_files/'
         'hidden_frame.yaml',
-        'multibody/parsing/test/model_directives_to_sdf/'
+        'multibody/parsing/test/model_directives_to_sdf_files/'
         'frame_attached_to_frame.yaml',
-        'multibody/parsing/test/model_directives_to_sdf/'
+        'multibody/parsing/test/model_directives_to_sdf_files/'
         'weld_frames_from_models.yaml',
-        'multibody/parsing/test/model_directives_to_sdf/'
+        'multibody/parsing/test/model_directives_to_sdf_files/'
         'scoped_frame_name.yaml',
-        'multibody/parsing/test/model_directives_to_sdf/'
+        'multibody/parsing/test/model_directives_to_sdf_files/'
         'weld_extra_scopes.yaml'
     ]
 
@@ -129,7 +129,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         directives_plant = MultibodyPlant(time_step=0.01)
         model_dir = os.path.dirname(FindResourceOrThrow(
             'drake/multibody/parsing/test/'
-            'model_directives_to_sdf/package.xml'))
+            'model_directives_to_sdf_files/package.xml'))
         parser = Parser(plant=directives_plant)
         parser.package_map().PopulateFromFolder(model_dir)
         directives = LoadModelDirectives(file_path)
@@ -221,7 +221,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                     r'\[directives\] must be the first keyword'
                                     ' in the yaml file, exiting.'):
             converter.convert_directive(
-                'multibody/parsing/test/model_directives_to_sdf/'
+                'multibody/parsing/test/model_directives_to_sdf_files/'
                 'something_not_directives.yaml')
 
     def test_error_directives_not_frist(self):
@@ -230,7 +230,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                     r'\[directives\] must be the first keyword'
                                     ' in the yaml file, exiting.'):
             result = converter.convert_directive(
-                'multibody/parsing/test/model_directives_to_sdf/'
+                'multibody/parsing/test/model_directives_to_sdf_files/'
                 'not_directives_first.yaml')
 
     def test_error_implicit_hidden_base_frame(self):
@@ -240,7 +240,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                     r'\[frame\] when trying to add frame: '
                                     r'\[frame_name\].'):
             converter.convert_directive(
-                'multibody/parsing/test/model_directives_to_sdf/'
+                'multibody/parsing/test/model_directives_to_sdf_files/'
                 'implicit_hidden_base_frame.yaml')
 
     def test_error_different_scopes_frame(self):
@@ -251,7 +251,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                     'different scope in its name and its '
                                     r'base_frame: \[simple_model::frame\].'):
             converter.convert_directive(
-                'multibody/parsing/test/model_directives_to_sdf/'
+                'multibody/parsing/test/model_directives_to_sdf_files/'
                 'different_scopes_frame.yaml')
 
     def test_error_world_base(self):
@@ -261,7 +261,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                     'are not supported to be converted using '
                                     'this script'):
             converter.convert_directive(
-                'multibody/parsing/test/model_directives_to_sdf/'
+                'multibody/parsing/test/model_directives_to_sdf_files/'
                 'world_base_frame.yaml')
 
     def test_error_frame_name_same_base_name(self):
@@ -271,7 +271,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                     'it\'s base frame. This case is not '
                                     'supported.'):
             converter.convert_directive(
-                'multibody/parsing/test/model_directives_to_sdf/'
+                'multibody/parsing/test/model_directives_to_sdf_files/'
                 'frame_same_as_base_frame.yaml')
 
     def test_error_frames_same_name(self):
@@ -281,5 +281,5 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                     r'\[frame_name\], could not resolve the '
                                     'scope.'):
             converter.convert_directive(
-                'multibody/parsing/test/model_directives_to_sdf/'
+                'multibody/parsing/test/model_directives_to_sdf_files/'
                 'frames_same_name.yaml')

@@ -1,0 +1,9 @@
+# Test for model directives convertion script
+# This should fail as "directives" is not found
+
+something_not_directives:
+
+# Top level model, for example the robot arm.
+- add_model:
+    name: top_level_model
+    file: package://model_directives_to_sdf_files/simple_model.sdf
