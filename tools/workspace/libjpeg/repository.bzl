@@ -11,9 +11,9 @@ def _impl(repository_ctx):
     noarch_hdrs = ["jerror.h", "jmorecfg.h", "jpegint.h", "jpeglib.h"]
 
     if os_result.is_macos:
-        libdir = "{}/opt/jpeg/lib".format(os_result.homebrew_prefix)
+        libdir = "{}/opt/jpeg-turbo/lib".format(os_result.homebrew_prefix)
         repository_ctx.symlink(
-            "{}/opt/jpeg/include".format(os_result.homebrew_prefix),
+            "{}/opt/jpeg-turbo/include".format(os_result.homebrew_prefix),
             "include",
         )
     elif os_result.is_manylinux or os_result.is_macos_wheel:
