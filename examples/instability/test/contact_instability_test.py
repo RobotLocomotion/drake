@@ -2,42 +2,28 @@
 Shows simple box collision going unstable based on time step.
 """
 
-from contextlib import contextmanager
 from types import SimpleNamespace
 import unittest
 
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import DrakeVisualizer, DrakeVisualizerParams, Role
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.multibody.math import SpatialVelocity
-from pydrake.multibody.parsing import Parser
-from pydrake.multibody.plant import AddMultibodyPlant, MultibodyPlantConfig
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import DiagramBuilder, EventStatus
 
-VISUALIZE = True
+from drake.examples.instability.test.instability_common import (
+    TestBase,
+    add_basic_simulation_components,
+    monitor_large_energy_delta,
+)
 
-
-def add_basic_simulation_components(ns, time_step, solver=None):
-    ns.builder = DiagramBuilder()
-    config = MultibodyPlantConfig(time_step=time_step)
-    if solver is not None:
-        config.discrete_contact_solver = solver
-    else:
-        assert time_step == 0.0
-    ns.plant, ns.scene_graph = AddMultibodyPlant(config, ns.builder)
-    ns.parser = Parser(ns.plant)
-    DrakeVisualizer.AddToBuilder(
-        ns.builder,
-        ns.scene_graph,
-        params=DrakeVisualizerParams(role=Role.kIllustration),
-    )
-    ns.plant.mutable_gravity_field().set_gravity_vector([0.0, 0.0, 0.0])
+VISUALIZE = False
 
 
 def add_floating_contact_sim(ns):
+    # "a" and "b" are objects that are representative of one version of the
+    # haptic simulation where contact instability occurred (anzu#9395).
     a_file = FindResourceOrThrow(
         "drake/examples/instability/test/contact_object_a.sdf"
     )
@@ -53,45 +39,7 @@ def add_floating_contact_sim(ns):
     return ns
 
 
-def total_energy(plant, context):
-    return plant.EvalKineticEnergy(context) + plant.EvalPotentialEnergy(
-        context
-    )
-
-
-def monitor_large_energy_delta(simulator, t, plant, max_energy_gain):
-    diagram_context = simulator.get_context()
-    context = plant.GetMyContextFromRoot(diagram_context)
-    energy_init = total_energy(plant, context)
-    max_bad_energy_delta = None
-
-    def monitor(diagram_context):
-        nonlocal max_bad_energy_delta
-        context = plant.GetMyContextFromRoot(diagram_context)
-        energy_now = total_energy(plant, context)
-        energy_delta = energy_now - energy_init
-        if energy_delta > max_energy_gain:
-            if (
-                max_bad_energy_delta is None
-                or energy_delta > max_bad_energy_delta
-            ):
-                max_bad_energy_delta = energy_delta
-        return EventStatus.DidNothing()
-
-    simulator.set_monitor(monitor)
-    simulator.AdvanceTo(t)
-    if max_bad_energy_delta is not None:
-        raise RuntimeError(f"Too much energy gained: {max_bad_energy_delta} J")
-
-
-class Test(unittest.TestCase):
-    @contextmanager
-    def assert_raises_message(self, pieces, cls=RuntimeError):
-        with self.assertRaises(cls) as cm:
-            yield
-        for piece in pieces:
-            self.assertIn(piece, str(cm.exception))
-
+class Test(TestBase):
     def run_floating_contact(
         self, time_step, *, solver=None, max_energy_gain,
     ):

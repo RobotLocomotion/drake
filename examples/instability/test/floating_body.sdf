@@ -11,6 +11,10 @@
       </visual>
       <inertial>
         <pose>0 0 0 0 0 0</pose>
+        <!--
+        Represents inertial terms in Anzu's yukon_gold_potato.sdf on
+        2022-11-02.
+        -->
         <mass>0.1</mass>
         <inertia>
           <ixx>0.000156</ixx>
