@@ -3,6 +3,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <regex>
 #include <set>
 #include <tuple>
 #include <utility>
@@ -1133,7 +1134,8 @@ GTEST_TEST(MultibodyPlantTest, Graphviz) {
   Parser(&plant).AddModelFromFile(cylinder_path, "cylinder2");
 
   plant.set_name("MyTestMBP");
-  const std::string dot = plant.GetTopologyGraphvizString();
+  const std::string dot = std::regex_replace(plant.GetTopologyGraphvizString(),
+                                             std::regex("\\n"), "");
 
   // Check that the diagram is labeled with the system name.
   EXPECT_NE(std::string::npos, dot.find("MyTestMBP")) << dot;
@@ -1153,9 +1155,24 @@ GTEST_TEST(MultibodyPlantTest, Graphviz) {
   // Check for the Acrobot elbow joint.
   EXPECT_NE(std::string::npos, dot.find("ElbowJoint [revolute]")) << dot;
 
-  // Check that the same string appears before and after calling Finalize().
+  // Finalize() will add floating joints for the free bodies.
   plant.Finalize();
-  EXPECT_STREQ(dot.c_str(), plant.GetTopologyGraphvizString().c_str());
+  const std::string dot_finalized = std::regex_replace(
+      plant.GetTopologyGraphvizString(), std::regex("\\n"), "");
+
+  // Check that the pre-finalize string is a substring of the post-finalize
+  // string (ignoring newlines and the ending '}' as the last character)
+  EXPECT_THAT(dot_finalized.c_str(),
+              testing::HasSubstr(dot.substr(0, dot.size() - 1).c_str()));
+
+  // Check that the two floating joints created at Finalize() exist.
+  const size_t pos_finalized =
+      dot_finalized.find("world_uniformSolidCylinder [quaternion_floating]");
+  EXPECT_NE(std::string::npos, pos_finalized) << dot_finalized;
+  EXPECT_NE(
+      std::string::npos,
+      dot_finalized.find("world_uniformSolidCylinder [quaternion_floating]",
+                         pos_finalized + 1));
 }
 
 // Verifies that the right errors get invoked upon finalization.

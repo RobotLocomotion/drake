@@ -731,8 +731,8 @@ TEST_F(SdfParserTest, IncludeTags) {
   EXPECT_EQ(plant_.num_model_instances(), 7);
   // The models should have added 8 more bodies.
   EXPECT_EQ(plant_.num_bodies(), 9);
-  // The models should have added 5 more joints.
-  EXPECT_EQ(plant_.num_joints(), 5);
+  // The models should have added 8 more joints.
+  EXPECT_EQ(plant_.num_joints(), 8);
 
   // There should be a model instance with the name "robot1".
   ASSERT_TRUE(plant_.HasModelInstanceNamed("robot1"));
@@ -1765,8 +1765,8 @@ TEST_F(SdfParserTest, LoadDirectlyNestedModelsInWorld) {
   EXPECT_EQ(plant_.num_model_instances(), 5);
   // The models should have added 4 more bodies.
   EXPECT_EQ(plant_.num_bodies(), 5);
-  // The models should have added 3 more joints.
-  EXPECT_EQ(plant_.num_joints(), 3);
+  // The models should have added 4 more joints.
+  EXPECT_EQ(plant_.num_joints(), 4);
 
   // There should be a model instance with the name "parent_model".
   ASSERT_TRUE(plant_.HasModelInstanceNamed("parent_model"));
@@ -1821,8 +1821,8 @@ TEST_F(SdfParserTest, LoadDirectlyNestedModelsInModel) {
   EXPECT_EQ(plant_.num_model_instances(), 6);
   // The models should have added 4 more bodies.
   EXPECT_EQ(plant_.num_bodies(), 5);
-  // The models should have added 3 more joints.
-  EXPECT_EQ(plant_.num_joints(), 3);
+  // The models should have added 4 more joints.
+  EXPECT_EQ(plant_.num_joints(), 4);
 
   // There should be a model instance with the name "grand_parent_model" (top
   // level model).
@@ -2548,7 +2548,7 @@ TEST_F(SdfParserTest, MergeInclude) {
   // We should have loaded *only* 1 more model.
   EXPECT_EQ(plant_.num_model_instances(), 3);
   EXPECT_EQ(plant_.num_bodies(), 4);
-  EXPECT_EQ(plant_.num_joints(), 2);
+  EXPECT_EQ(plant_.num_joints(), 3);
 
   ASSERT_TRUE(plant_.HasModelInstanceNamed("robot1_with_tool"));
   ModelInstanceIndex robot1_model =

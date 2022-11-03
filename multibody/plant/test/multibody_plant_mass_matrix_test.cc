@@ -115,8 +115,9 @@ TEST_F(MultibodyPlantMassMatrixTests, AtlasRobot) {
   for (JointIndex joint_index(0); joint_index < plant_.num_joints();
        ++joint_index) {
     const Joint<double>& joint = plant_.get_joint(joint_index);
-    // This model only has weld and revolute joints. Weld joints have zero DOFs.
-    if (joint.num_velocities() != 0) {
+    // This model has weld, revolute, and floating joints. Set the revolute
+    // joints to an arbitrary angle.
+    if (joint.type_name() == "revolute") {
       const RevoluteJoint<double>& revolute_joint =
           dynamic_cast<const RevoluteJoint<double>&>(joint);
       // Arbitrary non-zero angle.
@@ -140,8 +141,9 @@ TEST_F(MultibodyPlantMassMatrixTests, AtlasRobotWithFixedJoints) {
   for (JointIndex joint_index(0); joint_index < plant_.num_joints();
        ++joint_index) {
     const Joint<double>& joint = plant_.get_joint(joint_index);
-    // This model only has weld and revolute joints. Weld joints have zero DOFs.
-    if (joint.num_velocities() != 0) {
+    // This model has weld, revolute, and floating joints. Set the revolute
+    // joints to an arbitrary angle.
+    if (joint.type_name() == "revolute") {
       const RevoluteJoint<double>& revolute_joint =
           dynamic_cast<const RevoluteJoint<double>&>(joint);
       // Arbitrary non-zero angle.
