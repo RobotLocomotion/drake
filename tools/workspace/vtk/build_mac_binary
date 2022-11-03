@@ -56,6 +56,9 @@ git -C "${src_dir}" checkout "${VTK_VERSION}"
 # TODO(svenevs): macOS install rpath concerns.
 # -DCMAKE_INSTALL_NAME_DIR:STRING=/opt/homebrew/Cellar/vtk@9.1.0/9.1.0_4/lib
 # -DCMAKE_INSTALL_RPATH:STRING=/opt/homebrew/Cellar/vtk@9.1.0/9.1.0_4/lib
+# NOTE: for unknown reason the traditional `jpeg` is failing on
+# //systems/sensors:lcm_image_array_to_images_test.  `jpeg-turbo`, however,
+# works as expected.  As such, define JPEG_ROOT to point there.
 cmake \
     -G Ninja \
     -Wno-dev \
@@ -68,6 +71,7 @@ cmake \
     -DCMAKE_OSX_SYSROOT="${macosx_sysroot}" \
     -DCMAKE_C_COMPILER="$(xcrun -sdk macosx -find gcc)" \
     -DCMAKE_CXX_COMPILER="$(xcrun -sdk macosx -find g++)" \
+    -DJPEG_ROOT="$(brew --prefix jpeg-turbo)" \
     "${vtk_cmake_args[@]}" \
     -B "${build_dir}" \
     -S "${src_dir}"
