@@ -4529,10 +4529,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // shown to be exactly conserved and to be within O(dt) of the real energy of
   // the mechanical system.)
   // TODO(amcastro-tri): Update this docs when contact is added.
-  void DoCalcDiscreteVariableUpdates(
-      const drake::systems::Context<T>& context0,
-      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
-      drake::systems::DiscreteValues<T>* updates) const override;
+  systems::EventStatus CalcDiscreteStep(
+      const systems::Context<T>& context0,
+      systems::DiscreteValues<T>* updates) const;
 
   // Helper method used within DoCalcDiscreteVariableUpdates() to update
   // generalized velocities from previous step value v0 to next step value v.
