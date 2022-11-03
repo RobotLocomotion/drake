@@ -850,7 +850,7 @@ licenses([
     # TODO(svenevs): wheel cannot do this, it should be -lfreetype most likely.
     # vtk_rendering_freetype_linkopts = ["-lfreetype"]
     vtk_rendering_freetype_linkopts = [
-        "/usr/lib/x86_64-linux-gnu/libfreetype.so.6"
+        "/usr/lib/x86_64-linux-gnu/libfreetype.so.6",
     ]
     if os_result.is_macos:
         vtk_rendering_freetype_linkopts = [
