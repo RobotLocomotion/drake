@@ -182,6 +182,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_relaxation_time
 - @ref tag_drake_rigid_hydroelastic
 - @ref tag_drake_rotor_inertia
+- @ref tag_drake_screw_thread_pitch
 
 @subsection tag_drake_acceleration drake:acceleration
 
@@ -395,7 +396,7 @@ for translation; the third is for rotation. See that class for discussion of
 units and detailed semantics.
 
 URDF Note: The comparable feature in URDF is the standard
-`/robot/link/joint/dynamics/@damping` attribute.
+`/robot/joint/dynamics/@damping` attribute.
 
 @subsection tag_drake_declare_convex drake:declare_convex
 
@@ -441,8 +442,8 @@ the visual or collision geometry of the model.
 
 @subsection tag_drake_gear_ratio drake:gear_ratio
 
-- SDFormat path: `//model/link/joint/drake:gear_ratio`
-- URDF path: `/robot/link/joint/actuator/drake:gear_ratio@value`
+- SDFormat path: `//model/joint/drake:gear_ratio`
+- URDF path: `/robot/joint/actuator/drake:gear_ratio@value`
 - Syntax: Non-negative floating point value.
 
 @subsubsection tag_drake_gear_ratio_semantics Semantics
@@ -519,11 +520,13 @@ semantics are the same as for a standard joint.
 In SDFormat, the only supported `type` value is `planar`. The element must
 contain nested `drake:parent`, `drake:child`, and `drake:damping` elements.
 
-In URDF, supported `type` values are one of `ball`, `planar`, or
+In URDF, supported `type` values are one of `ball`, `planar`, `screw` or
 `universal`. The nested elements are the same as those defined by the standard
-joint element.
+joint element with the exception of the `screw` joint type, which requires
+a nested `drake:screw_thread_pitch` element.
 
-@see @ref tag_drake_parent, @ref tag_drake_child, @ref tag_drake_damping
+@see @ref tag_drake_parent, @ref tag_drake_child, @ref tag_drake_damping,
+@ref tag_drake_screw_thread_pitch
 
 @subsection tag_drake_linear_bushing_rpy drake:linear_bushing_rpy
 
@@ -696,8 +699,8 @@ to be rigid, as opposed to compliant, in hydroelastic contact models.
 
 @subsection tag_drake_rotor_inertia drake:rotor_inertia
 
-- SDFormat path: `//model/link/joint/drake:rotor_inertia`
-- URDF path: `/robot/link/joint/actuator/drake:rotor_inertia@value`
+- SDFormat path: `//model/joint/drake:rotor_inertia`
+- URDF path: `/robot/joint/actuator/drake:rotor_inertia@value`
 - Syntax: Non-negative floating point value.
 
 @subsubsection tag_drake_rotor_inertia_semantics Semantics
@@ -707,5 +710,20 @@ object. Units are kg⋅m² for revolute joints, and kg for prismatic joints.
 
 @see drake::multibody::JointActuator, @ref tag_drake_gear_ratio,
 @ref reflected_inertia "Reflected Inertia"
+
+@subsection tag_drake_screw_thread_pitch drake:screw_thread_pitch
+
+- SDFormat path: `//model/joint/drake:screw_thread_pitch`
+- URDF path: `/robot/joint/actuator/drake:screw_thread_pitch@value`
+- Syntax: Non-zero floating point value.
+
+@subsubsection tag_drake_screw_thread_pitch_semantics Semantics
+
+Applies the indicated thread pitch value to the appropriate ScrewJoint object.
+This kinematic parameter specifies the axial distance traveled for each
+revolution of the joint. Units are m/revolution, with a positive value
+corresponding to a right-handed thread.
+
+@see drake::multibody::ScrewJoint
 
 */

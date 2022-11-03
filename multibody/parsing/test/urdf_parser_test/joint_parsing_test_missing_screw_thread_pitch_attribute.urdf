@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<robot xmlns:drake="http://drake.mit.edu" xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test_missing_screw_thread_pitch_attribute">
+  <link name="link1"/>
+  <link name="link2"/>
+  <drake:joint name="screw_joint" type="screw">
+    <axis xyz="1 0 0"/>
+    <parent link="link1"/>
+    <child link="link2"/>
+    <drake:screw_thread_pitch/>
+  </drake:joint>
+</robot>
