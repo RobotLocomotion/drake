@@ -713,7 +713,8 @@ object. Units are kg⋅m² for revolute joints, and kg for prismatic joints.
 
 @subsection tag_drake_screw_thread_pitch drake:screw_thread_pitch
 
-- SDFormat path: `//model/joint/drake:screw_thread_pitch`
+- SDFormat path: `//model/joint/screw_thread_pitch` <br/>
+  Note this is **not** the custom attribute.
 - URDF path: `/robot/joint/actuator/drake:screw_thread_pitch@value`
 - Syntax: Non-zero floating point value.
 
