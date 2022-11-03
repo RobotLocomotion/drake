@@ -102,9 +102,12 @@ def _impl(repository_ctx):
 
     if os_result.is_ubuntu or os_result.is_macos:
         if os_result.is_macos:
-            # TODO(svenevs): this is not the final name, and is only arm64.
-            archive = "drake-vtk-mac.tar.gz"
-            sha256 = "61132db14ad553c56326e25f7aaa620f950926e275c45d8af8dddaa967d0c3f7"  # noqa
+            if os_result.macos_arch_result == "arm64":
+                archive = "vtk-9.2.0-1-mac-arm64.tar.gz"
+                sha256 = "5672f27dec744fa5d19c3481eb446834c763acb93443e3b009897424c062838b"  # noqa
+            else:
+                archive = "vtk-9.2.0-1-mac-x86_64.tar.gz"
+                sha256 = "cd224aa357bf760796e4291078bbecd622af80157ca23ad5a7cd28d61410b730"  # noqa
         elif os_result.ubuntu_release == "20.04":
             # TODO(svenevs): change our naming scheme (commit vs version)?
             archive = "vtk-9.2.0-1-focal-x86_64.tar.gz"
