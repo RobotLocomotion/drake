@@ -3,50 +3,48 @@
 #include <array>
 
 #include "drake/multibody/fem/constitutive_model.h"
-#include "drake/multibody/fem/linear_constitutive_model_data.h"
+#include "drake/multibody/fem/linear_corotated_model_data.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
 namespace internal {
 
-/* Traits for LinearConstitutiveModel. */
+/* Traits for LinearCorotatedModel. */
 template <typename T, int num_locations>
-struct LinearConstitutiveModelTraits {
+struct LinearCorotatedModelTraits {
   using Scalar = T;
-  using Data = LinearConstitutiveModelData<T, num_locations>;
+  using Data = LinearCorotatedModelData<T, num_locations>;
 };
 
-/* Implements the infinitesimal-strain linear elasticity constitutive model as
- described in Section 7.4 of [Gonzalez, 2008].
- @tparam_nonsymbolic_scalar.
+/* Implements the linear corotated constitutive model as described in
+ [Han et al., 2023].
+ @tparam_nonsymbolic_scalar
  @tparam num_locations Number of locations at which the constitutive
  relationship is evaluated. We currently only provide one instantiation of this
  template with `num_locations = 1`, but more instantiations can easily be added
  when needed.
 
-[Gonzalez, 2008] Gonzalez, Oscar, and Andrew M. Stuart. A first course in
-continuum mechanics. Cambridge University Press, 2008. */
+ [Han et al., 2023] Han, Xuchen, Joseph Masterjohn, and Alejandro Castro. "A
+ Convex Formulation of Frictional Contact between Rigid and Deformable Bodies."
+ arXiv preprint arXiv:2303.08912 (2023). */
 template <typename T, int num_locations>
-class LinearConstitutiveModel final
-    : public ConstitutiveModel<
-          LinearConstitutiveModel<T, num_locations>,
-          LinearConstitutiveModelTraits<T, num_locations>> {
+class LinearCorotatedModel final
+    : public ConstitutiveModel<LinearCorotatedModel<T, num_locations>,
+                               LinearCorotatedModelTraits<T, num_locations>> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearConstitutiveModel)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearCorotatedModel)
 
-  using Base =
-      ConstitutiveModel<LinearConstitutiveModel<T, num_locations>,
-                        LinearConstitutiveModelTraits<T, num_locations>>;
-  using Data = typename Base::Data;
+  using Traits = LinearCorotatedModelTraits<T, num_locations>;
+  using Data = typename Traits::Data;
 
-  /* Constructs a LinearConstitutiveModel constitutive model with the
+  /* Constructs a LinearCorotatedModel constitutive model with the
    prescribed Young's modulus and Poisson's ratio.
-   @param youngs_modulus Young's modulus of the model, with unit N/m²
-   @param poissons_ratio Poisson's ratio of the model, unitless.
+   @param youngs_modulus  Young's modulus of the model, with units of N/m².
+   @param poissons_ratio  Poisson's ratio of the model, unitless.
    @pre youngs_modulus >= 0.
    @pre -1 < poissons_ratio < 0.5. */
-  LinearConstitutiveModel(const T& youngs_modulus, const T& poissons_ratio);
+  LinearCorotatedModel(const T& youngs_modulus, const T& poissons_ratio);
 
   const T& youngs_modulus() const { return E_; }
 
@@ -63,8 +61,8 @@ class LinearConstitutiveModel final
   const T& lame_first_parameter() const { return lambda_; }
 
  private:
-  /* Allow base class friend access to the private CalcFooImpl functions. */
-  friend Base;
+  friend ConstitutiveModel<LinearCorotatedModel<T, num_locations>,
+                           LinearCorotatedModelTraits<T, num_locations>>;
 
   /* Shadows ConstitutiveModel::CalcElasticEnergyDensityImpl() as required by
    the CRTP base class. */
@@ -86,8 +84,6 @@ class LinearConstitutiveModel final
   T nu_;      // Poisson's ratio.
   T mu_;      // Lamé's second parameter/Shear modulus, N/m².
   T lambda_;  // Lamé's first parameter, N/m².
-  Eigen::Matrix<T, 9, 9>
-      dPdF_;  // The First Piola stress derivative is constant and precomputed.
 };
 
 }  // namespace internal
