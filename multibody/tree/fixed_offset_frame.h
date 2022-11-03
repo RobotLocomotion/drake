@@ -112,6 +112,7 @@ class FixedOffsetFrame final : public Frame<T> {
   /// Returns the rigid transform X_PF that characterizes `this` frame F's pose
   /// in its parent frame P.
   /// @param[in] context contains the state of the multibody plant.
+  /// @pre `this` frame has been registered in the given `context`.
   math::RigidTransform<T> GetPoseInParentFrame(
       const systems::Context<T>& context) const {
     const systems::BasicVector<T>& X_PF_parameter =
@@ -120,7 +121,7 @@ class FixedOffsetFrame final : public Frame<T> {
             X_PF_parameter.get_value().data()));
   }
 
-  DRAKE_DEPRECATED("2023-02-01", "SetPoseInBodyFrame() was incorrectly named "
+  DRAKE_DEPRECATED("2023-03-01", "SetPoseInBodyFrame() was incorrectly named "
                    "so it has been replaced by SetPoseInParentFrame().")
   void SetPoseInBodyFrame(systems::Context<T>* context,
                           const math::RigidTransform<T>& X_PF) const {

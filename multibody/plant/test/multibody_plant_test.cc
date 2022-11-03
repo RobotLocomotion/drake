@@ -3757,8 +3757,8 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
                               Vector3d(2, 2, 0));
   const RigidTransformd X_WpP(RotationMatrixd::MakeZRotation(M_PI/12),
                               Vector3d(0.1, 0.2, 0));
-        RigidTransformd X_BP(RotationMatrixd::MakeXRotation(M_PI/4),
-                             Vector3d(0, 0.3, 0.4));
+  RigidTransformd X_BP(RotationMatrixd::MakeXRotation(M_PI/4),
+                       Vector3d(0, 0.3, 0.4));
   const Joint<double>& weld_joint = plant.AddJoint<WeldJoint>("weld_WB",
       plant.world_body(), X_WWp, body_B, X_BP, X_WpP);
 
@@ -3782,39 +3782,32 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   // Verify frame P's pose in its parent B (reminder P is a fixed-offset frame).
   RigidTransformd X_BP_check1 = frame_P.GetPoseInParentFrame(*context);
   RigidTransformd X_BP_check2 = frame_P.CalcPoseInBodyFrame(*context);
-  EXPECT_TRUE(CompareMatrices(X_BP.GetAsMatrix34(),
-                    X_BP_check1.GetAsMatrix34(), kTolerance));
-  EXPECT_TRUE(CompareMatrices(X_BP.GetAsMatrix34(),
-                    X_BP_check2.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_BP_check1.IsNearlyEqualTo(X_BP, kTolerance));
+  EXPECT_TRUE(X_BP_check2.IsNearlyEqualTo(X_BP, kTolerance));
 
   // Verify frame P's pose in world W.
   RigidTransformd X_WP = X_WWp * X_WpP;
   RigidTransformd X_WP_check = frame_P.CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(X_WP.GetAsMatrix34(),
-                        X_WP_check.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_WP_check.IsNearlyEqualTo(X_WP, kTolerance));
 
   // Verify frame F's pose in its parent P.
   RigidTransformd X_PF_check = frame_F.GetPoseInParentFrame(*context);
-  EXPECT_TRUE(CompareMatrices(X_PF.GetAsMatrix34(),
-                        X_PF_check.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_PF_check.IsNearlyEqualTo(X_PF, kTolerance));
 
   // Verify frame F's pose in body B.
   RigidTransformd X_BF = X_BP * X_PF;
   RigidTransformd X_BF_check = frame_F.CalcPoseInBodyFrame(*context);
-  EXPECT_TRUE(CompareMatrices(X_BF.GetAsMatrix34(),
-                        X_BF_check.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_BF_check.IsNearlyEqualTo(X_BF, kTolerance));
 
   // Verify frame F's pose in world W.
   RigidTransformd X_WF = X_WWp * X_WpP * X_PF;
   RigidTransformd X_WF_check = frame_F.CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(X_WF.GetAsMatrix34(),
-                        X_WF_check.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_WF_check.IsNearlyEqualTo(X_WF, kTolerance));
 
   // Verify body B's pose in world W.
   RigidTransformd X_WB = X_WWp * X_WpP * X_BP.inverse();
   RigidTransformd X_WB_check = plant.EvalBodyPoseInWorld(*context, body_B);
-  EXPECT_TRUE(CompareMatrices(X_WB.GetAsMatrix34(),
-                        X_WB_check.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_WB_check.IsNearlyEqualTo(X_WB, kTolerance));
 
   //-------------------------------------------------------------------------
   // Set new pose for fixed offset frame P and verify it propagates correctly.
@@ -3825,15 +3818,12 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   // Verify frame P's new pose in its parent B.
   X_BP_check1 = frame_P.GetPoseInParentFrame(*context);
   X_BP_check2 = frame_P.CalcPoseInBodyFrame(*context);
-  EXPECT_TRUE(CompareMatrices(X_BP.GetAsMatrix34(),
-                       X_BP_check1.GetAsMatrix34(), kTolerance));
-  EXPECT_TRUE(CompareMatrices(X_BP.GetAsMatrix34(),
-                       X_BP_check2.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_BP_check1.IsNearlyEqualTo(X_BP, kTolerance));
+  EXPECT_TRUE(X_BP_check2.IsNearlyEqualTo(X_BP, kTolerance));
 
   // Verify frame P's new pose in world W (which should not have changed).
   X_WP_check = frame_P.CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(X_WP.GetAsMatrix34(),
-                        X_WP_check.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_WP_check.IsNearlyEqualTo(X_WP, kTolerance));
 
   //-------------------------------------------------------------------------
   // Set new pose for fixed offset frame F and verify it propagates correctly.
@@ -3843,26 +3833,22 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
 
   // Verify frame F's new pose in its parent P.
   X_PF_check = frame_F.GetPoseInParentFrame(*context);
-  EXPECT_TRUE(CompareMatrices(X_PF.GetAsMatrix34(),
-                        X_PF_check.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_PF_check.IsNearlyEqualTo(X_PF, kTolerance));
 
   // Verify frame F's new pose in body B.
   X_BF = X_BP * X_PF;
   X_BF_check = frame_F.CalcPoseInBodyFrame(*context);
-  EXPECT_TRUE(CompareMatrices(X_BF.GetAsMatrix34(),
-                        X_BF_check.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_BF_check.IsNearlyEqualTo(X_BF, kTolerance));
 
   // Verify frame F's new pose in world W.
   X_WF = X_WWp * X_WpP * X_PF;
   X_WF_check = frame_F.CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(X_WF.GetAsMatrix34(),
-                        X_WF_check.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_WF_check.IsNearlyEqualTo(X_WF, kTolerance));
 
   // Verify body B's pose in world W.
   X_WB = X_WWp * X_WpP * X_BP.inverse();
   X_WB_check = plant.EvalBodyPoseInWorld(*context, body_B);
-  EXPECT_TRUE(CompareMatrices(X_WB.GetAsMatrix34(),
-                        X_WB_check.GetAsMatrix34(), kTolerance));
+  EXPECT_TRUE(X_WB_check.IsNearlyEqualTo(X_WB, kTolerance));
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -3873,13 +3859,11 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
 
   // Misnaming means SetPoseInBodyFrame() mismatches CalcPoseInBodyFrame().
   X_BF_check = frame_F.CalcPoseInBodyFrame(*context.get());
-  EXPECT_FALSE(CompareMatrices(X_PF.GetAsMatrix34(),
-                         X_BF_check.GetAsMatrix34()));
+  EXPECT_FALSE(X_BF_check.IsNearlyEqualTo(X_PF, kTolerance));
 
-  // Misnaming means SetPoseInBodyFrame() matches GePoseInParentFrame().
+  // Misnaming means SetPoseInBodyFrame() matches GetPoseInParentFrame().
   X_PF_check = frame_F.GetPoseInParentFrame(*context.get());
-  EXPECT_TRUE(CompareMatrices(X_PF.GetAsMatrix34(),
-                        X_PF_check.GetAsMatrix34()));
+  EXPECT_TRUE(X_PF_check.IsNearlyEqualTo(X_PF, kTolerance));
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
