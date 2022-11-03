@@ -68,8 +68,6 @@ class LeafSystem : public System<T> {
 
   std::unique_ptr<ContextBase> DoAllocateContext() const final;
 
-  // TODO(sherm/russt): Initialize the discrete state from the model vector
-  // pending resolution of #7058.
   /** Default implementation: sets all continuous state to the model vector
   given in DeclareContinuousState (or zero if no model vector was given) and
   discrete states to zero. Overrides must not change the number of state
@@ -1123,11 +1121,15 @@ class LeafSystem : public System<T> {
   variable index is returned. */
   //@{
 
-  /** Declares an abstract state.
-  @param abstract_state The abstract state model value.
-  @return index of the declared abstract state. */
+  /** Declares an abstract state variable and provides a model value
+  for it. A Context obtained with CreateDefaultContext() will contain this
+  abstract state variable initially set to a clone of the `model_value`
+  given here. The actual concrete type is always preserved.
+
+  @param model_value The abstract state model value to be cloned as needed.
+  @returns index of the declared abstract state variable. */
   AbstractStateIndex DeclareAbstractState(
-      const AbstractValue& abstract_state);
+      const AbstractValue& model_value);
   //@}
 
 

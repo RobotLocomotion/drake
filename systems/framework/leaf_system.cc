@@ -611,9 +611,9 @@ DiscreteStateIndex LeafSystem<T>::DeclareDiscreteState(
 
 template <typename T>
 AbstractStateIndex LeafSystem<T>::DeclareAbstractState(
-    const AbstractValue& abstract_state) {
+    const AbstractValue& model_value) {
   const AbstractStateIndex index(model_abstract_states_.size());
-  model_abstract_states_.AddModel(index, abstract_state.Clone());
+  model_abstract_states_.AddModel(index, model_value.Clone());
   this->AddAbstractState(index);
   return index;
 }
