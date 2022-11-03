@@ -847,7 +847,11 @@ licenses([
 
     # TODO(svenevs): this is clearly wrong... @freetype needed?  IIRC needed
     # for ubuntu specifically, not sure about ubuntu/macOS wheel.
-    vtk_rendering_freetype_linkopts = ["-lfreetype"]
+    # TODO(svenevs): wheel cannot do this, it should be -lfreetype most likely.
+    # vtk_rendering_freetype_linkopts = ["-lfreetype"]
+    vtk_rendering_freetype_linkopts = [
+        "/usr/lib/x86_64-linux-gnu/libfreetype.so.6"
+    ]
     if os_result.is_macos:
         vtk_rendering_freetype_linkopts = [
             "-Wl,-rpath,{}/opt/freetype2/lib".format(
