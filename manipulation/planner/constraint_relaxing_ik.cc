@@ -21,7 +21,7 @@ ConstraintRelaxingIk::ConstraintRelaxingIk(
     : rand_generator_(kDefaultRandomSeed),
       plant_(0) {
   const auto model_instance =
-      multibody::Parser(&plant_).AddModelFromFile(model_path);
+      multibody::Parser(&plant_).AddModels(model_path).at(0);
 
   // Check if our robot is welded to the world.  If not, try welding the first
   // link.

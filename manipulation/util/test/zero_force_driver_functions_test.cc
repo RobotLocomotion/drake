@@ -24,12 +24,12 @@ GTEST_TEST(ZeroForceDriverFunctionsTest, SmokeTest) {
       AddMultibodyPlant(MultibodyPlantConfig{}, &builder);
   const std::string filename = FindResourceOrThrow(
       "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
-  Parser(&plant).AddModelFromFile(filename, "gripper");
+  Parser(&plant).AddModels(filename);
   plant.Finalize();
 
   // Apply zero actuation input.
   const ZeroForceDriver config;
-  ApplyDriverConfig(config, "gripper", plant, {}, {}, &builder);
+  ApplyDriverConfig(config, "Schunk_Gripper", plant, {}, {}, &builder);
 
   // Prove that simulation does not crash.
   Simulator<double> simulator(builder.Build());

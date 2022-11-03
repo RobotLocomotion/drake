@@ -44,9 +44,8 @@ QuadrotorGeometry::QuadrotorGeometry(
   multibody::MultibodyPlant<double> mbp(0.0);
   multibody::Parser parser(&mbp, scene_graph);
 
-  auto model_id = parser.AddModelFromFile(
-      FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),
-      "quadrotor");
+  auto model_id = parser.AddModels(
+      FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf")).at(0);
   mbp.Finalize();
 
   source_id_ = *mbp.get_source_id();
