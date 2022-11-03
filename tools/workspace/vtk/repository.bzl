@@ -849,7 +849,12 @@ licenses([
     # for ubuntu specifically, not sure about ubuntu/macOS wheel.
     vtk_rendering_freetype_linkopts = ["-lfreetype"]
     if os_result.is_macos:
-        vtk_rendering_freetype_linkopts = ["-L/opt/homebrew/lib", "-lfreetype"]
+        vtk_rendering_freetype_linkopts = [
+            "-Wl,-rpath,{}/opt/freetype2/lib".format(
+                os_result.homebrew_prefix,
+            ),
+            "-lfreetype",
+        ]
 
     file_content += _vtk_cc_library(
         os_result,
