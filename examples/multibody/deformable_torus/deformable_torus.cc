@@ -21,9 +21,9 @@ DEFINE_double(simulation_time, 8.0, "Desired duration of the simulation [s].");
 DEFINE_double(realtime_rate, 1.0, "Desired real time rate.");
 DEFINE_double(time_step, 1e-2,
               "Discrete time step for the system [s]. Must be positive.");
-DEFINE_double(E, 5e3, "Young's modulus of the deformable body [Pa].");
+DEFINE_double(E, 1e4, "Young's modulus of the deformable body [Pa].");
 DEFINE_double(nu, 0.4, "Poisson's ratio of the deformable body, unitless.");
-DEFINE_double(density, 8e2, "Mass density of the deformable body [kg/m³].");
+DEFINE_double(density, 1e3, "Mass density of the deformable body [kg/m³].");
 DEFINE_double(beta, 0.01,
               "Stiffness damping coefficient for the deformable body [1/s].");
 

@@ -79,7 +79,8 @@ GTEST_TEST(DeformationGradientDataTest, UpdateData) {
        3, 5, 7,
        8, 1, 6;
   // clang-format on
-  dummy_data.UpdateData({F});
+  const auto F0 = F;
+  dummy_data.UpdateData({F}, {F0});
 
   EXPECT_TRUE(CompareMatrices(dummy_data.deformation_gradient()[0], F));
   EXPECT_TRUE(
@@ -107,7 +108,7 @@ GTEST_TEST(DeformationGradientDataTest,
   InvalidDummyData<double, kNumLocations> invalid_dummy_data;
   const Matrix3d F = 2.8 * Matrix3d::Identity();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      invalid_dummy_data.UpdateData({F}),
+      invalid_dummy_data.UpdateData({F}, {F}),
       fmt::format("The derived class {} must provide a shadow definition of "
                   "UpdateFromDeformationGradient.. to be correct.",
                   NiceTypeName::Get(invalid_dummy_data)));

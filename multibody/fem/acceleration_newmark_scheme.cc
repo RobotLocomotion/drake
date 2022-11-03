@@ -32,6 +32,7 @@ void AccelerationNewmarkScheme<T>::DoAdvanceOneTimeStep(
                       dt() * dt() * (beta_ * a + (0.5 - beta_) * an));
   state->SetVelocities(vn + dt() * (gamma_ * a + (1.0 - gamma_) * an));
   state->SetAccelerations(a);
+  state->SetTimeStepPositions(state->GetPositions());
 }
 
 }  // namespace internal

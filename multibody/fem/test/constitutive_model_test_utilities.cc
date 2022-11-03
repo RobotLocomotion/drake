@@ -8,6 +8,7 @@
 #include "drake/multibody/fem/constitutive_model.h"
 #include "drake/multibody/fem/corotated_model.h"
 #include "drake/multibody/fem/linear_constitutive_model.h"
+#include "drake/multibody/fem/linear_corotated_model.h"
 #include "drake/multibody/fem/matrix_utilities.h"
 
 namespace drake {
@@ -20,7 +21,8 @@ using Eigen::Matrix3d;
 
 /* Creates an array of arbitrary autodiff deformation gradients. */
 template <int num_locations>
-std::array<Matrix3<AutoDiffXd>, num_locations> MakeDeformationGradients() {
+std::array<Matrix3<AutoDiffXd>, num_locations>
+MakeDeformationGradientsWithDerivatives() {
   /* Create an arbitrary AutoDiffXd deformation. */
   Matrix3d F;
   // clang-format off
@@ -43,10 +45,27 @@ std::array<Matrix3<AutoDiffXd>, num_locations> MakeDeformationGradients() {
   return deformation_gradients_autodiff;
 }
 
+template <int num_locations>
+std::array<Matrix3<AutoDiffXd>, num_locations>
+MakeDeformationGradientsWithoutDerivatives() {
+  /* Create an arbitrary AutoDiffXd deformation. */
+  Matrix3<AutoDiffXd> F;
+  // clang-format off
+  F << 0.18, 0.63, 0.54,
+       0.13, 0.92, 0.17,
+       0.03, 0.86, 0.85;
+  // clang-format on
+  std::array<Matrix3<AutoDiffXd>, num_locations> result;
+  for (int i = 0; i < num_locations; ++i) {
+    result[i] = F;
+  }
+  return result;
+}
+
 /* Tests the constructors correctly initializes St.Venant-Kichhoff like
 constitutive models and rejects invalid Young's modulus and Poisson's ratio.
-@tparam Model    Must be instantiations of LinearConstitutiveModel or
-CorotatedModel. */
+@tparam Model    Must be instantiations of LinearConstitutiveModel,
+LinearCorotatedModel, or CorotatedModel. */
 template <class Model>
 void TestParameters() {
   using T = typename Model::T;
@@ -77,8 +96,8 @@ void TestParameters() {
 
 /* Tests that the energy density and the stress are zero at the undeformed
 state.
-@tparam Model    Must be instantiations of LinearConstitutiveModel or
-CorotatedModel. */
+@tparam Model    Must be instantiations of LinearConstitutiveModel,
+LinearCorotatedModel, or CorotatedModel. */
 template <class Model>
 void TestUndeformedState() {
   constexpr int num_locations = Model::Data::num_locations;
@@ -89,7 +108,8 @@ void TestUndeformedState() {
   const Model model(kYoungsModulus, kPoissonRatio);
   typename Model::Traits::Data data;
   const std::array<Matrix3<T>, num_locations> F{Matrix3<T>::Identity()};
-  data.UpdateData(F);
+  const std::array<Matrix3<T>, num_locations> F0{Matrix3<T>::Identity()};
+  data.UpdateData(F, F0);
   /* At the undeformed state, the energy density should be zero. */
   const std::array<T, num_locations> analytic_energy_density{0};
   /* At the undeformed state, the stress should be zero. */
@@ -105,8 +125,8 @@ void TestUndeformedState() {
 /* Tests that the energy density and the stress are consistent by verifying the
 stress matches the derivative of energy density produced by automatic
 differentiation.
-@tparam Model    Must be AutoDiffXd instantiations of LinearConstitutiveModel or
-CorotatedModel. */
+@tparam Model    Must be instantiations of LinearConstitutiveModel,
+LinearCorotatedModel, or CorotatedModel. */
 template <class Model>
 void TestPIsDerivativeOfPsi() {
   const double kTolerance = 1e-12;
@@ -116,8 +136,11 @@ void TestPIsDerivativeOfPsi() {
   const Model model(kYoungsModulus, kPoissonRatio);
   typename Model::Traits::Data data;
   const std::array<Matrix3<AutoDiffXd>, num_locations> deformation_gradients =
-      MakeDeformationGradients<num_locations>();
-  data.UpdateData(deformation_gradients);
+      MakeDeformationGradientsWithDerivatives<num_locations>();
+  const std::array<Matrix3<AutoDiffXd>, num_locations>
+      time_step_deformation_gradients =
+          MakeDeformationGradientsWithoutDerivatives<num_locations>();
+  data.UpdateData(deformation_gradients, time_step_deformation_gradients);
   std::array<AutoDiffXd, num_locations> energy;
   model.CalcElasticEnergyDensity(data, &energy);
   std::array<Matrix3<AutoDiffXd>, num_locations> P;
@@ -131,8 +154,8 @@ void TestPIsDerivativeOfPsi() {
 
 /* Tests that the stress and the stress derivatives are consistent by verifying
 the handcrafted derivative matches that produced by automatic differentiation.
-@tparam Model    Must be AutoDiffXd instantiations of LinearConstitutiveModel or
-CorotatedModel. */
+@tparam Model    Must be instantiations of LinearConstitutiveModel,
+LinearCorotatedModel, or CorotatedModel. */
 template <class Model>
 void TestdPdFIsDerivativeOfP() {
   constexpr int kSpaceDimension = 3;
@@ -143,8 +166,11 @@ void TestdPdFIsDerivativeOfP() {
   const Model model(kYoungsModulus, kPoissonRatio);
   typename Model::Traits::Data data;
   const std::array<Matrix3<AutoDiffXd>, num_locations> deformation_gradients =
-      MakeDeformationGradients<num_locations>();
-  data.UpdateData(deformation_gradients);
+      MakeDeformationGradientsWithDerivatives<num_locations>();
+  const std::array<Matrix3<AutoDiffXd>, num_locations>
+      time_step_deformation_gradients =
+          MakeDeformationGradientsWithoutDerivatives<num_locations>();
+  data.UpdateData(deformation_gradients, time_step_deformation_gradients);
   std::array<Matrix3<AutoDiffXd>, num_locations> P;
   model.CalcFirstPiolaStress(data, &P);
   std::array<Eigen::Matrix<AutoDiffXd, 9, 9>, num_locations> dPdF;
@@ -181,6 +207,13 @@ template void TestUndeformedState<CorotatedModel<double, 1>>();
 template void TestUndeformedState<CorotatedModel<AutoDiffXd, 1>>();
 template void TestPIsDerivativeOfPsi<CorotatedModel<AutoDiffXd, 1>>();
 template void TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd, 1>>();
+
+template void TestParameters<LinearCorotatedModel<double, 1>>();
+template void TestParameters<LinearCorotatedModel<AutoDiffXd, 1>>();
+template void TestUndeformedState<LinearCorotatedModel<double, 1>>();
+template void TestUndeformedState<LinearCorotatedModel<AutoDiffXd, 1>>();
+template void TestPIsDerivativeOfPsi<LinearCorotatedModel<AutoDiffXd, 1>>();
+template void TestdPdFIsDerivativeOfP<LinearCorotatedModel<AutoDiffXd, 1>>();
 
 }  // namespace test
 }  // namespace internal
