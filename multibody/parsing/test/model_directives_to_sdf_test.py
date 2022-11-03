@@ -12,40 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import drake.multibody.parsing.model_directives_to_sdf \
+    as model_directives_to_sdf
+
+import io
+import lxml.etree as ET
+import os
+import subprocess
+import sys
+import unittest
+
 from pydrake.multibody.parsing import (
     Parser,
     LoadModelDirectives,
     ProcessModelDirectives,
 )
-
 from pydrake.multibody.plant import (
     MultibodyPlant,
 )
-
 from pydrake.multibody.tree import (
     BodyIndex,
     FrameIndex,
     ModelInstanceIndex,
     JointIndex,
 )
-
 from pydrake.common import FindResourceOrThrow
-
 from pydrake.common.test_utilities.meta import (
     ValueParameterizedTest,
     run_with_multiple_values,
 )
-
-import drake.multibody.parsing.model_directives_to_sdf \
-    as model_directives_to_sdf
-
-import lxml.etree as ET
-
-import os
-import subprocess
-import unittest
-import sys
-import io
 
 
 def _get_plant_aggregate(num_func, get_func, index_cls, model_instances=None):
@@ -107,21 +102,23 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                      metaclass=ValueParameterizedTest):
 
     files_to_test = [
-        'multibody/parsing/test/convert_model_directives_test/'
+        'multibody/parsing/test/model_directives_to_sdf/'
         'inject_frames.yaml',
-        'multibody/parsing/test/convert_model_directives_test/'
+        'multibody/parsing/test/model_directives_to_sdf/'
         'hidden_frame.yaml',
-        'multibody/parsing/test/convert_model_directives_test/'
+        'multibody/parsing/test/model_directives_to_sdf/'
         'frame_attached_to_frame.yaml',
-        'multibody/parsing/test/convert_model_directives_test/'
+        'multibody/parsing/test/model_directives_to_sdf/'
         'weld_frames_from_models.yaml',
-        'multibody/parsing/test/convert_model_directives_test/'
-        'scoped_frame_name.yaml'
+        'multibody/parsing/test/model_directives_to_sdf/'
+        'scoped_frame_name.yaml',
+        'multibody/parsing/test/model_directives_to_sdf/'
+        'weld_extra_scopes.yaml'
     ]
 
     @run_with_multiple_values([dict(file_path=file_path)
                                for file_path in files_to_test])
-    def test_through_plant_comparation(self, *, file_path):
+    def test_through_plant_comparison(self, *, file_path):
         # Convert
         converter = model_directives_to_sdf.ModelDirectivesToSdf()
         sdf_tree = converter.convert_directive(file_path)
@@ -132,7 +129,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         directives_plant = MultibodyPlant(time_step=0.01)
         model_dir = os.path.dirname(FindResourceOrThrow(
             'drake/multibody/parsing/test/'
-            'convert_model_directives_test/package.xml'))
+            'model_directives_to_sdf/package.xml'))
         parser = Parser(plant=directives_plant)
         parser.package_map().PopulateFromFolder(model_dir)
         directives = LoadModelDirectives(file_path)
@@ -148,49 +145,8 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
 
         # Compare plants
         # Note: SDF will create an extra top level model instance
-        self.assertEqual(sdf_plant.num_model_instances()-1,
+        self.assertEqual(sdf_plant.num_model_instances() - 1,
                          directives_plant.num_model_instances())
-
-        # ModelInstanceIndex(0) should be the WorldModelInstance
-        self.assertEqual(directives_plant.GetModelInstanceName(
-            ModelInstanceIndex(0)), 'WorldModelInstance')
-        self.assertEqual(directives_plant.GetModelInstanceName(
-            ModelInstanceIndex(0)),
-            sdf_plant.GetModelInstanceName(
-            ModelInstanceIndex(0)))
-        directives_world_model_bodies = get_bodies(
-            directives_plant, [ModelInstanceIndex(0)])
-        sdf_world_model_bodies = get_bodies(
-            sdf_plant, [ModelInstanceIndex(0)])
-        self.assertEqual(len(directives_world_model_bodies), 1)
-        self.assertEqual(len(sdf_world_model_bodies), 1)
-        self.assertEqual(directives_world_model_bodies[0].name(), 'WorldBody')
-        self.assertEqual(sdf_world_model_bodies[0].name(), 'WorldBody')
-        # Check world Frame
-        directives_world_model_frames = get_frames_attached_to(
-            directives_plant, directives_world_model_bodies)
-        sdf_world_model_frames = get_frames_attached_to(
-            sdf_plant, sdf_world_model_bodies)
-        self.assertEqual(len(directives_world_model_frames), 1)
-        self.assertEqual(len(sdf_world_model_frames), 1)
-        self.assertEqual(directives_world_model_frames[0].name(), 'WorldBody')
-        self.assertEqual(sdf_world_model_frames[0].name(), 'WorldBody')
-        self.assertTrue(directives_world_model_frames[0].is_world_frame())
-        self.assertTrue(sdf_world_model_frames[0].is_world_frame())
-
-        # ModelInstanceIndex(1) should be the DefaultModelInstance
-        self.assertEqual(directives_plant.GetModelInstanceName(
-            ModelInstanceIndex(1)), 'DefaultModelInstance')
-        self.assertEqual(directives_plant.GetModelInstanceName(
-            ModelInstanceIndex(1)),
-            sdf_plant.GetModelInstanceName(
-            ModelInstanceIndex(1)))
-        directives_default_model_bodies = get_bodies(
-            directives_plant, [ModelInstanceIndex(1)])
-        sdf_default_model_bodies = get_bodies(
-            sdf_plant, [ModelInstanceIndex(1)])
-        self.assertEqual(len(directives_default_model_bodies), 0)
-        self.assertEqual(len(sdf_default_model_bodies), 0)
 
         # SDF will create an extra top level model instance with the
         # name of the file
@@ -202,9 +158,9 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
 
         for i in range(3, directives_plant.num_model_instances()):
             model_scoped_name = file_name \
-                                + model_directives_to_sdf.SCOPE_DELIMITER \
-                                + directives_plant.GetModelInstanceName(
-                                    ModelInstanceIndex(i))
+                + model_directives_to_sdf.SCOPE_DELIMITER \
+                + directives_plant.GetModelInstanceName(
+                    ModelInstanceIndex(i))
 
             sdf_model_instances = get_model_instances_names(sdf_plant)
             model_found = False
@@ -255,60 +211,75 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                         sdf_joints.pop(j)
                         directives_joints.pop(i)
 
-            # All joints should have been removed
+            # All joints should have been verified
             self.assertEqual(len(sdf_joints), 0)
             self.assertEqual(len(directives_joints), 0)
 
     def test_error_no_directives(self):
-        s = io.StringIO()
-        sys.stdout = s
         converter = model_directives_to_sdf.ModelDirectivesToSdf()
-        result = converter.convert_directive(
-            'multibody/parsing/test/convert_model_directives_test/'
-            'something_not_directives.yaml')
-        s.seek(0)
-        self.assertEqual(
-            s.read(),
-            '[directives] must be the first keyword in the yaml file,'
-            ' exiting.\n')
+        with self.assertRaisesRegex(model_directives_to_sdf.ConversionError,
+                                    r'\[directives\] must be the first keyword'
+                                    ' in the yaml file, exiting.'):
+            converter.convert_directive(
+                'multibody/parsing/test/model_directives_to_sdf/'
+                'something_not_directives.yaml')
 
     def test_error_directives_not_frist(self):
-        s = io.StringIO()
-        sys.stdout = s
         converter = model_directives_to_sdf.ModelDirectivesToSdf()
-        result = converter.convert_directive(
-            'multibody/parsing/test/convert_model_directives_test/'
-            'not_directives_first.yaml')
-        s.seek(0)
-        self.assertEqual(
-            s.read(),
-            '[directives] must be the first keyword in the yaml file,'
-            ' exiting.\n')
+        with self.assertRaisesRegex(model_directives_to_sdf.ConversionError,
+                                    r'\[directives\] must be the first keyword'
+                                    ' in the yaml file, exiting.'):
+            result = converter.convert_directive(
+                'multibody/parsing/test/model_directives_to_sdf/'
+                'not_directives_first.yaml')
 
     def test_error_implicit_hidden_base_frame(self):
-        s = io.StringIO()
-        sys.stdout = s
         converter = model_directives_to_sdf.ModelDirectivesToSdf()
-        result = converter.convert_directive(
-            'multibody/parsing/test/convert_model_directives_test/'
-            'implicit_hidden_base_frame.yaml')
-        s.seek(0)
-        self.assertEqual(
-            s.read(),
-            'Failed trying to find scope for frame: [frame]. When trying'
-            ' to add frame: [frame_name].\nFailed to perform add_frame '
-            'directive.\n')
+        with self.assertRaisesRegex(model_directives_to_sdf.ConversionError,
+                                    'Failed trying to find scope for frame: '
+                                    r'\[frame\] when trying to add frame: '
+                                    r'\[frame_name\].'):
+            converter.convert_directive(
+                'multibody/parsing/test/model_directives_to_sdf/'
+                'implicit_hidden_base_frame.yaml')
 
     def test_error_different_scopes_frame(self):
-        s = io.StringIO()
-        sys.stdout = s
         converter = model_directives_to_sdf.ModelDirectivesToSdf()
-        result = converter.convert_directive(
-            'multibody/parsing/test/convert_model_directives_test/'
-            'different_scopes_frame.yaml')
-        s.seek(0)
-        self.assertEqual(
-            s.read(),
-            'Frame named: [extra_model::sub_added_frame] has a different'
-            ' scope in its name and its base_frame: [simple_model::frame].\n'
-            'Failed to perform add_frame directive.\n')
+        with self.assertRaisesRegex(model_directives_to_sdf.ConversionError,
+                                    'Frame named: '
+                                    r'\[extra_model::sub_added_frame\] has a '
+                                    'different scope in its name and its '
+                                    r'base_frame: \[simple_model::frame\].'):
+            converter.convert_directive(
+                'multibody/parsing/test/model_directives_to_sdf/'
+                'different_scopes_frame.yaml')
+
+    def test_error_world_base(self):
+        converter = model_directives_to_sdf.ModelDirectivesToSdf()
+        with self.assertRaisesRegex(model_directives_to_sdf.ConversionError,
+                                    r'Workflows where base_frame=\[world\] '
+                                    'are not supported to be converted using '
+                                    'this script'):
+            converter.convert_directive(
+                'multibody/parsing/test/model_directives_to_sdf/'
+                'world_base_frame.yaml')
+
+    def test_error_frame_name_same_base_name(self):
+        converter = model_directives_to_sdf.ModelDirectivesToSdf()
+        with self.assertRaisesRegex(model_directives_to_sdf.ConversionError,
+                                    r'Frame: \[frame\] has the same name as '
+                                    'it\'s base frame. This case is not '
+                                    'supported.'):
+            converter.convert_directive(
+                'multibody/parsing/test/model_directives_to_sdf/'
+                'frame_same_as_base_frame.yaml')
+
+    def test_error_frames_same_name(self):
+        converter = model_directives_to_sdf.ModelDirectivesToSdf()
+        with self.assertRaisesRegex(model_directives_to_sdf.ConversionError,
+                                    'Found more than two frames with name: '
+                                    r'\[frame_name\], could not resolve the '
+                                    'scope.'):
+            converter.convert_directive(
+                'multibody/parsing/test/model_directives_to_sdf/'
+                'frames_same_name.yaml')

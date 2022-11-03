@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<sdf version="1.9">
+  <model name="inject_frames">
+    <joint name="top_level_model__top_injected_frame___to___mid_level_model__base___weld_joint" type="fixed">
+      <parent>top_level_model::top_injected_frame</parent>
+      <child>mid_level_model::base</child>
+    </joint>
+    <joint name="mid_level_model__mid_injected_frame___to___bottom_level_model__base___weld_joint" type="fixed">
+      <parent>mid_level_model::mid_injected_frame</parent>
+      <child>bottom_level_model::base</child>
+    </joint>
+    <model name="top_level_model">
+      <frame name="top_injected_frame">
+        <pose relative_to="base">1 2 3   10 20 30</pose>
+      </frame>
+      <include merge="true">
+        <name>top_level_model</name>
+        <uri>simple_model.sdf</uri>
+      </include>
+    </model>
+    <model name="mid_level_model" placement_frame="base">
+      <pose relative_to="top_level_model::top_injected_frame"/>
+      <frame name="mid_injected_frame">
+        <pose relative_to="base">1 2 3   0 0 0</pose>
+      </frame>
+      <include merge="true">
+        <name>mid_level_model</name>
+        <uri>simple_model.sdf</uri>
+      </include>
+    </model>
+    <include>
+      <name>bottom_level_model</name>
+      <uri>simple_model.sdf</uri>
+      <placement_frame>base</placement_frame>
+      <pose relative_to="mid_level_model::mid_injected_frame"/>
+    </include>
+  </model>
+</sdf>

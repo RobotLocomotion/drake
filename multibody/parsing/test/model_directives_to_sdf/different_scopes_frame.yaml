@@ -1,0 +1,15 @@
+directives:
+- add_model:
+    name: simple_model
+    file: package://model_directives_to_sdf/simple_model.sdf
+
+- add_model:
+    name: extra_model
+    file: package://model_directives_to_sdf/simple_model.sdf
+
+- add_frame:
+    # This will implicitly resolve to the `simple_model` instance.
+    name: extra_model::sub_added_frame
+    X_PF:
+      base_frame: simple_model::frame
+      translation: [10, 20, 30]
