@@ -34,6 +34,9 @@ namespace systems {
  *   @f[ y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f]
  * where `y` denotes the output vector.
  *
+ * When configured as a discrete system, the discrete update can be triggered
+ * either by the defined periodic trigger or via a manual forced update.
+ *
  * @tparam_default_scalar
  * @ingroup primitive_systems
  * *
@@ -123,12 +126,11 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
                              ContinuousState<T>* derivatives) const override;
 
   /// Computes @f[ x(t+h) = A(t) x(t) + B(t) u(t) + f_0(t), @f] with by calling
-  /// `A(t)`, `B(t)`, and `f0(t)` with runtime size checks.  Derived classes
-  /// may override this for performance reasons.
-  void DoCalcDiscreteVariableUpdates(
-      const drake::systems::Context<T>& context,
-      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
-      drake::systems::DiscreteValues<T>* updates) const override;
+  /// `A(t)`, `B(t)`, and `f0(t)` with runtime size checks. This is the event
+  /// handler for the periodic and forced discrete update events. Derived
+  /// classes may override this for performance reasons.
+  virtual EventStatus CalcDiscreteUpdate(
+      const Context<T>& context, DiscreteValues<T>* updates) const;
 
   /// Sets the initial conditions.
   void SetDefaultState(const Context<T>& context,
@@ -270,10 +272,9 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final;
 
-  void DoCalcDiscreteVariableUpdates(
-      const drake::systems::Context<T>& context,
-      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
-      drake::systems::DiscreteValues<T>* updates) const final;
+  // We can simplify the discrete update event handler here.
+  EventStatus CalcDiscreteUpdate(
+      const Context<T>& context, DiscreteValues<T>* updates) const final;
 
   const Eigen::MatrixXd A_;
   const Eigen::MatrixXd B_;

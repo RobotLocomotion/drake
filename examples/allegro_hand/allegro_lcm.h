@@ -69,12 +69,10 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
                          int length,
                          systems::BasicVector<double>* output) const;
 
-  void DoCalcDiscreteVariableUpdates(
+  void UpdateDiscreteVariables(
       const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
-      systems::DiscreteValues<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const;
 
- private:
   int state_output_port_ = 0;
   int torque_output_port_ = 0;
   const int num_joints_ = 16;
