@@ -5,6 +5,7 @@
       <inertial>
         <pose>0 0 0 0 0 0</pose>
         <mass>1</mass>
+        <!-- TODO(eric.cousineau): Use better inertia. -->
         <inertia>
           <ixx>0.1</ixx>
           <ixy> 0 </ixy>
