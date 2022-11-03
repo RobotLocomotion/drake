@@ -599,7 +599,7 @@ class System : public SystemBase {
   }
 
   /** This method is the public entry point for dispatching all unrestricted
-  update event handlers. Using all the unrestricted update handers in
+  update event handlers. Using all the unrestricted update handlers in
   @p events, it updates *any* state variables in the @p context, and
   outputs the results to @p state. It does not allow the dimensionality
   of the state variables to change. See the documentation for
