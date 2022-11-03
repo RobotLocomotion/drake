@@ -208,7 +208,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
   const Vector3d expected_contact_force =
       volume * kMassDensity * (-plant_->gravity_field().gravity_vector());
   /* Verify the contact force balances gravity. */
-  constexpr double kForceThreshold = 1e-6;  // unit: N.
+  constexpr double kForceThreshold = 4e-5;  // unit: N.
   EXPECT_TRUE(CompareMatrices(expected_contact_force, f_B_W, kForceThreshold));
 }
 

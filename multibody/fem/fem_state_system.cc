@@ -14,6 +14,7 @@ FemStateSystem<T>::FemStateSystem(const VectorX<T>& model_q,
   DRAKE_THROW_UNLESS(model_q.size() == model_a.size());
   DRAKE_THROW_UNLESS(model_q.size() % 3 == 0);
   q_index_ = this->DeclareDiscreteState(model_q);
+  q0_index_ = this->DeclareDiscreteState(model_q);
   v_index_ = this->DeclareDiscreteState(model_v);
   a_index_ = this->DeclareDiscreteState(model_a);
 }

@@ -31,6 +31,9 @@ void DiscreteTimeIntegrator<T>::AdvanceOneTimeStep(
   DRAKE_DEMAND(next_state != nullptr);
   DRAKE_DEMAND(prev_state.num_dofs() == next_state->num_dofs());
   DRAKE_DEMAND(prev_state.num_dofs() == z.size());
+  /* Set q0 to q at the beginning of the timestep. This needs to happen before
+   changing q. */
+  next_state->SetTimeStepPositions(prev_state.GetPositions());
   DoAdvanceOneTimeStep(prev_state, z, next_state);
 }
 

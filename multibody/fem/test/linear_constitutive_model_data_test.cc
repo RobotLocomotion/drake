@@ -48,8 +48,9 @@ GTEST_TEST(LinearConstitutiveModelDataTest, UpdateData) {
                      5, 4, 5;
   // clang-format on
   const double expected_trace_strain = 12.0;
+  const auto F0 = F;
 
-  linear_elasticity_data.UpdateData({F});
+  linear_elasticity_data.UpdateData({F}, {F0});
   EXPECT_TRUE(
       CompareMatrices(linear_elasticity_data.deformation_gradient()[0], F));
   EXPECT_TRUE(CompareMatrices(linear_elasticity_data.strain()[0],
