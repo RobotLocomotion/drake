@@ -8,6 +8,8 @@ from pydrake.common.test.value_test_util import (
     make_abstract_value_cc_type_unregistered,
     CustomType,
     MoveOnlyType,
+    VirtualBase,
+    VirtualChild,
 )
 
 
@@ -131,3 +133,10 @@ class TestValue(unittest.TestCase):
         Value[object]
         Value[str]
         Value[bool]
+
+    def test_virtual_value(self):
+        obj = VirtualChild()
+        self.assertIsInstance(obj, VirtualBase)
+        value = AbstractValue.Make(obj)
+        self.assertIsInstance(value, Value[VirtualBase])
+        self.assertIsInstance(value.get_value(), VirtualChild)
