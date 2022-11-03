@@ -55,8 +55,9 @@ GTEST_TEST(CorotatedModelDataTest, UpdateData) {
   .finished();
   // clang-format on
   const Matrix3<double> F = R * S;
+  const Matrix3<double> F0 = F;
 
-  corotated_model_data.UpdateData({F});
+  corotated_model_data.UpdateData({F}, {F0});
   EXPECT_TRUE(
       CompareMatrices(corotated_model_data.deformation_gradient()[0], F));
   EXPECT_TRUE(CompareMatrices(corotated_model_data.R()[0], R, kTol));

@@ -64,9 +64,11 @@ class FemState {
    as NewmarkScheme.
    @{ */
   const VectorX<T>& GetPositions() const;
+  const VectorX<T>& GetTimeStepPositions() const;
   const VectorX<T>& GetVelocities() const;
   const VectorX<T>& GetAccelerations() const;
   void SetPositions(const Eigen::Ref<const VectorX<T>>& q);
+  void SetTimeStepPositions(const Eigen::Ref<const VectorX<T>>& q0);
   void SetVelocities(const Eigen::Ref<const VectorX<T>>& v);
   void SetAccelerations(const Eigen::Ref<const VectorX<T>>& a);
   /* @} */

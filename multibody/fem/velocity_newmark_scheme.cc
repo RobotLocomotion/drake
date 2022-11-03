@@ -34,6 +34,7 @@ void VelocityNewmarkScheme<T>::DoAdvanceOneTimeStep(
   state->SetAccelerations(one_over_dt_gamma_ * (v - vn) -
                           (1.0 - gamma_) / gamma_ * an);
   state->SetVelocities(v);
+  state->SetTimeStepPositions(state->GetPositions());
 }
 
 }  // namespace internal

@@ -89,7 +89,8 @@ void TestUndeformedState() {
   const Model model(kYoungsModulus, kPoissonRatio);
   typename Model::Traits::Data data;
   const std::array<Matrix3<T>, num_locations> F{Matrix3<T>::Identity()};
-  data.UpdateData(F);
+  const std::array<Matrix3<T>, num_locations> F0{Matrix3<T>::Identity()};
+  data.UpdateData(F, F0);
   /* At the undeformed state, the energy density should be zero. */
   const std::array<T, num_locations> analytic_energy_density{0};
   /* At the undeformed state, the stress should be zero. */
@@ -117,7 +118,10 @@ void TestPIsDerivativeOfPsi() {
   typename Model::Traits::Data data;
   const std::array<Matrix3<AutoDiffXd>, num_locations> deformation_gradients =
       MakeDeformationGradients<num_locations>();
-  data.UpdateData(deformation_gradients);
+  const std::array<Matrix3<AutoDiffXd>, num_locations>
+      prev_time_step_deformation_gradients =
+          MakeDeformationGradients<num_locations>();
+  data.UpdateData(deformation_gradients, prev_time_step_deformation_gradients);
   std::array<AutoDiffXd, num_locations> energy;
   model.CalcElasticEnergyDensity(data, &energy);
   std::array<Matrix3<AutoDiffXd>, num_locations> P;
@@ -144,7 +148,10 @@ void TestdPdFIsDerivativeOfP() {
   typename Model::Traits::Data data;
   const std::array<Matrix3<AutoDiffXd>, num_locations> deformation_gradients =
       MakeDeformationGradients<num_locations>();
-  data.UpdateData(deformation_gradients);
+  const std::array<Matrix3<AutoDiffXd>, num_locations>
+      prev_time_step_deformation_gradients =
+          MakeDeformationGradients<num_locations>();
+  data.UpdateData(deformation_gradients, prev_time_step_deformation_gradients);
   std::array<Matrix3<AutoDiffXd>, num_locations> P;
   model.CalcFirstPiolaStress(data, &P);
   std::array<Eigen::Matrix<AutoDiffXd, 9, 9>, num_locations> dPdF;
