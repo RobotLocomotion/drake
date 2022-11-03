@@ -44,6 +44,10 @@ class IiwaCommandReceiverTest : public testing::Test {
     return dut_.get_commanded_torque_output_port().Eval(context_);
   }
 
+  double time_output() const {
+    return dut_.get_time_output_port().Eval(context_)[0];
+  }
+
  protected:
   IiwaCommandReceiver dut_;
   std::unique_ptr<systems::Context<double>> context_ptr_;
@@ -51,12 +55,15 @@ class IiwaCommandReceiverTest : public testing::Test {
   systems::FixedInputPortValue& fixed_input_;
 };
 
+constexpr double kCommandTime = 1.2;
+
 TEST_F(IiwaCommandReceiverTest, AcceptanceTestWithoutMeasuredPositionInput) {
   // When no message has been received and *no* position measurement is
   // connected, the command is all zeros.
   const VectorXd zero = VectorXd::Zero(N);
   EXPECT_TRUE(CompareMatrices(position(), zero));
   EXPECT_TRUE(CompareMatrices(torque(), zero));
+  EXPECT_EQ(time_output(), 0);
 }
 
 TEST_F(IiwaCommandReceiverTest, AcceptanceTestWithMeasuredPositionInput) {
@@ -68,17 +75,19 @@ TEST_F(IiwaCommandReceiverTest, AcceptanceTestWithMeasuredPositionInput) {
   dut_.get_position_measured_input_port().FixValue(&context_, q0);
   EXPECT_TRUE(CompareMatrices(position(), q0));
   EXPECT_TRUE(CompareMatrices(torque(), zero));
+  EXPECT_EQ(time_output(), 0);
 
   // Check that a real command trumps the initial position.
   // First, try with empty torques.
   const VectorXd q1 = VectorXd::LinSpaced(N, 0.3, 0.4);
   lcmt_iiwa_command command{};
-  command.utime = 0;
+  command.utime = kCommandTime * 1e6;
   command.num_joints = N;
   command.joint_position = {q1.data(), q1.data() + q1.size()};
   SetInput(command);
   EXPECT_TRUE(CompareMatrices(position(), q1));
   EXPECT_TRUE(CompareMatrices(torque(), zero));
+  EXPECT_EQ(time_output(), kCommandTime);
 
   // Now provide torques.
   const VectorXd t1 = VectorXd::LinSpaced(N, 0.5, 0.6);
@@ -98,6 +107,7 @@ TEST_F(IiwaCommandReceiverTest, AcceptanceTestWithLatching) {
   dut_.get_position_measured_input_port().FixValue(&context_, q0);
   EXPECT_TRUE(CompareMatrices(position(), q0));
   EXPECT_TRUE(CompareMatrices(torque(), zero));
+  EXPECT_EQ(time_output(), 0);
 
   // Prior to any update events, changes to position_measured feed through.
   const VectorXd q1 = VectorXd::LinSpaced(N, 0.1, 0.2);
@@ -118,7 +128,7 @@ TEST_F(IiwaCommandReceiverTest, AcceptanceTestWithLatching) {
   const VectorXd q3 = VectorXd::LinSpaced(N, 0.4, 0.5);
   const VectorXd t3 = VectorXd::LinSpaced(N, 0.5, 0.6);
   lcmt_iiwa_command command{};
-  command.utime = 0;
+  command.utime = kCommandTime * 1e6;
   command.num_joints = N;
   command.joint_position = {q3.data(), q3.data() + q3.size()};
   command.num_torques = N;
@@ -126,6 +136,7 @@ TEST_F(IiwaCommandReceiverTest, AcceptanceTestWithLatching) {
   SetInput(command);
   EXPECT_TRUE(CompareMatrices(position(), q3));
   EXPECT_TRUE(CompareMatrices(torque(), t3));
+  EXPECT_EQ(time_output(), kCommandTime);
 }
 
 }  // namespace
