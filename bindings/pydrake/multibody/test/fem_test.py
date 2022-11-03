@@ -28,6 +28,7 @@ class TestMultibodyFem(unittest.TestCase):
         self.assertEqual(dut.mass_density(), 100)
 
         models = [
+            MaterialModel.kLinearCorotated,
             MaterialModel.kCorotated,
             MaterialModel.kLinear,
         ]

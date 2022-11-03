@@ -51,7 +51,7 @@ constexpr double kPoissonsRatio = 0.4;       // unitless.
 constexpr double kMassDensity = 1e3;         // unit: kg/m³
 constexpr double kStiffnessDamping = 0.01;   // unit: s
 /* Time step (seconds). */
-constexpr double kDt = 5e-3;
+constexpr double kDt = 1e-2;
 /* Contact parameters. */
 const double kSlopeAngle = M_PI / 12.0;             // unit: radian
 /* The friction coefficient has to be greater than or equal to tan(θ) to hold
@@ -182,7 +182,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
       plant_->GetMyContextFromRoot(diagram_context);
   const FemState<double>& fem_state =
       EvalFemState(plant_context, DeformableBodyIndex(0));
-  constexpr double kVelocityThreshold = 1e-5;  // unit: m/s.
+  constexpr double kVelocityThreshold = 2e-5;  // unit: m/s.
   constexpr double kAccelerationThreshold = 1e-6;  // unit: m/s².
   const VectorXd& v = fem_state.GetVelocities();
   EXPECT_TRUE(CompareMatrices(v, VectorXd::Zero(v.size()), kVelocityThreshold));
@@ -208,7 +208,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
   const Vector3d expected_contact_force =
       volume * kMassDensity * (-plant_->gravity_field().gravity_vector());
   /* Verify the contact force balances gravity. */
-  constexpr double kForceThreshold = 1e-6;  // unit: N.
+  constexpr double kForceThreshold = 1e-5;  // unit: N.
   EXPECT_TRUE(CompareMatrices(expected_contact_force, f_B_W, kForceThreshold));
 }
 
