@@ -92,9 +92,9 @@ struct Impl {
     using Base::DeclareDiscreteState;
     using Base::DeclareInitializationEvent;
     using Base::DeclareNumericParameter;
-    using Base::DeclarePeriodicDiscreteUpdate;
+    using Base::DeclarePeriodicDiscreteUpdateNoHandler;
     using Base::DeclarePeriodicEvent;
-    using Base::DeclarePeriodicPublish;
+    using Base::DeclarePeriodicPublishNoHandler;
     using Base::DeclarePeriodicUnrestrictedUpdateEvent;
     using Base::DeclarePerStepEvent;
     using Base::DeclareStateOutputPort;
@@ -722,14 +722,14 @@ Note: The above is for the C++ documentation. For Python, use
               self->DeclareInitializationEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
-        .def("DeclarePeriodicPublish",
-            &LeafSystemPublic::DeclarePeriodicPublish, py::arg("period_sec"),
-            py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicPublish.doc)
-        .def("DeclarePeriodicDiscreteUpdate",
-            &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
+        .def("DeclarePeriodicPublishNoHandler",
+            &LeafSystemPublic::DeclarePeriodicPublishNoHandler,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc)
+            doc.LeafSystem.DeclarePeriodicPublishNoHandler.doc)
+        .def("DeclarePeriodicDiscreteUpdateNoHandler",
+            &LeafSystemPublic::DeclarePeriodicDiscreteUpdateNoHandler,
+            py::arg("period_sec"), py::arg("offset_sec") = 0.,
+            doc.LeafSystem.DeclarePeriodicDiscreteUpdateNoHandler.doc)
         .def("DeclarePeriodicPublishEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self, double period_sec, double offset_sec,

@@ -62,7 +62,7 @@ LinearModelPredictiveController<T>::LinearModelPredictiveController(
     throw std::runtime_error("R must be positive definite");
   }
 
-  this->DeclarePeriodicDiscreteUpdate(time_period_);
+  this->DeclarePeriodicDiscreteUpdateNoHandler(time_period_);
 
   if (base_context_ != nullptr) {
     linear_model_ = Linearize(*model_, *base_context_);

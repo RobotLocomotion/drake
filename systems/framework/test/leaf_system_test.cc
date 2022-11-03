@@ -147,7 +147,7 @@ class TestSystem : public LeafSystem<T> {
   void AddPeriodicUpdate() {
     const double period = 10.0;
     const double offset = 5.0;
-    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
     std::optional<PeriodicEventData> periodic_attr =
         this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
@@ -157,7 +157,7 @@ class TestSystem : public LeafSystem<T> {
 
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
-    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
     std::optional<PeriodicEventData> periodic_attr =
        this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
@@ -166,14 +166,16 @@ class TestSystem : public LeafSystem<T> {
   }
 
   void AddPeriodicUpdate(double period, double offset) {
-    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
   }
 
   void AddPeriodicUnrestrictedUpdate(double period, double offset) {
-    this->DeclarePeriodicUnrestrictedUpdate(period, offset);
+    this->DeclarePeriodicUnrestrictedUpdateNoHandler(period, offset);
   }
 
-  void AddPublish(double period) { this->DeclarePeriodicPublish(period); }
+  void AddPublish(double period) {
+    this->DeclarePeriodicPublishNoHandler(period);
+  }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override {}

@@ -402,7 +402,7 @@ TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
 class NoInputNoOutputDiscreteTimeSystem : public VectorSystem<double> {
  public:
   NoInputNoOutputDiscreteTimeSystem() : VectorSystem<double>(0, 0) {
-    this->DeclarePeriodicDiscreteUpdate(1.0);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(1.0);
     this->DeclareDiscreteState(1);
   }
 
@@ -545,7 +545,7 @@ TEST_F(VectorSystemTest, MissingMethodsContinuousTimeSystemTest) {
 class MissingMethodsDiscreteTimeSystem : public VectorSystem<double> {
  public:
   MissingMethodsDiscreteTimeSystem() : VectorSystem<double>(0, 1) {
-    this->DeclarePeriodicDiscreteUpdate(1.0);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(1.0);
     this->DeclareDiscreteState(1);
   }
 };

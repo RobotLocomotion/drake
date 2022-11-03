@@ -50,12 +50,13 @@ class EmptySystem : public LeafSystem<T> {
   void AddPeriodicDiscreteUpdate() {
     const double default_period = 1.125;
     const double default_offset = 2.25;
-    this->DeclarePeriodicDiscreteUpdate(default_period, default_offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(default_period,
+                                                 default_offset);
   }
 
   // Adds a specific periodic discrete update.
   void AddPeriodicDiscreteUpdate(double period, double offset) {
-    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
   }
 };
 
@@ -1863,7 +1864,7 @@ class TestPublishingSystem final : public LeafSystem<double> {
   TestPublishingSystem() {
     this->DeclarePeriodicPublishEvent(
         kTestPublishPeriod, 0.0, &TestPublishingSystem::HandlePeriodPublish);
-    this->DeclarePeriodicPublish(kTestPublishPeriod);
+    this->DeclarePeriodicPublishNoHandler(kTestPublishPeriod);
 
     // Verify that no periodic discrete updates are registered.
     EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
@@ -2416,7 +2417,7 @@ TEST_F(ForcedPublishingSystemDiagramTest, ForcedPublish) {
 class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState(int id, double update_period) : id_(id) {
-    DeclarePeriodicUnrestrictedUpdate(update_period, 0);
+    DeclarePeriodicUnrestrictedUpdateNoHandler(update_period, 0);
     DeclareAbstractState(Value<double>(id_));
 
     // Verify that no periodic discrete updates are registered.

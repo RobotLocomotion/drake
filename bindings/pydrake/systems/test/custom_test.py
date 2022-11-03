@@ -299,9 +299,10 @@ class TestCustom(unittest.TestCase):
                 self.called_reset = False
                 self.called_system_reset = False
                 # Ensure we have desired overloads.
-                self.DeclarePeriodicPublish(1.0)
-                self.DeclarePeriodicPublish(1.0, 0)
-                self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
+                self.DeclarePeriodicPublishNoHandler(1.0)
+                self.DeclarePeriodicPublishNoHandler(1.0, 0)
+                self.DeclarePeriodicPublishNoHandler(
+                    period_sec=1.0, offset_sec=0.)
                 self.DeclareInitializationPublishEvent(
                     publish=self._on_initialize_publish)
                 self.DeclareInitializationDiscreteUpdateEvent(
@@ -312,7 +313,7 @@ class TestCustom(unittest.TestCase):
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
                         callback=self._on_initialize))
-                self.DeclarePeriodicDiscreteUpdate(
+                self.DeclarePeriodicDiscreteUpdateNoHandler(
                     period_sec=1.0, offset_sec=0.)
                 self.DeclarePeriodicPublishEvent(
                     period_sec=1.0,
