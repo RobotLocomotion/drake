@@ -396,7 +396,7 @@ for translation; the third is for rotation. See that class for discussion of
 units and detailed semantics.
 
 URDF Note: The comparable feature in URDF is the standard
-`/robot/link/joint/dynamics/@damping` attribute.
+`/robot/joint/dynamics/@damping` attribute.
 
 @subsection tag_drake_declare_convex drake:declare_convex
 
@@ -442,8 +442,8 @@ the visual or collision geometry of the model.
 
 @subsection tag_drake_gear_ratio drake:gear_ratio
 
-- SDFormat path: `//model/link/joint/drake:gear_ratio`
-- URDF path: `/robot/link/joint/actuator/drake:gear_ratio@value`
+- SDFormat path: `//model/joint/drake:gear_ratio`
+- URDF path: `/robot/joint/actuator/drake:gear_ratio@value`
 - Syntax: Non-negative floating point value.
 
 @subsubsection tag_drake_gear_ratio_semantics Semantics
@@ -699,8 +699,8 @@ to be rigid, as opposed to compliant, in hydroelastic contact models.
 
 @subsection tag_drake_rotor_inertia drake:rotor_inertia
 
-- SDFormat path: `//model/link/joint/drake:rotor_inertia`
-- URDF path: `/robot/link/joint/actuator/drake:rotor_inertia@value`
+- SDFormat path: `//model/joint/drake:rotor_inertia`
+- URDF path: `/robot/joint/actuator/drake:rotor_inertia@value`
 - Syntax: Non-negative floating point value.
 
 @subsubsection tag_drake_rotor_inertia_semantics Semantics
