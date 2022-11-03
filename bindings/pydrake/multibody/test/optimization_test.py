@@ -187,7 +187,7 @@ class TestContactWrenchFromForceInWorldFrameEvaluator(unittest.TestCase):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(
             builder, MultibodyPlant(time_step=0.01))
-        Parser(plant).AddModelFromFile(FindResourceOrThrow(
+        Parser(plant).AddModels(FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
         plant.Finalize()
         diagram = builder.Build()

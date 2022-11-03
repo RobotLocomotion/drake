@@ -32,7 +32,7 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
   void LoadModel(const std::string& file_path) {
     const std::string model_path = FindResourceOrThrow(file_path);
     Parser parser(&plant_);
-    parser.AddModelFromFile(model_path);
+    parser.AddModels(model_path);
     plant_.Finalize();
   }
 

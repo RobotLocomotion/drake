@@ -173,7 +173,7 @@ int do_main() {
   Parser parser(&plant);
   const std::string gripper_path =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
-  parser.AddModelFromFile(gripper_path);
+  parser.AddModels(gripper_path);
   /* Add collision geometries. */
   const RigidTransformd X_BG = RigidTransformd::Identity();
   const Body<double>& left_finger = plant.GetBodyByName("left_finger");

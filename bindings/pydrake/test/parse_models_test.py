@@ -25,7 +25,7 @@ def parse_model_and_create_context(file):
     building the relevant diagram, and allocating its default context."""
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-    Parser(plant).AddModelFromFile(file)
+    Parser(plant).AddModels(file)
     plant.Finalize()
     diagram = builder.Build()
     diagram.CreateDefaultContext()

@@ -277,7 +277,7 @@ int DoMain() {
 
   // Create the controlled plant. Contains only the fingers (no bricks).
   MultibodyPlant<double> control_plant(FLAGS_time_step);
-  Parser(&control_plant).AddModelFromFile(full_name);
+  Parser(&control_plant).AddModels(full_name);
   WeldGripperFrames<double>(&control_plant);
 
   // Adds a thin floor that can provide friction against the brick.

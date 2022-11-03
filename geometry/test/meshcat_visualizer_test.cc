@@ -39,7 +39,7 @@ class MeshcatVisualizerWithIiwaTest : public ::testing::Test {
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
     plant_ = &plant;
     scene_graph_ = &scene_graph;
-    multibody::Parser(plant_).AddModelFromFile(
+    multibody::Parser(plant_).AddModels(
         FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
                             "iiwa14_spheres_collision.urdf"));
     plant.WeldFrames(plant.world_frame(),

@@ -1227,7 +1227,7 @@ class TestPlant(unittest.TestCase):
         plant_f = builder_f.AddSystem(MultibodyPlant_[float](0.0))
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/free_body/uniform_solid_cylinder.urdf")
-        Parser(plant_f).AddModelFromFile(file_name)
+        Parser(plant_f).AddModels(file_name)
         plant_f.Finalize()
 
         # These connections will fail if the port output types
@@ -2065,7 +2065,7 @@ class TestPlant(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f = MultibodyPlant_[float](0.0)
-        Parser(plant_f).AddModelFromFile(file_name)
+        Parser(plant_f).AddModels(file_name)
         # Getting ready for when we set foot on Mars :-).
         gravity_vector = np.array([0.0, 0.0, -3.71])
         plant_f.mutable_gravity_field().set_gravity_vector(gravity_vector)
@@ -2241,7 +2241,7 @@ class TestPlant(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant_[float](0.0)
 
-        Parser(plant).AddModelFromFile(file_name)
+        Parser(plant).AddModels(file_name)
         plant.Finalize()
         plant.set_penetration_allowance(penetration_allowance=0.0001)
         plant.set_stiction_tolerance(v_stiction=0.001)
@@ -2263,7 +2263,7 @@ class TestPlant(unittest.TestCase):
             "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
         builder = DiagramBuilder_[float]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-        Parser(plant).AddModelFromFile(file_name)
+        Parser(plant).AddModels(file_name)
         plant.Finalize()
         self.assertGreater(
             len(plant.GetCollisionGeometriesForBody(
@@ -2286,7 +2286,7 @@ class TestPlant(unittest.TestCase):
         plant_f, scene_graph_f = AddMultibodyPlantSceneGraph(builder_f, 0.0)
         parser = Parser(plant=plant_f, scene_graph=scene_graph_f)
 
-        parser.AddModelFromFile(
+        parser.AddModels(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
         plant_f.Finalize()
@@ -2313,7 +2313,7 @@ class TestPlant(unittest.TestCase):
         # supported across all nonsymbolic scalar types (double, autodiffxd).
         # If two_bodies.sdf were to change to unsupported geometries, this
         # test would break.
-        parser.AddModelFromFile(
+        parser.AddModels(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
         plant_f.Finalize()
@@ -2387,7 +2387,7 @@ class TestPlant(unittest.TestCase):
         plant = MultibodyPlant_[float](time_step=0.0)
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        Parser(plant).AddModelFromFile(file_name)
+        Parser(plant).AddModels(file_name)
         plant.Finalize()
         body = plant.GetBodyByName("Link1")
 
@@ -2416,7 +2416,7 @@ class TestPlant(unittest.TestCase):
     def test_wing(self):
         builder = DiagramBuilder()
         plant = builder.AddSystem(MultibodyPlant(0.0))
-        Parser(plant).AddModelFromFile(
+        Parser(plant).AddModels(
             FindResourceOrThrow("drake/multibody/models/box.urdf"))
         plant.Finalize()
 
@@ -2463,7 +2463,7 @@ class TestPlant(unittest.TestCase):
     def _check_hydroelastic_contact_results(self, time_step):
         builder = DiagramBuilder_[float]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step)
-        Parser(plant).AddModelFromFile(
+        Parser(plant).AddModels(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/hydroelastic.sdf"))
         plant.set_contact_model(ContactModel.kHydroelastic)
