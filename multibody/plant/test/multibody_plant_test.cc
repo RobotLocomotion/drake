@@ -3308,9 +3308,8 @@ GTEST_TEST(StateSelection, FloatingBodies) {
           X_TO));
 
   // Add a floating mug.
-  const ModelInstanceIndex mug_model =
-      parser.AddModelFromFile(mug_sdf_path);
-  const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
+  parser.AddModels(mug_sdf_path);
+  const Body<double>& mug = plant.GetBodyByName("simple_mug");
 
   plant.Finalize();
 

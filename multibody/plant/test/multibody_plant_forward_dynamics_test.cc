@@ -165,7 +165,7 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
   const std::string model_path =
       FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
   Parser parser(&plant);
-  auto atlas_instance = parser.AddModelFromFile(model_path);
+  auto atlas_instance = parser.AddModels(model_path).at(0);
   plant.Finalize();
 
   // Create a context and store an arbitrary configuration.

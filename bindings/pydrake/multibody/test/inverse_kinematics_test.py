@@ -682,8 +682,8 @@ class TestGlobalInverseKinematics(unittest.TestCase):
 
     def test_api(self):
         plant = MultibodyPlant(time_step=0.01)
-        model_instance = Parser(plant).AddModelFromFile(FindResourceOrThrow(
-                "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
+        model_instance, = Parser(plant).AddModels(FindResourceOrThrow(
+            "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
         plant.Finalize()
         context = plant.CreateDefaultContext()
         options = ik.GlobalInverseKinematics.Options()
