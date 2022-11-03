@@ -375,6 +375,49 @@ T System<T>::CalcNextUpdateTime(const Context<T>& context,
 }
 
 template <typename T>
+const DiscreteValues<T>& System<T>::EvalUniquePeriodicDiscreteUpdate(
+    const Context<T>& context) const {
+  const CacheEntry& entry =
+      this->get_cache_entry(unique_periodic_discrete_update_cache_index_);
+  return entry.Eval<DiscreteValues<T>>(context);
+}
+
+// Unit testing for this method is in diagram_test.cc where it is used as
+// the leaf computation for the Diagram recursion.
+template <typename T>
+void System<T>::CalcUniquePeriodicDiscreteUpdate(
+    const Context<T>& context, DiscreteValues<T>* discrete_values) const {
+  ValidateContext(context);
+  ValidateCreatedForThisSystem(discrete_values);
+
+  // TODO(sherm1) We only need the DiscreteUpdateEvent portion of the
+  // CompositeEventCollection but don't have a convenient way to allocate
+  // that in a Leaf vs. Diagram agnostic way. Add that if needed for speed.
+  auto collection = AllocateCompositeEventCollection();
+
+  std::optional<PeriodicEventData> timing;
+  FindUniquePeriodicDiscreteUpdatesOrThrow(
+      __func__, *this, context, &timing,
+      &collection->get_mutable_discrete_update_events());
+  if (!timing.has_value()) {
+    throw std::logic_error(
+        fmt::format("{}(): there are no periodic discrete "
+                    "update events in this System.", __func__));
+  }
+
+  // This should come up with the same result although calculated independently.
+  // Too expensive to check in Release, but Debug is leisurely.
+  DRAKE_ASSERT(*timing == *GetUniquePeriodicDiscreteUpdateAttribute());
+
+  // Start with scratch discrete variables equal to the current values.
+  discrete_values->SetFrom(context.get_discrete_state());
+
+  // Then let the event handlers modify them or not.
+  this->CalcDiscreteVariableUpdates(
+      context, collection->get_discrete_update_events(), discrete_values);
+}
+
+template <typename T>
 void System<T>::GetPeriodicEvents(const Context<T>& context,
                                   CompositeEventCollection<T>* events) const {
   ValidateContext(context);
@@ -420,7 +463,6 @@ std::optional<PeriodicEventData>
 
   return saved_attr;
 }
-
 
 template <typename T>
 bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
@@ -967,7 +1009,21 @@ System<T>::System(SystemScalarConverter converter)
               {all_sources_ticket()})
           .cache_index();
 
-  // TODO(sherm1) Allocate and use discrete update cache.
+  // TODO(sherm1) Ideally a Diagram-level DiscreteValues cache object allocated
+  //  here would reference its LeafSystem-level DiscreteValues cache objects
+  //  rather than owning all these objects itself, and invoking
+  //  EvalUniquePeriodicDiscreteUpdate() on the Diagram would update all the
+  //  LeafSystem entries also. That would require a specialized version
+  //  of AllocateDiscreteVariables() that would build the Diagram object from
+  //  references to the already-allocated subsystem cache entries.
+  unique_periodic_discrete_update_cache_index_ =
+      this->DeclareCacheEntryWithKnownTicket(
+              xd_unique_periodic_update_ticket(),
+              "unique periodic discrete variable update",
+              ValueProducer(this, &System<T>::AllocateDiscreteVariables,
+                            &System<T>::CalcUniquePeriodicDiscreteUpdate),
+              {all_sources_ticket()})
+          .cache_index();
 }
 
 template <typename T>

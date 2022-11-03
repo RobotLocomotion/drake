@@ -493,6 +493,11 @@ struct Impl {
         .def("GetUniquePeriodicDiscreteUpdateAttribute",
             &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
             doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)
+        .def("EvalUniquePeriodicDiscreteUpdate",
+            &System<T>::EvalUniquePeriodicDiscreteUpdate, py_rvp::reference,
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), py::arg("context"),
+            doc.System.EvalUniquePeriodicDiscreteUpdate.doc)
         .def(
             "IsDifferenceEquationSystem",
             [](const System<T>& self) {

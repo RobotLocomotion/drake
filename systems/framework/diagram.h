@@ -3,6 +3,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -450,6 +451,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
            PeriodicEventDataComparator>
   DoMapPeriodicEventsByTiming(const Context<T>& context) const final;
+
+  void DoFindUniquePeriodicDiscreteUpdatesOrThrow(
+      const char* api_name, const Context<T>& context,
+      std::optional<PeriodicEventData>* timing,
+      EventCollection<DiscreteUpdateEvent<T>>* events) const final;
 
   void DoGetPeriodicEvents(
       const Context<T>& context,

@@ -234,6 +234,8 @@ class TestGeneral(unittest.TestCase):
         context.SetDiscreteState(group_index=0, xd=3 * x)
         np.testing.assert_equal(
             context.get_discrete_state_vector().CopyToVector(), 3 * x)
+        # Just verify that the third overload is present.
+        context.SetDiscreteState(context.get_discrete_state())
 
         def check_abstract_value_zero(context, expected_value):
             # Check through Context, State, and AbstractValues APIs.
@@ -296,6 +298,11 @@ class TestGeneral(unittest.TestCase):
         is_diff_eq, period = system1.IsDifferenceEquationSystem()
         self.assertTrue(is_diff_eq)
         self.assertEqual(period, periodic_data.period_sec())
+        context = system1.CreateDefaultContext()
+        system1.get_input_port(0).FixValue(context, 0.0)
+        updated_discrete = system1.EvalUniquePeriodicDiscreteUpdate(context)
+        self.assertEqual(updated_discrete.num_groups(),
+                         context.get_discrete_state().num_groups())
 
         # Simple continuous-time system.
         system2 = LinearSystem(A=[1], B=[1], C=[1], D=[1], time_period=0.0)

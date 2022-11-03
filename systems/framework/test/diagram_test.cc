@@ -2140,11 +2140,19 @@ class SystemWithDiscreteState : public LeafSystem<double> {
   SystemWithDiscreteState(int id, double update_period) : id_(id) {
     // Just one discrete variable, initialized to id.
     DeclareDiscreteState(Vector1d(id_));
-    DeclarePeriodicDiscreteUpdateEvent(
-        update_period, 0, &SystemWithDiscreteState::AddTimeToDiscreteVariable);
+    if (update_period > 0.0) {
+      DeclarePeriodicDiscreteUpdateEvent(
+          update_period, 0,
+          &SystemWithDiscreteState::AddTimeToDiscreteVariable);
+    }
+
+    DeclarePerStepDiscreteUpdateEvent(
+        &SystemWithDiscreteState::IncrementCounter);
   }
 
   int get_id() const { return id_; }
+
+  int counter() const { return counter_; }
 
  private:
   // Discrete state is set to input state value + time. We expect that the
@@ -2156,7 +2164,14 @@ class SystemWithDiscreteState : public LeafSystem<double> {
     (*discrete_state)[0] += context.get_time();
   }
 
+  EventStatus IncrementCounter(
+      const Context<double>&, DiscreteValues<double>*) const {
+    ++counter_;
+    return EventStatus::Succeeded();
+  }
+
   const int id_;
+  mutable int counter_{0};
 };
 
 class TwoDiscreteSystemDiagram : public Diagram<double> {
@@ -2295,6 +2310,68 @@ GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdates) {
                                       x_buf.get(), context.get());
   EXPECT_EQ(context->get_discrete_state(0)[0], kSys1Id + 2 + time);
   EXPECT_EQ(context->get_discrete_state(1)[0], kSys2Id + time);
+}
+
+// Tests that EvalUniquePeriodicDiscreteUpdate() rejects systems that don't
+// have exactly one periodic timing that triggers discrete updates.
+GTEST_TEST(DiscreteStateDiagramTest, EvalUniquePeriodicDiscreteUpdateErrors) {
+  TestPublishingSystem no_discrete_updates;
+  auto no_discrete_updates_context = no_discrete_updates.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      no_discrete_updates.EvalUniquePeriodicDiscreteUpdate(
+          *no_discrete_updates_context),
+      ".*no periodic discrete update events.*");
+
+  // Two unique periods.
+  DiagramBuilder<double> two_period_builder;
+  two_period_builder.template AddSystem<SystemWithDiscreteState>(1, 2.0);
+  two_period_builder.template AddSystem<SystemWithDiscreteState>(2, 3.0);
+  const auto two_period_diagram = two_period_builder.Build();
+  auto two_period_context = two_period_diagram->CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      two_period_diagram->EvalUniquePeriodicDiscreteUpdate(*two_period_context),
+      ".*more than one periodic timing.*");
+}
+
+// Tests that EvalUniquePeriodicDiscreteUpdate()
+//  - properly copies the old discrete state before calling handlers,
+//  - executes _all_ discrete update events triggered by the unique timing,
+//  - ignores non-periodic discrete updates.
+GTEST_TEST(DiscreteStateDiagramTest, EvalUniquePeriodicDiscreteUpdate) {
+  // Two discrete variables in different subsystems, initialized to 7 and 8,
+  // with periodic discrete updates that have identical period 5s. There is
+  // also a per-step discrete update event in each system whose handler
+  // increments a counter if triggered.
+  DiagramBuilder<double> builder;
+  auto* system0 = builder.template AddSystem<SystemWithDiscreteState>(7, 5.0);
+  auto* system1 = builder.template AddSystem<SystemWithDiscreteState>(8, 5.0);
+  // The third system doesn't have a periodic update at all.
+  auto* system2 = builder.template AddSystem<SystemWithDiscreteState>(9, 0.0);
+  const auto two_discretes = builder.Build();
+  auto context = two_discretes->CreateDefaultContext();
+
+  EXPECT_EQ(context->get_discrete_state(0)[0], 7.0);
+  EXPECT_EQ(context->get_discrete_state(1)[0], 8.0);
+  EXPECT_EQ(context->get_discrete_state(2)[0], 9.0);
+
+  // The update methods add time to the variable values.
+  context->SetTime(4.);
+  const DiscreteValues<double>& result =
+      two_discretes->EvalUniquePeriodicDiscreteUpdate(*context);
+
+  EXPECT_EQ(result.value(0)[0], 11.0);  // updated
+  EXPECT_EQ(result.value(1)[0], 12.0);  // updated
+  EXPECT_EQ(result.value(2)[0], 9.0);   // just copied
+
+  // Emphasize that the original Context discrete state remains unchanged.
+  EXPECT_EQ(context->get_discrete_state(0)[0], 7.0);
+  EXPECT_EQ(context->get_discrete_state(1)[0], 8.0);
+  EXPECT_EQ(context->get_discrete_state(2)[0], 9.0);
+
+  // Verify that the per-step discrete update events didn't get executed at all.
+  EXPECT_EQ(system0->counter(), 0);
+  EXPECT_EQ(system1->counter(), 0);
+  EXPECT_EQ(system2->counter(), 0);
 }
 
 // Tests that a publish action is taken at 19 sec.
