@@ -83,8 +83,8 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{package_map_, diagnostic_policy_,
                        &plant_, &resolver, TestingSelect};
-    std::optional<ModelInstanceIndex> result = AddModelFromSdf(
-        data_source, model_name, w);
+    std::optional<ModelInstanceIndex> result =
+        AddModelFromSdf(data_source, model_name, {}, w);
     EXPECT_TRUE(result.has_value());
     resolver.Resolve(diagnostic_policy_);
     return result.value_or(ModelInstanceIndex{});
@@ -96,7 +96,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{package_map_, diagnostic_policy_,
                        &plant_, &resolver, TestingSelect};
-    auto result = AddModelsFromSdf(data_source, w);
+    auto result = AddModelsFromSdf(data_source, {}, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
@@ -107,7 +107,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_,
                        &resolver, TestingSelect};
-    auto result = AddModelsFromSdf(data_source, w);
+    auto result = AddModelsFromSdf(data_source, {}, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
