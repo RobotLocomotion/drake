@@ -411,6 +411,7 @@ void DoScalarDependentDefinitions(py::module m) {
       .def("__deepcopy__", [](const Context<T>* self,
                                py::dict /* memo */) { return self->Clone(); })
       .def("__str__", &Context<T>::to_string, doc.Context.to_string.doc);
+  AddValueInstantiation<Context<T>>(m);
 
   auto bind_context_methods_templated_on_a_secondary_scalar =
       [m, &doc, &context_cls](auto dummy_u) {
