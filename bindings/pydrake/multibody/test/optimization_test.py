@@ -236,7 +236,7 @@ class TestToppra(unittest.TestCase):
         file_path = FindResourceOrThrow(
             "drake/manipulation/models/iiwa_description/iiwa7/"
             "iiwa7_no_collision.sdf")
-        iiwa_id = Parser(plant).AddModelFromFile(file_path, "iiwa")
+        iiwa_id, = Parser(plant).AddModels(file_path)
         plant.WeldFrames(plant.world_frame(),
                          plant.GetFrameByName("iiwa_link_0", iiwa_id))
         plant.Finalize()

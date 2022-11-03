@@ -59,11 +59,11 @@ std::unique_ptr<systems::Diagram<T>> ConstructDiagram(
   const std::string gripper_path =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
   multibody::Parser parser(*plant, *scene_graph);
-  parser.AddModelFromFile(gripper_path, "gripper");
+  parser.AddModels(gripper_path);
   examples::planar_gripper::WeldGripperFrames(*plant);
   const std::string brick_path =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_brick.sdf");
-  parser.AddModelFromFile(brick_path, "brick");
+  parser.AddModels(brick_path);
   (*plant)->WeldFrames((*plant)->world_frame(),
                        (*plant)->GetFrameByName("brick_base"),
                        math::RigidTransformd());
@@ -87,7 +87,7 @@ GripperBrickHelper<T>::GripperBrickHelper() {
             plant_
                 ->GetBodyByName("finger" + std::to_string(i + 1) + "_tip_link")
                 .index()),
-        geometry::Role::kProximity, "gripper::tip_sphere_collision");
+        geometry::Role::kProximity, "planar_gripper::tip_sphere_collision");
   }
   const geometry::Shape& fingertip_shape =
       inspector.GetShape(finger_tip_sphere_geometry_ids_[0]);

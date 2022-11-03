@@ -21,8 +21,8 @@ class IiwaToppraTest : public ::testing::Test {
     std::string file_path = FindResourceOrThrow(
         "drake/manipulation/models/iiwa_description/iiwa7/"
         "iiwa7_no_collision.sdf");
-    const auto iiwa_instance = multibody::Parser(iiwa_plant_.get())
-                                   .AddModelFromFile(file_path, "iiwa");
+    const auto iiwa_instance =
+        multibody::Parser(iiwa_plant_.get()).AddModels(file_path).at(0);
     iiwa_plant_->WeldFrames(
         iiwa_plant_->world_frame(),
         iiwa_plant_->GetFrameByName("iiwa_link_0", iiwa_instance));

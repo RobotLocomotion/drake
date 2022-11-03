@@ -26,7 +26,7 @@ std::unique_ptr<multibody::MultibodyPlant<double>> ConstructKuka() {
       "iiwa14_no_collision.sdf");
   auto plant = std::make_unique<MultibodyPlant<double>>(0.1);
   multibody::Parser parser{plant.get()};
-  parser.AddModelFromFile(iiwa_path, "iiwa");
+  parser.AddModels(iiwa_path);
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("iiwa_link_0"));
   plant->Finalize();
 

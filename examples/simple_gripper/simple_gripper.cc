@@ -171,11 +171,11 @@ int do_main() {
   Parser parser(&plant);
   std::string full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
-  parser.AddModelFromFile(full_name);
+  parser.AddModels(full_name);
 
   full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
-  ModelInstanceIndex mug_model = parser.AddModelFromFile(full_name);
+  ModelInstanceIndex mug_model = parser.AddModels(full_name).at(0);
 
   // Obtain the "translate_joint" axis so that we know the direction of the
   // forced motions. We do not apply gravity if motions are forced in the

@@ -243,14 +243,14 @@ int DoMain() {
   const std::string full_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
   const ModelInstanceIndex gripper_index =
-      Parser(&plant).AddModelFromFile(full_name);
+      Parser(&plant).AddModels(full_name).at(0);
   WeldGripperFrames<double>(&plant);
 
   // Adds the brick to be manipulated.
   const std::string brick_file_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_brick.sdf");
   const ModelInstanceIndex brick_index =
-      Parser(&plant).AddModelFromFile(brick_file_name, "brick");
+      Parser(&plant).AddModels(brick_file_name).at(0);
 
   // When the planar-gripper is welded via WeldGripperFrames(), motion always
   // lies in the world Y-Z plane (because the planar-gripper frame is aligned

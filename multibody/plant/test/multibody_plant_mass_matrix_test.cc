@@ -46,11 +46,11 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
 
     Parser parser(&plant_);
     const ModelInstanceIndex arm_model =
-        parser.AddModelFromFile(FindResourceOrThrow(kArmSdfPath));
+        parser.AddModels(FindResourceOrThrow(kArmSdfPath)).at(0);
 
     // Add the gripper.
     const ModelInstanceIndex gripper_model =
-        parser.AddModelFromFile(FindResourceOrThrow(kWsg50SdfPath));
+        parser.AddModels(FindResourceOrThrow(kWsg50SdfPath)).at(0);
 
     const auto& base_body = plant_.GetBodyByName("iiwa_link_0", arm_model);
     const auto& end_effector = plant_.GetBodyByName("iiwa_link_7", arm_model);
