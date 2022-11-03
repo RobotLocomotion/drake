@@ -35,6 +35,28 @@ struct UnregisteredType {
   int junk{};
 };
 
+class VirtualBase {
+ public:
+  virtual ~VirtualBase() {}
+
+  virtual std::unique_ptr<VirtualBase> Clone() const = 0;
+};
+
+class VirtualChild : public VirtualBase {
+ public:
+  explicit VirtualChild(int value) : value_(value) {}
+  virtual ~VirtualChild() {}
+
+  int value() const { return value_; }
+
+  std::unique_ptr<VirtualBase> Clone() const override {
+    return std::make_unique<VirtualChild>(value_);
+  };
+
+ private:
+  int value_{};
+};
+
 }  // namespace
 
 PYBIND11_MODULE(value_test_util, m) {
@@ -55,6 +77,12 @@ PYBIND11_MODULE(value_test_util, m) {
 
   m.def("make_abstract_value_cc_type_unregistered",
       []() { return AbstractValue::Make<UnregisteredType>(); });
+
+  py::class_<VirtualBase>(m, "VirtualBase");
+  AddValueInstantiation<VirtualBase>(m, true);
+  py::class_<VirtualChild, VirtualBase>(m, "VirtualChild")
+      .def(py::init<int>(), py::arg("value"))
+      .def("value", &VirtualChild::value);
 }
 
 }  // namespace pydrake

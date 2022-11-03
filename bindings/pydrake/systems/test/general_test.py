@@ -194,6 +194,11 @@ class TestGeneral(unittest.TestCase):
                 else:
                     self.assertEqual(contextT.get_time().Evaluate(), 0.5)
 
+            # Test value instantiations.
+            self.assertIsInstance(
+                AbstractValue.Make(contextT),
+                Value[ContextBase])
+
         pendulum = PendulumPlant()
         context = pendulum.CreateDefaultContext()
         self.assertEqual(context.num_numeric_parameter_groups(), 1)

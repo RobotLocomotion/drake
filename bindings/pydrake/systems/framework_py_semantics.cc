@@ -202,6 +202,7 @@ void DoScalarIndependentDefinitions(py::module m) {
       .def("is_cache_frozen", &ContextBase::is_cache_frozen,
           doc.ContextBase.is_cache_frozen.doc);
   // TODO(russt, eric.cousineau): Add remaining methods from ContextBase here.
+  AddValueInstantiation<ContextBase>(m, true);
 
   {
     using Class = ValueProducer;
