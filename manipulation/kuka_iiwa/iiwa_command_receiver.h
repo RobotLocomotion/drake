@@ -17,8 +17,9 @@ namespace kuka_iiwa {
 ///
 /// It has one required input port, "lcmt_iiwa_command".
 ///
-/// It has two output ports: one for the commanded position for each joint, and
-/// one for commanded additional feedforward joint torque.
+/// It has three output ports: one for the commanded position for each joint,
+/// one for commanded additional feedforward joint torque, and one for the
+/// timestamp in the most recently received message.
 ///
 /// @system
 /// name: IiwaCommandReceiver
@@ -28,18 +29,19 @@ namespace kuka_iiwa {
 /// output_ports:
 /// - position
 /// - torque
+/// - time
 /// @endsystem
 ///
-/// @par Output prior to receiving a valid lcmt_iiwa_command message:
-/// The "position" output initially feeds through from the "position_measured"
+/// @par Output prior to receiving a valid lcmt_iiwa_command message: The
+/// "position" output initially feeds through from the "position_measured"
 /// input port -- or if not connected, outputs zero.  When discrete update
 /// events are enabled (e.g., during a simulation), the system latches the
 /// "position_measured" input into state during the first event, and the
 /// "position" output comes from the latched state, no longer fed through from
 /// the "position" input.  Alternatively, the LatchInitialPosition() method is
-/// available to achieve the same effect without using events.
-/// @par
-/// The "torque" output will always be a vector of zeros.
+/// available to achieve the same effect without using events.  The "torque"
+/// output will be a vector of zeros, and the "time" output will be a
+/// vector of a single zero.
 class IiwaCommandReceiver final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandReceiver)
@@ -70,6 +72,9 @@ class IiwaCommandReceiver final : public systems::LeafSystem<double> {
   const systems::OutputPort<double>& get_commanded_torque_output_port() const {
     return *commanded_torque_output_;
   }
+  const systems::OutputPort<double>& get_time_output_port() const {
+    return *time_output_;
+  }
   //@}
 
  private:
@@ -87,6 +92,8 @@ class IiwaCommandReceiver final : public systems::LeafSystem<double> {
       const systems::Context<double>&, systems::BasicVector<double>*) const;
   void CalcTorqueOutput(
       const systems::Context<double>&, systems::BasicVector<double>*) const;
+  void CalcTimeOutput(
+      const systems::Context<double>&, systems::BasicVector<double>*) const;
 
   const int num_joints_;
   const systems::InputPort<double>* message_input_{};
@@ -97,6 +104,7 @@ class IiwaCommandReceiver final : public systems::LeafSystem<double> {
   const systems::CacheEntry* defaulted_command_{};
   const systems::OutputPort<double>* commanded_position_output_{};
   const systems::OutputPort<double>* commanded_torque_output_{};
+  const systems::OutputPort<double>* time_output_{};
 };
 
 }  // namespace kuka_iiwa

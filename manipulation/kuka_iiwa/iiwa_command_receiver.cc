@@ -51,6 +51,10 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
   commanded_torque_output_ = &DeclareVectorOutputPort(
       "torque", num_joints, &IiwaCommandReceiver::CalcTorqueOutput,
       {defaulted_command_->ticket()});
+
+  time_output_ = &DeclareVectorOutputPort(
+      "time", 1, &IiwaCommandReceiver::CalcTimeOutput,
+      {defaulted_command_->ticket()});
 }
 
 IiwaCommandReceiver::~IiwaCommandReceiver() = default;
@@ -157,6 +161,12 @@ void IiwaCommandReceiver::CalcTorqueOutput(
   output->SetFromVector(Eigen::Map<const VectorXd>(
       message.joint_torque.data(),
       message.joint_torque.size()));
+}
+
+void IiwaCommandReceiver::CalcTimeOutput(
+    const Context<double>& context, BasicVector<double>* output) const {
+  const auto& message = defaulted_command_->Eval<lcmt_iiwa_command>(context);
+  (*output)[0] = static_cast<double>(message.utime) / 1e6;
 }
 
 }  // namespace kuka_iiwa

@@ -39,6 +39,11 @@ JacoStatusReceiver::JacoStatusReceiver(int num_joints, int num_fingers)
       &JacoStatusReceiver::CalcJointOutput<
       &lcmt_jaco_status::joint_current,
       &lcmt_jaco_status::finger_current, 0>);
+  // Declared after the previous points to preserve port numbers (even though
+  // this isn't a guaranteed stable part of the API).
+  time_measured_output_ = &DeclareVectorOutputPort(
+      "time_measured", 1,
+      &JacoStatusReceiver::CalcTimeOutput);
 }
 
 template <std::vector<double> drake::lcmt_jaco_status::* arm_ptr,
@@ -66,6 +71,19 @@ void JacoStatusReceiver::CalcJointOutput(
         finger_field.data(), finger_field.size()) * scale_factor;
   }
   output->SetFromVector(output_vec);
+}
+
+void JacoStatusReceiver::CalcTimeOutput(const Context<double>& context,
+                                        BasicVector<double>* output) const {
+  const auto& status = get_input_port().Eval<lcmt_jaco_status>(context);
+
+  // If we're using a default constructed message (i.e., we haven't received
+  // any status message yet), output zero.
+  if (status.num_joints == 0) {
+    output->get_mutable_value().setZero();
+  } else {
+    (*output)[0] = static_cast<double>(status.utime) / 1e6;
+  }
 }
 
 }  // namespace kinova_jaco

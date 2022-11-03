@@ -20,7 +20,7 @@ namespace kuka_iiwa {
 /// optional), and one for the time to use, in seconds, for the message
 /// timestamp (which is optional). If the torque input port is not connected,
 /// then no torque values will be emitted in the resulting message. If the
-/// time_measured input port is not connected, the context time will be used for
+/// time input port is not connected, the context time will be used for
 /// message timestamp.
 ///
 /// This system has one abstract-valued output port of type lcmt_iiwa_command.
@@ -30,7 +30,7 @@ namespace kuka_iiwa {
 /// input_ports:
 /// - position
 /// - torque (optional)
-/// - time_measured (optional)
+/// - time (optional)
 /// output_ports:
 /// - lcmt_iiwa_command
 /// @endsystem
@@ -45,7 +45,7 @@ class IiwaCommandSender final : public systems::LeafSystem<double> {
 
   /// @name Named accessors for this System's input and output ports.
   //@{
-  const systems::InputPort<double>& get_time_measured_input_port() const;
+  const systems::InputPort<double>& get_time_input_port() const;
   const systems::InputPort<double>& get_position_input_port() const;
   const systems::InputPort<double>& get_torque_input_port() const;
   //@}

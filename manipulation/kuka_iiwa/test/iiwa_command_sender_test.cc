@@ -48,7 +48,7 @@ TEST_F(IiwaCommandSenderTest, AcceptanceTest) {
   EXPECT_EQ(output().joint_position, std_q0_);
   EXPECT_EQ(output().num_torques, 0);
 
-  dut_.get_time_measured_input_port().FixValue(&context_, time_);
+  dut_.get_time_input_port().FixValue(&context_, time_);
   dut_.get_torque_input_port().FixValue(&context_, t0_);
   EXPECT_EQ(output().utime, time_[0] * 1e6);
   EXPECT_EQ(output().num_joints, N);
@@ -82,8 +82,8 @@ TEST_F(IiwaCommandSenderTest, MallocTest) {
     output();
   }
 
-  // Add time_measured, re-initialize, and then invalidate the cached output.
-  auto& utime = dut_.get_time_measured_input_port().FixValue(&context_, time_);
+  // Add time, re-initialize, and then invalidate the cached output.
+  auto& utime = dut_.get_time_input_port().FixValue(&context_, time_);
   output();
   utime.GetMutableVectorData<double>();
 

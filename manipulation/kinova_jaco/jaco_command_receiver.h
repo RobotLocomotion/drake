@@ -22,10 +22,11 @@ namespace kinova_jaco {
 ///
 /// It has one required input port, "lcmt_jaco_command".
 ///
-/// This system has two output ports: one each for the commanded position and
-/// velocity of the arm+finger joints.  Finger velocities will be translated
-/// from the values used by the Kinova SDK to values appropriate for the
-/// finger joints in the Jaco description (see jaco_constants.h).
+/// This system has three output ports: one each for the commanded position
+/// and velocity of the arm+finger joints, and one for the timestamp in the
+/// most recently received message.  Finger velocities will be translated from
+/// the values used by the Kinova SDK to values appropriate for the finger
+/// joints in the Jaco description (see jaco_constants.h).
 ///
 /// @system
 /// name: JacoCommandReceiver
@@ -35,6 +36,7 @@ namespace kinova_jaco {
 /// output_ports:
 /// - position
 /// - velocity
+/// - time
 ///
 /// @par Output prior to receiving a valid lcmt_jaco_command message: The
 /// "position" output initially feeds through from the "position_measured"
@@ -43,7 +45,8 @@ namespace kinova_jaco {
 /// "position_measured" input into state during the first event, and the
 /// "position" output comes from the latched state, no longer fed through from
 /// the "position" input.  Alternatively, the LatchInitialPosition() method is
-/// available to achieve the same effect without using events.
+/// available to achieve the same effect without using events. The "time"
+/// output will be a vector of a single zero.
 ///
 /// @endsystem
 class JacoCommandReceiver : public systems::LeafSystem<double> {
@@ -77,6 +80,9 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
       const {
     return *commanded_velocity_output_;
   }
+  const systems::OutputPort<double>& get_time_output_port() const {
+    return *time_output_;
+  }
 //@}
 
  private:
@@ -97,6 +103,8 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
       const systems::Context<double>&, systems::BasicVector<double>*) const;
   void CalcVelocityOutput(
       const systems::Context<double>&, systems::BasicVector<double>*) const;
+  void CalcTimeOutput(
+      const systems::Context<double>&, systems::BasicVector<double>*) const;
 
   const int num_joints_;
   const int num_fingers_;
@@ -108,6 +116,7 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   const systems::CacheEntry* groomed_input_{};
   const systems::OutputPort<double>* commanded_position_output_{};
   const systems::OutputPort<double>* commanded_velocity_output_{};
+  const systems::OutputPort<double>* time_output_{};
 };
 
 }  // namespace kinova_jaco
