@@ -173,10 +173,9 @@ EOF
 if [[ $(arch) = "aarch64" ]]; then
   # Check if bazel is already installed.
   if [[ "$(which bazel)" ]]; then
-    echo "Bazel is already installed"
+    echo "Bazel is already installed." >&2
   else
-    echo "You need to manually install Bazel somehow; \
-    see https://bazel.build/ for details."
+    echo "You need to manually install Bazel somehow; see https://bazel.build/ for details." >&2
   fi
 else
   dpkg_install_from_wget \
