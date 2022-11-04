@@ -1932,7 +1932,7 @@ class TestPlant(unittest.TestCase):
             frame.GetPoseInParentFrame(context).GetAsMatrix34(),
             numpy_compare.to_float(X_PF.GetAsMatrix34()))
 
-        # TODO(2023-02-01) Remove with completion of deprecation.
+        # TODO(2023-03-01) Remove with completion of deprecation.
         with catch_drake_warnings(expected_count=1) as w:
             frame.SetPoseInBodyFrame(context=context, X_PF=X_PF)
             numpy_compare.assert_float_equal(
