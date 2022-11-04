@@ -1938,7 +1938,7 @@ class TestPlant(unittest.TestCase):
             numpy_compare.assert_float_equal(
                 frame.CalcPoseInBodyFrame(context).GetAsMatrix34(),
                 numpy_compare.to_float(X_PF.GetAsMatrix34()))
-        self.assertIn("2023-02-01", str(w[0].message))
+        self.assertIn("2023-03-01", str(w[0].message))
 
     @numpy_compare.check_all_types
     def test_frame_context_methods(self, T):

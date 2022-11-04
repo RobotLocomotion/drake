@@ -101,6 +101,7 @@ class FixedOffsetFrame final : public Frame<T> {
   /// @param[in] context contains the state of the multibody plant.
   /// @param[in] X_PF Rigid transform that characterizes `this` frame F's pose
   ///   (orientation and position) in its parent frame P.
+  /// @pre `this` frame has been registered in the given `context`.
   void SetPoseInParentFrame(systems::Context<T>* context,
                             const math::RigidTransform<T>& X_PF) const {
     systems::BasicVector<T>& X_PF_parameter =
