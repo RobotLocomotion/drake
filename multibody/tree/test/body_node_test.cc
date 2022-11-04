@@ -256,8 +256,8 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
         // A matrix with a bad condition number; doesn't pass.
         Vector3d{Vector3d{1.1, 2e12, 3e16}}}) {
     six_by_six.block<3, 3>(0, 0) = make_K(K_eigen_values).CopyToFullMatrix3();
-    EXPECT_THROW(Tester::CallLltFactorization(body_node, six_by_six), std::exception)
-        << "For expected bad value: " << six_by_six;
+    EXPECT_THROW(Tester::CallLltFactorization(body_node, six_by_six),
+        std::exception) << "For expected bad value: " << six_by_six;
   }
 }
 
