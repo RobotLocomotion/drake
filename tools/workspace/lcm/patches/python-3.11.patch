@@ -1,0 +1,34 @@
+--- a/lcm-python/module.c
++++ b/lcm-python/module.c
+@@ -31,6 +31,18 @@ PyDoc_STRVAR(lcmmod_doc, "LCM python extension modules");
+ #define MOD_DEF(ob, name, doc, methods) ob = Py_InitModule3(name, methods, doc);
+ #endif
+ 
++/* python 3.11 support: Py_TYPE(obj) = new_type must be replaced
++ * with Py_SET_TYPE(obj, new_type):
++ * https://docs.python.org/3/whatsnew/3.11.html
++ *
++ * TODO(svenevs): this likely does not work for python 2 (see macros
++ * above, needs testing). */
++#if PY_VERSION_HEX < 0x030900A4 && !defined(Py_SET_TYPE)
++static inline void _Py_SET_TYPE(PyObject *ob, PyTypeObject *type)
++{ ob->ob_type = type; }
++#define Py_SET_TYPE(ob, type) _Py_SET_TYPE((PyObject*)(ob), type)
++#endif
++
+ #if __GNUC__ >= 4 || defined(__clang__)
+ __attribute__((visibility("default")))
+ #endif
+@@ -43,9 +55,9 @@ init_lcm(void)
+ {
+     PyObject *m;
+ 
+-    Py_TYPE(&pylcmeventlog_type) = &PyType_Type;
+-    Py_TYPE(&pylcm_type) = &PyType_Type;
+-    Py_TYPE(&pylcm_subscription_type) = &PyType_Type;
++    Py_SET_TYPE(&pylcmeventlog_type, &PyType_Type);
++    Py_SET_TYPE(&pylcm_type, &PyType_Type);
++    Py_SET_TYPE(&pylcm_subscription_type, &PyType_Type);
+ 
+     MOD_DEF(m, "_lcm", lcmmod_doc, lcmmod_methods);
+ 
