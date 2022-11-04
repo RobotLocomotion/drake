@@ -106,7 +106,7 @@ Mac x86_64 are generated nightly and are available to download at:
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp38-cp38-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp38-cp38-manylinux_2_31_x86_64.whl)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp39-cp39-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp39-cp39-manylinux_2_31_x86_64.whl)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp310-cp310-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp310-cp310-manylinux_2_31_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp310-cp310-macosx_11_0_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp310-cp310-macosx_11_0_x86_64.whl)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp311-cp311-macosx_11_0_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp311-cp311-macosx_11_0_x86_64.whl)
 
 Older packages for specific dates are available by replacing ``latest`` with an
 8-digit date, e.g., ``20220914`` for September 14th, 2022.  The version number to
@@ -115,7 +115,7 @@ replace ``latest`` with follows the pattern ``0.0.YYYYMMDD``.
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20220914-cp38-cp38-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20220914-cp38-cp38-manylinux_2_31_x86_64.whl)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20220914-cp39-cp39-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20220914-cp39-cp39-manylinux_2_31_x86_64.whl)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20220914-cp310-cp310-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20220914-cp310-cp310-manylinux_2_31_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20220914-cp310-cp310-macosx_11_0_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20220914-cp310-cp310-macosx_11_0_x86_64.whl)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20220914-cp311-cp311-macosx_11_0_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20220914-cp311-cp311-macosx_11_0_x86_64.whl)
 
 Nightly wheels are retained for 56 days from their date of creation.
 
