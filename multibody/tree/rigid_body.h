@@ -190,9 +190,11 @@ class RigidBody : public Body<T> {
 
   /// For `this` rigid body B, sets its mass stored in @p context to @p mass.
   /// @param[out] context contains the state of the multibody system.
-  /// @param[in] mass mass of `this` rigid body B (to be set).
+  /// @param[in] mass mass of `this` rigid body B.
   /// @throws std::exception if `this` RigidBody is not owned by a
-  /// MultibodyPlant
+  /// MultibodyPlant.
+  /// @note This function changes `this` body B's mass and appropriately scales
+  /// I_BBo_B (B's rotational inertia about Bo, expressed in B).
   void SetMass(systems::Context<T>* context, const T& mass) const {
     DRAKE_THROW_UNLESS(context != nullptr);
     systems::BasicVector<T>& spatial_inertia_parameter =
@@ -202,15 +204,16 @@ class RigidBody : public Body<T> {
         internal::parameter_conversion::SpatialInertiaIndex::k_mass, mass);
   }
 
-  /// For `this` rigid body B, sets its center of mass position that is stored
-  /// in @p context to @p p_BoBcm_B.
+  /// For `this` rigid body B, sets its center of mass position stored in
+  /// @p context to @p p_BoBcm_B.
   /// @param[out] context contains the state of the multibody system.
   /// @param[in] p_BoBcm_B position vector from Bo (B's origin) to Bcm
   /// (B's center of mass), expressed in B.
   /// @throws std::exception if `this` RigidBody is not owned by a
-  /// MultibodyPlant
-  /// @note This function changes center of mass position without modifying the
-  /// body's rotational inertia. If needed, use SetSpatialInertiaInBodyFrame().
+  /// MultibodyPlant.
+  /// @note This function changes `this` body B's center of mass position
+  /// without modifying I_BBo_B (B's rotational inertia about Bo, expressed
+  /// in B). If needed, use SetSpatialInertiaInBodyFrame().
   void SetCenterOfMassInBodyFrame(systems::Context<T>* context,
                                   const Vector3<T>& p_BoBcm_B) const {
     DRAKE_THROW_UNLESS(context != nullptr);
@@ -233,10 +236,10 @@ class RigidBody : public Body<T> {
   /// @param[out] context contains the state of the multibody system.
   /// @param[in] M_BBo_B spatial inertia of this rigid body B about Bo (B's
   /// origin), expressed in B. M_BBo_B contains properties related to B's mass,
-  /// the position vector from Bo to Bcm (B's center of mass), and I_BBo_B
-  /// (B's rotational inertia about Bo expressed in B).
+  /// the position vector from Bo to Bcm (B's center of mass), and G_BBo_B
+  /// (B's unit inertia about Bo expressed in B).
   /// @throws std::exception if `this` RigidBody is not owned by a
-  /// MultibodyPlant
+  /// MultibodyPlant.
   void SetSpatialInertiaInBodyFrame(systems::Context<T>* context,
                                     const SpatialInertia<T>& M_Bo_B) const {
     DRAKE_THROW_UNLESS(context != nullptr);
