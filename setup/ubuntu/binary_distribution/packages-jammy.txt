@@ -36,7 +36,6 @@ libqt5core5a
 libqt5gui5
 libqt5printsupport5
 libqt5widgets5
-libquadmath0
 libspdlog-dev
 libsqlite3-0
 libtheora0
