@@ -99,6 +99,7 @@ drake_cc_library(
         "multibody_plant.cc",
         "physical_model.cc",
         "sap_driver.cc",
+        "tamsi_driver.cc",
     ],
     hdrs = [
         "compliant_contact_manager.h",
@@ -112,6 +113,7 @@ drake_cc_library(
         "physical_model.h",
         "sap_driver.h",
         "scalar_convertible_component.h",
+        "tamsi_driver.h",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -484,6 +486,16 @@ drake_cc_googletest(
         ":compliant_contact_manager_tester",
         ":plant",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "tamsi_driver_test",
+    data = ["test/square_surface.obj"],
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        "//common:find_resource",
     ],
 )
 
