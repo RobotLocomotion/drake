@@ -24,6 +24,9 @@ def pybind11_repository(
         sha256 = _SHA256,
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
+        patches = [
+            ":patches/python-3.11.patch",
+        ]
     )
 
 def generate_pybind11_version_py_file(name):

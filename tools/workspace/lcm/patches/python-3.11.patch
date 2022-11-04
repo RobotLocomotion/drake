@@ -1,5 +1,5 @@
---- a/lcm-python/module.c
-+++ b/lcm-python/module.c
+--- lcm-python/module.c
++++ lcm-python/module.c
 @@ -31,6 +31,18 @@ PyDoc_STRVAR(lcmmod_doc, "LCM python extension modules");
  #define MOD_DEF(ob, name, doc, methods) ob = Py_InitModule3(name, methods, doc);
  #endif
