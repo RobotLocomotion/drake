@@ -138,6 +138,14 @@ void DiscreteUpdateManager<T>::CalcForceElementsContribution(
 }
 
 template <typename T>
+const geometry::QueryObject<T>&
+DiscreteUpdateManager<T>::EvalGeometryQueryInput(
+    const systems::Context<T>& context, std::string_view caller) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalGeometryQueryInput(
+      plant(), context, caller);
+}
+
+template <typename T>
 const std::vector<std::vector<geometry::GeometryId>>&
 DiscreteUpdateManager<T>::collision_geometries() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::collision_geometries(
@@ -149,6 +157,13 @@ const std::vector<internal::CouplerConstraintSpecs<T>>&
 DiscreteUpdateManager<T>::coupler_constraints_specs() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::coupler_constraints_specs(*plant_);
+}
+
+template <typename T>
+const std::vector<int>& DiscreteUpdateManager<T>::EvalJointLockingIndices(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::EvalJointLockingIndices(plant(), context);
 }
 
 }  // namespace internal
