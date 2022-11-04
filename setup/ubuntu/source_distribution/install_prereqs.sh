@@ -172,10 +172,13 @@ EOF
 # Keep this version number in sync with the drake/.bazeliskrc version number.
 
 if [[ $(arch) = "aarch64" ]]; then
-  dpkg_install_from_wget \
-  bazel 5.3.1 \
-  https://releases.bazel.build/5.3.1/release/bazel_5.3.1-linux-arm64.deb \
-  1e939b50d90f68d30fa4f3c12dfdf31429b83ddd8076c622429854f64253c23d
+  # Check if bazel is already installed
+  if [[ "$(which bazel)" ]]; then
+    echo "Bazel is already installed"
+  else
+    echo "You need to manually install Bazel somehow; \
+    see https://bazel.build/ for details."
+  fi
 else 
 dpkg_install_from_wget \
   bazel 5.3.1 \
