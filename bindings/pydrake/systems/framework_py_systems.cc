@@ -942,7 +942,7 @@ Note: The above is for the C++ documentation. For Python, use
         .def("DeclareAbstractState",
             py::overload_cast<const AbstractValue&>(
                 &LeafSystemPublic::DeclareAbstractState),
-            doc.LeafSystem.DeclareAbstractState.doc);
+            py::arg("model_value"), doc.LeafSystem.DeclareAbstractState.doc);
 
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)

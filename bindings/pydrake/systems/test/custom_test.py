@@ -211,12 +211,12 @@ class TestCustom(unittest.TestCase):
 
     def test_leaf_system_per_item_tickets(self):
         dut = LeafSystem()
-        dut.DeclareAbstractParameter(AbstractValue.Make(1))
-        dut.DeclareAbstractState(AbstractValue.Make(1))
+        dut.DeclareAbstractParameter(model_value=AbstractValue.Make(1))
+        dut.DeclareAbstractState(model_value=AbstractValue.Make(1))
         dut.DeclareDiscreteState(1)
         dut.DeclareVectorInputPort("u0", BasicVector(1))
         self.assertEqual(dut.DeclareVectorInputPort("u1", 2).size(), 2)
-        dut.DeclareNumericParameter(BasicVector(1))
+        dut.DeclareNumericParameter(model_vector=BasicVector(1))
         for func, arg in [
                 (dut.abstract_parameter_ticket, AbstractParameterIndex(0)),
                 (dut.abstract_state_ticket, AbstractStateIndex(0)),
@@ -695,9 +695,9 @@ class TestCustom(unittest.TestCase):
                 LeafSystem.__init__(self)
                 self.DeclareContinuousState(1)
                 self.DeclareDiscreteState(2)
-                self.DeclareAbstractState(model_value.Clone())
-                self.DeclareAbstractParameter(model_value.Clone())
-                self.DeclareNumericParameter(model_vector.Clone())
+                self.DeclareAbstractState(model_value=model_value.Clone())
+                self.DeclareAbstractParameter(model_value=model_value.Clone())
+                self.DeclareNumericParameter(model_vector=model_vector.Clone())
 
         system = TrivialSystem()
         context = system.CreateDefaultContext()
