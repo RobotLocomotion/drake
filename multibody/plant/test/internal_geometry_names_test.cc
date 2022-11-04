@@ -31,18 +31,18 @@ class GeometryNamesTest : public ::testing::Test {
     // A single model, single body, single geometry.
     const std::string box = FindResourceOrThrow(
         "drake/multibody/models/box.urdf");
-    parser.AddModelFromFile(box);
+    parser.AddModels(box);
 
     // A single model, single body, multiple geometries.
     const std::string bin = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/bin.sdf");
-    parser.AddModelFromFile(bin);
+    parser.AddModels(bin);
 
     // Two identical models (each one has a single body, single geometry).
     const std::string sphere = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/sphere.sdf");
-    parser.AddModelFromFile(sphere, "sphere1");
-    parser.AddModelFromFile(sphere, "sphere2");
+    Parser("1", plant_).AddModels(sphere);
+    Parser("2", plant_).AddModels(sphere);
 
     // Build everything.
     plant_->Finalize();
@@ -137,27 +137,27 @@ TEST_F(GeometryNamesTest, FullBox) {
 TEST_F(GeometryNamesTest, BasicSphere1) {
   GeometryNames dut;
   dut.ResetBasic(plant());
-  const GeometryId id = GetSoleGeometryId("base_link", "sphere1");
+  const GeometryId id = GetSoleGeometryId("base_link", "1::sphere");
   const Entry& entry = dut.Find(id);
-  EXPECT_EQ(entry.model_instance_name, "sphere1");
+  EXPECT_EQ(entry.model_instance_name, "1::sphere");
   EXPECT_EQ(entry.body_name, "base_link");
   EXPECT_EQ(entry.geometry_name, std::nullopt);
   EXPECT_EQ(entry.body_name_is_unique_within_plant, false);
   EXPECT_EQ(entry.is_sole_geometry_within_body, true);
-  EXPECT_EQ(dut.GetFullName(id, "$"), "sphere1$base_link");
+  EXPECT_EQ(dut.GetFullName(id, "$"), "1::sphere$base_link");
 }
 
 TEST_F(GeometryNamesTest, FullSphere1) {
   GeometryNames dut;
   dut.ResetFull(plant(), inspector());
-  const GeometryId id = GetSoleGeometryId("base_link", "sphere1");
+  const GeometryId id = GetSoleGeometryId("base_link", "1::sphere");
   const Entry& entry = dut.Find(id);
-  EXPECT_EQ(entry.model_instance_name, "sphere1");
+  EXPECT_EQ(entry.model_instance_name, "1::sphere");
   EXPECT_EQ(entry.body_name, "base_link");
   EXPECT_EQ(entry.geometry_name, "sphere_collision");
   EXPECT_EQ(entry.body_name_is_unique_within_plant, false);
   EXPECT_EQ(entry.is_sole_geometry_within_body, true);
-  EXPECT_EQ(dut.GetFullName(id, "$"), "sphere1$base_link");
+  EXPECT_EQ(dut.GetFullName(id, "$"), "1::sphere$base_link");
 }
 
 TEST_F(GeometryNamesTest, BasicBin) {

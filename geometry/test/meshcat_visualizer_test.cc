@@ -288,10 +288,10 @@ GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
   std::string urdf = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_no_collision.urdf");
-  auto iiwa0 = multibody::Parser(&plant).AddModelFromFile(urdf);
+  auto iiwa0 = multibody::Parser("0", &plant).AddModels(urdf).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base", iiwa0).body_frame());
-  auto iiwa1 = multibody::Parser(&plant).AddModelFromFile(urdf, "second_iiwa");
+  auto iiwa1 = multibody::Parser("1", &plant).AddModels(urdf).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base", iiwa1).body_frame());
   plant.Finalize();
@@ -315,14 +315,14 @@ GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
 
   diagram->ForcedPublish(*context);
 
-  EXPECT_TRUE(meshcat->HasPath("/drake/visualizer/iiwa14"));
-  EXPECT_TRUE(meshcat->HasPath("/drake/visualizer/second_iiwa"));
+  EXPECT_TRUE(meshcat->HasPath("/drake/visualizer/0/iiwa14"));
+  EXPECT_TRUE(meshcat->HasPath("/drake/visualizer/1/iiwa14"));
   for (int link = 0; link < 8; link++) {
     EXPECT_NE(meshcat->GetPackedTransform(
-                  fmt::format("/drake/visualizer/iiwa14/iiwa_link_{}", link)),
+                  fmt::format("/drake/visualizer/0/iiwa14/iiwa_link_{}", link)),
               "");
     EXPECT_NE(meshcat->GetPackedTransform(fmt::format(
-                  "/drake/visualizer/second_iiwa/iiwa_link_{}", link)),
+                  "/drake/visualizer/1/iiwa14/iiwa_link_{}", link)),
               "");
   }
 }
