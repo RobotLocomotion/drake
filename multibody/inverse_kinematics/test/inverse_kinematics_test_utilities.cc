@@ -28,7 +28,7 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
   plant_->RegisterAsSourceForSceneGraph(
       builder.AddSystem<SceneGraph<double>>());
   multibody::Parser parser{plant_};
-  parser.AddModelFromFile(iiwa_path, "iiwa");
+  parser.AddModels(iiwa_path);
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0"));
   plant_->Finalize();
@@ -82,8 +82,7 @@ std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
   auto plant = std::make_unique<MultibodyPlant<double>>(time_step);
   for (int i = 0; i < num_iiwa; ++i) {
     const auto iiwa_instance =
-        Parser(plant.get())
-            .AddModelFromFile(file_path, "iiwa" + std::to_string(i));
+        Parser(std::to_string(i), plant.get()).AddModels(file_path).at(0);
     plant->WeldFrames(plant->world_frame(),
                       plant->GetFrameByName("iiwa_link_0", iiwa_instance));
   }
