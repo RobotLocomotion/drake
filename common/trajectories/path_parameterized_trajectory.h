@@ -18,7 +18,7 @@ namespace trajectories {
  * Using a path of form `q(s)` and a time_scaling of the form `s(t)`, a full
  * trajectory of form `q(t) = q(s(t))` is modeled.
  *
- * @tparam_default_scalars
+ * @tparam_default_scalar
  */
 template <typename T>
 class PathParameterizedTrajectory final : public Trajectory<T> {

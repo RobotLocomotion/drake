@@ -17,7 +17,7 @@ namespace trajectories {
  * A wrapper class that represents a pose trajectory, whose rotation part is a
  * PiecewiseQuaternionSlerp and the translation part is a PiecewisePolynomial.
  *
- * @tparam_default_scalars
+ * @tparam_default_scalar
  */
 template <typename T>
 class PiecewisePose final : public PiecewiseTrajectory<T> {

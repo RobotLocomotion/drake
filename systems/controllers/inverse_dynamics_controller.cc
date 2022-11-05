@@ -16,14 +16,21 @@ namespace systems {
 namespace controllers {
 
 template <typename T>
-void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
-                                         const VectorX<double>& ki,
-                                         const VectorX<double>& kd) {
+void InverseDynamicsController<T>::SetUp(
+    std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
+    const VectorX<double>& kp, const VectorX<double>& ki,
+    const VectorX<double>& kd) {
   DRAKE_DEMAND(multibody_plant_for_control_->is_finalized());
 
   DiagramBuilder<T> builder;
-  auto inverse_dynamics = builder.template AddSystem<InverseDynamics<T>>(
-      multibody_plant_for_control_, InverseDynamics<T>::kInverseDynamics);
+  InverseDynamics<T>* inverse_dynamics{};
+  if (owned_plant) {
+    inverse_dynamics = builder.template AddSystem<InverseDynamics<T>>(
+        std::move(owned_plant), InverseDynamics<T>::kInverseDynamics);
+  } else {
+    inverse_dynamics = builder.template AddSystem<InverseDynamics<T>>(
+        multibody_plant_for_control_, InverseDynamics<T>::kInverseDynamics);
+  }
 
   const int num_positions = multibody_plant_for_control_->num_positions();
   const int num_velocities = multibody_plant_for_control_->num_velocities();
@@ -48,6 +55,7 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
 
   // Adds a PID.
   pid_ = builder.template AddSystem<PidController<T>>(kp, ki, kd);
+  pid_->set_name("pid");
 
   // Adds a adder to do PID's acceleration + reference acceleration.
   auto adder = builder.template AddSystem<Adder<T>>(2, dim);
@@ -58,7 +66,6 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
   // Connects desired acceleration to inverse dynamics
   builder.Connect(adder->get_output_port(),
                   inverse_dynamics->get_input_port_desired_acceleration());
-
 
   // Exposes estimated state input port.
   // Connects estimated state to PID.
@@ -108,7 +115,7 @@ InverseDynamicsController<T>::InverseDynamicsController(
     bool has_reference_acceleration)
     : multibody_plant_for_control_(&plant),
       has_reference_acceleration_(has_reference_acceleration) {
-  SetUp(kp, ki, kd);
+  SetUp(nullptr, kp, ki, kd);
 }
 
 template <typename T>
@@ -116,19 +123,17 @@ InverseDynamicsController<T>::InverseDynamicsController(
     std::unique_ptr<multibody::MultibodyPlant<T>> plant,
     const VectorX<double>& kp, const VectorX<double>& ki,
     const VectorX<double>& kd, bool has_reference_acceleration)
-    : owned_plant_for_control_(std::move(plant)),
-      multibody_plant_for_control_(owned_plant_for_control_.get()),
+    : multibody_plant_for_control_(plant.get()),
       has_reference_acceleration_(has_reference_acceleration) {
-  SetUp(kp, ki, kd);
+  SetUp(std::move(plant), kp, ki, kd);
 }
 
 template <typename T>
 InverseDynamicsController<T>::~InverseDynamicsController() = default;
 
-template class InverseDynamicsController<double>;
-// TODO(siyuan) template on autodiff.
-// template class InverseDynamicsController<AutoDiffXd>;
-
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::controllers::InverseDynamicsController)

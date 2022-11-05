@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -204,6 +205,36 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
   EXPECT_TRUE(GravityModeled(robot_position));
 
   CheckGravityTorque(robot_position);
+}
+
+GTEST_TEST(AdditionalInverseDynamicsTest, ScalarConversion) {
+  auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
+  const std::string full_name = drake::FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  multibody::Parser(mbp.get()).AddModelFromFile(full_name);
+  mbp->WeldFrames(mbp->world_frame(),
+                  mbp->GetFrameByName("iiwa_link_0"));
+  mbp->Finalize();
+  const int num_states = mbp->num_multibody_states();
+
+  InverseDynamics<double> id_without_ownership(mbp.get());
+  DRAKE_EXPECT_THROWS_MESSAGE(id_without_ownership.ToAutoDiffXd(),
+                              ".*constructor which takes ownership.*");
+
+  InverseDynamics<double> id(std::move(mbp),
+                             InverseDynamics<double>::kGravityCompensation);
+
+  // Test AutoDiffXd.
+  auto id_ad = systems::System<double>::ToAutoDiffXd(id);
+  // Check the multibody plant.
+  EXPECT_EQ(id_ad->get_input_port_estimated_state().size(), num_states);
+  // Check the mode.
+  EXPECT_TRUE(id_ad->is_pure_gravity_compensation());
+
+  // Test Expression.
+  auto id_sym = systems::System<double>::ToSymbolic(id);
+  EXPECT_EQ(id_sym->get_input_port_estimated_state().size(), num_states);
+  EXPECT_TRUE(id_sym->is_pure_gravity_compensation());
 }
 
 }  // namespace

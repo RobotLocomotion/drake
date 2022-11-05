@@ -29,7 +29,7 @@ namespace trajectories {
  * Note that the quarternion value is in w, x, y, z order when represented as
  * a Vector4.
  *
- * @tparam_default_scalars
+ * @tparam_default_scalar
  */
 template<typename T>
 class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {

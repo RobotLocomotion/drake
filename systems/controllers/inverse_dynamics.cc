@@ -1,5 +1,6 @@
 #include "drake/systems/controllers/inverse_dynamics.h"
 
+#include <utility>
 #include <vector>
 
 using drake::multibody::MultibodyForces;
@@ -10,21 +11,30 @@ namespace systems {
 namespace controllers {
 
 template <typename T>
-InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
-                                    const InverseDynamicsMode mode)
-    : multibody_plant_(plant),
+InverseDynamics<T>::InverseDynamics(
+    std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
+    const MultibodyPlant<T>* plant, const InverseDynamicsMode mode)
+    : LeafSystem<T>(SystemTypeTag<InverseDynamics>{}),
+      owned_plant_(std::move(owned_plant)),
+      multibody_plant_(owned_plant_ ? owned_plant_.get() : plant),
       mode_(mode),
-      q_dim_(plant->num_positions()),
-      v_dim_(plant->num_velocities()) {
-  DRAKE_DEMAND(multibody_plant_ != nullptr);
+      q_dim_(multibody_plant_->num_positions()),
+      v_dim_(multibody_plant_->num_velocities()) {
+  if (owned_plant_) {
+    plant = owned_plant_.get();
+  }
+  DRAKE_DEMAND(plant != nullptr);
   DRAKE_DEMAND(plant->is_finalized());
 
   input_port_index_state_ =
       this->DeclareInputPort(kUseDefaultName, kVectorValued, q_dim_ + v_dim_)
           .get_index();
+  // We declare the all_input_ports ticket so that GetDirectFeedthrough does
+  // not try to cast to Symbolic for feedthrough evaluation.
   output_port_index_force_ =
       this->DeclareVectorOutputPort(kUseDefaultName, v_dim_,
-                                    &InverseDynamics<T>::CalcOutputForce)
+                                    &InverseDynamics<T>::CalcOutputForce,
+                                    {this->all_input_ports_ticket()})
           .get_index();
 
   auto multibody_plant_context = multibody_plant_->CreateDefaultContext();
@@ -61,6 +71,40 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
             .get_index();
   }
 }
+
+template <typename T>
+InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
+                                    const InverseDynamicsMode mode)
+    : InverseDynamics(nullptr, plant, mode) {}
+
+template <typename T>
+InverseDynamics<T>::InverseDynamics(
+    std::unique_ptr<multibody::MultibodyPlant<T>> plant,
+    const InverseDynamicsMode mode)
+    : InverseDynamics(std::move(plant), nullptr, mode) {}
+
+namespace {
+
+template <typename T, typename U>
+std::unique_ptr<multibody::MultibodyPlant<T>> ConvertOwnedPlant(
+    const std::unique_ptr<multibody::MultibodyPlant<U>>& owned_plant) {
+  if (!owned_plant) {
+    throw(
+        std::runtime_error("To use scalar conversion, you must use the "
+                           "constructor which takes ownership of the plant."));
+  }
+  return systems::System<U>::template ToScalarType<T>(*owned_plant);
+}
+
+}  // namespace
+
+template <typename T>
+template <typename U>
+InverseDynamics<T>::InverseDynamics(const InverseDynamics<U>& other)
+    : InverseDynamics(ConvertOwnedPlant<T, U>(other.owned_plant_),
+                      other.is_pure_gravity_compensation()
+                          ? kGravityCompensation
+                          : kInverseDynamics) {}
 
 template <typename T>
 InverseDynamics<T>::~InverseDynamics() = default;
@@ -118,10 +162,9 @@ void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
   }
 }
 
-template class InverseDynamics<double>;
-// TODO(siyuan) template on autodiff.
-// template class InverseDynamics<AutoDiffXd>;
-
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::controllers::InverseDynamics)

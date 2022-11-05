@@ -17,7 +17,7 @@ namespace trajectories {
 /// segments of time (delimited by `breaks`) to implement a trajectory that
 /// is represented by simpler logic in each segment or "piece".
 ///
-/// @tparam_default_scalars
+/// @tparam_default_scalar
 template <typename T>
 class PiecewiseTrajectory : public Trajectory<T> {
  public:

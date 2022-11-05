@@ -64,15 +64,9 @@ PYBIND11_MODULE(controllers, m) {
           doc.DynamicProgrammingOptions.assume_non_continuous_states_are_fixed
               .doc);
 
+  // TODO(russt): Bind all default scalars.
   py::class_<InverseDynamics<double>, LeafSystem<double>> idyn(
       m, "InverseDynamics", doc.InverseDynamics.doc);
-  idyn  // BR
-      .def(py::init<const multibody::MultibodyPlant<double>*,
-               InverseDynamics<double>::InverseDynamicsMode>(),
-          py::arg("plant"), py::arg("mode"), doc.InverseDynamics.ctor.doc)
-      .def("is_pure_gravity_compensation",
-          &InverseDynamics<double>::is_pure_gravity_compensation,
-          doc.InverseDynamics.is_pure_gravity_compensation.doc);
 
   py::enum_<InverseDynamics<double>::InverseDynamicsMode>(  // BR
       idyn, "InverseDynamicsMode")
@@ -83,6 +77,17 @@ PYBIND11_MODULE(controllers, m) {
           doc.InverseDynamics.InverseDynamicsMode.kGravityCompensation.doc)
       .export_values();
 
+  idyn  // BR
+      .def(py::init<const multibody::MultibodyPlant<double>*,
+               InverseDynamics<double>::InverseDynamicsMode>(),
+          py::arg("plant"),
+          py::arg("mode") = InverseDynamics<double>::kInverseDynamics,
+          doc.InverseDynamics.ctor.doc_unowned_plant)
+      .def("is_pure_gravity_compensation",
+          &InverseDynamics<double>::is_pure_gravity_compensation,
+          doc.InverseDynamics.is_pure_gravity_compensation.doc);
+
+  // TODO(russt): Bind all default scalars.
   // TODO(eric.cousineau): Expose multiple inheritance from
   // StateFeedbackControllerInterface once #9243 is resolved.
   py::class_<InverseDynamicsController<double>, Diagram<double>>(

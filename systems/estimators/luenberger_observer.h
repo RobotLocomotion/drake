@@ -32,7 +32,7 @@ namespace estimators {
 /// @endsystem
 ///
 /// @ingroup estimator_systems
-/// @tparam_default_scalars
+/// @tparam_default_scalar
 template <typename T>
 class LuenbergerObserver final: public LeafSystem<T> {
  public:
