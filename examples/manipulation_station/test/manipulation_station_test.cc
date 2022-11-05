@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/sensors/image.h"
@@ -22,8 +23,11 @@ using Eigen::Vector2d;
 using Eigen::VectorXd;
 using geometry::internal::DummyRenderEngine;
 using math::RigidTransform;
+using multibody::ExternallyAppliedSpatialForce;
 using multibody::RevoluteJoint;
+using multibody::SpatialForce;
 using systems::BasicVector;
+using systems::Context;
 
 // Calculate the spatial inertia of the set S of bodies that make up the gripper
 // about Go (the gripper frame's origin), expressed in the gripper frame G.
@@ -103,6 +107,63 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia() {
   return M_CGo_G;
 }
 
+void SetArbitraryState(const ManipulationStation<double>& station,
+                       Context<double>* context,
+                       const VectorXd& iiwa_position,
+                       const VectorXd& iiwa_velocity) {
+  station.SetIiwaPosition(context, iiwa_position);
+  station.SetIiwaVelocity(context, iiwa_velocity);
+
+  station.GetInputPort("iiwa_position").FixValue(context, iiwa_position);
+  station.GetInputPort("iiwa_feedforward_torque").FixValue(context,
+                                                           VectorXd::Zero(7));
+  double wsg_position = station.GetWsgPosition(*context);
+  station.GetInputPort("wsg_position").FixValue(context, wsg_position);
+  station.GetInputPort("wsg_force_limit").FixValue(context, 40.);
+
+  // Set desired position to actual position and the desired velocity to the
+  // actual velocity.
+  const auto& position_to_state = dynamic_cast<
+      const systems::StateInterpolatorWithDiscreteDerivative<double>&>(
+      station.GetSubsystemByName("desired_state_from_position"));
+  auto& position_to_state_context =
+      station.GetMutableSubsystemContext(position_to_state, context);
+  position_to_state.set_initial_state(&position_to_state_context, iiwa_position,
+                                      iiwa_velocity);
+  // Ensure that integral terms are zero.
+  context->get_mutable_continuous_state_vector().SetZero();
+}
+
+VectorXd GetNextIiwaVelocity(const ManipulationStation<double>& station,
+                             Context<double>* context,
+                             const std::string& iiwa_joint_name) {
+  auto next_state = station.AllocateDiscreteVariables();
+  station.CalcForcedDiscreteVariableUpdate(*context, next_state.get());
+
+  const auto& plant = station.get_multibody_plant();
+  const auto& base_joint =
+      plant.GetJointByName<multibody::RevoluteJoint>(iiwa_joint_name);
+  const int iiwa_velocity_start =
+      plant.num_positions() + base_joint.velocity_start();
+  return station.GetSubsystemDiscreteValues(plant, *next_state).value()
+      .segment<7>(iiwa_velocity_start);
+}
+
+void ApplyExternalForceToManipulator(ManipulationStation<double>* station,
+                                     Context<double>* context) {
+    DRAKE_DEMAND(station != nullptr);
+    DRAKE_DEMAND(context != nullptr);
+    auto& plant = station->get_multibody_plant();
+    std::vector<ExternallyAppliedSpatialForce<double>> external_forces(1);
+    external_forces[0].F_Bq_W = SpatialForce<double>(
+        Vector3<double>::Zero(), Vector3<double>::UnitZ() * 10.);
+    external_forces[0].p_BoBq_B.setZero();
+    external_forces[0].body_index = plant.GetBodyByName("body").index();
+
+    station->GetInputPort("applied_spatial_force").FixValue(
+        context, external_forces);
+}
+
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
   station.SetupManipulationClassStation();
@@ -155,6 +216,11 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                               station.GetOutputPort("iiwa_position_commanded")
                                   .Eval<BasicVector<double>>(*context)
                                   .get_value()));
+  // Check that the additional input port exists and is spelled correctly.
+  DRAKE_EXPECT_NO_THROW(station.GetInputPort("applied_spatial_force"));
+
+  // Confirm that iiwa_torque_commanded doesn't depend on applied_spatial_force.
+  ApplyExternalForceToManipulator(&station, context.get());
 
   // Check feedforward_torque command.
   VectorXd tau_with_no_ff = station.GetOutputPort("iiwa_torque_commanded")
@@ -230,37 +296,13 @@ GTEST_TEST(ManipulationStationTest, CheckDynamics) {
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
+  const VectorXd iiwa_position = VectorXd::LinSpaced(7, 0.735, 0.983);
+  const VectorXd iiwa_velocity = VectorXd::LinSpaced(7, -1.23, 0.456);
+  SetArbitraryState(station, context.get(), iiwa_position, iiwa_velocity);
 
   // Expect continuous state from the integral term in the PID from the
   // inverse dynamics controller.
   EXPECT_EQ(context->num_continuous_states(), 7);
-
-  const auto& plant = station.get_multibody_plant();
-
-  const VectorXd iiwa_position = VectorXd::LinSpaced(7, 0.735, 0.983);
-  const VectorXd iiwa_velocity = VectorXd::LinSpaced(7, -1.23, 0.456);
-  station.SetIiwaPosition(context.get(), iiwa_position);
-  station.SetIiwaVelocity(context.get(), iiwa_velocity);
-
-  station.GetInputPort("iiwa_position").FixValue(context.get(),
-                        iiwa_position);
-  station.GetInputPort("iiwa_feedforward_torque").FixValue(
-      context.get(), VectorXd::Zero(7));
-  double wsg_position = station.GetWsgPosition(*context);
-  station.GetInputPort("wsg_position").FixValue(context.get(), wsg_position);
-  station.GetInputPort("wsg_force_limit").FixValue(context.get(), 40.);
-
-  // Set desired position to actual position and the desired velocity to the
-  // actual velocity.
-  const auto& position_to_state = dynamic_cast<
-      const systems::StateInterpolatorWithDiscreteDerivative<double>&>(
-      station.GetSubsystemByName("desired_state_from_position"));
-  auto& position_to_state_context =
-      station.GetMutableSubsystemContext(position_to_state, context.get());
-  position_to_state.set_initial_state(&position_to_state_context, iiwa_position,
-                                      iiwa_velocity);
-  // Ensure that integral terms are zero.
-  context->get_mutable_continuous_state_vector().SetZero();
 
   // Check that iiwa_torque_external == 0 (no contact).
   EXPECT_TRUE(station.GetOutputPort("iiwa_torque_external")
@@ -268,22 +310,40 @@ GTEST_TEST(ManipulationStationTest, CheckDynamics) {
                   .get_value()
                   .isZero());
 
-  auto next_state = station.AllocateDiscreteVariables();
-  station.CalcForcedDiscreteVariableUpdate(*context, next_state.get());
+  const VectorXd next_velocity = GetNextIiwaVelocity(station,
+                                                     context.get(),
+                                                     "iiwa_joint_1");
+  // Note: This tolerance could be much smaller if the wsg was not attached.
+  const double kTolerance = 1e-4;  // rad/sec.
 
   // Check that vdot ≈ 0 by checking that next velocity ≈ velocity.
-  const auto& base_joint =
-      plant.GetJointByName<multibody::RevoluteJoint>("iiwa_joint_1");
-  const int iiwa_velocity_start =
-      plant.num_positions() + base_joint.velocity_start();
-  VectorXd next_velocity =
-      station.GetSubsystemDiscreteValues(plant, *next_state)
-          .value()
-          .segment<7>(iiwa_velocity_start);
+  EXPECT_TRUE(CompareMatrices(iiwa_velocity, next_velocity, kTolerance));
+}
+
+// Confirm that `applied_spatial_force` impacts the plant dynamics
+// run experiment again to show that τ_external causes vdot ≠ vdot_desired
+GTEST_TEST(ManipulationStationTest, CheckDynamicsUnderExternallyAppliedForce) {
+  const double kTimeStep = 0.002;
+  ManipulationStation<double> station(kTimeStep);
+  station.SetupManipulationClassStation();
+  station.Finalize();
+
+  auto context = station.CreateDefaultContext();
+  const VectorXd iiwa_position = VectorXd::LinSpaced(7, 0.735, 0.983);
+  const VectorXd zero_iiwa_velocity = VectorXd::Zero(7);
+  SetArbitraryState(station, context.get(), iiwa_position, zero_iiwa_velocity);
+  ApplyExternalForceToManipulator(&station, context.get());
+
+  const VectorXd next_velocity = GetNextIiwaVelocity(station,
+                                                     context.get(),
+                                                     "iiwa_joint_1");
 
   // Note: This tolerance could be much smaller if the wsg was not attached.
   const double kTolerance = 1e-4;  // rad/sec.
-  EXPECT_TRUE(CompareMatrices(iiwa_velocity, next_velocity, kTolerance));
+
+  // The next_velocity is expected to be non-zero due to
+  // the applied external forces.
+  EXPECT_FALSE(CompareMatrices(zero_iiwa_velocity, next_velocity, kTolerance));
 }
 
 GTEST_TEST(ManipulationStationTest, CheckWsg) {

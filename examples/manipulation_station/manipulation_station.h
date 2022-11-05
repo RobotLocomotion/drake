@@ -55,6 +55,7 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// - iiwa_feedforward_torque (optional)
 /// - wsg_position
 /// - wsg_force_limit (optional)
+/// - <b style="color:orange">applied_spatial_force (optional)</b>
 /// output_ports:
 /// - iiwa_position_commanded
 /// - iiwa_position_measured
@@ -93,7 +94,8 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// errors per issue https://github.com/RobotLocomotion/drake/issues/12125.
 ///
 /// Consider the robot dynamics
-///   M(q)vdot + C(q,v)v = τ_g(q) + τ_commanded + τ_joint_friction + τ_external,
+///   M(q)vdot + C(q,v)v = τ_g(q) + τ_commanded + τ_joint_friction +
+///                        τ_external + τ_applied_spatial_force,
 /// where q == position, v == velocity, and τ == torque.
 ///
 /// This model of the IIWA internal controller in the FRI software's
