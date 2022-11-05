@@ -175,7 +175,7 @@ class CompliantContactManager final
 
   // Eval version of CalcDiscreteContactPairs().
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
-      const systems::Context<T>& context) const override;
+      const systems::Context<T>& context) const;
 
   // Computes all continuous forces in the MultibodyPlant model. Joint limits
   // are not included as continuous compliant forces but rather as constraints

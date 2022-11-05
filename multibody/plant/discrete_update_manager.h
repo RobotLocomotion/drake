@@ -8,7 +8,6 @@
 
 #include "drake/common/scope_exit.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
@@ -135,11 +134,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     DoCalcDiscreteValues(context, updates);
   }
 
-  virtual const std::vector<internal::DiscreteContactPair<T>>&
-  EvalDiscreteContactPairs(const systems::Context<T>&) const {
-    throw std::runtime_error("TODO: provide default implementation.");
-  }
-
   /* Publicly exposed MultibodyPlant private/protected methods.
    @{ */
 
@@ -222,9 +216,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   void CalcForceElementsContribution(const drake::systems::Context<T>& context,
                                      MultibodyForces<T>* forces) const;
-
-  const geometry::QueryObject<T>& EvalGeometryQueryInput(
-      const systems::Context<T>& context, std::string_view caller) const;
 
   // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
   //  geometries.
