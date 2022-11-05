@@ -73,8 +73,10 @@ const auto kTestRgbaImagePath = FindResourceOrThrow(
     "drake/geometry/render_gltf_client/test/test_rgba_8U.png");
 const auto kTestDepthImage32FPath = FindResourceOrThrow(
     "drake/geometry/render_gltf_client/test/test_depth_32F.tiff");
-const auto kTestDepthImage16UPath = FindResourceOrThrow(
+const auto kTestDepthImage16UTiffPath = FindResourceOrThrow(
     "drake/geometry/render_gltf_client/test/test_depth_16U.tiff");
+const auto kTestDepthImage16UPngPath = FindResourceOrThrow(
+    "drake/geometry/render_gltf_client/test/test_depth_16U.png");
 const auto kTestLabelImagePath = FindResourceOrThrow(
     "drake/geometry/render_gltf_client/test/test_label_16I.png");
 
@@ -559,26 +561,33 @@ TEST_F(RenderClientTest, LoadColorImageBad) {
 }
 
 TEST_F(RenderClientTest, LoadDepth32FGood) {
-  // Loading a single channel 32 bit TIFF file should work as expected.
+  // Loading a single channel 32-bit TIFF file should work as expected.
   ImageDepth32F depth(kTestImageWidth, kTestImageHeight, 0);
   RenderClient::LoadDepthImage(kTestDepthImage32FPath, &depth);
   EXPECT_EQ(depth, CreateTestDepthImage());
 }
 
-TEST_F(RenderClientTest, LoadDepth16IGood) {
-  // Loading a single channel 16 bit TIFF file should work as expected.
+TEST_F(RenderClientTest, LoadDepth16UTiffGood) {
+  // Loading a single channel 16-bit TIFF file should work as expected.
   ImageDepth32F depth(kTestImageWidth, kTestImageHeight, 0);
-  RenderClient::LoadDepthImage(kTestDepthImage16UPath, &depth);
+  RenderClient::LoadDepthImage(kTestDepthImage16UTiffPath, &depth);
+  EXPECT_EQ(depth, CreateTestDepthImage());
+}
+
+TEST_F(RenderClientTest, LoadDepth16UPngGood) {
+  // Loading a single channel 16-bit PNG file should work as expected.
+  ImageDepth32F depth(kTestImageWidth, kTestImageHeight, 0);
+  RenderClient::LoadDepthImage(kTestDepthImage16UPngPath, &depth);
   EXPECT_EQ(depth, CreateTestDepthImage());
 }
 
 TEST_F(RenderClientTest, LoadDepthImageBad) {
   ImageDepth32F ignored(kTestImageWidth, kTestImageHeight, 0);
 
-  // Failure case 1: no such file.
+  // Failure case 1: invalid extension.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      RenderClient::LoadDepthImage("/no/such/file", &ignored),
-      ".*cannot load.*/no/such/file.*");
+      RenderClient::LoadDepthImage("/no/such/file_ext.foo", &ignored),
+      "Unsupported file extension");
 
   // Failure case 2: not a valid image file.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -598,7 +607,7 @@ TEST_F(RenderClientTest, LoadDepthImageBad) {
 }
 
 TEST_F(RenderClientTest, LoadLabelImageGood) {
-  // Loading a 16 bit label image file should work as expected.
+  // Loading a 16-bit label image file should work as expected.
   ImageLabel16I label(kTestImageWidth, kTestImageHeight, 0);
   RenderClient::LoadLabelImage(kTestLabelImagePath, &label);
   EXPECT_EQ(label, CreateTestLabelImage());
