@@ -70,7 +70,7 @@ struct AccelerationsDueToExternalForcesCache {
 // TODO(amcastro-tri): Retire code from MultibodyPlant as this contact manager
 // replaces all the contact related capabilities, per #16106.
 //
-// @tparam_default_scalar
+// @tparam_nonsymbolic_scalar
 template <typename T>
 class CompliantContactManager final
     : public internal::DiscreteUpdateManager<T> {
@@ -210,15 +210,9 @@ class CompliantContactManager final
   std::unique_ptr<SapDriver<T>> sap_driver_;
 };
 
-template <>
-void CompliantContactManager<symbolic::Expression>::
-    AppendDiscreteContactPairsForHydroelasticContact(
-        const drake::systems::Context<symbolic::Expression>&,
-        std::vector<DiscreteContactPair<symbolic::Expression>>*) const;
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::multibody::internal::CompliantContactManager);
