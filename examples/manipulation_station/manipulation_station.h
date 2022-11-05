@@ -55,6 +55,7 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// - iiwa_feedforward_torque (optional)
 /// - wsg_position
 /// - wsg_force_limit (optional)
+/// - applied_spatial_force (optional)
 /// output_ports:
 /// - iiwa_position_commanded
 /// - iiwa_position_measured

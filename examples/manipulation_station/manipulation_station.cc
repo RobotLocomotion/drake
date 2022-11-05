@@ -726,6 +726,8 @@ void ManipulationStation<T>::Finalize(
   builder.ExportOutput(scene_graph_->get_query_output_port(),
                        "geometry_query");
 
+  builder.ExportInput(plant_->get_applied_spatial_force_input_port(),
+                      "applied_spatial_force");
   builder.ExportOutput(plant_->get_contact_results_output_port(),
                        "contact_results");
   builder.ExportOutput(plant_->get_state_output_port(),
