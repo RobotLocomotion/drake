@@ -22,7 +22,7 @@ output_ports:
 - y0
 @endsystem
 
-@tparam default_scalar
+@tparam_default_scalar
 */
 template <typename T>
 class ExternallyAppliedSpatialForceMultiplexer final
