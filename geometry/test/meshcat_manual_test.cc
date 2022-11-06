@@ -339,8 +339,6 @@ Open up your browser to the URL above.
     std::cout << "Now we'll run the simulation...\n"
               << "- You should see the robot fall down and hit the table\n"
               << "- You should see the contact force vectors (when it hits)\n"
-              << "- You will also see large forces near the wrist until we "
-                 "resolve #15965\n"
               << std::endl;
 
     systems::Simulator<double> simulator(*diagram, std::move(context));
