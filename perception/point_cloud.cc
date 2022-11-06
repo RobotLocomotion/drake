@@ -415,15 +415,12 @@ PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
 
 PointCloud PointCloud::VoxelizedDownSample(
     const double voxel_size, const bool parallelize) const {
-  // This is a simple, narrow, no-frills implementation of the
-  // voxel_down_sample algorithm in Open3d and/or the down-sampling by a
-  // VoxelGrid filter in PCL.
   DRAKE_THROW_UNLESS(has_xyzs());
   DRAKE_THROW_UNLESS(voxel_size > 0);
 
   // Create a dynamic-spatial-hashed voxel grid (DSHVG) to bin points. While a
   // DSHVG usually has each dynamic "chunk" contain multiple voxels, by setting
-  // the chunk size to (voxel_size, 1, 1, 1) each chunk contain a single voxel
+  // the chunk size to (voxel_size, 1, 1, 1) each chunk contains a single voxel
   // and the whole DSHVG behaves as a sparse voxel grid.
   const common_robotics_utilities::voxel_grid::GridSizes chunk_sizes(
       voxel_size, INT64_C(1), INT64_C(1), INT64_C(1));

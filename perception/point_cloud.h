@@ -333,6 +333,7 @@ class PointCloud final {
   /// non-finite xyz values are ignored. All other fields (e.g. rgbs, normals,
   /// and descriptors) with finite values will also be averaged across the
   /// points in a voxel. @p parallelize enables OpenMP parallelization.
+  /// Equivalent to Open3d's voxel_down_sample or PCL's VoxelGrid filter.
   /// @throws std::exception if has_xyzs() is false.
   /// @throws std::exception if voxel_size <= 0.
   PointCloud VoxelizedDownSample(
