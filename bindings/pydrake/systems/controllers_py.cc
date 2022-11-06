@@ -12,6 +12,7 @@
 #include "drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/joint_stiffness_controller.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -118,6 +119,27 @@ PYBIND11_MODULE(controllers, m) {
           &InverseDynamicsController<double>::get_multibody_plant_for_control,
           py_rvp::reference_internal,
           doc.InverseDynamicsController.get_multibody_plant_for_control.doc);
+
+  // TODO(russt): Bind all scalar types.
+  py::class_<JointStiffnessController<double>, LeafSystem<double>>(
+      m, "JointStiffnessController", doc.JointStiffnessController.doc)
+      .def(py::init<const multibody::MultibodyPlant<double>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
+          py::arg("plant"), py::arg("kp"), py::arg("kd"),
+          doc.JointStiffnessController.ctor.doc_unowned_plant)
+      .def("get_input_port_estimated_state",
+          &JointStiffnessController<double>::get_input_port_estimated_state,
+          py_rvp::reference_internal,
+          doc.JointStiffnessController.get_input_port_estimated_state.doc)
+      .def("get_input_port_desired_state",
+          &JointStiffnessController<double>::get_input_port_desired_state,
+          py_rvp::reference_internal,
+          doc.JointStiffnessController.get_input_port_desired_state.doc)
+      .def("get_output_port_force",
+          &JointStiffnessController<double>::get_output_port_force,
+          py_rvp::reference_internal,
+          doc.JointStiffnessController.get_output_port_force.doc);
 
   py::class_<PidControlledSystem<double>, Diagram<double>>(
       m, "PidControlledSystem", doc.PidControlledSystem.doc)
