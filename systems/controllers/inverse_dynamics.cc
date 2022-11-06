@@ -79,28 +79,13 @@ InverseDynamics<T>::InverseDynamics(
     const InverseDynamicsMode mode)
     : InverseDynamics(std::move(plant), nullptr, mode) {}
 
-namespace {
-
-template <typename T, typename U>
-std::unique_ptr<multibody::MultibodyPlant<T>> ConvertOwnedPlant(
-    const std::unique_ptr<multibody::MultibodyPlant<U>>& owned_plant) {
-  if (!owned_plant) {
-    throw(
-        std::runtime_error("To use scalar conversion, you must use the "
-                           "constructor which takes ownership of the plant."));
-  }
-  return systems::System<U>::template ToScalarType<T>(*owned_plant);
-}
-
-}  // namespace
-
 template <typename T>
 template <typename U>
 InverseDynamics<T>::InverseDynamics(const InverseDynamics<U>& other)
-    : InverseDynamics(ConvertOwnedPlant<T, U>(other.owned_plant_),
-                      other.is_pure_gravity_compensation()
-                          ? kGravityCompensation
-                          : kInverseDynamics) {}
+    : InverseDynamics(
+          systems::System<U>::template ToScalarType<T>(*other.plant_),
+          other.is_pure_gravity_compensation() ? kGravityCompensation
+                                               : kInverseDynamics) {}
 
 template <typename T>
 InverseDynamics<T>::~InverseDynamics() = default;

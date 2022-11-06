@@ -217,22 +217,31 @@ GTEST_TEST(AdditionalInverseDynamicsTest, ScalarConversion) {
   mbp->Finalize();
   const int num_states = mbp->num_multibody_states();
 
-  InverseDynamics<double> id_without_ownership(mbp.get());
-  DRAKE_EXPECT_THROWS_MESSAGE(id_without_ownership.ToAutoDiffXd(),
-                              ".*constructor which takes ownership.*");
+  InverseDynamics<double> id(mbp.get());
+  // Test AutoDiffXd.
+  auto id_ad = systems::System<double>::ToAutoDiffXd(id);
+  // Check the multibody plant.
+  EXPECT_EQ(id_ad->get_input_port_estimated_state().size(), num_states);
+  // Check the mode.
+  EXPECT_FALSE(id_ad->is_pure_gravity_compensation());
 
-  InverseDynamics<double> id(std::move(mbp),
+  // Test Expression.
+  auto id_sym = systems::System<double>::ToSymbolic(id);
+  EXPECT_EQ(id_sym->get_input_port_estimated_state().size(), num_states);
+  EXPECT_FALSE(id_sym->is_pure_gravity_compensation());
+
+  InverseDynamics<double> id_with_ownership(std::move(mbp),
                              InverseDynamics<double>::kGravityCompensation);
 
   // Test AutoDiffXd.
-  auto id_ad = systems::System<double>::ToAutoDiffXd(id);
+  id_ad = systems::System<double>::ToAutoDiffXd(id_with_ownership);
   // Check the multibody plant.
   EXPECT_EQ(id_ad->get_input_port_estimated_state().size(), num_states);
   // Check the mode.
   EXPECT_TRUE(id_ad->is_pure_gravity_compensation());
 
   // Test Expression.
-  auto id_sym = systems::System<double>::ToSymbolic(id);
+  id_sym = systems::System<double>::ToSymbolic(id_with_ownership);
   EXPECT_EQ(id_sym->get_input_port_estimated_state().size(), num_states);
   EXPECT_TRUE(id_sym->is_pure_gravity_compensation());
 }

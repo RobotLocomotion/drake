@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":finite_horizon_linear_quadratic_regulator",
         ":inverse_dynamics",
         ":inverse_dynamics_controller",
+        ":joint_stiffness_controller",
         ":linear_model_predictive_controller",
         ":linear_quadratic_regulator",
         ":pid_controlled_system",
@@ -88,6 +89,16 @@ drake_cc_library(
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:demultiplexer",
         "//systems/primitives:pass_through",
+    ],
+)
+
+drake_cc_library(
+    name = "joint_stiffness_controller",
+    srcs = ["joint_stiffness_controller.cc"],
+    hdrs = ["joint_stiffness_controller.h"],
+    deps = [
+        "//multibody/plant",
+        "//systems/framework",
     ],
 )
 
@@ -222,6 +233,21 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
         "//systems/controllers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "joint_stiffness_controller_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":joint_stiffness_controller",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
     ],
 )
 

@@ -84,8 +84,6 @@ class InverseDynamicsController final
    *  - The model is not fully actuated.
    *  - Vector kp, ki and kd do not all have the same size equal to the number
    *    of generalized positions.
-   *
-   * @pydrake_mkdoc_identifier{5args_referenced_plant}
    */
   InverseDynamicsController(
       const multibody::MultibodyPlant<T>& plant,
@@ -98,7 +96,7 @@ class InverseDynamicsController final
    * Constructs an inverse dynamics controller and takes the ownership of the
    * input `plant`.
    *
-   * @pydrake_mkdoc_identifier{5args_owned_plant}
+   * @exclude_from_pydrake_mkdoc{This overload is not bound.}
    */
   InverseDynamicsController(std::unique_ptr<multibody::MultibodyPlant<T>> plant,
                             const VectorX<double>& kp,
