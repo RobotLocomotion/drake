@@ -15,4 +15,7 @@ def lcm_repository(
         sha256 = "6f519938de3dc57878e8de7618f21a254e99245ae9ebeb4699d425628e4818a5",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
+        patches = [
+            ":patches/python-3.11.patch",
+        ],
     )
