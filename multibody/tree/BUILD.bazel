@@ -604,13 +604,13 @@ drake_cc_googletest(
     ],
 )
 
-# drake_cc_googletest(
-#     name = "quaternion_floating_joint_test",
-#     deps = [
-#         ":tree",
-#         "//common/test_utilities:expect_no_throw",
-#     ],
-# )
+drake_cc_googletest(
+    name = "quaternion_floating_joint_test",
+    deps = [
+        ":tree",
+        "//common/test_utilities:expect_no_throw",
+    ],
+)
 
 drake_cc_googletest(
     name = "joint_actuator_test",

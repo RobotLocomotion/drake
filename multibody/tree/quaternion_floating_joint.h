@@ -76,18 +76,14 @@ class QuaternionFloatingJoint final : public Joint<T> {
                   angular_damping, translational_damping, translational_damping,
                   translational_damping)
                      .finished(),
-                 VectorX<double>::Constant(
-                     7, -std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     7, std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     6, -std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     6, std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     6, -std::numeric_limits<double>::infinity()),
-                 VectorX<double>::Constant(
-                     6, std::numeric_limits<double>::infinity())) {
+                 Vector<double, 7>::Constant(
+                     -std::numeric_limits<double>::infinity()),
+                 Vector<double, 7>::Constant(
+                     std::numeric_limits<double>::infinity()),
+                 Vector6d::Constant(-std::numeric_limits<double>::infinity()),
+                 Vector6d::Constant(std::numeric_limits<double>::infinity()),
+                 Vector6d::Constant(-std::numeric_limits<double>::infinity()),
+                 Vector6d::Constant(std::numeric_limits<double>::infinity())) {
     DRAKE_THROW_UNLESS(angular_damping >= 0);
     DRAKE_THROW_UNLESS(translational_damping >= 0);
   }
@@ -204,7 +200,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   ///   The desired pose of frame M in F to be stored in `context`.
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& set_pose(
-      systems::Context<T>* context, const math::RigidTransform<T>& X_FM) {
+      systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
     get_mobilizer()->set_position(context, X_FM.translation());
     get_mobilizer()->set_quaternion(context, X_FM.rotation().ToQuaternion());
     return *this;

@@ -52,6 +52,8 @@ DEFINE_double(bodyB_coef_kinetic_friction, 0.5,
 DEFINE_bool(is_inclined_plane_half_space, true,
             "Is inclined plane a half-space (true) or box (false).");
 DEFINE_int32(num_bodies, 8, "number of free bodies");
+DEFINE_double(simulation_interval, 1.0,
+              "Interval between actions in the simulation.");
 
 using drake::multibody::MultibodyPlant;
 
@@ -182,18 +184,18 @@ int do_main() {
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.AdvanceTo(1);
+  simulator.AdvanceTo(FLAGS_simulation_interval);
 
   for (int i = 0; i < FLAGS_num_bodies - 1; ++i) {
     auto& joint = plant.GetJointByName<QuaternionFloatingJoint>(
         fmt::format("{}_{}", FLAGS_num_bodies - i - 1, FLAGS_num_bodies - i));
     joint.Unlock(&plant_context);
-    simulator.AdvanceTo(i + 2);
+    simulator.AdvanceTo((i + 2) * FLAGS_simulation_interval);
   }
 
   bodyB.Unlock(&plant_context);
 
-  simulator.AdvanceTo(FLAGS_num_bodies + 12);
+  simulator.AdvanceTo((FLAGS_num_bodies + 1) * FLAGS_simulation_interval);
 
   return 0;
 }
