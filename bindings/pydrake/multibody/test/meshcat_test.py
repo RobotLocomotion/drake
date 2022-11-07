@@ -79,7 +79,7 @@ class TestMeshcat(unittest.TestCase):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         parser = Parser(plant)
-        parser.AddModelFromFile(acrobot_file)
+        parser.AddModels(acrobot_file)
         plant.Finalize()
 
         # Construct a sliders system, using every available option.

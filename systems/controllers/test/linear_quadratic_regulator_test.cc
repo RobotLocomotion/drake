@@ -323,7 +323,7 @@ GTEST_TEST(TestLqr, AcrobotTest) {
 
   // Confirm that I get the same result via MultibodyPlant.
   multibody::MultibodyPlant<double> mbp(0.0);
-  multibody::Parser(&mbp).AddModelFromFile(
+  multibody::Parser(&mbp).AddModels(
       FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"));
   mbp.Finalize();
   auto mbp_context = mbp.CreateDefaultContext();

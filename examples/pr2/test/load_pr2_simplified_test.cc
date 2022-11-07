@@ -17,7 +17,7 @@ GTEST_TEST(LoadPr2SimplifiedTest, TestIfPr2SimplifiedLoads) {
   const std::string& pathname = FindResourceOrThrow(
       "drake/examples/pr2/models/pr2_description/urdf/pr2_simplified.urdf");
   multibody::Parser parser(&plant);
-  parser.AddModelFromFile(pathname);
+  parser.AddModels(pathname);
   plant.Finalize();
 
   EXPECT_EQ(plant.num_actuators(), 28);

@@ -246,7 +246,7 @@ std::unique_ptr<systems::LinearSystem<double>> MakeLinearizedCartPole(
       "drake/examples/multibody/cart_pole/cart_pole.sdf");
 
   MultibodyPlant<double> plant(time_step);
-  Parser(&plant).AddModelFromFile(sdf_file);
+  Parser(&plant).AddModels(sdf_file);
   plant.Finalize();
 
   auto context = plant.CreateDefaultContext();

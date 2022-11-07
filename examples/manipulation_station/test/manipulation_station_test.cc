@@ -43,7 +43,7 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia() {
   const std::string& wsg_sdf_path = FindResourceOrThrow(
       "drake/manipulation/models/wsg_50_description/sdf/"
       "schunk_wsg_50_no_tip.sdf");
-  parser.AddModelFromFile(wsg_sdf_path);
+  parser.AddModels(wsg_sdf_path);
   plant.Finalize();
   const std::string gripper_body_frame_name = "body";
   const auto& frame = plant.GetFrameByName(gripper_body_frame_name);

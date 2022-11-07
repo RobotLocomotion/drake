@@ -56,7 +56,7 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   // to interact with that SceneGraph).
   MultibodyPlant<double> acrobot(0.0);
   Parser parser(&acrobot);
-  parser.AddModelFromFile(full_name);
+  parser.AddModels(full_name);
   // We are done defining the model.
   acrobot.Finalize();
 
@@ -103,7 +103,7 @@ int do_main() {
       "drake/multibody/benchmarks/acrobot/acrobot.sdf";
   const std::string full_name = FindResourceOrThrow(relative_name);
   Parser parser(&acrobot);
-  parser.AddModelFromFile(full_name);
+  parser.AddModels(full_name);
 
   // We are done defining the model.
   acrobot.Finalize();

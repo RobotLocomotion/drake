@@ -50,7 +50,7 @@ class TestMeldis(unittest.TestCase):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         parser = Parser(plant=plant)
-        parser.AddModelFromFile(FindResourceOrThrow(sdf_filename))
+        parser.AddModels(FindResourceOrThrow(sdf_filename))
         plant.Finalize()
         DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
                                      params=visualizer_params, lcm=lcm)
@@ -165,7 +165,7 @@ class TestMeldis(unittest.TestCase):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
         parser = Parser(plant=plant)
-        parser.AddModelFromFile(sdf_file)
+        parser.AddModels(sdf_file)
         body1 = plant.GetBodyByName("body1")
         body2 = plant.GetBodyByName("body2")
         plant.AddJoint(PrismaticJoint(

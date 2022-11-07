@@ -26,7 +26,7 @@ std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
 
   auto plant = std::make_unique<MultibodyPlant<double>>(0.);
   Parser parser(plant.get());
-  parser.AddModelFromFile(drake::FindResourceOrThrow(file_path));
+  parser.AddModels(drake::FindResourceOrThrow(file_path));
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("iiwa_link_0"));
   if (finalize) {
     plant->Finalize();
@@ -109,8 +109,8 @@ void AddIiwaWithSchunk(const RigidTransformd& X_7S,
   const std::string file_path =
       "drake/manipulation/models/iiwa_description/sdf/"
       "iiwa14_no_collision.sdf";
-  Parser(plant).AddModelFromFile(drake::FindResourceOrThrow(file_path));
-  Parser(plant).AddModelFromFile(
+  Parser(plant).AddModels(drake::FindResourceOrThrow(file_path));
+  Parser(plant).AddModels(
       FindResourceOrThrow("drake/manipulation/models/wsg_50_description/sdf/"
                           "schunk_wsg_50_welded_fingers.sdf"));
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("iiwa_link_0"));

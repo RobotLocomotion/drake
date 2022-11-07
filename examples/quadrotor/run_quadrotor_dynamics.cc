@@ -37,9 +37,9 @@ class Quadrotor : public systems::Diagram<T> {
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
     multibody::Parser parser(&plant);
-    parser.AddModelFromFile(
+    parser.AddModels(
         FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"));
-    parser.AddModelFromFile(
+    parser.AddModels(
         FindResourceOrThrow("drake/examples/quadrotor/warehouse.sdf"));
     plant.Finalize();
     DRAKE_DEMAND(plant.num_actuators() == 0);

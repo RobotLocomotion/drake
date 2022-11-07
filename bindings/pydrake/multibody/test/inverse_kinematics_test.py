@@ -33,7 +33,7 @@ class TestInverseKinematics(unittest.TestCase):
         builder = DiagramBuilder()
         self.plant, self.scene_graph = AddMultibodyPlantSceneGraph(
             builder, MultibodyPlant(time_step=0.01))
-        Parser(self.plant).AddModelFromFile(FindResourceOrThrow(
+        Parser(self.plant).AddModels(FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
         self.plant.Finalize()
         diagram = builder.Build()
@@ -446,7 +446,7 @@ class TestConstraints(unittest.TestCase):
         builder_f = DiagramBuilder()
         self.plant_f, self.scene_graph_f = AddMultibodyPlantSceneGraph(
             builder_f, MultibodyPlant(time_step=0.01))
-        Parser(self.plant_f).AddModelFromFile(FindResourceOrThrow(
+        Parser(self.plant_f).AddModels(FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
         self.plant_f.Finalize()
         diagram_f = builder_f.Build()

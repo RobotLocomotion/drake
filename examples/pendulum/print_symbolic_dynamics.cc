@@ -44,7 +44,7 @@ VectorX<Expression> MultibodyPlantDynamics() {
   const char* const urdf_path = "drake/examples/pendulum/Pendulum.urdf";
   MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);
-  parser.AddModelFromFile(FindResourceOrThrow(urdf_path));
+  parser.AddModels(FindResourceOrThrow(urdf_path));
   plant.Finalize();
   auto symbolic_plant_ptr = System<double>::ToSymbolic(plant);
   const MultibodyPlant<Expression>& symbolic_plant = *symbolic_plant_ptr;

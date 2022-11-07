@@ -78,7 +78,7 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
   for (auto& model_file : model_files) {
     multibody::MultibodyPlant<double> plant(0.0);
     multibody::Parser parser(&plant);
-    parser.AddModelFromFile(FindResourceOrThrow(model_file));
+    parser.AddModels(FindResourceOrThrow(model_file));
     plant.Finalize();
 
     for (int i = 0; i < canonical_plant.num_actuators(); ++i) {
@@ -117,7 +117,7 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValuesPlanarModel) {
 
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
-  parser.AddModelFromFile(
+  parser.AddModels(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
                           "planar_iiwa14_spheres_dense_elbow_collision.urdf"));
   plant.Finalize();
