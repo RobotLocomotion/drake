@@ -5,7 +5,10 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <utility>
+
+#include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
@@ -14,6 +17,7 @@
 
 namespace drake {
 namespace solvers {
+
 /**
  * A binding on constraint type C is a mapping of the decision
  * variables onto the inputs of C.  This allows the constraint to operate
@@ -28,6 +32,8 @@ class Binding {
           const Eigen::Ref<const VectorXDecisionVariable>& v)
       : evaluator_(c), vars_(v) {
     DRAKE_DEMAND(c->num_vars() == v.rows() || c->num_vars() == Eigen::Dynamic);
+    // TODO(hongkai.dai): allow duplicated variables.
+    CheckDuplicateVariables();
   }
 
   /**
@@ -40,6 +46,8 @@ class Binding {
     vars_ = ConcatenateVariableRefList(v);
     DRAKE_DEMAND(c->num_vars() == vars_.rows() ||
                  c->num_vars() == Eigen::Dynamic);
+    // TODO(hongkai.dai): allow duplicated variables.
+    CheckDuplicateVariables();
   }
 
   template <typename U>
@@ -126,6 +134,19 @@ class Binding {
   }
 
  private:
+  void CheckDuplicateVariables() const {
+    std::unordered_set<symbolic::Variable::Id> vars_set;
+    for (int i = 0; i < vars_.rows(); ++i) {
+      auto it = vars_set.find(vars_(i).get_id());
+      if (it == vars_set.end()) {
+        vars_set.insert(it, vars_(i).get_id());
+      } else {
+        throw std::runtime_error(fmt::format(
+            "Binding(): variable {} is duplicated in this binding's variables",
+            vars_(i).get_name()));
+      }
+    }
+  }
   std::shared_ptr<C> evaluator_;
   VectorXDecisionVariable vars_;
 };
