@@ -50,11 +50,11 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 _VERSION_SUPPORT_MATRIX = {
     "ubuntu:20.04": ["3.8"],
     "ubuntu:22.04": ["3.10"],
-    "macos": ["3.10"],
+    "macos": ["3.11"],
     # NOTE: when updating supported wheel python versions:
     # - Update URLs on doc/_pages/pip.md (`cpXY-cpXY` components), and
     # - Tables on from_source.md and installation.md (python version number).
-    "macos_wheel": ["3.10"],
+    "macos_wheel": ["3.11"],
     "manylinux": ["3.8", "3.9", "3.10"],
 }
 

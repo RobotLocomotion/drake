@@ -71,14 +71,14 @@ def create_temporary_dir(name='tmp'):
 def get_python_executable():
     """Use appropriate Python executable
 
-    Call python3.10 on macOS to force using the Python executable from the
-    python@3.10 formula. Calling a different Python executable would result in
+    Call python3.11 on macOS to force using the Python executable from the
+    python@3.11 formula. Calling a different Python executable would result in
     a crash since pydrake was not built against the Python library
     corresponding to that executable. On other systems, it will just fall back
     to the current Python executable.
     """
     if sys.platform == "darwin":
-        return "python3.10"
+        return "python3.11"
     else:
         return sys.executable
 
