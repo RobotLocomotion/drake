@@ -5,6 +5,8 @@
 /// defined by the user through MultibodyPlant API calls. These specifications
 /// are later on used by our discrete solvers to build a model.
 
+#include <limits>
+
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
@@ -17,7 +19,7 @@ namespace internal {
 // ρ⋅q₁ + Δq, where q₀ and q₁ are the positions of two one-DOF joints, ρ the
 // gear ratio and Δq a fixed offset. Per equation above, ρ has units of q₀/q₁
 // and Δq has units of q₀.
-// @tparam_nonsymbolic_scalar
+// @tparam_default_scalar
 template <typename T>
 struct CouplerConstraintSpecs {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CouplerConstraintSpecs);
@@ -52,6 +54,76 @@ struct CouplerConstraintSpecs {
   T offset{0.0};
 };
 
+// Struct to store the specification for a distance constraint. A distance
+// constraint is modeled as a holonomic constraint. Distance constraints can
+// be "soft" which imposes the the condition:
+//   (d(q)-d₀) + c/k⋅ḋ(q) + 1/k⋅f = 0
+// where d₀ is a fixed length, k a stiffness parameter in N/m and c a damping
+// parameter in N⋅s/m. We use d(q) to denote the Euclidean distance between two
+// points P and Q, rigidly affixed to bodies A and B respectively, as a function
+// of the configuration of the model q. This constraint reduces to d(q) = d₀ in
+// the limit to infinite stiffness and it behaves as a linear spring damper for
+// finite values of stiffness and damping.
+// @tparam_default_scalar
+template <typename T>
+struct DistanceConstraintSpecs {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DistanceConstraintSpecs);
+
+  // Please refer to this struct's documentation for further details on symbols
+  // and definitions.
+  // @param body_A_in Index of body A.
+  // @param body_A_in Index of body B.
+  // @param p_AP_in Position of point P in body frame A.
+  // @param p_AQ_in Position of point Q in body frame B.
+  // @param distance_in Free length d₀.
+  // @param stiffness_in Constraint stiffness k in N/m.
+  // @param damping_in Constraint damping c in N⋅s/m.
+  // @pre distance_in > 0, stiffness_in >= 0, damping_in >= 0.
+  DistanceConstraintSpecs(BodyIndex body_A_in, const Vector3<T>& p_AP_in,
+                          BodyIndex body_B_in, const Vector3<T>& p_BQ_in,
+                          const T& distance_in, const T& stiffness_in,
+                          const T& damping_in)
+      : body_A(body_A_in),
+        p_AP(p_AP_in),
+        body_B(body_B_in),
+        p_BQ(p_BQ_in),
+        distance(distance_in),
+        stiffness(stiffness_in),
+        damping(damping_in) {}
+
+  template <typename U>
+  DistanceConstraintSpecs(const DistanceConstraintSpecs<U>& other) {
+    body_A = other.body_A;
+    body_B = other.body_B;
+    if constexpr (std::is_same_v<T, double>) {
+      p_AP = ExtractDoubleOrThrow(other.p_AP);
+      p_BQ = ExtractDoubleOrThrow(other.p_BQ);
+      distance = ExtractDoubleOrThrow(other.distance);
+      stiffness = ExtractDoubleOrThrow(other.stiffness);
+      damping = ExtractDoubleOrThrow(other.damping);
+    } else {
+      p_AP = other.p_AP;
+      p_BQ = other.p_BQ;
+      distance = other.distance;
+      stiffness = other.stiffness;
+      damping = other.damping;
+    }
+  }
+
+  BodyIndex body_A;
+  Vector3<T> p_AP;
+  BodyIndex body_B;
+  Vector3<T> p_BQ;
+  T distance{0.0};
+  T stiffness{std::numeric_limits<double>::infinity()};
+  T damping{0.0};
+};
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    struct ::drake::multibody::internal::CouplerConstraintSpecs);
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    struct ::drake::multibody::internal::DistanceConstraintSpecs);
