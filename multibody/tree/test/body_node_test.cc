@@ -26,6 +26,7 @@ namespace internal {
 
 using Eigen::AngleAxisd;
 using Eigen::MatrixXd;
+using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using math::RotationMatrix;
 using std::move;
@@ -207,27 +208,22 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
   //
   // For *valid* 6x6 matrices, K will be positive definite and should not throw.
   // For *invalid* matrices, it can be anything.
-  //
-  // We'll hijack an un-validated RotationalInertia to turn eigen values into
-  // a rotatable 3x3 matrix, K_principal. K = R * K_principal * Rᵀ.
+
   Matrix six_by_six(6, 6);
   six_by_six = MatrixXd::Zero(6, 6);
-  const double m = 1.0;
+  const double m = 1.5;
   six_by_six(3, 3) = m;
   six_by_six(4, 4) = m;
   six_by_six(5, 5) = m;
 
-  // Arbitrary rotation matrix to create an interesting rotational inertia
-  // (used for K).
+  // We'll define K as R⋅D⋅Rᵀ; the choice of the values on the diagonal matrix D
+  // will determine whether K is positive definite or not.
   const RotationMatrix<double> R = RotationMatrix<double>(
       AngleAxisd(M_PI / 7, Vector3d{1, 2, 3}.normalized()));
 
   auto make_K = [&R](const Vector3d& K_eigen_values) {
-    const RotationalInertia<double> K_principal =
-        RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-            K_eigen_values(0), K_eigen_values(1), K_eigen_values(2), 0, 0, 0,
-            true /* skip validity test */);
-    const RotationalInertia<double> K = K_principal.ReExpress(R);
+    const Eigen::DiagonalMatrix<double, 3> K_principal(K_eigen_values);
+    const Matrix3d K = R.matrix() * K_principal * R.matrix().transpose();
     return K;
   };
 
@@ -237,12 +233,12 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
         Vector3d{1.1e-12, 2e-12, 3e-12},
         // A mid-sized matrix.
         Vector3d{1.1, 2, 3},
-        // A matrix with a bad condition number; still passes. (See below)
-        Vector3d{Vector3d{1.1, 2e12, 3e15}}}) {
-    six_by_six.block<3, 3>(0, 0) = make_K(K_eigen_values).CopyToFullMatrix3();
+        // A matrix with a not-too-bad condition number still passes.
+        // (Contrast this with the failiing test below.)
+        Vector3d{Vector3d{1.1, 2e12, 3e17}}}) {
+    six_by_six.block<3, 3>(0, 0) = make_K(K_eigen_values);
     EXPECT_NO_THROW(Tester::CallLltFactorization(body_node, six_by_six))
-        << "For expected good value:\n"
-        << six_by_six;
+        << "For expected bad eigenvalues: " << K_eigen_values.transpose();
   }
 
   // N.B. There are more ways the matrix could cause a throw. This approach
@@ -253,11 +249,12 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
         // A near-zero matrix (not really singular because of numerical
         // round-off when re-expressing K_principal).
         Vector3d{0, 1e-9, 3},
-        // A matrix with a bad condition number; doesn't pass.
-        Vector3d{Vector3d{1.1, 2e12, 3e16}}}) {
-    six_by_six.block<3, 3>(0, 0) = make_K(K_eigen_values).CopyToFullMatrix3();
+        // A matrix with a too-bad condition number; it throws.
+        Vector3d{Vector3d{1.1, 2e12, 3e18}}}) {
+    six_by_six.block<3, 3>(0, 0) = make_K(K_eigen_values);
     EXPECT_THROW(Tester::CallLltFactorization(body_node, six_by_six),
-        std::exception) << "For expected bad value: " << six_by_six;
+                 std::exception)
+        << "For expected bad eigenvalues: " << K_eigen_values.transpose();
   }
 }
 
