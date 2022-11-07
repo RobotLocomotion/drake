@@ -87,7 +87,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "gz_utils_internal",
     "lcm",
     "meshcat",
-    "msgpack_lite_js",
     "net_sf_jchart2d",
     "nanoflann_internal",
     "nlopt_internal",

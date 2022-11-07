@@ -57,7 +57,6 @@ load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
 load("@drake//tools/workspace/models_internal:repository.bzl", "models_internal_repository")  # noqa
 load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("@drake//tools/workspace/msgpack:repository.bzl", "msgpack_repository")
-load("@drake//tools/workspace/msgpack_lite_js:repository.bzl", "msgpack_lite_js_repository")  # noqa
 load("@drake//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
 load("@drake//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("@drake//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
@@ -233,8 +232,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         mosek_repository(name = "mosek")
     if "msgpack" not in excludes:
         msgpack_repository(name = "msgpack")
-    if "msgpack_lite_js" not in excludes:
-        msgpack_lite_js_repository(name = "msgpack_lite_js", mirrors = mirrors)
     if "mypy_extensions_internal" not in excludes:
         mypy_extensions_internal_repository(name = "mypy_extensions_internal", mirrors = mirrors)  # noqa
     if "mypy_internal" not in excludes:

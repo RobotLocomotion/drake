@@ -394,14 +394,6 @@ genrule(
 )
 
 genrule(
-    name = "msgpack_lite_js_genrule",
-    srcs = ["@msgpack_lite_js//:dist/msgpack.min.js"],
-    outs = ["msgpack.min.js"],
-    cmd = "cp $< $@",
-    visibility = ["//visibility:private"],
-)
-
-genrule(
     name = "meshcat_ico_genrule",
     srcs = ["//doc:favicon.ico"],
     outs = ["meshcat.ico"],
@@ -423,7 +415,6 @@ filegroup(
         "meshcat.html",
         ":meshcat.ico",
         ":meshcat.js",
-        ":msgpack.min.js",
         ":stats.min.js",
     ],
     visibility = ["//visibility:private"],
