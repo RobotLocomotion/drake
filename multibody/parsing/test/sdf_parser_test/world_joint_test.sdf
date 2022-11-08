@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <world name='W'>
+    <model name='M1'>
+      <pose>0.1 0.2 0.0  0 0 0</pose>
+      <link name='L1'/>
+    </model>
+    <model name='M2'>
+      <pose>0.1 0.2 0.0  0 0 0</pose>
+      <link name='L2'/>
+    </model>
+    <joint name='J1' type='fixed'>
+      <parent>M1::L1</parent>
+      <child>M2::L2</child>
+    </joint>
+  </world>
+</sdf>
