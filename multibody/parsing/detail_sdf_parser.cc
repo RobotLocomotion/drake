@@ -1727,12 +1727,24 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const std::set<std::string> supported_world_elements{
       "frame",
       "include",
+      "joint",
       "model"};
     CheckSupportedElements(
         workspace.diagnostic, world.Element(), supported_world_elements);
 
     // TODO(eric.cousineau): Either support or explicitly prevent adding joints
     // via `//world/joint`, per this Bitbucket comment: https://bit.ly/2udQxhp
+
+    // std::set<sdf::JointType> joint_types;
+    for (uint64_t joint_index = 0; joint_index < world.JointCount();
+        ++joint_index) {
+      const sdf::Joint& joint = *world.JointByIndex(joint_index);
+      // const sdf::Model& model = *world.ModelByIndex(joint_index);
+      // const RigidTransformd X_WM;
+      AddJointFromSpecification(
+          workspace.diagnostic, {}, {}, joint, world_model_instance(),
+          workspace.plant, {});
+    }
 
     for (uint64_t model_index = 0; model_index < world.ModelCount();
         ++model_index) {

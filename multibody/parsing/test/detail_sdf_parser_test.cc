@@ -2585,6 +2585,17 @@ TEST_F(SdfParserTest, UnsupportedElements) {
   EXPECT_THAT(TakeError(), MatchesRegex(".*drake:QQQ_dynamic"));
 }
 
+// TODO: write test description
+TEST_F(SdfParserTest, WorldJoint){
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "world_joint_test.sdf");
+  AddSceneGraph();
+  AddModelsFromSdfFile(full_name);
+
+
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
