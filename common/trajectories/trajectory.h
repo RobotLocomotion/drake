@@ -16,6 +16,9 @@ namespace trajectories {
  * A Trajectory represents a time-varying matrix, indexed by a single scalar
  * time.
  *
+ * These classes should never be used to extrapolate. By convention, they should
+ * clamp the times provided to evaulators to be within [start_time, end_time].
+ *
  * @tparam_default_scalars
  */
 template <typename T>
@@ -28,10 +31,14 @@ class Trajectory {
    */
   virtual std::unique_ptr<Trajectory<T>> Clone() const = 0;
 
+  // TODO(#17934): Enforce time clamp via NVI.
   /**
    * Evaluates the trajectory at the given time \p t.
-   * @param t The time at which to evaluate the trajectory.
+   * @param t The time at which to evaluate the trajectory. This value will be
+   * clamped to be within [start_time, end_time].
    * @return The matrix of evaluated values.
+   *
+   * @note Implementations of this class must perform their own clamping.
    */
   virtual MatrixX<T> value(const T& t) const = 0;
 
@@ -55,7 +62,9 @@ class Trajectory {
 
   /**
    * Evaluates the derivative of `this` at the given time @p t.
-   * Returns the nth derivative, where `n` is the value of @p derivative_order.
+   * @param t The time at which to evaluate the trajectory. This value will be
+   * clamped to be within [start_time, end_time].
+   * @return The nth derivative, where `n` is the value of @p derivative_order.
    *
    * @pre derivative_order must be non-negative.
    */
@@ -91,6 +100,7 @@ class Trajectory {
 
   virtual bool do_has_derivative() const;
 
+  // Implementations must perform their own clamping.
   virtual MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const;
 
   virtual std::unique_ptr<Trajectory<T>> DoMakeDerivative(
