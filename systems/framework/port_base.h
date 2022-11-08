@@ -1,12 +1,22 @@
 #pragma once
 
+#include <atomic>
+#include <optional>
 #include <string>
+#include <utility>
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
 
 namespace drake {
 namespace systems {
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+// This class is defined later in this header file, below.
+class PortBaseAttorney;
+}  // namespace internal
+#endif
 
 /** A PortBase is base class for System ports; users will typically use the
  InputPort<T> or OutputPort<T> types, not this base class. */
@@ -30,14 +40,16 @@ class PortBase {
   meaningful for abstract-valued ports. */
   int size() const { return size_; }
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // Returns a reference to the system that owns this port. Note that for a
-  // diagram port this will be the diagram, not the leaf system whose port was
-  // exported.
-  const internal::SystemMessageInterface& get_system_interface() const {
-    return owning_system_;
+  /** When this port is deprecated, returns non-null with a (possibly empty)
+  deprecation message; when this port is not deprecated, returns null. */
+  const std::optional<std::string>& get_deprecation() const {
+    return deprecation_;
   }
-#endif
+
+  /** Sets whether this port is deprecated (and if so, the message). */
+  void set_deprecation(std::optional<std::string> deprecation) {
+    deprecation_ = std::move(deprecation);
+  }
 
   /** (Advanced.) Returns the DependencyTicket for this port within the owning
   System. */
@@ -80,6 +92,13 @@ class PortBase {
   this will be the index within the Diagram, _not_ the index within the
   LeafSystem whose output port was forwarded. */
   int get_int_index() const { return index_; }
+
+  /** Returns a reference to the system that owns this port. Note that for a
+  diagram port this will be the diagram, not the leaf system whose port was
+  exported. */
+  const internal::SystemMessageInterface& get_system_interface() const {
+    return owning_system_;
+  }
 
   /** Returns get_system_interface(), but without the const. */
   internal::SystemMessageInterface& get_mutable_system_interface() {
@@ -135,6 +154,8 @@ class PortBase {
       const std::string& eval_typename) const;
 
  private:
+  friend class internal::PortBaseAttorney;
+
   // "Input" or "Output" (used for human-readable debugging strings).
   const char* const kind_string_;
 
@@ -148,6 +169,8 @@ class PortBase {
   const PortDataType data_type_;
   const int size_;
   const std::string name_;
+  std::optional<std::string> deprecation_;
+  std::atomic<bool> deprecation_already_warned_{false};
 };
 
 // Keep this inlineable.  Error reporting should happen in a separate method.
@@ -169,6 +192,40 @@ const ValueType& PortBase::PortEvalCast(const BasicVector<T>& basic) const {
   }
   return *value;
 }
+
+#ifndef DRAKE_DOXYGEN_CXX
+class SystemBase;
+template <typename> class Diagram;
+class LeafSystemDeprecationTest;
+namespace internal {
+// This is an attorney-client pattern class providing SystemBase and Diagram
+// with access to certain specific PortBase members.
+class PortBaseAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PortBaseAttorney)
+  PortBaseAttorney() = delete;
+
+ private:
+  friend class drake::systems::SystemBase;
+  template <typename> friend class drake::systems::Diagram;
+  friend class drake::systems::LeafSystemDeprecationTest;
+
+  // Returns a reference to the system that owns this port. Note that for a
+  // diagram port this will be the diagram, not the leaf system whose port was
+  // exported.
+  static const SystemMessageInterface& get_system_interface(
+      const PortBase& port) {
+    return port.get_system_interface();
+  }
+
+  // Returns the bool stored within the given port that indicates whether we've
+  // already logged a deprecation warning about it.
+  static std::atomic<bool>* deprecation_already_warned(PortBase* port) {
+    return &port->deprecation_already_warned_;
+  }
+};
+}  // namespace internal
+#endif
 
 }  // namespace systems
 }  // namespace drake
