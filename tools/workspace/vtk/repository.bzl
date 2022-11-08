@@ -3,16 +3,10 @@
 
 """
 Makes selected VTK headers and precompiled shared libraries available to be
-used as a C++ dependency. On Ubuntu, a VTK archive, built by the project
-maintainers from the Dockerfile and shell scripts in this directory, is
-downloaded and unpacked. On macOS, VTK must be installed from the
-robotlocomotion/director tap
-(https://github.com/RobotLocomotion/homebrew-director) using Homebrew.
+used as a C++ dependency.  A VTK archive, built by the project maintainers from
+the Dockerfile and shell scripts in this directory, is downloaded and unpacked.
 
-Archive naming convention:
-    vtk-<version>-<build_number>-<platform>-<arch>.tar.gz
-
-See also: image/package.sh.
+Archive naming convention: see image/clone-vtk.sh.
 
 Example:
     WORKSPACE:
@@ -103,18 +97,17 @@ def _impl(repository_ctx):
     if os_result.is_ubuntu or os_result.is_macos:
         if os_result.is_macos:
             if os_result.macos_arch_result == "arm64":
-                archive = "vtk-9.2.0-1-mac-arm64.tar.gz"
-                sha256 = "5672f27dec744fa5d19c3481eb446834c763acb93443e3b009897424c062838b"  # noqa
+                archive = "vtk-v9.2.0.rc2-1001-gd706250a14-mac-arm64-1.tar.gz"
+                sha256 = "8ca98f672f09f6e2f4c81dfebaef2d50def27f156af5bfb3f57e514ee20af41c"  # noqa
             else:
-                archive = "vtk-9.2.0-1-mac-x86_64.tar.gz"
-                sha256 = "cd224aa357bf760796e4291078bbecd622af80157ca23ad5a7cd28d61410b730"  # noqa
+                archive = "vtk-v9.2.0.rc2-1001-gd706250a14-mac-x86_64-1.tar.gz"
+                sha256 = "a547f9c9ab3e3d1c6d9595bae41b2799dd965921ff84aa89c40f0dcd8a01295f"  # noqa
         elif os_result.ubuntu_release == "20.04":
-            # TODO(svenevs): change our naming scheme (commit vs version)?
-            archive = "vtk-9.2.0-1-focal-x86_64.tar.gz"
-            sha256 = "5dbfeaed79c9762fb44f09f87d8eddc6b3b42ed1a8169d87292bf495c04494ad"  # noqa
+            archive = "vtk-v9.2.0.rc2-1001-gd706250a14-focal-x86_64-1.tar.gz"
+            sha256 = "d4c61fe5d82536d93ae0dbcf69967216de65cb441e8d56cf87e556a6669e49c9"  # noqa
         elif os_result.ubuntu_release == "22.04":
-            archive = "vtk-9.2.0-1-jammy-x86_64.tar.gz"
-            sha256 = "f6db640b1564b66afa80a933b9d65472c26057460d50452d69e0e53bfde9cb28"  # noqa
+            archive = "vtk-v9.2.0.rc2-1001-gd706250a14-jammy-x86_64-1.tar.gz"
+            sha256 = "a9bffb278574a7a24aba94f8199e00f914a0b7f20defd2f01023007d5c0daa04"  # noqa
         else:
             fail("Operating system is NOT supported {}".format(os_result))
 
