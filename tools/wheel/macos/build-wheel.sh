@@ -110,7 +110,9 @@ bazel run "${bazel_args[@]}" //:install -- /opt/drake
 
 rm -rf  "/opt/drake-wheel-build/python"
 
-python3 -m venv "/opt/drake-wheel-build/python"
+# NOTE: Xcode ships python3, make sure to use the one from brew.
+$(brew --prefix python@3.11)/bin/python3.11 \
+    -m venv "/opt/drake-wheel-build/python"
 
 . "/opt/drake-wheel-build/python/bin/activate"
 
