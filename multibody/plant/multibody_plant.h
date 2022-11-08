@@ -155,8 +155,6 @@ enum class DiscreteContactSolver {
 #define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 /// @endcond
 
-// TODO(sherm1) Rename "continuous_state" output ports to just "state" since
-//              they can be discrete. However see issue #12214.
 /**
 %MultibodyPlant is a Drake system framework representation (see
 systems::System) for the model of a physical system consisting of a
@@ -172,14 +170,14 @@ input_ports:
 - <em style="color:gray">model_instance_name[i]</em>_actuation
 - <span style="color:green">geometry_query</span>
 output_ports:
-- continuous_state
+- state
 - body_poses
 - body_spatial_velocities
 - body_spatial_accelerations
 - generalized_acceleration
 - reaction_forces
 - contact_results
-- <em style="color:gray">model_instance_name[i]</em>_continuous_state
+- <em style="color:gray">model_instance_name[i]</em>_state
 - '<em style="color:gray">
   model_instance_name[i]</em>_generalized_acceleration'
 - '<em style="color:gray">

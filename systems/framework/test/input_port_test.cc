@@ -51,7 +51,6 @@ GTEST_TEST(InputPortTest, VectorTest) {
   EXPECT_EQ(dut->size(), size);
   EXPECT_EQ(dut->GetFullDescription(),
             "InputPort[2] (port_name) of System ::dummy (DummySystem)");
-  EXPECT_EQ(&dut->get_system_interface(), system_interface);
   EXPECT_EQ(&dut->get_system(), system);
 
   // Check HasValue.
@@ -111,7 +110,6 @@ GTEST_TEST(InputPortTest, AbstractTest) {
   EXPECT_EQ(dut->size(), size);
   EXPECT_EQ(dut->GetFullDescription(),
             "InputPort[2] (port_name) of System ::dummy (DummySystem)");
-  EXPECT_EQ(&dut->get_system_interface(), system_interface);
   EXPECT_EQ(&dut->get_system(), system);
 
   // Check HasValue.

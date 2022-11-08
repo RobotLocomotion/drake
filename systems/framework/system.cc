@@ -42,9 +42,9 @@ template <typename T>
 std::unique_ptr<BasicVector<T>> System<T>::AllocateInputVector(
     const InputPort<T>& input_port) const {
   DRAKE_THROW_UNLESS(input_port.get_data_type() == kVectorValued);
-  const int index = input_port.get_index();
-  DRAKE_ASSERT(index >= 0 && index < num_input_ports());
-  DRAKE_ASSERT(get_input_port(index).get_data_type() == kVectorValued);
+  const InputPortBase& self_input_port_base = this->GetInputPortBaseOrThrow(
+      __func__, input_port.get_index(), /* warn_deprecated = */ false);
+  DRAKE_THROW_UNLESS(&input_port == &self_input_port_base);
   std::unique_ptr<AbstractValue> value = DoAllocateInput(input_port);
   return value->get_value<BasicVector<T>>().Clone();
 }
@@ -62,8 +62,10 @@ std::unique_ptr<SystemOutput<T>> System<T>::AllocateOutput() const {
   // make_unique can't invoke this private constructor.
   auto output = std::unique_ptr<SystemOutput<T>>(new SystemOutput<T>());
   for (int i = 0; i < this->num_output_ports(); ++i) {
-    const OutputPort<T>& port = this->get_output_port(i);
-    output->add_port(port.Allocate());
+    const auto& output_port = dynamic_cast<const OutputPort<T>&>(
+        this->GetOutputPortBaseOrThrow(__func__, i,
+                                       /* warn_deprecated = */ false));
+    output->add_port(output_port.Allocate());
   }
   output->set_system_id(get_system_id());
   return output;
@@ -144,7 +146,9 @@ void System<T>::AllocateFixedInputs(Context<T>* context) const {
   ValidateContext(context);
 
   for (InputPortIndex i(0); i < num_input_ports(); ++i) {
-    const InputPort<T>& port = get_input_port(i);
+    const InputPortBase& input_port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    const auto& port = dynamic_cast<const InputPort<T>&>(input_port_base);
     if (port.get_data_type() == kVectorValued) {
       port.FixValue(context, *AllocateInputVector(port));
     } else {
@@ -503,11 +507,14 @@ void System<T>::CalcOutput(const Context<T>& context,
   ValidateContext(context);
   ValidateCreatedForThisSystem(outputs);
   for (OutputPortIndex i(0); i < num_output_ports(); ++i) {
+    const auto& output_port = dynamic_cast<const OutputPort<T>&>(
+        this->GetOutputPortBaseOrThrow(__func__, i,
+                                       /* warn_deprecated = */ false));
     // TODO(sherm1) Would be better to use Eval() here but we don't have
     // a generic abstract assignment capability that would allow us to
     // copy into existing memory in `outputs` (rather than clone). User
     // code depends on memory stability in SystemOutput.
-    get_output_port(i).Calc(context, outputs->GetMutableData(i));
+    output_port.Calc(context, outputs->GetMutableData(i));
   }
 }
 
@@ -706,14 +713,18 @@ template <typename T>
 const InputPort<T>& System<T>::GetInputPort(
     const std::string& port_name) const {
   for (InputPortIndex i{0}; i < num_input_ports(); i++) {
-    if (port_name == get_input_port_base(i).get_name()) {
+    const InputPortBase& port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    if (port_name == port_base.get_name()) {
       return get_input_port(i);
     }
   }
   std::vector<std::string_view> port_names;
   port_names.reserve(num_input_ports());
   for (InputPortIndex i{0}; i < num_input_ports(); i++) {
-    port_names.push_back(get_input_port_base(i).get_name());
+    const InputPortBase& port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    port_names.push_back(port_base.get_name());
   }
   if (port_names.empty()) {
     port_names.push_back("it has no input ports");
@@ -728,7 +739,12 @@ template <typename T>
 bool System<T>::HasInputPort(
     const std::string& port_name) const {
   for (InputPortIndex i{0}; i < num_input_ports(); i++) {
-    if (port_name == get_input_port_base(i).get_name()) {
+    const InputPortBase& port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    if (port_name == port_base.get_name()) {
+      // Call the getter (ignoring its return value), to allow deprecation
+      // warnings to trigger.
+      get_input_port(i);
       return true;
     }
   }
@@ -757,7 +773,9 @@ template <typename T>
 const OutputPort<T>& System<T>::GetOutputPort(
     const std::string& port_name) const {
   for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
-    if (port_name == get_output_port_base(i).get_name()) {
+    const OutputPortBase& port_base = this->GetOutputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    if (port_name == port_base.get_name()) {
       return get_output_port(i);
     }
   }
@@ -779,7 +797,12 @@ template <typename T>
 bool System<T>::HasOutputPort(
     const std::string& port_name) const {
   for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
-    if (port_name == get_output_port_base(i).get_name()) {
+    const OutputPortBase& port_base = this->GetOutputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    if (port_name == port_base.get_name()) {
+      // Call the getter (ignoring its return value), to allow deprecation
+      // warnings to trigger.
+      get_output_port(i);
       return true;
     }
   }
@@ -895,8 +918,14 @@ void System<T>::FixInputPortsFrom(const System<double>& other_system,
   other_system.ValidateContext(other_context);
 
   for (int i = 0; i < num_input_ports(); ++i) {
-    const auto& input_port = get_input_port(i);
-    const auto& other_port = other_system.get_input_port(i);
+    const InputPortBase& input_port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    const InputPortBase& other_port_base = other_system.GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    const auto& input_port =
+        dynamic_cast<const InputPort<T>&>(input_port_base);
+    const auto& other_port =
+        dynamic_cast<const InputPort<double>&>(other_port_base);
     if (!other_port.HasValue(other_context)) {
       continue;
     }
@@ -1195,7 +1224,9 @@ template <typename T>
 std::function<void(const AbstractValue&)>
 System<T>::MakeFixInputPortTypeChecker(
     InputPortIndex port_index) const {
-  const InputPort<T>& port = this->get_input_port(port_index);
+  const InputPortBase& port_base = this->GetInputPortBaseOrThrow(
+      __func__, port_index, /* warn_deprecated = */ false);
+  const InputPort<T>& port = static_cast<const InputPort<T>&>(port_base);
   const std::string& port_name = port.get_name();
   const std::string path_name = this->GetSystemPathname();
 
@@ -1262,7 +1293,8 @@ const BasicVector<T>* System<T>::EvalBasicVectorInputImpl(
     InputPortIndex port_index) const {
   // Make sure this is the right kind of port before worrying about whether
   // it is connected up properly.
-  const InputPortBase& port = GetInputPortBaseOrThrow(func, port_index);
+  const InputPortBase& port = GetInputPortBaseOrThrow(
+      func, port_index, /* warn_deprecated = */ true);
   if (port.get_data_type() != kVectorValued)
     ThrowNotAVectorInputPort(func, port_index);
 

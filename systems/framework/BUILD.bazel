@@ -880,6 +880,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "leaf_system_deprecation_test",
+    deps = [
+        ":leaf_system",
+    ],
+)
+
+drake_cc_googletest(
     name = "model_values_test",
     deps = [
         ":model_values",

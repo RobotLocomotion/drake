@@ -3050,13 +3050,17 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
         Value<std::vector<ExternallyAppliedSpatialForce<T>>>()).get_index();
 
   // Declare one output port for the entire state vector.
-  // TODO(sherm1) Rename this port to just "state" when #12214 is resolved so
-  //              we can deprecate the old port name.
   state_output_port_ =
-      this->DeclareVectorOutputPort("continuous_state", num_multibody_states(),
+      this->DeclareVectorOutputPort("state", num_multibody_states(),
                                     &MultibodyPlant::CopyMultibodyStateOut,
                                     {this->all_state_ticket()})
           .get_index();
+
+  this->DeprecateOutputPort(this->DeclareVectorOutputPort(
+      "continuous_state", num_multibody_states(),
+      &MultibodyPlant::CopyMultibodyStateOut, {this->all_state_ticket()}),
+      "Use the port named 'state' instead; the 'continuous_state' alias will "
+      "be removed on or after 2023-03-01.");
 
   // Declare the output port for the poses of all bodies in the world.
   body_poses_port_ =
@@ -3112,18 +3116,20 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 
     const int instance_num_states =  // Might be zero.
         num_multibody_states(model_instance_index);
-    // TODO(sherm1) Rename these ports to just "_state" when #12214 is resolved
-    //              so we can deprecate the old port names.
+    auto copy_instance_state_out = [this, model_instance_index](
+        const Context<T>& context, BasicVector<T>* result) {
+      this->CopyMultibodyStateOut(model_instance_index, context, result);
+    };
     instance_state_output_ports_[model_instance_index] =
         this->DeclareVectorOutputPort(
-                instance_name + "_continuous_state", instance_num_states,
-                [this, model_instance_index](const systems::Context<T>& context,
-                                             systems::BasicVector<T>* result) {
-                  this->CopyMultibodyStateOut(model_instance_index, context,
-                                               result);
-                },
-                {this->all_state_ticket()})
+                instance_name + "_state", instance_num_states,
+                copy_instance_state_out, {this->all_state_ticket()})
             .get_index();
+    this->DeprecateOutputPort(this->DeclareVectorOutputPort(
+        instance_name + "_continuous_state", instance_num_states,
+        copy_instance_state_out, {this->all_state_ticket()}),
+        "Use the port suffixed with '_state' instead; the '_continuous_state' "
+        "alias will be removed on or after 2023-03-01.");
 
     const int instance_num_velocities =  // Might be zero.
         num_velocities(model_instance_index);
