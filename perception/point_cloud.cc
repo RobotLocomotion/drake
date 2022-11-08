@@ -20,6 +20,11 @@
 
 using Eigen::Map;
 using Eigen::NoChange;
+using common_robotics_utilities::openmp_helpers::GetNumOmpThreads;
+using common_robotics_utilities::voxel_grid::DSHVGSetType;
+using common_robotics_utilities::voxel_grid::DynamicSpatialHashedVoxelGrid;
+using common_robotics_utilities::voxel_grid::GridIndex;
+using common_robotics_utilities::voxel_grid::GridSizes;
 
 namespace drake {
 namespace perception {
@@ -422,15 +427,13 @@ PointCloud PointCloud::VoxelizedDownSample(
   // DSHVG usually has each dynamic "chunk" contain multiple voxels, by setting
   // the chunk size to (voxel_size, 1, 1, 1) each chunk contains a single voxel
   // and the whole DSHVG behaves as a sparse voxel grid.
-  const common_robotics_utilities::voxel_grid::GridSizes chunk_sizes(
-      voxel_size, INT64_C(1), INT64_C(1), INT64_C(1));
+  const GridSizes chunk_sizes(voxel_size, INT64_C(1), INT64_C(1), INT64_C(1));
   const std::vector<int> default_chunk_value;
   // By providing an initial estimated number of chunks, we reduce reallocation
   // and rehashing in the DSHVG.
   const size_t num_expected_chunks = static_cast<size_t>(size_ / 16);
-  common_robotics_utilities::voxel_grid::
-      DynamicSpatialHashedVoxelGrid<std::vector<int>> dynamic_voxel_grid(
-          chunk_sizes, default_chunk_value, num_expected_chunks);
+  DynamicSpatialHashedVoxelGrid<std::vector<int>> dynamic_voxel_grid(
+      chunk_sizes, default_chunk_value, num_expected_chunks);
 
   // Add points into the voxel grid.
   for (int i = 0; i < size_; ++i) {
@@ -445,9 +448,7 @@ PointCloud PointCloud::VoxelizedDownSample(
         // If the containing chunk hasn't already been allocated, create a new
         // chunk containing the current point index.
         dynamic_voxel_grid.SetLocation3d(
-            xyz(i).cast<double>(),
-            common_robotics_utilities::voxel_grid::DSHVGSetType::SET_CHUNK,
-            {i});
+            xyz(i).cast<double>(), DSHVGSetType::SET_CHUNK, {i});
       }
     }
   }
@@ -502,13 +503,12 @@ PointCloud PointCloud::VoxelizedDownSample(
 
   // Since the parallel form imposes additional overhead, only use it when
   // multiple OpenMP threads are available.
-  const bool can_execute_in_parallel =
-      common_robotics_utilities::openmp_helpers::GetNumOmpThreads() > 1;
+  const bool can_execute_in_parallel = GetNumOmpThreads() > 1;
   const bool operate_in_parallel = parallelize && can_execute_in_parallel;
 
   // Since we specify chunks contain a single voxel, a chunk's lone voxel can be
   // retrieved with index (0, 0, 0).
-  const common_robotics_utilities::voxel_grid::GridIndex kSingleVoxel(0, 0, 0);
+  const GridIndex kSingleVoxel(0, 0, 0);
 
   // Populate the elements of the down_sampled cloud.
   if (operate_in_parallel) {

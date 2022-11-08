@@ -65,6 +65,7 @@ GTEST_TEST(PointCloudTest, TestExpectedNumThreads) {
       common_robotics_utilities::openmp_helpers::GetNumOmpThreads();
 
   if (has_openmp && ENABLE_PARALLEL_OPS) {
+    // The build file specifies OMP_NUM_THREADS=2 for the parallel test.
     EXPECT_EQ(num_omp_threads, 2);
   } else {
     EXPECT_EQ(num_omp_threads, 1);

@@ -89,15 +89,26 @@ class TestPerception(unittest.TestCase):
         crop = pc.Crop(lower_xyz=[3, 4, 5], upper_xyz=[5, 6, 7])
         self.assertEqual(crop.size(), 1)
 
-        pc_merged = mut.Concatenate(clouds=[pc, pc_new])
-        self.assertEqual(pc_merged.size(), pc.size() + pc_new.size())
+        pc_merged_1 = mut.Concatenate(clouds=[pc, pc_new])
+        pc_merged_2 = mut.Concatenate(clouds=[pc, pc_new])
+        self.assertEqual(pc_merged_1.size(), pc.size() + pc_new.size())
+        self.assertEqual(pc_merged_2.size(), pc.size() + pc_new.size())
 
-        pc_downsampled = pc_merged.VoxelizedDownSample(voxel_size=2.0)
-        self.assertIsInstance(pc_downsampled, mut.PointCloud)
+        pc_downsampled_1 = pc_merged_1.VoxelizedDownSample(voxel_size=2.0)
+        self.assertIsInstance(pc_downsampled_1, mut.PointCloud)
 
-        self.assertFalse(pc_merged.has_normals())
-        pc_merged.EstimateNormals(radius=1, num_closest=50)
-        self.assertTrue(pc_merged.has_normals())
+        pc_downsampled_2 = pc_merged_2.VoxelizedDownSample(
+            voxel_size=2.0, parallelize=False)
+        self.assertIsInstance(pc_downsampled_2, mut.PointCloud)
+
+        self.assertFalse(pc_merged_1.has_normals())
+        pc_merged_1.EstimateNormals(radius=1, num_closest=50)
+        self.assertTrue(pc_merged_1.has_normals())
+
+        self.assertFalse(pc_merged_2.has_normals())
+        pc_merged_2.EstimateNormals(
+            radius=1, num_closest=50, parallelize=False)
+        self.assertTrue(pc_merged_2.has_normals())
 
     def test_depth_image_to_point_cloud_api(self):
         camera_info = CameraInfo(width=640, height=480, fov_y=np.pi / 4)
