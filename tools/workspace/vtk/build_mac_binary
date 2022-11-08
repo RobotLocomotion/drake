@@ -39,15 +39,16 @@ done < "${vtk_args_path}"
 vtk_cmake_args+=("-DVTK_USE_COCOA:BOOL=ON")
 
 # Directory to contain our source and build trees.
-container="${this_file_dir}/mac_binary_build"
-build_dir="${container}/build"
-install_dir="${container}/install"
+readonly container="${this_file_dir}/mac_binary_build"
+readonly build_dir="${container}/build"
+readonly install_dir="${container}/install"
 rm -rf "${container}"
 mkdir -p "${container}"
 cd "${container}"
 
-# Defines variables `architecture` and `archive`.
+# Defines variables `architecture` and `archive`.  Clones VTK to `src`.
 . "${this_file_dir}/image/clone-vtk.sh"
+readonly src_dir="${container}/src"
 
 # NOTE: Setting JPEG_ROOT tells VTK where to find libjpeg, otherwise it will
 # possibly choose `jpeg` or `jpeg-turbo` (depending on system and brew).
