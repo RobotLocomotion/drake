@@ -124,22 +124,25 @@ the main body of the document:
       are built from the same commit.  (It's usage instructions are atop its
       source code:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
-2. Launch the wheel staging builds for that git commit sha:
-   1. For both macOS and linux, open the jenkins build page from
-      this list:
-      - [macOS Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Wheel/job/mac-x86-big-sur-unprovisioned-clang-wheel-staging-snopt-mosek-release/)
-      - [linux Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-wheel-staging-snopt-mosek-release/)
+2. Launch the staging builds for that git commit sha:
+   1. Open the following five Jenkins jobs (e.g., each in its own
+      new browser tab):
+      - [Linux Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-wheel-staging-snopt-mosek-release/)
+      - [macOS x86 Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Wheel/job/mac-x86-big-sur-unprovisioned-clang-wheel-staging-snopt-mosek-release/)
+      - [macOS arm Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-monterey-unprovisioned-clang-wheel-staging-snopt-mosek-release/)
+      - [Focal Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-bazel-staging-snopt-mosek-packaging/)
+      - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-bazel-staging-snopt-mosek-packaging/)
    2. In the upper right, click "log in" (unless you're already logged in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".
    4. Change "sha1" to the full **git sha** corresponding to ``v1.N.0`` and
       "release_version" to ``1.N.0`` (no "v").
    5. Click "Build"; each build will take around an hour, give or take.
-   6. Note: The macOS job will produce one `.whl` file, whereas the linux job
-      will produce multiple `.whl` files (in the same job).
-   7. Wait for those two build jobs to succeed.  It's OK to work on release
-      notes finishing touches in the meantime, but do not merge the release
-      notes nor tag the release until the wheel builds have succeeded.
+   6. Note: The macOS wheel jobs will produce one `.whl` file, whereas the linux
+      job will produce multiple `.whl` files (in the same job).
+   7. Wait for all staging jobs to succeed.  It's OK to work on release notes
+      finishing touches in the meantime, but do not merge the release notes nor
+      tag the release until all five builds have succeeded.
 3. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
    sure that the nightly build git sha from the prior steps matches the
    ``newest_commit`` whose changes are enumerated in the notes.  Some dates
@@ -171,10 +174,13 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Into the box labeled "Attach binaries by dropping them here or selecting
-      them.", drag and drop the 12 ``tgz``-related binary artifacts from
-      ``/tmp/drake-release/v1.N.0`` (the 4 tarballs, and their 8 checksums).
-      * Do not attach the ``whl``-related binary artifacts; we'll upload those
-        pypi a bit later on.
+      them.", drag and drop the 33 release files from
+      ``/tmp/drake-release/v1.N.0``:
+      - 12: 4 `.tar.gz` + 8 checksums
+      - 6: 2 `.deb` + 4 checksums
+      - 9: 3 linux `.whl` + 6 checksums
+      - 3: 1 macOS x86 `.whl` + 2 checksums
+      - 3: 1 macOS arm `.whl` + 2 checksums
    6. Choose "Save draft" and take a deep breath.
 8. Once the documentation build finishes, release!
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
