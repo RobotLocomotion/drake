@@ -311,6 +311,44 @@ TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints2) {
   EXPECT_TRUE(CompareMatrices(upper, Eigen::Vector4d(2, kInf, 3, 2)));
 }
 
+void CheckAggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,
+                                      const VectorX<symbolic::Variable>& vars) {
+  Eigen::SparseMatrix<double> A_new;
+  VectorX<symbolic::Variable> vars_new;
+  AggregateDuplicateVariables(A, vars, &A_new, &vars_new);
+  EXPECT_EQ(A.rows(), A_new.rows());
+  for (int i = 0; i < A.rows(); ++i) {
+    EXPECT_PRED2(symbolic::test::ExprEqual,
+                 A.toDense().row(i).dot(vars).Expand(),
+                 A_new.toDense().row(i).dot(vars_new).Expand());
+  }
+  // Make sure vars_new doesn't have duplicated variables.
+  std::unordered_set<symbolic::Variable::Id> vars_new_set;
+  for (int i = 0; i < vars_new.rows(); ++i) {
+    EXPECT_EQ(vars_new_set.find(vars_new(i).get_id()), vars_new_set.end());
+    vars_new_set.insert(vars_new(i).get_id());
+  }
+}
+TEST_F(TestAggregateCostsAndConstraints, AggregateDuplicateVariables) {
+  Eigen::SparseMatrix<double> A = Eigen::RowVector3d(1, 2, 3).sparseView();
+  // No duplication.
+  CheckAggregateDuplicateVariables(
+      A, Vector3<symbolic::Variable>(x_[0], x_[1], x_[2]));
+
+  // A is a row vector, vars has duplication.
+  CheckAggregateDuplicateVariables(
+      A, Vector3<symbolic::Variable>(x_[0], x_[1], x_[0]));
+  CheckAggregateDuplicateVariables(
+      A, Vector3<symbolic::Variable>(x_[0], x_[0], x_[0]));
+
+  // A is a matrix.
+  A = (Eigen::Matrix<double, 2, 3>() << 0, 1, 2, 3, 4, 0)
+          .finished()
+          .sparseView();
+  CheckAggregateDuplicateVariables(
+      A, Vector3<symbolic::Variable>(x_[1], x_[0], x_[1]));
+}
+
 GTEST_TEST(TestFindNonconvexQuadraticCost, Test) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
