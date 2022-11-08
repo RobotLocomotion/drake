@@ -249,8 +249,7 @@ int DoMain() {
   // Adds the brick to be manipulated.
   const std::string brick_file_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_brick.sdf");
-  const ModelInstanceIndex brick_index =
-      Parser(&plant).AddModels(brick_file_name).at(0);
+  Parser(&plant).AddModels(brick_file_name);
 
   // When the planar-gripper is welded via WeldGripperFrames(), motion always
   // lies in the world Y-Z plane (because the planar-gripper frame is aligned
@@ -259,7 +258,7 @@ int DoMain() {
   Vector3d gravity;
   if (FLAGS_orientation == "vertical") {
     const multibody::Frame<double>& brick_base_frame =
-        plant.GetFrameByName("brick_base", brick_index);
+        plant.GetFrameByName("brick_base");
     plant.WeldFrames(plant.world_frame(), brick_base_frame);
     gravity = Vector3d(
         0, 0, -multibody::UniformGravityFieldElement<double>::kDefaultStrength);

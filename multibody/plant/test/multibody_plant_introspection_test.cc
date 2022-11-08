@@ -58,7 +58,7 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
 
   // Add a floating mug.
   const ModelInstanceIndex mug_model = parser.AddModelFromFile(mug_sdf_path);
-  const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
+  const Body<double>& mug = plant.GetBodyByName("simple_mug", mug_model);
 
   // Introspection of the underlying mathematical model is not available until
   // we call Finalize().

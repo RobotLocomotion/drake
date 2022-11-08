@@ -155,8 +155,7 @@ int DoMain() {
   const std::string spatula_file = FindResourceOrThrow(
       "drake/examples/hydroelastic/spatula_slip_control/models/spatula.sdf");
   parser.AddModels(gripper_file);
-  multibody::ModelInstanceIndex spatula_instance =
-      parser.AddModels(spatula_file).at(0);
+  parser.AddModels(spatula_file);
   // Pose the gripper and weld it to the world.
   const math::RigidTransform<double> X_WF0 = math::RigidTransform<double>(
       math::RollPitchYaw(0.0, -1.57, 0.0), Eigen::Vector3d(0, 0, 0.25));
@@ -217,7 +216,7 @@ int DoMain() {
   // Set spatula's free body pose.
   const math::RigidTransform<double> X_WF1 = math::RigidTransform<double>(
       math::RollPitchYaw(-0.4, 0.0, 1.57), Eigen::Vector3d(0.35, 0, 0.25));
-  const auto& base_link = plant.GetBodyByName("spatula", spatula_instance);
+  const auto& base_link = plant.GetBodyByName("spatula");
   plant.SetFreeBodyPose(&plant_context, base_link, X_WF1);
 
   // Set finger joint positions.

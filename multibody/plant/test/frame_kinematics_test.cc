@@ -670,7 +670,7 @@ GTEST_TEST(MultibodyPlantTest, FixedWorldKinematics) {
   // However the world is non-empty.
   ASSERT_NE(plant.num_bodies(), 0);
 
-  const Body<double>& mug = plant.GetBodyByName("main_body");
+  const Body<double>& mug = plant.GetBodyByName("simple_mug");
 
   // The objects frame O is affixed to a robot table defined by
   // test::AddFixedObjectsToPlant().
