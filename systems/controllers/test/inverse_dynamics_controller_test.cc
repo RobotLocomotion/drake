@@ -4,10 +4,12 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/systems/controllers/test_utilities/compute_torque.h"
 
 using drake::multibody::MultibodyPlant;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace systems {
@@ -129,6 +131,50 @@ TEST_F(InverseDynamicsControllerTest, TestTorqueWithOwnedPlant) {
       true /* expose reference acceleration port */);
 
   ConfigTestAndCheck(dut.get(), kp, ki, kd);
+}
+
+GTEST_TEST(AdditionalInverseDynamicsTest, ScalarConversion) {
+  auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
+  const std::string full_name = drake::FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  multibody::Parser(mbp.get()).AddModelFromFile(full_name);
+  mbp->WeldFrames(mbp->world_frame(),
+                  mbp->GetFrameByName("iiwa_link_0"));
+  mbp->Finalize();
+
+  const int num_states = mbp->num_multibody_states();
+  const int dim = mbp->num_positions();
+  VectorXd kp = VectorXd::Constant(dim, 0.12),
+           ki = VectorXd::Constant(dim, 0.34),
+           kd = VectorXd::Constant(dim, 0.56);
+
+  InverseDynamicsController<double> idc_without_ownership(*mbp, kp, ki, kd,
+                                                          true);
+  DRAKE_EXPECT_THROWS_MESSAGE(idc_without_ownership.ToAutoDiffXd(),
+                               ".*constructor which takes ownership.*");
+
+  InverseDynamicsController<double> idc(std::move(mbp), kp, ki, kd, true);
+
+  // Test AutoDiffXd.
+  auto idc_ad = System<double>::ToAutoDiffXd<Diagram>(idc);
+  // Note: With the current scalar conversion support, we can get a
+  // unique_ptr<Diagram<T>> but not a unique_ptr<InverseDynamicsController<T>>.
+
+  // Check the multibody plant.
+  EXPECT_EQ(idc_ad->get_input_port(0).size(), num_states);
+  // Check the PID gains.
+  const auto* pid_ad = dynamic_cast<const PidController<AutoDiffXd>*>(
+      &idc_ad->GetSubsystemByName("pid"));
+  ASSERT_NE(pid_ad, nullptr);
+  EXPECT_TRUE(CompareMatrices(pid_ad->get_Kp_vector(), kp));
+  EXPECT_TRUE(CompareMatrices(pid_ad->get_Ki_vector(), ki));
+  EXPECT_TRUE(CompareMatrices(pid_ad->get_Kd_vector(), kd));
+  // Check has_reference_acceleration.
+  EXPECT_EQ(idc_ad->num_input_ports(), 3);
+
+  // Test Expression.
+  auto idc_sym = idc.ToSymbolic();
+  EXPECT_EQ(idc_sym->get_input_port(0).size(), num_states);
 }
 
 
