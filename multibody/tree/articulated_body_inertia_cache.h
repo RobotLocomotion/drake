@@ -26,7 +26,7 @@ namespace internal {
 // - Articulated body inertia `Pplus_PB_W`, which can be thought of as the
 //   articulated body inertia of parent body P as though it were inertialess,
 //   but taken about Bo and expressed in W.
-// - LDLT factorization `ldlt_D_B` of the articulated body hinge inertia.
+// - LLT factorization `llt_D_B` of the articulated body hinge inertia.
 // - The Kalman gain `g_PB_W = P_B_W * H_PB_W * D_B⁻¹`.
 //
 // @tparam_default_scalar
@@ -73,18 +73,18 @@ class ArticulatedBodyInertiaCache {
     return Pplus_PB_W_[body_node_index];
   }
 
-  // LDLT factorization `ldlt_D_B` of the articulated body hinge inertia.
-  const math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& get_ldlt_D_B(
+  // LLT factorization `llt_D_B` of the articulated body hinge inertia.
+  const math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_llt_D_B(
       BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return ldlt_D_B_[body_node_index];
+    return llt_D_B_[body_node_index];
   }
 
-  // Mutable version of get_ldlt_D_B().
-  math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
+  // Mutable version of get_llt_D_B().
+  math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& get_mutable_llt_D_B(
       BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return ldlt_D_B_[body_node_index];
+    return llt_D_B_[body_node_index];
   }
 
   // The Kalman gain `g_PB_W` of the body.
@@ -106,7 +106,7 @@ class ArticulatedBodyInertiaCache {
   void Allocate() {
     P_B_W_.resize(num_nodes_);
     Pplus_PB_W_.resize(num_nodes_);
-    ldlt_D_B_.resize(num_nodes_);
+    llt_D_B_.resize(num_nodes_);
     g_PB_W_.resize(num_nodes_);
 
     // Initialize entries corresponding to world index to NaNs, since they
@@ -128,7 +128,7 @@ class ArticulatedBodyInertiaCache {
   // Pools indexed by BodyNodeIndex.
   std::vector<ArticulatedBodyInertia<T>> P_B_W_;
   std::vector<ArticulatedBodyInertia<T>> Pplus_PB_W_;
-  std::vector<math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>> ldlt_D_B_;
+  std::vector<math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>> llt_D_B_;
   std::vector<Matrix6xUpTo6<T>> g_PB_W_;
 };
 
