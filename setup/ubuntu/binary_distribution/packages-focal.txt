@@ -9,7 +9,7 @@ libbz2-1.0
 libdouble-conversion3
 libeigen3-dev
 libexpat1
-libfreetype6
+libfreetype-dev
 libgflags2.2
 libgfortran5
 libglew2.1
