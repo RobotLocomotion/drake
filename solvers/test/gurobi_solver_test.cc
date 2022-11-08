@@ -80,6 +80,13 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
   }
 }
 
+TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
+  GurobiSolver solver;
+  if (solver.is_available()) {
+    CheckSolution(solver);
+  }
+}
+
 TEST_P(QuadraticProgramTest, TestQP) {
   GurobiSolver solver;
   prob()->RunProblem(&solver);
@@ -283,6 +290,11 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   GurobiSolver solver;
   SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1E-6);
+}
+
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
+  GurobiSolver solver;
+  TestSocpDuplicatedVariable1(solver, 1E-6);
 }
 
 GTEST_TEST(GurobiTest, MultipleThreadsSharingEnvironment) {

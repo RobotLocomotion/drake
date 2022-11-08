@@ -346,6 +346,12 @@ void TestSocpDualSolution1(const SolverInterface& solver,
 void TestSocpDualSolution2(const SolverInterface& solver,
                            const SolverOptions& solver_options, double tol,
                            bool rotated_lorentz_cone_with_coefficient_two);
+
+// We intentionally use duplicated variables in the second order cone constraint
+// to test if Drake's solver wrappers can handle duplicated variables.
+// min x0 + x1
+// s.t 4x0²+3x1² ≤ 1
+void TestSocpDuplicatedVariable1(const SolverInterface& solver, double tol);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

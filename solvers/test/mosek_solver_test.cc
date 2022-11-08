@@ -144,6 +144,11 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1.3E-5);
 }
 
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
+  MosekSolver solver;
+  TestSocpDuplicatedVariable1(solver, 1E-6);
+}
+
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
