@@ -19,7 +19,6 @@ TODO(jwnimmer-tri) Rename this tool to something more general, like
 """
 
 import argparse
-from ensurepip import version
 from io import StringIO
 import os
 from pathlib import Path
@@ -203,19 +202,17 @@ def _find_git_sha(*, timestamp):
 def _check_deb_versions(*, filenames, version):
     """Check every `.deb` in filenames has the correct version, fail if not."""
     deb_filenames = [f for f in filenames if f.endswith(".deb")]
+    assert len(deb_filenames) > 0, filenames
     deb_versions = []  # list[tuple[str, str]]: (filename, extracted version)
     for deb in deb_filenames:
-        # Should produce output `{version}-1` e.g., `4.5.6-1`.
         proc = subprocess.run(["dpkg-deb", "-f", deb, "Version"],
                               capture_output=True, check=True)
         deb_version = proc.stdout.decode("utf-8").strip()
         deb_versions.append((deb, deb_version))
     version_errors = []
     for deb, deb_version in deb_versions:
-        deb_corrected = deb_version.split("-1")[0]  # grab X.Y.Z from X.Y.Z-1
-        if "focal" in deb:
-            deb_corrected = deb_version
-        if f"v{deb_corrected}" != version:  # version is prefixed with a v
+        # The version looks like "vM.m.p" and deb_version looks like "M.m.p-1".
+        if deb_version != f"{version[1:]}-1":
             version_errors.append(
                 f"For '{deb}': Version '{deb_version}' is not "
                 f"the expected value '{version}'")
