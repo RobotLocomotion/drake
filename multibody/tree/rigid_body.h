@@ -217,9 +217,9 @@ class RigidBody : public Body<T> {
   void SetCenterOfMassInBodyFrame(systems::Context<T>* context,
                                   const Vector3<T>& com) const {
     DRAKE_THROW_UNLESS(context != nullptr);
-    const T& x = p_BoBcm_B(0);
-    const T& y = p_BoBcm_B(1);
-    const T& z = p_BoBcm_B(2);
+    const T& x = com(0);
+    const T& y = com(1);
+    const T& z = com(2);
     systems::BasicVector<T>& spatial_inertia_parameter =
         context->get_mutable_numeric_parameter(
             spatial_inertia_parameter_index_);
