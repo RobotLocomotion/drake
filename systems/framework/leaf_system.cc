@@ -258,7 +258,8 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
   const auto orig_unknown = unknown;
   for (const auto& input_output : orig_unknown) {
     // Get the CacheEntry associated with the output port in this pair.
-    const auto& output = this->get_output_port(input_output.second);
+    const OutputPortBase& output = this->GetOutputPortBaseOrThrow(
+        __func__, input_output.second, /* warn_deprecated = */ false);
     DRAKE_ASSERT(typeid(output) == typeid(LeafOutputPort<T>));
     const auto& leaf_output = static_cast<const LeafOutputPort<T>&>(output);
     const auto& cache_entry = leaf_output.cache_entry();
@@ -269,7 +270,8 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
       continue;  // Leave this one "unknown".
 
     // Probe the dependency path and believe the result.
-    const auto& input = this->get_input_port(input_output.first);
+    const InputPortBase& input = this->GetInputPortBaseOrThrow(
+        __func__, input_output.first, /* warn_deprecated = */ false);
     const auto& input_tracker = context->get_tracker(input.ticket());
     auto& value = cache_entry.get_mutable_cache_entry_value(*context);
     value.mark_up_to_date();
@@ -655,6 +657,17 @@ InputPort<T>& LeafSystem<T>::DeclareAbstractInputPort(
 }
 
 template <typename T>
+void LeafSystem<T>::DeprecateInputPort(
+    const InputPort<T>& port, std::string message) {
+  InputPort<T>& mutable_port = const_cast<InputPort<T>&>(
+      this->get_input_port(port.get_index()));
+  DRAKE_THROW_UNLESS(&mutable_port == &port);
+  DRAKE_THROW_UNLESS(mutable_port.get_deprecation() == std::nullopt);
+  mutable_port.set_deprecation({std::move(message)});
+}
+
+
+template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
     std::variant<std::string, UseDefaultName> name,
     const BasicVector<T>& model_vector,
@@ -728,6 +741,16 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
         output->SetFrom(context.get_abstract_state().get_value(state_index));
       },
       {this->abstract_state_ticket(state_index)});
+}
+
+template <typename T>
+void LeafSystem<T>::DeprecateOutputPort(
+    const OutputPort<T>& port, std::string message) {
+  OutputPort<T>& mutable_port = const_cast<OutputPort<T>&>(
+      this->get_output_port(port.get_index()));
+  DRAKE_THROW_UNLESS(&mutable_port == &port);
+  DRAKE_THROW_UNLESS(mutable_port.get_deprecation() == std::nullopt);
+  mutable_port.set_deprecation({std::move(message)});
 }
 
 template <typename T>

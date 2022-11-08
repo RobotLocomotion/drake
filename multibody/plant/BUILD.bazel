@@ -587,6 +587,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_deprecated_test",
+    data = [
+        "test/split_pendulum.sdf",
+    ],
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_introspection_test",
     data = [
         "//examples/atlas:models",
