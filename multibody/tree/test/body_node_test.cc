@@ -46,8 +46,8 @@ class BodyNodeTester {
 
 namespace {
 
-// TODO(SeanCurtis-TRI): Consider moving this into common test utilities so
-// other tests can create mocked bodies. Possibly template it again.
+// TODO(SeanCurtis-TRI): Consider moving class DummyBody into common test
+//  utilities so other tests can create mocked bodies. Possibly templatize it.
 
 // Minimal definition of a body that we can use to construct a BodyNode.
 class DummyBody : public Body<double> {
@@ -99,12 +99,12 @@ class DummyBody : public Body<double> {
 // BodyNode::CalcArticulatedBodyHingeInertiaMatrixFactorization(). There are two
 // aspects of the message that are not simply *literal*:
 //
-//    - Inclusion of body names in the correct roles.
+//    - Inclusion of body names in their correct roles.
 //    - Customization for whether the joint allows translational and/or
 //      rotational motion.
 //
 // To test for both, we assess the *full* error message. This should be the only
-// time full message appears in a test. In all other test code, a small
+// time the full message appears in a test. In all other test code, a small
 // indication should be sufficient.
 GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
   // Construct enough of a node so we can invoke the dut with known body names.
@@ -151,13 +151,14 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
     const PlanarMobilizer<double> mobilizer(parent.body_frame(),
                                             child.body_frame());
     const BodyNode<double> body_node(&parent_node, &child, &mobilizer);
-    // We don't need to examine the full message. We exploit the knowledge that
-    // the resultant message in this case is a concatenation of the text in the
-    // previous messages. We look for evidence of that concatenation.
+    // In this case, we don't need to examine the full exception message since
+    // the message is a concatenation of the text in the previous messages. We
+    // look for evidence of concatenation with "rotation" and "translation".
     DRAKE_EXPECT_THROWS_MESSAGE(
         BodyNodeTester::CallLltFactorization(body_node, one_by_one),
-        "An internal .+ allows rotation.+ axes. Since the joint allows "
-        "translation.+");
+        "An internal mass matrix associated with the joint that connects body "
+        "parent to body child is not positive-definite. Since the joint allows "
+        "rotation.+ translation.+");
   }
 }
 
@@ -235,6 +236,7 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
         Vector3d{1.1, 2, 3},
         // A matrix with a not-too-bad condition number still passes.
         // (Contrast this with the failiing test below.)
+        // TODO(Mitiguy) Improve robusness of this test (see TODO below).
         Vector3d{Vector3d{1.1, 2e12, 3e17}}}) {
     six_by_six.block<3, 3>(0, 0) = make_K(K_eigen_values);
     EXPECT_NO_THROW(Tester::CallLltFactorization(body_node, six_by_six))
@@ -250,6 +252,13 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
         // round-off when re-expressing K_principal).
         Vector3d{0, 1e-9, 3},
         // A matrix with a too-bad condition number; it throws.
+        // TODO(Mitiguy) Improve robusness of these tests. These last two sets
+        //  of values are particularly brittle as we are near the edge of a
+        //  numerical "cliff". A single call to LLT is not a reliable way to
+        //  check if a matrix is near singular. Consider using an tolerance to
+        //  discern that we are sufficiently far from the cliff's edge.
+        //  Note: The brittle tests herein were chosen because they worked --
+        //  based on the computer hardware available in CI testing.
         Vector3d{Vector3d{1.1, 2e12, 3e18}}}) {
     six_by_six.block<3, 3>(0, 0) = make_K(K_eigen_values);
     EXPECT_THROW(Tester::CallLltFactorization(body_node, six_by_six),

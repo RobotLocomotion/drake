@@ -1639,7 +1639,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return abic->get_mutable_llt_D_B(topology_.index);
   }
 
-  // Forms LLT factorization of articulated rigid body's hinge inertia matrix..
+  // Forms LLT factorization of articulated rigid body's hinge inertia matrix.
   // @param[in] D_B Articulated rigid body hinge matrix.
   // @param[out] llt_D_B Stores the LLT factorization of D_B.
   // @throws an exception if D_B is not positive definite or is near-singular.

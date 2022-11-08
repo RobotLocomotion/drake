@@ -313,7 +313,7 @@ const RigidBody<double>& AddCubicalLink(
 }
 
 // ----------------------------------------------------------------------------
-// There are 5 tests below whose purpose is to improving MultibodyPlant feedback
+// There are 5 tests below whose purpose is to improve MultibodyPlant feedback
 // for invalid mass/inertia properties. The tests below uses forward dynamics in
 // continuous mode and test whether an exception is thrown for invalid
 // mass/inertia properties that are detected in the Articulated Body Algorithm.
@@ -332,6 +332,7 @@ const RigidBody<double>& AddCubicalLink(
 // Test 5 uses a single rigid body that connects to the world with a 6
 // degree-of-freedom "free-joint" and hence involves a 6 x 6 articulated body
 // hinge inertia matrix (whereas tests 1, 2, 3, 4 only involve a 1 x 1 matrix).
+// TODO(Mitiguy) Shorten this comment and give more "why" and less "what".
 // ----------------------------------------------------------------------------
 
 // Verify an exception is thrown for a forward dynamic analysis of a single

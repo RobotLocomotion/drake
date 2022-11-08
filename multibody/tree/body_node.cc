@@ -17,8 +17,8 @@ void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
   //  - body_node_test.cc: test the precision of the throwing condition based on
   //    the given hinge matrix, D_B. I.e., is this "correct"?
   //  - multibody_plant_forward_dynamics_test.cc: test integration with the
-  //    larger multibody ecosystem (see the HingeInertiaMatrixTest fixture) to
-  //    see confirm that bad models/configurations get caught in this net. In
+  //    larger multibody ecosystem (see the TestHingeInertiaMatrix fixture) to
+  //    confirm that bad models/configurations get caught in this net. In
   //    other words, does this test serve its intended purpose?
 
   // Compute the LLT factorization of D_B as llt_D_B.
@@ -49,7 +49,7 @@ void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
   //  If the LLT of (D_B - ε I) is not positive definite and the LLT of D_B is
   //  positive definite, we _know_ D_B is near singular.
   if (llt_D_B->eigen_linear_solver().info() != Eigen::Success) {
-    // Create a meaningful message the helps the user as much as possible.
+    // Create a meaningful message that helps the user as much as possible.
     const Mobilizer<T>& mobilizer = get_mobilizer();
     const Body<T>& inboard_body = mobilizer.inboard_body();
     const Body<T>& outboard_body = mobilizer.outboard_body();
