@@ -175,7 +175,10 @@ if [[ $(arch) = "aarch64" ]]; then
   if [[ "$(which bazel)" ]]; then
     echo "Bazel is already installed." >&2
   else
-    echo "You need to manually install Bazel somehow; see https://bazel.build/ for details." >&2
+    echo
+    "WARNING: On Ubuntu arm64 systems, Drake's install_prereqs does not
+    automatically install Bazel on your behalf. You will need to install
+    Bazel yourself. See https://bazel.build for instructions." >&2
   fi
 else
   dpkg_install_from_wget \
