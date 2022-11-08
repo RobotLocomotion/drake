@@ -205,9 +205,9 @@ class RigidBody : public Body<T> {
   }
 
   /// For `this` rigid body B, sets its center of mass position stored in
-  /// @p context to @p p_BoBcm_B.
+  /// @p context to @p position.
   /// @param[out] context contains the state of the multibody system.
-  /// @param[in] p_BoBcm_B position vector from Bo (B's origin) to Bcm
+  /// @param[in] com position vector from Bo (B's origin) to Bcm
   /// (B's center of mass), expressed in B.
   /// @throws std::exception if `this` RigidBody is not owned by a
   /// MultibodyPlant.
@@ -215,7 +215,7 @@ class RigidBody : public Body<T> {
   /// without modifying I_BBo_B (B's rotational inertia about Bo, expressed
   /// in B). If needed, use SetSpatialInertiaInBodyFrame().
   void SetCenterOfMassInBodyFrame(systems::Context<T>* context,
-                                  const Vector3<T>& p_BoBcm_B) const {
+                                  const Vector3<T>& com) const {
     DRAKE_THROW_UNLESS(context != nullptr);
     const T& x = p_BoBcm_B(0);
     const T& y = p_BoBcm_B(1);
@@ -232,11 +232,11 @@ class RigidBody : public Body<T> {
   }
 
   /// For `this` rigid body B, sets its spatial inertia that is stored in
-  /// @p context to @p M_BBo_B.
+  /// @p context to @p M_Bo_B.
   /// @param[out] context contains the state of the multibody system.
-  /// @param[in] M_BBo_B spatial inertia of this rigid body B about Bo (B's
-  /// origin), expressed in B. M_BBo_B contains properties related to B's mass,
-  /// the position vector from Bo to Bcm (B's center of mass), and G_BBo_B
+  /// @param[in] M_Bo_B spatial inertia of this rigid body B about Bo (B's
+  /// origin), expressed in B. M_Bo_B contains properties related to B's mass,
+  /// the position vector from Bo to Bcm (B's center of mass), and G_Bo_B
   /// (B's unit inertia about Bo expressed in B).
   /// @throws std::exception if `this` RigidBody is not owned by a
   /// MultibodyPlant.
