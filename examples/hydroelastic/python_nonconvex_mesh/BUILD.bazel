@@ -34,6 +34,10 @@ drake_py_binary(
         "--simulation_time=0.01",
         "--target_realtime_rate=0",
     ],
+    # The debug test can be 100x slower than the release.
+    # The debug test takes about 90 seconds.
+    # The release test takes about 3 seconds.
+    test_rule_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
     ],
