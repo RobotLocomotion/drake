@@ -101,6 +101,7 @@ drake_cc_library(
     srcs = [
         "ball_rpy_joint.cc",
         "body.cc",
+        "body_node.cc",
         "body_node_impl.cc",
         "door_hinge.cc",
         "fixed_offset_frame.cc",
@@ -260,6 +261,15 @@ drake_cc_library(
         ":tree",
         "//common:default_scalars",
         "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "body_node_test",
+    deps = [
+        ":multibody_tree_core",
+        ":rotational_inertia",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
