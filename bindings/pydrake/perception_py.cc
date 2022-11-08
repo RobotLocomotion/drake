@@ -124,9 +124,11 @@ void init_perception(py::module m) {
         .def("FlipNormalsTowardPoint", &Class::FlipNormalsTowardPoint,
             py::arg("p_CP"), cls_doc.FlipNormalsTowardPoint.doc)
         .def("VoxelizedDownSample", &Class::VoxelizedDownSample,
-            py::arg("voxel_size"), cls_doc.VoxelizedDownSample.doc)
+            py::arg("voxel_size"), py::arg("parallelize") = false,
+            cls_doc.VoxelizedDownSample.doc)
         .def("EstimateNormals", &Class::EstimateNormals, py::arg("radius"),
-            py::arg("num_closest"), cls_doc.EstimateNormals.doc);
+            py::arg("num_closest"), py::arg("parallelize") = false,
+            cls_doc.EstimateNormals.doc);
   }
 
   AddValueInstantiation<PointCloud>(m);
