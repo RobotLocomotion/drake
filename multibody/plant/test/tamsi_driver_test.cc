@@ -13,8 +13,6 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-/* @file This file tests SapDriver's support for distance constraints. */
-
 using drake::math::RigidTransformd;
 using drake::systems::Context;
 using drake::systems::Diagram;
@@ -46,11 +44,11 @@ std::ostream& operator<<(std::ostream& out, const TestConfig& c) {
 // The purpose of this fixture is to verify the implementation of TamsiDriver's
 // CalcContactSolverResults(). In this regard this is more of an integration
 // test where the correctness of the results rely on the ability of the driver
-// to properly setup a contact problem for TAMSI using MultibodyPlant's (for
+// to properly setup a contact problem for TAMSI using MultibodyPlant (for
 // kinematics and dynamics) and CompliantContactManager's services (for
 // contact), and solve it with TAMSI. MultibodyPlant, CompliantContactManager
 // and TamsiSolver are tested elsewhere.
-class SphereOnGround : public ::testing::TestWithParam<TestConfig> {
+class RigidBodyOnCompliantGround : public ::testing::TestWithParam<TestConfig> {
  public:
   // This fixture sets up a problem where a rigid body is set on top of a
   // compliant ground. The position of the body is set so that the compliant
@@ -143,13 +141,13 @@ class SphereOnGround : public ::testing::TestWithParam<TestConfig> {
     const TestConfig& config = GetParam();
     const double weight = CalcBodyWeight();
     // Either point contact stiffness or the effective hydroelastic stiffness.
-    const double stiffness =
-        config.point_contact
-            ? kStiffness_
-            : kArea_ * kHydroelasticModulus_ / kGroundThickness_;
-    if (config.point_contact)
-      return kPointContactSphereRadius_ - weight / stiffness;
-    return -weight / stiffness;
+    if (config.point_contact) {
+      return kPointContactSphereRadius_ - weight / kStiffness_;
+    } else {
+      const double stiffness =
+          kArea_ * kHydroelasticModulus_ / kGroundThickness_;
+      return -weight / stiffness;
+    }
   }
 
   std::unique_ptr<Diagram<double>> diagram_;
@@ -175,7 +173,7 @@ class SphereOnGround : public ::testing::TestWithParam<TestConfig> {
 };
 
 // This test verifies contact results in the equilibrium configuration.
-TEST_P(SphereOnGround, VerifyEquilibriumConfiguration) {
+TEST_P(RigidBodyOnCompliantGround, VerifyEquilibriumConfiguration) {
   const TestConfig& config = GetParam();
   EXPECT_EQ(plant_->num_velocities(), 6);
   contact_solvers::internal::ContactSolverResults<double> results;
@@ -186,13 +184,8 @@ TEST_P(SphereOnGround, VerifyEquilibriumConfiguration) {
   EXPECT_EQ(results.fn.size(), num_contacts);
 
   const double normal_force_expected = CalcBodyWeight();
-
-  const double normal_force =
-      config.point_contact ? results.fn[0] : 2.0 * results.fn[0];
+  const double normal_force = results.fn.sum();
   EXPECT_NEAR(normal_force, normal_force_expected, kEps);
-  if (!config.point_contact) {
-    EXPECT_NEAR(results.fn[1], results.fn[0], kEps);
-  }
 }
 
 // Setup test cases using point and hydroelastic contact.
@@ -203,7 +196,7 @@ std::vector<TestConfig> MakeTestCases() {
   };
 }
 
-INSTANTIATE_TEST_SUITE_P(TamsiDriverTests, SphereOnGround,
+INSTANTIATE_TEST_SUITE_P(TamsiDriverTests, RigidBodyOnCompliantGround,
                          testing::ValuesIn(MakeTestCases()),
                          testing::PrintToStringParamName());
 

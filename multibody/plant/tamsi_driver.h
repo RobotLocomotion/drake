@@ -24,8 +24,6 @@ class CompliantContactManager;
 // updates using the TAMSI solver. A const manager is provided at construction
 // so that the driver has access to the const model and computation services
 // agnostic to the solver type, such as geometry queries and/or kinematics.
-// Mutable access to the manager is provided during DeclareCacheEntries() to
-// allow the declaration of system-level cache entries.
 // @tparam_default_scalar
 template <typename T>
 class TamsiDriver {
@@ -73,9 +71,7 @@ class TamsiDriver {
       const VectorX<T>& damping, const VectorX<T>& mu,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
 
-  // The driver only has mutable access during the call to
-  // DeclareCacheEntries(). Otherwise the driver only has const access to the
-  // manager.
+  // Const access to the manager.
   const CompliantContactManager<T>* const manager_{nullptr};
 };
 
