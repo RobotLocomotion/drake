@@ -1205,6 +1205,11 @@ class LeafSystem : public System<T> {
   InputPort<T>& DeclareAbstractInputPort(
       std::variant<std::string, UseDefaultName> name,
       const AbstractValue& model_value);
+
+  /** Flags an already-declared input port as deprecated. The first attempt to
+  use the port in a program will log a warning message. This function may be
+  called at most once for any given port. */
+  void DeprecateInputPort(const InputPort<T>& port, std::string message);
   //@}
 
   // =========================================================================
@@ -1539,6 +1544,11 @@ class LeafSystem : public System<T> {
   LeafOutputPort<T>& DeclareStateOutputPort(
       std::variant<std::string, UseDefaultName> name,
       AbstractStateIndex state_index);
+
+  /** Flags an already-declared output port as deprecated. The first attempt to
+  use the port in a program will log a warning message. This function may be
+  called at most once for any given port. */
+  void DeprecateOutputPort(const OutputPort<T>& port, std::string message);
   //@}
 
   // =========================================================================

@@ -1,10 +1,13 @@
 #include "drake/systems/framework/system_base.h"
 
 #include <atomic>
+#include <mutex>
 #include <stdexcept>
+#include <unordered_set>
 
 #include <fmt/format.h>
 
+#include "drake/common/hash.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 
@@ -177,6 +180,9 @@ const AbstractValue* SystemBase::EvalAbstractInputImpl(
   if (port_index >= num_input_ports())
     ThrowInputPortIndexOutOfRange(func, port_index);
 
+  if (input_ports_[port_index]->get_deprecation().has_value())
+    WarnPortDeprecation(/* is_input = */ true, port_index);
+
   const FixedInputPortValue* const free_port_value =
       context.MaybeGetFixedInputPortValue(port_index);
 
@@ -326,6 +332,53 @@ void SystemBase::ThrowNotCreatedForThisSystemImpl(
                                        nice_type_name, GetSystemType(),
                                        GetSystemPathname()));
   }
+}
+
+void SystemBase::WarnPortDeprecation(bool is_input, int port_index) const {
+  // Locate the deprecated PortBase (while sanity-checking our arguments).
+  PortBase* port;
+  if (is_input) {
+    port = input_ports_.at(port_index).get();
+  } else {
+    port = output_ports_.at(port_index).get();
+  }
+  DRAKE_DEMAND(port != nullptr);
+  DRAKE_DEMAND(port->get_deprecation().has_value());
+
+  // If this port object has already been warned about, then return quickly.
+  std::atomic<bool>* const deprecation_already_warned =
+      internal::PortBaseAttorney::deprecation_already_warned(port);
+  const bool had_already_warned = deprecation_already_warned->exchange(true);
+  if (had_already_warned) {
+    return;
+  }
+
+  // The had_already_warned above is a *per instance* warning, for performance.
+  // We'd like to warn at most once *per process*; therefore, we have a second
+  // layer of checking, using a unique lookup key for SystemType + PortBase.
+  drake::internal::FNV1aHasher hash;
+  hash_append(hash, this->GetSystemType());
+  hash_append(hash, is_input);
+  hash_append(hash, port->get_name());
+  const size_t key = size_t{hash};
+  static std::mutex g_mutex;
+  static std::unordered_set<size_t> g_warned_hash;
+  {
+    std::lock_guard lock(g_mutex);
+    const bool inserted = g_warned_hash.insert(key).second;
+    if (!inserted) {
+      // The key was already in the map, which means that we've already
+      // warned about this port name on this particular system subclass.
+      return;
+    }
+  }
+
+  // We hadn't warned yet, so we'll warn now.
+  const std::string& description = port->GetFullDescription();
+  const std::string& deprecation = port->get_deprecation().value();
+  const char* const message = deprecation.size() ? deprecation.c_str() :
+      "no deprecation details were provided";
+  drake::log()->warn("{} is deprecated: {}", description, message);
 }
 
 std::string SystemBase::GetUnsupportedScalarConversionMessage(

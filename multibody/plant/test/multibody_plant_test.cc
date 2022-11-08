@@ -219,10 +219,10 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       "DefaultModelInstance_actuation");
   EXPECT_EQ(plant->get_state_output_port(default_model_instance())
                 .get_name(),
-            "DefaultModelInstance_continuous_state");
+            "DefaultModelInstance_state");
   EXPECT_EQ(plant->get_state_output_port(pendulum_model_instance)
                 .get_name(),
-            "SplitPendulum_continuous_state");
+            "SplitPendulum_state");
 
   // Query if elements exist in the model.
   EXPECT_TRUE(plant->HasBodyNamed(parameters.link1_name()));

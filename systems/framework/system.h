@@ -1016,7 +1016,8 @@ class System : public SystemBase {
     // has a check that port.get_system_interface() matches `this` which is a
     // System<T>, so we are safe.
     return static_cast<const InputPort<T>&>(
-        this->GetInputPortBaseOrThrow(__func__, port_index));
+        this->GetInputPortBaseOrThrow(__func__, port_index,
+                                      /* warn_deprecated = */ true));
   }
 
   /** Convenience method for the case of exactly one input port. */
@@ -1057,7 +1058,8 @@ class System : public SystemBase {
     // has a check that port.get_system_interface() matches `this` which is a
     // System<T>, so we are safe.
     return static_cast<const OutputPort<T>&>(
-        this->GetOutputPortBaseOrThrow(__func__, port_index));
+        this->GetOutputPortBaseOrThrow(__func__, port_index,
+                                       /* warn_deprecated = */ true));
   }
 
   /** Convenience method for the case of exactly one output port. */
