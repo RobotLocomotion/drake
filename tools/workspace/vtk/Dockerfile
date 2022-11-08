@@ -22,11 +22,8 @@ RUN /image/provision.sh
 
 FROM base AS vtk
 
-ADD image/build-vtk.sh /image/
+ADD image/clone-vtk.sh /image/
+ADD image/build-and-package-vtk.sh /image/
 ADD image/vtk-args /vtk/
 
-RUN /image/build-vtk.sh
-
-ADD image/package.sh /image/
-
-RUN /image/package.sh
+RUN /image/build-and-package-vtk.sh
