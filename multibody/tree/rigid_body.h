@@ -205,7 +205,7 @@ class RigidBody : public Body<T> {
   }
 
   /// For `this` rigid body B, sets its center of mass position stored in
-  /// @p context to @p position.
+  /// @p context to @p com.
   /// @param[out] context contains the state of the multibody system.
   /// @param[in] com position vector from Bo (B's origin) to Bcm
   /// (B's center of mass), expressed in B.
