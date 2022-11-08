@@ -151,6 +151,13 @@ DiscreteUpdateManager<T>::coupler_constraints_specs() const {
       T>::coupler_constraints_specs(*plant_);
 }
 
+template <typename T>
+const std::vector<int>& DiscreteUpdateManager<T>::EvalJointLockingIndices(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::EvalJointLockingIndices(plant(), context);
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

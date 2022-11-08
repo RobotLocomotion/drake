@@ -26,6 +26,8 @@ namespace internal {
 // Forward declaration.
 template <typename>
 class SapDriver;
+template <typename>
+class TamsiDriver;
 
 // To compute accelerations due to external forces (in particular non-contact
 // forces), we pack forces, ABA cache and accelerations into a single struct
@@ -94,6 +96,7 @@ class CompliantContactManager final
   // with tighter functionality. For instance, a class that takes care of
   // getting proximity properties and creating DiscreteContactPairs.
   friend class SapDriver<T>;
+  friend class TamsiDriver<T>;
 
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
