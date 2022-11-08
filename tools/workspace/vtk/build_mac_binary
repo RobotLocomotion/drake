@@ -38,10 +38,6 @@ while IFS='' read -r line || [[ -n "${line}" ]]; do
 done < "${vtk_args_path}"
 vtk_cmake_args+=("-DVTK_USE_COCOA:BOOL=ON")
 
-# TODO(svenevs): unify this with image/build-vtk.sh.
-# maybe we should just use `cd ${vtk_src} && git describe`?
-readonly VTK_VERSION="d706250a1422ae1e7ece0fa09a510186769a5fec"
-
 # Directory to contain our source and build trees.
 container="${this_file_dir}/mac_binary_build"
 build_dir="${container}/build"
@@ -50,30 +46,18 @@ rm -rf "${container}"
 mkdir -p "${container}"
 cd "${container}"
 
-git clone https://gitlab.kitware.com/vtk/vtk.git src
-src_dir="${container}/src"
-git -C "${src_dir}" checkout "${VTK_VERSION}"
+# Defines variables `architecture` and `archive`.
+. "${this_file_dir}/image/clone-vtk.sh"
 
-# TODO(svenevs): macOS install rpath concerns.
-# -DCMAKE_INSTALL_NAME_DIR:STRING=/opt/homebrew/Cellar/vtk@9.1.0/9.1.0_4/lib
-# -DCMAKE_INSTALL_RPATH:STRING=/opt/homebrew/Cellar/vtk@9.1.0/9.1.0_4/lib
-# //systems/sensors:lcm_image_array_to_images_test.  `jpeg-turbo`, however,
-# works as expected.  As such, define JPEG_ROOT to point there.
-# `arch` will report i386 on x86_64 builds, CMake needs either `arm64` or `x86_64`.
-if [[ "$(arch)" == "arm64" ]]; then
-    osx_arch="arm64"
-else
-    osx_arch="x86_64"
-fi
-
-# NOTE: for unknown reason the traditional `jpeg` is failing on
+# NOTE: Setting JPEG_ROOT tells VTK where to find libjpeg, otherwise it will
+# possibly choose `jpeg` or `jpeg-turbo` (depending on system and brew).
 cmake \
     -G Ninja \
     -Wno-dev \
     -DCMAKE_INSTALL_PREFIX="${install_dir}" \
     -DCMAKE_BUILD_TYPE:STRING=Release \
     -DCMAKE_CXX_STANDARD:STRING=20 \
-    "-DCMAKE_OSX_ARCHITECTURES:STRING='${osx_arch}'" \
+    "-DCMAKE_OSX_ARCHITECTURES:STRING='${architecture}'" \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_FIND_FRAMEWORK=LAST \
     -DCMAKE_OSX_SYSROOT="${macosx_sysroot}" \
@@ -87,9 +71,6 @@ cmake \
 cd "${build_dir}"
 ninja install/strip
 
-readonly vtk_version="9.2.0"
-readonly build_number="1"
-readonly archive="vtk-${vtk_version}-${build_number}-mac-${osx_arch}.tar.gz"
 cd "${install_dir}"
 
 tar czf "${archive}" -- *
