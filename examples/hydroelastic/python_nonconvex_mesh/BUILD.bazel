@@ -31,7 +31,7 @@ drake_py_binary(
         ":models",
     ],
     test_rule_args = [
-        "--simulation_time=0.1",
+        "--simulation_time=0.01",
         "--target_realtime_rate=0",
     ],
     deps = [
