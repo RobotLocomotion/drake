@@ -570,7 +570,7 @@ class Meshcat {
       a->Visit(DRAKE_NVP(axes));
     }
 
-    // Descriptions of these properties were adopted from
+    // Descriptions of these properties were adapted from
     // https://developer.mozilla.org/en-US/docs/Web/API/Gamepad.
 
     /** An an integer that is auto-incremented to be unique for each device
