@@ -4,6 +4,7 @@
 #include <array>
 #include <atomic>
 #include <limits>
+#include <unordered_set>
 
 #include "drake/common/never_destroyed.h"
 #include "drake/math/quadratic_form.h"
@@ -221,6 +222,45 @@ MSKrescodee MosekSolverProgram::AddLinearConstraintToMosek(
 }
 
 MSKrescodee MosekSolverProgram::ParseLinearExpression(
+    const solvers::MathematicalProgram& prog,
+    const Eigen::SparseMatrix<double>& A, const Eigen::SparseMatrix<double>& B,
+    const VectorX<symbolic::Variable>& decision_vars,
+    const std::vector<MSKint32t>& slack_vars_mosek_indices,
+    std::vector<MSKint32t>* F_subi, std::vector<MSKint32t>* F_subj,
+    std::vector<MSKrealt>* F_valij,
+    std::vector<std::unordered_map<
+        MSKint64t, std::pair<std::vector<MSKint64t>, std::vector<MSKrealt>>>>*
+        bar_F) {
+  // First check if decision_vars contains duplication.
+  // Since the duplication doesn't happen very often, we focus on improving the
+  // speed of the no-duplication case.
+  std::unordered_set<symbolic::Variable::Id> decision_vars_set;
+  bool has_duplication = false;
+  for (int i = 0; i < decision_vars.rows(); ++i) {
+    auto it = decision_vars_set.find(decision_vars(i).get_id());
+    if (it != decision_vars_set.end()) {
+      has_duplication = true;
+      break;
+    } else {
+      decision_vars_set.insert(it, decision_vars(i).get_id());
+    }
+  }
+  if (has_duplication) {
+    Eigen::SparseMatrix<double> A_unique;
+    VectorX<symbolic::Variable> unique_decision_vars;
+    AggregateDuplicateVariables(A, decision_vars, &A_unique,
+                                &unique_decision_vars);
+    return this->ParseLinearExpressionNoDuplication(
+        prog, A_unique, B, unique_decision_vars, slack_vars_mosek_indices,
+        F_subi, F_subj, F_valij, bar_F);
+  } else {
+    return this->ParseLinearExpressionNoDuplication(
+        prog, A, B, decision_vars, slack_vars_mosek_indices, F_subi, F_subj,
+        F_valij, bar_F);
+  }
+}
+
+MSKrescodee MosekSolverProgram::ParseLinearExpressionNoDuplication(
     const solvers::MathematicalProgram& prog,
     const Eigen::SparseMatrix<double>& A, const Eigen::SparseMatrix<double>& B,
     const VectorX<symbolic::Variable>& decision_vars,

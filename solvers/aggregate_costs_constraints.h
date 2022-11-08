@@ -83,6 +83,16 @@ void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
                                      Eigen::VectorXd* upper);
 
 /**
+ For linear expression A * vars where `vars` might contain duplicated entries,
+ rewrite this linear expression as A_new * vars_new where vars_new doesn't
+ contain duplicated entries.
+ */
+void AggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,
+                                 const VectorX<symbolic::Variable>& vars,
+                                 Eigen::SparseMatrix<double>* A_new,
+                                 VectorX<symbolic::Variable>* vars_new);
+
+/**
  * Returns the first non-convex quadratic cost among @p quadratic_costs. If all
  * quadratic costs are convex, then return a nullptr.
  */

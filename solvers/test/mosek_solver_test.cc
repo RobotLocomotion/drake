@@ -62,6 +62,13 @@ TEST_F(UnboundedLinearProgramTest1, Test) {
   }
 }
 
+TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
+  MosekSolver solver;
+  if (solver.available()) {
+    CheckSolution(solver);
+  }
+}
+
 TEST_P(QuadraticProgramTest, TestQP) {
   MosekSolver solver;
   prob()->RunProblem(&solver);
