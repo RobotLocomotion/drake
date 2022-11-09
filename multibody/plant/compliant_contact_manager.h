@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/multibody/plant/contact_pair_kinematics.h"
+#include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/deformable_driver.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/systems/framework/context.h"
@@ -119,7 +120,9 @@ class CompliantContactManager final
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
+    systems::CacheIndex contact_kinematics;
     systems::CacheIndex discrete_contact_pairs;
+    systems::CacheIndex hydroelastic_contact_info;
     systems::CacheIndex non_contact_forces_accelerations;
   };
 
@@ -173,10 +176,17 @@ class CompliantContactManager final
   void DoCalcAccelerationKinematicsCache(
       const systems::Context<T>&,
       multibody::internal::AccelerationKinematicsCache<T>*) const final;
+  void DoCalcContactResults(
+      const systems::Context<T>&,
+      ContactResults<T>* contact_results) const final;
 
   // This method computes sparse kinematics information for each contact pair at
   // the given configuration stored in `context`.
   std::vector<ContactPairKinematics<T>> CalcContactKinematics(
+      const systems::Context<T>& context) const;
+
+  // Eval version of CalcContactKinematics().
+  const std::vector<ContactPairKinematics<T>>& EvalContactKinematics(
       const systems::Context<T>& context) const;
 
   // Given the configuration stored in `context`, this method appends discrete
@@ -206,6 +216,17 @@ class CompliantContactManager final
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const final;
 
+  // Computes per-face contact information for the hydroelastic model (slip
+  // velocity, traction, etc). On return contact_info->size() will equal the
+  // number of faces discretizing the contact surface.
+  void CalcHydroelasticContactInfo(
+      const systems::Context<T>& context,
+      std::vector<HydroelasticContactInfo<T>>* contact_info) const;
+
+  // Eval version of CalcHydroelasticContactInfo() .
+  const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
+      const systems::Context<T>& context) const;
+
   // Computes all continuous forces in the MultibodyPlant model. Joint limits
   // are not included as continuous compliant forces but rather as constraints
   // in the solver, and therefore must be excluded.
@@ -224,6 +245,20 @@ class CompliantContactManager final
   const multibody::internal::AccelerationKinematicsCache<T>&
   EvalAccelerationsDueToNonContactForcesCache(
       const systems::Context<T>& context) const;
+
+  // Helper method to fill in contact_results with point contact information
+  // for the given state stored in `context`.
+  // @param[in,out] contact_results is appended to
+  void AppendContactResultsForPointContact(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
+
+  // Helper method to fill in `contact_results` with hydroelastic contact
+  // information for the given state stored in `context`.
+  // @param[in,out] contact_results is appended to
+  void AppendContactResultsForHydroelasticContact(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
 
   CacheIndexes cache_indexes_;
   // Vector of joint damping coefficients, of size plant().num_velocities().
