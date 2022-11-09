@@ -1860,6 +1860,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       double v_stiction = MultibodyPlantConfig{}.stiction_tolerance) {
     friction_model_.set_stiction_tolerance(v_stiction);
   }
+
+  /// @returns the stiction tolerance parameter, in m/s.
+  /// @see set_stiction_tolerance.
+  double stiction_tolerance() const {
+    return friction_model_.stiction_tolerance();
+  }
+
   /// @} <!-- Contact modeling -->
 
   /// @anchor mbp_state_accessors_and_mutators
