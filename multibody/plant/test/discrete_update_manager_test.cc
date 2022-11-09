@@ -159,6 +159,9 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
     }
   }
 
+  void DoCalcContactResults(const systems::Context<T>& context,
+                            ContactResults<T>* contact_results) const final {}
+
  private:
   systems::DiscreteStateIndex additional_state_index_;
   systems::CacheIndex cache_index_;

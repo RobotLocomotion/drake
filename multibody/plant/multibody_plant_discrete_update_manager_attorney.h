@@ -113,6 +113,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
       const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
     return plant.EvalJointLockingIndices(context);
   }
+
+  static BodyIndex FindBodyByGeometryId(const MultibodyPlant<T>& plant,
+                                        geometry::GeometryId geometry_id) {
+    return plant.FindBodyByGeometryId(geometry_id);
+  }
 };
 }  // namespace internal
 }  // namespace multibody
