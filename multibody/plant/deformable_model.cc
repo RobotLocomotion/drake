@@ -64,6 +64,39 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
 }
 
 template <typename T>
+void DeformableModel<T>::SetWallBoundaryCondition(DeformableBodyId id,
+                                                  const Vector3<T>& p_WQ,
+                                                  const Vector3<T>& n_W) {
+  this->ThrowIfSystemResourcesDeclared(__func__);
+  ThrowUnlessRegistered(__func__, id);
+  DRAKE_DEMAND(n_W.norm() > 1e-10);
+  const Vector3<T>& nhat_W = n_W.normalized();
+
+  fem::FemModel<T>& fem_model = *fem_models_.at(id);
+  const int num_nodes = fem_model.num_nodes();
+  constexpr int kDim = 3;
+  auto is_inside_wall = [&p_WQ, &nhat_W](const Vector3<T>& p_WV) {
+    T distance_to_wall = (p_WV - p_WQ).dot(nhat_W);
+    return distance_to_wall < 0;
+  };
+
+  const VectorX<T>& p_WVs = GetReferencePositions(id);
+  fem::internal::DirichletBoundaryCondition<T> bc;
+  for (int n = 0; n < num_nodes; ++n) {
+    const int dof_index = kDim * n;
+    const auto p_WV = p_WVs.template segment<kDim>(dof_index);
+    if (is_inside_wall(p_WV)) {
+      /* Set all kDim dofs associated with this node to be subject to zero
+       Dirichlet BC. */
+      for (int d = 0; d < kDim; ++d) {
+        bc.AddBoundaryCondition(dof_index + d, Vector3<T>(p_WV(d), 0, 0));
+      }
+    }
+  }
+  fem_model.SetDirichletBoundaryCondition(std::move(bc));
+}
+
+template <typename T>
 systems::DiscreteStateIndex DeformableModel<T>::GetDiscreteStateIndex(
     DeformableBodyId id) const {
   this->ThrowIfSystemResourcesNotDeclared(__func__);
