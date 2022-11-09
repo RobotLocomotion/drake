@@ -3,6 +3,7 @@ import textwrap
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.geometry import Meshcat
 import pydrake.visualization as mut
 
 
@@ -87,43 +88,35 @@ class TestModelVisualizer(unittest.TestCase):
     </sdf>
     """)
 
-    def test_model_in_buffer(self):
-        """
-        Tests the ModelVisualizer using a model in a string buffer.
-
-        Also tests getters and re-using a Meshcat instance.
-        """
-        visualize_frames = True
-        triad_length = 0.4
-        triad_radius = 0.02
-        triad_opacity = 0.5
-        publish_contacts = False
-        browser_new = False
-        pyplot = True
-
-        dut = mut.ModelVisualizer(
-            visualize_frames=visualize_frames, triad_length=triad_length,
-            triad_radius=triad_radius, triad_opacity=triad_opacity,
-            publish_contacts=publish_contacts, browser_new=browser_new,
-            pyplot=pyplot)
-
-        self.assertEqual(dut.visualize_frames, visualize_frames)
-        self.assertEqual(dut.triad_length, triad_length)
-        self.assertEqual(dut.triad_radius, triad_radius)
-        self.assertEqual(dut.triad_opacity, triad_opacity)
-        self.assertEqual(dut.publish_contacts, publish_contacts)
-        self.assertEqual(dut.browser_new, browser_new)
-        self.assertEqual(dut.pyplot, pyplot)
-
-        dut.parser.AddModelsFromString(self.SAMPLE_OBJ, 'sdf')
+    def test_model_from_string(self):
+        """Visualizes a model from a string buffer."""
+        dut = mut.ModelVisualizer()
+        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
+        self.assertIsNotNone(dut.meshcat())
         dut.Run(position=[1, 0, 0, 0, 0, 0, 0], loop_once=True)
 
-        dut2 = mut.ModelVisualizer(meshcat=dut.meshcat)
-        dut2.parser.AddModelsFromString(self.SAMPLE_OBJ, 'sdf')
+    def test_provided_meshcat(self):
+        """Visualizes using a user-provided meshcat."""
+        meshcat = Meshcat()
+        dut = mut.ModelVisualizer(meshcat=meshcat)
+        self.assertEqual(dut.meshcat(), meshcat)
+        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
         dut.Run(loop_once=True)
 
-    def test_model_in_file(self):
-        """Tests the ModelVisualizer using a model in a file."""
+    def test_pyplot(self):
+        """Enables pyplot and ensures nothing crashes."""
+        # This acute test only makes sense when pyplot is disabled by default.
+        defaults = mut.ModelVisualizer._get_constructor_defaults()
+        assert defaults["pyplot"] is False
+        dut = mut.ModelVisualizer(pyplot=True)
+        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
+        dut.Run(loop_once=True)
+
+    def test_model_from_file(self):
+        """
+        Visualizes models from files, one at a time.
+        Enables frame visualization for additional code coverage.
+        """
         model_runpaths = [
             # Simple SDFormat file.
             "drake/multibody/benchmarks/acrobot/acrobot.sdf",
@@ -147,11 +140,11 @@ class TestModelVisualizer(unittest.TestCase):
         dut = mut.ModelVisualizer()
 
         # Check that models can be added multiple times without error.
-        dut.parser.AddModelsFromString(self.SAMPLE_OBJ, 'sdf')
+        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
 
         sample2 = self.SAMPLE_OBJ.replace('name="cylinder"',
                                           'name="cylinder2"')
-        dut.parser.AddModelsFromString(sample2, 'sdf')
+        dut.parser().AddModelsFromString(sample2, "sdf")
 
         positions = [1, 0, 0, 0, 0, 0, 0] * 2  # Model is just doubled.
         dut.Finalize(position=positions)

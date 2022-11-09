@@ -37,47 +37,53 @@ def _main():
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    # Many of our command line arguments map directly onto named arguments to
+    # the ModelVisualizer constructor. We'll obey those constructor defaults
+    # as we define the argparse defaults.
+    defaults = _ModelVisualizer._get_constructor_defaults()
+
     args_parser.add_argument(
         "filename", type=str, default=None,
         help="Path to an SDFormat or URDF file, or a package:// URL.")
 
+    assert defaults["browser_new"] is False
     args_parser.add_argument(
         "-w", "--open-window", dest="browser_new",
-        action="store_const", const=1, default=None,
+        action="store_true",
         help="Open the MeshCat display in a new browser window.")
+    assert defaults["pyplot"] is False
     args_parser.add_argument(
         "--pyplot", action="store_true",
         help="Opens a pyplot figure for rendering using "
              "PlanarSceneGraphVisualizer.")
     # TODO(russt): Consider supporting the PlanarSceneGraphVisualizer
     #  options as additional arguments.
+    assert defaults["visualize_frames"] is False
     args_parser.add_argument(
         "--visualize_frames",
         action="store_true",
         help="Visualize the frames as triads for all links.",
     )
 
-    # Create a ModelVisualizer so we can access the defaults.
-    defaults = _ModelVisualizer()
     args_parser.add_argument(
         "--triad_length",
         type=float,
         dest="triad_length",
-        default=defaults.triad_length,
+        default=defaults["triad_length"],
         help="Triad length for frame visualization.",
     )
     args_parser.add_argument(
         "--triad_radius",
         type=float,
         dest="triad_radius",
-        default=defaults.triad_radius,
+        default=defaults["triad_radius"],
         help="Triad radius for frame visualization.",
     )
     args_parser.add_argument(
         "--triad_opacity",
         type=float,
         dest="triad_opacity",
-        default=defaults.triad_opacity,
+        default=defaults["triad_opacity"],
         help="Triad opacity for frame visualization.",
     )
     args_parser.add_argument(
@@ -101,7 +107,7 @@ def _main():
                                   browser_new=args.browser_new,
                                   pyplot=args.pyplot)
 
-    package_map = visualizer.parser.package_map()
+    package_map = visualizer.parser().package_map()
     package_map.PopulateFromRosPackagePath()
 
     # Resolve the filename if necessary.
