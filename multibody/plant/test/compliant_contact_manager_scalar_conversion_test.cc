@@ -40,34 +40,9 @@ TYPED_TEST(CompliantContactManagerScalarConversionTest, ToAutoDiffXd) {
   ASSERT_NE(clone, nullptr);
 }
 
-TYPED_TEST(CompliantContactManagerScalarConversionTest, ToSymbolicWithTamsi) {
+TYPED_TEST(CompliantContactManagerScalarConversionTest, ToSymbolic) {
   using T = TypeParam;
-  auto owned_source = std::make_unique<CompliantContactManager<T>>();
-  const CompliantContactManager<T>& source = *owned_source;
-  // Conversion to symbolic is conditioned to what solver is in use. Therefore
-  // we create a dummy plant model so that the manager can extract model info
-  // and solver type in use.
-  MultibodyPlant<T> plant(0.01 /* discrete updates step size. */);
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
-  plant.Finalize();
-  plant.SetDiscreteUpdateManager(std::move(owned_source));
-  EXPECT_TRUE(source.is_cloneable_to_symbolic());
-  std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>> clone =
-      source.template CloneToScalar<symbolic::Expression>();
-  ASSERT_NE(clone, nullptr);
-}
-
-TYPED_TEST(CompliantContactManagerScalarConversionTest, ToSymbolicWithSap) {
-  using T = TypeParam;
-  auto owned_source = std::make_unique<CompliantContactManager<T>>();
-  const CompliantContactManager<T>& source = *owned_source;
-  // Conversion to symbolic is conditioned to what solver is in use. Therefore
-  // we create a dummy plant model so that the manager can extract model info
-  // and solver type in use.
-  MultibodyPlant<T> plant(0.01 /* discrete updates step size. */);
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
-  plant.Finalize();
-  plant.SetDiscreteUpdateManager(std::move(owned_source));
+  CompliantContactManager<T> source;
   EXPECT_FALSE(source.is_cloneable_to_symbolic());
   DRAKE_EXPECT_THROWS_MESSAGE(
       source.template CloneToScalar<symbolic::Expression>(),
@@ -125,8 +100,6 @@ GTEST_TEST(CompliantContactManagerScalarConversionTest, PlantConversionTamsi) {
   TestPlantConversion<double, AutoDiffXd>(DiscreteContactSolver::kTamsi);
   TestPlantConversion<AutoDiffXd, double>(DiscreteContactSolver::kTamsi);
 }
-
-// TODO(amcastro-tri): Consider adding tests for symbolic::Expression here.
 
 }  // namespace internal
 }  // namespace multibody
