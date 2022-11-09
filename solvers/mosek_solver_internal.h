@@ -194,6 +194,20 @@ class MosekSolverProgram {
           MSKint64t, std::pair<std::vector<MSKint64t>, std::vector<MSKrealt>>>>*
           bar_F);
 
+  // Same as ParseLinearExpression, but assumes that each entry in
+  // `decision_vars` is unique.
+  MSKrescodee ParseLinearExpressionNoDuplication(
+      const solvers::MathematicalProgram& prog,
+      const Eigen::SparseMatrix<double>& A,
+      const Eigen::SparseMatrix<double>& B,
+      const VectorX<symbolic::Variable>& decision_vars,
+      const std::vector<MSKint32t>& slack_vars_mosek_indices,
+      std::vector<MSKint32t>* F_subi, std::vector<MSKint32t>* F_subj,
+      std::vector<MSKrealt>* F_valij,
+      std::vector<std::unordered_map<
+          MSKint64t, std::pair<std::vector<MSKint64t>, std::vector<MSKrealt>>>>*
+          bar_F);
+
   // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
   // @param[out] dual_indices maps each linear constraint to its dual variable
   // indices.
