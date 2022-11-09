@@ -70,6 +70,27 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
       std::unique_ptr<geometry::GeometryInstance> geometry_instance,
       const fem::DeformableBodyConfig<T>& config, double resolution_hint);
 
+  // TODO(xuchenhan-tri): Consider pulling PosedHalfSpace out of internal
+  // namespace and use it here.
+  /** Sets wall boundary conditions for the body with the given `id`. All
+   vertices of the mesh of the deformable body whose reference positions are
+   inside (or on the boundary of) the prescribed half space are put under zero
+   displacement boundary conditions. The half space is defined by a plane. A
+   vertex is considered to be inside the half space if it lies on the side of
+   the plane opposite the normal. More precisely, a vertex V is considered to be
+   subject to the boundary condition if n̂ ⋅ (V − Q) ≤ 0 where Q is a point on
+   the plane and n̂ is the normalized outward normal vector to the half space.
+   @param[in] id    The body to be put under boundary condition.
+   @param[in] p_WQ  The position of a point Q on the plane in the world frame.
+   @param[in] n_W   Outward normal to the half space expressed in the world
+                    frame.
+   @pre n_W.norm() > 1e-10.
+   @throws std::exception if Finalize() has been called on the multibody plant
+   owning this deformable model or if no deformable body with the given `id` has
+   been registered in this model. */
+  void SetWallBoundaryCondition(DeformableBodyId id, const Vector3<T>& p_WQ,
+                                const Vector3<T>& n_W);
+
   /** Returns the discrete state index of the deformable body identified by the
    given `id`.
    @throws std::exception if MultibodyPlant::Finalize() has not been called yet.

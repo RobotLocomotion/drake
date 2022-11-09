@@ -66,6 +66,45 @@ TEST_F(DeformableModelTest, RegisterDeformableBody) {
       ".*RegisterDeformableBody.*after system resources have been declared.*");
 }
 
+/* Coarsely tests that SetWallBoundaryCondition adds some sort of boundary
+ condition. Showing that boundary conditions only get conditionally added (based
+ on location of the boundary wall) is sufficient evidence to infer that the
+ right dofs are being given the right constraints. See
+ deformable_boundary_condition_test.cc for a more complete test on the effect of
+ calling this function. */
+TEST_F(DeformableModelTest, SetWallBoundaryCondition) {
+  constexpr double kRezHint = 0.5;
+  DeformableBodyId body_id = RegisterSphere(kRezHint);
+  const auto& fem_model = deformable_model_ptr_->GetFemModel(body_id);
+  const auto& dirichlet_bc = fem_model.dirichlet_boundary_condition();
+  /* No boundary condition has been added yet. */
+  EXPECT_TRUE(dirichlet_bc.index_to_boundary_state().empty());
+  /* Put the wall just far away enough so that no boundary condition is added.
+   */
+  const Eigen::Vector3d p_WQ1(0, 0, -1.0 - 1e-10);
+  const Eigen::Vector3d n_W(0, 0, 1);
+  deformable_model_ptr_->SetWallBoundaryCondition(body_id, p_WQ1, n_W);
+  EXPECT_TRUE(dirichlet_bc.index_to_boundary_state().empty());
+  /* Put the wall just close enough so that some boundary conditions are added.
+   */
+  const Eigen::Vector3d p_WQ2(0, 0, -1.0 + 1e-10);
+  deformable_model_ptr_->SetWallBoundaryCondition(body_id, p_WQ2, n_W);
+  EXPECT_FALSE(dirichlet_bc.index_to_boundary_state().empty());
+
+  /* Throws when called on unregistered id. */
+  const DeformableBodyId fake_body_id = DeformableBodyId::get_new_id();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->SetWallBoundaryCondition(fake_body_id, p_WQ2, n_W),
+      fmt::format(".*No.*id.*{}.*registered.*", fake_body_id));
+
+  /* Setting boudnary condition must be done pre-finalize. */
+  plant_->Finalize();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->SetWallBoundaryCondition(body_id, p_WQ2, n_W),
+      ".*SetWallBoundaryCondition.*after system resources have been "
+      "declared.*");
+}
+
 TEST_F(DeformableModelTest, DiscreteStateIndexAndReferencePositions) {
   constexpr double kRezHint = 0.5;
   Sphere sphere(1.0);
