@@ -14,8 +14,8 @@ For glTF comparison, the generated glTFs are compared against a carefully
 inspected ground truth glTF file.  Some entries not in the scope of the glTF
 test are replaced with placeholders to make the file size minimal.
 
-A good introduction to explain what each entry represents in a glTF file:
-https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/README.md
+See `Testing of the client-server RPC pipeline` section in the README file for
+more information.
 """
 
 import copy
@@ -157,6 +157,8 @@ class TestIntegration(unittest.TestCase):
         expected = self._fuzz_irrelevant_data(
             ground_truth_gltf, is_color_image
         )
+        # Check the glTF-related section in README for some troubleshooting
+        # tips if this test failed.
         self.assertDictEqual(expected, actual)
 
     def test_integration(self):
