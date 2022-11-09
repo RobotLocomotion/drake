@@ -70,7 +70,7 @@ struct AccelerationsDueToExternalForcesCache {
 // TODO(amcastro-tri): Retire code from MultibodyPlant as this contact manager
 // replaces all the contact related capabilities, per #16106.
 //
-// @tparam_default_scalar
+// @tparam_nonsymbolic_scalar
 template <typename T>
 class CompliantContactManager final
     : public internal::DiscreteUpdateManager<T> {
@@ -85,7 +85,6 @@ class CompliantContactManager final
 
   // Sets the parameters to be used by the SAP solver.
   // @pre plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap.
-  // @throws if called when instantiated on T = symbolic::Expression.
   void set_sap_solver_parameters(
       const contact_solvers::internal::SapSolverParameters& parameters);
 
@@ -94,12 +93,6 @@ class CompliantContactManager final
 
   // @returns `true`.
   bool is_cloneable_to_autodiff() const final;
-
-  // @returns `false` when using the SAP solver and `true` otherwise.
-  // @pre DiscreteUpdateManager::SetOwningMultibodyPlant() was already called
-  // from this manager so that model information and solver type are already
-  // known to the manager.
-  bool is_cloneable_to_symbolic() const final;
 
  private:
   // TODO(amcastro-tri): Instead of friendship consider another set of class(es)
@@ -129,11 +122,6 @@ class CompliantContactManager final
 
   std::unique_ptr<DiscreteUpdateManager<double>> CloneToDouble() const final;
   std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>> CloneToAutoDiffXd()
-      const final;
-
-  // @throws std::exception when using the SAP solver, since SAP does not
-  // support symbolic::Expression.
-  std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>> CloneToSymbolic()
       const final;
 
   // Extracts non state dependent model information from MultibodyPlant. See
@@ -232,19 +220,9 @@ class CompliantContactManager final
   std::unique_ptr<TamsiDriver<T>> tamsi_driver_;
 };
 
-template <>
-void CompliantContactManager<symbolic::Expression>::CalcDiscreteContactPairs(
-    const drake::systems::Context<symbolic::Expression>&,
-    std::vector<DiscreteContactPair<symbolic::Expression>>*) const;
-template <>
-void CompliantContactManager<symbolic::Expression>::
-    AppendDiscreteContactPairsForHydroelasticContact(
-        const drake::systems::Context<symbolic::Expression>&,
-        std::vector<DiscreteContactPair<symbolic::Expression>>*) const;
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::multibody::internal::CompliantContactManager);

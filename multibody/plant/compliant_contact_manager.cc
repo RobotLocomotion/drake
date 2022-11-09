@@ -57,27 +57,10 @@ bool CompliantContactManager<T>::is_cloneable_to_autodiff() const {
 }
 
 template <typename T>
-bool CompliantContactManager<T>::is_cloneable_to_symbolic() const {
-  // We require that SetOwningMultibodyPlant() was already called, and therefore
-  // model info along with specific solver drivers is available.
-  DRAKE_DEMAND(sap_driver_ != nullptr || tamsi_driver_ != nullptr);
-  // SAP does not support scalar conversion to symbolic.
-  if (sap_driver_ != nullptr) return false;
-  return true;
-}
-
-template <typename T>
 void CompliantContactManager<T>::set_sap_solver_parameters(
     const contact_solvers::internal::SapSolverParameters& parameters) {
-  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
-    DRAKE_DEMAND(sap_driver_ != nullptr);
-    sap_driver_->set_sap_solver_parameters(parameters);
-  } else {
-    unused(parameters);
-    throw std::logic_error(
-        "We do not provide SAP support T = symbolic::Expression. Therefore "
-        "this method cannot be called.");
-  }
+  DRAKE_DEMAND(sap_driver_ != nullptr);
+  sap_driver_->set_sap_solver_parameters(parameters);
 }
 
 template <typename T>
@@ -124,9 +107,7 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
     }
   }
 
-  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
-    if (sap_driver_ != nullptr) sap_driver_->DeclareCacheEntries(this);
-  }
+  if (sap_driver_ != nullptr) sap_driver_->DeclareCacheEntries(this);
 }
 
 template <typename T>
@@ -234,17 +215,6 @@ CompliantContactManager<T>::CalcContactKinematics(
   }
 
   return contact_kinematics;
-}
-
-template <>
-void CompliantContactManager<symbolic::Expression>::CalcDiscreteContactPairs(
-    const drake::systems::Context<symbolic::Expression>&,
-    std::vector<DiscreteContactPair<symbolic::Expression>>*) const {
-  // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
-  //  as long as there are no collisions.
-  throw std::domain_error(
-      fmt::format("This method doesn't support T = {}.",
-                  NiceTypeName::Get<symbolic::Expression>()));
 }
 
 template <typename T>
@@ -361,18 +331,6 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
     contact_pairs.push_back(
         {pair.id_A, pair.id_B, p_WC, pair.nhat_BA_W, phi0, fn0, k, d, tau, mu});
   }
-}
-
-template <>
-void CompliantContactManager<symbolic::Expression>::
-    AppendDiscreteContactPairsForHydroelasticContact(
-        const drake::systems::Context<symbolic::Expression>&,
-        std::vector<DiscreteContactPair<symbolic::Expression>>*) const {
-  // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
-  //  as long as there are no collisions.
-  throw std::domain_error(
-      fmt::format("This method doesn't support T = {}.",
-                  NiceTypeName::Get<symbolic::Expression>()));
 }
 
 template <typename T>
@@ -610,10 +568,8 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
     DRAKE_DEMAND(sap_driver_ != nullptr);
   if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi)
     DRAKE_DEMAND(tamsi_driver_ != nullptr);
-  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
-    if (sap_driver_ != nullptr)
-      sap_driver_->CalcContactSolverResults(context, contact_results);
-  }
+  if (sap_driver_ != nullptr)
+    sap_driver_->CalcContactSolverResults(context, contact_results);
   if (tamsi_driver_ != nullptr)
     tamsi_driver_->CalcContactSolverResults(context, contact_results);
 }
@@ -675,24 +631,6 @@ CompliantContactManager<T>::CloneToAutoDiffXd() const {
 }
 
 template <typename T>
-std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>>
-CompliantContactManager<T>::CloneToSymbolic() const {
-  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
-    // Since SAP does not support symbolic::Expression, cloning is not possible.
-    throw std::logic_error(
-        "Scalar conversion to symbolic::Expression is not supported by this "
-        "DiscreteUpdateManager.");
-  }
-  // Create a manager with default SAP parameters.
-  auto clone =
-      std::make_unique<CompliantContactManager<symbolic::Expression>>();
-  // N.B. we should copy/clone all members except for those overwritten in
-  // ExtractModelInfo and DeclareCacheEntries.
-  // E.g. SapParameters for SapDriver won't be the same after the clone.
-  return clone;
-}
-
-template <typename T>
 void CompliantContactManager<T>::ExtractModelInfo() {
   // Collect joint damping coefficients into a vector.
   joint_damping_ = VectorX<T>::Zero(plant().num_velocities());
@@ -707,13 +645,7 @@ void CompliantContactManager<T>::ExtractModelInfo() {
 
   switch (plant().get_discrete_contact_solver()) {
     case DiscreteContactSolver::kSap:
-      if constexpr (std::is_same_v<T, symbolic::Expression>) {
-        throw std::runtime_error(
-            "SAP solver is not supported for scalar type T = "
-            "symbolic::Expression.");
-      } else {
-        sap_driver_ = std::make_unique<SapDriver<T>>(this);
-      }
+      sap_driver_ = std::make_unique<SapDriver<T>>(this);
       break;
     case DiscreteContactSolver::kTamsi:
       tamsi_driver_ = std::make_unique<TamsiDriver<T>>(this);
@@ -781,5 +713,5 @@ void CompliantContactManager<T>::DoCalcAccelerationKinematicsCache(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::multibody::internal::CompliantContactManager);

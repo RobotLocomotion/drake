@@ -22,12 +22,11 @@ GTEST_TEST(MakeDiscreteUpdateManagerTest, Sap) {
   EXPECT_TRUE(is_dynamic_castable<CompliantContactManager<AutoDiffXd>>(
       autodiff_manager));
 
-  std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>>
-      symbolic_manager = MakeDiscreteUpdateManager<symbolic::Expression>(
-          DiscreteContactSolver::kSap);
-  EXPECT_TRUE(
-      is_dynamic_castable<CompliantContactManager<symbolic::Expression>>(
-          symbolic_manager));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeDiscreteUpdateManager<symbolic::Expression>(
+          DiscreteContactSolver::kSap),
+      "Discrete updates not supported for scalar type T = "
+      "symbolic::Expression.");
 }
 
 GTEST_TEST(MakeDiscreteUpdateManagerTest, Tamsi) {
@@ -41,12 +40,11 @@ GTEST_TEST(MakeDiscreteUpdateManagerTest, Tamsi) {
   EXPECT_TRUE(is_dynamic_castable<CompliantContactManager<AutoDiffXd>>(
       autodiff_manager));
 
-  std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>>
-      symbolic_manager = MakeDiscreteUpdateManager<symbolic::Expression>(
-          DiscreteContactSolver::kTamsi);
-  EXPECT_TRUE(
-      is_dynamic_castable<CompliantContactManager<symbolic::Expression>>(
-          symbolic_manager));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeDiscreteUpdateManager<symbolic::Expression>(
+          DiscreteContactSolver::kTamsi),
+      "Discrete updates not supported for scalar type T = "
+      "symbolic::Expression.");
 }
 
 }  // namespace
