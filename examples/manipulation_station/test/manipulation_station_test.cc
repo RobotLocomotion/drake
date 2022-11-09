@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/sensors/image.h"
@@ -22,8 +23,11 @@ using Eigen::Vector2d;
 using Eigen::VectorXd;
 using geometry::internal::DummyRenderEngine;
 using math::RigidTransform;
+using multibody::ExternallyAppliedSpatialForce;
 using multibody::RevoluteJoint;
+using multibody::SpatialForce;
 using systems::BasicVector;
+using systems::Context;
 
 // Calculate the spatial inertia of the set S of bodies that make up the gripper
 // about Go (the gripper frame's origin), expressed in the gripper frame G.
@@ -103,6 +107,18 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia() {
   return M_CGo_G;
 }
 
+void ApplyExternalForceToManipulator(ManipulationStation<double>* station,
+                                     Context<double>* context) {
+    DRAKE_DEMAND(station != nullptr);
+    DRAKE_DEMAND(context != nullptr);
+    auto& plant = station->get_multibody_plant();
+    std::vector<ExternallyAppliedSpatialForce<double>> external_spatial_forces(1);
+    external_spatial_forces[0].F_Bq_W = SpatialForce<double>(Vector3<double>::Zero(),
+                                                             Vector3<double>::UnitZ() * 10.);
+    external_spatial_forces[0].body_index = plant.GetBodyByName("body").index();
+    station->GetInputPort("applied_spatial_force").FixValue(context, external_spatial_forces);
+}
+
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
   station.SetupManipulationClassStation();
@@ -157,6 +173,11 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                               station.GetOutputPort("iiwa_position_commanded")
                                   .Eval<BasicVector<double>>(*context)
                                   .get_value()));
+  // Check that the additional input port exists and is spelled correctly.
+  DRAKE_EXPECT_NO_THROW(station.GetInputPort("applied_spatial_force"));
+
+  // Confirm that `iiwa_torque_commanded` doesn't depend on `applied_spatial_force`
+  ApplyExternalForceToManipulator(&station, context.get());
 
   // Check feedforward_torque command.
   VectorXd tau_with_no_ff = station.GetOutputPort("iiwa_torque_commanded")
@@ -286,6 +307,36 @@ GTEST_TEST(ManipulationStationTest, CheckDynamics) {
   // Note: This tolerance could be much smaller if the wsg was not attached.
   const double kTolerance = 1e-4;  // rad/sec.
   EXPECT_TRUE(CompareMatrices(iiwa_velocity, next_velocity, kTolerance));
+
+  // Confirm that `applied_spatial_force` impacts the plant dynamics
+  // run experiment again to show that τ_external causes vdot ≠ vdot_desired
+  auto another_context = station.CreateDefaultContext();
+  const VectorXd zero_iiwa_velocity = VectorXd::Zero(7);
+  station.SetIiwaPosition(another_context.get(), iiwa_position);
+  station.SetIiwaVelocity(another_context.get(), zero_iiwa_velocity);
+  station.GetInputPort("iiwa_position").FixValue(another_context.get(),
+                        iiwa_position);
+  station.GetInputPort("iiwa_feedforward_torque").FixValue(
+      context.get(), zero_iiwa_velocity);
+  wsg_position = station.GetWsgPosition(*another_context);
+  station.GetInputPort("wsg_position").FixValue(another_context.get(),
+                                                wsg_position);
+  station.GetInputPort("wsg_force_limit").FixValue(another_context.get(), 40.);
+  ApplyExternalForceToManipulator(&station, another_context.get());
+  auto& position_to_state_another_context =
+      station.GetMutableSubsystemContext(position_to_state, another_context.get());
+  position_to_state.set_initial_state(&position_to_state_another_context,
+                                      iiwa_position, zero_iiwa_velocity);
+  another_context->get_mutable_continuous_state_vector().SetZero();
+  next_state = station.AllocateDiscreteVariables();
+  station.CalcDiscreteVariableUpdates(*another_context, next_state.get());
+
+  next_velocity =
+      station.GetSubsystemDiscreteValues(plant, *next_state)
+          .value()
+          .segment<7>(iiwa_velocity_start);
+
+  EXPECT_FALSE(CompareMatrices(zero_iiwa_velocity, next_velocity, kTolerance));
 }
 
 GTEST_TEST(ManipulationStationTest, CheckWsg) {

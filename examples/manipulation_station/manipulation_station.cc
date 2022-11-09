@@ -554,6 +554,9 @@ void ManipulationStation<T>::Finalize(
   builder.ExportOutput(iiwa_position->get_output_port(),
                        "iiwa_position_commanded");
 
+  builder.ExportInput(plant_->get_applied_spatial_force_input_port(),
+                      "applied_spatial_force");
+
   // Export iiwa "state" outputs.
   {
     auto demux = builder.template AddSystem<systems::Demultiplexer>(
@@ -726,8 +729,6 @@ void ManipulationStation<T>::Finalize(
   builder.ExportOutput(scene_graph_->get_query_output_port(),
                        "geometry_query");
 
-  builder.ExportInput(plant_->get_applied_spatial_force_input_port(),
-                      "applied_spatial_force");
   builder.ExportOutput(plant_->get_contact_results_output_port(),
                        "contact_results");
   builder.ExportOutput(plant_->get_state_output_port(),
