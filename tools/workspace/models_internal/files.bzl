@@ -104,6 +104,17 @@ def ur3e_mesh_files():
         "ur3e/wrist3.obj",
     ]
 
+def veggies_mesh_files():
+    return [
+        "veggies/bell_pepper_no_stem_color.png",
+        "veggies/bell_pepper_no_stem_normal.png",
+        "veggies/bell_pepper_no_stem_occlusion_roughness_metallic.png",
+        "veggies/LICENSE",
+        "veggies/yellow_bell_pepper_no_stem_low.mtl",
+        "veggies/yellow_bell_pepper_no_stem_low.obj",
+        "veggies/yellow_bell_pepper_no_stem_low.vtk",
+    ]
+
 def wsg_50_description_mesh_files():
     return [
         "wsg_50_description/meshes/finger_without_tip.obj",
