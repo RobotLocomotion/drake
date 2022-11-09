@@ -44,13 +44,17 @@ QuadrotorGeometry::QuadrotorGeometry(
   multibody::MultibodyPlant<double> mbp(0.0);
   multibody::Parser parser(&mbp, scene_graph);
 
-  auto model_id = parser.AddModelFromFile(
-      FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),
-      "quadrotor");
+  const auto model_instance_indices = parser.AddModels(
+      FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"));
   mbp.Finalize();
 
+  // Identify the single quadrotor body and its frame.
+  DRAKE_THROW_UNLESS(model_instance_indices.size() == 1);
+  const auto body_indices = mbp.GetBodyIndices(model_instance_indices[0]);
+  DRAKE_THROW_UNLESS(body_indices.size() == 1);
+  const multibody::BodyIndex body_index = body_indices[0];
   source_id_ = *mbp.get_source_id();
-  frame_id_ = mbp.GetBodyFrameIdOrThrow(mbp.GetBodyIndices(model_id)[0]);
+  frame_id_ = mbp.GetBodyFrameIdOrThrow(body_index);
 
   this->DeclareVectorInputPort("state", 12);
   this->DeclareAbstractOutputPort(

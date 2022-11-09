@@ -20,8 +20,10 @@ ConstraintRelaxingIk::ConstraintRelaxingIk(
     const std::string& end_effector_link_name)
     : rand_generator_(kDefaultRandomSeed),
       plant_(0) {
-  const auto model_instance =
-      multibody::Parser(&plant_).AddModelFromFile(model_path);
+  const auto models = multibody::Parser(&plant_).AddModels(model_path);
+  DRAKE_THROW_UNLESS(models.size() == 1);
+  const auto model_instance = models[0];
+
 
   // Check if our robot is welded to the world.  If not, try welding the first
   // link.

@@ -8,7 +8,12 @@ package(default_visibility = ["//visibility:private"])
 drake_py_binary(
     name = "contact_sim_demo_py",
     srcs = ["contact_sim_demo.py"],
+    add_test_rule = 1,
     data = [":ball_paddle_files"],
+    test_rule_args = [
+        "--target_realtime_rate=0",
+        "--simulation_time=0.1",
+    ],
     deps = [
         "//bindings/pydrake",
     ],

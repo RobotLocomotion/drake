@@ -59,8 +59,8 @@ void AddFixedObjectsToPlant(MultibodyPlant<T>* plant) {
           X_TO));
 
   // Add a mug and weld it to the table.
-  const ModelInstanceIndex mug_model = parser.AddModelFromFile(mug_sdf_path);
-  const Body<double>& mug = plant->GetBodyByName("main_body", mug_model);
+  parser.AddModels(mug_sdf_path);
+  const Body<double>& mug = plant->GetBodyByName("simple_mug");
 
   // Weld the mug to the table with its center 5 cm above the table, i.e. with
   // its base on the table.

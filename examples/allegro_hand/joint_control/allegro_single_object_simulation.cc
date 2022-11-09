@@ -102,8 +102,8 @@ void DoMain() {
   const std::string object_model_path = FindResourceOrThrow(
       "drake/examples/allegro_hand/joint_control/simple_mug.sdf");
   multibody::Parser parser(&plant);
-  parser.AddModelFromFile(hand_model_path);
-  ModelInstanceIndex mug_model = parser.AddModelFromFile(object_model_path);
+  parser.AddModels(hand_model_path);
+  parser.AddModels(object_model_path);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
@@ -265,13 +265,13 @@ void DoMain() {
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
   // Initialize the mug pose to be right in the middle between the fingers.
+  const multibody::Body<double>& mug = plant.GetBodyByName("simple_mug");
   const Eigen::Vector3d& p_WHand =
       plant.EvalBodyPoseInWorld(plant_context, hand).translation();
   RigidTransformd X_WM(
       RollPitchYawd(M_PI / 2, 0, 0),
       p_WHand + Eigen::Vector3d(0.095, 0.062, 0.095));
-  plant.SetFreeBodyPose(&plant_context,
-                        plant.GetUniqueFreeBaseBodyOrThrow(mug_model), X_WM);
+  plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
   // set the initial command for the hand
   hand_command_receiver.set_initial_position(

@@ -18,7 +18,7 @@ multibody::ModelInstanceIndex LoadIiwa14CanonicalModel(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/sdf/"
                           "iiwa14_no_collision.sdf"));
   multibody::Parser parser(plant);
-  return parser.AddModelFromFile(canonical_model_file);
+  return parser.AddModels(canonical_model_file).at(0);
 }
 
 // Compares velocity, acceleration, effort and position limits of two given
