@@ -14,6 +14,7 @@
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_jacobians.h"
+#include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
@@ -135,6 +136,13 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     DoCalcDiscreteValues(context, updates);
   }
 
+  /* MultibodyPlant invokes this method to report contact results. */
+  void CalcContactResults(const systems::Context<T>& context,
+                          ContactResults<T>* contact_results) const {
+    DRAKE_DEMAND(contact_results != nullptr);
+    DoCalcContactResults(context, contact_results);
+  }
+
   /* TODO(amcastro-tri): Remove this function when #16955 is resolved. Right now
    this API is here to allow MultibodyPlant retrieve discrete pairs for the
    reporting of ContactResults. With the resolution of #16955, the managers
@@ -235,6 +243,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   const std::vector<int>& EvalJointLockingIndices(
       const systems::Context<T>& context) const;
+
+  BodyIndex FindBodyByGeometryId(geometry::GeometryId geometry_id) const;
   /* @} */
 
   /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to
@@ -251,6 +261,10 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   virtual void DoCalcDiscreteValues(
       const systems::Context<T>& context,
       systems::DiscreteValues<T>* updates) const = 0;
+
+  virtual void DoCalcContactResults(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const = 0;
 
  private:
   const MultibodyPlant<T>* plant_{nullptr};

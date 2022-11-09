@@ -187,6 +187,9 @@ class DoubleOnlyDiscreteUpdateManager final
   void DoCalcDiscreteValues(const systems::Context<T>&,
                             systems::DiscreteValues<T>*) const final {}
 
+  void DoCalcContactResults(const systems::Context<T>&,
+                            ContactResults<T>*) const final {}
+
   // This method will be removed with the resolution of #16955 and therefore a
   // no-op is implemented simply to be able to instantiate this class.
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(

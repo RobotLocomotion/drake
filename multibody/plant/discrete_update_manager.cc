@@ -158,6 +158,13 @@ const std::vector<int>& DiscreteUpdateManager<T>::EvalJointLockingIndices(
       T>::EvalJointLockingIndices(plant(), context);
 }
 
+template <typename T>
+BodyIndex DiscreteUpdateManager<T>::FindBodyByGeometryId(
+    geometry::GeometryId geometry_id) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::FindBodyByGeometryId(
+      plant(), geometry_id);
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
