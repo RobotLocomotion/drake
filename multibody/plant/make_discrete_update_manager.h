@@ -23,10 +23,7 @@ namespace multibody {
 namespace internal {
 
 /* Constructs and returns a suitable discrete update manager for a
- MultibodyPlant given the type of contact solver. Returns `nullptr` if the
- contact solver type is `kTamsi`.
- @throws std::exception if invoked with incompatible contact solver and scalar
- type.
+ MultibodyPlant given the type of contact solver.
  @tparam_default_scalar */
 template <typename T>
 std::unique_ptr<DiscreteUpdateManager<T>> MakeDiscreteUpdateManager(

@@ -4600,7 +4600,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context,
       internal::HydroelasticFallbackCacheData<T>* data) const;
 
-  // Eval version of the method CalcDiscreteContactPairs().
+  // TODO(amcastro-tri): Remove this function when #16955 is resolved. Right now
+  // this function is here only to support the computation of ContactResults,
+  // which should be performed by the discrete update manager instead.
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const {
     return discrete_update_manager_->EvalDiscreteContactPairs(context);

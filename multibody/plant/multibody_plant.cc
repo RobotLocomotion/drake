@@ -861,12 +861,7 @@ void MultibodyPlant<T>::Finalize() {
   }
   FinalizePlantOnly();
 
-  // Set discrete update manager. Currently, CompliantContactManager does not
-  // support T = symbolic::Expression.
-  // N.B. Unlike SAP, currently the TAMSI solver is incorporated directly into
-  // MultibodyPlant's source, rather than in CompliantContactManager. The plan
-  // is to move TAMSI, as well as the entirety of the discrete handling of
-  // contact, into CompliantContactManager.
+  // Make the manager of discrete updates.
   if (is_discrete()) {
     std::unique_ptr<internal::DiscreteUpdateManager<T>> manager =
         internal::MakeDiscreteUpdateManager<T>(contact_solver_enum_);
@@ -2780,7 +2775,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
 
   if (is_discrete()) {
     // Cache discrete solver computations.
-    auto& tamsi_results_cache_entry = this->DeclareCacheEntry(
+    auto& contact_solver_results_cache_entry = this->DeclareCacheEntry(
         std::string("discrete contact solver computations."),
         &MultibodyPlant<T>::CalcContactSolverResults,
         // The Correct Solution:
@@ -2807,7 +2802,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         // what we want.
         {this->xd_ticket(), this->all_parameters_ticket()});
     cache_indexes_.contact_solver_results =
-        tamsi_results_cache_entry.cache_index();
+        contact_solver_results_cache_entry.cache_index();
   }
 
 

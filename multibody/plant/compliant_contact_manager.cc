@@ -701,6 +701,10 @@ void CompliantContactManager<T>::ExtractModelInfo() {
     joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
   }
 
+  // Solver drivers are only created when ExtractModelInfo() and therefore we
+  // expect these pointers to equal nullptr. The only reason for one of them to
+  // be non-nullptr would be a bug leading to this method being called more than
+  // once on the same manager.
   DRAKE_DEMAND(sap_driver_ == nullptr && tamsi_driver_ == nullptr);
 
   switch (plant().get_discrete_contact_solver()) {

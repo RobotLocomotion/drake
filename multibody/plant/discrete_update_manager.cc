@@ -138,14 +138,6 @@ void DiscreteUpdateManager<T>::CalcForceElementsContribution(
 }
 
 template <typename T>
-const geometry::QueryObject<T>&
-DiscreteUpdateManager<T>::EvalGeometryQueryInput(
-    const systems::Context<T>& context, std::string_view caller) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalGeometryQueryInput(
-      plant(), context, caller);
-}
-
-template <typename T>
 const std::vector<std::vector<geometry::GeometryId>>&
 DiscreteUpdateManager<T>::collision_geometries() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::collision_geometries(
