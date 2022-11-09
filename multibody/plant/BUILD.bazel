@@ -870,6 +870,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "deformable_boundary_condition_test",
+    deps = [
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:drake_visualizer",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
     name = "deformable_driver_test",
     deps = [
         ":compliant_contact_manager_tester",
