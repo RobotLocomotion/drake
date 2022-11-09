@@ -127,8 +127,8 @@ void AddDefaultVisualization(systems::DiagramBuilder<double>* builder);
 namespace internal {
 
 // (For unit testing only.)
-std::vector<geometry::DrakeVisualizerParams>
-ConvertVisualizationConfigToParams(const VisualizationConfig&);
+std::vector<geometry::DrakeVisualizerParams> ConvertVisualizationConfigToParams(
+    const VisualizationConfig&);
 
 }  // namespace internal
 }  // namespace visualization

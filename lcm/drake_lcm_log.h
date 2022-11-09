@@ -38,7 +38,8 @@ class DrakeLcmLog : public DrakeLcmInterface {
    *
    * @throws std::exception if unable to open file.
    */
-  DrakeLcmLog(const std::string& file_name, bool is_write,
+  DrakeLcmLog(const std::string& file_name,
+              bool is_write,
               bool overwrite_publish_time_with_system_clock = false);
 
   ~DrakeLcmLog() override;
@@ -58,7 +59,9 @@ class DrakeLcmLog : public DrakeLcmInterface {
    * @throws std::exception if this instance is not constructed in write-only
    * mode.
    */
-  void Publish(const std::string& channel, const void* data, int data_size,
+  void Publish(const std::string& channel,
+               const void* data,
+               int data_size,
                std::optional<double> time_sec) override;
 
   /**
