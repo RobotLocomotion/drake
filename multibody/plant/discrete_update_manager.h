@@ -135,10 +135,12 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     DoCalcDiscreteValues(context, updates);
   }
 
+  /* TODO(amcastro-tri): Remove this function when #16955 is resolved. Right now
+   this API is here to allow MultibodyPlant retrieve discrete pairs for the
+   reporting of ContactResults. With the resolution of #16955, the managers
+   will be responsible for this computation. */
   virtual const std::vector<internal::DiscreteContactPair<T>>&
-  EvalDiscreteContactPairs(const systems::Context<T>&) const {
-    throw std::runtime_error("TODO: provide default implementation.");
-  }
+  EvalDiscreteContactPairs(const systems::Context<T>&) const = 0;
 
   /* Publicly exposed MultibodyPlant private/protected methods.
    @{ */
@@ -222,9 +224,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   void CalcForceElementsContribution(const drake::systems::Context<T>& context,
                                      MultibodyForces<T>* forces) const;
-
-  const geometry::QueryObject<T>& EvalGeometryQueryInput(
-      const systems::Context<T>& context, std::string_view caller) const;
 
   // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
   //  geometries.

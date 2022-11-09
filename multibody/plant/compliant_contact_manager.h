@@ -155,7 +155,7 @@ class CompliantContactManager final
   // For testing purposes only, we provide a default no-op implementation on
   // arbitrary models of unknown concrete model type. Otherwise, for the closed
   // list of models forward declared in physical_model.h, we must provide a
-  // concrete override of this method.
+  // function that extracts the particular variant of the physical model.
   void ExtractConcreteModel(std::monostate) {}
 
   void DeclareCacheEntries() final;
@@ -203,7 +203,7 @@ class CompliantContactManager final
 
   // Eval version of CalcDiscreteContactPairs().
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
-      const systems::Context<T>& context) const override;
+      const systems::Context<T>& context) const final;
 
   // Computes all continuous forces in the MultibodyPlant model. Joint limits
   // are not included as continuous compliant forces but rather as constraints
@@ -235,6 +235,7 @@ class CompliantContactManager final
 
   // Specific contact solver drivers are created at ExtractModelInfo() time,
   // when the manager retrieves modeling information from MultibodyPlant.
+  // Only one of these drivers will be non-nullptr.
   std::unique_ptr<SapDriver<T>> sap_driver_;
   std::unique_ptr<TamsiDriver<T>> tamsi_driver_;
 };
