@@ -251,7 +251,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsNotNone(plant)
         self.assertIsNotNone(scene_graph)
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         Joint = Joint_[T]
@@ -816,7 +816,7 @@ class TestPlant(unittest.TestCase):
     def test_multibody_tree_kinematics_continuous(self, T):
         self.do_test_multibody_tree_kinematics(T, 0.0)
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_multibody_tree_kinematics_discrete(self, T):
         self.do_test_multibody_tree_kinematics(T, 0.001)
 
@@ -1093,7 +1093,7 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.GetEffortLowerLimits().shape, (nu,))
         self.assertEqual(plant.GetEffortUpperLimits().shape, (nu,))
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_port_access(self, T):
         # N.B. We actually test the values because some of the value bindings
         # are somewhat special snowflakes.
@@ -1407,7 +1407,7 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(plant.GetPositionsAndVelocities(
             context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa))
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_model_instance_state_access_by_array(self, T):
         # N.B. Please check warning above in `check_multibody_state_access`.
         MultibodyPlant = MultibodyPlant_[T]
@@ -1563,7 +1563,7 @@ class TestPlant(unittest.TestCase):
         v_remap = plant.MapQDotToVelocity(context, qdot)
         numpy_compare.assert_float_allclose(v_remap, v_expected)
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_multibody_add_joint(self, T):
         """
         Tests joint constructors, `AddJoint`, `AddJointActuator` and
