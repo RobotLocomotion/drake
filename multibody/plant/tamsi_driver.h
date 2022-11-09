@@ -24,7 +24,7 @@ class CompliantContactManager;
 // updates using the TAMSI solver. A const manager is provided at construction
 // so that the driver has access to the const model and computation services
 // agnostic to the solver type, such as geometry queries and/or kinematics.
-// @tparam_nonsymbolic_scalar
+// @tparam_default_scalar
 template <typename T>
 class TamsiDriver {
  public:
@@ -79,5 +79,5 @@ class TamsiDriver {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::TamsiDriver);

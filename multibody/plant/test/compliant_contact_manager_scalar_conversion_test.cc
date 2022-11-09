@@ -43,10 +43,10 @@ TYPED_TEST(CompliantContactManagerScalarConversionTest, ToAutoDiffXd) {
 TYPED_TEST(CompliantContactManagerScalarConversionTest, ToSymbolic) {
   using T = TypeParam;
   CompliantContactManager<T> source;
-  EXPECT_FALSE(source.is_cloneable_to_symbolic());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      source.template CloneToScalar<symbolic::Expression>(),
-      ".*symbolic.*not supported.*");
+  EXPECT_TRUE(source.is_cloneable_to_symbolic());
+  std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>> clone =
+      source.template CloneToScalar<symbolic::Expression>();
+  ASSERT_NE(clone, nullptr);
 }
 
 constexpr double kTimeStep = 0.001;
@@ -100,6 +100,8 @@ GTEST_TEST(CompliantContactManagerScalarConversionTest, PlantConversionTamsi) {
   TestPlantConversion<double, AutoDiffXd>(DiscreteContactSolver::kTamsi);
   TestPlantConversion<AutoDiffXd, double>(DiscreteContactSolver::kTamsi);
 }
+
+// TODO(amcastro-tri): Consider adding tests for symbolic::Expression here.
 
 }  // namespace internal
 }  // namespace multibody

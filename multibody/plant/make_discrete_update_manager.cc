@@ -9,11 +9,6 @@ namespace internal {
 template <typename T>
 std::unique_ptr<DiscreteUpdateManager<T>> MakeDiscreteUpdateManager(
     DiscreteContactSolver) {
-  if constexpr (std::is_same_v<T, symbolic::Expression>) {
-    throw std::runtime_error(
-        "Discrete updates not supported for scalar type T = "
-        "symbolic::Expression.");
-  }
   return std::make_unique<CompliantContactManager<T>>();
 }
 
