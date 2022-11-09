@@ -70,6 +70,23 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
       std::unique_ptr<geometry::GeometryInstance> geometry_instance,
       const fem::DeformableBodyConfig<T>& config, double resolution_hint);
 
+  /** Sets wall boundary conditions for the body with the given `id`. All
+   vertices of the mesh of the deformable body inside (or on the boundary of)
+   the prescribed half space are put under zero Dirichlet boundary conditions.
+   The half space is defined by a plane. A vertex is considered to be inside the
+   half space if it lies on the side of the plane opposite the normal.
+   @param[in] id    The body to be put under boundary condition.
+   @param[in] p_WQ  The world frame position of the origin of the plane
+                    describing the half space.
+   @param[in] n_W   The world frame normal vector of the plane describing the
+                    half space.
+   @pre n_W.norm() > 1e-10.
+   @throws std::exception if Finalize() has been called on the multibody plant
+   owning this deformable model or if no deformable body with the given `id` has
+   been registered in this model. */
+  void SetWallBoundaryCondition(DeformableBodyId id, const Vector3<T>& p_WQ,
+                                const Vector3<T>& n_W);
+
   /** Returns the discrete state index of the deformable body identified by the
    given `id`.
    @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
