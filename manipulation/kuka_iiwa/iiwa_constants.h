@@ -14,6 +14,13 @@ VectorX<double> get_iiwa_max_joint_velocities();
 
 extern const double kIiwaLcmStatusPeriod;
 
+enum IiwaControlMode : int {
+    kIiwaPositionMode = 0b01,
+    kIiwaTorqueMode = 0b10
+};
+
+const int kIiwaDefaultMode = kIiwaPositionMode | kIiwaTorqueMode;
+
 }  // namespace kuka_iiwa
 }  // namespace manipulation
 }  // namespace drake

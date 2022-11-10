@@ -5,8 +5,10 @@ struct lcmt_iiwa_command {
   // The timestamp in microseconds.
   int64_t utime;
 
-  // The reference joint positions. They should always be sent regardless of
-  // whether the arm is in position control mode or torque control mode.
+  // The reference joint positions. They should always be sent whe the arm is
+  // in position control mode.  When only torques are being sent, num_joints
+  // should be set to zero.
+  // TODO(eric.cousineau): This name should really be num_position(s).
   int32_t num_joints;
   double joint_position[num_joints];
 
