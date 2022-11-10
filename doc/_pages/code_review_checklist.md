@@ -125,7 +125,7 @@ changes, be sure to opt-in to a pre-merge macOS build.
 [Schedule an on-demand build](/jenkins.html#scheduling-an-on-demand-build) using an "everything"
 flavor, for example:
 
-* ``@drake-jenkins-bot mac-x86-big-sur-clang-bazel-experimental-everything-release please``
+* ``@drake-jenkins-bot mac-x86-monterey-clang-bazel-experimental-everything-release please``
 
 # Have you run linting tools?
 
