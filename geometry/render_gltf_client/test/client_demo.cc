@@ -103,6 +103,10 @@ DEFINE_string(
 DEFINE_string(
     server_render_endpoint, RenderEngineGltfClientParams{}.render_endpoint,
     "The render_endpoint for the render server.");
+DEFINE_bool(
+    cleanup, RenderEngineGltfClientParams{}.cleanup,
+    "Whether the client should cleanup files generated or retrieved from the "
+    "server.");
 
 static bool valid_render_engine(const char* flagname, const std::string& val) {
   if (val == "vtk")
@@ -180,6 +184,9 @@ int DoMain() {
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
 
+  // Log debug messages and set `params.verbose` to true if `cleanup=false`.
+  if (!FLAGS_cleanup) logging::set_log_level("debug");
+
   const std::string renderer_name("renderer");
   if (FLAGS_render_engine == "vtk") {
     scene_graph.AddRenderer(renderer_name, geometry::MakeRenderEngineVtk({}));
@@ -187,6 +194,8 @@ int DoMain() {
     RenderEngineGltfClientParams params;
     params.base_url = FLAGS_server_base_url;
     params.render_endpoint = FLAGS_server_render_endpoint;
+    params.cleanup = FLAGS_cleanup;
+    params.verbose = !FLAGS_cleanup;
     scene_graph.AddRenderer(renderer_name,
                             geometry::MakeRenderEngineGltfClient(params));
   }

@@ -61,6 +61,79 @@ In a separate terminal, launch drake_visualizer.
 $ bazel run //tools:drake_visualizer
 ```
 
+## Testing of the client-server RPC pipeline
+To ensure the RPC (Remote Procedure Call) infrastructure works as expected,
+different layers of testing are in place.  Each file in
+`//geometry/render_gltf_client` is well-covered with unit tests.  Additionally,
+there are integration tests to exercise the entire pipeline and carefully
+inspect the output.  It's advised to have a similar testing mechanism when
+developing a new render server.
+
+### Notes on Acceptance Test
+Several example binaries are in the test folder to help exercise the pipeline.
+In `acceptance_test.py`, each binary is invoked individually.  The goal of the
+test is to check its high-level execution, e.g., not crashing or no import
+errors.  These binaries, i.e., `server_demo` and `client_demo`, also help
+demonstrate the pipeline that a Drake user can run through the command line.
+
+### Notes on Integration Test
+Furthermore, in `integration_test.py`, two end-to-end integration tests are
+designed to quantitatively inspect the actual output, i.e., the rendered images
+or the intermediate glTF file.
+
+Two sets of color, depth, and label images are generated from `RenderEngineVtk`
+and `RenderEngineGltfClient`.  Both `RenderEngine`'s render images via the VTK
+library underlying, and thus, comparing their output images provide evidence
+that the RPC infrastructure is merely a communication tool between a client and
+a server but has minimal impact on the image rendering process.  Images
+produced by `RenderEngineVtk` are treated as ground truth for pixel-by-pixel
+comparison.  However, it's inevitable to have rounding errors due to subtle
+renderer settings; therefore, the test places a reasonably small tolerance for
+the comparison.
+
+Besides precise image differencing, there is another integration test focuses on
+the glTF correctness.  For `RenderEngineGltfClient` to render an image, the
+client converts geometries in `SceneGraph` to a glTF file and sends it over the
+wire.  This test inspects the content of the intermediate glTF file.
+
+Two good resources of glTF:
+[glTF-Tutorials](https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/README.md),
+[glTF Properties Reference](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#properties-reference)
+
+The paragraphs below provide a guideline to check your generated glTF in case of
+a test failure (which should be rare).
+
+`scene` is the starting point of the entire glTF file and points to the only
+entry in `scenes`.  There should be only one scene, even though glTF allows
+multiple.
+
+Each entry in `nodes` contains an added geometry in `SceneGraph`, a camera node,
+or the node aggregating information pointed by `scenes`.  The `matrix` field
+represents the global transformation to place the geometry/camera in the world
+frame.  Note that the local camera coordinate systems of Drake and glTF are
+different, so the y and z axis of the rotation matrix is flipped 180 degrees.
+
+The extrinsics of the camera is specified in the `nodes` section.  However, the
+intrinsics is placed in the `cameras` section.  Nominally, the file should have
+only one camera node.
+
+`meshes` is the crucial part of a glTF file and contains the necessary
+information to specify the properties of a mesh.  Each mesh entry points to
+the corresponding `accessors` entries with information, such as 3D vertex
+positions, texture coordinates, and vertex indices.  It also specifies the
+material property of the mesh by pointing to a `materials` entry.
+
+The `materials` section includes the RGBA information of a mesh in the
+`baseColorFactor` field.  If the material is textured, `baseColorTexture` will
+be present with a number indexing to a `textures` entry.  `images` and
+`samplers` are children to `textures`, and their content is fairly standard from
+`vtkGLTFExporter`.
+
+Each `buffers` entry represents a block of raw binary data, and `bufferViews`
+and `accessors` provide hints on how to interpret a raw buffer to a meaningful
+data structure.  As comparing the exact object texture is covered by the image
+differencing test, only the `accessors` section is compared in the test.
+
 ## Prototyping your own Server
 If everything is running as expected, then you can begin changing the
 implementation of `render_callback` in `server_demo.py` to invoke the renderer

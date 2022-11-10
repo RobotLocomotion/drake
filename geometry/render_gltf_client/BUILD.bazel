@@ -285,6 +285,7 @@ drake_py_unittest(
     data = [
         ":client_demo",
         ":server_demo",
+        ":test/ground_truth.gltf",
     ],
     tags = [
         "cpu:2",

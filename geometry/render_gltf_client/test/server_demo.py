@@ -638,16 +638,15 @@ def main():
         "automatically when file changes.",
     )
     parser.add_argument(
-        "--test",
+        "--acceptance_test",
         action="store_true",
         default=False,
-        help="Whether to run as a smoke test that constructs a Flask app but "
-        "doesn't run it.",
+        help="Whether to run as an acceptance test that constructs a Flask app"
+        " but doesn't run it.",
     )
 
     args = parser.parse_args()
-    # TODO(zachfang): Exercise render_endpoint() in the integration test.
-    if args.test:
+    if args.acceptance_test:
         return
     app.run(host=args.host, port=args.port, debug=args.debug)
 

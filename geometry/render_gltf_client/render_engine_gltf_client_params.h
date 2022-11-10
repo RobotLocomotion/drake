@@ -26,7 +26,7 @@ struct RenderEngineGltfClientParams {
    being generated, as well as any information about HTTP communications between
    the client and server such as HTTP header information, url and port, etc.
    Information is logged at the debug level, so your application will need to
-   drake::set_log_level() to `"debug"`.  @sa drake/common/text_logging.h */
+   logging::set_log_level() to `"debug"`.  @sa drake/common/text_logging.h */
   bool verbose = false;
 
   /** Whether or not the client should cleanup files generated / retrieved from
