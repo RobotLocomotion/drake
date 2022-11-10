@@ -78,7 +78,10 @@ def _main():
         idle_timeout = None
     elif idle_timeout < 0.0:
         parser.error("The --idle_timeout cannot be negative.")
-    meldis.serve_forever(idle_timeout=idle_timeout)
+    try:
+        meldis.serve_forever(idle_timeout=idle_timeout)
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
