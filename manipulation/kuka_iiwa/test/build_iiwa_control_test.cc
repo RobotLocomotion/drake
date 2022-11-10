@@ -116,13 +116,30 @@ TEST_F(BuildIiwaControlTest, BuildIiwaControl) {
 TEST_F(BuildIiwaControlTest, FeedforwardDisabled) {
   IiwaControlPorts control_ports{};
   control_ports = BuildSimplifiedIiwaControl(
-      *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_);
+      *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
+      0.01, {}, IiwaControlMode::kPosition);
   const auto diagram = builder_.Build();
 
   EXPECT_NE(control_ports.commanded_positions, nullptr);
   EXPECT_EQ(control_ports.commanded_positions->size(), N);
   // Should be nullptr if enable_feedforward_torque is false.
-  EXPECT_EQ(control_ports.commanded_feedforward_torque, nullptr);
+  EXPECT_EQ(control_ports.commanded_torque, nullptr);
+  EXPECT_NE(control_ports.joint_torque, nullptr);
+  EXPECT_EQ(control_ports.joint_torque->size(), N);
+  EXPECT_NE(control_ports.external_torque, nullptr);
+  EXPECT_EQ(control_ports.external_torque->size(), N);
+}
+
+TEST_F(BuildIiwaControlTest, TorqueOnly) {
+  IiwaControlPorts control_ports{};
+  control_ports = BuildSimplifiedIiwaControl(
+      *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
+      0.01, {}, IiwaControlMode::kTorque);
+  const auto diagram = builder_.Build();
+
+  EXPECT_EQ(control_ports.commanded_positions, nullptr);
+  EXPECT_NE(control_ports.commanded_torque, nullptr);
+  EXPECT_EQ(control_ports.commanded_torque->size(), N);
   EXPECT_NE(control_ports.joint_torque, nullptr);
   EXPECT_EQ(control_ports.joint_torque->size(), N);
   EXPECT_NE(control_ports.external_torque, nullptr);
@@ -134,7 +151,7 @@ TEST_F(BuildIiwaControlTest, FeedforwardEnabled) {
   const double ext_joint_filter_tau{0.01};
   control_ports = BuildSimplifiedIiwaControl(
       *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
-      ext_joint_filter_tau, {}, true /* enable_feedforward_torque */);
+      ext_joint_filter_tau, {});
 
   /* Send a non-zero position command and a zero-feedforward-torque command. The
    Iiwa arm should reach the commanded position without a problem. */
@@ -148,14 +165,14 @@ TEST_F(BuildIiwaControlTest, FeedforwardEnabled) {
   auto torque_input_source = builder_.AddSystem<ConstantVectorSource<double>>(
       zero_feedforward_command);
   builder_.Connect(torque_input_source->get_output_port(),
-                   *control_ports.commanded_feedforward_torque);
+                   *control_ports.commanded_torque);
   auto diagram = builder_.Build();
 
   // Check all the ports of `control_ports` are set up properly.
   EXPECT_NE(control_ports.commanded_positions, nullptr);
   EXPECT_EQ(control_ports.commanded_positions->size(), N);
-  EXPECT_NE(control_ports.commanded_feedforward_torque, nullptr);
-  EXPECT_EQ(control_ports.commanded_feedforward_torque->size(), N);
+  EXPECT_NE(control_ports.commanded_torque, nullptr);
+  EXPECT_EQ(control_ports.commanded_torque->size(), N);
   EXPECT_NE(control_ports.joint_torque, nullptr);
   EXPECT_EQ(control_ports.joint_torque->size(), N);
   EXPECT_NE(control_ports.external_torque, nullptr);

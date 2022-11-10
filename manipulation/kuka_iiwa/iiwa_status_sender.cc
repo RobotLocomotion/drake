@@ -99,7 +99,9 @@ void IiwaStatusSender::CalcOutput(
       get_velocity_estimated_input_port().Eval(context) :
       zero_vector_.head(num_joints_);
   const auto& torque_commanded =
-      get_torque_commanded_input_port().Eval(context);
+      get_torque_commanded_input_port().HasValue(context) ?
+      get_torque_commanded_input_port().Eval(context) :
+      get_torque_measured_input_port().Eval(context);
   const auto& torque_measured = EvalFirstConnected(
       context, 1, 2, zero_vector_,
       get_torque_measured_input_port(),

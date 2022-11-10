@@ -23,8 +23,18 @@ from pydrake.systems.lcm import LcmBuses
 
 
 class TestKukaIiwa(unittest.TestCase):
+    def test_constants(self):
+        self.assertEqual(mut.kIiwaArmNumJoints, 7)
+        self.assertIsInstance(mut.get_iiwa_max_joint_velocities(), np.ndarray)
+        self.assertEqual(mut.kIiwaLcmStatusPeriod, 0.005)
+        self.assertEqual(
+            mut.IiwaControlMode.kDefault,
+            mut.IiwaControlMode.kPosition | mut.IiwaControlMode.kTorque)
+
     def test_kuka_iiwa_lcm(self):
-        command_rec = mut.IiwaCommandReceiver()
+        command_rec = mut.IiwaCommandReceiver(
+            num_joints=mut.kIiwaArmNumJoints,
+            control_mode=mut.IiwaControlMode.kDefault)
         self.assertIsInstance(
             command_rec.get_message_input_port(), InputPort)
         self.assertIsInstance(
@@ -43,6 +53,10 @@ class TestKukaIiwa(unittest.TestCase):
             command_send.get_position_input_port(), InputPort)
         self.assertIsInstance(
             command_send.get_torque_input_port(), InputPort)
+        # Constructor variants.
+        mut.IiwaCommandSender(
+            num_joints=mut.kIiwaArmNumJoints,
+            control_mode=mut.IiwaControlMode.kDefault)
 
         status_rec = mut.IiwaStatusReceiver()
         self.assertIsInstance(
@@ -101,8 +115,9 @@ class TestKukaIiwa(unittest.TestCase):
         mut.BuildIiwaControl(
             plant=plant, iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
             controller_plant=controller_plant, lcm=DrakeLcm(), builder=builder,
-            ext_joint_filter_tau=0.12, desired_iiwa_kp_gains=np.arange(7))
-        self.assertEqual(len(builder.GetSystems()), 11)
+            ext_joint_filter_tau=0.12, desired_iiwa_kp_gains=np.arange(7),
+            control_mode=mut.IiwaControlMode.kDefault)
+        self.assertEqual(len(builder.GetSystems()), 12)
 
     def test_kuka_iiwa_driver(self):
         dut = mut.IiwaDriver()
@@ -129,4 +144,4 @@ class TestKukaIiwa(unittest.TestCase):
             driver_config=dut, model_instance_name="iiwa7",
             sim_plant=plant, models_from_directives=model_dict, lcms=lcm_bus,
             builder=builder)
-        self.assertEqual(len(builder.GetSystems()), 12)
+        self.assertEqual(len(builder.GetSystems()), 13)

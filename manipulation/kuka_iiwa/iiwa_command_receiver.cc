@@ -1,5 +1,7 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_command_receiver.h"
 
+#include <limits>
+
 #include "drake/common/drake_throw.h"
 #include "drake/lcm/lcm_messages.h"
 
@@ -17,9 +19,11 @@ using systems::DiscreteUpdateEvent;
 using systems::NumericParameterIndex;
 using systems::kVectorValued;
 
-IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
-    : num_joints_(num_joints) {
+IiwaCommandReceiver::IiwaCommandReceiver(
+    int num_joints, IiwaControlMode control_mode)
+    : num_joints_(num_joints), control_mode_(control_mode) {
   DRAKE_THROW_UNLESS(num_joints > 0);
+  DRAKE_THROW_UNLESS(IsValid(control_mode_));
 
   message_input_ = &DeclareAbstractInputPort(
       "lcmt_iiwa_command", Value<lcmt_iiwa_command>());
@@ -44,13 +48,17 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
        discrete_state_ticket(latched_position_measured_),
        position_measured_or_zero_->ticket()});
 
-  commanded_position_output_ = &DeclareVectorOutputPort(
-      "position", num_joints, &IiwaCommandReceiver::CalcPositionOutput,
-      {defaulted_command_->ticket()});
+  if (static_cast<bool>(control_mode_ & IiwaControlMode::kPosition)) {
+    commanded_position_output_ = &DeclareVectorOutputPort(
+        "position", num_joints, &IiwaCommandReceiver::CalcPositionOutput,
+        {defaulted_command_->ticket()});
+  }
 
-  commanded_torque_output_ = &DeclareVectorOutputPort(
-      "torque", num_joints, &IiwaCommandReceiver::CalcTorqueOutput,
-      {defaulted_command_->ticket()});
+  if (static_cast<bool>(control_mode_ & IiwaControlMode::kTorque)) {
+    commanded_torque_output_ = &DeclareVectorOutputPort(
+        "torque", num_joints, &IiwaCommandReceiver::CalcTorqueOutput,
+        {defaulted_command_->ticket()});
+  }
 
   time_output_ = &DeclareVectorOutputPort(
       "time", 1, &IiwaCommandReceiver::CalcTimeOutput,
@@ -91,6 +99,14 @@ void IiwaCommandReceiver::LatchInitialPosition(
 void IiwaCommandReceiver::DoCalcNextUpdateTime(
     const Context<double>& context,
     CompositeEventCollection<double>* events, double* time) const {
+  const bool has_position =
+      static_cast<bool>(control_mode_ & IiwaControlMode::kPosition);
+  if (!has_position) {
+    // No need to schedule events.
+    *time = std::numeric_limits<double>::infinity();
+    return;
+  }
+
   // We do not support events other than our own message timing events.
   LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
   DRAKE_THROW_UNLESS(events->HasEvents() == false);
