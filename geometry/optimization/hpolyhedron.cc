@@ -441,14 +441,12 @@ HPolyhedron HPolyhedron::ReduceInequalities(double tol) const {
     // IsRedundant.
     if (std::get<0>(IsInfeasible(prog))) {
       kept_indices.erase(excluded_index);
-    }
-
-    else {
+    } else {
       // Constraint to check redundant.
       Binding<solvers::LinearConstraint> redundant_constraint_binding =
-          prog.AddLinearConstraint(A_.row(excluded_index),
-                                   VectorXd::Constant(1, -kInf),
-                                   b_.row(excluded_index) + VectorXd::Ones(1), x);
+          prog.AddLinearConstraint(
+              A_.row(excluded_index), VectorXd::Constant(1, -kInf),
+              b_.row(excluded_index) + VectorXd::Ones(1), x);
 
       // Construct cost binding for prog.
       Binding<solvers::LinearCost> program_cost_binding =
