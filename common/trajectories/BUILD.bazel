@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":piecewise_pose",
         ":piecewise_quaternion",
         ":piecewise_trajectory",
+        ":stacked_trajectory",
         ":trajectory",
     ],
 )
@@ -113,6 +114,16 @@ drake_cc_library(
         ":piecewise_trajectory",
         "//common:essential",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "stacked_trajectory",
+    srcs = ["stacked_trajectory.cc"],
+    hdrs = ["stacked_trajectory.h"],
+    deps = [
+        ":trajectory",
+        "//common:reset_after_move",
     ],
 )
 
@@ -222,6 +233,17 @@ drake_cc_googletest(
         ":piecewise_quaternion",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:wrap_to",
+    ],
+)
+
+drake_cc_googletest(
+    name = "stacked_trajectory_test",
+    deps = [
+        ":discrete_time_trajectory",
+        ":piecewise_polynomial",
+        ":stacked_trajectory",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
