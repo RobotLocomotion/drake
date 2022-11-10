@@ -49,11 +49,9 @@ _SRCS = [
     "lib/content_encoding.c",
     "lib/cookie.c",
     "lib/curl_addrinfo.c",
-    "lib/curl_ctype.c",
     "lib/curl_get_line.c",
     "lib/curl_memrchr.c",
     "lib/doh.c",
-    "lib/dotdot.c",
     "lib/dynbuf.c",
     "lib/easy.c",
     "lib/easygetopt.c",
@@ -112,6 +110,7 @@ _SRCS = [
     "lib/url.c",
     "lib/urlapi.c",
     "lib/vauth/digest.c",
+    "lib/vauth/vauth.c",
     "lib/vtls/vtls.c",
     "lib/warnless.c",
 ]
@@ -120,6 +119,8 @@ _SRCS = [
 _COPTS = [
     # Our build of curl should be private.
     "-fvisibility=hidden",
+    # To match CMakeLists.txt.
+    "-DBUILDING_LIBCURL",
     # Tell curl that we've generated the curl_config.h.
     "-DHAVE_CONFIG_H",
     # Send larger chunks of data, for improved performance.
@@ -183,6 +184,7 @@ check_lists_consistency(
         "lib/imap.c",
         "lib/krb5.c",
         "lib/ldap.c",
+        "lib/noproxy.c",
         "lib/openldap.c",
         "lib/pingpong.c",
         "lib/pop3.c",
@@ -199,6 +201,7 @@ check_lists_consistency(
         "lib/version.c",
         "lib/version_win32.c",
         "lib/wildcard.c",
+        "lib/ws.c",
     ],
 )
 
