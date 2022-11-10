@@ -34,7 +34,6 @@ body:
         - Unknown / Other
         - Ubuntu 20.04
         - Ubuntu 22.04
-        - macOS 11 (Big Sur)
         - macOS 12 (Monterey)
         - Other
   - type: dropdown
