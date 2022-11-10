@@ -1,5 +1,7 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 
+#include <fmt/format.h>
+
 namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
@@ -23,6 +25,20 @@ VectorX<double> get_iiwa_max_joint_velocities() {
 // when initializing the FRI configuration on the iiwa's control
 // cabinet.
 const double kIiwaLcmStatusPeriod = 0.005;
+
+IiwaControlMode ParseIiwaControlMode(const std::string& control_mode) {
+  if (control_mode == "position_only") {
+    return IiwaControlMode::kPositionOnly;
+  } else if (control_mode == "torque_only") {
+    return IiwaControlMode::kTorqueOnly;
+  } else if (control_mode == "position_and_torque") {
+    return IiwaControlMode::kPositionAndTorque;
+  } else {
+    throw std::runtime_error(fmt::format(
+        "ParseIiwaControlMode: Invalid control_mode string: '{}'",
+        control_mode));
+  }
+}
 
 }  // namespace kuka_iiwa
 }  // namespace manipulation
