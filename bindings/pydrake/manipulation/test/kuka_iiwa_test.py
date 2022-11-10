@@ -23,6 +23,15 @@ from pydrake.systems.lcm import LcmBuses
 
 
 class TestKukaIiwa(unittest.TestCase):
+    def test_constants(self):
+        self.assertEqual(mut.kIiwaArmNumJoints, 7)
+        self.assertIsInstance(mut.get_iiwa_max_joint_velocities(), np.ndarray)
+        self.assertEqual(mut.kIiwaLcmStatusPeriod, 0.005)
+        self.assertEqual(mut.kIiwaPositionMode, 0b01)
+        self.assertEqual(mut.kIiwaTorqueMode, 0b10)
+        self.assertEqual(
+            mut.kIiwaDefaultMode, mut.kIiwaPositionMode | mut.kIiwaTorqueMode)
+
     def test_kuka_iiwa_lcm(self):
         command_rec = mut.IiwaCommandReceiver()
         self.assertIsInstance(
@@ -43,6 +52,10 @@ class TestKukaIiwa(unittest.TestCase):
             command_send.get_position_input_port(), InputPort)
         self.assertIsInstance(
             command_send.get_torque_input_port(), InputPort)
+        # Constructor variants.
+        mut.IiwaCommandSender(
+            num_joints=mut.kIiwaArmNumJoints,
+            control_mode=mut.kIiwaDefaultMode)
 
         status_rec = mut.IiwaStatusReceiver()
         self.assertIsInstance(

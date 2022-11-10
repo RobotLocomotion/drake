@@ -18,19 +18,24 @@ constexpr int N = kIiwaArmNumJoints;
 
 class IiwaCommandSenderTest : public testing::Test {
  public:
-  IiwaCommandSenderTest()
-      : dut_(),
-        context_ptr_(dut_.CreateDefaultContext()),
-        context_(*context_ptr_) {}
-
-  const lcmt_iiwa_command& output() const {
-    return dut_.get_output_port().Eval<lcmt_iiwa_command>(context_);
-  }
+  IiwaCommandSenderTest() {}
 
  protected:
-  IiwaCommandSender dut_;
+  template <typename... Args>
+  void MakeDut(Args&&... args) {
+    dut_ = std::make_unique<IiwaCommandSender>(
+          kIiwaArmNumJoints, std::forward<Args>(args)...);
+    context_ptr_ = dut().CreateDefaultContext();
+  }
+
+  IiwaCommandSender& dut() { return *dut_; }
+  systems::Context<double>& context() { return *context_ptr_; }
+  const lcmt_iiwa_command& output() {
+    return dut().get_output_port().Eval<lcmt_iiwa_command>(context());
+  }
+
+  std::unique_ptr<IiwaCommandSender> dut_;
   std::unique_ptr<systems::Context<double>> context_ptr_;
-  systems::Context<double>& context_;
 
   const Vector1d time_{Vector1d(1.2)};
 
@@ -42,14 +47,21 @@ class IiwaCommandSenderTest : public testing::Test {
 };
 
 TEST_F(IiwaCommandSenderTest, AcceptanceTest) {
-  dut_.get_position_input_port().FixValue(&context_, q0_);
+  // Default is position and torque.
+  MakeDut();
+  // Position is required.
+  EXPECT_THROW(output(), std::logic_error);
+
+  dut().get_position_input_port().FixValue(&context(), q0_);
   EXPECT_EQ(output().utime, 0);
   EXPECT_EQ(output().num_joints, N);
   EXPECT_EQ(output().joint_position, std_q0_);
   EXPECT_EQ(output().num_torques, 0);
 
-  dut_.get_time_input_port().FixValue(&context_, time_);
-  dut_.get_torque_input_port().FixValue(&context_, t0_);
+  // Time is optional.
+  dut().get_time_input_port().FixValue(&context(), time_);
+  // Torque is optional.
+  dut().get_torque_input_port().FixValue(&context(), t0_);
   EXPECT_EQ(output().utime, time_[0] * 1e6);
   EXPECT_EQ(output().num_joints, N);
   EXPECT_EQ(output().joint_position, std_q0_);
@@ -57,11 +69,40 @@ TEST_F(IiwaCommandSenderTest, AcceptanceTest) {
   EXPECT_EQ(output().joint_torque, std_t0_);
 }
 
+TEST_F(IiwaCommandSenderTest, PositionOnlyTest) {
+  MakeDut(kIiwaPositionMode);
+  // Should not have torque output port.
+  EXPECT_THROW(dut().get_torque_input_port(), std::runtime_error);
+  // Position is required.
+  EXPECT_THROW(output(), std::logic_error);
+
+  dut().get_position_input_port().FixValue(&context(), q0_);
+  EXPECT_EQ(output().utime, 0);
+  EXPECT_EQ(output().num_joints, N);
+  EXPECT_EQ(output().joint_position, std_q0_);
+  EXPECT_EQ(output().num_torques, 0);
+}
+
+TEST_F(IiwaCommandSenderTest, TorqueOnlyTest) {
+  MakeDut(kIiwaTorqueMode);
+  // Should not have position output port.
+  EXPECT_THROW(dut().get_position_input_port(), std::runtime_error);
+  // Torque is required.
+  EXPECT_THROW(output(), std::logic_error);
+
+  dut().get_torque_input_port().FixValue(&context(), t0_);
+  EXPECT_EQ(output().utime, 0);
+  EXPECT_EQ(output().num_joints, 0);
+  EXPECT_EQ(output().num_torques, N);
+  EXPECT_EQ(output().joint_torque, std_t0_);
+}
+
 // This class is likely to be used on the critical path for robot control, so
 // we insist that it must not perform heap operations while in steady-state.
 TEST_F(IiwaCommandSenderTest, MallocTest) {
+  MakeDut();
   // Initialize and then invalidate the cached output.
-  auto& q = dut_.get_position_input_port().FixValue(&context_, q0_);
+  auto& q = dut().get_position_input_port().FixValue(&context(), q0_);
   output();
   q.GetMutableVectorData<double>();
 
@@ -72,7 +113,7 @@ TEST_F(IiwaCommandSenderTest, MallocTest) {
   }
 
   // Add torques, re-initialize, and then invalidate the cached output.
-  auto& tau = dut_.get_torque_input_port().FixValue(&context_, t0_);
+  auto& tau = dut().get_torque_input_port().FixValue(&context(), t0_);
   output();
   tau.GetMutableVectorData<double>();
 
@@ -83,7 +124,7 @@ TEST_F(IiwaCommandSenderTest, MallocTest) {
   }
 
   // Add time, re-initialize, and then invalidate the cached output.
-  auto& utime = dut_.get_time_input_port().FixValue(&context_, time_);
+  auto& utime = dut().get_time_input_port().FixValue(&context(), time_);
   output();
   utime.GetMutableVectorData<double>();
 

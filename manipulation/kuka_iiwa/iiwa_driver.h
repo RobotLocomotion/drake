@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
@@ -24,12 +25,18 @@ struct IiwaDriver {
   /** Per BuildIiwaControl. */
   double ext_joint_filter_tau{0.01};
 
+  /// Per BuildIiwaControl. Valid options are:
+  /// - "position" with optional "torque" feedforward
+  /// - "torque"
+  std::vector<std::string> control_mode{{"position"}, {"torque"}};
+
   std::string lcm_bus{"default"};
 
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(hand_model_name));
     a->Visit(DRAKE_NVP(ext_joint_filter_tau));
+    a->Visit(DRAKE_NVP(control_mode));
     a->Visit(DRAKE_NVP(lcm_bus));
   }
 };

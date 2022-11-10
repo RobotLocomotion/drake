@@ -41,10 +41,11 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
                       DrakeLcmInterface* lcm,
                       systems::DiagramBuilder<double>* builder,
                       double ext_joint_filter_tau,
-                      const std::optional<Eigen::VectorXd>& desired_kp_gains) {
+                      const std::optional<Eigen::VectorXd>& desired_kp_gains,
+                      int control_mode) {
   const IiwaControlPorts iiwa_control_ports = BuildSimplifiedIiwaControl(
       plant, iiwa_instance, controller_plant, builder, ext_joint_filter_tau,
-      desired_kp_gains, true /* enable_feedforward_torque*/);
+      desired_kp_gains, control_mode);
 
   const int num_iiwa_positions = controller_plant.num_positions();
 
@@ -54,15 +55,23 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
   iiwa_command_sub->set_name(
       plant.GetModelInstanceName(iiwa_instance) + "_iiwa_command_subscriber");
   auto iiwa_command_receiver =
-      builder->AddSystem<IiwaCommandReceiver>(num_iiwa_positions);
+      builder->AddSystem<IiwaCommandReceiver>(num_iiwa_positions, control_mode);
   builder->Connect(iiwa_command_sub->get_output_port(),
                    iiwa_command_receiver->get_message_input_port());
-  builder->Connect(iiwa_command_receiver->get_commanded_position_output_port(),
-                   *iiwa_control_ports.commanded_positions);
 
-  // Add in feedforward torque.
-  builder->Connect(iiwa_command_receiver->get_commanded_torque_output_port(),
-                   *iiwa_control_ports.commanded_feedforward_torque);
+  // Connect desired positions.
+  if (control_mode & kIiwaPositionMode) {
+      builder->Connect(
+          iiwa_command_receiver->get_commanded_position_output_port(),
+          *iiwa_control_ports.commanded_positions);
+  }
+
+  // Connect desired torque.
+  if (control_mode & kIiwaTorqueMode) {
+    builder->Connect(
+        iiwa_command_receiver->get_commanded_torque_output_port(),
+        *iiwa_control_ports.commanded_torque);
+  }
 
   // Create an Iiwa state sender.
   auto iiwa_state_measured_demux =
@@ -89,8 +98,11 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
                    iiwa_command_receiver->get_position_measured_input_port());
 
   // Also send commanded state through the Iiwa status sender.
-  builder->Connect(iiwa_command_receiver->get_commanded_position_output_port(),
-                   iiwa_status_sender->get_position_commanded_input_port());
+  if (control_mode & kIiwaPositionMode) {
+    builder->Connect(
+        iiwa_command_receiver->get_commanded_position_output_port(),
+        iiwa_status_sender->get_position_commanded_input_port());
+  }
 
   // Also send control torque through the Iiwa status sender.
   builder->Connect(*iiwa_control_ports.joint_torque,
@@ -112,57 +124,70 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     const MultibodyPlant<double>& controller_plant,
     systems::DiagramBuilder<double>* builder, double ext_joint_filter_tau,
     const std::optional<Eigen::VectorXd>& desired_kp_gains,
-    bool enable_feedforward_torque) {
+    int control_mode) {
+  DRAKE_DEMAND(
+      control_mode >= kIiwaPositionMode
+      && control_mode <= (kIiwaPositionMode | kIiwaTorqueMode));
+
   IiwaControlPorts ports{};
   const int num_iiwa_positions = controller_plant.num_positions();
   DRAKE_THROW_UNLESS(num_iiwa_positions == 7);
 
-  VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
+  // Intercept desired torque so we can also send it as measured torque.
+  const Gain<double>* torque_proxy =
+      builder->AddSystem<Gain>(1, num_iiwa_positions);
+  builder->Connect(
+      torque_proxy->get_output_port(),
+      plant.get_actuation_input_port(iiwa_instance));
 
-  // The default values are taken from the current FRI driver.
-  // TODO(EricCousineau-TRI): These seem like *very* high values for inverse
-  // dynamics on a simulated plant. Investigate overshoot from
-  // `robot_follow_joint_sequence`, see if it's just a timing issue.
-  iiwa_kp = desired_kp_gains.value_or((Eigen::VectorXd(7)
-      << 2000, 1500, 1500, 1500, 1500, 500, 500).finished());
-  DRAKE_THROW_UNLESS(iiwa_kp.size() == 7);
+  if (control_mode & kIiwaPositionMode) {
+    VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
 
-  iiwa_kd.resize(num_iiwa_positions);
-  for (int i = 0; i < num_iiwa_positions; ++i) {
-    // Critical damping gains.
-    iiwa_kd[i] = 2 * std::sqrt(iiwa_kp[i]);
+    // The default values are taken from the current FRI driver.
+    // TODO(EricCousineau-TRI): These seem like *very* high values for inverse
+    // dynamics on a simulated plant. Investigate overshoot from
+    // `robot_follow_joint_sequence`, see if it's just a timing issue.
+    iiwa_kp = desired_kp_gains.value_or((Eigen::VectorXd(7)
+        << 2000, 1500, 1500, 1500, 1500, 500, 500).finished());
+    DRAKE_THROW_UNLESS(iiwa_kp.size() == 7);
+
+    iiwa_kd.resize(num_iiwa_positions);
+    for (int i = 0; i < num_iiwa_positions; ++i) {
+      // Critical damping gains.
+      iiwa_kd[i] = 2 * std::sqrt(iiwa_kp[i]);
+    }
+    iiwa_ki = VectorX<double>::Constant(num_iiwa_positions, 1);
+
+    auto iiwa_controller = builder->AddSystem<InverseDynamicsController>(
+        controller_plant, iiwa_kp, iiwa_ki, iiwa_kd,
+        false /* no feedforward acceleration */);
+
+    builder->Connect(plant.get_state_output_port(iiwa_instance),
+                     iiwa_controller->get_input_port_estimated_state());
+
+    auto iiwa_commanded_state_interpolator =
+        builder->AddSystem<StateInterpolatorWithDiscreteDerivative>(
+            num_iiwa_positions, kIiwaLcmStatusPeriod,
+            true /* suppress_initial_transient */);
+    builder->Connect(iiwa_commanded_state_interpolator->get_output_port(),
+                     iiwa_controller->get_input_port_desired_state());
+
+    ports.commanded_positions =
+        &iiwa_commanded_state_interpolator->get_input_port();
+    if (control_mode & kIiwaTorqueMode) {
+      auto adder = builder->template AddSystem<Adder>(2, num_iiwa_positions);
+      builder->Connect(iiwa_controller->get_output_port_control(),
+                       adder->get_input_port(0));
+      builder->Connect(adder->get_output_port(),
+                       torque_proxy->get_input_port());
+      ports.commanded_torque = &adder->get_input_port(1);
+    } else {
+      builder->Connect(iiwa_controller->get_output_port_control(),
+                       torque_proxy->get_input_port());
+    }
+  } else if (control_mode & kIiwaTorqueMode) {
+    ports.commanded_torque = &torque_proxy->get_input_port();
   }
-  iiwa_ki = VectorX<double>::Constant(num_iiwa_positions, 1);
-
-  auto iiwa_controller = builder->AddSystem<InverseDynamicsController>(
-      controller_plant, iiwa_kp, iiwa_ki, iiwa_kd,
-      false /* no feedforward acceleration */);
-
-  builder->Connect(plant.get_state_output_port(iiwa_instance),
-                   iiwa_controller->get_input_port_estimated_state());
-
-  auto iiwa_commanded_state_interpolator =
-      builder->AddSystem<StateInterpolatorWithDiscreteDerivative>(
-          num_iiwa_positions, kIiwaLcmStatusPeriod,
-          true /* suppress_initial_transient */);
-  builder->Connect(iiwa_commanded_state_interpolator->get_output_port(),
-                   iiwa_controller->get_input_port_desired_state());
-
-  if (enable_feedforward_torque) {
-    auto adder = builder->template AddSystem<Adder>(2, num_iiwa_positions);
-    builder->Connect(iiwa_controller->get_output_port_control(),
-                     adder->get_input_port(0));
-    builder->Connect(adder->get_output_port(),
-                     plant.get_actuation_input_port(iiwa_instance));
-    ports.commanded_feedforward_torque = &adder->get_input_port(1);
-  } else {
-    builder->Connect(iiwa_controller->get_output_port_control(),
-                     plant.get_actuation_input_port(iiwa_instance));
-  }
-
-  auto torque_gain = builder->AddSystem<Gain>(-1, num_iiwa_positions);
-  builder->Connect(iiwa_controller->get_output_port_control(),
-                   torque_gain->get_input_port());
 
   // Filter for simulated external torques. Unlike the real robot, external
   // torques in sim are rather noisy (which propagates into the computed
@@ -191,8 +216,11 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
             *value = system.get_output_port(0).Eval(context);
           }));
 
-  ports.commanded_positions =
-      &iiwa_commanded_state_interpolator->get_input_port();
+  // TODO(eric.cousineau): Why do we fliip this?
+  auto torque_gain = builder->AddSystem<Gain>(-1, num_iiwa_positions);
+  builder->Connect(torque_proxy->get_output_port(),
+                   torque_gain->get_input_port());
+
   ports.external_torque = &external_torque_filter->get_output_port();
   ports.joint_torque = &torque_gain->get_output_port();
   return ports;

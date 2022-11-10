@@ -28,12 +28,23 @@ PYBIND11_MODULE(kuka_iiwa, m) {
 
   py::module::import("pydrake.systems.framework");
 
+  // Constants.
+  m.attr("kIiwaArmNumJoints") = kIiwaArmNumJoints;
+  m.def("get_iiwa_max_joint_velocities", &get_iiwa_max_joint_velocities,
+      doc.get_iiwa_max_joint_velocities.doc);
+  m.attr("kIiwaLcmStatusPeriod") = kIiwaLcmStatusPeriod;
+  // N.B. pybind11 seems to get confused by enum : int, so we explicitly cast
+  // here.
+  m.attr("kIiwaPositionMode") = int{kIiwaPositionMode};
+  m.attr("kIiwaTorqueMode") = int{kIiwaTorqueMode};
+  m.attr("kIiwaDefaultMode") = kIiwaDefaultMode;
+
   {
     using Class = IiwaCommandReceiver;
     constexpr auto& cls_doc = doc.IiwaCommandReceiver;
     py::class_<Class, LeafSystem<double>>(m, "IiwaCommandReceiver", cls_doc.doc)
-        .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
-            cls_doc.ctor.doc)
+        .def(py::init<int, int>(), py::arg("num_joints") = kIiwaArmNumJoints,
+            py::arg("control_mode") = kIiwaDefaultMode, cls_doc.ctor.doc)
         .def("get_message_input_port", &Class::get_message_input_port,
             py_rvp::reference_internal, cls_doc.get_message_input_port.doc)
         .def("get_position_measured_input_port",
@@ -56,8 +67,8 @@ PYBIND11_MODULE(kuka_iiwa, m) {
     using Class = IiwaCommandSender;
     constexpr auto& cls_doc = doc.IiwaCommandSender;
     py::class_<Class, LeafSystem<double>>(m, "IiwaCommandSender", cls_doc.doc)
-        .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
-            cls_doc.ctor.doc)
+        .def(py::init<int, int>(), py::arg("num_joints") = kIiwaArmNumJoints,
+            py::arg("control_mode") = kIiwaDefaultMode, cls_doc.ctor.doc)
         .def("get_time_input_port", &Class::get_time_input_port,
             py_rvp::reference_internal, cls_doc.get_time_input_port.doc)
         .def("get_position_input_port", &Class::get_position_input_port,
@@ -143,11 +154,6 @@ PYBIND11_MODULE(kuka_iiwa, m) {
   }
 
   {
-    m.def(
-        "get_iiwa_max_joint_velocities",
-        []() { return get_iiwa_max_joint_velocities(); },
-        doc.get_iiwa_max_joint_velocities.doc);
-
     m.def("ApplyDriverConfig", &ApplyDriverConfig, py::arg("driver_config"),
         py::arg("model_instance_name"), py::arg("sim_plant"),
         py::arg("models_from_directives"), py::arg("lcms"), py::arg("builder"),
@@ -157,6 +163,7 @@ PYBIND11_MODULE(kuka_iiwa, m) {
         py::arg("iiwa_instance"), py::arg("controller_plant"), py::arg("lcm"),
         py::arg("builder"), py::arg("ext_joint_filter_tau") = 0.01,
         py::arg("desired_iiwa_kp_gains") = std::nullopt,
+        py::arg("control_mode") = kIiwaDefaultMode,
         // Keep alive, reference: `builder` keeps `controller_plant` alive.
         py::keep_alive<5, 3>(), doc.BuildIiwaControl.doc);
   }

@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 
 #include "drake/lcm/drake_lcm_interface.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 /// @file
@@ -54,12 +55,13 @@ void BuildIiwaControl(
     const multibody::MultibodyPlant<double>& controller_plant,
     lcm::DrakeLcmInterface* lcm, systems::DiagramBuilder<double>* builder,
     double ext_joint_filter_tau = 0.01,
-    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt);
+    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
+    int control_mode = kIiwaDefaultMode);
 
 /// The return type of BuildSimplifiedIiwaControl().
 struct IiwaControlPorts {
   const systems::InputPort<double>* commanded_positions{};
-  const systems::InputPort<double>* commanded_feedforward_torque{};
+  const systems::InputPort<double>* commanded_torque{};
   const systems::OutputPort<double>* joint_torque{};
   const systems::OutputPort<double>* external_torque{};
 };
@@ -79,7 +81,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     systems::DiagramBuilder<double>* builder,
     double ext_joint_filter_tau = 0.01,
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
-    bool enable_feedforward_torque = false);
+    int control_mode = kIiwaDefaultMode);
 
 }  // namespace kuka_iiwa
 }  // namespace manipulation
