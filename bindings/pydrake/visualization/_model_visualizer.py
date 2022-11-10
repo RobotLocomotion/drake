@@ -7,10 +7,10 @@ from pydrake.geometry import (
     Cylinder,
     GeometryInstance,
     MakePhongIllustrationProperties,
-    Meshcat,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
     Role,
+    StartMeshcat,
 )
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.meshcat import JointSliders
@@ -85,6 +85,7 @@ class ModelVisualizer:
         self._publish_contacts = publish_contacts
         self._browser_new = browser_new
         self._pyplot = pyplot
+        self._meshcat = meshcat
 
         # The following fields remain valid for this object's lifetime after
         # Finalize() has been called.
@@ -92,7 +93,6 @@ class ModelVisualizer:
         self._sliders = None
         self._context = None
         self._plant_context = None
-        self._meshcat = meshcat
 
         # The builder, scene_graph, and parser become invalid after Finalize().
         # The plant remains valid for this object's lifetime.
@@ -101,75 +101,44 @@ class ModelVisualizer:
             self._builder, time_step=0.0)
         self._parser = Parser(self._plant)
 
-    @property
-    def visualize_frames(self):
+    @staticmethod
+    def _get_constructor_defaults():
         """
-        The value of `visualize_frames` passed to the constructor, or the
-        default.
+        Returns a dict of the default values used in our constructor's named
+        keyword arguments (for any non-None values); this helps our companion
+        main() function share those same defaults.
         """
-        return self._visualize_frames
+        result = dict()
+        prototype = ModelVisualizer()
+        for name in [
+                "visualize_frames",
+                "triad_length",
+                "triad_radius",
+                "triad_opacity",
+                "publish_contacts",
+                "browser_new",
+                "pyplot"]:
+            value = getattr(prototype, f"_{name}")
+            assert value is not None
+            result[name] = value
+        return result
 
-    @property
-    def triad_length(self):
-        """
-        The value of `triad_length` passed to the constructor, or the default.
-        """
-        return self._triad_length
-
-    @property
-    def triad_radius(self):
-        """
-        The value of `triad_radius` passed to the constructor, or the default.
-        """
-        return self._triad_radius
-
-    @property
-    def triad_opacity(self):
-        """
-        The value of `triad_opacity` passed to the constructor, or the default.
-        """
-        return self._triad_opacity
-
-    @property
-    def publish_contacts(self):
-        """
-        The value of `publish_contacts` passed to the constructor, or the
-        default.
-        """
-        return self._publish_contacts
-
-    @property
-    def browser_new(self):
-        """
-        The value of `browser_new` passed to the constructor, or the default.
-        """
-        return self._browser_new
-
-    @property
-    def pyplot(self):
-        """
-        The value of `pyplot` passed to the constructor, or the default.
-        """
-        return self._pyplot
-
-    @property
     def parser(self):
         """
-        The internal Parser instance.
+        Returns a Parser that will load models into this visualizer.
 
-        This property is only valid until Finalize is called.
+        This method cannot be used after Finalize is called.
         """
         assert self._parser is not None, "Finalize has already been called."
         return self._parser
 
-    @property
     def meshcat(self):
         """
-        The internal Meshcat instance.
-
-        Unless a Meshcat instance was provided to the constructor, this
-        property is only valid once Finalize is called.
+        Returns the Meshcat object this visualizer is plugged into.
+        If none was provided in the constructor, this creates one on demand.
         """
+        if self._meshcat is None:
+            self._meshcat = StartMeshcat()
         return self._meshcat
 
     def AddModels(self, filename):
@@ -232,12 +201,12 @@ class ModelVisualizer:
             scene_graph=self._scene_graph,
             builder=self._builder)
 
+        # (Re-)initialize the meshcat instance, creating one if needed.
+        self.meshcat()
+        self._meshcat.Delete()
+        self._meshcat.DeleteAddedControls()
+
         # Connect to MeshCat for visualizing and interfacing w/ widgets.
-        if self._meshcat is not None:
-            self._meshcat.Delete()
-            self._meshcat.DeleteAddedControls()
-        else:
-            self._meshcat = Meshcat()
         # Add two visualizers: one to publish the "illustration" geometry and
         # another to publish the "collision" geometry.
         MeshcatVisualizer.AddToBuilder(
