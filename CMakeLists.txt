@@ -28,10 +28,10 @@ set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
 if(APPLE)
-  if(CMAKE_SYSTEM_VERSION VERSION_LESS 20)
-    message(FATAL_ERROR
+  if(CMAKE_SYSTEM_VERSION VERSION_LESS 21)
+    message(WARNING
       "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use "
-      "Darwin 20.x (macOS Big Sur) or 21.x (macOS Monterey)."
+      "Darwin 21.x (macOS Monterey) or newer."
     )
   endif()
 else()
@@ -102,7 +102,7 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
-set(MINIMUM_APPLE_CLANG_VERSION 12)
+set(MINIMUM_APPLE_CLANG_VERSION 14)
 set(MINIMUM_CLANG_VERSION 12)
 set(MINIMUM_GNU_VERSION 9.3)
 
