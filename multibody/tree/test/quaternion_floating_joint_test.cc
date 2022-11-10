@@ -1,12 +1,10 @@
-// clang-format: off
-#include "drake/multibody/tree/multibody_tree-inl.h"
-// clang-format: on
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
-#include "drake/multibody/tree/quaternion_floating_joint.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
@@ -137,29 +135,30 @@ TEST_F(QuaternionFloatingJointTest, ContextDependentAccess) {
   const Vector3d position(1., 2., 3.);
   const Vector3d angular_velocity(0.5, 0.5, 0.5);
   const Vector3d translational_veloctiy(0.1, 0.2, 0.3);
-  Quaternion<double> rotation_A(1., 2., 3., 4.);
-  Quaternion<double> rotation_B(5., 6., 7., 8.);
-  rotation_A.normalize();
-  rotation_B.normalize();
-  const RigidTransformd pose(rotation_A, position);
-  const RotationMatrixd rotation_matrix(rotation_B);
+  Quaternion<double> quaternion_A(1., 2., 3., 4.);
+  Quaternion<double> quaternion_B(5., 6., 7., 8.);
+  quaternion_A.normalize();
+  quaternion_B.normalize();
+  const RigidTransformd transform_A(quaternion_A, position);
+  const RotationMatrixd rotation_matrix_B(quaternion_B);
 
   // Position access:
-  joint_->set_quaternion(context_.get(), rotation_A);
-  EXPECT_EQ(joint_->get_quaternion(*context_).coeffs(), rotation_A.coeffs());
+  joint_->set_quaternion(context_.get(), quaternion_A);
+  EXPECT_EQ(joint_->get_quaternion(*context_).coeffs(), quaternion_A.coeffs());
 
-  joint_->SetFromRotationMatrix(context_.get(), rotation_matrix);
+  joint_->SetFromRotationMatrix(context_.get(), rotation_matrix_B);
   EXPECT_TRUE(math::AreQuaternionsEqualForOrientation(
-      joint_->get_quaternion(*context_), rotation_B, kTolerance));
+      joint_->get_quaternion(*context_), quaternion_B, kTolerance));
 
   joint_->set_position(context_.get(), position);
   EXPECT_EQ(joint_->get_position(*context_), position);
 
   joint_->set_position(context_.get(), Vector3d::Zero());  // Zero out pose.
-  joint_->set_pose(context_.get(), pose);
+  joint_->set_pose(context_.get(), transform_A);
   // We expect a bit of roundoff error due to transforming between quaternion
   // and rotation matrix representations.
-  EXPECT_TRUE(joint_->get_pose(*context_).IsNearlyEqualTo(pose, kTolerance));
+  EXPECT_TRUE(
+      joint_->get_pose(*context_).IsNearlyEqualTo(transform_A, kTolerance));
 
   // Angular velocity access:
   joint_->set_angular_velocity(context_.get(), angular_velocity);

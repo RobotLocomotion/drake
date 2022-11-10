@@ -7,6 +7,8 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/random.h"
+#include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -47,11 +49,15 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// frames, get_quaternion() and get_position() for an explanation of the
   /// configuration of this joint, and get_angular_velocity() and
   /// get_translational_velocity() for an explanation of the generalized
-  /// velocities. This constructor signature creates a joint with no joint
+  /// velocities.
+  ///
+  /// This constructor signature creates a joint with no joint
   /// limits, i.e. the joint position, velocity and acceleration limits are the
   /// pair `(-∞, ∞)`. These can be set using the Joint methods
   /// set_position_limits(), set_velocity_limits() and
-  /// set_acceleration_limits(). The first three arguments to this constructor
+  /// set_acceleration_limits().
+  ///
+  /// The first three arguments to this constructor
   /// are those of the Joint class constructor. See the Joint class's
   /// documentation for details. The additional parameters are:
   /// @param[in] angular_damping
@@ -88,6 +94,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS(translational_damping >= 0);
   }
 
+  /// Returns the name of this joint type: "quaternion_floating"
   const std::string& type_name() const override {
     static const never_destroyed<std::string> name{kTypeName};
     return name.access();
@@ -123,7 +130,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   ///   The context of the model this joint belongs to.
   /// @returns The quaternion representing the orientation of frame M in F.
   Quaternion<T> get_quaternion(const systems::Context<T>& context) const {
-    return get_mobilizer()->get_quaternion(context);
+    return get_mobilizer().get_quaternion(context);
   }
 
   /// Returns the position `p_FM` of the outboard frame M's origin as measured
@@ -133,7 +140,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   ///   The context of the model this joint belongs to.
   /// @returns The position vector of frame M's origin in frame F.
   Vector3<T> get_position(const systems::Context<T>& context) const {
-    return get_mobilizer()->get_position(context);
+    return get_mobilizer().get_position(context);
   }
 
   /// Returns the pose `X_FM` of the outboard frame M as measured and expressed
@@ -147,6 +154,37 @@ class QuaternionFloatingJoint final : public Joint<T> {
                                    get_position(context));
   }
 
+  /// Retrieves from `context` the angular velocity `w_FM` of the child frame
+  /// M in the parent frame F, expressed in F.
+  /// @param[in] context
+  ///   The context of the model this joint belongs to.
+  /// @retval w_FM
+  ///   A vector in ℝ³ with the angular velocity of the child frame M in the
+  ///   parent frame F, expressed in F. Refer to this class's documentation for
+  ///   further details and definitions of these frames.
+  Vector3<T> get_angular_velocity(const systems::Context<T>& context) const {
+    return get_mobilizer().get_angular_velocity(context);
+  }
+
+  /// Retrieves from `context` the translational velocity `v_FM` of
+  /// the child frame M's origin as measured and expressed in the parent frame
+  /// F.
+  /// @param[in] context
+  ///   The context of the model this joint belongs to.
+  /// @retval v_FM
+  ///   A vector in ℝ³ with the translational velocity of the origin of child
+  ///   frame M in the parent frame F, expressed in F. Refer to this class's
+  ///   documentation for further details and definitions of these frames.
+  Vector3<T> get_translational_velocity(
+      const systems::Context<T>& context) const {
+    return get_mobilizer().get_translational_velocity(context);
+  }
+
+  /// @}
+
+  /// @name Context-dependent value setters
+  /// @{
+
   /// Sets `context` so that the orientation of frame M in F is given by the
   /// input quaternion `q_FM`.
   /// @param[out] context
@@ -156,7 +194,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& set_quaternion(
       systems::Context<T>* context, const Quaternion<T>& q_FM) const {
-    get_mobilizer()->set_quaternion(context, q_FM);
+    get_mobilizer().set_quaternion(context, q_FM);
     return *this;
   }
 
@@ -175,7 +213,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   // set_quaternion(context, q_FM);
   const QuaternionFloatingJoint<T>& SetFromRotationMatrix(
       systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
-    get_mobilizer()->SetFromRotationMatrix(context, R_FM);
+    get_mobilizer().SetFromRotationMatrix(context, R_FM);
     return *this;
   }
 
@@ -188,7 +226,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& set_position(systems::Context<T>* context,
                                                  const Vector3<T>& p_FM) const {
-    get_mobilizer()->set_position(context, p_FM);
+    get_mobilizer().set_position(context, p_FM);
     return *this;
   }
 
@@ -201,51 +239,9 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& set_pose(
       systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
-    get_mobilizer()->set_position(context, X_FM.translation());
-    get_mobilizer()->set_quaternion(context, X_FM.rotation().ToQuaternion());
+    get_mobilizer().set_position(context, X_FM.translation());
+    get_mobilizer().set_quaternion(context, X_FM.rotation().ToQuaternion());
     return *this;
-  }
-
-  /// Sets the random distribution that the orientation of this joint will be
-  /// randomly sampled from. See get_quaternion() for details on the orientation
-  /// representation.
-  void set_random_quaternion_distribution(
-      const Eigen::Quaternion<symbolic::Expression>& q_FM) {
-    get_mutable_mobilizer()->set_random_quaternion_distribution(q_FM);
-  }
-
-  /// Sets the random distribution that positions of this joint will be randomly
-  /// sampled from. See get_position() for details on the position
-  /// representation.
-  void set_random_position_distribution(
-      const Vector3<symbolic::Expression>& p_FM) {
-    get_mutable_mobilizer()->set_random_position_distribution(p_FM);
-  }
-
-  /// Retrieves from `context` the angular velocity `w_FM` of the child frame
-  /// M in the parent frame F, expressed in F.
-  /// @param[in] context
-  ///   The context of the model this joint belongs to.
-  /// @retval w_FM
-  ///   A vector in ℝ³ with the angular velocity of the child frame M in the
-  ///   parent frame F, expressed in F. Refer to this class's documentation for
-  ///   further details and definitions of these frames.
-  Vector3<T> get_angular_velocity(const systems::Context<T>& context) const {
-    return get_mobilizer()->get_angular_velocity(context);
-  }
-
-  /// Retrieves from `context` the translational velocity `v_FM` of
-  /// the child frame M's origin as measured and expressed in the parent frame
-  /// F.
-  /// @param[in] context
-  ///   The context of the model this joint belongs to.
-  /// @retval v_FM
-  ///   A vector in ℝ³ with the translational velocity of the origin of child
-  ///   frame M in the parent frame F, expressed in F. Refer to this class's
-  ///   documentation for further details and definitions of these frames.
-  Vector3<T> get_translational_velocity(
-      const systems::Context<T>& context) const {
-    return get_mobilizer()->get_translational_velocity(context);
   }
 
   /// Sets in `context` the state for `this` joint so that the angular velocity
@@ -259,7 +255,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& set_angular_velocity(
       systems::Context<T>* context, const Vector3<T>& w_FM) const {
-    get_mobilizer()->set_angular_velocity(context, w_FM);
+    get_mobilizer().set_angular_velocity(context, w_FM);
     return *this;
   }
 
@@ -274,33 +270,68 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& set_translational_velocity(
       systems::Context<T>* context, const Vector3<T>& v_FM) const {
-    get_mobilizer()->set_translational_velocity(context, v_FM);
+    get_mobilizer().set_translational_velocity(context, v_FM);
     return *this;
   }
 
   /// @}
 
+  /// @name Random distribution setters
+
+  /// Sets the random distribution that positions of this joint will be randomly
+  /// sampled from. See get_position() for details on the position
+  /// representation.
+  void set_random_position_distribution(
+      const Vector3<symbolic::Expression>& p_FM) {
+    get_mutable_mobilizer()->set_random_position_distribution(p_FM);
+  }
+
+  /// Sets the random distribution that the orientation of this joint will be
+  /// randomly sampled from. See get_quaternion() for details on the orientation
+  /// representation.
+  void set_random_quaternion_distribution(
+      const Eigen::Quaternion<symbolic::Expression>& q_FM) {
+    get_mutable_mobilizer()->set_random_quaternion_distribution(q_FM);
+  }
+
+  /// Sets the random distribution such that the orientation of this joint will
+  /// be randomly sampled using uniformly sampled rotations.
+  void set_random_quaternion_distribution_to_uniform() {
+    RandomGenerator generator;
+    auto q_FM =
+        math::UniformlyRandomQuaternion<symbolic::Expression>(&generator);
+    get_mutable_mobilizer()->set_random_quaternion_distribution(q_FM);
+  }
+
+  /// @}
+
+  /// @name Default value getters
+  /// @{
+
   /// Gets the default quaternion `q_FM` for `this` joint.
-  /// @returns The default quaternion `q_FM` of `this` stored in
-  /// `default_positions_`
+  /// @returns The default quaternion `q_FM` of `this`.
   Quaternion<double> get_default_quaternion() const {
     const Vector4<double>& q_FM = this->default_positions().template head<4>();
     return Quaternion<double>(q_FM[0], q_FM[1], q_FM[2], q_FM[3]);
   }
 
   /// Gets the default position `p_FM` for `this` joint.
-  /// @returns The default position `p_FM` of `this` stored in
-  /// `default_positions_`
+  /// @returns The default position `p_FM` of `this` joint.
   Vector3<double> get_default_position() const {
     return this->default_positions().template tail<3>();
   }
 
   /// Gets the default pose `X_FM` for `this` joint.
-  /// @returns The default pose `X_FM` of `this` stored in `default_positions_`
+  /// @returns The default pose `X_FM` of `this` joint.
   math::RigidTransform<double> get_default_pose() const {
     return math::RigidTransform(get_default_quaternion(),
                                 get_default_position());
   }
+
+  /// @}
+
+  /// @name Default value setters
+  /// @{
 
   /// Sets the default quaternion `q_FM` of this joint.
   /// @param[in] q_FM
@@ -327,7 +358,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @param[in] X_FM
   ///   The desired default pose of the joint.
   void SetDefaultPose(const math::RigidTransform<double>& X_FM) {
-    VectorX<double> default_positions = this->default_positions();
+    Vector<double, 7> default_positions;
     const Quaternion<double> q_FM = X_FM.rotation().ToQuaternion();
     default_positions[0] = q_FM.w();
     default_positions[1] = q_FM.x();
@@ -336,6 +367,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
     default_positions.template tail<3>() = X_FM.translation();
     this->set_default_positions(default_positions);
   }
+
+  /// @}
 
  protected:
   /// Joint<T> override called through public NVI, Joint::AddInForce().
@@ -359,7 +392,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const override {
     Eigen::Ref<VectorX<T>> t_BMo_F =
-        get_mobilizer()->get_mutable_generalized_forces_from_array(
+        get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const Vector3<T>& w_FM = get_angular_velocity(context);
     const Vector3<T>& v_FM = get_translational_velocity(context);
@@ -369,23 +402,23 @@ class QuaternionFloatingJoint final : public Joint<T> {
 
  private:
   int do_get_velocity_start() const override {
-    return get_mobilizer()->velocity_start_in_v();
+    return get_mobilizer().velocity_start_in_v();
   }
 
   int do_get_num_velocities() const override { return 6; }
 
   int do_get_position_start() const override {
-    return get_mobilizer()->position_start_in_q();
+    return get_mobilizer().position_start_in_q();
   }
 
   int do_get_num_positions() const override { return 7; }
 
   std::string do_get_position_suffix(int index) const override {
-    return get_mobilizer()->position_suffix(index);
+    return get_mobilizer().position_suffix(index);
   }
 
   std::string do_get_velocity_suffix(int index) const override {
-    return get_mobilizer()->velocity_suffix(index);
+    return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(
@@ -417,14 +450,14 @@ class QuaternionFloatingJoint final : public Joint<T> {
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
-  const internal::QuaternionFloatingMobilizer<T>* get_mobilizer() const {
+  const internal::QuaternionFloatingMobilizer<T>& get_mobilizer() const {
     // This implementation should only have one mobilizer.
     DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
     const internal::QuaternionFloatingMobilizer<T>* mobilizer =
         dynamic_cast<const internal::QuaternionFloatingMobilizer<T>*>(
             this->get_implementation().mobilizers_[0]);
     DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+    return *mobilizer;
   }
 
   internal::QuaternionFloatingMobilizer<T>* get_mutable_mobilizer() {
