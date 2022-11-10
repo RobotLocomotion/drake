@@ -596,6 +596,28 @@ void TestSocpDualSolution2(const SolverInterface& solver,
                                 Eigen::Vector2d(0, 0), tol));
   }
 }
+
+void TestSocpDuplicatedVariable1(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  // Add the constraint that
+  // (1, x0, sqrt(3)*x1, -sqrt(3)*x0) is in the Lorentz cone.
+  Eigen::Matrix<double, 4, 3> A;
+  A.setZero();
+  A(1, 0) = 1;
+  A(2, 1) = std::sqrt(3);
+  A(3, 2) = -std::sqrt(3);
+  prog.AddLorentzConeConstraint(A, Eigen::Vector4d(1, 0, 0, 0),
+                                Vector3<symbolic::Variable>(x(0), x(1), x(0)));
+  prog.AddLinearCost(x(0) + x(1));
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, std::nullopt, &result);
+    EXPECT_TRUE(result.is_success());
+    const Eigen::Vector2d x_sol = result.GetSolution(x);
+    EXPECT_NEAR(4 * x_sol(0) * x_sol(0) + 3 * x_sol(1) * x_sol(1), 1, tol);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
