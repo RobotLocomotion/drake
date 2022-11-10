@@ -53,7 +53,7 @@ where ``<job-name>`` is the name of an
 
 For example:
 
-* ``@drake-jenkins-bot mac-x86-big-sur-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-x86-monterey-clang-bazel-experimental-release please.``
 * ``@drake-jenkins-bot linux-focal-clang-bazel-experimental-valgrind-memcheck please``
 
 ## Scheduling Builds via the Jenkins User Interface
@@ -105,7 +105,7 @@ most likely fail. To test new prerequisites, you should first request
 unprovisioned experimental builds, e.g.:
 
 * ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-release please``
-* ``@drake-jenkins-bot mac-x86-big-sur-unprovisioned-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-bazel-experimental-release please.``
 
 After this has passed, go through normal review. Once normal review is done,
 add `@BetsyMcPhail` for review and request that the provisioned instances be
@@ -117,14 +117,14 @@ To schedule an "experimental" build of the [binary packages](/from_binary.html),
 comment on an open pull request as follows:
 
 * ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
-* ``@drake-jenkins-bot mac-x86-big-sur-unprovisioned-clang-bazel-experimental-snopt-packaging please``
+* ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-bazel-experimental-snopt-packaging please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the following jobs from the Jenkins user
 interface:
 
 * linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging
-* mac-x86-big-sur-unprovisioned-clang-bazel-experimental-snopt-packaging
+* mac-x86-monterey-unprovisioned-clang-bazel-experimental-snopt-packaging
 
 The URL from which to download the built package will be indicated in the
 Jenkins console log for the completed build, for example:
