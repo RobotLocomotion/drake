@@ -16,7 +16,6 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/solve.h"
-#include <iostream>
 
 namespace drake {
 namespace geometry {
@@ -51,8 +50,8 @@ std::tuple<bool, solvers::MathematicalProgramResult> IsInfeasible(
 }
 
 // Checks if Ax ≤ b defines an empty set.
-bool DoIsEmpty(const Eigen::Ref<const MatrixXd>& A,
-               const Eigen::Ref<const VectorXd>& b) {
+bool IsEmpty(const Eigen::Ref<const MatrixXd>& A,
+             const Eigen::Ref<const VectorXd>& b) {
   solvers::MathematicalProgram prog;
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(A.cols(), "x");
@@ -329,7 +328,7 @@ bool HPolyhedron::ContainedIn(const HPolyhedron& other, double tol) const {
   DRAKE_DEMAND(other.A().cols() == A_.cols());
   // `this` defines an empty set and therefore is contained in any `other`
   // HPolyhedron.
-  if (DoIsEmpty(A_, b_)) {
+  if (IsEmpty(A_, b_)) {
     return true;
   }
 
@@ -404,7 +403,7 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(const HPolyhedron& other,
       A.row(num_kept) = other.A().row(i);
       b.row(num_kept) = other.b().row(i);
       ++num_kept;
-      if (DoIsEmpty(A.topRows(num_kept), b.topRows(num_kept))) {
+      if (IsEmpty(A.topRows(num_kept), b.topRows(num_kept))) {
         return {A.topRows(num_kept), b.topRows(num_kept)};
       }
     }
@@ -437,8 +436,9 @@ HPolyhedron HPolyhedron::ReduceInequalities(double tol) const {
                                b_.row(i), x);
     }
 
-    // First we check whether the current index defines an empty set.
-    // If the constraint is already redundant.
+    // First we check whether the current index defines an empty set. If the
+    // constraint is already redundant. This check is expected before calling
+    // IsRedundant.
     if (std::get<0>(IsInfeasible(prog))) {
       kept_indices.erase(excluded_index);
     }
@@ -472,10 +472,6 @@ HPolyhedron HPolyhedron::ReduceInequalities(double tol) const {
     ++i;
   }
   return {A_new, b_new};
-}
-
-bool HPolyhedron::IsEmpty() const {
-  return DoIsEmpty(A_, b_);
 }
 
 bool HPolyhedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
