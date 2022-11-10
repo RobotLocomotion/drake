@@ -196,12 +196,7 @@ struct Impl {
           m, "PathParameterizedTrajectory", param, cls_doc.doc);
       cls  // BR
           .def(py::init<const Trajectory<T>&, const Trajectory<T>&>(),
-              py::arg("path"), py::arg("time_scaling"),
-              // Keep alive, reference: `self` keeps `path` alive.
-              py::keep_alive<1, 2>(),  // BR
-              // Keep alive, reference: `self` keeps `time_scaling` alive.
-              py::keep_alive<1, 3>(),  // BR
-              cls_doc.ctor.doc)
+              py::arg("path"), py::arg("time_scaling"), cls_doc.ctor.doc)
           .def("Clone", &Class::Clone, cls_doc.Clone.doc)
           .def("path", &Class::path, py_rvp::reference_internal,
               cls_doc.path.doc)
