@@ -140,6 +140,11 @@ class TestGeometryOptimization(unittest.TestCase):
         h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities(
             tol=1E-9)
 
+        # an empty polyhedron
+        h_empty = mut.HPolyhedron.MakeBox(np.ones(3), -np.ones(3))
+        self.assertTrue(h_empty.IsEmpty())
+        self.assertFalse(h_l1_ball.IsEmpty())
+
     def test_hyper_ellipsoid(self):
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)
         self.assertEqual(ellipsoid.ambient_dimension(), 3)
