@@ -128,6 +128,7 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.Intersection.doc)
         .def("ReduceInequalities", &HPolyhedron::ReduceInequalities,
             py::arg("tol") = 1E-9, cls_doc.ReduceInequalities.doc)
+        .def("IsEmpty", &HPolyhedron::IsEmpty, cls_doc.IsEmpty.doc)
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)
