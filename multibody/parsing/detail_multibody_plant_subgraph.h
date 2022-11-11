@@ -263,7 +263,7 @@ class MultibodyPlantElements {
 using FrameNameRemapFunction = std::function<std::string(const Frame<double>&)>;
 
 // Forward declaration
-class SubgraphElementAccessor;
+class MultibodySubgraphElementAccessor;
 
 class MultibodyPlantElementsMap {
  public:
@@ -291,14 +291,17 @@ class MultibodyPlantElementsMap {
     model_instances_.insert({src, dest});
   }
 
-  void CopyBody(const Body<double>* src);
+  void CopyBody(const Body<double>* src,
+                const MultibodySubgraphElementAccessor& handle);
 
   void CopyFrame(const Frame<double>* src,
-                 const SubgraphElementAccessor& handle);
+                 const MultibodySubgraphElementAccessor& handle);
 
-  void CopyJoint(const Joint<double>* src, const SubgraphElementAccessor& handle);
+  void CopyJoint(const Joint<double>* src,
+                 const MultibodySubgraphElementAccessor& handle);
 
-  void CopyJointActuator(const JointActuator<double>* src);
+  void CopyJointActuator(const JointActuator<double>* src,
+                         const MultibodySubgraphElementAccessor& handle);
 
   void CopyGeometryById(const geometry::GeometryId& geometry_id_src);
 
@@ -362,6 +365,10 @@ class MultibodyPlantElementsMap {
     return geometry_ids_;
   }
 
+  MultibodyPlant<double>* plant_destination() {
+    return plant_dest_;
+  }
+
   friend bool operator==(const MultibodyPlantElementsMap& a,
                          const MultibodyPlantElementsMap& b) {
     return a.model_instances() == b.model_instances() &&
@@ -398,10 +405,6 @@ void CheckSubgraphInvariants(const MultibodyPlantElements& elem);
 ModelInstanceIndex GetOrCreateModelInstanceByName(
     MultibodyPlant<double>* plant, const std::string& model_name);
 
-ModelInstanceIndex ModelInstanceRemapSameName(
-    const MultibodyPlant<double>& plant_src,
-    ModelInstanceIndex model_instance_src, MultibodyPlant<double>* plant_dest);
-
 std::string FrameNameRenameSameName(const Frame<double>& frame);
 
 class MultibodyPlantSubgraph {
@@ -412,14 +415,12 @@ class MultibodyPlantSubgraph {
     CheckSubgraphInvariants(elem_src_);
   }
 
-  using RemapFunction = std::function<ModelInstanceIndex(
-      const MultibodyPlant<double>&, ModelInstanceIndex,
-      MultibodyPlant<double>*)>;
+  using RemapFunction = std::function<ModelInstanceIndex(ModelInstanceIndex)>;
 
   MultibodyPlantElementsMap AddTo(
       MultibodyPlant<double>* plant_dest,
-      RemapFunction model_instance_remap = ModelInstanceRemapSameName,
-      FrameNameRemapFunction frame_name_remap = FrameNameRenameSameName) const;
+      std::optional<RemapFunction> model_instance_remap = std::nullopt,
+      std::optional<FrameNameRemapFunction> frame_name_remap = std::nullopt) const;
 
   MultibodyPlantElementsMap AddTo(
       MultibodyPlant<double>* plant_dest,

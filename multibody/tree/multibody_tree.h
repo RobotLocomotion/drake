@@ -98,6 +98,23 @@ class MultibodyElementAccessor {
   }
 
   template <template <typename> class MultibodyElement>
+  bool has_variant(const MultibodyElement<FromScalar>& element) const {
+    if constexpr (std::is_base_of_v<Frame<ToScalar>,
+                                    MultibodyElement<ToScalar>>) {
+      return DoHasFrame(element);
+    } else if constexpr (std::is_base_of_v<Body<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return DoHasBody(element);
+    } else if constexpr (std::is_base_of_v<Joint<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return DoHasJoint(element);
+    } else if constexpr (std::is_base_of_v<Mobilizer<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return DoHasMobilizer(element);
+    }
+  }
+
+  template <template <typename> class MultibodyElement>
   MultibodyElement<ToScalar>& get_mutable_variant(
       const MultibodyElement<FromScalar>& element) const {
     if constexpr (std::is_base_of_v<Frame<ToScalar>,
@@ -119,6 +136,35 @@ class MultibodyElementAccessor {
     }
   }
 
+  template <template <typename> class MultibodyElement>
+  std::string get_new_name(
+      const MultibodyElement<FromScalar>& element) const {
+    if constexpr (std::is_base_of_v<Frame<ToScalar>,
+                                    MultibodyElement<ToScalar>>) {
+      return DoGetFrameNewName(element);
+    } else if constexpr (std::is_base_of_v<Body<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return DoGetBodyNewName(element);
+    } else if constexpr (std::is_base_of_v<Joint<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return DoGetJointNewName(element);
+    }
+  }
+  template <template <typename> class MultibodyElement>
+  ModelInstanceIndex get_new_model_instance(
+      const MultibodyElement<FromScalar>& element) const {
+    if constexpr (std::is_base_of_v<Frame<ToScalar>,
+                                    MultibodyElement<ToScalar>>) {
+      return DoGetFrameNewModelInstance(element);
+    } else if constexpr (std::is_base_of_v<Body<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return DoGetBodyNewModelInstance(element);
+    } else if constexpr (std::is_base_of_v<Joint<ToScalar>,
+                                           MultibodyElement<ToScalar>>) {
+      return DoGetJointNewModelInstance(element);
+    }
+  }
+
  protected:
   virtual const Frame<ToScalar>& DoGetFrame(
       const Frame<FromScalar>& element) const = 0;
@@ -132,6 +178,14 @@ class MultibodyElementAccessor {
   virtual const Mobilizer<ToScalar>& DoGetMobilizer(
       const Mobilizer<FromScalar>& element) const = 0;
 
+  virtual bool DoHasFrame(const Frame<FromScalar>& element) const = 0;
+
+  virtual bool DoHasBody(const Body<FromScalar>& element) const = 0;
+
+  virtual bool DoHasJoint(const Joint<FromScalar>& element) const = 0;
+
+  virtual bool DoHasMobilizer(const Mobilizer<FromScalar>& element) const = 0;
+
   virtual Frame<ToScalar>& DoGetMutableFrame(
       const Frame<FromScalar>& element) = 0;
 
@@ -143,6 +197,24 @@ class MultibodyElementAccessor {
 
   virtual Mobilizer<ToScalar>& DoGetMutableMobilizer(
       const Mobilizer<FromScalar>& element) const = 0;
+
+  virtual std::string DoGetFrameNewName(
+      const Frame<FromScalar>& element) const = 0;
+
+  virtual std::string DoGetBodyNewName(
+      const Body<FromScalar>& element) const = 0;
+
+  virtual std::string DoGetJointNewName(
+      const Joint<FromScalar>& element) const = 0;
+
+  virtual ModelInstanceIndex DoGetFrameNewModelInstance(
+      const Frame<FromScalar>& element) const = 0;
+
+  virtual ModelInstanceIndex DoGetBodyNewModelInstance(
+      const Body<FromScalar>& element) const = 0;
+
+  virtual ModelInstanceIndex DoGetJointNewModelInstance(
+      const Joint<FromScalar>& element) const = 0;
 };
 
 template <typename ToScalar, typename FromScalar>
@@ -156,27 +228,45 @@ class DefaultElementAccessor
 
  protected:
   const Frame<ToScalar>& DoGetFrame(
-      const Frame<FromScalar>& other) const override;
+      const Frame<FromScalar>& element) const override;
 
-  const Body<ToScalar>& DoGetBody(const Body<FromScalar>& other) const override;
+  const Body<ToScalar>& DoGetBody(
+      const Body<FromScalar>& element) const override;
 
   const Joint<ToScalar>& DoGetJoint(
-      const Joint<FromScalar>& other) const override;
+      const Joint<FromScalar>& element) const override;
 
   const Mobilizer<ToScalar>& DoGetMobilizer(
-      const Mobilizer<FromScalar>& other) const override;
+      const Mobilizer<FromScalar>& element) const override;
 
-  Frame<ToScalar>& DoGetMutableFrame(
-      const Frame<FromScalar>& other) override;
+  bool DoHasFrame(const Frame<FromScalar>& element) const override;
 
-  Body<ToScalar>& DoGetMutableBody(
-      const Body<FromScalar>& other) override;
+  bool DoHasBody(const Body<FromScalar>& element) const override;
 
-  Joint<ToScalar>& DoGetMutableJoint(
-      const Joint<FromScalar>& other) override;
+  bool DoHasJoint(const Joint<FromScalar>& element) const override;
+
+  bool DoHasMobilizer(const Mobilizer<FromScalar>& element) const override;
+
+  Frame<ToScalar>& DoGetMutableFrame(const Frame<FromScalar>& element) override;
+
+  Body<ToScalar>& DoGetMutableBody(const Body<FromScalar>& element) override;
+
+  Joint<ToScalar>& DoGetMutableJoint(const Joint<FromScalar>& element) override;
 
   Mobilizer<ToScalar>& DoGetMutableMobilizer(
-      const Mobilizer<FromScalar>& other) const override;
+      const Mobilizer<FromScalar>& element) const override;
+
+  std::string DoGetFrameNewName(const Frame<FromScalar>& element) const override;
+
+  std::string DoGetBodyNewName(const Body<FromScalar>& element) const override;
+
+  std::string DoGetJointNewName(const Joint<FromScalar>& element) const override;
+
+  ModelInstanceIndex DoGetFrameNewModelInstance(const Frame<FromScalar>& element) const override;
+
+  ModelInstanceIndex DoGetBodyNewModelInstance(const Body<FromScalar>& element) const override;
+
+  ModelInstanceIndex DoGetJointNewModelInstance(const Joint<FromScalar>& element) const override;
 
  private:
   MultibodyTree<ToScalar>* owner_{};

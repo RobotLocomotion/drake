@@ -494,10 +494,13 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
       const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(handle);
 
-    std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
+    if (this->has_implementation())
+    {
+      std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
         implementation_clone =
         this->get_implementation().template CloneToScalar<ToScalar>(handle);
-    joint_clone->OwnImplementation(std::move(implementation_clone));
+      joint_clone->OwnImplementation(std::move(implementation_clone));
+    }
 
     return joint_clone;
   }
@@ -551,9 +554,12 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
       auto implementation_clone =
           std::make_unique<typename Joint<ToScalar>::JointImplementation>();
       for (const internal::Mobilizer<T>* mobilizer : mobilizers_) {
-        internal::Mobilizer<ToScalar>* mobilizer_clone =
+        if (handle.has_variant(*mobilizer))
+        {
+          internal::Mobilizer<ToScalar>* mobilizer_clone =
             &handle.get_mutable_variant(*mobilizer);
-        implementation_clone->mobilizers_.push_back(mobilizer_clone);
+          implementation_clone->mobilizers_.push_back(mobilizer_clone);
+        }
       }
       return implementation_clone;
     }

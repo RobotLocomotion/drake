@@ -94,7 +94,7 @@ class MultibodyPlantModelAttorney;
 template <typename>
 class MultibodyPlantDiscreteUpdateManagerAttorney;
 
-class MultibodyPlantSubgraph;
+class MultibodySubgraphElementAccessor;
 }  // namespace internal
 
 // TODO(amcastro-tri): Add a section on contact models in
@@ -4380,7 +4380,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   friend class internal::MultibodyPlantModelAttorney<T>;
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
 
-  friend class internal::MultibodyPlantSubgraph;
+  friend class internal::MultibodySubgraphElementAccessor;
 
   // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()

@@ -112,26 +112,30 @@ std::vector<geometry::GeometryId> GetGeometries(
 }
 }  // namespace
 
-class SubgraphElementAccessor
-    : public MultibodyElementAccessor<double, double> {
+class MultibodySubgraphElementAccessor
+    : public DefaultElementAccessor<double, double> {
  public:
-  SubgraphElementAccessor(MultibodyTree<double>* owner,
+  MultibodySubgraphElementAccessor(MultibodyPlantElementsMap* elements_map,
                           FrameNameRemapFunction frame_name_remap)
-      : owner_(owner), frame_name_remap_(frame_name_remap) {
-    DRAKE_DEMAND(owner_ != nullptr);
-  }
+      : DefaultElementAccessor(
+            &elements_map->plant_destination()->mutable_tree()),
+        elements_map_(elements_map),
+        frame_name_remap_(frame_name_remap) {}
 
  protected:
-  const Frame<double>& DoGetFrame(const Frame<double>& other) const override {
-    return owner_->get_frame(other.index());
+  const Frame<double>& DoGetFrame(const Frame<double>& element) const override {
+    return *elements_map_->frames().at(&element);
+  }
+  std::string DoGetFrameNewName(const Frame<double>& element) const override {
+    return frame_name_remap_(element);
   }
 
-  const Body<double>& DoGetBody(const Body<double>& other) const override {
-    return owner_->get_body(other.index());
+  const Joint<double>& DoGetJoint(const Joint<double>& element) const override {
+    return *elements_map_->joints().at(&element);
   }
 
  private:
-  const MultibodyTree<double>* owner_{};
+  MultibodyPlantElementsMap* elements_map_;
   FrameNameRemapFunction frame_name_remap_;
 };
 
@@ -251,7 +255,8 @@ MultibodyPlantElements MultibodyPlantElements::GetElementsFromBodies(
   return elem;
 }
 
-void MultibodyPlantElementsMap::CopyBody(const Body<double>* src) {
+void MultibodyPlantElementsMap::CopyBody(
+    const Body<double>* src, const MultibodySubgraphElementAccessor&) {
   if (builtins_src_.bodies().find(src) != builtins_src_.bodies().end()) {
     return;
   }
@@ -276,22 +281,21 @@ void MultibodyPlantElementsMap::CopyBody(const Body<double>* src) {
   frames_.insert({frame_src, frame_dest});
 }
 
-void MultibodyPlantElementsMap::CopyFrame(const Frame<double>* src,
-               const SubgraphElementAccessor& handle) {
+void MultibodyPlantElementsMap::CopyFrame(
+    const Frame<double>* src, const MultibodySubgraphElementAccessor& handle) {
   if (builtins_src_.frames().find(src) != builtins_src_.frames().end()) {
     return;
   }
   // BodyFrame's are handled by `CopyBody`, and are ignored by this method.
   DRAKE_DEMAND(dynamic_cast<const BodyFrame<double>*>(src) == nullptr);
 
-  // const ModelInstanceIndex model_instance_src = src->model_instance();
-  // const ModelInstanceIndex model_instance_dest =
-  //     model_instances_[model_instance_src];
-  // DRAKE_DEMAND(model_instance_dest.is_valid());
+  const ModelInstanceIndex model_instance_src = src->model_instance();
+  const ModelInstanceIndex model_instance_dest =
+      model_instances_[model_instance_src];
+  DRAKE_DEMAND(model_instance_dest.is_valid());
 
   std::unique_ptr<Frame<double>> frame_clone =  src->CloneToScalar(handle);
-  // TODO (azeey) Find a way to set the name of frame_clone
-  // TODO (azeey) Verify that the model instance info is copied over in 
+  // TODO(azeey) Verify that the model instance info is copied over in
   // CloneToScalar.
   const Frame<double>* frame_dest =
       &plant_dest_->AddFrame(std::move(frame_clone));
@@ -299,19 +303,20 @@ void MultibodyPlantElementsMap::CopyFrame(const Frame<double>* src,
   frames_.insert({src, frame_dest});
 }
 
-void MultibodyPlantElementsMap::CopyJoint(const Joint<double>* src, const SubgraphElementAccessor& handle) {
-  std::unique_ptr<Joint<double>> joint_clone = src->CloneToScalar(handle);
+void MultibodyPlantElementsMap::CopyJoint(
+    const Joint<double>* src, const MultibodySubgraphElementAccessor& handle) {
   const Joint<double>* joint_dest =
-      &plant_dest_->AddJoint(std::move(joint_clone));
+      &plant_dest_->AddJoint(src->CloneToScalar(handle));
   joints_.insert({src, joint_dest});
 }
 
 void MultibodyPlantElementsMap::CopyJointActuator(
-    const JointActuator<double>* src) {
+    const JointActuator<double>* src,
+    const MultibodySubgraphElementAccessor& handle) {
   const Joint<double>* joint_src = &src->joint();
-  const Joint<double>* joint_dest = joints_[joint_src];
+  const Joint<double>& joint_dest = handle.get_variant(*joint_src);
   const JointActuator<double>* joint_actuator_dest =
-      &plant_dest_->AddJointActuator(src->name(), *joint_dest,
+      &plant_dest_->AddJointActuator(src->name(), joint_dest,
                                      src->effort_limit());
   joint_actuators_.insert({src, joint_actuator_dest});
 }
@@ -469,31 +474,35 @@ ModelInstanceIndex GetOrCreateModelInstanceByName(
   return plant->AddModelInstance(model_name);
 }
 
-ModelInstanceIndex ModelInstanceRemapSameName(
-    const MultibodyPlant<double>& plant_src,
-    ModelInstanceIndex model_instance_src, MultibodyPlant<double>* plant_dest) {
-  const std::string name = plant_src.GetModelInstanceName(model_instance_src);
-  return GetOrCreateModelInstanceByName(plant_dest, name);
-}
-
 std::string FrameNameRenameSameName(const Frame<double>& frame) {
   return frame.name();
 }
 
 MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
-    MultibodyPlant<double>* plant_dest, RemapFunction model_instance_remap,
-    FrameNameRemapFunction frame_name_remap) const {
+    MultibodyPlant<double>* plant_dest, std::optional<RemapFunction> opt_model_instance_remap,
+    std::optional<FrameNameRemapFunction> opt_frame_name_remap) const {
   const auto* plant_src = elem_src_.plant();
   const auto* scene_graph_src = elem_src_.scene_graph();
 
-  SubgraphElementAccessor handle(&plant_dest->mutable_tree(), frame_name_remap);
+  RemapFunction model_instance_remap = opt_model_instance_remap.value_or(
+      [&](ModelInstanceIndex model_instance_src) {
+        const std::string name =
+            plant_src->GetModelInstanceName(model_instance_src);
+        return GetOrCreateModelInstanceByName(plant_dest, name);
+      });
+
+  FrameNameRemapFunction frame_name_remap =
+      opt_frame_name_remap.value_or(FrameNameRenameSameName);
 
   MultibodyPlantElementsMap src_to_dest(plant_src, plant_dest, scene_graph_src);
+  MultibodySubgraphElementAccessor handle(&src_to_dest, frame_name_remap);
 
   // Remap and register model instances.
   for (const auto& model_instance_src : elem_src_.model_instances()) {
+    // auto model_instance_dest =
+        // model_instance_remap(*plant_src, model_instance_src, plant_dest);
     auto model_instance_dest =
-        model_instance_remap(*plant_src, model_instance_src, plant_dest);
+        model_instance_remap(model_instance_src);
     src_to_dest.RegisterModelInstance(model_instance_src, model_instance_dest);
   }
 
@@ -506,7 +515,7 @@ MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
 
   // Copy bodies
   for (const auto& body_src : elem_src_.bodies()) {
-    src_to_dest.CopyBody(body_src);
+    src_to_dest.CopyBody(body_src, handle);
   }
 
   // Copy frames
@@ -515,11 +524,11 @@ MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
   }
 
   for (const auto& joint_src : elem_src_.joints()) {
-    src_to_dest.CopyJoint(joint_src);
+    src_to_dest.CopyJoint(joint_src, handle);
   }
 
   for (const auto& joint_actuator_src : elem_src_.joint_actuators()) {
-    src_to_dest.CopyJointActuator(joint_actuator_src);
+    src_to_dest.CopyJointActuator(joint_actuator_src, handle);
   }
 
   // Copy geometries (if applicable)
@@ -540,9 +549,12 @@ MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
 MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
     MultibodyPlant<double>* plant_dest, const std::string& model_instance_remap,
     FrameNameRemapFunction frame_name_remap) const {
-  auto model_name_remap = [&model_instance_remap](const auto&, auto,
-                                                  auto* dest) {
-    return GetOrCreateModelInstanceByName(dest, model_instance_remap);
+  // auto model_name_remap = [&model_instance_remap](const auto&, auto,
+                                                  // auto* dest) {
+    // return GetOrCreateModelInstanceByName(dest, model_instance_remap);
+  // };
+  auto model_name_remap = [&model_instance_remap, plant_dest](auto) {
+    return GetOrCreateModelInstanceByName(plant_dest, model_instance_remap);
   };
   return AddTo(plant_dest, model_name_remap, frame_name_remap);
 }

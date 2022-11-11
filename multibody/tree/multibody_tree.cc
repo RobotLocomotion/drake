@@ -3466,54 +3466,118 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
 
 template <typename ToScalar, typename FromScalar>
 const Body<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetBody(
-    const Body<FromScalar>& other) const {
-  return owner_->get_body(other.index());
+    const Body<FromScalar>& element) const {
+  return owner_->get_body(element.index());
 }
 
 template <typename ToScalar, typename FromScalar>
 const Frame<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetFrame(
-    const Frame<FromScalar>& other) const {
-  return owner_->get_frame(other.index());
+    const Frame<FromScalar>& element) const {
+  return owner_->get_frame(element.index());
 }
 
 template <typename ToScalar, typename FromScalar>
 const Joint<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetJoint(
-    const Joint<FromScalar>& other) const {
-  return owner_->get_joint(other.index());
+    const Joint<FromScalar>& element) const {
+  return owner_->get_joint(element.index());
 }
 
 template <typename ToScalar, typename FromScalar>
 const Mobilizer<ToScalar>&
 DefaultElementAccessor<ToScalar, FromScalar>::DoGetMobilizer(
-    const Mobilizer<FromScalar>& other) const {
-  return owner_->get_mobilizer(other.index());
+    const Mobilizer<FromScalar>& element) const {
+  return owner_->get_mobilizer(element.index());
+}
+
+template <typename ToScalar, typename FromScalar>
+bool DefaultElementAccessor<ToScalar, FromScalar>::DoHasBody(
+    const Body<FromScalar>& element) const {
+  return owner_->num_bodies() > element.index();
+}
+
+template <typename ToScalar, typename FromScalar>
+bool DefaultElementAccessor<ToScalar, FromScalar>::DoHasFrame(
+    const Frame<FromScalar>& element) const {
+  return owner_->num_frames() > element.index();
+}
+
+template <typename ToScalar, typename FromScalar>
+bool DefaultElementAccessor<ToScalar, FromScalar>::DoHasJoint(
+    const Joint<FromScalar>& element) const {
+  return owner_->num_joints() > element.index();
+}
+
+template <typename ToScalar, typename FromScalar>
+bool DefaultElementAccessor<ToScalar, FromScalar>::DoHasMobilizer(
+    const Mobilizer<FromScalar>& element) const {
+  return owner_->num_mobilizers() > element.index();
 }
 
 template <typename ToScalar, typename FromScalar>
 Body<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableBody(
-    const Body<FromScalar>& other) {
-  return owner_->get_mutable_body(other.index());
+    const Body<FromScalar>& element) {
+  return owner_->get_mutable_body(element.index());
 }
 
 template <typename ToScalar, typename FromScalar>
-Frame<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableFrame(
-    const Frame<FromScalar>& other) {
-  return owner_->get_mutable_frame(other.index());
+Frame<ToScalar>&
+DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableFrame(
+    const Frame<FromScalar>& element) {
+  return owner_->get_mutable_frame(element.index());
 }
 
 template <typename ToScalar, typename FromScalar>
-Joint<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableJoint(
-    const Joint<FromScalar>& other) {
-  return owner_->get_mutable_joint(other.index());
+Joint<ToScalar>&
+DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableJoint(
+    const Joint<FromScalar>& element) {
+  return owner_->get_mutable_joint(element.index());
 }
 
 template <typename ToScalar, typename FromScalar>
 Mobilizer<ToScalar>&
 DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableMobilizer(
-    const Mobilizer<FromScalar>& other) const {
-  return owner_->get_mutable_mobilizer(other.index());
+    const Mobilizer<FromScalar>& element) const {
+  return owner_->get_mutable_mobilizer(element.index());
 }
 
+template <typename ToScalar, typename FromScalar>
+std::string DefaultElementAccessor<ToScalar, FromScalar>::DoGetBodyNewName(
+    const Body<FromScalar>& element) const {
+  return element.name();
+}
+
+template <typename ToScalar, typename FromScalar>
+std::string DefaultElementAccessor<ToScalar, FromScalar>::DoGetFrameNewName(
+    const Frame<FromScalar>& element) const {
+  return element.name();
+}
+
+template <typename ToScalar, typename FromScalar>
+std::string DefaultElementAccessor<ToScalar, FromScalar>::DoGetJointNewName(
+    const Joint<FromScalar>& element) const {
+  return element.name();
+}
+
+template <typename ToScalar, typename FromScalar>
+ModelInstanceIndex
+DefaultElementAccessor<ToScalar, FromScalar>::DoGetBodyNewModelInstance(
+    const Body<FromScalar>& element) const {
+  return element.model_instance();
+}
+
+template <typename ToScalar, typename FromScalar>
+ModelInstanceIndex
+DefaultElementAccessor<ToScalar, FromScalar>::DoGetFrameNewModelInstance(
+    const Frame<FromScalar>& element) const {
+  return element.model_instance();
+}
+
+template <typename ToScalar, typename FromScalar>
+ModelInstanceIndex
+DefaultElementAccessor<ToScalar, FromScalar>::DoGetJointNewModelInstance(
+    const Joint<FromScalar>& element) const {
+  return element.model_instance();
+}
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -1014,6 +1014,66 @@ TEST_F(APITest, SubgraphAddToCopying) {
   }
 }
 
+TEST_F(APITest, FrameRename) {
+  MultibodyPlant<double> plant(0.01);
+  const std::string sdf_string = R"""(
+  <sdf version='1.7'>
+    <model name='frame_rename_test'>
+      <frame name='my_frame'/>
+      <link name='my_link'/>
+    </model>
+  </sdf>)""";
+
+  Parser(&plant).AddModelFromString(sdf_string, "sdf");
+  EXPECT_TRUE(plant.HasFrameNamed("my_frame"));
+
+  MultibodyPlantSubgraph subgraph(MultibodyPlantElements::FromPlant(&plant));
+  auto frame_name_remap = [](const Frame<double>& frame) {
+    return frame.name() + "_renamed";
+  };
+
+  MultibodyPlant<double> plant_dest(0.01);
+  subgraph.AddTo(&plant_dest, std::nullopt, frame_name_remap);
+  EXPECT_FALSE(plant_dest.HasFrameNamed("my_frame"));
+  EXPECT_TRUE(plant_dest.HasFrameNamed("my_frame_renamed"));
+}
+
+TEST_F(APITest, ModelInstanceRemap) {
+  MultibodyPlant<double> plant(0.01);
+  const std::string sdf_string = R"""(
+  <sdf version='1.7'>
+    <model name='frame_rename_test'>
+      <frame name='my_frame'/>
+      <link name='link1'/>
+      <link name='link2'/>
+      <joint name='j1' type='fixed'>
+        <parent>link1</parent>
+        <child>link2</child>
+      </joint>
+    </model>
+  </sdf>)""";
+
+  Parser(&plant).AddModelFromString(sdf_string, "sdf");
+
+  MultibodyPlant<double> plant_dest(0.01);
+  plant_dest.AddModelInstance("model_1");
+  plant_dest.AddModelInstance("model_2");
+  ModelInstanceIndex dest_model =
+      plant_dest.AddModelInstance("destination_model");
+  EXPECT_EQ(dest_model, ModelInstanceIndex(4));
+  auto model_remap = [&] (ModelInstanceIndex model_instance){
+    return dest_model;
+  };
+
+  MultibodyPlantSubgraph subgraph(MultibodyPlantElements::FromPlant(&plant));
+
+  subgraph.AddTo(&plant_dest, model_remap);
+  EXPECT_TRUE(plant_dest.HasFrameNamed("my_frame", dest_model));
+  EXPECT_TRUE(plant_dest.HasBodyNamed("link1", dest_model));
+  EXPECT_TRUE(plant_dest.HasBodyNamed("link2", dest_model));
+  EXPECT_TRUE(plant_dest.HasJointNamed("j1", dest_model));
+}
+
 class TestWorkflows: public APITest {};
 
 // Tests subgraphs (post-finalize) without a scene graph.
