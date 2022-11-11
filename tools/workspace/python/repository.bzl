@@ -48,13 +48,18 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 # CMakeLists.txt and doc/_pages/from_source.md, except for the "manylinux"
 # matrix which should match tools/wheel/build-wheels list of targets=().
 _VERSION_SUPPORT_MATRIX = {
+    # NOTE: when changing native OS python versions, make sure to update
+    # CMakeLists.txt python versions.
     "ubuntu:20.04": ["3.8"],
     "ubuntu:22.04": ["3.10"],
-    "macos": ["3.10"],
+    "macos": ["3.11"],
     # NOTE: when updating supported wheel python versions:
-    # - Update URLs on doc/_pages/pip.md (`cpXY-cpXY` components), and
+    # - Update both lists of URLs on doc/_pages/pip.md (`cpXY-cpXY` components)
+    #   under "Nightly Releases".
+    # - Wheel URLs in tools/release_engineering/download_release_candidate.py
+    #   (`cpXY-cpXY` components).
     # - Tables on from_source.md and installation.md (python version number).
-    "macos_wheel": ["3.10"],
+    "macos_wheel": ["3.11"],
     "manylinux": ["3.8", "3.9", "3.10"],
 }
 
