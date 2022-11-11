@@ -424,7 +424,7 @@ GTEST_TEST(HPolyhedronTest, IsBoundedEmptyPolyhedron) {
                   0, 1, -1;
   // clang-format on
   HPolyhedron H(A_infeasible, -Vector3d::Ones());
-  EXPECT_FALSE(H.IsBounded());
+  EXPECT_TRUE(H.IsEmpty());
 }
 
 GTEST_TEST(HPolyhedronTest, CartesianPowerTest) {
@@ -612,10 +612,8 @@ GTEST_TEST(HPolyhedronTest, ReduceToInfeasibleSet) {
   HPolyhedron H{A, b};
   HPolyhedron H_reduced = H.ReduceInequalities();
 
-  EXPECT_TRUE(H.IsBounded());
   EXPECT_TRUE(H.IsEmpty());
-//  EXPECT_TRUE(H_reduced.IsBounded());
-  EXPECT_TRUE(H.IsEmpty());
+  EXPECT_TRUE(H_reduced.IsEmpty());
 }
 
 GTEST_TEST(HPolyhedronTest, IsEmptyMinimalInequalitySet) {
