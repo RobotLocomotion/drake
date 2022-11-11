@@ -141,7 +141,9 @@ class TestGeometryOptimization(unittest.TestCase):
             tol=1E-9)
 
         # an empty polyhedron
-        h_empty = mut.HPolyhedron.MakeBox(np.ones(3), -np.ones(3))
+        A_empty = np.vstack([np.eye(3), -np.eye(3)])
+        b_empty = np.ones(6)
+        h_empty = mut.HPolyhedron(A_empty, b_empty)
         self.assertTrue(h_empty.IsEmpty())
         self.assertFalse(h_l1_ball.IsEmpty())
 

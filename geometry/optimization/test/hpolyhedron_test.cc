@@ -632,25 +632,16 @@ GTEST_TEST(HPolyhedronTest, IsEmptyMinimalInequalitySet) {
 }
 
 GTEST_TEST(HPolyhedronTest, IsEmptyNonMinimalInequalitySet) {
-  Eigen::MatrixXd A_infeasible{3, 3};
-  Eigen::VectorXd b_infeasible{3};
-  // A set of infeasible inequalities
-  // clang-format off
-  A_infeasible << 1, -1, 0,
-                  -1, 0, 1,
-                  0, 1, -1;
-  b_infeasible << -1, -1, -1;
-  // clang-format on
-
   Eigen::MatrixXd A{5, 3};
   Eigen::VectorXd b{5};
   // clang-format off
   A << 1, 0, 0,
-       0, 0, -1;
-  b << 1, 0;
+       0, 0, -1,
+       1, -1, 0,
+       -1, 0, 1,
+       0, 1, -1;;
+  b << 1, 0, -1, -1, -1;;
   // clang-format off
-  A.bottomRows(A_infeasible.rows()) = A_infeasible;
-  b.bottomRows(b_infeasible.rows()) = b_infeasible;
 
   HPolyhedron H{A, b};
   EXPECT_TRUE(H.IsEmpty());
