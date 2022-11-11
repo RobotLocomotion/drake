@@ -19,12 +19,12 @@
 
 DEFINE_double(simulation_time, 8.0, "Desired duration of the simulation [s].");
 DEFINE_double(realtime_rate, 1.0, "Desired real time rate.");
-DEFINE_double(time_step, 5.0e-3,
+DEFINE_double(time_step, 1e-2,
               "Discrete time step for the system [s]. Must be positive.");
 DEFINE_double(E, 5e3, "Young's modulus of the deformable body [Pa].");
 DEFINE_double(nu, 0.4, "Poisson's ratio of the deformable body, unitless.");
-DEFINE_double(density, 1e3, "Mass density of the deformable body [kg/m³].");
-DEFINE_double(beta, 0.005,
+DEFINE_double(density, 8e2, "Mass density of the deformable body [kg/m³].");
+DEFINE_double(beta, 0.01,
               "Stiffness damping coefficient for the deformable body [1/s].");
 
 using drake::geometry::AddContactMaterial;
@@ -51,9 +51,8 @@ using Eigen::VectorXd;
 
 namespace drake {
 namespace examples {
-namespace multibody {
-namespace deformable_box {
 namespace {
+
 /* We create a leaf system that uses PD control to output a force signal to
  a gripper to follow a close-lift-open motion sequence. The signal is
  2-dimensional with the first element corresponding to the wrist degree of
@@ -70,7 +69,7 @@ class GripperPositionControl : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperPositionControl);
 
-  /* Constructs a %PositionControl system with the given parameters.
+  /* Constructs a GripperPositionControl system with the given parameters.
    @param[in] open_width   The width between fingers in the open state. (meters)
    @param[in] closed_width The width between fingers in the closed state.
                            (meters)
@@ -111,9 +110,11 @@ class GripperPositionControl : public systems::LeafSystem<double> {
       const double end_time = gripper_lifted_time_ - fingers_closed_time_;
       const double theta = (t - fingers_closed_time_) / end_time;
       desired_positions = theta * lifted_state_ + (1.0 - theta) * closed_state_;
+    } else if (t < hold_time_) {
+      desired_positions = lifted_state_;
     } else if (t < fingers_open_time_) {
-      const double end_time = fingers_open_time_ - gripper_lifted_time_;
-      const double theta = (t - gripper_lifted_time_) / end_time;
+      const double end_time = fingers_open_time_ - hold_time_;
+      const double theta = (t - hold_time_) / end_time;
       desired_positions = theta * open_state_ + (1.0 - theta) * lifted_state_;
     } else {
       desired_positions = open_state_;
@@ -127,13 +128,14 @@ class GripperPositionControl : public systems::LeafSystem<double> {
   const double fingers_closed_time_{1.5};
   /* The time at which the gripper reaches the desired "lifted" state. */
   const double gripper_lifted_time_{3.0};
+  const double hold_time_{5.5};
   /* The time at which the fingers reach the desired open state. */
-  const double fingers_open_time_{4.5};
+  const double fingers_open_time_{7.0};
   Vector2d initial_state_;
   Vector2d closed_state_;
   Vector2d lifted_state_;
   Vector2d open_state_;
-  const double kp_{1000};
+  const double kp_{2000};
   const double kd_{60.0};
 };
 
@@ -154,7 +156,7 @@ int do_main() {
    queries can be performed against deformable geometries.) */
   ProximityProperties rigid_proximity_props;
   /* Set the friction coefficient close to that of rubber against rubber. */
-  const CoulombFriction<double> surface_friction(1.0, 1.0);
+  const CoulombFriction<double> surface_friction(1.15, 1.15);
   AddContactMaterial({}, {}, surface_friction, &rigid_proximity_props);
   rigid_proximity_props.AddProperty(geometry::internal::kHydroGroup,
                                     geometry::internal::kRezHint, 1.0);
@@ -169,10 +171,12 @@ int do_main() {
   plant.RegisterVisualGeometry(plant.world_body(), X_WG, ground,
                                "ground_visual", std::move(illustration_props));
 
+  // TODO(xuchenhan-tri): Consider using a schunk gripper from the manipulation
+  // station instead.
   /* Set up a simple gripper. */
   Parser parser(&plant);
-  const std::string gripper_path =
-      FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
+  const std::string gripper_path = FindResourceOrThrow(
+      "drake/examples/multibody/deformable_torus/simple_gripper.sdf");
   parser.AddModels(gripper_path);
   /* Add collision geometries. */
   const RigidTransformd X_BG = RigidTransformd::Identity();
@@ -187,7 +191,7 @@ int do_main() {
                                   "left_finger_collision",
                                   rigid_proximity_props);
 
-  /* Set up a deformable box. */
+  /* Set up a deformable torus. */
   auto owned_deformable_model =
       std::make_unique<DeformableModel<double>>(&plant);
 
@@ -197,27 +201,25 @@ int do_main() {
   deformable_config.set_mass_density(FLAGS_density);
   deformable_config.set_stiffness_damping_coefficient(FLAGS_beta);
 
-  // TODO(xuchenhan-tri): Replace the box with a more interesting (non-convex)
-  // geometry.
-  const std::string box_vtk =
-      FindResourceOrThrow("drake/examples/multibody/deformable_box/box.vtk");
-  /* Load the geometry and scale it up by 20% (to showcase the scaling
-   capability). */
-  const double scale = 1.2;
-  auto box_mesh = std::make_unique<Mesh>(box_vtk, scale);
-  /* Side length of the deformable box inferred from the vtk file. */
-  const double kL = 0.06 * scale;
-  /* Set the initial pose of the box such that its bottom face is touching the
+  const std::string torus_vtk = FindResourceOrThrow(
+      "drake/examples/multibody/deformable_torus/torus.vtk");
+  /* Load the geometry and scale it down to 65% (to showcase the scaling
+   capability and to make the torus suitable for grasping by the gripper). */
+  const double scale = 0.65;
+  auto torus_mesh = std::make_unique<Mesh>(torus_vtk, scale);
+  /* Minor diameter of the torus inferred from the vtk file. */
+  const double kL = 0.09 * scale;
+  /* Set the initial pose of the torus such that its bottom face is touching the
    ground. */
   const RigidTransformd X_WB(Vector3<double>(0.0, 0.0, kL / 2.0));
-  auto box_instance = std::make_unique<GeometryInstance>(
-      X_WB, std::move(box_mesh), "deformable_box");
+  auto torus_instance = std::make_unique<GeometryInstance>(
+      X_WB, std::move(torus_mesh), "deformable_torus");
 
   /* Minimumly required proximity properties for deformable bodies: A valid
    Coulomb friction coefficient. */
   ProximityProperties deformable_proximity_props;
   AddContactMaterial({}, {}, surface_friction, &deformable_proximity_props);
-  box_instance->set_proximity_properties(deformable_proximity_props);
+  torus_instance->set_proximity_properties(deformable_proximity_props);
 
   /* Registration of all deformable geometries ostensibly requires a resolution
    hint parameter that dictates how the shape is tesselated. In the case of a
@@ -227,7 +229,7 @@ int do_main() {
   // positive. Remove the requirement of a resolution hint for meshed shapes.
   const double unused_resolution_hint = 1.0;
   owned_deformable_model->RegisterDeformableBody(
-      std::move(box_instance), deformable_config, unused_resolution_hint);
+      std::move(torus_instance), deformable_config, unused_resolution_hint);
   const DeformableModel<double>* deformable_model =
       owned_deformable_model.get();
   plant.AddPhysicalModel(std::move(owned_deformable_model));
@@ -257,10 +259,10 @@ int do_main() {
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
 
   /* Set the width between the fingers for open and closed states as well as the
-   height to which the gripper lifts the deformable box. */
-  const double open_width = kL * 1.1;
-  const double closed_width = kL * 0.6;
-  const double lifted_height = 0.15;
+   height to which the gripper lifts the deformable torus. */
+  const double open_width = kL * 1.5;
+  const double closed_width = kL * 0.4;
+  const double lifted_height = 0.18;
 
   const auto& control = *builder.AddSystem<GripperPositionControl>(
       open_width, closed_width, lifted_height);
@@ -287,18 +289,16 @@ int do_main() {
 }
 
 }  // namespace
-}  // namespace deformable_box
-}  // namespace multibody
 }  // namespace examples
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "This is a demo used to showcase deformable body simulations in Drake. "
-      "A simple parallel gripper grasps a deformable box on the ground, lifts "
-      "it up, and then drops it back on the ground. "
+      "A simple parallel gripper grasps a deformable torus on the ground, "
+      "lifts it up, and then drops it back on the ground. "
       "Launch meldis before running this example. "
       "Refer to README for instructions on meldis as well as optional flags.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::multibody::deformable_box::do_main();
+  return drake::examples::do_main();
 }

@@ -7,14 +7,14 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_binary(
-    name = "deformable_box",
+    name = "deformable_torus",
     srcs = [
-        "deformable_box.cc",
+        "deformable_torus.cc",
     ],
     add_test_rule = 1,
     data = [
-        "box.vtk",
-        "//examples/simple_gripper:simple_gripper_models",
+        "simple_gripper.sdf",
+        "torus.vtk",
     ],
     test_rule_args = [
         "-simulation_time=0.1",
