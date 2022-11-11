@@ -417,7 +417,6 @@ GTEST_TEST(HPolyhedronTest, IsBounded4) {
 
 GTEST_TEST(HPolyhedronTest, IsBoundedEmptyPolyhedron) {
   Eigen::MatrixXd A_infeasible{3, 3};
-  // A set of infeasible inequalities
   // clang-format off
   A_infeasible << 1, -1, 0,
                   -1, 0, 1,
@@ -619,7 +618,6 @@ GTEST_TEST(HPolyhedronTest, ReduceToInfeasibleSet) {
 GTEST_TEST(HPolyhedronTest, IsEmptyMinimalInequalitySet) {
   Eigen::MatrixXd A_infeasible{3, 3};
   Eigen::VectorXd b_infeasible{3};
-  // A set of infeasible inequalities
   // clang-format off
   A_infeasible << 1, -1, 0,
                   -1, 0, 1,

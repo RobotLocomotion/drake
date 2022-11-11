@@ -20,8 +20,9 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
+44
 
-using Eigen::MatrixXd;
+    using Eigen::MatrixXd;
 using Eigen::RowVectorXd;
 using Eigen::VectorXd;
 using math::RigidTransformd;
@@ -437,8 +438,8 @@ HPolyhedron HPolyhedron::ReduceInequalities(double tol) const {
     }
 
     // First we check whether the current index defines an empty set. If it
-    // does, then any new constraint is redundant constraint is already
-    // redundant. This check is expected before calling IsRedundant.
+    // does, then any new constraint is already redundant. This check is
+    // expected before calling IsRedundant.
     if (std::get<0>(IsInfeasible(prog))) {
       kept_indices.erase(excluded_index);
     } else {

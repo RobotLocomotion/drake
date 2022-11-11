@@ -140,7 +140,7 @@ class TestGeometryOptimization(unittest.TestCase):
         h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities(
             tol=1E-9)
 
-        # an empty polyhedron
+        # This polyhedron is intentionally constructed to be an empty set.
         A_empty = np.vstack([np.eye(3), -np.eye(3)])
         b_empty = -np.ones(6)
         h_empty = mut.HPolyhedron(A_empty, b_empty)
