@@ -13,7 +13,6 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
 
 using geometry::FrameId;
 using geometry::GeometryId;
@@ -249,8 +248,7 @@ void DeformableModel<T>::ThrowUnlessRegistered(const char* source_method,
   }
 }
 
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
-template class drake::multibody::internal::DeformableModel<double>;
+template class drake::multibody::DeformableModel<double>;
