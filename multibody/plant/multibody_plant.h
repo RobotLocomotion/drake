@@ -876,25 +876,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const RigidBody<T>& AddRigidBody(
       const std::string& name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B) {
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    // Make note in the graph.
-    multibody_graph_.AddBody(name, model_instance);
-    // Add the actual rigid body to the model.
-    const RigidBody<T>& body = this->mutable_tree().AddRigidBody(
-        name, model_instance, M_BBo_B);
-    // Each entry of visual_geometries_, ordered by body index, contains a
-    // std::vector of geometry ids for that body. The emplace_back() below
-    // resizes visual_geometries_ to store the geometry ids for the body we
-    // just added.
-    // Similarly for the collision_geometries_ vector.
-    DRAKE_DEMAND(visual_geometries_.size() == body.index());
-    visual_geometries_.emplace_back();
-    DRAKE_DEMAND(collision_geometries_.size() == body.index());
-    collision_geometries_.emplace_back();
-    DRAKE_DEMAND(X_WB_default_list_.size() == body.index());
-    X_WB_default_list_.emplace_back();
-    RegisterRigidBodyWithSceneGraph(body);
-    return body;
+    return AddBody(
+        std::make_unique<RigidBody<T>>(name, model_instance, M_BBo_B));
   }
 
   /// Creates a rigid body with the provided name and spatial inertia.  This
@@ -937,6 +920,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   template <template<typename> class BodyType>
   const BodyType<T>& AddBody(std::unique_ptr<BodyType<T>> body) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
     // TODO(azeey) Check if we need to do extra bookkeeping.
     multibody_graph_.AddBody(body->name(), body->model_instance());
     // Each entry of visual_geometries_, ordered by body index, contains a
@@ -977,8 +961,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return this->mutable_tree().AddJoint(std::move(joint));
   }
 
-  /// This method adds a Joint of type `JointType` between two bodies.
-  /// For more information, see the below overload of `AddJoint<>`.
+  /// This method adds a JointActuator of type `JointTypeActuator`.
+  /// For more information, see the below overload of `AddJointActuator<>`.
+  /// @tparam JointActuatorType Template which will be instantiated on `T`.
+  /// @param joint_actuator Unique pointer joint_actuator instance.
+  /// @returns A constant reference to the new JointActuator just added, which
+  ///          will remain valid for the lifetime of `this` %MultibodyPlant.
   template <template <typename Scalar> class JointActuatorType>
   const JointActuatorType<T>& AddJointActuator(
       std::unique_ptr<JointActuatorType<T>> joint_actuator) {
