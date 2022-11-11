@@ -142,7 +142,7 @@ class TestGeometryOptimization(unittest.TestCase):
 
         # an empty polyhedron
         A_empty = np.vstack([np.eye(3), -np.eye(3)])
-        b_empty = np.ones(6)
+        b_empty = -np.ones(6)
         h_empty = mut.HPolyhedron(A_empty, b_empty)
         self.assertTrue(h_empty.IsEmpty())
         self.assertFalse(h_l1_ball.IsEmpty())
