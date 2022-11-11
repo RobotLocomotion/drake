@@ -935,6 +935,26 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return AddRigidBody(name, default_model_instance(), M_BBo_B);
   }
 
+  template <template<typename> class BodyType>
+  const BodyType<T>& AddBody(std::unique_ptr<BodyType<T>> body) {
+    // TODO(azeey) Check if we need to do extra bookkeeping.
+    multibody_graph_.AddBody(body->name(), body->model_instance());
+    // Each entry of visual_geometries_, ordered by body index, contains a
+    // std::vector of geometry ids for that body. The emplace_back() below
+    // resizes visual_geometries_ to store the geometry ids for the body we
+    // just added.
+    // Similarly for the collision_geometries_ vector.
+    const auto& added_body = this->mutable_tree().AddBody(std::move(body));
+    DRAKE_DEMAND(visual_geometries_.size() == added_body.index());
+    visual_geometries_.emplace_back();
+    DRAKE_DEMAND(collision_geometries_.size() == added_body.index());
+    collision_geometries_.emplace_back();
+    DRAKE_DEMAND(X_WB_default_list_.size() == added_body.index());
+    X_WB_default_list_.emplace_back();
+    // TODO(azeey) Should we only call this if body is a RigidBody?
+    RegisterRigidBodyWithSceneGraph(added_body);
+    return added_body;
+  }
   /// This method adds a Frame of type `FrameType<T>`. For more information,
   /// please see the corresponding constructor of `FrameType`.
   /// @tparam FrameType Template which will be instantiated on `T`.

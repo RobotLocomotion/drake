@@ -256,17 +256,22 @@ class DefaultElementAccessor
   Mobilizer<ToScalar>& DoGetMutableMobilizer(
       const Mobilizer<FromScalar>& element) const override;
 
-  std::string DoGetFrameNewName(const Frame<FromScalar>& element) const override;
+  std::string DoGetFrameNewName(
+      const Frame<FromScalar>& element) const override;
 
   std::string DoGetBodyNewName(const Body<FromScalar>& element) const override;
 
-  std::string DoGetJointNewName(const Joint<FromScalar>& element) const override;
+  std::string DoGetJointNewName(
+      const Joint<FromScalar>& element) const override;
 
-  ModelInstanceIndex DoGetFrameNewModelInstance(const Frame<FromScalar>& element) const override;
+  ModelInstanceIndex DoGetFrameNewModelInstance(
+      const Frame<FromScalar>& element) const override;
 
-  ModelInstanceIndex DoGetBodyNewModelInstance(const Body<FromScalar>& element) const override;
+  ModelInstanceIndex DoGetBodyNewModelInstance(
+      const Body<FromScalar>& element) const override;
 
-  ModelInstanceIndex DoGetJointNewModelInstance(const Joint<FromScalar>& element) const override;
+  ModelInstanceIndex DoGetJointNewModelInstance(
+      const Joint<FromScalar>& element) const override;
 
  private:
   MultibodyTree<ToScalar>* owner_{};

@@ -373,9 +373,9 @@ class RigidBody : public Body<T> {
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
-    unused(handle);
     return std::make_unique<RigidBody<ToScalar>>(
-        this->name(), default_spatial_inertia_);
+        this->name(), handle.get_new_model_instance(*this),
+        default_spatial_inertia_);
   }
 
   // Spatial inertia about the body frame origin Bo, expressed in B.

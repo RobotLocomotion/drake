@@ -115,11 +115,14 @@ std::vector<geometry::GeometryId> GetGeometries(
 class MultibodySubgraphElementAccessor
     : public DefaultElementAccessor<double, double> {
  public:
-  MultibodySubgraphElementAccessor(MultibodyPlantElementsMap* elements_map,
-                          FrameNameRemapFunction frame_name_remap)
+  MultibodySubgraphElementAccessor(
+      MultibodyPlantElementsMap* elements_map,
+      ModelInstanceRemapFunction model_instance_remap,
+      FrameNameRemapFunction frame_name_remap)
       : DefaultElementAccessor(
             &elements_map->plant_destination()->mutable_tree()),
         elements_map_(elements_map),
+        model_instance_remap_(model_instance_remap),
         frame_name_remap_(frame_name_remap) {}
 
  protected:
@@ -134,8 +137,24 @@ class MultibodySubgraphElementAccessor
     return *elements_map_->joints().at(&element);
   }
 
+  ModelInstanceIndex DoGetFrameNewModelInstance(
+      const Frame<double>& element) const override {
+    return model_instance_remap_(element.model_instance());
+  }
+
+  ModelInstanceIndex DoGetBodyNewModelInstance(
+      const Body<double>& element) const override {
+    return model_instance_remap_(element.model_instance());
+  }
+
+  ModelInstanceIndex DoGetJointNewModelInstance(
+      const Joint<double>& element) const override {
+    return model_instance_remap_(element.model_instance());
+  }
+
  private:
   MultibodyPlantElementsMap* elements_map_;
+  ModelInstanceRemapFunction model_instance_remap_;
   FrameNameRemapFunction frame_name_remap_;
 };
 
@@ -256,7 +275,7 @@ MultibodyPlantElements MultibodyPlantElements::GetElementsFromBodies(
 }
 
 void MultibodyPlantElementsMap::CopyBody(
-    const Body<double>* src, const MultibodySubgraphElementAccessor&) {
+    const Body<double>* src, const MultibodySubgraphElementAccessor& handle) {
   if (builtins_src_.bodies().find(src) != builtins_src_.bodies().end()) {
     return;
   }
@@ -266,9 +285,10 @@ void MultibodyPlantElementsMap::CopyBody(
   const ModelInstanceIndex model_instance_src = body_src->model_instance();
   const ModelInstanceIndex model_instance_dest =
       model_instances_[model_instance_src];
+  DRAKE_DEMAND(model_instance_dest.is_valid());
+  std::unique_ptr<Body<double>> body_clone = src->CloneToScalar(handle);
   const Body<double>* body_dest =
-      &plant_dest_->AddRigidBody(body_src->name(), model_instance_dest,
-                                 body_src->default_spatial_inertia());
+      &plant_dest_->AddBody(std::move(body_clone));
   bodies_.insert({body_src, body_dest});
 
   // Set default state.
@@ -479,23 +499,26 @@ std::string FrameNameRenameSameName(const Frame<double>& frame) {
 }
 
 MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
-    MultibodyPlant<double>* plant_dest, std::optional<RemapFunction> opt_model_instance_remap,
+    MultibodyPlant<double>* plant_dest,
+    std::optional<ModelInstanceRemapFunction> opt_model_instance_remap,
     std::optional<FrameNameRemapFunction> opt_frame_name_remap) const {
   const auto* plant_src = elem_src_.plant();
   const auto* scene_graph_src = elem_src_.scene_graph();
 
-  RemapFunction model_instance_remap = opt_model_instance_remap.value_or(
-      [&](ModelInstanceIndex model_instance_src) {
-        const std::string name =
-            plant_src->GetModelInstanceName(model_instance_src);
-        return GetOrCreateModelInstanceByName(plant_dest, name);
-      });
+  ModelInstanceRemapFunction model_instance_remap =
+      opt_model_instance_remap.value_or(
+          [&](ModelInstanceIndex model_instance_src) {
+            const std::string name =
+                plant_src->GetModelInstanceName(model_instance_src);
+            return GetOrCreateModelInstanceByName(plant_dest, name);
+          });
 
   FrameNameRemapFunction frame_name_remap =
       opt_frame_name_remap.value_or(FrameNameRenameSameName);
 
   MultibodyPlantElementsMap src_to_dest(plant_src, plant_dest, scene_graph_src);
-  MultibodySubgraphElementAccessor handle(&src_to_dest, frame_name_remap);
+  MultibodySubgraphElementAccessor handle(&src_to_dest, model_instance_remap,
+                                          frame_name_remap);
 
   // Remap and register model instances.
   for (const auto& model_instance_src : elem_src_.model_instances()) {

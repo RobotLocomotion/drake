@@ -406,6 +406,8 @@ ModelInstanceIndex GetOrCreateModelInstanceByName(
     MultibodyPlant<double>* plant, const std::string& model_name);
 
 std::string FrameNameRenameSameName(const Frame<double>& frame);
+using ModelInstanceRemapFunction =
+    std::function<ModelInstanceIndex(ModelInstanceIndex)>;
 
 class MultibodyPlantSubgraph {
  public:
@@ -415,16 +417,16 @@ class MultibodyPlantSubgraph {
     CheckSubgraphInvariants(elem_src_);
   }
 
-  using RemapFunction = std::function<ModelInstanceIndex(ModelInstanceIndex)>;
+  MultibodyPlantElementsMap AddTo(
+      MultibodyPlant<double>* plant_dest,
+      std::optional<ModelInstanceRemapFunction> model_instance_remap =
+          std::nullopt,
+      std::optional<FrameNameRemapFunction> frame_name_remap =
+          std::nullopt) const;
 
   MultibodyPlantElementsMap AddTo(
       MultibodyPlant<double>* plant_dest,
-      std::optional<RemapFunction> model_instance_remap = std::nullopt,
-      std::optional<FrameNameRemapFunction> frame_name_remap = std::nullopt) const;
-
-  MultibodyPlantElementsMap AddTo(
-      MultibodyPlant<double>* plant_dest,
-      const std::string &model_instance_remap,
+      const std::string& model_instance_remap,
       FrameNameRemapFunction frame_name_remap = FrameNameRenameSameName) const;
 
   const MultibodyPlantElements& elements_src() const { return elem_src_; }
