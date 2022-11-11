@@ -20,9 +20,8 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
-44
 
-    using Eigen::MatrixXd;
+using Eigen::MatrixXd;
 using Eigen::RowVectorXd;
 using Eigen::VectorXd;
 using math::RigidTransformd;
