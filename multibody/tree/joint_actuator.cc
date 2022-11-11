@@ -12,7 +12,7 @@ JointActuator<T>::JointActuator(const std::string& name, const Joint<T>& joint,
     : MultibodyElement<JointActuator, T, JointActuatorIndex>(
           joint.model_instance()),
       name_(name),
-      joint_index_(joint.index()),
+      joint_(joint),
       effort_limit_(effort_limit) {
   if (effort_limit_ <= 0.0) {
     throw std::runtime_error("Effort limit must be strictly positive!");
@@ -21,7 +21,7 @@ JointActuator<T>::JointActuator(const std::string& name, const Joint<T>& joint,
 
 template <typename T>
 const Joint<T>& JointActuator<T>::joint() const {
-  return this->get_parent_tree().get_joint(joint_index_);
+  return this->joint_;
 }
 
 template <typename T>
@@ -76,29 +76,30 @@ void JointActuator<T>::DoSetTopology(
 
 template <typename T>
 std::unique_ptr<JointActuator<double>> JointActuator<T>::DoCloneToScalar(
-    const internal::MultibodyElementAccessor<double, T>&) const {
-  return std::unique_ptr<JointActuator<double>>(
-      new JointActuator<double>(name_, joint_index_, effort_limit_,
-                                default_rotor_inertia_, default_gear_ratio_));
+    const internal::MultibodyElementAccessor<double, T>& handle) const {
+  return std::unique_ptr<JointActuator<double>>(new JointActuator<double>(
+      name_, handle.get_variant(joint()), effort_limit_,
+      default_rotor_inertia_, default_gear_ratio_));
 }
 
 template <typename T>
 std::unique_ptr<JointActuator<AutoDiffXd>> JointActuator<T>::DoCloneToScalar(
-    const internal::MultibodyElementAccessor<AutoDiffXd, T>&) const {
+    const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const {
   return std::unique_ptr<JointActuator<AutoDiffXd>>(
-      new JointActuator<AutoDiffXd>(name_, joint_index_, effort_limit_,
-                                    default_rotor_inertia_,
+      new JointActuator<AutoDiffXd>(name_, handle.get_variant(joint()),
+                                    effort_limit_, default_rotor_inertia_,
                                     default_gear_ratio_));
 }
 
 template <typename T>
 std::unique_ptr<JointActuator<symbolic::Expression>>
 JointActuator<T>::DoCloneToScalar(
-    const internal::MultibodyElementAccessor<symbolic::Expression, T>&) const {
+    const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+    const {
   return std::unique_ptr<JointActuator<symbolic::Expression>>(
       new JointActuator<symbolic::Expression>(
-          name_, joint_index_, effort_limit_, default_rotor_inertia_,
-          default_gear_ratio_));
+          name_, handle.get_variant(joint()), effort_limit_,
+          default_rotor_inertia_, default_gear_ratio_));
 }
 
 }  // namespace multibody

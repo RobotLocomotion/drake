@@ -346,8 +346,12 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
 }
 
 template <typename T>
-const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
-    const std::string& name, const Joint<T>& joint, double effort_limit) {
+template <template<typename Scalar> class JointActuatorType>
+const JointActuatorType<T>& MultibodyTree<T>::AddJointActuator(
+    std::unique_ptr<JointActuatorType<T>> joint_actuator) {
+
+  const Joint<T>& joint = joint_actuator->joint();
+  const std::string& name = joint_actuator->name();
   if (HasJointActuatorNamed(name, joint.model_instance())) {
     throw std::logic_error(
         "Model instance '" +
@@ -364,12 +368,18 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
 
   const JointActuatorIndex actuator_index =
       topology_.add_joint_actuator(joint.num_velocities());
-  owned_actuators_.push_back(
-      std::make_unique<JointActuator<T>>(name, joint, effort_limit));
+  owned_actuators_.push_back(std::move(joint_actuator));
   JointActuator<T>* actuator = owned_actuators_.back().get();
   actuator->set_parent_tree(this, actuator_index);
   this->SetElementIndex(name, actuator_index, &actuator_name_to_index_);
   return *actuator;
+}
+
+template <typename T>
+const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
+    const std::string& name, const Joint<T>& joint, double effort_limit) {
+  return AddJointActuator(
+      std::make_unique<JointActuator<T>>(name, joint, effort_limit));
 }
 
 template <typename T>

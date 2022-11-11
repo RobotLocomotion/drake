@@ -292,6 +292,7 @@ void MultibodyPlantElementsMap::CopyBody(
   bodies_.insert({body_src, body_dest});
 
   // Set default state.
+  // TODO(azeey) Can we do without setting the pose here?
   const auto X_WB = plant_src_->GetDefaultFreeBodyPose(*body_src);
   plant_dest_->SetDefaultFreeBodyPose(*body_dest, X_WB);
   // Register body frame as a builtin.
@@ -309,14 +310,7 @@ void MultibodyPlantElementsMap::CopyFrame(
   // BodyFrame's are handled by `CopyBody`, and are ignored by this method.
   DRAKE_DEMAND(dynamic_cast<const BodyFrame<double>*>(src) == nullptr);
 
-  const ModelInstanceIndex model_instance_src = src->model_instance();
-  const ModelInstanceIndex model_instance_dest =
-      model_instances_[model_instance_src];
-  DRAKE_DEMAND(model_instance_dest.is_valid());
-
   std::unique_ptr<Frame<double>> frame_clone =  src->CloneToScalar(handle);
-  // TODO(azeey) Verify that the model instance info is copied over in
-  // CloneToScalar.
   const Frame<double>* frame_dest =
       &plant_dest_->AddFrame(std::move(frame_clone));
 
@@ -333,11 +327,8 @@ void MultibodyPlantElementsMap::CopyJoint(
 void MultibodyPlantElementsMap::CopyJointActuator(
     const JointActuator<double>* src,
     const MultibodySubgraphElementAccessor& handle) {
-  const Joint<double>* joint_src = &src->joint();
-  const Joint<double>& joint_dest = handle.get_variant(*joint_src);
   const JointActuator<double>* joint_actuator_dest =
-      &plant_dest_->AddJointActuator(src->name(), joint_dest,
-                                     src->effort_limit());
+      &plant_dest_->AddJointActuator(src->CloneToScalar(handle));
   joint_actuators_.insert({src, joint_actuator_dest});
 }
 
@@ -572,10 +563,6 @@ MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
 MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
     MultibodyPlant<double>* plant_dest, const std::string& model_instance_remap,
     FrameNameRemapFunction frame_name_remap) const {
-  // auto model_name_remap = [&model_instance_remap](const auto&, auto,
-                                                  // auto* dest) {
-    // return GetOrCreateModelInstanceByName(dest, model_instance_remap);
-  // };
   auto model_name_remap = [&model_instance_remap, plant_dest](auto) {
     return GetOrCreateModelInstanceByName(plant_dest, model_instance_remap);
   };

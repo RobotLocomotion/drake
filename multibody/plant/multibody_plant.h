@@ -978,6 +978,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// This method adds a Joint of type `JointType` between two bodies.
+  /// For more information, see the below overload of `AddJoint<>`.
+  template <template <typename Scalar> class JointActuatorType>
+  const JointActuatorType<T>& AddJointActuator(
+      std::unique_ptr<JointActuatorType<T>> joint_actuator) {
+    return this->mutable_tree().AddJointActuator(std::move(joint_actuator));
+  }
+  /// This method adds a Joint of type `JointType` between two bodies.
   /// The two bodies connected by this Joint object are referred to as _parent_
   /// and _child_ bodies. The parent/child ordering defines the sign conventions
   /// for the generalized coordinates and the coordinate ordering for multi-DOF

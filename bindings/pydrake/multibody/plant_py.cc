@@ -214,10 +214,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("joint"), py_rvp::reference_internal,
             cls_doc.AddJoint.doc_1args)
-        .def("AddJointActuator", &Class::AddJointActuator,
-            py_rvp::reference_internal, py::arg("name"), py::arg("joint"),
-            py::arg("effort_limit") = std::numeric_limits<double>::infinity(),
-            cls_doc.AddJointActuator.doc)
+        .def(
+            "AddJointActuator",
+            [](Class * self,
+                std::unique_ptr<JointActuator<T>> joint_actuator) -> auto& {
+              return self->AddJointActuator(std::move(joint_actuator));
+            },
+            py::arg("joint_actuator"), py_rvp::reference_internal,
+            cls_doc.AddJointActuator.doc_1args)
         .def(
             "AddFrame",
             [](Class * self, std::unique_ptr<Frame<T>> frame) -> auto& {

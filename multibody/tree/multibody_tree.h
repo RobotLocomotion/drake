@@ -708,6 +708,11 @@ class MultibodyTree {
       const std::optional<math::RigidTransform<double>>& X_BM,
       Args&&... args);
 
+  // See MultibodyPlant documentation.
+  template <template<typename Scalar> class JointActuatorType>
+  const JointActuatorType<T>& AddJointActuator(
+      std::unique_ptr<JointActuatorType<T>> joint_actuator);
+
   // Creates and adds a JointActuator model for an actuator acting on a given
   // `joint`.
   // This method returns a constant reference to the actuator just added, which

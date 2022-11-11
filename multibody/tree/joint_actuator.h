@@ -265,10 +265,12 @@ class JointActuator final
   template <typename U> friend class JointActuator;
 
   // Private constructor used for cloning.
-  JointActuator(const std::string& name, JointIndex joint_index,
+  JointActuator(const std::string& name, const Joint<T>& joint,
                 double effort_limit, double rotor_inertia, double gear_ratio)
-      : name_(name),
-        joint_index_(joint_index),
+      : MultibodyElement<JointActuator, T, JointActuatorIndex>(
+            joint.model_instance()),
+        name_(name),
+        joint_(joint),
         effort_limit_(effort_limit),
         default_rotor_inertia_(rotor_inertia),
         default_gear_ratio_(gear_ratio) {}
@@ -309,7 +311,7 @@ class JointActuator final
   std::string name_;
 
   // The index of the joint on which this actuator acts.
-  JointIndex joint_index_;
+  const Joint<T> &joint_;
 
   // Actuator effort limit. It must be greater than 0.
   double effort_limit_;
