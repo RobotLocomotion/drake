@@ -13,6 +13,7 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_pose.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
+#include "drake/common/trajectories/stacked_trajectory.h"
 #include "drake/common/trajectories/trajectory.h"
 
 namespace drake {
@@ -492,6 +493,21 @@ struct Impl {
               cls_doc.get_position_trajectory.doc)
           .def("get_orientation_trajectory", &Class::get_orientation_trajectory,
               cls_doc.get_orientation_trajectory.doc);
+      DefCopyAndDeepCopy(&cls);
+    }
+
+    {
+      using Class = StackedTrajectory<T>;
+      constexpr auto& cls_doc = doc.StackedTrajectory;
+      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+          m, "StackedTrajectory", param, cls_doc.doc);
+      cls  // BR
+          .def(py::init<bool>(), py::arg("rowwise") = true, cls_doc.ctor.doc)
+          .def("Clone", &Class::Clone, cls_doc.Clone.doc)
+          .def("Append",
+              py::overload_cast<const Trajectory<T>&>(&Class::Append),
+              /* N.B. We choose to omit any py::arg name here. */
+              cls_doc.Append.doc);
       DefCopyAndDeepCopy(&cls);
     }
   }

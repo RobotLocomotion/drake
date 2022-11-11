@@ -10,8 +10,14 @@ from pydrake.common.value import AbstractValue
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
 from pydrake.trajectories import (
-    BsplineTrajectory_, PathParameterizedTrajectory_, PiecewisePolynomial_,
-    PiecewisePose_, PiecewiseQuaternionSlerp_, Trajectory, Trajectory_
+    BsplineTrajectory_,
+    PathParameterizedTrajectory_,
+    PiecewisePolynomial_,
+    PiecewisePose_,
+    PiecewiseQuaternionSlerp_,
+    StackedTrajectory_,
+    Trajectory,
+    Trajectory_
 )
 
 
@@ -516,3 +522,17 @@ class TestTrajectories(unittest.TestCase):
         # Ensure we can copy.
         self.assertEqual(copy.copy(ppose).get_number_of_segments(), 2)
         self.assertEqual(copy.deepcopy(ppose).get_number_of_segments(), 2)
+
+    @numpy_compare.check_all_types
+    def test_stacked_trajectory(self, T):
+        breaks = [0, 1, 2]
+        samples = [[[0]], [[1]], [[2]]]
+        zoh = PiecewisePolynomial_[T].ZeroOrderHold(breaks, samples)
+        dut = StackedTrajectory_[T](rowwise=True)
+        dut.Append(zoh)
+        dut.Append(zoh)
+        self.assertEqual(dut.rows(), 2)
+        self.assertEqual(dut.cols(), 1)
+        dut.Clone()
+        copy.copy(dut)
+        copy.deepcopy(dut)
