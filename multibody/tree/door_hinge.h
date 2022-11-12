@@ -204,7 +204,8 @@ class DoorHinge final : public ForceElement<T> {
       MultibodyForces<T>* forces) const override;
 
   std::unique_ptr<ForceElement<double>> DoCloneToScalar(
-      const internal::MultibodyElementAccessor<double, T>& handle) const override;
+      const internal::MultibodyElementAccessor<double, T>& handle)
+      const override;
 
   std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)

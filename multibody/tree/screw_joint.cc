@@ -46,7 +46,8 @@ std::unique_ptr<Joint<AutoDiffXd>> ScrewJoint<T>::DoCloneToScalar(
 
 template <typename T>
 std::unique_ptr<Joint<symbolic::Expression>> ScrewJoint<T>::DoCloneToScalar(
-    const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle) const {
+    const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+    const {
   return TemplatedDoCloneToScalar(handle);
 }
 

@@ -124,18 +124,21 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const override {
-    return TemplatedDoCloneToScalar(tree_clone);
+      const internal::MultibodyElementAccessor<double, T>& handle)
+      const override {
+    return TemplatedDoCloneToScalar(handle);
   }
 
   std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const override {
-    return TemplatedDoCloneToScalar(tree_clone);
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const override {
+    return TemplatedDoCloneToScalar(handle);
   }
 
   std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
-      const MultibodyTree<symbolic::Expression>& tree_clone) const override {
-    return TemplatedDoCloneToScalar(tree_clone);
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const override {
+    return TemplatedDoCloneToScalar(handle);
   }
 
  private:
@@ -161,11 +164,11 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
 
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const {
+    const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
     const Frame<ToScalar>& inboard_frame_clone =
-        tree_clone.get_variant(this->inboard_frame());
+        handle.get_variant(this->inboard_frame());
     const Frame<ToScalar>& outboard_frame_clone =
-        tree_clone.get_variant(this->outboard_frame());
+        handle.get_variant(this->outboard_frame());
     return std::make_unique<FeatherstoneMobilizer<ToScalar>>(
         inboard_frame_clone, outboard_frame_clone);
   }

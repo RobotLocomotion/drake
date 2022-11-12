@@ -3585,14 +3585,23 @@ DefaultElementAccessor<ToScalar, FromScalar>::DoGetJointNewModelInstance(
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::MultibodyTree)
 
-template class ::drake::multibody::internal::DefaultElementAccessor<double, double>;
-template class ::drake::multibody::internal::DefaultElementAccessor<double, ::drake::AutoDiffXd>;
-template class ::drake::multibody::internal::DefaultElementAccessor<double, ::drake::symbolic::Expression>;
+template class ::drake::multibody::internal::DefaultElementAccessor<double,
+                                                                    double>;
+template class ::drake::multibody::internal::DefaultElementAccessor<
+    double, ::drake::AutoDiffXd>;
+template class ::drake::multibody::internal::DefaultElementAccessor<
+    double, ::drake::symbolic::Expression>;
 
-template class ::drake::multibody::internal::DefaultElementAccessor<::drake::AutoDiffXd, double>;
-template class ::drake::multibody::internal::DefaultElementAccessor<::drake::AutoDiffXd, ::drake::AutoDiffXd>;
-template class ::drake::multibody::internal::DefaultElementAccessor<::drake::AutoDiffXd, ::drake::symbolic::Expression>;
+template class ::drake::multibody::internal::DefaultElementAccessor<
+    ::drake::AutoDiffXd, double>;
+template class ::drake::multibody::internal::DefaultElementAccessor<
+    ::drake::AutoDiffXd, ::drake::AutoDiffXd>;
+template class ::drake::multibody::internal::DefaultElementAccessor<
+    ::drake::AutoDiffXd, ::drake::symbolic::Expression>;
 
-template class ::drake::multibody::internal::DefaultElementAccessor<::drake::symbolic::Expression, double>;
-template class ::drake::multibody::internal::DefaultElementAccessor<::drake::symbolic::Expression, ::drake::AutoDiffXd>;
-template class ::drake::multibody::internal::DefaultElementAccessor<::drake::symbolic::Expression, ::drake::symbolic::Expression>;
+template class ::drake::multibody::internal::DefaultElementAccessor<
+    ::drake::symbolic::Expression, double>;
+template class ::drake::multibody::internal::DefaultElementAccessor<
+    ::drake::symbolic::Expression, ::drake::AutoDiffXd>;
+template class ::drake::multibody::internal::DefaultElementAccessor<
+    ::drake::symbolic::Expression, ::drake::symbolic::Expression>;

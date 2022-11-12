@@ -507,7 +507,8 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
 
   /// Clones this %Body (templated on T) to a body templated on AutoDiffXd.
   virtual std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle) const = 0;
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const = 0;
 
   /// Clones this %Body (templated on T) to a body templated on Expression.
   virtual std::unique_ptr<Body<symbolic::Expression>> DoCloneToScalar(

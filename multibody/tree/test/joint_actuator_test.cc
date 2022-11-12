@@ -77,8 +77,8 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
 
   tree.Finalize();
 
-  EXPECT_EQ(tree.num_actuated_dofs(), 6);
-  EXPECT_EQ(actuator4.input_start(), 3);
+  EXPECT_EQ(tree.num_actuated_dofs(), 4);
+  EXPECT_EQ(actuator4.input_start(), 1);
   EXPECT_EQ(actuator4.num_inputs(), 3);
 }
 
