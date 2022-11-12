@@ -121,6 +121,19 @@ class KinematicTrajectoryOptimization {
                                  const Eigen::Ref<const Eigen::VectorXd>& ub,
                                  double s);
 
+  /** Adds a (generic) constraint on trajectory velocity `q̇(t)`, evaluated at
+  `s`. The constraint will be evaluated as if it is bound with variables
+  corresponding to `[q(T*s), q̇(T*s)]`.
+
+  This is a potentially confusing mix of `s` and `t`, but it is important in
+  practice. For instance if you want to constrain the true (trajectory)
+  velocity at the final time, one would naturally want to write
+  AddVelocityConstraint(constraint, s=1).
+  @pre constraint.num_vars() == num_positions()
+  @pre 0 <= `s` <= 1. */
+  void AddVelocityConstraintAtNormalizedTime(
+      const std::shared_ptr<solvers::Constraint>& constraint, double s);
+
   /** Adds a linear constraint on the second derivative of the path,
   `lb` ≤ r̈(s) ≤ `ub`. Note that this does NOT directly constrain q̈(t).
   @pre 0 <= `s` <= 1. */
@@ -132,17 +145,30 @@ class KinematicTrajectoryOptimization {
   void AddDurationConstraint(std::optional<double> lb,
                              std::optional<double> ub);
 
-  /** Adds upper and lower bounds on the positions trajectory, q(t). These
-  bounds will be respected at all times, t∈[0,T]. This also implies the
-  constraints are satisfied for r(s), for all s∈[0,1]. */
+  /** Adds bounding box constraints to enforce upper and lower bounds on the
+  positions trajectory, q(t). These bounds will be respected at all times,
+  t∈[0,T]. This also implies the constraints are satisfied for r(s), for all
+  s∈[0,1]. */
   void AddPositionBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                          const Eigen::Ref<const Eigen::VectorXd>& ub);
 
-  /** Adds upper and lower bounds on the velocity trajectory, q̇(t). These
-  bounds will be respected at all times. Note this does NOT directly constrain
-  ṙ(s). */
+  /** Adds linear constraints to enforce upper and lower bounds on the velocity
+  trajectory, q̇(t). These bounds will be respected at all times. Note this
+  does NOT directly constrain ṙ(s). */
   void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                          const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+  /** Adds generic (nonlinear) constraints to enforce the upper and lower
+  bounds to the acceleration trajectory, q̈(t).  These constraints will be
+  respected at all times.  Note that this does NOT directly constrain r̈(s). */
+  void AddAccelerationBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                             const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+  /** Adds generic (nonlinear) constraints to enforce the upper and lower bounds
+  to the jerk trajectory, d³qdt³(t).  These constraints will be respected at all
+  times.  Note that this does NOT directly constrain d³rds³(s). */
+  void AddJerkBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                             const Eigen::Ref<const Eigen::VectorXd>& ub);
 
   /** Adds a linear cost on the duration of the trajectory. */
   void AddDurationCost(double weight = 1.0);
@@ -181,6 +207,8 @@ class KinematicTrajectoryOptimization {
       sym_rdot_{};
   copyable_unique_ptr<trajectories::BsplineTrajectory<symbolic::Expression>>
       sym_rddot_{};
+  copyable_unique_ptr<trajectories::BsplineTrajectory<symbolic::Expression>>
+      sym_rdddot_{};
 };
 
 }  // namespace trajectory_optimization
