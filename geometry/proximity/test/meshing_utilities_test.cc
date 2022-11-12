@@ -4,6 +4,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -48,6 +51,31 @@ GTEST_TEST(SplitPyramidToTetrahedraTest, SimpleTest) {
   EXPECT_TRUE(tetrahedra.end() != std::find(tetrahedra.begin(),
                                             tetrahedra.end(),
                                             VolumeElement(4, 1, 0, 2)));
+}
+
+GTEST_TEST(CalcEnclosedVolumeTest, SimpleTest) {
+  std::string obj = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  TriangleSurfaceMesh<double> surface_mesh =
+      ReadObjToTriangleSurfaceMesh(obj, 1.0);
+  EXPECT_NEAR(CalcEnclosedVolume(surface_mesh), 8.0, 1e-14);
+
+  // Translating the box so the origin is not in the interior should not change
+  // the volume.
+  surface_mesh.TransformVertices(
+      math::RigidTransform<double>(Eigen::Vector3d{4, 4, 4}));
+  EXPECT_NEAR(CalcEnclosedVolume(surface_mesh), 8.0, 1e-14);
+
+  obj = FindResourceOrThrow("drake/geometry/test/octahedron.obj");
+  const double meshlab_volume{3.771236};
+  surface_mesh = ReadObjToTriangleSurfaceMesh(obj, 1.0);
+  // Note: The large tolerance is because we are only matching Meshlab's volume
+  // calculation as printed to the console with limited precision.
+  EXPECT_NEAR(CalcEnclosedVolume(surface_mesh), meshlab_volume, 1e-6);
+
+  obj = FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
+  // meshlab reports volume 0.1.
+  surface_mesh = ReadObjToTriangleSurfaceMesh(obj, 1.0);
+  EXPECT_NEAR(CalcEnclosedVolume(surface_mesh), 0.1, 1e-14);
 }
 
 }  // namespace

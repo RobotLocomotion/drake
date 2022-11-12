@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
@@ -52,6 +53,10 @@ std::vector<VolumeElement> SplitTriangularPrismToTetrahedra(int v0, int v1,
  */
 std::vector<VolumeElement> SplitPyramidToTetrahedra(int v0, int v1, int v2,
                                                     int v3, int v4);
+
+/* Returns the volume enclosed by the surface mesh. The result is only
+meaningful if the mesh is watertight. */
+double CalcEnclosedVolume(const TriangleSurfaceMesh<double>& surface_mesh);
 
 }  // namespace internal
 }  // namespace geometry
