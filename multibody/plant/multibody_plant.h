@@ -1773,12 +1773,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called post-finalize. See Finalize().
   /// @note `this` MultibodyPlant will no longer support scalar conversion to or
   /// from symbolic::Expression after a call to this method.
-  void AddPhysicalModel(std::unique_ptr<internal::PhysicalModel<T>> model);
+  void AddPhysicalModel(std::unique_ptr<PhysicalModel<T>> model);
 
   /// For use only by advanced developers.
   ///
   /// @experimental
-  const std::vector<std::unique_ptr<internal::PhysicalModel<T>>>&
+  const std::vector<std::unique_ptr<PhysicalModel<T>>>&
   physical_models() const {
     return physical_models_;
   }
@@ -5175,7 +5175,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       discrete_update_manager_;
 
   // (Experimental) The vector of physical models owned by MultibodyPlant.
-  std::vector<std::unique_ptr<internal::PhysicalModel<T>>> physical_models_;
+  std::vector<std::unique_ptr<PhysicalModel<T>>> physical_models_;
 
   // Vector of coupler constraints specifications.
   std::vector<internal::CouplerConstraintSpecs<T>> coupler_constraints_specs_;

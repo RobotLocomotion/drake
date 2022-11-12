@@ -1303,7 +1303,7 @@ void MultibodyPlant<T>::SetDiscreteUpdateManager(
 
 template <typename T>
 void MultibodyPlant<T>::AddPhysicalModel(
-    std::unique_ptr<internal::PhysicalModel<T>> model) {
+    std::unique_ptr<PhysicalModel<T>> model) {
   // TODO(xuchenhan-tri): Guard against the same type of model being registered
   //  more than once.
   DRAKE_MBP_THROW_IF_FINALIZED();

@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/default_scalars.h"
 #include "drake/multibody/fem/deformable_body_config.h"
 
 namespace drake {

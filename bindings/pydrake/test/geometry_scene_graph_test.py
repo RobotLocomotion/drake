@@ -67,6 +67,9 @@ class TestGeometrySceneGraph(unittest.TestCase):
 
         self.assertIsInstance(
             scene_graph.get_source_pose_port(global_source), InputPort)
+        self.assertIsInstance(
+            scene_graph.get_source_configuration_port(global_source),
+            InputPort)
 
         self.assertIsInstance(
             scene_graph.get_query_output_port(), OutputPort)
