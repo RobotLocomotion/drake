@@ -1285,13 +1285,23 @@ void MultibodyPlant<T>::SetDiscreteUpdateManager(
 
 template <typename T>
 void MultibodyPlant<T>::AddPhysicalModel(
-    std::unique_ptr<internal::PhysicalModel<T>> model) {
+    std::unique_ptr<PhysicalModel<T>> model) {
   // TODO(xuchenhan-tri): Guard against the same type of model being registered
   //  more than once.
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_DEMAND(model != nullptr);
   auto& added_model = physical_models_.emplace_back(std::move(model));
   RemoveUnsupportedScalars(*added_model);
+}
+
+template <typename T>
+std::vector<const PhysicalModel<T>*> MultibodyPlant<T>::physical_models()
+    const {
+  std::vector<const PhysicalModel<T>*> result;
+  for (const std::unique_ptr<PhysicalModel<T>>& model : physical_models_) {
+    result.emplace_back(model.get());
+  }
+  return result;
 }
 
 template <typename T>

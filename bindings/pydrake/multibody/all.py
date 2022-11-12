@@ -1,8 +1,8 @@
 import warnings
 
 # Normal symbols.
-from .fem import *  # noqa
 from .inverse_kinematics import *  # noqa
+from .fem import *  # noqa
 from .math import *  # noqa
 from .meshcat import *  # noqa
 from .optimization import *  # noqa
