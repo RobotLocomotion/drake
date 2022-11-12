@@ -5,6 +5,9 @@
 #include <fmt/format.h>
 
 #include "drake/common/nice_type_name.h"
+#include "drake/geometry/proximity/meshing_utilities.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -267,6 +270,11 @@ class CalcVolumeReifier final : public ShapeReifier {
     volume_ = M_PI * std::pow(capsule.radius(), 2) * capsule.length() +
          4.0 / 3.0 * M_PI * std::pow(capsule.radius(), 3);
   }
+  void ImplementGeometry(const Convex& mesh, void*) {
+    TriangleSurfaceMesh<double> surface_mesh =
+        ReadObjToTriangleSurfaceMesh(mesh.filename(), mesh.scale());
+    volume_ = internal::CalcEnclosedVolume(surface_mesh);
+  }
   void ImplementGeometry(const Cylinder& cylinder, void*) final {
     volume_ = M_PI * std::pow(cylinder.radius(), 2) * cylinder.length();
   }
@@ -275,6 +283,11 @@ class CalcVolumeReifier final : public ShapeReifier {
   }
   void ImplementGeometry(const HalfSpace&, void*) final {
     volume_ = std::numeric_limits<double>::infinity();
+  }
+  void ImplementGeometry(const Mesh& mesh, void*) {
+    TriangleSurfaceMesh<double> surface_mesh =
+        ReadObjToTriangleSurfaceMesh(mesh.filename(), mesh.scale());
+    volume_ = internal::CalcEnclosedVolume(surface_mesh);
   }
   void ImplementGeometry(const MeshcatCone& cone, void*) final {
     volume_ = 1.0 / 3.0 * M_PI * cone.a() * cone.b() * cone.height();
