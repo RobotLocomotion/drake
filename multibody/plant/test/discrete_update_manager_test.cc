@@ -98,8 +98,8 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
     /* For unit testing we verify there is a single physical model of type
      DummyModel. */
     DRAKE_DEMAND(this->plant().physical_models().size() == 1);
-    const auto* dummy_model = dynamic_cast<const DummyModel<T>*>(
-        this->plant().physical_models()[0].get());
+    const auto* dummy_model =
+        dynamic_cast<const DummyModel<T>*>(this->plant().physical_models()[0]);
     DRAKE_DEMAND(dummy_model != nullptr);
     additional_state_index_ = dummy_model->discrete_state_index();
   }
@@ -253,7 +253,7 @@ TEST_F(DiscreteUpdateManagerTest, ScalarConversion) {
   ASSERT_EQ(autodiff_plant->physical_models().size(), 1);
   const DummyModel<AutoDiffXd>* model =
       dynamic_cast<const DummyModel<AutoDiffXd>*>(
-          autodiff_plant->physical_models()[0].get());
+          autodiff_plant->physical_models()[0]);
   ASSERT_NE(model, nullptr);
 
   const int time_steps = 2;

@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -18,6 +19,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/externally_applied_spatial_force_multiplexer.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -983,6 +985,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_contact_surface_representation",
             &Class::get_contact_surface_representation,
             cls_doc.get_contact_surface_representation.doc)
+        .def("AddPhysicalModel", &Class::AddPhysicalModel, py::arg("model"),
+            cls_doc.AddPhysicalModel.doc)
+        .def("physical_models", &Class::physical_models,
+            py_rvp::reference_internal, cls_doc.physical_models.doc)
         .def("set_penetration_allowance", &Class::set_penetration_allowance,
             py::arg("penetration_allowance") = 0.001,
             cls_doc.set_penetration_allowance.doc)
@@ -1412,6 +1418,46 @@ PYBIND11_MODULE(plant, m) {
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
+  }
+
+  // PhysicalModel
+  {
+    using Class = PhysicalModel<T>;
+    constexpr auto& cls_doc = doc.PhysicalModel;
+    auto cls = py::class_<Class>(m, "PhysicalModel", cls_doc.doc);
+  }
+
+  // DeformableModel
+  {
+    using Class = DeformableModel<double>;
+    constexpr auto& cls_doc = doc.DeformableModel;
+    py::class_<Class, PhysicalModel<T>> cls(m, "DeformableModel", cls_doc.doc);
+    cls  // BR
+        .def(py::init<MultibodyPlant<T>*>(), cls_doc.ctor.doc)
+        .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
+        .def("RegisterDeformableBody", &Class::RegisterDeformableBody,
+            py::arg("geometry_instance"), py::arg("config"),
+            py::arg("resolution_hint"), cls_doc.RegisterDeformableBody.doc)
+        .def("GetDiscreteStateIndex", &Class::GetDiscreteStateIndex,
+            py::arg("id"), cls_doc.GetDiscreteStateIndex.doc)
+        .def("GetReferencePositions", &Class::GetReferencePositions,
+            py::arg("id"), py_rvp::reference_internal,
+            cls_doc.GetReferencePositions.doc)
+        .def("GetGeometryId", &Class::GetGeometryId, py::arg("id"),
+            cls_doc.GetGeometryId.doc)
+        .def(
+            "GetBodyId",
+            [](const Class* self, geometry::GeometryId geometry_id) {
+              return self->GetBodyId(geometry_id);
+            },
+            py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id)
+        .def("vertex_positions_port", &Class::vertex_positions_port,
+            py_rvp::reference_internal, cls_doc.vertex_positions_port.doc);
+  }
+  // Deformable identifier.
+  {
+    BindIdentifier<DeformableBodyId>(
+        m, "DeformableBodyId", doc.DeformableBodyId.doc);
   }
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

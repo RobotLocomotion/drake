@@ -30,7 +30,7 @@ using DeformableBodyIndex = TypeSafeIndex<class DeformableBodyTag>;
  @experimental
  @tparam_double_only */
 template <typename T>
-class DeformableModel final : public multibody::internal::PhysicalModel<T> {
+class DeformableModel final : public multibody::PhysicalModel<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableModel)
 
@@ -149,9 +149,9 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   }
 
  private:
-  internal::PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant()
+  PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant()
       const final {
-    return internal::PhysicalModelPointerVariant<T>(this);
+    return PhysicalModelPointerVariant<T>(this);
   }
 
   // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd()
