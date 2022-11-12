@@ -494,9 +494,13 @@ class ShapeName final : public ShapeReifier {
 /** @relates ShapeName */
 std::ostream& operator<<(std::ostream& out, const ShapeName& name);
 
-/** Calculates the volume (in meters^3) for the Shape.
+/** Calculates the volume (in meters^3) for the Shape. For convex and mesh
+ geometries, the algorithm only supports ".obj" files and only produces
+ meaningful results for "closed" shapes.
+
  @throws std::exception if the derived type hasn't overloaded this
-  implementation (yet).
+  implementation (yet), if a filetype is unsupported, or if a referenced file
+  cannot be opened.
 */
 double CalcVolume(const Shape& shape);
 

@@ -649,6 +649,7 @@ drake_cc_library(
     srcs = ["meshing_utilities.cc"],
     hdrs = ["meshing_utilities.h"],
     deps = [
+        ":triangle_surface_mesh",
         ":volume_mesh",
     ],
 )
@@ -1269,8 +1270,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "meshing_utilities_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
     deps = [
         ":meshing_utilities",
+        ":obj_to_surface_mesh",
+        "//common:find_resource",
     ],
 )
 

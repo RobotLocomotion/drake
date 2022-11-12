@@ -1,10 +1,15 @@
 #include "drake/geometry/shape_specification.h"
 
+#include <algorithm>
+#include <filesystem>
 #include <limits>
 
 #include <fmt/format.h>
 
 #include "drake/common/nice_type_name.h"
+#include "drake/geometry/proximity/meshing_utilities.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -254,6 +259,24 @@ std::ostream& operator<<(std::ostream& out, const ShapeName& name) {
 }
 
 namespace {
+
+template <class MeshType>
+double CalcMeshVolumeFromFile(const MeshType& mesh) {
+  std::string extension = std::filesystem::path(mesh.filename()).extension();
+  std::transform(extension.begin(), extension.end(), extension.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+  // TODO(russt): Support .vtk files.
+  if (extension != ".obj") {
+    throw std::runtime_error(fmt::format(
+        "CalcVolume currently only supports .obj files for mesh geometries; "
+        "but the volume of {} was requested.",
+        mesh.filename()));
+  }
+  TriangleSurfaceMesh<double> surface_mesh =
+      ReadObjToTriangleSurfaceMesh(mesh.filename(), mesh.scale());
+  return internal::CalcEnclosedVolume(surface_mesh);
+}
+
 class CalcVolumeReifier final : public ShapeReifier {
  public:
   CalcVolumeReifier() = default;
@@ -267,6 +290,9 @@ class CalcVolumeReifier final : public ShapeReifier {
     volume_ = M_PI * std::pow(capsule.radius(), 2) * capsule.length() +
          4.0 / 3.0 * M_PI * std::pow(capsule.radius(), 3);
   }
+  void ImplementGeometry(const Convex& mesh, void*) {
+    volume_ = CalcMeshVolumeFromFile(mesh);
+  }
   void ImplementGeometry(const Cylinder& cylinder, void*) final {
     volume_ = M_PI * std::pow(cylinder.radius(), 2) * cylinder.length();
   }
@@ -275,6 +301,9 @@ class CalcVolumeReifier final : public ShapeReifier {
   }
   void ImplementGeometry(const HalfSpace&, void*) final {
     volume_ = std::numeric_limits<double>::infinity();
+  }
+  void ImplementGeometry(const Mesh& mesh, void*) {
+    volume_ = CalcMeshVolumeFromFile(mesh);
   }
   void ImplementGeometry(const MeshcatCone& cone, void*) final {
     volume_ = 1.0 / 3.0 * M_PI * cone.a() * cone.b() * cone.height();
