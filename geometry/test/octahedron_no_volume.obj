@@ -1,0 +1,21 @@
+# This describes an octahedron, but with half of the faces having a "bad
+# winding".  The result is that Meshlab, and our CalcEnclosedVolume method
+# returns a volume of zero.
+
+mtllib octahedron.mtl
+
+v  1.000000 -1.000000  0.000000
+v  1.000000  1.000000  0.000000
+v -1.000000 -1.000000  0.000000
+v -1.000000  1.000000  0.000000
+v  0.000000  0.000000  1.414213562373
+v  0.000000  0.000000 -1.414213562373
+usemtl OctahedronMaterial
+f 1 2 5
+f 1 3 5
+f 2 4 5
+f 3 4 5
+f 1 2 6
+f 1 3 6
+f 2 4 6
+f 3 4 6
