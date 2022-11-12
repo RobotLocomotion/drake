@@ -1336,7 +1336,7 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
       const double tol =
           (relaxed_result.get_solver_id() == solvers::GurobiSolver::id()) ? 1e-1
           : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id()) ? 1e-2
-          : 1e-6;
+          : 1e-5;
       EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0.5, tol);
     } else if (ii < 10) {
       EXPECT_LT(relaxed_result.GetSolution(edges[ii]->phi()), 0.5);
