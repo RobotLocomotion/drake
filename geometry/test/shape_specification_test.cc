@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -611,15 +612,37 @@ GTEST_TEST(ShapeTest, Volume) {
   EXPECT_NEAR(CalcVolume(Capsule(1.23, 2.4)),
               CalcVolume(Cylinder(1.23, 2.4)) + CalcVolume(Sphere(1.23)),
               1e-14);
-  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex("filepath", 1.0)),
-                              ".*does not support.*");
   EXPECT_NEAR(CalcVolume(Cylinder(1.3, 2.1)), M_PI * 1.3 * 1.3 * 2.1, 1e-14);
   EXPECT_NEAR(CalcVolume(Ellipsoid(1, 2, 3)), 8.0 * M_PI, 1e-14);
   EXPECT_EQ(CalcVolume(HalfSpace()), std::numeric_limits<double>::infinity());
-  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh("filepath", 1.0)),
-                              ".*does not support.*");
   EXPECT_NEAR(CalcVolume(MeshcatCone(4, 2, 3)), 8.0 * M_PI, 1e-14);
   EXPECT_NEAR(CalcVolume(Sphere(3)), 36.0 * M_PI, 1e-13);
+
+  const std::string cube_obj =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  EXPECT_NEAR(CalcVolume(Convex(cube_obj, 1.0)), 8.0, 1e-14);
+  EXPECT_NEAR(CalcVolume(Mesh(cube_obj, 1.0)), 8.0, 1e-14);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex("fakename.obj", 1.0)),
+                              "Cannot open file.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh("fakename.obj", 1.0)),
+                              "Cannot open file.*");
+
+  // We don't support .vtk files yet, but absolutely should.
+  const std::string mesh_vtk =
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk");
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex(mesh_vtk, 1.0)),
+                              ".*only supports .obj files.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh(mesh_vtk, 1.0)),
+                              ".*only supports .obj files.*");
+
+  // We don't support .stl files yet (and may not).
+  const std::string cube_stl =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.stl");
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex(cube_stl, 1.0)),
+                              ".*only supports .obj files.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh(cube_stl, 1.0)),
+                              ".*only supports .obj files.*");
 }
 
 }  // namespace
