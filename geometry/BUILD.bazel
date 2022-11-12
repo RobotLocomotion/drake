@@ -351,6 +351,8 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:nice_type_name",
+        "//geometry/proximity:meshing_utilities",
+        "//geometry/proximity:obj_to_surface_mesh",
         "//math:geometric_transform",
     ],
 )
@@ -600,6 +602,7 @@ filegroup(
         "test/non_convex_mesh.obj",
         "test/octahedron.mtl",
         "test/octahedron.obj",
+        "test/octahedron_no_volume.obj",
         "test/quad_cube.mtl",
         "test/quad_cube.obj",
     ],
@@ -613,6 +616,14 @@ filegroup(
         "test/one_negative_tetrahedron.vtk",
         "test/one_tetrahedron.vtk",
         "test/two_tetrahedra_with_field_variable.vtk",
+    ],
+)
+
+filegroup(
+    name = "test_stl_files",
+    testonly = 1,
+    srcs = [
+        "test/quad_cube.stl",
     ],
 )
 
@@ -785,8 +796,14 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "shape_specification_test",
+    data = [
+        ":test_obj_files",
+        ":test_stl_files",
+        ":test_vtk_files",
+    ],
     deps = [
         ":shape_specification",
+        "//common:find_resource",
         "//common/test_utilities",
     ],
 )
