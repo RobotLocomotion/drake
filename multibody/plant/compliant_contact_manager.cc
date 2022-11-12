@@ -631,7 +631,7 @@ void CompliantContactManager<T>::ExtractModelInfo() {
   sap_driver_ = std::make_unique<SapDriver<T>>(this);
 
   // Collect information from each PhysicalModel owned by the plant.
-  const std::vector<std::unique_ptr<multibody::internal::PhysicalModel<T>>>&
+  const std::vector<std::unique_ptr<multibody::PhysicalModel<T>>>&
       physical_models = this->plant().physical_models();
   for (const auto& model : physical_models) {
     std::visit(

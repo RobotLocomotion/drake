@@ -126,6 +126,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:identifier_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
@@ -321,6 +322,7 @@ drake_py_unittest(
     ],
     deps = [
         ":benchmarks_py",
+        ":fem_py",
         ":parsing_py",
         ":plant_py",
         ":tree_py",

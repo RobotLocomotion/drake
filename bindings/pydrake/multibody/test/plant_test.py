@@ -11,6 +11,9 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression, Variable
 from pydrake.lcm import DrakeLcm
 from pydrake.math import RigidTransform
+from pydrake.multibody.fem import (
+    DeformableBodyConfig_
+)
 from pydrake.multibody.tree import (
     BallRpyJoint_,
     Body_,
@@ -65,6 +68,7 @@ from pydrake.multibody.plant import (
     ContactResults_,
     ContactResultsToLcmSystem,
     CoulombFriction_,
+    DeformableModel,
     DiscreteContactSolver,
     ExternallyAppliedSpatialForce_,
     ExternallyAppliedSpatialForceMultiplexer_,
@@ -91,6 +95,7 @@ from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
     Box,
     GeometryId,
+    GeometryInstance,
     GeometrySet,
     HydroelasticContactRepresentation,
     Meshcat,
@@ -2515,3 +2520,37 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(plant.HasUniqueFreeBaseBody(model_instance))
         body = plant.GetUniqueFreeBaseBodyOrThrow(model_instance)
         self.assertEqual(body.index(), added_body.index())
+
+    def test_deformable_model(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
+        dut = DeformableModel(plant)
+        self.assertEqual(dut.num_bodies(), 0)
+        # Add a deformable body to the model.
+        deformable_body_config = DeformableBodyConfig_[float]()
+        id = dut.RegisterDeformableBody(
+            geometry_instance=GeometryInstance(
+                X_PG=RigidTransform_[float](),
+                shape=Sphere(1.),
+                name="sphere"),
+            config=deformable_body_config,
+            resolution_hint=1.0)
+        # Verify that a body has been added to the model.
+        self.assertEqual(dut.num_bodies(), 1)
+        self.assertIsInstance(dut.GetReferencePositions(id), np.ndarray)
+        # Add the model to the plant.
+        plant.AddPhysicalModel(dut)
+        plant.Finalize()
+
+        # Post-finalize operations.
+        self.assertIsInstance(
+            dut.vertex_positions_port(), OutputPort_[float])
+        builder.Connect(dut.vertex_positions_port(),
+                        scene_graph.get_source_configuration_port(
+                            plant.get_source_id()))
+        self.assertEqual(dut.GetDiscreteStateIndex(id), 1)
+
+        diagram = builder.Build()
+        # Ensure we can simulate this system.
+        simulator = Simulator_[float](diagram)
+        simulator.AdvanceTo(0.01)
