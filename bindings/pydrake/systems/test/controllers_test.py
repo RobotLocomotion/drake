@@ -60,8 +60,12 @@ class TestControllers(unittest.TestCase):
         options = DynamicProgrammingOptions()
         options.convergence_tol = 1.
         options.periodic_boundary_conditions = [
-            PeriodicBoundaryCondition(0, 0., 2.*math.pi)
+            DynamicProgrammingOptions.PeriodicBoundaryCondition(
+                state_index=0, low=0., high=2.*math.pi),
         ]
+        self.assertIs(
+            PeriodicBoundaryCondition,
+            DynamicProgrammingOptions.PeriodicBoundaryCondition)
         options.visualization_callback = callback
         options.input_port_index = InputPortSelection.kUseFirstInputIfItExists
         options.assume_non_continuous_states_are_fixed = False
