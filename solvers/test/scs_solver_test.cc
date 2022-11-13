@@ -179,6 +179,13 @@ TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
   }
 }
 
+TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
+  ScsSolver solver;
+  if (solver.is_available()) {
+    CheckSolution(solver, std::nullopt, 1E-5);
+  }
+}
+
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
@@ -234,6 +241,12 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   ScsSolver solver;
   SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, kTol);
 }
+
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
+  ScsSolver solver;
+  TestSocpDuplicatedVariable1(solver, std::nullopt, 1E-6);
+}
+
 
 TEST_P(QuadraticProgramTest, TestQP) {
   ScsSolver solver;
