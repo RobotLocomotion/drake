@@ -143,17 +143,28 @@ class InverseDynamicsController final
   }
 
   /**
-   * Returns the output port for computed control.
+   * Returns the output port the desired generalized forces.
    */
-  const OutputPort<T>& get_output_port_control() const final {
-    return this->get_output_port(output_port_index_control_);
+  const OutputPort<T>& get_output_port_generalized_forces() const final {
+    return this->get_output_port(output_port_index_generalized_forces_);
   }
 
   /**
-   * Returns a constant pointer to the MultibodyPlant used for control.
+   *  Returns a constant pointer to the MultibodyPlant used for control.
    */
+  const multibody::MultibodyPlant<T>* get_multibody_plant() const {
+    return multibody_plant_;
+  }
+
+  DRAKE_DEPRECATED(
+      "2023-03-01", "Please use get_output_port_generalized_forces() instead.")
+  const OutputPort<T>& get_output_port_control() const final {
+    return get_output_port_generalized_forces();
+  }
+
+  DRAKE_DEPRECATED("2023-03-01", "Please use get_multibody_plant() instead.")
   const multibody::MultibodyPlant<T>* get_multibody_plant_for_control() const {
-    return multibody_plant_for_control_;
+    return get_multibody_plant();
   }
 
  private:
@@ -161,13 +172,13 @@ class InverseDynamicsController final
              const VectorX<double>& kp, const VectorX<double>& ki,
              const VectorX<double>& kd);
 
-  const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
+  const multibody::MultibodyPlant<T>* multibody_plant_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
   InputPortIndex input_port_index_estimated_state_;
   InputPortIndex input_port_index_desired_state_;
   InputPortIndex input_port_index_desired_acceleration_;
-  OutputPortIndex output_port_index_control_;
+  OutputPortIndex output_port_index_generalized_forces_;
 };
 
 }  // namespace controllers
