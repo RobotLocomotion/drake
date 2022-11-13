@@ -18,6 +18,7 @@ from pydrake.systems.controllers import (
     FittedValueIteration,
     InverseDynamicsController,
     InverseDynamics,
+    JointStiffnessController,
     LinearQuadraticRegulator,
     LinearProgrammingApproximateDynamicProgramming,
     MakeFiniteHorizonLinearQuadraticRegulator,
@@ -99,6 +100,28 @@ class TestControllers(unittest.TestCase):
             state_samples, input_samples, timestep, options)
 
         self.assertAlmostEqual(J[0], 1., delta=1e-6)
+
+    def test_joint_stiffness_controller(self):
+        sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/"
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+
+        plant = MultibodyPlant(time_step=0.01)
+        Parser(plant).AddModelFromFile(sdf_path)
+        plant.WeldFrames(plant.world_frame(),
+                         plant.GetFrameByName("iiwa_link_0"))
+        plant.Finalize()
+
+        kp = np.ones((7,))
+        kd = 0.1*np.ones((7,))
+
+        controller = JointStiffnessController(plant=plant, kp=kp, kd=kd)
+        self.assertEqual(controller.get_input_port_estimated_state().size(),
+                         14)
+        self.assertEqual(controller.get_input_port_desired_state().size(), 14)
+        self.assertEqual(controller.get_output_port_generalized_force().size(),
+                         7)
+        self.assertIsInstance(controller.get_multibody_plant(), MultibodyPlant)
 
     def test_inverse_dynamics(self):
         sdf_path = FindResourceOrThrow(

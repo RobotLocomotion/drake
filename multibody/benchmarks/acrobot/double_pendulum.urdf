@@ -28,6 +28,11 @@
     <axis xyz="0 0 1"/>
     <dynamics damping="0.1"/>
   </joint>
+  <transmission type="SimpleTransmission" name="shaft1_trans">
+    <actuator name="shaft1" />
+    <joint name="shaft1" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
   <joint name="shaft2" type="continuous">
     <parent link="link1"/>
     <child link="link2"/>
@@ -35,6 +40,11 @@
     <axis xyz="0 0 1"/>
     <dynamics damping="0.1"/>
   </joint>
+  <transmission type="SimpleTransmission" name="shaft2_trans">
+    <actuator name="shaft2" />
+    <joint name="shaft2" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
   <frame link="link1" name="frame_on_link1" rpy="-1 0.1 0.2" xyz="0.8 -0.2 0.3"/>
   <frame link="link2" name="frame_on_link2" rpy="-1 0.1 0.2" xyz="0.8 -0.2 0.3"/>
   <!-- Frames located at the COM of each link. -->

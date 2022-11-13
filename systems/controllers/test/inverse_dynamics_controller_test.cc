@@ -148,12 +148,7 @@ GTEST_TEST(AdditionalInverseDynamicsTest, ScalarConversion) {
            ki = VectorXd::Constant(dim, 0.34),
            kd = VectorXd::Constant(dim, 0.56);
 
-  InverseDynamicsController<double> idc_without_ownership(*mbp, kp, ki, kd,
-                                                          true);
-  DRAKE_EXPECT_THROWS_MESSAGE(idc_without_ownership.ToAutoDiffXd(),
-                               ".*constructor which takes ownership.*");
-
-  InverseDynamicsController<double> idc(std::move(mbp), kp, ki, kd, true);
+  InverseDynamicsController<double> idc(*mbp, kp, ki, kd, true);
 
   // Test AutoDiffXd.
   auto idc_ad = System<double>::ToAutoDiffXd<Diagram>(idc);
@@ -174,6 +169,30 @@ GTEST_TEST(AdditionalInverseDynamicsTest, ScalarConversion) {
 
   // Test Expression.
   auto idc_sym = idc.ToSymbolic();
+  EXPECT_EQ(idc_sym->get_input_port(0).size(), num_states);
+
+  InverseDynamicsController<double> idc_with_ownership(std::move(mbp), kp, ki,
+                                                       kd, true);
+
+  // Test AutoDiffXd.
+  idc_ad = System<double>::ToAutoDiffXd<Diagram>(idc_with_ownership);
+  // Note: With the current scalar conversion support, we can get a
+  // unique_ptr<Diagram<T>> but not a unique_ptr<InverseDynamicsController<T>>.
+
+  // Check the multibody plant.
+  EXPECT_EQ(idc_ad->get_input_port(0).size(), num_states);
+  // Check the PID gains.
+  pid_ad = dynamic_cast<const PidController<AutoDiffXd>*>(
+      &idc_ad->GetSubsystemByName("pid"));
+  ASSERT_NE(pid_ad, nullptr);
+  EXPECT_TRUE(CompareMatrices(pid_ad->get_Kp_vector(), kp));
+  EXPECT_TRUE(CompareMatrices(pid_ad->get_Ki_vector(), ki));
+  EXPECT_TRUE(CompareMatrices(pid_ad->get_Kd_vector(), kd));
+  // Check has_reference_acceleration.
+  EXPECT_EQ(idc_ad->num_input_ports(), 3);
+
+  // Test Expression.
+  idc_sym = idc_with_ownership.ToSymbolic();
   EXPECT_EQ(idc_sym->get_input_port(0).size(), num_states);
 }
 

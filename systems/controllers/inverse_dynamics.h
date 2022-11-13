@@ -77,7 +77,6 @@ class InverseDynamics final : public LeafSystem<T> {
    * input port.
    * @pre The plant must be finalized (i.e., plant.is_finalized() must return
    * `true`).
-   * @pydrake_mkdoc_identifier{unowned_plant}
    */
   explicit InverseDynamics(const multibody::MultibodyPlant<T>* plant,
                            InverseDynamicsMode mode = kInverseDynamics);
@@ -86,7 +85,7 @@ class InverseDynamics final : public LeafSystem<T> {
    * Constructs the InverseDynamics system and takes the ownership of the
    * input `plant`.
    *
-   * @pydrake_mkdoc_identifier{owned_plant}
+   * @exclude_from_pydrake_mkdoc{This overload is not bound.}
    */
   explicit InverseDynamics(std::unique_ptr<multibody::MultibodyPlant<T>> plant,
                            InverseDynamicsMode mode = kInverseDynamics);
