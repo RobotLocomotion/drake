@@ -41,7 +41,7 @@ from pydrake.common.value import Value
 from pydrake.systems.drawing import plot_graphviz, plot_system_graphviz
 
 from anzu.common.cc import FindAnzuResourceOrThrow
-from drake_gym.drake_gym import DrakeGymEnv
+from pydrake.gym.drake_gym import DrakeGymEnv
 
 # Gym parameters.
 sim_time_step = 0.01
@@ -57,7 +57,7 @@ contact_solver = drake_contact_solvers[0]
 def AddAgent(plant):
     parser = Parser(plant)
     model_file = FindAnzuResourceOrThrow(
-        "drake_gym/models/cartpole_BSA.sdf")
+        "drake/bindings/pydrake/examples/gym/models/cartpole_BSA.sdf")
     agent = parser.AddModelFromFile(model_file)
     return agent
 

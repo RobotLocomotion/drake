@@ -35,8 +35,8 @@ from pydrake.all import (
     Variable,
 )
 
-from drake_gym.drake_gym import DrakeGymEnv
-from drake_gym.examples.scenario_helpers import (
+from pydrake.gym.drake_gym import DrakeGymEnv
+from pydrake.examples.gym.scenario_helpers import (
     AddShape,
     SetColor,
     SetTransparency,
@@ -51,7 +51,7 @@ def AddPlanarBinAndSimpleBox(plant,
                              height=0.3):
     parser = Parser(plant)
     sdf_location = FindResourceOrThrow(
-        "drake/drake_gym/models/planar_bin.sdf")
+        "drake/bindings/pydrake/examples/gym/models/planar_bin.sdf")
     bin = parser.AddModelFromFile(sdf_location)
     plant.WeldFrames(
         plant.world_frame(), plant.GetFrameByName("bin_base", bin),
