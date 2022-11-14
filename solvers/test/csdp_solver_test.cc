@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace solvers {
-namespace {
+namespace test {
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
   CsdpSolver solver;
   if (solver.available()) {
@@ -141,6 +141,18 @@ TEST_F(CsdpLinearProgram3, Solve) {
   }
 }
 
+TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver;
+    if (solver.is_available()) {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      CheckSolution(solver, solver_options);
+    }
+  }
+}
+
 TEST_F(TrivialSDP2, Solve) {
   for (auto method : GetRemoveFreeVariableMethods()) {
     CsdpSolver solver;
@@ -216,7 +228,19 @@ TEST_F(TrivialSOCP3, Solve) {
     }
   }
 }
-}  // namespace
+
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver;
+    if (solver.available()) {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
+                               static_cast<int>(method));
+      TestSocpDuplicatedVariable1(solver, solver_options, 1E-6);
+    }
+  }
+}
+}  // namespace test
 
 namespace test {
 TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
