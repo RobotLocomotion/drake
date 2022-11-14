@@ -107,16 +107,26 @@ bool StartsWith(const std::string_view str, const std::string_view prefix) {
 // relative_to_model_instance. If the body is a direct child of the model,
 // this simply returns the local name of the body. However, if the body is
 // a child of a nested model, the local name of the body is prefixed with the
-// scoped name of the nested model.
+// scoped name of the nested model. Furthermore, if the body is a child of a
+// model encapsulated inside the world, the local name of the body is prefixed
+// with the model name.
 std::string GetRelativeBodyName(
     const Body<double>& body,
     ModelInstanceIndex relative_to_model_instance,
     const MultibodyPlant<double>& plant) {
   const std::string& relative_to_model_absolute_name =
       plant.GetModelInstanceName(relative_to_model_instance);
+  // If the body is a child of a model encapsulated inside the world, we need
+  // to prefix the body name with the model name
+  if(relative_to_model_absolute_name == "WorldModelInstance"){
+    const std::string& model_absolute_name =
+        plant.GetModelInstanceName(body.model_instance());
+
+    return sdf::JoinName(model_absolute_name, body.name());
+  }
   // If the body is inside a nested model, we need to prefix the
   // name with the relative name of the nested model.
-  if (body.model_instance() != relative_to_model_instance) {
+  else if(body.model_instance() != relative_to_model_instance) {
     const std::string& nested_model_absolute_name =
         plant.GetModelInstanceName(body.model_instance());
     // The relative_to_model_absolute_name must be a prefix of the
@@ -1735,17 +1745,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     // TODO(eric.cousineau): Either support or explicitly prevent adding joints
     // via `//world/joint`, per this Bitbucket comment: https://bit.ly/2udQxhp
 
-    // std::set<sdf::JointType> joint_types;
-    for (uint64_t joint_index = 0; joint_index < world.JointCount();
-        ++joint_index) {
-      const sdf::Joint& joint = *world.JointByIndex(joint_index);
-      // const sdf::Model& model = *world.ModelByIndex(joint_index);
-      // const RigidTransformd X_WM;
-      AddJointFromSpecification(
-          workspace.diagnostic, {}, {}, joint, world_model_instance(),
-          workspace.plant, {});
-    }
-
     for (uint64_t model_index = 0; model_index < world.ModelCount();
         ++model_index) {
       // Get the model.
@@ -1766,6 +1765,18 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       AddFrameFromSpecification(
           workspace.diagnostic, frame, world_model_instance(),
           workspace.plant->world_frame(), workspace.plant);
+    }
+
+    // Add all the joints
+    std::set<sdf::JointType> joint_types;
+    for (uint64_t joint_index = 0; joint_index < world.JointCount();
+        ++joint_index) {
+      const sdf::Joint& joint = *world.JointByIndex(joint_index);
+      // const sdf::Model& model = *world.ModelByIndex(joint_index);
+      // const RigidTransformd X_WM;
+      AddJointFromSpecification(
+          workspace.diagnostic, {}, {}, joint, world_model_instance(),
+          workspace.plant, &joint_types);
     }
   }
 

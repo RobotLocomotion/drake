@@ -2585,14 +2585,44 @@ TEST_F(SdfParserTest, UnsupportedElements) {
   EXPECT_THAT(TakeError(), MatchesRegex(".*drake:QQQ_dynamic"));
 }
 
-// TODO: write test description
 TEST_F(SdfParserTest, WorldJoint){
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
       "world_joint_test.sdf");
   AddSceneGraph();
   AddModelsFromSdfFile(full_name);
+  plant_.Finalize();
 
+  ASSERT_TRUE(plant_.HasModelInstanceNamed("WorldModelInstance"));
+  ASSERT_TRUE(plant_.HasModelInstanceNamed("parent_model"));
+  ASSERT_TRUE(plant_.HasModelInstanceNamed("child_model"));
+  ASSERT_TRUE(plant_.HasFrameNamed("child_frame"));
+  ASSERT_TRUE(plant_.HasJointNamed("J1"));
+
+  EXPECT_EQ(plant_.num_joints(), 1);
+  EXPECT_EQ(plant_.num_model_instances(), 4);
+
+  ModelInstanceIndex parent_instance =
+      plant_.GetModelInstanceByName("parent_model");
+  ModelInstanceIndex child_instance =
+      plant_.GetModelInstanceByName("child_model");
+
+  EXPECT_TRUE(plant_.HasBodyNamed("L_P", parent_instance));
+  EXPECT_TRUE(plant_.HasBodyNamed("L_C", child_instance));
+
+  const Body<double>& parent_link =
+      plant_.GetBodyByName("L_P", parent_instance);
+  const Body<double>& child_link =
+      plant_.GetBodyByName("L_C", child_instance);
+  EXPECT_NE(parent_link.index(), child_link.index());
+  EXPECT_EQ(parent_link.model_instance(), parent_instance);
+  EXPECT_EQ(child_link.model_instance(), child_instance);
+
+  const Joint<double>& joint =
+      plant_.GetJointByName<Joint>("J1");
+  EXPECT_TRUE(joint.name() == "J1");
+  EXPECT_TRUE(joint.parent_body().name() == "L_P");
+  EXPECT_TRUE(joint.child_body().name() == "L_C");
 
 }
 

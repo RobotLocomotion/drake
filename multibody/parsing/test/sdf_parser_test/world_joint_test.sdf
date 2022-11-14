@@ -1,17 +1,21 @@
-<?xml version="1.0"?>
-<sdf version="1.8">
-  <world name='W'>
-    <model name='M1'>
-      <pose>0.1 0.2 0.0  0 0 0</pose>
-      <link name='L1'/>
+<?xml version="1.0" ?>
+<sdf version="1.10">
+  <world name="world_joint_child_frame">
+    <model name="parent_model">
+      <pose>0 0 1 0 0 0</pose>
+      <link name="L_P"/>
     </model>
-    <model name='M2'>
-      <pose>0.1 0.2 0.0  0 0 0</pose>
-      <link name='L2'/>
+    <model name="child_model">
+      <pose>0 0 10 0 0 0</pose>
+      <link name="L_C"/>
     </model>
-    <joint name='J1' type='fixed'>
-      <parent>M1::L1</parent>
-      <child>M2::L2</child>
+    <frame name="child_frame" attached_to="child_model">
+      <pose>0 1 0 0 0 0</pose>
+    </frame>
+    <joint name="J1" type="ball">
+      <pose>1 0 0 0 0 0</pose>
+      <parent>parent_model::L_P</parent>
+      <child>child_frame</child>
     </joint>
   </world>
 </sdf>
