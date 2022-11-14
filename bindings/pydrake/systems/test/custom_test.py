@@ -299,9 +299,13 @@ class TestCustom(unittest.TestCase):
                 self.called_reset = False
                 self.called_system_reset = False
                 # Ensure we have desired overloads.
-                self.DeclarePeriodicPublish(1.0)
-                self.DeclarePeriodicPublish(1.0, 0)
-                self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
+                self.DeclarePeriodicPublishNoHandler(1.0)
+                self.DeclarePeriodicPublishNoHandler(1.0, 0)
+                self.DeclarePeriodicPublishNoHandler(
+                    period_sec=1.0, offset_sec=0)
+                # Deprecated
+                with catch_drake_warnings(expected_count=1):
+                    self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0)
                 self.DeclareInitializationPublishEvent(
                     publish=self._on_initialize_publish)
                 self.DeclareInitializationDiscreteUpdateEvent(
@@ -312,8 +316,12 @@ class TestCustom(unittest.TestCase):
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
                         callback=self._on_initialize))
-                self.DeclarePeriodicDiscreteUpdate(
+                self.DeclarePeriodicDiscreteUpdateNoHandler(
                     period_sec=1.0, offset_sec=0.)
+                # Deprecated
+                with catch_drake_warnings(expected_count=1):
+                    self.DeclarePeriodicDiscreteUpdate(
+                        period_sec=1.0, offset_sec=0.)
                 self.DeclarePeriodicPublishEvent(
                     period_sec=1.0,
                     offset_sec=0,
@@ -544,8 +552,14 @@ class TestCustom(unittest.TestCase):
         # Test explicit calls.
         system = TrivialSystem()
         context = system.CreateDefaultContext()
-        system.Publish(context)
+        system.ForcedPublish(context=context)
         self.assertTrue(system.called_publish)
+        self.assertTrue(system.called_forced_publish)
+
+        # Deprecated
+        system.called_forced_publish = False
+        with catch_drake_warnings(expected_count=1):
+            system.Publish(context)
         self.assertTrue(system.called_forced_publish)
 
         context_update = context.Clone()
@@ -571,16 +585,32 @@ class TestCustom(unittest.TestCase):
         witnesses = system.GetWitnessFunctions(context)
         self.assertEqual(len(witnesses), 3)
 
-        system.CalcDiscreteVariableUpdates(
+        system.CalcForcedDiscreteVariableUpdate(
             context=context,
             discrete_state=context_update.get_mutable_discrete_state())
         self.assertTrue(system.called_discrete)
         self.assertTrue(system.called_forced_discrete)
 
-        system.CalcUnrestrictedUpdate(
+        # Deprecated
+        system.called_forced_discrete = False
+        with catch_drake_warnings(expected_count=1):
+            system.CalcDiscreteVariableUpdates(
+                context=context,
+                discrete_state=context_update.get_mutable_discrete_state())
+        self.assertTrue(system.called_forced_discrete)
+
+        system.CalcForcedUnrestrictedUpdate(
             context=context,
             state=context_update.get_mutable_state()
         )
+        self.assertTrue(system.called_forced_unrestricted)
+
+        # Deprecated
+        system.called_forced_unrestricted = False
+        with catch_drake_warnings(expected_count=1):
+            system.CalcUnrestrictedUpdate(
+                context=context,
+                state=context_update.get_mutable_state())
         self.assertTrue(system.called_forced_unrestricted)
 
         # Test per-step, periodic, and witness call backs

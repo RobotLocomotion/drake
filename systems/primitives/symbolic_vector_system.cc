@@ -130,7 +130,7 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
       this->DeclareContinuousState(state_vars_.size());
     } else {
       this->DeclareDiscreteState(state_vars_.size());
-      this->DeclarePeriodicDiscreteUpdate(time_period_, 0.0);
+      this->DeclarePeriodicDiscreteUpdateNoHandler(time_period_, 0.0);
     }
   }
   if (parameter_vars_.size() > 0) {

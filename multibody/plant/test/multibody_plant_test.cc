@@ -495,7 +495,8 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
       new_discrete_state->get_vector();
   EXPECT_EQ(new_discrete_state_vector.size(), 0);
   DRAKE_EXPECT_NO_THROW(
-      plant.CalcDiscreteVariableUpdates(*context, new_discrete_state.get()));
+      plant.CalcForcedDiscreteVariableUpdate(*context,
+                                             new_discrete_state.get()));
 }
 
 GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
@@ -845,7 +846,7 @@ class AcrobotPlantTests : public ::testing::Test {
 
     diagram_->CalcTimeDerivatives(*context_, derivatives_.get());
     auto updates = discrete_plant_->AllocateDiscreteVariables();
-    discrete_plant_->CalcDiscreteVariableUpdates(
+    discrete_plant_->CalcForcedDiscreteVariableUpdate(
         *discrete_context_, updates.get());
 
     // Copies to plain Eigen vectors to verify the math.

@@ -113,7 +113,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   dut.Initialize(0, Eigen::VectorXd::Zero(kNumJoints),
                  &context->get_mutable_state());
 
-  dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
+  dut.UpdatePlan(context.get());
 
   // Test we're running the plan through time by watching the
   // positions, velocities, and acceleration change.
@@ -152,7 +152,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
 
   for (const TrajectoryTestCase& kase : cases) {
     context->SetTime(kase.time);
-    dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
+    dut.UpdatePlan(context.get());
     dut.CalcOutput(*context, output.get());
     const double position =
         output->get_vector_data(dut.get_state_output_port().get_index())
@@ -178,7 +178,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
       interp_type == InterpolatorType::ZeroOrderHold ||
       interp_type == InterpolatorType::Pchip) {
     context->SetTime(t.back() + 0.01);
-    dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
+    dut.UpdatePlan(context.get());
     dut.CalcOutput(*context, output.get());
     const double velocity =
         output->get_vector_data(dut.get_state_output_port().get_index())
@@ -195,7 +195,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   // Check that sending an empty plan causes us to continue to output
   // the same commanded position.
   context->SetTime(1);
-  dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
+  dut.UpdatePlan(context.get());
   dut.CalcOutput(*context, output.get());
   double position =
       output->get_vector_data(dut.get_state_output_port().get_index())
@@ -206,7 +206,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   plan.num_states = 0;
   plan.plan.clear();
   dut.get_plan_input_port().FixValue(context.get(), plan);
-  dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
+  dut.UpdatePlan(context.get());
   dut.CalcOutput(*context, output.get());
   position = output->get_vector_data(
       dut.get_state_output_port().get_index())->GetAtIndex(0);

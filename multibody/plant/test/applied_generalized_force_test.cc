@@ -135,7 +135,8 @@ TEST_P(MultibodyPlantGeneralizedAppliedForceTest,
     auto new_discrete_state = diagram().AllocateDiscreteVariables();
     const VectorBase<double>& new_discrete_state_vector =
         new_discrete_state->get_vector();
-    diagram().CalcDiscreteVariableUpdates(context(), new_discrete_state.get());
+    diagram().CalcForcedDiscreteVariableUpdate(context(),
+                                               new_discrete_state.get());
 
     // Velocities start immediately after positions in the discrete state
     // vector.

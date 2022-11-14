@@ -41,7 +41,12 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
       this->DeclareContinuousState(num_states_);
     } else {
       this->DeclareDiscreteState(num_states_);
-      this->DeclarePeriodicDiscreteUpdate(time_period_, 0.0);
+      this->DeclarePeriodicDiscreteUpdateEvent(
+          time_period_, 0.0, &TimeVaryingAffineSystem<T>::CalcDiscreteUpdate);
+
+      // Allow a forced update to trigger the same handler.
+      this->DeclareForcedDiscreteUpdateEvent(
+          &TimeVaryingAffineSystem<T>::CalcDiscreteUpdate);
     }
   }
 
@@ -159,12 +164,12 @@ void TimeVaryingAffineSystem<T>::DoCalcTimeDerivatives(
   derivatives->SetFromVector(xdot);
 }
 
+// This is the default implementation; may be overridden in derived classes.
 template <typename T>
-void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
-    const drake::systems::Context<T>& context,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
-    drake::systems::DiscreteValues<T>* updates) const {
-  if (num_states_ == 0 || time_period_ == 0.0) return;
+EventStatus TimeVaryingAffineSystem<T>::CalcDiscreteUpdate(
+    const Context<T>& context, DiscreteValues<T>* updates) const {
+  if (num_states_ == 0 || time_period_ == 0.0)
+    return EventStatus::DidNothing();
 
   const T t = context.get_time();
 
@@ -188,6 +193,7 @@ void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
     xn += Bt * u;
   }
   updates->set_value(xn);
+  return EventStatus::Succeeded();
 }
 
 template <typename T>
@@ -379,12 +385,12 @@ void AffineSystem<T>::DoCalcTimeDerivatives(
   derivatives->SetFromVector(xdot);
 }
 
+// Overrides the base class default event handler with a simpler one.
 template <typename T>
-void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
-    const drake::systems::Context<T>& context,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
-    drake::systems::DiscreteValues<T>* updates) const {
-  if (this->num_states() == 0 || this->time_period() == 0.0) return;
+EventStatus AffineSystem<T>::CalcDiscreteUpdate(
+    const Context<T>& context, DiscreteValues<T>* updates) const {
+  if (this->num_states() == 0 || this->time_period() == 0.0)
+    return EventStatus::DidNothing();
 
   const auto& x = context.get_discrete_state(0).get_value();
 
@@ -396,6 +402,7 @@ void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
     xnext += B_ * u;
   }
   updates->set_value(xnext);
+  return EventStatus::Succeeded();
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((

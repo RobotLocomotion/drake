@@ -269,7 +269,7 @@ GTEST_TEST(ManipulationStationTest, CheckDynamics) {
                   .isZero());
 
   auto next_state = station.AllocateDiscreteVariables();
-  station.CalcDiscreteVariableUpdates(*context, next_state.get());
+  station.CalcForcedDiscreteVariableUpdate(*context, next_state.get());
 
   // Check that vdot ≈ 0 by checking that next velocity ≈ velocity.
   const auto& base_joint =

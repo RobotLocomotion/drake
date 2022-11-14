@@ -82,7 +82,7 @@ namespace systems {
  * <pre>
  *   sys.CalcUnrestrictedUpdate(context,
  *       all_events.get_unrestricted_update_events(), state);
- *   sys.CalcDiscreteVariableUpdates(context,
+ *   sys.CalcDiscreteVariableUpdate(context,
  *       all_events.get_discrete_update_events(), discrete_state);
  *   sys.Publish(context, all_events.get_publish_events())
  * </pre>

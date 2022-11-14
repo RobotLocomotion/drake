@@ -101,7 +101,7 @@ TEST_P(TrajectoryLinearSystemTest, Derivatives) {
       EXPECT_TRUE(CompareMatrices(
           A * x + B * u, derivatives_->get_vector().CopyToVector(), tol));
     } else {
-      dut_->CalcDiscreteVariableUpdates(*context_, updates_.get());
+      updates_->SetFrom(dut_->EvalUniquePeriodicDiscreteUpdate(*context_));
       EXPECT_TRUE(CompareMatrices(A * x + B * u,
                                   updates_->get_vector(0).CopyToVector(), tol));
     }

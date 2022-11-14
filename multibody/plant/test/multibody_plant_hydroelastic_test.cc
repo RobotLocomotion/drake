@@ -206,7 +206,7 @@ class HydroelasticModelTests : public ::testing::Test {
     // Set initial condition.
     const RigidTransformd X_WB(Vector3d(0.0, 0.0, kSphereRadius));
     plant_->SetFreeBodyPose(&plant_context, *body_, X_WB);
-    diagram_->Publish(diagram_context);
+    diagram_->ForcedPublish(diagram_context);
 
     // Run simulation for long enough to reach the steady state.
     simulator.AdvanceTo(0.5);
