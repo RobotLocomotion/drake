@@ -1,24 +1,5 @@
 # -*- yaml -*-
 
-# This portion of the file contains settings that are local to the
-# //bindings/... code, rather than all of Drake.
-
-# When a function signature's parameters or a function call's arguments need to
-# wrap onto another line, indent by four spaces -- do not whitespace castle all
-# the way over to the open-paren.
-AlignAfterOpenBracket: DontAlign
-
-# Try to fit onto a single line:
-# - functions with an empty body, or
-# - member functions defined inside a class;
-# everything else (e.g., free functions) are forced onto multiple lines.
-AllowShortFunctionsOnASingleLine: Inline
-
-# -----------------------------------------------------------------------------
-# The contents of the root dotfile should be exactly copied below this point.
-# -----------------------------------------------------------------------------
-# -*- yaml -*-
-
 # This file determines clang-format's style settings; for details, refer to
 # http://clang.llvm.org/docs/ClangFormatStyleOptions.html
 
@@ -63,3 +44,18 @@ IncludeCategories:
   # Other libraries' h files (with quotes).
   - Regex:    '^"'
     Priority: 40
+
+# -----------------------------------------------------------------------------
+# Hereafter are the pydrake-specific override settings.
+# -----------------------------------------------------------------------------
+
+# When a function signature's parameters or a function call's arguments need to
+# wrap onto another line, indent by four spaces -- do not whitespace castle all
+# the way over to the open-paren.
+AlignAfterOpenBracket: DontAlign
+
+# Try to fit onto a single line:
+# - functions with an empty body, or
+# - member functions defined inside a class;
+# everything else (e.g., free functions) are forced onto multiple lines.
+AllowShortFunctionsOnASingleLine: Inline

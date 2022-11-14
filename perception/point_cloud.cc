@@ -1,11 +1,15 @@
 #include "drake/perception/point_cloud.h"
 
 #include <algorithm>
+#include <atomic>
 #include <functional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include <common_robotics_utilities/dynamic_spatial_hashed_voxel_grid.hpp>
+#include <common_robotics_utilities/openmp_helpers.hpp>
+#include <common_robotics_utilities/voxel_grid.hpp>
 #include <drake_vendor/nanoflann.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -16,6 +20,11 @@
 
 using Eigen::Map;
 using Eigen::NoChange;
+using common_robotics_utilities::openmp_helpers::GetNumOmpThreads;
+using common_robotics_utilities::voxel_grid::DSHVGSetType;
+using common_robotics_utilities::voxel_grid::DynamicSpatialHashedVoxelGrid;
+using common_robotics_utilities::voxel_grid::GridIndex;
+using common_robotics_utilities::voxel_grid::GridSizes;
 
 namespace drake {
 namespace perception {
@@ -409,58 +418,48 @@ PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
   return new_cloud;
 }
 
-namespace {
-
-// Hash function for Eigen::Vector3i
-// implemented as in boost::hash_combine.
-struct Vector3iHash {
-  std::size_t operator()(const Eigen::Vector3i& index) const {
-    size_t hash = 0;
-    const auto add_to_hash = [&hash] (int value) {
-      hash ^= std::hash<int>{}(value) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-    };
-    add_to_hash(index.x());
-    add_to_hash(index.y());
-    add_to_hash(index.z());
-    return hash;
-  }
-};
-
-}  // namespace
-
-PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
-  // This is a simple, narrow, no-frills implementation of the
-  // voxel_down_sample algorithm in Open3d and/or the down-sampling by a
-  // VoxelGrid filter in PCL.
+PointCloud PointCloud::VoxelizedDownSample(
+    const double voxel_size, const bool parallelize) const {
   DRAKE_THROW_UNLESS(has_xyzs());
   DRAKE_THROW_UNLESS(voxel_size > 0);
-  Eigen::Vector3f lower_xyz =
-      Eigen::Vector3f::Constant(std::numeric_limits<float>::infinity());
+
+  // Create a dynamic-spatial-hashed voxel grid (DSHVG) to bin points. While a
+  // DSHVG usually has each dynamic "chunk" contain multiple voxels, by setting
+  // the chunk size to (voxel_size, 1, 1, 1) each chunk contains a single voxel
+  // and the whole DSHVG behaves as a sparse voxel grid.
+  const GridSizes chunk_sizes(voxel_size, INT64_C(1), INT64_C(1), INT64_C(1));
+  const std::vector<int> default_chunk_value;
+  // By providing an initial estimated number of chunks, we reduce reallocation
+  // and rehashing in the DSHVG.
+  const size_t num_expected_chunks = static_cast<size_t>(size_ / 16);
+  DynamicSpatialHashedVoxelGrid<std::vector<int>> dynamic_voxel_grid(
+      chunk_sizes, default_chunk_value, num_expected_chunks);
+
+  // Add points into the voxel grid.
   for (int i = 0; i < size_; ++i) {
     if (xyz(i).array().isFinite().all()) {
-      lower_xyz[0] = std::min(xyz(i)[0], lower_xyz[0]);
-      lower_xyz[1] = std::min(xyz(i)[1], lower_xyz[1]);
-      lower_xyz[2] = std::min(xyz(i)[2], lower_xyz[2]);
+      auto chunk_query =
+          dynamic_voxel_grid.GetLocationMutable3d(xyz(i).cast<double>());
+      if (chunk_query) {
+        // If the containing chunk has already been allocated, add the current
+        // point index directly.
+        chunk_query.Value().emplace_back(i);
+      } else {
+        // If the containing chunk hasn't already been allocated, create a new
+        // chunk containing the current point index.
+        dynamic_voxel_grid.SetLocation3d(
+            xyz(i).cast<double>(), DSHVGSetType::SET_CHUNK, {i});
+      }
     }
   }
 
-  // Create a map from voxel coordinate to a set of points.
-  std::unordered_map<Eigen::Vector3i, std::vector<int>, Vector3iHash>
-      voxel_map;
-  for (int i = 0; i < size_; ++i) {
-    if (xyz(i).array().isFinite().all()) {
-      voxel_map[((xyz(i) - lower_xyz) / voxel_size).cast<int>()].emplace_back(
-          i);
-    }
-  }
-  PointCloud down_sampled(voxel_map.size(), fields());
+  // Initialize downsampled cloud.
+  PointCloud down_sampled(
+      dynamic_voxel_grid.GetImmutableInternalChunks().size(), fields());
 
-  // Iterate through the map populating the elements of the down_sampled cloud.
-  // TODO(russt): Consider using OpenMP. Sample code from calderpg-tri provided
-  // during review of #17885.
-  int index_in_down_sampled = 0;
-  for (const auto& [coordinates, indices_in_this] : voxel_map) {
-    unused(coordinates);
+  // Helper lambda to process a single voxel cell.
+  const auto process_voxel = [this, &down_sampled](
+      int index_in_down_sampled, const std::vector<int>& indices_in_this) {
     // Use doubles instead of floats for accumulators to avoid round-off errors.
     Eigen::Vector3d xyz{Eigen::Vector3d::Zero()};
     Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
@@ -500,13 +499,58 @@ PointCloud PointCloud::VoxelizedDownSample(double voxel_size) const {
       down_sampled.mutable_descriptors().col(index_in_down_sampled) =
           (descriptor / num_descriptors).cast<D>();
     }
-    ++index_in_down_sampled;
+  };
+
+  // Since the parallel form imposes additional overhead, only use it when
+  // multiple OpenMP threads are available.
+  const bool can_execute_in_parallel = GetNumOmpThreads() > 1;
+  const bool operate_in_parallel = parallelize && can_execute_in_parallel;
+
+  // Since we specify chunks contain a single voxel, a chunk's lone voxel can be
+  // retrieved with index (0, 0, 0).
+  const GridIndex kSingleVoxel(0, 0, 0);
+
+  // Populate the elements of the down_sampled cloud.
+  if (operate_in_parallel) {
+    // Flatten voxel cells to allow parallel processing.
+    std::vector<const std::vector<int>*> voxel_indices;
+    voxel_indices.reserve(
+        dynamic_voxel_grid.GetImmutableInternalChunks().size());
+    for (const auto& [chunk_region, chunk] :
+            dynamic_voxel_grid.GetImmutableInternalChunks()) {
+      unused(chunk_region);
+      const std::vector<int>& indices_in_this =
+          chunk.GetIndexImmutable(kSingleVoxel).Value();
+      voxel_indices.emplace_back(&indices_in_this);
+    }
+
+    // Process voxel cells in parallel.
+#if defined(_OPENMP)
+#pragma omp parallel for
+#endif
+    for (int index_in_down_sampled = 0;
+         index_in_down_sampled < static_cast<int>(voxel_indices.size());
+         ++index_in_down_sampled) {
+      process_voxel(
+          index_in_down_sampled, *voxel_indices[index_in_down_sampled]);
+    }
+  } else {
+    int index_in_down_sampled = 0;
+    for (const auto& [chunk_region, chunk] :
+            dynamic_voxel_grid.GetImmutableInternalChunks()) {
+      unused(chunk_region);
+      const std::vector<int>& indices_in_this =
+          chunk.GetIndexImmutable(kSingleVoxel).Value();
+      process_voxel(index_in_down_sampled, indices_in_this);
+      ++index_in_down_sampled;
+    }
   }
 
   return down_sampled;
 }
 
-bool PointCloud::EstimateNormals(double radius, int num_closest) {
+bool PointCloud::EstimateNormals(
+    const double radius, const int num_closest, const bool parallelize) {
   DRAKE_DEMAND(radius > 0);
   DRAKE_DEMAND(num_closest >= 3);
   DRAKE_THROW_UNLESS(has_xyzs());
@@ -524,17 +568,18 @@ bool PointCloud::EstimateNormals(double radius, int num_closest) {
       kd_tree(3, data);
 
   // Iterate through all points and compute their normals.
-  // TODO(russt): Make an OpenMP implementation of this.
-  VectorX<Eigen::Index> indices(num_closest);
-  Eigen::VectorXf distances(num_closest);
-  Eigen::Vector3d mean;
-  Eigen::Matrix3d covariance;
+  std::atomic<bool> all_points_have_at_least_three_neighbors(true);
 
-  bool all_points_have_at_least_three_neighbors = true;
+  CRU_OMP_PARALLEL_FOR_IF(parallelize)
   for (int i = 0; i < size_; ++i) {
-    // With nanoflann, I can either search for the num_closest and
-    // take the ones closer than radius, or search for all points closer than
-    // radius and keep the num_closest.
+    VectorX<Eigen::Index> indices(num_closest);
+    Eigen::VectorXf distances(num_closest);
+
+    // nanoflann allows two types of queries:
+    // 1. search for the num_closest points, and then keep those within radius
+    // 2. search for points within radius, and then keep the num_closest
+    // for dense clouds where the number of points within radius would be high,
+    // approach (1) is considerably faster.
     const int num_neighbors = kd_tree.index->knnSearch(
         xyz(i).data(), num_closest, indices.data(), distances.data());
 
@@ -548,31 +593,34 @@ bool PointCloud::EstimateNormals(double radius, int num_closest) {
     }
 
     // Compute the covariance matrix.
-    {
-      int count = 0;
-      mean.setZero();
-      for (int j = 0; j < num_neighbors; ++j) {
-        if (distances[j] <= squared_radius) {
-          ++count;
-          mean += xyz(indices[j]).cast<double>();
-        }
-      }
-      if (count < 3) {
-        all_points_have_at_least_three_neighbors = false;
-      }
-      if (count < 2) {
-        mutable_normal(i) = Eigen::Vector3f::Constant(kNaN);
-        continue;
-      }
+    int count = 0;
+    Eigen::Vector3d mean = Eigen::Vector3d::Zero();
 
-      mean /= count;
-      covariance.setZero();
-      for (int j = 0; j < num_neighbors; ++j) {
-        if (distances[j] <= squared_radius) {
-          const Eigen::VectorXd x_minus_mean =
-              xyz(indices[j]).cast<double>() - mean;
-          covariance += x_minus_mean * x_minus_mean.transpose();
-        }
+    for (int j = 0; j < num_neighbors; ++j) {
+      if (distances[j] <= squared_radius) {
+        ++count;
+        mean += xyz(indices[j]).cast<double>();
+      }
+    }
+
+    if (count < 3) {
+      all_points_have_at_least_three_neighbors = false;
+    }
+
+    if (count < 2) {
+      mutable_normal(i) = Eigen::Vector3f::Constant(kNaN);
+      continue;
+    }
+
+    mean /= count;
+
+    Eigen::Matrix3d covariance = Eigen::Matrix3d::Zero();
+
+    for (int j = 0; j < num_neighbors; ++j) {
+      if (distances[j] <= squared_radius) {
+        const Eigen::VectorXd x_minus_mean =
+            xyz(indices[j]).cast<double>() - mean;
+        covariance += x_minus_mean * x_minus_mean.transpose();
       }
     }
 
@@ -582,7 +630,7 @@ bool PointCloud::EstimateNormals(double radius, int num_closest) {
     solver.computeDirect(covariance, Eigen::ComputeEigenvectors);
     mutable_normal(i) = solver.eigenvectors().col(0).cast<float>();
   }
-  return all_points_have_at_least_three_neighbors;
+  return all_points_have_at_least_three_neighbors.load();
 }
 
 }  // namespace perception

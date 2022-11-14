@@ -99,6 +99,7 @@ drake_cc_library(
         "multibody_plant.cc",
         "physical_model.cc",
         "sap_driver.cc",
+        "tamsi_driver.cc",
     ],
     hdrs = [
         "compliant_contact_manager.h",
@@ -112,6 +113,7 @@ drake_cc_library(
         "physical_model.h",
         "sap_driver.h",
         "scalar_convertible_component.h",
+        "tamsi_driver.h",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -488,6 +490,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "tamsi_driver_test",
+    data = ["test/square_surface.obj"],
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
     name = "hydroelastic_traction_test",
     data = [
         "test/block_on_halfspace.sdf",
@@ -587,6 +599,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_deprecated_test",
+    data = [
+        "test/split_pendulum.sdf",
+    ],
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_introspection_test",
     data = [
         "//examples/atlas:models",
@@ -674,6 +699,8 @@ drake_cc_googletest(
         ":kuka_iiwa_model_tests",
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:limit_malloc",
         "//systems/primitives:linear_system",
     ],

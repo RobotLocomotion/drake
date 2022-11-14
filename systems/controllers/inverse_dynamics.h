@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -13,38 +14,48 @@ namespace controllers {
 
 /**
  * Solves inverse dynamics with no consideration for joint actuator force
- * limits. The system also provides a pure gravity compensation mode. This
- * system provides a BasicVector input port for the state `(q, v)`, where `q`
- * is the generalized position and `v` is the generalized velocity, and a
- * BasicVector output port for the computed generalized forces. There is an
- * additional BasicVector input port for desired acceleration when configured
- * to be **not** in pure gravity compensation mode.
+ * limits.
+ *
+ * Computes the generalized force `τ_id` that needs to be applied so that the
+ * multibody system undergoes a desired acceleration `vd_d`. That is, `τ_id`
+ * is the result of an inverse dynamics computation according to:
+ * <pre>
+ *   τ_id = M(q)vd_d + C(q, v)v - τ_g(q) - τ_app
+ * </pre>
+ * where `M(q)` is the mass matrix, `C(q, v)v` is the bias term containing
+ * Coriolis and gyroscopic effects, `τ_g(q)` is the vector of generalized
+ * forces due to gravity and `τ_app` contains applied forces from force
+ * elements added to the multibody model (this can include damping, springs,
+ * etc. See MultibodyPlant::CalcForceElementsContribution()).
+ *
+ * The system also provides a pure gravity compensation mode via an option in
+ * the constructor. In this case, the output is simply
+ * <pre>
+ *  τ_id = -τ_g(q).
+ * </pre>
  *
  * InverseDynamicsController uses a PID controller to generate desired
- * acceleration and uses this class to compute generalized forces. This class
- * should be used directly if desired acceleration is computed differently.
- *
- * @see Constructors for descriptions of how (and which) forces are incorporated
- *      into the inverse dynamics computation.
+ * acceleration and uses this class to compute generalized forces. Use this
+ * class directly if desired acceleration is computed differently.
  *
  * @system
  * name: InverseDynamics
  * input_ports:
- * - u0
- * - <span style="color:gray">u1</span>
+ * - u0 (estimated state)
+ * - <span style="color:gray">u1</span> (desired accelerations)
  * output_ports:
- * - y0
+ * - y0 (force)
  * @endsystem
  *
- * Port `u0` accepts system state; port `y0` emits generalized forces. Port
- * `u1` is only present when the `mode` at construction is not
+ * Port `u0` accepts system estimated state; port `y0` emits generalized
+ * forces. Port `u1` is only present when the `mode` at construction is not
  * `kGravityCompensation`. When present, `u1` accepts desired accelerations.
  *
+ * @tparam_default_scalar
  * @ingroup control_systems
- * @tparam_double_only
  */
 template <typename T>
-class InverseDynamics : public LeafSystem<T> {
+class InverseDynamics final : public LeafSystem<T> {
  public:
   enum InverseDynamicsMode {
     /// Full inverse computation mode.
@@ -56,23 +67,8 @@ class InverseDynamics : public LeafSystem<T> {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics)
 
-  // @TODO(edrumwri) Find a cleaner way of approaching the consideration of
-  // external forces. I like to imagine a dichotomy of approaches for
-  // construction of this system: incorporating *no* external forces or all
-  // forces on the plant. The current approach does neither: it only pledges to
-  // account for exactly the forces that MultibodyPlant does.
   /**
-   * Computes the generalized force `tau_id` that needs to be applied so that
-   * the multibody system undergoes a desired acceleration `vd_d`. That is,
-   * `tau_id` is the result of an inverse dynamics computation according to:
-   * <pre>
-   *   tau_id = M(q)vd_d + C(q, v)v - tau_g(q) - tau_app
-   * </pre>
-   * where `M(q)` is the mass matrix, `C(q, v)v` is the bias term containing
-   * Coriolis and gyroscopic effects, `tau_g(q)` is the vector of generalized
-   * forces due to gravity and `tau_app` contains applied forces from force
-   * elements added to the multibody model (this can include damping, springs,
-   * etc. See MultibodyPlant::CalcForceElementsContribution()).
+   * Constructs the InverseDynamics system.
    *
    * @param plant Pointer to the multibody plant model. The life span of @p
    * plant must be longer than that of this instance.
@@ -82,8 +78,21 @@ class InverseDynamics : public LeafSystem<T> {
    * @pre The plant must be finalized (i.e., plant.is_finalized() must return
    * `true`).
    */
-  InverseDynamics(const multibody::MultibodyPlant<T>* plant,
-                  InverseDynamicsMode mode);
+  explicit InverseDynamics(const multibody::MultibodyPlant<T>* plant,
+                           InverseDynamicsMode mode = kInverseDynamics);
+
+  /**
+   * Constructs the InverseDynamics system and takes the ownership of the
+   * input `plant`.
+   *
+   * @exclude_from_pydrake_mkdoc{This overload is not bound.}
+   */
+  explicit InverseDynamics(std::unique_ptr<multibody::MultibodyPlant<T>> plant,
+                           InverseDynamicsMode mode = kInverseDynamics);
+
+  // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit InverseDynamics(const InverseDynamics<U>& other);
 
   ~InverseDynamics() override;
 
@@ -116,6 +125,13 @@ class InverseDynamics : public LeafSystem<T> {
   }
 
  private:
+  // Other constructors delegate to this private constructor.
+  InverseDynamics(std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
+                  const multibody::MultibodyPlant<T>* plant,
+                  InverseDynamicsMode mode);
+
+  template <typename> friend class InverseDynamics;
+
   // This is the calculator method for the output port.
   void CalcOutputForce(const Context<T>& context,
                        BasicVector<T>* force) const;
@@ -125,7 +141,8 @@ class InverseDynamics : public LeafSystem<T> {
   void CalcMultibodyForces(const Context<T>&,
                            multibody::MultibodyForces<T>*) const;
 
-  const multibody::MultibodyPlant<T>* const multibody_plant_;
+  const std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant_{};
+  const multibody::MultibodyPlant<T>* const plant_;
 
   // Mode dictates whether to do inverse dynamics or just gravity compensation.
   const InverseDynamicsMode mode_;
@@ -140,9 +157,12 @@ class InverseDynamics : public LeafSystem<T> {
   // Note: unused in gravity compensation mode.
   drake::systems::CacheIndex external_forces_cache_index_;
 
-  drake::systems::CacheIndex multibody_plant_context_cache_index_;
+  drake::systems::CacheIndex plant_context_cache_index_;
 };
 
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::controllers::InverseDynamics)

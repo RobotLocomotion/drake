@@ -247,11 +247,11 @@ The client accepts the following image types from a server render:
     - An RGB (3 channel) unsigned char PNG image.
     - An RGBA (4 channel) unsigned char PNG image.
 - When `image_type="depth"`, the server may return:
-    - A 32 bit float single channel TIFF image.  The client will interpret this
+    - A 32-bit float single channel TIFF image.  The client will interpret this
       rendering as units of meters.
-    - TODO(zachfang): A single channel unsigned short PNG image.  The client
-      will interpret this rendering as units of millimeters and will convert to
-      meters.
+    - A 16-bit integer single channel TIFF or PNG image.  The client will
+      interpret this rendering as units of millimeters.  Pixels at their maximum
+      value (2¹⁶-1) will be interpreted as kTooFar (i.e., infinity).
 - When `image_type="label"`, the server may return:
     - A single channel unsigned short PNG image.
 

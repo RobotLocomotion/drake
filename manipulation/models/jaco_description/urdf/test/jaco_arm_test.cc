@@ -36,7 +36,7 @@ TEST_P(JacoArmParamsTest, HasExpected) {
 
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
-  parser.AddModelFromFile(urdf);
+  parser.AddModels(urdf);
 
   EXPECT_EQ(plant.num_actuators(), param.num_actuators);
   EXPECT_EQ(plant.num_bodies(), param.num_bodies);

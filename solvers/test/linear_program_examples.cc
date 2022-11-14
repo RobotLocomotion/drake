@@ -7,6 +7,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
@@ -22,6 +23,8 @@ using drake::symbolic::Expression;
 namespace drake {
 namespace solvers {
 namespace test {
+const double kInf = std::numeric_limits<double>::infinity();
+
 LinearFeasibilityProgram::LinearFeasibilityProgram(
     ConstraintForm constraint_form)
     : OptimizationProgram(CostForm::kSymbolic, constraint_form), x_() {
@@ -449,6 +452,50 @@ UnboundedLinearProgramTest1::UnboundedLinearProgramTest1()
   prog_->AddBoundingBoxConstraint(0, 1, VectorDecisionVariable<2>(x(0), x(2)));
 }
 
+DuplicatedVariableLinearProgramTest1::DuplicatedVariableLinearProgramTest1()
+    : prog_{std::make_unique<MathematicalProgram>()} {
+  x_ = prog_->NewContinuousVariables<3>();
+  // Intentionally add the cost with duplicated entries x_(1).
+  prog_->AddLinearCost(Eigen::Vector4d(1, 2, 1, 4),
+                       Vector4<symbolic::Variable>(x_(0), x_(1), x_(1), x_(2)));
+  prog_->AddLinearCost(Eigen::Vector2d(2, -2), 3,
+                       Vector2<symbolic::Variable>(x_(0), x_(0)));
+  prog_->AddLinearEqualityConstraint(
+      Eigen::RowVector3d(2, 2, -1), Vector1d(1),
+      Vector3<symbolic::Variable>(x_(0), x_(2), x_(0)));
+  Eigen::Matrix<double, 2, 5> A;
+  // A * vars = [x0 + 2*x1 + x2]
+  //            [2*x0 + x1     ]
+  // clang-format off
+  A << -1, 1, 3, 2, -1,
+       2, 2, -1, 1, -1;
+  // clang-format on
+  Eigen::Matrix<symbolic::Variable, 5, 1> vars;
+  vars << x_(2), x_(0), x_(2), x_(1), x_(2);
+  prog_->AddLinearConstraint(A, Eigen::Vector2d(-kInf, 1),
+                             Eigen::Vector2d(3, 3), vars);
+  prog_->AddLinearConstraint(
+      Eigen::RowVector4d(2, 3, 2, -1), Vector1d(0), Vector1d(kInf),
+      Vector4<symbolic::Variable>(x_(1), x_(2), x_(0), x_(0)));
+}
+
+void DuplicatedVariableLinearProgramTest1::CheckSolution(
+    const SolverInterface& solver, double tol) const {
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(*prog_, std::nullopt, std::nullopt, &result);
+    EXPECT_TRUE(result.is_success());
+    const Eigen::Vector3d x_sol = result.GetSolution(x_);
+    EXPECT_NEAR(result.get_optimal_cost(),
+                x_sol(0) + 3 * x_sol(1) + 4 * x_sol(2) + 3, tol);
+    EXPECT_LE(x_sol(0) + 2 * x_sol(1) + x_sol(2), 3 + tol);
+    EXPECT_NEAR(x_sol(0) + 2 * x_sol(2), 1, tol);
+    EXPECT_GE(2 * x_sol(0) + x_sol(1), 1 - tol);
+    EXPECT_LE(2 * x_sol(0) + x_sol(1), 3 + tol);
+    EXPECT_GE(x_sol(0) + 2 * x_sol(1) + 3 * x_sol(2), -tol);
+  }
+}
+
 void TestLPDualSolution1(const SolverInterface& solver, double tol) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -460,7 +507,6 @@ void TestLPDualSolution1(const SolverInterface& solver, double tol) {
        1, 5,
        3, 2;
   // clang-format on
-  const double kInf = std::numeric_limits<double>::infinity();
   Eigen::Matrix<double, 5, 1> lb, ub;
   lb << -kInf, -2, -3, -kInf, 4;
   ub << 3, kInf, 4, kInf, 5;
@@ -599,7 +645,6 @@ void TestLPPoorScaling2(const SolverInterface& solver, bool expect_success,
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
   auto r = prog.NewContinuousVariables<1>()(0);
-  const double kInf = std::numeric_limits<double>::infinity();
   for (int i = 0; i < A.rows(); ++i) {
     prog.AddLinearConstraint(A.row(i).dot(x) + A.row(i).norm() * r <= b(i));
   }

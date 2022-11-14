@@ -155,8 +155,6 @@ enum class DiscreteContactSolver {
 #define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 /// @endcond
 
-// TODO(sherm1) Rename "continuous_state" output ports to just "state" since
-//              they can be discrete. However see issue #12214.
 /**
 %MultibodyPlant is a Drake system framework representation (see
 systems::System) for the model of a physical system consisting of a
@@ -172,14 +170,14 @@ input_ports:
 - <em style="color:gray">model_instance_name[i]</em>_actuation
 - <span style="color:green">geometry_query</span>
 output_ports:
-- continuous_state
+- state
 - body_poses
 - body_spatial_velocities
 - body_spatial_accelerations
 - generalized_acceleration
 - reaction_forces
 - contact_results
-- <em style="color:gray">model_instance_name[i]</em>_continuous_state
+- <em style="color:gray">model_instance_name[i]</em>_state
 - '<em style="color:gray">
   model_instance_name[i]</em>_generalized_acceleration'
 - '<em style="color:gray">
@@ -303,7 +301,7 @@ files.  Consider the example below which loads an acrobot model:
   const std::string relative_name =
     "drake/multibody/benchmarks/acrobot/acrobot.sdf";
   const std::string full_name = FindResourceOrThrow(relative_name);
-  parser.AddModelFromFile(full_name);
+  parser.AddModels(full_name);
 @endcode
 As in the example above, for models including visual geometry, collision
 geometry or both, the user must specify a SceneGraph for geometry handling.
@@ -1862,6 +1860,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       double v_stiction = MultibodyPlantConfig{}.stiction_tolerance) {
     friction_model_.set_stiction_tolerance(v_stiction);
   }
+
+  /// @returns the stiction tolerance parameter, in m/s.
+  /// @see set_stiction_tolerance.
+  double stiction_tolerance() const {
+    return friction_model_.stiction_tolerance();
+  }
+
   /// @} <!-- Contact modeling -->
 
   /// @anchor mbp_state_accessors_and_mutators

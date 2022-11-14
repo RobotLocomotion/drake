@@ -332,10 +332,12 @@ class PointCloud final {
   /// corresponding to the centroid of the points in that voxel. Points with
   /// non-finite xyz values are ignored. All other fields (e.g. rgbs, normals,
   /// and descriptors) with finite values will also be averaged across the
-  /// points in a voxel.
+  /// points in a voxel. @p parallelize enables OpenMP parallelization.
+  /// Equivalent to Open3d's voxel_down_sample or PCL's VoxelGrid filter.
   /// @throws std::exception if has_xyzs() is false.
   /// @throws std::exception if voxel_size <= 0.
-  PointCloud VoxelizedDownSample(double voxel_size) const;
+  PointCloud VoxelizedDownSample(
+      double voxel_size, bool parallelize = false) const;
 
   /// Estimates the normal vectors in `this` by fitting a plane at each point
   /// in the cloud using up to `num_closest` points within Euclidean distance
@@ -345,14 +347,15 @@ class PointCloud final {
   /// points within the @p radius), will receive normal [NaN, NaN, NaN].
   /// Normals estimated from two closest points will be orthogonal to the
   /// vector between those points, but can be arbitrary in the last
-  /// dimension.
+  /// dimension. @p parallelize enables OpenMP parallelization.
   ///
   /// @returns true iff all points were assigned normals by having at least
   /// *three* closest points within @p radius.
   ///
   /// @pre @p radius > 0 and @p num_closest >= 3.
   /// @throws std::exception if has_xyzs() is false.
-  bool EstimateNormals(double radius, int num_closest);
+  bool EstimateNormals(
+      double radius, int num_closest, bool parallelize = false);
 
  private:
   void SetDefault(int start, int num);

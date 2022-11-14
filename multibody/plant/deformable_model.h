@@ -14,27 +14,27 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
 
-/* Uniquely identifies a deformable body. It is valid before and after
+/** Uniquely identifies a deformable body. It is valid before and after
  Finalize(). */
 using DeformableBodyId = Identifier<class DeformableBodyTag>;
-/* Internally indexes deformable bodies, only used after Finalize(). */
+/** Internally indexes deformable bodies, only used after Finalize(). */
 using DeformableBodyIndex = TypeSafeIndex<class DeformableBodyTag>;
 
-/* DeformableModel implements the interface in PhysicalModel and provides the
+/** DeformableModel implements the interface in PhysicalModel and provides the
  functionalities to specify deformable bodies. Unlike rigid bodies, the shape of
  deformable bodies can change in a simulation. Each deformable body is modeled
  as a volumetric mesh with persisting topology, changing vertex positions, and
  an approximated signed distance field. A finite element model is built for each
  registered deformable body that is used to evaluate the dynamics of the body.
+ @experimental
  @tparam_double_only */
 template <typename T>
 class DeformableModel final : public multibody::internal::PhysicalModel<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableModel)
 
-  /* Construct a DeformableModel to be owned by the given MultibodyPlant.
+  /** Constructs a DeformableModel to be owned by the given MultibodyPlant.
    @pre plant != nullptr.
    @pre Finalize() has not been called on `plant`. */
   explicit DeformableModel(MultibodyPlant<T>* plant) : plant_(plant) {
@@ -42,7 +42,7 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
     DRAKE_DEMAND(!plant_->is_finalized());
   }
 
-  /* Returns the number of deformable bodies registered with this
+  /** Returns the number of deformable bodies registered with this
    DeformableModel. */
   int num_bodies() const { return reference_positions_.size(); }
 
@@ -51,14 +51,14 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   //  simulated with an MbP that involves contact.
   // TODO(xuchenhan-tri): Consider allowing registering deformable bodies with
   //  non-world frames.
-  /* Registers a deformable body in `this` DeformableModel with the given
+  /** Registers a deformable body in `this` DeformableModel with the given
    GeometryInstance. The body is represented in the world frame and simulated
    with FEM with linear elements and a first order quadrature rule that
    integrates linear functions exactly. See FemModel for details. Returns a
    unique identifier for the added geometry.
    @param[in] geometry_instance  The geometry to be registered with the model.
    @param[in] config             The physical properties of deformable body.
-   @parame[in] resolution_hint   The parameter that guides the level of mesh
+   @param[in] resolution_hint    The parameter that guides the level of mesh
                                  refinement of the deformable geometry. It has
                                  length units (in meters) and roughly
                                  corresponds to a typical edge length in the
@@ -70,14 +70,14 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
       std::unique_ptr<geometry::GeometryInstance> geometry_instance,
       const fem::DeformableBodyConfig<T>& config, double resolution_hint);
 
-  /* Returns the discrete state index of the deformable body identified by the
+  /** Returns the discrete state index of the deformable body identified by the
    given `id`.
    @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
    or if no deformable body with the given `id` has been registered in this
    model. */
   systems::DiscreteStateIndex GetDiscreteStateIndex(DeformableBodyId id) const;
 
-  /* Returns the FemModel for the body with `id`.
+  /** Returns the FemModel for the body with `id`.
    @throws exception if no deformable body with `id` is registered with `this`
    %DeformableModel. */
   const fem::FemModel<T>& GetFemModel(DeformableBodyId id) const;
@@ -85,7 +85,7 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   // TODO(xuchenhan-tri): The use of T over double is not well-reasoned.
   //  Consider whether T is really necessary when we support autodiff in
   //  deformable simulations.
-  /* Returns the reference positions of the vertices of the deformable body
+  /** Returns the reference positions of the vertices of the deformable body
    identified by the given `id`.
    The reference positions are represented as a VectorX with 3N values where N
    is the number of vertices. The x-, y-, and z-positions (measured and
@@ -95,28 +95,30 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
    registered in this model. */
   const VectorX<T>& GetReferencePositions(DeformableBodyId id) const;
 
-  /* Returns the DeformableBodyId of the body with the given body index.
+  /** Returns the DeformableBodyId of the body with the given body index.
    @throws std::exception if MultibodyPlant::Finalize() has not been called yet
    or if index is larger than or equal to the total number of registered
    deformable bodies. */
   DeformableBodyId GetBodyId(DeformableBodyIndex index) const;
 
-  /* Returns the DeformableBodyIndex of the body with the given id.
+  /** (Internal) Returns the DeformableBodyIndex of the body with the given id.
+   This function is for internal bookkeeping use only. Most users should use
+   DeformableBodyId instead.
    @throws std::exception if MultibodyPlant::Finalize() has not been called yet
    or if no body with the given `id` has been registered. */
   DeformableBodyIndex GetBodyIndex(DeformableBodyId id) const;
 
-  /* Returns the GeometryId of the geometry associated with the body with the
+  /** Returns the GeometryId of the geometry associated with the body with the
    given `id`.
    @throws std::exception if no body with the given `id` has been registered. */
   geometry::GeometryId GetGeometryId(DeformableBodyId id) const;
 
-  /* Returns the DeformableBodyId associated with the given `geometry_id`.
+  /** Returns the DeformableBodyId associated with the given `geometry_id`.
    @throws std::exception if the given `geometry_id` does not correspond to a
    deformable body registered with this model. */
   DeformableBodyId GetBodyId(geometry::GeometryId geometry_id) const;
 
-  /* Returns the output port of the vertex positions for all registered
+  /** Returns the output port of the vertex positions for all registered
    deformable bodies.
    @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
   */
@@ -126,8 +128,9 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   }
 
  private:
-  PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant() const final {
-    return PhysicalModelPointerVariant<T>(this);
+  internal::PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant()
+      const final {
+    return internal::PhysicalModelPointerVariant<T>(this);
   }
 
   // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd()
@@ -178,6 +181,5 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   systems::OutputPortIndex vertex_positions_port_index_;
 };
 
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

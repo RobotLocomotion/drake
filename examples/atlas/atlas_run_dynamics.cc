@@ -54,7 +54,7 @@ int do_main() {
 
   const std::string full_name =
       FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
-  multibody::Parser(&plant).AddModelFromFile(full_name);
+  multibody::Parser(&plant).AddModels(full_name);
 
   // Add model of the ground.
   const double static_friction = 1.0;

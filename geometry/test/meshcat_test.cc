@@ -695,6 +695,38 @@ GTEST_TEST(MeshcatTest, DuplicateMixedControls) {
       "Meshcat already has a button named button.");
 }
 
+// Properly testing Meshcat's limited support for gamepads requires human
+// input, and is done in meshcat_manual_test. This test simply ensures the
+// entry point forwards along the Javascript messages.
+GTEST_TEST(MeshcatTest, Gamepad) {
+  Meshcat meshcat;
+
+  Meshcat::Gamepad gamepad = meshcat.GetGamepad();
+  // Check the default status assuming no messages have been received:
+  EXPECT_FALSE(gamepad.index);
+  EXPECT_TRUE(gamepad.button_values.empty());
+  EXPECT_TRUE(gamepad.axes.empty());
+
+  // Clicking the button increases the count.
+  CheckWebsocketCommand(meshcat, R"""({
+      "type": "gamepad",
+      "name": "",
+      "gamepad": {
+        "index": 1, 
+        "button_values": [0, 0.5],
+        "axes": [0.1, 0.2, 0.3, 0.4]
+      }
+    })""", {}, {});
+
+  gamepad = meshcat.GetGamepad();
+  EXPECT_TRUE(gamepad.index);
+  EXPECT_EQ(gamepad.index, 1);
+  std::vector<double> expected_button_values{0, 0.5};
+  std::vector<double> expected_axes{0.1, 0.2, 0.3, 0.4};
+  EXPECT_EQ(gamepad.button_values, expected_button_values);
+  EXPECT_EQ(gamepad.axes, expected_axes);
+}
+
 GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
   Meshcat meshcat;
   meshcat.SetProperty("/Background", "visible", false);
@@ -931,7 +963,6 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   // Confirm that the js source links were replaced.
   EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
   EXPECT_THAT(html, ::testing::Not(HasSubstr("stats.min.js")));
-  EXPECT_THAT(html, ::testing::Not(HasSubstr("msgpack.min.js")));
   // The static html replaces the javascript web socket connection code with
   // direct invocation of MeshCat with all of the data. We'll confirm that
   // this appears to have happened by testing for the presence of the injected

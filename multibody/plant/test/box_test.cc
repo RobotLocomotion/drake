@@ -167,7 +167,7 @@ class SlidingBoxTest : public ::testing::Test {
     MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
         &builder, std::make_unique<MultibodyPlant<double>>(time_step));
     plant.set_name("plant");
-    Parser(&plant).AddModelFromFile(full_name);
+    Parser(&plant).AddModels(full_name);
 
     // Add gravity to the model.
     plant.mutable_gravity_field().set_gravity_vector(-g_ *

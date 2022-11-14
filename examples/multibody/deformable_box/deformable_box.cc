@@ -41,8 +41,8 @@ using drake::multibody::MultibodyPlantConfig;
 using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
 using drake::multibody::fem::DeformableBodyConfig;
-using drake::multibody::internal::DeformableBodyId;
-using drake::multibody::internal::DeformableModel;
+using drake::multibody::DeformableBodyId;
+using drake::multibody::DeformableModel;
 using drake::systems::BasicVector;
 using drake::systems::Context;
 using Eigen::Vector2d;
@@ -173,7 +173,7 @@ int do_main() {
   Parser parser(&plant);
   const std::string gripper_path =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
-  parser.AddModelFromFile(gripper_path);
+  parser.AddModels(gripper_path);
   /* Add collision geometries. */
   const RigidTransformd X_BG = RigidTransformd::Identity();
   const Body<double>& left_finger = plant.GetBodyByName("left_finger");

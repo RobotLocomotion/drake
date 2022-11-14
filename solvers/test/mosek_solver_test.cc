@@ -62,6 +62,13 @@ TEST_F(UnboundedLinearProgramTest1, Test) {
   }
 }
 
+TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
+  MosekSolver solver;
+  if (solver.available()) {
+    CheckSolution(solver);
+  }
+}
+
 TEST_P(QuadraticProgramTest, TestQP) {
   MosekSolver solver;
   prob()->RunProblem(&solver);
@@ -135,6 +142,11 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   // Mosek 10 returns a solution that is accurate up to 1.3E-5 for this specific
   // problem. Might need to change the tolerance when we upgrade Mosek.
   SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1.3E-5);
+}
+
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
+  MosekSolver solver;
+  TestSocpDuplicatedVariable1(solver, 1E-6);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {

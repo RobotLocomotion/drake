@@ -163,6 +163,11 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.DeleteAddedControls()
         self.assertIn("data:application/octet-binary;base64",
                       meshcat.StaticHtml())
+        gamepad = meshcat.GetGamepad()
+        # Check default values (assuming no gamepad messages have arrived):
+        self.assertIsNone(gamepad.index)
+        self.assertEqual(len(gamepad.button_values), 0)
+        self.assertEqual(len(gamepad.axes), 0)
         meshcat.SetRealtimeRate(1.0)
         meshcat.Flush()
 

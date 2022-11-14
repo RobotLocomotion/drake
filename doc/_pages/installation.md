@@ -18,7 +18,6 @@ officially supports:
 |------------------------------------|------------------|------------|
 | Ubuntu 20.04 LTS (Focal Fossa)     | x86_64           | 3.8        |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64           | 3.10       |
-| macOS Big Sur (11)                 | x86_64           | 3.10       |
 | macOS Monterey (12)                | x86_64 or arm64  | 3.10       |
 
 ⁽¹⁾ CPython is the only Python implementation supported.
@@ -42,7 +41,6 @@ compiler as our releases:
 |------------------------------------|--------------------------|-------|
 | Ubuntu 20.04 LTS (Focal Fossa)     | GCC 9                    | C++17 |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                   | C++20 |
-| macOS Big Sur (11)                 | Apple LLVM 12 (Xcode 12) | C++20 |
 | macOS Monterey (12)                | Apple LLVM 14 (Xcode 14) | C++20 |
 
 ## Available Versions

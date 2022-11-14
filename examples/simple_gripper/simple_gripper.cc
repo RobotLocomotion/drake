@@ -169,13 +169,10 @@ int do_main() {
       multibody::AddMultibodyPlant(plant_config, &builder);
 
   Parser parser(&plant);
-  std::string full_name =
-      FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
-  parser.AddModelFromFile(full_name);
-
-  full_name =
-      FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
-  ModelInstanceIndex mug_model = parser.AddModelFromFile(full_name);
+  parser.AddModels(FindResourceOrThrow(
+      "drake/examples/simple_gripper/simple_gripper.sdf"));
+  parser.AddModels(FindResourceOrThrow(
+      "drake/examples/simple_gripper/simple_mug.sdf"));
 
   // Obtain the "translate_joint" axis so that we know the direction of the
   // forced motions. We do not apply gravity if motions are forced in the
@@ -335,6 +332,7 @@ int do_main() {
   right_slider.set_translation(&plant_context, finger_offset);
 
   // Initialize the mug pose to be right in the middle between the fingers.
+  const multibody::Body<double>& mug = plant.GetBodyByName("simple_mug");
   const Vector3d& p_WBr =
       plant.EvalBodyPoseInWorld(plant_context, right_finger).translation();
   const Vector3d& p_WBl =
@@ -345,8 +343,7 @@ int do_main() {
       RollPitchYawd(FLAGS_rx * M_PI / 180, FLAGS_ry * M_PI / 180,
                     (FLAGS_rz * M_PI / 180) + M_PI),
       Vector3d(0.0, mug_y_W, 0.0));
-  plant.SetFreeBodyPose(&plant_context,
-                        plant.GetUniqueFreeBaseBodyOrThrow(mug_model), X_WM);
+  plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
   // Set the initial height of the gripper and its initial velocity so that with
   // the applied harmonic forces it continues to move in a harmonic oscillation

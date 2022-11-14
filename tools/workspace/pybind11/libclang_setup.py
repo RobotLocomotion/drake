@@ -37,7 +37,8 @@ def add_library_paths(parameters=None):
                 parameters.append('-isysroot')
                 parameters.append(sdkroot)
     elif platform.system() == 'Linux':
-        library_file = '/usr/lib/x86_64-linux-gnu/libclang-12.so'
+        arch = platform.machine()
+        library_file = f'/usr/lib/{arch}-linux-gnu/libclang-12.so'
     if not os.path.exists(library_file):
         raise RuntimeError(f'Library file {library_file} does NOT exist')
     cindex.Config.set_library_file(library_file)

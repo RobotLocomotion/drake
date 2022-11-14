@@ -222,7 +222,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   const double kRelativePositionTolerance = 0.055;
 
   MultibodyPlant<double> plant(time_step);
-  Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaFilePath));
+  Parser(&plant).AddModels(FindResourceOrThrow(kIiwaFilePath));
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("iiwa_link_0"));
   plant.mutable_gravity_field().set_gravity_vector(
@@ -296,7 +296,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
 GTEST_TEST(JointLimitsTest, KukaArmFloating) {
   // Check limits for a model with a floating base.
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaFilePath));
+  Parser(&plant).AddModels(FindResourceOrThrow(kIiwaFilePath));
   plant.Finalize();
   const int nq = 14;
   const int nq_floating = 7;
@@ -319,7 +319,7 @@ GTEST_TEST(JointLimitsTest, KukaArmFloating) {
 // for a continuous plant. This is merely to confirm that nothing crashes.
 GTEST_TEST(JointLimitsTest, ContinuousLimitsDoNotFault) {
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaFilePath));
+  Parser(&plant).AddModels(FindResourceOrThrow(kIiwaFilePath));
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
   plant.get_actuation_input_port().FixValue(context.get(),

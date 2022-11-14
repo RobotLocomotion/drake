@@ -34,7 +34,7 @@ GTEST_TEST(ReorderKeyframesTest, Test) {
   const std::string full_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
   MultibodyPlant<double> plant(0.0);
-  multibody::Parser(&plant).AddModelFromFile(full_name, "gripper");
+  multibody::Parser(&plant).AddModels(full_name);
   WeldGripperFrames(&plant);
   plant.Finalize();
 
@@ -85,11 +85,11 @@ GTEST_TEST(ReorderKeyframesTest, Test) {
   // Test throw when plant positions don't match number of expected planar
   // gripper joints.
   MultibodyPlant<double> bad_plant(0.0);
-  multibody::Parser(&bad_plant).AddModelFromFile(full_name, "gripper");
+  multibody::Parser(&bad_plant).AddModels(full_name);
   WeldGripperFrames(&bad_plant);
   const std::string extra_model_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_brick.sdf");
-  multibody::Parser(&bad_plant).AddModelFromFile(extra_model_name, "brick");
+  multibody::Parser(&bad_plant).AddModels(extra_model_name);
   bad_plant.Finalize();
   EXPECT_THROW(
       ReorderKeyframesForPlant(bad_plant, keyframes,

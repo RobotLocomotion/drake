@@ -48,6 +48,21 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "fem_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:type_pack",
+    ],
+    cc_srcs = ["fem_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+)
+
 drake_py_library(
     name = "jupyter_widgets_py",
     srcs = ["jupyter_widgets.py"],
@@ -205,6 +220,7 @@ drake_jupyter_py_binary(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":benchmarks_py",
+    ":fem_py",
     ":inverse_kinematics_py",
     ":math_py",
     ":meshcat_py",
@@ -282,6 +298,14 @@ drake_py_unittest(
     name = "benchmarks_test",
     deps = [
         ":benchmarks_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "fem_test",
+    deps = [
+        ":fem_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

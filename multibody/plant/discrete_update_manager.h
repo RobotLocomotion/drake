@@ -224,6 +224,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   const std::vector<internal::CouplerConstraintSpecs<T>>&
   coupler_constraints_specs() const;
+
+  const std::vector<int>& EvalJointLockingIndices(
+      const systems::Context<T>& context) const;
   /* @} */
 
   /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to

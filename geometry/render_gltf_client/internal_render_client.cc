@@ -33,6 +33,7 @@ using drake::geometry::render::ClippingRange;
 using drake::geometry::render::DepthRange;
 using drake::geometry::render::RenderCameraCore;
 using drake::systems::sensors::CameraInfo;
+using drake::systems::sensors::ImageDepth16U;
 using drake::systems::sensors::ImageDepth32F;
 using drake::systems::sensors::ImageLabel16I;
 using drake::systems::sensors::ImageRgba8U;
@@ -83,6 +84,32 @@ void AddField<RenderImageType>(DataFieldsMap* data_map,
       break;
     }
   }
+}
+
+void ReadPngFile(const std::string& path, vtkImageExport* image_exporter) {
+  // Load the PNG file from disk if possible.
+  vtkNew<vtkPNGReader> png_reader;
+  if (!png_reader->CanReadFile(path.c_str())) {
+    throw std::runtime_error(
+        fmt::format("RenderClient: cannot load '{}' as PNG.", path));
+  }
+  png_reader->SetFileName(path.c_str());
+  image_exporter->SetInputConnection(png_reader->GetOutputPort());
+  image_exporter->ImageLowerLeftOff();
+  png_reader->Update();  // Loads the image.
+}
+
+void ReadTiffFile(const std::string& path, vtkImageExport* image_exporter) {
+  // Load the TIFF file from disk if possible.
+  vtkNew<vtkTIFFReader> tiff_reader;
+  if (!tiff_reader->CanReadFile(path.c_str())) {
+    throw std::runtime_error(
+        fmt::format("RenderClient: cannot load '{}' as TIFF.", path));
+  }
+  tiff_reader->SetFileName(path.c_str());
+  image_exporter->SetInputConnection(tiff_reader->GetOutputPort());
+  // TODO(svenevs): why is ImageLowerLeftOff() not required for this exporter?
+  tiff_reader->Update();
 }
 
 /* Verifies the loaded image has the correct dimensions.  This includes
@@ -296,21 +323,11 @@ void RenderClient::LoadColorImage(const std::string& path,
                                   ImageRgba8U* color_image_out) {
   DRAKE_DEMAND(color_image_out != nullptr);
 
-  // Load the PNG file from disk if possible.
-  vtkNew<vtkPNGReader> png_reader;
-  if (!png_reader->CanReadFile(path.c_str())) {
-    throw std::runtime_error(
-        fmt::format("RenderClient: cannot load '{}' as PNG.", path));
-  }
-  png_reader->SetFileName(path.c_str());
   vtkNew<vtkImageExport> image_exporter;
-  image_exporter->SetInputConnection(png_reader->GetOutputPort());
-  image_exporter->ImageLowerLeftOff();
-  png_reader->Update();  // Loads the image.
-
-  VerifyImportedImageDimensions(color_image_out->width(),
-                                color_image_out->height(), image_exporter,
-                                path);
+  ReadPngFile(path, image_exporter);
+  const int width = color_image_out->width();
+  const int height = color_image_out->height();
+  VerifyImportedImageDimensions(width, height, image_exporter, path);
 
   // For color images, we support loading either RGB (3 channels) or RGBA (4).
   vtkImageData* image_data = image_exporter->GetInput();
@@ -340,8 +357,6 @@ void RenderClient::LoadColorImage(const std::string& path,
   constexpr int kNumChannels = ImageRgba8U::kNumChannels;
   static_assert(  // The logic below is not valid if this ever changes.
       kNumChannels == 4, "Expected ImageRgba8U::kNumChannels to be 4.");
-  const int width = color_image_out->width();
-  const int height = color_image_out->height();
   if (channels == kNumChannels) {
     // Same number of channels, do a direct transpose copy.
     for (int y = 0; y < height; ++y) {
@@ -373,65 +388,67 @@ void RenderClient::LoadDepthImage(const std::string& path,
                                   ImageDepth32F* depth_image_out) {
   DRAKE_DEMAND(depth_image_out != nullptr);
 
-  // Load the TIFF file from disk if possible.
-  vtkNew<vtkTIFFReader> tiff_reader;
-  // TODO(svenevs): add support for 16U png files.
-  if (!tiff_reader->CanReadFile(path.c_str())) {
-    throw std::runtime_error(
-        fmt::format("RenderClient: cannot load '{}' as TIFF.", path));
-  }
-  tiff_reader->SetFileName(path.c_str());
+  // Load different image types based on the file extension.  Note that even if
+  // a 16-bit TIFF image was sent, VTK will load it as 32-bit float data.
   vtkNew<vtkImageExport> image_exporter;
-  image_exporter->SetInputConnection(tiff_reader->GetOutputPort());
-  // TODO(svenevs): why is ImageLowerLeftOff() not required for this exporter?
-  tiff_reader->Update();
+  const std::string ext{fs::path{path}.extension()};
+  if (ext == ".png") {
+    ReadPngFile(path, image_exporter);
+  } else if (ext == ".tiff") {
+    ReadTiffFile(path, image_exporter);
+  } else {
+    throw std::runtime_error("Unsupported file extension");
+  }
 
-  VerifyImportedImageDimensions(depth_image_out->width(),
-                                depth_image_out->height(), image_exporter,
-                                path);
+  const int width = depth_image_out->width();
+  const int height = depth_image_out->height();
+  VerifyImportedImageDimensions(width, height, image_exporter, path);
 
-  // For depth images, we support loading single channel images only.
+  // For depth images, we support loading single channel 16-bit/32-bit float
+  // TIFF or 16-bit unsigned integer TIFF/PNG images.
   vtkImageData* image_data = image_exporter->GetInput();
   DRAKE_DEMAND(image_data != nullptr);
   const int channels = image_data->GetNumberOfScalarComponents();
   if (channels != 1) {
     throw std::runtime_error(fmt::format(
-        "RenderClient: loaded TIFF image from '{}' has {} channels, but only 1 "
-        "is allowed for depth images.",
+        "RenderClient: loaded image from '{}' has {} channels, but only 1 is "
+        "allowed for depth images.",
         path, channels));
   }
 
-  /* Make sure we can copy directly using VTK before doing so.  Even if a 16 bit
-   TIFF image was sent, VTK will load it as 32 bit float data. */
-  /* no cover: this case is improbable and therefore not worth explicitly
-   testing. If this assumption proves to be wrong in the future, we can revisit
-   the decision. */
-  DRAKE_THROW_UNLESS(image_data->GetScalarType() == VTK_TYPE_FLOAT32);
-
-  image_exporter->Export(depth_image_out->at(0, 0));
+  /* Copy the VTK data into our image. */
+  if (image_data->GetScalarType() == VTK_TYPE_FLOAT32) {
+    image_exporter->Export(depth_image_out->at(0, 0));
+  } else if (image_data->GetScalarType() == VTK_TYPE_UINT16) {
+    ImageDepth16U u16(width, height);
+    image_exporter->Export(u16.at(0, 0));
+    // Convert from millimeters to meters.
+    for (int y = 0; y < height; ++y) {
+      for (int x = 0; x < width; ++x) {
+        const std::uint16_t millimeters = u16.at(x, y)[0];
+        const float meters = (millimeters == ImageDepth16U::Traits::kTooFar)
+                                 ? ImageDepth32F::Traits::kTooFar
+                                 : millimeters * 1e-3;
+        *depth_image_out->at(x, y) = meters;
+      }
+    }
+  } else {
+    /* no cover */
+    throw std::runtime_error("Unsupported channel type");
+  }
 }
 
 void RenderClient::LoadLabelImage(const std::string& path,
                                   ImageLabel16I* label_image_out) {
   DRAKE_DEMAND(label_image_out != nullptr);
 
-  // Load the PNG file from disk if possible.
-  vtkNew<vtkPNGReader> png_reader;
-  if (!png_reader->CanReadFile(path.c_str())) {
-    throw std::runtime_error(
-        fmt::format("RenderClient: cannot load '{}' as PNG.", path));
-  }
-  png_reader->SetFileName(path.c_str());
   vtkNew<vtkImageExport> image_exporter;
-  image_exporter->SetInputConnection(png_reader->GetOutputPort());
-  image_exporter->ImageLowerLeftOff();
-  png_reader->Update();  // Loads the image.
+  ReadPngFile(path, image_exporter);
+  const int width = label_image_out->width();
+  const int height = label_image_out->height();
+  VerifyImportedImageDimensions(width, height, image_exporter, path);
 
-  VerifyImportedImageDimensions(label_image_out->width(),
-                                label_image_out->height(), image_exporter,
-                                path);
-
-  // For label images, we support loading 16 bit unsigned single channel images.
+  // For label images, we support loading 16-bit unsigned single channel images.
   vtkImageData* image_data = image_exporter->GetInput();
   DRAKE_DEMAND(image_data != nullptr);
   const int channels = image_data->GetNumberOfScalarComponents();

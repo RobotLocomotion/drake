@@ -1,6 +1,8 @@
+#include <chrono>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <thread>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
@@ -260,7 +262,7 @@ Open up your browser to the URL above.
     // Add the hydroelastic spheres and joints between them.
     const std::string hydro_sdf =
         FindResourceOrThrow("drake/multibody/meshcat/test/hydroelastic.sdf");
-    parser.AddModelFromFile(hydro_sdf);
+    parser.AddModels(hydro_sdf);
     const auto& body1 = plant.GetBodyByName("body1");
     plant.AddJoint<multibody::PrismaticJoint>("body1", plant.world_body(),
                                               std::nullopt, body1, std::nullopt,
@@ -301,11 +303,11 @@ Open up your browser to the URL above.
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
     multibody::Parser parser(&plant);
-    parser.AddModelFromFile(
+    parser.AddModels(
         FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
                             "iiwa14_spheres_collision.urdf"));
     plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
-    parser.AddModelFromFile(FindResourceOrThrow(
+    parser.AddModels(FindResourceOrThrow(
         "drake/examples/kuka_iiwa_arm/models/table/"
         "extra_heavy_duty_table_surface_only_collision.sdf"));
     const double table_height = 0.7645;
@@ -339,8 +341,6 @@ Open up your browser to the URL above.
     std::cout << "Now we'll run the simulation...\n"
               << "- You should see the robot fall down and hit the table\n"
               << "- You should see the contact force vectors (when it hits)\n"
-              << "- You will also see large forces near the wrist until we "
-                 "resolve #15965\n"
               << std::endl;
 
     systems::Simulator<double> simulator(*diagram, std::move(context));
@@ -405,7 +405,44 @@ Open up your browser to the URL above.
             << "Got " << meshcat->GetButtonClicks("Press t Key")
             << " clicks on \"Press t Key\".\n"
             << "Got " << meshcat->GetSliderValue("SliderTest")
-            << " value for SliderTest." << std::endl;
+            << " value for SliderTest.\n\n" << std::endl;
+
+  std::cout << "Next, we'll test gamepad (i.e., joystick) features.\n\n";
+  std::cout
+      << "While the Meshcat browser window has focus, click any button on "
+      << "your gamepad to activate gamepad support in the browser.\n\n";
+  std::cout
+      << "Then(after you press RETURN), we'll print the gamepad stats for 5 "
+      << "seconds. During that time, move the control sticks and hold some "
+      << "buttons and you should see those values reflected in the printouts. "
+      << "As long as you see varying values as you move the controls, that's "
+      << "sufficient to consider the test passing; the exact values do not "
+      << "matter.\n";
+
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  Meshcat::Gamepad gamepad = meshcat->GetGamepad();
+  if (!gamepad.index) {
+    std::cout << "No gamepad activity detected.\n";
+  } else {
+    for (int i = 0; i < 5; ++i) {
+      gamepad = meshcat->GetGamepad();
+      std::cout << "Gamepad status:\n";
+      std::cout << "  gamepad index: " << *gamepad.index << "\n";
+      std::cout << "  buttons: ";
+      for (auto const& value : gamepad.button_values) {
+        std::cout << value << ", ";
+      }
+      std::cout << "\n";
+      std::cout << "  axes: ";
+      for (auto const& value : gamepad.axes) {
+        std::cout << value << ", ";
+      }
+      std::cout << "\n";
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+  }
 
   std::cout << "Exiting..." << std::endl;
   return 0;

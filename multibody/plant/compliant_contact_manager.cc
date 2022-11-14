@@ -291,6 +291,13 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
         pair.id_B, this->default_contact_stiffness(), inspector);
     const T k = GetCombinedPointContactStiffness(
         pair.id_A, pair.id_B, this->default_contact_stiffness(), inspector);
+
+    // Hunt & Crossley dissipation. Used by TAMSI, ignored by SAP.
+    const T d = GetCombinedHuntCrossleyDissipation(
+        pair.id_A, pair.id_B, kA, kB, this->default_contact_dissipation(),
+        inspector);
+
+    // Dissipation time scale. Used by SAP, ignored by TAMSI.
     const double default_dissipation_time_constant = 0.1;
     const T tau = GetCombinedDissipationTimeConstant(
         pair.id_A, pair.id_B, default_dissipation_time_constant, body_A.name(),
@@ -306,15 +313,13 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
     const Vector3<T> p_WC = wA * pair.p_WCa + wB * pair.p_WCb;
 
     const T phi0 = -pair.depth;
-    const T fn0 = NAN;  // not used.
-    const T d = NAN;    // not used.
+    const T fn0 = k * pair.depth;  // Used by TAMSI, ignored by SAP.
+
     contact_pairs.push_back(
         {pair.id_A, pair.id_B, p_WC, pair.nhat_BA_W, phi0, fn0, k, d, tau, mu});
   }
 }
 
-// Most of the calculation in this function should be the same as in
-// MultibodyPlant<T>::CalcDiscreteContactPairs().
 template <typename T>
 void CompliantContactManager<T>::
     AppendDiscreteContactPairsForHydroelasticContact(
@@ -347,6 +352,20 @@ void CompliantContactManager<T>::
     const BodyIndex body_N_index =
         this->geometry_id_to_body_index().at(s.id_N());
     const Body<T>& body_N = plant().get_body(body_N_index);
+
+    // TODO(amcastro-tri): Consider making the modulus required, instead of
+    // a default infinite value.
+    const T hydro_modulus_M = GetHydroelasticModulus(
+        s.id_M(), std::numeric_limits<double>::infinity(), inspector);
+    const T hydro_modulus_N = GetHydroelasticModulus(
+        s.id_N(), std::numeric_limits<double>::infinity(), inspector);
+
+    // Hunt & Crossley dissipation. Used by TAMSI, ignored by SAP.
+    const T d = GetCombinedHuntCrossleyDissipation(
+        s.id_M(), s.id_N(), hydro_modulus_M, hydro_modulus_N,
+        0.0 /* Default value */, inspector);
+
+    // Dissipation time scale. Used by SAP, ignored by TAMSI.
     const double default_dissipation_time_constant = 0.1;
     const T tau = GetCombinedDissipationTimeConstant(
         s.id_M(), s.id_N(), default_dissipation_time_constant, body_M.name(),
@@ -418,6 +437,9 @@ void CompliantContactManager<T>::
                          ? s.tri_e_MN().Evaluate(face, tri_centroid_barycentric)
                          : s.poly_e_MN().EvaluateCartesian(face, p_WQ);
 
+        // Force contribution by this quadrature point.
+        const T fn0 = Ae * p0;
+
         // Effective compliance in the normal direction for the given
         // discrete patch, refer to [Masterjohn 2022] for details.
         // [Masterjohn 2022] Masterjohn J., Guoy D., Shepherd J. and
@@ -429,8 +451,6 @@ void CompliantContactManager<T>::
         const T phi0 = -p0 / g;
 
         if (k > 0) {
-          const T fn0 = NAN;  // not used.
-          const T d = NAN;    // not used.
           contact_pairs.push_back(
               {s.id_M(), s.id_N(), p_WQ, nhat_W, phi0, fn0, k, d, tau, mu});
         }
@@ -606,11 +626,8 @@ void CompliantContactManager<T>::ExtractModelInfo() {
     joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
   }
 
-  // TODO(amcastro-tri): Remove this DRAKE_DEMAND when other solvers are
-  // supported.
-  DRAKE_DEMAND(plant().get_discrete_contact_solver() ==
-                   DiscreteContactSolver::kSap &&
-               sap_driver_ == nullptr);
+  // TODO(amcastro-tri): Start using the TamsiDriver.
+  DRAKE_DEMAND(sap_driver_ == nullptr);
   sap_driver_ = std::make_unique<SapDriver<T>>(this);
 
   // Collect information from each PhysicalModel owned by the plant.

@@ -130,7 +130,7 @@
       <visual name="rgba_sphere_visual">
         <geometry>
           <sphere>
-            <radius>0.05 0.025 0.0375</radius>
+            <radius>0.05</radius>
           </sphere>
         </geometry>
         <material>

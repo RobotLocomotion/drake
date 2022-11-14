@@ -108,6 +108,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
   coupler_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.coupler_constraints_specs_;
   }
+
+  static const std::vector<int>& EvalJointLockingIndices(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
+    return plant.EvalJointLockingIndices(context);
+  }
 };
 }  // namespace internal
 }  // namespace multibody

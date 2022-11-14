@@ -62,7 +62,7 @@ SpatialInertia<double> CalcGripperSpatialInertia(
   // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
   MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
-  parser.AddModelFromFile(wsg_sdf_path);
+  parser.AddModels(wsg_sdf_path);
   plant.Finalize();
 
   // Create a default context which should contain a default state in which all

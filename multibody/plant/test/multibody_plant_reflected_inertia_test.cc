@@ -119,10 +119,10 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
 
     Parser parser(plant);
-    arm_model = parser.AddModelFromFile(FindResourceOrThrow(kArmSdfPath));
+    arm_model = parser.AddModels(FindResourceOrThrow(kArmSdfPath)).at(0);
 
     // Add the gripper.
-    gripper_model = parser.AddModelFromFile(FindResourceOrThrow(kWsg50SdfPath));
+    gripper_model = parser.AddModels(FindResourceOrThrow(kWsg50SdfPath)).at(0);
 
     const auto& base_body = plant->GetBodyByName("iiwa_link_0", arm_model);
     const auto& end_effector = plant->GetBodyByName("iiwa_link_7", arm_model);

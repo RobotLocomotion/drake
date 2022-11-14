@@ -16,11 +16,11 @@ namespace multibody {
 template <typename T>
 class MultibodyPlant;
 
-namespace internal {
-
 /* Forward declarations of all concrete PhysicalModel (right now one). */
 template <typename T>
 class DeformableModel;
+
+namespace internal {
 
 /* Variant over const pointers to all PhysicalModel. */
 template <typename T>

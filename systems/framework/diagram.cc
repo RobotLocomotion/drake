@@ -1034,8 +1034,8 @@ const AbstractValue* Diagram<T>::EvalConnectedSubsystemInputPort(
   // A static_cast is safe as long as the given input_port_base was actually
   // an InputPort<T>, and since our sole caller is SystemBase which always
   // retrieves the input_port_base from `this`, the <T> must be correct.
-  auto& system =
-      static_cast<const System<T>&>(input_port_base.get_system_interface());
+  auto& system = static_cast<const System<T>&>(
+      internal::PortBaseAttorney::get_system_interface(input_port_base));
   const InputPortLocator id{&system, input_port_base.get_index()};
 
   // Find if this input port is exported (connected to an input port of this

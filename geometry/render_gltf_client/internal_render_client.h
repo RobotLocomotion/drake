@@ -160,12 +160,10 @@ class RenderClient {
 
    This method supports loading:
 
-   - Single channel 16 bit or 32 bit TIFF images.  The depth channel of the TIFF
-     images are assumed to be encoded in units of meters.
-   - TODO(svenevs): Support single channel 16 bit unsigned short PNG images as
-     the input.  The depth channel of the PNG images are assumed to be encoded
-     in units of millimeters and will be converted to meters when copying to the
-     output buffer.
+   - Single channel 16-bit or 32-bit float TIFF images.  The depth channel of
+     the TIFF images are assumed to be encoded in units of meters.
+   - Single channel 16-bit unsigned integer TIFF or PNG images.  The depth
+     channel of the images are assumed to be encoded in units of millimeters.
 
    @param path
      The path to the file to try and load as a depth image.  The path returned
@@ -173,9 +171,9 @@ class RenderClient {
    @param depth_image_out
      The already allocated drake image buffer to load `path` into.
    @throws std::exception
-     If the specified `path` cannot be loaded as a single channel 16-bit or
-     32-bit TIFF image, or the image denoted by `path` does not have the same
-     width and height as the specified `depth_image_out`. */
+     If the specified `path` has an unsupported extension or channel type, or
+     the image denoted by `path` does not have the same width and height as the
+     specified `depth_image_out`. */
   static void LoadDepthImage(
       const std::string& path,
       drake::systems::sensors::ImageDepth32F* depth_image_out);

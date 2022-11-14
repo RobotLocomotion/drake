@@ -186,6 +186,7 @@ class TestGeneral(unittest.TestCase):
                 systemU = Adder_[U](3, 10)
                 contextU = systemU.CreateDefaultContext()
                 contextU.SetTime(0.5)
+                contextT.SetStateAndParametersFrom(contextU)
                 contextT.SetTimeStateAndParametersFrom(contextU)
                 if T == float:
                     self.assertEqual(contextT.get_time(), 0.5)

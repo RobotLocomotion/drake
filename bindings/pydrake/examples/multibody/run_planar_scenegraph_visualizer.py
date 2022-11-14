@@ -21,7 +21,7 @@ def run_pendulum_example(args):
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
     parser = Parser(plant)
-    parser.AddModelFromFile(FindResourceOrThrow(
+    parser.AddModels(FindResourceOrThrow(
         "drake/examples/pendulum/Pendulum.urdf"))
     plant.Finalize()
 

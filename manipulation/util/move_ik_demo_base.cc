@@ -21,7 +21,7 @@ MoveIkDemoBase::MoveIkDemoBase(std::string robot_description,
       print_interval_(print_interval),
       plant_(0.0),
       constraint_relaxing_ik_(robot_description_, ik_link_) {
-  multibody::Parser(&plant_).AddModelFromFile(robot_description_);
+  multibody::Parser(&plant_).AddModels(robot_description_);
   plant_.WeldFrames(plant_.world_frame(),
                     plant_.GetBodyByName(base_link).body_frame());
   plant_.Finalize();

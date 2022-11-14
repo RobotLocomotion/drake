@@ -44,7 +44,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     // respect to q̇ (time-derivative of generalized positions).
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
     Parser parser(plant_.get());
-    parser.AddModelFromFile(kArmSdfPath);
+    parser.AddModels(kArmSdfPath);
     // Add a frame H with a fixed pose X_EH in the end effector frame E.
     end_effector_link_ = &plant_->GetBodyByName("iiwa_link_7");
     frame_H_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
