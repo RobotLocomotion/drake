@@ -5,7 +5,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:py.bzl", "py_library", "py_test")
 
 py_library(
-    name = "drake_gym",
+    name = "gym",
     srcs = ["drake_gym.py"],
     visibility = ["//visibility:public"],
     deps = [
@@ -23,15 +23,19 @@ py_library(
         "test/mock_torch/torch/optim.py",
     ],
     imports = ["test/mock_torch"],
+    visibility = ["//bindings/pydrake/examples/gym:__pkg__"],
 )
 
+# TODO(ggould-tri) This depends on things in `examples` in order to build a
+# working env in order to run Gym's validation functions.  We rely on Bazel
+# to prevent this from being a circular dependency.
 py_test(
     name = "drake_gym_test",
     srcs = ["test/drake_gym_test.py"],
     deps = [
-        ":drake_gym",
+        ":gym",
         ":mock_torch_py",
-        "//drake_gym/examples:box_flipup",
+        "//bindings/pydrake/examples/gym:box_flipup",
         "@stable_baselines3_internal//:stable_baselines3",
     ],
 )

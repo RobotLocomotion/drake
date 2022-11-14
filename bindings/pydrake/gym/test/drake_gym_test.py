@@ -4,7 +4,7 @@ import gym
 import numpy as np
 import stable_baselines3.common.env_checker
 
-from drake_gym.examples.envs.box_flipup.box_flipup import BoxFlipUpEnv
+from pydrake.examples.gym.envs.box_flipup.box_flipup import BoxFlipUpEnv
 
 vec_env_available = False
 try:
@@ -30,7 +30,7 @@ class DrakeGymTest(unittest.TestCase):
     def setUpClass(cls):
         gym.envs.register(
             id="BoxFlipUp-v0",
-            entry_point="drake_gym.examples.envs.box_flipup.box_flipup:BoxFlipUpEnv")  # noqa
+            entry_point="pydrake.examples.gym.envs.box_flipup.box_flipup:BoxFlipUpEnv")  # noqa
 
     def make_env(self):
         # `new_step_api=False` was supposed to be deprecated some time ago

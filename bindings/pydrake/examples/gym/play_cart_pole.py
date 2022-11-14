@@ -8,7 +8,7 @@ from stable_baselines3.common.env_checker import check_env
 from pydrake.all import StartMeshcat
 
 parser = argparse.ArgumentParser(
-    description='Play a policy for //drake_gym/examples.envs:cart_pole.')
+    description='Play a policy for //bindings/pydrake/examples/gym:cart_pole.')
 parser.add_argument('--test', action='store_true')
 parser.add_argument('--debug', action='store_true')
 parser.add_argument('--model_path', help="path to the policy zip file.")
@@ -16,7 +16,7 @@ parser.add_argument('--log_path', help="path to the logs directory.")
 args = parser.parse_args()
 
 gym.envs.register(id="Cartpole-v0",
-                  entry_point="drake_gym.examples.envs.cart_pole.cart_pole:CartpoleEnv")  # noqa
+                  entry_point="pydrake.examples.gym.envs.cart_pole.cart_pole:CartpoleEnv")  # noqa
 
 if args.model_path is not None:
     zip = args.model_path
