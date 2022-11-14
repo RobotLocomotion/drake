@@ -228,7 +228,10 @@ class DuplicatedVariableLinearProgramTest1 : public ::testing::Test {
 
   DuplicatedVariableLinearProgramTest1();
 
-  void CheckSolution(const SolverInterface& solver, double tol = 1E-7) const;
+  void CheckSolution(
+      const SolverInterface& solver,
+      const std::optional<SolverOptions>& solver_options = std::nullopt,
+      double tol = 1E-7) const;
 
  protected:
   std::unique_ptr<MathematicalProgram> prog_;

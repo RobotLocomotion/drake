@@ -597,7 +597,9 @@ void TestSocpDualSolution2(const SolverInterface& solver,
   }
 }
 
-void TestSocpDuplicatedVariable1(const SolverInterface& solver, double tol) {
+void TestSocpDuplicatedVariable1(
+    const SolverInterface& solver,
+    const std::optional<SolverOptions>& solver_options, double tol) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<2>();
   // Add the constraint that
@@ -612,7 +614,7 @@ void TestSocpDuplicatedVariable1(const SolverInterface& solver, double tol) {
   prog.AddLinearCost(x(0) + x(1));
   if (solver.available()) {
     MathematicalProgramResult result;
-    solver.Solve(prog, std::nullopt, std::nullopt, &result);
+    solver.Solve(prog, std::nullopt, solver_options, &result);
     EXPECT_TRUE(result.is_success());
     const Eigen::Vector2d x_sol = result.GetSolution(x);
     EXPECT_NEAR(4 * x_sol(0) * x_sol(0) + 3 * x_sol(1) * x_sol(1), 1, tol);
