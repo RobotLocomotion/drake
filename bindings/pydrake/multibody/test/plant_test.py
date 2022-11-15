@@ -15,6 +15,7 @@ from pydrake.multibody.tree import (
     BallRpyJoint_,
     Body_,
     BodyIndex,
+    CalcSpatialInertia,
     ConstraintIndex,
     DoorHinge_,
     DoorHingeConfig,
@@ -100,6 +101,8 @@ from pydrake.geometry import (
     SignedDistancePair_,
     SignedDistanceToPoint_,
     Sphere,
+    SurfaceTriangle,
+    TriangleSurfaceMesh,
 )
 from pydrake.math import (
     RigidTransform_,
@@ -672,6 +675,35 @@ class TestPlant(unittest.TestCase):
         # N.B. `numpy_compare.assert_equal(IsNaN(), True)` does not work.
         if T != Expression:
             self.assertTrue(spatial_inertia.IsNaN())
+
+    def test_shape_spatial_inertia_apis(self):
+        # For both overloads, we want to confirm *two* things about the density
+        # parameter:
+        #
+        #   1) It is optional.
+        #   2) When not provided, it defaults to 1.
+        #
+        # So, we'll calc mass twice: once without specifying density and once
+        # with specifying density an arbitrary non-unit density. The masses
+        # reported should have the same proportion.
+
+        box = Box(1, 2, 3)
+        M_MMo_M_1 = CalcSpatialInertia(shape=box)
+        self.assertIsInstance(M_MMo_M_1, SpatialInertia_[float])
+        M_MMo_M_2 = CalcSpatialInertia(shape=box, density=2.5)
+        self.assertIsInstance(M_MMo_M_2, SpatialInertia_[float])
+        self.assertEqual(2.5 * M_MMo_M_1.get_mass(), M_MMo_M_2.get_mass())
+
+        t_a = SurfaceTriangle(v0=0, v1=1, v2=2)
+        v0 = (0, 0, 1)
+        v1 = (1, 0, 0)
+        v2 = (0, 1, 0)
+        mesh = TriangleSurfaceMesh(triangles=(t_a,), vertices=(v0, v1, v2))
+        M_MMo_M_1 = CalcSpatialInertia(mesh=mesh)
+        self.assertIsInstance(M_MMo_M_1, SpatialInertia_[float])
+        M_MMo_M_2 = CalcSpatialInertia(mesh=mesh, density=2.5)
+        self.assertIsInstance(M_MMo_M_2, SpatialInertia_[float])
+        self.assertEqual(2.5 * M_MMo_M_1.get_mass(), M_MMo_M_2.get_mass())
 
     @numpy_compare.check_all_types
     def test_friction_api(self, T):
