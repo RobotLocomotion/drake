@@ -18,6 +18,7 @@ from pydrake.multibody.tree import (
     BallRpyJoint_,
     Body_,
     BodyIndex,
+    CalcSpatialInertia,
     ConstraintIndex,
     DoorHinge_,
     DoorHingeConfig,
@@ -105,6 +106,8 @@ from pydrake.geometry import (
     SignedDistancePair_,
     SignedDistanceToPoint_,
     Sphere,
+    SurfaceTriangle,
+    TriangleSurfaceMesh,
 )
 from pydrake.math import (
     RigidTransform_,
@@ -677,6 +680,19 @@ class TestPlant(unittest.TestCase):
         # N.B. `numpy_compare.assert_equal(IsNaN(), True)` does not work.
         if T != Expression:
             self.assertTrue(spatial_inertia.IsNaN())
+
+    def test_geometry_spatial_inertia_apis(self):
+        box = Box(1, 2, 3)
+        M_BBo_B = CalcSpatialInertia(shape=box, density=2.5)
+        self.assertIsInstance(M_BBo_B, SpatialInertia_[float])
+
+        t_a = SurfaceTriangle(v0=0, v1=1, v2=2)
+        v0 = (0, 0, 1)
+        v1 = (1, 0, 0)
+        v2 = (0, 1, 0)
+        mesh = TriangleSurfaceMesh(triangles=(t_a,), vertices=(v0, v1, v2))
+        M_MMo_M = CalcSpatialInertia(mesh=mesh, density=2.5)
+        self.assertIsInstance(M_MMo_M, SpatialInertia_[float])
 
     @numpy_compare.check_all_types
     def test_friction_api(self, T):
