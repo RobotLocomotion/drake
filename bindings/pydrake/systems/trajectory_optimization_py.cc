@@ -310,6 +310,10 @@ PYBIND11_MODULE(trajectory_optimization, m) {
         .def("AddPathVelocityConstraint", &Class::AddPathVelocityConstraint,
             py::arg("lb"), py::arg("ub"), py::arg("s"),
             cls_doc.AddPathVelocityConstraint.doc)
+        .def("AddVelocityConstraintAtNormalizedTime",
+            &Class::AddVelocityConstraintAtNormalizedTime,
+            py::arg("constraint"), py::arg("s"),
+            cls_doc.AddVelocityConstraintAtNormalizedTime.doc)
         .def("AddPathAccelerationConstraint",
             &Class::AddPathAccelerationConstraint, py::arg("lb"), py::arg("ub"),
             py::arg("s"), cls_doc.AddPathAccelerationConstraint.doc)
@@ -319,6 +323,10 @@ PYBIND11_MODULE(trajectory_optimization, m) {
             py::arg("ub"), cls_doc.AddPositionBounds.doc)
         .def("AddVelocityBounds", &Class::AddVelocityBounds, py::arg("lb"),
             py::arg("ub"), cls_doc.AddVelocityBounds.doc)
+        .def("AddAccelerationBounds", &Class::AddAccelerationBounds,
+            py::arg("lb"), py::arg("ub"), cls_doc.AddAccelerationBounds.doc)
+        .def("AddJerkBounds", &Class::AddJerkBounds, py::arg("lb"),
+            py::arg("ub"), cls_doc.AddJerkBounds.doc)
         .def("AddDurationCost", &Class::AddDurationCost,
             py::arg("weight") = 1.0, cls_doc.AddDurationCost.doc)
         .def("AddPathLengthCost", &Class::AddPathLengthCost,
