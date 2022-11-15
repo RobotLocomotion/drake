@@ -111,7 +111,7 @@ class TestControllers(unittest.TestCase):
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant(time_step=0.01)
-        Parser(plant).AddModelFromFile(sdf_path)
+        Parser(plant).AddModels(sdf_path)
         plant.WeldFrames(plant.world_frame(),
                          plant.GetFrameByName("iiwa_link_0"))
         plant.Finalize()

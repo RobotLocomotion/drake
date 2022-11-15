@@ -18,7 +18,7 @@ GTEST_TEST(MultibodyPlant, DeprecatedOutputNames) {
   const AcrobotParameters parameters;
   std::unique_ptr<MultibodyPlant<double>> plant =
       MakeAcrobotPlant(parameters, /* finalize = */ false);
-  Parser(plant.get()).AddModelFromFile(FindResourceOrThrow(
+  Parser(plant.get()).AddModels(FindResourceOrThrow(
       "drake/multibody/plant/test/split_pendulum.sdf"));
   plant->Finalize();
   EXPECT_EQ(plant->num_model_instances(), 3);
