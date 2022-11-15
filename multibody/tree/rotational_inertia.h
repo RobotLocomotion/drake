@@ -279,8 +279,8 @@ class RotationalInertia {
   /// is symmetric and includes both lower and upper parts of the matrix.
   Matrix3<T> CopyToFullMatrix3() const { return get_symmetric_matrix_view(); }
 
-  /// Compares `this` rotational inertia to `other` rotional inertia within the
-  /// specified `precision` (which is a dimensionless number specifying
+  /// Compares `this` rotational inertia to `other` rotational inertia within
+  /// the specified `precision` (which is a dimensionless number specifying
   /// the relative precision to which the comparison is performed).
   /// Denoting `I_maxA` as the largest element value that can appear in a valid
   /// `this` rotational inertia (independent of the expressed-in frame E) and

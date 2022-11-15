@@ -19,6 +19,7 @@
 #include "drake/multibody/tree/door_hinge.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/frame.h"
+#include "drake/multibody/tree/geometry_spatial_inertia.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/joint_actuator.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
@@ -112,6 +113,18 @@ void DoScalarIndependentDefinitions(py::module m) {
       doc.world_model_instance.doc);
   m.def("default_model_instance", &default_model_instance,
       doc.default_model_instance.doc);
+
+  // CalcSpatialInertia.
+  {
+    m.def("CalcSpatialInertia",
+        py::overload_cast<const geometry::Shape&, double>(&CalcSpatialInertia),
+        py::arg("shape"), py::arg("density"), doc.CalcSpatialInertia.doc_shape);
+
+    m.def("CalcSpatialInertia",
+        py::overload_cast<const geometry::TriangleSurfaceMesh<double>&, double>(
+            &CalcSpatialInertia),
+        py::arg("mesh"), py::arg("density"), doc.CalcSpatialInertia.doc_mesh);
+  }
 
   {
     using Class = DoorHingeConfig;
