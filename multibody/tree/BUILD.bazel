@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":multibody_tree_indexes",
         ":multibody_tree_topology",
         ":rotational_inertia",
+        ":shape_mass",
         ":spatial_inertia",
         ":string_view_map_key",
         ":unit_inertia",
@@ -247,6 +248,18 @@ drake_cc_library(
         "//math:linear_solve",
         "//math:vector3_util",
         "//multibody/math:spatial_algebra",
+    ],
+)
+
+drake_cc_library(
+    name = "shape_mass",
+    srcs = ["shape_mass.cc"],
+    hdrs = ["shape_mass.h"],
+    deps = [
+        ":spatial_inertia",
+        "//geometry:shape_specification",
+        "//geometry/proximity:obj_to_surface_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
     ],
 )
 
@@ -620,6 +633,20 @@ drake_cc_googletest(
     deps = [
         ":tree",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "shape_mass_test",
+    data = ["//multibody/parsing:test_models"],
+    deps = [
+        ":shape_mass",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:shape_specification",
+        "//geometry/proximity:make_box_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
     ],
 )
 
