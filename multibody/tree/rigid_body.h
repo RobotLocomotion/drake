@@ -181,8 +181,8 @@ class RigidBody : public Body<T> {
 
   /// Gets this bodys spatial inertia about it origin that is stored in context.
   /// @param[in] context contains the state of the multibody system.
-  /// @returns M_Bo_B spatial inertia of this rigid body B about Bo (B's
-  /// origin), expressed in B. M_Bo_B contains properties related to B's mass,
+  /// @returns M_BBo_B spatial inertia of this rigid body B about Bo (B's
+  /// origin), expressed in B. M_BBo_B contains properties related to B's mass,
   /// the position vector from Bo to Bcm (B's center of mass), and G_BBo_B
   /// (B's unit inertia about Bo expressed in B).
   /// @pre the context should make sense for use by `this` RigidBody.
