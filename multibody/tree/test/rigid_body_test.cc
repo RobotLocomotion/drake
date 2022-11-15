@@ -152,11 +152,13 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrame) {
 
   // Show that calling SetCenterOfMassInBodyFrame() can cause an exception to
   // be thrown due to non-physical mass/inertia properties.
+#ifdef DRAKE_ASSERT_IS_ARMED
   p_BoBcm_B = Vector3d(3*L, 0, 0);  // Now p_BoBcm_B = (6, 0, 0).
   rigid_body_->SetCenterOfMassInBodyFrame(context_ptr, p_BoBcm_B);
   M_BBo_B = rigid_body_->CalcSpatialInertiaInBodyFrame(*context_);
   DRAKE_EXPECT_THROWS_MESSAGE(M_BBcm_B = M_BBo_B.Shift(p_BoBcm_B),
       "Spatial inertia fails SpatialInertia::IsPhysicallyValid[^]*");
+#endif
 }
 
 }  // namespace
