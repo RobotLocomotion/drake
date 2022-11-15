@@ -484,7 +484,7 @@ template <typename T>
 template <typename FromScalar>
 Joint<T>* MultibodyTree<T>::CloneJointAndAdd(
     const Joint<FromScalar>& joint,
-    const internal::MultibodyElementAccessor<T, FromScalar>& handle) {
+    const internal::MultibodyElementMutableAccessor<T, FromScalar>& handle) {
   JointIndex joint_index = joint.index();
   auto joint_clone = joint.CloneToScalar(handle);
   joint_clone->set_parent_tree(this, joint_index);

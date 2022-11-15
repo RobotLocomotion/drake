@@ -81,6 +81,21 @@ template SomeType<double>; \
 template SomeType<::drake::AutoDiffXd>; \
 template SomeType<::drake::symbolic::Expression>;
 
+/// Defines template instantiations for Drake's default scalars where the the 
+/// tyep has two template parameters.
+/// This should only be used in .cc files, never in .h files.
+#define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_TWO_DEFAULT_SCALARS( \
+    SomeType) \
+template SomeType<double, double>; \
+template SomeType<double, ::drake::AutoDiffXd>; \
+template SomeType<double, ::drake::symbolic::Expression>; \
+template SomeType<::drake::AutoDiffXd, double>; \
+template SomeType<::drake::AutoDiffXd, ::drake::AutoDiffXd>; \
+template SomeType<::drake::AutoDiffXd, ::drake::symbolic::Expression>; \
+template SomeType<drake::symbolic::Expression, double>; \
+template SomeType<drake::symbolic::Expression, ::drake::AutoDiffXd>; \
+template SomeType<drake::symbolic::Expression, ::drake::symbolic::Expression>;
+
 /// Defines template instantiations for Drake's default nonsymbolic scalars.
 /// This should only be used in .cc files, never in .h files.
 #define \
@@ -96,6 +111,22 @@ template SomeType<::drake::AutoDiffXd>;
 extern template SomeType<double>; \
 extern template SomeType<::drake::AutoDiffXd>; \
 extern template SomeType<::drake::symbolic::Expression>;
+
+/// Declares that template instantiations exist for Drake's default scalars
+/// where the the tyep has two template parameters.
+/// This should only be used in .h files, never in .cc files.
+#define DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_TWO_DEFAULT_SCALARS(  \
+    SomeType) \
+extern template SomeType<double, double>; \
+extern template SomeType<double, ::drake::AutoDiffXd>; \
+extern template SomeType<double, ::drake::symbolic::Expression>; \
+extern template SomeType<::drake::AutoDiffXd, double>; \
+extern template SomeType<::drake::AutoDiffXd, ::drake::AutoDiffXd>; \
+extern template SomeType<::drake::AutoDiffXd, ::drake::symbolic::Expression>; \
+extern template SomeType<drake::symbolic::Expression, double>; \
+extern template SomeType<drake::symbolic::Expression, ::drake::AutoDiffXd>; \
+extern template SomeType<drake::symbolic::Expression, \
+                         ::drake::symbolic::Expression>;
 
 /// Declares that template instantiations exist for Drake's default nonsymbolic
 /// scalars.  This should only be used in .h files, never in .cc files.

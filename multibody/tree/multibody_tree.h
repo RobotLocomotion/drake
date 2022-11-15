@@ -69,38 +69,38 @@ template <typename T> class ModelInstance;
 template <typename T> class Mobilizer;
 template <typename T> class QuaternionFloatingMobilizer;
 
+template <typename ToScalar, template <typename> class InputElement>
+constexpr bool is_a_frame =
+    std::is_base_of_v<Frame<ToScalar>, InputElement<ToScalar>>;
+template <typename ToScalar, template <typename> class InputElement>
+static constexpr bool is_a_body =
+    std::is_base_of_v<Body<ToScalar>, InputElement<ToScalar>>;
+template <typename ToScalar, template <typename> class InputElement>
+static constexpr bool is_a_joint =
+    std::is_base_of_v<Joint<ToScalar>, InputElement<ToScalar>>;
+template <typename ToScalar, template <typename> class InputElement>
+static constexpr bool is_a_mobilizer =
+    std::is_base_of_v<Mobilizer<ToScalar>, InputElement<ToScalar>>;
+
 // Compile-time reifier of sorts.
 template <typename ToScalar, typename FromScalar>
 class MultibodyElementAccessor {
  public:
   virtual ~MultibodyElementAccessor() = default;
 
-  template <typename InputElement>
-  static constexpr bool is_a_frame =
-      std::is_base_of_v<Frame<ToScalar>, InputElement>;
-  template <typename InputElement>
-  static constexpr bool is_a_body =
-      std::is_base_of_v<Body<ToScalar>, InputElement>;
-  template <typename InputElement>
-  static constexpr bool is_a_joint =
-      std::is_base_of_v<Joint<ToScalar>, InputElement>;
-  template <typename InputElement>
-  static constexpr bool is_a_mobilizer =
-      std::is_base_of_v<Mobilizer<ToScalar>, InputElement>;
-
   template <template <typename> class MultibodyElement>
   const MultibodyElement<ToScalar>& get_variant(
       const MultibodyElement<FromScalar>& element) const {
-    if constexpr (is_a_frame<MultibodyElement<ToScalar>>) {
+    if constexpr (is_a_frame<ToScalar, MultibodyElement>) {
       return dynamic_cast<const MultibodyElement<ToScalar>&>(
           DoGetFrame(element));
-    } else if constexpr (is_a_body<MultibodyElement<ToScalar>>) {
+    } else if constexpr (is_a_body<ToScalar, MultibodyElement>) {
       return dynamic_cast<const MultibodyElement<ToScalar>&>(
           DoGetBody(element));
-    } else if constexpr (is_a_joint<MultibodyElement<ToScalar>>) {
+    } else if constexpr (is_a_joint<ToScalar, MultibodyElement>) {
       return dynamic_cast<const MultibodyElement<ToScalar>&>(
           DoGetJoint(element));
-    } else if constexpr (is_a_mobilizer<MultibodyElement<ToScalar>>) {
+    } else if constexpr (is_a_mobilizer<ToScalar, MultibodyElement>) {
       return dynamic_cast<const MultibodyElement<ToScalar>&>(
           DoGetMobilizer(element));
     }
@@ -108,53 +108,35 @@ class MultibodyElementAccessor {
 
   template <template <typename> class MultibodyElement>
   bool has_variant(const MultibodyElement<FromScalar>& element) const {
-    if constexpr (is_a_frame<MultibodyElement<ToScalar>>) {
+    if constexpr (is_a_frame<ToScalar, MultibodyElement>) {
       return DoHasFrame(element);
-    } else if constexpr (is_a_body<MultibodyElement<ToScalar>>) {
+    } else if constexpr (is_a_body<ToScalar, MultibodyElement>) {
       return DoHasBody(element);
-    } else if constexpr (is_a_joint<MultibodyElement<ToScalar>>) {
+    } else if constexpr (is_a_joint<ToScalar, MultibodyElement>) {
       return DoHasJoint(element);
-    } else if constexpr (is_a_mobilizer<MultibodyElement<ToScalar>>) {
+    } else if constexpr (is_a_mobilizer<ToScalar, MultibodyElement>) {
       return DoHasMobilizer(element);
     }
   }
 
   template <template <typename> class MultibodyElement>
-  MultibodyElement<ToScalar>& get_mutable_variant(
-      const MultibodyElement<FromScalar>& element) const {
-    if constexpr (is_a_frame<MultibodyElement<ToScalar>>) {
-      return dynamic_cast<MultibodyElement<ToScalar>&>(
-          DoGetMutableFrame(element));
-    } else if constexpr (is_a_body<MultibodyElement<ToScalar>>) {
-      return dynamic_cast<MultibodyElement<ToScalar>&>(
-          DoGetMutableBody(element));
-    } else if constexpr (is_a_joint<MultibodyElement<ToScalar>>) {
-      return dynamic_cast<MultibodyElement<ToScalar>&>(
-          DoGetMutableJoint(element));
-    } else if constexpr (is_a_mobilizer<MultibodyElement<ToScalar>>) {
-      return dynamic_cast<MultibodyElement<ToScalar>&>(
-          DoGetMutableMobilizer(element));
-    }
-  }
-
-  template <template <typename> class MultibodyElement>
   std::string get_new_name(const MultibodyElement<FromScalar>& element) const {
-    if constexpr (is_a_frame<MultibodyElement<ToScalar>>) {
+    if constexpr (is_a_frame<ToScalar, MultibodyElement>) {
       return DoGetFrameNewName(element);
-    } else if constexpr (is_a_body<MultibodyElement<ToScalar>>) {
+    } else if constexpr (is_a_body<ToScalar, MultibodyElement>) {
       return DoGetBodyNewName(element);
-    } else if constexpr (is_a_joint<MultibodyElement<ToScalar>>) {
+    } else if constexpr (is_a_joint<ToScalar, MultibodyElement>) {
       return DoGetJointNewName(element);
     }
   }
   template <template <typename> class MultibodyElement>
   ModelInstanceIndex get_new_model_instance(
       const MultibodyElement<FromScalar>& element) const {
-    if constexpr (is_a_frame<MultibodyElement<ToScalar>>) {
+    if constexpr (is_a_frame<ToScalar, MultibodyElement>) {
       return DoGetFrameNewModelInstance(element);
-    } else if constexpr (is_a_body<MultibodyElement<ToScalar>>) {
+    } else if constexpr (is_a_body<ToScalar, MultibodyElement>) {
       return DoGetBodyNewModelInstance(element);
-    } else if constexpr (is_a_joint<MultibodyElement<ToScalar>>) {
+    } else if constexpr (is_a_joint<ToScalar, MultibodyElement>) {
       return DoGetJointNewModelInstance(element);
     }
   }
@@ -180,18 +162,6 @@ class MultibodyElementAccessor {
 
   virtual bool DoHasMobilizer(const Mobilizer<FromScalar>& element) const = 0;
 
-  virtual Frame<ToScalar>& DoGetMutableFrame(
-      const Frame<FromScalar>& element) = 0;
-
-  virtual Body<ToScalar>& DoGetMutableBody(
-      const Body<FromScalar>& element) = 0;
-
-  virtual Joint<ToScalar>& DoGetMutableJoint(
-      const Joint<FromScalar>& element) = 0;
-
-  virtual Mobilizer<ToScalar>& DoGetMutableMobilizer(
-      const Mobilizer<FromScalar>& element) const = 0;
-
   virtual std::string DoGetFrameNewName(
       const Frame<FromScalar>& element) const = 0;
 
@@ -212,10 +182,28 @@ class MultibodyElementAccessor {
 };
 
 template <typename ToScalar, typename FromScalar>
-class DefaultElementAccessor
-    : public MultibodyElementAccessor<ToScalar, FromScalar> {
+class MultibodyElementMutableAccessor
+    : public virtual MultibodyElementAccessor<ToScalar, FromScalar> {
  public:
-  explicit DefaultElementAccessor(MultibodyTree<ToScalar>* owner)
+  template <template <typename> class MultibodyElement>
+  MultibodyElement<ToScalar>& get_mutable_variant(
+      const MultibodyElement<FromScalar>& element) const {
+    if constexpr (is_a_mobilizer<ToScalar, MultibodyElement>) {
+      return dynamic_cast<MultibodyElement<ToScalar>&>(
+          DoGetMutableMobilizer(element));
+    }
+  }
+
+ protected:
+  virtual Mobilizer<ToScalar>& DoGetMutableMobilizer(
+      const Mobilizer<FromScalar>& element) const = 0;
+};
+
+template <typename ToScalar, typename FromScalar>
+class DefaultElementAccessor
+    : public virtual MultibodyElementAccessor<ToScalar, FromScalar> {
+ public:
+  explicit DefaultElementAccessor(const MultibodyTree<ToScalar>* owner)
       : owner_(owner) {
     DRAKE_DEMAND(owner_ != nullptr);
   }
@@ -241,15 +229,6 @@ class DefaultElementAccessor
 
   bool DoHasMobilizer(const Mobilizer<FromScalar>& element) const override;
 
-  Frame<ToScalar>& DoGetMutableFrame(const Frame<FromScalar>& element) override;
-
-  Body<ToScalar>& DoGetMutableBody(const Body<FromScalar>& element) override;
-
-  Joint<ToScalar>& DoGetMutableJoint(const Joint<FromScalar>& element) override;
-
-  Mobilizer<ToScalar>& DoGetMutableMobilizer(
-      const Mobilizer<FromScalar>& element) const override;
-
   std::string DoGetFrameNewName(
       const Frame<FromScalar>& element) const override;
 
@@ -266,6 +245,23 @@ class DefaultElementAccessor
 
   ModelInstanceIndex DoGetJointNewModelInstance(
       const Joint<FromScalar>& element) const override;
+
+ private:
+  const MultibodyTree<ToScalar>* owner_{};
+};
+
+template <typename ToScalar, typename FromScalar>
+class DefaultElementMutableAccessor
+    : public MultibodyElementMutableAccessor<ToScalar, FromScalar>,
+      public DefaultElementAccessor<ToScalar, FromScalar> {
+ public:
+  explicit DefaultElementMutableAccessor(MultibodyTree<ToScalar>* owner)
+      : DefaultElementAccessor<ToScalar, FromScalar>(owner), owner_(owner) {
+    DRAKE_DEMAND(owner_ != nullptr);
+  }
+
+  Mobilizer<ToScalar>& DoGetMutableMobilizer(
+      const Mobilizer<FromScalar>& element) const override;
 
  private:
   MultibodyTree<ToScalar>* owner_{};
@@ -285,9 +281,13 @@ class MultibodyTree {
 
   template <typename FromScalar>
   DefaultElementAccessor<T, FromScalar> get_default_element_accessor() const {
-    // TODO(azeey) remove const_cast
-    return DefaultElementAccessor<T, FromScalar>(
-        <MultibodyTree*>(this));
+    return DefaultElementAccessor<T, FromScalar>(this);
+  }
+
+  template <typename FromScalar>
+  DefaultElementMutableAccessor<T, FromScalar>
+  get_default_element_mutable_accessor() {
+    return DefaultElementMutableAccessor<T, FromScalar>(this);
   }
 
   // Creates a MultibodyTree containing only a **world** body and a
@@ -2450,12 +2450,14 @@ class MultibodyTree {
             tree_clone->owned_force_elements_[0].get());
     DRAKE_DEMAND(tree_clone->gravity_field_ != nullptr);
 
+    auto mutable_handle =
+        tree_clone->template get_default_element_mutable_accessor<T>();
     // Since Joint<T> objects are implemented from basic element objects like
     // Body, Mobilizer, ForceElement and Constraint, they are cloned last so
     // that the clones of their dependencies are guaranteed to be available.
     // DO NOT change this order!!!
     for (const auto& joint : owned_joints_) {
-      tree_clone->CloneJointAndAdd(*joint, handle);
+      tree_clone->CloneJointAndAdd(*joint, mutable_handle);
     }
 
     for (const auto& actuator : owned_actuators_) {
@@ -3066,7 +3068,7 @@ class MultibodyTree {
   template <typename FromScalar>
   Joint<T>* CloneJointAndAdd(
       const Joint<FromScalar>& joint,
-      const internal::MultibodyElementAccessor<T, FromScalar>& handle);
+      const internal::MultibodyElementMutableAccessor<T, FromScalar>& handle);
 
   // Helper method to create a clone of `actuator` (which is templated on
   // FromScalar) and add it to `this` tree (templated on T).
@@ -3239,23 +3241,8 @@ class MultibodyTree {
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::MultibodyTree)
 
-extern template class ::drake::multibody::internal::DefaultElementAccessor<
-    double, double>;
-extern template class ::drake::multibody::internal::DefaultElementAccessor<
-    double, ::drake::AutoDiffXd>;
-extern template class ::drake::multibody::internal::DefaultElementAccessor<
-    double, ::drake::symbolic::Expression>;
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_TWO_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::DefaultElementAccessor)
 
-extern template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::AutoDiffXd, double>;
-extern template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::AutoDiffXd, ::drake::AutoDiffXd>;
-extern template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::AutoDiffXd, ::drake::symbolic::Expression>;
-
-extern template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::symbolic::Expression, double>;
-extern template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::symbolic::Expression, ::drake::AutoDiffXd>;
-extern template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::symbolic::Expression, ::drake::symbolic::Expression>;
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_TWO_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::DefaultElementMutableAccessor)

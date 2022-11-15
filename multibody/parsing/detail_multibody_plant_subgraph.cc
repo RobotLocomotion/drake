@@ -113,13 +113,13 @@ std::vector<geometry::GeometryId> GetGeometries(
 }  // namespace
 
 class MultibodySubgraphElementAccessor
-    : public DefaultElementAccessor<double, double> {
+    : public DefaultElementMutableAccessor<double, double> {
  public:
   MultibodySubgraphElementAccessor(
       MultibodyPlantElementsMap* elements_map,
       ModelInstanceRemapFunction model_instance_remap,
       FrameNameRemapFunction frame_name_remap)
-      : DefaultElementAccessor(
+      : DefaultElementMutableAccessor(
             &elements_map->plant_destination()->mutable_tree()),
         elements_map_(elements_map),
         model_instance_remap_(model_instance_remap),

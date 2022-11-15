@@ -491,7 +491,8 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   // MultibodyTree::CloneToScalar().
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
-      const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+      const internal::MultibodyElementMutableAccessor<ToScalar, T>& handle)
+      const {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(handle);
 
     if (this->has_implementation()) {
@@ -549,8 +550,8 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     // implementation to the appropriate scalar type.
     template <typename ToScalar>
     std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
-    CloneToScalar(
-        const internal::MultibodyElementAccessor<ToScalar, T>& handle) const {
+    CloneToScalar(const internal::MultibodyElementMutableAccessor<ToScalar, T>&
+                      handle) const {
       auto implementation_clone =
           std::make_unique<typename Joint<ToScalar>::JointImplementation>();
       for (const internal::Mobilizer<T>* mobilizer : mobilizers_) {

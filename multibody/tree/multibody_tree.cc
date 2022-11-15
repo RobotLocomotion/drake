@@ -3514,28 +3514,8 @@ bool DefaultElementAccessor<ToScalar, FromScalar>::DoHasMobilizer(
 }
 
 template <typename ToScalar, typename FromScalar>
-Body<ToScalar>& DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableBody(
-    const Body<FromScalar>& element) {
-  return owner_->get_mutable_body(element.index());
-}
-
-template <typename ToScalar, typename FromScalar>
-Frame<ToScalar>&
-DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableFrame(
-    const Frame<FromScalar>& element) {
-  return owner_->get_mutable_frame(element.index());
-}
-
-template <typename ToScalar, typename FromScalar>
-Joint<ToScalar>&
-DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableJoint(
-    const Joint<FromScalar>& element) {
-  return owner_->get_mutable_joint(element.index());
-}
-
-template <typename ToScalar, typename FromScalar>
 Mobilizer<ToScalar>&
-DefaultElementAccessor<ToScalar, FromScalar>::DoGetMutableMobilizer(
+DefaultElementMutableAccessor<ToScalar, FromScalar>::DoGetMutableMobilizer(
     const Mobilizer<FromScalar>& element) const {
   return owner_->get_mutable_mobilizer(element.index());
 }
@@ -3585,23 +3565,8 @@ DefaultElementAccessor<ToScalar, FromScalar>::DoGetJointNewModelInstance(
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::MultibodyTree)
 
-template class ::drake::multibody::internal::DefaultElementAccessor<double,
-                                                                    double>;
-template class ::drake::multibody::internal::DefaultElementAccessor<
-    double, ::drake::AutoDiffXd>;
-template class ::drake::multibody::internal::DefaultElementAccessor<
-    double, ::drake::symbolic::Expression>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_TWO_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::DefaultElementAccessor)
 
-template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::AutoDiffXd, double>;
-template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::AutoDiffXd, ::drake::AutoDiffXd>;
-template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::AutoDiffXd, ::drake::symbolic::Expression>;
-
-template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::symbolic::Expression, double>;
-template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::symbolic::Expression, ::drake::AutoDiffXd>;
-template class ::drake::multibody::internal::DefaultElementAccessor<
-    ::drake::symbolic::Expression, ::drake::symbolic::Expression>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_TWO_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::DefaultElementMutableAccessor)

@@ -123,20 +123,18 @@ class MultiDofJointWithLimits final : public Joint<T> {
     DRAKE_UNREACHABLE();
   }
   std::unique_ptr<Joint<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const override {
+      const internal::MultibodyElementAccessor<double, T>& handle)
+      const override {
     DRAKE_UNREACHABLE();
   }
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override {
+      const internal::MultibodyElementAccessor<AutoDiffXd, T>& handle)
+      const override {
     DRAKE_UNREACHABLE();
   }
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const override {
-    DRAKE_UNREACHABLE();
-  }
-  const Joint<T>& DoCloneTo(
-      internal::MultibodyTree<T>* tree, const Frame<T>& dest_frame_on_parent,
-      const Frame<T>& dest_frame_on_child) const override {
+      const internal::MultibodyElementAccessor<symbolic::Expression, T>& handle)
+      const override {
     DRAKE_UNREACHABLE();
   }
 };
