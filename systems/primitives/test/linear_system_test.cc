@@ -742,7 +742,7 @@ class MimoSystem final : public LeafSystem<T> {
 
     if (is_discrete) {
       this->DeclareDiscreteState(2);
-      this->DeclarePeriodicDiscreteUpdate(0.1, 0.0);
+      this->DeclarePeriodicDiscreteUpdateNoHandler(0.1, 0.0);
     } else {
       this->DeclareContinuousState(2);
     }

@@ -56,11 +56,8 @@ GTEST_TEST(AllegroLcmTest, AllegroCommandReceiver) {
 
   dut.get_input_port(0).FixValue(context.get(), command);
 
-  std::unique_ptr<systems::DiscreteValues<double>> update =
-      dut.AllocateDiscreteVariables();
-  update->SetFrom(context->get_mutable_discrete_state());
-  dut.CalcDiscreteVariableUpdates(*context, update.get());
-  context->get_mutable_discrete_state().SetFrom(*update);
+  // Manually trigger the discrete update event.
+  context->SetDiscreteState(dut.EvalUniquePeriodicDiscreteUpdate(*context));
 
   dut.CalcOutput(*context, output.get());
   EXPECT_TRUE(CompareMatrices(

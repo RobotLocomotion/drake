@@ -233,10 +233,9 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   double u0 = 29;
   system.get_input_port().FixValue(context.get(), u0);
 
-  auto update = system.AllocateDiscreteVariables();
-  system.CalcDiscreteVariableUpdates(*context, update.get());
+  auto& update = system.EvalUniquePeriodicDiscreteUpdate(*context);
 
-  EXPECT_TRUE(CompareMatrices(update->get_vector(0).CopyToVector(),
+  EXPECT_TRUE(CompareMatrices(update.get_vector(0).CopyToVector(),
                               A * x0 + B * u0 + f0));
 
   // Test TimeVaryingAffineSystem accessor methods.
@@ -370,7 +369,8 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest,
   sys.get_input_port().FixValue(context.get(), 42.0);
 
   auto updates = sys.AllocateDiscreteVariables();
-  EXPECT_NO_THROW(sys.CalcDiscreteVariableUpdates(*context, updates.get()));
+  EXPECT_NO_THROW(
+      sys.CalcForcedDiscreteVariableUpdate(*context, updates.get()));
 }
 
 GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
@@ -383,10 +383,9 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
   context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(x);
   sys.get_input_port().FixValue(context.get(), 42.0);
 
-  auto updates = sys.AllocateDiscreteVariables();
-  sys.CalcDiscreteVariableUpdates(*context, updates.get());
+  auto& updates = sys.EvalUniquePeriodicDiscreteUpdate(*context);
   EXPECT_TRUE(CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t),
-                              updates->get_vector().CopyToVector()));
+                              updates.get_vector().CopyToVector()));
 
   EXPECT_TRUE(CompareMatrices(x + sys.y0(t) + 42.0 * sys.D(t),
                               sys.get_output_port().Eval(*context)));

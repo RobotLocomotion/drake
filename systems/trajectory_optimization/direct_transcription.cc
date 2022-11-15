@@ -113,8 +113,8 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
       *y = next_state - context->get_continuous_state_vector().CopyToVector();
     } else {
       context->SetDiscreteState(0, state);
-      integrator_->get_system().CalcDiscreteVariableUpdates(
-          *context, discrete_state_.get());
+      discrete_state_->SetFrom(
+          integrator_->get_system().EvalUniquePeriodicDiscreteUpdate(*context));
       *y = next_state - discrete_state_->get_vector(0).get_value();
     }
   }
@@ -275,9 +275,6 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
   const InputPort<Expression>* input_port =
       symbolic_system->get_input_port_selection(input_port_index);
 
-  std::unique_ptr<DiscreteValues<Expression>> discrete_state =
-      discrete_time_system_ ? symbolic_system->AllocateDiscreteVariables() :
-      nullptr;
   ExplicitEulerIntegrator<Expression> integrator(
       *symbolic_system, fixed_timestep(), symbolic_context.get());
   integrator.Initialize();
@@ -292,9 +289,9 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
 
     if (discrete_time_system_) {
       symbolic_context->SetDiscreteState(state(i).cast<Expression>());
-      symbolic_system->CalcDiscreteVariableUpdates(*symbolic_context,
-                                                   discrete_state.get());
-      next_state = discrete_state->get_vector(0).get_value();
+      const DiscreteValues<Expression>& discrete_state =
+          symbolic_system->EvalUniquePeriodicDiscreteUpdate(*symbolic_context);
+      next_state = discrete_state.get_vector(0).get_value();
     } else {
       symbolic_context->SetContinuousState(state(i).cast<Expression>());
       DRAKE_THROW_UNLESS(integrator.IntegrateWithSingleFixedStepToTime(

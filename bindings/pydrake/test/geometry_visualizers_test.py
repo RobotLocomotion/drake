@@ -285,7 +285,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         visualizer.cloud_input_port().FixValue(
           context, AbstractValue.Make(cloud))
         self.assertIsInstance(visualizer.pose_input_port(), InputPort_[T])
-        visualizer.Publish(context)
+        visualizer.ForcedPublish(context)
         visualizer.Delete()
         if T == float:
             ad_visualizer = visualizer.ToAutoDiffXd()

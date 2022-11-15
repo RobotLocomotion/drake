@@ -190,7 +190,7 @@ void System<T>::Publish(const Context<T>& context,
 }
 
 template <typename T>
-void System<T>::Publish(const Context<T>& context) const {
+void System<T>::ForcedPublish(const Context<T>& context) const {
   Publish(context, this->get_forced_publish_events());
 }
 
@@ -272,7 +272,7 @@ void System<T>::CalcImplicitTimeDerivativesResidual(
 }
 
 template <typename T>
-void System<T>::CalcDiscreteVariableUpdates(
+void System<T>::CalcDiscreteVariableUpdate(
     const Context<T>& context,
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
@@ -292,10 +292,10 @@ void System<T>::ApplyDiscreteVariableUpdate(
 }
 
 template <typename T>
-void System<T>::CalcDiscreteVariableUpdates(
+void System<T>::CalcForcedDiscreteVariableUpdate(
     const Context<T>& context,
     DiscreteValues<T>* discrete_state) const {
-  CalcDiscreteVariableUpdates(
+  CalcDiscreteVariableUpdate(
       context, this->get_forced_discrete_update_events(), discrete_state);
 }
 
@@ -330,8 +330,8 @@ void System<T>::ApplyUnrestrictedUpdate(
 }
 
 template <typename T>
-void System<T>::CalcUnrestrictedUpdate(const Context<T>& context,
-                                       State<T>* state) const {
+void System<T>::CalcForcedUnrestrictedUpdate(const Context<T>& context,
+                                             State<T>* state) const {
   CalcUnrestrictedUpdate(
       context, this->get_forced_unrestricted_update_events(), state);
 }
@@ -417,7 +417,7 @@ void System<T>::CalcUniquePeriodicDiscreteUpdate(
   discrete_values->SetFrom(context.get_discrete_state());
 
   // Then let the event handlers modify them or not.
-  this->CalcDiscreteVariableUpdates(
+  this->CalcDiscreteVariableUpdate(
       context, collection->get_discrete_update_events(), discrete_values);
 }
 

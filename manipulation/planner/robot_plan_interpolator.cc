@@ -93,19 +93,11 @@ RobotPlanInterpolator::RobotPlanInterpolator(
   // Flag indicating whether RobotPlanInterpolator::Initialize has been called.
   init_flag_index_ = this->DeclareAbstractState(Value<bool>(false));
 
-  this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
+  this->DeclarePeriodicUnrestrictedUpdateEvent(
+      update_interval, 0, &RobotPlanInterpolator::UpdatePlanOnNewMessage);
 }
 
 RobotPlanInterpolator::~RobotPlanInterpolator() {}
-
-void RobotPlanInterpolator::SetDefaultState(
-    const systems::Context<double>&,
-    systems::State<double>* state) const {
-  PlanData& plan =
-      state->get_mutable_abstract_state<PlanData>(plan_index_);
-  plan = PlanData();
-  state->get_mutable_abstract_state<bool>(init_flag_index_) = false;
-}
 
 void RobotPlanInterpolator::OutputState(const systems::Context<double>& context,
                                   systems::BasicVector<double>* output) const {
@@ -167,9 +159,8 @@ void RobotPlanInterpolator::Initialize(double plan_start_time,
   state->get_mutable_abstract_state<bool>(init_flag_index_) = true;
 }
 
-void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
+systems::EventStatus RobotPlanInterpolator::UpdatePlanOnNewMessage(
     const systems::Context<double>& context,
-    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
   PlanData& plan =
       state->get_mutable_abstract_state<PlanData>(plan_index_);
@@ -181,63 +172,67 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
   // this is the best I've got.
   std::vector<char> encoded_msg(plan_input.getEncodedSize());
   plan_input.encode(encoded_msg.data(), 0, encoded_msg.size());
-  if (encoded_msg != plan.encoded_msg) {
-    plan.encoded_msg.swap(encoded_msg);
-    if (plan_input.num_states == 0) {
-      // The plan is empty.  Encode a plan for the current planned position.
-      const double current_plan_time = context.get_time() - plan.start_time;
-      MakeFixedPlan(context.get_time(),
-                    plan.pp.value(current_plan_time),
-                    state);
-    } else if (plan_input.num_states == 1) {
-      drake::log()->info("Ignoring plan with only one knot point.");
-    } else {
-      plan.start_time = context.get_time();
-      std::vector<Eigen::MatrixXd> knots(
-          plan_input.num_states,
-          Eigen::MatrixXd::Zero(plant_.num_positions(), 1));
-      for (int i = 0; i < plan_input.num_states; ++i) {
-        const auto& plan_state = plan_input.plan[i];
-        for (int j = 0; j < plan_state.num_joints; ++j) {
-          if (!plant_.HasJointNamed(plan_state.joint_name[j])) {
-            continue;
-          }
-          const auto joint_index = plant_.GetJointByName(
-              plan_state.joint_name[j]).position_start();
-          knots[i](joint_index, 0) = plan_state.joint_position[j];
-        }
-      }
-
-      std::vector<double> input_time;
-      for (int k = 0; k < static_cast<int>(plan_input.plan.size()); ++k) {
-        input_time.push_back(plan_input.plan[k].utime / 1e6);
-      }
-
-      const Eigen::MatrixXd knot_dot =
-          Eigen::MatrixXd::Zero(plant_.num_velocities(), 1);
-      switch (interp_type_) {
-        case InterpolatorType::ZeroOrderHold :
-          plan.pp = PiecewisePolynomial<double>::ZeroOrderHold(
-              input_time, knots);
-          break;
-        case InterpolatorType::FirstOrderHold :
-          plan.pp = PiecewisePolynomial<double>::FirstOrderHold(
-              input_time, knots);
-          break;
-        case InterpolatorType::Pchip :
-          plan.pp = PiecewisePolynomial<double>::CubicShapePreserving(
-              input_time, knots, true);
-          break;
-        case InterpolatorType::Cubic :
-          plan.pp =
-              PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
-                  input_time, knots, knot_dot, knot_dot);
-          break;
-      }
-      plan.pp_deriv = plan.pp.derivative();
-      plan.pp_double_deriv = plan.pp_deriv.derivative();
-    }
+  if (encoded_msg == plan.encoded_msg) {
+    return systems::EventStatus::DidNothing();
   }
+
+  plan.encoded_msg.swap(encoded_msg);
+  if (plan_input.num_states == 0) {
+    // The plan is empty.  Encode a plan for the current planned position.
+    const double current_plan_time = context.get_time() - plan.start_time;
+    MakeFixedPlan(context.get_time(),
+                  plan.pp.value(current_plan_time),
+                  state);
+  } else if (plan_input.num_states == 1) {
+    drake::log()->info("Ignoring plan with only one knot point.");
+  } else {
+    plan.start_time = context.get_time();
+    std::vector<Eigen::MatrixXd> knots(
+        plan_input.num_states,
+        Eigen::MatrixXd::Zero(plant_.num_positions(), 1));
+    for (int i = 0; i < plan_input.num_states; ++i) {
+      const auto& plan_state = plan_input.plan[i];
+      for (int j = 0; j < plan_state.num_joints; ++j) {
+        if (!plant_.HasJointNamed(plan_state.joint_name[j])) {
+          continue;
+        }
+        const auto joint_index = plant_.GetJointByName(
+            plan_state.joint_name[j]).position_start();
+        knots[i](joint_index, 0) = plan_state.joint_position[j];
+      }
+    }
+
+    std::vector<double> input_time;
+    for (int k = 0; k < static_cast<int>(plan_input.plan.size()); ++k) {
+      input_time.push_back(plan_input.plan[k].utime / 1e6);
+    }
+
+    const Eigen::MatrixXd knot_dot =
+        Eigen::MatrixXd::Zero(plant_.num_velocities(), 1);
+    switch (interp_type_) {
+      case InterpolatorType::ZeroOrderHold :
+        plan.pp = PiecewisePolynomial<double>::ZeroOrderHold(
+            input_time, knots);
+        break;
+      case InterpolatorType::FirstOrderHold :
+        plan.pp = PiecewisePolynomial<double>::FirstOrderHold(
+            input_time, knots);
+        break;
+      case InterpolatorType::Pchip :
+        plan.pp = PiecewisePolynomial<double>::CubicShapePreserving(
+            input_time, knots, true);
+        break;
+      case InterpolatorType::Cubic :
+        plan.pp =
+            PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+                input_time, knots, knot_dot, knot_dot);
+        break;
+    }
+    plan.pp_deriv = plan.pp.derivative();
+    plan.pp_double_deriv = plan.pp_deriv.derivative();
+  }
+
+  return systems::EventStatus::Succeeded();
 }
 
 }  // namespace planner

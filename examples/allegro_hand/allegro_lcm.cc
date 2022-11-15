@@ -35,7 +35,8 @@ AllegroCommandReceiver::AllegroCommandReceiver(int num_joints,
                 this->CopyStateToOutput(c, num_joints_ * 2, num_joints_, o);
               })
           .get_index();
-  this->DeclarePeriodicDiscreteUpdate(lcm_period_);
+  this->DeclarePeriodicDiscreteUpdateEvent(
+      lcm_period_, 0.0, &AllegroCommandReceiver::UpdateDiscreteVariables);
   // State + torque
   this->DeclareDiscreteState(num_joints_ * 3);
 }
@@ -49,9 +50,8 @@ void AllegroCommandReceiver::set_initial_position(
   state_value.head(num_joints_) = x;
 }
 
-void AllegroCommandReceiver::DoCalcDiscreteVariableUpdates(
+void AllegroCommandReceiver::UpdateDiscreteVariables(
     const Context<double>& context,
-    const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);

@@ -88,6 +88,9 @@ class HPolyhedron final : public ConvexSet {
   negative tol means it is less likey to remote a constraint.  */
   [[nodiscard]] HPolyhedron ReduceInequalities(double tol = 1E-9) const;
 
+  /** Checks if this HPolyhedron defines an empty set.  */
+  [[nodiscard]] bool IsEmpty() const;
+
   /** Solves a semi-definite program to compute the inscribed ellipsoid.
   From Section 8.4.2 in Boyd and Vandenberghe, 2004, we solve
   @verbatim

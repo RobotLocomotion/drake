@@ -50,12 +50,13 @@ class EmptySystem : public LeafSystem<T> {
   void AddPeriodicDiscreteUpdate() {
     const double default_period = 1.125;
     const double default_offset = 2.25;
-    this->DeclarePeriodicDiscreteUpdate(default_period, default_offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(default_period,
+                                                 default_offset);
   }
 
   // Adds a specific periodic discrete update.
   void AddPeriodicDiscreteUpdate(double period, double offset) {
-    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
   }
 };
 
@@ -1514,7 +1515,7 @@ GTEST_TEST(DiagramPublishTest, Publish) {
   PublishNumberDiagram publishing_diagram(42.0);
   EXPECT_EQ(0, publishing_diagram.get());
   auto context = publishing_diagram.CreateDefaultContext();
-  publishing_diagram.Publish(*context);
+  publishing_diagram.ForcedPublish(*context);
   EXPECT_EQ(42.0, publishing_diagram.get());
 }
 
@@ -1863,7 +1864,7 @@ class TestPublishingSystem final : public LeafSystem<double> {
   TestPublishingSystem() {
     this->DeclarePeriodicPublishEvent(
         kTestPublishPeriod, 0.0, &TestPublishingSystem::HandlePeriodPublish);
-    this->DeclarePeriodicPublish(kTestPublishPeriod);
+    this->DeclarePeriodicPublishNoHandler(kTestPublishPeriod);
 
     // Verify that no periodic discrete updates are registered.
     EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
@@ -2038,7 +2039,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 9.0 sec and do the update.
   context_->SetTime(9.0);
-  diagram_.CalcDiscreteVariableUpdates(
+  diagram_.CalcDiscreteVariableUpdate(
       *context_, events->get_discrete_update_events(), updates.get());
 
   // Note that non-participating hold1's state should not have been
@@ -2063,7 +2064,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 12.0 sec and do the update again.
   context_->SetTime(12.0);
-  diagram_.CalcDiscreteVariableUpdates(
+  diagram_.CalcDiscreteVariableUpdate(
       *context_, events->get_discrete_update_events(), updates.get());
   EXPECT_EQ(17.0, updates1[0]);
   EXPECT_EQ(23.0, updates2[0]);
@@ -2108,7 +2109,7 @@ TEST_F(DiscreteStateTest, DiscreteUpdateNotificationsAreLocalized) {
 
   // Fast forward to 2.0 sec and collect the update.
   context_->SetTime(2.0);
-  diagram_.CalcDiscreteVariableUpdates(
+  diagram_.CalcDiscreteVariableUpdate(
       *context_, discrete_events, updates.get());
 
   // Of course nothing should have been notified since nothing's changed yet.
@@ -2231,13 +2232,13 @@ GTEST_TEST(DiscreteStateDiagramTest, IsDifferenceEquationSystem) {
   EXPECT_FALSE(one_period_two_state_diagram->IsDifferenceEquationSystem());
 }
 
-// Tests CalcDiscreteVariableUpdates() when there are multiple subsystems and
+// Tests CalcDiscreteVariableUpdate() when there are multiple subsystems and
 // only one has an event to handle (call that the "participating subsystem"). We
 // want to verify that only the participating subsystem's State gets copied,
 // that the copied value matches the current value in the context, and
 // that the update gets performed properly. We also check that it works properly
 // when multiple subsystems have events to handle.
-GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdates) {
+GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdate) {
   TwoDiscreteSystemDiagram diagram;
   const int kSys1Id = TwoDiscreteSystemDiagram::kSys1Id;
   const int kSys2Id = TwoDiscreteSystemDiagram::kSys2Id;
@@ -2274,7 +2275,7 @@ GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdates) {
   // Fast forward to the event time, and record it for the test below.
   double time = 2.0;
   context->SetTime(time);
-  diagram.CalcDiscreteVariableUpdates(
+  diagram.CalcDiscreteVariableUpdate(
       *context, events->get_discrete_update_events(), x_buf.get());
 
   // The non-participating sys2 state shouldn't have been copied (if it had
@@ -2303,7 +2304,7 @@ GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdates) {
   // Fast forward to the new event time, and record it for the tests below.
   time = 6.0;
   context->SetTime(time);
-  diagram.CalcDiscreteVariableUpdates(
+  diagram.CalcDiscreteVariableUpdate(
       *context, events->get_discrete_update_events(), x_buf.get());
   // Both sys1 and sys2's discrete data should be updated.
   diagram.ApplyDiscreteVariableUpdate(events->get_discrete_update_events(),
@@ -2403,12 +2404,12 @@ class ForcedPublishingSystemDiagramTest : public ::testing::Test {
 };
 
 // Tests that a forced publish is processed through the event handler.
-TEST_F(ForcedPublishingSystemDiagramTest, Publish) {
+TEST_F(ForcedPublishingSystemDiagramTest, ForcedPublish) {
   auto* forced_publishing_system_one = diagram_.publishing_system_one();
   auto* forced_publishing_system_two = diagram_.publishing_system_two();
   EXPECT_FALSE(forced_publishing_system_one->published());
   EXPECT_FALSE(forced_publishing_system_two->published());
-  diagram_.Publish(*context_);
+  diagram_.ForcedPublish(*context_);
   EXPECT_TRUE(forced_publishing_system_one->published());
   EXPECT_TRUE(forced_publishing_system_two->published());
 }
@@ -2416,7 +2417,7 @@ TEST_F(ForcedPublishingSystemDiagramTest, Publish) {
 class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState(int id, double update_period) : id_(id) {
-    DeclarePeriodicUnrestrictedUpdate(update_period, 0);
+    DeclarePeriodicUnrestrictedUpdateNoHandler(update_period, 0);
     DeclareAbstractState(Value<double>(id_));
 
     // Verify that no periodic discrete updates are registered.
@@ -3194,8 +3195,8 @@ class PerStepActionTestSystem : public LeafSystem<double> {
 // systems. To that end, we create a diagram with a nested diagram and sibling
 // leaf systems. Each leaf system has a unique set of events (None, discrete and
 // and unrestricted, and unrestricted and publish, respectively). By invoking
-// the various forced event-generating methods (CalcUnrestrictedUpdate,
-// CalcDiscreteVariableUpdates, and Publish), we can observe the results by
+// the various forced event-generating methods (CalcUnrestrictedUpdate(),
+// CalcDiscreteVariableUpdate(), and Publish(), we can observe the results by
 // observing the context for the system (and its for-the-unit-test, hacked
 // internal state). The fact that these unit tests use events triggered by
 // per-step events is wholly irrelevant -- at this tested level of the API, the
@@ -3247,9 +3248,9 @@ GTEST_TEST(DiagramEventEvaluation, Propagation) {
   context->get_mutable_state().SetFrom(*tmp_state);
 
   // Does discrete updates second.
-  diagram->CalcDiscreteVariableUpdates(*context,
-                                       events->get_discrete_update_events(),
-                                       tmp_discrete_state.get());
+  diagram->CalcDiscreteVariableUpdate(*context,
+                                      events->get_discrete_update_events(),
+                                      tmp_discrete_state.get());
   context->get_mutable_discrete_state().SetFrom(*tmp_discrete_state);
 
   // Publishes last.
@@ -3750,9 +3751,9 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   dut->GetInitializationEvents(*context, init_events.get());
 
   dut->Publish(*context, init_events->get_publish_events());
-  dut->CalcDiscreteVariableUpdates(*context,
-                                   init_events->get_discrete_update_events(),
-                                   discrete_updates.get());
+  dut->CalcDiscreteVariableUpdate(*context,
+                                  init_events->get_discrete_update_events(),
+                                  discrete_updates.get());
   dut->CalcUnrestrictedUpdate(
       *context, init_events->get_unrestricted_update_events(), state.get());
 

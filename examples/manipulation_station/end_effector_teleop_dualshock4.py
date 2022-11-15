@@ -171,7 +171,7 @@ class DualShock4Teleop(LeafSystem):
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self.DeclarePeriodicPublish(1.0, 0.0)
+        self.DeclarePeriodicPublishNoHandler(1.0, 0.0)
 
         self.teleop_manager = TeleopDualShock4Manager(joystick)
         self.roll = self.pitch = self.yaw = 0

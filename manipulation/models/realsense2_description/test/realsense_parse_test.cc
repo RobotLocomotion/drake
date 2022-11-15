@@ -69,7 +69,7 @@ TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
     drake::log()->info("Visualize: {}", object_name);
     Simulator<double> simulator(*diagram);
     simulator.Initialize();
-    diagram->Publish(simulator.get_context());
+    diagram->ForcedPublish(simulator.get_context());
   }
 }
 

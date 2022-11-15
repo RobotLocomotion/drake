@@ -36,7 +36,7 @@ GTEST_TEST(PlanarManipulandLcmTest, PlanarManipulandStatusPassthroughTest) {
   std::unique_ptr<systems::DiscreteValues<double>> update =
       diagram->AllocateDiscreteVariables();
   update->SetFrom(context->get_mutable_discrete_state());
-  diagram->CalcDiscreteVariableUpdates(*context, update.get());
+  diagram->CalcForcedDiscreteVariableUpdate(*context, update.get());
   context->get_mutable_discrete_state().SetFrom(*update);
   diagram->CalcOutput(*context, output.get());
 

@@ -105,9 +105,9 @@ GTEST_TEST(ForcedDispatchOverrideSystemTest, Dispatchers) {
   auto discrete_values = system.AllocateDiscreteVariables();
   EXPECT_EQ(discrete_values->get_system_id(), context->get_system_id());
   auto state = context->CloneState();
-  system.Publish(*context);
-  system.CalcDiscreteVariableUpdates(*context, discrete_values.get());
-  system.CalcUnrestrictedUpdate(*context, state.get());
+  system.ForcedPublish(*context);
+  system.CalcForcedDiscreteVariableUpdate(*context, discrete_values.get());
+  system.CalcForcedUnrestrictedUpdate(*context, state.get());
   ASSERT_TRUE(system.got_publish_event());
   ASSERT_TRUE(system.got_discrete_update_event());
   ASSERT_TRUE(system.got_unrestricted_update_event());
@@ -147,7 +147,7 @@ class TestSystem : public LeafSystem<T> {
   void AddPeriodicUpdate() {
     const double period = 10.0;
     const double offset = 5.0;
-    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
     std::optional<PeriodicEventData> periodic_attr =
         this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
@@ -157,7 +157,7 @@ class TestSystem : public LeafSystem<T> {
 
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
-    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
     std::optional<PeriodicEventData> periodic_attr =
        this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
@@ -166,14 +166,32 @@ class TestSystem : public LeafSystem<T> {
   }
 
   void AddPeriodicUpdate(double period, double offset) {
-    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
   }
 
   void AddPeriodicUnrestrictedUpdate(double period, double offset) {
+    this->DeclarePeriodicUnrestrictedUpdateNoHandler(period, offset);
+  }
+
+  void AddPublish(double period) {
+    this->DeclarePeriodicPublishNoHandler(period);
+  }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // DEPRECATED remove 2023-03-01
+  void AddPeriodicUpdateDeprecated(double period, double offset) {
+    this->DeclarePeriodicDiscreteUpdate(period, offset);
+  }
+
+  void AddPeriodicUnrestrictedUpdateDeprecated(double period, double offset) {
     this->DeclarePeriodicUnrestrictedUpdate(period, offset);
   }
 
-  void AddPublish(double period) { this->DeclarePeriodicPublish(period); }
+  void AddPublishDeprecated(double period, double offset) {
+    this->DeclarePeriodicPublish(period, offset);
+  }
+#pragma GCC diagnostic pop
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override {}
@@ -613,6 +631,26 @@ TEST_F(LeafSystemTest, EventsAtTheSameTime) {
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
+}
+
+// DEPRECATED remove 2023-03-01
+TEST_F(LeafSystemTest, DeprecatedNoHandlerMethodsStillWork) {
+  system_.AddPublishDeprecated(0.125, 0.5);
+  system_.AddPeriodicUpdateDeprecated(0.25, 0.75);
+  system_.AddPeriodicUnrestrictedUpdateDeprecated(0.5, 1.0);
+
+  auto collection = system_.AllocateCompositeEventCollection();
+  system_.GetPeriodicEvents(context_, collection.get());
+
+  auto& leaf_collection =
+      *dynamic_cast<const LeafCompositeEventCollection<double>*>(
+          collection.get());
+  EXPECT_EQ(
+      leaf_collection.get_publish_events().get_events().size(), 1);
+  EXPECT_EQ(
+      leaf_collection.get_discrete_update_events().get_events().size(), 1);
+  EXPECT_EQ(
+      leaf_collection.get_unrestricted_update_events().get_events().size(), 1);
 }
 
 // Tests that if the current time is exactly the offset, the next
@@ -2364,7 +2402,7 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   ASSERT_EQ(system.do_publish_count(), 0);
   ASSERT_EQ(system.event_handle_count(), 0);
 
-  system.Publish(*context);
+  system.ForcedPublish(*context);
   EXPECT_EQ(system.do_publish_count(), 1);
   EXPECT_EQ(system.event_handle_count(), 1);
   system.Publish(*context, events);
@@ -2376,7 +2414,7 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   system.set_ignore_events(true);
   ASSERT_TRUE(system.ignore_events());
 
-  system.Publish(*context);
+  system.ForcedPublish(*context);
   EXPECT_EQ(system.do_publish_count(), 3);
   EXPECT_EQ(system.event_handle_count(), 2);
   system.Publish(*context, events);
@@ -2791,15 +2829,32 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   dut.GetInitializationEvents(*context, init_events.get());
 
   dut.Publish(*context, init_events->get_publish_events());
-  dut.CalcDiscreteVariableUpdates(*context,
-                                  init_events->get_discrete_update_events(),
-                                  discrete_updates.get());
+  dut.CalcDiscreteVariableUpdate(*context,
+                                 init_events->get_discrete_update_events(),
+                                 discrete_updates.get());
   dut.CalcUnrestrictedUpdate(
       *context, init_events->get_unrestricted_update_events(), state.get());
 
   EXPECT_TRUE(dut.get_pub_init());
   EXPECT_TRUE(dut.get_dis_update_init());
   EXPECT_TRUE(dut.get_unres_update_init());
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Make sure the deprecated spelling still works (remove 2023-03-01).
+  InitializationTestSystem dut_deprecated;
+  EXPECT_FALSE(dut_deprecated.get_dis_update_init());
+  auto context_deprecated = dut_deprecated.CreateDefaultContext();
+  auto discrete_deprecated = dut_deprecated.AllocateDiscreteVariables();
+  auto init_events_deprecated =
+      dut_deprecated.AllocateCompositeEventCollection();
+  dut_deprecated.GetInitializationEvents(*context_deprecated,
+                                         init_events_deprecated.get());
+  dut_deprecated.CalcDiscreteVariableUpdates(
+      *context_deprecated, init_events_deprecated->get_discrete_update_events(),
+      discrete_deprecated.get());
+  EXPECT_TRUE(dut_deprecated.get_dis_update_init());
+#pragma GCC diagnostic pop
 }
 
 // Although many of the tests above validate behavior of events when the
@@ -2979,12 +3034,12 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
 
   dut.CalcUnrestrictedUpdate(
       *context, all_events->get_unrestricted_update_events(), &*state);
-  dut.CalcUnrestrictedUpdate(*context, &*state);
-  dut.CalcDiscreteVariableUpdates(
+  dut.CalcForcedUnrestrictedUpdate(*context, &*state);
+  dut.CalcDiscreteVariableUpdate(
       *context, all_events->get_discrete_update_events(), &*discrete_state);
-  dut.CalcDiscreteVariableUpdates(*context, &*discrete_state);
+  dut.CalcForcedDiscreteVariableUpdate(*context, &*discrete_state);
   dut.Publish(*context, all_events->get_publish_events());
-  dut.Publish(*context);
+  dut.ForcedPublish(*context);
 
   EXPECT_EQ(dut.num_publish(), 5);
   EXPECT_EQ(dut.num_second_publish_handler_publishes(), 1);
@@ -2992,6 +3047,20 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   EXPECT_EQ(dut.num_second_discrete_update(), 1);
   EXPECT_EQ(dut.num_unrestricted_update(), 5);
   EXPECT_EQ(dut.num_second_unrestricted_update(), 1);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Make sure the deprecated "forced" spellings still work (remove 2023-03-01)
+  dut.Publish(*context);
+  dut.CalcDiscreteVariableUpdates(*context, &*discrete_state);
+  dut.CalcUnrestrictedUpdate(*context, &*state);
+  EXPECT_EQ(dut.num_publish(), 6);
+  EXPECT_EQ(dut.num_second_publish_handler_publishes(), 2);
+  EXPECT_EQ(dut.num_discrete_update(), 6);
+  EXPECT_EQ(dut.num_second_discrete_update(), 2);
+  EXPECT_EQ(dut.num_unrestricted_update(), 6);
+  EXPECT_EQ(dut.num_second_unrestricted_update(), 2);
+#pragma GCC diagnostic pop
 }
 
 // A System that does not override the default implicit time derivatives

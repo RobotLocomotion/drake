@@ -351,7 +351,9 @@ void TestSocpDualSolution2(const SolverInterface& solver,
 // to test if Drake's solver wrappers can handle duplicated variables.
 // min x0 + x1
 // s.t 4x0²+3x1² ≤ 1
-void TestSocpDuplicatedVariable1(const SolverInterface& solver, double tol);
+void TestSocpDuplicatedVariable1(
+    const SolverInterface& solver,
+    const std::optional<SolverOptions>& solver_options, double tol);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -283,7 +283,7 @@ Eigen::VectorXd JointSliders<T>::Run(const Diagram<T>& diagram,
                        this->get_output_port().Eval(sliders_context));
 
   // Loop until the button is clicked, or the timeout (when given) is reached.
-  diagram.Publish(diagram_context);
+  diagram.ForcedPublish(diagram_context);
   while (meshcat_->GetButtonClicks(kButtonName) < 1) {
     if (timeout.has_value()) {
       const auto elapsed = Duration(Clock::now() - start_time).count();
@@ -302,7 +302,7 @@ Eigen::VectorXd JointSliders<T>::Run(const Diagram<T>& diagram,
 
     // Publish the new positions.
     plant_->SetPositions(&plant_context, new_positions);
-    diagram.Publish(diagram_context);
+    diagram.ForcedPublish(diagram_context);
   }
 
   return ExtractDoubleOrThrow(plant_->GetPositions(plant_context).eval());

@@ -480,10 +480,11 @@ DuplicatedVariableLinearProgramTest1::DuplicatedVariableLinearProgramTest1()
 }
 
 void DuplicatedVariableLinearProgramTest1::CheckSolution(
-    const SolverInterface& solver, double tol) const {
+    const SolverInterface& solver,
+    const std::optional<SolverOptions>& solver_options, double tol) const {
   if (solver.available()) {
     MathematicalProgramResult result;
-    solver.Solve(*prog_, std::nullopt, std::nullopt, &result);
+    solver.Solve(*prog_, std::nullopt, solver_options, &result);
     EXPECT_TRUE(result.is_success());
     const Eigen::Vector3d x_sol = result.GetSolution(x_);
     EXPECT_NEAR(result.get_optimal_cost(),

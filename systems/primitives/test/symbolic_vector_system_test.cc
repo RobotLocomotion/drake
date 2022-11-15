@@ -399,7 +399,7 @@ TEST_F(SymbolicVectorSystemTest, DiscreteStateOnly) {
   const double xval = 0.45;
   context->get_mutable_discrete_state_vector()[0] = xval;
   auto discrete_variables = system.AllocateDiscreteVariables();
-  system.CalcDiscreteVariableUpdates(*context, discrete_variables.get());
+  system.CalcForcedDiscreteVariableUpdate(*context, discrete_variables.get());
   EXPECT_TRUE(CompareMatrices(discrete_variables->get_vector().get_value(),
                               Vector1d{-xval + xval * xval * xval}));
 }
@@ -600,7 +600,7 @@ TEST_F(SymbolicVectorSystemTest, DiscreteTimeSymbolic) {
   context->get_mutable_numeric_parameter(0).SetFromVector(pc_);
 
   auto discrete_variables = system->AllocateDiscreteVariables();
-  system->CalcDiscreteVariableUpdates(*context, discrete_variables.get());
+  system->CalcForcedDiscreteVariableUpdate(*context, discrete_variables.get());
   const auto& xnext = discrete_variables->get_vector().get_value();
   EXPECT_TRUE(xnext[0].EqualTo(tc_));
   EXPECT_TRUE(xnext[1].EqualTo(xc_[1] + uc_[1] + pc_[1]));

@@ -71,7 +71,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, BasicTest) {
   SetUpDiagram();
 
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer/iiwa14"));
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(meshcat_->HasPath("/drake/visualizer/iiwa14"));
   for (int link = 0; link < 8; link++) {
     EXPECT_NE(meshcat_->GetPackedTransform(
@@ -108,7 +108,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Roles) {
     params.role = role;
     SetUpDiagram(params);
     EXPECT_FALSE(meshcat_->HasPath("visualizer/iiwa14/iiwa_link_7"));
-    diagram_->Publish(*context_);
+    diagram_->ForcedPublish(*context_);
     EXPECT_TRUE(meshcat_->HasPath("visualizer/iiwa14/iiwa_link_7"));
     auto& inspector = scene_graph_->model_inspector();
     FrameId iiwa_link_7 = plant_->GetBodyFrameIdOrThrow(
@@ -132,7 +132,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
   params.prefix = "/foo";
   SetUpDiagram(params);
   EXPECT_FALSE(meshcat_->HasPath("/foo/iiwa14"));
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(meshcat_->HasPath("/foo/iiwa14"));
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer"));
 
@@ -140,7 +140,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
   params.prefix = "foo";
   EXPECT_FALSE(meshcat_->HasPath("/drake/foo/iiwa14"));
   SetUpDiagram(params);
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(meshcat_->HasPath("/drake/foo/iiwa14"));
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer"));
 }
@@ -178,7 +178,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
 
 TEST_F(MeshcatVisualizerWithIiwaTest, Delete) {
   SetUpDiagram();
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(meshcat_->HasPath("/drake/visualizer"));
   visualizer_->Delete();
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer"));
@@ -201,12 +201,12 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
 
   // Publish once without recording and confirm that we don't have the iiwa
   // frame.
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_FALSE(has_iiwa_frame(*animation, 0));
 
   // Publish again *with* recording and confirm that we do now have the frame.
   visualizer_->StartRecording();
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(has_iiwa_frame(*animation, 0));
 
   // Deleting the recording removes that frame.
@@ -215,7 +215,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
   EXPECT_FALSE(has_iiwa_frame(*animation, 0));
 
   // We are still recording, so publish *will* add it.
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(has_iiwa_frame(*animation, 0));
 
   // But if we stop recording, then it's not added.
@@ -223,14 +223,14 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
   visualizer_->DeleteRecording();
   animation = visualizer_->get_mutable_recording();
   EXPECT_FALSE(has_iiwa_frame(*animation, 0));
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_FALSE(has_iiwa_frame(*animation, 0));
 
   // Now publish a time 0.0 and time = 1.0 and confirm we have the frames.
   animation = visualizer_->StartRecording();
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   context_->SetTime(1.0);
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(has_iiwa_frame(*animation, 0));
   EXPECT_TRUE(
       has_iiwa_frame(*animation, std::floor(1.0 / params.publish_period)));
@@ -242,7 +242,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
 
 TEST_F(MeshcatVisualizerWithIiwaTest, RecordingWithoutSetTransform) {
   SetUpDiagram();
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   std::string X_7_message =
       meshcat_->GetPackedTransform("/drake/visualizer/iiwa14/iiwa_link_7");
 
@@ -253,7 +253,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, RecordingWithoutSetTransform) {
   bool set_transforms_while_recording = false;
   visualizer_->StartRecording(set_transforms_while_recording);
   // This publish should *not* change the transform in the Meshcat scene tree.
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_EQ(
       meshcat_->GetPackedTransform("/drake/visualizer/iiwa14/iiwa_link_7"),
       X_7_message);
@@ -261,7 +261,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, RecordingWithoutSetTransform) {
   set_transforms_while_recording = true;
   visualizer_->StartRecording(set_transforms_while_recording);
   // This publish *should* change the transform in the Meshcat scene tree.
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_NE(
       meshcat_->GetPackedTransform("/drake/visualizer/iiwa14/iiwa_link_7"),
       X_7_message);
@@ -276,7 +276,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {
   // Call publish to provide code coverage for the AutoDiffXd version of
   // UpdateMeshcat / SetObjects SetTransforms.  We simply confirm that the code
   // doesn't blow up.
-  ad_diagram->Publish(*ad_context);
+  ad_diagram->ForcedPublish(*ad_context);
 }
 
 GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
@@ -313,7 +313,7 @@ GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
   EXPECT_FALSE(meshcat->HasPath("/drake/visualizer/iiwa14"));
   EXPECT_FALSE(meshcat->HasPath("/drake/visualizer/second_iiwa"));
 
-  diagram->Publish(*context);
+  diagram->ForcedPublish(*context);
 
   EXPECT_TRUE(meshcat->HasPath("/drake/visualizer/iiwa14"));
   EXPECT_TRUE(meshcat->HasPath("/drake/visualizer/second_iiwa"));
