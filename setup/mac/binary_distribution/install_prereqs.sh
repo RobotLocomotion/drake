@@ -34,6 +34,20 @@ if ! command -v brew &>/dev/null; then
     "$(/usr/bin/curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 
+eval "$(brew shellenv)"
+HOMEBREW_ADMIN=$(stat -f '%Su' ${HOMEBREW_PREFIX}/Cellar)
+if [[ "$HOMEBREW_ADMIN" != "$USER" ]]; then
+    cat <<EOF
+WARNING: You, $USER, are not the Homebrew administrator on this machine.
+Please ask $HOMEBREW_ADMIN to update Drake Homebrew dependencies if necessary.
+
+Skipping binary distribution dependency updates; try building Drake
+anyway. The currently installed dependencies may be adequate.
+
+EOF
+    exit 0
+fi
+
 # Pass --retry 2 when invoking the curl command line tool during execution of
 # this script to retry twice the download of a bottle.
 [[ -z "${HOMEBREW_CURL_RETRIES:-}" ]] || export HOMEBREW_CURL_RETRIES=2

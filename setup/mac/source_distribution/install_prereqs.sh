@@ -45,6 +45,20 @@ if ! command -v brew &>/dev/null; then
   exit 4
 fi
 
+eval "$(brew shellenv)"
+HOMEBREW_ADMIN=$(stat -f '%Su' ${HOMEBREW_PREFIX}/Cellar)
+if [[ "$HOMEBREW_ADMIN" != "$USER" ]]; then
+    cat <<EOF
+WARNING: You, $USER, are not the Homebrew administrator on this machine.
+Please ask $HOMEBREW_ADMIN to update Drake Homebrew dependencies if necessary.
+
+Skipping source distribution dependency updates; try building Drake
+anyway. The currently installed dependencies may be adequate.
+
+EOF
+    exit 0
+fi
+
 if [[ "${with_update}" -eq 1 && "${binary_distribution_called_update:-0}" -ne 1 ]]; then
   brew update || (sleep 30; brew update)
 fi
