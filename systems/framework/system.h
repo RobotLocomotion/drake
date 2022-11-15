@@ -651,7 +651,7 @@ class System : public SystemBase {
 
   /** (Deprecated) See CalcForcedUnrestrictedUpdate()
   @pydrake_mkdoc_identifier{deprecated} */
-  DRAKE_DEPRECATED("2023-02-01", "Use CalcForcedUnrestrictedUpdate() instead")
+  DRAKE_DEPRECATED("2023-03-01", "Use CalcForcedUnrestrictedUpdate() instead")
   void CalcUnrestrictedUpdate(const Context<T>& context,
                               State<T>* state) const {
     CalcForcedUnrestrictedUpdate(context, state);
