@@ -32,6 +32,7 @@
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/screw_joint.h"
+#include "drake/multibody/tree/shape_mass.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 
@@ -112,6 +113,20 @@ void DoScalarIndependentDefinitions(py::module m) {
       doc.world_model_instance.doc);
   m.def("default_model_instance", &default_model_instance,
       doc.default_model_instance.doc);
+
+  // CalcSpatialInertia.
+  {
+    m.def("CalcSpatialInertia",
+        py::overload_cast<const geometry::Shape&, double>(&CalcSpatialInertia),
+        py::arg("shape"), py::arg("density") = 1.0,
+        doc.CalcSpatialInertia.doc_shape);
+
+    m.def("CalcSpatialInertia",
+        py::overload_cast<const geometry::TriangleSurfaceMesh<double>&, double>(
+            &CalcSpatialInertia),
+        py::arg("mesh"), py::arg("density") = 1.0,
+        doc.CalcSpatialInertia.doc_mesh);
+  }
 
   {
     using Class = DoorHingeConfig;
