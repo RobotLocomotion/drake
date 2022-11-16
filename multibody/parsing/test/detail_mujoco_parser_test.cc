@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 
+#include <filesystem>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -284,6 +286,9 @@ GTEST_TEST(MujocoParser, GeometryProperties) {
 
   std::string xml = R"""(
 <mujoco model="test">
+  <asset>
+    <material name="Orange" rgba="1 0.5 0 1"/>
+  </asset>
   <default class="default_rgba">
     <geom rgba="0 1 0 1"/>
   </default>
@@ -292,6 +297,10 @@ GTEST_TEST(MujocoParser, GeometryProperties) {
     <geom name="default_rgba" type="sphere" size="0.1" class="default_rgba"/>
     <geom name="sphere" type="sphere" size="0.1" friction="0.9 0.0 0.0"
           rgba="1 0 0 1"/>
+    <geom name="orange" type="sphere" size="0.1" material="Orange"/>
+    <geom name="red" type="sphere" size="0.1" material="Orange" rgba="1 0 0 1"/>
+    <geom name="green" type="sphere" size="0.1" material="Orange"
+          class="default_rgba"/>
   </worldbody>
 </mujoco>
 )""";
@@ -335,6 +344,107 @@ GTEST_TEST(MujocoParser, GeometryProperties) {
   CheckProperties("default", 1.0, Vector4d{.5, .5, .5, 1});
   CheckProperties("default_rgba", 1.0, Vector4d{0, 1, 0, 1});
   CheckProperties("sphere", 0.9, Vector4d{1, 0, 0, 1});
+  CheckProperties("orange", 1.0, Vector4d{1, 0.5, 0, 1});
+  // If both material and rgba are specified, rgba wins.
+  CheckProperties("red", 1.0, Vector4d{1, 0, 0, 1});
+  CheckProperties("green", 1.0, Vector4d{0, 1, 0, 1});
+}
+
+void TestMesh(std::string expected_filename, std::string mesh_asset,
+              std::string compiler = "", double expected_scale = 1.0) {
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  std::string xml = fmt::format(
+      R"""(
+<mujoco model="test">
+  {}
+  <asset>
+    {}
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box"/>
+  </worldbody>
+</mujoco>
+)""",
+      compiler, mesh_asset);
+
+  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
+
+  const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
+  GeometryId geom_id = inspector.GetGeometryIdByName(
+      inspector.world_frame_id(), Role::kProximity, "box_geom");
+  auto* mesh =
+      dynamic_cast<const geometry::Mesh*>(&inspector.GetShape(geom_id));
+  EXPECT_NE(mesh, nullptr);
+  EXPECT_EQ(mesh->filename(), expected_filename);
+  EXPECT_EQ(mesh->scale(), expected_scale);
+}
+
+GTEST_TEST(MujocoParser, MeshFiles) {
+  std::string box_obj = std::filesystem::canonical(FindResourceOrThrow(
+      "drake/multibody/parsing/test/box_package/meshes/box.obj"));
+
+  // Absolute path, referencing the obj directly.
+  std::string mesh_asset =
+      fmt::format(R"""(<mesh name="box" file="{}"/>)""", box_obj);
+  TestMesh(box_obj, mesh_asset);
+
+  // Absolute path, referencing an stl with an obj replacement available.
+  std::string quad_cube_stl =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.stl");
+  std::string quad_cube_obj = std::filesystem::canonical(
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
+  mesh_asset =
+      fmt::format(R"""(<mesh name="box" file="{}"/>)""", quad_cube_stl);
+  TestMesh(quad_cube_obj, mesh_asset);
+
+  // Relative path (from string, so path is relative to cwd).
+  mesh_asset =
+      R"""(<mesh name="box" file="multibody/parsing/test/box_package/meshes/box.obj"/>)""";
+  TestMesh(box_obj, mesh_asset);
+
+  // Absolute path in the meshdir compiler attribute.
+  mesh_asset =
+      R"""(<mesh name="box" file="box.obj"/>)""";
+  std::string compiler =
+      fmt::format(R"""(<compiler meshdir={}/>)""",
+                  std::filesystem::path(box_obj).parent_path());
+  TestMesh(box_obj, mesh_asset, compiler);
+
+  // Relative path + meshdir compiler attribute.
+  mesh_asset =
+      R"""(<mesh name="box" file="box.obj"/>)""";
+  compiler = R"""(<compiler meshdir="multibody/parsing/test/box_package/meshes"/>)""";
+  TestMesh(box_obj, mesh_asset, compiler);
+
+  // Relative path (from file)
+  {
+    MultibodyPlant<double> plant(0.0);
+    SceneGraph<double> scene_graph;
+    plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+    const std::string file = FindResourceOrThrow(
+        "drake/multibody/parsing/test/box_package/mjcfs/box.xml");
+
+    AddModelFromMujocoXml({DataSource::kFilename, &file}, "test", {}, &plant);
+
+    const SceneGraphInspector<double>& inspector =
+        scene_graph.model_inspector();
+    GeometryId geom_id = inspector.GetGeometryIdByName(
+        inspector.world_frame_id(), Role::kProximity, "box_geom");
+    auto* mesh =
+        dynamic_cast<const geometry::Mesh*>(&inspector.GetShape(geom_id));
+    EXPECT_NE(mesh, nullptr);
+    EXPECT_EQ(mesh->filename(), box_obj);
+    EXPECT_EQ(mesh->scale(), 1.0);
+  }
+
+  // Test the scale attribute.
+  mesh_asset =
+      fmt::format(R"""(<mesh name="box" file="{}" scale="2 2 2"/>)""", box_obj);
+  TestMesh(box_obj, mesh_asset, "", 2.0);
 }
 
 GTEST_TEST(MujocoParser, InertiaFromGeometry) {
@@ -342,7 +452,10 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
   SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
 
-  std::string xml = R"""(
+  std::string box_obj = FindResourceOrThrow(
+      "drake/multibody/parsing/test/box_package/meshes/box.obj");
+
+  std::string xml = fmt::format(R"""(
 <mujoco model="test">
   <default class="main">
     <geom mass="2.53"/>
@@ -353,6 +466,9 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
       </default>
     </default>
   </default>
+  <asset>
+    <mesh name="box_mesh" file="{}"/>
+  </asset>
   <worldbody>
     <body name="default">
       <geom name="default" size="0.1"/>
@@ -390,15 +506,22 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
       <geom name="offset_cylinder" type="cylinder" size="0.4 2.0" pos="2 0 0"
             zaxis="1 0 0"/>
     </body>
+    <body name="box_from_mesh">
+      <geom name="box_from_mesh" type="mesh" mesh="box_mesh" mass="1.0"/>
+    </body>
   </worldbody>
 </mujoco>
-)""";
+)""",
+                                box_obj);
 
   AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
 
-  xml = R"""(
+  xml = fmt::format(R"""(
 <mujoco model="test_auto">
   <compiler inertiafromgeom="auto"/>
+  <asset>
+    <mesh name="box_mesh" file="{}"/>
+  </asset>
   <worldbody>
     <body name="sphere_auto">
       <inertial mass="524" diaginertia="1 2 3"/>
@@ -410,9 +533,14 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
     <body name="box_default_density">
       <geom name="box_w_density" type="box" size=".4 .5 .6"/>
     </body>
+    <body name="box_from_mesh_w_density">
+      <geom name="box_from_mesh_w_density" type="mesh" mesh="box_mesh"
+            density="1.0"/>
+    </body>
   </worldbody>
 </mujoco>
-)""";
+)""",
+                    box_obj);
 
   AddModelFromMujocoXml({DataSource::kContents, &xml}, "test_auto", {}, &plant);
 
@@ -462,8 +590,9 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 
   auto context = plant.CreateDefaultContext();
 
-  auto CheckBody = [&plant, &context](const std::string& body_name,
-                                      const UnitInertia<double>& unit_M_BBo_B) {
+  auto check_body = [&plant, &context](
+                        const std::string& body_name,
+                        const UnitInertia<double>& unit_M_BBo_B) {
     const Body<double>& body = plant.GetBodyByName(body_name);
     EXPECT_TRUE(CompareMatrices(
         body.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
@@ -472,34 +601,35 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
         1e-14));
   };
 
-  auto CheckBodySpatial = [&plant, &context](
-                              const std::string& body_name,
-                              const SpatialInertia<double>& M_BBo_B) {
+  auto check_body_spatial = [&plant, &context](
+                                const std::string& body_name,
+                                const SpatialInertia<double>& M_BBo_B,
+                                double tol = 1e-14) {
     const Body<double>& body = plant.GetBodyByName(body_name);
     EXPECT_TRUE(CompareMatrices(
         body.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
-        M_BBo_B.CopyToFullMatrix6(), 1e-14));
+        M_BBo_B.CopyToFullMatrix6(), tol));
   };
 
   const SpatialInertia<double> inertia_from_inertial_tag =
       SpatialInertia<double>::MakeFromCentralInertia(
           524, Vector3d::Zero(), RotationalInertia<double>(1, 2, 3));
 
-  CheckBody("default", UnitInertia<double>::SolidSphere(0.1));
-  CheckBodySpatial("sphere", inertia_from_inertial_tag);
-  CheckBody("capsule", UnitInertia<double>::SolidCapsule(0.1, 4.0));
-  CheckBody("ellipsoid", UnitInertia<double>::SolidEllipsoid(0.1, 0.2, 0.3));
-  CheckBody("cylinder", UnitInertia<double>::SolidCylinder(0.1, 4.0));
-  CheckBody("box", UnitInertia<double>::SolidBox(0.2, 4.0, 6.0));
-  CheckBody("box_from_default", UnitInertia<double>::SolidBox(0.2, 0.4, 0.6));
-  CheckBody("ellipsoid_from_default",
-            UnitInertia<double>::SolidEllipsoid(0.1, 0.2, 0.3));
-  CheckBody("box_from_sub", UnitInertia<double>::SolidBox(0.8, 1.0, 1.2));
+  check_body("default", UnitInertia<double>::SolidSphere(0.1));
+  check_body_spatial("sphere", inertia_from_inertial_tag);
+  check_body("capsule", UnitInertia<double>::SolidCapsule(0.1, 4.0));
+  check_body("ellipsoid", UnitInertia<double>::SolidEllipsoid(0.1, 0.2, 0.3));
+  check_body("cylinder", UnitInertia<double>::SolidCylinder(0.1, 4.0));
+  check_body("box", UnitInertia<double>::SolidBox(0.2, 4.0, 6.0));
+  check_body("box_from_default", UnitInertia<double>::SolidBox(0.2, 0.4, 0.6));
+  check_body("ellipsoid_from_default",
+             UnitInertia<double>::SolidEllipsoid(0.1, 0.2, 0.3));
+  check_body("box_from_sub", UnitInertia<double>::SolidBox(0.8, 1.0, 1.2));
   SpatialInertia<double> M_BBo_B = SpatialInertia<double>(
       2.53, Vector3d::Zero(), UnitInertia<double>::SolidSphere(0.1));
   M_BBo_B += SpatialInertia<double>(2.53, Vector3d::Zero(),
                                     UnitInertia<double>::SolidSphere(0.2));
-  CheckBodySpatial("two_spheres", M_BBo_B);
+  check_body_spatial("two_spheres", M_BBo_B);
   // Use the equation for the moment of inertia of a cylinder about one end.
   M_BBo_B = SpatialInertia<double>(
       2.53,                                    // mass
@@ -507,31 +637,41 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
       UnitInertia<double>(0.16 / 2.0,          // 1/2 r²
                           .04 + (16.0 / 3.0),  // 1/4 r^2+ 1/3 L^2)
                           .04 + (16.0 / 3.0)));
-  CheckBodySpatial("offset_cylinder", M_BBo_B);
+  check_body_spatial("offset_cylinder", M_BBo_B);
+  check_body_spatial(
+      "box_from_mesh",
+      SpatialInertia<double>(1.0, Vector3d::Zero(),
+                             UnitInertia<double>::SolidCube(2.0)),
+      1e-13);
 
-  CheckBodySpatial("sphere_auto", inertia_from_inertial_tag);
-  CheckBody("sphere_true", UnitInertia<double>::SolidSphere(0.1));
-  CheckBodySpatial("sphere_false", inertia_from_inertial_tag);
+  check_body_spatial("sphere_auto", inertia_from_inertial_tag);
+  check_body("sphere_true", UnitInertia<double>::SolidSphere(0.1));
+  check_body_spatial("sphere_false", inertia_from_inertial_tag);
 
-  CheckBodySpatial(
+  check_body_spatial(
       "box_w_density",
       SpatialInertia<double>(123 * .8 * 1.2, Vector3d::Zero(),
                              UnitInertia<double>::SolidBox(0.8, 1.0, 1.2)));
-  CheckBodySpatial(
+  check_body_spatial(
       "box_default_density",
       SpatialInertia<double>(1000 * .8 * 1.2, Vector3d::Zero(),
                              UnitInertia<double>::SolidBox(0.8, 1.0, 1.2)));
+  check_body_spatial(
+      "box_from_mesh_w_density",
+      SpatialInertia<double>(8.0, Vector3d::Zero(),
+                             UnitInertia<double>::SolidCube(2.0)),
+      1e-12);
 
   // A cube rotating about its corner.
   RotationalInertia<double> I_BFo_B(2, 2, 2, -.75, -.75, -.75);
-  CheckBodySpatial("full_inertia",
-                   SpatialInertia<double>::MakeFromCentralInertia(
-                       1.23, Vector3d::Zero(), I_BFo_B));
+  check_body_spatial("full_inertia",
+                     SpatialInertia<double>::MakeFromCentralInertia(
+                         1.23, Vector3d::Zero(), I_BFo_B));
   // The rotational component of this inertia is ignored, because the full
   // inertia was specified.
-  CheckBodySpatial("full_inertia_w_pose",
-                   SpatialInertia<double>::MakeFromCentralInertia(
-                       1.23, Vector3d{1, 2, 3}, I_BFo_B));
+  check_body_spatial("full_inertia_w_pose",
+                     SpatialInertia<double>::MakeFromCentralInertia(
+                         1.23, Vector3d{1, 2, 3}, I_BFo_B));
 }
 
 GTEST_TEST(MujocoParser, Joint) {
