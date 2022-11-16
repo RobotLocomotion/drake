@@ -13,6 +13,7 @@
 
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
+#include "drake/geometry/render/render_label.h"
 
 namespace drake {
 namespace geometry {
@@ -26,7 +27,9 @@ using geometry::render::DepthRenderCamera;
 using geometry::render::RenderCameraCore;
 using geometry::render::RenderEngine;
 using geometry::render::RenderEngineVtk;
+using geometry::render::RenderLabel;
 using geometry::render::internal::ImageType;
+using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -338,7 +341,27 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   }
 
   // Load the returned image back to the drake buffer.
-  render_client_->LoadLabelImage(image_path, label_image_out);
+  /* NOTE: The loaded image from `image_path` is expected to be a color label
+   image. The color label image needs to be converted using the
+   RenderEngine::LabelFromColor call. The server has no knowledge of the
+   conversion formula, and thus, a colored label image is returned. */
+  const int width = label_image_out->width();
+  const int height = label_image_out->height();
+  ImageRgba8U color_label_image(width, height);
+  render_client_->LoadColorImage(image_path, &color_label_image);
+
+  // Convert from RGB to Label.
+  ColorI color;
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      color.r = color_label_image.at(x, y)[0];
+      color.g = color_label_image.at(x, y)[1];
+      color.b = color_label_image.at(x, y)[2];
+      RenderLabel::ValueType label = RenderEngine::LabelFromColor(color);
+      label_image_out->at(x, y)[0] = static_cast<uint16_t>(label);
+    }
+  }
+
   if (get_params().cleanup) {
     CleanupFrame(scene_path, image_path, get_params().verbose);
   }
