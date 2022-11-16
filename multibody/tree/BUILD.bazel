@@ -497,6 +497,9 @@ drake_cc_googletest(
     name = "rigid_body_test",
     deps = [
         ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/framework:context",
     ],
 )
 
