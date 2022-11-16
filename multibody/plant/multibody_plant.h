@@ -4986,12 +4986,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
    private:
     // Stiction velocity tolerance for the Stribeck model.
-    // A negative value indicates it was not properly initialized.
-    double v_stiction_tolerance_{-1};
+    double v_stiction_tolerance_{MultibodyPlantConfig{}.stiction_tolerance};
     // Note: this is the *inverse* of the v_stiction_tolerance_ parameter to
     // optimize for the division.
-    // A negative value indicates it was not properly initialized.
-    double inv_v_stiction_tolerance_{-1};
+    double inv_v_stiction_tolerance_{1.0 / v_stiction_tolerance_};
   };
   StribeckModel friction_model_;
 
