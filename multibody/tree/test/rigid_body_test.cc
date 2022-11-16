@@ -116,7 +116,7 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrame) {
   // mass changes, p_BoBcm_B is unchanged, G_BBo_B and G_BBcm_B are unchanged.
   mass = 1;
   rigid_body_->SetMass(context_ptr, mass);
-  EXPECT_EQ(rigid_body_->get_mass(*context_ptr), mass);
+  EXPECT_EQ(rigid_body_->get_mass(*context_), mass);
   M_BBo_B = rigid_body_->CalcSpatialInertiaInBodyFrame(*context_);
   SpatialInertia<double> M_BBo_B_expected(mass, p_BoBcm_B, G_BBo_B);
   EXPECT_TRUE(CompareMatrices(M_BBo_B.CopyToFullMatrix6(),
@@ -130,9 +130,9 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrame) {
   p_BoBcm_B = Vector3d(L/2, 0, 0);  // Now p_BoBcm_B = (1, 0, 0).
   rigid_body_->SetCenterOfMassInBodyFrame(context_ptr, p_BoBcm_B);
   const Vector3d p_BoBcm_B_calculated =
-      rigid_body_->CalcCenterOfMassInBodyFrame(*context_ptr);
+      rigid_body_->CalcCenterOfMassInBodyFrame(*context_);
   EXPECT_EQ(p_BoBcm_B_calculated, p_BoBcm_B);      // Position vector changes.
-  EXPECT_EQ(rigid_body_->get_mass(*context_ptr), mass);  // Mass is unchanged.
+  EXPECT_EQ(rigid_body_->get_mass(*context_), mass);  // Mass is unchanged.
   M_BBo_B = rigid_body_->CalcSpatialInertiaInBodyFrame(*context_);
   const UnitInertia<double> G_BBo_B_test = M_BBo_B.get_unit_inertia();
   EXPECT_TRUE(CompareMatrices(G_BBo_B_test.CopyToFullMatrix3(),
@@ -155,8 +155,11 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrame) {
 #ifdef DRAKE_ASSERT_IS_ARMED
   p_BoBcm_B = Vector3d(3*L, 0, 0);  // Now p_BoBcm_B = (6, 0, 0).
   rigid_body_->SetCenterOfMassInBodyFrame(context_ptr, p_BoBcm_B);
+
+  // CalcSpatialInertiaInBodyFrame() does not check whether B's inertia
+  // properties make sense. However, Shift() does (whether to Bcm or elsewhere).
   M_BBo_B = rigid_body_->CalcSpatialInertiaInBodyFrame(*context_);
-  DRAKE_EXPECT_THROWS_MESSAGE(M_BBcm_B = M_BBo_B.Shift(p_BoBcm_B),
+  DRAKE_EXPECT_THROWS_MESSAGE(M_BBo_B.Shift(p_BoBcm_B),  // M_BBcm_B is invalid.
       "Spatial inertia fails SpatialInertia::IsPhysicallyValid[^]*");
 #endif
 }

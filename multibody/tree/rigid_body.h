@@ -132,20 +132,20 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_;
   }
 
-  /// Gets the mass stored in @p context.
+  /// Gets this body's mass from the given context.
   /// @param[in] context contains the state of the multibody system.
-  /// @pre the context should make sense for use by `this` RigidBody.
+  /// @pre the context makes sense for use by `this` RigidBody.
   const T& get_mass(const systems::Context<T>& context) const final {
     const systems::BasicVector<T>& spatial_inertia_parameter =
         context.get_numeric_parameter(spatial_inertia_parameter_index_);
     return internal::parameter_conversion::GetMass(spatial_inertia_parameter);
   }
 
-  /// Gets the center of mass stored in @p context
+  /// Gets this body's center of mass position from the given context.
   /// @param[in] context contains the state of the multibody system.
   /// @returns p_BoBcm_B position vector from Bo (this rigid body B's origin)
   /// to Bcm (B's center of mass), expressed in B.
-  /// @pre the context should make sense for use by `this` RigidBody.
+  /// @pre the context makes sense for use by `this` RigidBody.
   const Vector3<T> CalcCenterOfMassInBodyFrame(
       const systems::Context<T>& context) const final {
     const systems::BasicVector<T>& spatial_inertia_parameter =
@@ -179,13 +179,13 @@ class RigidBody : public Body<T> {
   // TODO(joemasterjohn): Speed this up when we can store a reference to a
   // SpatialInertia<T> as an abstract parameter.
 
-  /// Gets this bodys spatial inertia about it origin that is stored in context.
+  /// Gets this body's spatial inertia about its origin from the given context.
   /// @param[in] context contains the state of the multibody system.
   /// @returns M_BBo_B spatial inertia of this rigid body B about Bo (B's
   /// origin), expressed in B. M_BBo_B contains properties related to B's mass,
   /// the position vector from Bo to Bcm (B's center of mass), and G_BBo_B
   /// (B's unit inertia about Bo expressed in B).
-  /// @pre the context should make sense for use by `this` RigidBody.
+  /// @pre the context makes sense for use by `this` RigidBody.
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const override {
     const systems::BasicVector<T>& spatial_inertia_parameter =
@@ -199,7 +199,7 @@ class RigidBody : public Body<T> {
   /// @param[in] mass mass of `this` rigid body B.
   /// @note This function changes `this` body B's mass and appropriately scales
   /// I_BBo_B (B's rotational inertia about Bo, expressed in B).
-  /// @pre the context should make sense for use by `this` RigidBody.
+  /// @pre the context makes sense for use by `this` RigidBody.
   /// @throws std::exception if context is null.
   void SetMass(systems::Context<T>* context, const T& mass) const {
     DRAKE_THROW_UNLESS(context != nullptr);
@@ -218,7 +218,7 @@ class RigidBody : public Body<T> {
   /// @note This function changes `this` body B's center of mass position
   /// without modifying I_BBo_B (B's rotational inertia about Bo, expressed
   /// in B). If needed, use SetSpatialInertiaInBodyFrame().
-  /// @pre the context should make sense for use by `this` RigidBody.
+  /// @pre the context makes sense for use by `this` RigidBody.
   /// @throws std::exception if context is null.
   void SetCenterOfMassInBodyFrame(systems::Context<T>* context,
                                   const Vector3<T>& com) const {
@@ -244,7 +244,7 @@ class RigidBody : public Body<T> {
   /// origin), expressed in B. M_Bo_B contains properties related to B's mass,
   /// the position vector from Bo to Bcm (B's center of mass), and G_Bo_B
   /// (B's unit inertia about Bo expressed in B).
-  /// @pre the context should make sense for use by `this` RigidBody.
+  /// @pre the context makes sense for use by `this` RigidBody.
   /// @throws std::exception if context is null.
   void SetSpatialInertiaInBodyFrame(systems::Context<T>* context,
                                     const SpatialInertia<T>& M_Bo_B) const {
