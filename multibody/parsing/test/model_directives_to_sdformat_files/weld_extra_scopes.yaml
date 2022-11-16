@@ -1,11 +1,11 @@
 directives:
 - add_model:
     name: top_level_model
-    file: package://model_directives_to_sdf_files/simple_model.sdf
+    file: package://model_directives_to_sdformat_files/simple_model.sdf
 
 # - add_model:
 #     name: simple_model
-#     file: package://model_directives_to_sdf_files/simple_model.sdf
+#     file: package://model_directives_to_sdformat_files/simple_model.sdf
 #     name_space: top_level_model
 
 # - add_frame:

@@ -7,7 +7,7 @@ directives:
 - add_model:
     # This name will be prefixed by `model_namespace`.
     name: simple_model
-    file: package://model_directives_to_sdf_files/simple_model.sdf
+    file: package://model_directives_to_sdformat_files/simple_model.sdf
 
 # - add_frame:
 #     # This will implicitly resolve to the `simple_model` instance.
@@ -25,7 +25,7 @@ directives:
 #
 # - add_model:
 #     name: extra_model
-#     file: package://model_directives_to_sdf_files/simple_model.sdf
+#     file: package://model_directives_to_sdformat_files/simple_model.sdf
 #
 # - add_weld:
 #     parent: simple_model::frame

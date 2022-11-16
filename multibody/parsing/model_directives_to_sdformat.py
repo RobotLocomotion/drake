@@ -20,6 +20,9 @@ from typing import Any, Dict, List
 import warnings
 
 from pydrake.common.yaml import yaml_load_file
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
+from pydrake.systems.framework import DiagramBuilder
 
 SDF_VERSION = '1.9'
 SCOPE_DELIMITER = '::'
@@ -30,7 +33,7 @@ class ConversionError(Exception):
     pass
 
 
-class ModelDirectivesToSdf:
+class ModelDirectivesToSDFormat:
 
     # TODO(aaronchongth): Check for simple validity of output model XML,
     # whether the model just has a single joint or something, without any
@@ -125,24 +128,26 @@ class ModelDirectivesToSdf:
                 include_elem.set('placement_frame', placement_frame_name)
         else:
             include_elem = ET.SubElement(root, 'include', merge='true')
+
         file_path = directive['file']
         result_tree = self.convert_directive(file_path)
-        sdf_file_path = file_path.replace('.yaml', '.sdf')
+        sdformat_file_path = file_path.replace('.yaml', '.sdf')
 
         if result_tree is not None:
-            if sdf_file_path:
+            if sdformat_file_path:
                 result_tree.write(
-                    sdf_file_path,
+                    sdformat_file_path,
                     pretty_print=True,
                     encoding="unicode")
             else:
-                raise ConversionError(f'Error trying to guess sdf file name '
-                                      'for add_directives: {directive}')
+                raise ConversionError(
+                    'Error trying to guess SDFormat file name '
+                    f'for add_directives: {directive}')
         else:
             return False
 
         uri_elem = ET.SubElement(include_elem, 'uri')
-        uri_elem.text = sdf_file_path
+        uri_elem.text = sdformat_file_path
         return True
 
     def add_model(self, root: ET, directive: Dict[str, Any]) -> bool:
@@ -182,7 +187,7 @@ class ModelDirectivesToSdf:
                 weld['parent'])
             if scoped_parent_name_str is None:
                 raise ConversionError(
-                    f'Failed trying to find scope for frame: '
+                    'Failed trying to find scope for frame: '
                     f'[{weld["parent"]}]. When tring to solve the '
                     f'placement_frame for model: [{model_name}].')
         if merge_include:
@@ -225,8 +230,8 @@ class ModelDirectivesToSdf:
         base_frame = x_pf['base_frame']
         if base_frame == WORLD_FRAME:
             raise ConversionError(
-                f'Workflows where base_frame=[{WORLD_FRAME}] are not '
-                'supported to be converted using this script.')
+                f'Adding a frame using base_frame=[{WORLD_FRAME}] is '
+                'not supported.')
 
         split_base_frame = base_frame.split(SCOPE_DELIMITER)
         # Resolve frame name if implicit:
@@ -234,7 +239,7 @@ class ModelDirectivesToSdf:
             base_frame = self.resolve_and_scope_frame(base_frame)
             if base_frame is None:
                 raise ConversionError(
-                    f'Failed trying to find scope for frame: '
+                    'Failed trying to find scope for frame: '
                     f'[{x_pf["base_frame"]}] when trying to add frame: '
                     f'[{directive["name"]}].')
             split_base_frame = base_frame.split(SCOPE_DELIMITER)
@@ -245,7 +250,7 @@ class ModelDirectivesToSdf:
             if split_base_frame[:-1] != split_frame_name[:-1]:
                 raise ConversionError(
                     f'Frame named: [{directive["name"]}] has a different '
-                    f'scope in its name and its base_frame: '
+                    'scope in its name and its base_frame: '
                     f'[{x_pf["base_frame"]}].')
 
         # Construct the necessary model scopes.
@@ -372,7 +377,6 @@ class ModelDirectivesToSdf:
         split_child_name = child_name.split(SCOPE_DELIMITER)
         self.child_frame_model_name_to_weld_map[
             split_child_name[0]] = directive
-
         return True
 
     def convert_directive(self, input_path: str) -> str:
@@ -406,16 +410,12 @@ class ModelDirectivesToSdf:
                                                name=new_model_name)
                 self.model_elem_map[new_model_name] = new_model_elem
                 self.incomplete_models.append(new_model_name)
-
             elif 'add_weld' in directive:
                 weld = directive['add_weld']
                 weld_child = weld['child']
                 weld_child_scopes = weld_child.split(SCOPE_DELIMITER)
 
-                if not self.add_weld_fixed_joint(root_model_elem, weld):
-                    raise ConversionError('Failed to convert add_weld '
-                                          'directive.')
-
+                self.add_weld_fixed_joint(root_model_elem, weld)
             else:
                 leftover_directives.append(directive)
 
@@ -426,9 +426,7 @@ class ModelDirectivesToSdf:
         leftover_directives = []
         for directive in directives:
             if 'add_frame' in directive:
-                if not self.add_frame(root_model_elem, directive['add_frame']):
-                    raise ConversionError('Failed to perform add_frame'
-                                          ' directive.')
+                self.add_frame(root_model_elem, directive['add_frame'])
             leftover_directives.append(directive)
 
         # Go through each directive add to XML as needed.
@@ -451,15 +449,15 @@ class ModelDirectivesToSdf:
         # care of.
         if self.child_frame_model_name_to_weld_map:
             error_string = \
-                    'There are welds that are still not postured properly:\n'
+                'There are welds that are still not postured properly:\n'
             for key in self.child_frame_model_name_to_weld_map:
                 error_string += \
-                        f'    {self.child_frame_model_name_to_weld_map[key]}\n'
+                    f'    {self.child_frame_model_name_to_weld_map[key]}\n'
             raise ConversionError(error_string)
 
         if len(self.incomplete_models) != 0:
             error_string = \
-                    'There are models that are generated but not used:\n'
+                'There are models that are generated but not used:\n'
             for m in self.incomplete_models:
                 error_string += f'    {m}\n'
             raise ConversionError(error_string)
@@ -474,11 +472,11 @@ def main() -> None:
         help='Path to model directives file to be converted.')
     parser.add_argument(
         '-o', '--output', type=str,
-        help='Output path for converted sdformat file.')
+        help='Output path for converted SDFormat file.')
     args = parser.parse_args()
 
-    model_directives_to_sdf = ModelDirectivesToSdf()
-    result_tree = model_directives_to_sdf.convert_directive(
+    model_directives_to_sdformat = ModelDirectivesToSDFormat()
+    result_tree = model_directives_to_sdformat.convert_directive(
         args.model_directives)
 
     if result_tree is not None:

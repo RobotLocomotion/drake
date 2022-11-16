@@ -4,8 +4,6 @@
 
 directives:
 
-# N.B. The namespacing features are only available for RBT.
-
 # No namespace.
 - add_directives:
     file: add_scoped_sub.yaml

@@ -35,9 +35,9 @@ filegroup(
 )
 
 filegroup(
-    name = "model_directives_to_sdf_files",
+    name = "model_directives_to_sdformat_files",
     testonly = True,
-    data = glob(["test/model_directives_to_sdf_files/**"]),
+    data = glob(["test/model_directives_to_sdformat_files/**"]),
     visibility = [
         "//bindings/pydrake/multibody:__pkg__",
     ],
@@ -63,8 +63,8 @@ drake_cc_package_library(
 )
 
 drake_py_binary(
-    name = "model_directives_to_sdf",
-    srcs = ["model_directives_to_sdf.py"],
+    name = "model_directives_to_sdformat",
+    srcs = ["model_directives_to_sdformat.py"],
     deps = [
     ],
 )
@@ -554,10 +554,10 @@ drake_cc_googletest(
 )
 
 drake_py_unittest(
-    name = "model_directives_to_sdf_test",
+    name = "model_directives_to_sdformat_test",
     data = [
-        ":model_directives_to_sdf.py",
-        ":model_directives_to_sdf_files",
+        ":model_directives_to_sdformat.py",
+        ":model_directives_to_sdformat_files",
     ],
     deps = [
         "//bindings/pydrake",
