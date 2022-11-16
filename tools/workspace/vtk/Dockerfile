@@ -23,7 +23,9 @@ RUN /image/provision.sh
 FROM base AS vtk
 
 ADD image/clone-vtk.sh /image/
+# NOTE: vtk-common-cmake-args and vtk-cmake-args.sh must be in the same directory.
+ADD image/vtk-common-cmake-args /image/
+ADD image/vtk-cmake-args.sh /image/
 ADD image/build-and-package-vtk.sh /image/
-ADD image/vtk-args /vtk/
 
 RUN /image/build-and-package-vtk.sh

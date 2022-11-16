@@ -4,10 +4,10 @@
 #
 # 1. This script assumes the calling script's current working directory is ready
 #    for a `git clone`, VTK is cloned into the `src` directory.
-# 2. This script populates the variable `archive` variable used in the wrapping
-#    build scripts for the final `.tar.gz` archive name.
+# 2. This script populates the variable `vtk_archive_name` variable used in the
+#    wrapping build scripts for the final `.tar.gz` archive name.
 #
-# Anytime `vtk_git_ref` is updated, the `build_number` options defined below
+# Anytime `vtk_git_ref` is updated, the `build_number` variables defined below
 # should all be reset to 1.
 readonly vtk_git_ref="d706250a1422ae1e7ece0fa09a510186769a5fec"
 
@@ -25,22 +25,8 @@ readonly vtk_version="$(git -C src describe)"
 # where `build_number` is included in the event that an artifact needs to be
 # repackaged without the VTK version changing.  Never overwrite an artifact on
 # drake-packages s3 bucket, you will break historical builds.
-readonly symbolic_name="$(uname -s)"
-if [[ "${symbolic_name}" == "Darwin" ]]; then
-    # On macOS x86_64 (rather than reported i386) for consistency.
-    if [[ "$(/usr/bin/arch)" == "arm64" ]]; then
-        readonly architecture="arm64"
-    else
-        readonly architecture="x86_64"
-    fi
-    readonly codename="mac"  # We build on the oldest supported distribution.
-else
-    readonly codename="$(lsb_release -cs)"
-    readonly architecture="$(/usr/bin/arch)"
-fi
-
 # Define build numbers separately for maintenance convenience.
-if [[ "${symbolic_name}" == "Darwin" ]]; then
+if [[ "${os_name}" == "Darwin" ]]; then
     if [[ "${architecture}" == "arm64" ]]; then
         readonly build_number="1"  # macOS arm64
     else
@@ -55,4 +41,4 @@ else
 fi
 
 # The final archive output name used by the build scripts.
-readonly archive="vtk-${vtk_version}-${codename}-${architecture}-${build_number}.tar.gz"
+readonly vtk_archive_name="vtk-${vtk_version}-${codename}-${architecture}-${build_number}.tar.gz"
