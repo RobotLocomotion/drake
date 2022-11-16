@@ -225,7 +225,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::vector<internal::CouplerConstraintSpecs<T>>&
   coupler_constraints_specs() const;
 
-  const std::vector<internal::DistanceConstraintSpecs<T>>&
+  const std::vector<internal::DistanceConstraintSpecs>&
   distance_constraints_specs() const;
   /* @} */
 

@@ -1262,10 +1262,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `damping` is not positive or zero.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
   ConstraintIndex AddDistanceConstraint(
-      const Body<T>& body_A, const Vector3<T>& p_AP, const Body<T>& body_B,
-      const Vector3<T>& p_BQ, const T& distance,
-      const T& stiffness = std::numeric_limits<double>::infinity(),
-      const T& damping = 0.0);
+      const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
+      const Vector3<double>& p_BQ, double distance,
+      double stiffness = std::numeric_limits<double>::infinity(),
+      double damping = 0.0);
 
   /// <!-- TODO(xuchenhan-tri): Add getters to interrogate existing constraints.
   /// -->
@@ -5223,7 +5223,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<internal::CouplerConstraintSpecs<T>> coupler_constraints_specs_;
 
   // Vector of distance constraints specifications.
-  std::vector<internal::DistanceConstraintSpecs<T>> distance_constraints_specs_;
+  std::vector<internal::DistanceConstraintSpecs> distance_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

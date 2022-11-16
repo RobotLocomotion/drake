@@ -485,9 +485,10 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
       physical_models_.emplace_back(std::move(cloned_model));
     }
 
+    distance_constraints_specs_ = other.distance_constraints_specs_;
+
     // Copy over coupler_constraints_specs_;
     DRAKE_DEMAND(coupler_constraints_specs_.empty());
-    DRAKE_DEMAND(distance_constraints_specs_.empty());
     // symbolic::Expression doesn't support constraints. If the source is
     // symbolic, the constraints specs are necessarily empty. If the source has
     // non-empty constraints specs, then it necessarily has the compliant
@@ -499,13 +500,8 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
            other.coupler_constraints_specs_) {
         coupler_constraints_specs_.push_back(spec);
       }
-      for (const internal::DistanceConstraintSpecs<U>& spec :
-           other.distance_constraints_specs_) {
-        distance_constraints_specs_.push_back(spec);
-      }
     } else {
       DRAKE_DEMAND(other.coupler_constraints_specs_.empty());
-      DRAKE_DEMAND(other.distance_constraints_specs_.empty());
     }
     // cache_indexes_ is set in DeclareCacheEntries() in
     // DeclareStateCacheAndPorts() in FinalizePlantOnly().
@@ -575,9 +571,9 @@ ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
 
 template <typename T>
 ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
-    const Body<T>& body_A, const Vector3<T>& p_AP, const Body<T>& body_B,
-    const Vector3<T>& p_BQ, const T& distance, const T& stiffness,
-    const T& damping) {
+    const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
+    const Vector3<double>& p_BQ, double distance, double stiffness,
+    double damping) {
   // N.B. The manager is setup at Finalize() and therefore we must require
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
@@ -601,18 +597,20 @@ ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
 
   DRAKE_THROW_UNLESS(body_A.index() != body_B.index());
 
-  // To constrain two points to be coincident we need a 3-dof ball constraint,
-  // the 1-dof distance constraint is singular in this case. Therefore we
-  // require the distance parameter to be strictly positive.
-  DRAKE_THROW_UNLESS(distance > 0.0);
-  DRAKE_THROW_UNLESS(stiffness >= 0.0);
-  DRAKE_THROW_UNLESS(damping >= 0.0);
+  if (!internal::DistanceConstraintSpecs::AreParametersValid(
+          distance, stiffness, damping)) {
+    const std::string msg = fmt::format(
+        "Invalid set of parameters for constraint betwee bodies '{}' and '{}'. "
+        "distance = {}, stiffness = {}, damping = {}.",
+        body_A.name(), body_B.name(), distance, stiffness, damping);
+    throw std::runtime_error(msg);
+  }
 
   const ConstraintIndex constraint_index(num_constraints());
 
   distance_constraints_specs_.push_back(
-      internal::DistanceConstraintSpecs<T>{body_A.index(), p_AP, body_B.index(),
-                                           p_BQ, distance, stiffness, damping});
+      internal::DistanceConstraintSpecs{body_A.index(), p_AP, body_B.index(),
+                                        p_BQ, distance, stiffness, damping});
 
   return constraint_index;
 }

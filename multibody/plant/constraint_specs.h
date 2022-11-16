@@ -64,59 +64,29 @@ struct CouplerConstraintSpecs {
 // of the configuration of the model q. This constraint reduces to d(q) = d₀ in
 // the limit to infinite stiffness and it behaves as a linear spring damper for
 // finite values of stiffness and damping.
-// @tparam_default_scalar
-template <typename T>
+//
+// @note To constrain two points to be coincident we need a 3-dof ball
+// constraint, the 1-dof distance constraint is singular in this case.
+// Therefore we require the distance parameter to be strictly positive.
+//
+// @pre d₀ > 0, k >= 0, c >= 0. @see AreParametersValid().
 struct DistanceConstraintSpecs {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DistanceConstraintSpecs);
-
-  // Please refer to this struct's documentation for further details on symbols
-  // and definitions.
-  // @param body_A_in Index of body A.
-  // @param body_A_in Index of body B.
-  // @param p_AP_in Position of point P in body frame A.
-  // @param p_AQ_in Position of point Q in body frame B.
-  // @param distance_in Free length d₀.
-  // @param stiffness_in Constraint stiffness k in N/m.
-  // @param damping_in Constraint damping c in N⋅s/m.
-  // @pre distance_in > 0, stiffness_in >= 0, damping_in >= 0.
-  DistanceConstraintSpecs(BodyIndex body_A_in, const Vector3<T>& p_AP_in,
-                          BodyIndex body_B_in, const Vector3<T>& p_BQ_in,
-                          const T& distance_in, const T& stiffness_in,
-                          const T& damping_in)
-      : body_A(body_A_in),
-        p_AP(p_AP_in),
-        body_B(body_B_in),
-        p_BQ(p_BQ_in),
-        distance(distance_in),
-        stiffness(stiffness_in),
-        damping(damping_in) {}
-
-  template <typename U>
-  DistanceConstraintSpecs(const DistanceConstraintSpecs<U>& other) {
-    body_A = other.body_A;
-    body_B = other.body_B;
-    if constexpr (std::is_same_v<T, double>) {
-      p_AP = ExtractDoubleOrThrow(other.p_AP);
-      p_BQ = ExtractDoubleOrThrow(other.p_BQ);
-      distance = ExtractDoubleOrThrow(other.distance);
-      stiffness = ExtractDoubleOrThrow(other.stiffness);
-      damping = ExtractDoubleOrThrow(other.damping);
-    } else {
-      p_AP = other.p_AP;
-      p_BQ = other.p_BQ;
-      distance = other.distance;
-      stiffness = other.stiffness;
-      damping = other.damping;
-    }
+  // Returns `true` iff the given parameters are valid to define the
+  // specifications for a distance constraint .
+  static bool AreParametersValid(double distance, double stiffness,
+                                 double damping) {
+    return distance > 0.0 && stiffness >= 0.0 && damping >= 0.0;
   }
 
-  BodyIndex body_A;
-  Vector3<T> p_AP;
-  BodyIndex body_B;
-  Vector3<T> p_BQ;
-  T distance{0.0};
-  T stiffness{std::numeric_limits<double>::infinity()};
-  T damping{0.0};
+  BodyIndex body_A;      // Index of body A.
+  Vector3<double> p_AP;  // Position of point P in body frame A.
+  BodyIndex body_B;      // Index of body B.
+  Vector3<double> p_BQ;  // Position of point Q in body frame B.
+  double distance{0.0};  // Free length d₀.
+  double stiffness{
+      std::numeric_limits<double>::infinity()};  // Constraint stiffness
+                                                 // k in N/m.
+  double damping{0.0};  // Constraint damping c in N⋅s/m.
 };
 
 }  // namespace internal
@@ -125,5 +95,3 @@ struct DistanceConstraintSpecs {
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     struct ::drake::multibody::internal::CouplerConstraintSpecs);
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::DistanceConstraintSpecs);

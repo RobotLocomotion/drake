@@ -152,7 +152,7 @@ DiscreteUpdateManager<T>::coupler_constraints_specs() const {
 }
 
 template <typename T>
-const std::vector<internal::DistanceConstraintSpecs<T>>&
+const std::vector<internal::DistanceConstraintSpecs>&
 DiscreteUpdateManager<T>::distance_constraints_specs() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::distance_constraints_specs(*plant_);

@@ -380,7 +380,7 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
   MatrixX<T> Jdistance = MatrixX<T>::Zero(1, nv);
 
   const Frame<T>& frame_W = plant().world_frame();
-  for (const DistanceConstraintSpecs<T>& specs :
+  for (const DistanceConstraintSpecs& specs :
        manager().distance_constraints_specs()) {
     const Body<T>& body_A = plant().get_body(specs.body_A);
     const Body<T>& body_B = plant().get_body(specs.body_B);
@@ -389,8 +389,8 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
         plant().EvalBodyPoseInWorld(context, body_A);
     const math::RigidTransform<T>& X_WB =
         plant().EvalBodyPoseInWorld(context, body_B);
-    const Vector3<T>& p_WP = X_WA * specs.p_AP;
-    const Vector3<T>& p_WQ = X_WB * specs.p_BQ;
+    const Vector3<T>& p_WP = X_WA * specs.p_AP.cast<T>();
+    const Vector3<T>& p_WQ = X_WB * specs.p_BQ.cast<T>();
 
     // Distance as the norm of p_PQ_W = p_WQ - p_WP
     const Vector3<T> p_PQ_W = p_WQ - p_WP;
