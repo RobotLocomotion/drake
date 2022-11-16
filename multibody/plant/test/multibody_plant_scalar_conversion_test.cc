@@ -239,7 +239,7 @@ GTEST_TEST(ScalarConversionTest, ExternalComponent) {
 class MultibodyPlantTester {
  public:
   template <typename T>
-  static std::vector<internal::CouplerConstraintSpecs<T>>& get_mutable_specs(
+  static std::vector<internal::CouplerConstraintSpecs>& get_mutable_specs(
       MultibodyPlant<T>* plant) {
     return plant->coupler_constraints_specs_;
   }
@@ -258,8 +258,9 @@ GTEST_TEST(ScalarConversionTest, CouplerConstraintSpecs) {
   const JointIndex j1(5);
   constexpr double kGearRatio = 1.2;
   constexpr double kOffset = 0.3;
-  const internal::CouplerConstraintSpecs<double> reference_spec(
-      j0, j1, kGearRatio, kOffset);
+  const internal::CouplerConstraintSpecs reference_spec{j0, j1, kGearRatio,
+                                                        kOffset};
+
   // Directly add dummy constraint specs through the tester so that we don't
   // need to actually add any joints.
   MultibodyPlantTester::get_mutable_specs(&plant_double)

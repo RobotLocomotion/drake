@@ -230,7 +230,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
       const;
 
-  const std::vector<internal::CouplerConstraintSpecs<T>>&
+  const std::vector<internal::CouplerConstraintSpecs>&
   coupler_constraints_specs() const;
 
   const std::vector<int>& EvalJointLockingIndices(

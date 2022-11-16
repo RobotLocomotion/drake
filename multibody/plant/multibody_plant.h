@@ -1212,6 +1212,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws if joint0 and joint1 are not both single-dof joints.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  // TODO(amcastro-tri): gear_ratio and offset should be doubles.
   ConstraintIndex AddCouplerConstraint(const Joint<T>& joint0,
                                        const Joint<T>& joint1,
                                        const T& gear_ratio,
@@ -5140,7 +5141,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<std::unique_ptr<internal::PhysicalModel<T>>> physical_models_;
 
   // Vector of coupler constraints specifications.
-  std::vector<internal::CouplerConstraintSpecs<T>> coupler_constraints_specs_;
+  std::vector<internal::CouplerConstraintSpecs> coupler_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

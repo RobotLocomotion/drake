@@ -389,23 +389,8 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
       physical_models_.emplace_back(std::move(cloned_model));
     }
 
-    // Copy over coupler_constraints_specs_;
-    DRAKE_DEMAND(coupler_constraints_specs_.empty());
-    // symbolic::Expression doesn't support constraints. If the source is
-    // symbolic, the coupler constraints specs are necessarily empty. If the
-    // source has non-empty coupler constraints specs, then it necessarily has
-    // the compliant contact manager, which would preclude scalar conversion to
-    // symbolic. Thus we don't need to worry about the destination being
-    // symbolic either.
-    if constexpr (!std::is_same_v<T, symbolic::Expression> &&
-                  !std::is_same_v<U, symbolic::Expression>) {
-      for (const internal::CouplerConstraintSpecs<U>& spec :
-           other.coupler_constraints_specs_) {
-        coupler_constraints_specs_.push_back(spec);
-      }
-    } else {
-      DRAKE_DEMAND(other.coupler_constraints_specs_.empty());
-    }
+    coupler_constraints_specs_ = other.coupler_constraints_specs_;
+
     // cache_indexes_ is set in DeclareCacheEntries() in
     // DeclareStateCacheAndPorts() in FinalizePlantOnly().
     X_WB_default_list_ = other.X_WB_default_list_;
@@ -466,8 +451,13 @@ ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
 
   const ConstraintIndex constraint_index(num_constraints());
 
-  coupler_constraints_specs_.push_back(internal::CouplerConstraintSpecs<T>{
-      joint0.index(), joint1.index(), gear_ratio, offset});
+  // TODO(amcastro-tri): The plant APIs should provide default values for
+  // gear_ratio and offset, as doubles. Remove ExtractDoubleOrThrow() calls
+  // below. If we wanted to support different scalar types, then these should
+  // become parameters in the context.
+  coupler_constraints_specs_.push_back(internal::CouplerConstraintSpecs{
+      joint0.index(), joint1.index(), ExtractDoubleOrThrow(gear_ratio),
+      ExtractDoubleOrThrow(offset)});
 
   return constraint_index;
 }

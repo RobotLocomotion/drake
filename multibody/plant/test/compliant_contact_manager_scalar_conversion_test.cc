@@ -66,7 +66,7 @@ std::unique_ptr<MultibodyPlant<T>> MakePlant(
 // conversion from T to U, and that simulations results for models without
 // constraints stay the same.
 template <typename T, typename U>
-void TestPlantConversion(DiscreteContactSolver solver_type) {
+void TestPlantConversionAndSimulate(DiscreteContactSolver solver_type) {
   std::unique_ptr<MultibodyPlant<T>> source_plant = MakePlant<T>(solver_type);
   auto source_context = source_plant->CreateDefaultContext();
   const VectorX<T> initial_state =
@@ -91,17 +91,42 @@ void TestPlantConversion(DiscreteContactSolver solver_type) {
   EXPECT_TRUE(CompareMatrices(dest_final_state, source_final_state));
 }
 
-GTEST_TEST(CompliantContactManagerScalarConversionTest, PlantConversionSap) {
-  TestPlantConversion<double, AutoDiffXd>(DiscreteContactSolver::kSap);
-  TestPlantConversion<AutoDiffXd, double>(DiscreteContactSolver::kSap);
+GTEST_TEST(ScalarConvertAndSimulateTest, PlantWithSap) {
+  TestPlantConversionAndSimulate<double, AutoDiffXd>(
+      DiscreteContactSolver::kSap);
+  TestPlantConversionAndSimulate<AutoDiffXd, double>(
+      DiscreteContactSolver::kSap);
 }
 
-GTEST_TEST(CompliantContactManagerScalarConversionTest, PlantConversionTamsi) {
-  TestPlantConversion<double, AutoDiffXd>(DiscreteContactSolver::kTamsi);
-  TestPlantConversion<AutoDiffXd, double>(DiscreteContactSolver::kTamsi);
+GTEST_TEST(ScalarConvertAndSimulateTest, PlantWithTamsi) {
+  TestPlantConversionAndSimulate<double, AutoDiffXd>(
+      DiscreteContactSolver::kTamsi);
+  TestPlantConversionAndSimulate<AutoDiffXd, double>(
+      DiscreteContactSolver::kTamsi);
 }
 
-// TODO(amcastro-tri): Consider adding tests for symbolic::Expression here.
+template <typename T, typename U>
+void TestPlantConversion(DiscreteContactSolver solver_type) {
+  std::unique_ptr<MultibodyPlant<T>> source_plant = MakePlant<T>(solver_type);
+  // Scalar convert to U. Verify the conversion is successful.
+  EXPECT_NO_THROW(systems::System<T>::template ToScalarType<U>(*source_plant));
+}
+
+// Scalar conversions involving symbolic::Expression are supported, even if
+// discrete updates are not for specific solvers.
+GTEST_TEST(ScalarConvertTest, ConversionToAndFromSymbolic) {
+  // Conversion from double to symbolic.
+  TestPlantConversion<double, symbolic::Expression>(
+      DiscreteContactSolver::kTamsi);
+  TestPlantConversion<double, symbolic::Expression>(
+      DiscreteContactSolver::kSap);
+
+  // Conversion from symbolic to double.
+  TestPlantConversion<symbolic::Expression, double>(
+      DiscreteContactSolver::kTamsi);
+  TestPlantConversion<symbolic::Expression, double>(
+      DiscreteContactSolver::kSap);
+}
 
 }  // namespace internal
 }  // namespace multibody

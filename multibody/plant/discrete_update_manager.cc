@@ -145,7 +145,7 @@ DiscreteUpdateManager<T>::collision_geometries() const {
 }
 
 template <typename T>
-const std::vector<internal::CouplerConstraintSpecs<T>>&
+const std::vector<internal::CouplerConstraintSpecs>&
 DiscreteUpdateManager<T>::coupler_constraints_specs() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::coupler_constraints_specs(*plant_);
