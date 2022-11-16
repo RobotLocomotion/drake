@@ -481,7 +481,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "detail_mujoco_parser_test",
-    data = _DM_CONTROL_MUJOCO_FILES,
+    data = [
+        ":test_models",
+        "//geometry:test_obj_files",
+        "//geometry:test_stl_files",
+    ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":detail_mujoco_parser",
         "//common:find_resource",

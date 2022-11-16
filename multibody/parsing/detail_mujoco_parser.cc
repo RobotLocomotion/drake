@@ -1,9 +1,11 @@
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <limits>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -11,6 +13,9 @@
 #include <drake_vendor/tinyxml2.h>
 #include <fmt/format.h>
 
+#include "drake/geometry/proximity/meshing_utilities.h"
+#include "drake/geometry/proximity/obb.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -231,6 +236,7 @@ class MujocoParser {
          motor_node = motor_node->NextSiblingElement("motor")) {
       ParseMotor(motor_node);
     }
+    WarnUnsupportedElement(*node, "include");
     WarnUnsupportedElement(*node, "general");
     WarnUnsupportedElement(*node, "position");
     WarnUnsupportedElement(*node, "velocity");
@@ -427,6 +433,7 @@ class MujocoParser {
     }
 
     multibody::UnitInertia<double> unit_M_GG_G;
+    std::string mesh;
     if (type == "plane") {
       // We interpret the MuJoCo infinite plane as a half-space.
       geom.shape = std::make_unique<geometry::HalfSpace>();
@@ -520,8 +527,45 @@ class MujocoParser {
         unit_M_GG_G = multibody::UnitInertia<double>::SolidBox(
             size[0] * 2.0, size[1] * 2.0, size[2] * 2.0);
       }
-    } else if (type == "mesh" || type == "hfield") {
-      drake::log()->warn(
+    } else if (type == "mesh") {
+      if (!ParseStringAttribute(node, "mesh", &mesh)) {
+        throw std::runtime_error(fmt::format(
+            "geom {} specified type 'mesh', but did not set the mesh attribute",
+            geom.name));
+      }
+      if (mesh_.count(mesh)) {
+        geom.shape = mesh_.at(mesh)->Clone();
+        if (compute_inertia) {
+          // TODO(russt): Compute the proper unit inertia for the mesh geometry
+          // (#18314). For now, we compute an OBB for the mesh and take the
+          // unit inertia of the corresponding box.
+
+          // At least so far, we have a surface mesh for every mesh.
+          DRAKE_ASSERT(surface_mesh_.count(mesh) == 1);
+          const geometry::TriangleSurfaceMesh<double>& surface_mesh =
+              surface_mesh_.at(mesh);
+          std::set<int> v;
+          for (int i = 0; i < surface_mesh.num_vertices(); ++i) {
+            v.insert(v.end(), i);
+          }
+          // TODO(russt): The ObbMaker should really make it easier to "use all
+          // the vertices".
+          const geometry::internal::Obb obb =
+              geometry::internal::ObbMaker(surface_mesh, v).Compute();
+          UnitInertia<double> unit_M_GBox_Box =
+              multibody::UnitInertia<double>::SolidBox(
+                  obb.half_width()[0] * 2.0, obb.half_width()[1] * 2.0,
+                  obb.half_width()[2] * 2.0);
+          unit_M_GG_G = unit_M_GBox_Box.ReExpress(obb.pose().rotation())
+                            .ShiftFromCenterOfMass(-obb.pose().translation());
+        }
+      } else {
+        log()->warn("geom {} specified unknown mesh {} and will be ignored",
+                    geom.name, mesh);
+        return geom;
+      }
+    } else if (type == "hfield") {
+      log()->warn(
           "The geom type '{}' is currently unsupported and will be ignored.",
           type);
       return geom;
@@ -529,13 +573,36 @@ class MujocoParser {
       throw std::runtime_error(fmt::format("Unrecognized geom type {}", type));
     }
 
+    if (type != "mesh") {
+      // TODO(russt): Support the mesh tag for non-mesh geometry. (Presumably
+      // this is how they specify different visual + collision geometry).
+      WarnUnsupportedAttribute(*node, "mesh");
+      /* From the MuJoCo docs: Note that mesh assets can also be referenced
+      from other geom types, causing primitive shapes to be fitted; see below.
+      The size is determined by the mesh asset and the geom size parameters are
+      ignored. */
+    }
+
     WarnUnsupportedAttribute(*node, "contype");
     WarnUnsupportedAttribute(*node, "conaffinity");
     WarnUnsupportedAttribute(*node, "condim");
     WarnUnsupportedAttribute(*node, "group");
     WarnUnsupportedAttribute(*node, "priority");
-    WarnUnsupportedAttribute(*node, "material");
 
+    std::string material;
+    if (ParseStringAttribute(node, "material", &material)) {
+      if (material_.count(material)) {
+        XMLElement* material_node = material_.at(material);
+        // Note: there are many material attributes that we do not support yet,
+        // nor perhaps ever. Consider warning about them here (currently, it
+        // seems like too much noise).
+        ParseVectorAttribute(material_node, "rgba", &geom.rgba);
+      } else {
+        log()->warn("geom {} specified an unrecognized material {}", geom.name,
+                    material);
+      }
+    }
+    // rgba takes precedence over materials, so must be parsed after.
     ParseVectorAttribute(node, "rgba", &geom.rgba);
 
     // Note: The documentation suggests that at least 3 friction parameters
@@ -573,7 +640,14 @@ class MujocoParser {
       double mass, density{1000};
       if (!ParseScalarAttribute(node, "mass", &mass)) {
         ParseScalarAttribute(node, "density", &density);
-        mass = density * geometry::CalcVolume(*geom.shape);
+        if (type == "mesh") {
+          // At least so far, we have a surface mesh for every mesh.
+          DRAKE_ASSERT(surface_mesh_.count(mesh) == 1);
+          mass = density *
+                 geometry::internal::CalcEnclosedVolume(surface_mesh_.at(mesh));
+        } else {
+          mass = density * geometry::CalcVolume(*geom.shape);
+        }
       }
       multibody::SpatialInertia<double> M_GG_G(mass, Vector3d::Zero(),
                                                unit_M_GG_G);
@@ -694,6 +768,7 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "mocap");
     WarnUnsupportedAttribute(*node, "user");
 
+    WarnUnsupportedElement(*node, "include");
     WarnUnsupportedElement(*node, "site");
     WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
@@ -721,6 +796,7 @@ class MujocoParser {
       }
     }
 
+    WarnUnsupportedElement(*node, "include");
     WarnUnsupportedElement(*node, "site");
     WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
@@ -763,6 +839,7 @@ class MujocoParser {
       ParseDefault(default_node, class_name);
     }
 
+    WarnUnsupportedElement(*node, "include");
     WarnUnsupportedElement(*node, "mesh");
     WarnUnsupportedElement(*node, "material");
     WarnUnsupportedElement(*node, "site");
@@ -777,6 +854,125 @@ class MujocoParser {
     WarnUnsupportedElement(*node, "velocity");
     WarnUnsupportedElement(*node, "cylinder");
     WarnUnsupportedElement(*node, "muscle");
+  }
+
+  void ParseAsset(XMLElement* node) {
+    for (XMLElement* material_node = node->FirstChildElement("material");
+         material_node;
+         material_node = material_node->NextSiblingElement("material")) {
+      std::string name;
+      if (!ParseStringAttribute(material_node, "name", &name)) {
+        throw std::runtime_error(
+            "ERROR: Material elements must have a name attribute.");
+      }
+      material_[name] = material_node;
+    }
+
+    for (XMLElement* mesh_node = node->FirstChildElement("mesh");
+         mesh_node;
+         mesh_node = mesh_node->NextSiblingElement("mesh")) {
+      WarnUnsupportedAttribute(*mesh_node, "class");
+      WarnUnsupportedAttribute(*mesh_node, "smoothnormal");
+      WarnUnsupportedAttribute(*mesh_node, "vertex");
+      // Note: "normal" and "face" are not supported either, but that lack of
+      // support is implied by us not supporting "vertex".
+      WarnUnsupportedAttribute(*mesh_node, "refpos");
+      WarnUnsupportedAttribute(*mesh_node, "refquat");
+
+      std::string file;
+      if (ParseStringAttribute(mesh_node, "file", &file)) {
+        std::string name{file};
+        ParseStringAttribute(mesh_node, "name", &name);
+
+        Vector3d scale{1, 1, 1};
+        if (ParseVectorAttribute(mesh_node, "scale", &scale)) {
+          if (scale[0] != scale[1] || scale[1] != scale[2]) {
+            throw std::runtime_error(
+                fmt::format("mesh {} was defined with a non-uniform scale; but "
+                            "Drake currently only supports uniform scaling",
+                            name));
+          }
+        }
+
+        std::filesystem::path filename(file);
+
+        /* Adapted from the mujoco docs: The full path to a file is determined
+        as follows. If the strippath compiler option is “true”, all path
+        information from the file name is removed. The following checks are
+        then applied in order: (1) if the file name contains an absolute path,
+        it is used without further changes; (2) if the compiler meshdir
+        attribute is set and contains an absolute path, the full path is the
+        meshdir appended with the file name; (3) the full path is the
+        path to the main MJCF model file, appended with the value of meshdir if
+        set, appended with the file name. */
+
+        // TODO(russt): Support strippath.
+        if (!filename.is_absolute()) {
+          if (meshdir_) {
+            if (meshdir_->is_absolute()) {
+              filename = *meshdir_ / filename;
+            } else {
+              filename = main_mjcf_path_ / *meshdir_ / filename;
+            }
+          } else {
+            filename = main_mjcf_path_ / filename;
+          }
+        }
+        filename = std::filesystem::canonical(filename);
+        std::filesystem::path original_filename = filename;
+
+        // TODO(russt): Support .vtk files.
+
+        // Replace the extension with obj, unless tolower(extension) == "obj".
+        std::string extension = filename.extension();
+        std::transform(extension.begin(), extension.end(), extension.begin(),
+                        [](unsigned char c) { return std::tolower(c); });
+        if (extension != ".obj") {
+          filename.replace_extension("obj");
+        }
+
+        if (std::filesystem::exists(filename)) {
+          mesh_[name] =
+              std::make_unique<geometry::Mesh>(filename, scale[0]);
+          surface_mesh_.emplace(std::pair(
+              name,
+              geometry::ReadObjToTriangleSurfaceMesh(filename, scale[0])));
+        } else if (std::filesystem::exists(original_filename)) {
+          log()->warn(
+              "Drake's MuJoCo parser currently only supports mesh files in "
+              ".obj format. The meshfile {} was requested; Drake attempted to "
+              "load {}, but that file does not exist.",
+              original_filename, filename);
+          std::string original_extension = original_filename.extension();
+          std::transform(original_extension.begin(), original_extension.end(),
+                         original_extension.begin(),
+                         [](unsigned char c) { return std::tolower(c); });
+          if (original_extension == ".stl") {
+            log()->warn(
+                "If you have built Drake from source, running\n\n bazel run "
+                "//manipulation/utils/stl2obj -- {} {}\n\nonce will "
+                "resolve this.",
+                original_filename, filename);
+          }
+        } else {
+          log()->warn(
+              "The mesh asset {} could not be found, nor could its .obj "
+              "replacement {}.",
+              original_filename, filename);
+        }
+      } else {
+        std::string name{};
+        ParseStringAttribute(mesh_node, "name", &name);
+        log()->warn(
+            "The mesh asset named {} did not specify a 'file' attribute and so "
+            "will be ignored.",
+            name);
+      }
+    }
+
+    WarnUnsupportedElement(*node, "texture");
+    WarnUnsupportedElement(*node, "hfield");
+    WarnUnsupportedElement(*node, "skin");
   }
 
   void ParseOption(XMLElement* node) {
@@ -838,9 +1034,14 @@ class MujocoParser {
             angle, (angle_ == kDegree) ? "degree" : "radian");
       }
     }
+
+    std::string meshdir;
+    if (ParseStringAttribute(node, "meshdir", &meshdir)) {
+      meshdir_ = meshdir;
+    }
+
     WarnUnsupportedAttribute(*node, "fitaabb");
     WarnUnsupportedAttribute(*node, "eulerseq");
-    WarnUnsupportedAttribute(*node, "meshdir");
     WarnUnsupportedAttribute(*node, "texturedir");
     WarnUnsupportedAttribute(*node, "discardvisual");
     WarnUnsupportedAttribute(*node, "convexhull");
@@ -868,9 +1069,14 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "inertiagrouprange");
   }
 
+  // Assets without an absolute path are referenced relative to the "main MJCF
+  // model file" path, `main_mjcf_path`.
   ModelInstanceIndex Parse(const std::string& model_name_in,
                            const std::optional<std::string>& parent_model_name,
-                           XMLDocument* xml_doc) {
+                           XMLDocument* xml_doc,
+                           const std::filesystem::path& main_mjcf_path) {
+    main_mjcf_path_ = main_mjcf_path;
+
     XMLElement* node = xml_doc->FirstChildElement("mujoco");
     if (!node) {
       throw std::runtime_error("ERROR: XML does not contain a mujoco tag.");
@@ -901,6 +1107,13 @@ class MujocoParser {
       ParseOption(option_node);
     }
 
+    // Parses the assets.
+    for (XMLElement* asset_node = node->FirstChildElement("asset");
+         asset_node;
+         asset_node = asset_node->NextSiblingElement("asset")) {
+      ParseAsset(asset_node);
+    }
+
     // Parse the defaults.
     for (XMLElement* default_node = node->FirstChildElement("default");
          default_node;
@@ -927,11 +1140,11 @@ class MujocoParser {
       ParseActuator(actuator_node);
     }
 
+    WarnUnsupportedElement(*node, "include");
     WarnUnsupportedElement(*node, "size");
     WarnUnsupportedElement(*node, "visual");
     WarnUnsupportedElement(*node, "statistic");
     WarnUnsupportedElement(*node, "custom");
-    WarnUnsupportedElement(*node, "asset");
     WarnUnsupportedElement(*node, "contact");
     WarnUnsupportedElement(*node, "equality");
     WarnUnsupportedElement(*node, "tendon");
@@ -944,10 +1157,15 @@ class MujocoParser {
  private:
   MultibodyPlant<double>* plant_;
   ModelInstanceIndex model_instance_{};
+  std::filesystem::path main_mjcf_path_{};
   enum Angle { kRadian, kDegree };
   Angle angle_{kDegree};
   std::map<std::string, XMLElement*> default_geometry_{};
   std::optional<bool> inertia_from_geom_{};  // !has_value() => "auto".
+  std::map<std::string, XMLElement*> material_{};
+  std::optional<std::filesystem::path> meshdir_{};
+  std::map<std::string, std::unique_ptr<geometry::Mesh>> mesh_{};
+  std::map<std::string, geometry::TriangleSurfaceMesh<double>> surface_mesh_{};
 };
 
 }  // namespace
@@ -960,6 +1178,7 @@ ModelInstanceIndex AddModelFromMujocoXml(
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   XMLDocument xml_doc;
+  std::filesystem::path path{};
   if (data_source.IsFilename()) {
     xml_doc.LoadFile(data_source.filename().c_str());
     if (xml_doc.ErrorID()) {
@@ -967,16 +1186,19 @@ ModelInstanceIndex AddModelFromMujocoXml(
                                            data_source.filename(),
                                            xml_doc.ErrorName()));
     }
+    path = data_source.filename();
+    path.remove_filename();
   } else {
     xml_doc.Parse(data_source.contents().c_str());
     if (xml_doc.ErrorID()) {
       throw std::runtime_error(
           fmt::format("Failed to parse XML string: {}", xml_doc.ErrorName()));
     }
+    path = std::filesystem::current_path();
   }
 
   MujocoParser parser(plant);
-  return parser.Parse(model_name_in, parent_model_name, &xml_doc);
+  return parser.Parse(model_name_in, parent_model_name, &xml_doc, path);
 }
 
 MujocoParserWrapper::MujocoParserWrapper() {}
