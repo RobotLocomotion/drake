@@ -77,8 +77,8 @@ const auto kTestDepthImage16UTiffPath = FindResourceOrThrow(
     "drake/geometry/render_gltf_client/test/test_depth_16U.tiff");
 const auto kTestDepthImage16UPngPath = FindResourceOrThrow(
     "drake/geometry/render_gltf_client/test/test_depth_16U.png");
-const auto kTestLabelImagePath = FindResourceOrThrow(
-    "drake/geometry/render_gltf_client/test/test_label_16I.png");
+const auto kTestColoredLabelImagePath = FindResourceOrThrow(
+    "drake/geometry/render_gltf_client/test/test_colored_label_rgba_8U.png");
 
 class RenderClientTest : public ::testing::Test {
  public:
@@ -556,7 +556,7 @@ TEST_F(RenderClientTest, LoadColorImageBad) {
 
   // Failure case 4: wrong number of channels (== 1) instead of 3 or 4.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      RenderClient::LoadColorImage(kTestLabelImagePath, &ignored),
+      RenderClient::LoadColorImage(kTestDepthImage16UPngPath, &ignored),
       ".*PNG image.*has 1 channel.*");
 }
 
@@ -604,43 +604,6 @@ TEST_F(RenderClientTest, LoadDepthImageBad) {
         RenderClient::LoadDepthImage(kTestDepthImage32FPath, &wrong_size),
         ".*expected.*but got.*width=.*height=.*");
   }
-}
-
-TEST_F(RenderClientTest, LoadLabelImageGood) {
-  // Loading a 16-bit label image file should work as expected.
-  ImageLabel16I label(kTestImageWidth, kTestImageHeight, 0);
-  RenderClient::LoadLabelImage(kTestLabelImagePath, &label);
-  EXPECT_EQ(label, CreateTestLabelImage());
-}
-
-TEST_F(RenderClientTest, LoadLabelImageBad) {
-  ImageLabel16I ignored(kTestImageWidth, kTestImageHeight, 0);
-
-  // Failure case 1: no such file.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RenderClient::LoadLabelImage("/no/such/file", &ignored),
-      ".*cannot load.*/no/such/file.*");
-
-  // Failure case 2: not a valid image file.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RenderClient::LoadLabelImage(Touch(scratch_/"fake.png"), &ignored),
-      ".*cannot load.*fake.*");
-
-  // Failure case 3: wrong image dimensions (on each axis).
-  for (const bool selector : {true, false}) {
-    int width = kTestImageWidth;
-    int height = kTestImageHeight;
-    if (selector) { ++width; } else { ++height; }
-    ImageLabel16I wrong_size(width, height, 0);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient::LoadLabelImage(kTestLabelImagePath, &wrong_size),
-        ".*expected.*but got.*width=.*height=.*");
-  }
-
-  // Failure case 4: wrong number of channels (== 4) instead of 1.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RenderClient::LoadLabelImage(kTestRgbImagePath, &ignored),
-      ".*PNG image.*has 3 channel.*");
 }
 
 }  // namespace
