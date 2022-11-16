@@ -193,13 +193,13 @@ class FakeServer : public HttpService {
     std::string test_image_path;
     if (image_type == "color") {
       test_image_path = FindResourceOrThrow(
-          "drake/geometry/render_gltf_client/test/test_rgba_8U.png");
+        "drake/geometry/render_gltf_client/test/test_rgba_8U.png");
     } else if (image_type == "depth") {
       test_image_path = FindResourceOrThrow(
-          "drake/geometry/render_gltf_client/test/test_depth_32F.tiff");
+        "drake/geometry/render_gltf_client/test/test_depth_32F.tiff");
     } else {  // image_type := "label"
       test_image_path = FindResourceOrThrow(
-          "drake/geometry/render_gltf_client/test/test_label_16I.png");
+        "drake/geometry/render_gltf_client/test/test_label_color_rgba_8U.png");
     }
     fs::copy_file(test_image_path, data_path);
     return HttpResponse{.http_code = 200, .data_path = data_path};

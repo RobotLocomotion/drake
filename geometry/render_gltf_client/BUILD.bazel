@@ -166,6 +166,7 @@ filegroup(
         "test/test_depth_16U.tiff",
         "test/test_depth_32F.tiff",
         "test/test_label_16I.png",
+        "test/test_label_color_rgba_8U.png",
         "test/test_rgb_8U.png",
         "test/test_rgba_8U.png",
     ],
