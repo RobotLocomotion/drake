@@ -56,6 +56,27 @@ ImageDepth32F CreateTestDepthImage() {
   return test_depth_image;
 }
 
+ImageRgba8U CreateTestColoredLabelImage() {
+  ImageRgba8U test_colored_label_image{kTestImageWidth, kTestImageHeight};
+  using T = ImageRgba8U::T;
+  // clang-format off
+  std::vector<std::array<T, 4>> image_data {
+    {0, 0, 0, 255}, {1, 0, 0, 255}, {2, 0, 0, 255},
+    {3, 0, 0, 255}, {4, 0, 0, 255}, {5, 0, 0, 255}
+  };
+  // clang-format on
+  int p = 0;
+  for (int y = 0; y < 2; ++y) {
+    for (int x = 0; x < 3; ++x) {
+      const auto& rgba = image_data[p];
+      for (int c = 0; c < 4; ++c)
+        test_colored_label_image.at(x, y)[c] = rgba[c];
+      ++p;
+    }
+  }
+  return test_colored_label_image;
+}
+
 ImageLabel16I CreateTestLabelImage() {
   ImageLabel16I test_label_image{kTestImageWidth, kTestImageHeight};
   using T = ImageLabel16I::T;
