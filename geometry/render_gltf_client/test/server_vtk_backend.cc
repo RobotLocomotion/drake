@@ -371,40 +371,17 @@ int DoMain() {
     writer->SetFileName(FLAGS_output_path.c_str());
     writer->Write();
   } else {  // FLAGS_image_type == "label"
-    /* For the label image, we will export to a single channel PNG image with
-     16 bits per pixel.  Extract the value using the same code from drake that
-     RenderEngineVtk does, then save to a PNG. */
-    // First: export the image to a local buffer.
-    vtkNew<vtkImageExport> image_export;
-    image_export->SetInputConnection(window_to_image_filter->GetOutputPort());
-    image_export->Update();
-    ImageRgba8U rgb_image(FLAGS_width, FLAGS_height);
-    image_export->Export(rgb_image.at(0, 0));
-
-    /* Allocate a single channel ushort image.  Note that vtkImageData supports
-     3D data, the last channel in SetDimensions being `z`. */
+    /* For the label image, export a color label image. Use the normal VTK
+     pipeline to save the final results from the render_window. The
+     RenderEngineGltfClient::DoRenderLabelImage is responsible for reading the
+     color label image and should use the RenderEngine::LabelFromColor function
+     to read the label values. This decision was made because external
+     RenderEngines (e.g. Blender) do not know the secret formula for converting
+     between color to label. The glTF format for rendering label images
+     contains color RGB values and should only render a color label image. */
     vtkNew<vtkPNGWriter> writer;
-    vtkNew<vtkImageData> image_data;
-    writer->SetInputDataObject(image_data);
-    image_data->SetDimensions(FLAGS_width, FLAGS_height, 1);
-    image_data->AllocateScalars(VTK_UNSIGNED_SHORT, 1);
-
-    ColorI color;
-    uint16_t* ptr =
-        static_cast<uint16_t*>(image_data->GetScalarPointer(0, 0, 0));
-    for (int y = 0; y < FLAGS_height; ++y) {
-      for (int x = 0; x < FLAGS_width; ++x) {
-        color.r = rgb_image.at(x, y)[0];
-        color.g = rgb_image.at(x, y)[1];
-        color.b = rgb_image.at(x, y)[2];
-        // This is from RenderLabel::LabelFromColor(ColorI) protected member.
-        RenderLabel::ValueType label =
-            static_cast<RenderLabel::ValueType>(color.r | (color.g << 8));
-        DRAKE_DEMAND(label >= 0);
-        *ptr++ = static_cast<uint16_t>(label);
-      }
-    }
     writer->SetFileName(FLAGS_output_path.c_str());
+    writer->SetInputConnection(window_to_image_filter->GetOutputPort());
     writer->Write();
   }
 
