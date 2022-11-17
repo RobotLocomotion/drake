@@ -418,8 +418,8 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 template <typename T>
 ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
                                                         const Joint<T>& joint1,
-                                                        const T& gear_ratio,
-                                                        const T& offset) {
+                                                        double gear_ratio,
+                                                        double offset) {
   // N.B. The manager is setup at Finalize() and therefore we must require
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
@@ -451,13 +451,8 @@ ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
 
   const ConstraintIndex constraint_index(num_constraints());
 
-  // TODO(amcastro-tri): The plant APIs should provide default values for
-  // gear_ratio and offset, as doubles. Remove ExtractDoubleOrThrow() calls
-  // below. If we wanted to support different scalar types, then these should
-  // become parameters in the context.
   coupler_constraints_specs_.push_back(internal::CouplerConstraintSpecs{
-      joint0.index(), joint1.index(), ExtractDoubleOrThrow(gear_ratio),
-      ExtractDoubleOrThrow(offset)});
+      joint0.index(), joint1.index(), gear_ratio, offset});
 
   return constraint_index;
 }

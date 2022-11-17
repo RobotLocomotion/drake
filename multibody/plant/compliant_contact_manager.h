@@ -78,7 +78,8 @@ struct AccelerationsDueToExternalForcesCache {
 //
 // Even when limited support for discrete updates is provided for T =
 // symbolic::Expression, a MultibodyPlant can be scalar converted to symbolic in
-// order to perform other queries, such as kinematics, or introspection.
+// order to perform other supported queries, such as kinematics, or
+// introspection.
 //
 // @tparam_default_scalar
 template <typename T>

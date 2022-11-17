@@ -1212,11 +1212,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws if joint0 and joint1 are not both single-dof joints.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  // TODO(amcastro-tri): gear_ratio and offset should be doubles.
   ConstraintIndex AddCouplerConstraint(const Joint<T>& joint0,
                                        const Joint<T>& joint1,
-                                       const T& gear_ratio,
-                                       const T& offset = 0.0);
+                                       double gear_ratio, double offset = 0.0);
+
+  template <typename U = T>
+  DRAKE_DEPRECATED("2023-02-17",
+                   "Only gear_ratio and offset of type double are supported.")
+  ConstraintIndex
+      AddCouplerConstraint(const Joint<U>& joint0, const Joint<U>& joint1,
+                           const U& gear_ratio, const U& offset = 0.0) {
+    return this->AddCouplerConstraint(joint0, joint1,
+                                      ExtractDoubleOrThrow(gear_ratio),
+                                      ExtractDoubleOrThrow(offset));
+  }
 
   /// <!-- TODO(xuchenhan-tri): Add getters to interrogate existing constraints.
   /// -->
