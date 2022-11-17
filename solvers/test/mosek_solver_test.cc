@@ -98,6 +98,13 @@ INSTANTIATE_TEST_SUITE_P(
     MosekTest, TestEllipsoidsSeparation,
     ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
 
+GTEST_TEST(TestDuplicatedVariableQuadraticProgram, Test) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestDuplicatedVariableQuadraticProgram(solver);
+  }
+}
+
 TEST_P(TestQPasSOCP, TestSOCP) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {

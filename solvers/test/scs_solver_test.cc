@@ -268,6 +268,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+GTEST_TEST(TestDuplicatedVariableQuadraticProgram, Test) {
+  ScsSolver solver;
+  if (solver.available()) {
+    TestDuplicatedVariableQuadraticProgram(solver, 1E-5);
+  }
+}
+
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {

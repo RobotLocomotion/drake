@@ -193,6 +193,17 @@ void TestEqualityConstrainedQPDualSolution2(const SolverInterface& solver);
  */
 void TestNonconvexQP(const SolverInterface& solver, bool convex_solver,
                      double tol = 1E-5);
+
+/**
+ Test QP. We intentionally add the cost/constraints with duplicated variables.
+ min x0*x0 + 5*x1*x1 + 2*x2*x2+ x0*x1
+ s.t x0 + 2 * x1 + x2 <= 3
+     x0 + 2 * x2 = 1
+     1 <= 2 * x0 + x1 <= 3
+     x0 + 2x1 + 3x2 >= 0
+ */
+void TestDuplicatedVariableQuadraticProgram(const SolverInterface& solver,
+                                            double tol = 1E-7);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
