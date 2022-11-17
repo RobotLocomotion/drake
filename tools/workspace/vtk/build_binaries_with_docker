@@ -48,5 +48,6 @@ rm -f vtk-*.tar.gz{,.sha256}
 build focal --build-arg PLATFORM=ubuntu:20.04
 extract focal
 
-build jammy --build-arg PLATFORM=ubuntu:22.04
-extract jammy
+# On Ubuntu 22.04 non-wheel builds, we use Ubuntu's build of VTK 9.1 in order
+# to improve ABI compatibility with the host operating system, so we don't need
+# to build a binary archive here for it.

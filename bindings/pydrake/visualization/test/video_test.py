@@ -25,23 +25,7 @@ from pydrake.visualization import (
 )
 
 
-def _platform_supports_cv2():
-    # For macOS, we don't try to run the OpenCV acceptance tests in order to
-    # avoid the hassle of installing OpenCV in our macOS CI.
-    if "darwin" in sys.platform:
-        return False
-    # For Ubuntu 22.04, python3-opencv has VTK conflicts so we can't run that
-    # in CI either. We should re-enable our "cv2" tests here once drake#16502
-    # is resolved.
-    with open("/etc/lsb-release") as f:
-        lsb_data = f.read()
-    is_20 = "RELEASE=20.04" in lsb_data
-    is_22 = "RELEASE=22.04" in lsb_data
-    assert is_20 ^ is_22
-    return is_20
-
-
-_PLATFORM_SUPPORTS_CV2 = _platform_supports_cv2()
+_PLATFORM_SUPPORTS_CV2 = "darwin" not in sys.platform
 
 
 class TestColorizeDepthImage(unittest.TestCase):
