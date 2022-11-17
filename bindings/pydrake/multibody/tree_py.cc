@@ -1042,6 +1042,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("p_QBcm_E"), cls_doc.ShiftToCenterOfMass.doc)
         .def_static("PointMass", &Class::PointMass, py::arg("p_FQ"),
             cls_doc.PointMass.doc)
+        .def_static("SolidEllipsoid", &Class::SolidEllipsoid, py::arg("a"),
+            py::arg("b"), py::arg("c"), cls_doc.SolidEllipsoid.doc)
         .def_static("SolidSphere", &Class::SolidSphere, py::arg("r"),
             cls_doc.SolidSphere.doc)
         .def_static("HollowSphere", &Class::HollowSphere, py::arg("r"),
@@ -1053,6 +1055,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidCylinder", &Class::SolidCylinder, py::arg("r"),
             py::arg("L"), py::arg("b_E") = Vector3<T>::UnitZ().eval(),
             cls_doc.SolidCylinder.doc)
+        .def_static("SolidCapsule", &Class::SolidCapsule, py::arg("r"),
+            py::arg("L"), cls_doc.SolidCapsule.doc)
         .def_static("SolidCylinderAboutEnd", &Class::SolidCylinderAboutEnd,
             py::arg("r"), py::arg("L"), cls_doc.SolidCylinderAboutEnd.doc)
         .def_static("AxiallySymmetric", &Class::AxiallySymmetric, py::arg("J"),
