@@ -29,6 +29,7 @@ libsuitesparse-dev
 libtiff-dev
 libtinyxml-dev
 libtool
+libvtk9-dev
 libx11-dev
 ocl-icd-opencl-dev
 opencl-headers

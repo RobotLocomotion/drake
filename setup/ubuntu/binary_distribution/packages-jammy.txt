@@ -42,6 +42,7 @@ libtheora0
 libtiff5
 libtinyxml2-dev
 libtinyxml2.6.2v5
+libvtk9.1
 libx11-6
 libxml2
 libxt6
