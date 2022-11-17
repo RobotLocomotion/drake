@@ -115,6 +115,13 @@ GTEST_TEST(QPtest, TestInfeasible) {
   }
 }
 
+GTEST_TEST(OsqpSolverTest, DuplicatedVariable) {
+  OsqpSolver solver;
+  if (solver.available()) {
+    TestDuplicatedVariableQuadraticProgram(solver, 1E-5);
+  }
+}
+
 GTEST_TEST(OsqpSolverTest, DualSolution1) {
   // Test GetDualSolution().
   OsqpSolver solver;
