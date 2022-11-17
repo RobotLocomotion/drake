@@ -19,18 +19,35 @@ VectorX<double> get_iiwa_max_joint_velocities();
 
 extern const double kIiwaLcmStatusPeriod;
 
-enum IiwaControlMode : int {
-    kIiwaPositionMode = 0b01,
-    kIiwaTorqueMode = 0b10
+/** Enumeration for control modes. */
+enum class IiwaControlMode {
+    Position = 0b01,
+    Torque = 0b10,
+    // Position and Torque.
+    Default = 0b01 | 0b10
 };
-
-const int kIiwaDefaultMode = kIiwaPositionMode | kIiwaTorqueMode;
+/** Overload operator| for strongly-typed bitwise operations. */
+inline IiwaControlMode operator|(IiwaControlMode lhs, IiwaControlMode rhs) {
+  return static_cast<IiwaControlMode>(
+      static_cast<int>(lhs) | static_cast<int>(rhs));
+}
+/** Overload operator& for strongly-typed bitwise operations. */
+inline IiwaControlMode operator&(IiwaControlMode lhs, IiwaControlMode rhs) {
+  return static_cast<IiwaControlMode>(
+      static_cast<int>(lhs) & static_cast<int>(rhs));
+}
+/** Must specify position and/or torque. */
+inline bool IsValid(IiwaControlMode control_mode) {
+  return (
+      static_cast<bool>(control_mode & IiwaControlMode::Position) ||
+      static_cast<bool>(control_mode & IiwaControlMode::Torque));
+}
 
 /**
-Parses control mode, with string options of
-{"position", "velocity", "torque"}.
+Parses control mode, with string options of {"position", "torque"}.
 */
-int ParseIiwaControlMode(const std::vector<std::string>& control_mode);
+IiwaControlMode ParseIiwaControlMode(
+    const std::vector<std::string>& control_mode);
 
 }  // namespace kuka_iiwa
 }  // namespace manipulation

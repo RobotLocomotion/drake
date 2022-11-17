@@ -4,16 +4,15 @@ namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
 
-IiwaCommandSender::IiwaCommandSender(int num_joints, int control_mode)
+IiwaCommandSender::IiwaCommandSender(
+    int num_joints, IiwaControlMode control_mode)
     : num_joints_(num_joints), control_mode_(control_mode) {
-  DRAKE_DEMAND(
-      control_mode_ >= kIiwaPositionMode
-      && control_mode_ <= (kIiwaPositionMode | kIiwaTorqueMode));
-  if (control_mode_ & kIiwaPositionMode) {
+  DRAKE_DEMAND(IsValid(control_mode_));
+  if (static_cast<bool>(control_mode_ & IiwaControlMode::Position)) {
     position_input_port_ = &this->DeclareInputPort(
         "position", systems::kVectorValued, num_joints_);
   }
-  if (control_mode & kIiwaTorqueMode) {
+  if (static_cast<bool>(control_mode_ & IiwaControlMode::Torque)) {
     torque_input_port_ = &this->DeclareInputPort(
         "torque", systems::kVectorValued, num_joints_);
   }
@@ -27,13 +26,15 @@ IiwaCommandSender::~IiwaCommandSender() = default;
 
 using InPort = systems::InputPort<double>;
 const InPort& IiwaCommandSender::get_position_input_port() const {
-  DRAKE_THROW_UNLESS(control_mode_ & kIiwaPositionMode);
+  DRAKE_THROW_UNLESS(
+      static_cast<bool>(control_mode_ & IiwaControlMode::Position));
   DRAKE_DEMAND(position_input_port_ != nullptr);
   return *position_input_port_;
 }
 
 const InPort& IiwaCommandSender::get_torque_input_port() const {
-  DRAKE_THROW_UNLESS(control_mode_ & kIiwaTorqueMode);
+  DRAKE_THROW_UNLESS(
+      static_cast<bool>(control_mode_ & IiwaControlMode::Torque));
   DRAKE_DEMAND(torque_input_port_ != nullptr);
   return *torque_input_port_;
 }
@@ -50,11 +51,12 @@ void IiwaCommandSender::CalcOutput(
           ? get_time_input_port().Eval(context)[0]
           : context.get_time();
 
-  const bool has_position = control_mode_ & kIiwaPositionMode;
+  const bool has_position =
+      static_cast<bool>(control_mode_ & IiwaControlMode::Position);
   bool has_torque = false;
-  if (control_mode_ == kIiwaTorqueMode) {
+  if (control_mode_ == IiwaControlMode::Torque) {
     has_torque = true;
-  } else if (control_mode_ & kIiwaTorqueMode) {
+  } else if (static_cast<bool>(control_mode_ & IiwaControlMode::Torque)) {
     has_torque = get_torque_input_port().HasValue(context);
   }
 

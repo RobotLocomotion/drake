@@ -42,7 +42,7 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
                       systems::DiagramBuilder<double>* builder,
                       double ext_joint_filter_tau,
                       const std::optional<Eigen::VectorXd>& desired_kp_gains,
-                      int control_mode) {
+                      IiwaControlMode control_mode) {
   const IiwaControlPorts iiwa_control_ports = BuildSimplifiedIiwaControl(
       plant, iiwa_instance, controller_plant, builder, ext_joint_filter_tau,
       desired_kp_gains, control_mode);
@@ -59,15 +59,20 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
   builder->Connect(iiwa_command_sub->get_output_port(),
                    iiwa_command_receiver->get_message_input_port());
 
+  const bool has_position =
+      static_cast<bool>(control_mode & IiwaControlMode::Position);
+  const bool has_torque =
+      static_cast<bool>(control_mode & IiwaControlMode::Torque);
+
   // Connect desired positions.
-  if (control_mode & kIiwaPositionMode) {
+  if (has_position) {
       builder->Connect(
           iiwa_command_receiver->get_commanded_position_output_port(),
           *iiwa_control_ports.commanded_positions);
   }
 
   // Connect desired torque.
-  if (control_mode & kIiwaTorqueMode) {
+  if (has_torque) {
     builder->Connect(
         iiwa_command_receiver->get_commanded_torque_output_port(),
         *iiwa_control_ports.commanded_torque);
@@ -98,7 +103,7 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
                    iiwa_command_receiver->get_position_measured_input_port());
 
   // Also send commanded state through the Iiwa status sender.
-  if (control_mode & kIiwaPositionMode) {
+  if (has_position) {
     builder->Connect(
         iiwa_command_receiver->get_commanded_position_output_port(),
         iiwa_status_sender->get_position_commanded_input_port());
@@ -124,10 +129,13 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     const MultibodyPlant<double>& controller_plant,
     systems::DiagramBuilder<double>* builder, double ext_joint_filter_tau,
     const std::optional<Eigen::VectorXd>& desired_kp_gains,
-    int control_mode) {
-  DRAKE_DEMAND(
-      control_mode >= kIiwaPositionMode
-      && control_mode <= (kIiwaPositionMode | kIiwaTorqueMode));
+    IiwaControlMode control_mode) {
+  DRAKE_DEMAND(IsValid(control_mode));
+
+  const bool has_position =
+      static_cast<bool>(control_mode & IiwaControlMode::Position);
+  const bool has_torque =
+      static_cast<bool>(control_mode & IiwaControlMode::Torque);
 
   IiwaControlPorts ports{};
   const int num_iiwa_positions = controller_plant.num_positions();
@@ -140,7 +148,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
       torque_proxy->get_output_port(),
       plant.get_actuation_input_port(iiwa_instance));
 
-  if (control_mode & kIiwaPositionMode) {
+  if (has_position) {
     VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
 
     // The default values are taken from the current FRI driver.
@@ -174,7 +182,8 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
 
     ports.commanded_positions =
         &iiwa_commanded_state_interpolator->get_input_port();
-    if (control_mode & kIiwaTorqueMode) {
+    if (has_torque) {
+      // Optional feedforward torque.
       auto adder = builder->template AddSystem<Adder>(2, num_iiwa_positions);
       builder->Connect(iiwa_controller->get_output_port_control(),
                        adder->get_input_port(0));
@@ -185,7 +194,8 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
       builder->Connect(iiwa_controller->get_output_port_control(),
                        torque_proxy->get_input_port());
     }
-  } else if (control_mode & kIiwaTorqueMode) {
+  } else if (has_torque) {
+    // Torque alone.
     ports.commanded_torque = &torque_proxy->get_input_port();
   }
 
@@ -216,7 +226,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
             *value = system.get_output_port(0).Eval(context);
           }));
 
-  // TODO(eric.cousineau): Why do we fliip this?
+  // TODO(eric.cousineau): Why do we flip this?
   auto torque_gain = builder->AddSystem<Gain>(-1, num_iiwa_positions);
   builder->Connect(torque_proxy->get_output_port(),
                    torque_gain->get_input_port());

@@ -33,18 +33,22 @@ PYBIND11_MODULE(kuka_iiwa, m) {
   m.def("get_iiwa_max_joint_velocities", &get_iiwa_max_joint_velocities,
       doc.get_iiwa_max_joint_velocities.doc);
   m.attr("kIiwaLcmStatusPeriod") = kIiwaLcmStatusPeriod;
-  // N.B. pybind11 seems to get confused by enum : int, so we explicitly cast
-  // here.
-  m.attr("kIiwaPositionMode") = int{kIiwaPositionMode};
-  m.attr("kIiwaTorqueMode") = int{kIiwaTorqueMode};
-  m.attr("kIiwaDefaultMode") = kIiwaDefaultMode;
+
+  {
+    using Class = IiwaControlMode;
+    constexpr auto& cls_doc = doc.IiwaControlMode;
+    py::enum_<Class>(m, "IiwaControlMode", py::arithmetic(), cls_doc.doc)
+        .value("Position", Class::Position, cls_doc.Position.doc)
+        .value("Torque", Class::Torque, cls_doc.Torque.doc)
+        .value("Default", Class::Default, cls_doc.Default.doc);
+  }
 
   {
     using Class = IiwaCommandReceiver;
     constexpr auto& cls_doc = doc.IiwaCommandReceiver;
     py::class_<Class, LeafSystem<double>>(m, "IiwaCommandReceiver", cls_doc.doc)
         .def(py::init<int, int>(), py::arg("num_joints") = kIiwaArmNumJoints,
-            py::arg("control_mode") = kIiwaDefaultMode, cls_doc.ctor.doc)
+            py::arg("control_mode") = IiwaControlMode::Default, cls_doc.ctor.doc)
         .def("get_message_input_port", &Class::get_message_input_port,
             py_rvp::reference_internal, cls_doc.get_message_input_port.doc)
         .def("get_position_measured_input_port",
@@ -68,7 +72,7 @@ PYBIND11_MODULE(kuka_iiwa, m) {
     constexpr auto& cls_doc = doc.IiwaCommandSender;
     py::class_<Class, LeafSystem<double>>(m, "IiwaCommandSender", cls_doc.doc)
         .def(py::init<int, int>(), py::arg("num_joints") = kIiwaArmNumJoints,
-            py::arg("control_mode") = kIiwaDefaultMode, cls_doc.ctor.doc)
+            py::arg("control_mode") = IiwaControlMode::Default, cls_doc.ctor.doc)
         .def("get_time_input_port", &Class::get_time_input_port,
             py_rvp::reference_internal, cls_doc.get_time_input_port.doc)
         .def("get_position_input_port", &Class::get_position_input_port,
@@ -163,7 +167,7 @@ PYBIND11_MODULE(kuka_iiwa, m) {
         py::arg("iiwa_instance"), py::arg("controller_plant"), py::arg("lcm"),
         py::arg("builder"), py::arg("ext_joint_filter_tau") = 0.01,
         py::arg("desired_iiwa_kp_gains") = std::nullopt,
-        py::arg("control_mode") = kIiwaDefaultMode,
+        py::arg("control_mode") = IiwaControlMode::Default,
         // Keep alive, reference: `builder` keeps `controller_plant` alive.
         py::keep_alive<5, 3>(), doc.BuildIiwaControl.doc);
   }

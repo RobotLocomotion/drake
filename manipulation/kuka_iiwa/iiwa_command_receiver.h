@@ -48,7 +48,7 @@ class IiwaCommandReceiver final : public systems::LeafSystem<double> {
 
   explicit IiwaCommandReceiver(
       int num_joints = kIiwaArmNumJoints,
-      int control_mode = kIiwaDefaultMode);
+      IiwaControlMode control_mode = IiwaControlMode::Default);
   ~IiwaCommandReceiver() final;
 
   /// (Advanced.) Copies the current "position_measured" input (or zero if not
@@ -100,7 +100,7 @@ class IiwaCommandReceiver final : public systems::LeafSystem<double> {
       const systems::Context<double>&, systems::BasicVector<double>*) const;
 
   const int num_joints_{};
-  const int control_mode_{};
+  const IiwaControlMode control_mode_{};
   const systems::InputPort<double>* message_input_{};
   const systems::InputPort<double>* position_measured_input_{};
   const systems::CacheEntry* position_measured_or_zero_{};

@@ -51,7 +51,7 @@ class IiwaCommandSender final : public systems::LeafSystem<double> {
 
   explicit IiwaCommandSender(
       int num_joints = kIiwaArmNumJoints,
-      int control_mode = kIiwaDefaultMode);
+      IiwaControlMode control_mode = IiwaControlMode::Default);
   ~IiwaCommandSender() final;
 
   /** @name Named accessors for this System's input and output ports. */
@@ -65,7 +65,7 @@ class IiwaCommandSender final : public systems::LeafSystem<double> {
   void CalcOutput(const systems::Context<double>&, lcmt_iiwa_command*) const;
 
   const int num_joints_;
-  const int control_mode_{};
+  const IiwaControlMode control_mode_{};
 
   const drake::systems::InputPort<double>* position_input_port_{};
   const drake::systems::InputPort<double>* torque_input_port_{};

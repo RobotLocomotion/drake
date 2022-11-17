@@ -19,12 +19,11 @@ using systems::DiscreteUpdateEvent;
 using systems::NumericParameterIndex;
 using systems::kVectorValued;
 
-IiwaCommandReceiver::IiwaCommandReceiver(int num_joints, int control_mode)
+IiwaCommandReceiver::IiwaCommandReceiver(
+    int num_joints, IiwaControlMode control_mode)
     : num_joints_(num_joints), control_mode_(control_mode) {
   DRAKE_THROW_UNLESS(num_joints > 0);
-  DRAKE_THROW_UNLESS(
-      control_mode_ >= kIiwaPositionMode
-      && control_mode_ <= (kIiwaPositionMode | kIiwaTorqueMode));
+  DRAKE_THROW_UNLESS(IsValid(control_mode_));
 
   message_input_ = &DeclareAbstractInputPort(
       "lcmt_iiwa_command", Value<lcmt_iiwa_command>());
@@ -49,13 +48,13 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints, int control_mode)
        discrete_state_ticket(latched_position_measured_),
        position_measured_or_zero_->ticket()});
 
-  if (control_mode_ & kIiwaPositionMode) {
+  if (static_cast<bool>(control_mode_ & IiwaControlMode::Position)) {
     commanded_position_output_ = &DeclareVectorOutputPort(
         "position", num_joints, &IiwaCommandReceiver::CalcPositionOutput,
         {defaulted_command_->ticket()});
   }
 
-  if (control_mode_ & kIiwaTorqueMode) {
+  if (static_cast<bool>(control_mode_ & IiwaControlMode::Torque)) {
     commanded_torque_output_ = &DeclareVectorOutputPort(
         "torque", num_joints, &IiwaCommandReceiver::CalcTorqueOutput,
         {defaulted_command_->ticket()});
@@ -100,7 +99,8 @@ void IiwaCommandReceiver::LatchInitialPosition(
 void IiwaCommandReceiver::DoCalcNextUpdateTime(
     const Context<double>& context,
     CompositeEventCollection<double>* events, double* time) const {
-  const bool has_position = control_mode_ & kIiwaPositionMode;
+  const bool has_position =
+      static_cast<bool>(control_mode_ & IiwaControlMode::Position);
   if (!has_position) {
     // No need to schedule events.
     *time = std::numeric_limits<double>::infinity();

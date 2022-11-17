@@ -26,13 +26,14 @@ VectorX<double> get_iiwa_max_joint_velocities() {
 // cabinet.
 const double kIiwaLcmStatusPeriod = 0.005;
 
-int ParseIiwaControlMode(const std::vector<std::string>& control_mode) {
-  int result = 0;
+IiwaControlMode ParseIiwaControlMode(
+    const std::vector<std::string>& control_mode) {
+  IiwaControlMode result{};
   for (const auto& string_mode : control_mode) {
     if (string_mode == "position") {
-      result |= kIiwaPositionMode;
+      result = result | IiwaControlMode::Position;
     } else if (string_mode == "torque") {
-      result |= kIiwaTorqueMode;
+      result = result | IiwaControlMode::Torque;
     } else {
       throw std::runtime_error(fmt::format(
           "Malformed control mode type '{}'", string_mode));

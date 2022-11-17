@@ -51,7 +51,8 @@ void ApplyDriverConfig(
               sim_plant, arm_model, hand_model));
   // TODO(jwnimmer-tri) Make desired_iiwa_kp_gains configurable.
   std::optional<Eigen::VectorXd> desired_iiwa_kp_gains;
-  const int control_mode = ParseIiwaControlMode(driver_config.control_mode);
+  const IiwaControlMode control_mode =
+      ParseIiwaControlMode(driver_config.control_mode);
   BuildIiwaControl(
       sim_plant, arm_model.model_instance, *controller_plant, lcm, builder,
       driver_config.ext_joint_filter_tau, desired_iiwa_kp_gains,
