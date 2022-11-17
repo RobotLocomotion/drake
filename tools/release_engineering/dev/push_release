@@ -195,6 +195,12 @@ if [[ "${push_apt}" -ne 0 ]]; then
   # Download the current version of the aptly database from S3.
   aws s3 sync --delete s3://drake-infrastructure/aptly/.aptly "${HOME}/.aptly"
 
+  # Run this command to add a new repository
+  # aptly repo create -distribution=<platform> drake-<platform>
+
+  # Run this command to add or replace a package
+  # aptly repo add [-force-replace] drake-<platform> <package file>
+
   for platform in "${platforms[@]}"; do
     mkdir -p "${platform}"
     pushd "${platform}"
@@ -232,6 +238,10 @@ if [[ "${push_apt}" -ne 0 ]]; then
     # Publish the new apt repository to S3.
     aptly publish switch -gpg-key="${gpg_key: -8}" "${platform}" \
       "s3:drake-apt.csail.mit.edu/${platform}:" "drake-${platform}-${binary_version}"
+
+    # The first time a repository is published use snapshot not switch
+    # aptly publish snapshot -gpg-key="${gpg_key: -8}" -distribution="${platform}" \
+    #  "drake-${platform}-${binary_version}" "s3:drake-apt.csail.mit.edu/${platform}:"
 
     # Invalidate the cached apt repository.
     aws cloudfront create-invalidation --distribution-id E2RAGJYS5GNIOS \
@@ -297,36 +307,6 @@ if [[ "${push_tar}" -ne 0 ]]; then
         "s3://drake-packages/drake/release/${sha_filename}"
     done
   done
-
-  # COMMENT OUT EVERYTHING RELATED TO push_drake_colab.py
-  #filename=setup_drake_colab.py
-
-  # Download the nightly setup_drake_colab.py from S3 via CloudFront.
-  #curl --fail --location --remote-name \
-  #  "https://drake-packages.csail.mit.edu/drake/nightly/drake-${binary_version}/${filename}"
-
-  # Generate the detached armored GPG signature and SHA256 and SHA512 checksums
-  # of setup_drake_colab.py and upload it, and its signature, and checksums to
-  # S3.
-  #aws s3 cp "${filename}" \
-  #  "s3://drake-packages/drake/release/drake-${source_version}/${filename}"
-
-  #if [[ "${sign}" -ne 0 ]]; then
-  #  asc_filename="${filename}.asc"
-
-  #  gpg --armor --detach-sign --local-user "${gpg_key}" \
-  #    --output "${asc_filename}" --sign "${filename}"
-  #  aws s3 cp "${asc_filename}" \
-  #    "s3://drake-packages/drake/release/drake-${source_version}/${asc_filename}"
-  #fi
-
-  #for algorithm in "${algorithms[@]}"; do
-  #  sha_filename="${filename}.sha${algorithm}"
-
-  #  shasum --algorithm "${algorithm}" "${filename}" | tee "${sha_filename}"
-  #  aws s3 cp "${sha_filename}" \
-  #    "s3://drake-packages/drake/release/drake-${source_version}/${sha_filename}"
-  #done
 
   set +x
 fi
