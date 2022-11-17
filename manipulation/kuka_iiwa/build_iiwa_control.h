@@ -13,20 +13,23 @@
 /// Iiwa controller and controller plant setup
 ///
 /// This class implements the software stack of the Iiwa arm and the LCM-to-FRI
-/// adapter installed in it.  The only control mode FRI exposes is
-/// position-control with an optional feedforward torque command.  Torque
-/// control mode, however, is not available.  The arm receives position commands
-/// (`lcmt_iiwa_command`) and emits status (`lcmt_iiwa_status`); the Iiwa
-/// controller built here takes care of translating the command into torques on
-/// the Iiwa joints and the Iiwa measured positions and torques into those
-/// status messages.  Note that only 7 DoF Iiwa arm is supported.
+/// adapter installed in it as it is exposed in
+/// https://github.com/RobotLocomotion/drake-iiwa-driver.
+/// The driver in this repository exposes two options:
+///   - position-control with an optional feedforward torque command.
+///   - torque-only control, added with nominal gravity compensation.
+/// The arm receives position and/or torque commands (`lcmt_iiwa_command`) and
+/// emits status (`lcmt_iiwa_status`); the Iiwa controller built here takes
+/// care of translating the command into torques on the Iiwa joints and the
+/// Iiwa measured positions and torques into those status messages.  Note that
+/// only the 7 DoF Iiwa arm is supported.
 ///
-/// In order to do this, the controller maintains an entire separate Iiwa
-/// plant (*not* the simulated plant!) to perform inverse dynamics
-/// computations.  These computations correspond to the servoing and gravity
-/// compensation done on the real Iiwa; disagreement between the controller
-/// model and the simulated model represents errors in the servo, end-effector,
-/// and gravity-compensation configuration.
+/// In order to simulate the above driver's interface, the simulated controller
+/// maintains an entire separate Iiwa plant (*not* the simulated plant!) to
+/// perform inverse dynamics computations.  These computations correspond to
+/// the servoing and gravity compensation done on the real Iiwa; disagreement
+/// between the controller model and the simulated model represents errors in
+/// the servo, end-effector, and gravity-compensation configuration.
 
 namespace drake {
 namespace manipulation {
