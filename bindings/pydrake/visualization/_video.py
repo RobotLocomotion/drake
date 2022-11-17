@@ -301,10 +301,6 @@ class VideoWriter(LeafSystem):
         module cannot be imported. You must ensure that whichever backend you
         choose is available in your environment. Drake neither bundles nor
         depends on either one.
-
-    Warning:
-        Drake is currently not compatible with the Ubuntu 22.04 package of
-        ``python3-opencv`` due to VTK conflicts (see drake#16502).
     """
 
     def __init__(self, *, filename, fps=16.0, backend="PIL"):
