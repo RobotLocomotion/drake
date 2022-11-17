@@ -22,7 +22,7 @@ GTEST_TEST(JointStiffnessControllerTest, SimpleDoublePendulum) {
   auto plant = builder.AddSystem<MultibodyPlant>(0.0);
   std::string full_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
-  multibody::Parser(plant).AddModelFromFile(full_name);
+  multibody::Parser(plant).AddModels(full_name);
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("base"));
   plant->Finalize();
 
@@ -64,7 +64,7 @@ GTEST_TEST(JointStiffnessControllerTest, ScalarConversion) {
   auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
   const std::string full_name = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(mbp.get()).AddModelFromFile(full_name);
+  multibody::Parser(mbp.get()).AddModels(full_name);
   mbp->WeldFrames(mbp->world_frame(), mbp->GetFrameByName("iiwa_link_0"));
   mbp->Finalize();
   const int num_states = mbp->num_multibody_states();
