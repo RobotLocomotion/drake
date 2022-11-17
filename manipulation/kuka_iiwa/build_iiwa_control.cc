@@ -112,6 +112,11 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
     builder->Connect(
         iiwa_command_receiver->get_commanded_position_output_port(),
         iiwa_status_sender->get_position_commanded_input_port());
+  } else {
+    // If we don't supply positions, simply loopback the estimated states.
+    builder->Connect(
+        iiwa_state_measured_demux->get_output_port(0),
+        iiwa_status_sender->get_position_commanded_input_port());
   }
 
   // Also send control torque through the Iiwa status sender.

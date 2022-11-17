@@ -90,11 +90,8 @@ void IiwaStatusSender::CalcOutput(
       get_time_measured_input_port().HasValue(context)
           ? get_time_measured_input_port().Eval(context)[0]
           : context.get_time();
-  // HACK.
   const auto& position_commanded =
-      get_position_commanded_input_port().HasValue(context) ?
-      get_position_commanded_input_port().Eval(context) :
-      get_position_measured_input_port().Eval(context);
+      get_position_commanded_input_port().Eval(context);
   const auto& position_measured =
       get_position_measured_input_port().Eval(context);
   const auto& velocity_estimated =

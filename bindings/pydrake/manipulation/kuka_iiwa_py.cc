@@ -47,7 +47,8 @@ PYBIND11_MODULE(kuka_iiwa, m) {
     using Class = IiwaCommandReceiver;
     constexpr auto& cls_doc = doc.IiwaCommandReceiver;
     py::class_<Class, LeafSystem<double>>(m, "IiwaCommandReceiver", cls_doc.doc)
-        .def(py::init<int, int>(), py::arg("num_joints") = kIiwaArmNumJoints,
+        .def(py::init<int, IiwaCommandReceiver>(),
+            py::arg("num_joints") = kIiwaArmNumJoints,
             py::arg("control_mode") = IiwaControlMode::kDefault, cls_doc.ctor.doc)
         .def("get_message_input_port", &Class::get_message_input_port,
             py_rvp::reference_internal, cls_doc.get_message_input_port.doc)
@@ -71,7 +72,8 @@ PYBIND11_MODULE(kuka_iiwa, m) {
     using Class = IiwaCommandSender;
     constexpr auto& cls_doc = doc.IiwaCommandSender;
     py::class_<Class, LeafSystem<double>>(m, "IiwaCommandSender", cls_doc.doc)
-        .def(py::init<int, int>(), py::arg("num_joints") = kIiwaArmNumJoints,
+        .def(py::init<int, IiwaCommandReceiver>(),
+            py::arg("num_joints") = kIiwaArmNumJoints,
             py::arg("control_mode") = IiwaControlMode::kDefault, cls_doc.ctor.doc)
         .def("get_time_input_port", &Class::get_time_input_port,
             py_rvp::reference_internal, cls_doc.get_time_input_port.doc)
