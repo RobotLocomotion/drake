@@ -11,6 +11,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
@@ -31,6 +32,8 @@ using ::testing::HasSubstr;
 namespace drake {
 namespace solvers {
 namespace test {
+
+const double kInf = std::numeric_limits<double>::infinity();
 
 std::ostream& operator<<(std::ostream& os, QuadraticProblems value) {
   os << "QuadraticProblems::";
@@ -695,6 +698,51 @@ void TestNonconvexQP(const SolverInterface& solver, bool convex_solver,
     EXPECT_TRUE(
         CompareMatrices(result.GetSolution(x), Eigen::Vector2d(1, 0), tol));
     EXPECT_NEAR(result.get_optimal_cost(), 1., tol);
+  }
+}
+
+void TestDuplicatedVariableQuadraticProgram(const SolverInterface& solver,
+                                            double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  Eigen::Matrix2d Q1;
+  Q1 << 2, 1, 1, 2;
+  prog.AddQuadraticCost(Q1, Eigen::Vector2d::Zero(), x.head<2>());
+  Eigen::Matrix3d Q2 = Eigen::Vector3d(8, 2, 2).asDiagonal();
+  prog.AddQuadraticCost(Q2, Eigen::Vector3d::Zero(),
+                        Vector3<symbolic::Variable>(x(1), x(2), x(2)));
+  prog.AddLinearEqualityConstraint(
+      Eigen::RowVector3d(2, 2, -1), Vector1d(1),
+      Vector3<symbolic::Variable>(x(0), x(2), x(0)));
+  Eigen::Matrix<double, 2, 5> A;
+  // A * vars = [x0 + 2*x1 + x2]
+  //            [2*x0 + x1     ]
+  // clang-format off
+  A << -1, 1, 3, 2, -1,
+       2, 2, -1, 1, -1;
+  // clang-format on
+  Eigen::Matrix<symbolic::Variable, 5, 1> vars;
+  vars << x(2), x(0), x(2), x(1), x(2);
+  prog.AddLinearConstraint(A, Eigen::Vector2d(-kInf, 1), Eigen::Vector2d(3, 3),
+                           vars);
+  prog.AddLinearConstraint(Eigen::RowVector4d(2, 3, 2, -1), Vector1d(0),
+                           Vector1d(kInf),
+                           Vector4<symbolic::Variable>(x(1), x(2), x(0), x(0)));
+
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, std::nullopt, &result);
+    ASSERT_TRUE(result.is_success());
+    const Eigen::Vector3d x_sol = result.GetSolution(x);
+    EXPECT_NEAR(result.get_optimal_cost(),
+                x_sol(0) * x_sol(0) + 5 * x_sol(1) * x_sol(1) +
+                    2 * x_sol(2) * x_sol(2) + x_sol(0) * x_sol(1),
+                tol);
+    EXPECT_LE(x_sol(0) + 2 * x_sol(1) + x_sol(2), 3 + tol);
+    EXPECT_NEAR(x_sol(0) + 2 * x_sol(2), 1, tol);
+    EXPECT_GE(2 * x_sol(0) + x_sol(1), 1 - tol);
+    EXPECT_LE(2 * x_sol(0) + x_sol(1), 3 + tol);
+    EXPECT_GE(x_sol(0) + 2 * x_sol(1) + 3 * x_sol(2), -tol);
   }
 }
 
