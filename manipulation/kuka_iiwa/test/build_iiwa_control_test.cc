@@ -117,7 +117,7 @@ TEST_F(BuildIiwaControlTest, FeedforwardDisabled) {
   IiwaControlPorts control_ports{};
   control_ports = BuildSimplifiedIiwaControl(
       *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
-      0.01, {}, IiwaControlMode::Position);
+      0.01, {}, IiwaControlMode::kPosition);
   const auto diagram = builder_.Build();
 
   EXPECT_NE(control_ports.commanded_positions, nullptr);
@@ -134,7 +134,7 @@ TEST_F(BuildIiwaControlTest, TorqueOnly) {
   IiwaControlPorts control_ports{};
   control_ports = BuildSimplifiedIiwaControl(
       *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
-      0.01, {}, IiwaControlMode::Torque);
+      0.01, {}, IiwaControlMode::kTorque);
   const auto diagram = builder_.Build();
 
   EXPECT_EQ(control_ports.commanded_positions, nullptr);

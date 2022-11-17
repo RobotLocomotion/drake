@@ -28,8 +28,8 @@ class TestKukaIiwa(unittest.TestCase):
         self.assertIsInstance(mut.get_iiwa_max_joint_velocities(), np.ndarray)
         self.assertEqual(mut.kIiwaLcmStatusPeriod, 0.005)
         self.assertEqual(
-            mut.IiwaControlMode.Default,
-            mut.IiwaControlMode.Position | mut.IiwaControlMode.Torque)
+            mut.IiwaControlMode.kDefault,
+            mut.IiwaControlMode.kPosition | mut.IiwaControlMode.kTorque)
 
     def test_kuka_iiwa_lcm(self):
         command_rec = mut.IiwaCommandReceiver()
@@ -54,7 +54,7 @@ class TestKukaIiwa(unittest.TestCase):
         # Constructor variants.
         mut.IiwaCommandSender(
             num_joints=mut.kIiwaArmNumJoints,
-            control_mode=mut.IiwaControlMode::Default)
+            control_mode=mut.IiwaControlMode::kDefault)
 
         status_rec = mut.IiwaStatusReceiver()
         self.assertIsInstance(

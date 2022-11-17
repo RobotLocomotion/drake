@@ -70,8 +70,8 @@ TEST_F(IiwaCommandSenderTest, AcceptanceTest) {
 }
 
 TEST_F(IiwaCommandSenderTest, PositionOnlyTest) {
-  MakeDut(IiwaControlMode::Position);
-  // Should not have torque output port.
+  MakeDut(IiwaControlMode::kPosition);
+  // Should not have torque input port.
   EXPECT_THROW(dut().get_torque_input_port(), std::runtime_error);
   // Position is required.
   EXPECT_THROW(output(), std::logic_error);
@@ -84,8 +84,8 @@ TEST_F(IiwaCommandSenderTest, PositionOnlyTest) {
 }
 
 TEST_F(IiwaCommandSenderTest, TorqueOnlyTest) {
-  MakeDut(IiwaControlMode::Torque);
-  // Should not have position output port.
+  MakeDut(IiwaControlMode::kTorque);
+  // Should not have position input port.
   EXPECT_THROW(dut().get_position_input_port(), std::runtime_error);
   // Torque is required.
   EXPECT_THROW(output(), std::logic_error);

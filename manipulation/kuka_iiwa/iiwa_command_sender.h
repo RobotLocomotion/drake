@@ -36,8 +36,8 @@ This system has one abstract-valued output port of type lcmt_iiwa_command.
 @system
 name: IiwaCommandSender
 input_ports:
-- position (optional)
-- torque (optional)
+- position (required if using position mode)
+- torque (optional if using position mode, required in torque mode)
 - time (optional)
 output_ports:
 - lcmt_iiwa_command
@@ -51,7 +51,7 @@ class IiwaCommandSender final : public systems::LeafSystem<double> {
 
   explicit IiwaCommandSender(
       int num_joints = kIiwaArmNumJoints,
-      IiwaControlMode control_mode = IiwaControlMode::Default);
+      IiwaControlMode control_mode = IiwaControlMode::kDefault);
   ~IiwaCommandSender() final;
 
   /** @name Named accessors for this System's input and output ports. */

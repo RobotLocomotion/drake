@@ -48,13 +48,13 @@ IiwaCommandReceiver::IiwaCommandReceiver(
        discrete_state_ticket(latched_position_measured_),
        position_measured_or_zero_->ticket()});
 
-  if (static_cast<bool>(control_mode_ & IiwaControlMode::Position)) {
+  if (static_cast<bool>(control_mode_ & IiwaControlMode::kPosition)) {
     commanded_position_output_ = &DeclareVectorOutputPort(
         "position", num_joints, &IiwaCommandReceiver::CalcPositionOutput,
         {defaulted_command_->ticket()});
   }
 
-  if (static_cast<bool>(control_mode_ & IiwaControlMode::Torque)) {
+  if (static_cast<bool>(control_mode_ & IiwaControlMode::kTorque)) {
     commanded_torque_output_ = &DeclareVectorOutputPort(
         "torque", num_joints, &IiwaCommandReceiver::CalcTorqueOutput,
         {defaulted_command_->ticket()});
@@ -100,7 +100,7 @@ void IiwaCommandReceiver::DoCalcNextUpdateTime(
     const Context<double>& context,
     CompositeEventCollection<double>* events, double* time) const {
   const bool has_position =
-      static_cast<bool>(control_mode_ & IiwaControlMode::Position);
+      static_cast<bool>(control_mode_ & IiwaControlMode::kPosition);
   if (!has_position) {
     // No need to schedule events.
     *time = std::numeric_limits<double>::infinity();

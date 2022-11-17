@@ -8,13 +8,13 @@ namespace kuka_iiwa {
 namespace {
 
 GTEST_TEST(IiwaConstantsTest, ParseIiwaControlMode) {
-  EXPECT_TRUE(IsValid(IiwaControlMode::Default));
+  EXPECT_TRUE(IsValid(IiwaControlMode::kDefault));
   EXPECT_FALSE(IsValid(IiwaControlMode{}));
-  EXPECT_EQ(ParseIiwaControlMode({"position"}), IiwaControlMode::Position);
-  EXPECT_EQ(ParseIiwaControlMode({"torque"}), IiwaControlMode::Torque);
+  EXPECT_EQ(ParseIiwaControlMode({"position"}), IiwaControlMode::kPosition);
+  EXPECT_EQ(ParseIiwaControlMode({"torque"}), IiwaControlMode::kTorque);
   EXPECT_EQ(
       ParseIiwaControlMode({"position", "torque"}),
-      IiwaControlMode::Position | IiwaControlMode::Torque);
+      IiwaControlMode::kPosition | IiwaControlMode::kTorque);
   EXPECT_THROW(ParseIiwaControlMode({"asdf"}), std::runtime_error);
 }
 

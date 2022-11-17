@@ -14,6 +14,7 @@
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
 #include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 namespace manipulation {
@@ -29,11 +30,15 @@ using systems::Adder;
 using systems::Context;
 using systems::Demultiplexer;
 using systems::Gain;
+using systems::PassThrough;
 using systems::StateInterpolatorWithDiscreteDerivative;
 using systems::System;
+using systems::controllers::InverseDynamics;
 using systems::controllers::InverseDynamicsController;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::LcmSubscriberSystem;
+
+using InverseDynamicsMode = InverseDynamics<double>::InverseDynamicsMode;
 
 void BuildIiwaControl(const MultibodyPlant<double>& plant,
                       const multibody::ModelInstanceIndex iiwa_instance,
@@ -60,9 +65,9 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
                    iiwa_command_receiver->get_message_input_port());
 
   const bool has_position =
-      static_cast<bool>(control_mode & IiwaControlMode::Position);
+      static_cast<bool>(control_mode & IiwaControlMode::kPosition);
   const bool has_torque =
-      static_cast<bool>(control_mode & IiwaControlMode::Torque);
+      static_cast<bool>(control_mode & IiwaControlMode::kTorque);
 
   // Connect desired positions.
   if (has_position) {
@@ -133,17 +138,17 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
   DRAKE_DEMAND(IsValid(control_mode));
 
   const bool has_position =
-      static_cast<bool>(control_mode & IiwaControlMode::Position);
+      static_cast<bool>(control_mode & IiwaControlMode::kPosition);
   const bool has_torque =
-      static_cast<bool>(control_mode & IiwaControlMode::Torque);
+      static_cast<bool>(control_mode & IiwaControlMode::kTorque);
 
   IiwaControlPorts ports{};
   const int num_iiwa_positions = controller_plant.num_positions();
   DRAKE_THROW_UNLESS(num_iiwa_positions == 7);
 
   // Intercept desired torque so we can also send it as measured torque.
-  const Gain<double>* torque_proxy =
-      builder->AddSystem<Gain>(1, num_iiwa_positions);
+  const PassThrough<double>* torque_proxy =
+      builder->AddSystem<PassThrough>(num_iiwa_positions);
   builder->Connect(
       torque_proxy->get_output_port(),
       plant.get_actuation_input_port(iiwa_instance));
@@ -183,6 +188,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     ports.commanded_positions =
         &iiwa_commanded_state_interpolator->get_input_port();
     if (has_torque) {
+      DRAKE_THROW_UNLESS(!desired_kp_gains.has_value());
       // Optional feedforward torque.
       auto adder = builder->template AddSystem<Adder>(2, num_iiwa_positions);
       builder->Connect(iiwa_controller->get_output_port_control(),
@@ -195,8 +201,20 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
                        torque_proxy->get_input_port());
     }
   } else if (has_torque) {
-    // Torque alone.
-    ports.commanded_torque = &torque_proxy->get_input_port();
+    // Torque alone, added to gravity compensation.
+    auto gravity_comp = builder->AddSystem<InverseDynamics>(
+        &controller_plant, InverseDynamicsMode::kGravityCompensation);
+    builder->Connect(
+        plant.get_state_output_port(iiwa_instance),
+        gravity_comp->get_input_port_estimated_state());
+    auto adder = builder->template AddSystem<Adder>(2, num_iiwa_positions);
+    builder->Connect(
+        gravity_comp->get_output_port_force(),
+        adder->get_input_port(0));
+    ports.commanded_torque = &adder->get_input_port(1);
+    builder->Connect(
+        adder->get_output_port(),
+        torque_proxy->get_input_port());
   }
 
   // Filter for simulated external torques. Unlike the real robot, external

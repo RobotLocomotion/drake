@@ -8,11 +8,11 @@ IiwaCommandSender::IiwaCommandSender(
     int num_joints, IiwaControlMode control_mode)
     : num_joints_(num_joints), control_mode_(control_mode) {
   DRAKE_DEMAND(IsValid(control_mode_));
-  if (static_cast<bool>(control_mode_ & IiwaControlMode::Position)) {
+  if (static_cast<bool>(control_mode_ & IiwaControlMode::kPosition)) {
     position_input_port_ = &this->DeclareInputPort(
         "position", systems::kVectorValued, num_joints_);
   }
-  if (static_cast<bool>(control_mode_ & IiwaControlMode::Torque)) {
+  if (static_cast<bool>(control_mode_ & IiwaControlMode::kTorque)) {
     torque_input_port_ = &this->DeclareInputPort(
         "torque", systems::kVectorValued, num_joints_);
   }
@@ -27,14 +27,14 @@ IiwaCommandSender::~IiwaCommandSender() = default;
 using InPort = systems::InputPort<double>;
 const InPort& IiwaCommandSender::get_position_input_port() const {
   DRAKE_THROW_UNLESS(
-      static_cast<bool>(control_mode_ & IiwaControlMode::Position));
+      static_cast<bool>(control_mode_ & IiwaControlMode::kPosition));
   DRAKE_DEMAND(position_input_port_ != nullptr);
   return *position_input_port_;
 }
 
 const InPort& IiwaCommandSender::get_torque_input_port() const {
   DRAKE_THROW_UNLESS(
-      static_cast<bool>(control_mode_ & IiwaControlMode::Torque));
+      static_cast<bool>(control_mode_ & IiwaControlMode::kTorque));
   DRAKE_DEMAND(torque_input_port_ != nullptr);
   return *torque_input_port_;
 }
@@ -52,11 +52,11 @@ void IiwaCommandSender::CalcOutput(
           : context.get_time();
 
   const bool has_position =
-      static_cast<bool>(control_mode_ & IiwaControlMode::Position);
+      static_cast<bool>(control_mode_ & IiwaControlMode::kPosition);
   bool has_torque = false;
-  if (control_mode_ == IiwaControlMode::Torque) {
+  if (control_mode_ == IiwaControlMode::kTorque) {
     has_torque = true;
-  } else if (static_cast<bool>(control_mode_ & IiwaControlMode::Torque)) {
+  } else if (static_cast<bool>(control_mode_ & IiwaControlMode::kTorque)) {
     has_torque = get_torque_input_port().HasValue(context);
   }
 

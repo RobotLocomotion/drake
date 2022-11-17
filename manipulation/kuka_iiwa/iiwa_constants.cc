@@ -31,9 +31,9 @@ IiwaControlMode ParseIiwaControlMode(
   IiwaControlMode result{};
   for (const auto& string_mode : control_mode) {
     if (string_mode == "position") {
-      result = result | IiwaControlMode::Position;
+      result = result | IiwaControlMode::kPosition;
     } else if (string_mode == "torque") {
-      result = result | IiwaControlMode::Torque;
+      result = result | IiwaControlMode::kTorque;
     } else {
       throw std::runtime_error(fmt::format(
           "Malformed control mode type '{}'", string_mode));

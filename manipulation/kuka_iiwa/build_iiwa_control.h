@@ -47,7 +47,10 @@ namespace kuka_iiwa {
 /// @p desired_iiwa_kp_gains is an optional argument to pass in gains
 /// corresponding to the Iiwa Dof (7) in the controller.  If no argument is
 /// passed, the gains derived from hardware will be used instead (hardcoded
-/// within the implementation of this function).
+/// within the implementation of this function). These gains must be nullopt
+/// if control_mode does not include position control.
+///
+/// @p control_mode the control mode for the controller.
 ///
 /// Note: The Diagram will maintain an internal reference to `controller_plant`,
 /// so you must ensure that `controller_plant` has a longer lifetime than the
@@ -59,7 +62,7 @@ void BuildIiwaControl(
     lcm::DrakeLcmInterface* lcm, systems::DiagramBuilder<double>* builder,
     double ext_joint_filter_tau = 0.01,
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
-    IiwaControlMode control_mode = IiwaControlMode::Default);
+    IiwaControlMode control_mode = IiwaControlMode::kDefault);
 
 /// The return type of BuildSimplifiedIiwaControl().
 struct IiwaControlPorts {
@@ -73,10 +76,9 @@ struct IiwaControlPorts {
 /// InverseDynamicsController without connecting with LCM I/O systems.
 /// @sa BuildIiwaControl()
 ///
-/// @return an IiwaControlPorts struct containing the commanded positions input
-/// port of the installed controller as well as output ports for the joint and
-/// external torques. If @p enable_feedforward_torque is true, the struct also
-/// contains the feedforward torque input port.
+/// @return an IiwaControlPorts struct containing the commanded positions
+/// and/or commanded torques ports of the installed control, depending on
+/// @control_mode, as well as output ports for the joint and external torques.
 IiwaControlPorts BuildSimplifiedIiwaControl(
     const multibody::MultibodyPlant<double>& plant,
     const multibody::ModelInstanceIndex iiwa_instance,
@@ -84,7 +86,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     systems::DiagramBuilder<double>* builder,
     double ext_joint_filter_tau = 0.01,
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
-    IiwaControlMode control_mode = IiwaControlMode::Default);
+    IiwaControlMode control_mode = IiwaControlMode::kDefault);
 
 }  // namespace kuka_iiwa
 }  // namespace manipulation

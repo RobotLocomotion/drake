@@ -21,10 +21,10 @@ extern const double kIiwaLcmStatusPeriod;
 
 /** Enumeration for control modes. */
 enum class IiwaControlMode {
-    Position = 0b01,
-    Torque = 0b10,
+    kPosition = 0b01,
+    kTorque = 0b10,
     // Position and Torque.
-    Default = 0b01 | 0b10
+    kDefault = 0b01 | 0b10
 };
 /** Overload operator| for strongly-typed bitwise operations. */
 inline IiwaControlMode operator|(IiwaControlMode lhs, IiwaControlMode rhs) {
@@ -39,8 +39,8 @@ inline IiwaControlMode operator&(IiwaControlMode lhs, IiwaControlMode rhs) {
 /** Must specify position and/or torque. */
 inline bool IsValid(IiwaControlMode control_mode) {
   return (
-      static_cast<bool>(control_mode & IiwaControlMode::Position) ||
-      static_cast<bool>(control_mode & IiwaControlMode::Torque));
+      static_cast<bool>(control_mode & IiwaControlMode::kPosition) ||
+      static_cast<bool>(control_mode & IiwaControlMode::kTorque));
 }
 
 /**
