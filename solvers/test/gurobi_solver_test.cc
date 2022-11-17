@@ -137,6 +137,13 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
   }
 }
 
+GTEST_TEST(TestDuplicatedVariableQuadraticProgram, Test) {
+  GurobiSolver solver;
+  if (solver.available()) {
+    TestDuplicatedVariableQuadraticProgram(solver);
+  }
+}
+
 namespace TestCallbacks {
 
 struct TestCallbackInfo {
