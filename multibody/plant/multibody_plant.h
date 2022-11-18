@@ -1217,7 +1217,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                        double gear_ratio, double offset = 0.0);
 
   template <typename U = T>
-  DRAKE_DEPRECATED("2023-02-17",
+  DRAKE_DEPRECATED("2023-03-01",
                    "Only gear_ratio and offset of type double are supported.")
   ConstraintIndex
       AddCouplerConstraint(const Joint<U>& joint0, const Joint<U>& joint1,
