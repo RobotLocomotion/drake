@@ -314,7 +314,7 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
   const Vector1<T> stiffness(kInfinity);
   const Vector1<T> relaxation_time(plant().time_step());
 
-  for (const CouplerConstraintSpecs<T>& info :
+  for (const CouplerConstraintSpecs& info :
        manager().coupler_constraints_specs()) {
     const Joint<T>& joint0 = plant().get_joint(info.joint0_index);
     const Joint<T>& joint1 = plant().get_joint(info.joint1_index);

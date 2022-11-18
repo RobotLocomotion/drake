@@ -60,6 +60,13 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
     return data;
   }
 
+  // This method will be removed with the resolution of #16955 and therefore a
+  // no-op is implemented simply to be able to instantiate this class.
+  const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
+      const systems::Context<T>&) const final {
+    DRAKE_UNREACHABLE();
+  }
+
  private:
   /* Allow different specializations to access each other's private data for
    cloning to a different scalar type. */

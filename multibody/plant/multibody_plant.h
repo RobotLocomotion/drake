@@ -29,7 +29,6 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/physical_model.h"
-#include "drake/multibody/plant/tamsi_solver.h"
 #include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
@@ -1215,8 +1214,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
   ConstraintIndex AddCouplerConstraint(const Joint<T>& joint0,
                                        const Joint<T>& joint1,
-                                       const T& gear_ratio,
-                                       const T& offset = 0.0);
+                                       double gear_ratio, double offset = 0.0);
+
+  template <typename U = T>
+  DRAKE_DEPRECATED("2023-03-01",
+                   "Only gear_ratio and offset of type double are supported.")
+  ConstraintIndex
+      AddCouplerConstraint(const Joint<U>& joint0, const Joint<U>& joint1,
+                           const U& gear_ratio, const U& offset = 0.0) {
+    return this->AddCouplerConstraint(joint0, joint1,
+                                      ExtractDoubleOrThrow(gear_ratio),
+                                      ExtractDoubleOrThrow(offset));
+  }
 
   /// <!-- TODO(xuchenhan-tri): Add getters to interrogate existing constraints.
   /// -->
@@ -4346,7 +4355,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex contact_solver_results;
-    systems::CacheIndex contact_solver_scratch;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
@@ -4509,8 +4517,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                              MultibodyForces<T>* forces) const override;
 
   // Discrete system version of CalcForwardDynamics(). This method does not use
-  // O(n) forward dynamics but the discrete TAMSI solver, for further details
-  // please refer to @ref castro_etal_2019 "[Castro et al., 2019]"
+  // O(n) forward dynamics but a discrete solver according to the discrete
+  // contact solver specified.
+  // @see get_discrete_contact_solver().
   void DoCalcForwardDynamicsDiscrete(
       const drake::systems::Context<T>& context,
       internal::AccelerationKinematicsCache<T>* ac) const override;
@@ -4532,19 +4541,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   systems::EventStatus CalcDiscreteStep(
       const systems::Context<T>& context0,
       systems::DiscreteValues<T>* updates) const;
-
-  // Helper method used within DoCalcDiscreteVariableUpdates() to update
-  // generalized velocities from previous step value v0 to next step value v.
-  // This helper uses num_substeps within a time interval of duration dt
-  // to perform the update using a step size dt_substep = dt/num_substeps.
-  // During the time span dt the problem data M, Jn, Jt and minus_tau, are
-  // approximated to be constant, a first order approximation.
-  TamsiSolverResult SolveUsingSubStepping(
-      TamsiSolver<T>* tamsi_solver,
-      int num_substeps, const MatrixX<T>& M0, const MatrixX<T>& Jn,
-      const MatrixX<T>& Jt, const VectorX<T>& minus_tau,
-      const VectorX<T>& stiffness, const VectorX<T>& damping,
-      const VectorX<T>& mu, const VectorX<T>& v0, const VectorX<T>& fn0) const;
 
   // This method performs the computation of the impulses to advance the state
   // stored in `context0` in time.
@@ -4613,19 +4609,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context,
       internal::HydroelasticFallbackCacheData<T>* data) const;
 
-  // Depending on the ContactModel, this method performs point contact and
-  // hydroelastic queries and prepares the results in the form of a list of
-  // DiscreteContactPair to be consumed by our discrete solvers.
-  // TODO(amcastro-tri): consider adding a separate unit test for this method.
-  void CalcDiscreteContactPairs(
-      const systems::Context<T>&,
-      std::vector<internal::DiscreteContactPair<T>>*) const;
-
-  // Eval version of the method CalcDiscreteContactPairs().
+  // TODO(amcastro-tri): Remove this function when #16955 is resolved. Right now
+  // this function is here only to support the computation of ContactResults,
+  // which should be performed by the discrete update manager instead.
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.discrete_contact_pairs)
-        .template Eval<std::vector<internal::DiscreteContactPair<T>>>(context);
+    return discrete_update_manager_->EvalDiscreteContactPairs(context);
   }
 
   // Helper method to fill in the ContactResults given the current context when
@@ -4820,15 +4809,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       std::vector<geometry::PenetrationAsPointPair<T>>*) const;
 
-  // This helper method combines the friction properties for each pair of
-  // contact points in `point_pairs` according to
-  // CalcContactFrictionFromSurfaceProperties().
-  // The i-th entry in the returned std::vector corresponds to the combined
-  // friction properties for the i-th point pair in `point_pairs`.
-  std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
-      const drake::systems::Context<T>& context,
-      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const;
-
   // (Advanced) Helper method to compute contact forces in the normal direction
   // using a penalty method.
   void CalcAndAddContactForcesByPenaltyMethod(
@@ -4957,14 +4937,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                               joint.child_body().index());
   }
 
-  // Helper to invoke our TamsiSolver.
-  void CallTamsiSolver(
-      TamsiSolver<T>* tamsi_solver, const T& time0, const VectorX<T>& v0,
-      const MatrixX<T>& M0, const VectorX<T>& minus_tau, const VectorX<T>& fn0,
-      const MatrixX<T>& Jn, const MatrixX<T>& Jt, const VectorX<T>& stiffness,
-      const VectorX<T>& damping, const VectorX<T>& mu,
-      contact_solvers::internal::ContactSolverResults<T>* results) const;
-
   // Removes `this` MultibodyPlant's ability to convert to the scalar types
   // unsupported by the given `component`.
   void RemoveUnsupportedScalars(
@@ -5022,12 +4994,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
    private:
     // Stiction velocity tolerance for the Stribeck model.
-    // A negative value indicates it was not properly initialized.
-    double v_stiction_tolerance_{-1};
+    double v_stiction_tolerance_{MultibodyPlantConfig{}.stiction_tolerance};
     // Note: this is the *inverse* of the v_stiction_tolerance_ parameter to
     // optimize for the division.
-    // A negative value indicates it was not properly initialized.
-    double inv_v_stiction_tolerance_{-1};
+    double inv_v_stiction_tolerance_{1.0 / v_stiction_tolerance_};
   };
   StribeckModel friction_model_;
 
@@ -5177,7 +5147,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<std::unique_ptr<internal::PhysicalModel<T>>> physical_models_;
 
   // Vector of coupler constraints specifications.
-  std::vector<internal::CouplerConstraintSpecs<T>> coupler_constraints_specs_;
+  std::vector<internal::CouplerConstraintSpecs> coupler_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

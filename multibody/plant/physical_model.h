@@ -22,9 +22,18 @@ class DeformableModel;
 
 namespace internal {
 
-/* Variant over const pointers to all PhysicalModel. */
+/* Variant over const pointers to all PhysicalModel.
+ MultibodyPlant owns all the physical models, as PhysicalModel pointers. Now,
+ discrete update manager must create concrete instances for each physical model.
+ They do so by using the visitor pattern. Therefore,
+ a variant is used here so that discrete update managers can use the visitor
+ pattern to create concrete physical models, solely from a pointer to the base
+ class PhysicalModel. */
+// N.B. For testing, we allow std::monostate to indicate an "empty model" in the
+// return from PhysicalModel::DoToPhysicalModelPointerVariant().
 template <typename T>
-using PhysicalModelPointerVariant = std::variant<const DeformableModel<T>*>;
+using PhysicalModelPointerVariant =
+    std::variant<const DeformableModel<T>*, std::monostate>;
 
 /* PhysicalModel provides the functionalities to extend the type of
  physical model of MultibodyPlant. Developers can derive from this
