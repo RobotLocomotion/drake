@@ -312,31 +312,39 @@ const RigidBody<double>& AddCubicalLink(
   return plant->AddRigidBody(body_name, M_BBo_B);
 }
 
-// Fixture for a MultibodyPlant with connected rigid bodies and a Context.
+// Fixture that creates a MultibodyPlant, Context, and connected rigid bodies.
 class ConnectedRigidBodiesTest : public ::testing::Test {
  public:
-  // @param[in] mA mass of link A (first link in the multibody plant).
+  // Create a MultibodyPlant and a Context with at least one rigid body
+  // connected to world and maybe other interconnected rigid bodies thereafter.
+  // @param[in] jointA_type_name joint that connects a newly constructed bodyA
+  //   to world at the world origin Wo.
+  // @param[in] mA mass of link A (1ˢᵗ link in the multibody plant).
   // @param[in] LA length of uniform-density link A.
+  // @param[in] jointB_type_name joint that connects a newly constructed bodyB
+  //   to bodyA at the x-distal end of bodyA (similarly for jointC_type_name).
+  // @param[in] mB mass of link B (2ⁿᵈ link in the multibody plant).
+  // @param[in] LB length of uniform-density link B.
+  // @throws std::exception if a joint_type_name is not "revolute", "prismatic",
+  //   or "FreeJoint".
   void MakePlant(const std::string& jointA_type_name,
                  const double mA, const double LA,
                  const std::string* jointB_type_name = nullptr,
                  const double mB = 0, const double LB = 0,
                  const std::string* jointC_type_name = nullptr,
                  const double mC = 0, const double LC = 0) {
-    // Connect bodyA to world with the designate joint type.
+    // Connect bodyA to world W at world origin with the designate joint type.
     bodyA_ = &(AddCubicalLink(&plant_, "bodyA", mA, LA));
     const RigidBody<double>& world_body = plant_.world_body();
-    const RigidTransform<double> X_WF;
-    jointWA_ = AddJointToTestPlant(jointA_type_name,
-        world_body, X_WF, *bodyA_, RigidTransform<double>::Identity());
+    const RigidTransform<double> X_WF;  // Identity rigid transform.
+    jointWA_ = AddJointToTestPlant(jointA_type_name, world_body, X_WF, *bodyA_);
 
     // Connect bodyB to bodyA with the designate joint type. Create a "fixed"
     // frame F at the x-distal end of link A that connects to link B.
     if (jointB_type_name != nullptr) {
       bodyB_ = &AddCubicalLink(&plant_, "bodyB", mB, LB);
       const RigidTransform<double> X_AF(Vector3<double>(LA, 0, 0));
-      jointAB_ = AddJointToTestPlant(*jointB_type_name,
-          *bodyA_, X_AF, *bodyB_, RigidTransform<double>::Identity());
+      jointAB_ = AddJointToTestPlant(*jointB_type_name, *bodyA_, X_AF, *bodyB_);
     }
 
     // Connect bodyC to bodyB with the designate joint type. Create a "fixed"
@@ -344,8 +352,7 @@ class ConnectedRigidBodiesTest : public ::testing::Test {
     if (jointC_type_name != nullptr) {
       bodyC_ = &AddCubicalLink(&plant_, "bodyC", mC, LC);
       const RigidTransform<double> X_BF(Vector3<double>(LB, 0, 0));
-      jointBC_ = AddJointToTestPlant(*jointB_type_name,
-          *bodyB_, X_BF, *bodyC_, RigidTransform<double>::Identity());
+      jointBC_ = AddJointToTestPlant(*jointB_type_name, *bodyB_, X_BF, *bodyC_);
     }
 
     // Signal that we are done building the test model.
@@ -367,27 +374,27 @@ class ConnectedRigidBodiesTest : public ::testing::Test {
   const RevoluteJoint<double>* jointAB_{nullptr};
   const RevoluteJoint<double>* jointBC_{nullptr};
 
-  // Helper function to add a joint to this plant.
-  // @param[in] joint_type_name name of a Drake joint, e.g., "revolute".
-  // @param[in] bodyA inboard body to be connected to joint.
-  // @param[in] X_AF rigid transform relating body frame A to "fixed-frame" F
-  //   that is attached to body A and connects via the joint to body B.
-  // @param[in] bodyB outboard body to be connected to joint.
-  // @param[in] X_BM rigid transform relating body frame B to the frame M
-  //   that is attached to body B and connects via the joint to body A.
-  // @note If joint_type_name is prismatic, the joint has a Fx direction, where
-  //   Fx is a unit vector defined by the "fixed_frame" F. If joint_type_name is
-  //   revolute, the joint has a Fz direction.
+  // Helper function to add a joint to this fixture's plant_.
+  // @param[in] joint_type_name name of a Joint, e.g., "revolute", "prismatic"
+  //   or "FreeJoint".
+  // @param[in] bodyA inboard body to be connected to the joint.
+  // @param[in] X_AF rigid transform relating A's body frame to the fixed-frame
+  //   F that is attached to body A and connects via the joint to body B.
+  // @param[in] bodyB outboard body to be connected to the joint.
+  // @note A joint_type_name of prismatic allows translation in the Fx direction
+  //   (Fx is a unit vector of the fixed_frame F). A joint_type_name of revolute
+  //   allows rotation in the Fz direction.
   // @throws std::exception if joint_type_name is not "revolute", "prismatic",
   //   or "FreeJoint".
   // @returns pointer to a revolute joint (if one is created), otherwise null.
   const RevoluteJoint<double>* AddJointToTestPlant(
       const std::string& joint_type_name,
       const RigidBody<double>& bodyA, const RigidTransform<double>& X_AF,
-      const RigidBody<double>& bodyB, const RigidTransform<double>& X_BM) {
+      const RigidBody<double>& bodyB) {
     const RevoluteJoint<double>* joint{nullptr};
     const std::string joint_name =
         bodyA.name() + "_" + bodyB.name() + "_" + joint_type_name;
+    const RigidTransform<double> X_BM;  // Identity rigid transform.
     if (joint_type_name == PrismaticJoint<double>::kTypeName) {
       plant_.AddJoint<PrismaticJoint>(joint_name,
           bodyA, X_AF, bodyB, X_BM, Vector3<double>::UnitX());
@@ -404,36 +411,17 @@ class ConnectedRigidBodiesTest : public ::testing::Test {
 };
 
 // ----------------------------------------------------------------------------
-// There are 5 tests below whose purpose is to improve MultibodyPlant feedback
-// for invalid mass/inertia properties. The tests below uses forward dynamics in
-// continuous mode and test whether an exception is thrown for invalid
-// mass/inertia properties that are detected in the Articulated Body Algorithm.
-// The first two tests use a single body that is connected to world by a one
-// degree-of-freedom joint. The 1ˢᵗ test uses a prismatic (translational) joint
-// whereas the 2ⁿᵈ test uses a revolute joint. These first two tests ensure an
-// exception is thrown for a single body that is either translating or rotating
-// and is at the end of a topological chain.
-// Tests 3 and 4 use multiple bodies with multiple degree of freedom (albeit
-// with each joint being a single degree of freedom). Test 3 uses prismatic
-// joints whereas test 4 uses revolute joints. Tests 3 and 4 ensure an exception
-// can be regardless of whether or not the problematic joint is the last in a
-// topological chain of bodies. Also, since the expected tolerances for rotating
-// bodies are several orders of magnitude smaller than translating bodies, both
-// translational and rotational joints are tested.
-// Test 5 uses a single rigid body that connects to the world with a 6
-// degree-of-freedom "free-joint" and hence involves a 6 x 6 articulated body
-// hinge inertia matrix (whereas tests 1, 2, 3, 4 only involve a 1 x 1 matrix).
-// TODO(Mitiguy) Shorten this comment and give more "why" and less "what".
+// The purpose of the tests below are to ensure MultibodyPlant can detect
+// invalid mass/inertia properties in the Articulated Body Algorithm.
 // ----------------------------------------------------------------------------
-
-// Verify an exception is thrown for a forward dynamic analysis of a single
-// zero-mass body that is allowed to translate due to a prismatic joint.
+// Verify an exception can be thrown for a test with 𝟏 zero-mass body with
+// 𝟏 𝐭𝐫𝐚𝐧𝐬𝐥𝐚𝐭𝐢𝐨𝐧𝐚𝐥 (prismatic) degree-of-freedom.
 TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroMassTranslatingBody) {
   const double mA = 0;  // Mass of link A.
   const double LA = 3;  // Length of uniform-density link (arbitrary > 0).
   MakePlant(PrismaticJoint<double>::kTypeName, mA, LA);
 
-  // Verify proper assertion is thrown if mA = 0 since articulated body hinge
+  // Verify assertion is thrown if mA = 0 since articulated body hinge
   // inertia matrix = [0] which is not positive definite.
   DRAKE_EXPECT_THROWS_MESSAGE(plant_.EvalForwardDynamics(*context_),
     "An internal mass matrix .+ body world to body bodyA "
@@ -445,14 +433,14 @@ TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroMassTranslatingBody) {
   DRAKE_EXPECT_NO_THROW(plant_.EvalForwardDynamics(*context_))
 }
 
-// Verify an exception is thrown for a forward dynamic analysis of a single
-// zero-inertia body that is allowed to rotate due to a revolute joint.
+// Verify an exception can be thrown for a test with 𝟏 zero-inertia body with
+// 𝟏 𝐫𝐨𝐭𝐚𝐭𝐢𝐨𝐧𝐚𝐥 (revolute) degree-of-freedom.
 TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroInertiaRotatingBody) {
   const double mA = 0;  // Mass of link A.
   const double LA = 1;  // Length of uniform-density link (arbitrary > 0).
   MakePlant(RevoluteJoint<double>::kTypeName, mA, LA);
 
-  // Verify proper assertion is thrown if mA = 0 since articulated body hinge
+  // Verify assertion is thrown if mA = 0 since articulated body hinge
   // inertia matrix = [0] which is not positive definite.
   DRAKE_EXPECT_THROWS_MESSAGE(plant_.EvalForwardDynamics(*context_),
     "An internal mass matrix .+ body world to body bodyA "
@@ -464,24 +452,32 @@ TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroInertiaRotatingBody) {
   DRAKE_EXPECT_NO_THROW(plant_.EvalForwardDynamics(*context_))
 }
 
-// Verify an exception may be thrown for a forward dynamic analysis that has
-// sequential rigid bodies A and B that translate in the same direction, where
-// body A's mass is zero and body B's mass is large and positive.
+// Verify an exception can be thrown for a test with 𝟐 sequential bodies with
+// 𝟐 𝐭𝐫𝐚𝐧𝐬𝐥𝐚𝐭𝐢𝐨𝐧𝐚𝐥 (prismatic) degree-of-freedom (whether or not the zero-mass
+// body is at the end of the topological chain).
 TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroMassTranslating2Bodies) {
-  const double mA = 0, mB = 1;  // Mass of links A and B.
+  const double mA = 1, mB = 0;  // Mass of links A and B.
   const double LA = 1, LB = 1;  // Length of uniform-density links.
   const std::string prismatic(PrismaticJoint<double>::kTypeName);
   MakePlant(prismatic, mA, LA, &prismatic, mB, LB);
 
-  // Verify assertion is thrown if mA = 0, mB = 1 since articulated body hinge
-  // inertia matrix = [0] which is not positive definite.
+  // Verify assertion is thrown if mA = 1, mB = 0 (zero-mass distal body) since
+  // articulated body hinge inertia matrix = [0] which is not positive definite.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_.EvalForwardDynamics(*context_),
+    "An internal mass matrix .+ body bodyA to body bodyB "
+    "is not positive-definite. .+ allows translation,[^]*");
+
+  // Verify assertion is thrown if mA = 0, mB = 1 (zero-mass inboard body) since
+  // articulated body hinge inertia matrix = [0] which is not positive definite.
+  bodyA_->SetMass(context_.get(), 0);
+  bodyB_->SetMass(context_.get(), 1);
   DRAKE_EXPECT_THROWS_MESSAGE(plant_.EvalForwardDynamics(*context_),
     "An internal mass matrix .+ body world to body bodyA "
     "is not positive-definite. .+ allows translation,[^]*");
 
-  // Verify assertion is thrown if mA = 0, mB = 1E9 since articulated body hinge
-  // inertia matrix ≈ [-2.38419e-07] which is not positive definite.
-  // Note: Mathematically, if mA = 0, any real value of mB should still throw.
+  // Verify assertion is thrown if mA = 0, mB = 1E9 (zero-mass inboard body)
+  // since articulated body hinge inertia matrix ≈ [-2.38419e-07] which is not
+  // positive definite. Mathematically, if mA = 0, any value of mB should throw.
   // TODO(Mitiguy) It seems surprising that the matrix ≠ [0] since mA = 0.
   //  Explain why matrix is ≈ 10⁸ * machine epsilon distant from [0].
   bodyB_->SetMass(context_.get(), 1E9);
@@ -491,17 +487,16 @@ TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroMassTranslating2Bodies) {
 
   // Verify no assertion is thrown if mA = 1E-3, mB = 1E9 since articulated body
   // hinge inertia matrix is positive definite (and far enough from singular).
-  // Note: mA = 1E-3 was chosen from empirical numerical testing with LLT.
+  // Note: mA = 1E-3 was chosen from empirical numerical testing.
   bodyA_->SetMass(context_.get(), 1E-3);
   DRAKE_EXPECT_NO_THROW(plant_.EvalForwardDynamics(*context_))
 }
 
-// Perform a forward dynamic analysis for a planar triple pendulum consisting of
-// rigid bodies A, B, C, each which has an inboard revolute-pin axis that is
-// parallel to the world's Z-direction. Verify an exception is thrown if body
-// C's mass and inertia are zero or bodies A and B's mass and inertia are zero.
+// Verify an exception can be thrown for a test with 𝟑 sequential bodies with
+// 𝟑 𝐫𝐨𝐭𝐚𝐭𝐢𝐨𝐧𝐚𝐥 (revolute) degree-of-freedom if the 3ʳᵈ body is zero-inertia
+// or both the 1ˢᵗ and 2ⁿᵈ bodies are zero-inertia.
 TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroInertiaRotating3Bodies) {
-  const double mA = 0, mB = 1, mC = 0;  // Mass of links A, B, C.
+  const double mA = 1, mB = 1, mC = 0;  // Mass of links A, B, C.
   const double L = 0.2;  // Length of uniform-density links A, B, C.
   const std::string revolute(RevoluteJoint<double>::kTypeName);
   MakePlant(revolute, mA, L, &revolute, mB, L, &revolute, mC, L);
@@ -515,25 +510,32 @@ TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroInertiaRotating3Bodies) {
   jointAB_->set_angle(context_ptr, 0);
   jointBC_->set_angle(context_ptr, 0);
 
-  // Verify proper assertion is thrown if mA = mB = 1, mc = 0 since articulated
-  // body hinge inertia matrix = [0] which is not positive definite.
+  // Verify assertion is thrown if mA = mB = 1, mC = 0 (zero-inertia outboard
+  // body) since articulated body hinge inertia matrix = [0] which is not
+  // positive definite.
   DRAKE_EXPECT_THROWS_MESSAGE(plant_.EvalForwardDynamics(*context_),
     "An internal mass matrix .+ body bodyB to body bodyC "
     "is not positive-definite. .+ allows rotation,[^]*");
 
-  // Verify no assertion is thrown if mA = 1, mB = 0, mC = 1.
+  // Verify 𝐧𝐨 assertion is thrown if mA = 1, mB = 0, mC = 1 (zero-inertia
+  // middle link) or mA = 0, mB = 1, mC = 1 (zero-inertia inboard link).
   bodyA_->SetMass(context_ptr, 1);
   bodyB_->SetMass(context_ptr, 0);
   bodyC_->SetMass(context_ptr, 1);
   DRAKE_EXPECT_NO_THROW(plant_.EvalForwardDynamics(*context_))
+  bodyA_->SetMass(context_ptr, 0);
+  bodyB_->SetMass(context_ptr, 1);
+  bodyC_->SetMass(context_ptr, 1);
+  DRAKE_EXPECT_NO_THROW(plant_.EvalForwardDynamics(*context_))
 
-  // Verify proper assertion is thrown if mA = mB = 0, mC = 1 since articulated
-  // body hinge inertia matrix ≈ [-1.90126e-17] which is not positive-definite.
+  // Verify assertion is thrown if mA = mB = 0, mC = 1 (zero-inertia for both
+  // the 1ˢᵗ and 2ⁿᵈ bodies) since the articulated body hinge inertia
+  // matrix ≈ [-1.90126e-17] which is not positive-definite.
   // TODO(Mitiguy) Improve robustness of test. If mC = 2, no assertion is thrown
   //  since the articulated body hinge inertia matrix ≈ [1.582e-17].
   //  The tests herein were chosen because they worked -- based on computation
   //  in computer hardware available from CI (Continuous Integration) testing.
-  bodyA_->SetMass(context_ptr, 0);
+  bodyB_->SetMass(context_ptr, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(plant_.EvalForwardDynamics(*context_),
     "An internal mass matrix .+ body world to body bodyA "
     "is not positive-definite. .+ allows rotation,[^]*");
@@ -544,15 +546,16 @@ TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroInertiaRotating3Bodies) {
   DRAKE_EXPECT_NO_THROW(plant_.EvalForwardDynamics(*context_))
 }
 
-// Verify an exception is thrown for a forward dynamic analysis of a single
-// zero-mass, zero-inertia free body (both translates and rotates).
+// Verify an exception can be thrown for a test with 𝟏 zero-mass, zero-inertia
+// body with 𝟔 degrees-of-freedom (𝟑 𝐫𝐨𝐭𝐚𝐭𝐢𝐨𝐧𝐚𝐥 and 𝟑 𝐭𝐫𝐚𝐧𝐬𝐥𝐚𝐭𝐢𝐨𝐧𝐚𝐥).
+// Note: This tests a 𝟔 x 𝟔 articulated body hinge inertia matrix.
 TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroMassInertiaFreeBody) {
   const double mA = 0;    // Mass of link A.
   const double LA = 0.3;  // Length of uniform-density link (arbitrary > 0).
-  MakePlant("FreeJoint", mA, LA);
+  MakePlant("FreeJoint", mA, LA);  // Link A is a "free body".
 
   // Verify assertion is thrown if mA = 0 since articulated body hinge inertia
-  // matrix is 6 x 6 zero matrix (albeit with NaN in upper-triangular part).
+  // matrix is a 𝟔 x 𝟔 zero matrix (albeit with NaN in upper-triangular part).
   DRAKE_EXPECT_THROWS_MESSAGE(plant_.EvalForwardDynamics(*context_),
     "An internal mass matrix .+ body world to body bodyA "
     "is not positive-definite. .+ allows rotation.+ translation[^]*");
