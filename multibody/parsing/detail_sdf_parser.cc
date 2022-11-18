@@ -598,7 +598,9 @@ std::tuple<double, double, double, double> ParseJointLimits(
 }
 
 // Helper method to add joints to a MultibodyPlant given an sdf::Joint
-// specification object.
+// specification object. X_WM should be an identity when adding a world
+// joint (is_model_joint = false) since a world joint doesn't have a
+// containing model, hence M = W.
 void AddJointFromSpecification(
     const DiagnosticPolicy& diagnostic, const RigidTransformd& X_WM,
     const sdf::Joint& joint_spec, ModelInstanceIndex model_instance,
@@ -638,7 +640,7 @@ void AddJointFromSpecification(
   // We need to treat the world case separately since sdformat does not create
   // a "world" link from which we can request its pose (which in that case would
   // be the identity).
-  std::string relative_to = (is_model_joint) ? "__model__" : "world";
+  const std::string relative_to = (is_model_joint) ? "__model__" : "world";
   if (parent_body.index() == world_index()) {
     const RigidTransformd X_MJ = ResolveRigidTransform(
         diagnostic, joint_spec.SemanticPose(), relative_to);
@@ -1772,6 +1774,13 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       AddJointFromSpecification(
           workspace.diagnostic, {}, joint, world_model_instance(),
           workspace.plant, &joint_types, false);
+    }
+
+    for (sdf::JointType joint_type : joint_types) {
+      if (joint_type != sdf::JointType::FIXED) {
+        throw std::runtime_error(
+            "Only fixed joints are permitted in world joints.");
+      }
     }
   }
 

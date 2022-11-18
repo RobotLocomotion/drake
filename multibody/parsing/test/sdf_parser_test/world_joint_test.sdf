@@ -13,12 +13,12 @@
     <frame name="parent_frame" attached_to="parent_model">
       <pose>1 2 3 0 0 0</pose>
     </frame>
-    <joint name="J1" type="ball">
+    <joint name="J1" type="fixed">
       <pose>1 1 1 0 0 0</pose>
       <parent>parent_frame</parent>
       <child>child_frame</child>
     </joint>
-    <joint name="J2" type="ball">
+    <joint name="J2" type="fixed">
       <parent>world</parent>
       <child>parent_model::L_P</child>
     </joint>
