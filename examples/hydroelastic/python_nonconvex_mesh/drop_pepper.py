@@ -34,16 +34,15 @@ def make_pepper_bowl_table(contact_model, time_step):
                            builder)
 
     parser = Parser(plant)
-    parser.AddModelFromFile(
+    parser.AddModels(
         FindResourceOrThrow(
             "drake/examples/hydroelastic/python_nonconvex_mesh/pepper.sdf"))
-    parser.AddModelFromFile(
+    parser.AddModels(
         FindResourceOrThrow(
             "drake/examples/hydroelastic/python_nonconvex_mesh/bowl.sdf"))
-    table = parser.AddModelFromFile(
-              FindResourceOrThrow(
-                "drake/examples/hydroelastic/python_nonconvex_mesh/table.sdf"),
-              model_name="table")
+    (table,) = parser.AddModels(
+        FindResourceOrThrow(
+            "drake/examples/hydroelastic/python_nonconvex_mesh/table.sdf"))
 
     # We pose the table with its top surface on World's X-Y plane.
     # Intuitively we push it down 1 cm because the box is 2 cm thick.
