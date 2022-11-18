@@ -593,7 +593,7 @@ class TestPlant(unittest.TestCase):
         """Tests unit inertia construction and API."""
         UnitInertia = UnitInertia_[T]
         self._test_rotational_inertia_or_unit_inertia_api(T, UnitInertia)
-        # Test methods present only on UnitInertia, not RotationalInernia.
+        # Test methods present only on UnitInertia, not RotationalInertia.
         p = [0.1, 0.2, 0.3]
         dut = UnitInertia(I=RotationalInertia_[T](mass=1.0, p_PQ_E=p))
         self.assertIsInstance(
@@ -603,6 +603,30 @@ class TestPlant(unittest.TestCase):
         assert_pickle(self, dut, UnitInertia.CopyToFullMatrix3, T=T)
         # N.B. There are NO valid operators on UnitInertia.  They are inherited
         # through implementation reuse, but they are broken (#6109).
+
+        # The static constructors from "geometry".
+        self.assertIsInstance(UnitInertia.PointMass(p_FQ=[1, 2, 3]),
+                              UnitInertia)
+        self.assertIsInstance(UnitInertia.SolidEllipsoid(a=1, b=2, c=3),
+                              UnitInertia)
+        self.assertIsInstance(UnitInertia.SolidSphere(r=1.5), UnitInertia)
+        self.assertIsInstance(UnitInertia.HollowSphere(r=1.5), UnitInertia)
+        self.assertIsInstance(UnitInertia.SolidBox(Lx=1, Ly=2, Lz=3),
+                              UnitInertia)
+        self.assertIsInstance(UnitInertia.SolidCube(L=2), UnitInertia)
+        self.assertIsInstance(UnitInertia.SolidCylinder(r=1.5, L=2),
+                              UnitInertia)
+        self.assertIsInstance(
+            UnitInertia.SolidCylinder(r=1.5, L=2, b_E=[1, 2, 3]), UnitInertia)
+        self.assertIsInstance(UnitInertia.SolidCapsule(r=1, L=2), UnitInertia)
+        self.assertIsInstance(UnitInertia.SolidCylinderAboutEnd(r=1, L=2),
+                              UnitInertia)
+        self.assertIsInstance(
+            UnitInertia.AxiallySymmetric(J=1, K=2, b_E=[1, 2, 3]), UnitInertia)
+        self.assertIsInstance(UnitInertia.StraightLine(K=1.5, b_E=[1, 2, 3]),
+                              UnitInertia)
+        self.assertIsInstance(UnitInertia.ThinRod(L=1.5, b_E=[1, 2, 3]),
+                              UnitInertia)
 
     @numpy_compare.check_all_types
     def test_spatial_inertia_api(self, T):
