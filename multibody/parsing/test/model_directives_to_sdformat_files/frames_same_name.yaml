@@ -1,7 +1,7 @@
 directives:
 - add_model:
     name: simple_model
-    file: package://model_directives_to_sdformat_files/simple_model.sdf
+    file: package://process_model_directives_test/simple_model.sdf
 
 - add_frame:
     name: frame_name

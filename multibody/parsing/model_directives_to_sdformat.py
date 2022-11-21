@@ -24,6 +24,7 @@ from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.framework import DiagramBuilder
 
+
 SDF_VERSION = '1.9'
 SCOPE_DELIMITER = '::'
 WORLD_FRAME = 'world'
@@ -33,7 +34,7 @@ class ConversionError(Exception):
     pass
 
 
-class ModelDirectivesToSDFormat:
+class ModelDirectivesToSdf:
 
     # TODO(aaronchongth): Check for simple validity of output model XML,
     # whether the model just has a single joint or something, without any
@@ -475,7 +476,7 @@ def main() -> None:
         help='Output path for converted SDFormat file.')
     args = parser.parse_args()
 
-    model_directives_to_sdformat = ModelDirectivesToSDFormat()
+    model_directives_to_sdformat = ModelDirectivesToSdf()
     result_tree = model_directives_to_sdformat.convert_directive(
         args.model_directives)
 

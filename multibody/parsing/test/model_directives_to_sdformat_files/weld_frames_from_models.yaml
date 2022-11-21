@@ -2,11 +2,11 @@ directives:
 
 - add_model:
     name: M1
-    file: package://model_directives_to_sdformat_files/simple_model.sdf
+    file: package://process_model_directives_test/simple_model.sdf
 
 - add_model:
     name: M2
-    file: package://model_directives_to_sdformat_files/simple_model.sdf
+    file: package://process_model_directives_test/simple_model.sdf
 
 # Welding the newly included tool to top_injected_frame, from the world level.
 - add_weld:

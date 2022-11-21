@@ -558,6 +558,7 @@ drake_py_unittest(
     data = [
         ":model_directives_to_sdformat.py",
         ":model_directives_to_sdformat_files",
+        ":process_model_directives_test_models",
     ],
     deps = [
         "//bindings/pydrake",

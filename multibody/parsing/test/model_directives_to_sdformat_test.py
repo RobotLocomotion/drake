@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import drake.multibody.parsing.model_directives_to_sdformat \
-    as model_directives_to_sdformat
-
 import io
 import lxml.etree as ET
 import os
@@ -36,11 +33,14 @@ from pydrake.multibody.tree import (
     ModelInstanceIndex,
     JointIndex,
 )
-from pydrake.common import FindResourceOrThrow
+from pydrake.common import GetDrakePath
 from pydrake.common.test_utilities.meta import (
     ValueParameterizedTest,
     run_with_multiple_values,
 )
+
+import drake.multibody.parsing.model_directives_to_sdformat \
+    as model_directives_to_sdformat
 
 
 def _get_plant_aggregate(num_func, get_func, index_cls, model_instances=None):
@@ -112,24 +112,22 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         'weld_frames_from_models.yaml',
         'multibody/parsing/test/model_directives_to_sdformat_files/'
         'scoped_frame_name.yaml',
-        'multibody/parsing/test/model_directives_to_sdformat_files/'
-        'weld_extra_scopes.yaml'
     ]
 
     @run_with_multiple_values([dict(file_path=file_path)
                                for file_path in files_to_test])
     def test_through_plant_comparison(self, *, file_path):
         # Convert
-        converter = model_directives_to_sdformat.ModelDirectivesToSDFormat()
+        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         sdformat_tree = converter.convert_directive(file_path)
         sfdormat_result = ET.tostring(
             sdformat_tree, pretty_print=True, encoding="unicode")
 
         # Load model directives
         directives_plant = MultibodyPlant(time_step=0.01)
-        model_dir = os.path.dirname(FindResourceOrThrow(
-            'drake/multibody/parsing/test/'
-            'model_directives_to_sdformat_files/package.xml'))
+        model_dir = os.path.dirname(os.path.join(
+                GetDrakePath(),
+                'multibody/parsing/test/'))
         parser = Parser(plant=directives_plant)
         parser.package_map().PopulateFromFolder(model_dir)
         directives = LoadModelDirectives(file_path)
@@ -221,7 +219,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
             self.assertEqual(len(directives_joints), 0)
 
     def test_error_no_directives(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSDFormat()
+        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
                 model_directives_to_sdformat.ConversionError,
                 r'\[directives\] must be the first keyword'
@@ -232,7 +230,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                     'something_not_directives.yaml')
 
     def test_error_directives_not_frist(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSDFormat()
+        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
                 model_directives_to_sdformat.ConversionError,
                 r'\[directives\] must be the first keyword'
@@ -243,7 +241,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                     'not_directives_first.yaml')
 
     def test_error_implicit_hidden_base_frame(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSDFormat()
+        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
                 model_directives_to_sdformat.ConversionError,
                 'Failed trying to find scope for frame: '
@@ -255,7 +253,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                     'implicit_hidden_base_frame.yaml')
 
     def test_error_different_scopes_frame(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSDFormat()
+        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
                 model_directives_to_sdformat.ConversionError,
                 'Frame named: '
@@ -268,7 +266,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                     'different_scopes_frame.yaml')
 
     def test_error_world_base(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSDFormat()
+        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
                 model_directives_to_sdformat.ConversionError,
                 r'Adding a frame using base_frame=\[world\] is '
@@ -278,7 +276,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                     'model_directives_to_sdformat_files/world_base_frame.yaml')
 
     def test_error_frame_name_same_base_name(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSDFormat()
+        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
                 model_directives_to_sdformat.ConversionError,
                 r'Frame: \[frame\] has the same name as '
@@ -290,7 +288,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                     'frame_same_as_base_frame.yaml')
 
     def test_error_frames_same_name(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSDFormat()
+        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
                 model_directives_to_sdformat.ConversionError,
                 'Found more than two frames with name: '
