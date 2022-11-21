@@ -4124,6 +4124,20 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultPositions) {
                               q.tail<14>(), kTol));
 }
 
+GTEST_TEST(MultibodyPlantTest, GetMutableSceneGraphPreFinalize) {
+  MultibodyPlant<double> plant(0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetMutableSceneGraphPreFinalize(),
+                              ".*geometry_source_is_registered.*");
+
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  EXPECT_EQ(plant.GetMutableSceneGraphPreFinalize(), &scene_graph);
+
+  plant.Finalize();
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetMutableSceneGraphPreFinalize(),
+                              ".*!is_finalized.*");
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

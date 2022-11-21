@@ -12,23 +12,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-std::vector<double> ConvertToDoubles(const std::string& str) {
-  std::istringstream ss(str);
-  // Every real number in a URDF file needs to be parsed assuming that the
-  // decimal point separator is the period, as specified in XML Schema
-  // definition of xs:double. The call to imbue ensures that a suitable
-  // locale is used, instead of using the current C++ global locale.
-  // Related PR: https://github.com/ros/urdfdom_headers/pull/42 .
-  ss.imbue(std::locale::classic());
-
-  double val{};
-  std::vector<double> out;
-  while (ss >> val) {
-    out.push_back(val);
-  }
-  return out;
-}
-
 bool ParseStringAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name, std::string* val) {
   const char* attr = node->Attribute(attribute_name);
@@ -37,29 +20,6 @@ bool ParseStringAttribute(const tinyxml2::XMLElement* node,
     return true;
   }
   val->clear();
-  return false;
-}
-
-bool ParseScalarAttribute(
-    const tinyxml2::XMLElement* node,
-    const char* attribute_name, double* val,
-    std::optional<const drake::internal::DiagnosticPolicy> policy) {
-  if (!policy.has_value()) {
-    policy.emplace();
-  }
-  const char* attr = node->Attribute(attribute_name);
-  if (attr) {
-    std::vector<double> vals = ConvertToDoubles(attr);
-    if (vals.size() != 1) {
-      policy->Error(
-          fmt::format("Expected single value for attribute '{}' got '{}'",
-                      attribute_name, attr));
-    }
-    if (!vals.empty()) {
-      *val = vals[0];
-    }
-    return !vals.empty();
-  }
   return false;
 }
 
@@ -103,3 +63,4 @@ bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
