@@ -138,7 +138,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         sdformat_plant = MultibodyPlant(time_step=0.01)
         sdformat_parser = Parser(sdformat_plant)
         sdformat_parser.package_map().PopulateFromFolder(model_dir)
-        sdformat_parser.AddModelFromString(sfdormat_result, "sdf")
+        sdformat_parser.AddModelsFromString(sfdormat_result, "sdf")
         sdformat_plant.Finalize()
 
         # Compare plants
