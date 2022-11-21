@@ -606,7 +606,7 @@ void UrdfParser::ParseMechanicalReduction(const XMLElement& node) {
   if (!child) { return; }
   const char* text = child->GetText();
   if (!text) { return; }
-  std::vector<double> values = ConvertToDoubles(text);
+  std::vector<double> values = ConvertToVector<double>(text);
   if (values.size() == 1 && values[0] == 1) { return; }
   Warning(*child, fmt::format(
               "A '{}' element contains a mechanicalReduction element with a"

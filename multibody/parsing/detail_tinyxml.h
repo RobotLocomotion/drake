@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -14,9 +15,25 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Parses a string containing double values in the XML attribute format into a
-// vector of doubles.
-std::vector<double> ConvertToDoubles(const std::string& str);
+// Parses a string containing values of type T in the XML attribute format into
+// a vector of T.
+template <typename T>
+std::vector<T> ConvertToVector(const std::string& str) {
+  std::istringstream ss(str);
+  // Every real number in a URDF file needs to be parsed assuming that the
+  // decimal point separator is the period, as specified in XML Schema
+  // definition of xs:double. The call to imbue ensures that a suitable
+  // locale is used, instead of using the current C++ global locale.
+  // Related PR: https://github.com/ros/urdfdom_headers/pull/42 .
+  ss.imbue(std::locale::classic());
+
+  T val{};
+  std::vector<T> out;
+  while (ss >> val) {
+    out.push_back(val);
+  }
+  return out;
+}
 
 // Parses a string attribute of @p node named @p attribute_name into @p val.
 // If the attribute is not present, @p val will be cleared.
@@ -35,11 +52,29 @@ bool ParseStringAttribute(const tinyxml2::XMLElement* node,
 //
 // If @p policy is empty, then the default policy will be used, which results
 // in a `throw` on error.
-bool ParseScalarAttribute(
-    const tinyxml2::XMLElement* node,
-    const char* attribute_name, double* val,
-    std::optional<const drake::internal::DiagnosticPolicy> policy =
-    std::nullopt);
+template <typename T>
+bool ParseScalarAttribute(const tinyxml2::XMLElement* node,
+                          const char* attribute_name, T* val,
+                          std::optional<const drake::internal::DiagnosticPolicy>
+                              policy = std::nullopt) {
+  if (!policy.has_value()) {
+    policy.emplace();
+  }
+  const char* attr = node->Attribute(attribute_name);
+  if (attr) {
+    std::vector<T> vals = ConvertToVector<T>(attr);
+    if (vals.size() != 1) {
+      policy->Error(
+          fmt::format("Expected single value for attribute '{}' got '{}'",
+                      attribute_name, attr));
+    }
+    if (!vals.empty()) {
+      *val = vals[0];
+    }
+    return !vals.empty();
+  }
+  return false;
+}
 
 // Parses an attribute of @p node named @p attribute_name consisting of scalar
 // values into @p val.
@@ -56,7 +91,7 @@ bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
                           Eigen::Matrix<double, rows, 1>* val) {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
-    std::vector<double> vals = ConvertToDoubles(attr);
+    std::vector<double> vals = ConvertToVector<double>(attr);
     if (vals.size() != rows) {
       throw std::invalid_argument(
           fmt::format("Expected {} values for attribute {} got {}", rows,

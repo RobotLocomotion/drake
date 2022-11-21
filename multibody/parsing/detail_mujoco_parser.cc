@@ -35,6 +35,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::GeometryInstance;
+using geometry::GeometryId;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using tinyxml2::XMLAttribute;
@@ -413,7 +414,7 @@ class MujocoParser {
     {
       std::string size_attr;
       ParseStringAttribute(node, "size", &size_attr);
-      size = ConvertToDoubles(size_attr);
+      size = ConvertToVector<double>(size_attr);
     }
 
     Vector6d fromto;
@@ -583,9 +584,29 @@ class MujocoParser {
       ignored. */
     }
 
-    WarnUnsupportedAttribute(*node, "contype");
-    WarnUnsupportedAttribute(*node, "conaffinity");
-    WarnUnsupportedAttribute(*node, "condim");
+    int contype{1};
+    int conaffinity{1};
+    int condim{3};
+    ParseScalarAttribute(node, "contype", &contype);
+    ParseScalarAttribute(node, "conaffinity", &conaffinity);
+    ParseScalarAttribute(node, "condim", &condim);
+    if (contype != 1 || conaffinity != 1) {
+      log()->warn(
+          "geom {} specified contype={} and conaffinity={}; but collision "
+          "filter groups are not yet implemented for the mujoco parser.",
+          geom.name, contype, conaffinity);
+    }
+    if (condim != 3) {
+      // TODO(russt): Can we support condim=1 inefficiently by setting friction
+      // coefficients to zero? This may be insufficient given the parallel
+      // resistor friction coefficient logic. condim=4 or 6 are likely out of
+      // scope for now.
+      log()->warn(
+          "geom {} specified condim={}, which is not supported. condim=3 will "
+          "be used instead.",
+          geom.name, condim);
+    }
+
     WarnUnsupportedAttribute(*node, "group");
     WarnUnsupportedAttribute(*node, "priority");
 
@@ -612,7 +633,7 @@ class MujocoParser {
     {
       std::string friction_attr;
       ParseStringAttribute(node, "friction", &friction_attr);
-      friction = ConvertToDoubles(friction_attr);
+      friction = ConvertToVector<double>(friction_attr);
     }
     if (!friction.empty()) {
       // MuJoCo's friction specification is [sliding, torsional, rolling].  We
@@ -1069,6 +1090,100 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "inertiagrouprange");
   }
 
+  void ParseContact(XMLElement* node) {
+    if (!plant_->geometry_source_is_registered()) {
+      // No need to parse contacts if there is no SceneGraph registered.
+      return;
+    }
+
+    geometry::SceneGraph<double>* scene_graph = plant_->scene_graph();
+    DRAKE_DEMAND(scene_graph != nullptr);
+    geometry::CollisionFilterManager manager =
+        scene_graph->collision_filter_manager();
+    const geometry::SceneGraphInspector<double>& inspector =
+        scene_graph->model_inspector();
+    const std::vector<GeometryId> geom_ids = inspector.GetAllGeometryIds();
+
+    // MultibodyPlant Register__Geometry methods automatically changes the
+    // geometry name to model_instance_name::geometry_name (in
+    // MultibodyPlant::GetScopedName). I need to undo that change here.
+    int scoped_name_prefix_length =
+        plant_->GetModelInstanceName(model_instance_).size() + 2;
+
+    auto geom_id_from_name = [&inspector, &geom_ids, scoped_name_prefix_length](
+                                 const std::string& name) {
+      for (GeometryId id : geom_ids) {
+        const std::string_view unscoped_name =
+            std::string_view(inspector.GetName(id))
+                .substr(scoped_name_prefix_length, std::string::npos);
+        if (unscoped_name == name) {
+          return id;
+          break;
+        }
+      }
+      return GeometryId();
+    };
+
+    for (XMLElement* pair_node = node->FirstChildElement("pair"); pair_node;
+         pair_node = pair_node->NextSiblingElement("pair")) {
+      std::string geom1, geom2;
+      if (!ParseStringAttribute(pair_node, "geom1", &geom1) ||
+          !ParseStringAttribute(pair_node, "geom2", &geom2)) {
+        log()->warn(
+            "contact pair node does not have required geom1 and/or geom2 "
+            "attributes, so will be ignored.");
+        continue;
+      }
+
+      GeometryId geom1_id = geom_id_from_name(geom1),
+                 geom2_id = geom_id_from_name(geom2);
+      if (!geom1_id.is_valid()) {
+        log()->warn(
+            "contact pair specified unknown geom1 {} and will be ignored.",
+            geom1);
+        continue;
+      }
+      if (!geom2_id.is_valid()) {
+        log()->warn(
+            "contact pair specified unknown geom2 {} and will be ignored.",
+            geom2);
+        continue;
+      }
+
+      WarnUnsupportedAttribute(*pair_node, "class");
+      WarnUnsupportedAttribute(*pair_node, "condim");
+      WarnUnsupportedAttribute(*pair_node, "friction");
+      WarnUnsupportedAttribute(*pair_node, "solref");
+      WarnUnsupportedAttribute(*pair_node, "solimp");
+      WarnUnsupportedAttribute(*pair_node, "margin");
+      WarnUnsupportedAttribute(*pair_node, "gap");
+
+      manager.Apply(geometry::CollisionFilterDeclaration().AllowBetween(
+          geometry::GeometrySet({geom1_id}),
+          geometry::GeometrySet({geom2_id})));
+    }
+
+    for (XMLElement* exclude_node = node->FirstChildElement("exclude");
+         exclude_node;
+         exclude_node = exclude_node->NextSiblingElement("exclude")) {
+      std::string body1, body2;
+      if (!ParseStringAttribute(exclude_node, "body1", &body1) ||
+          !ParseStringAttribute(exclude_node, "body2", &body2)) {
+        drake::log()->warn(
+            "contact exclude node does not have required body1 and/or body2 "
+            "attributes, so will be ignored.");
+        continue;
+      }
+
+      geometry::FrameId fid1 = plant_->GetBodyFrameIdOrThrow(
+          plant_->GetBodyByName(body1, model_instance_).index());
+      geometry::FrameId fid2 = plant_->GetBodyFrameIdOrThrow(
+          plant_->GetBodyByName(body2, model_instance_).index());
+      manager.Apply(geometry::CollisionFilterDeclaration().ExcludeBetween(
+          geometry::GeometrySet(fid1), geometry::GeometrySet(fid2)));
+    }
+  }
+
   // Assets without an absolute path are referenced relative to the "main MJCF
   // model file" path, `main_mjcf_path`.
   ModelInstanceIndex Parse(const std::string& model_name_in,
@@ -1140,12 +1255,18 @@ class MujocoParser {
       ParseActuator(actuator_node);
     }
 
+    // Parses the model's contact elements.
+    for (XMLElement* contact_node = node->FirstChildElement("contact");
+         contact_node;
+         contact_node = contact_node->NextSiblingElement("contact")) {
+      ParseContact(contact_node);
+    }
+
     WarnUnsupportedElement(*node, "include");
     WarnUnsupportedElement(*node, "size");
     WarnUnsupportedElement(*node, "visual");
     WarnUnsupportedElement(*node, "statistic");
     WarnUnsupportedElement(*node, "custom");
-    WarnUnsupportedElement(*node, "contact");
     WarnUnsupportedElement(*node, "equality");
     WarnUnsupportedElement(*node, "tendon");
     WarnUnsupportedElement(*node, "sensor");

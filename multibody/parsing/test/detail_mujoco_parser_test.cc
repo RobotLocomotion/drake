@@ -917,6 +917,70 @@ GTEST_TEST(MujocoParser, Motor) {
   EXPECT_EQ(motor3.effort_limit(), std::numeric_limits<double>::infinity());
 }
 
+GTEST_TEST(MujocoParser, Contact) {
+  // Run through once without the contact elements, then again with the contact
+  // elements.
+  for (bool include_contact : {false, true}) {
+    MultibodyPlant<double> plant(0.0);
+    SceneGraph<double> scene_graph;
+    plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+    std::string xml = fmt::format(R"""(
+  <mujoco model="test">
+    <default>
+      <geom type="sphere" size="1"/>
+    </default>
+    <worldbody>
+      <body name="base">
+        <geom name="base_geom"/>
+        <body name="body1">
+          <geom name="body1_geom"/>
+          <joint type="hinge"/>
+        </body>
+        <body name="body2">
+          <geom name="body2_geom"/>
+          <joint type="hinge"/>
+        </body>
+      </body>
+    </worldbody>
+    {}
+  </mujoco>
+  )""",
+                                  include_contact ? R"""(
+    <contact>
+      <pair name="pair1" geom1="base_geom" geom2="body1_geom"/>
+      <exclude name="exclude1" body1="body1" body2="body2" />
+    </contact>
+  )"""
+                                                  : "");
+
+    AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
+    // The following tests are done pre-Finalize, due to #18350.
+    // plant.Finalize();
+
+    const SceneGraphInspector<double>& inspector =
+        scene_graph.model_inspector();
+    GeometryId base_geom = inspector.GetGeometries(
+        plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("base").index()),
+        geometry::Role::kProximity)[0];
+    GeometryId body1_geom = inspector.GetGeometries(
+        plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("body1").index()),
+        geometry::Role::kProximity)[0];
+    GeometryId body2_geom = inspector.GetGeometries(
+        plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("body2").index()),
+        geometry::Role::kProximity)[0];
+    if (include_contact) {
+      EXPECT_FALSE(inspector.CollisionFiltered(base_geom, body1_geom));
+      EXPECT_TRUE(inspector.CollisionFiltered(body1_geom, body2_geom));
+    } else {
+      // This one should be EXPECT_TRUE upon resolution of #18350.
+      EXPECT_FALSE(inspector.CollisionFiltered(base_geom, body1_geom));
+
+      EXPECT_FALSE(inspector.CollisionFiltered(body1_geom, body2_geom));
+    }
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

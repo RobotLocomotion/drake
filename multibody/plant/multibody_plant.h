@@ -4312,6 +4312,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       return false;
     }
   }
+
+  /// Returns a mutable pointer to the SceneGraph that this plant is registered
+  /// as a source for.
+  // @pre geometry_source_is_registered() == true
+  geometry::SceneGraph<T>* scene_graph() {
+    DRAKE_DEMAND(geometry_source_is_registered());
+    return scene_graph_;
+  }
   /// @} <!-- Introspection -->
 
   using internal::MultibodyTreeSystem<T>::is_discrete;
