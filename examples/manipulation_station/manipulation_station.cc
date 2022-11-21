@@ -48,68 +48,47 @@ using multibody::SpatialInertia;
 
 namespace internal {
 
-// TODO(amcastro-tri): Refactor this into schunk_wsg directory, and cover it
-// with a unit test.  Potentially tighten the tolerance in
-// station_simulation_test.
-// @param gripper_body_frame_name Name of a frame that's attached to the
-// gripper's main body.
-SpatialInertia<double> MakeCompositeGripperInertia(
-    const std::string& wsg_sdf_path,
-    const std::string& gripper_body_frame_name) {
+// Calculate the spatial inertia of the set S of bodies that make up the gripper
+// about Go (the gripper frame's origin), expressed in the gripper frame G.
+// The rigid bodies in set S consist of the gripper body G, the left finger, and
+// the right finger. For this calculation, the sliding joints associated with
+// the fingers are regarded as being in a "zero" configuration.
+// @param[in] wsg_sdf_path path to sdf file that when parsed creates the model.
+// @param[in] gripper_body_frame_name Name of the frame attached to the
+//            gripper's main body.
+// @retval M_SGo_G spatial inertia of set S about Go, expressed in frame G.
+SpatialInertia<double> CalcGripperSpatialInertia(
+    const std::string& wsg_sdf_path) {
   // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
   MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
-  parser.AddModelFromFile(wsg_sdf_path);
+  parser.AddModels(wsg_sdf_path);
   plant.Finalize();
-  const auto& frame = plant.GetFrameByName(gripper_body_frame_name);
-  const auto& gripper_body = plant.GetRigidBodyByName(frame.body().name());
-  const auto& left_finger = plant.GetRigidBodyByName("left_finger");
-  const auto& right_finger = plant.GetRigidBodyByName("right_finger");
-  const auto& left_slider = plant.GetJointByName("left_finger_sliding_joint");
-  const auto& right_slider = plant.GetJointByName("right_finger_sliding_joint");
-  const SpatialInertia<double>& M_GGo_G =
-      gripper_body.default_spatial_inertia();
-  const SpatialInertia<double>& M_LLo_L = left_finger.default_spatial_inertia();
-  const SpatialInertia<double>& M_RRo_R =
-      right_finger.default_spatial_inertia();
-  auto CalcFingerPoseInGripperFrame = [](const Joint<double>& slider) {
-    // Pose of the joint's parent frame P (attached on gripper body G) in the
-    // frame of the gripper G.
-    const RigidTransform<double> X_GP(
-        slider.frame_on_parent().GetFixedPoseInBodyFrame());
-    // Pose of the joint's child frame C (attached on the slider's finger body)
-    // in the frame of the slider's finger F.
-    const RigidTransform<double> X_FC(
-        slider.frame_on_child().GetFixedPoseInBodyFrame());
-    // When the slider's translational dof is zero, then P coincides with C.
-    // Therefore:
-    const RigidTransform<double> X_GF = X_GP * X_FC.inverse();
-    return X_GF;
-  };
-  // Pose of left finger L in gripper frame G when the slider's dof is zero.
-  const RigidTransform<double> X_GL(CalcFingerPoseInGripperFrame(left_slider));
-  // Pose of right finger R in gripper frame G when the slider's dof is zero.
-  const RigidTransform<double> X_GR(CalcFingerPoseInGripperFrame(right_slider));
-  // Helper to compute the spatial inertia of a finger F in about the gripper's
-  // origin Go, expressed in G.
-  auto CalcFingerSpatialInertiaInGripperFrame =
-      [](const SpatialInertia<double>& M_FFo_F,
-         const RigidTransform<double>& X_GF) {
-        const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.rotation());
-        const auto p_FoGo_G = -X_GF.translation();
-        const auto M_FGo_G = M_FFo_G.Shift(p_FoGo_G);
-        return M_FGo_G;
-      };
-  // Shift and re-express in G frame the finger's spatial inertias.
-  const auto M_LGo_G = CalcFingerSpatialInertiaInGripperFrame(M_LLo_L, X_GL);
-  const auto M_RGo_G = CalcFingerSpatialInertiaInGripperFrame(M_RRo_R, X_GR);
-  // With everything about the same point Go and expressed in the same frame G,
-  // proceed to compose into composite body C:
-  // TODO(amcastro-tri): Implement operator+() in SpatialInertia.
-  SpatialInertia<double> M_CGo_G = M_GGo_G;
-  M_CGo_G += M_LGo_G;
-  M_CGo_G += M_RGo_G;
-  return M_CGo_G;
+
+  // Create a default context which should contain a default state in which all
+  // joints/mobilizers have zero translation, zero rotation, zero velocity, etc.
+  auto context = plant.CreateDefaultContext();
+
+  // Get references to gripper frame, gripper body, and the two fingers.
+  const multibody::Frame<double>& gripper_frame =
+      plant.GetFrameByName("body");  // The gripper body's frame name is "body".
+  const multibody::RigidBody<double>& gripper_body =
+      plant.GetRigidBodyByName(gripper_frame.body().name());
+  const multibody::RigidBody<double>& left_finger =
+      plant.GetRigidBodyByName("left_finger");
+  const multibody::RigidBody<double>& right_finger =
+      plant.GetRigidBodyByName("right_finger");
+
+  // Form a vector with the BodyIndex for the gripper body and the two fingers.
+  std::vector<multibody::BodyIndex> body_indexes;
+  body_indexes.push_back(gripper_body.index());
+  body_indexes.push_back(left_finger.index());
+  body_indexes.push_back(right_finger.index());
+
+  // Calculate and return the spatial inertia of set S about Go, expressed in G.
+  const SpatialInertia<double> M_SGo_G =
+      plant.CalcSpatialInertia(*context, gripper_frame, body_indexes);
+  return M_SGo_G;
 }
 
 // TODO(russt): Get these from SDF instead of having them hard-coded (#10022).
@@ -453,11 +432,11 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   // (according to the sdf)... and we don't believe our inertia calibration
   // on the hardware to be so precise, so we simply ignore the inertia
   // contribution from the fingers here.
+  const multibody::SpatialInertia<double> wsg_spatial_inertial =
+    internal::CalcGripperSpatialInertia(wsg_model_.model_path);
   const multibody::RigidBody<T>& wsg_equivalent =
       owned_controller_plant_->AddRigidBody(
-          "wsg_equivalent", controller_iiwa_model,
-          internal::MakeCompositeGripperInertia(
-              wsg_model_.model_path, wsg_model_.child_frame->name()));
+          "wsg_equivalent", controller_iiwa_model, wsg_spatial_inertial);
 
   // TODO(siyuan.feng@tri.global): when we handle multiple IIWA and WSG, this
   // part need to deal with the parent's (iiwa's) model instance id.

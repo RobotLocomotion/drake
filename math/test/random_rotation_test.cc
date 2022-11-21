@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/math/hopf_coordinate.h"
 
 namespace drake {

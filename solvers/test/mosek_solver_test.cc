@@ -1,8 +1,9 @@
 #include "drake/solvers/mosek_solver.h"
 
+#include <filesystem>
+
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
@@ -41,7 +42,7 @@ TEST_F(UnboundedLinearProgramTest0, Test) {
         result.get_solver_details<MosekSolver>();
     EXPECT_EQ(mosek_solver_details.rescode, 0);
     // This problem status is defined in
-    // https://docs.mosek.com/9.3/capi/constants.html#mosek.prosta
+    // https://docs.mosek.com/10.0/capi/constants.html#mosek.prosta
     const int MSK_SOL_STA_DUAL_INFEAS_CER = 6;
     EXPECT_EQ(mosek_solver_details.solution_status,
               MSK_SOL_STA_DUAL_INFEAS_CER);
@@ -58,6 +59,13 @@ TEST_F(UnboundedLinearProgramTest1, Test) {
     solver.Solve(*prog_, {}, {}, &result);
     // Mosek can only detect dual infeasibility, not primal unboundedness.
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
+  }
+}
+
+TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
+  MosekSolver solver;
+  if (solver.available()) {
+    CheckSolution(solver);
   }
 }
 
@@ -89,6 +97,13 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
 INSTANTIATE_TEST_SUITE_P(
     MosekTest, TestEllipsoidsSeparation,
     ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
+
+GTEST_TEST(TestDuplicatedVariableQuadraticProgram, Test) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestDuplicatedVariableQuadraticProgram(solver);
+  }
+}
 
 TEST_P(TestQPasSOCP, TestSOCP) {
   MosekSolver mosek_solver;
@@ -131,9 +146,14 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   MosekSolver solver;
-  // Mosek 9 returns a solution that is accurate up to 1.2E-5 for this specific
+  // Mosek 10 returns a solution that is accurate up to 1.3E-5 for this specific
   // problem. Might need to change the tolerance when we upgrade Mosek.
-  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1.2E-5);
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1.3E-5);
+}
+
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
+  MosekSolver solver;
+  TestSocpDuplicatedVariable1(solver, std::nullopt, 1E-6);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
@@ -213,12 +233,12 @@ GTEST_TEST(MosekTest, TestLogging) {
   prog.AddLinearConstraint(x(0) + x(1) == 1);
 
   const std::string log_file = temp_directory() + "/mosek_logging.log";
-  EXPECT_FALSE(filesystem::exists({log_file}));
+  EXPECT_FALSE(std::filesystem::exists({log_file}));
   MosekSolver solver;
   MathematicalProgramResult result;
   solver.Solve(prog, {}, {}, &result);
   // By default, no logging file.
-  EXPECT_FALSE(filesystem::exists({log_file}));
+  EXPECT_FALSE(std::filesystem::exists({log_file}));
   // Print to console. We can only test this doesn't cause any runtime error. We
   // can't test if the logging message is actually printed to the console.
   SolverOptions solver_options;
@@ -228,7 +248,7 @@ GTEST_TEST(MosekTest, TestLogging) {
   // Output the logging to the console
   solver_options.SetOption(CommonSolverOption::kPrintFileName, log_file);
   solver.Solve(prog, {}, solver_options, &result);
-  EXPECT_TRUE(filesystem::exists({log_file}));
+  EXPECT_TRUE(std::filesystem::exists({log_file}));
   // Now set both print to console and the log file. This will cause an error.
   solver_options.SetOption(CommonSolverOption::kPrintToConsole, 1);
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -253,7 +273,7 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   mosek_solver.Solve(prog, {}, solver_options, &result);
   EXPECT_FALSE(result.is_success());
   // This response code is defined in
-  // https://docs.mosek.com/9.3/capi/response-codes.html#mosek.rescode
+  // https://docs.mosek.com/10.0/capi/response-codes.html#mosek.rescode
   const int MSK_RES_ERR_HUGE_C{1375};
   EXPECT_EQ(result.get_solver_details<MosekSolver>().rescode,
             MSK_RES_ERR_HUGE_C);
@@ -286,15 +306,15 @@ GTEST_TEST(MosekTest, Write) {
   MosekSolver mosek_solver;
   SolverOptions solver_options;
   const std::string file = temp_directory() + "mosek.mps";
-  EXPECT_FALSE(filesystem::exists(file));
+  EXPECT_FALSE(std::filesystem::exists(file));
   solver_options.SetOption(MosekSolver::id(), "writedata", file);
   mosek_solver.Solve(prog, {}, solver_options);
-  EXPECT_TRUE(filesystem::exists(file));
-  filesystem::remove(file);
+  EXPECT_TRUE(std::filesystem::exists(file));
+  std::filesystem::remove(file);
   // Set "writedata" to "". Now expect no model file.
   solver_options.SetOption(MosekSolver::id(), "writedata", "");
   mosek_solver.Solve(prog, {}, solver_options);
-  EXPECT_FALSE(filesystem::exists(file));
+  EXPECT_FALSE(std::filesystem::exists(file));
 }
 
 GTEST_TEST(MosekSolver, TestInitialGuess) {
@@ -321,15 +341,27 @@ GTEST_TEST(MosekSolver, TestInitialGuess) {
 
   MosekSolver solver;
   SolverOptions solver_options;
-  // Allow only one solution (the one corresponding to the initial guess on the
-  // integer values.)
+  // Allow only one solution (the one corresponding to the initial guess).
   solver_options.SetOption(solver.id(), "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS", 1);
-  // By setting y = (0, 1, 0, 0), point C is on the line segment A2A3. The
-  // minimal squared distance is 0.8;
+  // By setting y = (0, 1, 0, 0), pt_C = (0, 1), lambda = (0, 1, 0, 0, 0) point
+  // C is on the line segment A2A3. This is a valid integral solution with
+  // distance to origin = 1.
+  prog.SetInitialGuess(pt_C, Eigen::Vector2d(0, 1));
+  prog.SetInitialGuess(
+      lambda, (Eigen::Matrix<double, 5, 1>() << 0, 1, 0, 0, 0).finished());
   prog.SetInitialGuess(y, Eigen::Vector4d(0, 1, 0, 0));
   MathematicalProgramResult result;
   solver.Solve(prog, prog.initial_guess(), solver_options, &result);
   const double tol = 1E-8;
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.get_optimal_cost(), 1, tol);
+
+  // By setting MSK_IPAR_MIO_CONSTRUCT_SOL=1, Mosek will first try to construct
+  // the continuous solution given the initial binary variable solutions. In
+  // this case it searches the point on line segment A2A3 that is closest
+  // to the origin, which is (0.4, 0.8).
+  solver_options.SetOption(solver.id(), "MSK_IPAR_MIO_CONSTRUCT_SOL", 1);
+  solver.Solve(prog, prog.initial_guess(), solver_options, &result);
   EXPECT_TRUE(result.is_success());
   EXPECT_NEAR(result.get_optimal_cost(), 0.8, tol);
 
@@ -455,7 +487,7 @@ GTEST_TEST(MosekTest, QPDualSolution1) {
     // of 1E-4, that is too large.
     solver_options.SetOption(solver.id(), "MSK_DPAR_INTPNT_QO_TOL_REL_GAP",
                              1e-12);
-    TestQPDualSolution1(solver, solver_options, 4E-6);
+    TestQPDualSolution1(solver, solver_options, 6E-6);
   }
 }
 

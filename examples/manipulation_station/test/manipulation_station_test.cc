@@ -21,18 +21,95 @@ namespace {
 using Eigen::Vector2d;
 using Eigen::VectorXd;
 using geometry::internal::DummyRenderEngine;
+using math::RigidTransform;
 using multibody::RevoluteJoint;
 using systems::BasicVector;
+
+// Calculate the spatial inertia of the set S of bodies that make up the gripper
+// about Go (the gripper frame's origin), expressed in the gripper frame G.
+// The rigid bodies in set S consist of the gripper body G, the left finger, and
+// the right finger. For this calculation, the sliding joints associated with
+// the fingers are regarded as being in a "zero" configuration.
+// @param[in] wsg_sdf_path path to sdf file that when parsed creates the model.
+// @param[in] gripper_body_frame_name Name of the frame attached to the
+//            gripper's main body.
+// @retval M_SGo_G spatial inertia of set S about Go, expressed in frame G.
+// @note This function helps unit test the calculation of the gripper's spatial
+//   inertia done in CalcGripperSpatialInertia() in manipulation_station.cc.
+multibody::SpatialInertia<double> MakeCompositeGripperInertia() {
+  // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
+  multibody::MultibodyPlant<double> plant(1.0);
+  multibody::Parser parser(&plant);
+  const std::string& wsg_sdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/wsg_50_description/sdf/"
+      "schunk_wsg_50_no_tip.sdf");
+  parser.AddModels(wsg_sdf_path);
+  plant.Finalize();
+  const std::string gripper_body_frame_name = "body";
+  const auto& frame = plant.GetFrameByName(gripper_body_frame_name);
+  const auto& gripper_body = plant.GetRigidBodyByName(frame.body().name());
+  const auto& left_finger = plant.GetRigidBodyByName("left_finger");
+  const auto& right_finger = plant.GetRigidBodyByName("right_finger");
+  const auto& left_slider = plant.GetJointByName("left_finger_sliding_joint");
+  const auto& right_slider = plant.GetJointByName("right_finger_sliding_joint");
+  const multibody::SpatialInertia<double>& M_GGo_G =
+      gripper_body.default_spatial_inertia();
+  const multibody::SpatialInertia<double>& M_LLo_L =
+      left_finger.default_spatial_inertia();
+  const multibody::SpatialInertia<double>& M_RRo_R =
+      right_finger.default_spatial_inertia();
+  auto calc_finger_pose_in_gripper_frame =
+      [](const multibody::Joint<double>& slider) {
+    // Pose of the joint's parent frame P (attached on gripper body G) in the
+    // frame of the gripper G.
+    const RigidTransform<double> X_GP(
+        slider.frame_on_parent().GetFixedPoseInBodyFrame());
+    // Pose of the joint's child frame C (attached on the slider's finger body)
+    // in the frame of the slider's finger F.
+    const RigidTransform<double> X_FC(
+        slider.frame_on_child().GetFixedPoseInBodyFrame());
+    // When the slider's translational dof is zero, then P coincides with C.
+    // Therefore:
+    const RigidTransform<double> X_GF = X_GP * X_FC.inverse();
+    return X_GF;
+  };
+  // Pose of left finger L in gripper frame G when the slider's dof is zero.
+  const RigidTransform<double> X_GL(
+      calc_finger_pose_in_gripper_frame(left_slider));
+  // Pose of right finger R in gripper frame G when the slider's dof is zero.
+  const RigidTransform<double> X_GR(
+      calc_finger_pose_in_gripper_frame(right_slider));
+  // Helper to compute the spatial inertia of a finger F about the gripper's
+  // origin Go, expressed in G.
+  auto calc_finger_spatial_inertia_in_gripper_frame =
+      [](const multibody::SpatialInertia<double>& M_FFo_F,
+         const RigidTransform<double>& X_GF) {
+        const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.rotation());
+        const auto p_FoGo_G = -X_GF.translation();
+        const auto M_FGo_G = M_FFo_G.Shift(p_FoGo_G);
+        return M_FGo_G;
+      };
+  // Shift and re-express in G frame the finger's spatial inertias.
+  const auto M_LGo_G =
+      calc_finger_spatial_inertia_in_gripper_frame(M_LLo_L, X_GL);
+  const auto M_RGo_G =
+      calc_finger_spatial_inertia_in_gripper_frame(M_RRo_R, X_GR);
+  // With everything about the same point Go and expressed in the same frame G,
+  // proceed to compose into composite body C:
+  // TODO(amcastro-tri): Implement operator+() in SpatialInertia.
+  multibody::SpatialInertia<double> M_CGo_G = M_GGo_G;
+  M_CGo_G += M_LGo_G;
+  M_CGo_G += M_RGo_G;
+  return M_CGo_G;
+}
 
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
   station.SetupManipulationClassStation();
   multibody::Parser parser(&station.get_mutable_multibody_plant(),
                            &station.get_mutable_scene_graph());
-  parser.AddModelFromFile(
-      FindResourceOrThrow("drake/examples/manipulation_station/models"
-                          "/061_foam_brick.sdf"),
-      "object");
+  parser.AddModels(FindResourceOrThrow(
+      "drake/examples/manipulation_station/models/061_foam_brick.sdf"));
   station.Finalize();
 
   auto& plant = station.get_multibody_plant();
@@ -120,6 +197,28 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   // Check that the additional output ports exist and are spelled correctly.
   DRAKE_EXPECT_NO_THROW(station.GetOutputPort("contact_results"));
   DRAKE_EXPECT_NO_THROW(station.GetOutputPort("plant_continuous_state"));
+
+  // The station (manipulation station) has both a plant and a controller_plant.
+  // The controller plant has a "composite" rigid body whose spatial inertia is
+  // associated with the set S of bodies consisting of the gripper body G and
+  // the left and right fingers. The spatial inertia of the composite body is
+  // equal to the set S's spatial inertia about Go (body G's origin), expressed
+  // in G, where the fingers are regarded as being in a "zero" configuration.
+  // Verify the spatial inertia stored in the controller_plant matches the
+  // calculation returned by MakeCompositeGripperInertia().
+  const multibody::MultibodyPlant<double>& controller_plant =
+      station.get_controller_plant();
+  const multibody::RigidBody<double>& composite_gripper =
+      controller_plant.GetRigidBodyByName("wsg_equivalent");
+  const multibody::SpatialInertia<double> M_SGo_G_actual =
+      composite_gripper.default_spatial_inertia();
+  const multibody::SpatialInertia<double> M_SGo_G_expected =
+      MakeCompositeGripperInertia();
+
+  const Matrix6<double> M6_actual = M_SGo_G_actual.CopyToFullMatrix6();
+  const Matrix6<double> M6_expected = M_SGo_G_expected.CopyToFullMatrix6();
+  constexpr double ktol = 32 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(M6_actual, M6_expected, ktol));
 }
 
 // Partially check M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external
@@ -170,7 +269,7 @@ GTEST_TEST(ManipulationStationTest, CheckDynamics) {
                   .isZero());
 
   auto next_state = station.AllocateDiscreteVariables();
-  station.CalcDiscreteVariableUpdates(*context, next_state.get());
+  station.CalcForcedDiscreteVariableUpdate(*context, next_state.get());
 
   // Check that vdot ≈ 0 by checking that next velocity ≈ velocity.
   const auto& base_joint =

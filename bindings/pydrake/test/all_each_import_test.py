@@ -18,9 +18,7 @@ class TestAllEachImport(unittest.TestCase, metaclass=ValueParameterizedTest):
 
     def setUp(self):
         self._expected_non_native_modules = [
-            # A standalone 'import pydrake' should not trigger native code.
-            "pydrake",
-            # Another example of a module we'd want to be non-native would be
+            # An example of a module we'd want to be non-native would be
             # pydrake.lcmtypes, but we don't have such a module (yet).
         ]
         self._temp_dir = temp_directory()

@@ -2,6 +2,9 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
+# N.B. This repository is deprecated for removal on 2023-02-01.
+# For details see https://github.com/RobotLocomotion/drake/pull/18156.
+
 def dreal_repository(
         name,
         mirrors = None):
@@ -12,8 +15,10 @@ def dreal_repository(
         sha256 = "7bbd328a25c14cff814753694b1823257bb7cff7f84a7b705b9f111624d5b2e4",  # noqa
         mirrors = mirrors,
         patches = [
-            "@drake//tools/workspace/dreal:patches/ibex_2.8.6.patch",
-            "@drake//tools/workspace/dreal:patches/warnings.patch",
+            ":patches/ibex_2.8.6.patch",
+            ":patches/platforms.patch",
+            ":patches/pull283.patch",
+            ":patches/warnings.patch",
         ],
         repo_mapping = {
             "@nlopt": "@nlopt_internal",

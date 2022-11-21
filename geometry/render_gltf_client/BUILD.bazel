@@ -2,23 +2,50 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_unittest",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
-# TODO(jwnimmer-tri) Replace with "//visibility:private" once dev code is gone.
-_VISIBILITY = [
-    "//geometry/render/dev/render_gltf_client:__pkg__",
-]
-
-package(default_visibility = _VISIBILITY)
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library(
     name = "render_gltf_client",
-    visibility = ["//visibility:public"],
+    # TODO(jwnimmer-tri) Make public once we add libcurl to the wheel builds.
+    visibility = ["//visibility:private"],
     deps = [
+        ":factory",
+        ":render_engine_gltf_client_params",
+    ],
+)
+
+drake_cc_library(
+    name = "factory",
+    srcs = ["factory.cc"],
+    hdrs = ["factory.h"],
+    interface_deps = [
+        ":render_engine_gltf_client_params",
+        "//geometry/render:render_camera",
+    ],
+    deps = [
+        ":internal_render_engine_gltf_client",
+    ],
+)
+
+drake_cc_library(
+    name = "render_engine_gltf_client_params",
+    srcs = ["render_engine_gltf_client_params.cc"],
+    hdrs = ["render_engine_gltf_client_params.h"],
+    deps = [
+        "//geometry/render:render_label",
     ],
 )
 
@@ -27,12 +54,11 @@ drake_cc_library(
     srcs = ["internal_http_service.cc"],
     hdrs = ["internal_http_service.h"],
     internal = True,
-    visibility = _VISIBILITY,
+    visibility = ["//visibility:private"],
     interface_deps = [
         "//common:essential",
     ],
     deps = [
-        "//common:filesystem",
         "@fmt",
     ],
 )
@@ -42,23 +68,82 @@ drake_cc_library(
     srcs = ["internal_http_service_curl.cc"],
     hdrs = ["internal_http_service_curl.h"],
     internal = True,
-    visibility = _VISIBILITY,
+    visibility = ["//visibility:private"],
+    interface_deps = [
+        ":internal_http_service",
+    ],
+    deps = [
+        "//common:unused",
+        "@curl_internal//:libcurl",
+        "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_render_client",
+    srcs = [
+        "internal_render_client.cc",
+    ],
+    hdrs = [
+        "internal_render_client.h",
+    ],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":internal_http_service",
-        "//common:filesystem",
-        "//common:unused",
-        "@fmt",
-        "@libcurl",
+        ":internal_http_service_curl",
+        ":render_engine_gltf_client_params",
+        "//common:temp_directory",
+        "//geometry/render:render_camera",
+        "//geometry/render:render_engine",
+        "//systems/sensors:image",
+        "@picosha2",
+        "@vtk//:vtkIOImage",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_render_engine_gltf_client",
+    srcs = [
+        "internal_render_engine_gltf_client.cc",
+    ],
+    hdrs = [
+        "internal_render_engine_gltf_client.h",
+    ],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":internal_render_client",
+        "//geometry/render:render_camera",
+        "//geometry/render_vtk:internal_render_engine_vtk",
+        "//systems/sensors:image",
+        "@vtk//:vtkIOExport",
     ],
 )
 
 # === test/ ===
 
 drake_cc_googletest(
+    name = "factory_test",
+    deps = [
+        ":factory",
+        ":internal_render_engine_gltf_client",
+        ":render_engine_gltf_client_params",
+        "//geometry/render:render_camera",
+    ],
+)
+
+drake_cc_googletest(
+    name = "render_engine_gltf_client_params_test",
+    deps = [
+        ":render_engine_gltf_client_params",
+    ],
+)
+
+drake_cc_googletest(
     name = "internal_http_service_test",
     deps = [
         ":internal_http_service",
-        "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
@@ -71,6 +156,142 @@ drake_cc_googletest(
         ":internal_http_service_curl",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+filegroup(
+    name = "test_resources",
+    srcs = [
+        "test/test_depth_16U.png",
+        "test/test_depth_16U.tiff",
+        "test/test_depth_32F.tiff",
+        "test/test_label_16I.png",
+        "test/test_rgb_8U.png",
+        "test/test_rgba_8U.png",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_sample_image_data",
+    testonly = True,
+    srcs = ["test/internal_sample_image_data.cc"],
+    hdrs = ["test/internal_sample_image_data.h"],
+    deps = [
+        "//systems/sensors:image",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_render_client_test",
+    data = [
+        ":test_resources",
+    ],
+    deps = [
+        ":internal_render_client",
+        ":internal_sample_image_data",
+        "//common:find_resource",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_render_engine_gltf_client_test",
+    data = [
+        ":test_resources",
+    ],
+    tags = vtk_test_tags(),
+    deps = [
+        ":internal_render_engine_gltf_client",
+        ":internal_sample_image_data",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_py_binary(
+    name = "server_demo",
+    testonly = True,
+    srcs = ["test/server_demo.py"],
+    data = [":server_vtk_backend"],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+drake_cc_binary(
+    name = "server_vtk_backend",
+    testonly = True,
+    srcs = ["test/server_vtk_backend.cc"],
+    deps = [
+        "//geometry/render:render_label",
+        "//geometry/render/shaders:depth_shaders",
+        "//geometry/render_vtk:factory",
+        "//geometry/render_vtk:internal_render_engine_vtk",
+        "//math:geometric_transform",
+        "//systems/sensors:color_palette",
+        "//systems/sensors:image",
+        "@gflags",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkIOImport",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+drake_cc_binary(
+    name = "client_demo",
+    testonly = True,
+    srcs = ["test/client_demo.cc"],
+    data = [
+        ":test/4_color_texture.png",
+        ":test/example_scene.sdf",
+        "//manipulation/models/ycb:models",
+    ],
+    deps = [
+        ":factory",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//geometry/render_vtk",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/primitives:constant_vector_source",
+        "//systems/sensors:image_to_lcm_image_array_t",
+        "//systems/sensors:image_writer",
+        "//systems/sensors:rgbd_sensor",
+        "@fmt",
+        "@gflags",
+    ],
+)
+
+drake_py_unittest(
+    name = "acceptance_test",
+    data = [
+        ":client_demo",
+        ":server_demo",
+        ":server_vtk_backend",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+drake_py_unittest(
+    name = "integration_test",
+    size = "medium",
+    data = [
+        ":client_demo",
+        ":server_demo",
+        ":test/ground_truth.gltf",
+    ],
+    tags = [
+        "cpu:2",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
     ],
 )
 

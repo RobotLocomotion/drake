@@ -3,12 +3,14 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
 #include "drake/systems/framework/diagram_discrete_values.h"
@@ -138,11 +140,24 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const final;
 
-  /// Retrieves a reference to the subsystem with name @p name returned by
-  /// get_name().
+  /// Retrieves a const reference to the subsystem with name @p name returned
+  /// by get_name().
   /// @throws std::exception if a match cannot be found.
+  /// @see GetDowncastSubsystemByName()
   /// @see System<T>::get_name()
-  const System<T>& GetSubsystemByName(const std::string& name) const;
+  const System<T>& GetSubsystemByName(std::string_view name) const;
+
+  /// Retrieves a const reference to the subsystem with name @p name returned
+  /// by get_name(), downcast to the type provided as a template argument.
+  /// @tparam MySystem is the downcast type, e.g., drake::systems::Adder
+  /// @throws std::exception if a match cannot be found.
+  /// @see GetSubsystemByName()
+  /// @see System<T>::get_name()
+  template <template <typename> class MySystem>
+  const MySystem<T>& GetDowncastSubsystemByName(std::string_view name) const {
+    const System<T>& subsystem = this->GetSubsystemByName(name);
+    return *dynamic_pointer_cast_or_throw<const MySystem<T>>(&subsystem);
+  }
 
   /// Retrieves the state derivatives for a particular subsystem from the
   /// derivatives for the entire diagram. Aborts if @p subsystem is not
@@ -374,7 +389,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const EventCollection<PublishEvent<T>>& event_info) const final;
 
   // For each subsystem, if there is a discrete update event in its
-  // corresponding subevent collection, calls its CalcDiscreteVariableUpdates
+  // corresponding subevent collection, calls its CalcDiscreteVariableUpdate()
   // method with the appropriate subcontext, subevent collection and
   // substate.
   void DispatchDiscreteVariableUpdateHandler(
@@ -434,15 +449,25 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const;
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> DoGetPeriodicEvents() const override;
+           PeriodicEventDataComparator>
+  DoMapPeriodicEventsByTiming(const Context<T>& context) const final;
+
+  void DoFindUniquePeriodicDiscreteUpdatesOrThrow(
+      const char* api_name, const Context<T>& context,
+      std::optional<PeriodicEventData>* timing,
+      EventCollection<DiscreteUpdateEvent<T>>* events) const final;
+
+  void DoGetPeriodicEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
 
   void DoGetPerStepEvents(
       const Context<T>& context,
-      CompositeEventCollection<T>* event_info) const override;
+      CompositeEventCollection<T>* event_info) const final;
 
   void DoGetInitializationEvents(
       const Context<T>& context,
-      CompositeEventCollection<T>* event_info) const override;
+      CompositeEventCollection<T>* event_info) const final;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final;

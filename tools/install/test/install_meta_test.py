@@ -5,7 +5,7 @@ import io
 import os
 from os.path import isdir, join, relpath
 import unittest
-from subprocess import STDOUT, check_call, check_output
+from subprocess import STDOUT, check_output
 import sys
 
 import drake.tools.install.installer as installer
@@ -41,10 +41,6 @@ class TestInstallMeta(unittest.TestCase):
         """Invoke installation of dummy files by direct import and call to
         installer.
         """
-        # Forcibly reset globals.
-        # TODO(rpoyner-tri): get rid of installer globals; see #7331.
-        installer.libraries_to_fix_rpath.clear()
-
         stream = io.StringIO()
         with redirect_stdout(stream), redirect_stderr(stream):
             installer.main(

@@ -1,6 +1,7 @@
 #include "drake/common/find_resource.h"
 
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <memory>
@@ -14,7 +15,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 
 using std::string;
@@ -114,10 +114,10 @@ GTEST_TEST(GetDrakePathTest, PathIncludesDrake) {
   // Tests that the path returned includes the root of drake.
   const auto& result = MaybeGetDrakePath();
   ASSERT_TRUE(result);
-  const filesystem::path expected =
-      filesystem::path(*result) /
-      filesystem::path("common/test/find_resource_test_data.txt");
-  EXPECT_TRUE(filesystem::exists(expected));
+  const std::filesystem::path expected =
+      std::filesystem::path(*result) /
+      std::filesystem::path("common/test/find_resource_test_data.txt");
+  EXPECT_TRUE(std::filesystem::exists(expected));
 }
 
 }  // namespace

@@ -18,6 +18,21 @@ For Drake developers:
 """
 
 
+class _ExecutePreprocessorNoWidgets(ExecutePreprocessor):
+    """Customizes ExecutePreprocessor so that ipywidgets works on Ubuntu 22.
+    See https://github.com/RobotLocomotion/drake/issues/17433.
+    """
+
+    def preprocess_cell(self, *args, **kwargs):
+        # Turn off some broken ipywidgets hooks.
+        try:
+            self.comm_open_handlers.clear()
+        except AttributeError:
+            pass
+        # Then, continue as usual.
+        return super().preprocess_cell(*args, **kwargs)
+
+
 def _jupyter_bazel_notebook_main(notebook_path, argv):
     # This should *ONLY* be called by targets generated via `jupyter_py_*`
     # rules.
@@ -56,7 +71,7 @@ def _jupyter_bazel_notebook_main(notebook_path, argv):
         os.environ["_DRAKE_DEPRECATION_IS_ERROR"] = "1"
         # TODO(eric.cousineau): See if there is a way to redirect this to
         # stdout, rather than having the notebook capture the output.
-        ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
+        ep = _ExecutePreprocessorNoWidgets(timeout=600, kernel_name='python3')
         try:
             ep.preprocess(nb, resources={'metadata': {'path': notebook_dir}})
         except RuntimeError as e:

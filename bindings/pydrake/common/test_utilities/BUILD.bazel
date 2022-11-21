@@ -76,6 +76,17 @@ drake_py_library(
     ],
 )
 
+# A library that force-disables scipy, even if it's installed system-wide.
+drake_py_library(
+    name = "scipy_none_py",
+    testonly = 1,
+    srcs = [
+        "scipy_none/scipy/__init__.py",
+    ],
+    # N.B. We do not depend on ":module_py".
+    imports = ["scipy_none"],
+)
+
 # A minimal of implementation scipy.sparse that's barely functional enough
 # to support unit testing the Drake APIs that return Eigen::Sparse matrices.
 # The pybind11 type caster for Eigen::Sparse maps it to scipy.sparse.

@@ -4,9 +4,8 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace geometry {
@@ -80,11 +79,6 @@ template <typename Id, typename KinematicsValue>
 bool KinematicsVector<Id, KinematicsValue>::has_id(Id id) const {
   auto iter = values_.find(id);
   return (iter != values_.end()) && iter->second.has_value();
-}
-
-template <typename Id, typename KinematicsValue>
-std::vector<Id> KinematicsVector<Id, KinematicsValue>::frame_ids() const {
-  return ids();
 }
 
 template <typename Id, typename KinematicsValue>

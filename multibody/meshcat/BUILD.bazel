@@ -49,6 +49,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "contact_visualizer_test",
+    timeout = "moderate",
     data = [
         ":models",
         "//examples/manipulation_station:models",
@@ -61,10 +62,19 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "hydroelastic_contact_visualizer_test",
+    deps = [
+        ":hydroelastic_contact_visualizer",
+        "//common/test_utilities:expect_no_throw",
+    ],
+)
+
 drake_cc_library(
     name = "contact_visualizer_params",
     hdrs = ["contact_visualizer_params.h"],
     deps = [
+        "//common:name_value",
         "//geometry:rgba",
     ],
 )

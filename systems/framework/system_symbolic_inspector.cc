@@ -3,8 +3,7 @@
 #include <sstream>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/polynomial.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/decompose.h"
 
 namespace drake {
 namespace systems {
@@ -56,7 +55,7 @@ SystemSymbolicInspector::SystemSymbolicInspector(
 
   // Discrete updates.
   if (context_->num_discrete_state_groups() > 0) {
-    system.CalcDiscreteVariableUpdates(*context_, discrete_updates_.get());
+    system.CalcForcedDiscreteVariableUpdate(*context_, discrete_updates_.get());
   }
 
   // Constraints.

@@ -6,38 +6,36 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/contact_results.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/sine.h"
-
+#include "drake/visualization/visualization_config_functions.h"
 namespace drake {
 namespace examples {
 namespace simple_gripper {
 namespace {
 
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using geometry::SceneGraph;
 using geometry::Sphere;
-using lcm::DrakeLcm;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using multibody::Body;
-using multibody::ConnectContactResultsToDrakeVisualizer;
 using multibody::CoulombFriction;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
+using multibody::MultibodyPlantConfig;
 using multibody::Parser;
 using multibody::PrismaticJoint;
 using systems::Sine;
@@ -86,8 +84,8 @@ DEFINE_double(rz, 0,
               "The z-rotation of the mug around its origin - the center "
               "of its bottom. [degrees]. Extrinsic rotation order: X, Y, Z");
 
-// Gripping force.
-DEFINE_double(gripper_force, 10,
+// Grip force. The amount of force we want to apply on the manipuland.
+DEFINE_double(grip_force, 10,
               "The force to be applied by the gripper. [N]. "
               "A value of 0 indicates a fixed grip width as set with option "
               "grip_width.");
@@ -99,6 +97,16 @@ DEFINE_double(amplitude, 0.15,
 DEFINE_double(frequency, 2.0,
               "The frequency of the harmonic oscillations "
               "carried out by the gripper. [Hz].");
+
+DEFINE_string(discrete_solver, "sap",
+              "Discrete contact solver. Options are: 'tamsi', 'sap'.");
+DEFINE_double(
+    coupler_gear_ratio, -1.0,
+    "When using SAP, the left finger's position qₗ is constrainted to qₗ = "
+    "ρ⋅qᵣ, where qᵣ is the right finger's position and ρ is this "
+    "coupler_gear_ration parameter (dimensionless). If TAMSI used, "
+    "then the right finger is locked, only the left finger moves and this "
+    "parameter is ignored.");
 
 // The pad was measured as a torus with the following major and minor radii.
 const double kPadMajorRadius = 14e-3;  // 14 mm.
@@ -151,23 +159,20 @@ void AddGripperPads(MultibodyPlant<double>* plant, const double pad_offset,
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
-  scene_graph.set_name("scene_graph");
-
   DRAKE_DEMAND(FLAGS_simulator_max_time_step > 0);
   DRAKE_DEMAND(FLAGS_mbp_discrete_update_period >= 0);
 
-  MultibodyPlant<double>& plant =
-      *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_discrete_update_period);
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
-  Parser parser(&plant);
-  std::string full_name =
-      FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
-  parser.AddModelFromFile(full_name);
+  MultibodyPlantConfig plant_config;
+  plant_config.time_step = FLAGS_mbp_discrete_update_period;
+  plant_config.discrete_contact_solver = FLAGS_discrete_solver;
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlant(plant_config, &builder);
 
-  full_name =
-      FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
-  ModelInstanceIndex mug_model = parser.AddModelFromFile(full_name);
+  Parser parser(&plant);
+  parser.AddModels(FindResourceOrThrow(
+      "drake/examples/simple_gripper/simple_gripper.sdf"));
+  parser.AddModels(FindResourceOrThrow(
+      "drake/examples/simple_gripper/simple_mug.sdf"));
 
   // Obtain the "translate_joint" axis so that we know the direction of the
   // forced motions. We do not apply gravity if motions are forced in the
@@ -196,7 +201,7 @@ int do_main() {
   // Pads offset from the center of a finger. pad_offset = 0 means the center of
   // the spheres is located right at the center of the finger.
   const double pad_offset = 0.0046;
-  if (FLAGS_gripper_force == 0) {
+  if (FLAGS_grip_force == 0) {
     // We then fix everything to the right finger and leave the left finger
     // "free" with no applied forces (thus we see it not moving).
     const double finger_width = 0.007;  // From the visual in the SDF file.
@@ -206,6 +211,19 @@ int do_main() {
   } else {
     AddGripperPads(&plant, -pad_offset, right_finger);
     AddGripperPads(&plant, +pad_offset, left_finger);
+  }
+
+  // Get joints so that we can set initial conditions.
+  const PrismaticJoint<double>& left_slider =
+      plant.GetJointByName<PrismaticJoint>("left_slider");
+  const PrismaticJoint<double>& right_slider =
+      plant.GetJointByName<PrismaticJoint>("right_slider");
+
+  // TAMSI does not support general constraints. If using TAMSI, we simplify the
+  // model to have the right finger locked.
+  if (FLAGS_discrete_solver != "tamsi") {
+    plant.AddCouplerConstraint(left_slider, right_slider,
+                               FLAGS_coupler_gear_ratio);
   }
 
   // Now the model is complete.
@@ -238,20 +256,7 @@ int do_main() {
   DRAKE_DEMAND(plant.num_actuators() == 2);
   DRAKE_DEMAND(plant.num_actuated_dofs() == 2);
 
-  // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(plant.get_source_id().has_value());
-
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
-
-  DrakeLcm lcm;
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
-
-  // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
+  visualization::AddDefaultVisualization(&builder);
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
   // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the
@@ -272,14 +277,40 @@ int do_main() {
   const double f0 = mass * a0;           // Force amplitude, Newton.
   fmt::print("Acceleration amplitude = {:8.4f} m/s²\n", a0);
 
+  // The actuation force that must be applied in order to attain a given grip
+  // force depends on how the gripper is modeled.
+  // When we model the gripper as having the right finger locked and only the
+  // actuated left finger moves, it is clear that the actuation force directly
+  // balances the grip force (as done when usint the TAMSI solver).
+  // When we model the gripper with two moving fingers coupled to move together
+  // with a constraint, the relationship is not as obvious. We can think of the
+  // constrained mechanism as a system of pulleys and therefore we'd need to
+  // consider a free-body diagram to find the relationship between forces. A
+  // much simpler approach however is to consider virtual displacements. When
+  // the object is in a steady grasp between the fingers, there is an equal and
+  // opposite force on each finger of magnitude equal to the grip force, G (or
+  // otherwise the mug would move). A small motion δqᵣ of the right finger
+  // then leads to a motion δqₗ = ρ⋅δqᵣ of the left finger. If U is the
+  // actuation on the right finger, the virtual work due to U is δWu = U⋅δqᵣ.
+  // The virtual work due to the contact forces (G on each finger) is δWg =
+  // -G⋅δqₗ + G⋅δqᵣ = G⋅(1-ρ)⋅δqᵣ. In equilibrium we must have δWu = δWg for
+  // arbitrary δqᵣ and therefore we find U = G⋅(1-ρ). For instance, when ρ = -1
+  // (fingers move in opposition) we find that U = 2 G and thus we must apply
+  // twice as much force as the grip force. This makes sense if we consider a
+  // system of pulleys for this mechanism.
+  const double grip_actuation_force =
+      FLAGS_discrete_solver == "tamsi"
+          ? FLAGS_grip_force
+          : (1.0 - FLAGS_coupler_gear_ratio) * FLAGS_grip_force;
+
   // Notice we are using the same Sine source to:
   //   1. Generate a harmonic forcing of the gripper with amplitude f0 and
   //      angular frequency omega.
   //   2. Impose a constant force to the left finger. That is, a harmonic
   //      forcing with "zero" frequency.
-  const Vector2<double> amplitudes(f0, FLAGS_gripper_force);
-  const Vector2<double> frequencies(omega, 0.0);
-  const Vector2<double> phases(0.0, M_PI_2);
+  const Vector2d amplitudes(f0, grip_actuation_force);
+  const Vector2d frequencies(omega, 0.0);
+  const Vector2d phases(0.0, M_PI_2);
   const auto& harmonic_force =
       *builder.AddSystem<Sine>(amplitudes, frequencies, phases);
 
@@ -295,14 +326,13 @@ int do_main() {
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
-  // Get joints so that we can set initial conditions.
-  const PrismaticJoint<double>& finger_slider =
-      plant.GetJointByName<PrismaticJoint>("finger_sliding_joint");
-
-  // Set initial position of the left finger.
-  finger_slider.set_translation(&plant_context, -FLAGS_grip_width);
+  // Set initial position of the fingers.
+  const double finger_offset = FLAGS_grip_width / 2.0;
+  left_slider.set_translation(&plant_context, -finger_offset);
+  right_slider.set_translation(&plant_context, finger_offset);
 
   // Initialize the mug pose to be right in the middle between the fingers.
+  const multibody::Body<double>& mug = plant.GetBodyByName("simple_mug");
   const Vector3d& p_WBr =
       plant.EvalBodyPoseInWorld(plant_context, right_finger).translation();
   const Vector3d& p_WBl =
@@ -313,14 +343,21 @@ int do_main() {
       RollPitchYawd(FLAGS_rx * M_PI / 180, FLAGS_ry * M_PI / 180,
                     (FLAGS_rz * M_PI / 180) + M_PI),
       Vector3d(0.0, mug_y_W, 0.0));
-  plant.SetFreeBodyPose(&plant_context,
-                        plant.GetUniqueFreeBaseBodyOrThrow(mug_model), X_WM);
+  plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
   // Set the initial height of the gripper and its initial velocity so that with
   // the applied harmonic forces it continues to move in a harmonic oscillation
   // around this initial position.
   translate_joint.set_translation(&plant_context, 0.0);
   translate_joint.set_translation_rate(&plant_context, v0);
+
+  if (FLAGS_discrete_solver == "tamsi") {
+    drake::log()->warn(
+        "discrete_solver = 'tamsi'. Since TAMSI does not support coupler "
+        "constraints to model the coupling of the fingers, this simple example "
+        "locks the right finger and only the left finger is allowed to move.");
+    right_slider.Lock(&plant_context);
+  }
 
   // Set up simulator.
   auto simulator =

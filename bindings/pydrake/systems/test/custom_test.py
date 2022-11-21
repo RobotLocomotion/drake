@@ -211,12 +211,12 @@ class TestCustom(unittest.TestCase):
 
     def test_leaf_system_per_item_tickets(self):
         dut = LeafSystem()
-        dut.DeclareAbstractParameter(AbstractValue.Make(1))
-        dut.DeclareAbstractState(AbstractValue.Make(1))
+        dut.DeclareAbstractParameter(model_value=AbstractValue.Make(1))
+        dut.DeclareAbstractState(model_value=AbstractValue.Make(1))
         dut.DeclareDiscreteState(1)
         dut.DeclareVectorInputPort("u0", BasicVector(1))
         self.assertEqual(dut.DeclareVectorInputPort("u1", 2).size(), 2)
-        dut.DeclareNumericParameter(BasicVector(1))
+        dut.DeclareNumericParameter(model_vector=BasicVector(1))
         for func, arg in [
                 (dut.abstract_parameter_ticket, AbstractParameterIndex(0)),
                 (dut.abstract_state_ticket, AbstractStateIndex(0)),
@@ -299,9 +299,13 @@ class TestCustom(unittest.TestCase):
                 self.called_reset = False
                 self.called_system_reset = False
                 # Ensure we have desired overloads.
-                self.DeclarePeriodicPublish(1.0)
-                self.DeclarePeriodicPublish(1.0, 0)
-                self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
+                self.DeclarePeriodicPublishNoHandler(1.0)
+                self.DeclarePeriodicPublishNoHandler(1.0, 0)
+                self.DeclarePeriodicPublishNoHandler(
+                    period_sec=1.0, offset_sec=0)
+                # Deprecated
+                with catch_drake_warnings(expected_count=1):
+                    self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0)
                 self.DeclareInitializationPublishEvent(
                     publish=self._on_initialize_publish)
                 self.DeclareInitializationDiscreteUpdateEvent(
@@ -312,8 +316,12 @@ class TestCustom(unittest.TestCase):
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
                         callback=self._on_initialize))
-                self.DeclarePeriodicDiscreteUpdate(
+                self.DeclarePeriodicDiscreteUpdateNoHandler(
                     period_sec=1.0, offset_sec=0.)
+                # Deprecated
+                with catch_drake_warnings(expected_count=1):
+                    self.DeclarePeriodicDiscreteUpdate(
+                        period_sec=1.0, offset_sec=0.)
                 self.DeclarePeriodicPublishEvent(
                     period_sec=1.0,
                     offset_sec=0,
@@ -544,8 +552,14 @@ class TestCustom(unittest.TestCase):
         # Test explicit calls.
         system = TrivialSystem()
         context = system.CreateDefaultContext()
-        system.Publish(context)
+        system.ForcedPublish(context=context)
         self.assertTrue(system.called_publish)
+        self.assertTrue(system.called_forced_publish)
+
+        # Deprecated
+        system.called_forced_publish = False
+        with catch_drake_warnings(expected_count=1):
+            system.Publish(context)
         self.assertTrue(system.called_forced_publish)
 
         context_update = context.Clone()
@@ -571,16 +585,32 @@ class TestCustom(unittest.TestCase):
         witnesses = system.GetWitnessFunctions(context)
         self.assertEqual(len(witnesses), 3)
 
-        system.CalcDiscreteVariableUpdates(
+        system.CalcForcedDiscreteVariableUpdate(
             context=context,
             discrete_state=context_update.get_mutable_discrete_state())
         self.assertTrue(system.called_discrete)
         self.assertTrue(system.called_forced_discrete)
 
-        system.CalcUnrestrictedUpdate(
+        # Deprecated
+        system.called_forced_discrete = False
+        with catch_drake_warnings(expected_count=1):
+            system.CalcDiscreteVariableUpdates(
+                context=context,
+                discrete_state=context_update.get_mutable_discrete_state())
+        self.assertTrue(system.called_forced_discrete)
+
+        system.CalcForcedUnrestrictedUpdate(
             context=context,
             state=context_update.get_mutable_state()
         )
+        self.assertTrue(system.called_forced_unrestricted)
+
+        # Deprecated
+        system.called_forced_unrestricted = False
+        with catch_drake_warnings(expected_count=1):
+            system.CalcUnrestrictedUpdate(
+                context=context,
+                state=context_update.get_mutable_state())
         self.assertTrue(system.called_forced_unrestricted)
 
         # Test per-step, periodic, and witness call backs
@@ -605,6 +635,32 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_guard)
         self.assertTrue(system.called_reset)
         self.assertTrue(system.called_system_reset)
+
+    def test_event_handler_returns_none(self):
+        """Checks that a Python event handler callback function is allowed to
+        (implicitly) return None, instead of an EventStatus. Because of all the
+        setup boilerplate, we only test one specific event type and assume that
+        the other event types (which are implemented similarly) will likewise
+        behave the same.
+        """
+
+        class PublishReturnsNoneSystem(LeafSystem):
+            def __init__(self):
+                LeafSystem.__init__(self)
+                self.called_periodic_publish = False
+                self.DeclarePeriodicPublishEvent(
+                    period_sec=1.0, offset_sec=0.0,
+                    publish=self._on_periodic_publish)
+
+            def _on_periodic_publish(self, context):
+                self.called_periodic_publish = True
+                # There is no `return` statement here; Python implicitly treats
+                # this like a `return None`.
+
+        system = PublishReturnsNoneSystem()
+        simulator = Simulator(system)
+        simulator.AdvanceTo(0.25)
+        self.assertTrue(system.called_periodic_publish)
 
     def test_state_output_port_declarations(self):
         """Checks that DeclareStateOutputPort is bound."""
@@ -669,9 +725,9 @@ class TestCustom(unittest.TestCase):
                 LeafSystem.__init__(self)
                 self.DeclareContinuousState(1)
                 self.DeclareDiscreteState(2)
-                self.DeclareAbstractState(model_value.Clone())
-                self.DeclareAbstractParameter(model_value.Clone())
-                self.DeclareNumericParameter(model_vector.Clone())
+                self.DeclareAbstractState(model_value=model_value.Clone())
+                self.DeclareAbstractParameter(model_value=model_value.Clone())
+                self.DeclareNumericParameter(model_vector=model_vector.Clone())
 
         system = TrivialSystem()
         context = system.CreateDefaultContext()
@@ -712,6 +768,9 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(
             state.get_mutable_discrete_state(index=0) is
             state.get_mutable_discrete_state().get_vector(index=0))
+        self.assertTrue(
+            state.get_abstract_state(index=0) is
+            state.get_abstract_state().get_value(index=0))
         self.assertTrue(
             state.get_mutable_abstract_state(index=0) is
             state.get_mutable_abstract_state().get_value(index=0))

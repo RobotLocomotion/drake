@@ -25,6 +25,7 @@
 #include "drake/common/scoped_singleton.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 
 // TODO(hongkai.dai): GurobiSolver class should store data member such as
@@ -32,6 +33,13 @@
 namespace drake {
 namespace solvers {
 namespace {
+
+// Returns the (base) URL for Gurobi's online reference manual.
+std::string refman() {
+  return fmt::format(
+      "https://www.gurobi.com/documentation/{}.{}/refman",
+      GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
+}
 
 // Information to be passed through a Gurobi C callback to
 // grant it information about its problem (the host
@@ -312,74 +320,140 @@ __attribute__((unused)) bool HasCorrectNumberOfVariables(
   return (num_vars == num_vars_expected);
 }
 
-/**
- * Adds a constraint of one of the following forms :
- * lb ≤ A*x ≤ ub
- * or
- * A*x == lb
- *
- * @param is_equality True if the imposed constraint is
- * A*x == lb, false otherwise.
- * @return error as an integer. The full set of error values are
- * described here :
- * https://www.gurobi.com/documentation/9.5/refman/error_codes.html
- *
- * TODO(hongkai.dai): Use a sparse matrix A.
- */
-template <typename DerivedA, typename DerivedLB, typename DerivedUB>
-int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
-                        const Eigen::MatrixBase<DerivedA>& A,
-                        const Eigen::MatrixBase<DerivedLB>& lb,
-                        const Eigen::MatrixBase<DerivedUB>& ub,
-                        const Eigen::Ref<const VectorXDecisionVariable>& vars,
-                        bool is_equality, double sparseness_threshold,
-                        int* num_gurobi_linear_constraints) {
-  for (int i = 0; i < A.rows(); i++) {
-    int nonzero_coeff_count = 0;
-    std::vector<int> nonzero_var_index(A.cols(), 0);
-    std::vector<double> nonzero_coeff(A.cols(), 0.0);
 
-    for (int j = 0; j < A.cols(); j++) {
-      if (std::abs(A(i, j)) > sparseness_threshold) {
-        nonzero_coeff[nonzero_coeff_count] = A(i, j);
-        nonzero_var_index[nonzero_coeff_count++] =
-            prog.FindDecisionVariableIndex(vars(j));
-      }
+// Adds a constraint of one of the following forms :
+// lb ≤ A*x ≤ ub
+// or
+// A*x == lb
+//
+// @param is_equality True if the imposed constraint is
+// A*x == lb, false otherwise.
+// @param[in, out] num_gurobi_linear_constraints The number of linear
+// constraints stored in the gurobi model.
+// @return error as an integer. The full set of error values are
+// described here :
+// https://www.gurobi.com/documentation/9.5/refman/error_codes.html
+// This function assumes `vars` doesn't contain duplicate variables.
+int AddLinearConstraintNoDuplication(
+    const MathematicalProgram& prog, GRBmodel* model,
+    const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& lb,
+    const Eigen::VectorXd& ub, const VectorXDecisionVariable& vars,
+    bool is_equality, int* num_gurobi_linear_constraints) {
+  Eigen::SparseMatrix<double, Eigen::RowMajor> A_row_major = A;
+
+  const std::vector<int> var_index = prog.FindDecisionVariableIndices(vars);
+
+  // If this linear constraint is an equality constraint, we know that we can
+  // pass in A * vars = lb directly to Gurobi.
+  if (is_equality) {
+    std::vector<int> nonzero_col_index;
+    nonzero_col_index.reserve(A_row_major.nonZeros());
+    std::vector<char> sense(A.rows(), GRB_EQUAL);
+    for (int i = 0; i < A.nonZeros(); ++i) {
+      nonzero_col_index.push_back(
+          var_index[*(A_row_major.innerIndexPtr() + i)]);
     }
-    // The sense of the constraint could be ==, <= or >=
-    int error = 0;
-    if (is_equality) {
-      // Adds equality constraint.
-      error = GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],
-                           &nonzero_coeff[0], GRB_EQUAL, lb(i), nullptr);
-      (*num_gurobi_linear_constraints)++;
-      DRAKE_ASSERT(!error);
-      if (error) return error;
-    } else {
-      if (!std::isinf(ub(i)) || !std::isinf(lb(i))) {
-        if (!std::isinf(lb(i))) {
-          // Adds A.row(i)*x >= lb(i).
-          error = GRBaddconstr(model, nonzero_coeff_count,
-                               &nonzero_var_index[0], &nonzero_coeff[0],
-                               GRB_GREATER_EQUAL, lb(i), nullptr);
-          DRAKE_ASSERT(!error);
-          (*num_gurobi_linear_constraints)++;
-          if (error) return error;
-        }
-        if (!std::isinf(ub(i))) {
-          // Adds A.row(i)*x <= ub(i).
-          error =
-              GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],
-                           &nonzero_coeff[0], GRB_LESS_EQUAL, ub(i), nullptr);
-          DRAKE_ASSERT(!error);
-          (*num_gurobi_linear_constraints)++;
-          if (error) return error;
-        }
-      }
+    *num_gurobi_linear_constraints += A.rows();
+    int error =
+        GRBaddconstrs(model, A_row_major.rows(), A_row_major.nonZeros(),
+                      A_row_major.outerIndexPtr(), nonzero_col_index.data(),
+                      A_row_major.valuePtr(), sense.data(),
+                      const_cast<double*>(lb.data()), nullptr);
+    return error;
+  }
+
+  // Now handle the inequality constraints.
+  // Each row of linear constraint in Gurobi is in the form
+  // aᵀx ≤ b or aᵀx ≥ b or aᵀx=b, namely it doesn't accept imposing both the
+  // lower and the upper bound for a linear expression in one row. So for
+  // the constraint lb(i) <= A.row(i).dot(vars) <= ub(i), there are 4 situations
+  // 1. If both lb(i) and ub(i) are infinity, then we don't add any constraints
+  // to Gurobi.
+  // 2. If lb(i) is finite and ub(i) is infinity, then we add one constraint
+  // A.row(i).dot(vars) >= lb(i) to Gurobi.
+  // 3. If ub(i) is finite but lb(i) is -infinity, then we add one constraint
+  // A.row(i).dot(vars) <= ub(i) to Gurobi.
+  // 4. If both lb(i) and ub(i) are finite, then we add two constraints
+  // A.row(i).dot(vars) >= lb(i) and A.row(i).dot(vars) <= ub(i) to Gurobi.
+  // As a result, we add the constraint A_gurobi * vars <= rhs to Gurobi.
+
+  // Each row of A introduces at most two constraints in Gurobi, so we reserve 2
+  // * A.rows().
+  std::vector<double> rhs;
+  rhs.reserve(A.rows() * 2);
+  std::vector<char> sense;
+  sense.reserve(A.rows() * 2);
+
+  // The matrix A_gurobi is stored in Compressed Sparse Row (CSR) format, using
+  // three vectors cbeg, cind and cval. Please refer to
+  // https://www.gurobi.com/documentation/9.5/refman/c_addconstrs.html for the
+  // meaning of these three vectors. The non-zero entries in the i'th row of
+  // A_gurobi is stored in the chunk cind[cbeg[i]:cbeg[i+1]] and
+  // cval[cbeg[i]:cbeg[i+1]]
+  std::vector<int> cbeg;
+  cbeg.reserve(A.rows() * 2 + 1);
+  cbeg.push_back(0);
+  std::vector<int> cind;
+  cind.reserve(A.nonZeros() * 2);
+  std::vector<double> cval;
+  cval.reserve(A.nonZeros() * 2);
+
+  int A_gurobi_rows = 0;
+
+  // Add A_row_major.row(i) * vars ≥ bound (or ≤ bound) to the CSR format cbeg,
+  // cind, cva, also update rhs, sense and A_gurobi_rows.
+  auto add_gurobi_row = [&A_row_major, &var_index, &cbeg, &rhs, &sense, &cind,
+                         &cval,
+                         &A_gurobi_rows](int i, double bound, char row_sense) {
+    cbeg.push_back(cbeg.back() + *(A_row_major.outerIndexPtr() + i + 1) -
+                   *(A_row_major.outerIndexPtr() + i));
+    rhs.push_back(bound);
+    sense.push_back(row_sense);
+    for (int j = *(A_row_major.outerIndexPtr() + i);
+         j < *(A_row_major.outerIndexPtr() + i + 1); ++j) {
+      cind.push_back(var_index[*(A_row_major.innerIndexPtr() + j)]);
+      cval.push_back(*(A_row_major.valuePtr() + j));
+    }
+    A_gurobi_rows++;
+  };
+
+  for (int i = 0; i < A_row_major.rows(); ++i) {
+    if (!std::isinf(lb(i))) {
+      // Add A_row_major.row(i) * vars >= lb(i)
+      add_gurobi_row(i, lb(i), GRB_GREATER_EQUAL);
+    }
+    if (!std::isinf(ub(i))) {
+      // Add A_row_major.row(i) * vars <= ub(i)
+      add_gurobi_row(i, ub(i), GRB_LESS_EQUAL);
     }
   }
-  // If loop completes, no errors exist so the value '0' must be returned.
-  return 0;
+  *num_gurobi_linear_constraints += A_gurobi_rows;
+  int error =
+      GRBaddconstrs(model, A_gurobi_rows, cbeg.back(), cbeg.data(), cind.data(),
+                    cval.data(), sense.data(), rhs.data(), nullptr);
+
+  return error;
+}
+
+
+int AddLinearConstraint(
+    const MathematicalProgram& prog, GRBmodel* model,
+    const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& lb,
+    const Eigen::VectorXd& ub, const VectorXDecisionVariable& vars,
+    bool is_equality, int* num_gurobi_linear_constraints) {
+  const symbolic::Variables vars_set(vars);
+  if (static_cast<int>(vars_set.size()) == vars.rows()) {
+    return AddLinearConstraintNoDuplication(prog, model, A, lb, ub, vars,
+                                            is_equality,
+                                            num_gurobi_linear_constraints);
+  } else {
+    Eigen::SparseMatrix<double> A_new;
+    VectorX<symbolic::Variable> vars_new;
+    AggregateDuplicateVariables(A, vars, &A_new, &vars_new);
+    return AddLinearConstraintNoDuplication(prog, model, A_new, lb, ub,
+                                            vars_new, is_equality,
+                                            num_gurobi_linear_constraints);
+  }
 }
 
 /*
@@ -394,9 +468,6 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
  * RotatedLorentzConeConstraint.
  * @param second_order_cone_constraints  A vector of Binding objects, containing
  * either Lorentz cone constraints, or rotated Lorentz cone constraints.
- * @param sparseness_threshold. If the absolute value of an entry in A, b
- * matrices inside (rotated) Lorentz cone constraint is smaller than
- * \p sparseness_threshold, that entry is ignored.
  * @param second_order_cone_new_variable_indices. The indices of variable z in
  * the Gurobi model.
  * @param model The Gurobi model.
@@ -407,7 +478,6 @@ template <typename C>
 int AddSecondOrderConeConstraints(
     const MathematicalProgram& prog,
     const std::vector<Binding<C>>& second_order_cone_constraints,
-    double sparseness_threshold,
     const std::vector<std::vector<int>>& second_order_cone_new_variable_indices,
     GRBmodel* model, int* num_gurobi_linear_constraints) {
   static_assert(
@@ -549,7 +619,7 @@ int AddSecondOrderConeConstraints(
  * Add quadratic or linear costs to the optimization problem.
  */
 int AddCosts(GRBmodel* model, double* pconstant_cost,
-             const MathematicalProgram& prog, double sparseness_threshold) {
+             const MathematicalProgram& prog) {
   // Aggregates the quadratic costs and linear costs in the form
   // 0.5 * x' * Q_all * x + linear_term' * x.
   using std::abs;
@@ -578,13 +648,13 @@ int AddCosts(GRBmodel* model, double* pconstant_cost,
 
     for (int i = 0; i < Q.rows(); i++) {
       const double Qii = 0.5 * Q(i, i);
-      if (abs(Qii) > sparseness_threshold) {
+      if (Qii != 0) {
         Q_nonzero_coefs.push_back(Eigen::Triplet<double>(
             constraint_variable_index[i], constraint_variable_index[i], Qii));
       }
       for (int j = i + 1; j < Q.cols(); j++) {
         const double Qij = 0.5 * (Q(i, j) + Q(j, i));
-        if (abs(Qij) > sparseness_threshold) {
+        if (Qij != 0) {
           Q_nonzero_coefs.push_back(Eigen::Triplet<double>(
               constraint_variable_index[i], constraint_variable_index[j], Qij));
         }
@@ -592,7 +662,7 @@ int AddCosts(GRBmodel* model, double* pconstant_cost,
     }
 
     for (int i = 0; i < b.size(); i++) {
-      if (abs(b(i)) > sparseness_threshold) {
+      if (b(i) != 0) {
         b_nonzero_coefs.push_back(
             Eigen::Triplet<double>(constraint_variable_index[i], 0, b(i)));
       }
@@ -661,7 +731,7 @@ int AddCosts(GRBmodel* model, double* pconstant_cost,
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 int ProcessLinearConstraints(
     GRBmodel* model, const MathematicalProgram& prog,
-    double sparseness_threshold, int* num_gurobi_linear_constraints,
+    int* num_gurobi_linear_constraints,
     std::unordered_map<Binding<Constraint>, int>* constraint_dual_start_row) {
   for (const auto& binding : prog.linear_equality_constraints()) {
     const auto& constraint = binding.evaluator();
@@ -669,9 +739,9 @@ int ProcessLinearConstraints(
     constraint_dual_start_row->emplace(binding, *num_gurobi_linear_constraints);
 
     const int error = AddLinearConstraint(
-        prog, model, constraint->GetDenseA(), constraint->lower_bound(),
+        prog, model, constraint->get_sparse_A(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), true,
-        sparseness_threshold, num_gurobi_linear_constraints);
+        num_gurobi_linear_constraints);
     if (error) {
       return error;
     }
@@ -683,9 +753,9 @@ int ProcessLinearConstraints(
     constraint_dual_start_row->emplace(binding, *num_gurobi_linear_constraints);
 
     const int error = AddLinearConstraint(
-        prog, model, constraint->GetDenseA(), constraint->lower_bound(),
+        prog, model, constraint->get_sparse_A(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), false,
-        sparseness_threshold, num_gurobi_linear_constraints);
+        num_gurobi_linear_constraints);
     if (error) {
       return error;
     }
@@ -776,40 +846,76 @@ void SetOptionOrThrow(GRBenv* model_env, const std::string& option,
   static_assert(std::is_same_v<T, int> || std::is_same_v<T, double> ||
                     std::is_same_v<T, std::string>,
                 "Option values must be int, double, or string");
+
+  // Set the parameter as requested, returning immediately in case of success.
+  const char* actual_type;
   int error = 0;
   if constexpr (std::is_same_v<T, int>) {
+    actual_type = "integer";
     error = GRBsetintparam(model_env, option.c_str(), val);
   } else if constexpr (std::is_same_v<T, double>) {
+    actual_type = "floating-point";
     error = GRBsetdblparam(model_env, option.c_str(), val);
   } else if constexpr (std::is_same_v<T, std::string>) {
+    actual_type = "string";
     error = GRBsetstrparam(model_env, option.c_str(), val.c_str());
   }
-  if (error) {
-    const std::string gurobi_version =
-        fmt::format("{}.{}", GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
-    if (error == GRB_ERROR_UNKNOWN_PARAMETER) {
-      throw std::runtime_error(fmt::format(
-          "GurobiSolver(): '{}' is an unknown parameter in Gurobi, check "
-          "https://www.gurobi.com/documentation/{}/refman/parameters.html for "
-          "allowable parameters",
-          option, gurobi_version));
-    } else if (error == GRB_ERROR_VALUE_OUT_OF_RANGE) {
-      throw std::runtime_error(fmt::format(
-          "GurobiSolver(): '{}' is outside the parameter {}'s valid range", val,
-          option));
-    }
-    // The error message for Setting a Gurobi option should be either
-    // GRB_ERROR_UNKNOWN_PARAMETER or GRB_ERROR_VALUE_OF_OF_RANGE. But just in
-    // case I missed something, I added this throw to capture any other possible
-    // error message. This is untested because I don't know how to trigger an
-    // unknown error.
-    throw std::runtime_error(
-        fmt::format("GurobiSolver(): error code {}, cannot set option '{}' to "
-                    "value '{}', check "
-                    "https://www.gurobi.com/documentation/{}/refman/"
-                    "parameters.html for all allowable options and values.",
-                    error, option, val, gurobi_version));
+  if (!error) {
+    return;
   }
+
+  // Report range errors (i.e., the parameter name is known, but `val` is bad).
+  if (error == GRB_ERROR_VALUE_OUT_OF_RANGE) {
+    throw std::runtime_error(fmt::format(
+        "GurobiSolver(): '{}' is outside the parameter {}'s valid range", val,
+        option));
+  }
+
+  // In case of "unknown", it could either be truly unknown or else just the
+  // wrong data type.
+  if (error == GRB_ERROR_UNKNOWN_PARAMETER) {
+    // For the expected param_type, we have:
+    //   1: INT param
+    //   2: DBL param
+    //   3: STR param
+    const int param_type = GRBgetparamtype(model_env, option.c_str());
+
+    // If the user provided an int for a double param, treat it as a double
+    // without any complaint. This is especially helpful for Python users.
+    if constexpr (std::is_same_v<T, int>) {
+      if (param_type == 2) {
+        SetOptionOrThrow<double>(model_env, option, val);
+        return;
+      }
+    }
+
+    // Otherwise, identify all other cases of type-mismatches.
+    const char* expected_type = nullptr;
+    switch (param_type) {
+      case 1: { expected_type = "integer"; break; }
+      case 2: { expected_type = "floating-point"; break; }
+      case 3: { expected_type = "string"; break; }
+    }
+    if (expected_type != nullptr) {
+      throw std::runtime_error(fmt::format(
+          "GurobiSolver(): parameter {} should be a {} not a {}",
+          option, expected_type, actual_type));
+    }
+
+    // Otherwise, it was truly unknown not just wrongly-typed.
+    throw std::runtime_error(fmt::format(
+        "GurobiSolver(): '{}' is an unknown parameter in Gurobi, check "
+        "{}/parameters.html for allowable parameters",
+        option, refman()));
+  }
+
+  // The error code should always be UNKNOWN_PARAMETER or VALUE_OUT_OF_RANGE,
+  // but just in case we'll handle other errors with a fallback. This is
+  // untested because it's thought to be unreachable in practice.
+  throw std::runtime_error(fmt::format(
+      "GurobiSolver(): error code {}, cannot set option '{}' to value '{}', "
+      "check {}/parameters.html for all allowable options and values.",
+      error, option, val, refman()));
 }
 }  // anonymous namespace
 
@@ -997,32 +1103,30 @@ void GurobiSolver::DoSolve(
   });
 
   int error = 0;
-  // TODO(naveenoid) : This needs access externally.
-  double sparseness_threshold = 1e-14;
   double constant_cost = 0;
   if (!error) {
-    error = AddCosts(model, &constant_cost, prog, sparseness_threshold);
+    error = AddCosts(model, &constant_cost, prog);
   }
 
   int num_gurobi_linear_constraints = 0;
   if (!error) {
-    error = ProcessLinearConstraints(model, prog, sparseness_threshold,
-                                     &num_gurobi_linear_constraints,
-                                     &constraint_dual_start_row);
+    error =
+        ProcessLinearConstraints(model, prog, &num_gurobi_linear_constraints,
+                                 &constraint_dual_start_row);
   }
 
   // Add Lorentz cone constraints.
   if (!error) {
-    error = AddSecondOrderConeConstraints(
-        prog, prog.lorentz_cone_constraints(), sparseness_threshold,
-        lorentz_cone_new_variable_indices, model,
-        &num_gurobi_linear_constraints);
+    error =
+        AddSecondOrderConeConstraints(prog, prog.lorentz_cone_constraints(),
+                                      lorentz_cone_new_variable_indices, model,
+                                      &num_gurobi_linear_constraints);
   }
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
     error = AddSecondOrderConeConstraints(
-        prog, prog.rotated_lorentz_cone_constraints(), sparseness_threshold,
+        prog, prog.rotated_lorentz_cone_constraints(),
         rotated_lorentz_cone_new_variable_indices, model,
         &num_gurobi_linear_constraints);
   }
@@ -1142,12 +1246,10 @@ void GurobiSolver::DoSolve(
       if (error) {
         const std::string gurobi_version =
             fmt::format("{}.{}", GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
-        throw std::runtime_error(
-            fmt::format("GurobiSolver(): setting GRBwrite to {}, this is not "
-                        "supported. Check "
-                        "https://www.gurobi.com/documentation/{}/refman/"
-                        "py_model_write.html for more details.",
-                        grb_write.value(), gurobi_version));
+        throw std::runtime_error(fmt::format(
+            "GurobiSolver(): setting GRBwrite to {}, this is not supported. "
+            "Check {}/py_model_write.html for more details.",
+            grb_write.value(), refman()));
       }
     }
   }

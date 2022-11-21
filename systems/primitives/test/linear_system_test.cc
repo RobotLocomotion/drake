@@ -596,8 +596,8 @@ TEST_F(LinearSystemSymbolicTest, MakeLinearSystem) {
 }
 
 // Adds quadratic terms to check if we have an exception. Note that we have
-// similar testcases in drake/common/test/symbolic_decompose_test.cc file but we
-// believe that having redundancy is not bad in testing.
+// similar testcases in drake/common/symbolic/test/decompose_test.cc file but
+// we believe that having redundancy is not bad in testing.
 TEST_F(LinearSystemSymbolicTest, MakeLinearSystemException1) {
   VectorX<symbolic::Expression> extra_terms(3);
   // clang-format off
@@ -742,7 +742,7 @@ class MimoSystem final : public LeafSystem<T> {
 
     if (is_discrete) {
       this->DeclareDiscreteState(2);
-      this->DeclarePeriodicDiscreteUpdate(0.1, 0.0);
+      this->DeclarePeriodicDiscreteUpdateNoHandler(0.1, 0.0);
     } else {
       this->DeclareContinuousState(2);
     }

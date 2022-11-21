@@ -96,7 +96,7 @@ def library_lint(
 
     # Find libraries that are deps of the package_library but shouldn't be.
     extra_deps_expression = "deps({}, 1) except ({}) except {}".format(
-        package_name,
+        package_name + ":" + short_package_name,
         correct_deps_expression,
         # This is fine (it's a dependency of our copt select() statement).
         "//tools:drake_werror",
@@ -107,7 +107,7 @@ def library_lint(
     # positives from this report.
     missing_deps_expression = "({}) except deps({}, 1) ".format(
         correct_deps_expression,
-        package_name,
+        package_name + ":" + short_package_name,
     )
 
     # If there was a package_library rule, ensure its deps are comprehensive.

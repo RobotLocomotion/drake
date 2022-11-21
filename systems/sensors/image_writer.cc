@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include <filesystem>
 #include <regex>
 #include <string>
 #include <utility>
@@ -13,8 +14,6 @@
 #include <vtkPNGWriter.h>
 #include <vtkSmartPointer.h>
 #include <vtkTIFFWriter.h>
-
-#include "drake/common/filesystem.h"
 
 namespace drake {
 namespace systems {
@@ -195,7 +194,7 @@ std::string ImageWriter::MakeFileName(const std::string& format,
 
   int64_t u_time = static_cast<int64_t>(time * 1e6 + 0.5);
   int m_time = static_cast<int>(time * 1e3 + 0.5);
-  return fmt::format(format, fmt::arg("port_name", port_name),
+  return fmt::format(fmt_runtime(format), fmt::arg("port_name", port_name),
                      fmt::arg("image_type", labels_.at(pixel_type)),
                      fmt::arg("time_double", time),
                      fmt::arg("time_usec", u_time),
@@ -233,9 +232,9 @@ std::string ImageWriter::DirectoryFromFormat(const std::string& format,
 
 ImageWriter::FolderState ImageWriter::ValidateDirectory(
     const std::string& file_path_str) {
-  filesystem::path file_path(file_path_str);
-  if (filesystem::exists(file_path)) {
-    if (filesystem::is_directory(file_path)) {
+  std::filesystem::path file_path(file_path_str);
+  if (std::filesystem::exists(file_path)) {
+    if (std::filesystem::is_directory(file_path)) {
       if (::access(file_path.string().c_str(), W_OK) == 0) {
         return FolderState::kValid;
       } else {

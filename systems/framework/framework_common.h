@@ -286,15 +286,15 @@ enum BuiltInTicketNumbers {
   kKinematicsTicket     = 17,  // Configuration plus velocity-affecting values.
   kLastSourceTicket     = kKinematicsTicket,  // (Used in testing.)
 
-  // The rest of these are pre-defined computations with associated cache
-  // entries.
+  // These are pre-defined computations with associated cache entries.
   kXcdotTicket          = 18,  // d/dt xc = {qdot, vdot, zdot}.
   kPeTicket             = 19,  // Potential energy.
   kKeTicket             = 20,  // Kinetic energy.
   kPcTicket             = 21,  // Conservative power.
   kPncTicket            = 22,  // Non-conservative power.
+  kXdUniquePeriodicUpdateTicket = 23,  // Updated discrete (numeric) variables.
 
-  kNextAvailableTicket  = kPncTicket+1
+  kNextAvailableTicket  = kXdUniquePeriodicUpdateTicket+1
 };
 
 // Specifies the prerequisite of an output port. It will always be either

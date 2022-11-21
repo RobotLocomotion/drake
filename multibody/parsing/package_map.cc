@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
 #include <initializer_list>
 #include <optional>
 #include <regex>
@@ -9,18 +10,19 @@
 #include <tuple>
 #include <utility>
 
-#include <tinyxml2.h>
+#include <drake_vendor/tinyxml2.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 
 namespace drake {
 namespace multibody {
+
+namespace fs = std::filesystem;
 
 using std::runtime_error;
 using std::string;
@@ -125,6 +127,13 @@ void PackageMap::PopulateFromFolder(const string& path) {
 
 void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
   DRAKE_DEMAND(!environment_variable.empty());
+  if (environment_variable == "ROS_PACKAGE_PATH") {
+    drake::log()->warn(
+      "PackageMap: PopulateFromEnvironment(\"ROS_PACKAGE_PATH\") is "
+      "deprecated, and will be disabled on or around 2023-02-01. To populate "
+      "manifests from ROS_PACKAGE_PATH, use PopulateFromRosPackagePath() "
+      "instead.");
+  }
   const char* const value = std::getenv(environment_variable.c_str());
   if (value == nullptr) {
     return;
@@ -138,12 +147,32 @@ void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
   }
 }
 
+void PackageMap::PopulateFromRosPackagePath() {
+  const std::vector<std::string_view> stop_markers = {
+    "AMENT_IGNORE",
+    "CATKIN_IGNORE",
+    "COLCON_IGNORE",
+  };
+
+  const char* const value = std::getenv("ROS_PACKAGE_PATH");
+  if (value == nullptr) {
+    return;
+  }
+  std::istringstream input{string(value)};
+  string path;
+  while (std::getline(input, path, ':')) {
+    if (!path.empty()) {
+      CrawlForPackages(path, true, stop_markers);
+    }
+  }
+}
+
 namespace {
 
 // Returns the parent directory of @p directory.
 string GetParentDirectory(const string& directory) {
   DRAKE_DEMAND(!directory.empty());
-  return filesystem::path(directory).parent_path().string();
+  return fs::path(directory).parent_path().string();
 }
 
 // Removes leading and trailing whitespace and line breaks from a string.
@@ -215,7 +244,7 @@ bool PackageMap::AddPackageIfNew(const string& package_name,
   if (!Contains(package_name)) {
     drake::log()->trace(
         "PackageMap: Adding package://{}: {}", package_name, path);
-    if (!filesystem::is_directory(path)) {
+    if (!fs::is_directory(path)) {
       throw std::runtime_error(
           "Could not add package://" + package_name + " to the search path "
           "because directory " + path + " does not exist");
@@ -224,7 +253,7 @@ bool PackageMap::AddPackageIfNew(const string& package_name,
   } else {
     // Don't warn if we've found the same path with a different spelling.
     const PackageData existing_data = map_.at(package_name);
-    if (!filesystem::equivalent(existing_data.path, path)) {
+    if (!fs::equivalent(existing_data.path, path)) {
       drake::log()->warn(
           "PackageMap is ignoring newly-found path \"{}\" for package \"{}\""
           " and will continue using the previously-known path at \"{}\".",
@@ -241,11 +270,28 @@ PackageMap::PackageMap(std::initializer_list<std::string> manifest_paths) {
   }
 }
 
-void PackageMap::CrawlForPackages(const string& path) {
+void PackageMap::CrawlForPackages(const string& path, bool stop_at_package,
+    const std::vector<std::string_view>& stop_markers) {
   DRAKE_DEMAND(!path.empty());
+  fs::path dir = fs::path(path).lexically_normal();
+  if (std::any_of(stop_markers.begin(), stop_markers.end(),
+      [dir](std::string_view name){ return fs::exists(dir / name); })) {
+    return;
+  }
+  fs::path manifest = dir / "package.xml";
+  if (fs::exists(manifest)) {
+    const auto [package_name, deprecated_message] =
+        ParsePackageManifest(manifest.string());
+    const string package_path = dir.string();
+    if (AddPackageIfNew(package_name, package_path + "/")) {
+      SetDeprecated(package_name, deprecated_message);
+    }
+    if (stop_at_package) {
+      return;
+    }
+  }
   std::error_code ec;
-  filesystem::directory_iterator iter(
-      filesystem::path(path).lexically_normal(), ec);
+  fs::directory_iterator iter(dir, ec);
   if (ec) {
     log()->warn("Unable to open directory: {}", path);
     return;
@@ -257,13 +303,7 @@ void PackageMap::CrawlForPackages(const string& path) {
       if (filename.at(0) == '.') {
         continue;
       }
-      CrawlForPackages(entry.path().string());
-    } else if (entry.path().filename().string() == "package.xml") {
-      const auto [package_name, deprecated_message] = ParsePackageManifest(
-          entry.path().string());
-      const string package_path = entry.path().parent_path().string();
-      if (AddPackageIfNew(package_name, package_path + "/"))
-        SetDeprecated(package_name, deprecated_message);
+      CrawlForPackages(entry.path().string(), stop_at_package, stop_markers);
     }
   }
 }

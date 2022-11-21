@@ -4,7 +4,6 @@
 #include <optional>
 #include <vector>
 
-#include "drake/common/symbolic.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -49,11 +48,50 @@ struct IrisOptions {
   */
   double configuration_space_margin{1e-2};
 
-  /** For IRIS in configuration space, we can optionally use IbexSolver to
-  rigorously confirm that regions are collision-free. This step may be
-  computationally demanding, so we disable it by default for a faster
-  algorithm for obtaining regions without the rigorous guarantee. */
-  bool enable_ibex = false;
+  /** For each possible collision, IRIS will search for a counter-example by
+  formulating a (likely nonconvex) optimization problem. The initial guess for
+  this optimization is taken by sampling uniformly inside the current IRIS
+  region. This option controls the termination condition for that
+  counter-example search, defining the number of consecutive failures to find a
+  counter-example requested before moving on to the next constraint. */
+  int num_collision_infeasible_samples{5};
+
+  /** For IRIS in configuration space, it can be beneficial to not only specify
+  task-space obstacles (passed in through the plant) but also obstacles that are
+  defined by convex sets in the configuration space. This option can be used to
+  pass in such configuration space obstacles. */
+  ConvexSets configuration_obstacles{};
+
+  /** By default, IRIS in configuration space certifies regions for collision
+  avoidance constraints and joint limits. This option can be used to pass
+  additional constraints that should be satisfied by the IRIS region. We accept
+  these in the form of a MathematicalProgram:
+
+    find q subject to g(q) ≤ 0.
+
+  The decision_variables() for the program are taken to define `q`. IRIS will
+  silently ignore any costs in `prog_with_additional_constraints`, and will
+  throw std::runtime_error if it contains any unsupported constraints.
+
+  For example, one could create an InverseKinematics problem with rich
+  kinematic constraints, and then pass `InverseKinematics::prog()` into this
+  option.
+  */
+  const solvers::MathematicalProgram* prog_with_additional_constraints{};
+
+  /** For each constraint in `prog_with_additional_constraints`, IRIS will
+  search for a counter-example by formulating a (likely nonconvex) optimization
+  problem. The initial guess for this optimization is taken by sampling
+  uniformly inside the current IRIS region. This option controls the
+  termination condition for that counter-example search, defining the number of
+  consecutive failures to find a counter-example requested before moving on to
+  the next constraint. */
+  int num_additional_constraint_infeasible_samples{5};
+
+  /** The only randomization in IRIS is the random sampling done to find
+  counter-examples for the additional constraints using in
+  IrisInConfigurationSpace. Use this option to set the initial seed. */
+  int random_seed{1234};
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
@@ -93,13 +131,14 @@ HPolyhedron Iris(const ConvexSets& obstacles,
 
 /** Constructs ConvexSet representations of obstacles for IRIS in 3D using the
 geometry from a SceneGraph QueryObject. All geometry in the scene with a
-proximity role, both anchored and dynamic, are consider to be *fixed* obstacles
-frozen in the poses captured in the context used to create the QueryObject.
+proximity role, both anchored and dynamic, are consider to be *fixed*
+obstacles frozen in the poses captured in the context used to create the
+QueryObject.
 
 When multiple representations are available for a particular geometry (e.g. a
 Box can be represented as either an HPolyhedron or a VPolytope), then this
-method will prioritize the representation that we expect is most performant for
-the current implementation of the IRIS algorithm.
+method will prioritize the representation that we expect is most performant
+for the current implementation of the IRIS algorithm.
 
 @ingroup geometry_optimization
 */
@@ -109,20 +148,24 @@ ConvexSets MakeIrisObstacles(
 
 /** A variation of the Iris (Iterative Region Inflation by Semidefinite
 programming) algorithm which finds collision-free regions in the *configuration
-space* of @p plant.  @see Iris for details on the original algorithm.
-The possibility of this configuration-space variant was suggested in the
-original IRIS paper, but substantial new ideas have been employed here to
-address the non-convexity of configuration-space obstacles; these will be
-documented in a forth-coming publication.
+space* of @p plant.  @see Iris for details on the original algorithm. This
+variant uses nonlinear optimization (instead of convex optimization) to find
+collisions in configuration space; each potential collision is
+probabilistically "certified" by restarting the nonlinear optimization from
+random initial seeds inside the candidate IRIS region until it fails to find a
+collision in `options.num_collision_infeasible_samples` consecutive attempts.
 
 @param plant describes the kinematics of configuration space.  It must be
 connected to a SceneGraph in a systems::Diagram.
-@param context is a context of the @p plant. The context must have the positions
-of the plant set to the initialIRIS seed configuration.
+@param context is a context of the @p plant. The context must have the
+positions of the plant set to the initialIRIS seed configuration.
 @param options provides additional configuration options.  In particular,
-`options.enabled_ibex` may have a significant impact on the runtime of the
-algorithm.
+increasing `options.num_collision_infeasible_samples` increases the chances that
+the IRIS regions are collision free but can also significantly increase the
+run-time of the algorithm. The same goes for
+`options.num_additional_constraints_infeasible_samples`.
 
+@throws std::exception if the sample configuration in @p context is infeasible.
 @ingroup geometry_optimization
 */
 HPolyhedron IrisInConfigurationSpace(

@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 
+#include <filesystem>
 #include <fstream>
 #include <istream>
 #include <memory>
@@ -14,7 +15,6 @@
 #include <tiny_obj_loader.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
@@ -179,7 +179,7 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     throw std::runtime_error("Cannot open file '" + filename +"'");
   }
   const std::string mtl_basedir =
-      filesystem::path(filename).parent_path().string() + "/";
+      std::filesystem::path(filename).parent_path().string() + "/";
   return DoReadObjToSurfaceMesh(&input_stream, scale, mtl_basedir,
                                 std::move(on_warning));
 }

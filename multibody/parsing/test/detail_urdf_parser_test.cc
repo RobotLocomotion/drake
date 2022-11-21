@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 
+#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <stdexcept>
@@ -9,7 +10,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -23,6 +23,7 @@
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
 
 namespace drake {
@@ -50,7 +51,8 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
       const std::string& file_name,
       const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    ParsingWorkspace w{package_map_, diagnostic_policy_,
+                       &plant_, &resolver, NoSelect};
     auto result = AddModelFromUrdf(
         {DataSource::kFilename, &file_name}, model_name, {}, w);
     resolver.Resolve(diagnostic_policy_);
@@ -61,11 +63,18 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
       const std::string& file_contents,
       const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    ParsingWorkspace w{package_map_, diagnostic_policy_,
+                       &plant_, &resolver, NoSelect};
     auto result = AddModelFromUrdf(
         {DataSource::kContents, &file_contents}, model_name, {}, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
+  }
+
+  // URDF cannot delegate to any other parsers.
+  static ParserInterface& NoSelect(
+      const drake::internal::DiagnosticPolicy&, const std::string&) {
+    DRAKE_UNREACHABLE();
   }
 
  protected:
@@ -209,7 +218,7 @@ TEST_F(UrdfParserTest, JointChildLinkBroken) {
 }
 
 TEST_F(UrdfParserTest, JointBadDynamicsAttributes) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='parent'/>
       <link name='child'/>
@@ -444,7 +453,7 @@ TEST_F(UrdfParserTest, TransmissionJointNotExist) {
 }
 
 TEST_F(UrdfParserTest, TransmissionJointBadLimits) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='parent'/>
       <link name='child'/>
@@ -488,7 +497,7 @@ TEST_F(UrdfParserTest, PackageMapSpecified) {
 
   const std::string full_urdf_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf");
-  filesystem::path package_path = full_urdf_filename;
+  std::filesystem::path package_path = full_urdf_filename;
   package_path = package_path.parent_path();
   package_path = package_path.parent_path();
 
@@ -715,6 +724,48 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(planar_joint.position_upper_limits(), inf3));
   EXPECT_TRUE(CompareMatrices(planar_joint.velocity_lower_limits(), neg_inf3));
   EXPECT_TRUE(CompareMatrices(planar_joint.velocity_upper_limits(), inf3));
+
+  // Continuous joint
+  DRAKE_EXPECT_NO_THROW(
+      plant_.GetJointByName<RevoluteJoint>("continuous_joint"));
+  const RevoluteJoint<double>& continuous_joint =
+      plant_.GetJointByName<RevoluteJoint>("continuous_joint");
+  EXPECT_EQ(continuous_joint.name(), "continuous_joint");
+  EXPECT_EQ(continuous_joint.parent_body().name(), "link7");
+  EXPECT_EQ(continuous_joint.child_body().name(), "link8");
+  EXPECT_EQ(continuous_joint.revolute_axis(), Vector3d::UnitZ());
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.position_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(continuous_joint.position_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.velocity_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(continuous_joint.velocity_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.acceleration_lower_limits(), neg_inf));
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.acceleration_upper_limits(), inf));
+
+  // Screw joint
+  DRAKE_EXPECT_NO_THROW(
+      plant_.GetJointByName<ScrewJoint>("screw_joint"));
+  const ScrewJoint<double>& screw_joint =
+      plant_.GetJointByName<ScrewJoint>("screw_joint");
+  EXPECT_EQ(screw_joint.name(), "screw_joint");
+  EXPECT_EQ(screw_joint.parent_body().name(), "link8");
+  EXPECT_EQ(screw_joint.child_body().name(), "link9");
+  EXPECT_EQ(screw_joint.screw_axis(), Vector3d::UnitX());
+  EXPECT_EQ(screw_joint.screw_pitch(), 0.04);
+  EXPECT_EQ(screw_joint.damping(), 0.1);
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.position_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(screw_joint.position_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.velocity_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(screw_joint.velocity_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.acceleration_lower_limits(), neg_inf));
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.acceleration_upper_limits(), inf));
 }
 
 TEST_F(UrdfParserTest, JointParsingTagMismatchTest) {
@@ -734,6 +785,25 @@ TEST_F(UrdfParserTest, JointParsingTagMismatchTest) {
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*Joint ball_joint of type ball is a custom joint"
                   " type, and should be a <drake:joint>"));
+}
+
+TEST_F(UrdfParserTest, JointParsingTagMissingScrewParametersTest) {
+  // Screw joint with missing thread pitch parameter.
+  const std::string full_name_missing_element = FindResourceOrThrow(
+      "drake/multibody/parsing/test/urdf_parser_test/"
+      "joint_parsing_test_missing_screw_thread_pitch.urdf");
+  AddModelFromUrdfFile(full_name_missing_element, "");
+  EXPECT_THAT(TakeError(), MatchesRegex(
+                  ".*A screw joint is missing the <drake:screw_thread_pitch>"
+                  " tag."));
+
+  const std::string full_name_missing_attribute = FindResourceOrThrow(
+      "drake/multibody/parsing/test/urdf_parser_test/"
+      "joint_parsing_test_missing_screw_thread_pitch_attribute.urdf");
+  AddModelFromUrdfFile(full_name_missing_attribute, "");
+  EXPECT_THAT(TakeError(), MatchesRegex(
+                  ".*A screw joint has a <drake:screw_thread_pitch> tag"
+                  " that is missing the 'value' attribute."));
 }
 
 // We allow users to declare the "world" link for the purpose of declaring
@@ -882,7 +952,7 @@ TEST_F(UrdfParserTest, EntireInertialTagOmitted) {
 
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("entire_inertial_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -900,7 +970,7 @@ TEST_F(UrdfParserTest, InertiaTagOmitted) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("inertia_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 2.);
+  EXPECT_EQ(body.default_mass(), 2.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -920,7 +990,7 @@ TEST_F(UrdfParserTest, MassTagOmitted) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("mass_tag_omitted"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -938,7 +1008,7 @@ TEST_F(UrdfParserTest, MasslessBody) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("massless_link"));
-  EXPECT_EQ(body.get_default_mass(), 0.);
+  EXPECT_EQ(body.default_mass(), 0.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
@@ -956,14 +1026,14 @@ TEST_F(UrdfParserTest, PointMass) {
     </robot>)""", ""), std::nullopt);
   const auto& body = dynamic_cast<const RigidBody<double>&>(
       plant_.GetBodyByName("point_mass"));
-  EXPECT_EQ(body.get_default_mass(), 1.);
+  EXPECT_EQ(body.default_mass(), 1.);
   EXPECT_TRUE(body.default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
 
 TEST_F(UrdfParserTest, BadInertia) {
   // Test various mis-formatted inputs.
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='point_mass'>
       <link name='point_mass'>
         <inertial>
@@ -1192,7 +1262,7 @@ class ReflectedInertiaTest : public UrdfParserTest {
                         double rotor_inertia,
                         double gear_ratio) {
     std::string text =
-        fmt::format(test_string_, rotor_inertia_text, gear_ratio_text);
+        fmt::format(kTestString, rotor_inertia_text, gear_ratio_text);
     EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
 
     const JointActuator<double>& actuator =
@@ -1206,14 +1276,14 @@ class ReflectedInertiaTest : public UrdfParserTest {
                     const std::string& gear_ratio_text,
                     const std::string& error_pattern) {
     std::string text =
-        fmt::format(test_string_, rotor_inertia_text, gear_ratio_text);
+        fmt::format(kTestString, rotor_inertia_text, gear_ratio_text);
     EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
     EXPECT_THAT(TakeError(), MatchesRegex(error_pattern));
   }
 
  protected:
   // Common URDF string with format options for the two custom tags.
-  const std::string test_string_ = R"""(
+  static constexpr const char* kTestString = R"""(
     <robot name='reflected_inertia_test'>
       <link name='A'/>
       <link name='B'/>
@@ -1498,7 +1568,7 @@ TEST_F(UrdfParserTest, UnsupportedTransmissionJointStuffIgnoredSilent) {
 
 TEST_F(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe) {
   // Two substitution slots: actuator, then transmission.
-  constexpr char robot_template[] = R"""(
+  constexpr const char* robot_template = R"""(
     <robot>
       <link name='parent'/>
       <link name='child'/>

@@ -13,6 +13,8 @@ namespace systems {
 /// The set of all configurable properties on a Simulator and IntegratorBase.
 struct SimulatorConfig {
   template <typename Archive>
+  /// Passes this object to an Archive.
+  /// Refer to @ref yaml_serialization "YAML Serialization" for background.
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(integration_scheme));
     a->Visit(DRAKE_NVP(max_step_size));

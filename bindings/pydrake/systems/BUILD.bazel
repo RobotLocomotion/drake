@@ -107,6 +107,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
@@ -162,6 +163,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:value_pybind",
     ],
@@ -172,6 +174,7 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:eigen_geometry_py",
+        "//bindings/pydrake/common:schema_py",
         "//bindings/pydrake:geometry_py",
     ],
 )
@@ -188,7 +191,7 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":module_py",
-        "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake/solvers",
         "//bindings/pydrake:trajectories_py",
     ],
 )
@@ -242,22 +245,6 @@ drake_py_unittest(
         ":lcm_py",
         ":primitives_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
-    ],
-)
-
-drake_py_library(
-    name = "meshcat_visualizer_py",
-    srcs = ["meshcat_visualizer.py"],
-    imports = PACKAGE_INFO.py_imports,
-    deps = [
-        ":framework_py",
-        ":module_py",
-        ":rendering_py",
-        "//bindings/pydrake:geometry_py",
-        "//bindings/pydrake:lcm_py",
-        "//bindings/pydrake:math_py",
-        "//bindings/pydrake/common:eigen_geometry_py",
-        "@meshcat_python//:meshcat_sans_deprecation_warning",
     ],
 )
 
@@ -332,7 +319,6 @@ PY_LIBRARIES = [
     ":_resample_interp1d_py",
     ":drawing_py",
     ":jupyter_widgets_py",
-    ":meshcat_visualizer_py",
     ":scalar_conversion_py",
     ":module_py",
     ":perception_py",
@@ -367,8 +353,7 @@ drake_py_unittest(
         ":framework_py",
         ":primitives_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/examples:pendulum_py",
-        "//bindings/pydrake/examples:rimless_wheel_py",
+        "//bindings/pydrake/examples",
     ],
 )
 
@@ -384,10 +369,10 @@ drake_py_binary(
         ":drawing_py",
         ":framework_py",
         ":primitives_py",
-        "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:lcm_py",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
+        "//bindings/pydrake/visualization",
     ],
 )
 
@@ -483,37 +468,10 @@ drake_py_unittest(
     ],
     deps = [
         ":controllers_py",
-        "//bindings/pydrake/examples:pendulum_py",
+        "//bindings/pydrake/examples",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/multibody:tree_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "meshcat_visualizer_test",
-    data = [
-        "//examples/kuka_iiwa_arm:models",
-        "//examples/multibody/cart_pole:models",
-        "//examples/quadrotor:models",
-        "//geometry/render:test_models",
-        "//manipulation/models/allegro_hand_description:models",
-        "//manipulation/models/iiwa_description:models",
-    ],
-    # Defects related to ZMQ when run under DRD or Helgrind.
-    tags = [
-        "no_drd",
-        "no_helgrind",
-    ],
-    deps = [
-        ":analysis_py",
-        ":framework_py",
-        ":meshcat_visualizer_py",
-        ":test_util_py",
-        "//bindings/pydrake:geometry_py",
-        "//bindings/pydrake:perception_py",
-        "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/multibody",
     ],
 )
 
@@ -605,6 +563,7 @@ drake_py_unittest(
         ":sensors_py",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 
@@ -612,7 +571,7 @@ drake_py_unittest(
     name = "trajectory_optimization_test",
     deps = [
         ":trajectory_optimization_py",
-        "//bindings/pydrake/examples:pendulum_py",
+        "//bindings/pydrake/examples",
     ],
 )
 

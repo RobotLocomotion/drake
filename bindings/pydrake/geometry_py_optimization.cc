@@ -3,6 +3,7 @@
  pydrake.geometry.optimization module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry_py.h"
@@ -28,6 +29,8 @@ void DefineGeometryOptimization(py::module m) {
   using namespace drake::geometry::optimization;
   m.doc() = "Local bindings for `drake::geometry::optimization`";
   constexpr auto& doc = pydrake_doc.drake.geometry.optimization;
+
+  py::module::import("pydrake.solvers");
 
   // ConvexSet
   {
@@ -118,6 +121,14 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
         .def("A", &HPolyhedron::A, cls_doc.A.doc)
         .def("b", &HPolyhedron::b, cls_doc.b.doc)
+        .def("ContainedIn", &HPolyhedron::ContainedIn, py::arg("other"),
+            py::arg("tol") = 1E-9, cls_doc.ContainedIn.doc)
+        .def("Intersection", &HPolyhedron::Intersection, py::arg("other"),
+            py::arg("check_for_redundancy") = false, py::arg("tol") = 1E-9,
+            cls_doc.Intersection.doc)
+        .def("ReduceInequalities", &HPolyhedron::ReduceInequalities,
+            py::arg("tol") = 1E-9, cls_doc.ReduceInequalities.doc)
+        .def("IsEmpty", &HPolyhedron::IsEmpty, cls_doc.IsEmpty.doc)
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)
@@ -127,14 +138,24 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("other"), cls_doc.CartesianProduct.doc)
         .def("CartesianPower", &HPolyhedron::CartesianPower, py::arg("n"),
             cls_doc.CartesianPower.doc)
-        .def("Intersection", &HPolyhedron::Intersection, py::arg("other"),
-            cls_doc.Intersection.doc)
         .def("PontryaginDifference", &HPolyhedron::PontryaginDifference,
             py::arg("other"), cls_doc.PontryaginDifference.doc)
+        .def("UniformSample",
+            overload_cast_explicit<Eigen::VectorXd, RandomGenerator*,
+                const Eigen::Ref<const Eigen::VectorXd>&>(
+                &HPolyhedron::UniformSample),
+            py::arg("generator"), py::arg("previous_sample"),
+            cls_doc.UniformSample.doc_2args)
+        .def("UniformSample",
+            overload_cast_explicit<Eigen::VectorXd, RandomGenerator*>(
+                &HPolyhedron::UniformSample),
+            py::arg("generator"), cls_doc.UniformSample.doc_1args)
         .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc)
+        .def_static("MakeL1Ball", &HPolyhedron::MakeL1Ball, py::arg("dim"),
+            cls_doc.MakeL1Ball.doc)
         .def(py::pickle(
             [](const HPolyhedron& self) {
               return std::make_pair(self.A(), self.b());
@@ -256,39 +277,65 @@ void DefineGeometryOptimization(py::module m) {
     py::implicitly_convertible<VPolytope, copyable_unique_ptr<ConvexSet>>();
   }
 
-  py::class_<IrisOptions>(m, "IrisOptions", doc.IrisOptions.doc)
-      .def(py::init<>(), doc.IrisOptions.ctor.doc)
-      .def_readwrite("require_sample_point_is_contained",
-          &IrisOptions::require_sample_point_is_contained,
-          doc.IrisOptions.require_sample_point_is_contained.doc)
-      .def_readwrite("iteration_limit", &IrisOptions::iteration_limit,
-          doc.IrisOptions.iteration_limit.doc)
-      .def_readwrite("termination_threshold",
-          &IrisOptions::termination_threshold,
-          doc.IrisOptions.termination_threshold.doc)
-      .def_readwrite("relative_termination_threshold",
-          &IrisOptions::relative_termination_threshold,
-          doc.IrisOptions.relative_termination_threshold.doc)
-      .def_readwrite("configuration_space_margin",
-          &IrisOptions::configuration_space_margin,
-          doc.IrisOptions.configuration_space_margin.doc)
-      .def_readwrite("enable_ibex", &IrisOptions::enable_ibex,
-          doc.IrisOptions.enable_ibex.doc)
-      .def("__repr__", [](const IrisOptions& self) {
-        return py::str(
-            "IrisOptions("
-            "require_sample_point_is_contained={}, "
-            "iteration_limit={}, "
-            "termination_threshold={}, "
-            "relative_termination_threshold={}, "
-            "configuration_space_margin={}, "
-            "enable_ibex={}"
-            ")")
-            .format(self.require_sample_point_is_contained,
-                self.iteration_limit, self.termination_threshold,
-                self.relative_termination_threshold,
-                self.configuration_space_margin, self.enable_ibex);
-      });
+  {
+    const auto& cls_doc = doc.IrisOptions;
+    py::class_<IrisOptions> iris_options(m, "IrisOptions", cls_doc.doc);
+    iris_options.def(py::init<>(), cls_doc.ctor.doc)
+        .def_readwrite("require_sample_point_is_contained",
+            &IrisOptions::require_sample_point_is_contained,
+            cls_doc.require_sample_point_is_contained.doc)
+        .def_readwrite("iteration_limit", &IrisOptions::iteration_limit,
+            cls_doc.iteration_limit.doc)
+        .def_readwrite("termination_threshold",
+            &IrisOptions::termination_threshold,
+            cls_doc.termination_threshold.doc)
+        .def_readwrite("relative_termination_threshold",
+            &IrisOptions::relative_termination_threshold,
+            cls_doc.relative_termination_threshold.doc)
+        .def_readwrite("configuration_space_margin",
+            &IrisOptions::configuration_space_margin,
+            cls_doc.configuration_space_margin.doc)
+        .def_readwrite("num_collision_infeasible_samples",
+            &IrisOptions::num_collision_infeasible_samples,
+            cls_doc.num_collision_infeasible_samples.doc)
+        .def_readwrite("configuration_obstacles",
+            &IrisOptions::configuration_obstacles,
+            cls_doc.configuration_obstacles.doc)
+        .def_readwrite("num_additional_constraint_infeasible_samples",
+            &IrisOptions::num_additional_constraint_infeasible_samples,
+            cls_doc.num_additional_constraint_infeasible_samples.doc)
+        .def_readwrite(
+            "random_seed", &IrisOptions::random_seed, cls_doc.random_seed.doc)
+        .def("__repr__", [](const IrisOptions& self) {
+          return py::str(
+              "IrisOptions("
+              "require_sample_point_is_contained={}, "
+              "iteration_limit={}, "
+              "termination_threshold={}, "
+              "relative_termination_threshold={}, "
+              "configuration_space_margin={}, "
+              "num_collision_infeasible_samples={}, "
+              "configuration_obstacles {}, "
+              "prog_with_additional_constraints {}, "
+              "num_additional_constraint_infeasible_samples={}, "
+              "random_seed={}"
+              ")")
+              .format(self.require_sample_point_is_contained,
+                  self.iteration_limit, self.termination_threshold,
+                  self.relative_termination_threshold,
+                  self.configuration_space_margin,
+                  self.num_collision_infeasible_samples,
+                  self.configuration_obstacles,
+                  self.prog_with_additional_constraints ? "is set"
+                                                        : "is not set",
+                  self.num_additional_constraint_infeasible_samples,
+                  self.random_seed);
+        });
+
+    DefReadWriteKeepAlive(&iris_options, "prog_with_additional_constraints",
+        &IrisOptions::prog_with_additional_constraints,
+        cls_doc.prog_with_additional_constraints.doc);
+  }
 
   m.def("Iris", &Iris, py::arg("obstacles"), py::arg("sample"),
       py::arg("domain"), py::arg("options") = IrisOptions(), doc.Iris.doc);
@@ -302,6 +349,61 @@ void DefineGeometryOptimization(py::module m) {
           &IrisInConfigurationSpace),
       py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
       doc.IrisInConfigurationSpace.doc);
+
+  // GraphOfConvexSetsOptions
+  {
+    const auto& cls_doc = doc.GraphOfConvexSetsOptions;
+    py::class_<GraphOfConvexSetsOptions> gcs_options(
+        m, "GraphOfConvexSetsOptions", cls_doc.doc);
+    gcs_options.def(py::init<>(), cls_doc.ctor.doc)
+        .def_readwrite("convex_relaxation",
+            &GraphOfConvexSetsOptions::convex_relaxation,
+            cls_doc.convex_relaxation.doc)
+        .def_readwrite("preprocessing",
+            &GraphOfConvexSetsOptions::preprocessing, cls_doc.preprocessing.doc)
+        .def_readwrite("max_rounded_paths",
+            &GraphOfConvexSetsOptions::max_rounded_paths,
+            cls_doc.max_rounded_paths.doc)
+        .def_readwrite("max_rounding_trials",
+            &GraphOfConvexSetsOptions::max_rounding_trials,
+            cls_doc.max_rounding_trials.doc)
+        .def_readwrite("flow_tolerance",
+            &GraphOfConvexSetsOptions::flow_tolerance,
+            cls_doc.flow_tolerance.doc)
+        .def_readwrite("rounding_seed",
+            &GraphOfConvexSetsOptions::rounding_seed, cls_doc.rounding_seed.doc)
+        .def_property("solver_options",
+            py::cpp_function(
+                [](GraphOfConvexSetsOptions& self) {
+                  return &(self.solver_options);
+                },
+                py_rvp::reference_internal),
+            py::cpp_function([](GraphOfConvexSetsOptions& self,
+                                 solvers::SolverOptions solver_options) {
+              self.solver_options = std::move(solver_options);
+            }),
+            cls_doc.solver_options.doc)
+        .def("__repr__", [](const GraphOfConvexSetsOptions& self) {
+          return py::str(
+              "GraphOfConvexSetsOptions("
+              "convex_relaxation={}, "
+              "preprocessing={}, "
+              "max_rounded_paths={}, "
+              "max_rounding_trials={}, "
+              "flow_tolerance={}, "
+              "rounding_seed={}, "
+              "solver={}, "
+              "solver_options={}, "
+              ")")
+              .format(self.convex_relaxation, self.preprocessing,
+                  self.max_rounded_paths, self.max_rounding_trials,
+                  self.flow_tolerance, self.rounding_seed, self.solver,
+                  self.solver_options);
+        });
+
+    DefReadWriteKeepAlive(&gcs_options, "solver",
+        &GraphOfConvexSetsOptions::solver, cls_doc.solver.doc);
+  }
 
   // GraphOfConvexSets
   {
@@ -368,6 +470,9 @@ void DefineGeometryOptimization(py::module m) {
                   return out;
                 },
                 cls_doc.Edges.doc)
+            .def("ClearAllPhiConstraints",
+                &GraphOfConvexSets::ClearAllPhiConstraints,
+                cls_doc.ClearAllPhiConstraints.doc)
             .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
                 py::arg("result") = std::nullopt, py::arg("show_slacks") = true,
                 py::arg("precision") = 3, py::arg("scientific") = false,
@@ -375,26 +480,48 @@ void DefineGeometryOptimization(py::module m) {
             .def("SolveShortestPath",
                 overload_cast_explicit<solvers::MathematicalProgramResult,
                     GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
-                    bool, const solvers::SolverInterface*,
-                    const std::optional<solvers::SolverOptions>&>(
+                    const GraphOfConvexSetsOptions&>(
                     &GraphOfConvexSets::SolveShortestPath),
                 py::arg("source_id"), py::arg("target_id"),
-                py::arg("convex_relaxation") = false,
-                py::arg("solver") = nullptr,
-                py::arg("solver_options") = std::nullopt,
+                py::arg("options") = GraphOfConvexSetsOptions(),
                 cls_doc.SolveShortestPath.doc_by_id)
             .def("SolveShortestPath",
+                overload_cast_explicit<solvers::MathematicalProgramResult,
+                    const GraphOfConvexSets::Vertex&,
+                    const GraphOfConvexSets::Vertex&,
+                    const GraphOfConvexSetsOptions&>(
+                    &GraphOfConvexSets::SolveShortestPath),
+                py::arg("source"), py::arg("target"),
+                py::arg("options") = GraphOfConvexSetsOptions(),
+                cls_doc.SolveShortestPath.doc_by_reference);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    graph_of_convex_sets
+        .def("SolveShortestPath",
+            WrapDeprecated(cls_doc.SolveShortestPath.doc_deprecated_by_id,
+                overload_cast_explicit<solvers::MathematicalProgramResult,
+                    GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
+                    bool, const solvers::SolverInterface*,
+                    const std::optional<solvers::SolverOptions>&>(
+                    &GraphOfConvexSets::SolveShortestPath)),
+            py::arg("source_id"), py::arg("target_id"),
+            py::arg("convex_relaxation"), py::arg("solver") = nullptr,
+            py::arg("solver_options") = std::nullopt,
+            cls_doc.SolveShortestPath.doc_deprecated_by_id)
+        .def("SolveShortestPath",
+            WrapDeprecated(
+                cls_doc.SolveShortestPath.doc_deprecated_by_reference,
                 overload_cast_explicit<solvers::MathematicalProgramResult,
                     const GraphOfConvexSets::Vertex&,
                     const GraphOfConvexSets::Vertex&, bool,
                     const solvers::SolverInterface*,
                     const std::optional<solvers::SolverOptions>&>(
-                    &GraphOfConvexSets::SolveShortestPath),
-                py::arg("source"), py::arg("target"),
-                py::arg("convex_relaxation") = false,
-                py::arg("solver") = nullptr,
-                py::arg("solver_options") = std::nullopt,
-                cls_doc.SolveShortestPath.doc_by_reference);
+                    &GraphOfConvexSets::SolveShortestPath)),
+            py::arg("source"), py::arg("target"), py::arg("convex_relaxation"),
+            py::arg("solver") = nullptr,
+            py::arg("solver_options") = std::nullopt,
+            cls_doc.SolveShortestPath.doc_deprecated_by_reference);
+#pragma GCC diagnostic pop
 
     BindIdentifier<GraphOfConvexSets::VertexId>(
         graph_of_convex_sets, "VertexId", doc.GraphOfConvexSets.VertexId.doc);
@@ -419,6 +546,30 @@ void DefineGeometryOptimization(py::module m) {
             vertex_doc.x.doc)
         .def("set", &GraphOfConvexSets::Vertex::set, py_rvp::reference_internal,
             vertex_doc.set.doc)
+        .def("AddCost",
+            py::overload_cast<const symbolic::Expression&>(
+                &GraphOfConvexSets::Vertex::AddCost),
+            py::arg("e"), vertex_doc.AddCost.doc_expression)
+        .def("AddCost",
+            py::overload_cast<const solvers::Binding<solvers::Cost>&>(
+                &GraphOfConvexSets::Vertex::AddCost),
+            py::arg("binding"), vertex_doc.AddCost.doc_binding)
+        .def("AddConstraint",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const symbolic::Formula&>(
+                &GraphOfConvexSets::Vertex::AddConstraint),
+            py::arg("f"), vertex_doc.AddConstraint.doc_formula)
+        .def("AddConstraint",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const solvers::Binding<solvers::Constraint>&>(
+                &GraphOfConvexSets::Vertex::AddConstraint),
+            py::arg("binding"), vertex_doc.AddCost.doc_binding)
+        .def("GetCosts", &GraphOfConvexSets::Vertex::GetCosts,
+            vertex_doc.GetCosts.doc)
+        .def("GetConstraints", &GraphOfConvexSets::Vertex::GetConstraints,
+            vertex_doc.GetConstraints.doc)
+        .def("GetSolutionCost", &GraphOfConvexSets::Vertex::GetSolutionCost,
+            py::arg("result"), vertex_doc.GetSolutionCost.doc)
         .def("GetSolution", &GraphOfConvexSets::Vertex::GetSolution,
             py::arg("result"), vertex_doc.GetSolution.doc);
 
@@ -478,6 +629,8 @@ void DefineGeometryOptimization(py::module m) {
         .def("GetSolutionPhiXv", &GraphOfConvexSets::Edge::GetSolutionPhiXv,
             py::arg("result"), edge_doc.GetSolutionPhiXv.doc);
   }
+
+  // NOLINTNEXTLINE(readability/fn_size)
 }
 
 }  // namespace pydrake

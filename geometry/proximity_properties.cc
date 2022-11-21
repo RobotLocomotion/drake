@@ -7,6 +7,7 @@ namespace internal {
 const char* const kMaterialGroup = "material";
 const char* const kFriction = "coulomb_friction";
 const char* const kHcDissipation = "hunt_crossley_dissipation";
+const char* const kRelaxationTime = "relaxation_time";
 const char* const kPointStiffness = "point_contact_stiffness";
 
 const char* const kHydroGroup = "hydroelastic";

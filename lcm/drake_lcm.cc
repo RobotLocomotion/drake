@@ -7,11 +7,13 @@
 #include <vector>
 
 #include <glib.h>
+#include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/scope_exit.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace lcm {
@@ -83,12 +85,6 @@ DrakeLcm::DrakeLcm(const DrakeLcmParams& params)
   }
 }
 
-DrakeLcm::DrakeLcm(std::string lcm_url, bool defer_initialization)
-    : DrakeLcm(DrakeLcmParams{
-          .lcm_url = std::move(lcm_url),
-          .channel_suffix = {},
-          .defer_initialization = defer_initialization}) {}
-
 std::string DrakeLcm::get_lcm_url() const {
   return impl_->lcm_url_;
 }
@@ -139,6 +135,9 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
   static std::shared_ptr<DrakeSubscription> CreateMultichannel(
       ::lcm::LCM* native_instance,
       MultichannelHandlerFunction multichannel_handler) {
+    // TODO(jwnimmer-tri) If a channel_suffix was given, we should use it here
+    // for efficiency (to drop unwanted packets as early as possible). Be sure
+    // to regex-escape it first.
     return Create(native_instance, ".*", std::move(multichannel_handler));
   }
 
@@ -283,6 +282,23 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeAllChannels(
     MultichannelHandlerFunction handler) {
   DRAKE_THROW_UNLESS(handler != nullptr);
   impl_->CleanUpOldSubscriptions();
+  const std::string& suffix = impl_->channel_suffix_;
+  if (!suffix.empty()) {
+    handler =
+        [&suffix, handler](std::string_view channel,
+                           const void* data, int length) {
+          // TODO(ggould-tri) Use string_view::ends_with() once we have C++20.
+          if (channel.length() >= suffix.length() &&
+              channel.substr(channel.length() - suffix.length()) == suffix) {
+            channel.remove_suffix(suffix.length());
+            handler(channel, data, length);
+          } else {
+            drake::log()->debug("DrakeLcm with suffix {} received message on"
+                                " channel {}, which lacks the suffix.",
+                                suffix, channel);
+          }
+        };
+  }
 
   // Add the new subscriber.
   auto result = DrakeSubscription::CreateMultichannel(

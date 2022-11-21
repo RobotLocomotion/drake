@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
+#include <filesystem>
 #include <memory>
 #include <regex>
 #include <sstream>
@@ -9,8 +10,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -21,6 +22,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
+#include "drake/multibody/parsing/detail_urdf_parser.h"
 #include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
@@ -30,6 +32,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/systems/framework/context.h"
 
@@ -65,12 +68,21 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
   }
 
+  static ParserInterface& TestingSelect(const DiagnosticPolicy&,
+                                        const std::string&) {
+    // TODO(rpoyner-tri): add more formats here, as tests use them.
+    static never_destroyed<UrdfParserWrapper> urdf;
+    return urdf.access();
+  }
+
+
   ModelInstanceIndex AddModelFromSdfFile(
       const std::string& file_name,
       const std::string& model_name) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    ParsingWorkspace w{package_map_, diagnostic_policy_,
+                       &plant_, &resolver, TestingSelect};
     std::optional<ModelInstanceIndex> result = AddModelFromSdf(
         data_source, model_name, w);
     EXPECT_TRUE(result.has_value());
@@ -82,7 +94,8 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
       const std::string& file_name) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    ParsingWorkspace w{package_map_, diagnostic_policy_,
+                       &plant_, &resolver, TestingSelect};
     auto result = AddModelsFromSdf(data_source, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
@@ -92,7 +105,8 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
       const std::string& file_contents) {
     const DataSource data_source{DataSource::kContents, &file_contents};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
+    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_,
+                       &resolver, TestingSelect};
     auto result = AddModelsFromSdf(data_source, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
@@ -178,7 +192,7 @@ TEST_F(SdfParserTest, PackageMapSpecified) {
 
   const std::string full_sdf_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/sdfs/box.sdf");
-  filesystem::path package_path = full_sdf_filename;
+  std::filesystem::path package_path = full_sdf_filename;
   package_path = package_path.parent_path();
   package_path = package_path.parent_path();
 
@@ -356,7 +370,7 @@ TEST_F(SdfParserTest, EntireInertialTagOmitted) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("entire_inertial_tag_omitted"));
-  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_EQ(body->default_mass(), 1.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -377,7 +391,7 @@ TEST_F(SdfParserTest, InertiaTagOmitted) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("inertia_tag_omitted"));
-  EXPECT_EQ(body->get_default_mass(), 2.);
+  EXPECT_EQ(body->default_mass(), 2.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -405,7 +419,7 @@ TEST_F(SdfParserTest, MassTagOmitted) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("mass_tag_omitted"));
-  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_EQ(body->default_mass(), 1.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
   EXPECT_EQ(body->default_rotational_inertia().get_products(),
             Vector3d::Constant(0.1));
@@ -432,7 +446,7 @@ TEST_F(SdfParserTest, MasslessBody) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("massless_link"));
-  EXPECT_EQ(body->get_default_mass(), 0.);
+  EXPECT_EQ(body->default_mass(), 0.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -458,7 +472,7 @@ TEST_F(SdfParserTest, PointMass) {
 </model>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
       &plant_.GetBodyByName("point_mass"));
-  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_EQ(body->default_mass(), 1.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
@@ -708,7 +722,8 @@ TEST_F(SdfParserTest, IncludeTags) {
   ASSERT_EQ(plant_.num_bodies(), 1);
   ASSERT_EQ(plant_.num_joints(), 0);
 
-  package_map_.PopulateFromFolder(filesystem::path(full_name).parent_path());
+  package_map_.PopulateFromFolder(
+      std::filesystem::path(full_name).parent_path());
   AddModelsFromSdfFile(full_name);
   plant_.Finalize();
 
@@ -836,9 +851,8 @@ TEST_F(SdfParserTest, JointParsingTest) {
       prismatic_joint.acceleration_upper_limits(), Vector1d(10)));
 
   // Limitless revolute joint
-  DRAKE_EXPECT_NO_THROW(
-      plant_.GetJointByName<RevoluteJoint>("revolute_joint_no_limits",
-                                           instance1));
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<RevoluteJoint>(
+      "revolute_joint_no_limits", instance1));
   const RevoluteJoint<double>& no_limit_joint =
       plant_.GetJointByName<RevoluteJoint>("revolute_joint_no_limits",
                                            instance1);
@@ -852,8 +866,8 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
-  EXPECT_TRUE(CompareMatrices(
-      no_limit_joint.acceleration_lower_limits(), neg_inf));
+  EXPECT_TRUE(
+      CompareMatrices(no_limit_joint.acceleration_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.acceleration_upper_limits(), inf));
 
   // Ball joint
@@ -895,6 +909,31 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_lower_limits(),
                               neg_inf2));
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
+  // axis = (0, 0, 1) and axis2 = (0, 1, 0) in the model frame (aka the world
+  // frame in this case). So Ix, Iy, Iz are (0, 0, 1), (0, 1, 0), and (-1, 0, 0)
+  // respectively when expressed in the world frame. Since M = F = I and C = P =
+  // W, We have R_PF = R_CM = R_WI, and R_WI has column vectors Ix_W, Iy_W, and
+  // Iz_W.
+  Matrix3<double> R_WI;
+  // clang-format off
+  R_WI << 0, 0, -1,
+          0, 1, 0,
+          1, 0, 0;
+  // clang-format on
+  // The intermediate frame I and the joint frame J are off by a rotation and
+  // p_WI = p_WJ.
+  const Vector3d p_WI(
+      1.0, 2.0, 3.0); /* To be kept in sync with the testing SDFormat file. */
+  const RigidTransform<double> X_WI =
+      RigidTransform<double>(math::RotationMatrix<double>(R_WI), p_WI);
+  // In the SDFormat file, the frames on all links are coincident with the
+  // world frame. So p_PJ = p_CJ = p_WJ = p_WI. Therefore, X_PJ = X_CJ = X_WJ.
+  EXPECT_TRUE(universal_joint.frame_on_parent()
+                  .GetFixedPoseInBodyFrame()
+                  .IsExactlyEqualTo(X_WI));
+  EXPECT_TRUE(universal_joint.frame_on_child()
+                  .GetFixedPoseInBodyFrame()
+                  .IsExactlyEqualTo(X_WI));
 
   // Planar joint
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName<PlanarJoint>("planar_joint",
@@ -928,6 +967,48 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(planar_joint2.position_upper_limits(), inf3));
   EXPECT_TRUE(CompareMatrices(planar_joint2.velocity_lower_limits(), neg_inf3));
   EXPECT_TRUE(CompareMatrices(planar_joint2.velocity_upper_limits(), inf3));
+
+  // Continuous joint
+  DRAKE_EXPECT_NO_THROW(
+      plant_.GetJointByName<RevoluteJoint>("continuous_joint", instance1));
+  const RevoluteJoint<double>& continuous_joint =
+      plant_.GetJointByName<RevoluteJoint>("continuous_joint", instance1);
+  EXPECT_EQ(continuous_joint.name(), "continuous_joint");
+  EXPECT_EQ(continuous_joint.parent_body().name(), "link7");
+  EXPECT_EQ(continuous_joint.child_body().name(), "link8");
+  EXPECT_EQ(continuous_joint.revolute_axis(), Vector3d::UnitZ());
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.position_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(continuous_joint.position_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.velocity_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(continuous_joint.velocity_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.acceleration_lower_limits(), neg_inf));
+  EXPECT_TRUE(
+      CompareMatrices(continuous_joint.acceleration_upper_limits(), inf));
+
+  // Screw joint
+  DRAKE_EXPECT_NO_THROW(
+      plant_.GetJointByName<ScrewJoint>("screw_joint", instance1));
+  const ScrewJoint<double>& screw_joint =
+      plant_.GetJointByName<ScrewJoint>("screw_joint", instance1);
+  EXPECT_EQ(screw_joint.name(), "screw_joint");
+  EXPECT_EQ(screw_joint.parent_body().name(), "link8");
+  EXPECT_EQ(screw_joint.child_body().name(), "link9");
+  EXPECT_EQ(screw_joint.screw_axis(), Vector3d::UnitX());
+  EXPECT_EQ(screw_joint.screw_pitch(), 0.04);
+  EXPECT_EQ(screw_joint.damping(), 0.1);
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.position_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(screw_joint.position_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.velocity_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(screw_joint.velocity_upper_limits(), inf));
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.acceleration_lower_limits(), neg_inf));
+  EXPECT_TRUE(
+      CompareMatrices(screw_joint.acceleration_upper_limits(), inf));
 }
 
 // Tests the error handling for an unsupported joint type (when actuated).
@@ -957,6 +1038,86 @@ TEST_F(SdfParserTest, ActuatedUniversalJointParsingTest) {
   ClearDiagnostics();
 }
 
+// Tests the error handling when axis2 isn't specified for universal joints.
+TEST_F(SdfParserTest, UniversalJointAxisParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz> 0 0 1</xyz>
+    </axis>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstError(),
+              ::testing::MatchesRegex(
+                  ".*Both axis and axis2 must be specified.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for an non-orthogonal axis and axis2 in universal
+// joints.
+TEST_F(SdfParserTest, UniversalJointNonOrthogonalAxisParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+    </axis>
+    <axis2>
+      <xyz>0 0 1</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(
+      FormatFirstError(),
+      ::testing::MatchesRegex(".*axis and axis2 must be orthogonal.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for axis and axis2 with incompatible damping
+// coefficients in universal joints.
+TEST_F(SdfParserTest, UniversalJointDampingCoeffParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <limit>
+        <effort>0</effort>
+      </limit>
+      <dynamics>
+        <damping>0.1</damping>
+      </dynamics>
+      <xyz>0 0 1</xyz>
+    </axis>
+    <axis2>
+      <limit>
+        <effort>0</effort>
+      </limit>
+      <dynamics>
+        <damping>0.2</damping>
+      </dynamics>
+      <xyz>0 1 0</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(
+      FormatFirstWarning(),
+      ::testing::MatchesRegex(
+          ".*damping must be equal.*jerry.*damping coefficient.*0.1.*is "
+          "used.*0.2.*is ignored.*should be explicitly defined as 0.1 to "
+          "match.*"));
+  ClearDiagnostics();
+}
+
 // Tests the error handling for an unsupported joint type (when actuated).
 TEST_F(SdfParserTest, ActuatedBallJointParsingTest) {
   ParseTestString(R"""(
@@ -975,36 +1136,6 @@ TEST_F(SdfParserTest, ActuatedBallJointParsingTest) {
 </model>)""");
   EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
       ".*effort limits.*ball joint.*not implemented.*"));
-  ClearDiagnostics();
-}
-
-// Tests the error handling for an unsupported joint type.
-TEST_F(SdfParserTest, ContinuousJointParsingTest) {
-  ParseTestString(R"""(
-<model name="molly">
-  <link name="larry" />
-  <joint name="jerry" type="continuous">
-    <parent>world</parent>
-    <child>larry</child>
-  </joint>
-</model>)""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
-      ".*continuous.*not supported.*jerry.*"));
-  ClearDiagnostics();
-}
-
-// Tests the error handling for an unsupported joint type.
-TEST_F(SdfParserTest, ScrewJointParsingTest) {
-  ParseTestString(R"""(
-<model name="molly">
-  <link name="larry" />
-  <joint name="jerry" type="screw">
-    <parent>world</parent>
-    <child>larry</child>
-  </joint>
-</model>)""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
-      ".*screw.*not supported.*jerry.*"));
   ClearDiagnostics();
 }
 
@@ -1545,7 +1676,7 @@ TEST_F(SdfParserTest, BushingParsingBad3) {
 TEST_F(SdfParserTest, ReflectedInertiaParametersParsing) {
   AddSceneGraph();
   // Common SDF string with format options for the two custom tags.
-  const std::string test_string = R"""(
+  constexpr const char* test_string = R"""(
     <model name='ReflectedInertiaModel_{2}'>
       <link name='A'/>
       <link name='B'/>
@@ -2258,7 +2389,7 @@ TEST_F(SdfParserTest, CollisionFilterGroupParsingTest) {
 
   // Read in the SDF file.
   package_map_.PopulateFromFolder(
-      filesystem::path(full_sdf_filename).parent_path());
+      std::filesystem::path(full_sdf_filename).parent_path());
   AddModelFromSdfFile(full_sdf_filename, "");
 
   // Get geometry ids for all the bodies.
@@ -2409,7 +2540,8 @@ TEST_F(SdfParserTest, MergeInclude) {
   ASSERT_EQ(plant_.num_bodies(), 1);
   ASSERT_EQ(plant_.num_joints(), 0);
 
-  package_map_.PopulateFromFolder(filesystem::path(full_name).parent_path());
+  package_map_.PopulateFromFolder(
+      std::filesystem::path(full_name).parent_path());
   AddModelsFromSdfFile(full_name);
   plant_.Finalize();
 
@@ -2450,6 +2582,7 @@ TEST_F(SdfParserTest, UnsupportedElements) {
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*lighting"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*script"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*shader"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*drake:QQQ_dynamic"));
 }
 
 }  // namespace

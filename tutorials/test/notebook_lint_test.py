@@ -13,12 +13,15 @@ _PREAMBLE = """\
    "source": [
     "# TITLE PLACEHOLDER\\n",
     "For instructions on how to run these tutorial notebooks, please see the \
-[README](https://github.com/RobotLocomotion/drake/blob/master/tutorials/README.md).\\n"
+[index](./index.ipynb).\\n"
 """
 
 
 def _check_preamble(name, contents):
-    """Every file must open with a standard preamble."""
+    """Every file except the index must open with a standard preamble."""
+    if name == "tutorials/index.ipynb":
+        return 0
+    print(name)
     for i, expected_line in enumerate(_PREAMBLE.splitlines()):
         actual_line = contents[i]
         if "PLACEHOLDER" in expected_line:

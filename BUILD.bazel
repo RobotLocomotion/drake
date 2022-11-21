@@ -52,7 +52,6 @@ install(
         "//lcmtypes:install",
         "//manipulation/models:install_data",
         "//setup:install",
-        "//tools/install/cmake:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
         "//tutorials:install",
@@ -90,8 +89,11 @@ install_test(
 )
 
 add_lint_tests(
-    bazel_lint_extra_srcs = [
-        "cmake/external/workspace/spdlog/BUILD.bazel.in",
-        "cmake/external/workspace/fmt/BUILD.bazel.in",
-    ],
+    bazel_lint_extra_srcs = glob(
+        [
+            "cmake/external/workspace/**/*.bazel.in",
+            "cmake/external/workspace/**/*.bzl",
+        ],
+        allow_empty = False,
+    ),
 )

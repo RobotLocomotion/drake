@@ -46,13 +46,6 @@ JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
        discrete_state_ticket(latched_position_measured_),
        position_measured_or_zero_->ticket()});
 
-  state_output_ = &DeclareVectorOutputPort(
-      "state", (num_joints + num_fingers) * 2,
-      [this](const Context<double>& context, BasicVector<double>* output) {
-        output->SetFromVector(this->input_state(context));
-      },
-      {groomed_input_->ticket()});
-
   commanded_position_output_ = &DeclareVectorOutputPort(
       "position", num_joints + num_fingers,
       &JacoCommandReceiver::CalcPositionOutput,
@@ -61,6 +54,10 @@ JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
   commanded_velocity_output_ = &DeclareVectorOutputPort(
       "velocity", num_joints + num_fingers,
       &JacoCommandReceiver::CalcVelocityOutput,
+      {groomed_input_->ticket()});
+
+  time_output_ = &DeclareVectorOutputPort(
+      "time", 1, &JacoCommandReceiver::CalcTimeOutput,
       {groomed_input_->ticket()});
 }
 
@@ -176,26 +173,6 @@ void JacoCommandReceiver::CalcInput(
   }
 }
 
-Eigen::VectorXd JacoCommandReceiver::input_state(
-    const Context<double>& context) const {
-  const auto& message = groomed_input_->Eval<lcmt_jaco_command>(context);
-  Eigen::VectorXd state((num_joints_ + num_fingers_) * 2);
-  state.head(num_joints_) = Eigen::Map<const VectorXd>(
-      message.joint_position.data(), message.joint_position.size());
-  if (num_fingers_) {
-    state.segment(num_joints_, num_fingers_) = Eigen::Map<const VectorXd>(
-        message.finger_position.data(), message.finger_position.size());
-  }
-  state.segment(num_joints_ + num_fingers_, num_joints_) =
-      Eigen::Map<const VectorXd>(
-          message.joint_velocity.data(), message.joint_velocity.size());
-  if (num_fingers_) {
-    state.tail(num_fingers_) = Eigen::Map<const VectorXd>(
-      message.finger_velocity.data(), message.finger_velocity.size());
-  }
-  return state;
-}
-
 void JacoCommandReceiver::CalcPositionOutput(
     const Context<double>& context, BasicVector<double>* output) const {
   const auto& message = groomed_input_->Eval<lcmt_jaco_command>(context);
@@ -244,6 +221,12 @@ void JacoCommandReceiver::CalcVelocityOutput(
   }
 
   output->SetFromVector(velocity);
+}
+
+void JacoCommandReceiver::CalcTimeOutput(
+    const Context<double>& context, BasicVector<double>* output) const {
+  const auto& message = groomed_input_->Eval<lcmt_jaco_command>(context);
+  (*output)[0] = static_cast<double>(message.utime) / 1e6;
 }
 
 }  // namespace kinova_jaco

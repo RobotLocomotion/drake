@@ -195,13 +195,15 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Returns a reference to an InputPort given its `port_index`.
   @pre `port_index` selects an existing input port of this System. */
   const InputPortBase& get_input_port_base(InputPortIndex port_index) const {
-    return GetInputPortBaseOrThrow(__func__, port_index);
+    return GetInputPortBaseOrThrow(__func__, port_index,
+                                   /* warn_deprecated = */ true);
   }
 
   /** Returns a reference to an OutputPort given its `port_index`.
   @pre `port_index` selects an existing output port of this System. */
   const OutputPortBase& get_output_port_base(OutputPortIndex port_index) const {
-    return GetOutputPortBaseOrThrow(__func__, port_index);
+    return GetOutputPortBaseOrThrow(__func__, port_index,
+                                    /* warn_deprecated = */ true);
   }
 
   /** Returns the total dimension of all of the vector-valued input ports (as if
@@ -414,6 +416,8 @@ class SystemBase : public internal::SystemMessageInterface {
   @pre `index` selects an existing input port of this System. */
   DependencyTicket input_port_ticket(InputPortIndex index) const {
     DRAKE_DEMAND(0 <= index && index < num_input_ports());
+    if (input_ports_[index]->get_deprecation().has_value())
+      WarnPortDeprecation(/* is_input = */ true, index);
     return input_ports_[index]->ticket();
   }
 
@@ -533,6 +537,13 @@ class SystemBase : public internal::SystemMessageInterface {
   @see System::EvalNonConservativePower() */
   static DependencyTicket pnc_ticket() {
     return DependencyTicket(internal::kPncTicket);
+  }
+
+  /** (Internal use only) Returns a ticket for the cache entry that holds the
+  unique periodic discrete update computation.
+  @see System::EvalUniquePeriodicDiscreteUpdate() */
+  static DependencyTicket xd_unique_periodic_update_ticket() {
+    return DependencyTicket(internal::kXdUniquePeriodicUpdateTicket);
   }
 
   /** (Internal use only) Returns a ticket indicating dependence on the output
@@ -804,6 +815,7 @@ class SystemBase : public internal::SystemMessageInterface {
           all_sources_ticket()});
   //@}
 
+  // TODO(jwnimmer-tri) This function does not meet the criteria for inline.
   /** (Internal use only) Adds an already-constructed input port to this System.
   Insists that the port already contains a reference to this System, and that
   the port's index is already set to the next available input port index for
@@ -812,14 +824,15 @@ class SystemBase : public internal::SystemMessageInterface {
   // TODO(sherm1) Add check on suitability of `size` parameter for the port's
   // data type.
   void AddInputPort(std::unique_ptr<InputPortBase> port) {
+    using internal::PortBaseAttorney;
     DRAKE_DEMAND(port != nullptr);
-    DRAKE_DEMAND(&port->get_system_interface() == this);
+    DRAKE_DEMAND(&PortBaseAttorney::get_system_interface(*port) == this);
     DRAKE_DEMAND(port->get_index() == num_input_ports());
     DRAKE_DEMAND(!port->get_name().empty());
 
     // Check that name is unique.
     for (InputPortIndex i{0}; i < num_input_ports(); i++) {
-      if (port->get_name() == get_input_port_base(i).get_name()) {
+      if (port->get_name() == input_ports_[i]->get_name()) {
         throw std::logic_error("System " + GetSystemName() +
             " already has an input port named " +
             port->get_name());
@@ -829,6 +842,7 @@ class SystemBase : public internal::SystemMessageInterface {
     input_ports_.push_back(std::move(port));
   }
 
+  // TODO(jwnimmer-tri) This function does not meet the criteria for inline.
   /** (Internal use only) Adds an already-constructed output port to this
   System. Insists that the port already contains a reference to this System, and
   that the port's index is already set to the next available output port index
@@ -837,14 +851,15 @@ class SystemBase : public internal::SystemMessageInterface {
   // TODO(sherm1) Add check on suitability of `size` parameter for the port's
   // data type.
   void AddOutputPort(std::unique_ptr<OutputPortBase> port) {
+    using internal::PortBaseAttorney;
     DRAKE_DEMAND(port != nullptr);
-    DRAKE_DEMAND(&port->get_system_interface() == this);
+    DRAKE_DEMAND(&PortBaseAttorney::get_system_interface(*port) == this);
     DRAKE_DEMAND(port->get_index() == num_output_ports());
     DRAKE_DEMAND(!port->get_name().empty());
 
     // Check that name is unique.
     for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
-      if (port->get_name() == get_output_port_base(i).get_name()) {
+      if (port->get_name() == output_ports_[i]->get_name()) {
         throw std::logic_error("System " + GetSystemName() +
                                " already has an output port named " +
                                port->get_name());
@@ -1034,28 +1049,40 @@ class SystemBase : public internal::SystemMessageInterface {
   /** (Internal use only) Returns the InputPortBase at index `port_index`,
   throwing std::exception we don't like the port index. The name of the
   public API method that received the bad index is provided in `func` and is
-  included in the error message. */
+  included in the error message. The `warn_deprecated` governs whether or not
+  a deprecation warning should occur when the `port_index` is deprecated; calls
+  made on behalf of the user should pass `true`; calls made on behalf or the
+  framework internals should pass `false`. */
   const InputPortBase& GetInputPortBaseOrThrow(const char* func,
-                                               int port_index) const {
+                                               int port_index,
+                                               bool warn_deprecated) const {
     if (port_index < 0)
       ThrowNegativePortIndex(func, port_index);
     const InputPortIndex port(port_index);
     if (port_index >= num_input_ports())
       ThrowInputPortIndexOutOfRange(func, port);
+    if (warn_deprecated && input_ports_[port]->get_deprecation().has_value())
+      WarnPortDeprecation(/* is_input = */ true, port_index);
     return *input_ports_[port];
   }
 
   /** (Internal use only) Returns the OutputPortBase at index `port_index`,
   throwing std::exception if we don't like the port index. The name of the
   public API method that received the bad index is provided in `func` and is
-  included in the error message. */
+  included in the error message. The `warn_deprecated` governs whether or not
+  a deprecation warning should occur when the `port_index` is deprecated; calls
+  made on behalf of the user should pass `true`; calls made on behalf or the
+  framework internals should pass `false`. */
   const OutputPortBase& GetOutputPortBaseOrThrow(const char* func,
-                                                 int port_index) const {
+                                                 int port_index,
+                                                 bool warn_deprecated) const {
     if (port_index < 0)
       ThrowNegativePortIndex(func, port_index);
     const OutputPortIndex port(port_index);
     if (port_index >= num_output_ports())
       ThrowOutputPortIndexOutOfRange(func, port);
+    if (warn_deprecated && output_ports_[port]->get_deprecation().has_value())
+      WarnPortDeprecation(/* is_input = */ false, port_index);
     return *output_ports_[port_index];
   }
 
@@ -1189,6 +1216,10 @@ class SystemBase : public internal::SystemMessageInterface {
 
   [[noreturn]] void ThrowNotCreatedForThisSystemImpl(
       const std::string& nice_type_name, internal::SystemId id) const;
+
+  // Given a deprecated input or output port (as determined by `input`), logs
+  // a warning (just once per process) about the deprecation.
+  void WarnPortDeprecation(bool is_input, int port_index) const;
 
   // Ports and cache entries hold their own DependencyTickets. Note that the
   // addresses of the elements are stable even if the std::vectors are resized.

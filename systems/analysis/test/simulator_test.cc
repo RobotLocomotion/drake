@@ -7,6 +7,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
@@ -2106,7 +2107,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
       DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
           TriggerType::kInitialization));
 
-      DeclarePeriodicDiscreteUpdate(0.1);
+      DeclarePeriodicDiscreteUpdateNoHandler(0.1);
       DeclarePerStepEvent<UnrestrictedUpdateEvent<double>>(
           UnrestrictedUpdateEvent<double>(
               TriggerType::kPerStep));

@@ -129,7 +129,6 @@ drake_cc_library(
     hdrs = ["abstract_values.h"],
     deps = [
         ":framework_common",
-        "//common:autodiff",
         "//common:essential",
         "//common:value",
     ],
@@ -156,7 +155,6 @@ drake_cc_library(
         ":framework_common",
         ":system_scalar_converter",
         ":vector",
-        "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
         "//common:value",
@@ -190,7 +188,6 @@ drake_cc_library(
     deps = [
         ":abstract_values",
         ":context",
-        "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
         "//common:value",
@@ -474,12 +471,10 @@ drake_cc_library(
         ":system_scalar_converter",
         ":system_visitor",
         ":witness_function",
-        "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
         "//common:pointer_cast",
         "//common:random",
-        "//common:symbolic",
         "//common:type_safe_index",
         "//common:unused",
         "//common:value",
@@ -628,13 +623,16 @@ drake_cc_library(
     name = "diagram",
     srcs = ["diagram.cc"],
     hdrs = ["diagram.h"],
-    deps = [
-        ":abstract_value_cloner",
+    interface_deps = [
         ":diagram_context",
         ":diagram_output_port",
         ":system",
         "//common:default_scalars",
         "//common:essential",
+    ],
+    deps = [
+        ":abstract_value_cloner",
+        "//common:pointer_cast",
     ],
 )
 
@@ -642,10 +640,13 @@ drake_cc_library(
     name = "diagram_builder",
     srcs = ["diagram_builder.cc"],
     hdrs = ["diagram_builder.h"],
-    deps = [
+    interface_deps = [
         ":diagram",
         "//common:default_scalars",
         "//common:essential",
+    ],
+    deps = [
+        "//common:pointer_cast",
     ],
 )
 
@@ -657,7 +658,6 @@ drake_cc_library(
         ":context",
         "//common:default_scalars",
         "//common:essential",
-        "//common:symbolic",
         "//common:type_safe_index",
         "//common:unused",
     ],
@@ -676,11 +676,12 @@ drake_cc_library(
     name = "system_symbolic_inspector",
     srcs = ["system_symbolic_inspector.cc"],
     hdrs = ["system_symbolic_inspector.h"],
-    deps = [
-        ":context",
+    interface_deps = [
+        "//common/symbolic:expression",
         ":system",
-        "//common:polynomial",
-        "//common:symbolic",
+    ],
+    deps = [
+        "//common/symbolic:polynomial",
     ],
 )
 
@@ -719,9 +720,7 @@ drake_cc_googletest(
     name = "basic_vector_test",
     deps = [
         ":vector",
-        "//common:autodiff",
         "//common:essential",
-        "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities:my_vector",
@@ -881,11 +880,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "leaf_system_deprecation_test",
+    deps = [
+        ":leaf_system",
+    ],
+)
+
+drake_cc_googletest(
     name = "model_values_test",
     deps = [
         ":model_values",
-        "//common:autodiff",
-        "//common:symbolic",
         "//systems/framework/test_utilities",
     ],
 )
@@ -987,6 +991,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "system_base_test",
     deps = [
+        ":discrete_values",
         ":system_base",
         "//common:essential",
         "//common/test_utilities:expect_no_throw",
@@ -1033,6 +1038,7 @@ drake_cc_googletest(
     deps = [
         ":leaf_system",
         ":system_symbolic_inspector",
+        "//common/symbolic:polynomial",
         "//examples/pendulum:pendulum_plant",
     ],
 )

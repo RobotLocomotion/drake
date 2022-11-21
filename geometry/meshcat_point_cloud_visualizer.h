@@ -62,7 +62,7 @@ class MeshcatPointCloudVisualizer final : public systems::LeafSystem<T> {
   `has_rgbs() == false` for the cloud on the input port. */
   void set_default_rgba(const Rgba& rgba) { default_rgba_ = rgba; }
 
-  /** Calls Meschat::Delete(path), where `path` is the value passed in the
+  /** Calls Meshcat::Delete(path), where `path` is the value passed in the
    constructor. */
   void Delete() const;
 

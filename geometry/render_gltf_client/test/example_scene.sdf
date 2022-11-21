@@ -1,0 +1,162 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.8">
+  <!-- This adds different primitive shapes and loads a YCB mustard bottle to
+       the world as an example scene for testing purposes.  The goal is to
+       exhaust different functionalities of rendering color, depth, and label
+       images via a purposely designed scene with various rendering settings,
+       e.g., a colored and textured version of each shape are added (if it is
+       supported). -->
+  <!-- TODO(zachfang): We also need to add Mesh, Convex, and HalfSpace. -->
+  <model name="example_scene">
+    <!-- Add box primitives. -->
+    <link name="rgba_box">
+      <pose>0.4 -0.25 0 0 0 0</pose>
+      <visual name="rgba_box_visual">
+        <geometry>
+          <box>
+            <size>0.1 0.075 0.05</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.25 0.25 1.0</diffuse>
+        </material>
+      </visual>
+    </link>
+    <link name="textured_box">
+      <pose>0.4 0.25 0 0 0 0</pose>
+      <visual name="textured_box_visual">
+        <geometry>
+          <box>
+            <size>0.1 0.075 0.05</size>
+          </box>
+        </geometry>
+        <material>
+          <drake:diffuse_map>4_color_texture.png</drake:diffuse_map>
+        </material>
+      </visual>
+    </link>
+
+    <!-- Add capsule primitives. -->
+    <link name="rgba_capsule">
+      <pose>0.25 -0.25 0 0 0 0</pose>
+      <visual name="rgba_capsule_visual">
+        <geometry>
+          <capsule>
+            <radius>0.05</radius>
+            <length>0.1</length>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1.0 1.0 0.25 1.0</diffuse>
+        </material>
+      </visual>
+    </link>
+    <link name="textured_capsule">
+      <pose>0.25 0.25 0 0 0 0</pose>
+      <visual name="textured_capsule_visual">
+        <geometry>
+          <capsule>
+            <radius>0.05</radius>
+            <length>0.1</length>
+          </capsule>
+        </geometry>
+        <material>
+          <drake:diffuse_map>4_color_texture.png</drake:diffuse_map>
+        </material>
+      </visual>
+    </link>
+
+    <!-- Add cylinder primitives. -->
+    <link name="rgba_cylinder">
+      <pose>0.1 -0.25 0 0 0 0</pose>
+      <visual name="rgba_cylinder_visual">
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.1</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0.25 1.0 0.25 1.0</diffuse>
+        </material>
+      </visual>
+    </link>
+    <link name="textured_cylinder">
+      <pose>0.1 0.25 0 0 0 0</pose>
+      <visual name="textured_cylinder_visual">
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.1</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <drake:diffuse_map>4_color_texture.png</drake:diffuse_map>
+        </material>
+      </visual>
+    </link>
+
+    <!-- Add ellipsoid primitives. -->
+    <link name="rgba_ellipsoid">
+      <pose>-0.05 -0.25 0 0 0 0</pose>
+      <visual name="rgba_ellipsoid_visual">
+        <geometry>
+          <ellipsoid>
+            <radii>0.05 0.025 0.0375</radii>
+          </ellipsoid>
+        </geometry>
+        <material>
+          <diffuse>0.25 1.0 1.0 1.0</diffuse>
+        </material>
+      </visual>
+    </link>
+    <link name="textured_ellipsoid">
+      <pose>-0.05 0.25 0 0 0 0</pose>
+      <visual name="textured_ellipsoid_visual">
+        <geometry>
+          <ellipsoid>
+            <radii>0.05 0.025 0.0375</radii>
+          </ellipsoid>
+        </geometry>
+        <material>
+          <drake:diffuse_map>4_color_texture.png</drake:diffuse_map>
+        </material>
+      </visual>
+    </link>
+
+    <!-- Add sphere primitives. -->
+    <link name="rgba_sphere">
+      <pose>-0.2 -0.25 0 0 0 0</pose>
+      <visual name="rgba_sphere_visual">
+        <geometry>
+          <sphere>
+            <radius>0.05</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 1.0 1.0</diffuse>
+        </material>
+      </visual>
+    </link>
+    <link name="textured_sphere">
+      <pose>-0.2 0.25 0 0 0 0</pose>
+      <visual name="textured_sphere_visual">
+        <geometry>
+          <sphere>
+            <radius>0.05</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <drake:diffuse_map>4_color_texture.png</drake:diffuse_map>
+        </material>
+      </visual>
+    </link>
+
+    <!-- Add a YCB mustard bottle. -->
+    <include>
+      <uri>package://drake/manipulation/models/ycb/sdf/006_mustard_bottle.sdf</uri>
+      <name>mustard_bottle</name>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+  </model>
+</sdf>

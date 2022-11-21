@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 
@@ -17,7 +16,7 @@ GTEST_TEST(ScopedNamesTest, GetScopedFrameByName) {
 
   MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);
-  parser.AddModelFromFile(full_name);
+  parser.AddModels(full_name);
   plant.Finalize();
 
   ASSERT_EQ(

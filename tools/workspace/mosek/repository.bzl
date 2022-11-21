@@ -23,20 +23,28 @@ Argument:
 """
 
 load("@drake//tools/workspace:execute.bzl", "which")
+load("@drake//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):
-    # When these values are updated, tools/dynamic_analysis/tsan.supp may also
-    # need updating.
-    mosek_major_version = 9
-    mosek_minor_version = 3
-    mosek_patch_version = 20
+    # When these values are updated:
+    # - tools/dynamic_analysis/tsan.supp may also need updating
+    # - LICENSE.third_party may also need updating to match
+    #     https://docs.mosek.com/latest/licensing/license-agreement-info.html
+    mosek_major_version = 10
+    mosek_minor_version = 0
+    mosek_patch_version = 18
 
-    if repository_ctx.os.name == "mac os x":
-        mosek_platform = "osx64x86"
-        sha256 = "e804225fdc48933d753645e6e4afe415aabbabb32233dd376d0dd6bf985756ef"  # noqa
-    elif repository_ctx.os.name == "linux":
+    os_result = determine_os(repository_ctx)
+    if os_result.is_macos or os_result.is_macos_wheel:
+        if os_result.macos_arch_result == "arm64":
+            mosek_platform = "osxaarch64"
+            sha256 = "99518b88c3bfc27edc92775eada349f7dd232c7bf7aa1cb7a8620603e05a6a6d"  # noqa
+        else:
+            mosek_platform = "osx64x86"
+            sha256 = "e3de2b99e5ab27a7c37356a7fe88f0a42c53ec04aeaba70abe8b5971fbcfc150"  # noqa
+    elif os_result.is_ubuntu or os_result.is_manylinux:
         mosek_platform = "linux64x86"
-        sha256 = "2fa2e1f742a31d7a7249ae083748f377dc68e378eb5ba18279647a433dc2e595"  # noqa
+        sha256 = "f778f6e5560cdb8a3b5001cb51f40ccba9b3ef73da09406dcd3c1a870433eb34"  # noqa
     else:
         fail(
             "Operating system is NOT supported",
@@ -69,15 +77,13 @@ def _impl(repository_ctx):
     if repository_ctx.os.name == "mac os x":
         install_name_tool = which(repository_ctx, "install_name_tool")
 
-        # Note that libmosek64.dylib is (erroneously) a copy of
-        # libmosek64.9.3.dylib instead of a symlink. Otherwise, the list of
-        # files should include the following in place of bin/libmosek64.dylib:
-        #
-        # "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,
-        #                                     mosek_minor_version)
         files = [
-            "bin/libcilkrts.5.dylib",
-            "bin/libmosek64.dylib",
+            "bin/libtbb.12.dylib",
+            "bin/libtbb.12.5.dylib",
+            "bin/libmosek64.{}.{}.dylib".format(
+                mosek_major_version,
+                mosek_minor_version,
+            ),
         ]
 
         for file in files:
@@ -108,11 +114,10 @@ def _impl(repository_ctx):
         ]
     else:
         files = [
-            # We unconditionally use the the MOSEK™ copy of libcilkrts. Even
-            # though Ubuntu 20 offers a cilk shared library for legacy support,
-            # Ubuntu 22 has dropped it, and it's simplest for us to just use
-            # the MOSEK™ copy of the library everywhere.
-            "bin/libcilkrts.so.5",
+            # We use the the MOSEK™ copy of libtbb. The version of libtbb
+            # available in Ubuntu is too old.
+            "bin/libtbb.so.12",
+            "bin/libtbb.so.12.6",
             "bin/libmosek64.so.{}.{}".format(
                 mosek_major_version,
                 mosek_minor_version,
@@ -157,16 +162,15 @@ install_files(
 )
 
 install(
-   name = "install",
-   docs = [
-       "mosek-eula.pdf",
-       "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
-       "@drake//tools/workspace/mosek:drake_mosek_redistribution.txt",
-   ],
-   allowed_externals = [
-       "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
-   ],
-   deps = [":install_libraries"],
+    name = "install",
+    docs = [
+        "mosek-eula.pdf",
+        "@drake//tools/workspace/mosek:drake_mosek_redistribution.txt",
+        "@drake//tools/workspace/mosek:LICENSE.third_party",
+    ],
+    doc_strip_prefix = ["tools/workspace/mosek"],
+    allowed_externals = ["@drake//:.bazelproject"],
+    deps = [":install_libraries"],
 )
     """.format(srcs, hdrs, includes, linkopts, files, libraries_strip_prefix)
 

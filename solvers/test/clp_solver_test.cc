@@ -47,6 +47,13 @@ TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
   }
 }
 
+TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
+  ClpSolver solver;
+  if (solver.available()) {
+    CheckSolution(solver);
+  }
+}
+
 GTEST_TEST(TestDual, DualSolution1) {
   ClpSolver solver;
   if (solver.available()) {

@@ -34,17 +34,40 @@ try:
 except ImportError:
     pass
 
+# We specifically load `common` prior to loading any other pydrake modules,
+# in order to a) get assertion configuration done as early as possible, and b)
+# detect whether we are able to load the shared libraries.
+try:
+    from . import common
+except ImportError as e:
+    if '/pydrake/' in e.path and 'cannot open shared object file' in e.msg:
+        message = f'''
+Drake failed to load a required library. This could indicate an installation
+problem, or that your system is missing required distro-provided packages.
+Please refer to the installation instructions to ensure that all required
+dependencies are installed.
+'''
+        # For wheel builds, we have a file with additional advice.
+        wheel_doc = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), 'INSTALLATION')
+        if os.path.exists(wheel_doc):
+            with open(wheel_doc) as f:
+                message += f.read()
+        message += '''
+For more information, please see https://drake.mit.edu/installation.html
+'''
+        print(message)
+    raise
 
-__all__ = ['getDrakePath']
+__all__ = ['common', 'getDrakePath']
 
 
 def getDrakePath():
     # Compatibility alias.
-    from . import common as _common
-    return os.path.abspath(_common.GetDrakePath())
+    return os.path.abspath(common.GetDrakePath())
 
 
-def _execute_extra_python_code(m):
+def _execute_extra_python_code(m, use_subdir: bool = False):
     # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
     # rationale.
     if m.__name__ not in sys.modules:
@@ -60,7 +83,10 @@ def _execute_extra_python_code(m):
             ).format(m.__name__))
     top_module_name = module_path[0]
     top_module_dir = os.path.dirname(sys.modules[top_module_name].__file__)
-    mid_module_names = module_path[1:-1]
+    if use_subdir:
+        mid_module_names = module_path[1:]
+    else:
+        mid_module_names = module_path[1:-1]
     base_module_name = module_path[-1]
     if base_module_name.startswith("_"):
         # Do not repeat leading `_`.

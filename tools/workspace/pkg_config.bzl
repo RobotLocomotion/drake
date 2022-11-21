@@ -102,7 +102,7 @@ def setup_pkg_config_repository(repository_ctx):
     # However, sometimes it produces "-framework CoreFoundation" or similar,
     # which is *supposed* to be a single switch, but our split heuristic
     # chopped it up.  We recombine non-switch args with their preceding arg as
-    # a repair.  We process args in reserve order to keep our loop index
+    # a repair.  We process args in reverse order to keep our loop index
     # unchanged by a pop.
     for i in reversed(range(len(linkopts))):
         linkopt = linkopts[i]

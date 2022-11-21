@@ -941,6 +941,23 @@ GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
   }
 }
 
+// Tests RotationMatrix::ToRollPitchYaw() is exactly the same as the constructor
+// RollPitchYaw(RotationMatrix).
+GTEST_TEST(RotationMatrixTest, ToRollPitchYaw) {
+  // Create a somewhat arbitrary RotationMatrix.
+  const double r(0.5), p(0.4), y(0.3);
+  const RollPitchYaw<double> rpy(r, p, y);
+  const RotationMatrix<double> R_AB(rpy);
+
+  // Ensure R_AB.ToRollPitchYaw() is exactly the same as RollPitchYaw(R_AB).
+  const RollPitchYaw<double> roll_pitch_yaw = R_AB.ToRollPitchYaw();
+  const RollPitchYaw<double> roll_pitch_yaw_expected(R_AB);
+  EXPECT_TRUE(roll_pitch_yaw.IsNearlyEqualTo(roll_pitch_yaw_expected, 0));
+
+  // Ensure roll_pitch_yaw is nearly the same as rpy (to within 2 bits).
+  constexpr double kTolerance = 2 * std::numeric_limits<double>::epsilon();;
+  EXPECT_TRUE(roll_pitch_yaw.IsNearlyEqualTo(rpy, kTolerance));
+}
 
 class RotationMatrixConversionTests : public ::testing::Test {
  protected:
@@ -1050,12 +1067,23 @@ TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
   if (kDrakeAssertIsArmed) {
     // A zero quaternion should throw an exception.
     const Eigen::Quaterniond q_zero(0, 0, 0, 0);
-    EXPECT_THROW(const RotationMatrix<double> R_bad(q_zero), std::exception);
+    DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>(q_zero),
+      "QuaternionToRotationMatrix\\(\\):"
+      " All the elements in a quaternion are zero\\.");
 
-    // A quaternion containing a NaN throw an exception.
-    double nan = std::numeric_limits<double>::quiet_NaN();
-    const Eigen::Quaterniond q_nan(nan, 0, 0, 0);
-    EXPECT_THROW(const RotationMatrix<double> R_nan(q_nan), std::exception);
+    // A quaternion containing a NaN should throw an exception.
+    const double kNaN = std::numeric_limits<double>::quiet_NaN();
+    const Eigen::Quaterniond q_NaN(kNaN, 0, 0, 0);
+    DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>(q_NaN),
+      "QuaternionToRotationMatrix\\(\\):"
+      " Quaternion contains an element that is infinity or NaN\\.");
+
+    // A quaternion containing infinity should throw an exception.
+    const double kInf = std::numeric_limits<double>::infinity();
+    const Eigen::Quaterniond q_Inf(kInf, 0, 0, 0);
+    DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>(q_Inf),
+      "QuaternionToRotationMatrix\\(\\):"
+      " Quaternion contains an element that is infinity or NaN\\.");
   }
 }
 

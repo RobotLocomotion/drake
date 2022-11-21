@@ -56,6 +56,19 @@ Fixes
 
 * TBD
 
+## Planning
+
+<!-- <relnotes for planning go here> -->
+
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
 ## Tutorials and examples
 
 <!-- <relnotes for examples,tutorials go here> -->
@@ -64,7 +77,7 @@ Fixes
 
 ## Miscellaneous features and fixes
 
-<!-- <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here> -->
+<!-- <relnotes for common,math,lcm,lcmtypes,manipulation,perception,visualization go here> -->
 
 * TBD
 
@@ -93,8 +106,7 @@ Newly bound
 
 ## Build dependencies
 
-<!-- Manually relocate any "Upgrade foo_external to latest" lines to here, -->
-<!-- and then sort them alphabetically. -->
+<!-- <relnotes for workspace go here> -->
 
 * TBD
 
@@ -110,7 +122,7 @@ Newly bound
 
 
 This release provides [pre-compiled binaries](https://github.com/RobotLocomotion/drake/releases/tag/{version}) named
-``drake-YYYYMMDD-{{focal|mac}}.tar.gz``. See [Stable Releases](/from_binary.html#stable-releases) for instructions on how to use them.
+``drake-YYYYMMDD-{{focal|jammy|mac|mac-arm64}}.tar.gz``. See [Stable Releases](/from_binary.html#stable-releases) for instructions on how to use them.
 
 Drake binary releases incorporate a pre-compiled version of [SNOPT](https://ccom.ucsd.edu/~optimizers/solvers/snopt/) as part of the
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html). Thanks to

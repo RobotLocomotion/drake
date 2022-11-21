@@ -267,17 +267,17 @@ Hyperellipsoid::DoToShapeWithPose() const {
   return std::make_pair(std::move(shape), X_WG);
 }
 
-void Hyperellipsoid::ImplementGeometry(const Sphere& sphere, void* data) {
-  auto* A = static_cast<Eigen::Matrix3d*>(data);
-  *A = Eigen::Matrix3d::Identity() / sphere.radius();
-}
-
 void Hyperellipsoid::ImplementGeometry(const Ellipsoid& ellipsoid, void* data) {
   // x²/a² + y²/b² + z²/c² = 1 in quadratic form is
   // xᵀ * diag(1/a^2, 1/b^2, 1/c^2) * x = 1 and A is the square root.
   auto* A = static_cast<Eigen::Matrix3d*>(data);
   *A = Eigen::DiagonalMatrix<double, 3>(
       1.0 / ellipsoid.a(), 1.0 / ellipsoid.b(), 1.0 / ellipsoid.c());
+}
+
+void Hyperellipsoid::ImplementGeometry(const Sphere& sphere, void* data) {
+  auto* A = static_cast<Eigen::Matrix3d*>(data);
+  *A = Eigen::Matrix3d::Identity() / sphere.radius();
 }
 
 }  // namespace optimization

@@ -10,15 +10,18 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
+#include "drake/math/matrix_util.h"
 
 using std::runtime_error;
 using std::vector;
 using std::abs;
-using std::min;
+using std::clamp;
 using std::max;
 
 namespace drake {
 namespace trajectories {
+
+using math::EigenToStdVector;
 
 template <typename T>
 PiecewisePolynomial<T>::PiecewisePolynomial(
@@ -119,7 +122,7 @@ template <typename T>
 MatrixX<T> PiecewisePolynomial<T>::DoEvalDerivative(
     const T& t, int derivative_order) const {
   const int segment_index = this->get_segment_index(t);
-  const T time = min(max(t, this->start_time()), this->end_time());
+  const T time = clamp(t, this->start_time(), this->end_time());
   Eigen::Matrix<T, PolynomialMatrix::RowsAtCompileTime,
                 PolynomialMatrix::ColsAtCompileTime>
       ret(rows(), cols());
@@ -1128,22 +1131,6 @@ PiecewisePolynomial<T> PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial(
                                 {times[0], times[times.size() - 1]});
 }
 
-namespace {
-
-// Helper method to go from the Eigen entry points to the std::vector versions.
-// Copies each column of mat to an element of the returned std::vector.
-template <typename T>
-std::vector<MatrixX<T>> ColsToStdVector(
-    const Eigen::Ref<const MatrixX<T>>& mat) {
-  std::vector<MatrixX<T>> vec(mat.cols());
-  for (int i=0; i < mat.cols(); i++) {
-    vec[i] = mat.col(i);
-  }
-  return vec;
-}
-
-}  // end namespace
-
 template <typename T>
 PiecewisePolynomial<T> PiecewisePolynomial<T>::ZeroOrderHold(
     const Eigen::Ref<const VectorX<T>>& breaks,
@@ -1151,7 +1138,7 @@ PiecewisePolynomial<T> PiecewisePolynomial<T>::ZeroOrderHold(
   DRAKE_DEMAND(samples.cols() == breaks.size());
   std::vector<T> my_breaks(breaks.data(), breaks.data() + breaks.size());
   return PiecewisePolynomial<T>::ZeroOrderHold(my_breaks,
-                                               ColsToStdVector(samples));
+                                               EigenToStdVector(samples));
 }
 
 template <typename T>
@@ -1161,7 +1148,7 @@ PiecewisePolynomial<T> PiecewisePolynomial<T>::FirstOrderHold(
   DRAKE_DEMAND(samples.cols() == breaks.size());
   std::vector<T> my_breaks(breaks.data(), breaks.data() + breaks.size());
   return PiecewisePolynomial<T>::FirstOrderHold(my_breaks,
-                                                ColsToStdVector(samples));
+                                                EigenToStdVector(samples));
 }
 
 template <typename T>
@@ -1172,7 +1159,7 @@ PiecewisePolynomial<T> PiecewisePolynomial<T>::CubicShapePreserving(
   DRAKE_DEMAND(samples.cols() == breaks.size());
   std::vector<T> my_breaks(breaks.data(), breaks.data() + breaks.size());
   return PiecewisePolynomial<T>::CubicShapePreserving(
-      my_breaks, ColsToStdVector(samples), zero_end_point_derivatives);
+      my_breaks, EigenToStdVector(samples), zero_end_point_derivatives);
 }
 
 template <typename T>
@@ -1185,7 +1172,7 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
   DRAKE_DEMAND(samples.cols() == breaks.size());
   std::vector<T> my_breaks(breaks.data(), breaks.data() + breaks.size());
   return PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
-      my_breaks, ColsToStdVector(samples), samples_dot_start.eval(),
+      my_breaks, EigenToStdVector(samples), samples_dot_start.eval(),
       samples_dot_end.eval());
 }
 
@@ -1197,7 +1184,7 @@ PiecewisePolynomial<T> PiecewisePolynomial<T>::CubicHermite(
   DRAKE_DEMAND(samples.cols() == breaks.size());
   std::vector<T> my_breaks(breaks.data(), breaks.data() + breaks.size());
   return PiecewisePolynomial<T>::CubicHermite(
-      my_breaks, ColsToStdVector(samples), ColsToStdVector(samples_dot));
+      my_breaks, EigenToStdVector(samples), EigenToStdVector(samples_dot));
 }
 
 template <typename T>
@@ -1208,7 +1195,7 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
   DRAKE_DEMAND(samples.cols() == breaks.size());
   std::vector<T> my_breaks(breaks.data(), breaks.data() + breaks.size());
   return PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
-      my_breaks, ColsToStdVector(samples), periodic_end_condition);
+      my_breaks, EigenToStdVector(samples), periodic_end_condition);
 }
 
 template <typename T>
@@ -1218,7 +1205,7 @@ PiecewisePolynomial<T> PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial(
   DRAKE_DEMAND(samples.cols() == times.size());
   std::vector<T> my_times(times.data(), times.data() + times.size());
   return PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial(
-      my_times, ColsToStdVector(samples));
+      my_times, EigenToStdVector(samples));
 }
 
 // Computes the cubic spline coefficients based on the given values and first

@@ -1,0 +1,55 @@
+# -*- python -*-
+
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/install:install_data.bzl", "install_data")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load("//tools/workspace/models_internal:files.bzl", "veggies_mesh_files")
+load("//tools/workspace/models_internal:files.bzl", "dishes_files")
+
+package(default_visibility = ["//visibility:private"])
+
+_VEGGIES_MESHES = forward_files(
+    srcs = ["@models_internal//:" + x for x in veggies_mesh_files()],
+    dest_prefix = "",
+    strip_prefix = "@models_internal//:veggies/",
+    visibility = ["//visibility:private"],
+)
+
+_DISHES_FILES = forward_files(
+    srcs = ["@models_internal//:dishes/bowls/evo_bowl_no_mtl.obj"],
+    dest_prefix = "",
+    strip_prefix = "@models_internal//:dishes/bowls/",
+    visibility = ["//visibility:private"],
+)
+
+drake_py_binary(
+    name = "drop_pepper_py",
+    srcs = ["drop_pepper.py"],
+    add_test_rule = 1,
+    data = [
+        ":models",
+    ],
+    test_rule_args = [
+        "--simulation_time=0.01",
+        "--target_realtime_rate=0",
+    ],
+    # The debug test can be 100x slower than the release.
+    # The debug test takes about 90 seconds.
+    # The release test takes about 3 seconds.
+    test_rule_timeout = "moderate",
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+filegroup(
+    name = "models",
+    srcs = [
+        "bowl.sdf",
+        "pepper.sdf",
+        "table.sdf",
+    ] + _VEGGIES_MESHES + _DISHES_FILES,
+)
+
+add_lint_tests()

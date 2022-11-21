@@ -1,13 +1,20 @@
 #include "drake/multibody/parsing/detail_common.h"
 
+#include <filesystem>
+
 #include "drake/common/drake_assert.h"
-#include "drake/common/filesystem.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
 
 using drake::internal::DiagnosticPolicy;
+
+bool EndsWithCaseInsensitive(std::string_view str, std::string_view ext) {
+  if (ext.size() > str.size()) { return false; }
+  return std::equal(str.end() - ext.size(), str.end(), ext.begin(),
+                    [](char a, char b) { return tolower(a) == tolower(b); });
+}
 
 DataSource::DataSource(DataSourceType type, const std::string* data)
     : type_(type), data_(data) {
@@ -27,21 +34,21 @@ const std::string& DataSource::contents() const {
 
 std::string DataSource::GetAbsolutePath() const {
   if (IsFilename()) {
-    return filesystem::absolute(*data_).native();
+    return std::filesystem::absolute(*data_).native();
   }
   return "";
 }
 
 std::string DataSource::GetRootDir() const {
   if (IsFilename()) {
-    return filesystem::absolute(*data_).parent_path().native();
+    return std::filesystem::absolute(*data_).parent_path().native();
   }
   return "";
 }
 
 std::string DataSource::GetStem() const {
   if (IsFilename()) {
-    filesystem::path p{*data_};
+    std::filesystem::path p{*data_};
     return p.stem();
   }
   return kContentsPseudoStem;
@@ -89,6 +96,9 @@ geometry::ProximityProperties ParseProximityProperties(
   std::optional<double> dissipation =
       read_double("drake:hunt_crossley_dissipation");
 
+  std::optional<double> relaxation_time =
+      read_double("drake:relaxation_time");
+
   std::optional<double> stiffness =
       read_double("drake:point_contact_stiffness");
 
@@ -106,6 +116,17 @@ geometry::ProximityProperties ParseProximityProperties(
   }
 
   geometry::AddContactMaterial(dissipation, stiffness, friction, &properties);
+
+  if (relaxation_time.has_value()) {
+    if (*relaxation_time < 0) {
+      throw std::logic_error(
+          fmt::format("The dissipation time scale can't be negative; given {}",
+                      *dissipation));
+    }
+    properties.AddProperty(geometry::internal::kMaterialGroup,
+                           geometry::internal::kRelaxationTime,
+                           *relaxation_time);
+  }
 
   return properties;
 }

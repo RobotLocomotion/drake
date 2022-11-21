@@ -13,6 +13,7 @@ LIBDRAKE_COMPONENTS = [
     "//common",
     "//common/proto",
     "//common/schema",
+    "//common/symbolic",
     "//common/trajectories",
     "//common/yaml",
     "//common:drake_marker_shared_library",  # unpackaged
@@ -41,9 +42,8 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/optimization",
     "//geometry/proximity",
     "//geometry/query_results",
-    "//geometry/render/gl_renderer",
     "//geometry/render/shaders",
-    "//geometry/render_gltf_client",
+    "//geometry/render_gl",
     "//geometry/render_vtk",
     "//lcm",
     "//manipulation/kinova_jaco",
@@ -70,13 +70,13 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
+    "//multibody/rational",
     "//multibody/topology:multibody_graph",  # unpackaged
     "//multibody/tree",
     "//multibody/triangle_quadrature",
     "//perception",
+    "//planning",
     "//solvers",
-    "//solvers/fbstab",
-    "//solvers/fbstab/components",
     "//systems/analysis",
     "//systems/controllers",
     "//systems/estimators",
@@ -87,9 +87,5 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
-    # N.B. These are added by hand for deprecation 2022-09-01. Once the
-    # deprecation clears, we should go back to auto-generating this file
-    # without any manual edits.
-    "//geometry/render:render_engine_vtk_factory",
-    "//geometry/render:render_unpolluted",
+    "//visualization",
 ]

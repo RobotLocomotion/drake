@@ -5,6 +5,7 @@
 #include <string>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/frame_base.h"
@@ -13,6 +14,10 @@
 
 namespace drake {
 namespace multibody {
+
+namespace internal {
+std::string DeprecateWhenEmptyName(std::string name, std::string_view type);
+}  // namespace internal
 
 // Forward declarations.
 template<typename T> class Body;
@@ -56,7 +61,7 @@ class Frame : public FrameBase<T> {
 
   /// Returns true if `this` is the world frame.
   bool is_world_frame() const {
-    return this->index() == FrameIndex(0);
+    return this->index() == world_frame_index();
   }
 
   /// Returns true if `this` is the body frame.
@@ -64,8 +69,7 @@ class Frame : public FrameBase<T> {
     return this->index() == body_.body_frame().index();
   }
 
-
-  /// Returns the name of this frame. It may be empty if unnamed.
+  /// Returns the name of this frame. The name will never be empty.
   const std::string& name() const {
     return name_;
   }
@@ -589,9 +593,10 @@ class Frame : public FrameBase<T> {
       const std::string& name, const Body<T>& body,
       std::optional<ModelInstanceIndex> model_instance = {})
       : FrameBase<T>(model_instance.value_or(body.model_instance())),
-        name_(name), body_(body) {}
+        name_(internal::DeprecateWhenEmptyName(name, "Frame")), body_(body) {}
 
-  /// Overload to permit constructing an unnamed frame.
+  DRAKE_DEPRECATED("2022-12-01",
+      "The name parameter to the Frame constructor is now required.")
   explicit Frame(const Body<T>& body)
       : Frame("", body) {}
 
@@ -627,7 +632,7 @@ class Frame : public FrameBase<T> {
     DRAKE_ASSERT(topology_.index == this->index());
   }
 
-  std::string name_;
+  const std::string name_;
 
   // The body associated with this frame.
   const Body<T>& body_;

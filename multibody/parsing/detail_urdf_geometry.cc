@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 
+#include <filesystem>
 #include <iomanip>
 #include <memory>
 #include <ostream>
@@ -11,7 +12,6 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity_properties.h"

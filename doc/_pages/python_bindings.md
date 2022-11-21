@@ -20,6 +20,8 @@ Drake does not support the Python environment supplied by Anaconda. Before
 installing or using Drake, please `conda deactivate` (repeatedly, until even
 the conda base environment has been deactivated) such that none of the paths
 reported `which -a python python3 pip pip3` refer to conda.
+Note that Miniconda seems to work fine; it's only Anaconda that has caused
+problems for some users.
 </div>
 
 # Installation
@@ -49,7 +51,7 @@ If you are using Gurobi, you must either have it installed in the suggested loca
 You should first browse the [Python API](https://drake.mit.edu/pydrake/index.html) to see what
 modules are available. The most up-to-date high-level demonstrations of what
 can be done using ``pydrake`` are in Drake's [Tutorials](/index.html#tutorials) and
-the [Underactuated Robotics Textbook](http://underactuated.mit.edu/) and
+the [Underactuated Robotics Textbook](https://underactuated.mit.edu/) and
 the [Robotic Manipulation Textbook](https://manipulation.mit.edu/).
 
 You can also see lower-level usages of the API in the ``pydrake`` unit tests
@@ -72,7 +74,7 @@ from pydrake.systems.framework import DiagramBuilder
 
 builder = DiagramBuilder()
 plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
-Parser(plant).AddModelFromFile(
+Parser(plant).AddModels(
     FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
 plant.Finalize()
 diagram = builder.Build()
@@ -97,7 +99,7 @@ from pydrake.all import (
 
 builder = DiagramBuilder()
 plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
-Parser(plant).AddModelFromFile(
+Parser(plant).AddModels(
     FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
 plant.Finalize()
 diagram = builder.Build()
@@ -112,7 +114,7 @@ import pydrake.all
 
 builder = pydrake.systems.framework.DiagramBuilder()
 plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(builder, 0.0)
-pydrake.multibody.parsing.Parser(plant).AddModelFromFile(
+pydrake.multibody.parsing.Parser(plant).AddModels(
   pydrake.common.FindResourceOrThrow(
       "drake/examples/pendulum/Pendulum.urdf"))
 plant.Finalize()

@@ -250,7 +250,7 @@ class FileCoverage:
             doc_nodes = [n for n in file_name_dict[fn]
                          if "doc_var" in n.attrib]
 
-            assert(len(doc_nodes) == len(file_name_dict[fn]))
+            assert len(doc_nodes) == len(file_name_dict[fn])
             row = CommonUtils.get_node_coverage(doc_nodes, self.pybind_strings)
 
             row["FileName"] = FileName(fn)

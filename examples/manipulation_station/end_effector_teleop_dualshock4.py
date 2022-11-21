@@ -9,24 +9,23 @@ import os
 import pprint
 import sys
 from textwrap import dedent
+import webbrowser
 
 import numpy as np
 
-from pydrake.examples.manipulation_station import (
+from pydrake.common.value import AbstractValue
+from pydrake.examples import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
-from pydrake.geometry import DrakeVisualizer
+from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
+    DifferentialInverseKinematicsIntegrator,
     DifferentialInverseKinematicsParameters)
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder, LeafSystem
-from pydrake.systems.meshcat_visualizer import (
-    ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.primitives import FirstOrderLowPassFilter
-
-from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
 # On macOS, our setup scripts do not provide pygame so we need to skip this
 # program and its tests.  On Ubuntu, we do expect to have pygame.
@@ -160,14 +159,19 @@ class TeleopDualShock4Manager:
 class DualShock4Teleop(LeafSystem):
     def __init__(self, joystick):
         LeafSystem.__init__(self)
-        self.DeclareVectorOutputPort("rpy_xyz", 6, self.DoCalcOutput)
-        self.DeclareVectorOutputPort("position", 1, self.CalcPositionOutput)
+        # Note: Disable caching because the teleop manager has undeclared
+        # state.
+        self.DeclareVectorOutputPort(
+            "rpy_xyz", 6, self.DoCalcOutput).disable_caching_by_default()
+        self.DeclareVectorOutputPort(
+            "position", 1,
+            self.CalcPositionOutput).disable_caching_by_default()
         self.DeclareVectorOutputPort("force_limit", 1,
                                      self.CalcForceLimitOutput)
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self.DeclarePeriodicPublish(1.0, 0.0)
+        self.DeclarePeriodicPublishNoHandler(1.0, 0.0)
 
         self.teleop_manager = TeleopDualShock4Manager(joystick)
         self.roll = self.pitch = self.yaw = 0
@@ -263,6 +267,20 @@ class DualShock4Teleop(LeafSystem):
         output.SetAtIndex(5, self.z)
 
 
+class ToPose(LeafSystem):
+    def __init__(self, grab_focus=True):
+        LeafSystem.__init__(self)
+        self.DeclareVectorInputPort("rpy_xyz", 6)
+        self.DeclareAbstractOutputPort(
+            "pose", lambda: AbstractValue.Make(RigidTransform()),
+            self.DoCalcOutput)
+
+    def DoCalcOutput(self, context, output):
+        rpy_xyz = self.get_input_port().Eval(context)
+        output.set_value(RigidTransform(RollPitchYaw(rpy_xyz[:3]),
+                                        rpy_xyz[3:]))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -302,8 +320,18 @@ def main():
         '--schunk_collision_model', type=str, default='box',
         help="The Schunk collision model to use for simulation. ",
         choices=['box', 'box_plus_fingertip_spheres'])
-    MeshcatVisualizer.add_argparse_argument(parser)
+    parser.add_argument(
+        "--meshcat", action="store_true", default=False,
+        help="Enable visualization with meshcat.")
+    parser.add_argument(
+        "-w", "--open-window", dest="browser_new",
+        action="store_const", const=1, default=None,
+        help="Open the MeshCat display in a new browser window.")
     args = parser.parse_args()
+
+    if (args.browser_new is not None) and (not args.meshcat):
+        parser.error(
+            "-w / --show-window is only valid in conjunction with --meshcat")
 
     if args.test:
         # Don't grab mouse focus during testing.
@@ -323,7 +351,7 @@ def main():
         elif args.schunk_collision_model == "box_plus_fingertip_spheres":
             schunk_model = SchunkCollisionModel.kBoxPlusFingertipSpheres
 
-    # Initializes the chosen station type.
+        # Initializes the chosen station type.
         if args.setup == 'manipulation_class':
             station.SetupManipulationClassStation(
                 schunk_model=schunk_model)
@@ -339,20 +367,28 @@ def main():
                 station.AddManipulandFromFile(model_file, X_WObject)
 
         station.Finalize()
-        DrakeVisualizer.AddToBuilder(builder,
-                                     station.GetOutputPort("query_object"))
+        query_port = station.GetOutputPort("query_object")
+
+        DrakeVisualizer.AddToBuilder(builder, query_port)
         if args.meshcat:
-            meshcat = ConnectMeshcatVisualizer(
-                builder, output_port=station.GetOutputPort("geometry_query"),
-                zmq_url=args.meshcat, open_browser=args.open_browser)
+            meshcat = Meshcat()
+            MeshcatVisualizer.AddToBuilder(
+                builder=builder,
+                query_object_port=query_port,
+                meshcat=meshcat)
+
             if args.setup == 'planar':
-                meshcat.set_planar_viewpoint()
+                meshcat.Set2dRenderMode()
+
+            if args.browser_new is not None:
+                url = meshcat.web_url()
+                webbrowser.open(url=url, new=args.browser_new)
 
     robot = station.get_controller_plant()
     params = DifferentialInverseKinematicsParameters(robot.num_positions(),
                                                      robot.num_velocities())
 
-    params.set_timestep(args.time_step)
+    params.set_time_step(args.time_step)
     # True velocity limits for the IIWA14 (in rad/s, rounded down to the first
     # decimal)
     iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])
@@ -361,10 +397,12 @@ def main():
     params.set_joint_velocity_limits((-factor*iiwa14_velocity_limits,
                                       factor*iiwa14_velocity_limits))
 
-    differential_ik = builder.AddSystem(DifferentialIK(
-        robot, robot.GetFrameByName("iiwa_link_7"), params, args.time_step))
+    differential_ik = builder.AddSystem(
+        DifferentialInverseKinematicsIntegrator(
+            robot, robot.GetFrameByName("iiwa_link_7"), args.time_step,
+            params))
 
-    builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
+    builder.Connect(differential_ik.GetOutputPort("joint_positions"),
                     station.GetInputPort("iiwa_position"))
 
     joystick = initialize_joystick(args.joystick_id)
@@ -373,8 +411,12 @@ def main():
         FirstOrderLowPassFilter(time_constant=args.time_step, size=6))
 
     builder.Connect(teleop.get_output_port(0), filter_.get_input_port(0))
+
+    to_pose = builder.AddSystem(ToPose())
     builder.Connect(filter_.get_output_port(0),
-                    differential_ik.GetInputPort("rpy_xyz_desired"))
+                    to_pose.get_input_port())
+    builder.Connect(to_pose.get_output_port(),
+                    differential_ik.GetInputPort("X_WE_desired"))
 
     builder.Connect(teleop.GetOutputPort("position"), station.GetInputPort(
         "wsg_position"))
@@ -402,16 +444,19 @@ def main():
         simulator.AdvanceTo(1e-6)
 
     q0 = station.GetOutputPort("iiwa_position_measured").Eval(station_context)
-    differential_ik.parameters.set_nominal_joint_position(q0)
+    differential_ik.get_mutable_parameters().set_nominal_joint_position(q0)
 
-    teleop.SetPose(differential_ik.ForwardKinematics(q0))
+    differential_ik.SetPositions(
+        differential_ik.GetMyMutableContextFromRoot(
+            simulator.get_mutable_context()), q0)
+    teleop.SetPose(
+        differential_ik.ForwardKinematics(
+            differential_ik.GetMyContextFromRoot(simulator.get_context())))
     filter_.set_initial_output_value(
         diagram.GetMutableSubsystemContext(
             filter_, simulator.get_mutable_context()),
         teleop.get_output_port(0).Eval(diagram.GetMutableSubsystemContext(
             teleop, simulator.get_mutable_context())))
-    differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
-        differential_ik, simulator.get_mutable_context()), q0)
 
     simulator.set_target_realtime_rate(args.target_realtime_rate)
 

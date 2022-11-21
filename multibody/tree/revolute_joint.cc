@@ -9,6 +9,40 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+RevoluteJoint<T>::RevoluteJoint(const std::string& name,
+              const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
+              const Vector3<double>& axis, double pos_lower_limit,
+              double pos_upper_limit, double damping)
+    : Joint<T>(name, frame_on_parent, frame_on_child,
+               VectorX<double>::Constant(1, damping),
+               VectorX<double>::Constant(1, pos_lower_limit),
+               VectorX<double>::Constant(1, pos_upper_limit),
+               VectorX<double>::Constant(
+                   1, -std::numeric_limits<double>::infinity()),
+               VectorX<double>::Constant(
+                   1, std::numeric_limits<double>::infinity()),
+               VectorX<double>::Constant(
+                   1, -std::numeric_limits<double>::infinity()),
+               VectorX<double>::Constant(
+                   1, std::numeric_limits<double>::infinity())) {
+  const double kEpsilon = std::numeric_limits<double>::epsilon();
+  if (axis.isZero(kEpsilon)) {
+    throw std::logic_error("Revolute joint axis vector must have nonzero "
+                           "length.");
+  }
+  if (damping < 0) {
+    throw std::logic_error("Revolute joint damping must be nonnegative.");
+  }
+  axis_ = axis.normalized();
+}
+
+template <typename T>
+const std::string& RevoluteJoint<T>::type_name() const {
+  static const never_destroyed<std::string> name{kTypeName};
+  return name.access();
+}
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Joint<ToScalar>> RevoluteJoint<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {

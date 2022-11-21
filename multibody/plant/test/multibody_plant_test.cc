@@ -10,10 +10,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -122,12 +120,6 @@ class MultibodyPlantTester {
     plant.CalcNormalAndTangentContactJacobians(
         context, discrete_pairs, Jn, Jt, R_WC_set);
   }
-
-  static const geometry::QueryObject<double>& EvalGeometryQueryInput(
-      const MultibodyPlant<double>& plant,
-      const systems::Context<double>& context) {
-    return plant.EvalGeometryQueryInput(context);
-  }
 };
 
 namespace {
@@ -227,10 +219,10 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       "DefaultModelInstance_actuation");
   EXPECT_EQ(plant->get_state_output_port(default_model_instance())
                 .get_name(),
-            "DefaultModelInstance_continuous_state");
+            "DefaultModelInstance_state");
   EXPECT_EQ(plant->get_state_output_port(pendulum_model_instance)
                 .get_name(),
-            "SplitPendulum_continuous_state");
+            "SplitPendulum_state");
 
   // Query if elements exist in the model.
   EXPECT_TRUE(plant->HasBodyNamed(parameters.link1_name()));
@@ -460,12 +452,40 @@ GTEST_TEST(MultibodyPlantTest, NoHeapAllocOnStringQueries) {
   plant->GetJointActuatorByName(kJointName, iiwa_instance);
 }
 
+// This test creates an empty model and checks simple invariants on model
+// elements. We test the contracts here, not in MultibodyTree, to test
+// behavior from public API perspective.
+GTEST_TEST(MultibodyPlant, EmptyWorldElements) {
+  const double time_step = 0.0;
+  MultibodyPlant<double> plant(time_step);
+  // Model instances.
+  EXPECT_EQ(plant.num_model_instances(), 2);
+  // Bodies.
+  EXPECT_EQ(plant.num_bodies(), 1);
+  const Body<double>& world_body = plant.world_body();
+  EXPECT_EQ(world_body.index(), world_index());
+  EXPECT_EQ(world_body.model_instance(), world_model_instance());
+  // Frames.
+  EXPECT_EQ(plant.num_frames(), 1);
+  const Frame<double>& world_frame = plant.world_frame();
+  EXPECT_EQ(world_frame.index(), world_frame_index());
+  EXPECT_EQ(world_frame.model_instance(), world_model_instance());
+  EXPECT_EQ(&world_body.body_frame(), &world_frame);
+  // Remaining elements.
+  EXPECT_EQ(plant.num_joints(), 0);
+  EXPECT_EQ(plant.num_actuators(), 0);
+  EXPECT_EQ(plant.num_constraints(), 0);
+  EXPECT_EQ(plant.num_force_elements(), 1);
+}
+
 GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
   const double discrete_update_period = 1.0e-3;
   MultibodyPlant<double> plant(discrete_update_period);
   plant.Finalize();
   EXPECT_EQ(plant.num_velocities(), 0);
   EXPECT_EQ(plant.num_positions(), 0);
+  EXPECT_EQ(plant.num_multibody_states(), 0);
+  EXPECT_EQ(plant.num_actuated_dofs(), 0);
   // Compute discrete update.
   auto context = plant.CreateDefaultContext();
   auto& discrete_state_vector = context->get_discrete_state_vector();
@@ -475,7 +495,8 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
       new_discrete_state->get_vector();
   EXPECT_EQ(new_discrete_state_vector.size(), 0);
   DRAKE_EXPECT_NO_THROW(
-      plant.CalcDiscreteVariableUpdates(*context, new_discrete_state.get()));
+      plant.CalcForcedDiscreteVariableUpdate(*context,
+                                             new_discrete_state.get()));
 }
 
 GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
@@ -483,6 +504,8 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
   plant.Finalize();
   EXPECT_EQ(plant.num_velocities(), 0);
   EXPECT_EQ(plant.num_positions(), 0);
+  EXPECT_EQ(plant.num_multibody_states(), 0);
+  EXPECT_EQ(plant.num_actuated_dofs(), 0);
   // Compute continuous derivatives.
   auto context = plant.CreateDefaultContext();
   auto& continuous_state_vector = context->get_continuous_state_vector();
@@ -589,7 +612,7 @@ class AcrobotPlantTests : public ::testing::Test {
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/benchmarks/acrobot/acrobot.sdf");
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
-    Parser(plant_).AddModelFromFile(full_name);
+    Parser(plant_).AddModels(full_name);
     // Sanity check on the availability of the optional source id before using
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != std::nullopt);
@@ -639,7 +662,7 @@ class AcrobotPlantTests : public ::testing::Test {
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/benchmarks/acrobot/acrobot.sdf");
     discrete_plant_ = std::make_unique<MultibodyPlant<double>>(time_step);
-    Parser(discrete_plant_.get()).AddModelFromFile(full_name);
+    Parser(discrete_plant_.get()).AddModels(full_name);
     discrete_plant_->Finalize();
 
     discrete_context_ = discrete_plant_->CreateDefaultContext();
@@ -698,7 +721,7 @@ class AcrobotPlantTests : public ::testing::Test {
       const Body<double>& body = plant_->get_body(body_index);
       const SpatialForce<double>& F_Bo_W =
           body.GetForceInWorld(*plant_context_, forces);
-      const double mass = body.get_default_mass();
+      const double mass = body.default_mass();
       // TODO(amcastro-tri): provide Body::EvalCOMInWorld().
       const Vector3<double> p_BoBcm_B =
           body.CalcCenterOfMassInBodyFrame(*plant_context_);
@@ -823,7 +846,7 @@ class AcrobotPlantTests : public ::testing::Test {
 
     diagram_->CalcTimeDerivatives(*context_, derivatives_.get());
     auto updates = discrete_plant_->AllocateDiscreteVariables();
-    discrete_plant_->CalcDiscreteVariableUpdates(
+    discrete_plant_->CalcForcedDiscreteVariableUpdate(
         *discrete_context_, updates.get());
 
     // Copies to plain Eigen vectors to verify the math.
@@ -1005,7 +1028,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetBodyFrameIdOrThrow(world_index()),
       /* Verify this method is throwing for the right reasons. */
-      "Body 'WorldBody' does not have geometry registered with it.");
+      "Body 'world' does not have geometry registered with it.");
 
   // Similarly, the "optional" variant should return a null opt.
   std::optional<FrameId> undefined_id =
@@ -1040,7 +1063,7 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
   MultibodyPlant<double> plant(0.0);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const auto& body = plant.AddRigidBody("body",
-      SpatialInertia<double>::MakeTestCube());
+      SpatialInertia<double>::MakeUnitary());
   EXPECT_TRUE(CompareMatrices(
       plant.GetDefaultFreeBodyPose(body).GetAsMatrix4(),
       RigidTransformd::Identity().GetAsMatrix4()));
@@ -1197,7 +1220,7 @@ class SphereChainScenario {
       const double radius = 0.5;
       // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
       const RigidBody<double>& sphere = plant_->AddRigidBody(
-          "Sphere" + to_string(i), SpatialInertia<double>::MakeTestCube());
+          "Sphere" + to_string(i), SpatialInertia<double>::MakeUnitary());
       GeometryId sphere_id = plant_->RegisterCollisionGeometry(
           sphere, RigidTransformd::Identity(), geometry::Sphere(radius),
           "collision", CoulombFriction<double>());
@@ -1230,7 +1253,7 @@ class SphereChainScenario {
     // Body with no registered frame.
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
     no_geometry_body_ = &plant_->AddRigidBody("NothingRegistered",
-        SpatialInertia<double>::MakeTestCube());
+        SpatialInertia<double>::MakeUnitary());
   }
 
   void Finalize() {
@@ -1415,7 +1438,7 @@ GTEST_TEST(MultibodyPlantTest, FilterWeldedSubgraphs) {
 GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
   MultibodyPlant<double> plant(0.0);
   const RigidBody<double>& body = plant.AddRigidBody("body",
-      SpatialInertia<double>::MakeTestCube());
+      SpatialInertia<double>::MakeUnitary());
 
   // It's an error to call this without a SceneGraph.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1517,7 +1540,7 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
   const std::string sdf_file =
       FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModelFromFile(sdf_file);
+  Parser(&plant).AddModels(sdf_file);
   const Body<double>& upper = plant.GetBodyByName("upper_section");
   const Body<double>& lower = plant.GetBodyByName("lower_section");
 
@@ -1553,6 +1576,46 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
               UnorderedElementsAre(&upper_ad, &lower_ad));
 }
 
+// Checks plumbing and top-level contract in MultibodyPlant.
+// See more complete testing of this graph query in `multibody_graph_test`.
+GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
+  // This test expects that the following model has a world body and a pair of
+  // welded-together bodies.
+  const std::string sdf_file =
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModels(sdf_file);
+  const Body<double>& upper = plant.GetBodyByName("upper_section");
+  const Body<double>& lower = plant.GetBodyByName("lower_section");
+  const JointIndex shoulder = plant.GetJointByName("pin").index();
+  const JointIndex elbow = plant.GetJointByName("weld").index();
+  // Add a new body, and weld it to the world body.
+  const Body<double>& extra = plant.AddRigidBody(
+      "extra", default_model_instance(), SpatialInertia<double>());
+  plant.WeldFrames(plant.world_frame(), extra.body_frame());
+
+  const std::vector<JointIndex> joints1{shoulder};
+  std::vector<BodyIndex> expected_bodies1{lower.index(), upper.index()};
+  std::sort(expected_bodies1.begin(), expected_bodies1.end());
+
+  // Verify we can only call GetBodiesKinematicallyAffectedBy() post-finalize.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.GetBodiesKinematicallyAffectedBy(joints1),
+      "Pre-finalize calls to .*GetBodiesKinematicallyAffectedBy.*");
+  plant.Finalize();
+  EXPECT_EQ(plant.GetBodiesKinematicallyAffectedBy(joints1), expected_bodies1);
+
+  // Test throw condition: weld joint.
+  const std::vector<JointIndex> joints2{shoulder, elbow};
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesKinematicallyAffectedBy(joints2),
+                              ".*joint with index.*welded.");
+
+  // Test throw condition: unregistered joint.
+  std::vector<JointIndex> joint100{JointIndex(100)};
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesKinematicallyAffectedBy(joint100),
+                              ".*No joint with index.*registered.");
+}
+
 // Regression test for unhelpful error message -- see #14641.
 GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
   // This test expects that the following model has a world body and a pair of
@@ -1560,7 +1623,7 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
   const std::string sdf_file =
       FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModelFromFile(sdf_file);
+  Parser(&plant).AddModels(sdf_file);
 
   // Add a new body, and weld it in the wrong direction using `WeldFrames`.
   const Body<double>& extra = plant.AddRigidBody(
@@ -1630,8 +1693,8 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
 
   // Add two spherical bodies.
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", SpatialInertia<double>::MakeTestCube());
+  const RigidBody<double>& sphere1 = plant.AddRigidBody("Sphere1",
+          SpatialInertia<double>::MakeUnitary());
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
   // estimated parameters for mass=1kg, penetration_tolerance=0.01m
   // and gravity g=9.8 m/s^2.
@@ -1667,8 +1730,8 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
                                  geometry::internal::kHcDissipation,
                                  sphere2_dissipation);
-  const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", SpatialInertia<double>::MakeTestCube());
+  const RigidBody<double>& sphere2 = plant.AddRigidBody("Sphere2",
+      SpatialInertia<double>::MakeUnitary());
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
       sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
       "collision", std::move(sphere2_properties));
@@ -1797,15 +1860,15 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
 
   // Add two spherical bodies.
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", SpatialInertia<double>::MakeTestCube());
+  const RigidBody<double>& sphere1 = plant.AddRigidBody("Sphere1",
+      SpatialInertia<double>::MakeUnitary());
   Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
   GeometryId sphere1_id = plant.RegisterVisualGeometry(
       sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
       "visual", sphere1_diffuse);
   EXPECT_EQ(render_engine.num_registered(), 2);
-  const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", SpatialInertia<double>::MakeTestCube());
+  const RigidBody<double>& sphere2 = plant.AddRigidBody("Sphere2",
+      SpatialInertia<double>::MakeUnitary());
   IllustrationProperties sphere2_props;
   const Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   sphere2_props.AddProperty("phong", "diffuse", sphere2_diffuse);
@@ -1888,30 +1951,6 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
   // This test case contains no collisions, and hence we should not throw.
   DRAKE_EXPECT_NO_THROW(
       autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
-}
-
-GTEST_TEST(MultibodyPlantTest, CalcPointPairPenetrationsDisconnectedPorts) {
-  // Creates a plant and register geometry with a SceneGraph, but does not
-  // connect their respective ports in a Diagram. MultibodyPlant will know
-  // that it is registered as a source for geometry, but will fail to Eval
-  // its geometry_query_input_port(). Check that this failure happens as
-  // expected.
-  SceneGraph<double> scene_graph;
-  MultibodyPlant<double> plant(0.0);
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
-  plant.Finalize();
-  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
-
-  // Plant was not connected to the SceneGraph in a diagram, so its input port
-  // should be invalid.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MultibodyPlantTester::EvalGeometryQueryInput(plant, *context),
-      "The geometry query input port \\(see "
-      "MultibodyPlant::get_geometry_query_input_port\\(\\)\\) "
-      "of this MultibodyPlant is not connected. Please connect the"
-      "geometry query output port of a SceneGraph object "
-      "\\(see SceneGraph::get_query_output_port\\(\\)\\) to this plants input "
-      "port in a Diagram.");
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
@@ -2037,8 +2076,8 @@ void InitializePlantAndContextForVelocityToQDotMapping(
     MultibodyPlant<double>* plant, std::unique_ptr<Context<double>>* context) {
   // This is used in purely kinematic tests.
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const RigidBody<double>& body =
-      plant->AddRigidBody("FreeBody", SpatialInertia<double>::MakeTestCube());
+  const RigidBody<double>& body = plant->AddRigidBody("FreeBody",
+      SpatialInertia<double>::MakeUnitary());
   plant->Finalize();
 
   *context = plant->CreateDefaultContext();
@@ -2132,7 +2171,7 @@ class SplitPendulum : public ::testing::Test {
     // Make the cart_pole model.
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/plant/test/split_pendulum.sdf");
-    Parser(&plant_).AddModelFromFile(full_name);
+    Parser(&plant_).AddModels(full_name);
     plant_.Finalize();
 
     // Get pin joint so that we can set the state.
@@ -2184,7 +2223,8 @@ TEST_F(SplitPendulum, GetMultibodyPlantFromElement) {
   // Create an element-owning MBTreeSystem that _is not_ an MBPlant.
   struct MyMBSystem : public internal::MultibodyTreeSystem<double> {
     MyMBSystem() {
-      rigid_body = &mutable_tree().AddBody<RigidBody>(SpatialInertia<double>());
+      rigid_body = &mutable_tree().AddBody<RigidBody>(
+          "Body", SpatialInertia<double>());
       Finalize();
     }
     const RigidBody<double>* rigid_body{};
@@ -2202,7 +2242,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
           "links_with_visuals_and_collisions.sdf");
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
-  Parser(&plant, &scene_graph).AddModelFromFile(full_name);
+  Parser(&plant, &scene_graph).AddModels(full_name);
 
   // Try scalar-converting pre-finalize - error.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -2283,15 +2323,15 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
 
     // The model simply contains a small and a large box.
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-    const RigidBody<double>& large_box =
-        plant_.AddRigidBody("LargeBox", SpatialInertia<double>::MakeTestCube());
+    const RigidBody<double>& large_box = plant_.AddRigidBody("LargeBox",
+        SpatialInertia<double>::MakeUnitary());
     large_box_id_ = plant_.RegisterCollisionGeometry(
         large_box, RigidTransformd::Identity(),
         geometry::Box(large_box_size_, large_box_size_, large_box_size_),
         "collision", CoulombFriction<double>());
 
-    const RigidBody<double>& small_box =
-        plant_.AddRigidBody("SmallBox", SpatialInertia<double>::MakeTestCube());
+    const RigidBody<double>& small_box = plant_.AddRigidBody("SmallBox",
+        SpatialInertia<double>::MakeUnitary());
     small_box_id_ = plant_.RegisterCollisionGeometry(
         small_box, RigidTransformd::Identity(),
         geometry::Box(small_box_size_, small_box_size_, small_box_size_),
@@ -2599,7 +2639,7 @@ GTEST_TEST(KukaModel, JointIndexes) {
           "iiwa14_no_collision.sdf";
 
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModelFromFile(FindResourceOrThrow(kSdfPath));
+  Parser(&plant).AddModels(FindResourceOrThrow(kSdfPath));
   const auto& base_link_frame = plant.GetFrameByName("iiwa_link_0");
   const Joint<double>& weld = plant.WeldFrames(
       plant.world_frame(), base_link_frame);
@@ -2684,7 +2724,7 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
         "drake/manipulation/models/iiwa_description/sdf/"
             "iiwa14_no_collision.sdf";
     plant_ = std::make_unique<MultibodyPlant<double>>(this->GetParam());
-    Parser(plant_.get()).AddModelFromFile(FindResourceOrThrow(kSdfPath));
+    Parser(plant_.get()).AddModels(FindResourceOrThrow(kSdfPath));
     const Joint<double>& weld =
         plant_->WeldFrames(plant_->world_frame(),
                            plant_->GetFrameByName("iiwa_link_0"));
@@ -2969,7 +3009,7 @@ GTEST_TEST(StateSelection, JointHasNoActuator) {
   const std::string file_name =
       "drake/multibody/benchmarks/acrobot/acrobot.sdf";
   MultibodyPlant<double> plant(0.0);
-  Parser(&plant).AddModelFromFile(FindResourceOrThrow(file_name));
+  Parser(&plant).AddModels(FindResourceOrThrow(file_name));
   plant.Finalize();
 
   // Sanity checks.
@@ -3269,9 +3309,8 @@ GTEST_TEST(StateSelection, FloatingBodies) {
           X_TO));
 
   // Add a floating mug.
-  const ModelInstanceIndex mug_model =
-      parser.AddModelFromFile(mug_sdf_path);
-  const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
+  parser.AddModels(mug_sdf_path);
+  const Body<double>& mug = plant.GetBodyByName("simple_mug");
 
   plant.Finalize();
 
@@ -3343,7 +3382,7 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
 
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const Body<double>& body = plant.AddRigidBody("LoneBody",
-      SpatialInertia<double>::MakeTestCube());
+      SpatialInertia<double>::MakeUnitary());
   plant.Finalize();
 
   RandomGenerator generator;
@@ -3626,8 +3665,8 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
 
   const RigidTransform<AutoDiffXd> X_link1_Ei(-l1_ad * Vector3d::UnitZ());
 
-  elbow_joint_parent_frame.SetPoseInBodyFrame(context_autodiff.get(),
-                                              X_link1_Ei);
+  elbow_joint_parent_frame.SetPoseInParentFrame(context_autodiff.get(),
+                                                X_link1_Ei);
 
   // Take the derivative of the mass matrix w.r.t. length.
   Matrix2<AutoDiffXd> mass_matrix;
@@ -3707,53 +3746,125 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
                               MatrixCompareType::relative));
 }
 
-GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameParameters) {
+GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   MultibodyPlant<double> plant(0.0);
+  const Body<double>& body_B = plant.AddRigidBody("body_B",
+                                                  SpatialInertia<double>{});
 
-  const Vector3d p_WF(0, 0, 0);
-  const RotationMatrixd R_WF{};
-  const RigidTransformd X_WF(R_WF, p_WF);
+  // Weld body B to the world W which creates a fixed offset frame Wp fixed to
+  // the world and a fixed offset frame P fixed to body B.
+  const RigidTransformd X_WWp(RotationMatrixd::MakeZRotation(M_PI/6),
+                              Vector3d(2, 2, 0));
+  const RigidTransformd X_WpP(RotationMatrixd::MakeZRotation(M_PI/12),
+                              Vector3d(0.1, 0.2, 0));
+  RigidTransformd X_BP(RotationMatrixd::MakeXRotation(M_PI/4),
+                       Vector3d(0, 0.3, 0.4));
+  const Joint<double>& weld_joint = plant.AddJoint<WeldJoint>("weld_WB",
+      plant.world_body(), X_WWp, body_B, X_BP, X_WpP);
 
-  const Body<double>& body = plant.AddRigidBody("B", SpatialInertia<double>{});;
-
-  const Joint<double>& weld_joint =
-      plant.AddJoint<WeldJoint>("weld_WB", plant.world_body(), X_WF, body, {},
-                                RigidTransformd::Identity());
-
-  const FixedOffsetFrame<double>& frame_F =
+  // Get a reference to the fixed offset frame P on body B.
+  const FixedOffsetFrame<double>& frame_P =
       dynamic_cast<const FixedOffsetFrame<double>&>(
-          weld_joint.frame_on_parent());
+          weld_joint.frame_on_child());
 
+  // Create a fixed offset frame F on body B whose parent frame is P.
+  RigidTransformd X_PF(RotationMatrixd::MakeZRotation(M_PI/3),
+                       Vector3d(0.9, 0.7, 0.3));
+  const FixedOffsetFrame<double>& frame_F = plant.AddFrame(
+      std::make_unique<FixedOffsetFrame<double>>(
+          "fixed_offset_frame_F", frame_P, X_PF));
+
+  // Finalize the plant and create a default context.
   plant.Finalize();
-
-  // Create a default context.
   auto context = plant.CreateDefaultContext();
+  constexpr double kTolerance = 8 * std::numeric_limits<double>::epsilon();
 
-  // Verify default parameters are set for the frame and that they've propagated
-  // to the welded body's pose.
-  const RigidTransformd& X_WF_context = frame_F.CalcPoseInBodyFrame(*context);
-  const math::RigidTransformd& X_WF_body =
-      plant.EvalBodyPoseInWorld(*context, body);
+  // Verify frame P's pose in its parent B (reminder P is a fixed-offset frame).
+  RigidTransformd X_BP_check1 = frame_P.GetPoseInParentFrame(*context);
+  RigidTransformd X_BP_check2 = frame_P.CalcPoseInBodyFrame(*context);
+  EXPECT_TRUE(X_BP_check1.IsNearlyEqualTo(X_BP, kTolerance));
+  EXPECT_TRUE(X_BP_check2.IsNearlyEqualTo(X_BP, kTolerance));
 
-  EXPECT_TRUE(
-      CompareMatrices(X_WF.GetAsMatrix34(), X_WF_context.GetAsMatrix34()));
-  EXPECT_TRUE(CompareMatrices(X_WF.GetAsMatrix34(), X_WF_body.GetAsMatrix34()));
+  // Verify frame P's pose in world W.
+  RigidTransformd X_WP = X_WWp * X_WpP;
+  RigidTransformd X_WP_check = frame_P.CalcPoseInWorld(*context);
+  EXPECT_TRUE(X_WP_check.IsNearlyEqualTo(X_WP, kTolerance));
 
-  // Set new parameters and verify they propagate.
-  const Vector3d p_WF_new(1, 1, 1);
-  const RotationMatrixd R_WF_new = RotationMatrixd::MakeXRotation(3);
-  const RigidTransformd X_WF_new(R_WF_new, p_WF_new);
+  // Verify frame F's pose in its parent P.
+  RigidTransformd X_PF_check = frame_F.GetPoseInParentFrame(*context);
+  EXPECT_TRUE(X_PF_check.IsNearlyEqualTo(X_PF, kTolerance));
 
-  frame_F.SetPoseInBodyFrame(context.get(), X_WF_new);
+  // Verify frame F's pose in body B.
+  RigidTransformd X_BF = X_BP * X_PF;
+  RigidTransformd X_BF_check = frame_F.CalcPoseInBodyFrame(*context);
+  EXPECT_TRUE(X_BF_check.IsNearlyEqualTo(X_BF, kTolerance));
 
-  const RigidTransformd& X_WF_context_new =
-      frame_F.CalcPoseInBodyFrame(*context);
-  const math::RigidTransformd& X_WF_body_new =
-      plant.EvalBodyPoseInWorld(*context, body);
-  EXPECT_TRUE(CompareMatrices(X_WF_new.GetAsMatrix34(),
-                              X_WF_context_new.GetAsMatrix34()));
-  EXPECT_TRUE(
-      CompareMatrices(X_WF_new.GetAsMatrix34(), X_WF_body_new.GetAsMatrix34()));
+  // Verify frame F's pose in world W.
+  RigidTransformd X_WF = X_WWp * X_WpP * X_PF;
+  RigidTransformd X_WF_check = frame_F.CalcPoseInWorld(*context);
+  EXPECT_TRUE(X_WF_check.IsNearlyEqualTo(X_WF, kTolerance));
+
+  // Verify body B's pose in world W.
+  RigidTransformd X_WB = X_WWp * X_WpP * X_BP.inverse();
+  RigidTransformd X_WB_check = plant.EvalBodyPoseInWorld(*context, body_B);
+  EXPECT_TRUE(X_WB_check.IsNearlyEqualTo(X_WB, kTolerance));
+
+  //-------------------------------------------------------------------------
+  // Set new pose for fixed offset frame P and verify it propagates correctly.
+  X_BP = RigidTransformd(RotationMatrixd::MakeXRotation(3*M_PI/4),
+                         Vector3d(0, 0.5, 0.8));
+  frame_P.SetPoseInParentFrame(context.get(), X_BP);
+
+  // Verify frame P's new pose in its parent B.
+  X_BP_check1 = frame_P.GetPoseInParentFrame(*context);
+  X_BP_check2 = frame_P.CalcPoseInBodyFrame(*context);
+  EXPECT_TRUE(X_BP_check1.IsNearlyEqualTo(X_BP, kTolerance));
+  EXPECT_TRUE(X_BP_check2.IsNearlyEqualTo(X_BP, kTolerance));
+
+  // Verify frame P's new pose in world W (which should not have changed).
+  X_WP_check = frame_P.CalcPoseInWorld(*context);
+  EXPECT_TRUE(X_WP_check.IsNearlyEqualTo(X_WP, kTolerance));
+
+  //-------------------------------------------------------------------------
+  // Set new pose for fixed offset frame F and verify it propagates correctly.
+  X_PF = RigidTransformd(RotationMatrixd::MakeZRotation(2*M_PI/3),
+                         Vector3d(2, 2, 2));
+  frame_F.SetPoseInParentFrame(context.get(), X_PF);
+
+  // Verify frame F's new pose in its parent P.
+  X_PF_check = frame_F.GetPoseInParentFrame(*context);
+  EXPECT_TRUE(X_PF_check.IsNearlyEqualTo(X_PF, kTolerance));
+
+  // Verify frame F's new pose in body B.
+  X_BF = X_BP * X_PF;
+  X_BF_check = frame_F.CalcPoseInBodyFrame(*context);
+  EXPECT_TRUE(X_BF_check.IsNearlyEqualTo(X_BF, kTolerance));
+
+  // Verify frame F's new pose in world W.
+  X_WF = X_WWp * X_WpP * X_PF;
+  X_WF_check = frame_F.CalcPoseInWorld(*context);
+  EXPECT_TRUE(X_WF_check.IsNearlyEqualTo(X_WF, kTolerance));
+
+  // Verify body B's pose in world W.
+  X_WB = X_WWp * X_WpP * X_BP.inverse();
+  X_WB_check = plant.EvalBodyPoseInWorld(*context, body_B);
+  EXPECT_TRUE(X_WB_check.IsNearlyEqualTo(X_WB, kTolerance));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Check that misnamed SetPoseInBodyFrame() works like SetPoseInParentFrame().
+  X_PF = RigidTransformd(RotationMatrixd::MakeZRotation(0),
+                         Vector3d(1, 1, 1));
+  frame_F.SetPoseInBodyFrame(context.get(), X_PF);
+
+  // Misnaming means SetPoseInBodyFrame() mismatches CalcPoseInBodyFrame().
+  X_BF_check = frame_F.CalcPoseInBodyFrame(*context.get());
+  EXPECT_FALSE(X_BF_check.IsNearlyEqualTo(X_PF, kTolerance));
+
+  // Misnaming means SetPoseInBodyFrame() matches GetPoseInParentFrame().
+  X_PF_check = frame_F.GetPoseInParentFrame(*context.get());
+  EXPECT_TRUE(X_PF_check.IsNearlyEqualTo(X_PF, kTolerance));
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
 GTEST_TEST(MultibodyPlant, CombinePointContactParameters) {
@@ -3781,7 +3892,7 @@ GTEST_TEST(MultibodyPlant, CombinePointContactParameters) {
 GTEST_TEST(MultibodyPlant, FixInputPortsFrom) {
   systems::DiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant).AddModelFromFile(
+  Parser(&plant).AddModels(
       FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf"));
   plant.Finalize();
   auto diagram = builder.Build();
@@ -3950,6 +4061,67 @@ GTEST_TEST(MultibodyPlantTest, ThrowIfSpatialForcePortContainsNaN) {
       plant->get_reaction_forces_output_port()
           .Eval<std::vector<SpatialForce<double>>>(*context),
       "Spatial force.*contains NaN.");
+}
+
+GTEST_TEST(MultibodyPlantTest, SetDefaultPositions) {
+  // Construct a plant with two Iiwas.
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+      "iiwa14_no_collision.sdf";
+  auto plant =
+      std::make_unique<MultibodyPlant<double>>(0 /* plant type irrelevant */);
+  Parser parser(plant.get());
+  multibody::ModelInstanceIndex iiwa0_instance =
+      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa0");
+  multibody::ModelInstanceIndex iiwa1_instance =
+      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa1");
+  // Weld iiwa0 to the world, leave iiwa1 to be floating.
+  plant->WeldFrames(plant->world_frame(),
+                    plant->GetFrameByName("iiwa_link_0", iiwa0_instance));
+
+  Eigen::VectorXd q = Eigen::VectorXd::LinSpaced(
+      7 + 7 + 7, 1.0, 2.0);  // 7 joints each + 7 floating base positions.
+  q.segment(7, 4).normalize();  // normalize the quaternion indices.
+
+  // Throws if called pre-finalize.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant->SetDefaultPositions(q),
+                              ".*you must call Finalize.* first.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->SetDefaultPositions(iiwa0_instance, q.head<7>()),
+      ".*you must call Finalize.* first.");
+  plant->Finalize();
+
+  // Throws if the q is the wrong size.
+  DRAKE_EXPECT_THROWS_MESSAGE(plant->SetDefaultPositions(q.head<3>()),
+                              ".*num_positions.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->SetDefaultPositions(iiwa1_instance, q.head<3>()),
+      ".*q_instance.size.* == num_positions.*");
+
+  plant->SetDefaultPositions(q);
+
+  const double kTol = 1e-15;
+  auto context = plant->CreateDefaultContext();
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context), q, kTol));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa0_instance),
+                              q.head<7>()));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa1_instance),
+                              q.tail<14>(), kTol));
+
+  // Change q, and now verify the model_instance variant.
+  q = Eigen::VectorXd::LinSpaced(
+      7 + 7 + 7, 3.0, 4.0);  // 7 joints each + 7 floating base positions.
+  q.segment(7, 4).normalize();  // normalize the quaternion indices.
+
+  plant->SetDefaultPositions(iiwa0_instance, q.head<7>());
+  plant->SetDefaultPositions(iiwa1_instance, q.tail<14>());
+
+  plant->SetDefaultContext(context.get());
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context), q, kTol));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa0_instance),
+                              q.head<7>()));
+  EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa1_instance),
+                              q.tail<14>(), kTol));
 }
 
 }  // namespace

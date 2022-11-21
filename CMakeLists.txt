@@ -24,20 +24,14 @@ if(ANDROID OR CYGWIN OR IOS OR NOT UNIX)
   )
 endif()
 
-if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
-  message(FATAL_ERROR
-    "System processor ${CMAKE_SYSTEM_PROCESSOR} is NOT supported"
-  )
-endif()
-
 set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
 if(APPLE)
-  if(CMAKE_SYSTEM_VERSION VERSION_LESS 20)
-    message(FATAL_ERROR
+  if(CMAKE_SYSTEM_VERSION VERSION_LESS 21)
+    message(WARNING
       "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use "
-      "Darwin 20.x (macOS Big Sur) or 21.x (macOS Monterey)."
+      "Darwin 21.x (macOS Monterey) or newer."
     )
   endif()
 else()
@@ -81,10 +75,10 @@ else()
 
   # The supported releases should match those listed in both
   # doc/_pages/from_source.md and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(focal)$")
+  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(focal|jammy)$")
     message(FATAL_ERROR
       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-      "Ubuntu 20.04 (Focal)."
+      "Ubuntu 20.04 (Focal) or Ubuntu 22.04 (Jammy)."
     )
   endif()
 endif()
@@ -108,9 +102,8 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
-# TODO(jwnimmer-tri) Set MINIMUM_CLANG_VERSION=12 on 2022-09-01.
-set(MINIMUM_APPLE_CLANG_VERSION 12)
-set(MINIMUM_CLANG_VERSION 9)
+set(MINIMUM_APPLE_CLANG_VERSION 14)
+set(MINIMUM_CLANG_VERSION 12)
 set(MINIMUM_GNU_VERSION 9.3)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
@@ -209,9 +202,13 @@ set(CMAKE_CXX_STANDARD 17)
 # The supported Python major/minor versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/python/repository.bzl.
 if(APPLE)
-  set(SUPPORTED_PYTHON_VERSION 3.9)
+  set(SUPPORTED_PYTHON_VERSION 3.10)
 else()
-  set(SUPPORTED_PYTHON_VERSION 3.8)
+  if(UNIX_DISTRIBUTION_CODENAME STREQUAL focal)
+    set(SUPPORTED_PYTHON_VERSION 3.8)
+  else()  # UNIX_DISTRIBUTION_CODENAME := jammy
+    set(SUPPORTED_PYTHON_VERSION 3.10)
+  endif()
 endif()
 
 if(APPLE)
@@ -369,6 +366,8 @@ function(generate_external_repository_file OUTPUT)
   endif()
 endfunction()
 
+# Symlinks the C++ include path for TARGET as workspace/NAME/include, e.g.
+#  workspace/eigen/include -> .../build/install/include/eigen3
 function(symlink_external_repository_includes NAME TARGET)
   if(ARGN)
     get_target_property(include_dir ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
@@ -383,6 +382,40 @@ function(symlink_external_repository_includes NAME TARGET)
         ${CMAKE_CONFIGURATION_TYPES})
     elseif(CMAKE_BUILD_TYPE)
       symlink_external_repository_includes(${NAME} ${TARGET}
+        ${CMAKE_BUILD_TYPE})
+    endif()
+  endif()
+endfunction()
+
+# Symlinks the C++ libraries for TARGET as workspace/NAME/lib/*, e.g.
+#  workspace/fmt/lib/libfmt.so.6.1.2 -> .../build/install/lib/fmt/libfmt.so.6.1.2
+#  workspace/fmt/lib/libfmt.so.6 -> .../build/install/lib/fmt/libfmt.so.6.1.2
+function(symlink_external_repository_libs NAME TARGET)
+  if(ARGN)
+    foreach(config IN LISTS ARGN)
+      set(workspace "${CMAKE_CURRENT_BINARY_DIR}/external/${config}/workspace")
+      file(MAKE_DIRECTORY "${workspace}/${NAME}/lib")
+      # Link the full library name (i.e., libfmt.so.6.1.2 in the case of shared).
+      get_target_property(location ${TARGET} LOCATION_${config})
+      if(NOT location)
+        message(FATAL_ERROR "Target ${TARGET} has no library in LOCATION_${config}")
+      endif()
+      get_filename_component(basename "${location}" NAME)
+      file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${basename}" SYMBOLIC)
+      # Link the SONAME spelling in case of shared libraries.
+      # If the basename does not match this pattern, this part is all a no-op.
+      string(REGEX REPLACE "(\\.so\\.[0-9]+)\\.[0-9]+\\.[0-9]+$" "\\1"
+          other_basename "${basename}")
+      string(REGEX REPLACE "(\\.[0-9]+)\\.[0-9]+\\.[0-9]+\\.dylib$" "\\1.dylib"
+          other_basename "${other_basename}")
+      file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${other_basename}" SYMBOLIC)
+    endforeach()
+  else()
+    if(CMAKE_CONFIGURATION_TYPES)
+      symlink_external_repository_libs(${NAME} ${TARGET}
+        ${CMAKE_CONFIGURATION_TYPES})
+    elseif(CMAKE_BUILD_TYPE)
+      symlink_external_repository_libs(${NAME} ${TARGET}
         ${CMAKE_BUILD_TYPE})
     endif()
   endif()
@@ -415,6 +448,7 @@ if(WITH_USER_FMT)
   find_package(fmt CONFIG REQUIRED)
 
   symlink_external_repository_includes(fmt fmt::fmt)
+  symlink_external_repository_libs(fmt fmt::fmt)
   generate_external_repository_file(fmt/WORKSPACE)
   generate_external_repository_file(
     fmt/BUILD.bazel
@@ -435,6 +469,7 @@ if(WITH_USER_SPDLOG)
   find_package(spdlog CONFIG REQUIRED)
 
   symlink_external_repository_includes(spdlog spdlog::spdlog)
+  symlink_external_repository_libs(spdlog spdlog::spdlog)
   generate_external_repository_file(spdlog/WORKSPACE)
   generate_external_repository_file(
     spdlog/BUILD.bazel

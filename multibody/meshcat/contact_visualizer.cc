@@ -19,10 +19,10 @@ using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::Meshcat;
 using geometry::QueryObject;
-using meshcat::internal::PointContactVisualizer;
-using meshcat::internal::PointContactVisualizerItem;
 using meshcat::internal::HydroelasticContactVisualizer;
 using meshcat::internal::HydroelasticContactVisualizerItem;
+using meshcat::internal::PointContactVisualizer;
+using meshcat::internal::PointContactVisualizerItem;
 using multibody::internal::GeometryNames;
 using systems::CacheEntry;
 using systems::Context;
@@ -35,8 +35,8 @@ using systems::System;
 using systems::ValueProducer;
 
 template <typename T>
-ContactVisualizer<T>::ContactVisualizer(
-    std::shared_ptr<Meshcat> meshcat, ContactVisualizerParams params)
+ContactVisualizer<T>::ContactVisualizer(std::shared_ptr<Meshcat> meshcat,
+                                        ContactVisualizerParams params)
     : systems::LeafSystem<T>(systems::SystemTypeTag<ContactVisualizer>{}),
       meshcat_(std::move(meshcat)),
       params_(std::move(params)) {
@@ -67,13 +67,13 @@ ContactVisualizer<T>::ContactVisualizer(
       "contact_results", Value<ContactResults<T>>());
   contact_results_input_port_ = contact_results.get_index();
 
-  const InputPort<T>& query_object = this->DeclareAbstractInputPort(
-      "query_object", Value<QueryObject<T>>());
+  const InputPort<T>& query_object =
+      this->DeclareAbstractInputPort("query_object", Value<QueryObject<T>>());
   query_object_input_port_ = query_object.get_index();
 
   const CacheEntry& geometry_names = this->DeclareCacheEntry(
-      "geometry_names", ValueProducer(
-          GeometryNames(), &ValueProducer::NoopCalc),
+      "geometry_names",
+      ValueProducer(GeometryNames(), &ValueProducer::NoopCalc),
       {this->nothing_ticket()});
   geometry_names_scratch_ = geometry_names.cache_index();
 
@@ -90,8 +90,7 @@ ContactVisualizer<T>::ContactVisualizer(
 
 template <typename T>
 template <typename U>
-ContactVisualizer<T>::ContactVisualizer(
-    const ContactVisualizer<U>& other)
+ContactVisualizer<T>::ContactVisualizer(const ContactVisualizer<U>& other)
     : ContactVisualizer(other.meshcat_, other.params_) {}
 
 template <typename T>
@@ -111,14 +110,13 @@ const ContactVisualizer<T>& ContactVisualizer<T>::AddToBuilder(
   DRAKE_THROW_UNLESS(builder != nullptr);
 
   // Delegate to another overload.
-  const auto& result = AddToBuilder(
-      builder, plant.get_contact_results_output_port(),
-      std::move(meshcat), std::move(params));
+  const auto& result =
+      AddToBuilder(builder, plant.get_contact_results_output_port(),
+                   std::move(meshcat), std::move(params));
 
   // Add the query connection (if the plant has a SceneGraph).
-  builder->ConnectToSame(
-      plant.get_geometry_query_input_port(),
-      result.query_object_input_port());
+  builder->ConnectToSame(plant.get_geometry_query_input_port(),
+                         result.query_object_input_port());
 
   return result;
 }
@@ -151,8 +149,8 @@ template <typename T>
 EventStatus ContactVisualizer<T>::UpdateMeshcat(
     const Context<T>& context) const {
   const auto& point_contacts =
-      this->get_cache_entry(point_contacts_cache_).
-      template Eval<std::vector<PointContactVisualizerItem>>(context);
+      this->get_cache_entry(point_contacts_cache_)
+          .template Eval<std::vector<PointContactVisualizerItem>>(context);
   point_visualizer_->Update(point_contacts);
 
   const auto& hydroelastic_contacts =
@@ -203,9 +201,9 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
   result->reserve(contact_results.num_hydroelastic_contacts());
 
   // Update our output vector of items.
-  for (int i = 0; i < contact_results.num_hydroelastic_contacts(); ++i) {
+  for (int ci = 0; ci < contact_results.num_hydroelastic_contacts(); ++ci) {
     const HydroelasticContactInfo<T>& info =
-        contact_results.hydroelastic_contact_info(i);
+        contact_results.hydroelastic_contact_info(ci);
 
     const geometry::ContactSurface<T>& contact_surface = info.contact_surface();
 
@@ -217,8 +215,65 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
     Vector3d centroid_W = ExtractDoubleOrThrow(contact_surface.centroid());
     Vector3d force_C_W = ExtractDoubleOrThrow(info.F_Ac_W().translational());
     Vector3d moment_C_W = ExtractDoubleOrThrow(info.F_Ac_W().rotational());
-    result->emplace_back(std::move(body_A), std::move(body_B), centroid_W,
-                       force_C_W, moment_C_W);
+
+    if (contact_surface.is_triangle()) {
+      const auto& mesh = contact_surface.tri_mesh_W();
+
+      Eigen::Matrix3Xd vertices(3, contact_surface.num_vertices());
+      for (int i = 0; i < contact_surface.num_vertices(); ++i) {
+        vertices.col(i) = ExtractDoubleOrThrow(mesh.vertex(i));
+      }
+      Eigen::Matrix3Xi faces(3, mesh.num_triangles());
+      for (int i = 0; i < mesh.num_triangles(); ++i) {
+        const auto& e = mesh.element(i);
+        for (int j = 0; j < 3; ++j) {
+          faces(j, i) = e.vertex(j);
+        }
+      }
+
+      const std::vector<T>& field_pressures =
+          contact_surface.tri_e_MN().values();
+      const VectorX<T> pressure_T =
+          Eigen::Map<const VectorX<T>, Eigen::Unaligned>(
+              field_pressures.data(), field_pressures.size());
+      const Eigen::VectorXd pressure = ExtractDoubleOrThrow(pressure_T);
+      result->emplace_back(std::move(body_A), std::move(body_B), centroid_W,
+                           force_C_W, moment_C_W, vertices, faces, pressure);
+    } else {
+      const auto& mesh = contact_surface.poly_mesh_W();
+      Eigen::Matrix3Xd vertices(3, contact_surface.num_vertices());
+      for (int i = 0; i < contact_surface.num_vertices(); ++i) {
+        vertices.col(i) = ExtractDoubleOrThrow(mesh.vertex(i));
+      }
+
+      int num_triangles = 0;
+      for (int i = 0; i < mesh.num_elements(); ++i) {
+        num_triangles += mesh.element(i).num_vertices() - 2;
+      }
+
+      Eigen::Matrix3Xi faces(3, num_triangles);
+      int f_index = 0;
+      for (int i = 0; i < mesh.num_elements(); ++i) {
+        const auto& e = mesh.element(i);
+        for (int j = 1; j < e.num_vertices() - 1; ++j) {
+          faces(0, f_index) = e.vertex(0);
+          faces(1, f_index) = e.vertex(j);
+          faces(2, f_index) = e.vertex(j + 1);
+          ++f_index;
+        }
+      }
+
+      const std::vector<T>& field_pressures =
+          contact_surface.poly_e_MN().values();
+      const VectorX<T> pressure_T =
+          Eigen::Map<const VectorX<T>, Eigen::Unaligned>(
+              field_pressures.data(), field_pressures.size());
+      const Eigen::VectorXd pressure = ExtractDoubleOrThrow(pressure_T);
+
+      result->emplace_back(std::move(body_A), std::move(body_B), centroid_W,
+                           force_C_W, moment_C_W, std::move(vertices),
+                           std::move(faces), std::move(pressure));
+    }
   }
 }
 
@@ -255,8 +310,7 @@ void ContactVisualizer<T>::CalcPointContacts(
 
 // N.B. This is only called if params_.delete_on_initialization_event was true.
 template <typename T>
-EventStatus ContactVisualizer<T>::OnInitialization(
-    const Context<T>&) const {
+EventStatus ContactVisualizer<T>::OnInitialization(const Context<T>&) const {
   Delete();
   return EventStatus::Succeeded();
 }

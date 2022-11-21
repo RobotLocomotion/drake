@@ -236,32 +236,29 @@ class ForceSensorEvaluator : public systems::LeafSystem<double> {
 int DoMain() {
   systems::DiagramBuilder<double> builder;
 
-  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
-  scene_graph.set_name("scene_graph");
-  Vector3d gravity;
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
 
   // Make and add the planar_gripper model.
   const std::string full_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
-  MultibodyPlant<double>& plant =
-      *builder.AddSystem<MultibodyPlant>(FLAGS_time_step);
   const ModelInstanceIndex gripper_index =
-      Parser(&plant, &scene_graph).AddModelFromFile(full_name);
+      Parser(&plant).AddModels(full_name).at(0);
   WeldGripperFrames<double>(&plant);
 
   // Adds the brick to be manipulated.
   const std::string brick_file_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_brick.sdf");
-  const ModelInstanceIndex brick_index =
-      Parser(&plant).AddModelFromFile(brick_file_name, "brick");
+  Parser(&plant).AddModels(brick_file_name);
 
   // When the planar-gripper is welded via WeldGripperFrames(), motion always
   // lies in the world Y-Z plane (because the planar-gripper frame is aligned
   // with the world frame). Therefore, gravity can either point along the world
   // -Z axis (vertical case), or world -X axis (horizontal case).
+  Vector3d gravity;
   if (FLAGS_orientation == "vertical") {
     const multibody::Frame<double>& brick_base_frame =
-        plant.GetFrameByName("brick_base", brick_index);
+        plant.GetFrameByName("brick_base");
     plant.WeldFrames(plant.world_frame(), brick_base_frame);
     gravity = Vector3d(
         0, 0, -multibody::UniformGravityFieldElement<double>::kDefaultStrength);
@@ -279,7 +276,7 @@ int DoMain() {
 
   // Create the controlled plant. Contains only the fingers (no bricks).
   MultibodyPlant<double> control_plant(FLAGS_time_step);
-  Parser(&control_plant).AddModelFromFile(full_name);
+  Parser(&control_plant).AddModels(full_name);
   WeldGripperFrames<double>(&control_plant);
 
   // Adds a thin floor that can provide friction against the brick.
@@ -292,16 +289,6 @@ int DoMain() {
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
   plant.mutable_gravity_field().set_gravity_vector(gravity);
   control_plant.mutable_gravity_field().set_gravity_vector(gravity);
-
-  // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(plant.geometry_source_is_registered());
-
-  // Connect MBP and SG.
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
 
   systems::lcm::LcmInterfaceSystem* lcm =
       builder.AddSystem<systems::lcm::LcmInterfaceSystem>();

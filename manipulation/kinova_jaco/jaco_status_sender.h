@@ -1,7 +1,6 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/lcmt_jaco_status.hpp"
 #include "drake/manipulation/kinova_jaco/jaco_constants.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -16,14 +15,18 @@ namespace kinova_jaco {
 /// channel. To send the message, the output of this system should be
 /// connected to a systems::lcm::LcmPublisherSystem::Make<lcmt_jaco_status>().
 ///
-/// This system has many vector-valued input ports.  All input ports are of
-/// size num_joints + num_fingers.  The elements in the ports are the joints
-/// of the arm from the base to the tip, followed by the fingers in the same
-/// order as used by the Kinova SDK (consult the URDF model for a visual
-/// example).  If the torque, torque_external, or current input ports are not
-/// connected, the output message will use zeros.  Finger velocities will be
-/// translated to the values used by the Kinova SDK from values appropriate
-/// for the finger joints in the Jaco description (see jaco_constants.h).
+/// This system has many vector-valued input ports.  Most input ports are of
+/// size num_joints + num_fingers. The exception is `time_measured` which is
+/// the one-dimensional time in seconds to set as the message timestamp
+/// (i.e. the time inputed will be converted to microseconds and sent to the
+/// hardware). It is optional and if unset, the context time is used.  The
+/// elements in the ports are the joints of the arm from the base to the tip,
+/// followed by the fingers in the same order as used by the Kinova SDK
+/// (consult the URDF model for a visual example).  If the torque,
+/// torque_external, or current input ports are not connected, the output
+/// message will use zeros.  Finger velocities will be translated to the
+/// values used by the Kinova SDK from values appropriate for the finger
+/// joints in the Jaco description (see jaco_constants.h).
 ///
 /// This system has one abstract-valued output port of type lcmt_jaco_status.
 ///
@@ -38,6 +41,7 @@ namespace kinova_jaco {
 /// - torque (optional)
 /// - torque_external (optional)
 /// - current (optional)
+/// - time_measured (optional)
 /// output_ports:
 /// - lcmt_jaco_status
 /// @endsystem
@@ -50,11 +54,11 @@ class JacoStatusSender : public systems::LeafSystem<double> {
   JacoStatusSender(int num_joints = kJacoDefaultArmNumJoints,
                    int num_fingers = kJacoDefaultArmNumFingers);
 
-  DRAKE_DEPRECATED("2022-08-01", "Use position/velocity input ports instead.")
-  const systems::InputPort<double>& get_state_input_port() const;
-
   /// @name Named accessors for this System's input and output ports.
   //@{
+  const systems::InputPort<double>& get_time_measured_input_port() const {
+    return *time_measured_input_;
+  }
   const systems::InputPort<double>& get_position_input_port() const {
     return *position_input_;
   }
@@ -77,7 +81,7 @@ class JacoStatusSender : public systems::LeafSystem<double> {
 
   const int num_joints_;
   const int num_fingers_;
-  const systems::InputPort<double>* state_input_{};
+  const systems::InputPort<double>* time_measured_input_{};
   const systems::InputPort<double>* position_input_{};
   const systems::InputPort<double>* velocity_input_{};
   const systems::InputPort<double>* torque_input_{};

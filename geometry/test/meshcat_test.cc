@@ -286,9 +286,8 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   EXPECT_FALSE(meshcat.GetPackedObject("box").empty());
   meshcat.SetObject("ellipsoid", Ellipsoid(.25, .25, .5), Rgba(1., 0, 1, 1));
   EXPECT_FALSE(meshcat.GetPackedObject("ellipsoid").empty());
-  // Capsules are not supported yet; this should only log a warning.
   meshcat.SetObject("capsule", Capsule(.25, .5));
-  EXPECT_TRUE(meshcat.GetPackedObject("capsule").empty());
+  EXPECT_FALSE(meshcat.GetPackedObject("capsule").empty());
   meshcat.SetObject(
       "mesh", Mesh(FindResourceOrThrow(
                        "drake/geometry/render/test/meshes/box.obj"),
@@ -613,6 +612,30 @@ GTEST_TEST(MeshcatTest, Buttons) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetButtonClicks("bob"),
       "Meshcat does not have any button named bob.");
+
+  // Adding a button with the keycode.
+  meshcat.AddButton("alice", "KeyT");
+  CheckWebsocketCommand(meshcat, R"""({
+      "type": "button",
+      "name": "alice"
+    })""", {}, {});
+  EXPECT_EQ(meshcat.GetButtonClicks("alice"), 1);
+  // Adding with the same keycode still resets.
+  meshcat.AddButton("alice", "KeyT");
+  EXPECT_EQ(meshcat.GetButtonClicks("alice"), 0);
+  // Adding the same button with an empty keycode throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("alice"),
+      ".*does not match the current keycode.*");
+  // Adding the same button with a different keycode throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("alice", "KeyR"),
+      ".*does not match the current keycode.*");
+  meshcat.DeleteButton("alice");
+
+  // Adding a button with the keycode empty, then populated works.
+  meshcat.AddButton("alice");
+  meshcat.AddButton("alice", "KeyT");
 }
 
 GTEST_TEST(MeshcatTest, Sliders) {
@@ -665,8 +688,43 @@ GTEST_TEST(MeshcatTest, DuplicateMixedControls) {
       meshcat.AddButton("slider"),
       "Meshcat already has a slider named slider.");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("slider", "KeyR"),
+      "Meshcat already has a slider named slider.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.AddSlider("button", 0.2, 1.5, 0.1, 0.5),
       "Meshcat already has a button named button.");
+}
+
+// Properly testing Meshcat's limited support for gamepads requires human
+// input, and is done in meshcat_manual_test. This test simply ensures the
+// entry point forwards along the Javascript messages.
+GTEST_TEST(MeshcatTest, Gamepad) {
+  Meshcat meshcat;
+
+  Meshcat::Gamepad gamepad = meshcat.GetGamepad();
+  // Check the default status assuming no messages have been received:
+  EXPECT_FALSE(gamepad.index);
+  EXPECT_TRUE(gamepad.button_values.empty());
+  EXPECT_TRUE(gamepad.axes.empty());
+
+  // Clicking the button increases the count.
+  CheckWebsocketCommand(meshcat, R"""({
+      "type": "gamepad",
+      "name": "",
+      "gamepad": {
+        "index": 1, 
+        "button_values": [0, 0.5],
+        "axes": [0.1, 0.2, 0.3, 0.4]
+      }
+    })""", {}, {});
+
+  gamepad = meshcat.GetGamepad();
+  EXPECT_TRUE(gamepad.index);
+  EXPECT_EQ(gamepad.index, 1);
+  std::vector<double> expected_button_values{0, 0.5};
+  std::vector<double> expected_axes{0.1, 0.2, 0.3, 0.4};
+  EXPECT_EQ(gamepad.button_values, expected_button_values);
+  EXPECT_EQ(gamepad.axes, expected_axes);
 }
 
 GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
@@ -714,7 +772,8 @@ GTEST_TEST(MeshcatTest, SetPerspectiveCamera) {
           "fov": 82.0,
           "aspect": 1.5,
           "near": 0.01,
-          "far": 100
+          "far": 100,
+          "zoom": 1.0
         }
       }
     })""");
@@ -900,11 +959,28 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
                          RigidTransformd(RotationMatrixd::MakeZRotation(M_PI)));
 
   const std::string html = meshcat.StaticHtml();
-  // Confirm that I have some base64 content.
-  EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
 
-  // Confirm that the meshcat.js link was replaced.
+  // Confirm that the js source links were replaced.
   EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
+  EXPECT_THAT(html, ::testing::Not(HasSubstr("stats.min.js")));
+  // The static html replaces the javascript web socket connection code with
+  // direct invocation of MeshCat with all of the data. We'll confirm that
+  // this appears to have happened by testing for the presence of the injected
+  // tree (base64 content) and the absence of what is *believed* to be the
+  // delimiting text of the connection block.
+  EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
+  EXPECT_THAT(html, ::testing::Not(HasSubstr("CONNECTION BLOCK")));
+}
+
+// Check MeshcatParams.hide_stats_plot sends a hide_realtime_rate message
+GTEST_TEST(MeshcatTest, RealtimeRatePlot) {
+  MeshcatParams params;
+  params.show_stats_plot = true;
+  Meshcat meshcat(params);
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
+      "type": "show_realtime_rate",
+      "show": true
+    })""");
 }
 
 }  // namespace

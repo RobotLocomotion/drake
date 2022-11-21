@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
@@ -31,10 +32,8 @@ class TestLcm(unittest.TestCase):
         dut.defer_initialization = True
         instance = DrakeLcm(params=dut)
         self.assertTrue(instance.get_lcm_url(), "memq://123")
-
-    def test_deprecated(self):
-        with catch_drake_warnings(expected_count=1):
-            DrakeLcm(lcm_url="", defer_initialization=True)
+        self.assertIn("lcm_url", repr(dut))
+        copy.copy(dut)
 
     def _handler(self, raw):
         quat = lcmt_quaternion.decode(raw)

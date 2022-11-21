@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -27,6 +28,40 @@ enum class SapSolverStatus {
 // SAP solver parameters such as tolerances, maximum number of iterations and
 // regularization parameters.
 struct SapSolverParameters {
+  // Line search method.
+  enum LineSearchType {
+    // Approximate backtracking method with Armijo criterion.
+    kBackTracking,
+    // Newton method to find the root of dℓ(α)/dα to high accuracy.
+    kExact,
+  };
+
+  // Parameters for the backtracking line search.
+  // Ignored if line_search_type != LineSearchType::kBackTracking.
+  struct BackTrackingLineSearchParameters {
+    int max_iterations{40};  // Maximum number of backtracking iterations.
+    double armijos_parameter{1.0e-4};  // Armijo's criterion parameter.
+    double rho{0.8};                   // Backtracking parameter.
+    // Maximum line search step size allowed.
+    // Using this value of alpha_max ensures that the backtracking line search
+    // uses alpha = 1.0 on the second iteration. This is particularly important
+    // to avoid overrelaxation of Newton's method in regions where the cost is
+    // quadratic, or close to quadratic.
+    double alpha_max{1.0 / rho};
+  };
+
+  // Parameters for the exact line search.
+  // Ignored if line_search_type != LineSearchType::kExact.
+  struct ExactLineSearchParameters {
+    // Maximum number of iterations allowed. Since our one-dimensional strategy
+    // switches to bisection when Newton convergence is slow, this means that
+    // the step size parameter will be computed with precision
+    // 0.5^max_iterations. We very seldom need to change this parameter.
+    int max_iterations{100};
+    // Maximum line search step size allowed.
+    double alpha_max{1.5};
+  };
+
   // Stopping Criteria:
   //   SAP uses two stopping criteria, one on the optimality condition and a
   // second one on the cost, see specifics below for each criteria. SAP
@@ -101,17 +136,11 @@ struct SapSolverParameters {
   double cost_rel_tolerance{1.e-15};  // Relative tolerance εᵣ.
   int max_iterations{100};            // Maximum number of Newton iterations.
 
-  // Line-search parameters.
-  int ls_max_iterations{40};  // Maximum number of line search iterations.
-  double ls_c{1.0e-4};        // Armijo's criterion parameter.
-  double ls_rho{0.8};         // Backtracking search parameter.
+  LineSearchType line_search_type{LineSearchType::kExact};
 
-  // Maximum line search parameter allowed.
-  // Using this value of ls_alpha_max ensures that SAP's line search uses alpha
-  // = 1.0 on the second iteration. This is particularly important to avoid
-  // overrelaxation of Newton's method in regions where the cost is quadratic,
-  // or close to quadratic.
-  double ls_alpha_max{1.0 / ls_rho};
+  BackTrackingLineSearchParameters backtracking_line_search;
+
+  ExactLineSearchParameters exact_line_search;
 
   // Tolerance used in impulse soft norms. In Ns.
   double soft_tolerance{1.0e-7};
@@ -119,6 +148,24 @@ struct SapSolverParameters {
   // SAP uses sparse supernodal algebra by default. Set this to true to use
   // dense algebra instead. Typically used for testing.
   bool use_dense_algebra{false};
+
+  // Dimensionless number used to allow some slop on the check near zero for
+  // certain quantities such as the gradient of the cost.
+  // It is also used to check for monotonic convergence. In particular, we allow
+  // a small increase in the cost due to round-off errors
+  //   ℓᵏ ≤ ℓᵏ⁻¹ + ε
+  // where ε = relative_slop*max(1, (ℓᵏ+ℓᵏ⁻¹)/2).
+  // If this condition is not satisfied and nonmonotonic_convergence_is_error =
+  // true, SapSolver throws an exception.
+  double relative_slop{1000 * std::numeric_limits<double>::epsilon()};
+
+  // (For debugging) Even though SAP's convergence in monotonic, round-off
+  // errors could cause small cost increases on the order of machine epsilon.
+  // SAP's implementation uses a `realtive_slop` so that round-off errors do not
+  // cause false negatives. For debugging purposes however, this options allows
+  // to trigger an exception if the cost increases. For details, see
+  // documentation on `relative_slop`.
+  bool nonmonotonic_convergence_is_error{false};
 };
 
 // This class implements the Semi-Analytic Primal (SAP) solver described in
@@ -162,6 +209,8 @@ class SapSolver {
       cost_criterion_reached = false;
       momentum_residual.clear();
       momentum_scale.clear();
+      cost.clear();
+      alpha.clear();
     }
     int num_iters{0};              // Number of Newton iterations.
     int num_line_search_iters{0};  // Total number of line search iterations.
@@ -172,17 +221,28 @@ class SapSolver {
     // Indicates if the cost condition was reached.
     bool cost_criterion_reached{false};
 
-    // Dimensionless momentum residual at each iteration. Of size num_iters + 1.
+    // Cost at each SAP Newton iteration. cost[0] stores cost at the initial
+    // guess.
+    std::vector<double> cost;
+
+    // Line search step size at each SAP Newton iteration. alpha[0] stores alpha
+    // = 1.
+    std::vector<double> alpha;
+
+    // Dimensionless momentum residual at each SAP Newton iteration. Of size
+    // num_iters + 1.
     std::vector<double> momentum_residual;
 
-    // Dimensionless momentum scale at each iteration. Of size num_iters + 1.
+    // Dimensionless momentum scale at each SAP Newton iteration. Of size
+    // num_iters + 1.
     std::vector<double> momentum_scale;
   };
 
   SapSolver() = default;
 
   // Solve the contact problem specified by the input data. Currently, only `T =
-  // double` is supported. An exception is thrown if `T != double`.
+  // double` is fully supported. An exception is thrown if `T != double` and the
+  // set of constraints is non-empty.
   //
   // Convergence of the solver is controlled by set_parameters(). Refer to
   // SapSolverParameters for details on the convergence conditions.
@@ -247,10 +307,26 @@ class SapSolver {
   // the last Newton iteration values of generalized velocities and search
   // direction, respectively. This methods uses the O(n) strategy described in
   // [Castro et al., 2021].
-  // @pre context was created by the underlying SapModel.
+  //
+  // @param context A SapModel context storing the state of the underlying
+  //   model.
+  // @param search_direction_data Search direction Δv and derived data.
+  // @param alpha Step size α along Δv.
+  //   Cost will be computed at ℓ(α) = ℓ(vᵐ + αΔvᵐ).
+  // @param scratch A SapModel context used as a scratchpad. Values stored in
+  //   this context do not affect the result of the computation. scratch must
+  //   not be nullptr and scratch != &context.
+  // @param dell_dalpha If not nullptr, on return dell_dalpha contains the value
+  //   of the derivative dℓ/dα = ∇ℓ(vᵐ)⋅Δvᵐ.
+  // @param d2ell_dalpha2 If not nullptr then on return d2ell_dalpha2 contains
+  //   the value of the second derivative d²ℓ/dα².
+  // @param d2ell_dalpha2_scratch A scratchpad needed when computing
+  //   d2ell_dalpha2. Must not be nullptr if d2ell_dalpha2 != nullptr.
   T CalcCostAlongLine(const systems::Context<T>& context,
                       const SearchDirectionData& search_direction_data,
-                      const T& alpha, systems::Context<T>* scratch) const;
+                      const T& alpha, systems::Context<T>* scratch,
+                      T* dell_dalpha = nullptr, T* d2ell_dalpha2 = nullptr,
+                      VectorX<T>* d2ell_dalpha2_scratch = nullptr) const;
 
   // Approximation to the 1D minimization problem α = argmin ℓ(α) = ℓ(v + αΔv)
   // over α. We define ϕ(α) = ℓ₀ + α c ℓ₀', where ℓ₀ = ℓ(0), ℓ₀' = dℓ/dα(0) and
@@ -264,11 +340,32 @@ class SapSolver {
   // For a good reference on this method, see Section 11.3 of Bierlaire, M.,
   // 2015. "Optimization: principles and algorithms", EPFL Press.
   //
+  // @param context A SapModel context storing the state of the underlying
+  //   model.
+  // @param search_direction_data Search direction Δv and derived data.
+  // @param scratch_workspace A SapModel context used as a scratchpad. Values
+  //   stored in this context do not affect the result of the computation.
+  //   scratch_workspace must not be nullptr and scratch_workspace != &context.
+  //
   // @returns A pair (α, num_iterations) where α satisfies Armijo's criterion
   // and num_iterations is the number of backtracking iterations performed.
-  // @pre both context and scratch_workspace were created by the underlying
-  // SapModel.
   std::pair<T, int> PerformBackTrackingLineSearch(
+      const systems::Context<T>& context,
+      const SearchDirectionData& search_direction_data,
+      systems::Context<T>* scratch_workspace) const;
+
+  // Solves α = argmin ℓ(α) = ℓ(v + αΔv) using a Newton-based method.
+  //
+  // @param context A SapModel context storing the state of the underlying
+  //   model.
+  // @param search_direction_data Search direction Δv and derived data.
+  // @param scratch_workspace A SapModel context used as a scratchpad. Values
+  //   stored in this context do not affect the result of the computation.
+  //   scratch_workspace must not be nullptr and scratch_workspace != &context.
+  //
+  // @returns A pair (α, num_iterations) with α the optimal line search step
+  // size and num_iterations is the number of iterations performed.
+  std::pair<T, int> PerformExactLineSearch(
       const systems::Context<T>& context,
       const SearchDirectionData& search_direction_data,
       systems::Context<T>* scratch_workspace) const;
@@ -325,10 +422,15 @@ class SapSolver {
 };
 
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.
+// We use these to specialize functions that do not support AutoDiffXd.
 template <>
 SapSolverStatus SapSolver<double>::SolveWithGuess(
     const SapContactProblem<double>&, const VectorX<double>&,
     SapSolverResults<double>*);
+template <>
+std::pair<double, int> SapSolver<double>::PerformExactLineSearch(
+    const systems::Context<double>&, const SearchDirectionData&,
+    systems::Context<double>*) const;
 
 }  // namespace internal
 }  // namespace contact_solvers

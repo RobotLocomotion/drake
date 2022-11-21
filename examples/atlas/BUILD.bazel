@@ -25,12 +25,11 @@ drake_cc_binary(
     deps = [
         "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//geometry:drake_visualizer",
         "//multibody/parsing",
-        "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_gflags",
         "//systems/framework:diagram",
+        "//visualization:visualization_config_functions",
         "@gflags",
     ],
 )

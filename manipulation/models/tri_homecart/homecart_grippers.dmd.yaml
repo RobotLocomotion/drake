@@ -1,0 +1,41 @@
+directives:
+# Left Gripper
+- add_frame:
+    name: gripper_left_origin
+    X_PF:
+      base_frame: ur3_left::ur_ee_link
+      translation: [0.06, 0, 0]
+      rotation: !Rpy { deg: [0, 0, -90] }
+- add_model:
+    name: gripper_left
+    file: package://drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+- add_weld:
+    parent: gripper_left_origin
+    child: gripper_left::body
+# Right Gripper
+- add_frame:
+    name: gripper_right_origin
+    X_PF:
+      base_frame: ur3_right::ur_ee_link
+      translation: [0.06, 0, 0]
+      rotation: !Rpy { deg: [0, 0, -90] }
+- add_model:
+    name: gripper_right
+    file: package://drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+- add_weld:
+    parent: gripper_right_origin
+    child: gripper_right::body
+
+# Grasp frames
+- add_frame:
+    name: gripper_left::grasp_frame
+    X_PF:
+      base_frame: gripper_left::body_frame
+      translation: [0.0, 0.11, 0.0]
+      rotation: !Rpy { deg: [0, 0, 0] }
+- add_frame:
+    name: gripper_right::grasp_frame
+    X_PF:
+      base_frame: gripper_right::body_frame
+      translation: [0.0, 0.11, 0.0]
+      rotation: !Rpy { deg: [0, 0, 0] }

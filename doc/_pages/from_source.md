@@ -8,36 +8,26 @@ The following table shows the configurations and platforms that Drake
 officially supports. Supported configurations are tested in continuous
 integration. Any other configurations are provided on a best-effort basis.
 
+<!-- The operating system requirements should match those listed in both the
+     root CMakeLists.txt and tools/workspace/os.bzl. -->
 <!-- The minimum compiler versions should match those listed in both the root
      CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
 
-| Operating System ⁽⁴⁾             | Architecture | Python  | Bazel | CMake | C/C++ Compiler ⁽⁵⁾                 | Java                          |
-|----------------------------------|--------------|---------|-------|-------|------------------------------------|-------------------------------|
-| Ubuntu 20.04 LTS (Focal Fossa)   | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾ | 5.1   | 3.16  | GCC 9.3 (default) or Clang 12  | OpenJDK 11                    |
-| macOS Big Sur (11)               | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
-| macOS Monterey (12)              | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
+| Operating System ⁽²⁾               | Architecture | Python ⁽¹⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java                          |
+|------------------------------------|--------------|------------|-------|-------|------------------------------|-------------------------------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8        | 5.3   | 3.16  | GCC 9 (default) or Clang 12  | OpenJDK 11                    |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 5.3   | 3.22  | GCC 11 (default) or Clang 12 | OpenJDK 11                    |
+| macOS Monterey (12)                | x86_64       | 3.10       | 5.3   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Monterey (12)                | arm64        | 3.10       | 5.3   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
 
-⁽¹⁾ Drake Ubuntu builds assume support for Intel's AVX2 and FMA instructions,
-introduced with the Haswell architecture in 2013 with substantial performance
-improvements in the Broadwell architecture in 2014. Drake is compiled with
-`-march=broadwell` to exploit these instructions (that also works for Haswell
-machines). Drake can be used on older machines if necessary by building from
-source with that flag removed.
+⁽¹⁾ CPython is the only Python implementation supported.
 
-⁽²⁾ For users running on Apple's newer arm64 hardware, refer to
-[Running under Rosetta 2](/rosetta2.html)
-for instructions on running using x86_64 emulation.
-Building and running directly on arm64 is not yet supported; plans
-for any future arm64 support on macOS and/or Ubuntu are discussed in
-[issue #13514](https://github.com/RobotLocomotion/drake/issues/13514).
-
-⁽³⁾ CPython is the only Python implementation supported.
-
-⁽⁴⁾ Drake features that perform image rendering (e.g., camera simulation)
+⁽²⁾ Drake features that perform image rendering (e.g., camera simulation)
 require a working display server.  Most personal computers will have this
-already built in, but some cloud or docker environments may not.
+already built in, but some cloud or docker environments may require extra
+setup steps.
 
-⁽⁵⁾ Drake requires a compiler running in C++17 or C++20 mode.
+⁽³⁾ Drake requires a compiler running in C++17 or C++20 mode.
 
 # Getting Drake
 
@@ -72,7 +62,7 @@ git remote add upstream git@github.com:RobotLocomotion/drake.git
 git remote set-url --push upstream no_push
 ```
 
-# Mandatory platform specific instructions
+# Mandatory platform-specific instructions
 
 Before running the build, you must follow some one-time platform-specific
 setup steps:
@@ -86,8 +76,9 @@ All else being equal, we would recommend developers use Ubuntu Focal.
 
 # Build with Bazel
 
-For instructions, jump to [Using Bazel](/bazel.html#developing-drake-using-bazel), or check out the
-full details at:
+For instructions, jump to
+[Developing Drake using Bazel](/bazel.html#developing-drake-using-bazel),
+or check out the full details at:
 
 * [Bazel build system](/bazel.html)
 
@@ -103,6 +94,11 @@ cd drake-build
 cmake ../drake
 make -j
 ```
+
+Note that a concurrency limit passed to `make` (e.g., `make -j 2`) has almost no
+effect on the Drake build. You might need to add a bazel configuration dotfile
+to your home directory if your build is running out of memory. See the
+[troubleshooting](/troubleshooting.html#build-oom) page for details.
 
 Please note the additional CMake options which affect the Python bindings:
 

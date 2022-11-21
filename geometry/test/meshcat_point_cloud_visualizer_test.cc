@@ -60,7 +60,7 @@ TEST_F(MeshcatPointCloudVisualizerTest, Publish) {
 
   EXPECT_TRUE(meshcat_->GetPackedObject("cloud").empty());
   EXPECT_TRUE(meshcat_->GetPackedTransform("cloud").empty());
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_FALSE(meshcat_->GetPackedObject("cloud").empty());
   EXPECT_FALSE(meshcat_->GetPackedTransform("cloud").empty());
 }
@@ -70,7 +70,7 @@ TEST_F(MeshcatPointCloudVisualizerTest, NoPose) {
 
   EXPECT_TRUE(meshcat_->GetPackedObject("cloud").empty());
   EXPECT_TRUE(meshcat_->GetPackedTransform("cloud").empty());
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_FALSE(meshcat_->GetPackedObject("cloud").empty());
   // It still publishes a transform; but it publishes the identity.
   EXPECT_FALSE(meshcat_->GetPackedTransform("cloud").empty());
@@ -80,8 +80,8 @@ TEST_F(MeshcatPointCloudVisualizerTest, PublishPeriod) {
   const double kPeriod = 1/12.0;
   SetUpDiagram(true, kPeriod);
 
-  auto periodic_events = visualizer_->GetPeriodicEvents();
-  for (const auto& data_and_vector : periodic_events) {
+  auto periodic_events_map = visualizer_->MapPeriodicEventsByTiming();
+  for (const auto& data_and_vector : periodic_events_map) {
     EXPECT_EQ(data_and_vector.second.size(), 1);  // only one periodic event
     EXPECT_EQ(data_and_vector.first.period_sec(), kPeriod);
     EXPECT_EQ(data_and_vector.first.offset_sec(), 0.0);
@@ -91,7 +91,7 @@ TEST_F(MeshcatPointCloudVisualizerTest, PublishPeriod) {
 TEST_F(MeshcatPointCloudVisualizerTest, Delete) {
   SetUpDiagram();
 
-  diagram_->Publish(*context_);
+  diagram_->ForcedPublish(*context_);
   EXPECT_FALSE(meshcat_->GetPackedObject("cloud").empty());
 
   visualizer_->Delete();
@@ -115,7 +115,7 @@ TEST_F(MeshcatPointCloudVisualizerTest, ScalarConversion) {
 
   // Call publish to provide code coverage for the AutoDiffXd version of
   // UpdateMeshcat.  We simply confirm that the code doesn't blow up.
-  ad_diagram->Publish(*ad_context);
+  ad_diagram->ForcedPublish(*ad_context);
 }
 
 

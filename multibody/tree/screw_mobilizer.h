@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -17,19 +18,20 @@ namespace multibody {
 namespace internal {
 
 /* This mobilizer models a screw joint between an inboard frame F and an
- outboard frame M that enables translation along F's z axis while
- rotating about it.
+ outboard frame M that enables translation along an axis while
+ rotating about it, such that the axis is constant when measured
+ in either this mobilizer's inboard or outboard frames.
 
  The generalized coordinate for this mobilizer, θ corresponds to
- rotation about the z-axis of frame F.
+ rotation about axis â of frame F.
  Zero θ defines the "zero configuration", which corresponds to frames F and
  M being coincident (axes are aligned and origins are co-located),
- see set_zero_state(). The translation (z) depends on and is proportional to
- the rotation θ. Their relation is defined by a screw pitch.
- The translation (z) is defined to be positive in the direction of
- frame F's z-axis and the rotation θ is defined to be positive according
+ see set_zero_state(). The translation along â depends on and is proportional
+ to the rotation θ. Their relation is defined by a screw pitch.
+ The translation is defined to be positive in the direction of
+ frame F's axis â and the rotation θ is defined to be positive according
  to the right-hand-rule with the thumb aligned in the direction of
- frame F's z-axis. The frame F's z-axis and the frame M's z-axis are aligned
+ frame F's axis â. The axis â in frame F and in frame M are aligned
  at all times for this mobilizer. The generalized velocity for this mobilizer
  is the rate of change of the coordinate, ω =˙θ (θ_dot).
 
@@ -42,24 +44,42 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   /* Constructor for a %ScrewMobilizer between an inboard frame F and
      an outboard frame M  granting one translational and one rotational degrees
      of freedom as described in this class's documentation.
+   @param[in] axis A vector in ℝ³ specifying the axis of motion for this joint.
+                   The coordinates of `axis` expressed in frames F and M are
+                   the same at all times, that is, `axis_F = axis_M`. In other
+                   words, `axis_F` (or `axis_M`) is the eigenvector of `R_FM`
+                   with eigenvalue equal to one. This vector can have any
+                   length, only the direction is used.
    @param[in] screw_pitch The amount of translation along F's z-axis in meters
                           for a one full revolution about F's z-axis.
                           When set to zero, the mobilizer behaves like a
                           revolute joint, i.e. producing zero translation for
-                          any value of the generalized coordinate. */
+                          any value of the generalized coordinate.
+   @pre `axis` must be a non-zero vector with norm at least root square of
+   machine epsilon. */
   ScrewMobilizer(const Frame<T>& inboard_frame_F,
                  const Frame<T>& outboard_frame_M,
-                 double screw_pitch)
-      : MobilizerBase(inboard_frame_F, outboard_frame_M)
-      , screw_pitch_(screw_pitch) {}
+                 const Vector3<double>& axis, double screw_pitch)
+      : MobilizerBase(inboard_frame_F, outboard_frame_M),
+        screw_pitch_(screw_pitch) {
+    const double kEpsilon = std::numeric_limits<double>::epsilon();
+    DRAKE_DEMAND(!axis.isZero(kEpsilon));
+    axis_ = axis.normalized();
+  }
 
   // Overloads to define the suffix names for the position and velocity
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
-  bool can_rotate() const final    { return true; }
+  bool can_rotate() const final { return true; }
   bool can_translate() const final { return true; }
+
+  /* @returns the normalized axis of motion as a unit vector.
+   Since the measures of this axis in either frame F or M are the same (see
+   this class's documentation for frame definitions) then,
+   `axis = axis_F = axis_M`. */
+  const Vector3<double>& screw_axis() const { return axis_; }
 
   /* @returns the screw pitch, which is used to relate rotational
    to translational motion for `this` mobilizer as documented
@@ -83,16 +103,15 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    @returns A constant reference to `this` mobilizer.
    @throws std::exception if the screw_pitch is very near zero and
            |translation| > kEpsilon. */
-  const ScrewMobilizer<T>& set_translation(
-      systems::Context<T>* context,
-      const T& translation) const;
+  const ScrewMobilizer<T>& set_translation(systems::Context<T>* context,
+                                           const T& translation) const;
 
   /* Retrieves from `context` the angle θ which describes the orientation for
    `this` mobilizer as documented in this class's documentation.
 
    @param[in] context The context of the model this mobilizer belongs to.
    @returns The angle θ of the mobilizer. */
-  T get_angle(const systems::Context<T>& context) const;
+  const T& get_angle(const systems::Context<T>& context) const;
 
   /* Sets in `context` the orientation for `this` mobilizer to the angle θ
    provided by the input argument `angle`.
@@ -101,7 +120,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    @param[in] angle The desired angle in radians.
    @returns a constant reference to `this` mobilizer. */
   const ScrewMobilizer<T>& set_angle(systems::Context<T>* context,
-                                      const T& angle) const;
+                                     const T& angle) const;
 
   /* Retrieves from `context` the rate of change, in meters per second, of
    `this` mobilizer's translation (see get_translation()).
@@ -120,15 +139,14 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
    @returns A constant reference to `this` mobilizer.
    @throws std::exception if the screw_pitch is very near zero and
            |vz| > kEpsilon. */
-  const ScrewMobilizer<T>& set_translation_rate(
-      systems::Context<T>* context,
-      const T& vz) const;
+  const ScrewMobilizer<T>& set_translation_rate(systems::Context<T>* context,
+                                                const T& vz) const;
 
   /* Retrieves from `context` the rate of change, in radians per second, of
    `this` mobilizer's angle (see get_angle()).
    @param[in] context The context of the model this mobilizer belongs to.
    @returns The rate of change of `this` mobilizer's angle. */
-  T get_angular_rate(const systems::Context<T>& context) const;
+  const T& get_angular_rate(const systems::Context<T>& context) const;
 
   /* Sets in `context` the rate of change, in radians per second, of `this`
    mobilizer's angle (see angle()) to `theta_dot`.
@@ -137,7 +155,7 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
                         in radians per second.
    @returns A constant reference to `this` mobilizer. */
   const ScrewMobilizer<T>& set_angular_rate(systems::Context<T>* context,
-                                             const T& theta_dot) const;
+                                            const T& theta_dot) const;
 
   /* Computes the across-mobilizer transform `X_FM(q)` between the inboard
    frame F and the outboard frame M as a function of the configuration q stored
@@ -224,24 +242,26 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
 
+  // Default joint axis expressed in the inboard frame F.
+  Vector3<double> axis_;
+
   const double screw_pitch_;
 };
 
-  /* `get_screw_translation_from_rotation`,
-   `get_screw_rotation_from_translation` are used for position, velocity,
-   and acceleration conversions.  All of these are governed by
-   the same relation, depended on the `screw_pitch` of a screw mobilizer. */
+/* `get_screw_translation_from_rotation`,
+ `get_screw_rotation_from_translation` are used for position, velocity,
+ and acceleration conversions.  All of these are governed by
+ the same relation, depended on the `screw_pitch` of a screw mobilizer. */
 template <typename T>
 inline T get_screw_translation_from_rotation(const T& theta,
                                              double screw_pitch) {
-  const T revolution_amount{theta / (2 * M_PI)};
+  T revolution_amount{theta / (2 * M_PI)};
   return screw_pitch * revolution_amount;
 }
 
 template <typename T>
-inline T get_screw_rotation_from_translation(const T& z,
-                                             double screw_pitch) {
-  const T revolution_amount{z / screw_pitch};
+inline T get_screw_rotation_from_translation(const T& z, double screw_pitch) {
+  T revolution_amount{z / screw_pitch};
   return revolution_amount * 2 * M_PI;
 }
 

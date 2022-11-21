@@ -5,9 +5,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -218,15 +217,6 @@ GTEST_TEST(KinematicsVector, FrameIdRange) {
   EXPECT_EQ(ids.size(), actual_ids.size());
   for (FrameId id : ids) EXPECT_EQ(actual_ids.count(id), 1);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(KinematicsVector, DeprecatedFrameIds) {
-  FramePoseVector<double> poses;
-  poses.set_value(FrameId::get_new_id(), RigidTransformd::Identity());
-  EXPECT_EQ(poses.frame_ids(), poses.ids());
-}
-#pragma GCC diagnostic pop
 
 }  // namespace test
 }  // namespace geometry

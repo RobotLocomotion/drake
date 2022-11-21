@@ -208,14 +208,14 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   auto& tree = *tree_owned;
 
   // Add box body and SpaceXYZ mobilizer.
-  const RigidBody<double>& box_link = tree.AddBody<RigidBody>(M_Bcm);
+  const RigidBody<double>& box_link = tree.AddBody<RigidBody>("box", M_Bcm);
   const Frame<double>& world_frame = tree.world_frame();
   const Frame<double>& box_frame = box_link.body_frame();
   tree.AddMobilizer<SpaceXYZMobilizer>(world_frame, box_frame);
 
   // Add cylinder body and Featherstone mobilizer.
   const RigidBody<double>& cylinder_link =
-      tree.AddBody<RigidBody>(M_Ccm);
+      tree.AddBody<RigidBody>("cylinder", M_Ccm);
   const Frame<double>& cylinder_frame = cylinder_link.body_frame();
   tree.AddMobilizer<FeatherstoneMobilizer>(box_frame, cylinder_frame);
 
@@ -285,14 +285,16 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   auto& tree = *tree_owned;
 
   // Add box body and SpaceXYZ mobilizer.
-  const RigidBody<double>& box_link = tree.AddBody<RigidBody>(M_Bcm);
+  const RigidBody<double>& box_link = tree.AddBody<RigidBody>(
+      "Box", M_Bcm);
   const Frame<double>& world_frame = tree.world_frame();
   const Frame<double>& box_frame = box_link.body_frame();
   const SpaceXYZMobilizer<double>& WB_mobilizer =
       tree.AddMobilizer<SpaceXYZMobilizer>(world_frame, box_frame);
 
   // Add cylinder body and Featherstone mobilizer.
-  const RigidBody<double>& cylinder_link = tree.AddBody<RigidBody>(M_Ccm);
+  const RigidBody<double>& cylinder_link = tree.AddBody<RigidBody>(
+      "Cylinder", M_Ccm);
   const Frame<double>& cylinder_frame = cylinder_link.body_frame();
   const FeatherstoneMobilizer<double>& BC_mobilizer =
       tree.AddMobilizer<FeatherstoneMobilizer>(box_frame, cylinder_frame);

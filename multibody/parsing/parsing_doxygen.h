@@ -5,11 +5,9 @@
 @defgroup multibody_parsing Parsing Models for Multibody Dynamics
 @ingroup multibody
 
-Drake's drake::multibody::Parser accepts model files written in either SDFormat
-or URDF. In both formats, however, there are Drake-specific extensions and
-Drake-specific limitations.
-
-<!-- TODO(rpoyner-tri): document mujoco format support -->
+Drake's drake::multibody::Parser accepts model files written in a variety of
+input formats. Drake's parsing of URDF, SDFormat, and MJCF (Mujoco XML) has
+Drake-specific extensions and limitations.
 
 The result of the parse is an in-memory model realized within
 drake::multibody::MultibodyPlant and (optionally)
@@ -17,8 +15,24 @@ drake::geometry::SceneGraph. Note that parses that do not use a `SceneGraph`
 will effectively ignore geometric model elements, especially `//visual` and
 `//collision` elements.
 
-In the reference sections below, the relevant usage paths for various tags
-are indicated using [XPath](https://www.w3.org/TR/xpath-31/) notation.
+In the reference sections below, when discussing XML formats, the relevant
+usage paths for various tags are indicated using
+[XPath](https://www.w3.org/TR/xpath-31/) notation.
+
+@section multibody_parsing_dmd Drake Model Directives Support
+
+Drake Model Directives is a Drake-native model description format, primarily
+intended for combining models written in other formats into complex scenes. It
+is YAML based, and follows a limited data schema.  See
+`multibody/parsing/README_model_directives.md` for more detail.
+
+@section multibody_parsing_mjcf MJCF (Mujoco XML) Support
+
+There is limited, undocumented support for parsing MJCF (Mujoco XML) files. The
+files are recognized by an .xml file extension. The scope of features that are
+actually supported still need to be documented.
+
+<!-- TODO(rpoyner-tri): document mujoco format support -->
 
 @section multibody_parsing_sdf SDFormat Support
 Drake supports SDFormat files following the specification at
@@ -165,8 +179,10 @@ Here is the full list of custom elements:
 - @ref tag_drake_parent
 - @ref tag_drake_point_contact_stiffness
 - @ref tag_drake_proximity_properties
+- @ref tag_drake_relaxation_time
 - @ref tag_drake_rigid_hydroelastic
 - @ref tag_drake_rotor_inertia
+- @ref tag_drake_screw_thread_pitch
 
 @subsection tag_drake_acceleration drake:acceleration
 
@@ -380,7 +396,7 @@ for translation; the third is for rotation. See that class for discussion of
 units and detailed semantics.
 
 URDF Note: The comparable feature in URDF is the standard
-`/robot/link/joint/dynamics/@damping` attribute.
+`/robot/joint/dynamics/@damping` attribute.
 
 @subsection tag_drake_declare_convex drake:declare_convex
 
@@ -426,8 +442,8 @@ the visual or collision geometry of the model.
 
 @subsection tag_drake_gear_ratio drake:gear_ratio
 
-- SDFormat path: `//model/link/joint/drake:gear_ratio`
-- URDF path: `/robot/link/joint/actuator/drake:gear_ratio@value`
+- SDFormat path: `//model/joint/drake:gear_ratio`
+- URDF path: `/robot/joint/actuator/drake:gear_ratio@value`
 - Syntax: Non-negative floating point value.
 
 @subsubsection tag_drake_gear_ratio_semantics Semantics
@@ -504,11 +520,13 @@ semantics are the same as for a standard joint.
 In SDFormat, the only supported `type` value is `planar`. The element must
 contain nested `drake:parent`, `drake:child`, and `drake:damping` elements.
 
-In URDF, supported `type` values are one of `ball`, `planar`, or
+In URDF, supported `type` values are one of `ball`, `planar`, `screw` or
 `universal`. The nested elements are the same as those defined by the standard
-joint element.
+joint element with the exception of the `screw` joint type, which requires
+a nested `drake:screw_thread_pitch` element.
 
-@see @ref tag_drake_parent, @ref tag_drake_child, @ref tag_drake_damping
+@see @ref tag_drake_parent, @ref tag_drake_child, @ref tag_drake_damping,
+@ref tag_drake_screw_thread_pitch
 
 @subsection tag_drake_linear_bushing_rpy drake:linear_bushing_rpy
 
@@ -651,6 +669,21 @@ following nested elements may be present:
 @ref tag_drake_rigid_hydroelastic,
 drake::geometry::ProximityProperties
 
+@subsection tag_drake_relaxation_time drake:relaxation_time
+
+- SDFormat path: `//model/link/collision/drake:proximity_properies/drake:relaxation_time`
+- URDF path: `/robot/link/collision/drake:proximity_properties/drake:relaxation_time/@value`
+- Syntax: Non-negative floating point value.
+
+@subsubsection tag_drake_relaxation_time_semantics Semantics
+
+If present, this element provides a value (units of time, i.e. seconds) for a
+linear Kelvin-Voigt model of dissipation. It is stored in a ProximityProperties
+object under `(material, relaxation_time)`.
+
+@see drake::geometry::ProximityProperties,
+@ref mbp_dissipation_model "Modeling Dissipation"
+
 @subsection tag_drake_rigid_hydroelastic drake:rigid_hydroelastic
 
 - SDFormat path: `//model/link/collision/drake:proximity_properties/drake:rigid_hydroelastic`
@@ -666,8 +699,8 @@ to be rigid, as opposed to compliant, in hydroelastic contact models.
 
 @subsection tag_drake_rotor_inertia drake:rotor_inertia
 
-- SDFormat path: `//model/link/joint/drake:rotor_inertia`
-- URDF path: `/robot/link/joint/actuator/drake:rotor_inertia@value`
+- SDFormat path: `//model/joint/drake:rotor_inertia`
+- URDF path: `/robot/joint/actuator/drake:rotor_inertia@value`
 - Syntax: Non-negative floating point value.
 
 @subsubsection tag_drake_rotor_inertia_semantics Semantics
@@ -677,5 +710,21 @@ object. Units are kg⋅m² for revolute joints, and kg for prismatic joints.
 
 @see drake::multibody::JointActuator, @ref tag_drake_gear_ratio,
 @ref reflected_inertia "Reflected Inertia"
+
+@subsection tag_drake_screw_thread_pitch drake:screw_thread_pitch
+
+- SDFormat path: `//model/joint/screw_thread_pitch` <br/>
+  Note this is **not** the custom attribute.
+- URDF path: `/robot/joint/actuator/drake:screw_thread_pitch@value`
+- Syntax: Non-zero floating point value.
+
+@subsubsection tag_drake_screw_thread_pitch_semantics Semantics
+
+Applies the indicated thread pitch value to the appropriate ScrewJoint object.
+This kinematic parameter specifies the axial distance traveled for each
+revolution of the joint. Units are m/revolution, with a positive value
+corresponding to a right-handed thread.
+
+@see drake::multibody::ScrewJoint
 
 */

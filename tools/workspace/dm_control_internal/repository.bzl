@@ -8,8 +8,8 @@ def dm_control_internal_repository(
     github_archive(
         name = name,
         repository = "deepmind/dm_control",
-        commit = "41d0c7383153f9ca6c12f8e865ef5e73a98759bd",
-        sha256 = "712fbc5b81518b640b1f1c084b22bebc558a8acecec4831ef5f6ca63181431d6",  # noqa
-        build_file = "@drake//tools/workspace/dm_control_internal:package.BUILD.bazel",  # noqa
+        commit = "644b3c6844cafd611cb2dfe82bc68bb6aed97292",
+        sha256 = "873255140a3ff1d0e9b2275cf66ded00d74be0bfa763dd280312a569e7f4994f",  # noqa
+        build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

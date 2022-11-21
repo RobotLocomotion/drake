@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -120,12 +119,6 @@ class AugmentedLagrangianNonsmooth {
   Eigen::VectorXd x_lo_;
   Eigen::VectorXd x_up_;
 };
-
-using NonsmoothAugmentedLagrangian DRAKE_DEPRECATED(
-    "2022-07-01",
-    "NonsmoothAugmentedLagrangian is an alias of "
-    "AugmentedLagrangianNonsmooth. Use AugmentedLagrangianNonsmooth instead.") =
-    AugmentedLagrangianNonsmooth;
 
 /**
  * Compute the augmented Lagrangian (AL) of a given mathematical program

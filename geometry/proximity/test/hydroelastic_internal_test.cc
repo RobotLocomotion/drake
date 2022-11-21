@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 
 #include <cmath>
+#include <filesystem>
 #include <functional>
 #include <limits>
 
@@ -8,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_sphere_field.h"
@@ -602,8 +604,7 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
 // origin along each axis) to confirm that the correct mesh got loaded. We also
 // confirm that the scale factor is included in the rigid representation.
 template <typename MeshType>
-void TestRigidMeshType() {
-  std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+void TestRigidMeshTypeFromObj(const std::string& file) {
   // Empty props since its contents do not matter.
   ProximityProperties props;
 
@@ -637,15 +638,48 @@ void TestRigidMeshType() {
 // Confirm support for a rigid Mesh. Tests that a hydroelastic representation
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Mesh) {
-  SCOPED_TRACE("Rigid Mesh");
-  TestRigidMeshType<Mesh>();
+  const std::string file_lower_case =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  {
+    SCOPED_TRACE("Rigid Mesh, lower-case obj extension");
+    TestRigidMeshTypeFromObj<Mesh>(file_lower_case);
+  }
+  {
+    SCOPED_TRACE("Rigid Mesh, upper-case OBJ extension");
+    const std::string file_upper_case = temp_directory() + "/quad_cube.OBJ";
+    std::filesystem::copy(file_lower_case, file_upper_case);
+    TestRigidMeshTypeFromObj<Mesh>(file_upper_case);
+  }
 }
 
 // Confirm support for a rigid Convex. Tests that a hydroelastic representation
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Convex) {
   SCOPED_TRACE("Rigid Convex");
-  TestRigidMeshType<Convex>();
+  std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  TestRigidMeshTypeFromObj<Convex>(file);
+}
+
+TEST_F(HydroelasticRigidGeometryTest, MeshFromVtk) {
+  const std::string file_lower_case =
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk");
+  const std::string file_upper_case = temp_directory() + "/non_convex_mesh.VTK";
+  std::filesystem::copy(file_lower_case, file_upper_case);
+  // Empty props since its contents do not matter.
+  const ProximityProperties props;
+  for (const std::string& file_name : {file_lower_case, file_upper_case}) {
+    SCOPED_TRACE(file_name);
+    std::optional<RigidGeometry> geometry =
+        MakeRigidRepresentation(Mesh(file_name), props);
+    ASSERT_NE(geometry, std::nullopt);
+
+    // We only check that the vtk file was read by verifying the number of
+    // vertices and triangles, which depend on the specific content of
+    // the vtk file.
+    const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
+    EXPECT_EQ(surface_mesh.num_vertices(), 5);
+    EXPECT_EQ(surface_mesh.num_triangles(), 6);
+  }
 }
 
 // Template magic to instantiate a particular kind of shape at compile time.
@@ -820,9 +854,7 @@ class HydroelasticSoftGeometryTest : public ::testing::Test {
 TEST_F(HydroelasticSoftGeometryTest, UnsupportedSoftShapes) {
   ProximityProperties props = soft_properties();
 
-  // Note: the file name doesn't have to be valid for this (and the Mesh) test.
-  const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
-  EXPECT_EQ(MakeSoftRepresentation(Mesh(obj, 1.0), props), std::nullopt);
+  EXPECT_EQ(MakeSoftRepresentation(MeshcatCone(2, 1, 1), props), std::nullopt);
 }
 
 TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
@@ -1137,6 +1169,28 @@ TEST_F(HydroelasticSoftGeometryTest, Convex) {
       properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < convex->mesh().num_vertices(); ++v) {
     const double pressure = convex->pressure_field().EvaluateAtVertex(v);
+    EXPECT_GE(pressure, 0);
+    EXPECT_LE(pressure, E);
+  }
+}
+
+// Test construction of a compliant (generally non-convex) tetrahedral mesh.
+TEST_F(HydroelasticSoftGeometryTest, Mesh) {
+  const Mesh mesh_specification(
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
+
+  ProximityProperties properties = soft_properties();
+  std::optional<SoftGeometry> compliant_geometry =
+      MakeSoftRepresentation(mesh_specification, properties);
+
+  // Smoke test the mesh and the pressure field. It relies on unit tests for
+  // the generators of the mesh and the pressure field.
+  const int expected_num_vertices = 6;
+  EXPECT_EQ(compliant_geometry->mesh().num_vertices(), expected_num_vertices);
+  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  for (int v = 0; v < compliant_geometry->mesh().num_vertices(); ++v) {
+    const double pressure =
+        compliant_geometry->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
   }

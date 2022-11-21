@@ -1,17 +1,25 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
-  <!-- Note: This is the accompaning SDF file for the example demo in
-       simple_gripper.cc and therefore these two files must be kept in sync.
+  <!-- Note: This is the accompanying SDF file for the example demo in
+       simple_gripper.cc and deformable_box.cc and therefore these files must
+       be kept in sync.
 
-         This file defines the model for a simple gripper having two fingers.
-       The right finger is fixed to the body of the gripper. The left finger
-       is attached to the main body by a prismatic joint that allows it to
-       perform a grip.
-         The frame of the gripper, G, has its x-axis pointing to the right
+       This file defines the model for a simple gripper having two fingers on
+       prismatic joints. Only the left finger is actuated. The modeler will want
+       to add a coupler constraint between the fingers (if the selected solver
+       supports it) or simply lock the right finger in place.
+
+       The frame of the gripper, G, has its x-axis pointing to the right
        of the gripper, its y-axis pointing "forward" (towards the fingers
        side) and, the z-axis pointing upwards. This file only defines visual
        geometry but not contact geometry, allowing the demo in
        simple_gripper.cc to add contact geometry programmatically.
+
+       simple_gripper.cc adds pads to the model programatically. Including the
+       thickness of these pads, 6 mm, and the offset from the center of the
+       corresponding finger, 4.6 mm, each finger is positioned along the x-axis
+       such that at q=0 the pads from each finger barely touch. This is 6 mm +
+       4.6 mm = 10.5 mm.
   -->
   <model name="simple_gripper">
     <!-- Pose X_WG of the gripper model frame G in the world frame W. -->
@@ -64,10 +72,16 @@
             <size>0.146 0.0725 0.049521</size>
           </box>
         </geometry>
+        <material>
+          <diffuse>0.3 0.3 0.3 0.9</diffuse>
+        </material>
       </visual>
     </link>
     <link name="left_finger">
-      <pose>0.040 0.029 0 0 0 0</pose>
+      <!-- Each finger is positioned along the x-axis such that at q=0 the pads
+      of each finger barely touch each other. See notes at the top of this
+      file. -->
+      <pose>-0.0105 0.029 0 0 0 0</pose>
       <inertial>
         <mass>0.05</mass>
         <inertia>
@@ -85,10 +99,16 @@
             <size>0.007 0.081 0.028</size>
           </box>
         </geometry>
+        <material>
+          <diffuse>0.3 0.3 0.3 0.9</diffuse>
+        </material>
       </visual>
     </link>
     <link name="right_finger">
-      <pose>0.047 0.029 0 0 0 0</pose>
+      <!-- Each finger is positioned along the x-axis such that at q=0 the pads
+      of each finger barely touch each other. See notes at the top of this
+      file. -->
+      <pose>0.0105 0.029 0 0 0 0</pose>
       <inertial>
         <mass>0.05</mass>
         <inertia>
@@ -106,14 +126,13 @@
             <size>0.007 0.081 0.028</size>
           </box>
         </geometry>
+        <material>
+          <diffuse>0.3 0.3 0.3 0.9</diffuse>
+        </material>
       </visual>
     </link>
-    <joint name="weld_right_finger" type="fixed">
+    <joint name="left_slider" type="prismatic">
       <parent>body</parent>
-      <child>right_finger</child>
-    </joint>
-    <joint name="finger_sliding_joint" type="prismatic">
-      <parent>right_finger</parent>
       <child>left_finger</child>
       <axis>
         <xyz>1 0 0</xyz>
@@ -121,6 +140,18 @@
              limit. We do want an actuator for this joint. -->
         <limit>
           <effort>500</effort>
+        </limit>
+      </axis>
+    </joint>
+    <joint name="right_slider" type="prismatic">
+      <parent>body</parent>
+      <child>right_finger</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <!-- Drake attaches an actuator to all joints with a non-zero effort
+             limit. We do NOT want an actuator for this joint. -->
+        <limit>
+          <effort>0</effort>
         </limit>
       </axis>
     </joint>

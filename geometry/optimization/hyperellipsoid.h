@@ -126,8 +126,8 @@ class Hyperellipsoid final : public ConvexSet {
 
   // Implement support shapes for the ShapeReifier interface.
   using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Sphere& sphere, void* data) final;
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* data) final;
+  void ImplementGeometry(const Sphere& sphere, void* data) final;
 
   Eigen::MatrixXd A_{};
   Eigen::VectorXd center_{};

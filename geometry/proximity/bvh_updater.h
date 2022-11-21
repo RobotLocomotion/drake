@@ -84,9 +84,8 @@ class BvhUpdater {
   // Helper function to perform a bottom-up refit.
   void UpdateRecursive(typename Bvh<Aabb, MeshType>::NodeType* node,
                        const std::vector<Vector3<double>>& vertices) {
-    using Vector3d = Eigen::Vector3d;
     /* Intentionally uninitialized. */
-    Vector3d lower, upper;
+    Eigen::Vector3d lower, upper;
     constexpr int kElementVertexCount = MeshType::kVertexPerElement;
     constexpr double kInf = std::numeric_limits<double>::infinity();
     if (node->is_leaf()) {
@@ -99,7 +98,8 @@ class BvhUpdater {
       for (int e = 0; e < num_elements; ++e) {
         const auto& element = mesh_.element(node->element_index(e));
         for (int i = 0; i < kElementVertexCount; ++i) {
-          const Vector3d& p_MV = convert_to_double(vertices[element.vertex(i)]);
+          const Eigen::Vector3d& p_MV =
+              convert_to_double(vertices[element.vertex(i)]);
           lower = lower.cwiseMin(p_MV);
           upper = upper.cwiseMax(p_MV);
         }

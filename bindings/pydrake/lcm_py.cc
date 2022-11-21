@@ -5,6 +5,7 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/lcm/drake_lcm.h"
@@ -50,22 +51,12 @@ PYBIND11_MODULE(lcm, m) {
   {
     using Class = DrakeLcmParams;
     constexpr auto& cls_doc = doc.DrakeLcmParams;
-    py::class_<Class>(m, "DrakeLcmParams", cls_doc.doc)
-        .def(ParamInit<Class>())
-        .def_readwrite("lcm_url", &Class::lcm_url, cls_doc.lcm_url.doc)
-        .def_readwrite("channel_suffix", &Class::channel_suffix,
-            cls_doc.channel_suffix.doc)
-        .def_readwrite("defer_initialization", &Class::defer_initialization,
-            cls_doc.defer_initialization.doc)
-        .def("__repr__", [](const Class& self) {
-          return py::str(
-              "DrakeLcmParams("
-              "lcm_url={}, "
-              "channel_suffix={}, "
-              "defer_initialization={})")
-              .format(
-                  self.lcm_url, self.channel_suffix, self.defer_initialization);
-        });
+    py::class_<Class> cls(m, "DrakeLcmParams", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
@@ -92,14 +83,6 @@ PYBIND11_MODULE(lcm, m) {
             },
             py::arg("channel"), py::arg("handler"), cls_doc.Subscribe.doc);
     // TODO(eric.cousineau): Add remaining methods.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const char* const doc_deprecated =
-        cls_doc.ctor
-            .doc_deprecated_deprecated_2args_lcm_url_defer_initialization;
-    cls.def(py_init_deprecated<Class, std::string, bool>(doc_deprecated),
-        py::arg("lcm_url"), py::arg("defer_initialization"), doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   ExecuteExtraPythonCode(m);

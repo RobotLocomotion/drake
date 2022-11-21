@@ -18,13 +18,14 @@ In each release, new deprecations might be announced, and then those changes
 will be finalized 3+ minor versions later, without changing the major version
 number.
 
-Deprecation announcements appear in the [release notes](/release_notes.html)
-for each stable release. For C++ and Python API changes, we will also use the
-language mechanism to highlight the change when possible (`[[deprecated]]` for
-C++; `warnings.warn` for Python). However, those mechanisms will not always
-trigger in every case, and some deprecations will reach beyond what those tools
-can denote. Therefore, we still recommend that you monitor the release notes as
-the final arbiter of deprecation announcements.
+Deprecation announcements appear in the
+[release notes](/release_notes/release_notes.html) for each stable release.
+For C++ and Python API changes, we will also use the language mechanism to
+highlight the change when possible (`[[deprecated]]` for C++; `warnings.warn`
+for Python). However, those mechanisms will not always trigger in every case,
+and some deprecations will reach beyond what those tools can denote.
+Therefore, we still recommend that you monitor the release notes as the final
+arbiter of deprecation announcements.
 
 Due to our 3-month announcement window, we recommend upgrading your pinned
 version of Drake at least that frequently. If you wish to upgrade less
@@ -39,10 +40,10 @@ In general, we do not plan to backport fixes into prior stable releases.
 We define a large portion of Drake as our "Stable API" that you can rely
 on. For the Stable API, we aim to give at least 3 months of notice ahead of any
 disruption (via deprecation announcements in Drake's
-[release notes](/release_notes.html), and with compile-time or run-time
-warnings when feasible). Any element of Drake that is not explicitly documented
-to be part of the Stable API is deemed "unstable" and is subject to change or
-removal without prior notice.
+[release notes](/release_notes/release_notes.html), and with compile-time or
+run-time warnings when feasible). Any element of Drake that is not explicitly
+documented to be part of the Stable API is deemed "unstable" and is subject to
+change or removal without prior notice.
 
 The sub-headings below explain the Stable API for various facets of Drake.
 
@@ -204,7 +205,8 @@ We expect any C++ code linked against Drake within the same program to use the
 identical source revision and build flags of Drake as all other code within
 that program.
 
-Refer to [Installation](/installation.html) for the current details.
+Refer to [Installation and Quickstart](/installation.html) for the current
+details.
 
 # OS Support
 
@@ -212,4 +214,5 @@ Drake intends to support the two most recent versions of Ubuntu LTS and macOS
 on an ongoing basis. That generally means that your OS must be no more than
 ~2-4 years old for Ubuntu, or ~2 years old for macOS.
 
-Refer to [Installation](/installation.html) for the current details.
+Refer to [Installation and Quickstart](/installation.html) for the current
+details.

@@ -50,14 +50,7 @@ class Obb {
                         and Bz directions.
    @pre half_width.x(), half_width.y(), half_width.z() are not negative.
   */
-  Obb(const math::RigidTransformd& X_HB, const Vector3<double>& half_width)
-      : pose_(X_HB), half_width_(half_width) {
-    DRAKE_DEMAND(half_width.x() >= 0.0);
-    DRAKE_DEMAND(half_width.y() >= 0.0);
-    DRAKE_DEMAND(half_width.z() >= 0.0);
-
-    PadBoundary();
-  }
+  Obb(const math::RigidTransformd& X_HB, const Vector3<double>& half_width);
 
   /* Returns the center of the box -- equivalent to the position vector from
    the hierarchy frame's origin Ho to `this` box's origin Bo: `p_HoBo_H`. */

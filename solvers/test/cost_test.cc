@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -16,6 +16,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/create_cost.h"
+#include "drake/solvers/evaluator_base.h"
 #include "drake/solvers/test/generic_trivial_costs.h"
 
 using std::cout;
@@ -645,6 +646,95 @@ GTEST_TEST(TestPerspectiveQuadraticCost, Display) {
   cost.Display(os, symbolic::MakeVectorContinuousVariable(2, "x"));
   EXPECT_EQ(fmt::format("{}", os.str()),
             "PerspectiveQuadraticCost (pow((1 + x(1)), 2) / (1 + x(0)))");
+}
+
+class Evaluator2In1Out : public EvaluatorBase {
+ public:
+  Evaluator2In1Out() : EvaluatorBase(1, 2) {}
+
+  ~Evaluator2In1Out() override {}
+
+ private:
+  template <typename T, typename S>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
+                     VectorX<S>* y) const {
+    y->resize(1);
+    using std::sin;
+    (*y)(0) = x(0) + sin(x(1));
+  }
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              VectorXd* y) const override {
+    this->DoEvalGeneric(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override {
+    this->DoEvalGeneric(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
+    this->DoEvalGeneric(x, y);
+  }
+};
+
+class Evaluator3In2Out : public EvaluatorBase {
+ public:
+  Evaluator3In2Out() : EvaluatorBase(3, 2) {}
+
+  ~Evaluator3In2Out() override {}
+
+ private:
+  template <typename T, typename S>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
+                     VectorX<S>* y) const {
+    y->resize(3);
+    using std::sin;
+    (*y)(0) = x(0) + 3 * x(1) * x(0);
+    (*y)(1) = sin(x(0) + x(1));
+    (*y)(2) = 2 + x(0);
+  }
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              VectorXd* y) const override {
+    this->DoEvalGeneric(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override {
+    this->DoEvalGeneric(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
+    this->DoEvalGeneric(x, y);
+  }
+};
+
+GTEST_TEST(EvaluatorCost, Eval) {
+  // Test with a single-output evaluator.
+  auto evaluator_2in_1out = std::make_shared<Evaluator2In1Out>();
+  EvaluatorCost<Evaluator2In1Out> dut1(evaluator_2in_1out);
+  Eigen::Vector2d x1(0.2, 0.3);
+  VectorXd y1;
+  dut1.Eval(x1, &y1);
+  Eigen::VectorXd y1_expected;
+  evaluator_2in_1out->Eval(x1, &y1_expected);
+  EXPECT_TRUE(CompareMatrices(y1, y1_expected));
+
+  // Test a linear transformation of the evaluator output.
+  auto evaluator_3in_2out = std::make_shared<Evaluator3In2Out>();
+  const Eigen::Vector3d a(1, 2, 3);
+  const double b = 4;
+  EvaluatorCost<Evaluator3In2Out> dut2(evaluator_3in_2out, a, b);
+  const Eigen::Vector2d x2(2, 3);
+  Eigen::VectorXd y2;
+  dut2.Eval(x2, &y2);
+  Eigen::VectorXd evaluator2_y;
+  evaluator_3in_2out->Eval(x2, &evaluator2_y);
+  ASSERT_EQ(y2.rows(), 1);
+  EXPECT_NEAR(y2(0), a.dot(evaluator2_y) + b, 1E-12);
 }
 
 }  // anonymous namespace

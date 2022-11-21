@@ -24,58 +24,94 @@ package(default_visibility = ["//visibility:private"])
 
 cmake_configure_file(
     name = "config",
-    src = "include/ignition/utils/config.hh.in",
-    out = "include/ignition/utils/config.hh",
+    src = "include/gz/utils/config.hh.in",
+    out = "include/gz/utils/config.hh",
     cmakelists = ["CMakeLists.txt"],
     defines = [
-        "IGN_DESIGNATION=utils",
         "PROJECT_VERSION_MAJOR=0",
         "PROJECT_VERSION_MINOR=0",
         "PROJECT_VERSION_PATCH=0",
         "PROJECT_VERSION=0.0",
         "PROJECT_VERSION_FULL=0.0.0",
-        "PROJECT_NAME_NO_VERSION=ignition-utils",
+        "PROJECT_NAME_NO_VERSION=gz-utils",
     ],
 )
 
 generate_file(
-    name = "include/ignition/utils/Export.hh",
+    name = "include/gz/utils/Export.hh",
     content = """
 #pragma once
 // Simplified version of visibility and deprecation macros.
-#define IGNITION_UTILS_VISIBLE
-#define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
+#define GZ_UTILS_VISIBLE
+#define GZ_DEPRECATED(version) __attribute__ ((__deprecated__))
     """,
 )
 
 _MOST_PUBLIC_HDRS = [
-    "include/ignition/utils/ImplPtr.hh",
-    "include/ignition/utils/SuppressWarning.hh",
-    "include/ignition/utils/detail/DefaultOps.hh",
-    "include/ignition/utils/detail/ImplPtr.hh",
-    "include/ignition/utils/detail/SuppressWarning.hh",
+    "include/gz/utils/Environment.hh",
+    "include/gz/utils/ImplPtr.hh",
+    "include/gz/utils/NeverDestroyed.hh",
+    "include/gz/utils/SuppressWarning.hh",
+    "include/gz/utils/detail/DefaultOps.hh",
+    "include/gz/utils/detail/ImplPtr.hh",
+    "include/gz/utils/detail/SuppressWarning.hh",
+]
+
+_SRCS = [
+    "src/Environment.cc",
 ]
 
 check_lists_consistency(
-    files = _MOST_PUBLIC_HDRS,
-    glob_include = ["include/**/*.hh"],
+    files = _MOST_PUBLIC_HDRS + _SRCS,
+    glob_include = [
+        "include/**/*.hh",
+        "src/**/*.cc",
+    ],
+    glob_exclude = [
+        # These are test utilities, not for use by library code.
+        "include/gz/utils/ExtraTestMacros.hh",
+        "include/gz/utils/detail/ExtraTestMacros.hh",
+        # These headers are deprecated.
+        "include/ignition/utils/Environment.hh",
+        "include/ignition/utils/ExtraTestMacros.hh",
+        "include/ignition/utils/Export.hh",
+        "include/ignition/utils/ImplPtr.hh",
+        "include/ignition/utils/NeverDestroyed.hh",
+        "include/ignition/utils/SuppressWarning.hh",
+        "include/ignition/utils/config.hh",
+        "include/ignition/utils/detail/DefaultOps.hh",
+        "include/ignition/utils/detail/Export.hh",
+        "include/ignition/utils/detail/ExtraTestMacros.hh",
+        "include/ignition/utils/detail/ImplPtr.hh",
+        "include/ignition/utils/detail/SuppressWarning.hh",
+        "include/ignition/utils.hh",
+        # These are test code, not library code.
+        "**/*TEST*",
+    ],
 )
 
 _HDRS = _MOST_PUBLIC_HDRS + [
-    "include/ignition/utils/config.hh",
-    "include/ignition/utils/Export.hh",
+    "include/gz/utils/config.hh",
+    "include/gz/utils/Export.hh",
 ]
 
 cc_library_vendored(
     name = "gz_utils",
     hdrs = _HDRS,
     hdrs_vendored = [
-        x.replace("include/ignition/", "drake_src/drake_vendor/ignition/")
+        x.replace("include/gz/", "drake_src/drake_vendor/gz/")
         for x in _HDRS
     ],
+    srcs = _SRCS,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/")
+        for x in _SRCS
+    ],
     edit_include = {
-        "ignition/": "drake_vendor/ignition/",
+        "gz/": "drake_vendor/gz/",
     },
+    copts = ["-w"],
+    linkstatic = True,
     includes = ["drake_src"],
     visibility = ["//visibility:public"],
 )

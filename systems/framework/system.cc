@@ -42,9 +42,9 @@ template <typename T>
 std::unique_ptr<BasicVector<T>> System<T>::AllocateInputVector(
     const InputPort<T>& input_port) const {
   DRAKE_THROW_UNLESS(input_port.get_data_type() == kVectorValued);
-  const int index = input_port.get_index();
-  DRAKE_ASSERT(index >= 0 && index < num_input_ports());
-  DRAKE_ASSERT(get_input_port(index).get_data_type() == kVectorValued);
+  const InputPortBase& self_input_port_base = this->GetInputPortBaseOrThrow(
+      __func__, input_port.get_index(), /* warn_deprecated = */ false);
+  DRAKE_THROW_UNLESS(&input_port == &self_input_port_base);
   std::unique_ptr<AbstractValue> value = DoAllocateInput(input_port);
   return value->get_value<BasicVector<T>>().Clone();
 }
@@ -62,8 +62,10 @@ std::unique_ptr<SystemOutput<T>> System<T>::AllocateOutput() const {
   // make_unique can't invoke this private constructor.
   auto output = std::unique_ptr<SystemOutput<T>>(new SystemOutput<T>());
   for (int i = 0; i < this->num_output_ports(); ++i) {
-    const OutputPort<T>& port = this->get_output_port(i);
-    output->add_port(port.Allocate());
+    const auto& output_port = dynamic_cast<const OutputPort<T>&>(
+        this->GetOutputPortBaseOrThrow(__func__, i,
+                                       /* warn_deprecated = */ false));
+    output->add_port(output_port.Allocate());
   }
   output->set_system_id(get_system_id());
   return output;
@@ -144,7 +146,9 @@ void System<T>::AllocateFixedInputs(Context<T>* context) const {
   ValidateContext(context);
 
   for (InputPortIndex i(0); i < num_input_ports(); ++i) {
-    const InputPort<T>& port = get_input_port(i);
+    const InputPortBase& input_port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    const auto& port = dynamic_cast<const InputPort<T>&>(input_port_base);
     if (port.get_data_type() == kVectorValued) {
       port.FixValue(context, *AllocateInputVector(port));
     } else {
@@ -186,7 +190,7 @@ void System<T>::Publish(const Context<T>& context,
 }
 
 template <typename T>
-void System<T>::Publish(const Context<T>& context) const {
+void System<T>::ForcedPublish(const Context<T>& context) const {
   Publish(context, this->get_forced_publish_events());
 }
 
@@ -268,7 +272,7 @@ void System<T>::CalcImplicitTimeDerivativesResidual(
 }
 
 template <typename T>
-void System<T>::CalcDiscreteVariableUpdates(
+void System<T>::CalcDiscreteVariableUpdate(
     const Context<T>& context,
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
@@ -288,10 +292,10 @@ void System<T>::ApplyDiscreteVariableUpdate(
 }
 
 template <typename T>
-void System<T>::CalcDiscreteVariableUpdates(
+void System<T>::CalcForcedDiscreteVariableUpdate(
     const Context<T>& context,
     DiscreteValues<T>* discrete_state) const {
-  CalcDiscreteVariableUpdates(
+  CalcDiscreteVariableUpdate(
       context, this->get_forced_discrete_update_events(), discrete_state);
 }
 
@@ -326,8 +330,8 @@ void System<T>::ApplyUnrestrictedUpdate(
 }
 
 template <typename T>
-void System<T>::CalcUnrestrictedUpdate(const Context<T>& context,
-                                       State<T>* state) const {
+void System<T>::CalcForcedUnrestrictedUpdate(const Context<T>& context,
+                                             State<T>* state) const {
   CalcUnrestrictedUpdate(
       context, this->get_forced_unrestricted_update_events(), state);
 }
@@ -375,6 +379,58 @@ T System<T>::CalcNextUpdateTime(const Context<T>& context,
 }
 
 template <typename T>
+const DiscreteValues<T>& System<T>::EvalUniquePeriodicDiscreteUpdate(
+    const Context<T>& context) const {
+  const CacheEntry& entry =
+      this->get_cache_entry(unique_periodic_discrete_update_cache_index_);
+  return entry.Eval<DiscreteValues<T>>(context);
+}
+
+// Unit testing for this method is in diagram_test.cc where it is used as
+// the leaf computation for the Diagram recursion.
+template <typename T>
+void System<T>::CalcUniquePeriodicDiscreteUpdate(
+    const Context<T>& context, DiscreteValues<T>* discrete_values) const {
+  ValidateContext(context);
+  ValidateCreatedForThisSystem(discrete_values);
+
+  // TODO(sherm1) We only need the DiscreteUpdateEvent portion of the
+  // CompositeEventCollection but don't have a convenient way to allocate
+  // that in a Leaf vs. Diagram agnostic way. Add that if needed for speed.
+  auto collection = AllocateCompositeEventCollection();
+
+  std::optional<PeriodicEventData> timing;
+  FindUniquePeriodicDiscreteUpdatesOrThrow(
+      __func__, *this, context, &timing,
+      &collection->get_mutable_discrete_update_events());
+  if (!timing.has_value()) {
+    throw std::logic_error(
+        fmt::format("{}(): there are no periodic discrete "
+                    "update events in this System.", __func__));
+  }
+
+  // This should come up with the same result although calculated independently.
+  // Too expensive to check in Release, but Debug is leisurely.
+  DRAKE_ASSERT(*timing == *GetUniquePeriodicDiscreteUpdateAttribute());
+
+  // Start with scratch discrete variables equal to the current values.
+  discrete_values->SetFrom(context.get_discrete_state());
+
+  // Then let the event handlers modify them or not.
+  this->CalcDiscreteVariableUpdate(
+      context, collection->get_discrete_update_events(), discrete_values);
+}
+
+template <typename T>
+void System<T>::GetPeriodicEvents(const Context<T>& context,
+                                  CompositeEventCollection<T>* events) const {
+  ValidateContext(context);
+  ValidateCreatedForThisSystem(events);
+  events->Clear();
+  DoGetPeriodicEvents(context, events);
+}
+
+template <typename T>
 void System<T>::GetPerStepEvents(const Context<T>& context,
                                  CompositeEventCollection<T>* events) const {
   ValidateContext(context);
@@ -397,8 +453,8 @@ template <typename T>
 std::optional<PeriodicEventData>
     System<T>::GetUniquePeriodicDiscreteUpdateAttribute() const {
   std::optional<PeriodicEventData> saved_attr;
-  auto periodic_events = GetPeriodicEvents();
-  for (const auto& saved_attr_and_vector : periodic_events) {
+  auto periodic_events_map = MapPeriodicEventsByTiming();
+  for (const auto& saved_attr_and_vector : periodic_events_map) {
     for (const auto& event : saved_attr_and_vector.second) {
       if (event->is_discrete_update()) {
         if (saved_attr)
@@ -433,8 +489,15 @@ bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
 
 template <typename T>
 std::map<PeriodicEventData, std::vector<const Event<T>*>,
-  PeriodicEventDataComparator> System<T>::GetPeriodicEvents() const {
-  return DoGetPeriodicEvents();
+         PeriodicEventDataComparator>
+System<T>::MapPeriodicEventsByTiming(const Context<T>* context) const {
+  std::unique_ptr<Context<T>> dummy_context;
+  const Context<T>* context_to_use = context;
+  if (context_to_use == nullptr) {
+    dummy_context = AllocateContext();
+    context_to_use = dummy_context.get();
+  }
+  return DoMapPeriodicEventsByTiming(*context_to_use);
 }
 
 template <typename T>
@@ -444,11 +507,14 @@ void System<T>::CalcOutput(const Context<T>& context,
   ValidateContext(context);
   ValidateCreatedForThisSystem(outputs);
   for (OutputPortIndex i(0); i < num_output_ports(); ++i) {
+    const auto& output_port = dynamic_cast<const OutputPort<T>&>(
+        this->GetOutputPortBaseOrThrow(__func__, i,
+                                       /* warn_deprecated = */ false));
     // TODO(sherm1) Would be better to use Eval() here but we don't have
     // a generic abstract assignment capability that would allow us to
     // copy into existing memory in `outputs` (rather than clone). User
     // code depends on memory stability in SystemOutput.
-    get_output_port(i).Calc(context, outputs->GetMutableData(i));
+    output_port.Calc(context, outputs->GetMutableData(i));
   }
 }
 
@@ -647,14 +713,18 @@ template <typename T>
 const InputPort<T>& System<T>::GetInputPort(
     const std::string& port_name) const {
   for (InputPortIndex i{0}; i < num_input_ports(); i++) {
-    if (port_name == get_input_port_base(i).get_name()) {
+    const InputPortBase& port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    if (port_name == port_base.get_name()) {
       return get_input_port(i);
     }
   }
   std::vector<std::string_view> port_names;
   port_names.reserve(num_input_ports());
   for (InputPortIndex i{0}; i < num_input_ports(); i++) {
-    port_names.push_back(get_input_port_base(i).get_name());
+    const InputPortBase& port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    port_names.push_back(port_base.get_name());
   }
   if (port_names.empty()) {
     port_names.push_back("it has no input ports");
@@ -669,7 +739,12 @@ template <typename T>
 bool System<T>::HasInputPort(
     const std::string& port_name) const {
   for (InputPortIndex i{0}; i < num_input_ports(); i++) {
-    if (port_name == get_input_port_base(i).get_name()) {
+    const InputPortBase& port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    if (port_name == port_base.get_name()) {
+      // Call the getter (ignoring its return value), to allow deprecation
+      // warnings to trigger.
+      get_input_port(i);
       return true;
     }
   }
@@ -698,7 +773,9 @@ template <typename T>
 const OutputPort<T>& System<T>::GetOutputPort(
     const std::string& port_name) const {
   for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
-    if (port_name == get_output_port_base(i).get_name()) {
+    const OutputPortBase& port_base = this->GetOutputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    if (port_name == port_base.get_name()) {
       return get_output_port(i);
     }
   }
@@ -720,7 +797,12 @@ template <typename T>
 bool System<T>::HasOutputPort(
     const std::string& port_name) const {
   for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
-    if (port_name == get_output_port_base(i).get_name()) {
+    const OutputPortBase& port_base = this->GetOutputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    if (port_name == port_base.get_name()) {
+      // Call the getter (ignoring its return value), to allow deprecation
+      // warnings to trigger.
+      get_output_port(i);
       return true;
     }
   }
@@ -836,8 +918,14 @@ void System<T>::FixInputPortsFrom(const System<double>& other_system,
   other_system.ValidateContext(other_context);
 
   for (int i = 0; i < num_input_ports(); ++i) {
-    const auto& input_port = get_input_port(i);
-    const auto& other_port = other_system.get_input_port(i);
+    const InputPortBase& input_port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    const InputPortBase& other_port_base = other_system.GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    const auto& input_port =
+        dynamic_cast<const InputPort<T>&>(input_port_base);
+    const auto& other_port =
+        dynamic_cast<const InputPort<double>&>(other_port_base);
     if (!other_port.HasValue(other_context)) {
       continue;
     }
@@ -950,7 +1038,21 @@ System<T>::System(SystemScalarConverter converter)
               {all_sources_ticket()})
           .cache_index();
 
-  // TODO(sherm1) Allocate and use discrete update cache.
+  // TODO(sherm1) Ideally a Diagram-level DiscreteValues cache object allocated
+  //  here would reference its LeafSystem-level DiscreteValues cache objects
+  //  rather than owning all these objects itself, and invoking
+  //  EvalUniquePeriodicDiscreteUpdate() on the Diagram would update all the
+  //  LeafSystem entries also. That would require a specialized version
+  //  of AllocateDiscreteVariables() that would build the Diagram object from
+  //  references to the already-allocated subsystem cache entries.
+  unique_periodic_discrete_update_cache_index_ =
+      this->DeclareCacheEntryWithKnownTicket(
+              xd_unique_periodic_update_ticket(),
+              "unique periodic discrete variable update",
+              ValueProducer(this, &System<T>::AllocateDiscreteVariables,
+                            &System<T>::CalcUniquePeriodicDiscreteUpdate),
+              {all_sources_ticket()})
+          .cache_index();
 }
 
 template <typename T>
@@ -1024,6 +1126,13 @@ void System<T>::DoCalcNextUpdateTime(const Context<T>& context,
                                      T* time) const {
   unused(context, events);
   *time = std::numeric_limits<double>::infinity();
+}
+
+template <typename T>
+void System<T>::DoGetPeriodicEvents(
+    const Context<T>& context,
+    CompositeEventCollection<T>* events) const {
+  unused(context, events);
 }
 
 template <typename T>
@@ -1115,7 +1224,9 @@ template <typename T>
 std::function<void(const AbstractValue&)>
 System<T>::MakeFixInputPortTypeChecker(
     InputPortIndex port_index) const {
-  const InputPort<T>& port = this->get_input_port(port_index);
+  const InputPortBase& port_base = this->GetInputPortBaseOrThrow(
+      __func__, port_index, /* warn_deprecated = */ false);
+  const InputPort<T>& port = static_cast<const InputPort<T>&>(port_base);
   const std::string& port_name = port.get_name();
   const std::string path_name = this->GetSystemPathname();
 
@@ -1182,7 +1293,8 @@ const BasicVector<T>* System<T>::EvalBasicVectorInputImpl(
     InputPortIndex port_index) const {
   // Make sure this is the right kind of port before worrying about whether
   // it is connected up properly.
-  const InputPortBase& port = GetInputPortBaseOrThrow(func, port_index);
+  const InputPortBase& port = GetInputPortBaseOrThrow(
+      func, port_index, /* warn_deprecated = */ true);
   if (port.get_data_type() != kVectorValued)
     ThrowNotAVectorInputPort(func, port_index);
 

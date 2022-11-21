@@ -8,8 +8,8 @@ def gz_utils_internal_repository(
     github_archive(
         name = name,
         repository = "gazebosim/gz-utils",
-        commit = "ignition-utils1_1.0.0",
-        sha256 = "55d3285692392f9493a35b680f275ec116584baedeef90de57d2b03dfd952d9d",  # noqa
-        build_file = "@drake//tools/workspace/gz_utils_internal:package.BUILD.bazel",  # noqa
+        commit = "gz-utils2_2.0.0",
+        sha256 = "af9e5b862e10aa0cedd97d9c5ca3eb9a443b7c9e560a083e8f0399e93e1cfafa",  # noqa
+        build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

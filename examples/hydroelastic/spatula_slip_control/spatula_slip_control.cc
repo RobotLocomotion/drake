@@ -42,6 +42,8 @@ DEFINE_string(contact_model, "hydroelastic",
 DEFINE_string(contact_surface_representation, "polygon",
               "Contact-surface representation for hydroelastics. "
               "Options are: 'triangle' or 'polygon'.");
+DEFINE_string(discrete_solver, "tamsi",
+              "Discrete contact solver. Options are: 'tamsi', 'sap'.");
 
 // Simulator settings.
 DEFINE_double(realtime_rate, 1,
@@ -137,6 +139,7 @@ int DoMain() {
   plant_config.time_step = FLAGS_mbp_discrete_update_period;
   plant_config.stiction_tolerance = FLAGS_stiction_tolerance;
   plant_config.contact_model = FLAGS_contact_model;
+  plant_config.discrete_contact_solver = FLAGS_discrete_solver;
   plant_config.contact_surface_representation =
       FLAGS_contact_surface_representation;
 
@@ -151,9 +154,8 @@ int DoMain() {
       "schunk_wsg_50_hydro_bubble.sdf");
   const std::string spatula_file = FindResourceOrThrow(
       "drake/examples/hydroelastic/spatula_slip_control/models/spatula.sdf");
-  parser.AddModelFromFile(gripper_file);
-  multibody::ModelInstanceIndex spatula_instance =
-      parser.AddModelFromFile(spatula_file);
+  parser.AddModels(gripper_file);
+  parser.AddModels(spatula_file);
   // Pose the gripper and weld it to the world.
   const math::RigidTransform<double> X_WF0 = math::RigidTransform<double>(
       math::RollPitchYaw(0.0, -1.57, 0.0), Eigen::Vector3d(0, 0, 0.25));
@@ -203,7 +205,7 @@ int DoMain() {
   sim_config.publish_every_time_step = false;
 
   systems::Simulator<double> simulator(*diagram);
-  ApplySimulatorConfig(&simulator, sim_config);
+  ApplySimulatorConfig(sim_config, &simulator);
 
   // Set the initial conditions for the spatula pose and the gripper finger
   // positions.
@@ -214,7 +216,7 @@ int DoMain() {
   // Set spatula's free body pose.
   const math::RigidTransform<double> X_WF1 = math::RigidTransform<double>(
       math::RollPitchYaw(-0.4, 0.0, 1.57), Eigen::Vector3d(0.35, 0, 0.25));
-  const auto& base_link = plant.GetBodyByName("spatula", spatula_instance);
+  const auto& base_link = plant.GetBodyByName("spatula");
   plant.SetFreeBodyPose(&plant_context, base_link, X_WF1);
 
   // Set finger joint positions.

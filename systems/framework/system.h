@@ -200,12 +200,32 @@ class System : public SystemBase {
   void Publish(const Context<T>& context,
                const EventCollection<PublishEvent<T>>& events) const;
 
-  /** Forces a publish on the system, given a @p context. The publish event will
-  have a trigger type of kForced, with no additional data, attribute or
-  custom callback. The Simulator can be configured to call this in
-  Simulator::Initialize() and at the start of each continuous integration
-  step. See the Simulator API for more details. */
-  void Publish(const Context<T>& context) const;
+  /** (Advanced) Manually triggers any PublishEvent that has trigger
+  type kForced. Invokes the publish event dispatcher on this %System with the
+  given Context.
+
+  The default dispatcher will invoke the handlers (if any) associated with each
+  force-triggered event.
+
+  @note There will always be at least one force-triggered event, though with no
+  associated handler. By default that will do nothing when triggered, but that
+  behavior can be changed by overriding the dispatcher DoPublish()
+  (not recommended).
+
+  The Simulator can be configured to call this in Simulator::Initialize() and at
+  the start of each continuous integration step. See the Simulator API for more
+  details.
+
+  @see Publish(), CalcForcedDiscreteVariableUpdate(),
+       CalcForcedUnrestrictedUpdate() */
+  void ForcedPublish(const Context<T>& context) const;
+
+  /** (Deprecated) See ForcedPublish()
+  @pydrake_mkdoc_identifier{deprecated} */
+  DRAKE_DEPRECATED("2023-03-01", "Use ForcedPublish() instead")
+  void Publish(const Context<T>& context) const {
+    ForcedPublish(context);
+  }
   //@}
 
   //----------------------------------------------------------------------------
@@ -515,18 +535,29 @@ class System : public SystemBase {
   variables `xd(n)` in @p context and outputs the results to @p
   discrete_state. See documentation for
   DispatchDiscreteVariableUpdateHandler() for more details. */
-  void CalcDiscreteVariableUpdates(
+  void CalcDiscreteVariableUpdate(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const;
 
+  /** (Deprecated) See CalcDiscreteVariableUpdate() (no final 's')
+  @pydrake_mkdoc_identifier{deprecated_3args} */
+  DRAKE_DEPRECATED("2023-03-01",
+                   "Use CalcDiscreteVariableUpdate() (no final 's') instead")
+  void CalcDiscreteVariableUpdates(
+      const Context<T>& context,
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state) const {
+    CalcDiscreteVariableUpdate(context, events, discrete_state);
+  }
+
   /** Given the @p discrete_state results of a previous call to
-  CalcDiscreteVariableUpdates() that dispatched the given collection of
+  CalcDiscreteVariableUpdate() that dispatched the given collection of
   events, modifies the @p context to reflect the updated @p discrete_state.
   @param[in] events
       The Event collection that resulted in the given @p discrete_state.
   @param[in,out] discrete_state
-      The updated discrete state from a CalcDiscreteVariableUpdates()
+      The updated discrete state from a CalcDiscreteVariableUpdate()
       call. This is mutable to permit its contents to be swapped with the
       corresponding @p context contents (rather than copied).
   @param[in,out] context
@@ -535,21 +566,40 @@ class System : public SystemBase {
       may cause addresses of individual discrete state group vectors in
       @p context to be different on return than they were on entry.
   @pre @p discrete_state is the result of a previous
-       CalcDiscreteVariableUpdates() call that dispatched this @p events
+       CalcDiscreteVariableUpdate() call that dispatched this @p events
        collection. */
   void ApplyDiscreteVariableUpdate(
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state, Context<T>* context) const;
 
-  /** This method forces a discrete update on the system given a @p context,
-  and the updated discrete state is stored in @p discrete_state. The
-  discrete update event will have a trigger type of kForced, with no
-  attribute or custom callback. */
+  /** (Advanced) Manually triggers any DiscreteUpdateEvent that has trigger
+  type kForced. Invokes the discrete event dispatcher on this %System with the
+  given Context providing the initial values for the discrete variables. The
+  updated values of the discrete variables are written to the `discrete_state`
+  output argument; no change is made to the %Context.
+
+  The default dispatcher will invoke the handlers (if any) associated with each
+  force-triggered event.
+
+  @note There will always be at least one force-triggered event, though with no
+  associated handler. By default that will do nothing when triggered, but that
+  behavior can be changed by overriding the dispatcher (not recommended).
+
+  @see CalcDiscreteVariableUpdate(), CalcForcedUnrestrictedUpdate() */
+  void CalcForcedDiscreteVariableUpdate(
+      const Context<T>& context, DiscreteValues<T>* discrete_state) const;
+
+  /** (Deprecated) See CalcForcedDiscreteVariableUpdate()
+  @pydrake_mkdoc_identifier{deprecated_2args} */
+  DRAKE_DEPRECATED("2023-03-01",
+                   "Use CalcForcedDiscreteVariableUpdate() instead")
   void CalcDiscreteVariableUpdates(const Context<T>& context,
-                                   DiscreteValues<T>* discrete_state) const;
+                                   DiscreteValues<T>* discrete_state) const {
+    CalcForcedDiscreteVariableUpdate(context, discrete_state);
+  }
 
   /** This method is the public entry point for dispatching all unrestricted
-  update event handlers. Using all the unrestricted update handers in
+  update event handlers. Using all the unrestricted update handlers in
   @p events, it updates *any* state variables in the @p context, and
   outputs the results to @p state. It does not allow the dimensionality
   of the state variables to change. See the documentation for
@@ -582,16 +632,30 @@ class System : public SystemBase {
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const;
 
-  /** This method forces an unrestricted update on the system given a
-  @p context, and the updated state is stored in @p state. The
-  unrestricted update event will have a trigger type of kForced, with no
-  additional data, attribute or custom callback.
+  /** (Advanced) Manually triggers any UnrestrictedUpdateEvent that has trigger
+  type kForced. Invokes the unrestricted event dispatcher on this %System with
+  the given Context providing the initial values for the state variables. The
+  updated values of the state variables are written to the `state`
+  output argument; no change is made to the %Context.
 
-  @sa CalcUnrestrictedUpdate(const Context<T>&, const
-  EventCollection<UnrestrictedUpdateEvent<T>>*, State<T>* state)
-      for more information. */
+  The default dispatcher will invoke the handlers (if any) associated with each
+  force-triggered event.
+
+  @note There will always be at least one force-triggered event, though with no
+  associated handler. By default that will do nothing when triggered, but that
+  behavior can be changed by overriding the dispatcher (not recommended).
+
+  @see CalcUnrestrictedUpdate() */
+  void CalcForcedUnrestrictedUpdate(const Context<T>& context,
+                                    State<T>* state) const;
+
+  /** (Deprecated) See CalcForcedUnrestrictedUpdate()
+  @pydrake_mkdoc_identifier{deprecated} */
+  DRAKE_DEPRECATED("2023-03-01", "Use CalcForcedUnrestrictedUpdate() instead")
   void CalcUnrestrictedUpdate(const Context<T>& context,
-                              State<T>* state) const;
+                              State<T>* state) const {
+    CalcForcedUnrestrictedUpdate(context, state);
+  }
 
   /** This method is called by a Simulator during its calculation of the size of
   the next continuous step to attempt. The System returns the next time at
@@ -602,6 +666,9 @@ class System : public SystemBase {
   merged CompositeEventCollection will be passed to all event handling
   mechanisms.
 
+  Despite the name, the returned events includes both state-updating events
+  and publish events.
+
   If there is no timed event coming, the return value is Infinity. If
   a finite update time is returned, there will be at least one Event object
   in the returned event collection.
@@ -609,6 +676,14 @@ class System : public SystemBase {
   @p events cannot be null. @p events will be cleared on entry. */
   T CalcNextUpdateTime(const Context<T>& context,
                        CompositeEventCollection<T>* events) const;
+
+  /** Returns all periodic events in this %System. This includes publish,
+  discrete update, and unrestricted update events.
+
+  @p events cannot be null. @p events will be cleared on entry.
+  @see GetPerStepEvents(), GetInitializationEvents() */
+  void GetPeriodicEvents(const Context<T>& context,
+                         CompositeEventCollection<T>* events) const;
 
   /** This method is called by Simulator::Initialize() to gather all update
   and publish events that are to be handled in AdvanceTo() at the point
@@ -621,7 +696,8 @@ class System : public SystemBase {
   will be passed to the appropriate handlers before Simulator integrates the
   continuous state.
 
-  @p events cannot be null. @p events will be cleared on entry. */
+  @p events cannot be null. @p events will be cleared on entry.
+  @see GetPeriodicEvents(), GetInitializationEvents() */
   void GetPerStepEvents(const Context<T>& context,
                         CompositeEventCollection<T>* events) const;
 
@@ -629,43 +705,143 @@ class System : public SystemBase {
   update and publish events that need to be handled at initialization
   before the simulator starts integration.
 
-  @p events cannot be null. @p events will be cleared on entry. */
+  @p events cannot be null. @p events will be cleared on entry.
+  @see GetPeriodicEvents(), GetPerStepEvents() */
   void GetInitializationEvents(const Context<T>& context,
                                CompositeEventCollection<T>* events) const;
 
-  /** Gets whether there exists a unique periodic attribute that triggers
-  one or more discrete update events (and, if so, returns that unique
-  periodic attribute). Thus, this method can be used (1) as a test to
+  /** Determines whether there exists a unique periodic timing (offset and
+  period) that triggers one or more discrete update events (and, if so, returns
+  that unique periodic timing). Thus, this method can be used (1) as a test to
   determine whether a system's dynamics are at least partially governed by
-  difference equations and (2) to obtain the difference equation update
-  times.
-  @returns optional<PeriodicEventData> Contains the periodic trigger
-  attributes if the unique periodic attribute exists, otherwise `nullopt`. */
+  difference equations, and (2) to obtain the difference equation update times.
+  Use EvalUniquePeriodicDiscreteUpdate() if you want to determine the actual
+  effects of triggering these events.
+
+  @warning Even if we find a unique discrete update timing as described above,
+  there may also be unrestricted updates performed with that timing or other
+  timings. (Unrestricted updates can modify any state variables _including_
+  discrete variables.) Also, there may be trigger types other than periodic that
+  can modify discrete variables. This function does not attempt to look for any
+  of those; they are simply ignored. If you are concerned with those, you can
+  use GetPerStepEvents(), GetInitializationEvents(), and GetPeriodicEvents() to
+  get a more comprehensive picture of the event landscape.
+
+  @returns optional<PeriodicEventData> Contains the unique periodic trigger
+  timing if it exists, otherwise `nullopt`.
+
+  @see EvalUniquePeriodicDiscreteUpdate(), IsDifferenceEquationSystem() */
   std::optional<PeriodicEventData>
       GetUniquePeriodicDiscreteUpdateAttribute() const;
+
+  /** If this %System contains a unique periodic timing for discrete update
+  events, this function executes the handlers for those periodic events to
+  determine what their effect would be. Returns a reference to the discrete
+  variable cache entry containing what values the discrete variables would have
+  if these periodic events were triggered.
+
+  Note that this function _does not_ change the value of the discrete variables
+  in the supplied Context. However, you can apply the result to the %Context
+  like this: @code
+    const DiscreteValue<T>& updated =
+        system.EvalUniquePeriodicDiscreteUpdate(context);
+    context.SetDiscreteState(updated);
+  @endcode
+  You can write the updated values to a different %Context than the one you
+  used to calculate the update; the requirement is only that the discrete
+  state in the destination has the same structure (number of groups and size of
+  each group).
+
+  You can use GetUniquePeriodicDiscreteUpdateAttribute() to check whether you
+  can call %EvalUniquePeriodicDiscreteUpdate() safely, and to find the unique
+  periodic timing information (offset and period).
+
+  @warning Even if we find a unique discrete update timing as described above,
+  there may also be unrestricted updates performed with that timing or other
+  timings. (Unrestricted updates can modify any state variables _including_
+  discrete variables.) Also, there may be trigger types other than periodic that
+  can modify discrete variables. This function does not attempt to look for any
+  of those; they are simply ignored. If you are concerned with those, you can
+  use GetPerStepEvents(), GetInitializationEvents(), and GetPeriodicEvents() to
+  get a more comprehensive picture of the event landscape.
+
+  @param[in] context
+      The Context containing the current %System state and the mutable cache
+      space into which the result is written. The current state is _not_
+      modified, though the cache entry may be updated.
+  @returns
+      A reference to the DiscreteValues cache space in `context` containing
+      the result of applying the discrete update event handlers to the current
+      discrete variable values.
+
+  @note The referenced cache entry is recalcuated if anything in the
+      given Context has changed since last calculation. Subsequent calls just
+      return the already-calculated value.
+
+  @throws std::exception if there is not exactly one periodic timing in this
+  %System (which may be a Diagram) that triggers discrete update events.
+
+  @par Implementation
+  If recalculation is needed, copies the current discrete state values into
+  preallocated `context` cache space. Applies the discrete update event handlers
+  (in an unspecified order) to the cache copy, possibly updating it. Returns a
+  reference to the possibly-updated cache space.
+
+  @see GetUniquePeriodicDiscreteUpdateAttribute(), GetPeriodicEvents() */
+  const DiscreteValues<T>& EvalUniquePeriodicDiscreteUpdate(
+      const Context<T>& context) const;
 
   /** Returns true iff the state dynamics of this system are governed
   exclusively by a difference equation on a single discrete state group
   and with a unique periodic update (having zero offset).  E.g., it is
   amenable to analysis of the form:
-    x[n+1] = f(x[n], u[n])
+
+      x[n+1] = f(x[n], u[n])
+
   Note that we do NOT consider the number of input ports here, because
   in practice many systems of interest (e.g. MultibodyPlant) have input
   ports that are safely treated as constant during the analysis.
   Consider using get_input_port_selection() to choose one.
 
+  @warning In determining whether this system is governed as above, we do not
+  consider unrestricted updates or any update events that have trigger types
+  other than periodic. See GetUniquePeriodicDiscreteUpdateAttribute() for more
+  information.
+
   @param[out] time_period if non-null, then iff the function
   returns `true`, then time_period is set to the period data
   returned from GetUniquePeriodicDiscreteUpdateAttribute().  If the
   function returns `false` (the system is not a difference equation
-  system), then `time_period` does not receive a value. */
+  system), then `time_period` does not receive a value.
+
+  @see GetUniquePeriodicDiscreteUpdateAttribute()
+  @see EvalUniquePeriodicDiscreteUpdate() */
   bool IsDifferenceEquationSystem(double* time_period = nullptr) const;
 
-  /** Gets all periodic triggered events for a system. Each periodic attribute
-  (offset and period, in seconds) is mapped to one or more update events
-  that are to be triggered at the proper times. */
+  /** Maps all periodic triggered events for a %System, organized by timing.
+  Each unique periodic timing attribute (offset and period) is
+  mapped to the set of Event objects that are triggered with that timing.
+  Those may include a mix of Publish, DiscreteUpdate, and UnrestrictedUpdate
+  events.
+
+  @param context Optional Context to pass on to Event selection functions;
+      not commonly needed. */
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-    PeriodicEventDataComparator> GetPeriodicEvents() const;
+           PeriodicEventDataComparator>
+  MapPeriodicEventsByTiming(const Context<T>* context = nullptr) const;
+
+  /** (Deprecated) See MapPeriodicEventsByTiming(). If you are looking for
+  the EventCollection of periodic events (analogous to GetPerStepEvents()
+  and GetInitializationEvents()), see
+  GetPeriodicEvents(Context, EventCollection). */
+  DRAKE_DEPRECATED("2023-02-01",
+      "Use MapPeriodicEventsByTiming() or "
+      "GetPeriodicEvents(Context, EventCollection) instead")
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+           PeriodicEventDataComparator>
+  GetPeriodicEvents() const {
+    return MapPeriodicEventsByTiming();
+  }
 
   /** Utility method that computes for _every_ output port i the value y(i) that
   should result from the current contents of the given Context. Note that
@@ -898,7 +1074,8 @@ class System : public SystemBase {
     // has a check that port.get_system_interface() matches `this` which is a
     // System<T>, so we are safe.
     return static_cast<const InputPort<T>&>(
-        this->GetInputPortBaseOrThrow(__func__, port_index));
+        this->GetInputPortBaseOrThrow(__func__, port_index,
+                                      /* warn_deprecated = */ true));
   }
 
   /** Convenience method for the case of exactly one input port. */
@@ -939,7 +1116,8 @@ class System : public SystemBase {
     // has a check that port.get_system_interface() matches `this` which is a
     // System<T>, so we are safe.
     return static_cast<const OutputPort<T>&>(
-        this->GetOutputPortBaseOrThrow(__func__, port_index));
+        this->GetOutputPortBaseOrThrow(__func__, port_index,
+                                       /* warn_deprecated = */ true));
   }
 
   /** Convenience method for the case of exactly one output port. */
@@ -1273,6 +1451,19 @@ class System : public SystemBase {
   // don't need "this->" everywhere when in templated derived classes.
   using SystemBase::DeclareCacheEntry;
 
+  /** (Internal use only) Static interface to
+  DoFindUniquePeriodicDiscreteUpdatesOrThrow() to allow a Diagram to invoke that
+  private method on its subsystems. */
+  static void FindUniquePeriodicDiscreteUpdatesOrThrow(
+      const char* api_name, const System<T>& system, const Context<T>& context,
+      std::optional<PeriodicEventData>* timing,
+      EventCollection<DiscreteUpdateEvent<T>>* events) {
+    DRAKE_DEMAND(timing != nullptr && events != nullptr);
+    system.ValidateContext(context);
+    system.DoFindUniquePeriodicDiscreteUpdatesOrThrow(api_name, context, timing,
+                                                      events);
+  }
+
   /** Derived classes will implement this method to evaluate a witness function
   at the given context. */
   virtual T DoCalcWitnessValue(
@@ -1457,19 +1648,33 @@ class System : public SystemBase {
   time, you _must_ put at least one Event object in the @p events collection.
   These requirements are enforced by the public CalcNextUpdateTime() method.
 
+  @note Despite the name, you must include publish events along with
+  state-updating events.
+
   The default implementation returns with the next sample time being
   Infinity and no events added to @p events. */
   virtual void DoCalcNextUpdateTime(const Context<T>& context,
                                     CompositeEventCollection<T>* events,
                                     T* time) const;
 
-  /** Implement this method to return all periodic triggered events.
-  @see GetPeriodicEvents() for a detailed description of the returned
-       variable.
-  @note The default implementation returns an empty map. */
-  virtual std::map<PeriodicEventData,
-      std::vector<const Event<T>*>, PeriodicEventDataComparator>
-    DoGetPeriodicEvents() const = 0;
+  /** Implement this method to return all periodic triggered events organized
+  by timing.
+  @see MapPeriodicEventsByTiming() for a detailed description of the returned
+       variable. */
+  virtual std::map<PeriodicEventData, std::vector<const Event<T>*>,
+                   PeriodicEventDataComparator>
+  DoMapPeriodicEventsByTiming(const Context<T>& context) const = 0;
+
+  /** Implement this method to return any periodic events. @p events is cleared
+  in the public non-virtual GetPeriodicEvents(). You may assume that
+  @p context has already been validated and that @p events is not null.
+  @p events can be changed freely by the overriding implementation.
+
+  The default implementation returns without changing @p events.
+  @sa GetPeriodicEvents() */
+  virtual void DoGetPeriodicEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const;
 
   /** Implement this method to return any events to be handled before the
   simulator integrates the system's continuous state at each time step.
@@ -1685,6 +1890,43 @@ class System : public SystemBase {
   virtual std::unique_ptr<CompositeEventCollection<T>>
   DoAllocateCompositeEventCollection() const = 0;
 
+  /* Diagram and LeafSystem must provide `final` implementations of this that
+  return the set of all periodic discrete update events in this %System,
+  provided that they share a unique periodic timing. If PeriodicEventData is
+  provided by the caller, then that is the required timing. If not, then any
+  unique timing will do and you should set PeriodicEventData to that timing on
+  return. If there are no periodic discrete update events in this %System,
+  return quietly without touching `timing` or `events`.
+
+  @note This is a protected helper function for the Leaf and Diagram
+  implementations of CalcUniquePeriodicDiscreteUpdate() which will apply the
+  event handlers for the event collection returned here.
+
+  @note The definition of "unique periodic discrete update events" used here
+  should match the definition used by the public API
+  GetUniquePeriodicDiscreteUpdateAttribute(). However, the implementations are
+  necessarily independent.
+
+  @param[in] system The subsystem to be examined.
+  @param[in] context Compatible Context in case that's needed.
+  @param[in,out] timing If provided, the required timing. Otherwise set to
+     the discovered timing on return (if any).
+  @param[in,out] events A pre-allocated EventCollection of the appropriate
+     type for this %System. The set of periodic discrete events (if any) should
+     be _appended_ here on return.
+
+  @throws std::exception if PeriodicEventData is supplied and this %System
+      contains a periodic discrete event with different timing.
+  @throws std::exception if PeriodicEventData is not supplied and this %System
+      contains multiple periodic discrete update events with different timing.
+
+  @pre `timing` and `events` are non-null.
+  @see FindUniquePeriodicDiscreteUpdatesOrThrow() (static interface) */
+  virtual void DoFindUniquePeriodicDiscreteUpdatesOrThrow(
+      const char* api_name, const Context<T>& context,
+      std::optional<PeriodicEventData>* timing,
+      EventCollection<DiscreteUpdateEvent<T>>* events) const = 0;
+
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
       InputPortIndex port_index) const final;
 
@@ -1703,6 +1945,11 @@ class System : public SystemBase {
   void AddExternalConstraints(
       const std::vector<ExternalSystemConstraint>& constraints);
 
+  // This is the computation function for EvalUniquePeriodicDiscreteUpdate()'s
+  // cache entry.
+  void CalcUniquePeriodicDiscreteUpdate(
+      const Context<T>& context, DiscreteValues<T>* updated) const;
+
   // The constraints_ vector encompass all constraints on this system, whether
   // they were declared by a concrete subclass during construction (e.g., by
   // calling DeclareInequalityConstraint), or added after construction (e.g.,
@@ -1716,6 +1963,12 @@ class System : public SystemBase {
   // (so that the external constraints are preserved); for runtime calculations,
   // only the constraints_ vector is used.
   std::vector<ExternalSystemConstraint> external_constraints_;
+
+  // TODO(sherm1) Unify force-triggered events with publish, per-step, and
+  //  initialization events (see leaf_system.h). These should be stored in
+  //  a CompositeEventCollection, likely in LeafSystem. But consider instead
+  //  moving the other collections up here so that the Diagram collections
+  //  don't have to be reconstructed on the fly when accessed.
 
   // These are only used to dispatch forced event handling. For a LeafSystem,
   // these contain at least one kForced triggered event. For a Diagram, they
@@ -1736,6 +1989,7 @@ class System : public SystemBase {
   CacheIndex kinetic_energy_cache_index_;
   CacheIndex conservative_power_cache_index_;
   CacheIndex nonconservative_power_cache_index_;
+  CacheIndex unique_periodic_discrete_update_cache_index_;
 };
 
 }  // namespace systems

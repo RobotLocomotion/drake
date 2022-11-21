@@ -19,6 +19,7 @@
 #include <cmath>
 #include <limits>
 #include <ostream>
+#include <type_traits>
 
 #include <Eigen/Dense>
 
@@ -106,7 +107,7 @@ class AutoDiffScalar<VectorXd>
       const AutoDiffScalar<OtherDerType>& other
 #ifndef EIGEN_PARSED_BY_DOXYGEN
       ,
-      typename internal::enable_if<
+      typename std::enable_if<
           internal::is_same<
               Scalar, typename internal::traits<typename internal::remove_all<
                           OtherDerType>::type>::Scalar>::value,

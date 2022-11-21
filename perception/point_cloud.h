@@ -238,11 +238,11 @@ class PointCloud final {
 
   /// Returns access to a descriptor value.
   /// @pre `has_descriptors()` must be true.
-  VectorX<T> descriptor(int i) const { return descriptors().col(i); }
+  VectorX<D> descriptor(int i) const { return descriptors().col(i); }
 
   /// Returns mutable access to a descriptor value.
   /// @pre `has_descriptors()` must be true.
-  Eigen::Ref<VectorX<T>> mutable_descriptor(int i) {
+  Eigen::Ref<VectorX<D>> mutable_descriptor(int i) {
     return mutable_descriptors().col(i);
   }
 
@@ -300,11 +300,62 @@ class PointCloud final {
 
   /// @}
 
+  /// @name Point Cloud Processing
+  /// @{
+
+  /// Returns a new point cloud containing only the points in `this` with xyz
+  /// values within the axis-aligned bounding box defined by `lower_xyz` and
+  /// `upper_xyz`. Requires that xyz values are defined.
+  /// @pre lower_xyz <= upper_xyz (elementwise).
+  /// @throws std::exception if has_xyzs() != true.
+  PointCloud Crop(const Eigen::Ref<const Vector3<T>>& lower_xyz,
+            const Eigen::Ref<const Vector3<T>>& upper_xyz);
+
+  /// Changes the sign of the normals in `this`, if necessary, so that each
+  /// normal points toward the point `P` in the frame `C` in which the xyzs of
+  /// `this` cloud are represented.  This can be useful, for instance, when `P`
+  /// is the position of the camera used to generate the cloud.
+  /// @throws std::exception if has_xyzs() != true or has_normals() != true.
+  void FlipNormalsTowardPoint(const Eigen::Ref<const Vector3<T>>& p_CP);
+
+  /// @}
+
   // TODO(eric.cousineau): Add storage for indices, with SHOT as a motivating
   // example.
 
   // TODO(eric.cousineau): Add mechanism for handling organized / unorganized
   // point clouds.
+
+  /// Returns a down-sampled point cloud by grouping all xyzs in this cloud
+  /// into a 3D grid with cells of dimension voxel_size. Each occupied voxel
+  /// will result in one point in the downsampled cloud, with a location
+  /// corresponding to the centroid of the points in that voxel. Points with
+  /// non-finite xyz values are ignored. All other fields (e.g. rgbs, normals,
+  /// and descriptors) with finite values will also be averaged across the
+  /// points in a voxel. @p parallelize enables OpenMP parallelization.
+  /// Equivalent to Open3d's voxel_down_sample or PCL's VoxelGrid filter.
+  /// @throws std::exception if has_xyzs() is false.
+  /// @throws std::exception if voxel_size <= 0.
+  PointCloud VoxelizedDownSample(
+      double voxel_size, bool parallelize = false) const;
+
+  /// Estimates the normal vectors in `this` by fitting a plane at each point
+  /// in the cloud using up to `num_closest` points within Euclidean distance
+  /// `radius` from the point. If has_normals() is false, then new normals will
+  /// be allocated (and has_normals() will become true). Points for which the
+  /// normals cannot be estimated (because the `this` has less than two closest
+  /// points within the @p radius), will receive normal [NaN, NaN, NaN].
+  /// Normals estimated from two closest points will be orthogonal to the
+  /// vector between those points, but can be arbitrary in the last
+  /// dimension. @p parallelize enables OpenMP parallelization.
+  ///
+  /// @returns true iff all points were assigned normals by having at least
+  /// *three* closest points within @p radius.
+  ///
+  /// @pre @p radius > 0 and @p num_closest >= 3.
+  /// @throws std::exception if has_xyzs() is false.
+  bool EstimateNormals(
+      double radius, int num_closest, bool parallelize = false);
 
  private:
   void SetDefault(int start, int num);
@@ -315,10 +366,16 @@ class PointCloud final {
   // Represents the size of the point cloud.
   int size_{};
   // Represents which fields are enabled for this point cloud.
-  const pc_flags::Fields fields_{pc_flags::kXYZs};
+  pc_flags::Fields fields_{pc_flags::kXYZs};
   // Owns storage used for the point cloud.
   std::unique_ptr<Storage> storage_;
 };
+
+/// Returns a new point cloud that includes all of the points from the point
+/// clouds in `clouds`. All of the `clouds` must have the same fields.
+/// @pre `clouds` contains at least one point cloud.
+/// @throws std::exception if the clouds have different fields defined.
+PointCloud Concatenate(const std::vector<PointCloud>& clouds);
 
 // TODO(eric.cousineau): Consider a way of reinterpret_cast<>ing the array
 // data to permit more semantic access to members, PCL-style

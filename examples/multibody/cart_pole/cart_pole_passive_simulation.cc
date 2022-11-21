@@ -4,15 +4,14 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace examples {
@@ -21,9 +20,9 @@ namespace cart_pole {
 namespace {
 
 using geometry::SceneGraph;
-using lcm::DrakeLcm;
 
 // "multibody" namespace is ambiguous here without "drake::".
+using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
@@ -44,27 +43,18 @@ DEFINE_double(time_step, 0,
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
-  scene_graph.set_name("scene_graph");
-
   // Make and add the cart_pole model.
+  auto [cart_pole, scene_graph] =
+      AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
   const std::string full_name = FindResourceOrThrow(
       "drake/examples/multibody/cart_pole/cart_pole.sdf");
-  MultibodyPlant<double>& cart_pole =
-      *builder.AddSystem<MultibodyPlant>(FLAGS_time_step);
-  Parser(&cart_pole, &scene_graph).AddModelFromFile(full_name);
+  Parser(&cart_pole, &scene_graph).AddModels(full_name);
 
   // Now the model is complete.
   cart_pole.Finalize();
 
-  // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(cart_pole.geometry_source_is_registered());
+  visualization::AddDefaultVisualization(&builder);
 
-  builder.Connect(
-      cart_pole.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(cart_pole.get_source_id().value()));
-
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   auto diagram = builder.Build();
 
   // Create a context for this system:

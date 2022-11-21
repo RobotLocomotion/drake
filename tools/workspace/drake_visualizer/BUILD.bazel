@@ -34,19 +34,6 @@ py_library(
     ],
 )
 
-# When developing within Drake, we don't want //tools:drake_visualizer to
-# depend on the entire pydrake library, because that adds a dependency on a
-# whole bunch of C++ code that is irrelevant for the visualizer.  So, here we
-# provide a small stub version of pydrake with only getDrakePath implemented
-# (the only piece drake_visualizer needs).  Note that the installed version of
-# drake-visualizer *does* use the installed (full) version of pydrake -- this
-# is development-sandbox-only stub.
-py_library(
-    name = "stub_pydrake",
-    srcs = ["stub/pydrake/__init__.py"],
-    visibility = ["//tools:__pkg__"],
-)
-
 # TODO(eric.cousineau): Use something simpler than cmake_configure_file to do
 # basic subsitutions as a genrule.
 cmake_configure_file(
@@ -66,7 +53,9 @@ install_files(
         # participate in the install target.  Nerf the linter warning for that.
         "no_install_lint",
     ],
-    files = ["drake_visualizer_installed.py"],
+    files = [
+        "drake_visualizer_installed.py",
+    ] if _DRAKE_VISUALIZER_ENABLED else [],
     rename = {
         "bin/drake_visualizer_installed.py": "drake-visualizer",
     },

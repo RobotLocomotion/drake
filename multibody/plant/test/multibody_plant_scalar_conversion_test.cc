@@ -39,8 +39,8 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, RevoluteJointAndSpring) {
 
   MultibodyPlant<double> plant(0.0);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const RigidBody<double>& body = plant.AddRigidBody("Body",
-      SpatialInertia<double>::MakeTestCube());
+  const RigidBody<double>& body =
+      plant.AddRigidBody("Body", SpatialInertia<double>::MakeUnitary());
   const RevoluteJoint<double>& pin = plant.AddJoint<RevoluteJoint>(
       "Pin", plant.world_body(), std::nullopt, body, std::nullopt,
       Vector3<double>::UnitZ());
@@ -66,10 +66,10 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, RevoluteJointAndSpring) {
   EXPECT_EQ(plant.num_force_elements(), plant_u->num_force_elements());
 
   // We verify the correct reference to the pin joint after conversion.
-  const auto& pin_u = plant_u->template GetJointByName<RevoluteJoint>(
-      pin.name());
-  const auto& spring_u = plant_u->template GetForceElement<RevoluteSpring>(
-      spring.index());
+  const auto& pin_u =
+      plant_u->template GetJointByName<RevoluteJoint>(pin.name());
+  const auto& spring_u =
+      plant_u->template GetForceElement<RevoluteSpring>(spring.index());
 
   // Verify correct cross-referencing in the scalar converted model.
   EXPECT_EQ(&pin_u, &spring_u.joint());
@@ -133,8 +133,8 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, PortIndexOrdering) {
 
   std::unique_ptr<Diagram<U>> diagram_u =
       System<double>::ToScalarType<U>(*diagram);
-  const auto& plant_u = dynamic_cast<const MultibodyPlant<U>&>(
-      *diagram_u->GetSystems().at(0));
+  const auto& plant_u =
+      dynamic_cast<const MultibodyPlant<U>&>(*diagram_u->GetSystems().at(0));
 
   CompareMultibodyPlantPortIndices(plant, plant_u);
 }
@@ -150,9 +150,8 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, DirectlyAdded) {
 }
 
 REGISTER_TYPED_TEST_SUITE_P(MultibodyPlantDefaultScalarsTest,
-    RevoluteJointAndSpring,
-    PortIndexOrdering,
-    DirectlyAdded);
+                            RevoluteJointAndSpring, PortIndexOrdering,
+                            DirectlyAdded);
 
 using NonDoubleScalarTypes = ::testing::Types<AutoDiffXd, Expression>;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, MultibodyPlantDefaultScalarsTest,
@@ -213,10 +212,9 @@ GTEST_TEST(ScalarConversionTest, ExternalComponent) {
                std::exception);
   // double -> Expression
   std::unique_ptr<MultibodyPlant<Expression>> plant_autodiff_to_symbolic;
-  EXPECT_THROW(
-      plant_autodiff_to_symbolic =
-          System<AutoDiffXd>::ToSymbolic(*plant_autodiff),
-      std::exception);
+  EXPECT_THROW(plant_autodiff_to_symbolic =
+                   System<AutoDiffXd>::ToSymbolic(*plant_autodiff),
+               std::exception);
 
   // Verify that adding a component that doesn't allow scalar conversion to
   // autodiff does not prevent scalar conversion to double.
@@ -227,6 +225,49 @@ GTEST_TEST(ScalarConversionTest, ExternalComponent) {
   EXPECT_FALSE(discrete_update_manager->is_cloneable_to_symbolic());
   plant_autodiff->SetDiscreteUpdateManager(std::move(discrete_update_manager));
   EXPECT_NO_THROW(plant_autodiff->ToScalarType<double>());
+}
+
+}  // namespace
+
+class MultibodyPlantTester {
+ public:
+  template <typename T>
+  static std::vector<internal::CouplerConstraintSpecs<T>>& get_mutable_specs(
+      MultibodyPlant<T>* plant) {
+    return plant->coupler_constraints_specs_;
+  }
+};
+
+namespace {
+
+// Verify that constraint specs survive scalar conversions. Here we only test
+// that the number of constraints before and aftter scalar conversion are the
+// same. The correctness of the scalar copying semantics for the constraints are
+// tested in their own unit tests.
+GTEST_TEST(ScalarConversionTest, CouplerConstraintSpecs) {
+  MultibodyPlant<double> plant_double(0.1);
+
+  const JointIndex j0(3);
+  const JointIndex j1(5);
+  constexpr double kGearRatio = 1.2;
+  constexpr double kOffset = 0.3;
+  const internal::CouplerConstraintSpecs<double> reference_spec(
+      j0, j1, kGearRatio, kOffset);
+  // Directly add dummy constraint specs through the tester so that we don't
+  // need to actually add any joints.
+  MultibodyPlantTester::get_mutable_specs(&plant_double)
+      .emplace_back(reference_spec);
+  plant_double.Finalize();
+  // double -> AutoDiffXd.
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_double_to_autodiff =
+      System<double>::ToAutoDiffXd(plant_double);
+  EXPECT_EQ(plant_double_to_autodiff->num_constraints(),
+            plant_double.num_constraints());
+  // AutoDiffXd -> double.
+  std::unique_ptr<MultibodyPlant<double>> plant_autodiff_to_double =
+      System<AutoDiffXd>::ToScalarType<double>(*plant_double_to_autodiff);
+  EXPECT_EQ(plant_autodiff_to_double->num_constraints(),
+            plant_double.num_constraints());
 }
 
 }  // namespace

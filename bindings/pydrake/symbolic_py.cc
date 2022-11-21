@@ -14,9 +14,11 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_py_unapply.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
-#include "drake/common/symbolic_decompose.h"
-#include "drake/common/symbolic_latex.h"
-#include "drake/common/symbolic_trigonometric_polynomial.h"
+#include "drake/common/symbolic/decompose.h"
+#include "drake/common/symbolic/latex.h"
+#include "drake/common/symbolic/monomial_util.h"
+#include "drake/common/symbolic/replace_bilinear_terms.h"
+#include "drake/common/symbolic/trigonometric_polynomial.h"
 
 namespace drake {
 namespace pydrake {
@@ -548,6 +550,30 @@ PYBIND11_MODULE(symbolic, m) {
       },
       py::arg("m"), py::arg("subs"), doc.Substitute.doc_sincos_matrix);
 
+  m.def(
+      "SubstituteStereographicProjection",
+      [](const symbolic::Polynomial& e, const std::vector<SinCos>& sin_cos,
+          const VectorX<symbolic::Variable>& t) {
+        return symbolic::SubstituteStereographicProjection(e, sin_cos, t);
+      },
+      py::arg("e"), py::arg("sin_cos"), py::arg("t"),
+      doc.SubstituteStereographicProjection.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("SubstituteStereographicProjection",
+      WrapDeprecated(
+          "2023-02-01, use the other SubstituteStereographicProjection which "
+          "passes e as a sym.Polynomial",
+          [](const Expression& e, const std::unordered_map<symbolic::Variable,
+                                      symbolic::Variable>& subs) {
+            return symbolic::SubstituteStereographicProjection(e, subs);
+          }),
+      py::arg("e"), py::arg("subs"),
+      "2023-02-01, use the other SubstituteStereographicProjection which "
+      "passes e as a sym.Polynomial");
+#pragma GCC diagnostic pop
+
   {
     constexpr auto& cls_doc = doc.FormulaKind;
     py::enum_<FormulaKind>(m, "FormulaKind", doc.FormulaKind.doc)
@@ -744,7 +770,11 @@ PYBIND11_MODULE(symbolic, m) {
       .def("EvenDegreeMonomialBasis", &symbolic::EvenDegreeMonomialBasis,
           py::arg("vars"), py::arg("degree"), doc.EvenDegreeMonomialBasis.doc)
       .def("OddDegreeMonomialBasis", &symbolic::OddDegreeMonomialBasis,
-          py::arg("vars"), py::arg("degree"), doc.OddDegreeMonomialBasis.doc);
+          py::arg("vars"), py::arg("degree"), doc.OddDegreeMonomialBasis.doc)
+      .def("CalcMonomialBasisOrderUpToOne",
+          &symbolic::CalcMonomialBasisOrderUpToOne, py::arg("x"),
+          py::arg("sort_monomial") = false,
+          doc.CalcMonomialBasisOrderUpToOne.doc);
 
   using symbolic::Polynomial;
 
@@ -898,13 +928,83 @@ PYBIND11_MODULE(symbolic, m) {
           },
           py::arg("vars"), doc.Polynomial.Jacobian.doc);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  polynomial_cls.def("EqualToAfterExpansion",
-      WrapDeprecated(doc.Polynomial.EqualToAfterExpansion.doc_deprecated,
-          &Polynomial::EqualToAfterExpansion),
-      doc.Polynomial.EqualToAfterExpansion.doc_deprecated);
-#pragma GCC diagnostic pop
+  py::class_<RationalFunction> rat_fun_cls(
+      m, "RationalFunction", doc.RationalFunction.doc);
+  rat_fun_cls.def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
+      .def(py::init<Polynomial, Polynomial>(), py::arg("numerator"),
+          py::arg("denominator"),
+          doc.RationalFunction.ctor.doc_2args_numerator_denominator)
+      .def(py::init<const Polynomial&>(), py::arg("p"),
+          doc.RationalFunction.ctor.doc_1args_p)
+      .def(py::init<const Monomial&>(), py::arg("m"),
+          doc.RationalFunction.ctor.doc_1args_m)
+      .def(py::init<double>(), py::arg("c"),
+          doc.RationalFunction.ctor.doc_1args_c)
+      .def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
+      .def("numerator", &RationalFunction::numerator,
+          doc.RationalFunction.numerator.doc)
+      .def("denominator", &RationalFunction::denominator,
+          doc.RationalFunction.denominator.doc)
+      .def("SetIndeterminates", &RationalFunction::SetIndeterminates,
+          py::arg("new_indeterminates"),
+          doc.RationalFunction.SetIndeterminates.doc)
+      .def("__str__",
+          [](const RationalFunction& self) { return fmt::format("{}", self); })
+      .def("__repr__",
+          [](const RationalFunction& self) {
+            return fmt::format("<RationalFunction \"{}\">", self);
+          })
+      .def(
+          "Evaluate",
+          [](const RationalFunction& self, const Environment::map& env) {
+            return self.Evaluate(Environment{env});
+          },
+          py::arg("env"), doc.RationalFunction.Evaluate.doc)
+      .def("ToExpression", &RationalFunction::ToExpression,
+          doc.RationalFunction.ToExpression.doc)
+      .def("EqualTo", &RationalFunction::EqualTo, py::arg("f"),
+          doc.RationalFunction.EqualTo.doc)
+
+      .def(-py::self)
+      // Addition
+      .def(py::self + py::self)
+      .def(py::self + double())
+      .def(double() + py::self)
+      .def(py::self + Polynomial())
+      .def(Polynomial() + py::self)
+      .def(py::self + Monomial())
+      .def(Monomial() + py::self)
+
+      // Subtraction
+      .def(py::self - py::self)
+      .def(py::self - double())
+      .def(double() - py::self)
+      .def(py::self - Polynomial())
+      .def(Polynomial() - py::self)
+      .def(py::self - Monomial())
+      .def(Monomial() - py::self)
+
+      // Multiplication
+      .def(py::self * py::self)
+      .def(py::self * double())
+      .def(double() * py::self)
+      .def(py::self * Polynomial())
+      .def(Polynomial() * py::self)
+      .def(py::self * Monomial())
+      .def(Monomial() * py::self)
+
+      // Division
+      .def(py::self / py::self)
+      .def(py::self / double())
+      .def(double() / py::self)
+      .def(py::self / Polynomial())
+      .def(Polynomial() / py::self)
+      .def(py::self / Monomial())
+      .def(Monomial() / py::self)
+
+      // Logical comparison
+      .def(py::self == py::self)
+      .def(py::self != py::self);
 
   m.def(
       "Evaluate",
@@ -953,7 +1053,7 @@ PYBIND11_MODULE(symbolic, m) {
 
   ExecuteExtraPythonCode(m);
 
-  // Bind the free functions in symbolic_decompose.h
+  // Bind the free functions in symbolic/decompose.h
   m  // BR
       .def(
           "DecomposeLinearExpressions",
@@ -1031,6 +1131,10 @@ PYBIND11_MODULE(symbolic, m) {
       .def("DecomposeLumpedParameters", &DecomposeLumpedParameters,
           py::arg("f"), py::arg("parameters"),
           doc.DecomposeLumpedParameters.doc);
+
+  // Bind free function in replace_bilinear_terms.
+  m.def("ReplaceBilinearTerms", &ReplaceBilinearTerms, py::arg("e"),
+      py::arg("x"), py::arg("y"), py::arg("W"), doc.ReplaceBilinearTerms.doc);
 
   // NOLINTNEXTLINE(readability/fn_size)
 }

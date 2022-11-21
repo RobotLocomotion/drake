@@ -20,7 +20,7 @@ py_library(
 py_library(
     name = "otool",
     srcs = ["otool.py"],
-    visibility = ["//tools:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [":module_py"],
 )
 
@@ -42,6 +42,11 @@ drake_py_binary(
     name = "installer",
     srcs = ["installer.py"],
     deps = [":otool"],
+)
+
+drake_py_unittest(
+    name = "installer_test",
+    data = [":installer"],
 )
 
 # Runs `install_test_helper` unit tests.

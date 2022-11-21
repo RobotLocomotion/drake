@@ -11,6 +11,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/system.h"
 
@@ -248,13 +249,62 @@ class DiagramBuilder {
     return registered_systems_.empty();
   }
 
+  /// Returns true iff Build() or BuildInto() has been called on this Builder,
+  /// in which case it's an error to call any member function other than the
+  /// the destructor.
+  bool already_built() const {
+    return already_built_;
+  }
+
   /// Returns the list of contained Systems.
-  /// See also GetMutableSystems().
+  /// @see GetSubsystemByName()
+  /// @see GetMutableSystems()
   std::vector<const System<T>*> GetSystems() const;
 
   /// Returns the list of contained Systems.
-  /// See also GetSystems().
+  /// @see GetMutableSubsystemByName()
+  /// @see GetSystems()
   std::vector<System<T>*> GetMutableSystems();
+
+  /// Retrieves a const reference to the subsystem with name @p name returned
+  /// by get_name().
+  /// @throws std::exception if a unique match cannot be found.
+  /// @see System<T>::get_name()
+  /// @see GetMutableSubsystemByName()
+  /// @see GetDowncastSubsystemByName()
+  const System<T>& GetSubsystemByName(std::string_view name) const;
+
+  /// Retrieves a mutable reference to the subsystem with name @p name returned
+  /// by get_name().
+  /// @throws std::exception if a unique match cannot be found.
+  /// @see System<T>::get_name()
+  /// @see GetSubsystemByName()
+  /// @see GetMutableDowncastSubsystemByName()
+  System<T>& GetMutableSubsystemByName(std::string_view name);
+
+  /// Retrieves a const reference to the subsystem with name @p name returned
+  /// by get_name(), downcast to the type provided as a template argument.
+  /// @tparam MySystem is the downcast type, e.g., drake::systems::Adder
+  /// @throws std::exception if a unique match cannot be found.
+  /// @see GetMutableDowncastSubsystemByName()
+  /// @see GetSubsystemByName()
+  template <template <typename> class MySystem>
+  const MySystem<T>& GetDowncastSubsystemByName(std::string_view name) const {
+    const System<T>& subsystem = this->GetSubsystemByName(name);
+    return *dynamic_pointer_cast_or_throw<const MySystem<T>>(&subsystem);
+  }
+
+  /// Retrieves a mutable reference to the subsystem with name @p name returned
+  /// by get_name(), downcast to the type provided as a template argument.
+  /// @tparam MySystem is the downcast type, e.g., drake::systems::Adder
+  /// @throws std::exception if a unique match cannot be found.
+  /// @see GetDowncastSubsystemByName()
+  /// @see GetMutableSubsystemByName()
+  template <template <typename> class MySystem>
+  MySystem<T>& GetMutableDowncastSubsystemByName(std::string_view name) {
+    System<T>& subsystem = this->GetMutableSubsystemByName(name);
+    return *dynamic_pointer_cast_or_throw<MySystem<T>>(&subsystem);
+  }
 
   /// (Advanced) Returns a reference to the map of connections between Systems.
   /// The reference becomes invalid upon any call to Build or BuildInto.

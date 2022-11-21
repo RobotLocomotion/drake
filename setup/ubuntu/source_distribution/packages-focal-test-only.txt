@@ -5,16 +5,15 @@ llvm-12
 python3-dateutil
 python3-dbg
 python3-flask
-python3-jwcrypto
 python3-lxml-dbg
 python3-matplotlib-dbg
 python3-nbconvert
 python3-nbformat
 python3-numpy-dbg
+python3-opencv
 python3-pandas
 python3-psutil
 python3-requests
-python3-scipy-dbg
 python3-six
 python3-uritemplate
 python3-websockets

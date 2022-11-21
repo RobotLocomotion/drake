@@ -7,6 +7,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace manipulation {
@@ -21,7 +22,7 @@ std::unique_ptr<multibody::MultibodyPlant<double>> MakeIiwa(void) {
   const std::string filename = FindResourceOrThrow(
       "drake/manipulation/models/"
       "iiwa_description/sdf/iiwa14_no_collision.sdf");
-  parser.AddModelFromFile(filename, "iiwa");
+  parser.AddModels(filename);
   robot->WeldFrames(robot->world_frame(), robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();
   return robot;
@@ -29,7 +30,7 @@ std::unique_ptr<multibody::MultibodyPlant<double>> MakeIiwa(void) {
 
 
 // Tests that the LeafSystem behavior matches the function API.
-GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, BasicTest) {
+GTEST_TEST(DifferentialInverseKinematicsIntegratorTest, BasicTest) {
   auto robot = MakeIiwa();
   auto robot_context = robot->CreateDefaultContext();
   const multibody::Frame<double>& frame_E =
@@ -63,14 +64,17 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, BasicTest) {
   math::RigidTransformd X_WE_desired(Eigen::Vector3d(0.2, 0.0, 0.2));
   diff_ik.get_input_port(0).FixValue(diff_ik_context.get(), X_WE_desired);
   auto discrete_state = diff_ik.AllocateDiscreteVariables();
-  diff_ik.CalcDiscreteVariableUpdates(*diff_ik_context, discrete_state.get());
+  for (const auto& [data, events] : diff_ik.MapPeriodicEventsByTiming()) {
+    dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
+        ->handle(diff_ik, *diff_ik_context, discrete_state.get());
+  }
 
   // Confirm that the result status state was updated properly.
   EXPECT_EQ(
       discrete_state->get_vector(1).GetAtIndex(0),
       static_cast<double>(DifferentialInverseKinematicsStatus::kSolutionFound));
 
-  params.set_timestep(time_step);  // intentionally set this after diff_ik call
+  params.set_time_step(time_step);  // intentionally set this after diff_ik call
   DifferentialInverseKinematicsResult result = DoDifferentialInverseKinematics(
       *robot, *robot_context, X_WE_desired, frame_E, params);
 
@@ -87,13 +91,19 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, BasicTest) {
   const auto b = Eigen::VectorXd::Zero(A.rows());
   diff_ik.get_mutable_parameters().AddLinearVelocityConstraint(
       std::make_shared<solvers::LinearConstraint>(A, b, b));
-  diff_ik.CalcDiscreteVariableUpdates(*diff_ik_context, discrete_state.get());
+  Eigen::VectorXd last_q = robot->GetPositions(*robot_context);
+  for (const auto& [data, events] : diff_ik.MapPeriodicEventsByTiming()) {
+    dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
+        ->handle(diff_ik, *diff_ik_context, discrete_state.get());
+  }
   EXPECT_EQ(discrete_state->get_vector(1).GetAtIndex(0),
             static_cast<double>(
                 DifferentialInverseKinematicsStatus::kStuck));
+  // kStuck does *not* imply that the positions will not advance.
+  EXPECT_FALSE(CompareMatrices(discrete_state->get_value(0), last_q, 1e-12));
 }
 
-GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, ParametersTest) {
+GTEST_TEST(DifferentialInverseKinematicsIntegratorTest, ParametersTest) {
   auto robot = MakeIiwa();
   auto robot_context = robot->CreateDefaultContext();
   const multibody::Frame<double>& frame_E =
@@ -105,14 +115,14 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, ParametersTest) {
   DifferentialInverseKinematicsIntegrator diff_ik(
       *robot, frame_E, time_step, params);
 
-  EXPECT_EQ(diff_ik.get_parameters().get_timestep(), time_step);
-  diff_ik.get_mutable_parameters().set_timestep(0.2);
-  EXPECT_EQ(diff_ik.get_parameters().get_timestep(), 0.2);
+  EXPECT_EQ(diff_ik.get_parameters().get_time_step(), time_step);
+  diff_ik.get_mutable_parameters().set_time_step(0.2);
+  EXPECT_EQ(diff_ik.get_parameters().get_time_step(), 0.2);
 }
 
 // Confirm that we can act like a difference equation system when the warning
 // logic is disabled.
-GTEST_TEST(DifferentialInverseKinematicsIntegatorTest,
+GTEST_TEST(DifferentialInverseKinematicsIntegratorTest,
            DifferenceEquationSystemTest) {
   auto robot = MakeIiwa();
   auto robot_context = robot->CreateDefaultContext();
@@ -131,6 +141,106 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest,
       *robot, frame_E, time_step, params, nullptr, false);
   EXPECT_EQ(diff_ik_without_status_state.num_discrete_state_groups(), 1);
   EXPECT_TRUE(diff_ik_without_status_state.IsDifferenceEquationSystem());
+}
+
+GTEST_TEST(DifferentialInverseKinematicsIntegratorTest,
+           InitializationEvent) {
+  systems::DiagramBuilder<double> builder;
+  auto robot = builder.AddSystem(MakeIiwa());
+  const multibody::Frame<double>& frame_E =
+      robot->GetFrameByName("iiwa_link_7");
+
+  DifferentialInverseKinematicsParameters params(robot->num_positions(),
+                                                 robot->num_velocities());
+  const double time_step = 0.1;
+  auto diff_ik = builder.AddSystem<DifferentialInverseKinematicsIntegrator>(
+      *robot, frame_E, time_step, params);
+  builder.Connect(robot->get_state_output_port(),
+                  diff_ik->GetInputPort("robot_state"));
+  auto diagram = builder.Build();
+  systems::Simulator<double> simulator(*diagram);
+
+  systems::Context<double>& context = simulator.get_mutable_context();
+  systems::Context<double>& robot_context =
+      robot->GetMyMutableContextFromRoot(&context);
+  robot->SetPositions(&robot_context, Eigen::VectorXd::Constant(7, 0.1));
+  systems::Context<double>& diff_ik_context =
+      diff_ik->GetMyMutableContextFromRoot(&context);
+  diff_ik_context.FixInputPort(0, Value<math::RigidTransform<double>>());
+
+  // Confirm that the initialization event sets the diff_ik positions to the
+  // robot positions.
+  EXPECT_FALSE(
+      CompareMatrices(diff_ik_context.get_discrete_state(0).get_value(),
+                      robot->GetPositions(robot_context)));
+  simulator.Initialize();
+  EXPECT_TRUE(
+      CompareMatrices(diff_ik_context.get_discrete_state(0).get_value(),
+                      robot->GetPositions(robot_context)));
+}
+
+GTEST_TEST(DifferentialInverseKinematicsIntegratorTest,
+           UseRobotStatePort) {
+  systems::DiagramBuilder<double> builder;
+  auto robot = builder.AddSystem(MakeIiwa());
+  const multibody::Frame<double>& frame_E =
+      robot->GetFrameByName("iiwa_link_7");
+
+  DifferentialInverseKinematicsParameters params(robot->num_positions(),
+                                                 robot->num_velocities());
+  const double time_step = 0.1;
+  auto diff_ik = builder.AddSystem<DifferentialInverseKinematicsIntegrator>(
+      *robot, frame_E, time_step, params);
+  builder.Connect(robot->get_state_output_port(),
+                  diff_ik->GetInputPort("robot_state"));
+  auto diagram = builder.Build();
+  systems::Simulator<double> simulator(*diagram);
+
+  systems::Context<double>& context = simulator.get_mutable_context();
+  systems::Context<double>& robot_context =
+      robot->GetMyMutableContextFromRoot(&context);
+  robot->SetPositions(&robot_context, Eigen::VectorXd::Constant(7, 0.1));
+  systems::Context<double>& diff_ik_context =
+      diff_ik->GetMyMutableContextFromRoot(&context);
+  const math::RigidTransform<double> X_G =
+      robot->GetBodyByName("iiwa_link_7").EvalPoseInWorld(robot_context);
+  diff_ik_context.FixInputPort(0, Value<math::RigidTransform<double>>(X_G));
+  auto discrete_state = diff_ik->AllocateDiscreteVariables();
+
+  // Note: we intentionally do not call simulator.Initialize() nor send an
+  // initialization event.
+
+  // use_robot_state port is unset.
+  for (const auto& [data, events] : diff_ik->MapPeriodicEventsByTiming()) {
+    dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
+        ->handle(*diff_ik, diff_ik_context, discrete_state.get());
+  }
+  EXPECT_FALSE(CompareMatrices(discrete_state->get_value(0),
+                               robot->GetPositions(robot_context)));
+
+  // use_robot_state port is set to false.
+  diff_ik_context.FixInputPort(
+      diff_ik->GetInputPort("use_robot_state").get_index(),
+      Value<bool>{false});
+  for (const auto& [data, events] : diff_ik->MapPeriodicEventsByTiming()) {
+    dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
+        ->handle(*diff_ik, diff_ik_context, discrete_state.get());
+  }
+  EXPECT_FALSE(CompareMatrices(discrete_state->get_value(0),
+                               robot->GetPositions(robot_context)));
+
+  // use_robot_state port is set to true.
+  diff_ik_context.FixInputPort(
+      diff_ik->GetInputPort("use_robot_state").get_index(),
+      Value<bool>{true});
+  for (const auto& [data, events] : diff_ik->MapPeriodicEventsByTiming()) {
+    dynamic_cast<const systems::DiscreteUpdateEvent<double>*>(events[0])
+        ->handle(*diff_ik, diff_ik_context, discrete_state.get());
+  }
+  // We set the desired pose to the current pose, so updating with true should
+  // result in the integrator positions matching the robot positions.
+  EXPECT_TRUE(CompareMatrices(discrete_state->get_value(0),
+                              robot->GetPositions(robot_context), 1e-12));
 }
 
 }  // namespace

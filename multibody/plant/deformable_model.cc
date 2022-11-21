@@ -1,5 +1,6 @@
 #include "drake/multibody/plant/deformable_model.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -12,7 +13,6 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
 
 using geometry::FrameId;
 using geometry::GeometryId;
@@ -40,23 +40,60 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   /* Record the reference positions. */
   const geometry::SceneGraphInspector<T>& inspector =
       scene_graph.model_inspector();
-  const geometry::VolumeMesh<double>* mesh_ptr =
+  const geometry::VolumeMesh<double>* mesh_G =
       inspector.GetReferenceMesh(geometry_id);
-  DRAKE_DEMAND(mesh_ptr != nullptr);
-  const auto& mesh = *mesh_ptr;
-  VectorX<T> reference_position(3 * mesh.num_vertices());
-  for (int v = 0; v < mesh.num_vertices(); ++v) {
-    reference_position.template segment<3>(3 * v) = mesh.vertex(v);
+  DRAKE_DEMAND(mesh_G != nullptr);
+  const math::RigidTransform<T>& X_WG = inspector.GetPoseInFrame(geometry_id);
+  geometry::VolumeMesh<double> mesh_W = *mesh_G;
+  mesh_W.TransformVertices(X_WG);
+  VectorX<T> reference_position(3 * mesh_W.num_vertices());
+  for (int v = 0; v < mesh_W.num_vertices(); ++v) {
+    reference_position.template segment<3>(3 * v) = mesh_W.vertex(v);
   }
 
   const DeformableBodyId body_id = DeformableBodyId::get_new_id();
   /* Build FEM model for the deformable body. */
-  BuildLinearVolumetricModel(body_id, mesh, config);
+  BuildLinearVolumetricModel(body_id, mesh_W, config);
 
   /* Do the book-keeping. */
   reference_positions_.emplace(body_id, std::move(reference_position));
   body_id_to_geometry_id_.emplace(body_id, geometry_id);
+  geometry_id_to_body_id_.emplace(geometry_id, body_id);
+  body_ids_.emplace_back(body_id);
   return body_id;
+}
+
+template <typename T>
+void DeformableModel<T>::SetWallBoundaryCondition(DeformableBodyId id,
+                                                  const Vector3<T>& p_WQ,
+                                                  const Vector3<T>& n_W) {
+  this->ThrowIfSystemResourcesDeclared(__func__);
+  ThrowUnlessRegistered(__func__, id);
+  DRAKE_DEMAND(n_W.norm() > 1e-10);
+  const Vector3<T>& nhat_W = n_W.normalized();
+
+  fem::FemModel<T>& fem_model = *fem_models_.at(id);
+  const int num_nodes = fem_model.num_nodes();
+  constexpr int kDim = 3;
+  auto is_inside_wall = [&p_WQ, &nhat_W](const Vector3<T>& p_WV) {
+    T distance_to_wall = (p_WV - p_WQ).dot(nhat_W);
+    return distance_to_wall < 0;
+  };
+
+  const VectorX<T>& p_WVs = GetReferencePositions(id);
+  fem::internal::DirichletBoundaryCondition<T> bc;
+  for (int n = 0; n < num_nodes; ++n) {
+    const int dof_index = kDim * n;
+    const auto p_WV = p_WVs.template segment<kDim>(dof_index);
+    if (is_inside_wall(p_WV)) {
+      /* Set all kDim dofs associated with this node to be subject to zero
+       Dirichlet BC. */
+      for (int d = 0; d < kDim; ++d) {
+        bc.AddBoundaryCondition(dof_index + d, Vector3<T>(p_WV(d), 0, 0));
+      }
+    }
+  }
+  fem_model.SetDirichletBoundaryCondition(std::move(bc));
 }
 
 template <typename T>
@@ -79,6 +116,40 @@ const VectorX<T>& DeformableModel<T>::GetReferencePositions(
     DeformableBodyId id) const {
   ThrowUnlessRegistered(__func__, id);
   return reference_positions_.at(id);
+}
+
+template <typename T>
+DeformableBodyId DeformableModel<T>::GetBodyId(
+    DeformableBodyIndex index) const {
+  this->ThrowIfSystemResourcesNotDeclared(__func__);
+  DRAKE_THROW_UNLESS(index.is_valid() && index < num_bodies());
+  return body_ids_[index];
+}
+
+template <typename T>
+DeformableBodyIndex DeformableModel<T>::GetBodyIndex(
+    DeformableBodyId id) const {
+  this->ThrowIfSystemResourcesNotDeclared(__func__);
+  ThrowUnlessRegistered(__func__, id);
+  return body_id_to_index_.at(id);
+}
+
+template <typename T>
+GeometryId DeformableModel<T>::GetGeometryId(DeformableBodyId id) const {
+  ThrowUnlessRegistered(__func__, id);
+  return body_id_to_geometry_id_.at(id);
+}
+
+template <typename T>
+DeformableBodyId DeformableModel<T>::GetBodyId(
+    geometry::GeometryId geometry_id) const {
+  if (geometry_id_to_body_id_.count(geometry_id) == 0) {
+    throw std::runtime_error(
+        fmt::format("The given GeometryId {} does not correspond to a "
+                    "deformable body registered with this model.",
+                    geometry_id));
+  }
+  return geometry_id_to_body_id_.at(geometry_id);
 }
 
 template <typename T>
@@ -161,6 +232,43 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
     discrete_state_indexes_.emplace(
         deformable_id, this->DeclareDiscreteState(plant, model_state));
   }
+
+  /* Declare the vertex position output port. */
+  vertex_positions_port_index_ =
+      this->DeclareAbstractOutputPort(
+              plant, "vertex_positions",
+              []() {
+                return AbstractValue::Make<
+                    geometry::GeometryConfigurationVector<T>>();
+              },
+              [this](const systems::Context<T>& context,
+                     AbstractValue* output) {
+                this->CopyVertexPositions(context, output);
+              },
+              {systems::System<double>::xd_ticket()})
+          .get_index();
+
+  std::sort(body_ids_.begin(), body_ids_.end());
+  for (DeformableBodyIndex i(0); i < static_cast<int>(body_ids_.size()); ++i) {
+    DeformableBodyId id = body_ids_[i];
+    body_id_to_index_[id] = i;
+  }
+}
+
+template <typename T>
+void DeformableModel<T>::CopyVertexPositions(const systems::Context<T>& context,
+                                             AbstractValue* output) const {
+  auto& output_value =
+      output->get_mutable_value<geometry::GeometryConfigurationVector<T>>();
+  output_value.clear();
+  for (const auto& [body_id, geometry_id] : body_id_to_geometry_id_) {
+    const auto& fem_model = GetFemModel(body_id);
+    const int num_dofs = fem_model.num_dofs();
+    const auto& discrete_state_index = GetDiscreteStateIndex(body_id);
+    VectorX<T> vertex_positions =
+        context.get_discrete_state(discrete_state_index).value().head(num_dofs);
+    output_value.set_value(geometry_id, std::move(vertex_positions));
+  }
 }
 
 template <typename T>
@@ -173,8 +281,7 @@ void DeformableModel<T>::ThrowUnlessRegistered(const char* source_method,
   }
 }
 
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
-template class drake::multibody::internal::DeformableModel<double>;
+template class drake::multibody::DeformableModel<double>;

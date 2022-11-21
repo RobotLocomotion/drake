@@ -25,6 +25,7 @@
 #include <set>
 #include <stack>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -676,10 +677,14 @@ class MultibodyTreeTopology {
     // Checks for graph loops. Each body can have only one inboard mobilizer.
     if (bodies_[outboard_body].inboard_mobilizer.is_valid()) {
       throw std::runtime_error(
-          "This mobilizer is creating a closed loop since the outboard body "
-          "already has an inboard mobilizer connected to it. "
-          "If a physical loop is really needed, consider using a constraint "
-          "instead.");
+          "When creating a model, an attempt was made to add two inboard "
+          "joints to the same body; this is not allowed. One possible cause "
+          "might be attempting to weld a robot to World somewhere other "
+          "than its base link; see Drake issue #17429 for discussion and "
+          "work-arounds, e.g., reversing some joint parent/child directions. "
+          "Another possible cause might be attempting to form a kinematic "
+          "loop using joints; to create a loop, consider using a "
+          "LinearBushingRollPitchYaw instead of a joint.");
     }
 
     // The checks above guarantee that it is the first time we add an inboard
@@ -1030,19 +1035,58 @@ class MultibodyTreeTopology {
   // - The minimum size of the list is one. This corresponds to a topology with
   //   all bodies welded to the world.
   std::vector<std::set<BodyIndex>> CreateListOfWeldedBodies() const   {
-    std::vector<std::set<BodyIndex>> welded_bodies;
+    std::vector<std::set<BodyIndex>> welded_bodies_list;
     // Reserve the maximum possible of welded bodies (that is, when each body
     // forms its own welded body) in advance in order to avoid reallocation in
-    // welded_bodies which would cause the invalidation of references as we
-    // recursively fill it in.
-    welded_bodies.reserve(num_bodies());
-    welded_bodies.push_back(std::set<BodyIndex>{world_index()});
+    // welded_bodies_list which would cause the invalidation of references as
+    // we recursively fill it in.
+    welded_bodies_list.reserve(num_bodies());
+    welded_bodies_list.push_back(std::set<BodyIndex>{world_index()});
     // We build the list of welded bodies recursively, starting with the world
     // body added to the very first welded body in the list.
-    std::set<BodyIndex>& bodies_welded_to_world = welded_bodies.back();
+    std::set<BodyIndex>& bodies_welded_to_world = welded_bodies_list.back();
     CreateListOfWeldedBodiesRecurse(
-        world_index(), &bodies_welded_to_world, &welded_bodies);
-    return welded_bodies;
+        world_index(), &bodies_welded_to_world, &welded_bodies_list);
+    return welded_bodies_list;
+  }
+
+  // Computes the number of generalized velocities in the tree composed of the
+  // nodes outboard of `base`, excluding the generalized velocities of `base`.
+  // Note: This method returns 0 if base is the most distal body in a multibody
+  // tree or if base's children are all welded to it and they are the most
+  // distal bodies in the tree.
+  // @pre Body nodes were already created.
+  int CalcNumberOfOutboardVelocitiesExcludingBase(
+      const BodyNodeTopology& base) const {
+    return CalcNumberOfOutboardVelocities(base) - base.num_mobilizer_velocities;
+  }
+
+  // Returns all bodies that are transitively outboard of the given bodies. In
+  // other words, returns the union of all bodies in the subtrees with the given
+  // bodies as roots. The result is sorted in increasing body index order.
+  // @pre Finalize() is called.
+  // @pre body_index is valid and is less than the number of bodies.
+  std::vector<BodyIndex> GetTransitiveOutboardBodies(
+      std::vector<BodyIndex> body_indexes) const {
+    DRAKE_DEMAND(is_valid());
+    std::unordered_set<BodyIndex> outboard_bodies;
+    auto collect_body = [&outboard_bodies](const BodyNodeTopology& node) {
+      outboard_bodies.insert(node.body);
+    };
+    for (const BodyIndex& body_index : body_indexes) {
+      DRAKE_DEMAND(body_index.is_valid() && body_index < num_bodies());
+      // Skip bodies that are already traversed because the subtree with it
+      // being the root has necessarily been traversed already.
+      if (outboard_bodies.count(body_index) == 0) {
+        const BodyNodeTopology& root =
+            get_body_node(get_body(body_index).body_node);
+        TraverseOutboardNodes(root, collect_body);
+      }
+    }
+    std::vector<BodyIndex> results(outboard_bodies.begin(),
+                                   outboard_bodies.end());
+    std::sort(results.begin(), results.end());
+    return results;
   }
 
  private:
@@ -1127,7 +1171,7 @@ class MultibodyTreeTopology {
   // Computes the number of generalized velocities in the tree composed of the
   // nodes outboard of `base`, including the generalized velocities of `base`.
   // @pre Body nodes were already created.
-  int CalcNumberOfOutboardVelocities(const BodyNodeTopology& base) {
+  int CalcNumberOfOutboardVelocities(const BodyNodeTopology& base) const {
     DRAKE_DEMAND(get_num_body_nodes() != 0);
     int nv = 0;
     TraverseOutboardNodes(base, [&nv](const BodyNodeTopology& node) {

@@ -37,6 +37,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_srcs = ["kuka_iiwa_py.cc"],
     package_info = PACKAGE_INFO,
@@ -49,6 +50,7 @@ drake_pybind_library(
     name = "planner_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
     ],
     cc_srcs = ["planner_py.cc"],
@@ -63,8 +65,23 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_srcs = ["schunk_wsg_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "util_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
+    ],
+    cc_srcs = ["util_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
@@ -75,6 +92,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":kuka_iiwa_py",
     ":planner_py",
     ":schunk_wsg_py",
+    ":util_py",
 ]
 
 PY_LIBRARIES = [
@@ -83,8 +101,13 @@ PY_LIBRARIES = [
 
 drake_py_unittest(
     name = "kuka_iiwa_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/util:test_directives",
+    ],
     deps = [
         ":kuka_iiwa_py",
+        "//bindings/pydrake/multibody",
         "//bindings/pydrake/systems",
     ],
 )
@@ -96,14 +119,31 @@ drake_py_unittest(
     ],
     deps = [
         ":planner_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody",
     ],
 )
 
 drake_py_unittest(
     name = "schunk_wsg_test",
+    data = [
+        "//manipulation/util:test_directives",
+    ],
     deps = [
         ":schunk_wsg_py",
+        "//bindings/pydrake/multibody",
+        "//bindings/pydrake/systems",
+    ],
+)
+
+drake_py_unittest(
+    name = "util_test",
+    data = [
+        "//manipulation/util:test_directives",
+    ],
+    deps = [
+        ":util_py",
+        "//bindings/pydrake/multibody",
         "//bindings/pydrake/systems",
     ],
 )

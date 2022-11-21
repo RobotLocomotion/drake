@@ -1,6 +1,8 @@
 """The acceptance test for //tools/install/bazel:install.
 """
 
+import copy
+import os
 from os.path import join
 import subprocess
 import sys
@@ -16,9 +18,12 @@ def main():
 
     # The commit (version) here should be identical to the commit listed in
     # drake/tools/workspace/rules_python/repository.bzl.
-    rules_python_commit = "0.8.1"
-    rules_python_url = f"https://github.com/bazelbuild/rules_python/archive/{rules_python_commit}.tar.gz"  # noqa
-    rules_python_sha256 = "cdf6b84084aad8f10bf20b46b77cb48d83c319ebe6458a18e9d2cebf57807cdd"  # noqa
+    rules_python_commit = "0.13.0"
+    rules_python_urls = [
+        f"https://github.com/bazelbuild/rules_python/archive/{rules_python_commit}.tar.gz",  # noqa
+        f"https://drake-mirror.csail.mit.edu/github/bazelbuild/rules_python/{rules_python_commit}.tar.gz",  # noqa
+    ]
+    rules_python_sha256 = "8c8fe44ef0a9afc256d1e75ad5f448bb59b81aba149b8958f02f7b3a98f5d9b4"  # noqa
 
     with open(join(scratch_dir, "WORKSPACE"), "w") as f:
         f.write(f"""
@@ -32,7 +37,7 @@ http_archive(
     name = "rules_python",
     sha256 = "{rules_python_sha256}",
     strip_prefix = "rules_python-{rules_python_commit}",
-    url = "{rules_python_url}",
+    urls = {rules_python_urls!r},
 )
 
 new_local_repository(
@@ -55,6 +60,7 @@ load("@drake//:.os.bzl", OS_NAME = "NAME")
 cc_test(
     name = "text_logging_test",
     srcs = ["text_logging_test.cc"],
+    copts = ["--std=c++17"],
     # TODO(jwnimmer-tri) On macOS, we need to pkg-config fmt for this to pass.
     # For the moment, we'll say that :drake_shared_library is Ubuntu-only.
     tags = ["manual"] if OS_NAME == "mac os x" else [],
@@ -90,8 +96,8 @@ int main(int argc, char** argv) {
 
     with open(join(scratch_dir, "find_resource_test.py"), "w") as f:
         f.write("""
-from pydrake.common import FindResourceOrThrow, set_log_level
-set_log_level("trace")
+from pydrake.common import FindResourceOrThrow, _set_log_level
+_set_log_level("trace")
 FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf")
 """)
 
@@ -102,10 +108,12 @@ import pydrake.all
 
     # Check that a full `bazel test` passes.
     command = "test"
+    env = copy.copy(os.environ)
+    env["BAZELISK_HOME"] = env["TEST_TMPDIR"]
     if sys.platform.startswith("darwin"):
         # TODO(jwnimmer-tri) A `test //...` doesn't pass yet on macOS.
         command = "build"
-    subprocess.check_call(cwd=scratch_dir, args=[
+    subprocess.check_call(cwd=scratch_dir, env=env, args=[
         "bazel",
         # Use "release engineering" options for hermeticity.
         # https://docs.bazel.build/versions/master/user-manual.html#bazel-releng

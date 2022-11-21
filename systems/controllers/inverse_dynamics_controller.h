@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -21,10 +22,14 @@ namespace controllers {
  * A state feedback controller that uses a PidController to generate desired
  * accelerations, which are then converted into torques using InverseDynamics.
  * More specifically, the output of this controller is:
- * `torque = inverse_dynamics(q, v, vd_d)`,
- * where `vd_d = kp(q* - q) + kd(v* - v) + ki int(q* - q) + vd*`.
- * `q` and `v` stand for the generalized position and velocity, and `vd` is
- * the generalized acceleration. `*` indicates reference values.
+ * <pre>
+ *   force = inverse_dynamics(q, v, vd_command), where
+ *   vd_command = kp(q_d - q) + kd(v_d - v) + ki int(q_d - q) + vd_d.
+ * </pre>
+ * Here `q` and `v` stand for the generalized position and velocity, and `vd`
+ * is the generalized acceleration. The subscript `_d` indicates desired
+ * values, and `vd_command` indicates the acceleration command (which includes
+ * the stabilization terms) passed to the inverse dynamics computation.
  *
  * @system
  * name: InverseDynamicsController
@@ -36,19 +41,12 @@ namespace controllers {
  * - force
  * @endsystem
  *
- * Ports show in <span style="color:gray">gray</span> may be absent, depending
- * on how the system is constructed.
+ * The desired acceleration port shown in <span style="color:gray">gray</span>
+ * may be absent, depending on the arguments passed to the constructor.
  *
- * This controller always has a BasicVector input port for estimated robot state
- * `(q, v)`, a BasicVector input port for reference robot state `(q*, v*)` and
- * a BasicVector output port for computed torque `torque`. A constructor flag
- * can be set to track reference acceleration `vd*` as well. When set, a
- * BasicVector input port is also declared, and it's content is used as `vd*`.
- * When unset, `vd*` is be treated as zero.
- *
- * Note that this class assumes the robot is fully actuated, its position
- * and velocity have the same dimension, and it does not have a floating base.
- * If violated, the program will abort. This controller was not designed for
+ * Note that this class assumes the robot is fully actuated, its position and
+ * velocity have the same dimension, and it does not have a floating base. If
+ * violated, the program will abort. This controller was not designed for
  * closed-loop systems: the controller accounts for neither constraint forces
  * nor actuator forces applied at loop constraints. Use on such systems is not
  * recommended.
@@ -56,12 +54,13 @@ namespace controllers {
  * @see InverseDynamics for an accounting of all forces incorporated into the
  *      inverse dynamics computation.
  *
- * @tparam_double_only
+ * @tparam_default_scalar
  * @ingroup control_systems
  */
 template <typename T>
-class InverseDynamicsController : public Diagram<T>,
-                                  public StateFeedbackControllerInterface<T> {
+class InverseDynamicsController final
+    : public Diagram<T>,
+      public StateFeedbackControllerInterface<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController)
 
@@ -75,7 +74,7 @@ class InverseDynamicsController : public Diagram<T>,
    * @param ki Integral gain.
    * @param kd Velocity gain.
    * @param has_reference_acceleration If true, there is an extra BasicVector
-   * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
+   * input port for `vd_d`. If false, `vd_d` is treated as zero, and no extra
    * input port is declared.
    * @pre `plant` has been finalized (plant.is_finalized() returns `true`).
    * @throws std::exception if
@@ -85,8 +84,6 @@ class InverseDynamicsController : public Diagram<T>,
    *  - The model is not fully actuated.
    *  - Vector kp, ki and kd do not all have the same size equal to the number
    *    of generalized positions.
-   *
-   * @pydrake_mkdoc_identifier{5args_referenced_plant}
    */
   InverseDynamicsController(
       const multibody::MultibodyPlant<T>& plant,
@@ -99,13 +96,17 @@ class InverseDynamicsController : public Diagram<T>,
    * Constructs an inverse dynamics controller and takes the ownership of the
    * input `plant`.
    *
-   * @pydrake_mkdoc_identifier{5args_owned_plant}
+   * @exclude_from_pydrake_mkdoc{This overload is not bound.}
    */
   InverseDynamicsController(std::unique_ptr<multibody::MultibodyPlant<T>> plant,
                             const VectorX<double>& kp,
                             const VectorX<double>& ki,
                             const VectorX<double>& kd,
                             bool has_reference_acceleration);
+
+  // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit InverseDynamicsController(const InverseDynamicsController<U>& other);
 
   ~InverseDynamicsController() override;
 
@@ -154,11 +155,10 @@ class InverseDynamicsController : public Diagram<T>,
   }
 
  private:
-  void SetUp(const VectorX<double>& kp, const VectorX<double>& ki,
+  void SetUp(std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
+             const VectorX<double>& kp, const VectorX<double>& ki,
              const VectorX<double>& kd);
 
-  const std::unique_ptr<multibody::MultibodyPlant<T>>
-      owned_plant_for_control_{};
   const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
@@ -171,3 +171,6 @@ class InverseDynamicsController : public Diagram<T>,
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::controllers::InverseDynamicsController)

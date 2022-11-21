@@ -6,7 +6,6 @@ jupyter-notebook
 libamd2
 libblas3
 libbz2-1.0
-libcurl3-gnutls
 libdouble-conversion3
 libeigen3-dev
 libexpat1
@@ -37,7 +36,6 @@ libqt5core5a
 libqt5gui5
 libqt5printsupport5
 libqt5widgets5
-libquadmath0
 libspdlog-dev
 libsqlite3-0
 libtheora0
@@ -57,8 +55,6 @@ python3-numpy
 python3-pil
 python3-pydot
 python3-pygame
-python3-scipy
-python3-tk
 python3-tornado
 python3-u-msgpack
 python3-yaml

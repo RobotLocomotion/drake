@@ -37,10 +37,11 @@ RUN /image/build-vtk.sh
 FROM incubator AS clean
 
 ARG PYTHON=3
+ARG PYTHON_SHA=
 
-ADD image/provision-python.sh /image/
+ADD image/provision-python.sh image/build-python.sh /image/
 
-RUN /image/provision-python.sh ${PYTHON}
+RUN /image/provision-python.sh ${PYTHON} ${PYTHON_SHA}
 
 # -----------------------------------------------------------------------------
 # Inject the primary build scripts.
@@ -64,6 +65,7 @@ RUN --mount=type=ssh \
 
 ADD image/build-wheel.sh /image/
 ADD image/setup.py /opt/drake-wheel-build/wheel/
+ADD content /opt/drake-wheel-content
 
 ENV DRAKE_VERSION=${DRAKE_VERSION}
 

@@ -193,6 +193,13 @@ void TestEqualityConstrainedQPDualSolution2(const SolverInterface& solver);
  */
 void TestNonconvexQP(const SolverInterface& solver, bool convex_solver,
                      double tol = 1E-5);
+
+/**
+ Test formulating a QP where adding costs or constraints where the `vars` vector
+will have repeated entries for given variables.
+ */
+void TestDuplicatedVariableQuadraticProgram(const SolverInterface& solver,
+                                            double tol = 1E-7);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -58,7 +58,7 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
 
   // Add a floating mug.
   const ModelInstanceIndex mug_model = parser.AddModelFromFile(mug_sdf_path);
-  const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
+  const Body<double>& mug = plant.GetBodyByName("simple_mug", mug_model);
 
   // Introspection of the underlying mathematical model is not available until
   // we call Finalize().
@@ -150,7 +150,7 @@ GTEST_TEST(MultibodyPlantIntrospection, NonUniqueBaseBody) {
   // free.
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   plant.AddRigidBody("free_body", default_model_instance(),
-      SpatialInertia<double>::MakeTestCube());
+      SpatialInertia<double>::MakeUnitary());
   const Body<double>& fixed_body = plant.AddRigidBody(
       "fixed_body", default_model_instance(), SpatialInertia<double>());
   plant.WeldFrames(plant.world_frame(), fixed_body.body_frame());

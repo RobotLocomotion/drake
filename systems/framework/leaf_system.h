@@ -68,8 +68,6 @@ class LeafSystem : public System<T> {
 
   std::unique_ptr<ContextBase> DoAllocateContext() const final;
 
-  // TODO(sherm/russt): Initialize the discrete state from the model vector
-  // pending resolution of #7058.
   /** Default implementation: sets all continuous state to the model vector
   given in DeclareContinuousState (or zero if no model vector was given) and
   discrete states to zero. Overrides must not change the number of state
@@ -506,37 +504,68 @@ class LeafSystem : public System<T> {
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
                             const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
-        event.get_trigger_type() == TriggerType::kPeriodic);
+                 event.get_trigger_type() == TriggerType::kPeriodic);
     PeriodicEventData periodic_data;
     periodic_data.set_period_sec(period_sec);
     periodic_data.set_offset_sec(offset_sec);
     auto event_copy = event.Clone();
     event_copy->set_trigger_type(TriggerType::kPeriodic);
-    periodic_events_.emplace_back(
-        std::make_pair(periodic_data, std::move(event_copy)));
+    event_copy->set_event_data(periodic_data);
+    event_copy->AddToComposite(TriggerType::kPeriodic, &periodic_events_);
   }
 
-  /** (To be deprecated) Declares a periodic publish event that invokes the
-  Publish() dispatcher but does not provide a handler function. This does
-  guarantee that a Simulator step will end exactly at the publish time,
-  but otherwise has no effect unless the DoPublish() dispatcher has been
-  overloaded (not recommended). */
-  void DeclarePeriodicPublish(double period_sec, double offset_sec = 0);
+  /** (Advanced) Declares a periodic publish event with no handler function.
+  When triggered, the event will invoke the DoPublish() dispatcher, but no
+  other processing will occur unless you have overridden the dispatcher (not
+  recommended). Otherwise the only visible effect will be that a Simulator step
+  will end exactly at the publish time.
 
-  /** (To be deprecated) Declares a periodic discrete update event that invokes
-  the DiscreteUpdate() dispatcher but does not provide a handler
-  function. This does guarantee that a Simulator step will end exactly at
-  the update time, but otherwise has no effect unless the
-  DoDiscreteUpdate() dispatcher has been overloaded (not recommended). */
-  void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec = 0);
+  Prefer DeclarePeriodicPublishEvent() where you can supply a handler. */
+  void DeclarePeriodicPublishNoHandler(double period_sec,
+                                       double offset_sec = 0);
 
-  /** (To be deprecated) Declares a periodic unrestricted update event that
-  invokes the UnrestrictedUpdate() dispatcher but does not provide a handler
-  function. This does guarantee that a Simulator step will end exactly at
-  the update time, but otherwise has no effect unless the
-  DoUnrestrictedUpdate() dispatcher has been overloaded (not recommended). */
+  /** (Advanced) Declares a periodic discrete update event with no handler
+  function. When triggered, the event will invoke the
+  DoCalcDiscreteVariableUpdates() dispatcher, but no other processing will occur
+  unless you have overridden the dispatcher (not recommended). Otherwise the
+  only visible effect will be that a Simulator step will end exactly at the
+  publish time.
+
+  Prefer DeclarePeriodicDiscreteUpdateEvent() where you can supply a handler. */
+  void DeclarePeriodicDiscreteUpdateNoHandler(double period_sec,
+                                              double offset_sec = 0);
+
+  /** (Advanced) Declares a periodic unrestricted update event with no handler
+  function. When triggered, the event will invoke the
+  DoCalcUnrestrictedUpdate() dispatcher, but no other processing will occur
+  unless you have overridden the dispatcher (not recommended). Otherwise the
+  only visible effect will be that a Simulator step will end exactly at the
+  publish time.
+
+  Prefer DeclarePeriodicUnrestrictedUpdateEvent() where you can supply a
+  handler. */
+  void DeclarePeriodicUnrestrictedUpdateNoHandler(double period_sec,
+                                                  double offset_sec = 0);
+
+  DRAKE_DEPRECATED("2023-03-01",
+                   "Use DeclarePeriodicPublishNoHandler() instead")
+  void DeclarePeriodicPublish(double period_sec, double offset_sec = 0) {
+    DeclarePeriodicPublishNoHandler(period_sec, offset_sec);
+  }
+
+  DRAKE_DEPRECATED("2023-03-01",
+                   "Use DeclarePeriodicDiscreteUpdateNoHandler() instead")
+  void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec = 0) {
+    DeclarePeriodicDiscreteUpdateNoHandler(period_sec, offset_sec);
+  }
+
+  DRAKE_DEPRECATED("2023-03-01",
+                   "Use DeclarePeriodicUnrestrictedUpdateNoHandler() instead")
   void DeclarePeriodicUnrestrictedUpdate(double period_sec,
-                                         double offset_sec = 0);
+                                         double offset_sec = 0) {
+    DeclarePeriodicUnrestrictedUpdateNoHandler(period_sec, offset_sec);
+  }
+
   //@}
 
   // =========================================================================
@@ -870,7 +899,7 @@ class LeafSystem : public System<T> {
 
   @see DeclareInitializationPublishEvent()
   @see DeclareInitializationDiscreteUpdateEvent()
-  @see DeclareInitializationUnrestrictedUpdate()
+  @see DeclareInitializationUnrestrictedUpdateEvent()
 
   See @ref declare_initialization_events "Declare initialization events" for
   more information.
@@ -900,11 +929,11 @@ class LeafSystem : public System<T> {
   /** @anchor declare_forced_events
   @name                  Declare forced events
   Forced events are those that are triggered through invocation of
-  System::Publish(const Context&),
-  System::CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*),
-  or System::CalcUnrestrictedUpdate(const Context&, State<T>*),
+  System::ForcedPublish(const Context&),
+  System::CalcForcedDiscreteVariableUpdate(const Context&, DiscreteValues<T>*),
+  or System::CalcForcedUnrestrictedUpdate(const Context&, State<T>*),
   rather than as a response to some computation-related event (e.g.,
-  the beginning of a period of time was reached, a trajectory advancing
+  the beginning of a period of time was reached, a trajectory-advancing
   step was performed, etc.) One useful application of a forced publish:
   a process receives a network message and wants to trigger message
   emissions in various systems embedded within a Diagram in response.
@@ -917,15 +946,15 @@ class LeafSystem : public System<T> {
 
   @warning Simulator handles forced publish events at initialization
   and on a per-step basis when its "publish at initialization" and
-  "publish every time step" options are set.
+  "publish every time step" options are set (not recommended).
   @see Simulator::set_publish_at_initialization()
   @see Simulator::set_publish_every_time_step() */
   //@{
 
   /** Declares a function that is called whenever a user directly calls
-  Publish(const Context&). Multiple calls to
+  ForcedPublish(const Context&). Multiple calls to
   DeclareForcedPublishEvent() will cause multiple handlers to be called
-  upon a call to Publish(); these handlers which will be called with the
+  upon a call to ForcedPublish(); these handlers which will be called with the
   same const Context in arbitrary order. The handler should be a class
   member function (method) with this signature:
   @code
@@ -960,10 +989,10 @@ class LeafSystem : public System<T> {
   }
 
   /** Declares a function that is called whenever a user directly calls
-  CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*). Multiple
+  CalcForcedDiscreteVariableUpdate(const Context&, DiscreteValues<T>*). Multiple
   calls to DeclareForcedDiscreteUpdateEvent() will cause multiple handlers
-  to be called upon a call to CalcDiscreteVariableUpdates(); these handlers
-  which will be called with the same const Context in arbitrary order. The
+  to be called upon a call to CalcForcedDiscreteVariableUpdate(); these handlers
+  will be called with the same const Context in arbitrary order. The
   handler should be a class member function (method) with this signature:
   @code
     EventStatus MySystem::MyDiscreteVariableUpdates(const Context<T>&,
@@ -1002,10 +1031,10 @@ class LeafSystem : public System<T> {
   }
 
   /** Declares a function that is called whenever a user directly calls
-  CalcUnrestrictedUpdate(const Context&, State<T>*). Multiple calls to
+  CalcForcedUnrestrictedUpdate(const Context&, State<T>*). Multiple calls to
   DeclareForcedUnrestrictedUpdateEvent() will cause multiple handlers to be
-  called upon a call to CalcUnrestrictedUpdate(); these handlers which will
-  be called with the same const Context in arbitrary order.The handler
+  called upon a call to CalcForcedUnrestrictedUpdate(); these handlers which
+  will be called with the same const Context in arbitrary order.The handler
   should be a class member function (method) with this signature:
   @code
     EventStatus MySystem::MyUnrestrictedUpdates(const Context<T>&,
@@ -1123,11 +1152,15 @@ class LeafSystem : public System<T> {
   variable index is returned. */
   //@{
 
-  /** Declares an abstract state.
-  @param abstract_state The abstract state model value.
-  @return index of the declared abstract state. */
+  /** Declares an abstract state variable and provides a model value
+  for it. A Context obtained with CreateDefaultContext() will contain this
+  abstract state variable initially set to a clone of the `model_value`
+  given here. The actual concrete type is always preserved.
+
+  @param model_value The abstract state model value to be cloned as needed.
+  @returns index of the declared abstract state variable. */
   AbstractStateIndex DeclareAbstractState(
-      const AbstractValue& abstract_state);
+      const AbstractValue& model_value);
   //@}
 
 
@@ -1203,6 +1236,11 @@ class LeafSystem : public System<T> {
   InputPort<T>& DeclareAbstractInputPort(
       std::variant<std::string, UseDefaultName> name,
       const AbstractValue& model_value);
+
+  /** Flags an already-declared input port as deprecated. The first attempt to
+  use the port in a program will log a warning message. This function may be
+  called at most once for any given port. */
+  void DeprecateInputPort(const InputPort<T>& port, std::string message);
   //@}
 
   // =========================================================================
@@ -1537,6 +1575,11 @@ class LeafSystem : public System<T> {
   LeafOutputPort<T>& DeclareStateOutputPort(
       std::variant<std::string, UseDefaultName> name,
       AbstractStateIndex state_index);
+
+  /** Flags an already-declared output port as deprecated. The first attempt to
+  use the port in a program will log a warning message. This function may be
+  called at most once for any given port. */
+  void DeprecateOutputPort(const OutputPort<T>& port, std::string message);
   //@}
 
   // =========================================================================
@@ -1825,6 +1868,10 @@ class LeafSystem : public System<T> {
       const Context<T>& context,
       const std::vector<const PublishEvent<T>*>& events) const;
 
+  // TODO(sherm1) This virtual implementation of CalcDiscreteVariableUpdate()
+  //  uses the plural "Updates" instead for unfortunate historical reasons.
+  //  Consider whether it is worth changing.
+
   /** Derived-class event dispatcher for all simultaneous discrete update
   events. Override this in your derived LeafSystem only if you require
   behavior other than the default dispatch behavior (not common).
@@ -1840,7 +1887,7 @@ class LeafSystem : public System<T> {
 
   This method is called only from the virtual
   DispatchDiscreteVariableUpdateHandler(), which is only called from
-  the public non-virtual CalcDiscreteVariableUpdates(), which will already
+  the public non-virtual CalcDiscreteVariableUpdate(), which will already
   have error-checked the parameters so you don't have to. In particular,
   implementations may assume that @p context is valid; that
   @p discrete_state is non-null, and that the referenced object has the
@@ -1858,6 +1905,7 @@ class LeafSystem : public System<T> {
   // TODO(sherm1) Shouldn't require preloading of the output state; better to
   //              note just the changes since usually only a small subset will
   //              be changed by this method.
+
   /** Derived-class event dispatcher for all simultaneous unrestricted update
   events. Override this in your derived LeafSystem only if you require
   behavior other than the default dispatch behavior (not common).
@@ -1903,7 +1951,13 @@ class LeafSystem : public System<T> {
       DoAllocateCompositeEventCollection() const final;
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> DoGetPeriodicEvents() const override;
+           PeriodicEventDataComparator>
+  DoMapPeriodicEventsByTiming(const Context<T>& context) const final;
+
+  void DoFindUniquePeriodicDiscreteUpdatesOrThrow(
+      const char* api_name, const Context<T>& context,
+      std::optional<PeriodicEventData>* timing,
+      EventCollection<DiscreteUpdateEvent<T>>* events) const final;
 
   // Calls DoPublish.
   // Assumes @param events is an instance of LeafEventCollection, throws
@@ -1945,13 +1999,17 @@ class LeafSystem : public System<T> {
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const final;
 
+  void DoGetPeriodicEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
+
   void DoGetPerStepEvents(
-      const Context<T>&,
-      CompositeEventCollection<T>* events) const override;
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
 
   void DoGetInitializationEvents(
-      const Context<T>&,
-      CompositeEventCollection<T>* events) const override;
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const final;
 
   // Creates a new cached, vector-valued LeafOutputPort in this LeafSystem and
   // returns a reference to it.
@@ -1999,9 +2057,7 @@ class LeafSystem : public System<T> {
           get_vector_from_context);
 
   // Periodic Update or Publish events declared by this system.
-  std::vector<std::pair<PeriodicEventData,
-                        std::unique_ptr<Event<T>>>>
-      periodic_events_;
+  LeafCompositeEventCollection<T> periodic_events_;
 
   // Update or Publish events declared by this system for every simulator
   // major time step.

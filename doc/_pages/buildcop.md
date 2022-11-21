@@ -11,6 +11,12 @@ production continuous integration failures in the
 [RobotLocomotion/drake](https://github.com/RobotLocomotion/drake) GitHub
 repo.
 
+The build cop also checks in on the builds of the
+[drake-external-examples](https://github.com/RobotLocomotion/drake-external-examples/)
+and
+[automatically generated documentation](https://github.com/RobotLocomotion/RobotLocomotion.github.io/commits/master)
+repositories from time to time.
+
 The build cop will rotate on a weekly basis. The
 [schedule](https://github.com/RobotLocomotion/drake-ci/wiki/Build-Cop-Rotation)
 is maintained on the
@@ -18,7 +24,7 @@ is maintained on the
 
 # Process
 
-Two build cops are expected to be on duty on weekdays, holidays excepted. At
+Two build cops are expected to be on duty Monday through Thursday, holidays excepted. At
 least one build cop should be on duty during normal business hours Eastern Time,
 approximately 9am to 5pm. Developers are encouraged, but not required, to merge
 pull requests during times when the build cop is on duty. Nightly and weekly
@@ -45,17 +51,34 @@ pass.
 In the case of failures in a ``dev`` directory, the build cop should disable the
 failing test instead of reverting the entire commit. To disable the test, add a
 ``tags = []`` attribute to its BUILD rule. If it only fails in certain
-configurations, you can add tags for just those, e.g., "no_asan". If it fails in
+configurations, you can add tags for just those, e.g., `"no_asan"`. If it fails in
 the default configuration or in too many configurations to list one by one, use
 the tag "manual" to disable the test under all configurations.
+
+In the case of intermittent failures of unclear origin or which cannot
+reasonably be prevented (for example, network failures of remotely hosted
+build machines), the build cop should file a drake issue (or add a comment
+to an existing issue) and apply the `component: continuous integration` and
+`type: bug` labels.  The first time an unexplained failure occurs, close the
+issue immediately -- there is not much value in keeping an open issue for a
+failure that only ever happened once.  If the issue occurs a second time,
+reopen it.
+ * [The list of open buildcop issues](https://github.com/RobotLocomotion/drake/issues?q=is:issue+is:open+label:%22component:+continuous+integration%22+label:%22type:+bug%22)
+   should generally be kept fairly short for quick reference.
+ * [The list of all buildcop issues](https://github.com/RobotLocomotion/drake/issues?q=is:issue+label:%22component:+continuous+integration%22+label:%22type:+bug%22) may also
+   be helpful in determining whether to file a new issue or reopen an old one.
+
+With the exception of build failures that are quickly fixed without a code
+change, every CI failure should result in an issue, comment on an existing
+issue, revert PR, or fix-forward PR.  There will of course be exceptions to
+this rule.
 
 Use the [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
 to discuss build issues with your partner build cop and other Drake
 contributors.
 
-At the end of each rotation, the build cop should complete the
-[build cop review and retrospective](https://docs.google.com/document/d/120AOAaamIMO-SM1UaJ6vfzpA15LnXHexDF4a7MLAS3o/edit#heading=h.sxk1djc2v0yg),
-and should notify the next build cop on the [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/).
+At the end of each rotation, the build cop should
+notify the next build cop on the [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/).
 
 # Revert Template
 
@@ -181,8 +204,13 @@ Determine if an open GitHub Drake issue describes the situation. For example,
 some tests are flaky for reasons that have no known resolution, but are
 described by Drake issues. If you find that your broken build is described by
 such an issue, consider adding the build information to the issue for future
-analysis. The [build cop review and retrospective](https://docs.google.com/document/d/120AOAaamIMO-SM1UaJ6vfzpA15LnXHexDF4a7MLAS3o/edit#heading=h.sxk1djc2v0yg)
-also describes current build issues.
+analysis
+
+ * [The list of open buildcop issues](https://github.com/RobotLocomotion/drake/issues?q=is:issue+is:open+label:%22component:+continuous+integration%22+label:%22type:+bug%22)
+   has most recent recurring failures, and should be the first place you look.
+ * [The list of all buildcop issues](https://github.com/RobotLocomotion/drake/issues?q=is:issue+label:%22component:+continuous+integration%22+label:%22type:+bug%22)
+   has historical and non-recurring failures, and is a good second line of
+   inquiry.
 
 ## Broken Compile or Test
 

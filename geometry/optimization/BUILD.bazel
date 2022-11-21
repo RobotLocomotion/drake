@@ -65,7 +65,7 @@ drake_cc_library(
     hdrs = ["graph_of_convex_sets.h"],
     deps = [
         ":convex_set",
-        "//common:symbolic",
+        "//common/symbolic:expression",
         "//solvers:create_cost",
         "//solvers:mathematical_program_result",
         "//solvers:solve",
@@ -82,7 +82,6 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//multibody/plant",
         "//solvers:choose_best_solver",
-        "//solvers:ibex_solver",
         "//solvers:ipopt_solver",
         "//solvers:snopt_solver",
     ],
@@ -121,12 +120,16 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "graph_of_convex_sets_test",
+    timeout = "moderate",
+    shard_count = 8,
     deps = [
         ":graph_of_convex_sets",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//solvers:choose_best_solver",
         "//solvers:clp_solver",
+        "//solvers:csdp_solver",
         "//solvers:gurobi_solver",
         "//solvers:ipopt_solver",
         "//solvers:mosek_solver",
@@ -139,6 +142,9 @@ drake_cc_googletest(
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/yaml",
+        "//geometry:meshcat",
+        "//geometry/test_utilities:meshcat_environment",
     ],
 )
 
@@ -171,6 +177,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_in_configuration_space_test",
+    timeout = "moderate",
     shard_count = 8,
     # Most of these tests take an exceptionally long time under
     # instrumentation, resulting in timeouts, and so are excluded.
@@ -180,6 +187,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":iris",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:meshcat",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/inverse_kinematics",
         "//multibody/parsing:parser",
         "//systems/framework:diagram_builder",
     ],

@@ -5,8 +5,11 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/weld_joint.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -23,7 +26,7 @@ std::unique_ptr<multibody::MultibodyPlant<double>> ConstructKuka() {
       "iiwa14_no_collision.sdf");
   auto plant = std::make_unique<MultibodyPlant<double>>(0.1);
   multibody::Parser parser{plant.get()};
-  parser.AddModelFromFile(iiwa_path, "iiwa");
+  parser.AddModels(iiwa_path);
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("iiwa_link_0"));
   plant->Finalize();
 
@@ -107,6 +110,44 @@ Eigen::VectorXd KukaTest::CheckNonlinearIK(
   const auto result = solvers::Solve(ik.prog(), q_guess_ik);
   EXPECT_EQ(result.is_success(), ik_success_expected);
   return q_sol;
+}
+
+ToyTest::ToyTest() : plant_{std::make_unique<MultibodyPlant<double>>(0.0)} {
+  const SpatialInertia<double> spatial_inertia(
+      1, Eigen::Vector3d::Zero(), UnitInertia<double>(0.01, 0.01, 0.01));
+  body_indices_.push_back(
+      plant_->AddRigidBody("body0", spatial_inertia).index());
+  // weld body0.
+  plant_->AddJoint<WeldJoint>(
+      "joint0", plant_->get_body(world_index()),
+      math::RigidTransform<double>(math::RollPitchYaw<double>(0.2, 0.1, 0.3),
+                                   Eigen::Vector3d(0.2, -0.1, 0.1)),
+      plant_->get_body(body_indices_[0]),
+      math::RigidTransform<double>(math::RollPitchYaw<double>(0.3, 0.1, -0.5),
+                                   Eigen::Vector3d(0.3, 0.2, 0.5)),
+      math::RigidTransform<double>(math::RollPitchYaw(0.4, -0.3, 0.2),
+                                   Eigen::Vector3d(0.5, 0.3, -0.2)));
+  const auto& body2 = plant_->AddRigidBody("body2", spatial_inertia);
+  const auto& body1 = plant_->AddRigidBody("body1", spatial_inertia);
+  body_indices_.push_back(body1.index());
+  body_indices_.push_back(body2.index());
+  plant_->AddJoint<RevoluteJoint>(
+      "joint1", plant_->get_body(body_indices_[0]),
+      math::RigidTransform<double>(math::RollPitchYawd(0.1, 0.5, 0.3),
+                                   Eigen::Vector3d(0.2, 0.1, 0.4)),
+      body1,
+      math::RigidTransformd(math::RollPitchYawd(0.5, -0.2, 0.1),
+                            Eigen::Vector3d(0.1, 0.2, 0.3)),
+      Eigen::Vector3d::UnitX());
+  plant_->AddJoint<RevoluteJoint>(
+      "joint2", body1,
+      math::RigidTransform<double>(math::RollPitchYawd(0.3, -0.5, 0.3),
+                                   Eigen::Vector3d(-0.2, 0.2, 0.4)),
+      body2,
+      math::RigidTransformd(math::RollPitchYawd(0.2, -0.5, 0.1),
+                            Eigen::Vector3d(0.1, 0.2, 0.1)),
+      Eigen::Vector3d::UnitY());
+  plant_->Finalize();
 }
 }  // namespace multibody
 }  // namespace drake

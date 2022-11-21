@@ -1,5 +1,6 @@
 #include "drake/solvers/snopt_solver.h"
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <regex>
@@ -8,7 +9,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -144,25 +144,25 @@ GTEST_TEST(SnoptTest, TestPrintFile) {
   const SnoptSolver solver;
   {
     const std::string print_file = temp_directory() + "/snopt.out";
-    EXPECT_FALSE(filesystem::exists({print_file}));
+    EXPECT_FALSE(std::filesystem::exists({print_file}));
     SolverOptions solver_options;
     solver_options.SetOption(SnoptSolver::id(), "Print file", print_file);
     const auto result = solver.Solve(prog, {}, solver_options);
     EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(filesystem::exists({print_file}));
+    EXPECT_TRUE(std::filesystem::exists({print_file}));
   }
 
   // This is to verify we can set the print out file through CommonSolverOption.
   {
     const std::string print_file_common =
         temp_directory() + "/snopt_common.out";
-    EXPECT_FALSE(filesystem::exists({print_file_common}));
+    EXPECT_FALSE(std::filesystem::exists({print_file_common}));
     SolverOptions solver_options;
     solver_options.SetOption(CommonSolverOption::kPrintFileName,
                              print_file_common);
     const auto result = solver.Solve(prog, {}, solver_options);
     EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(filesystem::exists({print_file_common}));
+    EXPECT_TRUE(std::filesystem::exists({print_file_common}));
   }
 
   // Now set the solver option with both CommonSolverOption and solver specific
@@ -175,11 +175,11 @@ GTEST_TEST(SnoptTest, TestPrintFile) {
     solver_options.SetOption(solver.id(), "Print file", print_file);
     solver_options.SetOption(CommonSolverOption::kPrintFileName,
                              print_file_common);
-    EXPECT_FALSE(filesystem::exists({print_file_common}));
-    EXPECT_FALSE(filesystem::exists({print_file}));
+    EXPECT_FALSE(std::filesystem::exists({print_file_common}));
+    EXPECT_FALSE(std::filesystem::exists({print_file}));
     solver.Solve(prog, {}, solver_options);
-    EXPECT_TRUE(filesystem::exists({print_file}));
-    EXPECT_FALSE(filesystem::exists({print_file_common}));
+    EXPECT_TRUE(std::filesystem::exists({print_file}));
+    EXPECT_FALSE(std::filesystem::exists({print_file_common}));
   }
 }
 
@@ -560,6 +560,11 @@ GTEST_TEST(SnoptSolverTest, TestNonconvexQP) {
   if (solver.available()) {
     TestNonconvexQP(solver, false);
   }
+}
+
+GTEST_TEST(SnoptSolverTest, TestL2NormCost) {
+  SnoptSolver solver;
+  TestL2NormCost(solver, 1e-6);
 }
 
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {

@@ -8,10 +8,10 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-SpatialInertia<T> SpatialInertia<T>::MakeTestCube(T mass, T length) {
-  const UnitInertia<T> G_BBcm_B = UnitInertia<T>::SolidCube(length);
-  const Vector3<T> p_BoBcm_B(length / 2, 0, 0);  // Position from Bo to Bcm.
-  const UnitInertia<T> G_BBo_B = G_BBcm_B.ShiftFromCenterOfMass(-p_BoBcm_B);
+SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
+  const T mass = 1;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();  // Position from Bo to Bcm.
+  const UnitInertia<T> G_BBo_B(/* Ixx = */ 1, /* Iyy = */ 1, /* Izz = */ 1);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
 }
 

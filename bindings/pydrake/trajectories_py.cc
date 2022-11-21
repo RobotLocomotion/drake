@@ -9,9 +9,11 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/bspline_trajectory.h"
+#include "drake/common/trajectories/path_parameterized_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_pose.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
+#include "drake/common/trajectories/stacked_trajectory.h"
 #include "drake/common/trajectories/trajectory.h"
 
 namespace drake {
@@ -152,6 +154,15 @@ struct Impl {
           m, "BsplineTrajectory", param, cls_doc.doc);
       cls  // BR
           .def(py::init<>())
+          // This overload will match 2d numpy arrays before
+          // std::vector<MatrixX<T>>. We want each column of the numpy array as
+          // a MatrixX of control points, but the std::vectors here are
+          // associated with the rows in numpy.
+          .def(py::init([](math::BsplineBasis<T> basis,
+                            std::vector<std::vector<T>> control_points) {
+            return Class(basis, MakeEigenFromRowMajorVectors(control_points));
+          }),
+              py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
           .def(py::init<math::BsplineBasis<T>, std::vector<MatrixX<T>>>(),
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
           .def("Clone", &Class::Clone, cls_doc.Clone.doc)
@@ -176,6 +187,22 @@ struct Impl {
                       args) {
                 return Class(std::get<0>(args), std::get<1>(args));
               }));
+      DefCopyAndDeepCopy(&cls);
+    }
+
+    {
+      using Class = PathParameterizedTrajectory<T>;
+      constexpr auto& cls_doc = doc.PathParameterizedTrajectory;
+      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+          m, "PathParameterizedTrajectory", param, cls_doc.doc);
+      cls  // BR
+          .def(py::init<const Trajectory<T>&, const Trajectory<T>&>(),
+              py::arg("path"), py::arg("time_scaling"), cls_doc.ctor.doc)
+          .def("Clone", &Class::Clone, cls_doc.Clone.doc)
+          .def("path", &Class::path, py_rvp::reference_internal,
+              cls_doc.path.doc)
+          .def("time_scaling", &Class::time_scaling, py_rvp::reference_internal,
+              cls_doc.time_scaling.doc);
       DefCopyAndDeepCopy(&cls);
     }
 
@@ -466,6 +493,21 @@ struct Impl {
               cls_doc.get_position_trajectory.doc)
           .def("get_orientation_trajectory", &Class::get_orientation_trajectory,
               cls_doc.get_orientation_trajectory.doc);
+      DefCopyAndDeepCopy(&cls);
+    }
+
+    {
+      using Class = StackedTrajectory<T>;
+      constexpr auto& cls_doc = doc.StackedTrajectory;
+      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+          m, "StackedTrajectory", param, cls_doc.doc);
+      cls  // BR
+          .def(py::init<bool>(), py::arg("rowwise") = true, cls_doc.ctor.doc)
+          .def("Clone", &Class::Clone, cls_doc.Clone.doc)
+          .def("Append",
+              py::overload_cast<const Trajectory<T>&>(&Class::Append),
+              /* N.B. We choose to omit any py::arg name here. */
+              cls_doc.Append.doc);
       DefCopyAndDeepCopy(&cls);
     }
   }

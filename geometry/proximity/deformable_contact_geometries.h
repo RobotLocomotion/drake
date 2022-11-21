@@ -20,85 +20,29 @@ namespace geometry {
 namespace internal {
 namespace deformable {
 
-/* Definition of a deformable body's geometry at the reference configuration.
- It includes a volume mesh and a scalar field approximating the signed distance
- to the surface of the mesh defined on the interior of the geometry. This class
- is similar to geometry::internal::hydroelastic::SoftMesh with two distinctions:
- 1. This class doesn't provide a bounding volume hierarchy.
- 2. This class calculates an approximate signed distance field (meters, negative
-    inside) instead of taking a prescribed pressure field (Pascals, positive
-    inside). */
-class ReferenceDeformableGeometry : public ShapeReifier {
- public:
-  // TODO(xuchenhan-tri): Consider if it's possible to take a const pointer to
-  // the mesh instead of owning a copy of the mesh.
-  /* Constructs a deformable geometry at reference configuration with the given
-  `shape` and its spatial discretization `mesh`. An internal approximate signed
-  distance field in the `mesh` (to the surface of `shape`) is created at
-  construction.
-  @param shape  The shape of the deformable geometry in reference configuration.
-  @param mesh   A reasonable tetrahedral tessellation of the given `shape`. */
-  ReferenceDeformableGeometry(const Shape& shape, VolumeMesh<double> mesh);
-
-  /* Custom copy assign and construct. */
-  ReferenceDeformableGeometry& operator=(const ReferenceDeformableGeometry&);
-  ReferenceDeformableGeometry(const ReferenceDeformableGeometry&);
-  /* Default move assign and construct. */
-  ReferenceDeformableGeometry(ReferenceDeformableGeometry&&) = default;
-  ReferenceDeformableGeometry& operator=(ReferenceDeformableGeometry&&) =
-      default;
-
-  /* Returns the volume mesh representation of the deformable geometry at
-   reference configuration. */
-  const VolumeMesh<double>& mesh() const {
-    DRAKE_DEMAND(mesh_ != nullptr);
-    return *mesh_;
-  }
-
-  /* Returns the approximate signed distance field (sdf) to the surface of the
-   deformable geometry in the reference configuration. More specifically, the
-   sdf value at each vertex is exact (to the accuracy of the distance query
-   algorithm), and the values in the interior of the mesh are linearly
-   interpolated from vertex values. */
-  const VolumeMeshFieldLinear<double, double>& signed_distance_field() const {
-    DRAKE_DEMAND(signed_distance_field_ != nullptr);
-    return *signed_distance_field_;
-  }
-
- private:
-  /* Data to be used during reification. It is passed as the `user_data`
-   parameter in the ImplementGeometry API. */
-  struct ReifyData {
-    std::vector<double> signed_distance;
-  };
-
-  std::vector<double> ComputeSignedDistanceOfVertices(const Shape& shape);
-
-  using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Sphere& sphere, void* user_data) override;
-  void ImplementGeometry(const Box& box, void* user_data) override;
-
-  std::unique_ptr<VolumeMesh<double>> mesh_{nullptr};
-  std::unique_ptr<VolumeMeshFieldLinear<double, double>> signed_distance_field_{
-      nullptr};
-};
-
-/* Definition of a deformable geometry for contact implementations. To be a
- deformable geometry, a shape must be associated with both:
+// TODO(xuchenhan-tri): Consider supporting AutoDiffXd.
+/* Definition of a deformable geometry for contact evaluations. To be
+ considered as deformable, a geometry must be associated with both:
    - a deformable volume mesh, and
    - an approximate signed distance field in the interior of the mesh. */
 class DeformableGeometry {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableGeometry)
+  DeformableGeometry(const DeformableGeometry& other);
+  DeformableGeometry& operator=(const DeformableGeometry& other);
+  DeformableGeometry(DeformableGeometry&&) = default;
+  DeformableGeometry& operator=(DeformableGeometry&&) = default;
 
-  /* Constructs a deformable geometry. */
-  DeformableGeometry(const Shape& shape, VolumeMesh<double> mesh)
-      : reference_geometry_(shape, mesh), deformable_mesh_(std::move(mesh)) {}
+  /* Constructs a deformable geometry from the given mesh. Also computes an
+   approximate signed distance field for the mesh. */
+  explicit DeformableGeometry(VolumeMesh<double> mesh);
+
+  // TODO(xuchenhan-tri): Consider adding another constructor that takes in both
+  // a mesh and a precomputed (approximated) sign distance field.
 
   /* Returns the volume mesh representation of the deformable geometry at
    current configuration. */
   const DeformableVolumeMesh<double>& deformable_mesh() const {
-    return deformable_mesh_;
+    return *deformable_mesh_;
   }
 
   /* Updates the vertex positions of the underlying deformable mesh.
@@ -108,21 +52,27 @@ class DeformableGeometry {
   @pre q.size() == 3 * deformable_mesh().num_vertices(). */
   void UpdateVertexPositions(const Eigen::Ref<const VectorX<double>>& q) {
     DRAKE_DEMAND(q.size() == 3 * deformable_mesh().mesh().num_vertices());
-    deformable_mesh_.UpdateVertexPositions(q);
+    deformable_mesh_->UpdateVertexPositions(q);
   }
 
   /* Returns the approximate signed distance field (sdf) for the deformable
-   geometry. More specifically, the sdf value at each vertex is equal to the
-   exact value (to the accuracy of the distance query algorithm) in their
-   reference configuration. The values in the interior of the mesh are linearly
-   interpolated from vertex values. */
-  const VolumeMeshFieldLinear<double, double>& signed_distance_field() const {
-    return reference_geometry_.signed_distance_field();
-  }
+   geometry evaluated with the deformable mesh at its *current* configuration.
+   More specifically, the sdf value at each vertex is equal to the exact value
+   (to the accuracy of the distance query algorithm) in their reference
+   configuration. The values in the interior of the mesh are linearly
+   interpolated from vertex values.
+   @warn The result may no longer be valid after calls to
+   UpdateVertexPositions(). Hence, the result should be used and discarded
+   instead of kept around. */
+  const VolumeMeshFieldLinear<double, double>& CalcSignedDistanceField() const;
 
  private:
-  ReferenceDeformableGeometry reference_geometry_;
-  DeformableVolumeMesh<double> deformable_mesh_;
+  std::unique_ptr<DeformableVolumeMesh<double>> deformable_mesh_;
+  /* Note: we don't provide an accessor to `signed_distance_field_` as it may be
+   invalidated by calls to `UpdateVertexPositions()`. Instead, we provide
+   `CalcSignedDistanceField()` that guarantees to return the up-to-date mesh
+   field. */
+  std::unique_ptr<VolumeMeshFieldLinear<double, double>> signed_distance_field_;
 };
 
 /* Defines a rigid geometry -- a rigid hydroelastic mesh repurposed to compute
@@ -131,11 +81,11 @@ class DeformableGeometry {
  aren't relying on FCL's broadphase. */
 class RigidGeometry {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry)
+
   explicit RigidGeometry(
       std::unique_ptr<internal::hydroelastic::RigidMesh> rigid_mesh)
       : rigid_mesh_(std::move(rigid_mesh)) {}
-
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry)
 
   const internal::hydroelastic::RigidMesh& rigid_mesh() const {
     DRAKE_DEMAND(rigid_mesh_ != nullptr);

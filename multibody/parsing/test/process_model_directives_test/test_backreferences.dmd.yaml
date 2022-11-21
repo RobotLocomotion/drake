@@ -1,0 +1,34 @@
+# This file is for testing the backreference behavior of Model Directives, which
+# is possibly a design flaw; see README for more information.
+
+directives:
+
+# Adding simple_model and a simple_model_origin frame.
+- add_model:
+    name: simple_model
+    file: package://process_model_directives_test/simple_model.sdf
+- add_frame:
+    name: simple_model_origin
+    X_PF:
+      base_frame: world
+
+# Including a backreference without specifying a model namespace.
+- add_directives:
+    file: package://process_model_directives_test/add_backreference.dmd.yaml
+
+# Including simple_model within another model namespace called 'nested'.
+- add_model_instance:
+    name: nested
+- add_directives:
+    file: package://process_model_directives_test/add_scoped_sub.dmd.yaml
+    model_namespace: nested
+- add_frame:
+    name: nested::simple_model_origin
+    X_PF:
+      base_frame: world
+      translation: [1, 2, 3]
+
+# Including the same backreference under the 'nested' model namespace.
+- add_directives:
+    file: package://process_model_directives_test/add_backreference.dmd.yaml
+    model_namespace: nested

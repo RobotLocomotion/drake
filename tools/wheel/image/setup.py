@@ -3,7 +3,6 @@
 import os
 import setuptools
 from setuptools import setup, find_packages, glob
-from setuptools.dist import Distribution
 
 DRAKE_VERSION = os.environ.get('DRAKE_VERSION', '0.0.0')
 
@@ -15,28 +14,7 @@ python_required = [
     'numpy',
     'pydot',
     'PyYAML',
-    'scipy',
 ]
-
-if os.uname()[0].lower() == 'linux':
-    # This is intended to help force a binary, rather than platform-agnostic,
-    # wheel, but only works on Ubuntu; clang is not happy about being asked to
-    # make a library with no sources.
-    ext_modules = [
-        setuptools.Extension(name='drake',
-                             sources=[]),
-    ]
-else:
-    ext_modules = []
-
-
-# Distribution which always forces a binary package with platform name.
-class BinaryDistribution(Distribution):
-    def is_pure(self):
-        return False
-
-    def has_ext_modules(self):
-        return True
 
 
 def find_data_files(*patterns):
@@ -44,6 +22,25 @@ def find_data_files(*patterns):
     for pattern in patterns:
         result += [f'../{f}' for f in glob.iglob(pattern, recursive=True)]
     return result
+
+
+def _actually_find_packages():
+    """Work around broken(?!) setuptools."""
+    result = find_packages()
+    result.extend([
+        "pydrake.examples",
+        "pydrake.solvers",
+        "pydrake.visualization",
+    ])
+    print(f"Using packages={result}")
+    return result
+
+
+# Generate a source file we can use to produce an extension library (which we
+# do to force the wheel to not be platform-agnostic. We need this because
+# trying to build an extension module with no sources is not reliable.
+with open('dummy.c', 'wt') as f:
+    f.write('void not_used() {}')
 
 
 setup(name='drake',
@@ -56,7 +53,10 @@ The development team has now grown significantly, with core development led by
 the Toyota Research Institute.
 It is a collection of tools for analyzing the dynamics of our robots and
 building control systems for them, with a heavy emphasis on optimization-based
-design/analysis.'''.strip(),
+design/analysis.
+
+See https://drake.mit.edu/pip.html for installation instructions and caveats.
+'''.strip(),
       url='https://drake.mit.edu',
       author='Drake Development Team',
       author_email='drake-users@mit.edu',
@@ -66,31 +66,35 @@ design/analysis.'''.strip(),
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
+        'License :: Other/Proprietary License',
         'Operating System :: MacOS',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Scientific/Engineering',
         'Topic :: Software Development :: Libraries :: Python Modules'],
-      distclass=BinaryDistribution,
-      # TODO Check this: do we need to add third-party licenses?
-      license='BSD 3-Clause License',
+      license='Various',
       platforms=['linux_x86_64', 'macosx_x86_64'],
-      packages=find_packages(),
+      packages=_actually_find_packages(),
       # Add in any packaged data.
       include_package_data=True,
       package_data={
           '': find_data_files(
+              'pydrake/py.typed',
+              'pydrake/**/*.pyi',
               'pydrake/**/*.so',
               'pydrake/lib/**',
               'pydrake/doc/**',
               'pydrake/share/**',
+              'pydrake/INSTALLATION',
           )
       },
       python_requires='>=3.8',
       install_requires=python_required,
-      ext_modules=ext_modules,
+      # Ensure the wheel is not platform-agnostic.
+      ext_modules=[
+        setuptools.Extension(name='drake',
+                             sources=['dummy.c']),
+      ],
       zip_safe=False
       )

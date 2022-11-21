@@ -18,9 +18,8 @@
 #include <fmt/ostream.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
-#include "drake/common/symbolic_decompose.h"
-#include "drake/common/symbolic_monomial_util.h"
+#include "drake/common/symbolic/decompose.h"
+#include "drake/common/symbolic/monomial_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/decision_variable.h"
@@ -56,44 +55,12 @@ const double kInf = std::numeric_limits<double>::infinity();
 
 MathematicalProgram::MathematicalProgram() = default;
 
+MathematicalProgram::MathematicalProgram(const MathematicalProgram&) = default;
+
 MathematicalProgram::~MathematicalProgram() = default;
 
 std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
-  // The constructor of MathematicalProgram will construct each solver. It
-  // also sets x_initial_guess_ to default values.
-  auto new_prog = std::make_unique<MathematicalProgram>();
-  // Add variables and indeterminates
-  // AddDecisionVariables and AddIndeterminates also set
-  // decision_variable_index_ and indeterminate_index_ properly.
-  new_prog->AddDecisionVariables(this->decision_variables());
-  new_prog->AddIndeterminates(this->indeterminates());
-  // Add costs
-  new_prog->generic_costs_ = generic_costs_;
-  new_prog->quadratic_costs_ = quadratic_costs_;
-  new_prog->linear_costs_ = linear_costs_;
-  new_prog->l2norm_costs_ = l2norm_costs_;
-
-  // Add constraints
-  new_prog->generic_constraints_ = generic_constraints_;
-  new_prog->linear_constraints_ = linear_constraints_;
-  new_prog->linear_equality_constraints_ = linear_equality_constraints_;
-  new_prog->bbox_constraints_ = bbox_constraints_;
-  new_prog->lorentz_cone_constraint_ = lorentz_cone_constraint_;
-  new_prog->rotated_lorentz_cone_constraint_ =
-      rotated_lorentz_cone_constraint_;
-  new_prog->positive_semidefinite_constraint_ =
-      positive_semidefinite_constraint_;
-  new_prog->linear_matrix_inequality_constraint_ =
-      linear_matrix_inequality_constraint_;
-  new_prog->exponential_cone_constraints_ = exponential_cone_constraints_;
-  new_prog->linear_complementarity_constraints_ =
-      linear_complementarity_constraints_;
-
-  new_prog->x_initial_guess_ = x_initial_guess_;
-  new_prog->solver_options_ = solver_options_;
-
-  new_prog->required_capabilities_ = required_capabilities_;
-  return new_prog;
+  return std::unique_ptr<MathematicalProgram>(new MathematicalProgram(*this));
 }
 
 string MathematicalProgram::to_string() const {
@@ -255,19 +222,20 @@ symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
   switch (type) {
     case MathematicalProgram::NonnegativePolynomial::kSos: {
       AddPositiveSemidefiniteConstraint(gramian);
-      break;
+      return p;
     }
     case MathematicalProgram::NonnegativePolynomial::kSdsos: {
       AddScaledDiagonallyDominantMatrixConstraint(gramian);
-      break;
+      return p;
     }
     case MathematicalProgram::NonnegativePolynomial::kDsos: {
       AddPositiveDiagonallyDominantMatrixConstraint(
           gramian.cast<symbolic::Expression>());
-      break;
+      return p;
     }
   }
-  return p;
+  throw std::runtime_error(
+      "NewSosPolynomial() was passed an invalid NonnegativePolynomial type");
 }
 
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
@@ -1285,6 +1253,7 @@ std::vector<Binding<Constraint>> MathematicalProgram::GetAllConstraints()
   extend(lorentz_cone_constraint_);
   extend(rotated_lorentz_cone_constraint_);
   extend(linear_matrix_inequality_constraint_);
+  extend(positive_semidefinite_constraint_);
   extend(linear_complementarity_constraints_);
   extend(exponential_cone_constraints_);
   return conlist;

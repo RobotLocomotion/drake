@@ -57,7 +57,7 @@ int DoMain() {
   const std::string full_name =
       FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
   MultibodyPlant<double> control_plant(0.0);
-  multibody::Parser(&control_plant).AddModelFromFile(full_name);
+  multibody::Parser(&control_plant).AddModels(full_name);
   WeldGripperFrames<double>(&control_plant);
   control_plant.Finalize();
 
@@ -151,7 +151,7 @@ int DoMain() {
     simulator.AdvanceTo(time);
     // Force-publish the lcmt_planar_gripper_command (via the command_pub system
     // within the diagram).
-    diagram->Publish(diagram_context);
+    diagram->ForcedPublish(diagram_context);
   }
 
   // We should never reach here.

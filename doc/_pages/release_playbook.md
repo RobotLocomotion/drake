@@ -103,108 +103,122 @@ the main body of the document:
 
 ## Cutting the release
 
-9. Find a plausible build to use
+1. Find a plausible nightly build to use:
    1. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean
    2. Make sure <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>
       has nothing still running (modulo the ``*-coverage`` builds, which we can
       ignore)
    3. Open the latest builds from the following builds:
-      1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-big-sur-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
-      2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-mosek-packaging/>
+      1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-mosek-packaging/>
+      2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-bazel-nightly-snopt-mosek-packaging/>
+      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-x86-monterey-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
+      4. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-monterey-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
       ``drake/nightly/drake-20``), and find the date.  It will be ``YYYYMMDD``
       with today's date (they kick off after midnight).  All of the builds
       should have the same date. If not, wait until the following night.
    5. Use the
-      ``tools/release_engineering/download_release_candidate`` tool to download
-      and verify that all the release candidates are built from the same
-      commit.  (It's usage
+      ``tools/release_engineering/download_release_candidate`` tool with the
+      ``--find-git-sha`` option to download and verify that all the nightlies
+      are built from the same commit.  (It's usage instructions are atop its
+      source code:
+      [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
+2. Launch the staging builds for that git commit sha:
+   1. Open the following five Jenkins jobs (e.g., each in its own
+      new browser tab):
+      - [Linux Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-wheel-staging-snopt-mosek-release/)
+      - [macOS x86 Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-x86-monterey-unprovisioned-clang-wheel-staging-snopt-mosek-release/)
+      - [macOS arm Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-monterey-unprovisioned-clang-wheel-staging-snopt-mosek-release/)
+      - [Focal Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-bazel-staging-snopt-mosek-packaging/)
+      - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-bazel-staging-snopt-mosek-packaging/)
+   2. In the upper right, click "log in" (unless you're already logged in). This
+      will use your GitHub credentials.
+   3. Click "Build with Parameters".
+   4. Change "sha1" to the full **git sha** corresponding to ``v1.N.0`` and
+      "release_version" to ``1.N.0`` (no "v").
+   5. Click "Build"; each build will take around an hour, give or take.
+   6. Note: The macOS wheel jobs will produce one `.whl` file, whereas the linux
+      job will produce multiple `.whl` files (in the same job).
+   7. Wait for all staging jobs to succeed.  It's OK to work on release notes
+      finishing touches in the meantime, but do not merge the release notes nor
+      tag the release until all five builds have succeeded.
+3. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
+   sure that the nightly build git sha from the prior steps matches the
+   ``newest_commit`` whose changes are enumerated in the notes.  Some dates
+   are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
+   them all.
+   1. Update the github links within ``doc/_pages/from_binary.md`` to reflect
+      the upcoming v1.N.0 and YYYYMMDD.
+4. Re-enable CI by reverting the commit you added way up above in step 3.
+5. Wait for the wheel builds to complete, and then download release artifacts:
+   1. Use the
+      ``tools/release_engineering/download_release_candidate`` tool with the
+      ``--version`` option to download and verify all binaries.  (It's usage
       instructions are atop its source code:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
-
-10. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
-    sure that the nightly build git sha from the prior step matches the
-    ``newest_commit`` whose changes are enumerated in the notes.  Some dates
-    are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
-    them all.
-   1. Update the github links within doc/_pages/from_binary.md to reflect the
-      upcoming v1.N.0 and YYYYMMDD.
-11. Re-enable CI by reverting the commit you added in step 3.
-12. Merge the release notes PR
+6. Merge the release notes PR
    1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
    2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-focal-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
-13. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
-    a new release".  Note that this page does has neither history nor undo.  Be
-    slow and careful!
-    1. Tag version is: v1.N.0
-    2. Target is: [the git sha from above]
-      *  You should select the commit from Target > Recent Commits. The search
-         via commit does not work if you don't use the correct length.
-    3. Release title is: Drake v1.N.0
-    4. The body of the release should be forked from the prior release (open the
-       prior release's web page and click "Edit" to get the markdown), with
-       appropriate edits as follows:
-       * The version number
-    5. Into the box labeled "Attach binaries by dropping them here or selecting
-       them.", drag and drop the 6 release binary artifacts from above (the 2
-       tarballs, and their 3 checksums).
-    6. Choose "Save draft" and take a deep breath.
-14. Once the documentation build finishes, release!
-    1. Check that the link to drake.mit.edu docs from the GitHub release draft
-       page actually works.
-    2. Click "Publish release"
-    3. Notify `@BetsyMcPhail` via a GitHub comment to manually tag docker images
-       and upload the releases to S3. Be sure to provide her with the binary
-       date, commit SHA, and release tag in the same ping.
-    4. Announce on Drake Slack, ``#general``.
-    5. Party on, Wayne.
+7. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
+   a new release".  Note that this page does has neither history nor undo.  Be
+   slow and careful!
+   1. Tag version is: v1.N.0
+   2. Target is: [the git sha from above]
+     *  You should select the commit from Target > Recent Commits. The search
+        via commit does not work if you don't use the correct length.
+   3. Release title is: Drake v1.N.0
+   4. The body of the release should be forked from the prior release (open the
+      prior release's web page and click "Edit" to get the markdown), with
+      appropriate edits as follows:
+      * The version number
+   5. Into the box labeled "Attach binaries by dropping them here or selecting
+      them.", drag and drop the 33 release files from
+      ``/tmp/drake-release/v1.N.0``:
+      - 12: 4 `.tar.gz` + 8 checksums
+      - 6: 2 `.deb` + 4 checksums
+      - 9: 3 linux `.whl` + 6 checksums
+      - 3: 1 macOS x86 `.whl` + 2 checksums
+      - 3: 1 macOS arm `.whl` + 2 checksums
+   6. Choose "Save draft" and take a deep breath.
+8. Once the documentation build finishes, release!
+   1. Check that the link to drake.mit.edu docs from the GitHub release draft
+      page actually works.
+   2. Click "Publish release"
+   3. Notify `@BetsyMcPhail` via a GitHub comment to manually tag docker images
+      and upload the releases to S3. Be sure to provide her with the binary
+      date, commit SHA, and release tag in the same ping.
+   4. Announce on Drake Slack, ``#general``.
+   5. Party on, Wayne.
 
-## Post-release follow up
+## Post-release wheel upload
 
-1. Open the [tagged workspace](https://github.com/RobotLocomotion/drake/tree/v1.N.0/tools/workspace)
-   (editing that URL to have the correct value for ``N``) and ensure that
-   certain Drake-owned externals have sufficient tags:
-   1. Open ``common_robotics_utilities/repository.bzl`` and find the ``commit =`` used.
-      1. Open
-         [ToyotaResearchInstitute/common_robotics_utilities](https://github.com/ToyotaResearchInstitute/common_robotics_utilities/releases)
-         and check whether that commit already has an associated release tag.
-      2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
-         the 8-digit datestamp associated with the ``commit`` in question (i.e.,
-         four digit year, two digit month, two digit day).
-   2. Open ``models/repository.bzl`` and find the ``commit =`` used.
-      1. Open
-         [RobotLocomotion/models](https://github.com/RobotLocomotion/models/releases)
-         and check whether that commit already has an associated release tag.
-      2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
-         the 8-digit datestamp associated with the ``commit`` in question (i.e.,
-         four digit year, two digit month, two digit day).
-   3. Open ``optitrack_driver/repository.bzl`` and find the ``commit =`` used.
-      1. Open
-         [RobotLocomotion/optitrack-driver](https://github.com/RobotLocomotion/optitrack-driver/releases)
-         and check whether that commit already has an associated release tag.
-      2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
-         the 8-digit datestamp associated with the ``commit`` in question (i.e.,
-         four digit year, two digit month, two digit day).
-   4. Open ``styleguide/repository.bzl`` and find the ``commit =`` used.
-      1. Open [RobotLocomotion/styleguide](https://github.com/RobotLocomotion/styleguide/releases)
-         and check whether that commit already has an associated release tag.
-      2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
-         the 8-digit datestamp associated with the ``commit`` in question (i.e.,
-         four digit year, two digit month, two digit day).
+After tagging the release, you must manually upload a PyPI release.
+
+If you haven't done so already, follow Drake's PyPI
+[account setup](https://docs.google.com/document/d/17D0yzyr0kGH44eWpiNY7E33A8hW1aiJRmADaoAlVISE/edit#)
+instructions to obtain a username and password.
+
+1. Run ``twine`` to upload the wheel release, as follows:
+
+   1. You will need your PyPI username and password for this. (Do not use drake-robot.)
+   2. Run ``twine upload /tmp/drake-release/v1.N.0/*.whl``.
+   3. Confirm that all of the uploads succeeded without any error messages in
+      your terminal.
 
 ## Post-release tutorials updates
 
-Upgrade our Deepnote-hosted tutorials to the latest release.  This requires that
-you have "Edit" permission in the Deepnote project.  If you don't have that yet,
-then ask for help on slack in the ``#releases`` channel.
+Upgrade our Deepnote-hosted tutorials to the latest release.  This requires
+that you have "Edit" permission in the Deepnote project.  If you don't have
+that yet, then ask for help on slack in the ``#releases`` channel.  Provide
+the email address associated with your github account.
 
 1. Open the tutorials [Dockerfile](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2FDockerfile):
    1. Edit the first line to refer to the YYYYMMDD for this release.
       1. For reference, the typical content is thus:
          ```
-         FROM robotlocomotion/drake:focal-20220420
+         FROM robotlocomotion/drake:jammy-20220929
 
          RUN apt-get -q update && apt-get -q install -y --no-install-recommends nginx-light xvfb && apt-get -q clean
 
@@ -228,51 +242,43 @@ then ask for help on slack in the ``#releases`` channel.
    has this cell added the bottom, as a Drake-specific customization:
    ```
    %%bash
+   /opt/drake/share/drake/setup/deepnote/install_nginx
    /opt/drake/share/drake/setup/deepnote/install_xvfb
    ```
    In case the display server is not working later on, this might be a good place to double-check.
+   For Jammy we also needed to add ``cd /work`` atop the stanza that checks for
+   ``requirements.txt`` to get it working again.
 4. Copy the updated tutorials from the pinned Dockerfile release
    (in ``/opt/drake/share/drake/tutorials/...``) into the Deepnote project
    storage (``~/work/...``):
    1. Open [.for_maintainers.ipynb](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2F.for_maintainers.ipynb).
    2. Run each cell one by one, checking for errors as you go.
-5. For *all other* notebooks (excluding the ``.for_maintainers`` notebook)
-   one by one (probably in alphabetical order, for your sanity):
+5. For almost all other notebooks (excluding the ``.for_maintainers`` notebook
+   **and** excluding the ``licensed_solvers_deepnote`` notebook) one by one
+   (probably in alphabetical order, for your sanity):
    1. Open the notebook and click "Run notebook".
+      1. The ``authoring_multibody_simulation`` notebook will appear to hang on
+         one of the middle cells where it uses JointSliders. It is _not_ hung,
+         rather it is waiting for user input. Find the "Meshcat URL" link
+         earlier in the notebook, click through to open Meshcat in a new tab,
+         click "Open Controls", then click "Stop JointSliders" repeatedly until
+         the option vanishes and the notebook completes.
+      2. Do not try to run the ``licensed_solvers_deepnote`` notebook.
+         (You do not have a suitable license key.)
+      3. If you get an error like "Synchronization of file ... failed, your changes are not being saved. You might be running out of disk quota" you may ignore it.
+      4. In the "rendering multibody plant" tutorial, sometimes the rendering
+         step may crash with an interrupted error. In that case, click through
+         to the "Environment" gear in the right-hand panel, then into the
+         "init.ipynb" notbook and re-run the initialization.
    2. For all markdown cells, quickly skim over the rendered output to check
       that no markup errors have snuck through (e.g., LaTeX syntax errors).
    3. For all code cells, examine the output of each cell to check that no
       exceptions have snuck through (or any other unexpected error text).
+      * The error "'%matplotlib notebook' is not supported in Deepnote" is
+        expected and can be ignored.
    4. Leave the notebook output intact (do not clear the outputs). We want
       users to be able to read the outputs on their own, without necessarily
       running the notebook themselves.
 6. On the right side, click "Environment" then "Stop Machine", as a
    courtesy. (It will time out on its own within the hour, but we might as
    well save a few nanograms of CO2 where we can.)
-
-## Post-release wheel builds
-
-After tagging the release, you must manually build and upload a PyPI release.
-
-If you haven't done so already, follow Drake's PyPI
-[account setup](https://docs.google.com/document/d/17D0yzyr0kGH44eWpiNY7E33A8hW1aiJRmADaoAlVISE/edit#)
-instructions to obtain a username and password.
-
-1. Use your Ubuntu 20.04 workstation for these steps.  (Do not use any other OS.)
-2. Create some empty scratch folder to use for these steps, and then ``cd`` into it.
-3. Run ``sudo apt install docker.io twine``
-   1. If you get an "docker.sock connect" error, you might need to give yourself Docker permissions:
-      1. Run ``sudo usermod -aG docker $USER``
-      2. Run ``newgrp docker``
-   2. If Docker still doesn't work, you might need to logout and/or reboot first.
-4. Run ``git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git``
-5. Run ``cd drake``
-6. Run ``git checkout v1.N.0``
-7. To remove any cached images:
-   1. Run ``docker rmi $(docker image ls --filter=reference='pip-drake:*' -q)``
-   1. Run ``docker builder prune -f``
-8. Run ``./setup/ubuntu/source_distribution/install_prereqs_user_environment.sh``
-9. Run ``bazel run //tools/wheel:builder -- --output-dir=${PWD} --test 1.N.0``
-10. Wait a long time for it to finish (around 30 minutes on a beefy workstation). It will take over all of your computer's resources, so don't plan to do much else concurrently.
-11. There should have been exactly two whl files created. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path to each of the wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64``, etc.)
-    1. You will need your PyPI username and password for this. (Do not use drake-robot.)

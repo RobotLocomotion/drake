@@ -3,7 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -68,10 +68,6 @@ GTEST_TEST(TestConstraint, LinearConstraintSparse) {
   EXPECT_TRUE(
       CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
   EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE(CompareMatrices(dut.A(), A_sparse.toDense()));
-#pragma GCC diagnostic pop
   EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
   EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
 

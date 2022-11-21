@@ -4,12 +4,18 @@
 #include <optional>
 #include <string>
 
-#include "lcm/lcm-cpp.hpp"
-
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_params.h"
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace lcm {
+// We don't want to pollute our Drake headers with the include paths for either
+// @lcm or @glib, so we forward-declare the `class ::lcm::LCM` for use only by
+// DrakeLcm::get_lcm_instance() -- an advanced function that is rarely used.
+class LCM;
+}  // namespace lcm
+#endif
 
 namespace drake {
 namespace lcm {
@@ -37,9 +43,6 @@ class DrakeLcm : public DrakeLcmInterface {
    * Constructs using the given parameters.
    */
   explicit DrakeLcm(const DrakeLcmParams& params);
-
-  DRAKE_DEPRECATED("2022-10-01", "Use DrakeLcmParams instead.")
-  DrakeLcm(std::string lcm_url, bool defer_initialization);
 
   /**
    * A destructor that forces the receive thread to be stopped.

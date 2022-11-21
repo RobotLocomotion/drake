@@ -1,6 +1,8 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsing/package_map.h"
@@ -22,6 +24,8 @@ PYBIND11_MODULE(parsing, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
+
+  py::module::import("pydrake.common.schema");
 
   // PackageMap
   {
@@ -55,6 +59,8 @@ PYBIND11_MODULE(parsing, m) {
         .def("PopulateFromEnvironment", &Class::PopulateFromEnvironment,
             py::arg("environment_variable"),
             cls_doc.PopulateFromEnvironment.doc)
+        .def("PopulateFromRosPackagePath", &Class::PopulateFromRosPackagePath,
+            cls_doc.PopulateFromRosPackagePath.doc)
         .def_static("MakeEmpty", &Class::MakeEmpty, cls_doc.MakeEmpty.doc);
   }
 
@@ -62,7 +68,8 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = Parser;
     constexpr auto& cls_doc = doc.Parser;
-    py::class_<Class>(m, "Parser", cls_doc.doc)
+    auto cls = py::class_<Class>(m, "Parser", cls_doc.doc);
+    cls  // BR
         .def(py::init<MultibodyPlant<double>*, SceneGraph<double>*>(),
             py::arg("plant"), py::arg("scene_graph") = nullptr,
             cls_doc.ctor.doc)
@@ -70,25 +77,125 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.plant.doc)
         .def("package_map", &Class::package_map, py_rvp::reference_internal,
             cls_doc.package_map.doc)
+        // TODO(rpoyner-tri): deprecate on or after 2023-01.
         .def("AddAllModelsFromFile", &Class::AddAllModelsFromFile,
             py::arg("file_name"), cls_doc.AddAllModelsFromFile.doc)
+        .def(
+            "AddModels",
+            // Pybind11 won't implicitly convert strings to
+            // std::filesystem::path, but C++ will. Use a lambda to avoid wider
+            // disruptions in python bindings.
+            [](Parser& self, const std::string& file_name) {
+              return self.AddModels(file_name);
+            },
+            py::arg("file_name"), cls_doc.AddModels.doc)
+        .def("AddModelsFromString", &Class::AddModelsFromString,
+            py::arg("file_contents"), py::arg("file_type"),
+            cls_doc.AddModelsFromString.doc)
         .def("AddModelFromFile", &Class::AddModelFromFile, py::arg("file_name"),
             py::arg("model_name") = "", cls_doc.AddModelFromFile.doc)
-        .def("AddModelFromString", &Class::AddModelFromString,
-            py::arg("file_contents"), py::arg("file_type"),
-            py::arg("model_name") = "", cls_doc.AddModelFromString.doc)
         .def("SetStrictParsing", &Class::SetStrictParsing,
             cls_doc.SetStrictParsing.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("AddModelFromString",
+            WrapDeprecated(cls_doc.AddModelFromString.doc_deprecated,
+                &Class::AddModelFromString),
+            py::arg("file_contents"), py::arg("file_type"),
+            py::arg("model_name") = "",
+            cls_doc.AddModelFromString.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 
   // Model Directives
   {
+    using Class = parsing::AddWeld;
+    constexpr auto& cls_doc = doc.parsing.AddWeld;
+    py::class_<Class> cls(m, "AddWeld", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::AddModel;
+    constexpr auto& cls_doc = doc.parsing.AddModel;
+    py::class_<Class> cls(m, "AddModel", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::AddModelInstance;
+    constexpr auto& cls_doc = doc.parsing.AddModelInstance;
+    py::class_<Class> cls(m, "AddModelInstance", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::AddFrame;
+    constexpr auto& cls_doc = doc.parsing.AddFrame;
+    py::class_<Class> cls(m, "AddFrame", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::AddCollisionFilterGroup;
+    constexpr auto& cls_doc = doc.parsing.AddCollisionFilterGroup;
+    py::class_<Class> cls(m, "AddCollisionFilterGroup", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::AddDirectives;
+    constexpr auto& cls_doc = doc.parsing.AddDirectives;
+    py::class_<Class> cls(m, "AddDirectives", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::ModelDirective;
+    constexpr auto& cls_doc = doc.parsing.ModelDirective;
+    py::class_<Class> cls(m, "ModelDirective", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
     using Class = parsing::ModelDirectives;
-    py::class_<Class>(m, "ModelDirectives", doc.parsing.ModelDirectives.doc);
+    constexpr auto& cls_doc = doc.parsing.ModelDirectives;
+    py::class_<Class> cls(m, "ModelDirectives", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 
   m.def("LoadModelDirectives", &parsing::LoadModelDirectives,
       py::arg("filename"), doc.parsing.LoadModelDirectives.doc);
+
+  m.def("LoadModelDirectivesFromString",
+      &parsing::LoadModelDirectivesFromString, py::arg("model_directives"),
+      doc.parsing.LoadModelDirectivesFromString.doc);
 
   // ModelInstanceInfo
   {
@@ -106,28 +213,23 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.model_instance.doc);
   }
 
-  // Individual directives are not bound here (they are generally loaded from
-  // yaml rather than constructed explicitly), but some downstream users use
-  // this type as a return value which requires an explicit binding.
-  {
-    using Class = drake::multibody::parsing::AddFrame;
-    constexpr auto& cls_doc = doc.parsing.AddFrame;
-    py::class_<Class>(m, "AddFrame")
-        .def_readonly("name", &Class::name, cls_doc.name.doc)
-        .def_readonly("X_PF", &Class::X_PF, cls_doc.X_PF.doc);
-  }
+  m.def("ProcessModelDirectives",
+      py::overload_cast<const parsing::ModelDirectives&, Parser*>(
+          &parsing::ProcessModelDirectives),
+      py::arg("directives"), py::arg("parser"),
+      doc.parsing.ProcessModelDirectives.doc_2args);
 
   m.def(
       "ProcessModelDirectives",
       [](const parsing::ModelDirectives& directives,
-          MultibodyPlant<double>* plant, Parser* parser = nullptr) {
+          MultibodyPlant<double>* plant, Parser* parser) {
         std::vector<parsing::ModelInstanceInfo> added_models;
         parsing::ProcessModelDirectives(
             directives, plant, &added_models, parser);
         return added_models;
       },
-      py::arg("directives"), py::arg("plant"), py::arg("parser"),
-      doc.parsing.ProcessModelDirectives.doc);
+      py::arg("directives"), py::arg("plant"), py::arg("parser") = nullptr,
+      doc.parsing.ProcessModelDirectives.doc_4args);
 
   m.def("GetScopedFrameByName", &parsing::GetScopedFrameByName,
       py::arg("plant"), py::arg("full_name"),

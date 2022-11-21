@@ -4,15 +4,19 @@ import warnings
 
 import numpy as np
 
-from pydrake.examples.pendulum import PendulumPlant
-from pydrake.math import eq
-from pydrake.trajectories import PiecewisePolynomial
+from pydrake.examples import PendulumPlant
+from pydrake.math import eq, BsplineBasis
+from pydrake.trajectories import PiecewisePolynomial, BsplineTrajectory
 from pydrake.solvers import mathematicalprogram as mp
+from pydrake.symbolic import Variable
 from pydrake.systems.framework import InputPortSelection
 from pydrake.systems.primitives import LinearSystem
 from pydrake.systems.trajectory_optimization import (
-    AddDirectCollocationConstraint, DirectCollocation,
-    DirectCollocationConstraint, DirectTranscription,
+    AddDirectCollocationConstraint,
+    DirectCollocation,
+    DirectCollocationConstraint,
+    DirectTranscription,
+    KinematicTrajectoryOptimization,
     TimeStep,
 )
 
@@ -165,3 +169,44 @@ class TestTrajectoryOptimization(unittest.TestCase):
         states = dirtran.GetStateSamples(result)
         input_traj = dirtran.ReconstructInputTrajectory(result)
         state_traj = dirtran.ReconstructStateTrajectory(result)
+
+    def test_kinematic_trajectory_optimization(self):
+        trajopt = KinematicTrajectoryOptimization(num_positions=2,
+                                                  num_control_points=10,
+                                                  spline_order=3,
+                                                  duration=2.0)
+        self.assertIsInstance(trajopt.prog(), mp.MathematicalProgram)
+        self.assertIsInstance(trajopt.get_mutable_prog(),
+                              mp.MathematicalProgram)
+        self.assertEqual(trajopt.num_positions(), 2)
+        self.assertEqual(trajopt.num_control_points(), 10)
+        self.assertIsInstance(trajopt.basis(), BsplineBasis)
+        self.assertEqual(trajopt.basis().order(), 3)
+        self.assertEqual(trajopt.control_points().shape, (2, 10))
+        self.assertIsInstance(trajopt.duration(), Variable)
+        self.assertEqual(trajopt.prog().GetInitialGuess(trajopt.duration()),
+                         2.0)
+
+        b = np.zeros((2, 1))
+        trajopt.AddPathPositionConstraint(lb=b, ub=b, s=0)
+        con = mp.LinearConstraint(np.eye(2), lb=b, ub=b)
+        trajopt.AddPathPositionConstraint(con, 0)
+        trajopt.AddPathVelocityConstraint(lb=b, ub=b, s=0)
+        velocity_constraint = mp.LinearConstraint(np.eye(4),
+                                                  lb=np.zeros((4, 1)),
+                                                  ub=np.zeros((4, 1)))
+        trajopt.AddVelocityConstraintAtNormalizedTime(velocity_constraint, s=0)
+        trajopt.AddPathAccelerationConstraint(lb=b, ub=b, s=0)
+        trajopt.AddDurationConstraint(1, 1)
+        trajopt.AddPositionBounds(lb=b, ub=b)
+        trajopt.AddVelocityBounds(lb=b, ub=b)
+        trajopt.AddAccelerationBounds(lb=b, ub=b)
+        trajopt.AddJerkBounds(lb=b, ub=b)
+
+        trajopt.AddDurationCost(weight=1)
+        trajopt.AddPathLengthCost(weight=1)
+
+        result = mp.Solve(trajopt.prog())
+        q = trajopt.ReconstructTrajectory(result=result)
+        self.assertIsInstance(q, BsplineTrajectory)
+        trajopt.SetInitialGuess(trajectory=q)

@@ -2,12 +2,12 @@
 
 #include <array>
 #include <cstddef>
-#include <iostream>
 #include <limits>
 #include <list>
 #include <map>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -24,7 +24,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/monomial_util.h"
+#include "drake/common/symbolic/polynomial.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
@@ -140,7 +142,17 @@ struct assert_if_is_constraint {
  */
 class MathematicalProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
+  /** @name Does not allow copy, move, or assignment. */
+  /** @{ */
+#ifdef DRAKE_DOXYGEN_CXX
+  // Copy constructor is private for use in implementing Clone().
+  MathematicalProgram(const MathematicalProgram&) = delete;
+#endif
+  MathematicalProgram& operator=(const MathematicalProgram&) = delete;
+  MathematicalProgram(MathematicalProgram&&) = delete;
+  MathematicalProgram& operator=(MathematicalProgram&&) = delete;
+  /** @} */
+
   using VarType = symbolic::Variable::Type;
 
   /// The optimal cost is +∞ when the problem is globally infeasible.
@@ -163,8 +175,9 @@ class MathematicalProgram {
    * - solver settings
    * - initial guess
    *
-   * However, the clone's x values will be initialized to NaN, and all internal
-   * solvers will be freshly constructed.
+   * Note that this is currently a *shallow* clone. The costs and constraints
+   * are not themselves cloned.
+   *
    * @retval new_prog. The newly constructed mathematical program.
    */
   [[nodiscard]] std::unique_ptr<MathematicalProgram> Clone() const;
@@ -463,9 +476,10 @@ class MathematicalProgram {
    * https://arxiv.org/abs/1706.02586
    */
   enum class NonnegativePolynomial {
-    kSos,    ///< A sum-of-squares polynomial.
-    kSdsos,  ///< A scaled-diagonally dominant sum-of-squares polynomial.
-    kDsos,   ///< A diagonally dominant sum-of-squares polynomial.
+    // We reserve the 0 value as a tactic for identifying uninitialized enums.
+    kSos = 1,    ///< A sum-of-squares polynomial.
+    kSdsos,      ///< A scaled-diagonally dominant sum-of-squares polynomial.
+    kDsos,       ///< A diagonally dominant sum-of-squares polynomial.
   };
 
   /** Returns a pair of a SOS polynomial p = mᵀQm and the Gramian matrix Q,
@@ -1107,8 +1121,7 @@ class MathematicalProgram {
   /**
    * Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since we
    * don't take the square of the L2 norm).
-   * @note Currently no solver supports kL2NormCost, and the user will
-   * receive an error message if they add L2NormCost and call Solve().
+   * @note Currently only the SnoptSolver and IpoptSolver support kL2NormCost.
    * @pydrake_mkdoc_identifier{3args_A_b_vars}
    */
   // TODO(hongkai.dai): support L2NormCost in each solver.
@@ -2639,12 +2652,10 @@ class MathematicalProgram {
   template <typename Derived>
   typename std::enable_if_t<
       std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>
+      MatrixLikewise<double, Derived>>
   GetInitialGuess(
       const Eigen::MatrixBase<Derived>& decision_variable_mat) const {
-    Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime>
+    MatrixLikewise<double, Derived>
         decision_variable_values(decision_variable_mat.rows(),
                                  decision_variable_mat.cols());
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {
@@ -3232,6 +3243,9 @@ class MathematicalProgram {
   //@}
 
  private:
+  // Copy constructor is private for use in implementing Clone().
+  explicit MathematicalProgram(const MathematicalProgram&);
+
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
 
   // Removes a binding of a constraint/constraint, @p removal, from a given
@@ -3443,6 +3457,8 @@ class MathematicalProgram {
   symbolic::Polynomial NewFreePolynomialImpl(
       const symbolic::Variables& indeterminates, int degree,
       const std::string& coeff_name,
+      // TODO(jwnimmer-tri) Fix this to not depend on all of "monomial_util.h"
+      // for just this tiny enum (e.g., use a bare int == 0,1,2 instead).
       symbolic::internal::DegreeType degree_type);
 
   std::unordered_map<int, double> var_scaling_map_{};

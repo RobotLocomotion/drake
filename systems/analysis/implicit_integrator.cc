@@ -36,12 +36,8 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
   // math::jacobian(), if possible.
 
   // Create AutoDiff versions of the state vector.
-  VectorX<AutoDiffXd> a_xt = xt;
-
   // Set the size of the derivatives and prepare for Jacobian calculation.
-  const int n_state_dim = a_xt.size();
-  for (int i = 0; i < n_state_dim; ++i)
-    a_xt[i].derivatives() = VectorX<T>::Unit(n_state_dim, i);
+  VectorX<AutoDiffXd> a_xt = math::InitializeAutoDiff(xt);
 
   // Get the system and the context in AutoDiffable format. Inputs must also
   // be copied to the context used by the AutoDiff'd system (which is
@@ -72,7 +68,7 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
   // segfault when forming Newton iteration matrices); if it is, we set it equal
   // to an n x n zero matrix.
   if (J->cols() == 0) {
-    *J = MatrixX<T>::Zero(n_state_dim, n_state_dim);
+    *J = MatrixX<T>::Zero(xt.size(), xt.size());
   }
 }
 

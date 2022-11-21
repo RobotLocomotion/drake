@@ -2,6 +2,8 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
+#include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -23,19 +25,17 @@ PYBIND11_MODULE(optimization, m) {
 
   py::module::import("pydrake.math");
   py::module::import("pydrake.multibody.plant");
-  py::module::import("pydrake.solvers.mathematicalprogram");
+  py::module::import("pydrake.solvers");
 
   {
     using Class = CalcGridPointsOptions;
     constexpr auto& cls_doc = doc.CalcGridPointsOptions;
-    py::class_<Class>(m, "CalcGridPointsOptions", cls_doc.doc)
-        .def(ParamInit<Class>())
-        .def_readwrite("max_err", &Class::max_err, cls_doc.max_err.doc)
-        .def_readwrite("max_iter", &Class::max_iter, cls_doc.max_iter.doc)
-        .def_readwrite("max_seg_length", &Class::max_seg_length,
-            cls_doc.max_seg_length.doc)
-        .def_readwrite(
-            "min_points", &Class::min_points, cls_doc.min_points.doc);
+    py::class_<Class> cls(m, "CalcGridPointsOptions", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
@@ -58,6 +58,19 @@ PYBIND11_MODULE(optimization, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 4>(), cls_doc.ctor.doc);
+  }
+
+  {
+    using Class = ContactWrenchFromForceInWorldFrameEvaluator;
+    constexpr auto& cls_doc = doc.ContactWrenchFromForceInWorldFrameEvaluator;
+    using Ptr = std::shared_ptr<Class>;
+    py::class_<Class, solvers::EvaluatorBase, Ptr>(
+        m, "ContactWrenchFromForceInWorldFrameEvaluator", cls_doc.doc)
+        .def(py::init<const MultibodyPlant<AutoDiffXd>*,
+                 systems::Context<AutoDiffXd>*,
+                 const SortedPair<geometry::GeometryId>&>(),
+            py::arg("plant"), py::arg("context"), py::arg("geometry_id_pair"),
+            cls_doc.ctor.doc);
   }
 
   {

@@ -71,11 +71,3 @@ def StartMeshcat():
     if "DEEPNOTE_PROJECT_ID" in os.environ:
         return _start_meshcat_deepnote()
     return Meshcat()
-
-
-# TODO(jwnimmer-tri) Deprecate these legacy compatibility aliases on or after
-# 2022-07-01.
-MeshcatVisualizerCpp = MeshcatVisualizer
-MeshcatVisualizerCpp_ = MeshcatVisualizer_
-MeshcatPointCloudVisualizerCpp = MeshcatPointCloudVisualizer
-MeshcatPointCloudVisualizerCpp_ = MeshcatPointCloudVisualizer_

@@ -6,7 +6,9 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -29,6 +31,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 
@@ -101,7 +104,10 @@ void DoScalarIndependentDefinitions(py::module m) {
       m, "JointActuatorIndex", doc.JointActuatorIndex.doc);
   BindTypeSafeIndex<ModelInstanceIndex>(
       m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
+  BindTypeSafeIndex<ConstraintIndex>(
+      m, "ConstraintIndex", doc.ConstraintIndex.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
+  m.def("world_frame_index", &world_frame_index, doc.world_frame_index.doc);
   m.def("world_model_instance", &world_model_instance,
       doc.world_model_instance.doc);
   m.def("default_model_instance", &default_model_instance,
@@ -110,25 +116,12 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = DoorHingeConfig;
     constexpr auto& cls_doc = doc.DoorHingeConfig;
-    py::class_<Class>(m, "DoorHingeConfig", cls_doc.doc)
-        .def(ParamInit<Class>(), cls_doc.ctor.doc)
-        .def_readwrite("spring_zero_angle_rad", &Class::spring_zero_angle_rad,
-            cls_doc.spring_zero_angle_rad.doc)
-        .def_readwrite("spring_constant", &Class::spring_constant,
-            cls_doc.spring_constant.doc)
-        .def_readwrite("dynamic_friction_torque",
-            &Class::dynamic_friction_torque,
-            cls_doc.dynamic_friction_torque.doc)
-        .def_readwrite("static_friction_torque", &Class::static_friction_torque,
-            cls_doc.static_friction_torque.doc)
-        .def_readwrite("viscous_friction", &Class::viscous_friction,
-            cls_doc.viscous_friction.doc)
-        .def_readwrite(
-            "catch_width", &Class::catch_width, cls_doc.catch_width.doc)
-        .def_readwrite(
-            "catch_torque", &Class::catch_torque, cls_doc.catch_torque.doc)
-        .def_readwrite("motion_threshold", &Class::motion_threshold,
-            cls_doc.motion_threshold.doc);
+    py::class_<Class> cls(m, "DoorHingeConfig", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>(), cls_doc.ctor.doc);
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
@@ -252,18 +245,36 @@ void DoScalarDependentDefinitions(py::module m, T) {
                  const RigidTransform<double>&,
                  std::optional<ModelInstanceIndex>>(),
             py::arg("name"), py::arg("P"), py::arg("X_PF"),
-            py::arg("model_instance") = std::nullopt, cls_doc.ctor.doc_4args)
-        .def(py::init<const Frame<T>&, const math::RigidTransform<double>&>(),
-            py::arg("P"), py::arg("X_PF"), cls_doc.ctor.doc_2args)
+            py::arg("model_instance") = std::nullopt,
+            cls_doc.ctor.doc_4args_name_P_X_PF_model_instance)
+        .def(py_init_deprecated<Class, const Frame<T>&,
+                 const math::RigidTransform<double>&>(
+                 cls_doc.ctor.doc_deprecated_deprecated_2args_P_X_PF),
+            py::arg("P"), py::arg("X_PF"),
+            cls_doc.ctor.doc_deprecated_deprecated_2args_P_X_PF)
         .def(py::init<const std::string&, const Body<T>&,
                  const math::RigidTransform<double>&>(),
             py::arg("name"), py::arg("bodyB"), py::arg("X_BF"),
-            cls_doc.ctor.doc_3args)
-        .def(py::init<const Body<T>&, const math::RigidTransform<double>&>(),
-            py::arg("bodyB"), py::arg("X_BF"), cls_doc.ctor.doc_2args)
-        .def("SetPoseInBodyFrame", &Class::SetPoseInBodyFrame,
+            cls_doc.ctor.doc_3args_name_bodyB_X_BF)
+        .def(py_init_deprecated<Class, const Body<T>&,
+                 const math::RigidTransform<double>&>(
+                 cls_doc.ctor.doc_deprecated_deprecated_2args_bodyB_X_BF),
+            py::arg("bodyB"), py::arg("X_BF"),
+            cls_doc.ctor.doc_deprecated_deprecated_2args_bodyB_X_BF)
+        .def("SetPoseInParentFrame", &Class::SetPoseInParentFrame,
             py::arg("context"), py::arg("X_PF"),
-            cls_doc.SetPoseInBodyFrame.doc);
+            cls_doc.SetPoseInParentFrame.doc)
+        .def("GetPoseInParentFrame", &Class::GetPoseInParentFrame,
+            py::arg("context"), cls_doc.GetPoseInParentFrame.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("SetPoseInBodyFrame",
+            WrapDeprecated(cls_doc.SetPoseInBodyFrame.doc_deprecated,
+                &Class::SetPoseInBodyFrame),
+            py::arg("context"), py::arg("X_PF"),
+            cls_doc.SetPoseInBodyFrame.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   }
 
   // Bodies.
@@ -292,8 +303,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.floating_position_suffix.doc)
         .def("floating_velocity_suffix", &Class::floating_velocity_suffix,
             cls_doc.floating_velocity_suffix.doc)
-        .def("get_default_mass", &Class::get_default_mass,
-            cls_doc.get_default_mass.doc)
+        .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc)
         .def("get_mass", &Class::get_mass, py::arg("context"),
             cls_doc.get_mass.doc)
         .def("CalcCenterOfMassInBodyFrame", &Class::CalcCenterOfMassInBodyFrame,
@@ -327,8 +337,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Body<T>>(
         m, "RigidBody", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<const SpatialInertia<double>&>(), py::arg("M_BBo_B"),
-            cls_doc.ctor.doc_1args)
+        .def(py_init_deprecated<Class, const SpatialInertia<double>&>(
+                 cls_doc.ctor.doc_deprecated_1args),
+            py::arg("M_BBo_B"), cls_doc.ctor.doc_deprecated_1args)
         .def(py::init<const std::string&, const SpatialInertia<double>&>(),
             py::arg("body_name"), py::arg("M_BBo_B"), cls_doc.ctor.doc_2args)
         .def(py::init<const std::string&, ModelInstanceIndex,
@@ -550,6 +561,69 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_random_translation_distribution.doc);
   }
 
+  // ScrewJoint
+  {
+    using Class = ScrewJoint<T>;
+    constexpr auto& cls_doc = doc.ScrewJoint;
+    auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
+        m, "ScrewJoint", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init([](const std::string& name,
+                          const Frame<T>& frame_on_parent,
+                          const Frame<T>& frame_on_child,
+                          std::optional<double> screw_pitch,
+                          std::optional<double> damping) {
+          if (!screw_pitch.has_value() || !damping.has_value()) {
+            WarnDeprecated(
+                "Defaults for the ScrewJoint constructor are deprecated.",
+                "2023-02-01");
+          }
+          return std::make_unique<Class>(name, frame_on_parent, frame_on_child,
+              screw_pitch.value_or(0.0), damping.value_or(0.0));
+        }),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"), py::arg("screw_pitch") = py::none(),
+            py::arg("damping") = py::none(),
+            (std::string(cls_doc.ctor.doc_5args) +
+                "\n\nThe defaults values for screw_pitch and damping are "
+                "deprecated and will removed on 2023-02-01.")
+                .c_str())
+        .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
+                 const Vector3<double>&, double, double>(),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"), py::arg("axis"), py::arg("screw_pitch"),
+            py::arg("damping"), cls_doc.ctor.doc_6args)
+        .def("screw_pitch", &Class::screw_pitch, cls_doc.screw_pitch.doc)
+        .def("damping", &Class::damping, cls_doc.damping.doc)
+        .def("get_default_translation", &Class::get_default_translation,
+            cls_doc.get_default_translation.doc)
+        .def("set_default_translation", &Class::set_default_translation,
+            py::arg("z"), cls_doc.set_default_translation.doc)
+        .def("get_default_rotation", &Class::get_default_rotation,
+            cls_doc.get_default_rotation.doc)
+        .def("set_default_rotation", &Class::set_default_rotation,
+            py::arg("theta"), cls_doc.set_default_rotation.doc)
+        .def("get_translation", &Class::get_translation, py::arg("context"),
+            cls_doc.get_translation.doc)
+        .def("set_translation", &Class::set_translation, py::arg("context"),
+            py::arg("translation"), cls_doc.set_translation.doc)
+        .def("get_translational_velocity", &Class::get_translational_velocity,
+            py::arg("context"), cls_doc.get_translational_velocity.doc)
+        .def("set_translational_velocity", &Class::set_translational_velocity,
+            py::arg("context"), py::arg("translation_dot"),
+            cls_doc.set_translational_velocity.doc)
+        .def("get_rotation", &Class::get_rotation, py::arg("context"),
+            cls_doc.get_rotation.doc)
+        .def("get_angular_velocity", &Class::get_angular_velocity,
+            py::arg("context"), cls_doc.get_angular_velocity.doc)
+        .def("set_angular_velocity", &Class::set_angular_velocity,
+            py::arg("context"), py::arg("theta_dot"),
+            cls_doc.set_angular_velocity.doc)
+        .def("set_random_pose_distribution",
+            &Class::set_random_pose_distribution, py::arg("theta"),
+            cls_doc.set_random_pose_distribution.doc);
+  }
+
   // RevoluteJoint
   {
     using Class = RevoluteJoint<T>;
@@ -637,9 +711,27 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const RigidTransform<double>&>(),
-            py::arg("name"), py::arg("frame_on_parent_P"),
-            py::arg("frame_on_child_C"), py::arg("X_PC"), cls_doc.ctor.doc)
-        .def("X_PC", &Class::X_PC, cls_doc.X_PC.doc);
+            py::arg("name"), py::arg("frame_on_parent_F"),
+            py::arg("frame_on_child_M"), py::arg("X_FM"), cls_doc.ctor.doc)
+        .def("X_FM", &Class::X_FM, cls_doc.X_FM.doc);
+
+    // Deprecated definitions
+    constexpr char kInitDeprecated[] =
+        "Deprecated:\n    WeldJoint frame notation has changed. Use "
+        "the constructor that uses `frame_on_parent_F`, "
+        "`frame_on_child_M`, and `X_FM`. The deprecated code will be "
+        "removed from Drake on or after 2022-12-01.";
+    cls.def(
+        py_init_deprecated<Class, const string&, const Frame<T>&,
+            const Frame<T>&, const RigidTransform<double>&>(kInitDeprecated),
+        py::arg("name"), py::arg("frame_on_parent_P"),
+        py::arg("frame_on_child_C"), py::arg("X_PC"), kInitDeprecated);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("X_PC", WrapDeprecated(cls_doc.X_PC.doc_deprecated, &Class::X_PC),
+        cls_doc.X_PC.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 
   // Actuators.
@@ -950,6 +1042,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("p_QBcm_E"), cls_doc.ShiftToCenterOfMass.doc)
         .def_static("PointMass", &Class::PointMass, py::arg("p_FQ"),
             cls_doc.PointMass.doc)
+        .def_static("SolidEllipsoid", &Class::SolidEllipsoid, py::arg("a"),
+            py::arg("b"), py::arg("c"), cls_doc.SolidEllipsoid.doc)
         .def_static("SolidSphere", &Class::SolidSphere, py::arg("r"),
             cls_doc.SolidSphere.doc)
         .def_static("HollowSphere", &Class::HollowSphere, py::arg("r"),
@@ -961,6 +1055,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidCylinder", &Class::SolidCylinder, py::arg("r"),
             py::arg("L"), py::arg("b_E") = Vector3<T>::UnitZ().eval(),
             cls_doc.SolidCylinder.doc)
+        .def_static("SolidCapsule", &Class::SolidCapsule, py::arg("r"),
+            py::arg("L"), cls_doc.SolidCapsule.doc)
         .def_static("SolidCylinderAboutEnd", &Class::SolidCylinderAboutEnd,
             py::arg("r"), py::arg("L"), cls_doc.SolidCylinderAboutEnd.doc)
         .def_static("AxiallySymmetric", &Class::AxiallySymmetric, py::arg("J"),

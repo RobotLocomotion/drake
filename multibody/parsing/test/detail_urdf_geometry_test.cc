@@ -6,7 +6,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -239,7 +238,7 @@ class UrdfGeometryTest : public test::DiagnosticPolicyTestBase {
   // <collision> tag.
   void MakeCollisionDocFromString(
       const std::string& collision_spec) {
-    const std::string urdf_harness = R"""(
+    constexpr const char* urdf_harness = R"""(
 <?xml version="1.0"?>
   <collision>
     <geometry>
@@ -675,6 +674,7 @@ TEST_F(UrdfGeometryTest, CollisionSmokeTest) {
     <drake:mesh_resolution_hint value="2.5"/>
     <drake:hydroelastic_modulus value="3.5" />
     <drake:hunt_crossley_dissipation value="3.5" />
+    <drake:relaxation_time value="3.1" />
     <drake:mu_dynamic value="3.25" />
     <drake:mu_static value="3.5" />
   </drake:proximity_properties>)""");
@@ -684,6 +684,8 @@ TEST_F(UrdfGeometryTest, CollisionSmokeTest) {
                          geometry::internal::kElastic, 3.5);
   VerifySingleProperty(properties, geometry::internal::kMaterialGroup,
                        geometry::internal::kHcDissipation, 3.5);
+  VerifySingleProperty(properties, geometry::internal::kMaterialGroup,
+                       geometry::internal::kRelaxationTime, 3.1);
   VerifyFriction(properties, {3.5, 3.25});
 }
 
@@ -746,7 +748,7 @@ TEST_F(UrdfGeometryTest, TestBadBox) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadSphere) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -763,7 +765,7 @@ TEST_F(UrdfGeometryTest, TestBadSphere) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadCylinder) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -788,7 +790,7 @@ TEST_F(UrdfGeometryTest, TestBadCylinder) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadCapsule) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -818,7 +820,7 @@ TEST_F(UrdfGeometryTest, TestBadCapsule) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadEllipsoid) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -851,7 +853,7 @@ TEST_F(UrdfGeometryTest, TestBadEllipsoid) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadMesh) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -886,7 +888,7 @@ TEST_F(UrdfGeometryTest, TestBadShapeCollision) {
 }
 
 TEST_F(UrdfGeometryTest, TestLegacyDrakeCompliance) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
@@ -935,7 +937,7 @@ TEST_F(UrdfGeometryTest, TestBadShapeVisual) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadProperty) {
-  std::string base = R"""(
+  constexpr const char* base = R"""(
   <drake:proximity_properties>
     <drake:mu_dynamic {}/>
   </drake:proximity_properties>)""";

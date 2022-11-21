@@ -71,7 +71,7 @@ TEST_P(ParseTest, Quantities) {
 
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant).AddModelFromFile(filename);
+  Parser(&plant).AddModels(filename);
   const auto& visualizer = MeshcatVisualizerd::AddToBuilder(
       &builder, scene_graph, GetTestEnvironmentMeshcat());
   plant.Finalize();
@@ -91,7 +91,7 @@ TEST_P(ParseTest, Quantities) {
   // Display the object; optionally wait for user input.
   drake::log()->info("Visualize: {}", object_name);
   auto context = diagram->CreateDefaultContext();
-  diagram->Publish(*context);
+  diagram->ForcedPublish(*context);
   if (FLAGS_pause) {
     WaitForNextButtonClick();
   }

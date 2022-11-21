@@ -119,7 +119,7 @@ class TestSystemBase : public System<T> {
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
            PeriodicEventDataComparator>
-  DoGetPeriodicEvents() const final {
+  DoMapPeriodicEventsByTiming(const Context<T>&) const final {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
     return {};
   }
@@ -132,6 +132,13 @@ class TestSystemBase : public System<T> {
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override {}
+
+  void DoFindUniquePeriodicDiscreteUpdatesOrThrow(
+      const char* api_name, const Context<T>& context,
+      std::optional<PeriodicEventData>* timing,
+      EventCollection<DiscreteUpdateEvent<T>>* events) const override {
+    ADD_FAILURE() << "A test called a method that was expected to be unused.";
+  }
 
   void DispatchPublishHandler(
       const Context<T>& context,
@@ -288,10 +295,10 @@ TEST_F(SystemTest, ContextBelongsWithSystem) {
 
   // These just uses a couple of arbitrary methods to test that a Context not
   // created by a System throws the appropriate exception.
-  DRAKE_EXPECT_THROWS_MESSAGE(system2.Publish(*context_),
-                              "Context was not created for.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(system2.ForcedPublish(*context_),
+                              "[^]*#framework-context-system-mismatch.*");
   DRAKE_EXPECT_THROWS_MESSAGE(system2.SetDefaultContext(context_.get()),
-                              "Context was not created for.*");
+                              "[^]*#framework-context-system-mismatch.*");
 }
 
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
@@ -369,7 +376,7 @@ TEST_F(SystemTest, DiscreteUpdate) {
 
   std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.CalcDiscreteVariableUpdates(
+  system_.CalcDiscreteVariableUpdate(
       *context_, event_info->get_discrete_update_events(), update.get());
   EXPECT_EQ(1, system_.get_update_count());
 }

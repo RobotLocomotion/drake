@@ -18,13 +18,15 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":calc_distance_and_time_derivative",
-        ":compliant_contact_manager",
+        ":constraint_specs",
         ":contact_jacobians",
+        ":contact_pair_kinematics",
+        ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
-        ":deformable_model",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
+        ":externally_applied_spatial_force_multiplexer",
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
@@ -34,46 +36,23 @@ drake_cc_package_library(
         ":multibody_plant_core",
         ":point_pair_contact_info",
         ":propeller",
+        ":slicing_and_indexing",
         ":tamsi_solver",
         ":wing",
     ],
 )
 
 drake_cc_library(
-    name = "compliant_contact_manager",
-    srcs = ["compliant_contact_manager.cc"],
-    hdrs = ["compliant_contact_manager.h"],
-    deps = [
-        ":multibody_plant_core",
-        "//multibody/contact_solvers:contact_solver_utils",
-        "//multibody/contact_solvers/sap:sap_contact_problem",
-        "//multibody/contact_solvers/sap:sap_friction_cone_constraint",
-        "//multibody/contact_solvers/sap:sap_limit_constraint",
-        "//multibody/contact_solvers/sap:sap_solver",
-        "//multibody/triangle_quadrature",
-    ],
-)
-
-drake_cc_library(
-    name = "deformable_model",
+    name = "constraint_specs",
     srcs = [
-        "deformable_model.cc",
+        "constraint_specs.cc",
     ],
     hdrs = [
-        "deformable_model.h",
+        "constraint_specs.h",
     ],
     deps = [
-        ":multibody_plant_core",
         "//common:default_scalars",
-        "//common:essential",
-        "//multibody/fem:corotated_model",
-        "//multibody/fem:deformable_body_config",
-        "//multibody/fem:fem_model",
-        "//multibody/fem:fem_state",
-        "//multibody/fem:linear_constitutive_model",
-        "//multibody/fem:linear_simplex_element",
-        "//multibody/fem:simplex_gaussian_quadrature",
-        "//multibody/fem:volumetric_model",
+        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
@@ -112,27 +91,43 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
+        "compliant_contact_manager.cc",
+        "deformable_driver.cc",
+        "deformable_model.cc",
         "discrete_update_manager.cc",
+        "make_discrete_update_manager.cc",
         "multibody_plant.cc",
         "physical_model.cc",
+        "sap_driver.cc",
+        "tamsi_driver.cc",
     ],
     hdrs = [
+        "compliant_contact_manager.h",
+        "deformable_driver.h",
+        "deformable_model.h",
         "discrete_update_manager.h",
+        "make_discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
         "multibody_plant_model_attorney.h",
         "physical_model.h",
+        "sap_driver.h",
         "scalar_convertible_component.h",
+        "tamsi_driver.h",
     ],
     visibility = ["//visibility:private"],
     deps = [
+        ":constraint_specs",
         ":contact_jacobians",
+        ":contact_pair_kinematics",
+        ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_traction",
         ":multibody_plant_config",
+        ":slicing_and_indexing",
         ":tamsi_solver",
         "//common:default_scalars",
         "//common:essential",
@@ -142,6 +137,8 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody/contact_solvers:contact_solver",
         "//multibody/contact_solvers:sparse_linear_operator",
+        "//multibody/contact_solvers/sap",
+        "//multibody/fem",
         "//multibody/hydroelastics:hydroelastic_engine",
         "//multibody/topology:multibody_graph",
         "//multibody/tree",
@@ -161,6 +158,32 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//geometry/query_results:penetration_as_point_pair",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "compliant_contact_manager_tester",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["test/compliant_contact_manager_tester.h"],
+    deps = [
+        ":multibody_plant_core",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_pair_kinematics",
+    srcs = [
+        "contact_pair_kinematics.cc",
+    ],
+    hdrs = [
+        "contact_pair_kinematics.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//math:geometric_transform",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )
@@ -312,6 +335,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "externally_applied_spatial_force_multiplexer",
+    srcs = ["externally_applied_spatial_force_multiplexer.cc"],
+    hdrs = ["externally_applied_spatial_force_multiplexer.h"],
+    deps = [
+        ":externally_applied_spatial_force",
+        "//common:default_scalars",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "calc_distance_and_time_derivative",
     srcs = ["calc_distance_and_time_derivative.cc"],
     hdrs = ["calc_distance_and_time_derivative.h"],
@@ -359,21 +393,109 @@ drake_cc_library(
     ],
 )
 
-drake_cc_googletest(
-    name = "compliant_contact_manager_test",
-    data = [
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
+drake_cc_library(
+    name = "slicing_and_indexing",
+    srcs = ["slicing_and_indexing.cc"],
+    hdrs = ["slicing_and_indexing.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "spheres_stack",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["test/spheres_stack.h"],
+    deps = [
+        ":multibody_plant_config",
+        ":multibody_plant_core",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_properties",
+    srcs = [
+        "contact_properties.cc",
+    ],
+    hdrs = [
+        "contact_properties.h",
     ],
     deps = [
-        ":compliant_contact_manager",
+        "//common:default_scalars",
+        "//geometry:scene_graph_inspector",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compliant_contact_manager_scalar_conversion_test",
+    deps = [
         ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compliant_contact_manager_test",
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        ":spheres_stack",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
         "//systems/primitives:pass_through",
         "//systems/primitives:zero_order_hold",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_driver_test",
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        ":spheres_stack",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_driver_joint_limits_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_driver_multidof_joints_test",
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "tamsi_driver_test",
+    data = ["test/square_surface.obj"],
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":plant",
+        "//common:find_resource",
     ],
 )
 
@@ -403,6 +525,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "slicing_and_indexing_test",
+    deps = [
+        ":slicing_and_indexing",
+        "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
     name = "applied_generalized_force_test",
     data = [
         "//manipulation/models/iiwa_description:models",
@@ -426,6 +556,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "externally_applied_spatial_force_multiplexer_test",
+    deps = [
+        ":externally_applied_spatial_force_multiplexer",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -461,6 +599,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_deprecated_test",
+    data = [
+        "test/split_pendulum.sdf",
+    ],
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_introspection_test",
     data = [
         "//examples/atlas:models",
@@ -472,6 +623,16 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_query_object_connect_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "@fmt",
     ],
 )
 
@@ -538,6 +699,9 @@ drake_cc_googletest(
         ":kuka_iiwa_model_tests",
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
         "//systems/primitives:linear_system",
     ],
 )
@@ -586,6 +750,7 @@ drake_cc_googletest(
         ":plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
         "//multibody/parsing",
     ],
 )
@@ -606,6 +771,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multibody_plant_reaction_forces_test",
+    timeout = "moderate",
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
@@ -672,6 +838,22 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "constraint_specs_test",
+    deps = [
+        ":constraint_specs",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_properties_test",
+    deps = [
+        ":contact_properties",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:scene_graph",
+    ],
+)
+
+drake_cc_googletest(
     name = "contact_results_to_lcm_test",
     deps = [
         ":contact_results_to_lcm",
@@ -688,9 +870,68 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "deformable_boundary_condition_test",
+    deps = [
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:drake_visualizer",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_driver_test",
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_driver_contact_test",
+    deps = [
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_driver_contact_kinematics_test",
+    deps = [
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_driver_multiplexer_test",
+    deps = [
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_integration_test",
+    deps = [
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:drake_visualizer",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
     name = "deformable_model_test",
     deps = [
-        ":deformable_model",
+        ":multibody_plant_core",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework:diagram_builder",
     ],
@@ -705,6 +946,7 @@ drake_cc_googletest(
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//multibody/benchmarks/free_body",
         "//multibody/test_utilities:floating_body_plant",
         "//systems/analysis:simulator",
@@ -754,6 +996,7 @@ drake_cc_googletest(
     name = "joint_locking_test",
     deps = [
         ":plant",
+        "//systems/analysis:simulator",
     ],
 )
 
@@ -792,7 +1035,7 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
-        "//examples/multibody/rolling_sphere:make_rolling_sphere_plant",
+        "//examples/multibody/rolling_sphere:populate_ball_plant",
     ],
 )
 
@@ -863,6 +1106,15 @@ drake_cc_googletest(
         ":multibody_plant_config_functions",
         "//common/test_utilities:expect_throws_message",
         "//common/yaml",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_discrete_update_manager_test",
+    deps = [
+        ":multibody_plant_core",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:is_dynamic_castable",
     ],
 )
 

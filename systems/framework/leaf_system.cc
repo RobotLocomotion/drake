@@ -258,7 +258,8 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
   const auto orig_unknown = unknown;
   for (const auto& input_output : orig_unknown) {
     // Get the CacheEntry associated with the output port in this pair.
-    const auto& output = this->get_output_port(input_output.second);
+    const OutputPortBase& output = this->GetOutputPortBaseOrThrow(
+        __func__, input_output.second, /* warn_deprecated = */ false);
     DRAKE_ASSERT(typeid(output) == typeid(LeafOutputPort<T>));
     const auto& leaf_output = static_cast<const LeafOutputPort<T>&>(output);
     const auto& cache_entry = leaf_output.cache_entry();
@@ -269,7 +270,8 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
       continue;  // Leave this one "unknown".
 
     // Probe the dependency path and believe the result.
-    const auto& input = this->get_input_port(input_output.first);
+    const InputPortBase& input = this->GetInputPortBaseOrThrow(
+        __func__, input_output.first, /* warn_deprecated = */ false);
     const auto& input_tracker = context->get_tracker(input.ticket());
     auto& value = cache_entry.get_mutable_cache_entry_value(*context);
     value.mark_up_to_date();
@@ -336,12 +338,9 @@ T LeafSystem<T>::DoCalcWitnessValue(
 
 template <typename T>
 void LeafSystem<T>::AddTriggeredWitnessFunctionToCompositeEventCollection(
-    Event<T>* event,
-    CompositeEventCollection<T>* events) const {
+    Event<T>* event, CompositeEventCollection<T>* events) const {
   DRAKE_DEMAND(event != nullptr);
-  DRAKE_DEMAND(event->get_event_data() != nullptr);
-  DRAKE_DEMAND(dynamic_cast<const WitnessTriggeredEventData<T>*>(
-      event->get_event_data()) != nullptr);
+  DRAKE_DEMAND(event->template has_event_data<WitnessTriggeredEventData<T>>());
   DRAKE_DEMAND(events != nullptr);
   event->AddToComposite(events);
 }
@@ -352,13 +351,13 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
     CompositeEventCollection<T>* events, T* time) const {
   T min_time = std::numeric_limits<double>::infinity();
 
-  if (periodic_events_.empty()) {
+  if (!periodic_events_.HasEvents()) {
     *time = min_time;
     return;
   }
 
   // Calculate which events to fire. Use an InlinedVector so that small-ish
-  // numbers events can be processed without heap allocations. Our threshold
+  // numbers of events can be processed without heap allocations. Our threshold
   // for "small" is the same amount that would cause an EventCollection to
   // grow beyond its pre-allocated size.
   using NextEventsVector = absl::InlinedVector<
@@ -367,17 +366,29 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
 
   // Find the minimum next sample time across all declared periodic events,
   // and store the set of declared events that will occur at that time.
-  for (const auto& event_pair : periodic_events_) {
-    const PeriodicEventData& event_data = event_pair.first;
-    const Event<T>* const event = event_pair.second.get();
-    const T t = GetNextSampleTime(event_data, context.get_time());
-    if (t < min_time) {
-      min_time = t;
-      next_events = {event};
-    } else if (t == min_time) {
-      next_events.push_back(event);
+  // There are three lists to run through in a CompositeEventCollection.
+
+  // We give absl hidden visibility in Drake so can't capture the absl vector
+  // (otherwise we suffer a warning). Works as a parameter though.
+  auto scan_events = [&context, &min_time](const auto& typed_events,
+                                           NextEventsVector* event_list) {
+    for (const auto* event : typed_events.get_events()) {
+      const PeriodicEventData* event_data =
+          event->template get_event_data<PeriodicEventData>();
+      DRAKE_DEMAND(event_data != nullptr);
+      const T t = GetNextSampleTime(*event_data, context.get_time());
+      if (t < min_time) {
+        min_time = t;
+        *event_list = {event};
+      } else if (t == min_time) {
+        event_list->push_back(event);
+      }
     }
-  }
+  };
+
+  scan_events(periodic_events_.get_publish_events(), &next_events);
+  scan_events(periodic_events_.get_discrete_update_events(), &next_events);
+  scan_events(periodic_events_.get_unrestricted_update_events(), &next_events);
 
   // Write out the events that fire at min_time.
   *time = min_time;
@@ -508,19 +519,19 @@ int LeafSystem<T>::DeclareAbstractParameter(const AbstractValue& model_value) {
 }
 
 template <typename T>
-void LeafSystem<T>::DeclarePeriodicPublish(
+void LeafSystem<T>::DeclarePeriodicPublishNoHandler(
     double period_sec, double offset_sec) {
   DeclarePeriodicEvent(period_sec, offset_sec, PublishEvent<T>());
 }
 
 template <typename T>
-void LeafSystem<T>::DeclarePeriodicDiscreteUpdate(
+void LeafSystem<T>::DeclarePeriodicDiscreteUpdateNoHandler(
     double period_sec, double offset_sec) {
   DeclarePeriodicEvent(period_sec, offset_sec, DiscreteUpdateEvent<T>());
 }
 
 template <typename T>
-void LeafSystem<T>::DeclarePeriodicUnrestrictedUpdate(
+void LeafSystem<T>::DeclarePeriodicUnrestrictedUpdateNoHandler(
     double period_sec, double offset_sec) {
   DeclarePeriodicEvent(period_sec, offset_sec, UnrestrictedUpdateEvent<T>());
 }
@@ -602,9 +613,9 @@ DiscreteStateIndex LeafSystem<T>::DeclareDiscreteState(
 
 template <typename T>
 AbstractStateIndex LeafSystem<T>::DeclareAbstractState(
-    const AbstractValue& abstract_state) {
+    const AbstractValue& model_value) {
   const AbstractStateIndex index(model_abstract_states_.size());
-  model_abstract_states_.AddModel(index, abstract_state.Clone());
+  model_abstract_states_.AddModel(index, model_value.Clone());
   this->AddAbstractState(index);
   return index;
 }
@@ -644,6 +655,17 @@ InputPort<T>& LeafSystem<T>::DeclareAbstractInputPort(
   return this->DeclareInputPort(NextInputPortName(std::move(name)),
                                 kAbstractValued, 0 /* size */);
 }
+
+template <typename T>
+void LeafSystem<T>::DeprecateInputPort(
+    const InputPort<T>& port, std::string message) {
+  InputPort<T>& mutable_port = const_cast<InputPort<T>&>(
+      this->get_input_port(port.get_index()));
+  DRAKE_THROW_UNLESS(&mutable_port == &port);
+  DRAKE_THROW_UNLESS(mutable_port.get_deprecation() == std::nullopt);
+  mutable_port.set_deprecation({std::move(message)});
+}
+
 
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
@@ -719,6 +741,16 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
         output->SetFrom(context.get_abstract_state().get_value(state_index));
       },
       {this->abstract_state_ticket(state_index)});
+}
+
+template <typename T>
+void LeafSystem<T>::DeprecateOutputPort(
+    const OutputPort<T>& port, std::string message) {
+  OutputPort<T>& mutable_port = const_cast<OutputPort<T>&>(
+      this->get_output_port(port.get_index()));
+  DRAKE_THROW_UNLESS(&mutable_port == &port);
+  DRAKE_THROW_UNLESS(mutable_port.get_deprecation() == std::nullopt);
+  mutable_port.set_deprecation({std::move(message)});
 }
 
 template <typename T>
@@ -808,12 +840,28 @@ std::unique_ptr<AbstractValue> LeafSystem<T>::DoAllocateInput(
 
 template <typename T>
 std::map<PeriodicEventData, std::vector<const Event<T>*>,
-    PeriodicEventDataComparator> LeafSystem<T>::DoGetPeriodicEvents() const {
+         PeriodicEventDataComparator>
+LeafSystem<T>::DoMapPeriodicEventsByTiming(const Context<T>&) const {
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> periodic_events_map;
-  for (const auto& i : periodic_events_) {
-    periodic_events_map[i.first].push_back(i.second.get());
-  }
+           PeriodicEventDataComparator>
+      periodic_events_map;
+
+  // Build a mapping from (offset,period) to the periodic events sharing
+  // that trigger. There are three lists of different types in a
+  // CompositeEventCollection; we use this generic lambda for all.
+  auto map_events = [&periodic_events_map](const auto& typed_events) {
+    for (const auto* event : typed_events.get_events()) {
+      const PeriodicEventData* event_data =
+          event->template get_event_data<PeriodicEventData>();
+      DRAKE_DEMAND(event_data != nullptr);
+      periodic_events_map[*event_data].push_back(event);
+    }
+  };
+
+  map_events(periodic_events_.get_publish_events());
+  map_events(periodic_events_.get_discrete_update_events());
+  map_events(periodic_events_.get_unrestricted_update_events());
+
   return periodic_events_map;
 }
 
@@ -886,6 +934,54 @@ void LeafSystem<T>::DoApplyUnrestrictedUpdate(
   context->get_mutable_state().SetFrom(*state);
 }
 
+// The Diagram implementation of this method recursively visits sub-Diagrams
+// until we get to this LeafSystem implementation, where we can actually look
+// at the periodic discrete update Events. When no timing has yet been
+// established (`timing` parameter is empty), the first LeafSystem
+// to find a periodic discrete update event sets the timing for all the rest.
+// After that every periodic discrete update event must have the same timing
+// or this method throws an error message. If the timing is good, we return
+// all the periodic discrete update events we find in this LeafSystem.
+//
+// Unit testing for this method is in diagram_test.cc where it is used in
+// the leaf computation for the Diagram EvalUniquePeriodicDiscreteUpdate()
+// recursion.
+template <typename T>
+void LeafSystem<T>::DoFindUniquePeriodicDiscreteUpdatesOrThrow(
+    const char* api_name, const Context<T>& context,
+    std::optional<PeriodicEventData>* timing,
+    EventCollection<DiscreteUpdateEvent<T>>* events) const {
+  unused(context);
+  auto& leaf_collection =
+      dynamic_cast<LeafEventCollection<DiscreteUpdateEvent<T>>&>(*events);
+
+  for (const DiscreteUpdateEvent<T>* event :
+       periodic_events_.get_discrete_update_events().get_events()) {
+    DRAKE_DEMAND(event->get_trigger_type() == TriggerType::kPeriodic);
+    const PeriodicEventData* const event_timing =
+        event->template get_event_data<PeriodicEventData>();
+    DRAKE_DEMAND(event_timing != nullptr);
+    if (!timing->has_value())  // First find sets the required timing.
+      *timing = *event_timing;
+    if (!(*event_timing == *(*timing))) {
+      throw std::logic_error(fmt::format(
+          "{}(): found more than one "
+          "periodic timing that triggers discrete update events. "
+          "Timings were (offset,period)=({},{}) and ({},{}).",
+          api_name, (*timing)->offset_sec(), (*timing)->period_sec(),
+          event_timing->offset_sec(), event_timing->period_sec()));
+    }
+    leaf_collection.AddEvent(*event);
+  }
+}
+
+template <typename T>
+void LeafSystem<T>::DoGetPeriodicEvents(
+      const Context<T>&,
+      CompositeEventCollection<T>* events) const {
+  events->SetFrom(periodic_events_);
+}
+
 template <typename T>
 void LeafSystem<T>::DoGetPerStepEvents(
     const Context<T>&,
@@ -899,7 +995,6 @@ void LeafSystem<T>::DoGetInitializationEvents(
     CompositeEventCollection<T>* events) const {
   events->SetFrom(initialization_events_);
 }
-
 
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(

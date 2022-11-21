@@ -1,0 +1,321 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "symbolic",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":chebyshev_polynomial",
+        ":codegen",
+        ":expression",
+        ":generic_polynomial",
+        ":latex",
+        ":monomial_util",
+        ":polynomial",
+        ":polynomial_basis",
+        ":rational_function",
+        ":replace_bilinear_terms",
+        ":simplification",
+        ":trigonometric_polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "expression",
+    hdrs = ["expression.h"],
+    deps = [
+        "//common/symbolic/expression",
+    ],
+)
+
+drake_cc_library(
+    name = "chebyshev_polynomial",
+    srcs = ["chebyshev_polynomial.cc"],
+    hdrs = ["chebyshev_polynomial.h"],
+    deps = [
+        ":expression",
+        ":polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "chebyshev_polynomial_test",
+    deps = [
+        ":chebyshev_polynomial",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_library(
+    name = "codegen",
+    srcs = ["codegen.cc"],
+    hdrs = ["codegen.h"],
+    deps = [
+        ":expression",
+    ],
+)
+
+drake_cc_googletest(
+    name = "codegen_test",
+    deps = [
+        ":codegen",
+    ],
+)
+
+drake_cc_library(
+    name = "generic_polynomial",
+    srcs = [
+        "chebyshev_basis_element.cc",
+        "generic_polynomial.cc",
+        "monomial_basis_element.cc",
+        "polynomial_basis_element.cc",
+    ],
+    hdrs = [
+        "chebyshev_basis_element.h",
+        "generic_polynomial.h",
+        "monomial_basis_element.h",
+        "polynomial_basis_element.h",
+    ],
+    deps = [
+        ":chebyshev_polynomial",
+        ":expression",
+    ],
+)
+
+drake_cc_googletest(
+    name = "chebyshev_basis_element_test",
+    deps = [
+        ":generic_polynomial",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "generic_polynomial_test",
+    deps = [
+        ":generic_polynomial",
+        ":polynomial_basis",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "monomial_basis_element_test",
+    deps = [
+        ":generic_polynomial",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "polynomial_basis_element_test",
+    deps = [
+        ":generic_polynomial",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_library(
+    name = "latex",
+    srcs = ["latex.cc"],
+    hdrs = ["latex.h"],
+    deps = [
+        ":expression",
+    ],
+)
+
+drake_cc_googletest(
+    name = "latex_test",
+    deps = [
+        ":expression",
+        ":latex",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_library(
+    name = "monomial_util",
+    srcs = ["monomial_util.cc"],
+    hdrs = ["monomial_util.h"],
+    deps = [
+        ":polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "monomial_util_test",
+    deps = [
+        ":monomial_util",
+    ],
+)
+
+drake_cc_library(
+    name = "polynomial",
+    srcs = [
+        "decompose.cc",
+        "monomial.cc",
+        "polynomial.cc",
+    ],
+    hdrs = [
+        "decompose.h",
+        "monomial.h",
+        "polynomial.h",
+    ],
+    deps = [
+        ":expression",
+    ],
+)
+
+drake_cc_googletest(
+    name = "decompose_test",
+    deps = [
+        ":polynomial",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "monomial_test",
+    deps = [
+        ":monomial_util",
+        ":polynomial",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "polynomial_test",
+    deps = [
+        ":monomial_util",
+        ":polynomial",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "polynomial_matrix_test",
+    deps = [
+        ":polynomial",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_library(
+    name = "polynomial_basis",
+    hdrs = ["polynomial_basis.h"],
+    deps = [
+        ":generic_polynomial",
+        ":monomial_util",
+        ":polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "polynomial_basis_test",
+    deps = [
+        ":polynomial_basis",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_library(
+    name = "rational_function",
+    srcs = ["rational_function.cc"],
+    hdrs = ["rational_function.h"],
+    deps = [
+        ":polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rational_function_test",
+    deps = [
+        ":rational_function",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rational_function_matrix_test",
+    deps = [
+        ":rational_function",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_library(
+    name = "replace_bilinear_terms",
+    srcs = ["replace_bilinear_terms.cc"],
+    hdrs = ["replace_bilinear_terms.h"],
+    interface_deps = [
+        "//common:essential",
+        "//common/symbolic:expression",
+    ],
+    deps = [
+        "//common/symbolic:polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "replace_bilinear_terms_test",
+    deps = [
+        ":replace_bilinear_terms",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_library(
+    name = "simplification",
+    srcs = ["simplification.cc"],
+    hdrs = ["simplification.h"],
+    deps = [
+        ":expression",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simplification_test",
+    deps = [
+        ":simplification",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_library(
+    name = "trigonometric_polynomial",
+    srcs = ["trigonometric_polynomial.cc"],
+    hdrs = ["trigonometric_polynomial.h"],
+    deps = [
+        ":expression",
+        ":rational_function",
+    ],
+)
+
+drake_cc_googletest(
+    name = "trigonometric_polynomial_test",
+    deps = [
+        ":trigonometric_polynomial",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+add_lint_tests()

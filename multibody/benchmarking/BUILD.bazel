@@ -1,0 +1,127 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/performance:defs.bzl",
+    "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
+)
+load(
+    "@drake//tools/skylark:test_tags.bzl",
+    "gurobi_test_tags",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_googlebench_binary(
+    name = "acrobot",
+    srcs = ["acrobot.cc"],
+    add_test_rule = True,
+    deps = [
+        "//common:essential",
+        "//common:find_resource",
+        "//examples/acrobot:acrobot_plant",
+        "//math:autodiff",
+        "//math:gradient",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+        "//multibody/parsing",
+        "//tools/performance:fixture_common",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "acrobot_experiment",
+    googlebench_binary = ":acrobot",
+)
+
+drake_cc_googlebench_binary(
+    name = "cassie",
+    srcs = ["cassie.cc"],
+    add_test_rule = True,
+    data = ["cassie_v2.urdf"],
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//common:essential",
+        "//common:find_resource",
+        "//math:gradient",
+        "//multibody/parsing:parser",
+        "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "cassie_experiment",
+    googlebench_binary = ":cassie",
+)
+
+drake_cc_googlebench_binary(
+    name = "iiwa_relaxed_pos_ik",
+    srcs = ["iiwa_relaxed_pos_ik.cc"],
+    add_test_rule = True,
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//common:find_resource",
+        "//multibody/inverse_kinematics",
+        "//multibody/parsing",
+        "//solvers:solve",
+        "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "iiwa_relaxed_pos_ik_experiment",
+    googlebench_binary = ":iiwa_relaxed_pos_ik",
+)
+
+drake_cc_googlebench_binary(
+    name = "homecart_global_ik",
+    srcs = ["homecart_global_ik.cc"],
+    add_test_rule = True,
+    data = [
+        "//manipulation/models/tri_homecart:models",
+        "//manipulation/models/ur3e:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    test_tags = gurobi_test_tags(),
+    deps = [
+        "//common:find_resource",
+        "//multibody/inverse_kinematics",
+        "//multibody/parsing",
+        "//solvers:solve",
+        "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "homecart_global_ik_experiment",
+    googlebench_binary = ":homecart_global_ik",
+)
+
+drake_cc_googlebench_binary(
+    name = "position_constraint",
+    srcs = ["position_constraint.cc"],
+    add_test_rule = True,
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//multibody/inverse_kinematics:kinematic_evaluators",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//tools/performance:fixture_common",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "position_constraint_experiment",
+    googlebench_binary = ":position_constraint",
+)
+
+add_lint_tests()

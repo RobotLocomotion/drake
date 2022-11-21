@@ -1,11 +1,11 @@
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
 
+#include <filesystem>
 #include <fstream>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -16,7 +16,7 @@ namespace render_gltf_client {
 namespace internal {
 namespace {
 
-namespace fs = drake::filesystem;
+namespace fs = std::filesystem;
 
 // A concrete implementation of HttpService that does nothing.
 class EmptyService : public HttpService {
@@ -26,7 +26,6 @@ class EmptyService : public HttpService {
  protected:
   HttpResponse DoPostForm(
       const std::string& /* temp_directory */, const std::string& /* url */,
-      int /* port */,
       const DataFieldsMap& /* data_fields */,
       const FileFieldsMap& /* file_fields */,
       bool /* verbose */ = false) override {
@@ -59,10 +58,9 @@ class HttpServicePostFormTest : public ::testing::Test {
       actual_fields.emplace(field_name, std::move(payload));
     }
     EmptyService empty_service;
-    const std::string url = "http://127.0.0.1/render";
-    const int port = 8000;
+    const std::string url = "http://127.0.0.1:8000/render";
     const DataFieldsMap string_fields;
-    empty_service.PostForm(temp_dir_, url, port, string_fields, actual_fields);
+    empty_service.PostForm(temp_dir_, url, string_fields, actual_fields);
   }
 
  protected:

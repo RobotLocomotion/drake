@@ -36,6 +36,9 @@
             <size>0.486 0.35 0.581</size>
           </box>
         </geometry>
+        <drake:proximity_properties>
+          <drake:QQQ_dynamic/>
+        </drake:proximity_properties>
       </collision>
       <drake:proximity_properties/>
     </link>

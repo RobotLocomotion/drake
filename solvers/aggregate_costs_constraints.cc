@@ -4,6 +4,8 @@
 #include <limits>
 #include <map>
 
+#include <fmt/format.h>
+
 namespace drake {
 namespace solvers {
 namespace {
@@ -197,6 +199,39 @@ void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
       }
     }
   }
+}
+
+void AggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,
+                                 const VectorX<symbolic::Variable>& vars,
+                                 Eigen::SparseMatrix<double>* A_new,
+                                 VectorX<symbolic::Variable>* vars_new) {
+  // First select the unique variables from decision_vars.
+  vars_new->resize(vars.rows());
+  // vars_to_vars_new records the mapping from vars to vars_new. Namely
+  // vars[i] = (*vars_new)[vars_to_vars_new[vars[i].get_id()]]
+  std::unordered_map<symbolic::Variable::Id, int> vars_to_vars_new;
+  int unique_var_count = 0;
+  for (int i = 0; i < vars.rows(); ++i) {
+    const bool seen_already = vars_to_vars_new.count(vars(i).get_id());
+    if (!seen_already) {
+      (*vars_new)(unique_var_count) = vars(i);
+      vars_to_vars_new.emplace(vars(i).get_id(), unique_var_count);
+      unique_var_count++;
+    }
+  }
+  // A * vars = A_new * vars_new.
+  // A_new_triplets are the non-zero triplets in A_new.
+  std::vector<Eigen::Triplet<double>> A_new_triplets;
+  A_new_triplets.reserve(A.nonZeros());
+  for (int i = 0; i < A.cols(); ++i) {
+    const int A_new_col = vars_to_vars_new.at(vars(i).get_id());
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+      A_new_triplets.emplace_back(it.row(), A_new_col, it.value());
+    }
+  }
+  *A_new = Eigen::SparseMatrix<double>(A.rows(), unique_var_count);
+  A_new->setFromTriplets(A_new_triplets.begin(), A_new_triplets.end());
+  vars_new->conservativeResize(unique_var_count);
 }
 
 const Binding<QuadraticCost>* FindNonconvexQuadraticCost(

@@ -11,8 +11,6 @@ using drake::systems::kVectorValued;
 JacoStatusSender::JacoStatusSender(int num_joints, int num_fingers)
     : num_joints_(num_joints),
       num_fingers_(num_fingers) {
-  state_input_ = &DeclareInputPort(
-      "state", kVectorValued, (num_joints_ + num_fingers_) * 2);
   position_input_ = &DeclareInputPort(
       "position", kVectorValued, num_joints_ + num_fingers_);
   velocity_input_ = &DeclareInputPort(
@@ -23,17 +21,19 @@ JacoStatusSender::JacoStatusSender(int num_joints, int num_fingers)
       "torque_external", kVectorValued, num_joints_ + num_fingers_);
   current_input_ = &DeclareInputPort(
       "current", kVectorValued, num_joints_ + num_fingers_);
+  time_measured_input_ = &DeclareInputPort(
+      "time_measured", kVectorValued, 1);
   DeclareAbstractOutputPort(
       "lcmt_jaco_status", &JacoStatusSender::CalcOutput);
 }
 
-const systems::InputPort<double>&
-JacoStatusSender::get_state_input_port() const {
-  return *state_input_;
-}
-
 void JacoStatusSender::CalcOutput(
     const systems::Context<double>& context, lcmt_jaco_status* output) const {
+  const double time_measured =
+      get_time_measured_input_port().HasValue(context)
+          ? get_time_measured_input_port().Eval(context)[0]
+          : context.get_time();
+
   const Eigen::VectorXd zero_state =
       Eigen::VectorXd::Zero(num_joints_ + num_fingers_);
   const auto& torque =
@@ -50,7 +50,7 @@ void JacoStatusSender::CalcOutput(
       zero_state;
 
   lcmt_jaco_status& status = *output;
-  status.utime = context.get_time() * 1e6;
+  status.utime = time_measured * 1e6;
 
   status.num_joints = num_joints_;
   status.joint_position.resize(num_joints_, 0);
@@ -65,31 +65,6 @@ void JacoStatusSender::CalcOutput(
   status.finger_torque.resize(num_fingers_, 0);
   status.finger_torque_external.resize(num_fingers_, 0);
   status.finger_current.resize(num_fingers_, 0);
-
-  if (state_input_->HasValue(context)) {
-    const auto& state = state_input_->Eval(context);
-    for (int i = 0; i < num_joints_; ++i) {
-      status.joint_position[i] = state(i);
-      // It seems like the Jaco reports half of the actual angular
-      // velocity.  Fix that up here.  Note bug-for-bug compatibility
-      // implemented in JacoStatusReceiver.
-      status.joint_velocity[i] = state(i + num_joints_ + num_fingers_) / 2;
-      status.joint_torque[i] = torque(i);
-      status.joint_torque_external[i] = torque_external(i);
-      status.joint_current[i] = current(i);
-    }
-
-    for (int i = 0; i < num_fingers_; ++i) {
-      status.finger_position[i] = state(i + num_joints_) * kFingerUrdfToSdk;
-      status.finger_velocity[i] =
-          state.tail(num_fingers_)(i) * kFingerUrdfToSdk;
-      status.finger_torque[i] = torque(num_joints_ + i);
-      status.finger_torque_external[i] = torque_external(num_joints_ + i);
-      status.finger_current[i] = current(num_joints_ + i);
-    }
-
-    return;
-  }
 
   const auto& position = position_input_->Eval(context);
   const auto& velocity = velocity_input_->Eval(context);

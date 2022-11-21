@@ -26,7 +26,10 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/generic_polynomial.h"
+#include "drake/common/symbolic/polynomial.h"
+#include "drake/common/symbolic/rational_function.h"
 
 namespace drake {
 namespace symbolic {

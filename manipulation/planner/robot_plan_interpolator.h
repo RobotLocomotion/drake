@@ -73,18 +73,24 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   void Initialize(double plan_start_time, const VectorX<double>& q0,
                   systems::State<double>* state) const;
 
+  /**
+   * Updates the plan if there is a new message on the input port.
+   * Normally this is done automatically by a Simulator; here we invoke
+   * the same periodic event handler that the Simulator would use.
+   */
+  void UpdatePlan(systems::Context<double>* context) const {
+    UpdatePlanOnNewMessage(*context, &context->get_mutable_state());
+  }
+
   const multibody::MultibodyPlant<double>& plant() { return plant_; }
-
- protected:
-  void SetDefaultState(const systems::Context<double>& context,
-                       systems::State<double>* state) const override;
-
-  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-            const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
-            systems::State<double>* state) const override;
 
  private:
   struct PlanData;
+
+  // Updates plan when a new message arrives.
+  systems::EventStatus UpdatePlanOnNewMessage(
+      const systems::Context<double>& context,
+      systems::State<double>* state) const;
 
   // Calculator method for the state output port.
   void OutputState(const systems::Context<double>& context,

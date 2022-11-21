@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
@@ -86,8 +86,9 @@ TEST_P(TestRpyLimitsFixture, TestRpyLimits) {
             const Eigen::VectorXd& lb = b.evaluator()->lower_bound();
             const Eigen::VectorXd& ub = b.evaluator()->upper_bound();
             for (int i = 0; i < x.size(); i++) {
-              EXPECT_GE(x(i), lb(i));
-              EXPECT_LE(x(i), ub(i));
+              constexpr double threshold = 1e-15;
+              EXPECT_GE(x(i), lb(i) - threshold);
+              EXPECT_LE(x(i), ub(i) + threshold);
             }
           }
         }

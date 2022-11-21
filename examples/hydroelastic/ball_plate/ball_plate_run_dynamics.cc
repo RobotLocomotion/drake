@@ -4,15 +4,14 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/examples/hydroelastic/ball_plate/make_ball_plate_plant.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 DEFINE_double(simulation_time, 0.4,
               "Desired duration of the simulation in seconds.");
@@ -99,9 +98,7 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 12);
   DRAKE_DEMAND(plant.num_positions() == 14);
 
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph,
-                                         /* lcm */ nullptr);
+  visualization::AddDefaultVisualization(&builder);
 
   auto diagram = builder.Build();
   auto simulator = MakeSimulatorFromGflags(*diagram);

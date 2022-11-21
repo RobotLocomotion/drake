@@ -15,8 +15,8 @@ namespace {
 
 GTEST_TEST(UrdfDynamicsTest, AllTests) {
   multibody::MultibodyPlant<double> mbp(0.0);
-  multibody::Parser(&mbp).AddModelFromFile(FindResourceOrThrow(
-      "drake/examples/pendulum/Pendulum.urdf"));
+  multibody::Parser(&mbp).AddModels(
+      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"));
   mbp.Finalize();
   PendulumPlant<double> p;
 

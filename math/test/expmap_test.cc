@@ -7,7 +7,6 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
-using Eigen::AutoDiffScalar;
 using Eigen::Matrix3d;
 using Eigen::Vector4d;
 

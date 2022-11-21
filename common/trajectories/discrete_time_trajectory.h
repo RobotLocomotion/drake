@@ -52,7 +52,7 @@ discrete sample time, then this means u(t) = -K(t_s)*x(t_s) instead of u(t) =
 -K(t_s)*x(t).  Using x(t_s) and having a true zero-order hold on u(t) is the
 correct model for the discrete-time LQR result.
 
-@tparam_default_scalars
+@tparam_default_scalar
 */
 template <typename T>
 class DiscreteTimeTrajectory final : public Trajectory<T> {

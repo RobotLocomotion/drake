@@ -23,7 +23,6 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":autodiff",
-        ":autodiffxd_make_coherent",
         ":bit_cast",
         ":cond",
         ":copyable_unique_ptr",
@@ -52,11 +51,8 @@ drake_cc_package_library(
         ":scope_exit",
         ":scoped_singleton",
         ":sorted_pair",
-        ":symbolic",
-        ":symbolic_decompose",
-        ":symbolic_latex",
-        ":symbolic_trigonometric_polynomial",
         ":temp_directory",
+        ":timer",
         ":type_safe_index",
         ":unused",
         ":value",
@@ -171,130 +167,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "autodiffxd_make_coherent",
-    hdrs = ["autodiffxd_make_coherent.h"],
-    deps = [
-        ":autodiff",
-        ":symbolic",
-    ],
-)
-
-drake_cc_library(
     name = "polynomial",
     srcs = ["polynomial.cc"],
-    hdrs = [
-        "polynomial.h",
-        "trig_poly.h",
-    ],
+    hdrs = ["polynomial.h"],
     deps = [
         ":autodiff",
         ":default_scalars",
         ":essential",
-        ":symbolic",
-    ],
-)
-
-drake_cc_library(
-    name = "symbolic",
-    # We only expose `symbolic.h` to the users of symbolic target and hide the
-    # rest of the header files by adding them in `srcs` section.
-    srcs = [
-        "symbolic.cc",
-        "symbolic_chebyshev_basis_element.cc",
-        "symbolic_chebyshev_basis_element.h",
-        "symbolic_chebyshev_polynomial.cc",
-        "symbolic_chebyshev_polynomial.h",
-        "symbolic_codegen.cc",
-        "symbolic_codegen.h",
-        "symbolic_decompose.cc",
-        "symbolic_environment.cc",
-        "symbolic_environment.h",
-        "symbolic_expression.cc",
-        "symbolic_expression.h",
-        "symbolic_expression_cell.cc",
-        "symbolic_expression_cell.h",
-        "symbolic_expression_visitor.h",
-        "symbolic_formula.cc",
-        "symbolic_formula.h",
-        "symbolic_formula_cell.cc",
-        "symbolic_formula_cell.h",
-        "symbolic_formula_visitor.h",
-        "symbolic_generic_polynomial.cc",
-        "symbolic_generic_polynomial.h",
-        "symbolic_ldlt.cc",
-        "symbolic_ldlt.h",
-        "symbolic_monomial.cc",
-        "symbolic_monomial.h",
-        "symbolic_monomial_basis_element.cc",
-        "symbolic_monomial_basis_element.h",
-        "symbolic_monomial_util.cc",
-        "symbolic_monomial_util.h",
-        "symbolic_polynomial.cc",
-        "symbolic_polynomial.h",
-        "symbolic_polynomial_basis.h",
-        "symbolic_polynomial_basis_element.cc",
-        "symbolic_polynomial_basis_element.h",
-        "symbolic_rational_function.cc",
-        "symbolic_rational_function.h",
-        "symbolic_simplification.cc",
-        "symbolic_simplification.h",
-        "symbolic_variable.cc",
-        "symbolic_variable.h",
-        "symbolic_variables.cc",
-        "symbolic_variables.h",
-    ],
-    hdrs = [
-        "symbolic.h",
-        # TODO(#13833) We should split out this header into its own library,
-        # once we have the new subdirectory established.
-        "symbolic_decompose.h",
-    ],
-    deps = [
-        ":bit_cast",
-        ":cond",
-        ":drake_bool",
-        ":dummy_value",
-        ":essential",
-        ":extract_double",
-        ":hash",
-        ":random",
-        "@fmt",
-    ],
-)
-
-# TODO(#13833) This library name is vestigial.  Once we are finished with the
-# new file layout in drake/common/symbolic/..., then we should deprecate this
-# library name.
-drake_cc_library(
-    name = "symbolic_decompose",
-    deps = [
-        ":symbolic",
-    ],
-)
-
-drake_cc_library(
-    name = "symbolic_latex",
-    srcs = [
-        "symbolic_latex.cc",
-    ],
-    hdrs = [
-        "symbolic_latex.h",
-    ],
-    deps = [
-        ":symbolic",
-    ],
-)
-
-drake_cc_library(
-    name = "symbolic_trigonometric_polynomial",
-    srcs = [
-        "symbolic_trigonometric_polynomial.cc",
-    ],
-    hdrs = [
-        "symbolic_trigonometric_polynomial.h",
-    ],
-    deps = [
-        ":symbolic",
+        "//common/symbolic:expression",
     ],
 )
 
@@ -304,7 +184,7 @@ drake_cc_library(
     deps = [
         ":autodiff",
         ":essential",
-        ":symbolic",
+        "//common/symbolic:expression",
     ],
 )
 
@@ -371,21 +251,6 @@ drake_cc_library(
     visibility = ["//tools/install/libdrake:__pkg__"],
 )
 
-# The drake::filesystem support is intended ONLY for use within Drake's *.cc
-# files -- it is not a public dependency of Drake.  As such, we compile it with
-# hidden visibility and mark it internal.
-drake_cc_library(
-    name = "filesystem",
-    srcs = ["filesystem.cc"],
-    hdrs = ["filesystem.h"],
-    copts = ["-fvisibility=hidden"],
-    internal = True,
-    visibility = ["//:__subpackages__"],
-    deps = [
-        "@ghc_filesystem",
-    ],
-)
-
 drake_cc_library(
     name = "find_runfiles",
     srcs = ["find_runfiles.cc"],
@@ -393,7 +258,6 @@ drake_cc_library(
     interface_deps = [],
     deps = [
         ":essential",
-        ":filesystem",
         "@bazel_tools//tools/cpp/runfiles",
     ],
 )
@@ -421,7 +285,6 @@ drake_cc_library(
     ],
     deps = [
         ":drake_marker_shared_library",
-        ":filesystem",
         ":find_runfiles",
     ],
 )
@@ -436,7 +299,6 @@ drake_cc_library(
     visibility = ["//tools/install/libdrake:__pkg__"],
     interface_deps = [],
     deps = [
-        ":filesystem",
         ":find_resource",
     ],
 )
@@ -537,9 +399,7 @@ drake_cc_library(
     interface_deps = [
         ":essential",
     ],
-    deps = [
-        ":filesystem",
-    ],
+    deps = [],
 )
 
 # This is a Drake-internal utility for use only as a direct dependency
@@ -590,6 +450,15 @@ drake_cc_library(
 drake_cc_library(
     name = "scoped_singleton",
     hdrs = ["scoped_singleton.h"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "timer",
+    srcs = ["timer.cc"],
+    hdrs = ["timer.h"],
     deps = [
         ":essential",
     ],
@@ -670,10 +539,16 @@ drake_cc_googletest(
         "test/autodiffxd_subtraction_test.cc",
         "test/autodiffxd_tan_test.cc",
         "test/autodiffxd_tanh_test.cc",
-        "test/autodiffxd_test.h",
+    ],
+    copts = [
+        # The test fixture at //common/ad:standard_operations_test_h requires
+        # some configuration for the specific autodiff class to be tested.
+        "-DDRAKE_AUTODIFFXD_DUT=drake::AutoDiffXd",
+        "-DStandardOperationsTest=AutoDiffXdTest",
     ],
     deps = [
         ":autodiff",
+        "//common/ad:standard_operations_test_h",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -707,7 +582,7 @@ drake_cc_googletest(
     name = "drake_bool_test",
     deps = [
         ":drake_bool",
-        ":symbolic",
+        "//common/symbolic:expression",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -907,6 +782,7 @@ drake_cc_googletest(
         ":sorted_pair",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "@abseil_cpp_internal//absl/container:flat_hash_set",
     ],
 )
 
@@ -934,21 +810,12 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "filesystem_test",
-    deps = [
-        ":filesystem",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "find_resource_test",
     data = [
         "test/find_resource_test_data.txt",
     ],
     deps = [
         ":drake_path",
-        ":filesystem",
         ":find_resource",
         "//common/test_utilities:expect_no_throw",
     ],
@@ -982,7 +849,6 @@ drake_cc_googletest(
         "test/find_resource_test_data.txt",
     ],
     deps = [
-        ":filesystem",
         ":find_runfiles",
         ":temp_directory",
         "//common/test_utilities:expect_throws_message",
@@ -1024,62 +890,6 @@ drake_cc_googletest(
     name = "name_value_test",
     deps = [
         ":name_value",
-    ],
-)
-
-drake_cc_googletest(
-    name = "autodiffxd_make_coherent_test",
-    deps = [
-        ":autodiffxd_make_coherent",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_no_throw",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_monomial_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_chebyshev_polynomial_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_chebyshev_basis_element_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_monomial_basis_element_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_simplification_test",
-    deps = [
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -1127,282 +937,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "symbolic_codegen_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_decompose_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        ":symbolic_decompose",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_environment_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expansion_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:limit_malloc",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_test",
-    deps = [
-        ":essential",
-        ":polynomial",
-        ":symbolic",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:is_memcpy_movable",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_cell_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_differentiation_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_jacobian_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_array_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_matrix_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_expression_transform_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_latex_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        ":symbolic_latex",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_trigonometric_polynomial_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        ":symbolic_trigonometric_polynomial",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_ldlt_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_no_throw",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_mixing_scalar_types_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_polynomial_basis_element_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_polynomial_basis_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_generic_polynomial_test",
-    deps = [
-        ":symbolic",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_polynomial_test",
-    deps = [
-        ":symbolic",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_polynomial_matrix_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_rational_function_test",
-    deps = [
-        ":symbolic",
-        "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_rational_function_matrix_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_substitution_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_variable_overloading_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_formula_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:is_memcpy_movable",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_formula_visitor_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_variable_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-        "//common/test_utilities:is_memcpy_movable",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "symbolic_variables_test",
-    deps = [
-        ":essential",
-        ":symbolic",
-    ],
-)
-
-drake_cc_googletest(
     name = "temp_directory_test",
     # Run each test case in a different process, to avoid environment variable
     # changes from one accidentally polluting the others.
     shard_count = 3,
     deps = [
-        ":filesystem",
         ":temp_directory",
     ],
 )
@@ -1441,14 +980,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "trig_poly_test",
-    deps = [
-        ":essential",
-        ":polynomial",
-    ],
-)
-
-drake_cc_googletest(
     name = "type_safe_index_test",
     deps = [
         ":type_safe_index",
@@ -1474,6 +1005,14 @@ drake_cc_googletest(
     name = "scoped_singleton_test",
     deps = [
         ":scoped_singleton",
+    ],
+)
+
+drake_cc_googletest(
+    name = "timer_test",
+    flaky = True,
+    deps = [
+        ":timer",
     ],
 )
 

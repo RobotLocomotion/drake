@@ -3,7 +3,6 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/text_logging_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -94,6 +93,10 @@ PYBIND11_MODULE(_module_py, m) {
   m.doc() = "Bindings for //common:common";
   constexpr auto& doc = pydrake_doc.drake;
 
+  // Morph any DRAKE_ASSERT and DRAKE_DEMAND failures into SystemExit exceptions
+  // instead of process aborts.  See RobotLocomotion/drake#5268.
+  drake_set_assertion_failure_to_throw_exception();
+
   // WARNING: Deprecations for this module can be *weird* because of stupid
   // cyclic dependencies (#7912). If you need functions that immediately import
   // `pydrake.common.deprecation` (e.g. DeprecateAttribute, WrapDeprecated),
@@ -104,16 +107,6 @@ PYBIND11_MODULE(_module_py, m) {
   // Python users should not touch the C++ level; thus, we bind this privately.
   m.def("_set_log_level", &logging::set_log_level, py::arg("level"),
       doc.logging.set_log_level.doc);
-  {
-    const char* doc_deprecated =
-        "Deprecated:\n"
-        "    Do not use ``pydrake.common.set_log_level(...)``.\n"
-        "    Instead, use ``logging.getLogger('drake').setLevel(...)``.\n"
-        "    This function will be removed from Drake on or after 2022-09-01";
-    m.def("set_log_level",
-        WrapDeprecated(doc_deprecated, &logging::set_log_level),
-        py::arg("level"), doc_deprecated);
-  }
 
   internal::MaybeRedirectPythonLogging();
 
@@ -208,9 +201,6 @@ discussion), use e.g.
       },
       doc.MaybeGetDrakePath.doc);
   // These are meant to be called internally by pydrake; not by users.
-  m.def("set_assertion_failure_to_throw_exception",
-      &drake_set_assertion_failure_to_throw_exception,
-      "Set Drake's assertion failure mechanism to be exceptions");
   m.def("trigger_an_assertion_failure", &trigger_an_assertion_failure,
       "Trigger a Drake C++ assertion failure");
 

@@ -95,7 +95,7 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
                                   &CubicPolynomialSystem::OutputState,
                                   {this->all_state_ticket()});
     this->DeclareDiscreteState(2);
-    this->DeclarePeriodicDiscreteUpdate(time_step);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(time_step);
   }
 
   template <typename U>

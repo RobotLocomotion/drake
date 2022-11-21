@@ -16,7 +16,7 @@ namespace trajectories {
  * A Trajectory represents a time-varying matrix, indexed by a single scalar
  * time.
  *
- * @tparam_default_scalars
+ * @tparam_default_scalar
  */
 template <typename T>
 class Trajectory {

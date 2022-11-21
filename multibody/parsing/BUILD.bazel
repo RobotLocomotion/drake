@@ -29,7 +29,9 @@ filegroup(
         "test/**/*.sdf",
         "test/**/*.urdf",
         "test/**/*.xml",
+        "test/**/*.dmd.yaml",
         "test/**/*.png",
+        "test/**/COLCON_IGNORE",
     ]),
     visibility = ["//visibility:public"],
 )
@@ -55,6 +57,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":model_directives",
+        ":model_instance_info",
         ":package_map",
         ":parser",
         ":process_model_directives",
@@ -80,8 +83,7 @@ drake_cc_library(
     ],
     deps = [
         "//common",
-        "//common:filesystem",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 
@@ -113,12 +115,11 @@ drake_cc_library(
         ":scoped_names",
         "//common:diagnostic_policy",
         "//common:essential",
-        "//common:filesystem",
         "//geometry:proximity_properties",
         "//math:geometric_transform",
         "//multibody/plant",
         "@sdformat_internal//:sdformat",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 
@@ -187,9 +188,8 @@ drake_cc_library(
         ":detail_misc",
         ":detail_parsing_workspace",
         ":scoped_names",
-        "//common:filesystem",
         "@fmt",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 
@@ -201,10 +201,29 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":detail_misc",
+        ":detail_parsing_workspace",
         ":scoped_names",
         "//multibody/plant",
         "@fmt",
-        "@tinyxml2",
+        "@tinyxml2_internal//:tinyxml2",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_dmd_parser",
+    srcs = ["detail_dmd_parser.cc"],
+    hdrs = ["detail_dmd_parser.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":detail_misc",
+        ":detail_parsing_workspace",
+        ":model_directives",
+        ":model_instance_info",
+        ":scoped_names",
+        "//common/yaml",
+        "//multibody/plant",
+        "@fmt",
     ],
 )
 
@@ -217,6 +236,21 @@ drake_cc_library(
         ":package_map",
         "//common:diagnostic_policy",
         "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_select_parser",
+    srcs = ["detail_select_parser.cc"],
+    hdrs = ["detail_select_parser.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":detail_dmd_parser",
+        ":detail_mujoco_parser",
+        ":detail_parsing_workspace",
+        ":detail_sdf_parser",
+        ":detail_urdf_parser",
     ],
 )
 
@@ -242,11 +276,8 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
-        ":detail_mujoco_parser",
         ":detail_parsing_workspace",
-        ":detail_sdf_parser",
-        ":detail_urdf_parser",
-        "//common:filesystem",
+        ":detail_select_parser",
     ],
 )
 
@@ -263,21 +294,33 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "model_instance_info",
+    hdrs = ["model_instance_info.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//math:geometric_transform",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
     name = "process_model_directives",
     srcs = ["process_model_directives.cc"],
     hdrs = ["process_model_directives.h"],
     visibility = ["//visibility:public"],
     interface_deps = [
         ":model_directives",
+        ":model_instance_info",
         ":parser",
         "//multibody/plant",
     ],
     deps = [
+        ":detail_dmd_parser",
         ":detail_misc",
+        ":detail_parsing_workspace",
         ":scoped_names",
-        "//common:filesystem",
+        "//common:diagnostic_policy",
         "//common:find_resource",
-        "//common/yaml",
     ],
 )
 
@@ -285,6 +328,7 @@ drake_cc_library(
     name = "scoped_names",
     srcs = ["scoped_names.cc"],
     hdrs = ["scoped_names.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//multibody/plant",
     ],
@@ -363,7 +407,6 @@ drake_cc_googletest(
     ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":parser",
-        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -380,11 +423,11 @@ drake_cc_googletest(
     name = "process_model_directives_test",
     data = [
         ":process_model_directives_test_models",
+        "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
         ":process_model_directives",
         ":scoped_names",
-        "//common:filesystem",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -397,7 +440,6 @@ drake_cc_googletest(
     deps = [
         ":parser",
         ":scoped_names",
-        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -419,6 +461,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "detail_select_parser_test",
+    deps = [
+        ":detail_select_parser",
+        ":diagnostic_policy_test_base",
+    ],
+)
+
+drake_cc_googletest(
     name = "detail_sdf_parser_test",
     data = [
         ":test_models",
@@ -428,7 +478,6 @@ drake_cc_googletest(
     deps = [
         ":detail_sdf_parser",
         ":diagnostic_policy_test_base",
-        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -445,7 +494,6 @@ drake_cc_googletest(
     deps = [
         ":detail_urdf_parser",
         ":diagnostic_policy_test_base",
-        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
         "//multibody/benchmarks/acrobot",
@@ -455,7 +503,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "detail_mujoco_parser_test",
-    data = _DM_CONTROL_MUJOCO_FILES,
+    data = [
+        ":test_models",
+        "//geometry:test_obj_files",
+        "//geometry:test_stl_files",
+    ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":detail_mujoco_parser",
         "//common:find_resource",
@@ -471,7 +523,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_sdf_geometry",
-        "//common:filesystem",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
@@ -498,7 +549,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":package_map",
-        "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -523,7 +573,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_misc",
-        "//common:filesystem",
         "//common/test_utilities",
     ],
 )

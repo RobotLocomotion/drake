@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":direct_collocation",
         ":direct_transcription",
         ":integration_constraint",
+        ":kinematic_trajectory_optimization",
         ":multiple_shooting",
         ":sequential_expression_manager",
     ],
@@ -30,8 +31,8 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
-        "//common:symbolic",
         "//common:unused",
+        "//common/symbolic:expression",
     ],
 )
 
@@ -75,6 +76,7 @@ drake_cc_library(
     ],
     deps = [
         ":multiple_shooting",
+        "//common/symbolic:polynomial",
         "//common/trajectories:piecewise_polynomial",
         "//math:autodiff",
         "//math:gradient",
@@ -82,6 +84,21 @@ drake_cc_library(
         "//systems/analysis:integrator_base",
         "//systems/framework",
         "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_library(
+    name = "kinematic_trajectory_optimization",
+    srcs = ["kinematic_trajectory_optimization.cc"],
+    hdrs = ["kinematic_trajectory_optimization.h"],
+    deps = [
+        "//common",
+        "//common/trajectories:bspline_trajectory",
+        "//math:bspline_basis",
+        "//math:gradient",
+        "//math:matrix_util",
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
     ],
 )
 
@@ -133,6 +150,16 @@ drake_cc_googletest(
         "//solvers:solve",
         "//systems/primitives:symbolic_vector_system",
         "//systems/primitives:trajectory_linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "kinematic_trajectory_optimization_test",
+    deps = [
+        ":kinematic_trajectory_optimization",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:constraint",
+        "//solvers:solve",
     ],
 )
 

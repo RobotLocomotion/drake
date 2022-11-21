@@ -1,8 +1,9 @@
 #include "drake/solvers/ipopt_solver.h"
 
+#include <filesystem>
+
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -213,6 +214,11 @@ GTEST_TEST(IpoptSolverTest, TestNonconvexQP) {
   }
 }
 
+GTEST_TEST(IpoptSolverTest, TestL2NormCost) {
+  IpoptSolver solver;
+  TestL2NormCost(solver, 1e-6);
+}
+
 /* Tests the solver's processing of the verbosity options. With multiple ways
  to request verbosity (common options and solver-specific options), we simply
  apply a smoke test that none of the means causes runtime errors. Note, we
@@ -268,7 +274,7 @@ GTEST_TEST(IpoptSolverTest, PrintToFile) {
   prog.AddLinearCost(x(0));
 
   const std::string filename = temp_directory() + "/ipopt.log";
-  EXPECT_FALSE(filesystem::exists({filename}));
+  EXPECT_FALSE(std::filesystem::exists({filename}));
   SolverOptions solver_options;
   solver_options.SetOption(CommonSolverOption::kPrintFileName, filename);
 
@@ -276,7 +282,7 @@ GTEST_TEST(IpoptSolverTest, PrintToFile) {
   if (solver.is_available()) {
     const auto result = solver.Solve(prog, {}, solver_options);
     EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(filesystem::exists({filename}));
+    EXPECT_TRUE(std::filesystem::exists({filename}));
   }
 }
 
@@ -342,6 +348,7 @@ GTEST_TEST(TestLP, PoorScaling) {
   TestLPPoorScaling1(solver, true, 1E-6);
   TestLPPoorScaling2(solver, true, 1E-4);
 }
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

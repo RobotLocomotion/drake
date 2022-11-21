@@ -14,8 +14,8 @@ namespace internal {
 described in [Castro et al., 2021].
 
 All SAP constraints are compliant. That is, SAP does not impose the hard
-constraint g(q, v) = 0 but rather applies a compliant force that drives the
-state towards g(q, v) = 0. More specifically, the impulse γ applied by a
+constraint g(q, v, t) = 0 but rather applies a compliant force that drives the
+state towards g(q, v, t) = 0. More specifically, the impulse γ applied by a
 constraint in the SAP formulation admits the analytical form:
   γ/δt = P(−k⋅g−cġ)                                                         (1)
 where δt is the discrete time step used in the formulation, k is the
@@ -32,11 +32,12 @@ and damping c are positive diagonal matrices of size nᵢ×nᵢ. Then the projec
 P projects vectors in the real nᵢ-space into vectors in the same space. Refer to
 Project()'s documentation for further details.
 
-The constraint's Jacobian J is defined such that ġ = J⋅v where v are the
-generalized velocities of the system. When a constraint is instantiated,
-constraint function g and Jacobian J are provided at construction for the state
-of the mechanical system at the previous (current) time step. Therefore an
-instance of this class is a function of the state of the dynamical system.
+The constraint's Jacobian J is defined such that ġ = J⋅v + b where v are the
+generalized velocities of the system and b is the bias term b = ∂g/∂t. When a
+constraint is instantiated, constraint function g and Jacobian J are provided at
+construction for the state of the mechanical system at the previous (current)
+time step. Therefore an instance of this class is a function of the state of the
+dynamical system.
 
 In general a constraint will couple the degrees of freedom of two cliques
 (please refer to SapContactProblem's documentation for a definition of

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- This file is forked from dist/index.html in rdeits/meshcat. -->
+<!-- This file is forked from dist/index.html in rdeits/meshcat.-->
 <html>
 
 <head>
@@ -8,28 +8,154 @@
 </head>
 
 <body>
+  <div id="status-message">
+    No connection to server.
+  </div>
   <div id="meshcat-pane">
   </div>
 
   <script type="text/javascript" src="meshcat.js"></script>
+  <script type="text/javascript" src="stats.min.js"></script>
   <script>
+    // TODO(#16486): add tooltips to Stats to describe chart contents
+    var stats = new Stats();
+    var realtimeRatePanel = stats.addPanel(
+            new Stats.Panel('rtr%', '#ff8', '#221')
+    );
+    document.body.appendChild(stats.dom);
+    stats.dom.id = "stats-plot";
+    // We want to show the realtime rate panel by default
+    // it is the last element in the stats.dom.children list
+    stats.showPanel(stats.dom.children.length - 1)
+    var latestRealtimeRate = 0;
     var viewer = new MeshCat.Viewer(document.getElementById("meshcat-pane"));
+    viewer.animate = function() {
+      viewer.animator.update();
+      if (viewer.needs_render) {
+        viewer.render();
+      }
+    }
+
+    const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+
+    // See https://beej.us/blog/data/javascript-gamepad/ for a tutorial.
+    var last_gamepad = {};
+    function handle_gamepads() {
+      let gamepads = navigator.getGamepads();
+      let gamepad = {};
+      for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i] === null || !gamepads[i].connected) {
+          continue;
+        }
+
+        // Only send a subset of the available information. Also, the floating
+        // point values are not constant; they are constantly changing in the
+        // least significant digits even when the gamepad is untouched by the
+        // user. We truncate the floating point values to two significant
+        // digits to reject this noise.
+        gamepad = {
+          'index': gamepads[i].index, 
+          'button_values': gamepads[i].buttons.map(
+            a => clamp(Math.round(a.value * 100) / 100, 0, 1)), 
+          'axes': gamepads[i].axes.map(
+            a => clamp(Math.round(a * 100) / 100, -1, 1)),
+        };
+        break;  // Just take the first connected gamepad.
+      }
+      if (this.connection.readyState == WebSocket.OPEN && 
+        JSON.stringify(gamepad) !== JSON.stringify(last_gamepad)) {
+        this.connection.send(MeshCat.msgpack.encode(
+          { 'type': 'gamepad', 'name': '', 'gamepad': gamepad }));
+        last_gamepad = gamepad;
+      }
+    }
+
+    function animate() {
+      stats.begin();
+      // convert realtime rate to percentage so it is easier to read
+      realtimeRatePanel.update(latestRealtimeRate*100, 100);
+      viewer.animate()
+      stats.end();
+      handle_gamepads();
+      requestAnimationFrame(animate);
+    }
+
+    // TODO(#16486): Replace this function with more robust custom command
+    //  handling in Meshcat
+    function handle_message(ws_message) {
+      let decoded = viewer.decode(ws_message);
+      if (decoded.type == "realtime_rate") {
+        rtr = decoded.rate;
+      } else if (decoded.type == "show_realtime_rate") {
+        stats.dom.style.display = decoded.show ? "block" : "none";
+      } else {
+        viewer.handle_command(decoded)
+      }
+    }
+
+    requestAnimationFrame( animate );
     // Set background to match Drake Visualizer.
     viewer.set_property(['Background'], "top_color", [.95, .95, 1.0])
     viewer.set_property(['Background'], "bottom_color", [.32, .32, .35])
     // Set the initial view looking up the y-axis.
     viewer.set_property(['Cameras', 'default', 'rotated', '<object>'],
                         "position", [0.0, 1.0, 3.0])
-    try {
-      url = location.toString();
-      url = url.replace("http://", "ws://")
-      url = url.replace("https://", "wss://")
-      url = url.replace("/index.html", "/")
-      url = url.replace("/meshcat.html", "/")
-      viewer.connect(url);
-    } catch (e) {
-      console.info("Not connected to MeshCat websocket server: ", e);
+
+    <!-- CONNECTION BLOCK BEGIN -->
+    // The lifespan of the server may be much shorter than this visualizer
+    // client. We'd like the user to not have to explicitly reload when they
+    // start a new server. So, we automatically try to reconnect at some given
+    // rate. However, due to the split of visualizer state between server and
+    // client, simply reconnecting may leave the *existing* visualizer in a
+    // strange state with various stale artifacts. So, when we detect a
+    // *reconnection*, we simply reload the page, so that every *meaningful*
+    // connection is accompanied by a fresh client state. Upon loading the
+    // page, it can accept a connection. After that first connection, any
+    // new connection is interpreted as a signal to reload.
+    var accepting_connections = true;
+    status_dom = document.getElementById("status-message");
+    // When the connection closes, try creating a new connection automatically.
+    function make_connection(url, reconnect_ms) {
+      try {
+        connection = new WebSocket(url);
+        connection.binaryType = "arraybuffer";
+        connection.onmessage = (msg) => handle_message(msg);
+        connection.onopen = (evt) => {
+          if (!accepting_connections) location.reload();
+          accepting_connections = false
+        };
+        connection.onclose = function(evt) {
+          status_dom.style.display = "block";
+          if (do_reconnect) {
+            // Immediately schedule an attempt to reconnect.
+            setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);
+          }
+        }
+        viewer.connection = connection
+      } catch (e) {
+        console.info("Not connected to MeshCat websocket server: ", e);
+        if (do_reconnect) {
+          setTimeout(() => {make_connection(url, reconnect_ms);}, reconnect_ms);
+        }
+      }
     }
+
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    reconnect_ms = parseInt(urlParams.get('reconnect_ms')) || 1000;
+    var do_reconnect = reconnect_ms > 0;
+    if (do_reconnect) {
+      status_dom.textContent = "No connection to server. Attempting to reconnect...";
+    }
+
+    url = location.toString();
+    url = url.replace("http://", "ws://")
+    url = url.replace("https://", "wss://")
+    url = url.replace("/index.html", "/")
+    url = url.replace("/meshcat.html", "/")
+    make_connection(url, reconnect_ms);
+    <!-- CONNECTION BLOCK END -->
+
   </script>
 
   <style>
@@ -41,6 +167,20 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
+    }
+
+    #status-message{
+      width: 50vw;
+      text-align: center;
+      font-weight: bold;
+      background-color: yellow;
+      position: fixed;
+      left: 25%;
+      display: none;
+    }
+
+    #stats-plot {
+      display: none;
     }
   </style>
   <script id="embedded-json"></script>

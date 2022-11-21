@@ -14,6 +14,7 @@ using geometry::GeometryProperties;
 using geometry::ProximityProperties;
 using geometry::internal::HydroelasticType;
 using geometry::internal::kComplianceType;
+using geometry::internal::kRelaxationTime;
 using geometry::internal::kElastic;
 using geometry::internal::kFriction;
 using geometry::internal::kHcDissipation;
@@ -22,6 +23,17 @@ using geometry::internal::kHydroGroup;
 using geometry::internal::kMaterialGroup;
 using geometry::internal::kRezHint;
 using std::optional;
+
+GTEST_TEST(EndsWithCaseInsensitiveTest, BasicTests) {
+  EXPECT_TRUE(EndsWithCaseInsensitive("something", "thing"));
+  EXPECT_TRUE(EndsWithCaseInsensitive("something", "THING"));
+  EXPECT_TRUE(EndsWithCaseInsensitive("something", "Thing"));
+  EXPECT_TRUE(EndsWithCaseInsensitive("thing", "thing"));
+  EXPECT_TRUE(EndsWithCaseInsensitive("thing", "THING"));
+  EXPECT_TRUE(EndsWithCaseInsensitive("thing", "Thing"));
+  EXPECT_FALSE(EndsWithCaseInsensitive("something", "some"));
+  EXPECT_FALSE(EndsWithCaseInsensitive("thing", "something"));
+}
 
 class DataSourceTest : public ::testing::Test {
  protected:
@@ -243,6 +255,19 @@ TEST_F(ParseProximityPropertiesTest, Dissipation) {
       param_read_double("drake:hunt_crossley_dissipation", kValue), !rigid,
       !compliant);
   EXPECT_TRUE(ExpectScalar(kMaterialGroup, kHcDissipation, kValue, properties));
+  // Dissipation is the only property.
+  EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
+  EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+}
+
+// Confirms successful parsing of linear dissipation.
+TEST_F(ParseProximityPropertiesTest, LinearDissipation) {
+  const double kValue = 1.25;
+  ProximityProperties properties = ParseProximityProperties(
+      param_read_double("drake:relaxation_time", kValue), !rigid,
+      !compliant);
+  EXPECT_TRUE(
+      ExpectScalar(kMaterialGroup, kRelaxationTime, kValue, properties));
   // Dissipation is the only property.
   EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
   EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.

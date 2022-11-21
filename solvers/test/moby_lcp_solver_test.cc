@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <gtest/gtest.h>
+#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 

@@ -336,7 +336,7 @@ class MultibodyPlantHydroelasticTractionTests
     MultibodyPlant<double>& plant = *plant_;
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/plant/test/block_on_halfspace.sdf");
-    Parser(&plant, scene_graph).AddModelFromFile(full_name);
+    Parser(&plant, scene_graph).AddModels(full_name);
 
     plant.Finalize();
     diagram_ = builder.Build();

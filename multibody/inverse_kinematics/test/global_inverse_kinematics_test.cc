@@ -5,6 +5,7 @@
 using Eigen::Vector3d;
 
 using drake::solvers::SolutionResult;
+using drake::math::RigidTransformd;
 
 namespace drake {
 namespace multibody {
@@ -25,6 +26,55 @@ GTEST_TEST(GlobalInverseKinematicsTest, TestConstructor) {
   GlobalInverseKinematics global_ik_milp(*kuka, global_ik_options);
   EXPECT_TRUE(global_ik_milp.prog().lorentz_cone_constraints().empty());
   EXPECT_TRUE(global_ik_milp.prog().rotated_lorentz_cone_constraints().empty());
+}
+
+TEST_F(KukaTest, SetInitialGuess) {
+  const Eigen::VectorXd initial_guess0 =
+      Eigen::VectorXd::Zero(global_ik_.prog().num_vars());
+  global_ik_.get_mutable_prog()->SetInitialGuessForAllVariables(initial_guess0);
+
+  const int num_bb_constraints =
+      global_ik_.prog().bounding_box_constraints().size();
+  Eigen::VectorXd q(7);
+  q << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+  global_ik_.SetInitialGuess(q);
+  // Check that SetInitialGuess does not leave any new constraints.
+  EXPECT_EQ(num_bb_constraints,
+            global_ik_.prog().bounding_box_constraints().size());
+
+  EXPECT_FALSE(
+      CompareMatrices(global_ik_.prog().initial_guess(), initial_guess0));
+
+  Eigen::Map<const VectorX<symbolic::Variable> > variables =
+      global_ik_.prog().decision_variables();
+
+  const double kTol = 1e-6;  // Choose a typical solver tolerance.
+
+  // Check that at least one binary variable has been set to 1.
+  bool found_one_for_binary = false;
+  for (int i = 0; i < static_cast<int>(variables.size()); ++i) {
+    symbolic::Variable v = variables[i];
+    if (v.get_type() == symbolic::Variable::Type::BINARY) {
+      const double value = global_ik_.prog().GetInitialGuess(v);
+      if (abs(value - 1.0) < kTol) {
+        found_one_for_binary = true;
+        break;
+      }
+    }
+  }
+  EXPECT_TRUE(found_one_for_binary);
+
+  auto context = plant_->CreateDefaultContext();
+  plant_->SetPositions(context.get(), q);
+  const Body<double>& link7 = plant_->GetBodyByName("iiwa_link_7");
+  const RigidTransformd X_W7 = plant_->EvalBodyPoseInWorld(*context, link7);
+  EXPECT_TRUE(CompareMatrices(global_ik_.prog().GetInitialGuess(
+                                  global_ik_.body_position(link7.index())),
+                              X_W7.translation(), kTol));
+  EXPECT_TRUE(
+      CompareMatrices(global_ik_.prog().GetInitialGuess(
+                          global_ik_.body_rotation_matrix(link7.index())),
+                      X_W7.rotation().matrix(), kTol));
 }
 
 TEST_F(KukaTest, UnreachableTest) {
@@ -74,20 +124,31 @@ TEST_F(KukaTest, ReachableWithCost) {
   auto context = plant_->CreateDefaultContext();
   plant_->SetPositions(context.get(), q);
 
-  math::RigidTransformd ee_desired_pose = plant_->CalcRelativeTransform(
+  math::RigidTransformd X_WEe = plant_->CalcRelativeTransform(
       *context, plant_->world_frame(),
       plant_->get_body(BodyIndex{ee_idx_}).body_frame());
+  math::RigidTransformd X_W0 = plant_->CalcRelativeTransform(
+      *context, plant_->world_frame(), plant_->GetFrameByName("iiwa_link_0"));
   // Constrain the global IK to reach the exact end effector pose as the
   // posture q.
   global_ik_.AddWorldPositionConstraint(
       ee_idx_,                         // body index
       Vector3d::Zero(),                // p_BQ
-      ee_desired_pose.translation(),   // lower bound
-      ee_desired_pose.translation());  // upper bound
+      X_WEe.translation(),   // lower bound
+      X_WEe.translation(),   // upper bound
+      RigidTransformd());
+  global_ik_.AddWorldRelativePositionConstraint(
+      ee_idx_,
+      Vector3d::Zero(),
+      plant_->GetBodyByName("iiwa_link_0").index(),
+      Vector3d::Zero(),
+      X_WEe.translation() - X_W0.translation(),   // lower bound
+      X_WEe.translation() - X_W0.translation(),   // upper bound
+      RigidTransformd());
   global_ik_.AddWorldOrientationConstraint(
       ee_idx_,  // body index
       Eigen::Quaterniond(
-          ee_desired_pose.rotation().matrix()),  // desired orientation
+          X_WEe.rotation().matrix()),  // desired orientation
       0);                                        // tolerance.
 
   solvers::GurobiSolver gurobi_solver;
@@ -132,6 +193,35 @@ TEST_F(KukaTest, ReachableWithCost) {
     EXPECT_LE((q_w_cost - q).norm(), (q_no_cost - q).norm());
   }
 }
+
+TEST_F(ToyTest, Test) {
+  GlobalInverseKinematics::Options global_ik_options;
+  GlobalInverseKinematics global_ik(*plant_, global_ik_options);
+
+  // Test an arbitrary configuration. Set the body position and orientation to
+  // the pose at this configuration, and make sure that global IK is feasible.
+  auto context = plant_->CreateDefaultContext();
+  const Eigen::Vector2d q(0.5, 1);
+  plant_->SetPositions(context.get(), q);
+  for (BodyIndex body_index{1}; body_index < plant_->num_bodies();
+       ++body_index) {
+    const auto X_WB = plant_->CalcRelativeTransform(
+        *context, plant_->world_frame(),
+        plant_->get_body(body_index).body_frame());
+    global_ik.get_mutable_prog()->AddBoundingBoxConstraint(
+        X_WB.rotation().matrix(), X_WB.rotation().matrix(),
+        global_ik.body_rotation_matrix(body_index));
+    global_ik.get_mutable_prog()->AddBoundingBoxConstraint(
+        X_WB.translation(), X_WB.translation(),
+        global_ik.body_position(body_index));
+  }
+  solvers::GurobiSolver gurobi_solver;
+  if (gurobi_solver.available()) {
+    const auto result = gurobi_solver.Solve(global_ik.prog());
+    EXPECT_TRUE(result.is_success());
+  }
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

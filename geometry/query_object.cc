@@ -36,7 +36,7 @@ QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>& query_object) {
     state_ = query_object.state_;
   } else if (query_object.context_ && query_object.scene_graph_) {
     // Create a new baked state; make sure the source is fully updated.
-    query_object.FullPoseUpdate();
+    query_object.FullPoseAndConfigurationUpdate();
     state_ = std::make_shared<GeometryState<T>>(query_object.geometry_state());
   }
   inspector_.set(state_.get());
@@ -69,6 +69,15 @@ template <typename T>
 const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
     GeometryId geometry_id) const {
   ThrowIfNotCallable();
+  if (inspector_.IsDeformableGeometry(geometry_id)) {
+    throw std::logic_error(
+        fmt::format("{} is not allowed to be called on deformable geometries. "
+                    "Use QueryObject::GetConfigurationsInWorld() to get the "
+                    "current configuration of the deformable geometry or use "
+                    "SceneGraphInspector::GetPoseInFrame() to get the pose of "
+                    "the reference geometry in its parent frame.",
+                    __func__));
+  }
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
@@ -80,8 +89,7 @@ const VectorX<T>& QueryObject<T>::GetConfigurationsInWorld(
     GeometryId geometry_id) const {
   ThrowIfNotCallable();
 
-  // TODO(xuchenhan-tri): Update this function when mesh vertex positions can be
-  // updated from input ports.
+  FullConfigurationUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.get_configurations_in_world(geometry_id);
 }
@@ -144,6 +152,20 @@ QueryObject<T>::ComputeContactSurfacesWithFallback(
   const GeometryState<T>& state = geometry_state();
   state.ComputeContactSurfacesWithFallback(representation, surfaces,
                                            point_pairs);
+}
+
+template <typename T>
+template <typename T1>
+typename std::enable_if_t<std::is_same_v<T1, double>, void>
+QueryObject<T>::ComputeDeformableContact(
+    internal::DeformableContact<T>* deformable_contact) const {
+  DRAKE_DEMAND(deformable_contact != nullptr);
+  ThrowIfNotCallable();
+
+  FullPoseAndConfigurationUpdate();
+
+  const GeometryState<T>& state = geometry_state();
+  state.ComputeDeformableContact(deformable_contact);
 }
 
 template <typename T>
@@ -240,6 +262,9 @@ const GeometryState<T>& QueryObject<T>::geometry_state() const {
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&QueryObject<T>::template ComputeContactSurfaces<T>,
      &QueryObject<T>::template ComputeContactSurfacesWithFallback<T>))
+
+template void QueryObject<double>::ComputeDeformableContact<double>(
+    internal::DeformableContact<double>*) const;
 
 }  // namespace geometry
 }  // namespace drake

@@ -1,12 +1,12 @@
 #include "drake/multibody/parsing/parser.h"
 
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -30,6 +30,9 @@ GTEST_TEST(FileParserTest, BasicTest) {
       "drake/multibody/benchmarks/acrobot/acrobot.urdf");
   const std::string xml_name = FindResourceOrThrow(
       "drake/multibody/parsing/dm_control/suite/acrobot.xml");
+  const std::string dmd_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/process_model_directives_test/"
+      "acrobot.dmd.yaml");
 
   // Load from SDF using plural method.
   // Add a second one with an overridden model_name.
@@ -37,7 +40,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     EXPECT_EQ(&dut.plant(), &plant);
-    EXPECT_EQ(dut.AddAllModelsFromFile(sdf_name).size(), 1);
+    EXPECT_EQ(dut.AddModels(sdf_name).size(), 1);
     dut.AddModelFromFile(sdf_name, "foo");
   }
 
@@ -46,7 +49,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    EXPECT_EQ(dut.AddAllModelsFromFile(urdf_name).size(), 1);
+    EXPECT_EQ(dut.AddModels(urdf_name).size(), 1);
     dut.AddModelFromFile(urdf_name, "foo");
   }
 
@@ -63,15 +66,39 @@ GTEST_TEST(FileParserTest, BasicTest) {
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const std::vector<ModelInstanceIndex> ids =
-        dut.AddAllModelsFromFile(xml_name);
+    const std::vector<ModelInstanceIndex> ids = dut.AddModels(xml_name);
     EXPECT_EQ(ids.size(), 1);
     EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
     const ModelInstanceIndex id = dut.AddModelFromFile(xml_name, "foo");
     EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
   }
+
+  // Load from DMD using plural method.
+  // Using the singular method is always an error.
+  {
+    MultibodyPlant<double> plant(0.0);
+    Parser dut(&plant);
+    const std::vector<ModelInstanceIndex> ids = dut.AddModels(dmd_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        dut.AddModelFromFile(dmd_name, "foo"),
+        ".* always an error.*");
+  }
 }
 
+GTEST_TEST(FileParserTest, LegacyFunctionTest) {
+  // Just make sure the legacy spelling "AddAllModelsFromFile" still
+  // works. This test can go away when the function is deprecated.
+  const std::string sdf_name = FindResourceOrThrow(
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  MultibodyPlant<double> plant(0.0);
+  Parser dut(&plant);
+  EXPECT_EQ(dut.AddAllModelsFromFile(sdf_name).size(), 1);
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(FileParserTest, BasicStringTest) {
   const std::string sdf_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/acrobot.sdf");
@@ -79,34 +106,71 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
       "drake/multibody/benchmarks/acrobot/acrobot.urdf");
   const std::string xml_name = FindResourceOrThrow(
       "drake/multibody/parsing/dm_control/suite/acrobot.xml");
+  const std::string dmd_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/process_model_directives_test/"
+      "acrobot.dmd.yaml");
 
-  // Load an SDF via string.
+  // Load an SDF via string using plural method.
+  // Add a second one with an overridden model_name.
   {
     const std::string sdf_contents = ReadEntireFile(sdf_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const ModelInstanceIndex id = dut.AddModelFromString(sdf_contents, "sdf");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddModelsFromString(sdf_contents, "sdf");
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
+    const ModelInstanceIndex id = dut.AddModelFromString(sdf_contents, "sdf",
+                                                         "foo");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
   }
 
-  // Load an URDF via string.
+  // Load an URDF via string using plural method.
+  // Add a second one with an overridden model_name.
   {
     const std::string urdf_contents = ReadEntireFile(urdf_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const ModelInstanceIndex id = dut.AddModelFromString(urdf_contents, "urdf");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddModelsFromString(urdf_contents, "urdf");
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
+    const ModelInstanceIndex id = dut.AddModelFromString(urdf_contents, "urdf",
+                                                         "foo");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
   }
 
-  // Load an MJCF via string.
+  // Load an MJCF via string using plural method.
+  // Add a second one with an overridden model_name.
   {
     const std::string xml_contents = ReadEntireFile(xml_name);
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
-    const ModelInstanceIndex id = dut.AddModelFromString(xml_contents, "xml");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddModelsFromString(xml_contents, "xml");
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
+    const ModelInstanceIndex id = dut.AddModelFromString(xml_contents, "xml",
+                                                         "foo");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
+  }
+
+  // Load a DMD.YAML via string using plural method.
+  // Using the singular method is always an error.
+  {
+    const std::string dmd_contents = ReadEntireFile(dmd_name);
+    MultibodyPlant<double> plant(0.0);
+    Parser dut(&plant);
+    const std::vector<ModelInstanceIndex> ids =
+        dut.AddModelsFromString(dmd_contents, "dmd.yaml");
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        dut.AddModelFromString(dmd_contents, "dmd.yaml"),
+        ".* always an error.*");
   }
 }
+#pragma GCC diagnostic pop
 
 // Try loading a file with two <model> elements, but without a <world>.
 // This should always result in an error. For an example of a valid <world>
@@ -119,7 +183,7 @@ GTEST_TEST(FileParserTest, MultiModelErrorsTest) {
   {
     MultibodyPlant<double> plant(0.0);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        Parser(&plant).AddAllModelsFromFile(sdf_name),
+        Parser(&plant).AddModels(sdf_name),
         R"([\s\S]*Root object can only contain one model.*)");
   }
 
@@ -168,7 +232,7 @@ GTEST_TEST(FileParserTest, MultiModelViaWorldIncludesTest) {
       "world_with_directly_nested_models.sdf");
   MultibodyPlant<double> plant(0.0);
   const std::vector<ModelInstanceIndex> models =
-      Parser(&plant).AddAllModelsFromFile(sdf_name);
+      Parser(&plant).AddModels(sdf_name);
   const std::vector<std::string> model_names_actual =
       GetModelInstanceNames(plant, models);
   const std::vector<std::string> model_names_expected = {
@@ -185,10 +249,9 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
   MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromFile("acrobot.foo"),
-      ".*file type '\\.foo' is not supported .*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Parser(&plant).AddAllModelsFromFile("acrobot.foo"),
-      ".*file type '\\.foo' is not supported .*");
+      ".*file.*\\.foo.* is not.*recognized.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Parser(&plant).AddModels("acrobot.foo"),
+                              ".*file.*\\.foo.* is not.*recognized.*");
 
   // Uppercase extensions are accepted (i.e., still call the underlying SDF or
   // URDF parser, shown here by it generating a different exception message).
@@ -205,19 +268,33 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   // Malformed SDF string is an error.
   MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Parser(&plant).AddModelFromString("bad", "sdf"),
+      Parser(&plant).AddModelsFromString("bad", "sdf"),
       ".*Unable to read SDF string.*");
 
   // Malformed URDF string is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Parser(&plant).AddModelFromString("bad", "urdf"),
+      Parser(&plant).AddModelsFromString("bad", "urdf"),
       "<literal-string>.urdf:1: error: "
       "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
 
+  // Malformed Mujoco string is an error.
+  // TODO(#18055): Until the underlying parser supports diagnostic policy, the
+  // error message matching here will be less than convincing.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Parser(&plant).AddModelsFromString("bad", "xml"),
+      "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
+
+  // Malformed DMD string is an error.
+  // TODO(#18052): Until the underlying parser supports diagnostic policy, the
+  // input needs to crafted to avoid reachable fatal assertions.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Parser(&plant).AddModelsFromString("bad:", "dmd.yaml"),
+      ".*YAML.*bad.*");
+
   // Unknown extension is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Parser(&plant).AddModelFromString("<bad/>", "weird-ext"),
-      ".*file type '\\.weird-ext' is not supported .*");
+      Parser(&plant).AddModelsFromString("<bad/>", "weird-ext"),
+      ".*file.*\\.weird-ext.* is not.*recognized.*");
 }
 
 // If a non-Drake URDF or SDF file uses package URIs, this confirms that it is
@@ -244,11 +321,11 @@ GTEST_TEST(FileParserTest, PackageMapTest) {
   // Copy the relevant files to the temporary directory.
   const std::string sdf_path = temp_dir + "/sdfs";
   const std::string mesh_path = temp_dir + "/meshes";
-  filesystem::create_directory({sdf_path});
-  filesystem::create_directory({mesh_path});
-  filesystem::copy(full_package_filename, temp_dir + "/package.xml");
-  filesystem::copy(full_sdf_filename, sdf_path + "/box.sdf");
-  filesystem::copy(full_obj_filename, mesh_path + "/box.obj");
+  std::filesystem::create_directory({sdf_path});
+  std::filesystem::create_directory({mesh_path});
+  std::filesystem::copy(full_package_filename, temp_dir + "/package.xml");
+  std::filesystem::copy(full_sdf_filename, sdf_path + "/box.sdf");
+  std::filesystem::copy(full_obj_filename, mesh_path + "/box.obj");
 
   // Attempt to read in the SDF file without setting the package map first.
   const std::string new_sdf_filename = sdf_path + "/box.sdf";
@@ -270,17 +347,25 @@ GTEST_TEST(FileParserTest, StrictParsing) {
     </robot>)""";
   std::string warning_pattern = ".*version.*ignored.*";
 
-  MultibodyPlant<double> plant(0.0);
-  geometry::SceneGraph<double> scene_graph;
-  Parser parser(&plant, &scene_graph);
+  {
+    // Lax parser does not throw on warnings.
+    MultibodyPlant<double> plant(0.0);
+    geometry::SceneGraph<double> scene_graph;
+    Parser parser(&plant, &scene_graph);
+    EXPECT_NO_THROW(
+        parser.AddModelsFromString(model_provokes_warning, "urdf"));
+  }
 
-  EXPECT_NO_THROW(
-      parser.AddModelFromString(model_provokes_warning, "urdf", "lax"));
-
-  parser.SetStrictParsing();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      parser.AddModelFromString(model_provokes_warning, "urdf", "strict"),
-      warning_pattern);
+  {
+    // Strict parser *does* throw on warnings.
+    MultibodyPlant<double> plant(0.0);
+    geometry::SceneGraph<double> scene_graph;
+    Parser parser(&plant, &scene_graph);
+    parser.SetStrictParsing();
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        parser.AddModelsFromString(model_provokes_warning, "urdf"),
+        warning_pattern);
+  }
 }
 
 }  // namespace

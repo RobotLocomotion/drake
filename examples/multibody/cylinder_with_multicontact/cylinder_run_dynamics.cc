@@ -3,14 +3,13 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/multibody/cylinder_with_multicontact/make_cylinder_plant.h"
-#include "drake/geometry/drake_visualizer.h"
+#include "drake/examples/multibody/cylinder_with_multicontact/populate_cylinder_plant.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace examples {
@@ -52,19 +51,17 @@ DEFINE_double(time_step, 1.0e-3,
 
 using Eigen::Vector3d;
 using geometry::SceneGraph;
-using lcm::DrakeLcm;
 
 // "multibody" namespace is ambiguous here without "drake::".
+using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::CoulombFriction;
-using drake::multibody::ConnectContactResultsToDrakeVisualizer;
-using drake::multibody::MultibodyPlant;
 using drake::multibody::SpatialVelocity;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
-  scene_graph.set_name("scene_graph");
+  auto [plant, scene_graph] =
+      AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
 
   // Plant's parameters.
   const double radius = 0.05;          // The cylinder's radius, m
@@ -75,9 +72,10 @@ int do_main() {
       FLAGS_friction_coefficient /* static friction */,
       FLAGS_friction_coefficient /* dynamic friction */);
 
-  MultibodyPlant<double>& plant = *builder.AddSystem(MakeCylinderPlant(
-      radius, length, mass, coulomb_friction, -g * Vector3d::UnitZ(),
-      FLAGS_time_step, &scene_graph));
+  PopulateCylinderPlant(radius, length, mass, coulomb_friction,
+                        -g * Vector3d::UnitZ(), &plant);
+  plant.Finalize();
+
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
@@ -85,22 +83,7 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
 
-  // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(plant.get_source_id().has_value());
-
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
-
-  DrakeLcm lcm;
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
-
-  // This is the source of poses for the visualizer.
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
-
-  // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
+  visualization::AddDefaultVisualization(&builder);
 
   auto diagram = builder.Build();
 

@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<sdf version="1.7"
+     xmlns:xacro="http://wiki.ros.org/xacro"
+     xmlns:drake="https://drake.mit.edu">
+  <model name="homecart_cutting_board">
+    <!--
+    Axes:
+      +X - Pointing towards front
+      +Y - Pointing to left side
+      +Z - Up
+    Origin:
+      (0, 0, 0)
+    A custom cutting board centered on the homecart baseplate center with the
+    same X,Y origin point.
+    The large double cutting board's origin is at the center of the homecart
+    offset from the table by the height of the cutting board, with the
+    Z axis upward from the table. The Y axis is facing along the long axis
+    of the table, and X axis along the short axis of the table.
+    -->
+    <xacro:property name="homecart_cutting_board_height" value="0.0254"/>
+    <xacro:property name="homecart_cutting_board_width" value="0.9864"/>
+    <xacro:property name="homecart_cutting_board_length" value="0.6816"/>
+    <link name="homecart_cutting_board_link">
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>100</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>100</iyy>
+          <iyz>0</iyz>
+          <izz>100</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>homecart_cutting_board.obj</uri>
+            <scale>1.0 1.0 1.0</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      <!-- At the suggestion of the dynamics team, we define both a compliant
+           and a rigid surface, with the rigid one slightly inset.  This means
+           that:
+            * user code can assign different items to the different
+              collision styles, but
+            * Objects without special collision filtering will not penetrate
+              far enough into the cutting board to cause pathological collision
+              shapes.
+      -->
+      <collision name="collision_compliant">
+        <pose>0 0 ${-homecart_cutting_board_height/2.0} 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>
+              ${homecart_cutting_board_length}
+              ${homecart_cutting_board_width}
+              ${homecart_cutting_board_height}
+            </size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.3</drake:mu_dynamic>
+          <drake:mu_static>0.3</drake:mu_static>
+          <drake:hydroelastic_modulus>20.0e3</drake:hydroelastic_modulus>
+          <drake:hunt_crossley_dissipation>200</drake:hunt_crossley_dissipation>
+          <drake:compliant_hydroelastic/>
+        </drake:proximity_properties>
+      </collision>
+      <collision name="collision_rigid">
+        <pose>0 0 ${-homecart_cutting_board_height/2.0} 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>
+              ${homecart_cutting_board_length}
+              ${homecart_cutting_board_width}
+              ${homecart_cutting_board_height - 0.001}
+            </size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.3</drake:mu_dynamic>
+          <drake:mu_static>0.3</drake:mu_static>
+          <drake:hunt_crossley_dissipation>200</drake:hunt_crossley_dissipation>
+          <drake:rigid_hydroelastic/>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

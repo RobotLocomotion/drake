@@ -1,0 +1,12 @@
+
+For Ubuntu 20.04, install these additional libraries:
+
+    sudo apt-get install --no-install-recommends \
+      libpython3.8 libx11-6 libsm6 libxt6 libglib2.0-0
+
+For Ubuntu 22.04, install these additional libraries:
+
+    sudo apt-get install --no-install-recommends \
+      libx11-6 libsm6 libglib2.0-0
+
+For macOS, ensure that you're using Homebrew Python (not Apple's system Python).

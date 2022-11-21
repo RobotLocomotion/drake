@@ -6,10 +6,12 @@ load(
     "drake_cc_googlebench_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 drake_cc_googlebench_binary(
     name = "mesh_intersection_benchmark",
     srcs = ["mesh_intersection_benchmark.cc"],
+    add_test_rule = True,
     test_timeout = "moderate",
     deps = [
         "//common:essential",
@@ -21,25 +23,24 @@ drake_cc_googlebench_binary(
     ],
 )
 
-# TODO(jwnimmer-tri) Change this to a drake_cc_googlebench_binary (i.e., add
-# a unit test here) once we figure out how to mate googlebench with gflags.
-drake_cc_binary(
+drake_cc_googlebench_binary(
     name = "render_benchmark",
     srcs = ["render_benchmark.cc"],
-    defines = select({
-        "//tools/cc_toolchain:apple": [
-        ],
-        "//conditions:default": ["RENDER_ENGINE_GL_SUPPORTED"],
-    }),
+    add_test_rule = True,
+    test_args = [
+        # To save time, only run the low-resolution tests in CI.
+        "--benchmark_filter=.*/1/1/320/240",
+    ],
+    test_tags = vtk_test_tags(),
     deps = [
-        "//common:filesystem",
+        "//common:add_text_logging_gflags",
         "//geometry/render",
-        "//geometry/render/gl_renderer",
+        "//geometry/render_gl",
         "//geometry/render_vtk",
         "//systems/sensors:image_writer",
+        "//tools/performance:gflags_main",
         "@fmt",
         "@gflags",
-        "@googlebenchmark//:benchmark",
     ],
 )
 

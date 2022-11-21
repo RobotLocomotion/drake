@@ -109,11 +109,11 @@ PYBIND11_MODULE(test_util, m) {
       system.CalcTimeDerivatives(*context, state_dot.get());
     }
     {
-      // Call `CalcDiscreteVariableUpdates` to test
+      // Call `CalcForcedDiscreteVariableUpdate` to test
       // `DoCalcDiscreteVariableUpdates`.
       auto& state = context->get_mutable_discrete_state();
       auto state_copy = state.Clone();
-      system.CalcDiscreteVariableUpdates(*context, state_copy.get());
+      system.CalcForcedDiscreteVariableUpdate(*context, state_copy.get());
 
       // From t=0, return next update time for testing discrete time.
       // If there is an abstract / unrestricted update, this assumes that
@@ -134,7 +134,7 @@ PYBIND11_MODULE(test_util, m) {
         if (is_discrete) {
           auto& state = context->get_mutable_discrete_state();
           auto state_copy = state.Clone();
-          system.CalcDiscreteVariableUpdates(*context, state_copy.get());
+          system.CalcForcedDiscreteVariableUpdate(*context, state_copy.get());
           state.SetFrom(*state_copy);
         } else {
           auto& state = context->get_mutable_continuous_state();

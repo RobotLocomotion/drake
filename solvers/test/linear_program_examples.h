@@ -6,6 +6,7 @@
 #include <tuple>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/solvers/test/optimization_examples.h"
 
 namespace drake {
@@ -78,7 +79,7 @@ class LinearProgram1 : public OptimizationProgram {
 };
 
 // Test a simple linear programming problem
-// Adapted from https://docs.mosek.com/9.3/capi/tutorial-lo-shared.html
+// Adapted from https://docs.mosek.com/10.0/capi/tutorial-lo-shared.html
 // min -3x0 - x1 - 5x2 - x3
 // s.t     3x0 +  x1 + 2x2        = 30
 //   15 <= 2x0 +  x1 + 3x2 +  x3 <= inf
@@ -209,6 +210,32 @@ class UnboundedLinearProgramTest1 : public ::testing::Test {
 
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
+};
+
+/**
+ When adding constraints and costs, we intentionally put duplicated variables in
+ each constraint/cost binding, so as to test if Drake's solver wrapper can
+ handle duplicated variables correctly.
+ min x0 + 3 * x1 + 4 * x2 + 3
+ s.t x0 + 2 * x1 + x2 <= 3
+     x0 + 2 * x2 = 1
+     1 <= 2 * x0 + x1 <= 3
+     x0 + 2x1 + 3x2 >= 0
+ */
+class DuplicatedVariableLinearProgramTest1 : public ::testing::Test {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DuplicatedVariableLinearProgramTest1)
+
+  DuplicatedVariableLinearProgramTest1();
+
+  void CheckSolution(
+      const SolverInterface& solver,
+      const std::optional<SolverOptions>& solver_options = std::nullopt,
+      double tol = 1E-7) const;
+
+ protected:
+  std::unique_ptr<MathematicalProgram> prog_;
+  Vector3<symbolic::Variable> x_;
 };
 
 /**

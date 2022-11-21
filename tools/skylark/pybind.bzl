@@ -412,7 +412,10 @@ def _generate_pybind_documentation_header_impl(ctx):
     args = ctx.actions.args()
 
     # TODO(jamiesnape): Remove this line when #14034 is resolved.
-    args.add("-DDRAKE_COMMON_SYMBOLIC_DETAIL_HEADER")
+    args.add("-DDRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER")
+
+    # TODO(svenevs): Remove when drake uses fmt 9+ ostream behavior.
+    args.add("-DFMT_DEPRECATED_OSTREAM=1")
     args.add_all(
         targets.compile_flags + target_deps.compile_flags,
         uniquify = True,

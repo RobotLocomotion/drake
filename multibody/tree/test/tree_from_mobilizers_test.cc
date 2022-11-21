@@ -160,9 +160,9 @@ class PendulumTests : public ::testing::Test {
     // Adds the upper and lower links of the pendulum.
     // Using: const BodyType& AddBody(std::unique_ptr<BodyType> body).
     upper_link_ =
-        &model_->AddBody(make_unique<RigidBody<double>>(M_U));
+        &model_->AddBody(make_unique<RigidBody<double>>("UpperLink", M_U));
     // Using: const BodyType<T>& AddBody(Args&&... args)
-    lower_link_ = &model_->AddBody<RigidBody>(M_L);
+    lower_link_ = &model_->AddBody<RigidBody>("LowerLink", M_L);
 
     // The shoulder is the mobilizer that connects the world to the upper link.
     // Its inboard frame, Si, is the world frame. Its outboard frame, So, a
@@ -177,7 +177,8 @@ class PendulumTests : public ::testing::Test {
     // In this case the frame is created explicitly from the body frame of
     // upper_link.
     shoulder_outboard_frame_ =
-        &model_->AddFrame<FixedOffsetFrame>(upper_link_->body_frame(), X_USo_);
+        &model_->AddFrame<FixedOffsetFrame>(
+            "So", upper_link_->body_frame(), X_USo_);
 
     // Adds the shoulder and elbow mobilizers of the pendulum.
     // Using:
@@ -407,7 +408,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
 // assign these indexes.
 TEST_F(PendulumTests, Indexes) {
   CreatePendulumModel();
-  EXPECT_EQ(shoulder_inboard_frame_->index(), FrameIndex(0));
+  EXPECT_EQ(shoulder_inboard_frame_->index(), world_frame_index());
   EXPECT_EQ(upper_link_->body_frame().index(), FrameIndex(1));
   EXPECT_EQ(lower_link_->body_frame().index(), FrameIndex(2));
   EXPECT_EQ(shoulder_outboard_frame_->index(), FrameIndex(3));
@@ -429,9 +430,9 @@ TEST_F(PendulumTests, Finalize) {
 
   // Asserts that no more multibody elements can be added after finalize.
   SpatialInertia<double> M_Bo_B;
-  EXPECT_THROW(model_->AddBody<RigidBody>(M_Bo_B), std::logic_error);
+  EXPECT_THROW(model_->AddBody<RigidBody>("B", M_Bo_B), std::logic_error);
   EXPECT_THROW(
-      model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_),
+      model_->AddFrame<FixedOffsetFrame>("F", *lower_link_, X_LEo_),
       std::logic_error);
   EXPECT_THROW(model_->AddMobilizer<RevoluteMobilizer>(
       *shoulder_inboard_frame_, *shoulder_outboard_frame_,

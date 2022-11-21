@@ -110,33 +110,33 @@
         </material>
       </visual>
       <collision name="left_top">
-	<pose> -0.008 0.021 0 0 0 0 </pose>
-	<geometry>
-	  <sphere>
+        <pose> -0.008 0.021 0 0 0 0 </pose>
+        <geometry>
+          <sphere>
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
       </collision>
       <collision name="left_bottom">
-	<pose> -0.008 0.041 0 0 0 0 </pose>
-	<geometry>
-	  <sphere>
+        <pose> -0.008 0.041 0 0 0 0 </pose>
+        <geometry>
+          <sphere>
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
       </collision>
       <collision name="left_left">
-	<pose> -0.008 0.031 -0.01 0 0 0 </pose>
-	<geometry>
-	  <sphere>
+        <pose> -0.008 0.031 -0.01 0 0 0 </pose>
+        <geometry>
+          <sphere>
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
       </collision>
       <collision name="left_right">
-	<pose> -0.008 0.031 0.01 0 0 0 </pose>
-	<geometry>
-	  <sphere>
+        <pose> -0.008 0.031 0.01 0 0 0 </pose>
+        <geometry>
+          <sphere>
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
@@ -221,33 +221,33 @@
         </material>
       </visual>
       <collision name="right_top">
-	<pose> -0.008 0.021 0 0 0 0 </pose>
-	<geometry>
-	  <sphere>
+        <pose> -0.008 0.021 0 0 0 0 </pose>
+        <geometry>
+          <sphere>
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
       </collision>
       <collision name="right_bottom">
-	<pose> -0.008 0.041 0 0 0 0 </pose>
-	<geometry>
-	  <sphere>
+        <pose> -0.008 0.041 0 0 0 0 </pose>
+        <geometry>
+          <sphere>
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
       </collision>
       <collision name="right_left">
-	<pose> -0.008 0.031 -0.01 0 0 0 </pose>
-	<geometry>
-	  <sphere>
+        <pose> -0.008 0.031 -0.01 0 0 0 </pose>
+        <geometry>
+          <sphere>
             <radius> 0.001 </radius>
           </sphere>
         </geometry>
       </collision>
       <collision name="right_right">
-	<pose> -0.008 0.031 0.01 0 0 0 </pose>
-	<geometry>
-	  <sphere>
+        <pose> -0.008 0.031 0.01 0 0 0 </pose>
+        <geometry>
+          <sphere>
             <radius> 0.001 </radius>
           </sphere>
         </geometry>

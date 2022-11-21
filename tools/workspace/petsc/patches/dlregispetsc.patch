@@ -1,18 +1,18 @@
 --- src/sys/classes/viewer/interface/dlregispetsc.c
 +++ src/sys/classes/viewer/interface/dlregispetsc.c
-@@ -76,7 +76,6 @@ PETSC_EXTERN PetscErrorCode PetscDLLibraryRegister_petscmat(void);
+@@ -71,7 +71,6 @@ PETSC_EXTERN PetscErrorCode PetscDLLibraryRegister_petscmat(void);
  PETSC_EXTERN PetscErrorCode PetscDLLibraryRegister_petscdm(void);
  PETSC_EXTERN PetscErrorCode PetscDLLibraryRegister_petscksp(void);
  PETSC_EXTERN PetscErrorCode PetscDLLibraryRegister_petscsnes(void);
 -PETSC_EXTERN PetscErrorCode PetscDLLibraryRegister_petscts(void);
- #endif
- 
- /*
-@@ -108,7 +107,6 @@ PETSC_EXTERN PetscErrorCode PetscDLLibraryRegister_petscsys(void)
+   #endif
+
+   /*
+@@ -101,7 +100,6 @@ PETSC_EXTERN PetscErrorCode PetscDLLibraryRegister_petscsys(void)
    PetscCall(PetscDLLibraryRegister_petscdm());
    PetscCall(PetscDLLibraryRegister_petscksp());
    PetscCall(PetscDLLibraryRegister_petscsnes());
 -  PetscCall(PetscDLLibraryRegister_petscts());
- #endif
+   #endif
    PetscFunctionReturn(0);
  }

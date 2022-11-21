@@ -8,7 +8,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/math/rigid_transform.h"
@@ -96,11 +95,11 @@ class KinematicsVector {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KinematicsVector)
 
-  /** Initializes the vector using an invalid SourceId with no data .*/
+  /** Initializes the vector with no data .*/
   KinematicsVector();
 
-  /** Initializes the vector using an invalid SourceId and the given the keys
-  and the corresponding kinematics values. */
+  /** Initializes the vector using the given the keys and their corresponding
+   kinematics values. */
   KinematicsVector(
       std::initializer_list<std::pair<const Id, KinematicsValue>> init);
 
@@ -128,19 +127,6 @@ class KinematicsVector {
 
   /** Reports true if the given id is a member of this data. */
   bool has_id(Id id) const;
-
-  /** Provides a range object for all of the existing ids in the vector.
-   This is intended to be used as:
-   @code
-   for (Id id : this_vector.frame_ids()) {
-    ...
-    // Obtain the KinematicsValue of an id by `this_vector.value(id)`
-    ...
-   }
-   @endcode
-   */
-  DRAKE_DEPRECATED("2022-10-01", "Use ids() instead.")
-  std::vector<Id> frame_ids() const;
 
   /** Provides a range object for all of the existing ids in the vector.
    This is intended to be used as:

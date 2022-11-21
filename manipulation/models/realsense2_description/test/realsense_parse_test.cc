@@ -56,7 +56,7 @@ TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
 
   // Check to ensure URDF is parsable.
   Parser parser(&plant);
-  EXPECT_NO_THROW(parser.AddModelFromFile(filename));
+  EXPECT_NO_THROW(parser.AddModels(filename));
 
   // Ensure there was exactly one model instance added for the new model.
   EXPECT_EQ(plant.num_model_instances() - default_num_models, 1);
@@ -69,7 +69,7 @@ TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
     drake::log()->info("Visualize: {}", object_name);
     Simulator<double> simulator(*diagram);
     simulator.Initialize();
-    diagram->Publish(simulator.get_context());
+    diagram->ForcedPublish(simulator.get_context());
   }
 }
 

@@ -234,6 +234,14 @@ class RigidGeometry {
     return geometry_->mesh();
   }
 
+  /* Releases the RigidMesh representation of this `RigidGeometry`, rendering
+   `this` RigidGeometry invalid.
+   @pre is_half_space() == false. */
+  std::unique_ptr<RigidMesh> release_mesh() {
+    DRAKE_DEMAND(!is_half_space());
+    return std::make_unique<RigidMesh>(std::move(*geometry_));
+  }
+
   /* Returns a reference to the bounding volume hierarchy -- calling this will
    throw unless is_half_space() returns false.  */
   const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh() const {
@@ -327,14 +335,14 @@ class Geometries final : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Sphere& sphere, void* user_data) override;
-  void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
-  void ImplementGeometry(const HalfSpace&, void* user_data) override;
   void ImplementGeometry(const Box& box, void* user_data) override;
   void ImplementGeometry(const Capsule& capsule, void* user_data) override;
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override;
-  void ImplementGeometry(const Mesh&, void*) override;
   void ImplementGeometry(const Convex& convex, void* user_data) override;
+  void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override;
+  void ImplementGeometry(const HalfSpace&, void* user_data) override;
+  void ImplementGeometry(const Mesh&, void*) override;
+  void ImplementGeometry(const Sphere& sphere, void* user_data) override;
 
   template <typename ShapeType>
   void MakeShape(const ShapeType& shape, const ReifyData& data);
@@ -474,6 +482,12 @@ have sufficient information). Requires the
 ('hydroelastic','hydroelastic_modulus') property. */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Convex& convex_spec, const ProximityProperties& props);
+
+/* Creates a compliant (generally) non-convex mesh (assuming the proximity
+ properties have sufficient information). Requires the ('hydroelastic',
+ 'hydroelastic_modulus') properties. */
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Mesh& mesh_specification, const ProximityProperties& props);
 
 //@}
 

@@ -8,6 +8,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/piecewise_trajectory.h"
@@ -68,7 +69,7 @@ namespace trajectories {
  * the range defined by the breaks. So `pp.value(-2.0, row, col)` in the example
  * above would evaluate to -1.0. See value().
  *
- * @tparam_default_scalars
+ * @tparam_default_scalar
  */
 template <typename T>
 class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
@@ -425,6 +426,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const Eigen::Ref<const MatrixX<T>>& samples,
       bool periodic_end_condition = false);
 
+  DRAKE_DEPRECATED("2023-03-01",
+                   "Please use CubicWithContinuousSecondDerivatives instead.")
   static PiecewisePolynomial<T> Cubic(
       const Eigen::Ref<const VectorX<T>>& breaks,
       const Eigen::Ref<const MatrixX<T>>& samples,

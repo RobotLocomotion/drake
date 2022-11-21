@@ -297,6 +297,8 @@ class TestGeometryCore(unittest.TestCase):
                                            "hydroelastic_modulus"), E)
 
     def test_rgba_api(self):
+        default_white = mut.Rgba()
+        self.assertEqual(default_white, mut.Rgba(1, 1, 1, 1))
         r, g, b, a = 0.75, 0.5, 0.25, 1.
         color = mut.Rgba(r=r, g=g, b=b)
         self.assertEqual(color.r(), r)
@@ -346,6 +348,7 @@ class TestGeometryCore(unittest.TestCase):
         # order in shape_specification.h
         box = mut.Box(width=1.0, depth=2.0, height=3.0)
         assert_shape_api(box)
+        box = mut.Box(measures=(1.0, 2.0, 3.0))
         self.assertEqual(box.width(), 1.0)
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
@@ -357,6 +360,7 @@ class TestGeometryCore(unittest.TestCase):
 
         capsule = mut.Capsule(radius=1.0, length=2.0)
         assert_shape_api(capsule)
+        capsule = mut.Capsule(measures=(1.0, 2.0))
         self.assertEqual(capsule.radius(), 1.0)
         self.assertEqual(capsule.length(), 2.0)
         assert_pickle(
@@ -372,6 +376,7 @@ class TestGeometryCore(unittest.TestCase):
 
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
         assert_shape_api(cylinder)
+        cylinder = mut.Cylinder(measures=(1.0, 2.0))
         self.assertEqual(cylinder.radius(), 1.0)
         self.assertEqual(cylinder.length(), 2.0)
         assert_pickle(
@@ -379,6 +384,7 @@ class TestGeometryCore(unittest.TestCase):
 
         ellipsoid = mut.Ellipsoid(a=1.0, b=2.0, c=3.0)
         assert_shape_api(ellipsoid)
+        ellipsoid = mut.Ellipsoid(measures=(1.0, 2.0, 3.0))
         self.assertEqual(ellipsoid.a(), 1.0)
         self.assertEqual(ellipsoid.b(), 2.0)
         self.assertEqual(ellipsoid.c(), 3.0)
@@ -402,6 +408,7 @@ class TestGeometryCore(unittest.TestCase):
 
         cone = mut.MeshcatCone(height=1.2, a=3.4, b=5.6)
         assert_shape_api(cone)
+        cone = mut.MeshcatCone(measures=(1.2, 3.4, 5.6))
         self.assertEqual(cone.height(), 1.2)
         self.assertEqual(cone.a(), 3.4)
         self.assertEqual(cone.b(), 5.6)

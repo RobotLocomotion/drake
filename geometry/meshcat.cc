@@ -4,6 +4,7 @@
 #include <atomic>
 #include <cctype>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <future>
@@ -24,7 +25,6 @@
 #include <uuid.h>
 
 #include "drake/common/drake_throw.h"
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
@@ -56,6 +56,8 @@ std::string LoadResource(const std::string& resource_name) {
 const std::string& GetUrlContent(std::string_view url_path) {
   static const drake::never_destroyed<std::string> meshcat_js(
       LoadResource("drake/geometry/meshcat.js"));
+  static const drake::never_destroyed<std::string> stats_js(
+      LoadResource("drake/geometry/stats.min.js"));
   static const drake::never_destroyed<std::string> meshcat_ico(
       LoadResource("drake/geometry/meshcat.ico"));
   static const drake::never_destroyed<std::string> meshcat_html(
@@ -68,6 +70,9 @@ const std::string& GetUrlContent(std::string_view url_path) {
   }
   if (url_path == "/meshcat.js") {
     return meshcat_js.access();
+  }
+  if (url_path == "/stats.min.js") {
+    return stats_js.access();
   }
   if (url_path == "/favicon.ico") {
     return meshcat_ico.access();
@@ -257,76 +262,6 @@ class MeshcatShapeReifier : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Sphere& sphere, void* data) override {
-    DRAKE_DEMAND(data != nullptr);
-    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    lumped.object = internal::MeshData();
-
-    auto geometry = std::make_unique<internal::SphereGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
-    geometry->radius = sphere.radius();
-    lumped.geometry = std::move(geometry);
-  }
-
-  void ImplementGeometry(const Cylinder& cylinder, void* data) override {
-    DRAKE_DEMAND(data != nullptr);
-    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    auto& mesh = lumped.object.emplace<internal::MeshData>();
-
-    auto geometry = std::make_unique<internal::CylinderGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
-    geometry->radiusBottom = cylinder.radius();
-    geometry->radiusTop = cylinder.radius();
-    geometry->height = cylinder.length();
-    lumped.geometry = std::move(geometry);
-
-    // Meshcat cylinders have their long axis in y.
-    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
-        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0))
-            .GetAsMatrix4();
-  }
-
-  void ImplementGeometry(const HalfSpace&, void*) override {
-    // TODO(russt): Use PlaneGeometry with fields width, height,
-    // widthSegments, heightSegments
-    drake::log()->warn("Meshcat does not display HalfSpace geometry (yet).");
-  }
-
-  void ImplementGeometry(const Box& box, void* data) override {
-    DRAKE_DEMAND(data != nullptr);
-    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    lumped.object = internal::MeshData();
-
-    auto geometry = std::make_unique<internal::BoxGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
-    geometry->width = box.width();
-    // Three.js uses height for the y axis; Drake uses depth.
-    geometry->height = box.depth();
-    geometry->depth = box.height();
-    lumped.geometry = std::move(geometry);
-  }
-
-  void ImplementGeometry(const Capsule&, void*) override {
-    drake::log()->warn("Meshcat does not display Capsule geometry (yet).");
-  }
-
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void* data) override {
-    // Implemented as a Sphere stretched by a diagonal transform.
-    DRAKE_DEMAND(data != nullptr);
-    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    auto& mesh = lumped.object.emplace<internal::MeshData>();
-
-    auto geometry = std::make_unique<internal::SphereGeometryData>();
-    geometry->uuid = uuids::to_string((*uuid_generator_)());
-    geometry->radius = 1;
-    lumped.geometry = std::move(geometry);
-
-    Eigen::Map<Eigen::Matrix4d> matrix(mesh.matrix);
-    matrix(0, 0) = ellipsoid.a();
-    matrix(1, 1) = ellipsoid.b();
-    matrix(2, 2) = ellipsoid.c();
-  }
-
   template <typename T>
   void ImplementMesh(const T& mesh, void* data) {
     DRAKE_DEMAND(data != nullptr);
@@ -336,7 +271,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     // meshes unless necessary.  Using the filename is tempting, but that leads
     // to problems when the file contents change on disk.
 
-    const filesystem::path filename(mesh.filename());
+    const std::filesystem::path filename(mesh.filename());
     std::string format = filename.extension();
     format.erase(0, 1);  // remove the . from the extension
     std::ifstream input(mesh.filename(), std::ios::binary | std::ios::ate);
@@ -382,7 +317,7 @@ class MeshcatShapeReifier : public ShapeReifier {
       std::string mtllib = matches.str(1);
 
       // Use filename path as the base directory for textures.
-      const filesystem::path basedir = filename.parent_path();
+      const std::filesystem::path basedir = filename.parent_path();
 
       // Read .mtl file into geometry.mtl_library.
       std::ifstream mtl_stream(basedir / mtllib, std::ios::ate);
@@ -396,8 +331,16 @@ class MeshcatShapeReifier : public ShapeReifier {
 
         // Scan .mtl file for map_ lines.  For each, load the file and add
         // the contents to geometry.resources.
-        // TODO(russt): Make this parsing more robust.
-        std::regex map_regex("map_[^\\s]+\\s+([^\\s]+)");
+        // The syntax (http://paulbourke.net/dataformats/mtl/) is e.g.
+        //   map_Ka -options args filename
+        // Here we ignore the options and only extract the filename (by
+        // extracting the last word before the end of line/string).
+        //  - "map_.+" matches the map_ plus any options,
+        //  - "\s" matches one whitespace (before the filename),
+        //  - "[^\s]+" matches the filename, and
+        //  - "[$\r\n]" matches the end of string or end of line.
+        // TODO(russt): This parsing could still be more robust.
+        std::regex map_regex(R"""(map_.+\s([^\s]+)[$\r\n])""");
         for (std::sregex_iterator iter(meshfile_object.mtl_library.begin(),
                                        meshfile_object.mtl_library.end(),
                                        map_regex);
@@ -448,11 +391,83 @@ class MeshcatShapeReifier : public ShapeReifier {
     }
     }
 
-  void ImplementGeometry(const Mesh& mesh, void* data) override {
-    ImplementMesh(mesh, data);
+  void ImplementGeometry(const Box& box, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
+    lumped.object = internal::MeshData();
+
+    auto geometry = std::make_unique<internal::BoxGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->width = box.width();
+    // Three.js uses height for the y axis; Drake uses depth.
+    geometry->height = box.depth();
+    geometry->depth = box.height();
+    lumped.geometry = std::move(geometry);
+  }
+
+  void ImplementGeometry(const Capsule& capsule, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
+
+    auto geometry = std::make_unique<internal::CapsuleGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radius = capsule.radius();
+    geometry->length = capsule.length();
+    lumped.geometry = std::move(geometry);
+
+    // Meshcat cylinders have their long axis in y.
+    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
+        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0))
+            .GetAsMatrix4();
   }
 
   void ImplementGeometry(const Convex& mesh, void* data) override {
+    ImplementMesh(mesh, data);
+  }
+
+  void ImplementGeometry(const Cylinder& cylinder, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
+
+    auto geometry = std::make_unique<internal::CylinderGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radiusBottom = cylinder.radius();
+    geometry->radiusTop = cylinder.radius();
+    geometry->height = cylinder.length();
+    lumped.geometry = std::move(geometry);
+
+    // Meshcat cylinders have their long axis in y.
+    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
+        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0))
+            .GetAsMatrix4();
+  }
+
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* data) override {
+    // Implemented as a Sphere stretched by a diagonal transform.
+    DRAKE_DEMAND(data != nullptr);
+    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
+
+    auto geometry = std::make_unique<internal::SphereGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radius = 1;
+    lumped.geometry = std::move(geometry);
+
+    Eigen::Map<Eigen::Matrix4d> matrix(mesh.matrix);
+    matrix(0, 0) = ellipsoid.a();
+    matrix(1, 1) = ellipsoid.b();
+    matrix(2, 2) = ellipsoid.c();
+  }
+
+  void ImplementGeometry(const HalfSpace&, void*) override {
+    // TODO(russt): Use PlaneGeometry with fields width, height,
+    // widthSegments, heightSegments
+    drake::log()->warn("Meshcat does not display HalfSpace geometry (yet).");
+  }
+
+  void ImplementGeometry(const Mesh& mesh, void* data) override {
     ImplementMesh(mesh, data);
   }
 
@@ -476,6 +491,17 @@ class MeshcatShapeReifier : public ShapeReifier {
         RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0),
                         Eigen::Vector3d{0, 0, cone.height() / 2.0})
             .GetAsMatrix4();
+  }
+
+  void ImplementGeometry(const Sphere& sphere, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
+    lumped.object = internal::MeshData();
+
+    auto geometry = std::make_unique<internal::SphereGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radius = sphere.radius();
+    lumped.geometry = std::move(geometry);
   }
 
  private:
@@ -524,7 +550,8 @@ class Meshcat::Impl {
     // values) through to fmt to allow any fmt-specific exception to percolate.
     // Then, confirm that the user's pattern started with a valid protocol.
     const std::string url = fmt::format(
-        params.web_url_pattern, fmt::arg("host", "foo"), fmt::arg("port", 1));
+        fmt_runtime(params.web_url_pattern),
+        fmt::arg("host", "foo"), fmt::arg("port", 1));
     if (url.substr(0, 4) != "http") {
       throw std::logic_error("The web_url_pattern must be http:// or https://");
     }
@@ -593,7 +620,7 @@ class Meshcat::Impl {
     const bool is_localhost = host.empty() || host == "*";
     const std::string display_host = is_localhost ? "localhost" : host;
     return fmt::format(
-        params_.web_url_pattern,
+        fmt_runtime(params_.web_url_pattern),
         fmt::arg("host", display_host),
         fmt::arg("port", port_));
   }
@@ -602,6 +629,21 @@ class Meshcat::Impl {
   int port() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     return port_;
+  }
+
+  // This function is public via the PIMPL.
+  void SetRealtimeRate(double rate) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    internal::RealtimeRateData data;
+    data.rate = rate;
+    Defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      DRAKE_DEMAND(app_ != nullptr);
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+    });
   }
 
   // This function is public via the PIMPL.
@@ -908,6 +950,54 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
+  void SetTriangleColorMesh(std::string_view path,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                       const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
+                       bool wireframe,
+                       double wireframe_line_width) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    uuids::uuid_random_generator uuid_generator{generator_};
+    internal::SetObjectData data;
+    data.path = FullPath(path);
+
+    auto geometry = std::make_unique<internal::BufferGeometryData>();
+    geometry->uuid = uuids::to_string(uuid_generator());
+    geometry->position = vertices.cast<float>();
+    geometry->faces = faces.cast<uint32_t>();
+    geometry->color = colors.cast<float>();
+    data.object.geometry = std::move(geometry);
+
+    auto material = std::make_unique<internal::MaterialData>();
+    material->uuid = uuids::to_string(uuid_generator());
+    material->type = "MeshPhongMaterial";
+    material->transparent = false;
+    material->opacity = 1.0;
+    material->wireframe = wireframe;
+    material->wireframeLineWidth = wireframe_line_width;
+    material->vertexColors = true;
+    material->side = internal::kDoubleSide;
+    data.object.material = std::move(material);
+
+    internal::MeshData mesh;
+    mesh.uuid = uuids::to_string(uuid_generator());
+    mesh.type = "Mesh";
+    mesh.geometry = data.object.geometry->uuid;
+    mesh.material = data.object.material->uuid;
+    data.object.object = std::move(mesh);
+
+    Defer([this, data = std::move(data)]() {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      SceneTreeElement& e = scene_tree_root_[data.path];
+      e.object() = std::move(message);
+    });
+  }
+
+  // This function is public via the PIMPL.
   template <typename CameraData>
   void SetCamera(CameraData camera, std::string path) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
@@ -1120,7 +1210,7 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void AddButton(std::string name) {
+  void AddButton(std::string name, std::string keycode) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetButtonControl data;
@@ -1130,19 +1220,32 @@ class Meshcat::Impl {
   'type': 'button',
   'name': '{}'
 }})))""", data.name);
+    data.keycode1 = std::move(keycode);
 
     {
       std::lock_guard<std::mutex> lock(controls_mutex_);
-      auto iter = buttons_.find(data.name);
-      if (iter != buttons_.end()) {
-        iter->second.num_clicks = 0;
-        return;
-      }
       if (sliders_.find(data.name) != sliders_.end()) {
         throw std::logic_error(
             fmt::format("Meshcat already has a slider named {}.", data.name));
       }
-      controls_.emplace_back(data.name);
+      auto iter = buttons_.find(data.name);
+      if (iter == buttons_.end()) {
+        controls_.emplace_back(data.name);
+      } else {
+        iter->second.num_clicks = 0;
+        if (iter->second.keycode1.empty()) {
+          if (data.keycode1.empty()) {
+            // No need to publish to meshcat.
+            return;
+          }  // else fall through.
+        } else if (iter->second.keycode1 != data.keycode1) {
+          throw std::logic_error(fmt::format(
+              "Meshcat already has a button named `{}`, but the previously "
+              "assigned keycode `{}` does not match the current keycode `{}`. "
+              "To re-assign the keycode, you must first delete the button.",
+              data.name, iter->second.keycode1, data.keycode1));
+        }
+      }
       buttons_[data.name] = data;
       DRAKE_DEMAND(controls_.size() == (buttons_.size() + sliders_.size()));
     }
@@ -1157,7 +1260,7 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  int GetButtonClicks(std::string_view name) {
+  int GetButtonClicks(std::string_view name) const {
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = buttons_.find(name);
     if (iter == buttons_.end()) {
@@ -1197,8 +1300,9 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void AddSlider(std::string name, double min, double max,
-                               double step, double value) {
+  void AddSlider(std::string name, double min, double max, double step,
+                 double value, std::string decrement_keycode,
+                 std::string increment_keycode) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetSliderControl data;
@@ -1216,8 +1320,10 @@ class Meshcat::Impl {
     // https://github.com/dataarts/dat.gui/blob/f720c729deca5d5c79da8464f8a05500d38b140c/src/dat/controllers/NumberController.js#L62
     value = std::max(value, min);
     value = std::min(value, max);
-    value = std::round(value/step)*step;
+    value = std::round(value / step) * step;
     data.value = value;
+    data.keycode1 = std::move(decrement_keycode);
+    data.keycode2 = std::move(increment_keycode);
 
     {
       std::lock_guard<std::mutex> lock(controls_mutex_);
@@ -1276,7 +1382,7 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  double GetSliderValue(std::string_view name) {
+  double GetSliderValue(std::string_view name) const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     std::lock_guard<std::mutex> lock(controls_mutex_);
@@ -1337,6 +1443,13 @@ class Meshcat::Impl {
     }
   }
 
+  Meshcat::Gamepad GetGamepad() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    std::lock_guard<std::mutex> lock(controls_mutex_);
+    return gamepad_;
+  }
+
   // This function is public via the PIMPL.
   std::string StaticHtml() {
     DRAKE_DEMAND(IsThread(main_thread_id_));
@@ -1355,28 +1468,22 @@ class Meshcat::Impl {
 
     // Replace the javascript code in the original html file which connects via
     // websockets with the static javascript commands.
-    // Note: If the html code changes, the DRAKE_DEMAND will fail, and the code
-    // string here will need to be updated to once again match the html.
-    const std::string html_connect = R"""(try {
-      url = location.toString();
-      url = url.replace("http://", "ws://")
-      url = url.replace("https://", "wss://")
-      url = url.replace("/index.html", "/")
-      url = url.replace("/meshcat.html", "/")
-      viewer.connect(url);
-    } catch (e) {
-      console.info("Not connected to MeshCat websocket server: ", e);
-    })""";
-    size_t pos = html.find(html_connect);
-    DRAKE_DEMAND(pos != std::string::npos);
-    html.replace(pos, html_connect.size(), std::move(f.get()));
+    std::regex block_re(
+        "<!-- CONNECTION BLOCK BEGIN [^]+ CONNECTION BLOCK END -->\n");
+    html = std::regex_replace(html, block_re, f.get());
 
     // Insert the javascript directly into the html.
-    const std::string meshcat_src_link(" src=\"meshcat.js\"");
-    pos = html.find(meshcat_src_link);
-    DRAKE_DEMAND(pos != std::string::npos);
-    html.erase(pos, meshcat_src_link.size());
-    html.insert(pos+1, GetUrlContent("/meshcat.js"));
+    std::vector<std::pair<std::string, std::string>> js_paths{
+        {" src=\"meshcat.js\"", "/meshcat.js"},
+        {" src=\"stats.min.js\"", "/stats.min.js"},
+    };
+
+    for (const auto& [src_link, url] : js_paths) {
+      const size_t js_pos = html.find(src_link);
+      DRAKE_DEMAND(js_pos != std::string::npos);
+      html.erase(js_pos, src_link.size());
+      html.insert(js_pos+1, GetUrlContent(url));
+    }
 
     return html;
   }
@@ -1649,6 +1756,14 @@ class Meshcat::Impl {
         ws->send(message_stream.str());
       }
     }
+
+    // Tell client if the realtime rate plot should be hidden
+    internal::ShowRealtimeRate realtime_rate_message;
+    realtime_rate_message.show = params_.show_stats_plot;
+    std::stringstream realtime_message_stream;
+    msgpack::pack(realtime_message_stream, realtime_rate_message);
+    ws->send(realtime_message_stream.str());
+
     if (inject_open_fault_.load()) {
       throw std::runtime_error(
           "InjectWebsocketThreadFault during socket open");
@@ -1704,6 +1819,14 @@ class Meshcat::Impl {
           ws->publish("all", message_stream.str(), uWS::OpCode::BINARY);
         }
       }
+      return;
+    }
+    if (data.type == "gamepad" && data.gamepad.has_value()) {
+      // TODO(russt): Figure out how to do the non-invasive unpack of
+      // Meshcat::Gamepad and remove internal::Gamepad.
+      gamepad_.index = data.gamepad->index;
+      gamepad_.button_values = std::move(data.gamepad->button_values);
+      gamepad_.axes = std::move(data.gamepad->axes);
       return;
     }
     drake::log()->warn("Meshcat ignored a '{}' event", data.type);
@@ -1772,10 +1895,11 @@ class Meshcat::Impl {
   std::thread websocket_thread_{};
   const std::string prefix_{};
 
-  // Both threads access controls_, guarded by controls_mutex_.
-  std::mutex controls_mutex_;
+  // Both threads access the following variables, guarded by controls_mutex_.
+  mutable std::mutex controls_mutex_;
   std::map<std::string, internal::SetButtonControl, std::less<>> buttons_{};
   std::map<std::string, internal::SetSliderControl, std::less<>> sliders_{};
+  Meshcat::Gamepad gamepad_{};
   std::vector<std::string> controls_{};  // Names of buttons and sliders in the
                                          // order they were added.
 
@@ -1974,6 +2098,15 @@ void Meshcat::SetTriangleMesh(
                               wireframe_line_width);
 }
 
+void Meshcat::SetTriangleColorMesh(
+    std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+    const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+    const Eigen::Ref<const Eigen::Matrix3Xd>& colors, bool wireframe,
+    double wireframe_line_width) {
+  impl().SetTriangleColorMesh(path, vertices, faces, colors, wireframe,
+                         wireframe_line_width);
+}
+
 void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {
   impl().SetCamera(std::move(camera), std::move(path));
 }
@@ -1994,6 +2127,10 @@ void Meshcat::SetTransform(std::string_view path,
 
 void Meshcat::Delete(std::string_view path) {
   impl().Delete(path);
+}
+
+void Meshcat::SetRealtimeRate(double rate) {
+  impl().SetRealtimeRate(rate);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
@@ -2024,11 +2161,11 @@ void Meshcat::ResetRenderMode() {
   impl().ResetRenderMode();
 }
 
-void Meshcat::AddButton(std::string name) {
-  impl().AddButton(std::move(name));
+void Meshcat::AddButton(std::string name, std::string keycode) {
+  impl().AddButton(std::move(name), std::move(keycode));
 }
 
-int Meshcat::GetButtonClicks(std::string_view name) {
+int Meshcat::GetButtonClicks(std::string_view name) const {
   return impl().GetButtonClicks(name);
 }
 
@@ -2036,16 +2173,18 @@ void Meshcat::DeleteButton(std::string name) {
   impl().DeleteButton(std::move(name));
 }
 
-void Meshcat::AddSlider(std::string name, double min, double max,
-                               double step, double value) {
-  impl().AddSlider(std::move(name), min, max, step, value);
+void Meshcat::AddSlider(std::string name, double min, double max, double step,
+                        double value, std::string decrement_keycode,
+                        std::string increment_keycode) {
+  impl().AddSlider(std::move(name), min, max, step, value,
+                   std::move(decrement_keycode), std::move(increment_keycode));
 }
 
 void Meshcat::SetSliderValue(std::string name, double value) {
   impl().SetSliderValue(std::move(name), value);
 }
 
-double Meshcat::GetSliderValue(std::string_view name) {
+double Meshcat::GetSliderValue(std::string_view name) const {
   return impl().GetSliderValue(name);
 }
 
@@ -2055,6 +2194,10 @@ void Meshcat::DeleteSlider(std::string name) {
 
 void Meshcat::DeleteAddedControls() {
   impl().DeleteAddedControls();
+}
+
+Meshcat::Gamepad Meshcat::GetGamepad() const {
+  return impl().GetGamepad();
 }
 
 std::string Meshcat::StaticHtml() {

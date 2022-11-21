@@ -8,6 +8,9 @@
 // This file contains implementations that are common to both the available and
 // unavailable flavor of this class.
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace drake {
 namespace solvers {
 
@@ -45,3 +48,5 @@ bool IbexSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
 
 }  // namespace solvers
 }  // namespace drake
+
+#pragma GCC diagnostic pop

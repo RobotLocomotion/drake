@@ -35,6 +35,8 @@ extern const char* const kFriction;        ///< Friction coefficients property
                                            ///< name.
 extern const char* const kHcDissipation;   ///< Hunt-Crossley dissipation
                                            ///< property name.
+extern const char* const kRelaxationTime;  ///< Linear dissipation
+                                           ///< property name.
 extern const char* const kPointStiffness;  ///< Point stiffness property
                                            ///< name.
 

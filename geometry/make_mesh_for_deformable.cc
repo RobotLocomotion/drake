@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/geometry/proximity/make_mesh_from_vtk.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 
 namespace drake {
@@ -17,103 +18,31 @@ std::unique_ptr<VolumeMesh<double>> MeshBuilderForDeformable::Build(
   return std::move(data.mesh);
 }
 
+void MeshBuilderForDeformable::ImplementGeometry(const Mesh& mesh_spec,
+                                                 void* user_data) {
+  DRAKE_DEMAND(user_data != nullptr);
+  ReifyData& data = *static_cast<ReifyData*>(user_data);
+  data.mesh = std::make_unique<VolumeMesh<double>>(
+      MakeVolumeMeshFromVtk<double>(mesh_spec));
+}
+
 void MeshBuilderForDeformable::ImplementGeometry(const Sphere& sphere,
                                                  void* user_data) {
+  DRAKE_DEMAND(user_data != nullptr);
   ReifyData& data = *static_cast<ReifyData*>(user_data);
-  data.mesh = std::make_unique<VolumeMesh<double>>(
-      MakeMeshForDeformable(sphere, data.resolution_hint));
-}
-void MeshBuilderForDeformable::ImplementGeometry(const Cylinder& cylinder,
-                                                 void* user_data) {
-  ReifyData& data = *static_cast<ReifyData*>(user_data);
-  data.mesh = std::make_unique<VolumeMesh<double>>(
-      MakeMeshForDeformable(cylinder, data.resolution_hint));
-}
-void MeshBuilderForDeformable::ImplementGeometry(const HalfSpace& half_space,
-                                                 void* user_data) {
-  ReifyData& data = *static_cast<ReifyData*>(user_data);
-  data.mesh = std::make_unique<VolumeMesh<double>>(
-      MakeMeshForDeformable(half_space, data.resolution_hint));
-}
-void MeshBuilderForDeformable::ImplementGeometry(const Box& box,
-                                                 void* user_data) {
-  ReifyData& data = *static_cast<ReifyData*>(user_data);
-  data.mesh = std::make_unique<VolumeMesh<double>>(
-      MakeMeshForDeformable(box, data.resolution_hint));
-}
-void MeshBuilderForDeformable::ImplementGeometry(const Capsule& capsule,
-                                                 void* user_data) {
-  ReifyData& data = *static_cast<ReifyData*>(user_data);
-  data.mesh = std::make_unique<VolumeMesh<double>>(
-      MakeMeshForDeformable(capsule, data.resolution_hint));
-}
-void MeshBuilderForDeformable::ImplementGeometry(const Ellipsoid& ellipsoid,
-                                                 void* user_data) {
-  ReifyData& data = *static_cast<ReifyData*>(user_data);
-  data.mesh = std::make_unique<VolumeMesh<double>>(
-      MakeMeshForDeformable(ellipsoid, data.resolution_hint));
-}
-void MeshBuilderForDeformable::ImplementGeometry(const Mesh& mesh,
-                                                 void* user_data) {
-  ReifyData& data = *static_cast<ReifyData*>(user_data);
-  data.mesh = std::make_unique<VolumeMesh<double>>(
-      MakeMeshForDeformable(mesh, data.resolution_hint));
-}
-void MeshBuilderForDeformable::ImplementGeometry(const Convex& convex,
-                                                 void* user_data) {
-  ReifyData& data = *static_cast<ReifyData*>(user_data);
-  data.mesh = std::make_unique<VolumeMesh<double>>(
-      MakeMeshForDeformable(convex, data.resolution_hint));
-}
-void MeshBuilderForDeformable::ImplementGeometry(const MeshcatCone& cone,
-                                                 void* user_data) {
-  ReifyData& data = *static_cast<ReifyData*>(user_data);
-  data.mesh = std::make_unique<VolumeMesh<double>>(
-      MakeMeshForDeformable(cone, data.resolution_hint));
+  DRAKE_DEMAND(data.resolution_hint > 0);
+  // Relying on move construction from r-value return from MakeSphereVolumeMesh.
+  data.mesh = std::make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
+      sphere, data.resolution_hint,
+      TessellationStrategy::kDenseInteriorVertices));
 }
 
-VolumeMesh<double> MakeMeshForDeformable(const Sphere& sphere,
-                                         double resolution_hint) {
-  DRAKE_DEMAND(resolution_hint > 0);
-  return MakeSphereVolumeMesh<double>(
-      sphere, resolution_hint, TessellationStrategy::kDenseInteriorVertices);
-}
-
-// TODO(xuchenhan-tri): Implement these shapes.
-VolumeMesh<double> MakeMeshForDeformable(const Cylinder&, double) {
+void MeshBuilderForDeformable::ThrowUnsupportedGeometry(
+    const std::string& shape_name) {
   throw std::logic_error(
-      "Cylinder shape is not supported in MakeMeshForDeformable().");
-}
-VolumeMesh<double> MakeMeshForDeformable(const HalfSpace&, double) {
-  throw std::logic_error(
-      "Half space shape is not supported in MakeMeshForDeformable().");
-}
-VolumeMesh<double> MakeMeshForDeformable(const Box&, double) {
-  throw std::logic_error(
-      "Box shape is not supported in MakeMeshForDeformable().");
-}
-VolumeMesh<double> MakeMeshForDeformable(const Capsule&, double) {
-  throw std::logic_error(
-      "Capsule shape is not supported in MakeMeshForDeformable().");
-}
-VolumeMesh<double> MakeMeshForDeformable(const Ellipsoid&, double) {
-  throw std::logic_error(
-      "Ellipsoid shape is not supported in MakeMeshForDeformable().");
-}
-VolumeMesh<double> MakeMeshForDeformable(const Mesh&, double) {
-  throw std::logic_error(
-      "Mesh shape is not supported in MakeMeshForDeformable().");
-}
-
-VolumeMesh<double> MakeMeshForDeformable(const Convex&, double) {
-  throw std::logic_error(
-      "Convex shape is not supported in MakeMeshForDeformable().");
-}
-
-/* Unsupported shapes. */
-VolumeMesh<double> MakeMeshForDeformable(const MeshcatCone&, double) {
-  throw std::logic_error(
-      "MeshcatCone shape is not supported in MakeMeshForDeformable().");
+      fmt::format("MeshBuilderForDeformable: We don't yet generate deformable "
+                  "meshes from {}.",
+                  shape_name));
 }
 
 }  // namespace internal

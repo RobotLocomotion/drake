@@ -19,15 +19,18 @@ namespace kuka_iiwa {
 ///
 /// This system has one abstract-valued input port of type lcmt_iiwa_status.
 ///
-/// This system has many vector-valued output ports, each of which has exactly
-/// num_joints elements.  The ports will output zeros until an input message is
-/// received.
+/// This system has many vector-valued output ports, most of which emit vector
+/// values of exactly `num_joints` elements. The exception is `time_measured`,
+/// which has a one-dimensional measured time output in seconds, i.e., the
+/// timestamp from the hardware in microseconds converted into seconds. All
+/// ports will output zeros until an input message is received.
 //
 /// @system
 /// name: IiwaStatusReceiver
 /// input_ports:
 /// - lcmt_iiwa_status
 /// output_ports:
+/// - time_measured
 /// - position_commanded
 /// - position_measured
 /// - velocity_estimated
@@ -46,6 +49,7 @@ class IiwaStatusReceiver final : public systems::LeafSystem<double> {
 
   /// @name Named accessors for this System's input and output ports.
   //@{
+  const systems::OutputPort<double>& get_time_measured_output_port() const;
   const systems::OutputPort<double>& get_position_commanded_output_port() const;
   const systems::OutputPort<double>& get_position_measured_output_port() const;
   const systems::OutputPort<double>& get_velocity_estimated_output_port() const;
@@ -58,6 +62,9 @@ class IiwaStatusReceiver final : public systems::LeafSystem<double> {
   template <std::vector<double> drake::lcmt_iiwa_status::*>
   void CalcLcmOutput(const systems::Context<double>&,
                      systems::BasicVector<double>*) const;
+
+  void CalcTimeOutput(const systems::Context<double>&,
+                      systems::BasicVector<double>*) const;
 
   const int num_joints_;
 };

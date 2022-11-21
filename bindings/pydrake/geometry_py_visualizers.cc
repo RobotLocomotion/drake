@@ -2,6 +2,7 @@
  found in drake::geometry. They can be found in the pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -156,27 +157,13 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = DrakeVisualizerParams;
     constexpr auto& cls_doc = doc.DrakeVisualizerParams;
-    py::class_<Class>(
-        m, "DrakeVisualizerParams", py::dynamic_attr(), cls_doc.doc)
-        .def(ParamInit<Class>())
-        .def_readwrite("publish_period", &DrakeVisualizerParams::publish_period,
-            cls_doc.publish_period.doc)
-        .def_readwrite("role", &DrakeVisualizerParams::role, cls_doc.role.doc)
-        .def_readwrite("default_color", &DrakeVisualizerParams::default_color,
-            cls_doc.default_color.doc)
-        .def_readwrite("show_hydroelastic",
-            &DrakeVisualizerParams::show_hydroelastic,
-            cls_doc.show_hydroelastic.doc)
-        .def("__repr__", [](const Class& self) {
-          return py::str(
-              "DrakeVisualizerParams("
-              "publish_period={}, "
-              "role={}, "
-              "default_color={}, "
-              "show_hydroelastic={})")
-              .format(self.publish_period, self.role, self.default_color,
-                  self.show_hydroelastic);
-        });
+    py::class_<Class> cls(
+        m, "DrakeVisualizerParams", py::dynamic_attr(), cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 
   // MeshcatParams
@@ -186,18 +173,10 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Class, std::shared_ptr<Class>> cls(
         m, "MeshcatParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
-        .def(ParamInit<Class>())
-        .def_readwrite("host", &MeshcatParams::host, cls_doc.host.doc)
-        .def_readwrite("port", &MeshcatParams::port, cls_doc.port.doc)
-        .def_readwrite("web_url_pattern", &MeshcatParams::web_url_pattern,
-            cls_doc.web_url_pattern.doc)
-        .def("__repr__", [](const Class& self) {
-          return py::str(
-              "MeshcatParams("
-              "port={}, "
-              "web_url_pattern={})")
-              .format(self.port, self.web_url_pattern);
-        });
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 
   // Meshcat
@@ -247,6 +226,11 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("rgba") = Rgba(0.1, 0.1, 0.1, 1.0),
             py::arg("wireframe") = false, py::arg("wireframe_line_width") = 1.0,
             cls_doc.SetTriangleMesh.doc)
+        .def("SetTriangleColorMesh", &Class::SetTriangleColorMesh,
+            py::arg("path"), py::arg("vertices"), py::arg("faces"),
+            py::arg("colors"), py::arg("wireframe") = false,
+            py::arg("wireframe_line_width") = 1.0,
+            cls_doc.SetTriangleColorMesh.doc)
         .def("SetCamera",
             py::overload_cast<Meshcat::PerspectiveCamera, std::string>(
                 &Class::SetCamera),
@@ -274,6 +258,8 @@ void DoScalarIndependentDefinitions(py::module m) {
                 const Eigen::Ref<const Eigen::Matrix4d>&>(&Class::SetTransform),
             py::arg("path"), py::arg("matrix"), cls_doc.SetTransform.doc_matrix)
         .def("Delete", &Class::Delete, py::arg("path") = "", cls_doc.Delete.doc)
+        .def("SetRealtimeRate", &Class::SetRealtimeRate, py::arg("rate"),
+            cls_doc.SetRealtimeRate.doc)
         .def("SetProperty",
             py::overload_cast<std::string_view, std::string, bool>(
                 &Class::SetProperty),
@@ -292,14 +278,15 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("SetAnimation", &Class::SetAnimation, py::arg("animation"),
             +cls_doc.SetAnimation.doc)
         .def("AddButton", &Class::AddButton, py::arg("name"),
-            cls_doc.AddButton.doc)
+            py::arg("keycode") = "", cls_doc.AddButton.doc)
         .def("GetButtonClicks", &Class::GetButtonClicks, py::arg("name"),
             cls_doc.GetButtonClicks.doc)
         .def("DeleteButton", &Class::DeleteButton, py::arg("name"),
             cls_doc.DeleteButton.doc)
         .def("AddSlider", &Class::AddSlider, py::arg("name"), py::arg("min"),
             py::arg("max"), py::arg("step"), py::arg("value"),
-            cls_doc.AddSlider.doc)
+            py::arg("decrement_keycode") = "",
+            py::arg("increment_keycode") = "", cls_doc.AddSlider.doc)
         .def("SetSliderValue", &Class::SetSliderValue, py::arg("name"),
             py::arg("value"), cls_doc.SetSliderValue.doc)
         .def("GetSliderValue", &Class::GetSliderValue, py::arg("name"),
@@ -308,67 +295,40 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.DeleteSlider.doc)
         .def("DeleteAddedControls", &Class::DeleteAddedControls,
             cls_doc.DeleteAddedControls.doc)
+        .def("GetGamepad", &Class::GetGamepad, cls_doc.GetGamepad.doc)
         .def("StaticHtml", &Class::StaticHtml, cls_doc.StaticHtml.doc)
         .def("HasPath", &Class::HasPath, py::arg("path"), cls_doc.HasPath.doc);
     // Note: we intentionally do not bind the advanced methods (GetPacked...)
     // which were intended primarily for testing in C++.
 
     const auto& perspective_camera_doc = doc.Meshcat.PerspectiveCamera;
-    py::class_<Meshcat::PerspectiveCamera>(
-        meshcat, "PerspectiveCamera", perspective_camera_doc.doc)
-        .def(ParamInit<Meshcat::PerspectiveCamera>())
-        .def_readwrite("fov", &Meshcat::PerspectiveCamera::fov,
-            perspective_camera_doc.fov.doc)
-        .def_readwrite("aspect", &Meshcat::PerspectiveCamera::aspect,
-            perspective_camera_doc.aspect.doc)
-        .def_readwrite("near", &Meshcat::PerspectiveCamera::near,
-            perspective_camera_doc.near.doc)
-        .def_readwrite("far", &Meshcat::PerspectiveCamera::far,
-            perspective_camera_doc.far.doc)
-        .def_readwrite("zoom", &Meshcat::PerspectiveCamera::zoom,
-            perspective_camera_doc.zoom.doc)
-        .def("__repr__", [](const Meshcat::PerspectiveCamera& self) {
-          return py::str(
-              "PerspectiveCamera("
-              "fov={}, "
-              "aspect={}, "
-              "near={}, "
-              "far={}, "
-              "zoom={})")
-              .format(self.fov, self.aspect, self.near, self.far, self.zoom);
-        });
+    py::class_<Meshcat::PerspectiveCamera> perspective_camera_cls(
+        meshcat, "PerspectiveCamera", perspective_camera_doc.doc);
+    perspective_camera_cls  // BR
+        .def(ParamInit<Meshcat::PerspectiveCamera>());
+    DefAttributesUsingSerialize(
+        &perspective_camera_cls, perspective_camera_doc);
+    DefReprUsingSerialize(&perspective_camera_cls);
+    DefCopyAndDeepCopy(&perspective_camera_cls);
 
     const auto& orthographic_camera_doc = doc.Meshcat.OrthographicCamera;
-    py::class_<Meshcat::OrthographicCamera>(
-        meshcat, "OrthographicCamera", orthographic_camera_doc.doc)
-        .def(ParamInit<Meshcat::OrthographicCamera>())
-        .def_readwrite("left", &Meshcat::OrthographicCamera::left,
-            orthographic_camera_doc.left.doc)
-        .def_readwrite("right", &Meshcat::OrthographicCamera::right,
-            orthographic_camera_doc.right.doc)
-        .def_readwrite("top", &Meshcat::OrthographicCamera::top,
-            orthographic_camera_doc.top.doc)
-        .def_readwrite("bottom", &Meshcat::OrthographicCamera::bottom,
-            orthographic_camera_doc.bottom.doc)
-        .def_readwrite("near", &Meshcat::OrthographicCamera::near,
-            orthographic_camera_doc.near.doc)
-        .def_readwrite("far", &Meshcat::OrthographicCamera::far,
-            orthographic_camera_doc.far.doc)
-        .def_readwrite("zoom", &Meshcat::OrthographicCamera::zoom,
-            orthographic_camera_doc.zoom.doc)
-        .def("__repr__", [](const Meshcat::OrthographicCamera& self) {
-          return py::str(
-              "OrthographicCamera("
-              "left={}, "
-              "right={}, "
-              "top={}, "
-              "bottom={}, "
-              "near={}, "
-              "far={}, "
-              "zoom={})")
-              .format(self.left, self.right, self.top, self.bottom, self.near,
-                  self.far, self.zoom);
-        });
+    py::class_<Meshcat::OrthographicCamera> orthographic_camera_cls(
+        meshcat, "OrthographicCamera", orthographic_camera_doc.doc);
+    orthographic_camera_cls  // BR
+        .def(ParamInit<Meshcat::OrthographicCamera>());
+    DefAttributesUsingSerialize(
+        &orthographic_camera_cls, orthographic_camera_doc);
+    DefReprUsingSerialize(&orthographic_camera_cls);
+    DefCopyAndDeepCopy(&orthographic_camera_cls);
+
+    const auto& gamepad_doc = doc.Meshcat.Gamepad;
+    py::class_<Meshcat::Gamepad> gamepad_cls(
+        meshcat, "Gamepad", gamepad_doc.doc);
+    gamepad_cls  // BR
+        .def(ParamInit<Meshcat::Gamepad>());
+    DefAttributesUsingSerialize(&gamepad_cls, gamepad_doc);
+    DefReprUsingSerialize(&gamepad_cls);
+    DefCopyAndDeepCopy(&gamepad_cls);
   }
 
   // MeshcatAnimation
@@ -433,31 +393,13 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = MeshcatVisualizerParams;
     constexpr auto& cls_doc = doc.MeshcatVisualizerParams;
-    py::class_<Class>(
-        m, "MeshcatVisualizerParams", py::dynamic_attr(), cls_doc.doc)
-        .def(ParamInit<Class>())
-        .def_readwrite("publish_period",
-            &MeshcatVisualizerParams::publish_period,
-            cls_doc.publish_period.doc)
-        .def_readwrite("role", &MeshcatVisualizerParams::role, cls_doc.role.doc)
-        .def_readwrite("default_color", &MeshcatVisualizerParams::default_color,
-            cls_doc.default_color.doc)
-        .def_readwrite(
-            "prefix", &MeshcatVisualizerParams::prefix, cls_doc.prefix.doc)
-        .def_readwrite("delete_on_initialization_event",
-            &MeshcatVisualizerParams::delete_on_initialization_event,
-            cls_doc.delete_on_initialization_event.doc)
-        .def("__repr__", [](const Class& self) {
-          return py::str(
-              "MeshcatVisualizerParams("
-              "publish_period={}, "
-              "role={}, "
-              "default_color={}, "
-              "prefix={}, "
-              "delete_on_initialization_event={}")
-              .format(self.publish_period, self.role, self.default_color,
-                  self.prefix, self.delete_on_initialization_event);
-        });
+    py::class_<Class> cls(
+        m, "MeshcatVisualizerParams", py::dynamic_attr(), cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 }
 

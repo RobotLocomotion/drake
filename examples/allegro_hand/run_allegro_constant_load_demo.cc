@@ -9,7 +9,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
@@ -21,6 +20,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace examples {
@@ -53,13 +53,9 @@ void DoMain() {
 
   systems::DiagramBuilder<double> builder;
 
-  geometry::SceneGraph<double>& scene_graph =
-      *builder.AddSystem<geometry::SceneGraph>();
-  scene_graph.set_name("scene_graph");
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlantSceneGraph(&builder, FLAGS_max_time_step);
 
-  MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>
-                                  (FLAGS_max_time_step);
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
   std::string full_name;
   if (FLAGS_use_right_hand)
     full_name = FindResourceOrThrow("drake/manipulation/models/"
@@ -68,7 +64,7 @@ void DoMain() {
     full_name = FindResourceOrThrow("drake/manipulation/models/"
       "allegro_hand_description/sdf/allegro_hand_description_left.sdf");
 
-  multibody::Parser(&plant).AddModelFromFile(full_name);
+  multibody::Parser(&plant).AddModels(full_name);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
@@ -97,14 +93,8 @@ void DoMain() {
   builder.Connect(constant_source->get_output_port(),
                   plant.get_actuation_input_port());
 
-  DRAKE_DEMAND(plant.get_source_id().has_value());
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
+  visualization::AddDefaultVisualization(&builder);
 
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   // Create a context for this system:

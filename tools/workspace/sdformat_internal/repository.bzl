@@ -8,15 +8,14 @@ def sdformat_internal_repository(
     github_archive(
         name = name,
         repository = "gazebosim/sdformat",
-        commit = "sdformat12_12.5.0",
-        build_file = "@drake//tools/workspace/sdformat_internal:package.BUILD.bazel",  # noqa
-        sha256 = "3896772db68b7ca7b18bbf1945a72206885b03d3f0caf29491be5b53b79a7124",  # noqa
+        commit = "sdformat13_13.2.0",
+        build_file = ":package.BUILD.bazel",
+        sha256 = "e1084091f65caf8aabd4cfca6df3a7bf3a9563de1715829810813840598d5de3",  # noqa
         patches = [
-            "@drake//tools/workspace/sdformat_internal:patches/1043.patch",
-            "@drake//tools/workspace/sdformat_internal:patches/console.patch",
-            "@drake//tools/workspace/sdformat_internal:patches/deprecation_unit_testing.patch",  # noqa
-            "@drake//tools/workspace/sdformat_internal:patches/no_global_config.patch",  # noqa
-            "@drake//tools/workspace/sdformat_internal:patches/no_urdf.patch",
+            ":patches/console.patch",
+            ":patches/deprecation_unit_testing.patch",
+            ":patches/no_global_config.patch",
+            ":patches/no_urdf.patch",
         ],
         mirrors = mirrors,
     )

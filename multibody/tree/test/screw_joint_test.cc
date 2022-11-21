@@ -32,7 +32,7 @@ class ScrewJointTest : public ::testing::Test {
   // screw joint.
   void SetUp() override {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
-    body_ = &model->AddBody<RigidBody>(SpatialInertia<double>{});
+    body_ = &model->AddBody<RigidBody>("Body", SpatialInertia<double>{});
 
     // Add a screw joint between the world and body1:
     joint_ = &model->AddJoint<ScrewJoint>("Joint", model->world_body(),
@@ -121,12 +121,14 @@ TEST_F(ScrewJointTest, ContextDependentAccess) {
   EXPECT_EQ(joint_->get_translation(*context_), translation1);
   joint_->set_rotation(context_.get(), angle1);
   EXPECT_EQ(joint_->get_rotation(*context_), angle1);
+  EXPECT_EQ(joint_->GetOnePosition(*context_), angle1);
 
   // Velocity access:
   joint_->set_translational_velocity(context_.get(), translation1);
   EXPECT_EQ(joint_->get_translational_velocity(*context_), translation1);
   joint_->set_angular_velocity(context_.get(), angle1);
   EXPECT_EQ(joint_->get_angular_velocity(*context_), angle1);
+  EXPECT_EQ(joint_->GetOneVelocity(*context_), angle1);
 
   // Joint locking.
   joint_->Lock(context_.get());

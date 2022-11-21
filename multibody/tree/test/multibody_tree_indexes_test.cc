@@ -6,10 +6,12 @@ namespace drake {
 namespace multibody {
 namespace {
 
-// Verifies the correct behavior of BodyIndex.
-GTEST_TEST(MultibodyTreeIndexes, BodyIndex) {
-  // Verify the we can retrieve the "world" id.
+// Verifies the correct behavior of provided functions.
+GTEST_TEST(MultibodyTreeIndexes, ConstantFunctions) {
   EXPECT_EQ(world_index(), BodyIndex(0));
+  EXPECT_EQ(world_frame_index(), FrameIndex(0));
+  EXPECT_EQ(world_model_instance(), ModelInstanceIndex(0));
+  EXPECT_EQ(default_model_instance(), ModelInstanceIndex(1));
 }
 
 // Verifies that it is not possible to convert between two different

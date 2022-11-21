@@ -10,8 +10,14 @@ from pydrake.common.value import AbstractValue
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
 from pydrake.trajectories import (
-    BsplineTrajectory_, PiecewisePolynomial_, PiecewisePose_,
-    PiecewiseQuaternionSlerp_, Trajectory, Trajectory_
+    BsplineTrajectory_,
+    PathParameterizedTrajectory_,
+    PiecewisePolynomial_,
+    PiecewisePose_,
+    PiecewiseQuaternionSlerp_,
+    StackedTrajectory_,
+    Trajectory,
+    Trajectory_
 )
 
 
@@ -75,9 +81,16 @@ class TestTrajectories(unittest.TestCase):
         BsplineBasis = BsplineBasis_[T]
         BsplineTrajectory = BsplineTrajectory_[T]
 
+        # Call the default constructor.
         bspline = BsplineTrajectory()
         self.assertIsInstance(bspline, BsplineTrajectory)
         self.assertEqual(BsplineBasis().num_basis_functions(), 0)
+        # Call the vector<vector<T>> constructor.
+        bspline = BsplineTrajectory(basis=BsplineBasis(2, [0, 1, 2, 3]),
+                                    control_points=np.zeros((4, 2)))
+        self.assertEqual(bspline.rows(), 4)
+        self.assertEqual(bspline.cols(), 1)
+        # Call the vector<MatrixX<T>> constructor.
         bspline = BsplineTrajectory(
             basis=BsplineBasis(2, [0, 1, 2, 3]),
             control_points=[np.zeros((3, 4)), np.ones((3, 4))])
@@ -101,15 +114,35 @@ class TestTrajectories(unittest.TestCase):
             bspline.CopyBlock(start_row=1, start_col=2,
                               block_rows=2, block_cols=1),
             BsplineTrajectory)
-        bspline = BsplineTrajectory(
-            basis=BsplineBasis(2, [0, 1, 2, 3]),
-            control_points=[np.zeros(3), np.ones(3)])
+        bspline = BsplineTrajectory(basis=BsplineBasis(2, [0, 1, 2, 3]),
+                                    control_points=np.array([[0, 1], [0, 1],
+                                                             [0, 1]]))
         self.assertIsInstance(bspline.CopyHead(n=2), BsplineTrajectory)
         # Ensure we can copy.
         self.assertEqual(copy.copy(bspline).rows(), 3)
         self.assertEqual(copy.deepcopy(bspline).rows(), 3)
         assert_pickle(self, bspline,
                       lambda traj: np.array(traj.control_points()), T=T)
+
+    @numpy_compare.check_all_types
+    def test_path_parameterized_trajectory(self, T):
+        PathParameterizedTrajectory = PathParameterizedTrajectory_[T]
+        PiecewisePolynomial = PiecewisePolynomial_[T]
+
+        s = np.array([[1., 3., 5.]])
+        x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
+        param = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], s)
+        path = PiecewisePolynomial.ZeroOrderHold(s[0], x)
+        trajectory = PathParameterizedTrajectory(path, param)
+        self.assertIsInstance(trajectory.Clone(), PathParameterizedTrajectory)
+        numpy_compare.assert_float_equal(trajectory.value(t=1.5), x[:, 1:2])
+        self.assertEqual(trajectory.rows(), 2)
+        self.assertEqual(trajectory.cols(), 1)
+        numpy_compare.assert_float_equal(trajectory.start_time(), 0.)
+        numpy_compare.assert_float_equal(trajectory.end_time(), 2.)
+        self.assertIsInstance(trajectory.path(), PiecewisePolynomial)
+        self.assertIsInstance(trajectory.time_scaling(),
+                              PiecewisePolynomial)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_empty_constructor(self, T):
@@ -489,3 +522,17 @@ class TestTrajectories(unittest.TestCase):
         # Ensure we can copy.
         self.assertEqual(copy.copy(ppose).get_number_of_segments(), 2)
         self.assertEqual(copy.deepcopy(ppose).get_number_of_segments(), 2)
+
+    @numpy_compare.check_all_types
+    def test_stacked_trajectory(self, T):
+        breaks = [0, 1, 2]
+        samples = [[[0]], [[1]], [[2]]]
+        zoh = PiecewisePolynomial_[T].ZeroOrderHold(breaks, samples)
+        dut = StackedTrajectory_[T](rowwise=True)
+        dut.Append(zoh)
+        dut.Append(zoh)
+        self.assertEqual(dut.rows(), 2)
+        self.assertEqual(dut.cols(), 1)
+        dut.Clone()
+        copy.copy(dut)
+        copy.deepcopy(dut)

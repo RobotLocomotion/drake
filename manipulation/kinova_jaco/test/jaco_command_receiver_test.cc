@@ -43,12 +43,18 @@ class JacoCommandReceiverTestBase : public testing::Test {
     return dut_.get_commanded_velocity_output_port().Eval(context_);
   }
 
+  double time_output() const {
+    return dut_.get_time_output_port().Eval(context_)[0];
+  }
+
  protected:
   JacoCommandReceiver dut_;
   std::unique_ptr<systems::Context<double>> context_ptr_;
   systems::Context<double>& context_;
   systems::FixedInputPortValue& fixed_input_;
 };
+
+constexpr double kCommandTime = 1.2;
 
 class JacoCommandReceiverTest : public JacoCommandReceiverTestBase {
  public:
@@ -70,6 +76,7 @@ TEST_F(JacoCommandReceiverTest, AcceptanceTestWithoutMeasuredPositionInput) {
   const VectorXd zero = VectorXd::Zero(N + N_F);
   EXPECT_TRUE(CompareMatrices(position(), zero));
   EXPECT_TRUE(CompareMatrices(velocity(), zero));
+  EXPECT_EQ(time_output(), 0);
 }
 
 TEST_F(JacoCommandReceiverNoFingersTest,
@@ -79,6 +86,7 @@ TEST_F(JacoCommandReceiverNoFingersTest,
   const VectorXd zero = VectorXd::Zero(N);
   EXPECT_TRUE(CompareMatrices(position(), zero));
   EXPECT_TRUE(CompareMatrices(velocity(), zero));
+  EXPECT_EQ(time_output(), 0);
 }
 
 TEST_F(JacoCommandReceiverNoFingersTest,
@@ -91,18 +99,20 @@ TEST_F(JacoCommandReceiverNoFingersTest,
   dut_.get_position_measured_input_port().FixValue(&context_, q0);
   EXPECT_TRUE(CompareMatrices(position(), q0));
   EXPECT_TRUE(CompareMatrices(velocity(), zero));
+  EXPECT_EQ(time_output(), 0);
 
   // Check that a real command trumps the initial position.
   const VectorXd q1 = VectorXd::LinSpaced(N, 0.3, 0.4);
   const VectorXd v1 = VectorXd::LinSpaced(N, 0.5, 0.6);
   lcmt_jaco_command command{};
-  command.utime = 0;
+  command.utime = kCommandTime * 1e6;
   command.num_joints = N;
   command.joint_position = {q1.data(), q1.data() + q1.size()};
   command.joint_velocity = {v1.data(), v1.data() + v1.size()};
   SetInput(command);
   EXPECT_TRUE(CompareMatrices(position(), q1));
   EXPECT_TRUE(CompareMatrices(velocity(), v1));
+  EXPECT_EQ(time_output(), kCommandTime);
 }
 
 TEST_F(JacoCommandReceiverNoFingersTest,
@@ -115,6 +125,7 @@ TEST_F(JacoCommandReceiverNoFingersTest,
   dut_.get_position_measured_input_port().FixValue(&context_, q0);
   EXPECT_TRUE(CompareMatrices(position(), q0));
   EXPECT_TRUE(CompareMatrices(velocity(), zero));
+  EXPECT_EQ(time_output(), 0);
 
   // Prior to any update events, changes to position_measured feed through.
   const VectorXd q1 = VectorXd::LinSpaced(N, 0.1, 0.2);
@@ -134,13 +145,14 @@ TEST_F(JacoCommandReceiverNoFingersTest,
   const VectorXd q3 = VectorXd::LinSpaced(N, 0.4, 0.5);
   const VectorXd v3 = VectorXd::LinSpaced(N, 0.5, 0.6);
   lcmt_jaco_command command{};
-  command.utime = 0;
+  command.utime = kCommandTime * 1e6;
   command.num_joints = N;
   command.joint_position = {q3.data(), q3.data() + q3.size()};
   command.joint_velocity = {v3.data(), v3.data() + v3.size()};
   SetInput(command);
   EXPECT_TRUE(CompareMatrices(position(), q3));
   EXPECT_TRUE(CompareMatrices(velocity(), v3));
+  EXPECT_EQ(time_output(), kCommandTime);
 }
 
 TEST_F(JacoCommandReceiverTest,
@@ -153,6 +165,7 @@ TEST_F(JacoCommandReceiverTest,
   dut_.get_position_measured_input_port().FixValue(&context_, q0);
   EXPECT_TRUE(CompareMatrices(position(), q0));
   EXPECT_TRUE(CompareMatrices(velocity(), zero));
+  EXPECT_EQ(time_output(), 0);
 
   // Check that a real command trumps the initial position.
   const VectorXd q1 = VectorXd::LinSpaced(N, 0.3, 0.4);
@@ -160,7 +173,7 @@ TEST_F(JacoCommandReceiverTest,
   const VectorXd f_q1 = VectorXd::LinSpaced(N_F, 1.3, 1.4);
   const VectorXd f_v1 = VectorXd::LinSpaced(N_F, 1.5, 1.6);
   lcmt_jaco_command command{};
-  command.utime = 0;
+  command.utime = kCommandTime * 1e6;
   command.num_joints = N;
   command.joint_position = {q1.data(), q1.data() + q1.size()};
   command.joint_velocity = {v1.data(), v1.data() + v1.size()};
@@ -179,6 +192,7 @@ TEST_F(JacoCommandReceiverTest,
 
   EXPECT_TRUE(CompareMatrices(position(), position_expected));
   EXPECT_TRUE(CompareMatrices(velocity(), velocity_expected));
+  EXPECT_EQ(time_output(), kCommandTime);
 }
 
 TEST_F(JacoCommandReceiverTest, AcceptanceTestWithLatching) {
@@ -190,6 +204,7 @@ TEST_F(JacoCommandReceiverTest, AcceptanceTestWithLatching) {
   dut_.get_position_measured_input_port().FixValue(&context_, q0);
   EXPECT_TRUE(CompareMatrices(position(), q0));
   EXPECT_TRUE(CompareMatrices(velocity(), zero));
+  EXPECT_EQ(time_output(), 0);
 
   // Prior to any update events, changes to position_measured feed through.
   const VectorXd q1 = VectorXd::LinSpaced(N + N_F, 0.1, 0.2);
@@ -211,7 +226,7 @@ TEST_F(JacoCommandReceiverTest, AcceptanceTestWithLatching) {
   const VectorXd f_q3 = VectorXd::LinSpaced(N_F, 0.4, 0.5);
   const VectorXd f_v3 = VectorXd::LinSpaced(N_F, 1.5, 1.6);
   lcmt_jaco_command command{};
-  command.utime = 0;
+  command.utime = kCommandTime * 1e6;
   command.num_joints = N;
   command.num_fingers = N_F;
   command.joint_position = {q3.data(), q3.data() + q3.size()};
@@ -229,6 +244,7 @@ TEST_F(JacoCommandReceiverTest, AcceptanceTestWithLatching) {
   velocity_expected.tail(N_F) = f_v3 * kFingerSdkToUrdf;
   EXPECT_TRUE(CompareMatrices(position(), position_expected));
   EXPECT_TRUE(CompareMatrices(velocity(), velocity_expected));
+  EXPECT_EQ(time_output(), kCommandTime);
 }
 
 }  // namespace

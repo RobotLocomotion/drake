@@ -20,7 +20,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import (
-    Expression, Formula, Monomial, Polynomial, Variable)
+    Expression, Formula, Monomial, Polynomial, Variable, RationalFunction)
 from pydrake.polynomial import Polynomial_ as RawPolynomial_
 
 
@@ -43,19 +43,17 @@ class _Registry:
         self._to_float = {}
 
     def register_comparator(
-        self,
-        cls_a,
-        cls_b,
-        assert_eq,
-        assert_ne=None,
-        assert_allclose=None,
-    ):
+            self,
+            cls_a,
+            cls_b,
+            assert_eq,
+            assert_ne=None,
+            assert_allclose=None):
         key = (cls_a, cls_b)
         assert key not in self._comparators, key
         assert_eq = np.vectorize(assert_eq)
         self._comparators[key] = self.AssertComparator(
-            assert_eq, assert_ne, assert_allclose
-        )
+            assert_eq, assert_ne, assert_allclose)
 
     def get_comparator_from_arrays(self, a, b):
         # Ensure all types are homogeneous.
@@ -211,7 +209,6 @@ def _str_ne(a, b):
 
 
 def _register_autodiff():
-
     def autodiff_eq(a, b):
         assert a.value() == b.value(), (a.value(), b.value())
         np.testing.assert_equal(a.derivatives(), b.derivatives())
@@ -237,7 +234,6 @@ def _register_autodiff():
 
 
 def _register_symbolic():
-
     def sym_struct_eq(a, b):
         assert a.EqualTo(b), (a, b)
 
@@ -286,11 +282,18 @@ def _register_polynomial():
         _raw_ne)
 
 
+def _register_rational_function():
+    _registry.register_comparator(
+        RationalFunction, RationalFunction,
+        RationalFunction.__eq__, RationalFunction.__ne__)
+
+
 # Globals.
 _registry = _Registry()
 _register_autodiff()
 _register_symbolic()
 _register_polynomial()
+_register_rational_function()
 
 
 def check_all_types(check_func):

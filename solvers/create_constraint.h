@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 

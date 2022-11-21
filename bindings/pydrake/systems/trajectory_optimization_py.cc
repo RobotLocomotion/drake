@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 #include "drake/systems/trajectory_optimization/direct_transcription.h"
+#include "drake/systems/trajectory_optimization/kinematic_trajectory_optimization.h"
 
 namespace drake {
 namespace pydrake {
@@ -34,12 +35,13 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   constexpr auto& doc = pydrake_doc.drake.systems.trajectory_optimization;
 
   using solvers::MathematicalProgram;
+  using solvers::MatrixXDecisionVariable;
   using solvers::VectorXDecisionVariable;
 
   py::module::import("pydrake.symbolic");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
-  py::module::import("pydrake.solvers.mathematicalprogram");
+  py::module::import("pydrake.solvers");
 
   py::class_<MultipleShooting> cls(
       m, "MultipleShooting", doc.MultipleShooting.doc);
@@ -259,6 +261,78 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           py::arg("input_port_index") =
               systems::InputPortSelection::kUseFirstInputIfItExists,
           doc.DirectTranscription.ctor.doc_5args);
+
+  {
+    using Class = KinematicTrajectoryOptimization;
+    constexpr auto& cls_doc = doc.KinematicTrajectoryOptimization;
+    py::class_<KinematicTrajectoryOptimization>(
+        m, "KinematicTrajectoryOptimization", cls_doc.doc)
+        .def(py::init<int, int, int, double>(), py::arg("num_positions"),
+            py::arg("num_control_points"), py::arg("spline_order") = 4,
+            py::arg("duration") = 1.0, cls_doc.ctor.doc_4args)
+        .def(py::init<const trajectories::BsplineTrajectory<double>&>(),
+            py::arg("trajectory"), cls_doc.ctor.doc_1args)
+        .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
+        .def("num_control_points", &Class::num_control_points,
+            cls_doc.num_control_points.doc)
+        .def("basis", &Class::basis, py_rvp::reference_internal,
+            cls_doc.basis.doc)
+        .def(
+            "control_points",
+            [](const Class& self) -> MatrixXDecisionVariable {
+              return self.control_points();
+            },
+            cls_doc.control_points.doc)
+        .def(
+            "duration",
+            [](const Class& self) -> symbolic::Variable {
+              return self.duration();
+            },
+            cls_doc.duration.doc)
+        .def("prog", &Class::prog, py_rvp::reference_internal, cls_doc.prog.doc)
+        .def("get_mutable_prog", &Class::get_mutable_prog,
+            py_rvp::reference_internal, cls_doc.get_mutable_prog.doc)
+        .def("SetInitialGuess", &Class::SetInitialGuess, py::arg("trajectory"),
+            cls_doc.SetInitialGuess.doc)
+        .def("ReconstructTrajectory", &Class::ReconstructTrajectory,
+            py::arg("result"), cls_doc.ReconstructTrajectory.doc)
+        .def("AddPathPositionConstraint",
+            py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
+                const Eigen::Ref<const Eigen::VectorXd>&, double>(
+                &Class::AddPathPositionConstraint),
+            py::arg("lb"), py::arg("ub"), py::arg("s"),
+            cls_doc.AddPathPositionConstraint.doc_3args)
+        .def("AddPathPositionConstraint",
+            py::overload_cast<const std::shared_ptr<solvers::Constraint>&,
+                double>(&Class::AddPathPositionConstraint),
+            py::arg("constraint"), py::arg("s"),
+            cls_doc.AddPathPositionConstraint.doc_2args)
+        .def("AddPathVelocityConstraint", &Class::AddPathVelocityConstraint,
+            py::arg("lb"), py::arg("ub"), py::arg("s"),
+            cls_doc.AddPathVelocityConstraint.doc)
+        .def("AddVelocityConstraintAtNormalizedTime",
+            &Class::AddVelocityConstraintAtNormalizedTime,
+            py::arg("constraint"), py::arg("s"),
+            cls_doc.AddVelocityConstraintAtNormalizedTime.doc)
+        .def("AddPathAccelerationConstraint",
+            &Class::AddPathAccelerationConstraint, py::arg("lb"), py::arg("ub"),
+            py::arg("s"), cls_doc.AddPathAccelerationConstraint.doc)
+        .def("AddDurationConstraint", &Class::AddDurationConstraint,
+            py::arg("lb"), py::arg("ub"), cls_doc.AddDurationConstraint.doc)
+        .def("AddPositionBounds", &Class::AddPositionBounds, py::arg("lb"),
+            py::arg("ub"), cls_doc.AddPositionBounds.doc)
+        .def("AddVelocityBounds", &Class::AddVelocityBounds, py::arg("lb"),
+            py::arg("ub"), cls_doc.AddVelocityBounds.doc)
+        .def("AddAccelerationBounds", &Class::AddAccelerationBounds,
+            py::arg("lb"), py::arg("ub"), cls_doc.AddAccelerationBounds.doc)
+        .def("AddJerkBounds", &Class::AddJerkBounds, py::arg("lb"),
+            py::arg("ub"), cls_doc.AddJerkBounds.doc)
+        .def("AddDurationCost", &Class::AddDurationCost,
+            py::arg("weight") = 1.0, cls_doc.AddDurationCost.doc)
+        .def("AddPathLengthCost", &Class::AddPathLengthCost,
+            py::arg("weight") = 1.0, py::arg("use_conic_constraint") = false,
+            cls_doc.AddPathLengthCost.doc);
+  }
 }
 
 }  // namespace pydrake

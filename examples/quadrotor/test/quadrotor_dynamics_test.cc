@@ -110,8 +110,8 @@ class MultibodyQuadrotor: public Diagram<double> {
   MultibodyQuadrotor() {
     auto owned_plant = std::make_unique<MultibodyPlant<double>>(0.0);
     plant_ = owned_plant.get();
-    Parser(plant_).AddModelFromFile(FindResourceOrThrow(
-        "drake/examples/quadrotor/quadrotor.urdf"));
+    Parser(plant_).AddModels(
+        FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"));
     plant_->Finalize();
     body_ = &plant_->GetBodyByName("base_link");
     DiagramBuilder<double> builder;

@@ -190,6 +190,29 @@ struct SphereGeometryData : public GeometryData {
   }
 };
 
+struct CapsuleGeometryData : public GeometryData {
+  // For a complete description of these parameters see:
+  // https://threejs.org/docs/#api/en/geometries/CapsuleGeometry
+  double radius{};
+  double length{};
+  double radialSegments{20};  // Number of segmented faces around the
+                              // circumference of the capsule.
+  double capSegments{10};     // Number of curve segments used to build
+                              // the caps.
+
+  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+  void msgpack_pack(msgpack::packer<std::stringstream>& o) const override {
+    o.pack_map(6);
+    o.pack("type");
+    o.pack("CapsuleGeometry");
+    PACK_MAP_VAR(o, uuid);
+    PACK_MAP_VAR(o, radius);
+    PACK_MAP_VAR(o, length);
+    PACK_MAP_VAR(o, radialSegments);
+    PACK_MAP_VAR(o, capSegments);
+  }
+};
+
 struct CylinderGeometryData : public GeometryData {
   double radiusBottom{};
   double radiusTop{};
@@ -367,6 +390,24 @@ struct SetTransformData {
   MSGPACK_DEFINE_MAP(type, path, matrix);
 };
 
+// Note that this struct is unique to Drake's integration of meshcat; it is not
+// part of upstream meshcat.js. We handle it directly within meshcat.html,
+// without ever feeding it into meshcat.js.
+struct RealtimeRateData {
+  std::string type{"realtime_rate"};
+  double rate{};
+  MSGPACK_DEFINE_MAP(type, rate);
+};
+
+// Note that this struct is unique to Drake's integration of meshcat; it is not
+// part of upstream meshcat.js. We handle it directly within meshcat.html,
+// without ever feeding it into meshcat.js.
+struct ShowRealtimeRate {
+  std::string type{"show_realtime_rate"};
+  bool show{true};
+  MSGPACK_DEFINE_MAP(type, show);
+};
+
 struct DeleteData {
   std::string type{"delete"};
   std::string path;
@@ -387,7 +428,8 @@ struct SetButtonControl {
   int num_clicks{0};
   std::string name;
   std::string callback;
-  MSGPACK_DEFINE_MAP(type, name, callback);
+  std::string keycode1{};
+  MSGPACK_DEFINE_MAP(type, name, callback, keycode1);
 };
 
 struct SetSliderControl {
@@ -398,7 +440,10 @@ struct SetSliderControl {
   double min{};
   double max{};
   double step{};
-  MSGPACK_DEFINE_MAP(type, name, callback, value, min, max, step);
+  std::string keycode1{};
+  std::string keycode2{};
+  MSGPACK_DEFINE_MAP(type, name, callback, value, min, max, step, keycode1,
+                     keycode2);
 };
 
 struct SetSliderValue {
@@ -419,11 +464,21 @@ struct DeleteControl {
   MSGPACK_DEFINE_MAP(type, name);
 };
 
+// This message schema is defined by gamepad dictionary populated in
+// /drake/geometry/meshcat.html::handle_gamepads().
+struct Gamepad {
+  int index{};
+  std::vector<double> button_values;
+  std::vector<double> axes;
+  MSGPACK_DEFINE_MAP(index, button_values, axes);
+};
+
 struct UserInterfaceEvent {
   std::string type;
   std::string name;
   std::optional<double> value;
-  MSGPACK_DEFINE_MAP(type, name, value);
+  std::optional<internal::Gamepad> gamepad;
+  MSGPACK_DEFINE_MAP(type, name, value, gamepad);
 };
 
 }  // namespace internal
@@ -440,7 +495,6 @@ MSGPACK_ADD_ENUM(drake::geometry::MeshcatAnimation::LoopMode);
 namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 namespace adaptor {
-
 
 template <typename Scalar, int RowsAtCompileTime, int ColsAtCompileTime,
           int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime>
@@ -529,7 +583,7 @@ struct pack<drake::geometry::Meshcat::PerspectiveCamera> {
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
       msgpack::packer<Stream>& o,
       const drake::geometry::Meshcat::PerspectiveCamera& v) const {
-    o.pack_map(5);
+    o.pack_map(6);
     o.pack("type");
     o.pack("PerspectiveCamera");
     o.pack("fov");

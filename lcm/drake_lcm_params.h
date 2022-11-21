@@ -10,9 +10,14 @@ namespace lcm {
 
 /** The set of parameters for configuring DrakeLcm.  */
 struct DrakeLcmParams {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DrakeLcmParams)
-  DrakeLcmParams() = default;
-  ~DrakeLcmParams();
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(lcm_url));
+    a->Visit(DRAKE_NVP(channel_suffix));
+    a->Visit(DRAKE_NVP(defer_initialization));
+  }
 
   /** The URL for DrakeLcm communication. If empty, DrakeLcm will use the
   default URL per the DrakeLcm::DrakeLcm() no-argument constructor. */
@@ -23,9 +28,17 @@ struct DrakeLcmParams {
   When provided, calls to DrakeLcm::Publish() or DrakeLcm::Subscribe() will
   append this string to the `channel` name requested for publish or subscribe.
 
-  This has no effect on DrakeLcm::SubscribeAllChannels(); the channel names
-  reported there will remain unmodified.
-  */
+  For example, with the channel_suffix set to "_ALT" a call to
+  `Publish(&drake_lcm, "FOO", message)` will transmit on the network using the
+  channel name "FOO_ALT", and a call to `Subscribe(&lcm, "BAR", handler)` will
+  only call the handler for messages received on the "BAR_ALT" channel name.
+
+  Simiarly, DrakeLcm::SubscribeAllChannels() only subscribes to network messages
+  that end with the suffix. A network message on a non-matching channel name
+  (e.g., "QUUX") will silently discarded.
+  The DrakeLcmInterface::MultichannelHandlerFunction callback will be passed the
+  _unadaorned_  channel name as its first argument (e.g., "FOO" or "BAR"), not
+  "FOO_ALT", etc. */
   std::string channel_suffix;
 
   /** (Advanced) Controls whether or not LCM's background receive thread will
@@ -34,13 +47,6 @@ struct DrakeLcmParams {
   configuration for new threads varies between the construction time and first
   use. */
   bool defer_initialization{false};
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(lcm_url));
-    a->Visit(DRAKE_NVP(channel_suffix));
-    a->Visit(DRAKE_NVP(defer_initialization));
-  }
 };
 
 }  // namespace lcm

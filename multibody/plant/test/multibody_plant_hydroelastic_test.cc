@@ -206,7 +206,7 @@ class HydroelasticModelTests : public ::testing::Test {
     // Set initial condition.
     const RigidTransformd X_WB(Vector3d(0.0, 0.0, kSphereRadius));
     plant_->SetFreeBodyPose(&plant_context, *body_, X_WB);
-    diagram_->Publish(diagram_context);
+    diagram_->ForcedPublish(diagram_context);
 
     // Run simulation for long enough to reach the steady state.
     simulator.AdvanceTo(0.5);
@@ -623,21 +623,6 @@ TEST_F(ContactModelTest, HydroelasticWithFallback) {
     EXPECT_TRUE(CompareMatrices(F_BBo_W_array[b].get_coeffs(),
                                 F_BBo_W_array_expected[b].get_coeffs()));
   }
-}
-
-TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
-  this->Configure(ContactModel::kHydroelasticWithFallback, false);
-
-  // Plant was not connected to the SceneGraph in a diagram, so its input port
-  // should be invalid.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      GetContactResults(),
-      "The geometry query input port \\(see "
-      "MultibodyPlant::get_geometry_query_input_port\\(\\)\\) "
-      "of this MultibodyPlant is not connected. Please connect the"
-      "geometry query output port of a SceneGraph object "
-      "\\(see SceneGraph::get_query_output_port\\(\\)\\) to this plants input "
-      "port in a Diagram.");
 }
 
 // TODO(DamrongGuoy): Create an independent test fixture instead of using

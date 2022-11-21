@@ -10,15 +10,18 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/sensors/camera_config_functions.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
+#include "drake/systems/sensors/lcm_image_array_to_images.h"
 #include "drake/systems/sensors/pixel_types.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
 
@@ -56,6 +59,7 @@ PYBIND11_MODULE(sensors, m) {
   m.doc() = "Bindings for the sensors portion of the Systems framework.";
 
   py::module::import("pydrake.common.eigen_geometry");
+  py::module::import("pydrake.common.schema");
   py::module::import("pydrake.geometry.render");
   py::module::import("pydrake.systems.framework");
 
@@ -141,6 +145,7 @@ PYBIND11_MODULE(sensors, m) {
       py::class_<ImageT> image(m, TemporaryClassName<ImageT>().c_str());
       AddTemplateClass(m, "Image", image, py_param);
       image  // BR
+          .def(py::init<>(), doc.Image.ctor.doc_0args)
           .def(py::init<int, int>(), py::arg("width"), py::arg("height"),
               doc.Image.ctor.doc_2args)
           .def(py::init<int, int, T>(), py::arg("width"), py::arg("height"),
@@ -234,6 +239,56 @@ PYBIND11_MODULE(sensors, m) {
       double{RgbdSensorDiscrete::kDefaultPeriod};
 
   {
+    // To bind nested serializable structs without errors, we declare the outer
+    // struct first, then bind its inner structs, then bind the outer struct.
+    constexpr auto& config_cls_doc = doc.CameraConfig;
+    py::class_<CameraConfig> config_cls(m, "CameraConfig", config_cls_doc.doc);
+
+    // Inner struct.
+    constexpr auto& fov_degrees_doc = doc.CameraConfig.FovDegrees;
+    py::class_<CameraConfig::FovDegrees> fov_class(
+        config_cls, "FovDegrees", fov_degrees_doc.doc);
+    fov_class  // BR
+        .def(ParamInit<CameraConfig::FovDegrees>());
+    DefAttributesUsingSerialize(&fov_class, fov_degrees_doc);
+    DefReprUsingSerialize(&fov_class);
+    DefCopyAndDeepCopy(&fov_class);
+
+    // Inner struct.
+    constexpr auto& focal_doc = doc.CameraConfig.FocalLength;
+    py::class_<CameraConfig::FocalLength> focal_class(
+        config_cls, "FocalLength", focal_doc.doc);
+    focal_class  // BR
+        .def(ParamInit<CameraConfig::FocalLength>());
+    DefAttributesUsingSerialize(&focal_class, focal_doc);
+    DefReprUsingSerialize(&focal_class);
+    DefCopyAndDeepCopy(&focal_class);
+
+    // Now we can bind the outer struct (see above).
+    config_cls  // BR
+        .def(ParamInit<CameraConfig>())
+        .def("focal_x", &CameraConfig::focal_x, config_cls_doc.focal_x.doc)
+        .def("focal_y", &CameraConfig::focal_y, config_cls_doc.focal_y.doc)
+        .def("principal_point", &CameraConfig::principal_point,
+            config_cls_doc.principal_point.doc);
+    DefAttributesUsingSerialize(&config_cls, config_cls_doc);
+    DefReprUsingSerialize(&config_cls);
+    DefCopyAndDeepCopy(&config_cls);
+
+    m.def("ApplyCameraConfig",
+        py::overload_cast<const CameraConfig&, DiagramBuilder<double>*,
+            const systems::lcm::LcmBuses*,
+            const multibody::MultibodyPlant<double>*,
+            geometry::SceneGraph<double>*, drake::lcm::DrakeLcmInterface*>(
+            &ApplyCameraConfig),
+        py::arg("config"), py::arg("builder"), py::arg("lcm_buses") = nullptr,
+        py::arg("plant") = nullptr, py::arg("scene_graph") = nullptr,
+        py::arg("lcm") = nullptr,
+        // Keep alive, reference: `builder` keeps `lcm` alive.
+        py::keep_alive<2, 6>(), doc.ApplyCameraConfig.doc);
+  }
+
+  {
     using Class = CameraInfo;
     constexpr auto& cls_doc = doc.CameraInfo;
     py::class_<Class> cls(m, "CameraInfo", cls_doc.doc);
@@ -252,6 +307,8 @@ PYBIND11_MODULE(sensors, m) {
         .def("height", &Class::height, cls_doc.height.doc)
         .def("focal_x", &Class::focal_x, cls_doc.focal_x.doc)
         .def("focal_y", &Class::focal_y, cls_doc.focal_y.doc)
+        .def("fov_x", &Class::fov_x, cls_doc.fov_x.doc)
+        .def("fov_y", &Class::fov_y, cls_doc.fov_y.doc)
         .def("center_x", &Class::center_x, cls_doc.center_x.doc)
         .def("center_y", &Class::center_y, cls_doc.center_y.doc)
         .def("intrinsic_matrix", &Class::intrinsic_matrix,
@@ -267,6 +324,21 @@ PYBIND11_MODULE(sensors, m) {
                   t[2].cast<double>(), t[3].cast<double>(), t[4].cast<double>(),
                   t[5].cast<double>());
             }));
+  }
+
+  {
+    using Class = LcmImageArrayToImages;
+    constexpr auto& cls_doc = doc.LcmImageArrayToImages;
+    py::class_<Class, LeafSystem<double>> cls(
+        m, "LcmImageArrayToImages", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def("image_array_t_input_port", &Class::image_array_t_input_port,
+            py_rvp::reference_internal, cls_doc.image_array_t_input_port.doc)
+        .def("color_image_output_port", &Class::color_image_output_port,
+            py_rvp::reference_internal, cls_doc.color_image_output_port.doc)
+        .def("depth_image_output_port", &Class::depth_image_output_port,
+            py_rvp::reference_internal, cls_doc.depth_image_output_port.doc);
   }
 
   {

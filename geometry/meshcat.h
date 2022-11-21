@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/name_value.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/rgba.h"
@@ -21,6 +22,16 @@ namespace geometry {
 
 /** The set of parameters for configuring Meshcat. */
 struct MeshcatParams {
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(host));
+    a->Visit(DRAKE_NVP(port));
+    a->Visit(DRAKE_NVP(web_url_pattern));
+    a->Visit(DRAKE_NVP(show_stats_plot));
+  }
+
   /** Meshcat will listen only on the given hostname (e.g., "localhost").
   If "*" is specified, then it will listen on all interfaces.
   If empty, an appropriate default value will be chosen (currently "*"). */
@@ -47,6 +58,11 @@ struct MeshcatParams {
     "all interfaces".
   */
   std::string web_url_pattern{"http://{host}:{port}"};
+
+  /** Determines whether or not to display the stats plot widget in the Meshcat
+  user interface. This plot including realtime rate and WebGL render
+  statistics. */
+  bool show_stats_plot{true};
 };
 
 /** Provides an interface to %Meshcat (https://github.com/rdeits/meshcat).
@@ -232,14 +248,13 @@ class Meshcat {
                        double line_width = 1.0,
                        const Rgba& rgba = Rgba(0.1, 0.1, 0.1, 1.0));
 
-  // TODO(russt): Support per-vertex coloring (maybe rgba as std::variant).
   /** Sets the "object" at `path` in the scene tree to a triangular mesh.
 
   @param path a "/"-delimited string indicating the path in the scene tree. See
               @ref meshcat_path "Meshcat paths" for the semantics.
   @param vertices is a 3-by-N matrix of 3D point defining the vertices of the
                   mesh.
-  @param faces is a 3-by-N integer matrix with each entry denoting an index
+  @param faces is a 3-by-M integer matrix with each entry denoting an index
                into vertices and each column denoting one face (aka
                SurfaceTriangle).
   @param rgba is the mesh face or wireframe color.
@@ -255,6 +270,30 @@ class Meshcat {
                        bool wireframe = false,
                        double wireframe_line_width = 1.0);
 
+  /** Sets the "object" at `path` in the scene tree to a triangular mesh with
+      per-vertex coloring.
+
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param vertices is a 3-by-N matrix of 3D point defining the vertices of the
+                  mesh.
+  @param faces is a 3-by-M integer matrix with each entry denoting an index
+               into vertices and each column denoting one face (aka
+               SurfaceTriangle).
+  @param colors is a 3-by-N matrix of RGB color values, one color per vertex of
+                the mesh. Color values are in the range [0, 1].
+  @param wireframe if "true", then only the triangle edges are visualized, not
+                   the faces.
+  @param wireframe_line_width is the width in pixels.  Due to limitations in
+                              WebGL implementations, the line width may be 1
+                              regardless of the set value. */
+  void SetTriangleColorMesh(std::string_view path,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                       const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
+                       bool wireframe = false,
+                       double wireframe_line_width = 1.0);
+
   // TODO(russt): Provide a more general SetObject(std::string_view path,
   // msgpack::object object) that would allow users to pass through anything
   // that meshcat.js / three.js can handle.  Possible this could use
@@ -263,6 +302,17 @@ class Meshcat {
   /** Properties for a perspective camera in three.js:
    https://threejs.org/docs/#api/en/cameras/PerspectiveCamera */
   struct PerspectiveCamera {
+    /** Passes this object to an Archive.
+    Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(fov));
+      a->Visit(DRAKE_NVP(aspect));
+      a->Visit(DRAKE_NVP(near));
+      a->Visit(DRAKE_NVP(far));
+      a->Visit(DRAKE_NVP(zoom));
+    }
+
     double fov{75};    ///< Camera frustum vertical field of view.
     double aspect{1};  ///< Camera frustum aspect ratio.
     double near{.01};  ///< Camera frustum near plane.
@@ -282,6 +332,19 @@ class Meshcat {
   /** Properties for an orthographic camera in three.js:
    https://threejs.org/docs/#api/en/cameras/OrthographicCamera */
   struct OrthographicCamera {
+    /** Passes this object to an Archive.
+    Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(left));
+      a->Visit(DRAKE_NVP(right));
+      a->Visit(DRAKE_NVP(top));
+      a->Visit(DRAKE_NVP(bottom));
+      a->Visit(DRAKE_NVP(near));
+      a->Visit(DRAKE_NVP(far));
+      a->Visit(DRAKE_NVP(zoom));
+    }
+
     double left{-1};     ///< Camera frustum left plane.
     double right{1};     ///< Camera frustum right plane.
     double top{-1};      ///< Camera frustum top plane.
@@ -352,6 +415,16 @@ class Meshcat {
   /** Deletes the object at the given `path` as well as all of its children.
   See @ref meshcat_path for the detailed semantics of deletion. */
   void Delete(std::string_view path = "");
+
+  // TODO(#16486): add low-pass filter to smooth the Realtime plot
+  /** Sets the realtime rate that is displayed in the meshcat visualizer stats
+   strip chart. This rate is the ratio between sim time and real
+   world time. 1 indicates the simulator is the same speed as real time. 2
+   indicates running twice as fast as real time, 0.5 is half speed, etc.
+  @see drake::systems::Simulator::set_target_realtime_rate()
+  @param rate the realtime rate value to be displayed, will be converted to a
+  percentage (multiplied by 100) */
+  void SetRealtimeRate(double rate);
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim
@@ -426,16 +499,24 @@ class Meshcat {
   //@{
 
   /** Adds a button with the label `name` to the meshcat browser controls GUI.
-   If the button already existed, then resets its click count to zero instead.
-   @throws std::exception if `name` has already been added as any other type
-   of control (e.g., slider). */
-  void AddButton(std::string name);
+   If the optional @p keycode is set to a javascript string key code (such as
+   "KeyG" or "ArrowLeft", see
+   https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_code_values),
+   then a keydown callback is registered in the GUI which will also `click` the
+   button. If the button already existed, then resets its click count to zero;
+   and sets the keycode if no keycode was set before.
+
+   @throws std::exception if `name` has already been added as any other type of
+   control (e.g., slider).
+   @throw std::exception if a button of the same `name` has already been
+   assigned a different keycode. */
+  void AddButton(std::string name, std::string keycode = "");
 
   /** Returns the number of times the button `name` has been clicked in the
    GUI, from the time that it was added to `this`.  If multiple browsers are
    open, then this number is the cumulative number of clicks in all browsers.
    @throws std::exception if `name` is not a registered button. */
-  int GetButtonClicks(std::string_view name);
+  int GetButtonClicks(std::string_view name) const;
 
   /** Removes the button `name` from the GUI.
    @throws std::exception if `name` is not a registered button. */
@@ -445,11 +526,18 @@ class Meshcat {
    The slider range is given by [`min`, `max`]. `step` is the smallest
    increment by which the slider can change values (and therefore send updates
    back to this Meshcat instance). `value` specifies the initial value; it will
-   be truncated to the slider range and rounded to the nearest increment.
+   be truncated to the slider range and rounded to the nearest increment. If
+   the optional @p decrement_keycode or @p increment_keycode are set to a
+   javascript string key code (such as "KeyG" or "ArrowLeft", see
+   https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_code_values),
+   then keydown callbacks will be registered in the GUI that will move the
+   slider by @p step (within the limits) when those buttons are pressed.
+
    @throws std::exception if `name` has already been added as any type of
    control (e.g., either button or slider). */
   void AddSlider(std::string name, double min, double max, double step,
-                 double value);
+                 double value, std::string decrement_keycode = "",
+                 std::string increment_keycode = "");
 
   /** Sets the current `value` of the slider `name`. `value` will be truncated
    to the slider range and rounded to the nearest increment specified by the
@@ -460,7 +548,7 @@ class Meshcat {
 
   /** Gets the current `value` of the slider `name`.
    @throws std::exception if `name` is not a registered slider. */
-  double GetSliderValue(std::string_view name);
+  double GetSliderValue(std::string_view name) const;
 
   /** Removes the slider `name` from the GUI.
    @throws std::exception if `name` is not a registered slider. */
@@ -470,6 +558,78 @@ class Meshcat {
    this Meshcat instance. It does *not* clear the default GUI elements set in
    the meshcat browser (e.g. for cameras and lights). */
   void DeleteAddedControls();
+
+  /** Status of a gamepad obtained from the Meshcat javascript client. */
+  struct Gamepad {
+    /** Passes this object to an Archive.
+    Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(index));
+      a->Visit(DRAKE_NVP(button_values));
+      a->Visit(DRAKE_NVP(axes));
+    }
+
+    // Descriptions of these properties were adapted from
+    // https://developer.mozilla.org/en-US/docs/Web/API/Gamepad.
+
+    /** An an integer that is auto-incremented to be unique for each device
+    currently connected to the system. If `index.has_value() == false`, then we
+    have not yet received any gamepad status from the Meshcat browser. */
+    std::optional<int> index;
+
+    /** An array of floating point values representing analog buttons, such as
+    the triggers on many modern gamepads. The values are normalized to the
+    range [0.0, 1.0], with 0.0 representing a button that is not pressed, and
+    1.0 representing a button that is fully pressed.
+
+    See https://w3c.github.io/gamepad/#dfn-standard-gamepad for the standard
+    mapping of gamepad buttons to this vector.
+    */
+    std::vector<double> button_values;
+
+    /** An array of floating point values representing e.g. analog thumbsticks.
+    Each entry in the array is a floating point value in the range -1.0 – 1.0,
+    representing the axis position from the lowest value (-1.0) to the highest
+    value (1.0).
+
+    In the standard gamepad mapping, we have:
+    - axes[0] Left stick x (negative left/positive right)
+    - axes[1] Left stick y (negative up/positive down)
+    - axes[2] Right stick x (negative left/positive right)
+    - axes[3] Right stick y (negative up/positive down)
+
+    Note that a stick that is left alone may not output all zeros.
+    https://beej.us/blog/data/javascript-gamepad/ gives some useful advice for
+    applying a deadzone to these values.
+    */
+    std::vector<double> axes;
+  };
+
+  /** Returns the status from the most recently updated gamepad data in the
+  Meshcat. See Gamepad for details on the returned values.
+
+  Note that in javascript, gamepads are not detected until users "opt-in" by
+  pressing a gamepad button or moving the thumbstick in the Meshcat window. If
+  no gamepad information is available in javascript, then no messages are sent
+  and the returned gamepad index will not have a value.
+
+  Currently Meshcat only attempts to support one gamepad. If multiple gamepads
+  are detected in the same Meshcat window, then only the status of the first
+  connected gamepad in `navigator.GetGamepads()` is returned. If multiple
+  Meshcat windows are connected to this Meshcat instance, and gamepads are
+  being used in multiple windows, then the returned status will be the most
+  recently received status message. Therefore using multiple gamepads
+  simultaneously is not recommended.
+
+  This feature is provided primarily to support applications where Drake is
+  running on a remote machine (e.g. in the cloud), and the Meshcat javascript
+  in the browser is the only code running on the local machine which has access
+  to the gamepad.
+
+  For more details on javascript support for gamepads (or to test that your
+  gamepad is working), see https://beej.us/blog/data/javascript-gamepad/. */
+  Gamepad GetGamepad() const;
 
   //@}
 

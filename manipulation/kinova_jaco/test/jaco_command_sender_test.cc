@@ -29,6 +29,8 @@ class JacoCommandSenderTestBase : public testing::Test {
   JacoCommandSender dut_;
   std::unique_ptr<systems::Context<double>> context_ptr_;
   systems::Context<double>& context_;
+
+  const Vector1d time_{Vector1d(1.2)};
 };
 
 class JacoCommandSenderTest : public JacoCommandSenderTestBase {
@@ -49,31 +51,6 @@ const std::vector<double> ToStdVec(const Eigen::VectorXd& in) {
   return std::vector<double>{in.data(), in.data() + in.size()};
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-TEST_F(JacoCommandSenderTest, DeprecatedAcceptanceTest) {
-  constexpr int total_dof =
-      kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers;
-  const VectorXd state =
-      VectorXd::LinSpaced(total_dof * 2, 0.3, 0.4);
-
-  dut_.get_input_port().FixValue(&context_, state);
-  EXPECT_EQ(output().num_joints, kJacoDefaultArmNumJoints);
-  EXPECT_EQ(output().joint_position,
-            ToStdVec(state.head(kJacoDefaultArmNumJoints)));
-  EXPECT_EQ(output().joint_velocity,
-            ToStdVec(state.segment(total_dof, kJacoDefaultArmNumJoints)));
-  EXPECT_EQ(output().num_fingers, kJacoDefaultArmNumFingers);
-  EXPECT_EQ(output().finger_position, ToStdVec(state.segment(
-      kJacoDefaultArmNumJoints, kJacoDefaultArmNumFingers)
-                                               * kFingerUrdfToSdk));
-  EXPECT_EQ(output().finger_velocity,
-            ToStdVec(state.tail(kJacoDefaultArmNumFingers)
-                     * kFingerUrdfToSdk));
-}
-#pragma GCC diagnostic pop
-
 TEST_F(JacoCommandSenderTest, AcceptanceTestWithFingers) {
   const VectorXd q0 = VectorXd::LinSpaced(N + N_F, 0.2, 0.3);
   const VectorXd v0 = VectorXd::LinSpaced(N + N_F, 0.3, 0.4);
@@ -81,6 +58,7 @@ TEST_F(JacoCommandSenderTest, AcceptanceTestWithFingers) {
   dut_.get_position_input_port().FixValue(&context_, q0);
   dut_.get_velocity_input_port().FixValue(&context_, v0);
 
+  EXPECT_EQ(output().utime, 0);
   EXPECT_EQ(output().num_joints, kJacoDefaultArmNumJoints);
   EXPECT_EQ(output().joint_position, ToStdVec(q0.head(N)));
   EXPECT_EQ(output().joint_velocity, ToStdVec(v0.head(N)));
@@ -89,6 +67,10 @@ TEST_F(JacoCommandSenderTest, AcceptanceTestWithFingers) {
             ToStdVec(q0.tail(N_F) * kFingerUrdfToSdk));
   EXPECT_EQ(output().finger_velocity,
             ToStdVec(v0.tail(N_F) * kFingerUrdfToSdk));
+
+
+  dut_.get_time_input_port().FixValue(&context_, time_);
+  EXPECT_EQ(output().utime, time_[0] * 1e6);
 }
 
 TEST_F(JacoCommandSenderNoFingersTest, AcceptanceNoFingers) {

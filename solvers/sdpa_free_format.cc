@@ -13,6 +13,8 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseQR>
 
+#include "drake/common/text_logging.h"
+
 namespace drake {
 namespace solvers {
 namespace internal {
@@ -937,8 +939,8 @@ bool GenerateSdpaImpl(const std::vector<BlockInX>& X_blocks,
     }
 
   } else {
-    std::cout << "GenerateSDPA(): Cannot open the file " << file_name
-              << ".dat-s\n";
+    drake::log()->warn(
+        "GenerateSDPA(): Cannot open the file {}.dat-s", file_name);
     return false;
   }
   sdpa_file.close();

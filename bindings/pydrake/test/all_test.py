@@ -1,6 +1,12 @@
+import os
 import sys
 import unittest
 import warnings
+
+# When importing pydrake, confirm that it works without any matplotlib
+# customization. We don't need the MPLBACKEND=Template override (from
+# our tools/bazel.rc file) since importing doesn't open any new windows.
+del os.environ['MPLBACKEND']  # noqa
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
@@ -34,7 +40,7 @@ class TestAll(unittest.TestCase):
 
         builder = DiagramBuilder()
         plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
-        Parser(plant).AddModelFromFile(
+        Parser(plant).AddModels(
             FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
         plant.Finalize()
         diagram = builder.Build()
@@ -47,7 +53,7 @@ class TestAll(unittest.TestCase):
 
         builder = DiagramBuilder()
         plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
-        Parser(plant).AddModelFromFile(
+        Parser(plant).AddModels(
             FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
         plant.Finalize()
         diagram = builder.Build()
@@ -59,7 +65,7 @@ class TestAll(unittest.TestCase):
         builder = pydrake.systems.framework.DiagramBuilder()
         plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(
             builder, 0.0)
-        pydrake.multibody.parsing.Parser(plant).AddModelFromFile(
+        pydrake.multibody.parsing.Parser(plant).AddModels(
             pydrake.common.FindResourceOrThrow(
                 "drake/examples/pendulum/Pendulum.urdf"))
         plant.Finalize()
@@ -187,9 +193,12 @@ class TestAll(unittest.TestCase):
             # - sensors
             "Image",
             # visualization
-            # - meldis
+            "AddDefaultVisualization",
+            # - _meldis
             "Meldis",
-            # - plotting
+            # -  model_visualizer
+            "ModelVisualizer",
+            # - _plotting
             "plot_sublevelset_quadratic",
         )
         # Ensure each symbol is exposed as globals from the above import

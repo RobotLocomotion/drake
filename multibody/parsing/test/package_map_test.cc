@@ -1,10 +1,10 @@
 #include "drake/multibody/parsing/package_map.h"
 
 #include <algorithm>
+#include <filesystem>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
@@ -15,6 +15,8 @@ using std::string;
 namespace drake {
 namespace multibody {
 namespace {
+
+namespace fs = std::filesystem;
 
 string GetTestDataRoot() {
   const string desired_dir =
@@ -66,21 +68,25 @@ void VerifyMatchWithTestDataRoot(const PackageMap& package_map) {
   map<string, string> expected_packages = {
     {"package_map_test_package_a", root_path +
         "package_map_test_package_a/"},
+    {"package_map_test_package_aa", root_path +
+        "package_map_test_package_a/package_map_test_package_aa/"},
     {"package_map_test_package_b", root_path +
         "package_map_test_package_b/"},
     {"package_map_test_package_c", root_path +
         "package_map_test_package_set/package_map_test_package_c/"},
     {"package_map_test_package_d", root_path +
         "package_map_test_package_set/package_map_test_package_d/"},
+    {"package_map_test_package_e", root_path +
+        "package_map_test_package_e/"},
   };
   VerifyMatch(package_map, expected_packages);
 }
 
 // Tests that the PackageMap can be manually populated and unpopulated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
-  filesystem::create_directory("package_foo");
-  filesystem::create_directory("package_bar");
-  filesystem::create_directory("package_baz");
+  fs::create_directory("package_foo");
+  fs::create_directory("package_bar");
+  fs::create_directory("package_baz");
   map<string, string> expected_packages = {
     {"package_foo", "package_foo"},
     {"my_package", "package_bar"}
@@ -122,9 +128,9 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
 
 // Tests that PackageMaps can be combined via AddMap.
 GTEST_TEST(PackageMapTest, TestAddMap) {
-  filesystem::create_directory("package_foo");
-  filesystem::create_directory("package_bar");
-  filesystem::create_directory("package_baz");
+  fs::create_directory("package_foo");
+  fs::create_directory("package_bar");
+  fs::create_directory("package_baz");
   map<string, string> expected_packages_1 = {
     {"package_foo", "package_foo"},
     {"package_bar", "package_bar"}
@@ -183,7 +189,7 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
       "drake/multibody/parsing/test/"
       "package_map_test_packages/package_map_test_package_a/package.xml");
   const string xml_dirname =
-      filesystem::path(xml_filename).parent_path().string();
+      fs::path(xml_filename).parent_path().string();
   PackageMap package_map = PackageMap::MakeEmpty();
   package_map.AddPackageXml(xml_filename);
 
@@ -247,10 +253,45 @@ GTEST_TEST(PackageMapTest, TestPopulateFromEnvironment) {
   VerifyMatchWithTestDataRoot(package_map);
 }
 
+// Tests that PackageMap can be populated from the
+// ROS_PACKAGE_PATH env var.
+GTEST_TEST(PackageMapTest, TestPopulateFromRosPackagePath) {
+  PackageMap package_map = PackageMap::MakeEmpty();
+
+  // Test a null environment.
+  package_map.PopulateFromRosPackagePath();
+  EXPECT_EQ(package_map.size(), 0);
+
+  // Test an empty environment.
+  ::setenv("ROS_PACKAGE_PATH", "", 1);
+  package_map.PopulateFromRosPackagePath();
+  EXPECT_EQ(package_map.size(), 0);
+
+  // Test three environment entries, concatenated:
+  // - one bad path
+  // - one good path
+  // - one empty path
+  const std::string root_path = GetTestDataRoot();
+  const std::string value = "/does/not/exist:" + root_path + ":";
+  ::setenv("ROS_PACKAGE_PATH", value.c_str(), 1);
+  package_map.PopulateFromRosPackagePath();
+  map<string, string> expected_packages = {
+    {"package_map_test_package_a", root_path +
+        "package_map_test_package_a/"},
+    {"package_map_test_package_b", root_path +
+        "package_map_test_package_b/"},
+    {"package_map_test_package_c", root_path +
+        "package_map_test_package_set/package_map_test_package_c/"},
+    {"package_map_test_package_d", root_path +
+        "package_map_test_package_set/package_map_test_package_d/"},
+  };
+  VerifyMatch(package_map, expected_packages);
+}
+
 // Tests that PackageMap's streaming to-string operator works.
 GTEST_TEST(PackageMapTest, TestStreamingToString) {
-  filesystem::create_directory("package_foo");
-  filesystem::create_directory("package_bar");
+  fs::create_directory("package_foo");
+  fs::create_directory("package_bar");
   map<string, string> expected_packages = {
     {"package_foo", "package_foo"},
     {"my_package", "package_bar"}
