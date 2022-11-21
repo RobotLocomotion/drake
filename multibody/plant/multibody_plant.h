@@ -4429,6 +4429,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       return false;
     }
   }
+
+  // Note: As discussed in #18351, we've used CamelCase here in case we need to
+  // change its implementation down the road to a more expensive lookup.
+  /// (Internal use only) Returns a mutable pointer to the SceneGraph that this
+  /// plant is registered as a source for. This method can only be used
+  /// pre-Finalize.
+  ///
+  /// @throws std::exception if is_finalized() == true ||
+  ///           geometry_source_is_registered() == false
+  geometry::SceneGraph<T>* GetMutableSceneGraphPreFinalize() {
+    DRAKE_THROW_UNLESS(!is_finalized());
+    DRAKE_THROW_UNLESS(geometry_source_is_registered());
+    return scene_graph_;
+  }
+
   /// @} <!-- Introspection -->
 
   using internal::MultibodyTreeSystem<T>::is_discrete;
