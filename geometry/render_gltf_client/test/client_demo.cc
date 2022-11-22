@@ -78,6 +78,7 @@ DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 DEFINE_bool(color, true, "Sets the enabled camera to render color");
 DEFINE_bool(depth, true, "Sets the enabled camera to render depth");
+DEFINE_bool(depth16, false, "Sets the enabled camera to render depth 16U");
 DEFINE_bool(label, true, "Sets the enabled camera to render label");
 DEFINE_double(render_fps, 10, "Frames per simulation second to render");
 
@@ -178,7 +179,8 @@ bool IsValidSaveDirectory(const std::string& save_dir) {
 }
 
 int DoMain() {
-  DRAKE_THROW_UNLESS(FLAGS_color || FLAGS_depth || FLAGS_label);
+  DRAKE_THROW_UNLESS(FLAGS_color || FLAGS_depth || FLAGS_label
+      || FLAGS_depth16);
 
   systems::DiagramBuilder<double> builder;
   auto [plant, scene_graph] =
@@ -271,6 +273,20 @@ int DoMain() {
           image_writer->DeclareImageInputPort<PixelType::kDepth32F>(
               "depth", filename, image_publish_period, 0.);
       builder.Connect(camera->depth_image_32F_output_port(), writer_port);
+    }
+  }
+
+  if (FLAGS_depth16) {
+    const auto& port =
+        image_to_lcm_image_array->DeclareImageInputPort<PixelType::kDepth16U>(
+            "depth16");
+    builder.Connect(camera->depth_image_16U_output_port(), port);
+
+    if (save_images) {
+      const auto& writer_port =
+          image_writer->DeclareImageInputPort<PixelType::kDepth16U>(
+              "depth16", filename, image_publish_period, 0.);
+      builder.Connect(camera->depth_image_16U_output_port(), writer_port);
     }
   }
 

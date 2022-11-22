@@ -147,7 +147,6 @@ ColorD GetColorDFromLabel(const RenderLabel& label) {
 // Validates the output file extension based on `image_type`.
 bool ValidateOutputExtension() {
   if (FLAGS_image_type == "depth") {
-    // TODO(svenevs): Add support for 16U PNG depth images.
     if (std::filesystem::path(FLAGS_output_path).extension() == ".png") {
       drake::log()->debug("Depth images must have a .tiff extension.");
       return false;
@@ -354,7 +353,6 @@ int DoMain() {
       }
     }
 
-    // TODO(svenevs): Support for 16U PNG export here.
     /* Allocate a single channel float image.  Note that vtkImageData supports
      3D data, the last channel in SetDimensions being `z`. */
     vtkNew<vtkTIFFWriter> writer;
