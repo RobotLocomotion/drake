@@ -1106,4 +1106,14 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "leaf_system_discrete_initialization_test",
+    deps = [
+        ":diagram_builder",
+        ":leaf_system",
+        "//systems/analysis:simulator",
+        "//systems/primitives:zero_order_hold",
+    ],
+)
+
 add_lint_tests()
