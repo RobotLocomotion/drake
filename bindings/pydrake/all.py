@@ -17,11 +17,19 @@ Things to note:
   suppressed, subseqeuent imports of those deprecated modules will not trigger
   warnings.
 
+To see example usages, please see `doc/python_bindings.rst`.
+
 Note:
     Import order matters! If there is a name conflict, the last one imported
-    wins.
+    wins. See "Preferred Ordering" section below.
 
-To see example usages, please see `doc/python_bindings.rst`.
+**Preferred Ordering**: In service of maintaining convenient spellings, we have
+a "preferred ordering" section in this top-level module. Please note that this
+ordering is subject to change without notice. If you desire stability, please
+**do not use** ``pydrake.all``. If you have a preferred ordering, please submit
+a PR that will be subject to discussion and review. If you wish to debug
+collisions, please run ``bazel run //bindings/pydrake:print_symbol_collision``
+from the Drake source tree.
 """
 
 import inspect as __inspect
@@ -34,11 +42,7 @@ from .lcm import *
 from .math import *
 from .perception import *
 from .polynomial import *
-# "from .symbolic import *" but don't shadow pydrake.math's existing functions.
-from . import symbolic as __symbolic
-for __name, __value in __inspect.getmembers(__symbolic):
-    if __name[0] != '_':
-        locals().setdefault(__name, __value)
+from .symbolic import *
 from .trajectories import *
 
 # Submodules.
@@ -50,3 +54,12 @@ from .multibody.all import *
 from .solvers.all import *
 from .systems.all import *
 from .visualization import *
+
+# Preferred Ordering.
+# Please note this will *re*import some modules.
+# To view what collisions may occur, please run:
+# - Ensure .math imports win over less capable .symbolic or .autodiffutils
+# overloads.
+from .math import *
+# - Ensure symbolic.Polynomial wins (#18353).
+from .symbolic import Polynomial
