@@ -364,6 +364,11 @@ void VPolytope::ImplementGeometry(const Box& box, void* data) {
 
 void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
   DRAKE_ASSERT(data != nullptr);
+  Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
+  *vertex_data = GetVertices(convex);
+}
+
+Eigen::MatrixXd GetVertices(const Convex& convex) {
   const auto [tinyobj_vertices, faces, num_faces] = internal::ReadObjFile(
       convex.filename(), convex.scale(), false /* triangulate */);
   unused(faces);
@@ -383,13 +388,13 @@ void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
         fmt::format("Qhull terminated with status {} and  message:\n{}",
                     qhull.qhullStatus(), qhull.qhullMessage()));
   }
-  Matrix3Xd* vertices = static_cast<Matrix3Xd*>(data);
-  vertices->resize(3, qhull.vertexCount());
+  Matrix3Xd vertices(3, qhull.vertexCount());
   int vertex_count = 0;
   for (const auto& qhull_vertex : qhull.vertexList()) {
-    vertices->col(vertex_count++) =
+    vertices.col(vertex_count++) =
         Eigen::Map<Eigen::Vector3d>(qhull_vertex.point().toStdVector().data());
   }
+  return vertices;
 }
 
 }  // namespace optimization
