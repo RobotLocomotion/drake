@@ -58,6 +58,20 @@ class TestGeometryRender(unittest.TestCase):
         self.assertIn("default_label", repr(params))
         copy.copy(params)
 
+    def test_render_engine_gltf_client_params(self):
+        # A default constructor exists.
+        mut.render.RenderEngineGltfClientParams()
+
+        # The kwarg constructor also works.
+        label = mut.render.RenderLabel(10)
+        params = mut.render.RenderEngineGltfClientParams(
+            default_label=label,
+        )
+        self.assertEqual(params.default_label, label)
+
+        self.assertIn("default_label", repr(params))
+        copy.copy(params)
+
     def test_render_label(self):
         RenderLabel = mut.render.RenderLabel
         value = 10
