@@ -116,6 +116,13 @@ class VPolytope final : public ConvexSet {
   Eigen::MatrixXd vertices_;
 };
 
+/** Obtain all the vertices stored in the convex object.
+ * @return vertices. Each column of `vertices` is a vertex. We don't impose any
+ * specific order on the vertices. The vertices are expressed in the convex own
+ * frame.
+ */
+[[nodiscard]] Eigen::MatrixXd GetVertices(const Convex& convex);
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
