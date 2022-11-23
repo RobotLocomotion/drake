@@ -46,6 +46,7 @@ drake_cc_library(
     hdrs = ["render_engine_gltf_client_params.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "//common:name_value",
         "//geometry/render:render_label",
     ],
 )

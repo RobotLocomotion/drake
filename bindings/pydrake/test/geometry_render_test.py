@@ -58,6 +58,26 @@ class TestGeometryRender(unittest.TestCase):
         self.assertIn("default_label", repr(params))
         copy.copy(params)
 
+    def test_render_engine_gltf_client_params(self):
+        # A default constructor exists.
+        mut.render.RenderEngineGltfClientParams()
+
+        # The kwarg constructor also works.
+        label = mut.render.RenderLabel(10)
+        base_url = "http://127.0.0.1:8888"
+        render_endpoint = "render"
+        params = mut.render.RenderEngineGltfClientParams(
+            default_label=label,
+            base_url=base_url,
+            render_endpoint=render_endpoint,
+        )
+        self.assertEqual(params.default_label, label)
+        self.assertEqual(params.render_endpoint, render_endpoint)
+        self.assertEqual(params.base_url, base_url)
+
+        self.assertIn("default_label", repr(params))
+        copy.copy(params)
+
     def test_render_label(self):
         RenderLabel = mut.render.RenderLabel
         value = 10
@@ -224,3 +244,12 @@ class TestGeometryRender(unittest.TestCase):
         self.assertEqual(current_engine.label_count, 1)
 
         # TODO(eric, duy): Test more properties.
+
+    def test_render_engine_gltf_client_api(self):
+        scene_graph = mut.SceneGraph()
+        params = mut.render.RenderEngineGltfClientParams()
+        scene_graph.AddRenderer("gltf_renderer",
+                                mut.render.MakeRenderEngineGltfClient(
+                                    params=params))
+        self.assertTrue(scene_graph.HasRenderer("gltf_renderer"))
+        self.assertEqual(scene_graph.RendererCount(), 1)
