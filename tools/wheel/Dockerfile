@@ -25,11 +25,6 @@ ADD image/build-dependencies.sh /image/
 
 RUN /image/build-dependencies.sh
 
-ADD image/vtk-args /opt/drake-wheel-build/vtk/
-ADD image/build-vtk.sh /image/
-
-RUN /image/build-vtk.sh
-
 # -----------------------------------------------------------------------------
 # Install Python.
 # -----------------------------------------------------------------------------
