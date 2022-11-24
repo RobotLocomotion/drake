@@ -63,7 +63,7 @@ if [[ "$(uname)" == "Linux" ]]; then
       /opt/drake-wheel-content/*
 fi
 
-# NOTE: build-vtk.sh also puts licenses in /opt/drake-dependencies/licenses.
+# TODO(svenevs): confirm vtk licenses are getting installed
 cp -r -t ${WHEEL_DIR}/pydrake/doc \
     /opt/drake-dependencies/licenses/*
 
