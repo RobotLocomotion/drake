@@ -17,5 +17,6 @@ python3-u-msgpack
 python3-uritemplate
 python3-websockets
 python3-yaml-dbg
+shellcheck
 valgrind
 valgrind-dbg
