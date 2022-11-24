@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/detail_multibody_plant_subgraph.h"
 
+#include "drake/geometry/geometry_cloning.h"
+
 namespace drake {
 namespace multibody {
 namespace internal {
@@ -126,6 +128,10 @@ class MultibodySubgraphElementAccessor
         frame_name_remap_(frame_name_remap) {}
 
  protected:
+  const Body<double>& DoGetBody(const Body<double>& element) const override {
+    return *elements_map_->bodies().at(&element);
+  }
+
   const Frame<double>& DoGetFrame(const Frame<double>& element) const override {
     return *elements_map_->frames().at(&element);
   }
@@ -332,61 +338,16 @@ void MultibodyPlantElementsMap::CopyJointActuator(
   joint_actuators_.insert({src, joint_actuator_dest});
 }
 
-void MultibodyPlantElementsMap::CopyGeometryById(
-    const geometry::GeometryId& geometry_id_src) {
+void MultibodyPlantElementsMap::CopyGeometryIds(
+    const std::set<geometry::GeometryId>& geometry_ids_src,
+    const MultibodySubgraphElementAccessor& handle) {
   DRAKE_DEMAND(scene_graph_src_ != nullptr);
 
-  const auto& inspector_src = scene_graph_src_->model_inspector();
-  const auto frame_id_src = inspector_src.GetFrameId(geometry_id_src);
-  const auto* body_src = plant_src_->GetBodyFromFrameId(frame_id_src);
-  DRAKE_DEMAND(body_src != nullptr);
-  const auto* body_dest = bodies_.at(body_src);
-  auto geometry_instance_dest =
-      inspector_src.CloneGeometryInstance(geometry_id_src);
+  auto geometry_ids = geometry::internal::CloneGeometriesToPlant(
+      geometry_ids_src, *plant_src_, *scene_graph_src_,
+      plant_dest_, handle);
 
-  // Use new "scoped" name.
-  std::string prefix_src;
-  if (body_src->model_instance() != world_model_instance()) {
-    prefix_src = plant_src_->GetModelInstanceName(body_src->model_instance());
-  }
-
-  std::string prefix_dest;
-  if (body_dest->model_instance() != world_model_instance()) {
-    prefix_dest =
-        plant_dest_->GetModelInstanceName(body_dest->model_instance());
-  }
-
-  auto scoped_name_src =
-      parsing::ParseScopedName(geometry_instance_dest->name());
-  DRAKE_DEMAND(scoped_name_src.instance_name == prefix_src);
-
-  auto scoped_name_dest =
-      parsing::PrefixName(prefix_dest, scoped_name_src.name);
-  geometry_instance_dest->set_name(scoped_name_dest);
-
-  // TODO(eric.cousineau): How to relax this constraint? How can we
-  // register with SceneGraph only?
-  // See: https://github.com/RobotLocomotion/drake/issues/13445
-  // TODO(eric.cousineau): Try Ale's potential fix here:
-  // https://github.com/RobotLocomotion/drake/pull/13371
-  geometry::GeometryId geometry_id_dest;
-  // Register as normal.
-  geometry_id_dest = plant_dest_->RegisterGeometry(
-      *body_dest, std::move(geometry_instance_dest));
-  geometry_ids_.insert({geometry_id_src, geometry_id_dest});
-}
-
-void MultibodyPlantElementsMap::CopyCollisionFilterPair(
-    const std::pair<geometry::GeometryId, geometry::GeometryId>& filter_pair) {
-  DRAKE_DEMAND(scene_graph_src_ != nullptr);
-
-  auto [id_a, id_b] = filter_pair;
-  auto id_a_dest = geometry_ids_[id_a];
-  auto id_b_dest = geometry_ids_[id_b];
-
-  plant_dest_->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
-      {"a", geometry::GeometrySet(id_a_dest)},
-      {"b", geometry::GeometrySet(id_b_dest)});
+  geometry_ids_.insert(geometry_ids.begin(), geometry_ids.end());
 }
 
 void MultibodyPlantElementsMap::CopyState(
@@ -547,13 +508,18 @@ MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
 
   // Copy geometries (if applicable)
   if (plant_dest->geometry_source_is_registered()) {
-    for (const auto& geometry_id_src : elem_src_.geometry_ids()) {
-      src_to_dest.CopyGeometryById(geometry_id_src);
-    }
+    // for (const auto& geometry_id_src : elem_src_.geometry_ids()) {
+    //   src_to_dest.CopyGeometryById(geometry_id_src);
+    // }
 
-    for (const auto& filter_pair_src : elem_src_.collision_filter_pairs()) {
-      src_to_dest.CopyCollisionFilterPair(filter_pair_src);
-    }
+    // for (const auto& filter_pair_src : elem_src_.collision_filter_pairs()) {
+    //   src_to_dest.CopyCollisionFilterPair(filter_pair_src);
+    // }
+    auto geometry_ids = geometry::internal::CloneGeometriesToPlant(
+        elem_src_.geometry_ids(), *elem_src_.plant(), *elem_src_.scene_graph(),
+        plant_dest, handle);
+
+    src_to_dest.geometry_ids().insert(geometry_ids.begin(), geometry_ids.end());
   }
 
   // TODO(azeey) Apply policies

@@ -143,6 +143,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":scoped_names",
+        "//geometry:geometry_cloning",
         "//multibody/plant",
         "//multibody/tree",
     ],

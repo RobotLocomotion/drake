@@ -161,6 +161,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "geometry_cloning",
+    srcs = ["geometry_cloning.cc"],
+    hdrs = ["geometry_cloning.h"],
+    deps = [
+        ":scene_graph",
+        "//multibody/plant",
+        "//multibody/parsing:scoped_names",
+    ],
+)
+drake_cc_library(
     name = "geometry_frame",
     srcs = ["geometry_frame.cc"],
     hdrs = ["geometry_frame.h"],

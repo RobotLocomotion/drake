@@ -17,11 +17,6 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/ball_rpy_joint.h"
-#include "drake/multibody/tree/prismatic_joint.h"
-#include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/universal_joint.h"
-#include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -303,10 +298,8 @@ class MultibodyPlantElementsMap {
   void CopyJointActuator(const JointActuator<double>* src,
                          const MultibodySubgraphElementAccessor& handle);
 
-  void CopyGeometryById(const geometry::GeometryId& geometry_id_src);
-
-  void CopyCollisionFilterPair(
-      const std::pair<geometry::GeometryId, geometry::GeometryId>& filter_pair);
+  void CopyGeometryIds(const std::set<geometry::GeometryId>& geometry_ids_src,
+                       const MultibodySubgraphElementAccessor& handle);
 
   // Copies the (physical) state from context_src to context_dest.
   void CopyState(const systems::Context<double>& context_src,
