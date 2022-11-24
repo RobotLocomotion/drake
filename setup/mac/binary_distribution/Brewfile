@@ -10,6 +10,8 @@ brew 'cmake'
 brew 'double-conversion'
 brew 'eigen'
 brew 'gcc'
+# TODO(17963): remove freetype from VTK dependencies if possible.
+brew 'freetype'
 brew 'fmt'
 brew 'glew'
 brew 'glib'

@@ -1,0 +1,7 @@
+# NOTE: these files need to be validated by
+# tools/wheel/test/tools_wheel_image_matches_tools_workspace_vtk_image_test.py
+exports_files([
+    "clone-vtk.sh",
+    "common-definitions.sh",
+    "vtk-cmake-args.sh",
+])
