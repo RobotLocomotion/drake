@@ -186,6 +186,27 @@ TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
   }
 }
 
+GTEST_TEST(TestLPDualSolution1, Test) {
+  ScsSolver solver;
+  if (solver.is_available()) {
+    TestLPDualSolution1(solver, kTol);
+  }
+}
+
+GTEST_TEST(TestLPDualSolution2, Test) {
+  ScsSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution2(solver, kTol);
+  }
+}
+
+GTEST_TEST(TestLPDualSolution3, Test) {
+  ScsSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution3(solver, kTol);
+  }
+}
+
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
@@ -193,8 +214,9 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(SCSTest, TestEllipsoidsSeparation,
-                        ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
+INSTANTIATE_TEST_SUITE_P(
+    SCSTest, TestEllipsoidsSeparation,
+    ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
 
 TEST_P(TestQPasSOCP, TestSOCP) {
   ScsSolver scs_solver;
@@ -204,7 +226,7 @@ TEST_P(TestQPasSOCP, TestSOCP) {
 }
 
 INSTANTIATE_TEST_SUITE_P(SCSTest, TestQPasSOCP,
-                        ::testing::ValuesIn(GetQPasSOCPProblems()));
+                         ::testing::ValuesIn(GetQPasSOCPProblems()));
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   ScsSolver scs_solver;
@@ -242,11 +264,23 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, kTol);
 }
 
+GTEST_TEST(TestSOCP, LorentzConeDual) {
+  ScsSolver solver;
+  SolverOptions solver_options;
+  TestSocpDualSolution1(solver, solver_options, kTol);
+}
+
+GTEST_TEST(TestSOCP, RotatedLorentzConeDual) {
+  ScsSolver solver;
+  SolverOptions solver_options;
+  TestSocpDualSolution2(solver, solver_options, kTol,
+                        false /*rotated_lorentz_cone_with_coefficient_two*/);
+}
+
 GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
   ScsSolver solver;
   TestSocpDuplicatedVariable1(solver, std::nullopt, 1E-6);
 }
-
 
 TEST_P(QuadraticProgramTest, TestQP) {
   ScsSolver solver;
@@ -356,16 +390,14 @@ GTEST_TEST(TestScs, SetOptions) {
   if (solver.available()) {
     auto result = solver.Solve(prog, {}, {});
     const int iter_solve = result.get_solver_details<ScsSolver>().iter;
-    const int solved_status =
-        result.get_solver_details<ScsSolver>().scs_status;
+    const int solved_status = result.get_solver_details<ScsSolver>().scs_status;
     DRAKE_DEMAND(iter_solve >= 2);
     SolverOptions solver_options;
     // Now we require that SCS can only take half of the iterations before
     // termination. We expect now SCS cannot solve the problem.
     solver_options.SetOption(solver.solver_id(), "max_iters", iter_solve / 2);
     solver.Solve(prog, {}, solver_options, &result);
-    EXPECT_NE(result.get_solver_details<ScsSolver>().scs_status,
-              solved_status);
+    EXPECT_NE(result.get_solver_details<ScsSolver>().scs_status, solved_status);
   }
 }
 
