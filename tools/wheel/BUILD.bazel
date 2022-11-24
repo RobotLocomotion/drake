@@ -1,4 +1,8 @@
-load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_unittest",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 py_library(
@@ -31,6 +35,22 @@ drake_py_binary(
     name = "change_lpath",
     srcs = ["macos/change_lpath.py"],
     deps = ["//tools/install:otool"],
+)
+
+# Symlinks between tools/wheel/image and tools/workspace/vtk/image cannot be
+# mounted during a `docker build`.  As such we must track a copy of the file
+# in both locations, this test ensures they remain synchronized.
+drake_py_unittest(
+    name = "tools_wheel_image_matches_tools_workspace_vtk_image_test",
+    data = [
+        "//tools/wheel/image:clone-vtk.sh",
+        "//tools/wheel/image:common-definitions.sh",
+        "//tools/wheel/image:vtk-cmake-args.sh",
+        "//tools/workspace/vtk/image:clone-vtk.sh",
+        "//tools/workspace/vtk/image:common-definitions.sh",
+        "//tools/workspace/vtk/image:vtk-cmake-args.sh",
+    ],
+    tags = ["lint"],
 )
 
 add_lint_tests()

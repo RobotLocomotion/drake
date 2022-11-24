@@ -16,7 +16,8 @@ namespace internal {
 /* A RenderEngine that exports
  <a href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
  </a> scenes, uploads to a render server, and retrieves the renderings back. */
-class RenderEngineGltfClient : public geometry::render::RenderEngineVtk {
+class __attribute__((visibility("hidden"))) RenderEngineGltfClient
+    : public geometry::render::RenderEngineVtk {
  public:
   /* @name Does not allow copy, move, or assignment  */
   //@{
@@ -32,9 +33,6 @@ class RenderEngineGltfClient : public geometry::render::RenderEngineVtk {
    @sa RenderEngineGltfClientParams */
   RenderEngineGltfClient(const RenderEngineGltfClientParams& parameters =
                              RenderEngineGltfClientParams());
-
-  // TODO(svenevs): Remove when VTK is updated, see implementation for details.
-  void UpdateViewpoint(const math::RigidTransformd& X_WC) override;
 
   const RenderEngineGltfClientParams& get_params() const {
     return render_client_->get_params();
