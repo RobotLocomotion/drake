@@ -47,7 +47,8 @@ struct ModuleInitVtkRenderingOpenGL2 {
 // See also shaders::kDepthFS, this is where the variables are used.
 // For the detail of VTK's callback mechanism, please refer to:
 // https://www.vtk.org/doc/nightly/html/classvtkCommand.html#details
-class ShaderCallback : public vtkCommand {
+class __attribute__((visibility("hidden"))) ShaderCallback
+    : public vtkCommand {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShaderCallback);
 
@@ -89,8 +90,8 @@ enum ImageType {
 #endif  // !DRAKE_DOXYGEN_CXX
 
 /** See documentation of MakeRenderEngineVtk().  */
-class RenderEngineVtk : public RenderEngine,
-                        private internal::ModuleInitVtkRenderingOpenGL2 {
+class __attribute__((visibility("hidden"))) RenderEngineVtk
+    : public RenderEngine, private internal::ModuleInitVtkRenderingOpenGL2 {
  public:
   /** @name Does not allow copy, move, or assignment  */
   //@{
