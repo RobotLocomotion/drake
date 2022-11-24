@@ -29,5 +29,6 @@ libxt-dev
 lsb-release
 ninja-build
 python-is-python3
+sqlite3
 wget
 zlib1g-dev

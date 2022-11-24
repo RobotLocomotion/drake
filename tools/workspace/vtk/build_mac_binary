@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# This shell script and some files in vtk/image (for docker) are used by
+# the project maintainers to create the precompiled vtk binaries that are
+# downloaded during the build. They are neither called during the build nor
+# expected to be called by most developers or users of the project.
+
+set -euo pipefail
+
+if ! command -v xcrun >/dev/null 2>&1; then
+    echo '`xcrun` command not found, is Xcode installed?' >&2
+    exit 1
+fi
+
+macosx_sysroot="$(xcrun -sdk macosx -show-sdk-path)"
+# TODO(svenevs): this should fail if it points to "command line tools"
+# Must point to Contents/Developer under an Xcode.app like folder.
+
+this_file_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+readonly container="${this_file_dir}/mac_binary_build"
+readonly src_dir="${container}/src"
+readonly build_dir="${container}/build"
+readonly install_dir="${container}/install"
+
+# Display what folders are being created in the process of making the .tar.gz.
+echo '==> Creating the following directories:'
+echo "    - Containment folder: ${container}"
+echo "    - VTK source code: ${src_dir}"
+echo "    - VTK build tree: ${build_dir}"
+echo "    - VTK install tree: ${install_dir}"
+
+# Always start with a clean working tree.
+rm -rf "${container}"
+mkdir -p "${container}"
+cd "${container}"
+
+# Defines `vtk_archive_name`, clones VTK into `${PWD}/src`.
+. "${this_file_dir}/image/common-definitions.sh"
+. "${this_file_dir}/image/clone-vtk.sh"
+
+# Defines `vtk_cmake_args`.
+drake_vtk_build_flavor="mac" . "${this_file_dir}/image/vtk-cmake-args.sh"
+
+# NOTE: Setting JPEG_ROOT tells VTK where to find libjpeg, otherwise it will
+# possibly choose `jpeg` or `jpeg-turbo` (depending on system and brew).
+set -x
+cmake \
+    -G Ninja \
+    -Wno-dev \
+    -DCMAKE_INSTALL_PREFIX="${install_dir}" \
+    -DCMAKE_BUILD_TYPE:STRING=Release \
+    "-DCMAKE_OSX_ARCHITECTURES:STRING='${architecture}'" \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_FIND_FRAMEWORK=LAST \
+    -DCMAKE_OSX_SYSROOT="${macosx_sysroot}" \
+    -DCMAKE_C_COMPILER="$(xcrun -sdk macosx -find gcc)" \
+    -DCMAKE_CXX_COMPILER="$(xcrun -sdk macosx -find g++)" \
+    -DJPEG_ROOT="$(brew --prefix jpeg)" \
+    "${vtk_cmake_args[@]}" \
+    -B "${build_dir}" \
+    -S "${src_dir}"
+set +x
+
+cd "${build_dir}"
+ninja install/strip
+
+cd "${install_dir}"
+
+tar czf "${vtk_archive_name}" -- *
+shasum --algorithm 256 "${vtk_archive_name}" | tee "${vtk_archive_name}.sha256"
+
+mv "${vtk_archive_name}" "${this_file_dir}"
+mv "${vtk_archive_name}.sha256" "${this_file_dir}"

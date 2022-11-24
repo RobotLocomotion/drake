@@ -3,16 +3,10 @@
 
 """
 Makes selected VTK headers and precompiled shared libraries available to be
-used as a C++ dependency. On Ubuntu, a VTK archive, built by the project
-maintainers from the Dockerfile and shell scripts in this directory, is
-downloaded and unpacked. On macOS, VTK must be installed from the
-robotlocomotion/director tap
-(https://github.com/RobotLocomotion/homebrew-director) using Homebrew.
+used as a C++ dependency.  A VTK archive, built by the project maintainers from
+the Dockerfile and shell scripts in this directory, is downloaded and unpacked.
 
-Archive naming convention:
-    vtk-<version>-<build_number>-<platform>-<arch>.tar.gz
-
-See also: image/package.sh.
+Archive naming convention: see image/clone-vtk.sh.
 
 Example:
     WORKSPACE:
@@ -33,7 +27,7 @@ Argument:
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-VTK_MAJOR_MINOR_VERSION = "9.1"
+VTK_MAJOR_MINOR_VERSION = "9.2"
 
 VTK_MAJOR_MINOR_PATCH_VERSION = "{}.0".format(VTK_MAJOR_MINOR_VERSION)
 
@@ -66,34 +60,10 @@ def _vtk_cc_library(
 
     srcs = []
 
-    if os_result.is_macos:
+    if os_result.is_ubuntu or os_result.is_macos or os_result.is_manylinux or \
+       os_result.is_macos_wheel:
         if not header_only:
-            lib_dir = "{}/opt/vtk@{}/lib".format(
-                os_result.homebrew_prefix,
-                VTK_MAJOR_MINOR_PATCH_VERSION,
-            )
-            linkopts = linkopts + [
-                "-L{}".format(lib_dir),
-                "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION),
-                "-Wl,-rpath,{}".format(lib_dir),
-            ]
-    elif os_result.is_ubuntu and os_result.ubuntu_release == "22.04":
-        if not header_only:
-            linkopts = linkopts + [
-                "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION),
-            ]
-    elif os_result.is_ubuntu:
-        if not header_only:
-            srcs = ["lib/lib{}-{}.so.1".format(name, VTK_MAJOR_MINOR_VERSION)]
-    elif os_result.is_manylinux or os_result.is_macos_wheel:
-        if not header_only:
-            # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
-            # using manylinux.
-            lib_dir = "/opt/vtk/lib"
-            linkopts = linkopts + [
-                "-L{}".format(lib_dir),
-                "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION),
-            ]
+            srcs = ["lib/lib{}-{}.a".format(name, VTK_MAJOR_MINOR_VERSION)]
     else:
         fail("Unknown os_result {}".format(os_result))
 
@@ -116,21 +86,20 @@ def _impl(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
-    if os_result.is_macos:
-        repository_ctx.symlink("{}/opt/vtk@{}/include".format(
-            os_result.homebrew_prefix,
-            VTK_MAJOR_MINOR_PATCH_VERSION,
-        ), "include")
-    elif os_result.is_ubuntu and os_result.ubuntu_release == "22.04":
-        include_dir = "vtk-{}".format(VTK_MAJOR_MINOR_VERSION)
-        repository_ctx.symlink(
-            "/usr/include/" + include_dir,
-            "include/" + include_dir,
-        )
-    elif os_result.is_ubuntu:
-        if os_result.ubuntu_release == "20.04":
-            archive = "vtk-9.1.0-3-focal-x86_64.tar.gz"
-            sha256 = "0a899323e7927a7b3e09d1be35bf70df9630f4eba56b9af93c59401cefa227c5"  # noqa
+    if os_result.is_ubuntu or os_result.is_macos:
+        if os_result.is_macos:
+            if os_result.macos_arch_result == "arm64":
+                archive = "vtk-v9.2.0.rc2-1001-gd706250a14-mac-arm64-1.tar.gz"
+                sha256 = "f16664b12e0fde7c7cfa2cfb86d34a34ea7106d185fdc373339054352b3dad81"  # noqa
+            else:
+                archive = "vtk-v9.2.0.rc2-1001-gd706250a14-mac-x86_64-1.tar.gz"
+                sha256 = "5e8dae8106d00c10e84d00ceb73fc346bee19e7c5bed5f1708829a863f107dc2"  # noqa
+        elif os_result.ubuntu_release == "20.04":
+            archive = "vtk-v9.2.0.rc2-1001-gd706250a14-focal-x86_64-1.tar.gz"
+            sha256 = "8553a7debd5d66933b84374f9c5c3eb2eb5cfe2aa3d647531a3b30344c7dfd4b"  # noqa
+        elif os_result.ubuntu_release == "22.04":
+            archive = "vtk-v9.2.0.rc2-1001-gd706250a14-jammy-x86_64-1.tar.gz"
+            sha256 = "0f3598ca596e06641a7b444e6cc51e4546029dfa86939061b51c00ba56ccea5d"  # noqa
         else:
             fail("Operating system is NOT supported {}".format(os_result))
 
@@ -148,6 +117,7 @@ def _impl(repository_ctx):
         )
     elif os_result.is_manylinux or os_result.is_macos_wheel:
         repository_ctx.symlink("/opt/vtk/include", "include")
+        repository_ctx.symlink("/opt/vtk/lib", "lib")
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 
@@ -208,18 +178,30 @@ licenses([
         deps = ["@zlib"],
     )
 
-    # NOTE: see homebrew-director, pugixml is installed via brew.
-    if not os_result.is_macos:
-        file_content += _vtk_cc_library(os_result, "vtkpugixml")
+    file_content += _vtk_cc_library(os_result, "vtkpugixml")
 
+    vtksys_hdrs = [
+        "vtksys/Configure.h",
+        "vtksys/Configure.hxx",
+        "vtksys/Status.hxx",
+        "vtksys/SystemTools.hxx",
+    ]
     if os_result.is_manylinux:
         file_content += _vtk_cc_library(
             os_result,
             "vtksys",
+            hdrs = vtksys_hdrs,
             linkopts = ["-ldl"],
         )
     else:
-        file_content += _vtk_cc_library(os_result, "vtksys")
+        file_content += _vtk_cc_library(
+            os_result,
+            "vtksys",
+            hdrs = vtksys_hdrs,
+            # TODO(svenevs): this may or may not be needed for macOS.  If not,
+            # above if should allow for ubuntu or manylinux and remove here.
+            linkopts = ["-ldl"],
+        )
 
     ###########################################################################
     # VTK "Public" Libraries (See: tools/workspace/vtk/README.md)
@@ -249,6 +231,7 @@ licenses([
         "vtkCommonCore",
         hdrs = [
             "vtkABI.h",
+            "vtkABINamespace.h",
             "vtkAOSDataArrayTemplate.h",
             "vtkAbstractArray.h",
             "vtkAssume.h",
@@ -259,6 +242,7 @@ licenses([
             "vtkCommand.h",
             "vtkCommonCoreModule.h",
             "vtkCompiler.h",
+            "vtkEventData.h",
             "vtkDataArray.h",
             "vtkDataArrayAccessor.h",
             "vtkDataArrayMeta.h",
@@ -332,18 +316,6 @@ licenses([
         ],
     )
 
-    vtk_common_data_model_deps = [
-        ":vtkCommonCore",
-        ":vtkCommonMath",
-        ":vtkCommonMisc",
-        ":vtkCommonSystem",
-        ":vtkCommonTransforms",
-        ":vtksys",
-    ]
-
-    # pugixml is included with the brew install.
-    if not os_result.is_macos:
-        vtk_common_data_model_deps.append(":vtkpugixml")
     file_content += _vtk_cc_library(
         os_result,
         "vtkCommonDataModel",
@@ -370,10 +342,19 @@ licenses([
             "vtkPolyData.h",
             "vtkPolyDataInternals.h",
             "vtkRect.h",
+            "vtkSelection.h",
             "vtkStructuredData.h",
             "vtkVector.h",
         ],
-        deps = vtk_common_data_model_deps,
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonMath",
+            ":vtkCommonMisc",
+            ":vtkCommonSystem",
+            ":vtkCommonTransforms",
+            ":vtksys",
+            ":vtkpugixml",
+        ],
     )
 
     file_content += _vtk_cc_library(
@@ -508,6 +489,21 @@ licenses([
             ":vtkCommonExecutionModel",
             ":vtkFiltersCore",
             ":vtksys",
+        ],
+    )
+
+    # Indirect dependency: omit headers.
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkFiltersHyperTree",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMisc",
+            ":vtkCommonSystem",
+            ":vtkFiltersCore",
+            ":vtkFiltersGeneral",
         ],
     )
 
@@ -656,27 +652,6 @@ licenses([
         ],
     )
 
-    vtk_io_image_deps = [
-        ":vtkCommonCore",
-        ":vtkCommonDataModel",
-        ":vtkCommonExecutionModel",
-        ":vtkCommonMath",
-        ":vtkCommonMisc",
-        ":vtkCommonSystem",
-        ":vtkCommonTransforms",
-        ":vtkDICOMParser",
-        ":vtkImagingCore",
-        ":vtkmetaio",
-        ":vtksys",
-        "@libjpeg",
-        "@libpng",
-        "@libtiff",
-        "@zlib",
-    ]
-
-    # pugixml is included with the brew install.
-    if not os_result.is_macos:
-        vtk_io_image_deps.append(":vtkpugixml")
     file_content += _vtk_cc_library(
         os_result,
         "vtkIOImage",
@@ -695,7 +670,24 @@ licenses([
             "vtkTIFFReader.h",
             "vtkTIFFWriter.h",
         ],
-        deps = vtk_io_image_deps,
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
+            ":vtkCommonMisc",
+            ":vtkCommonSystem",
+            ":vtkCommonTransforms",
+            ":vtkDICOMParser",
+            ":vtkImagingCore",
+            ":vtkmetaio",
+            ":vtksys",
+            ":vtkpugixml",
+            "@libjpeg",
+            "@libpng",
+            "@libtiff",
+            "@zlib",
+        ],
     )
 
     file_content += _vtk_cc_library(
@@ -851,6 +843,24 @@ licenses([
             ":vtkCommonExecutionModel",
             ":vtkFiltersGeneral",
             ":vtkRenderingCore",
+            "@libfreetype",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkRenderingHyperTreeGrid",
+        hdrs = [
+            "vtkRenderingHyperTreeGridModule.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
+            ":vtkFiltersHybrid",
+            ":vtkFiltersHyperTree",
+            ":vtkRenderingCore",
         ],
     )
 
@@ -861,21 +871,22 @@ licenses([
     if not os_result.is_macos and not os_result.is_macos_wheel:
         vtk_rendering_ui_hdrs.append("vtkXRenderWindowInteractor.h")
 
-    if os_result.is_macos_wheel:
+    vtk_rendering_ui_deps = [":vtkRenderingCore"]
+    if os_result.is_macos or os_result.is_macos_wheel:
         # Normally this would be a private dependency, but no such thing when
         # VTK is built static.
-        vtk_ui_linkopts = ["-framework Cocoa"]
+        vtk_rendering_ui_linkopts = ["-framework Cocoa"]
     else:
-        vtk_ui_linkopts = []
+        # TODO(svenevs): should this be getting added for wheel?
+        vtk_rendering_ui_linkopts = []
+        vtk_rendering_ui_deps.append("@x11")
 
     file_content += _vtk_cc_library(
         os_result,
         "vtkRenderingUI",
         hdrs = vtk_rendering_ui_hdrs,
-        deps = [
-            ":vtkRenderingCore",
-        ],
-        linkopts = vtk_ui_linkopts,
+        deps = vtk_rendering_ui_deps,
+        linkopts = vtk_rendering_ui_linkopts,
     )
 
     # Indirect dependency: omit headers.
@@ -930,7 +941,9 @@ licenses([
             ":vtkCommonSystem",
             ":vtkCommonTransforms",
             ":vtkFiltersGeneral",
+            ":vtkIOImage",
             ":vtkRenderingCore",
+            ":vtkRenderingHyperTreeGrid",
             ":vtkRenderingUI",
             ":vtksys",
             vtk_glew_library,
@@ -960,15 +973,8 @@ filegroup(
 )
 """
 
-    if os_result.is_macos:
-        # Use Homebrew VTK.
-        files_to_install = []
-    elif os_result.is_ubuntu and os_result.ubuntu_release == "22.04":
-        # Use Ubuntu VTK.
-        files_to_install = []
-    else:
-        # Install all files.
-        files_to_install = [":vtk"]
+    # Install all files.
+    files_to_install = [":vtk"]
 
     file_content += """
 load("@drake//tools/install:install.bzl", "install_files")
