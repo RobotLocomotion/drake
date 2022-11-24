@@ -108,7 +108,7 @@ class IpoptLintTest(unittest.TestCase):
 
         # Parse the Wheel version from the line `set(ipopt_version #.#.#)`.
         projects = self._read(
-            "tools/wheel/image/dependencies/projects.cmake")
+            "tools/wheel/image_template/dependencies/projects.cmake")
         prefix = "set(ipopt_version "
         start = projects.index(prefix) + len(prefix)
         end = projects.index(")", start)

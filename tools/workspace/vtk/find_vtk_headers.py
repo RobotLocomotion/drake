@@ -62,6 +62,7 @@ VTK_MODULES = [
     "vtkRenderingCore",
     "vtkRenderingContext2D",
     "vtkRenderingFreeType",
+    "vtkRenderingHyperTreeGrid",
     "vtkRenderingOpenGL2",
     "vtkRenderingSceneGraph",
     "vtkRenderingUI",
@@ -103,6 +104,7 @@ VTK_SOURCE_MAP = {
     "vtkRenderingCore": Path("Rendering") / "Core",
     "vtkRenderingContext2D": Path("Rendering") / "Context2D",
     "vtkRenderingFreeType": Path("Rendering") / "FreeType",
+    "vtkRenderingHyperTreeGrid": Path("Rendering") / "HyperTreeGrid",
     "vtkRenderingOpenGL2": Path("Rendering") / "OpenGL2",
     "vtkRenderingSceneGraph": Path("Rendering") / "SceneGraph",
     "vtkRenderingUI": Path("Rendering") / "UI",
@@ -145,6 +147,8 @@ def main():
         required=True,
     )
     parser.add_argument("--debug", action="store_true")
+    # TODO(svenevs): add ability to dump all headers for all modules to find a
+    # header when the module name is not known.
     parser.add_argument(
         "module", type=str, help="VTK module to parse.", choices=VTK_MODULES
     )
