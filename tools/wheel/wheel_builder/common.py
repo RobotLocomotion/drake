@@ -4,7 +4,9 @@
 import argparse
 import os
 import re
+import shutil
 import sys
+from pathlib import Path
 
 # Location where most of the build will take place.
 build_root = '/opt/drake-wheel-build'
@@ -140,7 +142,35 @@ def do_main(args, platform):
         return
 
     if platform is not None:
-        platform.build(options)
+        # If building a wheel, we need to stage the `image` directory first by
+        # *copying* every file from `image_template`.  See
+        # tools/workspace/vtk/README.md for information on why this is done.
+        image_dir = Path(resource_root) / "image"
+        image_template_dir = Path(resource_root) / "image_template"
+        try:
+            shutil.rmtree(image_dir)
+            assert not image_dir.exists()
+        except Exception as e:
+            raise RuntimeError(
+                f"The path {image_dir} is reserved for the wheel build.  "
+                f"Please delete and re-run, it was not able to be deleted: {e}"
+            )
+        try:
+            shutil.copytree(image_template_dir, image_dir)
+        except Exception as e:
+            raise RuntimeError(
+                f"Unable to stage {image_template_dir} => {image_dir}: {e}"
+            )
+        try:
+            platform.build(options)
+        finally:
+            # At the end of the build, remove the staged image/ directory.
+            try:
+                shutil.rmtree(image_dir)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Unable to perform final deletion of {image_dir}: {e}"
+                )
     else:
         die('Building wheels is not supported on this platform '
             f'(\'{sys.platform}\')')

@@ -1,0 +1,3 @@
+# The image/ directory is created by syncing files from both
+# ./image_template as well as tools/workspace/vtk/image.
+image

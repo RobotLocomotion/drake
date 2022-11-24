@@ -25,7 +25,9 @@ ADD image/build-dependencies.sh /image/
 
 RUN /image/build-dependencies.sh
 
-ADD image/vtk-args /opt/drake-wheel-build/vtk/
+ADD image/clone-vtk.sh /image/
+ADD image/common-definitions.sh /image/
+ADD image/vtk-cmake-args.sh /image/
 ADD image/build-vtk.sh /image/
 
 RUN /image/build-vtk.sh
