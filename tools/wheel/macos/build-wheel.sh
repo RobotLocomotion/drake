@@ -76,10 +76,6 @@ if [[ -n "$build_deps" ]]; then
     rm -rf "/opt/drake-wheel-build/vtk"
     mkdir -p "/opt/drake-wheel-build/vtk"
 
-    cp \
-        "$resource_root/image/vtk-args" \
-        "/opt/drake-wheel-build/vtk/vtk-args"
-
     "$resource_root/image/build-vtk.sh"
 fi
 
