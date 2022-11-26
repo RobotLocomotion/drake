@@ -157,9 +157,66 @@ class TestIntegration(unittest.TestCase):
         expected = self._fuzz_irrelevant_data(
             ground_truth_gltf, is_color_image
         )
-        # Check the glTF-related section in README for some troubleshooting
-        # tips if this test failed.
-        self.assertDictEqual(expected, actual)
+        self._check_gltf_recursive(expected, actual)
+
+    def _check_gltf_recursive(self, expected, actual):
+        """
+        Recursively evaluate keys and nested keys of the glTF dictionaries.
+        Perform floating point epsilon comparisons where applicable.  Helper
+        method for _check_one_gltf in favor of `self.assertDictEqual` since
+        floating point comparisons need tolerance checks."""
+        __tracebackhide__ = True
+        supported_types = (str, dict, list, float, int)
+        for item in (expected, actual):
+            self.assertTrue(
+                isinstance(item, supported_types),
+                f"Unexpected type {type(item)} in glTF comparison, this test "
+                "needs to be updated to support more than "
+                f"{', '.join(str(st) for st in supported_types)}")
+
+        # The types must be equivalent before we can compare their values, with
+        # the exception of float vs int (always cast int to float).
+        if isinstance(expected, int):
+            expected = float(expected)
+        if isinstance(actual, int):
+            actual = float(actual)
+        expected_type = type(expected)
+        actual_type = type(actual)
+        self.assertEqual(
+            actual_type, expected_type,
+            f"Error performing glTF validation, cannot compare {actual_type} "
+            f"with {expected_type}.")
+
+        # For dictionaries assert the keys are equivalent, and then compare
+        # each value individually.
+        if actual_type == dict:
+            self.assertEqual(
+                expected.keys(),
+                actual.keys(),
+                f"glTF dictionary keys do not match.  Expected: "
+                f"{sorted(expected.keys())}, got: {sorted(actual.keys())}.")
+            for k in expected.keys():
+                self._check_gltf_recursive(expected[k], actual[k])
+        elif actual_type == list:
+            # NOTE: do *NOT* sort lists, that will break matrix comparisons.
+            # Special treatment for lists that represent matrices.
+            if all(isinstance(x, (float, int)) for x in actual):
+                # Anything that is less than 1e-12 is set to zero before
+                # comparing to prevent overly restrictive comparisons.
+                actual_array = np.array(actual)
+                expected_array = np.array(expected)
+                actual_array[np.abs(actual_array) < 1e-12] = 0.0
+                expected_array[np.abs(expected_array) < 1e-12] = 0.0
+                np.testing.assert_allclose(actual_array, expected_array)
+            else:
+                self.assertEqual(len(actual), len(expected))
+                for i in range(len(actual)):
+                    self._check_gltf_recursive(actual[i], expected[i])
+        elif actual_type in (str, int, float):
+            # Terminal types should be exactly equal, including int and float.
+            # Any float that needs epsilon comparison will be in a matrix
+            # handled above, anything hitting this should be exactly equal.
+            self.assertEqual(expected, actual)
 
     @unittest.skipIf("darwin" in sys.platform, "Broken on macOS")
     def test_integration(self):
