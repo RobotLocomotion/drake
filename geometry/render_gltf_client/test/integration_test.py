@@ -218,7 +218,6 @@ class TestIntegration(unittest.TestCase):
             # handled above, anything hitting this should be exactly equal.
             self.assertEqual(expected, actual)
 
-    @unittest.skipIf("darwin" in sys.platform, "Broken on macOS")
     def test_integration(self):
         """Quantitatively compares the images rendered by RenderEngineVtk and
         RenderEngineGltfClient via a fully exercised RPC pipeline.
