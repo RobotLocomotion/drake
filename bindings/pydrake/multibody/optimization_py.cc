@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/optimization/centroidal_momentum_constraint.h"
 #include "drake/multibody/optimization/quaternion_integration_constraint.h"
+#include "drake/multibody/optimization/spatial_velocity_constraint.h"
 #include "drake/multibody/optimization/static_equilibrium_problem.h"
 #include "drake/multibody/optimization/toppra.h"
 
@@ -94,6 +95,49 @@ PYBIND11_MODULE(optimization, m) {
         m, "QuaternionEulerIntegrationConstraint", cls_doc.doc)
         .def(py::init<bool>(), py::arg("allow_quaternion_negation"),
             cls_doc.ctor.doc);
+  }
+
+  {
+    using Class = SpatialVelocityConstraint;
+    constexpr auto& cls_doc = doc.SpatialVelocityConstraint;
+    using Ptr = std::shared_ptr<Class>;
+    py::class_<Class, solvers::Constraint, Ptr> cls(
+        m, "SpatialVelocityConstraint", cls_doc.doc);
+    cls.def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
+                         const Frame<AutoDiffXd>& frameA,
+                         const Eigen::Ref<const Eigen::Vector3d>& v_AQ_lower,
+                         const Eigen::Ref<const Eigen::Vector3d>& v_AQ_upper,
+                         const Frame<AutoDiffXd>& frameB,
+                         const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                         systems::Context<AutoDiffXd>* plant_context,
+                         const std::optional<
+                             SpatialVelocityConstraint::AngularVelocityBounds>&
+                             w_AQ_bounds) {
+      return std::make_unique<Class>(plant, frameA, v_AQ_lower, v_AQ_upper,
+          frameB, p_BQ, plant_context, w_AQ_bounds);
+    }),
+        py::arg("plant"), py::arg("frameA"), py::arg("v_AQ_lower"),
+        py::arg("v_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
+        py::arg("plant_context"), py::arg("w_AQ_bounds") = std::nullopt,
+        // Keep alive, reference: `self` keeps `plant` alive.
+        py::keep_alive<1, 2>(),
+        // Keep alive, reference: `self` keeps `plant_context` alive.
+        py::keep_alive<1, 8>(), cls_doc.ctor.doc);
+
+    using Avb = SpatialVelocityConstraint::AngularVelocityBounds;
+    constexpr auto& avb_doc =
+        doc.SpatialVelocityConstraint.AngularVelocityBounds;
+    py::class_<SpatialVelocityConstraint::AngularVelocityBounds>(
+        cls, "AngularVelocityBounds", avb_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def_readwrite("magnitude_lower", &Avb::magnitude_lower,
+            avb_doc.magnitude_lower.doc)
+        .def_readwrite("magnitude_upper", &Avb::magnitude_upper,
+            avb_doc.magnitude_upper.doc)
+        .def_readwrite("nominal_direction", &Avb::nominal_direction,
+            avb_doc.nominal_direction.doc)
+        .def_readwrite(
+            "theta_bound", &Avb::theta_bound, avb_doc.theta_bound.doc);
   }
 
   {
