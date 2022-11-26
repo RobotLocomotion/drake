@@ -97,6 +97,9 @@ class CollisionGeometry : public ShapeReifier {
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* data) final;
   void ImplementGeometry(const Convex& convex, void* data) final;
+  void ImplementGeometry(const Sphere& sphere, void* data) final;
+  void ImplementGeometry(const Capsule& capsule, void* data) final;
+  void ImplementGeometry(const Cylinder& cylinder, void* data) final;
   const Shape* geometry_;
   multibody::BodyIndex body_index_;
   geometry::GeometryId id_;
