@@ -572,8 +572,7 @@ void TestSocpDualSolution1(const SolverInterface& solver,
 }
 
 void TestSocpDualSolution2(const SolverInterface& solver,
-                           const SolverOptions& solver_options, double tol,
-                           bool rotated_lorentz_cone_with_coefficient_two) {
+                           const SolverOptions& solver_options, double tol) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<1>()(0);
   auto constraint1 = prog.AddRotatedLorentzConeConstraint(
@@ -585,10 +584,7 @@ void TestSocpDualSolution2(const SolverInterface& solver,
     MathematicalProgramResult result;
     solver.Solve(prog, {}, solver_options, &result);
     ASSERT_TRUE(result.is_success());
-    const Eigen::Vector3d constraint1_dual =
-        rotated_lorentz_cone_with_coefficient_two
-            ? Eigen::Vector3d(0.25, 0.5, 0.5)
-            : Eigen::Vector3d(0.5, 0.5, 0.5);
+    const Eigen::Vector3d constraint1_dual = Eigen::Vector3d(0.125, 0.5, 0.5);
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
                                 constraint1_dual, tol));
     // This Lorentz cone is not activated, hence its dual should be zero.

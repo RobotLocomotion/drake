@@ -531,7 +531,7 @@ GTEST_TEST(MosekSolver, SocpDualSolution2) {
   MosekSolver solver;
   if (solver.available()) {
     SolverOptions solver_options{};
-    TestSocpDualSolution2(solver, solver_options, 1E-6, true);
+    TestSocpDualSolution2(solver, solver_options, 1E-6);
   }
 }
 
