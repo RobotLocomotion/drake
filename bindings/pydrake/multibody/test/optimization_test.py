@@ -10,6 +10,7 @@ from pydrake.multibody.optimization import (
     CentroidalMomentumConstraint,
     ContactWrenchFromForceInWorldFrameEvaluator,
     QuaternionEulerIntegrationConstraint,
+    SpatialVelocityConstraint,
     StaticEquilibriumProblem,
     Toppra,
     ToppraDiscretization,
@@ -180,6 +181,46 @@ class TestQuaternionEulerIntegrationConstraint(unittest.TestCase):
         dut = QuaternionEulerIntegrationConstraint(
             allow_quaternion_negation=True)
         self.assertIsInstance(dut, mp.Constraint)
+
+
+class TestSpatialVelocityConstraint(unittest.TestCase):
+    def test(self):
+        masses = [1., 2]
+        box_sizes = [np.array([0.1, 0.1, 0.1]), np.array([0.1, 0.1, 0.2])]
+        env = construct_environment(masses, box_sizes)
+        context = env.plant.CreateDefaultContext()
+        w_AC_bounds = SpatialVelocityConstraint.AngularVelocityBounds()
+        w_AC_bounds.magnitude_lower = 0.2
+        w_AC_bounds.magnitude_upper = 0.4
+        w_AC_bounds.reference_direction = [1, 2, 3]
+        w_AC_bounds.theta_bound = np.pi / 4
+        dut = SpatialVelocityConstraint(
+            plant=env.plant,
+            frameA=env.plant.world_frame(),
+            v_AC_lower=[1, 2, 3],
+            v_AC_upper=[4, 5, 6],
+            frameB=env.plant.GetFrameByName("box0"),
+            p_BCo=[0.2, 0.3, 0.6],
+            plant_context=context)
+        self.assertIsInstance(dut, mp.Constraint)
+        np.testing.assert_array_almost_equal(dut.lower_bound(), [1, 2, 3])
+        np.testing.assert_array_almost_equal(dut.upper_bound(), [4, 5, 6])
+
+        dut = SpatialVelocityConstraint(
+            plant=env.plant,
+            frameA=env.plant.world_frame(),
+            v_AC_lower=[1, 2, 3],
+            v_AC_upper=[4, 5, 6],
+            frameB=env.plant.GetFrameByName("box0"),
+            p_BCo=[0.2, 0.3, 0.6],
+            plant_context=context,
+            w_AC_bounds=w_AC_bounds)
+        self.assertIsInstance(dut, mp.Constraint)
+        np.testing.assert_array_almost_equal(
+            dut.lower_bound(),
+            [1, 2, 3, 0.04, np.cos(np.pi / 4)])
+        np.testing.assert_array_almost_equal(
+            dut.upper_bound(), [4, 5, 6, 0.16, 1])
 
 
 class TestContactWrenchFromForceInWorldFrameEvaluator(unittest.TestCase):
