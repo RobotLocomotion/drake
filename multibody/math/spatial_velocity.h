@@ -112,14 +112,15 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     return SpatialVelocity<T>(*this).ShiftInPlace(offset);
   }
 
-  /// Given a frame C's velocity measured in a frame B, and frame B's velocity
-  /// measured in a frame M, returns frame C's velocity measured in frame M.
+  /// Given a frame C's spatial velocity measured in a frame B, and frame B's
+  /// spatial velocity measured in a frame M, returns frame C's spatial velocity
+  /// measured in frame M.
   /// @param[in] position_of_moving_frame which is the position vector p_BoCo_E
   /// (from frame B's origin Bo to frame C's origin Co), expressed in frame E.
-  /// p_BoCo_E must have the same expressed-in frame E as `this` = V_MB_E.
+  /// p_BoCo_E must have the same expressed-in frame E as `this`, where `this`
+  /// is V_MB_E (frame B's spatial velocity measured in M, expressed in E).
   /// @param[in] velocity_of_moving_frame which is V_BC_E, frame C's spatial
-  /// velocity measured in frame B, expressed in the same frame E as
-  /// `this` = V_MB_E.
+  /// velocity measured in frame B, expressed in frame E.
   /// @retval V_MC_E frame C's spatial velocity measured in frame M, expressed
   /// in frame E.
   /// @note The returned spatial velocity V_MC_E contains an angular velocity
@@ -192,7 +193,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 /// @note The general utility of this operator+() function is questionable and
 /// it should only be used if you are sure it makes sense.  One use case is
 /// for calculating the spatial velocity V_MC of a frame C measured in a frame M
-/// when frame C is moving relative to a frame B and one has pre-calculated
+/// when frame C is moving on a frame B and one has pre-calculated
 /// V_MBc (frame Bc's spatial velocity measured in frame M, where frame Bc is
 /// instantaneously coincident with frame C). For this use case, the operator+
 /// function returns V_MC_E = V_MBc_E + V_BC_E, where the precalculated V_MBc_E
