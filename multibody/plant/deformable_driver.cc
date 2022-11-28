@@ -2,10 +2,12 @@
 
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/fem/fem_solver.h"
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
@@ -20,6 +22,7 @@ using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
 using drake::multibody::fem::FemModel;
 using drake::multibody::fem::FemState;
+using drake::multibody::fem::internal::DirichletBoundaryCondition;
 using drake::multibody::fem::internal::FemSolver;
 using drake::multibody::fem::internal::FemSolverScratchData;
 using drake::multibody::fem::internal::PetscSymmetricBlockSparseMatrix;
@@ -315,6 +318,21 @@ void DeformableDriver<T>::AppendContactKinematics(
         EvalVertexPermutation(context, id_A);
     /* For now, body B is guaranteed to be rigid. */
     DRAKE_DEMAND(!surface.is_B_deformable());
+    /* Retrieve the boundary condition information of body A to determine
+     which columns for the jacobian need to be zero out later. */
+    const DeformableBodyId body_id_A = deformable_model_->GetBodyId(id_A);
+    const FemModel<T>& fem_model = deformable_model_->GetFemModel(body_id_A);
+    const DirichletBoundaryCondition<T>& bc =
+        fem_model.dirichlet_boundary_condition();
+    std::unordered_set<int> vertices_under_bc;
+    for (const auto& it : bc.index_to_boundary_state()) {
+      /* Note that we currently do not allow partial boundary condition; i.e.,
+       if any dof of a vertex is under bc, then all dofs associated with the
+       vertex are under bc. */
+      const int dof_index = it.first;
+      const int vertex_index = dof_index / 3;
+      vertices_under_bc.emplace(vertex_index);
+    }
 
     for (int i = 0; i < surface.num_contact_points(); ++i) {
       /* We have at most two blocks per contact. */
@@ -334,15 +352,26 @@ void DeformableDriver<T>::AppendContactKinematics(
           surface.contact_vertex_indexes_A()[i];
       const Vector4<T>& b = surface.barycentric_coordinates_A()[i];
       for (int v = 0; v < 4; ++v) {
+        const bool vertex_under_bc =
+            vertices_under_bc.count(participating_vertices(v)) > 0;
         /* Map indexes to the permuted domain. */
         participating_vertices(v) =
             vertex_permutation.permuted_index(participating_vertices(v));
-        /* v_WAc = (b₀ * v₀ + b₁ * v₁ + b₂ * v₂ + b₃ * v₃) where v₀, v₁, v₂,
-         v₃ are the velocities of the vertices forming the tetrahedron
-         containing the contact point and the b's are their corresponding
-         barycentric weights. */
-        Jv_v_WAc_W.template middleCols<3>(3 * participating_vertices(v)) =
-            b(v) * Matrix3<T>::Identity();
+        if (vertex_under_bc) {
+          /* Set columns corresponding to dofs under dirichlet boundary
+           conditions to zero. We assume that the boundary conditions impose
+           zero velocities. Otherwise, the kinematic relationship between dofs
+           and contact velocities will also contain a bias term. */
+          Jv_v_WAc_W.template middleCols<3>(3 * participating_vertices(v))
+              .setZero();
+        } else {
+          /* v_WAc = (b₀ * v₀ + b₁ * v₁ + b₂ * v₂ + b₃ * v₃) where v₀, v₁, v₂,
+           v₃ are the velocities of the vertices forming the tetrahedron
+           containing the contact point and the b's are their corresponding
+           barycentric weights. */
+          Jv_v_WAc_W.template middleCols<3>(3 * participating_vertices(v)) =
+              b(v) * Matrix3<T>::Identity();
+        }
       }
       jacobian_blocks.emplace_back(clique_index_A, -R_CW.matrix() * Jv_v_WAc_W);
 
