@@ -104,7 +104,7 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.geometry_id_to_body_index_;
   }
 
-  static const std::vector<internal::CouplerConstraintSpecs<T>>&
+  static const std::vector<internal::CouplerConstraintSpecs>&
   coupler_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.coupler_constraints_specs_;
   }

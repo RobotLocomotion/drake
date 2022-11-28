@@ -51,7 +51,14 @@ class CompliantContactManagerTester {
 
   static const SapDriver<double>& sap_driver(
       const CompliantContactManager<double>& manager) {
+    DRAKE_DEMAND(manager.sap_driver_ != nullptr);
     return *manager.sap_driver_;
+  }
+
+  static const TamsiDriver<double>& tamsi_driver(
+      const CompliantContactManager<double>& manager) {
+    DRAKE_DEMAND(manager.tamsi_driver_ != nullptr);
+    return *manager.tamsi_driver_;
   }
 
   // Returns the Jacobian J_AcBc_C. This method takes the Jacobian blocks

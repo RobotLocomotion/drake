@@ -44,14 +44,10 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "constraint_specs",
-    srcs = [
-        "constraint_specs.cc",
-    ],
     hdrs = [
         "constraint_specs.h",
     ],
     deps = [
-        "//common:default_scalars",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )
@@ -834,13 +830,6 @@ drake_cc_googletest(
         "//multibody/parsing",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
-    name = "constraint_specs_test",
-    deps = [
-        ":constraint_specs",
     ],
 )
 
