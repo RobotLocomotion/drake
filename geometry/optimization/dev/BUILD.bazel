@@ -21,6 +21,26 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "separating_plane",
+    srcs = ["separating_plane.cc"],
+    hdrs = ["separating_plane.h"],
+    deps = [
+        ":collision_geometry",
+        "//common/symbolic:polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "cspace_free_polytope",
+    srcs = ["cspace_free_polytope.cc"],
+    hdrs = ["cspace_free_polytope.h"],
+    deps = [
+        ":collision_geometry",
+        ":separating_plane",
+    ],
+)
+
 # test
 
 drake_cc_library(
@@ -46,6 +66,14 @@ drake_cc_googletest(
         ":c_iris_test_utilities",
         ":collision_geometry",
         "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cspace_free_polytope_test",
+    deps = [
+        ":c_iris_test_utilities",
+        ":cspace_free_polytope",
     ],
 )
 
