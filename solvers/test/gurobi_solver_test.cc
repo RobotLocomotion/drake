@@ -667,34 +667,6 @@ GTEST_TEST(GurobiTest, TestNonconvexQP) {
   }
 }
 
-GTEST_TEST(GurobiTest, TestIterationLimit) {
-  // Make sure that when the solver hits the iteration limit, it still reports
-  // the best-effort solution.
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<4>();
-  prog.AddLorentzConeConstraint(x);
-  auto constraint2 = prog.AddLinearConstraint(x(0) + x(1) + x(2) + x(3) == 2);
-  prog.AddRotatedLorentzConeConstraint(x);
-  prog.AddLinearCost(x(0) + 2 * x(1));
-
-  GurobiSolver solver;
-  if (solver.available()) {
-    SolverOptions solver_options;
-    solver_options.SetOption(solver.id(), "IterationLimit", 1);
-    solver_options.SetOption(solver.id(), "BarIterLimit", 1);
-    solver_options.SetOption(solver.id(), "QCPDual", 1);
-    const auto result = solver.Solve(prog, std::nullopt, solver_options);
-    const auto solver_details = result.get_solver_details<GurobiSolver>();
-    // This code is defined in
-    // https://www.gurobi.com/documentation/9.5/refman/optimization_status_codes.html
-    const int ITERATION_LIMIT = 7;
-    EXPECT_EQ(solver_details.optimization_status, ITERATION_LIMIT);
-    EXPECT_TRUE(std::isfinite(result.get_optimal_cost()));
-    EXPECT_TRUE(result.GetSolution(x).array().isFinite().all());
-    EXPECT_TRUE(result.GetDualSolution(constraint2).array().isFinite().all());
-  }
-}
-
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

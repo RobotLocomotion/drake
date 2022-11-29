@@ -917,107 +917,6 @@ void SetOptionOrThrow(GRBenv* model_env, const std::string& option,
       "check {}/parameters.html for all allowable options and values.",
       error, option, val, refman()));
 }
-
-void SetSolution(
-    GRBmodel* model, GRBenv* model_env, const MathematicalProgram& prog,
-    const std::vector<bool>& is_new_variable, int num_prog_vars, bool is_mip,
-    int num_gurobi_linear_constraints, double constant_cost,
-    const std::unordered_map<Binding<Constraint>, int>&
-        constraint_dual_start_row,
-    const std::unordered_map<Binding<BoundingBoxConstraint>,
-                             std::pair<std::vector<int>, std::vector<int>>>&
-        bb_con_dual_indices,
-    MathematicalProgramResult* result, GurobiSolverDetails* solver_details) {
-  int num_total_variables = is_new_variable.size();
-  // Gurobi has solved not only for the decision variables in
-  // MathematicalProgram prog, but also for any extra decision variables
-  // that this GurobiSolver injected to craft certain constraints, such as
-  // Lorentz cones.  We therefore filter out the optimized values for
-  // injected variables, and report back values for the MathematicalProgram
-  // variables only.
-  // solver_sol_vector includes the potentially newly added variables, i.e.,
-  // variables not in MathematicalProgram prog, but added to Gurobi by
-  // GurobiSolver.
-  // prog_sol_vector only includes the original variables in
-  // MathematicalProgram prog.
-  std::vector<double> solver_sol_vector(num_total_variables);
-  GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_total_variables,
-                     solver_sol_vector.data());
-  Eigen::VectorXd prog_sol_vector(num_prog_vars);
-  SetProgramSolutionVector(is_new_variable, solver_sol_vector,
-                           &prog_sol_vector);
-  result->set_x_val(prog_sol_vector);
-
-  // If QCPDual is 0 and the program has quadratic constraints (including
-  // both Lorentz cone and rotated Lorentz cone constraints), then the dual
-  // variables are not computed.
-  int qcp_dual;
-  int error = GRBgetintparam(model_env, "QCPDual", &qcp_dual);
-  DRAKE_DEMAND(!error);
-
-  int num_q_constrs = 0;
-  error = GRBgetintattr(model, "NumQConstrs", &num_q_constrs);
-  DRAKE_DEMAND(!error);
-
-  const bool compute_dual = !(num_q_constrs > 0 && qcp_dual == 0);
-
-  // Set dual solutions.
-  if (!is_mip && compute_dual) {
-    // Gurobi only provides dual solution for continuous models.
-    // Gurobi stores its dual solution for each variable bounds in "reduced
-    // cost".
-    std::vector<double> reduced_cost(num_total_variables);
-    GRBgetdblattrarray(model, GRB_DBL_ATTR_RC, 0, num_total_variables,
-                       reduced_cost.data());
-    SetBoundingBoxDualSolution(prog, reduced_cost, bb_con_dual_indices, result);
-
-    Eigen::VectorXd gurobi_dual_solutions(num_gurobi_linear_constraints);
-    GRBgetdblattrarray(model, GRB_DBL_ATTR_PI, 0, num_gurobi_linear_constraints,
-                       gurobi_dual_solutions.data());
-    SetLinearConstraintDualSolutions(prog, gurobi_dual_solutions,
-                                     constraint_dual_start_row, result);
-
-    SetAllSecondOrderConeDualSolution(prog, model, result);
-  }
-
-  // Obtain optimal cost.
-  double optimal_cost = std::numeric_limits<double>::quiet_NaN();
-  GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &optimal_cost);
-
-  // Provide Gurobi's computed cost in addition to the constant cost.
-  result->set_optimal_cost(optimal_cost + constant_cost);
-
-  if (is_mip) {
-    // The program wants to retrieve sub-optimal solutions
-    int sol_count{0};
-    GRBgetintattr(model, "SolCount", &sol_count);
-    for (int solution_number = 0; solution_number < sol_count;
-         ++solution_number) {
-      error = GRBsetintparam(model_env, "SolutionNumber", solution_number);
-      DRAKE_DEMAND(!error);
-      double suboptimal_obj{1.0};
-      error = GRBgetdblattrarray(model, "Xn", 0, num_total_variables,
-                                 solver_sol_vector.data());
-      DRAKE_DEMAND(!error);
-      error = GRBgetdblattr(model, "PoolObjVal", &suboptimal_obj);
-      DRAKE_DEMAND(!error);
-      SetProgramSolutionVector(is_new_variable, solver_sol_vector,
-                               &prog_sol_vector);
-      result->AddSuboptimalSolution(suboptimal_obj, prog_sol_vector);
-    }
-    // If the problem is a mixed-integer optimization program, provide
-    // Gurobi's lower bound.
-    double lower_bound;
-    error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUND, &lower_bound);
-    if (error) {
-      drake::log()->error("GRB error {} getting lower bound: {}\n", error,
-                          GRBgeterrormsg(GRBgetenv(model)));
-      solver_details->error_code = error;
-    } else {
-      solver_details->objective_bound = lower_bound;
-    }
-  }
-}
 }  // anonymous namespace
 
 bool GurobiSolver::is_available() { return true; }
@@ -1366,11 +1265,6 @@ void GurobiSolver::DoSolve(
                        GRBgeterrormsg(env));
     solver_details.error_code = error;
   } else {
-    // Always set the primal and dual solution for any non-error gurobi status.
-    SetSolution(model, model_env, prog, is_new_variable, num_prog_vars, is_mip,
-                num_gurobi_linear_constraints, constant_cost,
-                constraint_dual_start_row, bb_con_dual_indices, result,
-                &solver_details);
     int optimstatus = 0;
     GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
 
@@ -1395,6 +1289,97 @@ void GurobiSolver::DoSolve(
       }
     } else {
       solution_result = SolutionResult::kSolutionFound;
+      int num_total_variables = is_new_variable.size();
+      // Gurobi has solved not only for the decision variables in
+      // MathematicalProgram prog, but also for any extra decision variables
+      // that this GurobiSolver injected to craft certain constraints, such as
+      // Lorentz cones.  We therefore filter out the optimized values for
+      // injected variables, and report back values for the MathematicalProgram
+      // variables only.
+      // solver_sol_vector includes the potentially newly added variables, i.e.,
+      // variables not in MathematicalProgram prog, but added to Gurobi by
+      // GurobiSolver.
+      // prog_sol_vector only includes the original variables in
+      // MathematicalProgram prog.
+      std::vector<double> solver_sol_vector(num_total_variables);
+      GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_total_variables,
+                         solver_sol_vector.data());
+      Eigen::VectorXd prog_sol_vector(num_prog_vars);
+      SetProgramSolutionVector(is_new_variable, solver_sol_vector,
+                               &prog_sol_vector);
+      result->set_x_val(prog_sol_vector);
+
+      // If QCPDual is 0 and the program has quadratic constraints (including
+      // both Lorentz cone and rotated Lorentz cone constraints), then the dual
+      // variables are not computed.
+      int qcp_dual;
+      error = GRBgetintparam(model_env, "QCPDual", &qcp_dual);
+      DRAKE_DEMAND(!error);
+
+      int num_q_constrs = 0;
+      error = GRBgetintattr(model, "NumQConstrs", &num_q_constrs);
+      DRAKE_DEMAND(!error);
+
+      const bool compute_dual = !(num_q_constrs > 0 && qcp_dual == 0);
+
+      // Set dual solutions.
+      if (!is_mip && compute_dual) {
+        // Gurobi only provides dual solution for continuous models.
+        // Gurobi stores its dual solution for each variable bounds in "reduced
+        // cost".
+        std::vector<double> reduced_cost(num_total_variables);
+        GRBgetdblattrarray(model, GRB_DBL_ATTR_RC, 0, num_total_variables,
+                           reduced_cost.data());
+        SetBoundingBoxDualSolution(prog, reduced_cost, bb_con_dual_indices,
+                                   result);
+
+        Eigen::VectorXd gurobi_dual_solutions(num_gurobi_linear_constraints);
+        GRBgetdblattrarray(model, GRB_DBL_ATTR_PI, 0,
+                           num_gurobi_linear_constraints,
+                           gurobi_dual_solutions.data());
+        SetLinearConstraintDualSolutions(prog, gurobi_dual_solutions,
+                                         constraint_dual_start_row, result);
+
+        SetAllSecondOrderConeDualSolution(prog, model, result);
+      }
+
+      // Obtain optimal cost.
+      double optimal_cost = std::numeric_limits<double>::quiet_NaN();
+      GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &optimal_cost);
+
+      // Provide Gurobi's computed cost in addition to the constant cost.
+      result->set_optimal_cost(optimal_cost + constant_cost);
+
+      if (is_mip) {
+        // The program wants to retrieve sub-optimal solutions
+        int sol_count{0};
+        GRBgetintattr(model, "SolCount", &sol_count);
+        for (int solution_number = 0; solution_number < sol_count;
+             ++solution_number) {
+          error = GRBsetintparam(model_env, "SolutionNumber", solution_number);
+          DRAKE_DEMAND(!error);
+          double suboptimal_obj{1.0};
+          error = GRBgetdblattrarray(model, "Xn", 0, num_total_variables,
+                                     solver_sol_vector.data());
+          DRAKE_DEMAND(!error);
+          error = GRBgetdblattr(model, "PoolObjVal", &suboptimal_obj);
+          DRAKE_DEMAND(!error);
+          SetProgramSolutionVector(is_new_variable, solver_sol_vector,
+                                   &prog_sol_vector);
+          result->AddSuboptimalSolution(suboptimal_obj, prog_sol_vector);
+        }
+        // If the problem is a mixed-integer optimization program, provide
+        // Gurobi's lower bound.
+        double lower_bound;
+        error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUND, &lower_bound);
+        if (error) {
+          drake::log()->error("GRB error {} getting lower bound: {}\n", error,
+                              GRBgeterrormsg(GRBgetenv(model)));
+          solver_details.error_code = error;
+        } else {
+          solver_details.objective_bound = lower_bound;
+        }
+      }
     }
   }
 
