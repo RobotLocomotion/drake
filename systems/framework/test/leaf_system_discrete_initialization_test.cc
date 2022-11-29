@@ -41,6 +41,8 @@ class Dut : public LeafSystem<double> {
       return;
     }
     // Schedule for now.
+    // TODO(eric.cousineau): Should this instead just be an initialization
+    // event?
     *time = context.get_time();
     auto initialize = [this](
         const Context<double>& event_context,
@@ -80,27 +82,38 @@ GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
 
   // Initialize.
   simulator.Initialize();
-  // Note: Still false!
+  // Note: Initialization() is a *specific* kind of event. Our manually
+  // scheduled pseudo-initialization event is not detectable beyond nominal
+  // event queuing.
   EXPECT_FALSE(dut->IsInitialized(dut_context));
   EXPECT_FALSE(zoh_shows_initialized());
 
   // Advance.
   simulator.AdvanceTo(0.0);
-  // Now it changes!
+  // Now initialized as we have processed the t=0 pseudo-initialization event.
   EXPECT_TRUE(dut->IsInitialized(dut_context));
-  // ... but effectively dependent system has no state change upon
-  // *initialization* event?
+  // The ZOH updated, but was operating on dut's y⁻(0) (not initialized), thus
+  // indicates no initialization.
   EXPECT_FALSE(zoh_shows_initialized());
 
   // Advance to exactly the boundary.
+  // No events have executed yet, so no changes will occur.
   simulator.AdvanceTo(zoh_period_sec);
   EXPECT_TRUE(dut->IsInitialized(dut_context));
-  // Er...?
   EXPECT_FALSE(zoh_shows_initialized());
 
-  // Advance again.
+  // Advance to same time point.
+  simulator.AdvanceTo(zoh_period_sec);
+  EXPECT_TRUE(dut->IsInitialized(dut_context));
+  // WARNING: The ZOH discrete update has executed, and thus the state has
+  // changed.
+  EXPECT_TRUE(zoh_shows_initialized());
+
+  // Advance again to beyond event's execution boundary.
   simulator.AdvanceTo(zoh_period_sec + kEps);
-  // Everything as expected.
+  // Everything as expected, given that ZOH has executed against what is
+  // effectively the dut's y⁺(0).
+  // TODO(eric.cousineau): In this case, it's more concisely y⁻(Δt + ε)?
   EXPECT_TRUE(dut->IsInitialized(dut_context));
   EXPECT_TRUE(zoh_shows_initialized());
 }
