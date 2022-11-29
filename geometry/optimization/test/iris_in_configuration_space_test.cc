@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -27,7 +28,10 @@ HPolyhedron IrisFromUrdf(const std::string urdf,
   systems::DiagramBuilder<double> builder;
   multibody::MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
-  multibody::Parser(&plant).AddModelsFromString(urdf, "urdf");
+  multibody::Parser parser(&plant);
+  parser.package_map().AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/box_package/package.xml"));
+  parser.AddModelsFromString(urdf, "urdf");
   plant.Finalize();
   auto diagram = builder.Build();
 
@@ -69,7 +73,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, JointLimits) {
   EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
 }
 
-const char boxes_urdf[] = R"(
+const char boxes_urdf[] = R"""(
 <robot name="boxes">
   <link name="fixed">
     <collision name="right">
@@ -97,7 +101,7 @@ const char boxes_urdf[] = R"(
     <child link="movable"/>
   </joint>
 </robot>
-)";
+)""";
 
 // Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic
 // joint.  The configuration space is a (convex) line segment q ∈ (−1,1).
@@ -105,6 +109,62 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
   const Vector1d sample = Vector1d::Zero();
   IrisOptions options;
   HPolyhedron region = IrisFromUrdf(boxes_urdf, sample, options);
+
+  EXPECT_EQ(region.ambient_dimension(), 1);
+
+  const double kTol = 1e-3;  // due to ibex's rel_eps_f.
+  const double qmin = -1.0 + options.configuration_space_margin,
+               qmax = 1.0 - options.configuration_space_margin;
+  EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+  EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(IrisFromUrdf(boxes_urdf, Vector1d{1.1}, options),
+                              "The seed point is in collision.*");
+}
+
+const char boxes_with_mesh_urdf[] = R"""(
+<robot name="boxes">
+  <link name="fixed">
+    <collision name="right">
+      <origin rpy="0 0 0" xyz="2.5 0 0"/>
+      <geometry><box size="1 1 1"/></geometry>
+    </collision>
+    <collision name="left">
+      <origin rpy="0 0 0" xyz="-2.5 0 0"/>
+      <geometry><box size="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="fixed_link_weld" type="fixed">
+    <parent link="world"/>
+    <child link="fixed"/>
+  </joint>
+  <link name="movable">
+    <collision name="center">
+      <!-- box size="2 2 2" -->
+      <geometry>
+        <mesh filename="package://box_model/meshes/box.obj">
+          <drake:declare_convex/>
+        </mesh>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="movable" type="prismatic">
+    <axis xyz="1 0 0"/>
+    <limit lower="-2" upper="2"/>
+    <parent link="world"/>
+    <child link="movable"/>
+  </joint>
+</robot>
+)""";
+
+// Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic
+// joint.  The configuration space is a (convex) line segment q ∈ (−1,1).
+GTEST_TEST(IrisInConfigurationSpaceTest, BoxesWithMeshPrismatic) {
+  const Vector1d sample = Vector1d::Zero();
+  IrisOptions options;
+  HPolyhedron region = IrisFromUrdf(boxes_with_mesh_urdf, sample, options);
 
   EXPECT_EQ(region.ambient_dimension(), 1);
 
