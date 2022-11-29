@@ -88,6 +88,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "iiwa_driver",
+    srcs = ["iiwa_driver.cc"],
     hdrs = ["iiwa_driver.h"],
     deps = [
         "//common:essential",

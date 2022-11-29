@@ -25,10 +25,11 @@ struct IiwaDriver {
   /** Per BuildIiwaControl. */
   double ext_joint_filter_tau{0.01};
 
-  /// Per BuildIiwaControl. Valid options are:
-  /// - "position" with optional "torque" feedforward
+  /// Per ParseIiwaControlMode. Valid options are:
+  /// - "position"
+  /// - "position_and_torque" (default)
   /// - "torque"
-  std::vector<std::string> control_mode{{"position"}, {"torque"}};
+  std::string control_mode{"position_and_torque"};
 
   std::string lcm_bus{"default"};
 

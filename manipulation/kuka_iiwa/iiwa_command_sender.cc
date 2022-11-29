@@ -7,12 +7,11 @@ namespace kuka_iiwa {
 IiwaCommandSender::IiwaCommandSender(
     int num_joints, IiwaControlMode control_mode)
     : num_joints_(num_joints), control_mode_(control_mode) {
-  DRAKE_DEMAND(IsValid(control_mode_));
-  if (static_cast<bool>(control_mode_ & IiwaControlMode::kPosition)) {
+  if (has_position_mode(control_mode_)) {
     position_input_port_ = &this->DeclareInputPort(
         "position", systems::kVectorValued, num_joints_);
   }
-  if (static_cast<bool>(control_mode_ & IiwaControlMode::kTorque)) {
+  if (has_torque_mode(control_mode_)) {
     torque_input_port_ = &this->DeclareInputPort(
         "torque", systems::kVectorValued, num_joints_);
   }
@@ -26,15 +25,13 @@ IiwaCommandSender::~IiwaCommandSender() = default;
 
 using InPort = systems::InputPort<double>;
 const InPort& IiwaCommandSender::get_position_input_port() const {
-  DRAKE_THROW_UNLESS(
-      static_cast<bool>(control_mode_ & IiwaControlMode::kPosition));
+  DRAKE_THROW_UNLESS(has_position_mode(control_mode_));
   DRAKE_DEMAND(position_input_port_ != nullptr);
   return *position_input_port_;
 }
 
 const InPort& IiwaCommandSender::get_torque_input_port() const {
-  DRAKE_THROW_UNLESS(
-      static_cast<bool>(control_mode_ & IiwaControlMode::kTorque));
+  DRAKE_THROW_UNLESS(has_torque_mode(control_mode_));
   DRAKE_DEMAND(torque_input_port_ != nullptr);
   return *torque_input_port_;
 }
@@ -51,12 +48,11 @@ void IiwaCommandSender::CalcOutput(
           ? get_time_input_port().Eval(context)[0]
           : context.get_time();
 
-  const bool has_position =
-      static_cast<bool>(control_mode_ & IiwaControlMode::kPosition);
+  const bool has_position = has_position_mode(control_mode_);
   bool has_torque = false;
-  if (control_mode_ == IiwaControlMode::kTorque) {
+  if (control_mode_ == IiwaControlMode::kTorqueOnly) {
     has_torque = true;
-  } else if (static_cast<bool>(control_mode_ & IiwaControlMode::kTorque)) {
+  } else if (control_mode_ == IiwaControlMode::kPositionAndTorque) {
     has_torque = get_torque_input_port().HasValue(context);
   }
 

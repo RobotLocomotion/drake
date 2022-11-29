@@ -113,11 +113,11 @@ TEST_F(BuildIiwaControlTest, BuildIiwaControl) {
   }
 }
 
-TEST_F(BuildIiwaControlTest, FeedforwardDisabled) {
+TEST_F(BuildIiwaControlTest, PositionOnly) {
   IiwaControlPorts control_ports{};
   control_ports = BuildSimplifiedIiwaControl(
       *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
-      0.01, {}, IiwaControlMode::kPosition);
+      0.01, {}, IiwaControlMode::kPositionOnly);
   const auto diagram = builder_.Build();
 
   EXPECT_NE(control_ports.commanded_positions, nullptr);
@@ -134,7 +134,7 @@ TEST_F(BuildIiwaControlTest, TorqueOnly) {
   IiwaControlPorts control_ports{};
   control_ports = BuildSimplifiedIiwaControl(
       *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
-      0.01, {}, IiwaControlMode::kTorque);
+      0.01, {}, IiwaControlMode::kTorqueOnly);
   const auto diagram = builder_.Build();
 
   EXPECT_EQ(control_ports.commanded_positions, nullptr);
@@ -146,7 +146,7 @@ TEST_F(BuildIiwaControlTest, TorqueOnly) {
   EXPECT_EQ(control_ports.external_torque->size(), N);
 }
 
-TEST_F(BuildIiwaControlTest, FeedforwardEnabled) {
+TEST_F(BuildIiwaControlTest, PositionAndTorque) {
   IiwaControlPorts control_ports{};
   const double ext_joint_filter_tau{0.01};
   control_ports = BuildSimplifiedIiwaControl(

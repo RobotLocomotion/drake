@@ -38,16 +38,11 @@ PYBIND11_MODULE(kuka_iiwa, m) {
   {
     using Class = IiwaControlMode;
     constexpr auto& cls_doc = doc.IiwaControlMode;
-    py::enum_<Class>(m, "IiwaControlMode", py::arithmetic(), cls_doc.doc)
-        .value("kPosition", Class::kPosition, cls_doc.kPosition.doc)
-        .value("kTorque", Class::kTorque, cls_doc.kTorque.doc)
-        .value("kDefault", Class::kDefault, cls_doc.kDefault.doc)
-        // TODO(eric.cousineau): Unclear why we need to define this given
-        // py::arithmetic() used above.
-        .def(py::self | py::self)
-        .def(py::self & py::self)
-        .def("__bool__",
-            [](const Class& self) { return static_cast<bool>(self); });
+    py::enum_<Class>(m, "IiwaControlMode", cls_doc.doc)
+        .value("kPositionOnly", Class::kPositionOnly, cls_doc.kPositionOnly.doc)
+        .value("kTorqueOnly", Class::kTorqueOnly, cls_doc.kTorqueOnly.doc)
+        .value("kPositionAndTorque", Class::kPositionAndTorque,
+            cls_doc.kPositionAndTorque.doc);
   }
 
   {
@@ -56,7 +51,7 @@ PYBIND11_MODULE(kuka_iiwa, m) {
     py::class_<Class, LeafSystem<double>>(m, "IiwaCommandReceiver", cls_doc.doc)
         .def(py::init<int, IiwaControlMode>(),
             py::arg("num_joints") = kIiwaArmNumJoints,
-            py::arg("control_mode") = IiwaControlMode::kDefault,
+            py::arg("control_mode") = IiwaControlMode::kPositionAndTorque,
             cls_doc.ctor.doc)
         .def("get_message_input_port", &Class::get_message_input_port,
             py_rvp::reference_internal, cls_doc.get_message_input_port.doc)
@@ -82,7 +77,7 @@ PYBIND11_MODULE(kuka_iiwa, m) {
     py::class_<Class, LeafSystem<double>>(m, "IiwaCommandSender", cls_doc.doc)
         .def(py::init<int, IiwaControlMode>(),
             py::arg("num_joints") = kIiwaArmNumJoints,
-            py::arg("control_mode") = IiwaControlMode::kDefault,
+            py::arg("control_mode") = IiwaControlMode::kPositionAndTorque,
             cls_doc.ctor.doc)
         .def("get_time_input_port", &Class::get_time_input_port,
             py_rvp::reference_internal, cls_doc.get_time_input_port.doc)
@@ -178,7 +173,7 @@ PYBIND11_MODULE(kuka_iiwa, m) {
         py::arg("iiwa_instance"), py::arg("controller_plant"), py::arg("lcm"),
         py::arg("builder"), py::arg("ext_joint_filter_tau") = 0.01,
         py::arg("desired_iiwa_kp_gains") = std::nullopt,
-        py::arg("control_mode") = IiwaControlMode::kDefault,
+        py::arg("control_mode") = IiwaControlMode::kPositionAndTorque,
         // Keep alive, reference: `builder` keeps `controller_plant` alive.
         py::keep_alive<5, 3>(), doc.BuildIiwaControl.doc);
   }

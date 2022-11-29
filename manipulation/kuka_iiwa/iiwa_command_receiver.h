@@ -48,7 +48,7 @@ class IiwaCommandReceiver final : public systems::LeafSystem<double> {
 
   explicit IiwaCommandReceiver(
       int num_joints = kIiwaArmNumJoints,
-      IiwaControlMode control_mode = IiwaControlMode::kDefault);
+      IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
   ~IiwaCommandReceiver() final;
 
   /// (Advanced.) Copies the current "position_measured" input (or zero if not

@@ -51,7 +51,7 @@ class IiwaCommandSender final : public systems::LeafSystem<double> {
 
   explicit IiwaCommandSender(
       int num_joints = kIiwaArmNumJoints,
-      IiwaControlMode control_mode = IiwaControlMode::kDefault);
+      IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
   ~IiwaCommandSender() final;
 
   /** @name Named accessors for this System's input and output ports. */

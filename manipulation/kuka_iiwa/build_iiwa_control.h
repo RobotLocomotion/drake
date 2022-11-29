@@ -62,7 +62,7 @@ void BuildIiwaControl(
     lcm::DrakeLcmInterface* lcm, systems::DiagramBuilder<double>* builder,
     double ext_joint_filter_tau = 0.01,
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
-    IiwaControlMode control_mode = IiwaControlMode::kDefault);
+    IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
 
 /// The return type of BuildSimplifiedIiwaControl().
 struct IiwaControlPorts {
@@ -87,7 +87,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     systems::DiagramBuilder<double>* builder,
     double ext_joint_filter_tau = 0.01,
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
-    IiwaControlMode control_mode = IiwaControlMode::kDefault);
+    IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
 
 }  // namespace kuka_iiwa
 }  // namespace manipulation

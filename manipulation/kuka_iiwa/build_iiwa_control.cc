@@ -64,10 +64,8 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
   builder->Connect(iiwa_command_sub->get_output_port(),
                    iiwa_command_receiver->get_message_input_port());
 
-  const bool has_position =
-      static_cast<bool>(control_mode & IiwaControlMode::kPosition);
-  const bool has_torque =
-      static_cast<bool>(control_mode & IiwaControlMode::kTorque);
+  const bool has_position = has_position_mode(control_mode);
+  const bool has_torque = has_torque_mode(control_mode);
 
   // Connect desired positions.
   if (has_position) {
@@ -140,12 +138,6 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     systems::DiagramBuilder<double>* builder, double ext_joint_filter_tau,
     const std::optional<Eigen::VectorXd>& desired_kp_gains,
     IiwaControlMode control_mode) {
-  DRAKE_DEMAND(IsValid(control_mode));
-
-  const bool has_position =
-      static_cast<bool>(control_mode & IiwaControlMode::kPosition);
-  const bool has_torque =
-      static_cast<bool>(control_mode & IiwaControlMode::kTorque);
 
   IiwaControlPorts ports{};
   const int num_iiwa_positions = controller_plant.num_positions();
@@ -158,7 +150,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
       torque_proxy->get_output_port(),
       plant.get_actuation_input_port(iiwa_instance));
 
-  if (has_position) {
+  if (has_position_mode(control_mode)) {
     VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
 
     // The default values are taken from the current FRI driver.
@@ -192,7 +184,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
 
     ports.commanded_positions =
         &iiwa_commanded_state_interpolator->get_input_port();
-    if (has_torque) {
+    if (control_mode == IiwaControlMode::kPositionAndTorque) {
       // Optional feedforward torque.
       auto adder = builder->template AddSystem<Adder>(2, num_iiwa_positions);
       builder->Connect(iiwa_controller->get_output_port_control(),
@@ -204,7 +196,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
       builder->Connect(iiwa_controller->get_output_port_control(),
                        torque_proxy->get_input_port());
     }
-  } else if (has_torque) {
+  } else if (control_mode == IiwaControlMode::kTorqueOnly) {
     DRAKE_THROW_UNLESS(!desired_kp_gains.has_value());
     // Torque alone, added to gravity compensation.
     auto gravity_comp = builder->AddSystem<InverseDynamics>(
@@ -220,6 +212,8 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     builder->Connect(
         adder->get_output_port(),
         torque_proxy->get_input_port());
+  } else {
+    DRAKE_UNREACHABLE();
   }
 
   // Filter for simulated external torques. Unlike the real robot, external

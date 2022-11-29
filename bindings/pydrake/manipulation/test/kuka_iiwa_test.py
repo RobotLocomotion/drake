@@ -27,14 +27,17 @@ class TestKukaIiwa(unittest.TestCase):
         self.assertEqual(mut.kIiwaArmNumJoints, 7)
         self.assertIsInstance(mut.get_iiwa_max_joint_velocities(), np.ndarray)
         self.assertEqual(mut.kIiwaLcmStatusPeriod, 0.005)
-        self.assertEqual(
-            mut.IiwaControlMode.kDefault,
-            mut.IiwaControlMode.kPosition | mut.IiwaControlMode.kTorque)
+        self.assertIsInstance(
+            mut.IiwaControlMode.kPositionOnly, mut.IiwaControlMode)
+        self.assertIsInstance(
+            mut.IiwaControlMode.kTorqueOnly, mut.IiwaControlMode)
+        self.assertIsInstance(
+            mut.IiwaControlMode.kPositionAndTorque, mut.IiwaControlMode)
 
     def test_kuka_iiwa_lcm(self):
         command_rec = mut.IiwaCommandReceiver(
             num_joints=mut.kIiwaArmNumJoints,
-            control_mode=mut.IiwaControlMode.kDefault)
+            control_mode=mut.IiwaControlMode.kPositionAndTorque)
         self.assertIsInstance(
             command_rec.get_message_input_port(), InputPort)
         self.assertIsInstance(
@@ -56,7 +59,7 @@ class TestKukaIiwa(unittest.TestCase):
         # Constructor variants.
         mut.IiwaCommandSender(
             num_joints=mut.kIiwaArmNumJoints,
-            control_mode=mut.IiwaControlMode.kDefault)
+            control_mode=mut.IiwaControlMode.kPositionAndTorque)
 
         status_rec = mut.IiwaStatusReceiver()
         self.assertIsInstance(
@@ -116,7 +119,7 @@ class TestKukaIiwa(unittest.TestCase):
             plant=plant, iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
             controller_plant=controller_plant, lcm=DrakeLcm(), builder=builder,
             ext_joint_filter_tau=0.12, desired_iiwa_kp_gains=np.arange(7),
-            control_mode=mut.IiwaControlMode.kDefault)
+            control_mode=mut.IiwaControlMode.kPositionAndTorque)
         self.assertEqual(len(builder.GetSystems()), 12)
 
     def test_kuka_iiwa_driver(self):

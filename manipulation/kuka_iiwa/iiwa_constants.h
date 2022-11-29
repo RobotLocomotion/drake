@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -25,6 +26,32 @@ enum class IiwaControlMode {
     kTorqueOnly,
     kPositionAndTorque
 };
+
+/** Reports if the given control `mode` includes positions. */
+constexpr inline bool has_position_mode(IiwaControlMode control_mode) {
+  switch (control_mode) {
+    case IiwaControlMode::kPositionOnly:
+    case IiwaControlMode::kPositionAndTorque:
+      return true;
+    case IiwaControlMode::kTorqueOnly:
+      return false;
+    default:
+      DRAKE_UNREACHABLE();
+  }
+}
+
+/** Reports if the given control `mode` includes torques. */
+constexpr inline bool has_torque_mode(IiwaControlMode control_mode) {
+  switch (control_mode) {
+    case IiwaControlMode::kTorqueOnly:
+    case IiwaControlMode::kPositionAndTorque:
+      return true;
+    case IiwaControlMode::kPositionOnly:
+      return false;
+    default:
+      DRAKE_UNREACHABLE();
+  }
+}
 
 /**
 Parses control mode with the following mapping:

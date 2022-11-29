@@ -150,7 +150,7 @@ TEST_F(IiwaCommandReceiverTest, AcceptanceTestWithLatching) {
 }
 
 TEST_F(IiwaCommandReceiverTest, TorqueOnly) {
-  MakeDut(IiwaControlMode::kTorque);
+  MakeDut(IiwaControlMode::kTorqueOnly);
   EXPECT_THROW(dut().get_commanded_position_output_port(), std::runtime_error);
   const VectorXd t0 = VectorXd::LinSpaced(N, 0.5, 0.6);
   lcmt_iiwa_command command{};
