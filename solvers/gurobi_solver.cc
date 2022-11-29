@@ -971,7 +971,8 @@ void SetSolution(
                        reduced_cost.data());
     SetBoundingBoxDualSolution(prog, reduced_cost, bb_con_dual_indices, result);
 
-    Eigen::VectorXd gurobi_dual_solutions(num_gurobi_linear_constraints);
+    Eigen::VectorXd gurobi_dual_solutions =
+        Eigen::VectorXd::Zero(num_gurobi_linear_constraints);
     GRBgetdblattrarray(model, GRB_DBL_ATTR_PI, 0, num_gurobi_linear_constraints,
                        gurobi_dual_solutions.data());
     SetLinearConstraintDualSolutions(prog, gurobi_dual_solutions,
