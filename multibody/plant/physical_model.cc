@@ -6,7 +6,6 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
 
 template <typename T>
 std::unique_ptr<PhysicalModel<double>> PhysicalModel<T>::CloneToDouble() const {
@@ -48,14 +47,14 @@ bool PhysicalModel<T>::is_cloneable_to_symbolic() const {
 template <typename T>
 geometry::SceneGraph<T>& PhysicalModel<T>::mutable_scene_graph(
     MultibodyPlant<T>* plant) {
-  return MultibodyPlantModelAttorney<T>::mutable_scene_graph(plant);
+  return internal::MultibodyPlantModelAttorney<T>::mutable_scene_graph(plant);
 }
 
 template <typename T>
 systems::DiscreteStateIndex PhysicalModel<T>::DeclareDiscreteState(
     MultibodyPlant<T>* plant, const VectorX<T>& model_value) {
-  return MultibodyPlantModelAttorney<T>::DeclareDiscreteState(plant,
-                                                              model_value);
+  return internal::MultibodyPlantModelAttorney<T>::DeclareDiscreteState(
+      plant, model_value);
 }
 
 template <typename T>
@@ -64,7 +63,7 @@ systems::LeafOutputPort<T>& PhysicalModel<T>::DeclareAbstractOutputPort(
     typename systems::LeafOutputPort<T>::AllocCallback alloc_function,
     typename systems::LeafOutputPort<T>::CalcCallback calc_function,
     std::set<systems::DependencyTicket> prerequisites_of_calc) {
-  return MultibodyPlantModelAttorney<T>::DeclareAbstractOutputPort(
+  return internal::MultibodyPlantModelAttorney<T>::DeclareAbstractOutputPort(
       plant, std::move(name), std::move(alloc_function),
       std::move(calc_function), std::move(prerequisites_of_calc));
 }
@@ -76,12 +75,12 @@ systems::LeafOutputPort<T>& PhysicalModel<T>::DeclareVectorOutputPort(
     typename systems::LeafOutputPort<T>::CalcVectorCallback
         vector_calc_function,
     std::set<systems::DependencyTicket> prerequisites_of_calc) {
-  return MultibodyPlantModelAttorney<T>::DeclareVectorOutputPort(
+  return internal::MultibodyPlantModelAttorney<T>::DeclareVectorOutputPort(
       plant, std::move(name), model_vector, std::move(vector_calc_function),
       std::move(prerequisites_of_calc));
 }
-}  // namespace internal
+
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::PhysicalModel);
+    class ::drake::multibody::PhysicalModel);

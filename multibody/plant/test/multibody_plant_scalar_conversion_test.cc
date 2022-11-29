@@ -200,7 +200,7 @@ class DoubleOnlyDiscreteUpdateManager final
 // scalar types.
 GTEST_TEST(ScalarConversionTest, ExternalComponent) {
   MultibodyPlant<double> plant(0.1);
-  std::unique_ptr<internal::PhysicalModel<double>> dummy_physical_model =
+  std::unique_ptr<PhysicalModel<double>> dummy_physical_model =
       std::make_unique<internal::test::DummyModel<double>>();
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_double());
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_autodiff());
