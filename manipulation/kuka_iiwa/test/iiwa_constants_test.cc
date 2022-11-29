@@ -8,14 +8,16 @@ namespace kuka_iiwa {
 namespace {
 
 GTEST_TEST(IiwaConstantsTest, ParseIiwaControlMode) {
-  EXPECT_TRUE(IsValid(IiwaControlMode::kDefault));
-  EXPECT_FALSE(IsValid(IiwaControlMode{}));
-  EXPECT_EQ(ParseIiwaControlMode({"position"}), IiwaControlMode::kPosition);
-  EXPECT_EQ(ParseIiwaControlMode({"torque"}), IiwaControlMode::kTorque);
   EXPECT_EQ(
-      ParseIiwaControlMode({"position", "torque"}),
-      IiwaControlMode::kPosition | IiwaControlMode::kTorque);
-  EXPECT_THROW(ParseIiwaControlMode({"asdf"}), std::runtime_error);
+      ParseIiwaControlMode("position_only"),
+      IiwaControlMode::kPositionOnly);
+  EXPECT_EQ(
+      ParseIiwaControlMode("torque_only"),
+      IiwaControlMode::kTorqueOnly);
+  EXPECT_EQ(
+      ParseIiwaControlMode("position_and_torque"),
+      IiwaControlMode::kPositionAndTorque);
+  EXPECT_THROW(ParseIiwaControlMode("asdf"), std::runtime_error);
 }
 
 }  // namespace
