@@ -112,8 +112,6 @@ GTEST_TEST(FileParserTest, LegacyFunctionTest) {
   EXPECT_EQ(dut.AddAllModelsFromFile(sdf_name).size(), 1);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(FileParserTest, BasicStringTest) {
   const std::string sdf_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/acrobot.sdf");
@@ -126,7 +124,6 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
       "acrobot.dmd.yaml");
 
   // Load an SDF via string using plural method.
-  // Add a second one with an overridden model_name.
   {
     const std::string sdf_contents = ReadEntireFile(sdf_name);
     MultibodyPlant<double> plant(0.0);
@@ -135,13 +132,9 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
         dut.AddModelsFromString(sdf_contents, "sdf");
     EXPECT_EQ(ids.size(), 1);
     EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
-    const ModelInstanceIndex id = dut.AddModelFromString(sdf_contents, "sdf",
-                                                         "foo");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
   }
 
   // Load an URDF via string using plural method.
-  // Add a second one with an overridden model_name.
   {
     const std::string urdf_contents = ReadEntireFile(urdf_name);
     MultibodyPlant<double> plant(0.0);
@@ -150,13 +143,9 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
         dut.AddModelsFromString(urdf_contents, "urdf");
     EXPECT_EQ(ids.size(), 1);
     EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
-    const ModelInstanceIndex id = dut.AddModelFromString(urdf_contents, "urdf",
-                                                         "foo");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
   }
 
   // Load an MJCF via string using plural method.
-  // Add a second one with an overridden model_name.
   {
     const std::string xml_contents = ReadEntireFile(xml_name);
     MultibodyPlant<double> plant(0.0);
@@ -165,13 +154,9 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
         dut.AddModelsFromString(xml_contents, "xml");
     EXPECT_EQ(ids.size(), 1);
     EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
-    const ModelInstanceIndex id = dut.AddModelFromString(xml_contents, "xml",
-                                                         "foo");
-    EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
   }
 
   // Load a DMD.YAML via string using plural method.
-  // Using the singular method is always an error.
   {
     const std::string dmd_contents = ReadEntireFile(dmd_name);
     MultibodyPlant<double> plant(0.0);
@@ -180,12 +165,24 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
         dut.AddModelsFromString(dmd_contents, "dmd.yaml");
     EXPECT_EQ(ids.size(), 1);
     EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        dut.AddModelFromString(dmd_contents, "dmd.yaml"),
-        ".* always an error.*");
   }
 }
+
+GTEST_TEST(FileParserTest, LegacyStringFunctionTest) {
+  // Just make sure the legacy function "AddModelFromString" still
+  // works. This test can go away when the function is deprecated.
+  const std::string sdf_name = FindResourceOrThrow(
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  const std::string sdf_contents = ReadEntireFile(sdf_name);
+  MultibodyPlant<double> plant(0.0);
+  Parser dut(&plant);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const ModelInstanceIndex id = dut.AddModelFromString(sdf_contents, "sdf",
+                                                       "foo");
 #pragma GCC diagnostic pop
+  EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
+}
 
 // Try loading a file with two <model> elements, but without a <world>.
 // This should always result in an error. For an example of a valid <world>
