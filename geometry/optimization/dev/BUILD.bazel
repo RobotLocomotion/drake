@@ -21,6 +21,15 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "cspace_free_region",
+    srcs = ["cspace_free_region.cc"],
+    hdrs = ["cspace_free_region.h"],
+    deps = [
+        ":collision_geometry",
+    ],
+)
+
 # test
 
 drake_cc_library(
@@ -46,6 +55,14 @@ drake_cc_googletest(
         ":c_iris_test_utilities",
         ":collision_geometry",
         "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cspace_free_region_test",
+    deps = [
+        ":c_iris_test_utilities",
+        ":cspace_free_region",
     ],
 )
 
