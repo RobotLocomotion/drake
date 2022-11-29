@@ -18,7 +18,7 @@ enum class PlaneSide {
   kNegative,
 };
 
-class CollisionGeometry : public ShapeReifier {
+class CollisionGeometry {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionGeometry)
 
@@ -57,7 +57,7 @@ class CollisionGeometry : public ShapeReifier {
    s. Constraint (2) says the vector a has length <= 1.
 
    Similarly we can write down the conditions for other geometry types,
-   including polytopes, cylinders, and capsules.
+   including polytopes and capsules.
 
    Note that when we don't require a separating margin δ, and the geometry is a
    polytope, then we consider the constraint
@@ -90,13 +90,9 @@ class CollisionGeometry : public ShapeReifier {
       const multibody::RationalForwardKinematics& rational_forward_kin,
       const std::optional<symbolic::Variable>& separating_margin,
       PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
-      std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector);
+      std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) const;
 
  private:
-  // Implements supported shapes for the ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Box& box, void* data) final;
-  void ImplementGeometry(const Convex& convex, void* data) final;
   const Shape* geometry_;
   multibody::BodyIndex body_index_;
   geometry::GeometryId id_;
