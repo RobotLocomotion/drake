@@ -13,6 +13,7 @@
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/choose_best_solver.h"
@@ -180,6 +181,12 @@ class IrisConvexSetMaker final : public ShapeReifier {
     DRAKE_DEMAND(geom_id_.is_valid());
     auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
     set = std::make_unique<Hyperellipsoid>(query_, geom_id_, reference_frame_);
+  }
+
+  void ImplementGeometry(const Convex&, void* data) {
+    DRAKE_DEMAND(geom_id_.is_valid());
+    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+    set = std::make_unique<VPolytope>(query_, geom_id_, reference_frame_);
   }
 
  private:
