@@ -45,6 +45,13 @@ PYBIND11_MODULE(kuka_iiwa, m) {
             cls_doc.kPositionAndTorque.doc);
   }
 
+  m.def("position_enabled", &position_enabled, py::arg("control_mode"),
+      doc.position_enabled.doc);
+  m.def("torque_enabled", &torque_enabled, py::arg("control_mode"),
+      doc.torque_enabled.doc);
+  m.def("ParseIiwaControlMode", &ParseIiwaControlMode, py::arg("control_mode"),
+      doc.ParseIiwaControlMode.doc);
+
   {
     using Class = IiwaCommandReceiver;
     constexpr auto& cls_doc = doc.IiwaCommandReceiver;

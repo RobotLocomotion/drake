@@ -12,10 +12,7 @@ namespace kuka_iiwa {
 
 constexpr int kIiwaArmNumJoints = 7;
 
-/**
-Returns the maximum joint velocities provided by Kuka.
-@return Maximum joint velocities (rad/s).
-*/
+/** Returns the maximum joint velocities (rad/s) provided by Kuka. */
 VectorX<double> get_iiwa_max_joint_velocities();
 
 extern const double kIiwaLcmStatusPeriod;
@@ -28,37 +25,19 @@ enum class IiwaControlMode {
 };
 
 /** Reports if the given control `mode` includes positions. */
-constexpr inline bool has_position_mode(IiwaControlMode control_mode) {
-  switch (control_mode) {
-    case IiwaControlMode::kPositionOnly:
-    case IiwaControlMode::kPositionAndTorque:
-      return true;
-    case IiwaControlMode::kTorqueOnly:
-      return false;
-    default:
-      DRAKE_UNREACHABLE();
-  }
+constexpr inline bool position_enabled(IiwaControlMode control_mode) {
+  return control_mode != IiwaControlMode::kTorqueOnly;
 }
 
 /** Reports if the given control `mode` includes torques. */
-constexpr inline bool has_torque_mode(IiwaControlMode control_mode) {
-  switch (control_mode) {
-    case IiwaControlMode::kTorqueOnly:
-    case IiwaControlMode::kPositionAndTorque:
-      return true;
-    case IiwaControlMode::kPositionOnly:
-      return false;
-    default:
-      DRAKE_UNREACHABLE();
-  }
+constexpr inline bool torque_enabled(IiwaControlMode control_mode) {
+  return control_mode != IiwaControlMode::kPositionOnly;
 }
 
-/**
-Parses control mode with the following mapping:
+/** Parses control mode with the following mapping:
 - "position_only": kPositionOnly
 - "torque_only": kTorqueOnly
-- "position_and_torque": kPositionAndTorque
-*/
+- "position_and_torque": kPositionAndTorque */
 IiwaControlMode ParseIiwaControlMode(const std::string& control_mode);
 
 }  // namespace kuka_iiwa

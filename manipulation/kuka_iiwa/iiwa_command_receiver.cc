@@ -47,13 +47,13 @@ IiwaCommandReceiver::IiwaCommandReceiver(
        discrete_state_ticket(latched_position_measured_),
        position_measured_or_zero_->ticket()});
 
-  if (has_position_mode(control_mode_)) {
+  if (position_enabled(control_mode_)) {
     commanded_position_output_ = &DeclareVectorOutputPort(
         "position", num_joints, &IiwaCommandReceiver::CalcPositionOutput,
         {defaulted_command_->ticket()});
   }
 
-  if (has_torque_mode(control_mode_)) {
+  if (torque_enabled(control_mode_)) {
     commanded_torque_output_ = &DeclareVectorOutputPort(
         "torque", num_joints, &IiwaCommandReceiver::CalcTorqueOutput,
         {defaulted_command_->ticket()});
@@ -98,7 +98,7 @@ void IiwaCommandReceiver::LatchInitialPosition(
 void IiwaCommandReceiver::DoCalcNextUpdateTime(
     const Context<double>& context,
     CompositeEventCollection<double>* events, double* time) const {
-  if (!has_position_mode(control_mode_)) {
+  if (!position_enabled(control_mode_)) {
     // No need to schedule events.
     *time = std::numeric_limits<double>::infinity();
     return;

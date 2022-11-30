@@ -64,8 +64,8 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
   builder->Connect(iiwa_command_sub->get_output_port(),
                    iiwa_command_receiver->get_message_input_port());
 
-  const bool has_position = has_position_mode(control_mode);
-  const bool has_torque = has_torque_mode(control_mode);
+  const bool has_position = position_enabled(control_mode);
+  const bool has_torque = torque_enabled(control_mode);
 
   // Connect desired positions.
   if (has_position) {
@@ -150,7 +150,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
       torque_proxy->get_output_port(),
       plant.get_actuation_input_port(iiwa_instance));
 
-  if (has_position_mode(control_mode)) {
+  if (position_enabled(control_mode)) {
     VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
 
     // The default values are taken from the current FRI driver.
@@ -212,8 +212,6 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     builder->Connect(
         adder->get_output_port(),
         torque_proxy->get_input_port());
-  } else {
-    DRAKE_UNREACHABLE();
   }
 
   // Filter for simulated external torques. Unlike the real robot, external

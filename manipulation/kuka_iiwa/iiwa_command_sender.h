@@ -12,7 +12,7 @@ namespace kuka_iiwa {
 /**
 Creates and outputs lcmt_iiwa_command messages.
 
-Note that this system does not actually send the message an LCM channel. To
+Note that this system does not actually send the message on an LCM channel. To
 send the message, the output of this system should be connected to a
 systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_command>().
 
@@ -26,8 +26,10 @@ This system has three vector-valued input ports:
 - one for the time to use, in seconds, for the message timestamp, which is
   optional.
 
-If either position or torque are optional and/or not supplied, then the values
-emitted in the message will be zero.
+If position and torque mode is specified, the torque input port can remain
+unconnected; the message will contain torque values of zero. If position mode
+is not specified, the message will contain position values of zero.
+
 If the time input port is not connected, the context time will be used for
 message timestamp.
 

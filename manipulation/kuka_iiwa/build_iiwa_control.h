@@ -15,8 +15,10 @@
 /// This class implements the software stack of the Iiwa arm and the LCM-to-FRI
 /// adapter installed in it as it is exposed in
 /// https://github.com/RobotLocomotion/drake-iiwa-driver.
-/// The driver in this repository exposes two options:
-///   - position-control with an optional feedforward torque command.
+/// The driver in this repository exposes three options:
+///   - position-only control,
+///   - position-and-torque control, where feedforward torque command is
+///     optional, and
 ///   - torque-only control, added with nominal gravity compensation.
 /// The arm receives position and/or torque commands (`lcmt_iiwa_command`) and
 /// emits status (`lcmt_iiwa_status`); the Iiwa controller built here takes
@@ -24,12 +26,12 @@
 /// Iiwa measured positions and torques into those status messages.  Note that
 /// only the 7 DoF Iiwa arm is supported.
 ///
-/// In order to simulate the above driver's interface, the simulated controller
-/// maintains an entire separate Iiwa plant (*not* the simulated plant!) to
-/// perform inverse dynamics computations.  These computations correspond to
-/// the servoing and gravity compensation done on the real Iiwa; disagreement
-/// between the controller model and the simulated model represents errors in
-/// the servo, end-effector, and gravity-compensation configuration.
+/// A simulated controller maintains an entire separate Iiwa plant (*not* the
+/// simulated plant!) to perform inverse dynamics computations.  These
+/// computations correspond to the servoing and gravity compensation done on
+/// the real Iiwa; disagreement between the controller model and the simulated
+/// model represents errors in the servo, end-effector, and
+/// gravity-compensation configuration.
 
 namespace drake {
 namespace manipulation {
@@ -48,7 +50,7 @@ namespace kuka_iiwa {
 /// corresponding to the Iiwa Dof (7) in the controller.  If no argument is
 /// passed, the gains derived from hardware will be used instead (hardcoded
 /// within the implementation of this function). These gains must be nullopt
-/// if control_mode does not include position control.
+/// if @p control_mode does not include position control.
 ///
 /// @p control_mode the control mode for the controller.
 ///
@@ -79,7 +81,8 @@ struct IiwaControlPorts {
 /// @return an IiwaControlPorts struct containing the commanded positions
 /// and/or commanded torques ports of the installed control, depending on
 /// @p control_mode, as well as output ports for the joint and external
-/// torques.
+/// torques. If a port is not present due to specified @p control mode, its
+/// pointer will be nullptr.
 IiwaControlPorts BuildSimplifiedIiwaControl(
     const multibody::MultibodyPlant<double>& plant,
     const multibody::ModelInstanceIndex iiwa_instance,

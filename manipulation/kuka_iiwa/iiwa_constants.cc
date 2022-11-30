@@ -35,7 +35,7 @@ IiwaControlMode ParseIiwaControlMode(const std::string& control_mode) {
     return IiwaControlMode::kPositionAndTorque;
   } else {
     throw std::runtime_error(fmt::format(
-        "ParseIiwaControlMode: Invalid control_mode string: {}",
+        "ParseIiwaControlMode: Invalid control_mode string: '{}'",
         control_mode));
   }
 }

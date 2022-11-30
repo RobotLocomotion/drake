@@ -33,6 +33,12 @@ class TestKukaIiwa(unittest.TestCase):
             mut.IiwaControlMode.kTorqueOnly, mut.IiwaControlMode)
         self.assertIsInstance(
             mut.IiwaControlMode.kPositionAndTorque, mut.IiwaControlMode)
+        control_mode = mut.IiwaControlMode.kPositionAndTorque
+        self.assertTrue(mut.position_enabled(control_mode=control_mode))
+        self.assertTrue(mut.torque_enabled(control_mode=control_mode))
+        self.assertEqual(
+            mut.ParseIiwaControlMode(control_mode="position_and_torque"),
+            control_mode)
 
     def test_kuka_iiwa_lcm(self):
         command_rec = mut.IiwaCommandReceiver(

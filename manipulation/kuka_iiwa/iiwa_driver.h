@@ -26,9 +26,9 @@ struct IiwaDriver {
   double ext_joint_filter_tau{0.01};
 
   /// Per ParseIiwaControlMode. Valid options are:
-  /// - "position"
+  /// - "position_only"
   /// - "position_and_torque" (default)
-  /// - "torque"
+  /// - "torque_only"
   std::string control_mode{"position_and_torque"};
 
   std::string lcm_bus{"default"};

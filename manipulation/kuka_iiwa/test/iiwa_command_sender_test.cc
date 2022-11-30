@@ -46,10 +46,11 @@ class IiwaCommandSenderTest : public testing::Test {
   const std::vector<double> std_t0_{t0_.data(), t0_.data() + t0_.size()};
 };
 
-TEST_F(IiwaCommandSenderTest, AcceptanceTest) {
+TEST_F(IiwaCommandSenderTest, PositionAndTorqueTest) {
   // Default is position and torque.
   MakeDut();
-  // Position is required.
+  // For position and torque control mode, an unconnected position input port
+  // throws.
   EXPECT_THROW(output(), std::logic_error);
 
   dut().get_position_input_port().FixValue(&context(), q0_);
@@ -73,7 +74,7 @@ TEST_F(IiwaCommandSenderTest, PositionOnlyTest) {
   MakeDut(IiwaControlMode::kPositionOnly);
   // Should not have torque input port.
   EXPECT_THROW(dut().get_torque_input_port(), std::runtime_error);
-  // Position is required.
+  // For position-only control mode, an unconnected position input port throws.
   EXPECT_THROW(output(), std::logic_error);
 
   dut().get_position_input_port().FixValue(&context(), q0_);
@@ -87,7 +88,7 @@ TEST_F(IiwaCommandSenderTest, TorqueOnlyTest) {
   MakeDut(IiwaControlMode::kTorqueOnly);
   // Should not have position input port.
   EXPECT_THROW(dut().get_position_input_port(), std::runtime_error);
-  // Torque is required.
+  // For torque-only control mode, an unconnected torque input port throws.
   EXPECT_THROW(output(), std::logic_error);
 
   dut().get_torque_input_port().FixValue(&context(), t0_);
