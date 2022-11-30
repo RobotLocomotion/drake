@@ -39,7 +39,7 @@ systems::sensors::ImageRgba8U CreateTestColorImage(bool pad_alpha);
 systems::sensors::ImageDepth32F CreateTestDepthImage();
 
 /* Recreates an ImageLabel16I image that should be exactly the same as the
- loaded test_colored_label_rgba_8U.png after it has been converted.
+ loaded test_depth_16I.png.
 
      ┌─────────────────┬─────────────────┬─────────────────┐
      │        0        │        1        │        2        │

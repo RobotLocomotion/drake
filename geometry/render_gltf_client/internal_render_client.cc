@@ -438,6 +438,38 @@ void RenderClient::LoadDepthImage(const std::string& path,
   }
 }
 
+void RenderClient::LoadLabelImage(const std::string& path,
+                                  ImageLabel16I* label_image_out) {
+  DRAKE_DEMAND(label_image_out != nullptr);
+
+  vtkNew<vtkImageExport> image_exporter;
+  ReadPngFile(path, image_exporter);
+  const int width = label_image_out->width();
+  const int height = label_image_out->height();
+  VerifyImportedImageDimensions(width, height, image_exporter, path);
+
+  // For label images, we support loading 16-bit unsigned single channel images.
+  vtkImageData* image_data = image_exporter->GetInput();
+  DRAKE_DEMAND(image_data != nullptr);
+  const int channels = image_data->GetNumberOfScalarComponents();
+  if (channels != 1) {
+    throw std::runtime_error(fmt::format(
+        "RenderClient: loaded PNG image from '{}' has {} channels, but only 1 "
+        "is allowed for label images.",
+        path, channels));
+  }
+
+  /* no cover: this case is improbable and therefore not worth explicitly
+   testing. If this assumption proves to be wrong in the future, we can revisit
+   the decision. */
+  DRAKE_THROW_UNLESS(image_data->GetScalarType() == VTK_TYPE_UINT16);
+
+  /* NOTE: Officially label image is signed integers, but vtkImageExport::Export
+   will reinterpret this as unsigned internally; since the loaded PNG image is
+   required to be unsigned short data, negative values will not occur. */
+  image_exporter->Export(label_image_out->at(0, 0));
+}
+
 void RenderClient::SetHttpService(std::unique_ptr<HttpService> service) {
   http_service_ = std::move(service);
 }

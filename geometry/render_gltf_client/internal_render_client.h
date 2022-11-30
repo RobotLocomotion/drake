@@ -40,11 +40,11 @@ class RenderClient {
   //@{
 
   /* Uploads the scene file from `scene_path` to the render server, downloads
-   the image file response, and returns the path to the image file.  The
-   returned file path may be used directly with any one of the helper methods
-   LoadColorImage() or LoadDepthImage().  The file path returned will be in
-   temp_directory(), users do not need to delete the file manually after they
-   are finished.
+   the image file response, and returns the path to the image file.
+   The returned file path may be used directly with any one of the helper
+   methods LoadColorImage(), LoadDepthImage(), or LoadLabelImage().  The file
+   path returned will be in temp_directory(), users do not need to delete the
+   file manually after they are finished.
 
    @sa get_params().cleanup
    @param camera_core
@@ -177,6 +177,23 @@ class RenderClient {
   static void LoadDepthImage(
       const std::string& path,
       drake::systems::sensors::ImageDepth32F* depth_image_out);
+
+  /* Loads the specified image file to a drake output buffer.
+
+   This method only supports loading single channel unsigned short PNG images.
+
+   @param path
+     The path to the file to try and load as a label image.  The path returned
+     by RetrieveRender() can be used directly for this parameter.
+   @param label_image_out
+     The already allocated drake image buffer to load `path` into.
+   @throws std::exception
+     If the specified `path` cannot be loaded as a single channel unsigned short
+     PNG image, or the image denoted by `path` does not have the same width and
+     height as the specified `label_image_out`. */
+  static void LoadLabelImage(
+      const std::string& path,
+      drake::systems::sensors::ImageLabel16I* label_image_out);
 
   //@}
 

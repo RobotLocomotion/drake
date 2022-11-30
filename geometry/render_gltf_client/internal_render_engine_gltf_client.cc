@@ -27,7 +27,6 @@ using geometry::render::RenderCameraCore;
 using geometry::render::RenderEngine;
 using geometry::render::RenderEngineVtk;
 using geometry::render::internal::ImageType;
-using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -339,26 +338,7 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   }
 
   // Load the returned image back to the drake buffer.
-  /* NOTE: The loaded image from `image_path` is expected to be a colored label
-   image that will then be converted to an actual label image.  The server has
-   no knowledge of the conversion formula, and thus, a colored label image is
-   returned. */
-  const int width = label_image_out->width();
-  const int height = label_image_out->height();
-  ImageRgba8U colored_label_image(width, height);
-  render_client_->LoadColorImage(image_path, &colored_label_image);
-
-  // Convert from RGB to Label.
-  ColorI color;
-  for (int y = 0; y < height; ++y) {
-    for (int x = 0; x < width; ++x) {
-      color.r = colored_label_image.at(x, y)[0];
-      color.g = colored_label_image.at(x, y)[1];
-      color.b = colored_label_image.at(x, y)[2];
-      label_image_out->at(x, y)[0] = RenderEngine::LabelFromColor(color);
-    }
-  }
-
+  render_client_->LoadLabelImage(image_path, label_image_out);
   if (get_params().cleanup) {
     CleanupFrame(scene_path, image_path, get_params().verbose);
   }
