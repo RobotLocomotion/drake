@@ -681,7 +681,7 @@ class TestPlant(unittest.TestCase):
         if T != Expression:
             self.assertTrue(spatial_inertia.IsNaN())
 
-    def test_shape_spatial_inertia_apis(self):
+    def test_geometry_spatial_inertia_apis(self):
         box = Box(1, 2, 3)
         M_BBo_B = CalcSpatialInertia(shape=box, density=2.5)
         self.assertIsInstance(M_BBo_B, SpatialInertia_[float])

@@ -1,4 +1,4 @@
-#include "drake/multibody/tree/shape_mass.h"
+#include "drake/multibody/tree/geometry_spatial_inertia.h"
 
 #include <algorithm>
 #include <filesystem>
