@@ -46,7 +46,9 @@ class IiwaCommandReceiver final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandReceiver)
 
-  explicit IiwaCommandReceiver(int num_joints = kIiwaArmNumJoints);
+  explicit IiwaCommandReceiver(
+      int num_joints = kIiwaArmNumJoints,
+      IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
   ~IiwaCommandReceiver() final;
 
   /// (Advanced.) Copies the current "position_measured" input (or zero if not
@@ -65,13 +67,20 @@ class IiwaCommandReceiver final : public systems::LeafSystem<double> {
   const systems::InputPort<double>& get_position_measured_input_port() const {
     return *position_measured_input_;
   }
+
+  /// @throws std::exception if control_mode does not include position control.
   const systems::OutputPort<double>& get_commanded_position_output_port()
       const {
+    DRAKE_THROW_UNLESS(commanded_position_output_ != nullptr);
     return *commanded_position_output_;
   }
+
+  /// @throws std::exception if control_mode does not include torque control.
   const systems::OutputPort<double>& get_commanded_torque_output_port() const {
+    DRAKE_THROW_UNLESS(commanded_torque_output_ != nullptr);
     return *commanded_torque_output_;
   }
+
   const systems::OutputPort<double>& get_time_output_port() const {
     return *time_output_;
   }
@@ -95,7 +104,8 @@ class IiwaCommandReceiver final : public systems::LeafSystem<double> {
   void CalcTimeOutput(
       const systems::Context<double>&, systems::BasicVector<double>*) const;
 
-  const int num_joints_;
+  const int num_joints_{};
+  const IiwaControlMode control_mode_{IiwaControlMode::kPositionAndTorque};
   const systems::InputPort<double>* message_input_{};
   const systems::InputPort<double>* position_measured_input_{};
   const systems::CacheEntry* position_measured_or_zero_{};
