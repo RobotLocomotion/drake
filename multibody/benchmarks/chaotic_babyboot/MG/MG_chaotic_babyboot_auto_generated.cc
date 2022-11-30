@@ -212,7 +212,7 @@ double  MGIntegrator::KMIntegrator( double y[], double tStart, double* hEntry )
     {
       if( fabs(h=h2) > fabs(mySmallestAllowableStepsize) )  continue;
       static char stepsizeCutMessage[80];
-      sprintf(stepsizeCutMessage, "Error: Stepsize has been cut too many times for variable %d.", errorVarIndex);
+      snprintf(stepsizeCutMessage, 80, "Error: Stepsize has been cut too many times for variable %d.", errorVarIndex);
       errorMessage = stepsizeCutMessage;  break;
     }
 
@@ -227,7 +227,7 @@ double  MGIntegrator::KMIntegrator( double y[], double tStart, double* hEntry )
   if( errorMessage ) AddErrorMessage( errorMessage );
   else AddErrorMessage( "Error: Numerical round-off makes stepsize h too small so (tStart + h == tStart)." );
   static char failureTimeMessage[80];
-  sprintf( failureTimeMessage, "Error: Numerical integration failed at t = %15.8E.", tStart );
+  snprintf( failureTimeMessage, 80, "Error: Numerical integration failed at t = %15.8E.", tStart );
   AddErrorMessage( failureTimeMessage );
 
   MGeqns(tStart, y, f0, true);         // Fill for error display.
