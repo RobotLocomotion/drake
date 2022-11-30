@@ -286,9 +286,12 @@ class QuaternionFloatingJoint final : public Joint<T> {
     get_mutable_mobilizer()->set_random_position_distribution(p_FM);
   }
 
-  /// Sets the random distribution that the orientation of this joint will be
-  /// randomly sampled from. See get_quaternion() for details on the orientation
-  /// representation.
+  /// (Advanced) Sets the random distribution that the orientation of this joint
+  /// will be randomly sampled from. See get_quaternion() for details on the
+  /// orientation representation.
+  /// @note Use caution when setting a quaternion distribution. See
+  /// `set_random_quaternion_distribution_to_uniform()` for the most common case
+  /// of uniformly sampling rotations.
   void set_random_quaternion_distribution(
       const Eigen::Quaternion<symbolic::Expression>& q_FM) {
     get_mutable_mobilizer()->set_random_quaternion_distribution(q_FM);
@@ -338,6 +341,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
   ///   The desired default quaternion of the joint.
   void set_default_quaternion(const Quaternion<double>& q_FM) {
     VectorX<double> default_positions = this->default_positions();
+    // @note we store the quaternion components consistently with
+    // `QuaternionFloatingMobilizer<T>::get_quaternion()`
     default_positions[0] = q_FM.w();
     default_positions[1] = q_FM.x();
     default_positions[2] = q_FM.y();
