@@ -201,7 +201,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return body_frame_;
   }
 
-  /// For a floating body, lock its implicit inboard joint. Its generalized
+  /// For a floating body, lock its inboard joint. Its generalized
   /// velocities will be 0 until it is unlocked. Locking is not yet supported
   /// for continuous-mode systems.
   /// @throws std::exception if this body is not a floating body, or if the
@@ -214,22 +214,14 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     // non-floating bodies.
     if (!is_floating()) {
       throw std::logic_error(fmt::format(
-          "Attempted to call lock() on non-floating body {}", name()));
+          "Attempted to call unlock() on non-floating body {}", name()));
     }
-    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
-        .set_value(true);
-
-    static constexpr int kVelocities = 6;
-    const auto& tree = this->get_parent_tree();
-    const int start_in_v =
-        this->floating_velocities_start() - tree.num_positions();
-    DRAKE_ASSERT(start_in_v >= 0);
-    DRAKE_ASSERT(start_in_v + kVelocities <= tree.num_velocities());
-    tree.GetMutableVelocities(context)
-        .template segment<kVelocities>(start_in_v).setZero();
+    this->get_parent_tree()
+        .get_mobilizer(topology_.inboard_mobilizer)
+        .Lock(context);
   }
 
-  /// For a floating body, unlock its implicit inboard joint. Unlocking is not
+  /// For a floating body, unlock its inboard joint. Unlocking is not
   /// yet supported for continuous-mode systems.
   /// @throws std::exception if this body is not a floating body, or if the
   /// parent model uses continuous state.
@@ -243,14 +235,16 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
       throw std::logic_error(fmt::format(
           "Attempted to call unlock() on non-floating body {}", name()));
     }
-    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
-        .set_value(false);
+    this->get_parent_tree()
+        .get_mobilizer(topology_.inboard_mobilizer)
+        .Unlock(context);
   }
 
   /// @return true if the body is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
-    return context.get_parameters().template get_abstract_parameter<bool>(
-        is_locked_parameter_index_);
+    return this->get_parent_tree()
+        .get_mobilizer(topology_.inboard_mobilizer)
+        .is_locked(context);
   }
 
   /// (Advanced) Returns the index of the node in the underlying tree structure
@@ -259,7 +253,8 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return topology_.body_node;
   }
 
-  /// (Advanced) Returns `true` if `this` body is granted 6-dofs by a Mobilizer.
+  /// (Advanced) Returns `true` if `this` body is granted 6-dofs by a Mobilizer
+  /// and the parent body of this body's associated 6-dof joint is `world`.
   /// @note A floating body is not necessarily modeled with a quaternion
   /// mobilizer, see has_quaternion_dofs(). Alternative options include a space
   /// XYZ parametrization of rotations, see SpaceXYZMobilizer.
@@ -507,16 +502,6 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
 
   /// @}
 
-  // Implementation for MultibodyElement::DoDeclareParameters().
-  void DoDeclareParameters(
-      internal::MultibodyTreeSystem<T>* tree_system) override {
-    // Declare parent classes' parameters
-    MultibodyElement<Body, T, BodyIndex>::DoDeclareParameters(tree_system);
-
-    is_locked_parameter_index_ =
-        this->DeclareAbstractParameter(tree_system, Value<bool>(false));
-  }
-
  private:
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected
   // set of private Body methods.
@@ -558,9 +543,6 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
 
   // The internal bookkeeping topology struct used by MultibodyTree.
   internal::BodyTopology topology_;
-
-  // System parameter index for `this` body's lock state stored in a context.
-  systems::AbstractParameterIndex is_locked_parameter_index_;
 };
 
 /// @cond
