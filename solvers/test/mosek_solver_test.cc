@@ -478,6 +478,13 @@ GTEST_TEST(MosekTest, LPDualSolution3) {
   }
 }
 
+GTEST_TEST(MosekTest, LPDualSolution4) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution4(solver, 1E-8);
+  }
+}
+
 GTEST_TEST(MosekTest, QPDualSolution1) {
   MosekSolver solver;
   if (solver.available()) {
