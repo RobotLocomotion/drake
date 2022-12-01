@@ -594,6 +594,28 @@ void TestLPDualSolution3(const SolverInterface& solver, double tol) {
   }
 }
 
+void TestLPDualSolution4(const SolverInterface& solver, double tol) {
+  unused(tol);
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>();
+  auto constraint1 =
+      prog.AddLinearEqualityConstraint(x(0) + 2 * x(1) + 3 * x(3) == 4);
+  Eigen::Matrix2d A2;
+  A2 << 1, 3, -2, 2;
+  auto constraint2 = prog.AddLinearEqualityConstraint(A2, Eigen::Vector2d(2, 5),
+                                                      x.segment<2>(1));
+  prog.AddLinearCost(x(0) + 5 * x(1) - 7 * x(2) + 3 * x(3));
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, std::nullopt, &result);
+    ASSERT_TRUE(result.is_success());
+    const Eigen::VectorXd dual1 = result.GetDualSolution(constraint1);
+    EXPECT_TRUE(CompareMatrices(dual1, Vector1d(1), tol));
+    const Eigen::VectorXd dual2 = result.GetDualSolution(constraint2);
+    EXPECT_TRUE(CompareMatrices(dual2, Vector2d(-1, -2), tol));
+  }
+}
+
 void TestLPPoorScaling1(const SolverInterface& solver, bool expect_success,
                         double tol,
                         const std::optional<SolverOptions>& options) {

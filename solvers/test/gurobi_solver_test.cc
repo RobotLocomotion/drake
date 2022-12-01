@@ -594,6 +594,11 @@ GTEST_TEST(GurobiTest, LPDualSolution3) {
   TestLPDualSolution3(solver);
 }
 
+GTEST_TEST(GurobiTest, LPDualSolution4) {
+  GurobiSolver solver;
+  TestLPDualSolution4(solver);
+}
+
 GTEST_TEST(GurobiTest, SOCPDualSolution1) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();

@@ -255,8 +255,10 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
 void ParseLinearEqualityConstraint(
     const MathematicalProgram& prog,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
-    int* A_row_count, ScsCone* cone) {
+    int* A_row_count, ScsCone* cone,
+    std::vector<int>* linear_eq_y_start_indices) {
   int num_linear_equality_constraints_rows = 0;
+  linear_eq_y_start_indices->reserve(prog.linear_equality_constraints().size());
   // The linear equality constraint A x = b is converted to
   // A x + s = b. s in zero cone.
   for (const auto& linear_equality_constraint :
@@ -280,6 +282,7 @@ void ParseLinearEqualityConstraint(
     for (int i = 0; i < num_Ai_rows; ++i) {
       b->push_back(linear_equality_constraint.evaluator()->lower_bound()(i));
     }
+    linear_eq_y_start_indices->push_back(*A_row_count);
     *A_row_count += num_Ai_rows;
     num_linear_equality_constraints_rows += num_Ai_rows;
   }
@@ -720,6 +723,7 @@ void SetDualSolution(
     const std::vector<std::vector<std::pair<int, int>>>& bbcon_dual_indices,
     const std::vector<std::vector<std::pair<int, int>>>&
         linear_constraint_dual_indices,
+    const std::vector<int>& linear_eq_y_start_indices,
     const std::vector<int>& lorentz_cone_y_start_indices,
     const std::vector<int>& rotated_lorentz_cone_y_start_indices,
     MathematicalProgramResult* result) {
@@ -762,6 +766,25 @@ void SetDualSolution(
       }
     }
     result->set_dual_solution(prog.linear_constraints()[i], lin_con_dual);
+  }
+  for (int i = 0;
+       i < static_cast<int>(prog.linear_equality_constraints().size()); ++i) {
+    // Notice that we have a negative sign in front of y.
+    // This is because in SCS, for a problem with the linear equality constraint
+    // min cᵀx
+    // s.t A*x=b
+    // SCS formulates the dual problem as
+    // max -bᵀy
+    // s.t Aᵀy = -c
+    // Note that there is a negation sign before b and c in SCS dual problem,
+    // which is different from the standard formulation (no negation sign).
+    // Hence the dual variable y for the linear equality constraint is the
+    // negation of the shadow price.
+    result->set_dual_solution(prog.linear_equality_constraints()[i],
+                              -y.segment(linear_eq_y_start_indices[i],
+                                         prog.linear_equality_constraints()[i]
+                                             .evaluator()
+                                             ->num_constraints()));
   }
   for (int i = 0; i < static_cast<int>(prog.lorentz_cone_constraints().size());
        ++i) {
@@ -890,7 +913,17 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
   ParseLinearCost(prog, &c, &cost_constant);
 
   // Parse linear equality constraint
-  ParseLinearEqualityConstraint(prog, &A_triplets, &b, &A_row_count, cone);
+  // linear_eq_y_start_indices[i] is the starting index of the dual
+  // variable for the constraint prog.linear_equality_constraints()[i]. Namely
+  // y[linear_eq_y_start_indices[i]:
+  // linear_eq_y_start_indices[i] +
+  // prog.linear_equality_constraints()[i].evaluator()->num_constraints] are the
+  // dual variables for  the linear equality constraint
+  // prog.linear_equality_constraint()(i), where y is the vector containing all
+  // dual variables.
+  std::vector<int> linear_eq_y_start_indices;
+  ParseLinearEqualityConstraint(prog, &A_triplets, &b, &A_row_count, cone,
+                                &linear_eq_y_start_indices);
 
   // Parse bounding box constraint
   // bbcon_dual_indices[i][j][0]/bbcon_dual_indices[i][j][1] is the dual
@@ -997,7 +1030,8 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
       (Eigen::Map<VectorX<scs_float>>(scs_sol->x, prog.num_vars()))
           .cast<double>());
   SetDualSolution(prog, solver_details.y, bbcon_dual_indices,
-                  linear_constraint_dual_indices, lorentz_cone_y_start_indices,
+                  linear_constraint_dual_indices, linear_eq_y_start_indices,
+                  lorentz_cone_y_start_indices,
                   rotated_lorentz_cone_y_start_indices, result);
   // Set the solution_result enum and the optimal cost based on SCS status.
   if (solver_details.scs_status == SCS_SOLVED ||
