@@ -276,7 +276,7 @@ TEST_F(QuaternionFloatingJointTest, DefaultAngles) {
   const Vector7d lower_limit_angles = Vector7d::Constant(kPositionLowerLimit);
   const Vector7d upper_limit_angles = Vector7d::Constant(kPositionUpperLimit);
 
-  const Vector7d default_angles = Vector7d::Zero();
+  const Vector7d default_angles = Vector7d::Identity();
 
   const Vector7d new_default_angles =
       Vector7d::Constant(kPositionNonZeroDefault);
@@ -300,6 +300,46 @@ TEST_F(QuaternionFloatingJointTest, DefaultAngles) {
       mutable_joint_->set_default_positions(out_of_bounds_low_angles));
   EXPECT_NO_THROW(
       mutable_joint_->set_default_positions(out_of_bounds_high_angles));
+}
+
+TEST_F(QuaternionFloatingJointTest, RandomState) {
+  RandomGenerator generator;
+  std::uniform_real_distribution<symbolic::Expression> uniform;
+
+  // Default behavior is to set to zero.
+  tree().SetRandomState(*context_, &context_->get_mutable_state(),
+                           &generator);
+  EXPECT_TRUE(joint_->get_pose(*context_).IsExactlyIdentity());
+  // Set the position distribution to arbitrary values.
+  Eigen::Matrix<symbolic::Expression, 3, 1> position_distribution;
+  for (int i = 0; i < 3; i++) {
+    position_distribution[i] = uniform(generator) + i + 1.0;
+  }
+
+  mutable_joint_->set_random_quaternion_distribution(
+      math::UniformlyRandomQuaternion<symbolic::Expression>(&generator));
+  mutable_joint_->set_random_position_distribution(position_distribution);
+  tree().SetRandomState(*context_, &context_->get_mutable_state(),
+                           &generator);
+  // We expect arbitrary non-zero values for the random state.
+  EXPECT_FALSE(joint_->get_pose(*context_).IsExactlyIdentity());
+
+  // Set position and quaternion distributions back to 0.
+  mutable_joint_->set_random_quaternion_distribution(
+      Eigen::Quaternion<symbolic::Expression>::Identity());
+  mutable_joint_->set_random_position_distribution(
+      Eigen::Matrix<symbolic::Expression, 3, 1>::Zero());
+  tree().SetRandomState(*context_, &context_->get_mutable_state(),
+                           &generator);
+  // We expect zero values for pose.
+  EXPECT_TRUE(joint_->get_pose(*context_).IsExactlyIdentity());
+
+  // Set the quaternion distribution using built in uniform sampling.
+  mutable_joint_->set_random_quaternion_distribution_to_uniform();
+  tree().SetRandomState(*context_, &context_->get_mutable_state(),
+                           &generator);
+  // We expect arbitrary non-zero pose.
+  EXPECT_FALSE(joint_->get_pose(*context_).IsExactlyIdentity());
 }
 
 }  // namespace

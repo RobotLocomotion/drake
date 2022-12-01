@@ -34,9 +34,6 @@ class QuaternionFloatingJoint final : public Joint<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingJoint)
 
-  template <typename Scalar>
-  using Context = systems::Context<Scalar>;
-
   /// The name for this Joint type.  It resolves to "quaternion_floating".
   static const char kTypeName[];
 
@@ -92,6 +89,9 @@ class QuaternionFloatingJoint final : public Joint<T> {
                  Vector6d::Constant(std::numeric_limits<double>::infinity())) {
     DRAKE_THROW_UNLESS(angular_damping >= 0);
     DRAKE_THROW_UNLESS(translational_damping >= 0);
+    // Parent constructor sets all default positions to 0.
+    // Adjust quaternion default to identity.
+    this->set_default_quaternion(Quaternion<double>::Identity());
   }
 
   /// Returns the name of this joint type: "quaternion_floating"
@@ -289,9 +289,10 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// (Advanced) Sets the random distribution that the orientation of this joint
   /// will be randomly sampled from. See get_quaternion() for details on the
   /// orientation representation.
-  /// @note Use caution when setting a quaternion distribution. See
-  /// `set_random_quaternion_distribution_to_uniform()` for the most common case
-  /// of uniformly sampling rotations.
+  /// @note Use caution when setting a quaternion distribution. A naive uniform
+  /// sampling of each component will not lead to a uniform sampling of the unit
+  /// sphere. See `set_random_quaternion_distribution_to_uniform()` for the most
+  /// common case of uniformly sampling rotations.
   void set_random_quaternion_distribution(
       const Eigen::Quaternion<symbolic::Expression>& q_FM) {
     get_mutable_mobilizer()->set_random_quaternion_distribution(q_FM);
@@ -380,30 +381,18 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// Adding forces per-dof makes no physical sense. Therefore, this method
   /// throws an exception if invoked.
   void DoAddInOneForce(const systems::Context<T>&, int, const T&,
-                       MultibodyForces<T>*) const override {
-    throw std::logic_error(
-        "QuaternionFloating joints do not allow applying forces to individual "
-        "degrees of freedom.");
-  }
+                       MultibodyForces<T>*) const override;
 
   /// Joint<T> override called through public NVI, Joint::AddInDamping().
   /// Therefore arguments were already checked to be valid.
   /// This method adds into the translational component of `forces` for `this`
   /// joint a dissipative force according to the viscous law `f = -d⋅v`, with d
-  /// the damping coordinate (see translational_damping()). This method also
+  /// the damping coefficient (see translational_damping()). This method also
   /// adds into the angular component of `forces` for `this` joint a dissipative
   /// torque according to the viscous law `τ = -d⋅ω`, with d the damping
   /// coefficient (see angular_damping()).
   void DoAddInDamping(const systems::Context<T>& context,
-                      MultibodyForces<T>* forces) const override {
-    Eigen::Ref<VectorX<T>> t_BMo_F =
-        get_mobilizer().get_mutable_generalized_forces_from_array(
-            &forces->mutable_generalized_forces());
-    const Vector3<T>& w_FM = get_angular_velocity(context);
-    const Vector3<T>& v_FM = get_translational_velocity(context);
-    t_BMo_F.template head<3>() -= angular_damping() * w_FM;
-    t_BMo_F.template tail<3>() -= translational_damping() * v_FM;
-  }
+                      MultibodyForces<T>* forces) const override;
 
  private:
   int do_get_velocity_start() const override {

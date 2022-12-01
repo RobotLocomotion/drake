@@ -68,6 +68,27 @@ QuaternionFloatingJoint<T>::MakeImplementationBlueprint() const {
   return blue_print;
 }
 
+template <typename T>
+void QuaternionFloatingJoint<T>::DoAddInOneForce(const systems::Context<T>&,
+                                                 int, const T&,
+                                                 MultibodyForces<T>*) const {
+  throw std::logic_error(
+      "QuaternionFloating joints do not allow applying forces to individual "
+      "degrees of freedom.");
+}
+
+template <typename T>
+void QuaternionFloatingJoint<T>::DoAddInDamping(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  Eigen::Ref<VectorX<T>> t_BMo_F =
+      get_mobilizer().get_mutable_generalized_forces_from_array(
+          &forces->mutable_generalized_forces());
+  const Vector3<T>& w_FM = get_angular_velocity(context);
+  const Vector3<T>& v_FM = get_translational_velocity(context);
+  t_BMo_F.template head<3>() -= angular_damping() * w_FM;
+  t_BMo_F.template tail<3>() -= translational_damping() * v_FM;
+}
+
 }  // namespace multibody
 }  // namespace drake
 
