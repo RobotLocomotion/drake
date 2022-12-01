@@ -1960,6 +1960,28 @@ void MultibodyPlant<T>::AddAppliedExternalGeneralizedForces(
   }
 }
 
+template <typename T>
+void MultibodyPlant<T>::CalcGeneralizedForces(
+    const systems::Context<T>& context, const MultibodyForces<T>& forces,
+    VectorX<T>* generalized_forces) const {
+  this->ValidateContext(context);
+  DRAKE_THROW_UNLESS(forces.CheckHasRightSizeForModel(*this));
+  DRAKE_THROW_UNLESS(generalized_forces != nullptr);
+  generalized_forces->resize(num_velocities());
+  // Heap allocate the necessary workspace.
+  // TODO(amcastro-tri): Get rid of these heap allocations.
+  std::vector<SpatialAcceleration<T>> A_scratch(num_bodies());
+  std::vector<SpatialForce<T>> F_scratch(num_bodies());
+  const VectorX<T> zero_vdot = VectorX<T>::Zero(num_velocities());
+  // TODO(amcastro-tri): For performance, update this implementation to exclude
+  // terms involving accelerations.
+  const bool zero_velocities = true;
+  internal_tree().CalcInverseDynamics(
+      context, zero_vdot, forces.body_forces(), forces.generalized_forces(),
+      zero_velocities, &A_scratch, &F_scratch, generalized_forces);
+  *generalized_forces = -*generalized_forces;
+}
+
 template<typename T>
 void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
