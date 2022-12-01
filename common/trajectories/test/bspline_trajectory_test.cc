@@ -191,6 +191,16 @@ TYPED_TEST(BsplineTrajectoryTests, EvalDerivativeTest) {
       EXPECT_TRUE(CompareMatrices(derivative, expected_derivative, tolerance));
     }
   }
+
+  // Verify that evaluating outside the time interval gets clamped.
+  for (int o = 0; o < trajectory.basis().order(); ++o) {
+    EXPECT_TRUE(CompareMatrices(
+        trajectory.EvalDerivative(trajectory.start_time() - 1, o),
+        trajectory.EvalDerivative(trajectory.start_time(), o)));
+    EXPECT_TRUE(
+        CompareMatrices(trajectory.EvalDerivative(trajectory.end_time() + 1, o),
+                        trajectory.EvalDerivative(trajectory.end_time(), o)));
+  }
 }
 
 // Verifies that CopyBlock() works as expected.
