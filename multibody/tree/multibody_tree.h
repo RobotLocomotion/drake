@@ -2606,7 +2606,7 @@ class MultibodyTree {
   // called at Finalize().
   // The world body is special in that it is the only body in the model with no
   // mobilizer, even after Finalize().
-  void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
+  void CreateJointImplementations();
 
   // For a frame Fp that is fixed/welded to a frame_F, this method computes
   // A_AFp_E, Fp's spatial acceleration in a body_A, expressed in a frame_E.

@@ -3876,6 +3876,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<BodyIndex> GetBodiesKinematicallyAffectedBy(
       const std::vector<JointIndex>& joint_indexes) const;
 
+  /// Returns the unique joint for which joint.child_body() == `body`.
+  const Joint<T>& GetParentJoint(const Body<T>& body) const;
+
   /// Returns the number of joints in the model.
   /// @see AddJoint().
   int num_joints() const {
