@@ -28,6 +28,7 @@
 #include "drake/multibody/plant/make_discrete_update_manager.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 
@@ -840,6 +841,17 @@ template<typename T>
 void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
+
+  // Add free joints created by tree's finalize to the multibody graph.
+  // Until the call to Finalize(), all joints are added through calls to
+  // MultibodyPlant APIs and therefore registered in the graph. This accounts
+  // for the QuaternionFloatingJoint added for each free body that was not
+  // explicitly given a parent joint. It is important that this loop happens
+  // AFTER finalizing the internal tree.
+  for (JointIndex i{multibody_graph_.num_joints()}; i < num_joints(); ++i) {
+    RegisterJointInGraph(get_joint(i));
+  }
+
   if (geometry_source_is_registered()) {
     ApplyDefaultCollisionFilters();
     ExcludeCollisionsWithVisualGeometry();
@@ -1059,6 +1071,7 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
     const Body<T>& child = joint.child_body();
     const Body<T>& parent = joint.parent_body();
     if (parent.index() == world_index()) continue;
+    if (joint.type_name() == QuaternionFloatingJoint<T>::kTypeName) continue;
     std::optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
     std::optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
 
@@ -2231,15 +2244,6 @@ void MultibodyPlant<T>::CalcJointLockingIndices(
     }
   }
 
-  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
-    const Body<T>& body = get_body(body_index);
-    if (body.is_floating() && !body.is_locked(context)) {
-      for (int k = 0; k < 6; ++k) {
-        indices[unlocked_cursor++] =
-            body.floating_velocities_start() - num_positions() + k;
-      }
-    }
-  }
   DRAKE_ASSERT(unlocked_cursor <= num_velocities());
 
   // Use size to indicate exactly how many velocities are unlocked.

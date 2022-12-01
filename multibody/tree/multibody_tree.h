@@ -690,6 +690,11 @@ class MultibodyTree {
     return *owned_mobilizers_[mobilizer_index];
   }
 
+  Mobilizer<T>& get_mutable_mobilizer(MobilizerIndex mobilizer_index) {
+    DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
+    return *owned_mobilizers_[mobilizer_index];
+  }
+
   // See MultibodyPlant method.
   template <template <typename> class ForceElementType = ForceElement>
   const ForceElementType<T>& GetForceElement(
@@ -2601,7 +2606,7 @@ class MultibodyTree {
   // called at Finalize().
   // The world body is special in that it is the only body in the model with no
   // mobilizer, even after Finalize().
-  void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
+  void CreateJointImplementations();
 
   // For a frame Fp that is fixed/welded to a frame_F, this method computes
   // A_AFp_E, Fp's spatial acceleration in a body_A, expressed in a frame_E.
