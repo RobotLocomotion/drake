@@ -1065,7 +1065,8 @@ template <typename T>
 void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
   DRAKE_DEMAND(geometry_source_is_registered());
   // Disallow collisions between adjacent bodies. Adjacency is implied by the
-  // existence of a joint between bodies.
+  // existence of a joint between bodies, except in the case of 6-dof joints or
+  // joints in which the parent body is `world`.
   for (JointIndex j{0}; j < num_joints(); ++j) {
     const Joint<T>& joint = get_joint(j);
     const Body<T>& child = joint.child_body();
