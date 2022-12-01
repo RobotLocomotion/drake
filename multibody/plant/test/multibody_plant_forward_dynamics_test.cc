@@ -175,7 +175,7 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
     const Joint<double>& joint = plant.get_joint(joint_index);
     // This model only has weld, revolute, and floating joints. Set the revolute
     // joints to an arbitrary angle.
-    if (joint.num_velocities() == 1) {
+    if (joint.type_name() == RevoluteJoint<double>::kTypeName) {
       const RevoluteJoint<double>& revolute_joint =
           dynamic_cast<const RevoluteJoint<double>&>(joint);
       // Arbitrary non-zero angle.

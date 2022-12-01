@@ -86,8 +86,9 @@ class KukaIiwaModelTests : public ::testing::Test {
   // velocity of the base is set arbitrarily to a non-identity pose and non-zero
   // spatial velocity.
   void SetState(const VectorX<double>& x_joints) {
-    EXPECT_EQ(plant_->num_joints(), kNumJoints + 1);  // + 1 for floating joint
-    for (JointIndex joint_index(0); joint_index < kNumJoints; ++joint_index) {
+    EXPECT_EQ(plant_->num_joints(), kNumJoints);
+    // The last joint is the free body's joint so we skip it.
+    for (JointIndex joint_index(0); joint_index < kNumJoints - 1; ++joint_index) {
       const RevoluteJoint<double>& joint =
           dynamic_cast<const RevoluteJoint<double>&>(
               plant_->get_joint(joint_index));
@@ -138,7 +139,7 @@ class KukaIiwaModelTests : public ::testing::Test {
 
  protected:
   // Problem sizes.
-  const int kNumJoints = 7;
+  const int kNumJoints = 8;
   const int kNumPositions = 14;
   const int kNumVelocities = 13;
 

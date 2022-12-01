@@ -617,7 +617,7 @@ void MultibodyTree<T>::SetVelocitiesInArray(
 template <typename T>
 void MultibodyTree<T>::CreateJointImplementations() {
   DRAKE_DEMAND(!topology_is_valid());
-  // Create Joint objects's implementation. Joints are implemented using a
+  // Create Joint objects' implementation. Joints are implemented using a
   // combination of MultibodyTree's building blocks such as Body, Mobilizer,
   // ForceElement and Constraint. For a same physical Joint, several
   // implementations could be created (for instance, a Constraint instead of a
@@ -629,15 +629,15 @@ void MultibodyTree<T>::CreateJointImplementations() {
   // implementation will therefore change the tree topology. Since topology
   // changes are NOT allowed after Finalize(), joint implementations MUST be
   // assembled BEFORE the tree's topology is finalized.
-  int num_joints_pre_floating_joints = num_joints();
+  const int num_joints_pre_floating_joints = num_joints();
   joint_to_mobilizer_.resize(num_joints_pre_floating_joints);
   for (int i = 0; i < num_joints_pre_floating_joints; ++i) {
     auto& joint = owned_joints_[i];
     std::vector<Mobilizer<T>*> mobilizers =
         internal::JointImplementationBuilder<T>::Build(joint.get(), this);
-    // Below we assume a single mobilizer per joint, the sane thing to do.
-    // TODO(amcastro-tri): clean up the JointImplementationBuilder so that this
-    // assumption (one mobilizer per joint) is set in stone once and for all.
+    // Below we assume a single mobilizer per joint, which is  true
+    // for all joint types currently implemented. This may change in the future
+    // when closed topologies are supported.
     DRAKE_DEMAND(mobilizers.size() == 1);
     for (Mobilizer<T>* mobilizer : mobilizers) {
       mobilizer->set_model_instance(joint->model_instance());
@@ -645,9 +645,11 @@ void MultibodyTree<T>::CreateJointImplementations() {
       joint_to_mobilizer_[joint->index()] = mobilizer->index();
     }
   }
-  // It is VERY important to add quaternions if needed only AFTER joints had a
-  // chance to get implemented with mobilizers. This is because joints's
-  // implementations change the topology of the tree. Therefore, do not change
+  // It is VERY important to add joints to free bodies only AFTER joints had a
+  // chance to get implemented with mobilizers. This is because above added
+  // joints' implementations change the topology of the tree. After all joints
+  // above are implemented, any body remaining with no valid inboard mobilizer
+  // will get a 6-dof joint with world as its parent. Therefore, do not change
   // this order!
 
   // Skip the world.
@@ -665,9 +667,9 @@ void MultibodyTree<T>::CreateJointImplementations() {
     auto& joint = owned_joints_[i];
     std::vector<Mobilizer<T>*> mobilizers =
         internal::JointImplementationBuilder<T>::Build(joint.get(), this);
-    // Below we assume a single mobilizer per joint, the sane thing to do.
-    // TODO(amcastro-tri): clean up the JointImplementationBuilder so that this
-    // assumption (one mobilizer per joint) is set in stone once and for all.
+    // Below we assume a single mobilizer per joint, which is  true
+    // for all joint types currently implemented. This may change in the future
+    // when closed topologies are supported.
     DRAKE_DEMAND(mobilizers.size() == 1);
     for (Mobilizer<T>* mobilizer : mobilizers) {
       mobilizer->set_model_instance(joint->model_instance());
