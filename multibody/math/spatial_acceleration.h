@@ -185,9 +185,10 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
                                   a_MBo_E + alpha_MB_E.cross(p_BoCo_E));
   }
 
-  /// Given a frame C's spatial acceleration measured in a frame B, and
-  /// frame B's spatial acceleration measured in a frame M, returns frame C's
-  /// spatial acceleration measured in frame M.
+  /// Compose `this` spatial acceleration (measured in some frame M) with the
+  /// spatial acceleration of another frame to form the 𝐨𝐭𝐡𝐞𝐫 frame's spatial
+  /// acceleration in frame M. Herein, `this` is the spatial acceleration of a
+  /// frame (designated B) in frame M and the 𝐨𝐭𝐡𝐞𝐫 frame is designated C.
   /// @param[in] position_of_moving_frame which is the position vector p_BoCo_E
   /// (from frame B's origin Bo to frame C's origin Co), expressed in frame E.
   /// p_BoCo_E must have the same expressed-in frame E as `this`, where `this`
