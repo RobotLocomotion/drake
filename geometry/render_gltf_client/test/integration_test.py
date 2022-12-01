@@ -33,11 +33,15 @@ from PIL import Image
 COLOR_PIXEL_THRESHOLD = 20  # RGB pixel value tolerance.
 DEPTH_PIXEL_THRESHOLD = 0.001  # Depth measurement tolerance in meters.
 LABEL_PIXEL_THRESHOLD = 0
-INVALID_PIXEL_FRACTION = 0.5
+INVALID_PIXEL_FRACTION = 0.2
 
 
 class TestIntegration(unittest.TestCase):
     def setUp(self):
+        # Allow the testing log to print the nested dictionary for debugging
+        # when the glTF test fails.
+        self.maxDiff = None
+
         self.runfiles = CreateRunfiles()
         self.tmp_dir = os.environ.get("TEST_TMPDIR", "/tmp")
 
@@ -53,7 +57,9 @@ class TestIntegration(unittest.TestCase):
             "--port=0",
         ]
         self.server_proc = subprocess.Popen(
-            server_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            server_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
 
         # Wait to hear which port it's using.
@@ -116,52 +122,99 @@ class TestIntegration(unittest.TestCase):
             image_sets.append(image_set)
         return image_sets
 
-    def get_gltf_paths(self, gltf_file_dir):
-        """Returns one glTF file for each image type for inspection."""
-        return [
-            f"{gltf_file_dir}/{1:019d}-color.gltf",
-            f"{gltf_file_dir}/{2:019d}-depth.gltf",
-            f"{gltf_file_dir}/{3:019d}-label.gltf",
-        ]
+    def get_gltf_path_pairs(self, gltf_file_dir):
+        """Returns pairs of generated and ground truth glTF files for each
+        image type for inspection.
+        """
+        gltf_path_pairs = []
+        for index, image_type in enumerate(["color", "depth", "label"]):
+            gltf_path = f"{gltf_file_dir}/{index+1:019d}-{image_type}.gltf"
+            ground_truth_gltf = self.runfiles.Rlocation(
+                "drake/geometry/render_gltf_client/test/"
+                f"test_{image_type}_scene.gltf"
+            )
+            gltf_path_pairs.append((gltf_path, ground_truth_gltf))
+        return gltf_path_pairs
 
     def assert_error_fraction_less(self, image_diff, fraction):
         image_diff_fraction = np.count_nonzero(image_diff) / image_diff.size
         self.assertLess(image_diff_fraction, fraction)
 
-    def _fuzz_irrelevant_data(self, gltf, is_color_image):
-        """Replaces irrelevant entries and returns the processed glTF dict for
-        comparison.
+    _REPLACED = {
+        "bufferView": "bufferViews",
+        "camera": "cameras",
+        "index": "textures",
+        "indices": "accessors",
+        "material": "materials",
+        "mesh": "meshes",
+        "sampler": "samplers",
+        "source": "images",
+        "POSITION": "accessors",
+        "TEXCOORD_0": "accessors",
+    }
+    """A map from an object property containing an index value to the name of
+    the array that contains the full definition."""
+
+    _REMOVED = ["buffer", "name"]
+    """The nodes that we'll simply remove.  We don't want the test to even
+    consider them."""
+
+    @staticmethod
+    def _traverse_and_mutate(gltf, entry):
+        """Walk the tree rooted at `entry` and replace entries found in
+        _REPLACED with the explicit tree referenced."""
+        entry_type = type(entry)
+        if entry_type == dict:
+            for to_remove in TestIntegration._REMOVED:
+                entry.pop(to_remove, None)
+            for k, v in entry.items():
+                # Replace the index with the actual referenced data structure.
+                if k in TestIntegration._REPLACED.keys():
+                    entry[k] = gltf[TestIntegration._REPLACED[k]][v]
+                TestIntegration._traverse_and_mutate(gltf, entry[k])
+        elif entry_type == list:
+            # If the list contains only numeric numbers, round floating values
+            # till 12 decimal places due to the precision differences across
+            # platforms.
+            if all(isinstance(x, (int, float)) for x in entry):
+                for i in range(len(entry)):
+                    entry[i] = round(entry[i], 12)
+            elif not all(isinstance(x, str) for x in entry):
+                for item in entry:
+                    TestIntegration._traverse_and_mutate(gltf, item)
+        # Everything else is something that doesn't need normalization.
+
+    @staticmethod
+    def _normalize_for_compare(gltf):
+        """Creates an alternative gltf dictionary from `gltf` by normalizing it
+        for platform-independent comparisons.  Most of the normalization takes
+        place during the recursive traversal.  Normalization includes:
+            - Elimination of nodes outside the scope of this test (see
+              _REMOVED).
+            - Replacing indices to referenced items with the full specification
+              (eliminating dependencies on the orders those indexed items would
+              appear in their lists).
+            - Rounding arrays of numeric values (setting consistent precision
+              for floating-point comparison).
         """
         result = copy.deepcopy(gltf)
 
-        # These two entries encode the exact texture information and are
-        # ignored for all image types.
-        for entry in ["buffers", "bufferViews"]:
-            result[entry] = "IGNORED"
+        # We're not going to compare any of the raw data in `buffers``.
+        result.pop("buffers", None)
 
-        # These entries contain basic material properties, e.g., RGBA, and are
-        # only relevant for color image comparison.
-        if not is_color_image:
-            for entry in [
-                "accessors",
-                "images",
-                "materials",
-                "samplers",
-                "textures",
-            ]:
-                result[entry] = "IGNORED"
+        TestIntegration._traverse_and_mutate(result, result["nodes"])
         return result
 
-    def _check_one_gltf(self, gltf, ground_truth_gltf, is_color_image):
-        actual = self._fuzz_irrelevant_data(gltf, is_color_image)
-        expected = self._fuzz_irrelevant_data(
-            ground_truth_gltf, is_color_image
-        )
-        # Check the glTF-related section in README for some troubleshooting
-        # tips if this test failed.
-        self.assertDictEqual(expected, actual)
+    def _check_one_gltf(self, gltf, ground_truth_gltf):
+        actual = self._normalize_for_compare(gltf)
+        expected = self._normalize_for_compare(ground_truth_gltf)
 
-    @unittest.skipIf("darwin" in sys.platform, "Broken on macOS")
+        for entry in ["scene", "scenes", "asset"]:
+            self.assertEqual(actual[entry], expected[entry])
+        # The `nodes` entry has the rest of the information after the
+        # normalization, e.g., meshes, cameras, materials, accessors, etc.
+        self.assertCountEqual(actual["nodes"], expected["nodes"])
+
     def test_integration(self):
         """Quantitatively compares the images rendered by RenderEngineVtk and
         RenderEngineGltfClient via a fully exercised RPC pipeline.
@@ -207,17 +260,12 @@ class TestIntegration(unittest.TestCase):
             )
             self.assert_error_fraction_less(label_diff, INVALID_PIXEL_FRACTION)
 
-    @unittest.skipIf("darwin" in sys.platform, "Broken on macOS")
     def test_gltf_conversion(self):
         """Checks that the fundamental structure of the generated glTF files is
         preserved.  The comparison of the exact texture information is not in
         the test's scope and is covered in the integration test above.
         """
         result = self.run_render_client("client", cleanup=False)
-
-        ground_truth_gltf_path = self.runfiles.Rlocation(
-            "drake/geometry/render_gltf_client/test/ground_truth.gltf"
-        )
 
         # Scrape the directory for the glTF files.
         gltf_file_dir = None
@@ -231,13 +279,13 @@ class TestIntegration(unittest.TestCase):
                 break
         self.assertIsNotNone(gltf_file_dir)
 
-        with open(ground_truth_gltf_path, "r") as gt:
-            ground_truth_gltf = json.load(gt)
-
         # Iterate through each gltf file to compare against the ground truth.
-        for gltf_path in self.get_gltf_paths(gltf_file_dir):
-            is_color_image = "color.gltf" in gltf_path
+        for gltf_path, ground_truth_gltf_path in self.get_gltf_path_pairs(
+            gltf_file_dir
+        ):
             with open(gltf_path, "r") as f:
                 gltf = json.load(f)
+            with open(ground_truth_gltf_path, "r") as g:
+                ground_truth_gltf = json.load(g)
             with self.subTest(gltf_path=os.path.basename(gltf_path)):
-                self._check_one_gltf(gltf, ground_truth_gltf, is_color_image)
+                self._check_one_gltf(gltf, ground_truth_gltf)
