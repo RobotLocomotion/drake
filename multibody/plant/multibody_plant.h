@@ -3056,6 +3056,31 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcGravityGeneralizedForces(context);
   }
 
+  /// Computes the generalized forces result of a set of MultibodyForces applied
+  /// to this model.
+  ///
+  /// MultibodyForces store applied forces as both generalized forces τₐₚₚ and
+  /// spatial forces F on each body, refer to documentation in MultibodyForces
+  /// for details. Users of MultibodyForces will use
+  /// MultibodyForces::mutable_generalized_forces() to mutate the stored
+  /// generalized forces directly and will use Body::AddInForceInWorld() to
+  /// append spatial forces.
+  ///
+  /// For a given set of forces stored as MultibodyForces, this method will
+  /// compute the total generalized forces on this model. More precisely, if
+  /// J_WBo is the Jacobian (with respect to velocities) for this model,
+  /// including all bodies, then this method computes: <pre>
+  ///   τ = τₐₚₚ + J_Bo⋅F
+  /// </pre>
+  ///
+  /// @throws std::exception if `forces` is null or not compatible with this
+  ///   model, per MultibodyForces::CheckInvariants().
+  /// @throws std::exception if `generalized_forces` is a valid non-null
+  /// pointer.
+  void CalcGeneralizedForces(const systems::Context<T>& context,
+                             const MultibodyForces<T>& forces,
+                             VectorX<T>* generalized_forces) const;
+
   // Preserve access to base overload from this class.
   using systems::System<T>::MapVelocityToQDot;
 

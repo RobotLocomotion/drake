@@ -8,6 +8,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -17,6 +18,7 @@
 namespace drake {
 
 using Eigen::VectorXd;
+using math::RigidTransform;
 using multibody::Parser;
 using systems::ConstantVectorSource;
 using systems::Context;
@@ -122,11 +124,11 @@ class ExternallyAppliedForcesTest : public ::testing::Test {
 
     // Add the system that applies inverse gravitational forces to the link
     // endpoints.
-    auto acrobot_gravity_compensator =
+    acrobot_gravity_compensator_ =
         builder.AddSystem<AcrobotGravityCompensator>(plant_);
 
     // Connect the system to the MBP.
-    builder.Connect(acrobot_gravity_compensator->get_output_port(0),
+    builder.Connect(acrobot_gravity_compensator_->get_output_port(0),
                     plant_->get_applied_spatial_force_input_port());
     auto zero_source =
         builder.AddSystem<ConstantVectorSource<double>>(Vector1<double>(0));
@@ -145,6 +147,7 @@ class ExternallyAppliedForcesTest : public ::testing::Test {
     plant_->SetPositions(&acrobot_context, q);
   }
   MultibodyPlant<double>* plant_{nullptr};
+  AcrobotGravityCompensator* acrobot_gravity_compensator_{nullptr};
   std::unique_ptr<systems::Diagram<double>> diagram_;
   std::unique_ptr<systems::Context<double>> context_;
 };
@@ -182,6 +185,59 @@ TEST_F(ExternallyAppliedForcesTest, DiscretePlant) {
   const double eps = 100 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(delta_x, VectorXd::Zero(4), eps,
                               MatrixCompareType::absolute));
+}
+
+TEST_F(ExternallyAppliedForcesTest, CalcGeneralizedForcesDueToMultibodyForces) {
+  // N.B. Whether the model is discrete or continuous is irrelevant. In this
+  // case we arbitrarily chose to use a continuous model.
+  MakePlantWithGravityCompensator(0.0);
+
+  const Context<double>& plant_context =
+      diagram_->GetSubsystemContext(*plant_, *context_);
+  const Context<double>& compensator_context =
+      diagram_->GetSubsystemContext(*acrobot_gravity_compensator_, *context_);
+  const auto& externally_applied_spatial_forces =
+      acrobot_gravity_compensator_->get_output_port(0)
+          .Eval<std::vector<ExternallyAppliedSpatialForce<double>>>(
+              compensator_context);
+
+  MultibodyForces<double> forces(*plant_);
+  for (const ExternallyAppliedSpatialForce<double>& a_force :
+       externally_applied_spatial_forces) {
+    const Body<double>& body = plant_->get_body(a_force.body_index);
+
+    // Get the pose for this body in the world frame.
+    const RigidTransform<double>& X_WB = body.EvalPoseInWorld(plant_context);
+
+    // Get the position vector from the body origin (Bo) to the point of
+    // force application (Bq), expressed in the world frame (W).
+    const Vector3<double> p_BoBq_W = X_WB.rotation() * a_force.p_BoBq_B;
+
+    // Shift the spatial force from Bq to Bo.
+    const SpatialForce<double> F_Bo_W = a_force.F_Bq_W.Shift(-p_BoBq_W);
+
+    // Add contribution.
+    body.AddInForceInWorld(plant_context, F_Bo_W, &forces);
+  }
+
+  // For completeness, we will add an arbitrary set of generalized forces.
+  const VectorX<double> tau_external =
+      (VectorX<double>(2) << 1.4, -3.14).finished();
+  forces.mutable_generalized_forces() = tau_external;
+
+  // Generalized forces result of applying "forces".
+  VectorX<double> generalized_forces(plant_->num_velocities());
+  plant_->CalcGeneralizedForces(plant_context, forces, &generalized_forces);
+
+  // We expect the total generalized forces to be the result of the generalized
+  // forces from the gravity compensator, which balance gravity (minus sign),
+  // and the externally applied generalized forces.
+  const VectorX<double> expected_generalized_forces =
+      -plant_->CalcGravityGeneralizedForces(plant_context) + tau_external;
+
+  const double tolerance = 5.0 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(generalized_forces, expected_generalized_forces,
+                              tolerance, MatrixCompareType::relative));
 }
 
 }  // namespace
