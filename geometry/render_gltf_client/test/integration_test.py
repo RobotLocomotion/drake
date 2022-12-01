@@ -33,7 +33,7 @@ from PIL import Image
 COLOR_PIXEL_THRESHOLD = 20  # RGB pixel value tolerance.
 DEPTH_PIXEL_THRESHOLD = 0.001  # Depth measurement tolerance in meters.
 LABEL_PIXEL_THRESHOLD = 0
-INVALID_PIXEL_FRACTION = 0.5
+INVALID_PIXEL_FRACTION = 0.2
 
 
 class TestIntegration(unittest.TestCase):
@@ -53,7 +53,9 @@ class TestIntegration(unittest.TestCase):
             "--port=0",
         ]
         self.server_proc = subprocess.Popen(
-            server_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            server_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
 
         # Wait to hear which port it's using.
@@ -116,52 +118,105 @@ class TestIntegration(unittest.TestCase):
             image_sets.append(image_set)
         return image_sets
 
-    def get_gltf_paths(self, gltf_file_dir):
-        """Returns one glTF file for each image type for inspection."""
-        return [
-            f"{gltf_file_dir}/{1:019d}-color.gltf",
-            f"{gltf_file_dir}/{2:019d}-depth.gltf",
-            f"{gltf_file_dir}/{3:019d}-label.gltf",
-        ]
+    def get_gltf_path_pairs(self, gltf_file_dir):
+        """Returns pairs of generated and ground truth glTF files for each
+        image type for inspection.
+        """
+        gltf_path_pairs = []
+        for index, image_type in enumerate(["color", "depth", "label"]):
+            gltf_path = f"{gltf_file_dir}/{index+1:019d}-{image_type}.gltf"
+            ground_truth_gltf = self.runfiles.Rlocation(
+                "drake/geometry/render_gltf_client/test/"
+                f"test_{image_type}_scene.gltf"
+            )
+            gltf_path_pairs.append((gltf_path, ground_truth_gltf))
+        return gltf_path_pairs
 
     def assert_error_fraction_less(self, image_diff, fraction):
         image_diff_fraction = np.count_nonzero(image_diff) / image_diff.size
         self.assertLess(image_diff_fraction, fraction)
 
-    def _fuzz_irrelevant_data(self, gltf, is_color_image):
-        """Replaces irrelevant entries and returns the processed glTF dict for
+    _REPLACED = {
+        "bufferView": "bufferViews",
+        "camera": "cameras",
+        "index": "textures",
+        "indices": "accessors",
+        "material": "materials",
+        "mesh": "meshes",
+        "sampler": "samplers",
+        "source": "images",
+        "POSITION": "accessors",
+        "TEXCOORD_0": "accessors",
+    }
+    """The dict keys that their values should be replaced with actual data. """
+
+    _IGNORED = ["buffer", "name"]
+    """The dict keys that are order-dependent and should be ignored. """
+
+    def _get_or_replace_value(self, gltf, keys, value=None):
+        """Retrieves the data through a list of keys in a nested dict. If
+        `value` is not provided, the function will iterate to the leaf node and
+        return. Otherwise, the leaf node will be updated but return at the
+        second-to-last layer.
+        """
+        entry = gltf
+        for key in keys[:-1]:
+            entry = entry[key]
+
+        if value:
+            entry[keys[-1]] = value
+        else:
+            entry = entry[keys[-1]]
+        return entry
+
+    def _traverse_and_mutate_recursively(self, gltf, keys):
+        """The glTF entries usually contain indices that point to another
+        entry. This function traverses through the dictionary recursively and
+        replaces the indices with the actual data.
+        """
+        entry = self._get_or_replace_value(gltf, keys)
+        entry_type = type(entry)
+        if entry_type == dict:
+            for k, v in entry.items():
+                # Replace the index with the actual pointed data structure.
+                if k in self._REPLACED.keys():
+                    self._get_or_replace_value(
+                        gltf, keys + [k], gltf[self._REPLACED[k]][v]
+                    )
+                elif k in self._IGNORED:
+                    self._get_or_replace_value(gltf, keys + [k], "IGNORED")
+                self._traverse_and_mutate_recursively(gltf, keys + [k])
+        elif entry_type == list:
+            if not all(isinstance(x, (int, float, str)) for x in entry):
+                for index, _ in enumerate(entry):
+                    self._traverse_and_mutate_recursively(gltf, keys + [index])
+
+    def _fuzz_data_and_restructure(self, gltf):
+        """Restructures the glTF by fuzzing irrelevant entries and unlinking
+        the internal references to produce an order-agnostic dict for
         comparison.
         """
         result = copy.deepcopy(gltf)
 
-        # These two entries encode the exact texture information and are
-        # ignored for all image types.
-        for entry in ["buffers", "bufferViews"]:
-            result[entry] = "IGNORED"
+        # The `buffers` entry encodes all the raw data, e.g., textures and
+        # UV-coordinates, and is fuzzed out for comparison.
+        result["buffers"] = "IGNORED"
 
-        # These entries contain basic material properties, e.g., RGBA, and are
-        # only relevant for color image comparison.
-        if not is_color_image:
-            for entry in [
-                "accessors",
-                "images",
-                "materials",
-                "samplers",
-                "textures",
-            ]:
-                result[entry] = "IGNORED"
+        self._traverse_and_mutate_recursively(result, ["nodes"])
         return result
 
-    def _check_one_gltf(self, gltf, ground_truth_gltf, is_color_image):
-        actual = self._fuzz_irrelevant_data(gltf, is_color_image)
-        expected = self._fuzz_irrelevant_data(
-            ground_truth_gltf, is_color_image
-        )
-        # Check the glTF-related section in README for some troubleshooting
-        # tips if this test failed.
-        self.assertDictEqual(expected, actual)
+    def _check_one_gltf(self, gltf, ground_truth_gltf):
+        actual = self._fuzz_data_and_restructure(gltf)
+        expected = self._fuzz_data_and_restructure(ground_truth_gltf)
 
-    @unittest.skipIf("darwin" in sys.platform, "Broken on macOS")
+        # Compare each entry by their types. Note that `nodes` entry has
+        # combined information for the rest of the entries, e.g., meshes,
+        # cameras, materials, textures, accessors, etc.
+        self.assertEqual(actual["scene"], expected["scene"])
+        self.assertDictEqual(actual["asset"], expected["asset"])
+        for entry in ["scenes", "nodes"]:
+            self.assertCountEqual(actual[entry], expected[entry])
+
     def test_integration(self):
         """Quantitatively compares the images rendered by RenderEngineVtk and
         RenderEngineGltfClient via a fully exercised RPC pipeline.
@@ -207,17 +262,12 @@ class TestIntegration(unittest.TestCase):
             )
             self.assert_error_fraction_less(label_diff, INVALID_PIXEL_FRACTION)
 
-    @unittest.skipIf("darwin" in sys.platform, "Broken on macOS")
     def test_gltf_conversion(self):
         """Checks that the fundamental structure of the generated glTF files is
         preserved.  The comparison of the exact texture information is not in
         the test's scope and is covered in the integration test above.
         """
         result = self.run_render_client("client", cleanup=False)
-
-        ground_truth_gltf_path = self.runfiles.Rlocation(
-            "drake/geometry/render_gltf_client/test/ground_truth.gltf"
-        )
 
         # Scrape the directory for the glTF files.
         gltf_file_dir = None
@@ -231,13 +281,13 @@ class TestIntegration(unittest.TestCase):
                 break
         self.assertIsNotNone(gltf_file_dir)
 
-        with open(ground_truth_gltf_path, "r") as gt:
-            ground_truth_gltf = json.load(gt)
-
         # Iterate through each gltf file to compare against the ground truth.
-        for gltf_path in self.get_gltf_paths(gltf_file_dir):
-            is_color_image = "color.gltf" in gltf_path
+        for gltf_path, ground_truth_gltf_path in self.get_gltf_path_pairs(
+            gltf_file_dir
+        ):
             with open(gltf_path, "r") as f:
                 gltf = json.load(f)
+            with open(ground_truth_gltf_path, "r") as g:
+                ground_truth_gltf = json.load(g)
             with self.subTest(gltf_path=os.path.basename(gltf_path)):
-                self._check_one_gltf(gltf, ground_truth_gltf, is_color_image)
+                self._check_one_gltf(gltf, ground_truth_gltf)
