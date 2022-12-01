@@ -690,6 +690,11 @@ class MultibodyTree {
     return *owned_mobilizers_[mobilizer_index];
   }
 
+  Mobilizer<T>& get_mutable_mobilizer(MobilizerIndex mobilizer_index) {
+    DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
+    return *owned_mobilizers_[mobilizer_index];
+  }
+
   // See MultibodyPlant method.
   template <template <typename> class ForceElementType = ForceElement>
   const ForceElementType<T>& GetForceElement(
