@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<sdf version="1.10">
+  <world name="world_joint_child_frame">
+    <model name="parent_model">
+      <link name="L_P"/>
+    </model>
+    <model name="child_model">
+      <link name="L_C"/>
+    </model>
+    <frame name="child_frame" attached_to="child_model">
+      <pose>4 5 6 0 0 0</pose>
+    </frame>
+    <frame name="parent_frame" attached_to="parent_model">
+      <pose>1 2 3 0 0 0</pose>
+    </frame>
+    <joint name="J1" type="fixed">
+      <pose>1 1 1 0 0 0</pose>
+      <parent>parent_frame</parent>
+      <child>child_frame</child>
+    </joint>
+    <joint name="J2" type="fixed">
+      <parent>world</parent>
+      <child>parent_model::L_P</child>
+    </joint>
+  </world>
+</sdf>
