@@ -79,6 +79,7 @@ TEST_F(CollisionGeometryTest, Box) {
   const multibody::BodyIndex geometry_body = body_indices_[0];
   CollisionGeometry box(&model_inspector.GetShape(body0_box_), geometry_body,
                         body0_box_, model_inspector.GetPoseInFrame(body0_box_));
+  EXPECT_EQ(box.type(), GeometryType::kPolytope);
 
   Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[1];
@@ -92,6 +93,7 @@ TEST_F(CollisionGeometryTest, Box) {
   box.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_, std::nullopt,
                   PlaneSide::kPositive, &rationals, &unit_length_vector);
   EXPECT_FALSE(unit_length_vector.has_value());
+  EXPECT_EQ(box.num_rationals_per_side(), 8);
   EXPECT_EQ(rationals.size(), 8);
 
   // The order of the vertices should be the same in collision_geometry.cc
@@ -166,6 +168,7 @@ TEST_F(CollisionGeometryTest, Convex) {
   CollisionGeometry convex(&model_inspector.GetShape(body1_convex_),
                            geometry_body, body1_convex_,
                            model_inspector.GetPoseInFrame(body1_convex_));
+  EXPECT_EQ(convex.type(), GeometryType::kPolytope);
 
   const multibody::BodyIndex expressed_body = body_indices_[3];
   const Eigen::Vector3d q_star(0, 0, 0);
@@ -182,6 +185,7 @@ TEST_F(CollisionGeometryTest, Convex) {
 
   const VPolytope polytope(query_object, body1_convex_,
                            model_inspector.GetFrameId(body1_convex_));
+  EXPECT_EQ(convex.num_rationals_per_side(), polytope.vertices().cols());
 
   const Eigen::Vector3d q_val(0.2, -0.1, 0.4);
   const Eigen::VectorXd s_val = SetQ(q_star, q_val);
@@ -257,6 +261,8 @@ TEST_F(CollisionGeometryTest, Sphere) {
   CollisionGeometry sphere(&model_inspector.GetShape(world_sphere_),
                            plant_->world_body().index(), world_sphere_,
                            model_inspector.GetPoseInFrame(world_sphere_));
+  EXPECT_EQ(sphere.type(), GeometryType::kSphere);
+  EXPECT_EQ(sphere.num_rationals_per_side(), 1);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[3];
@@ -323,6 +329,8 @@ TEST_F(CollisionGeometryTest, Capsule) {
   CollisionGeometry capsule(&model_inspector.GetShape(body2_capsule_),
                             geometry_body, body2_capsule_,
                             model_inspector.GetPoseInFrame(body2_capsule_));
+  EXPECT_EQ(capsule.type(), GeometryType::kCapsule);
+  EXPECT_EQ(capsule.num_rationals_per_side(), 2);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[0];

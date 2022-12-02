@@ -31,11 +31,11 @@ class CIrisToyRobotTest : public ::testing::Test {
   geometry::GeometryId body0_box_;
   geometry::GeometryId body0_sphere_;
   geometry::GeometryId body1_convex_;
-  geometry::GeometryId body1_cylinder_;
+  geometry::GeometryId body1_capsule_;
   geometry::GeometryId body2_capsule_;
   geometry::GeometryId body2_sphere_;
   geometry::GeometryId body3_box_;
-  geometry::GeometryId body3_cylinder_;
+  geometry::GeometryId body3_sphere_;
 };
 
 }  // namespace optimization

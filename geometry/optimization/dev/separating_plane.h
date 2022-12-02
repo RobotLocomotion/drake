@@ -42,6 +42,12 @@ struct SeparatingPlane {
         plane_order{m_plane_order},
         decision_variables{m_decision_variables} {}
 
+  /// Return the geometry on the specified side.
+  [[nodiscard]] const CollisionGeometry* geometry(PlaneSide plane_side) const {
+    return plane_side == PlaneSide::kPositive ? positive_side_geometry
+                                              : negative_side_geometry;
+  }
+
   Vector3<symbolic::Polynomial> a;
   symbolic::Polynomial b;
   const CollisionGeometry* positive_side_geometry;
@@ -124,7 +130,6 @@ void CalcPlane(const VectorX<T>& decision_variables,
     }
   }
 }
-
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
