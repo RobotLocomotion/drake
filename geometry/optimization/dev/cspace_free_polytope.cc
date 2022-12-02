@@ -60,6 +60,21 @@ GetLinkCollisionPairs(
   return ret;
 }
 
+struct BodyPair {
+  BodyPair(multibody::BodyIndex m_body1, multibody::BodyIndex m_body2)
+      : body1{m_body1}, body2{m_body2} {}
+  bool operator==(const BodyPair& other) const {
+    return body1 == other.body1 && body2 == other.body2;
+  }
+
+  multibody::BodyIndex body1;
+  multibody::BodyIndex body2;
+};
+
+struct BodyPairHash {
+  size_t operator()(const BodyPair& p) const { return p.body1 * 100 + p.body2; }
+};
+
 }  // namespace
 
 CspaceFreePolytope::CspaceFreePolytope(
@@ -125,6 +140,91 @@ CspaceFreePolytope::CspaceFreePolytope(
           static_cast<int>(separating_planes_.size()) - 1);
     }
   }
+}
+
+std::vector<PlaneSeparatesGeometries> CspaceFreePolytope::GenerateRationals(
+    const Eigen::Ref<const Eigen::VectorXd>& q_star,
+    const CspaceFreePolytope::FilteredCollsionPairs& filtered_collision_pairs,
+    const std::optional<symbolic::Variable>& separating_margin) const {
+  std::vector<PlaneSeparatesGeometries> ret;
+  // There can be multiple geometries on the same pair, hence the body pose will
+  // be reused. We use this map to store the body pose to avoid redundant
+  // computation.
+  std::unordered_map<
+      BodyPair,
+      multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>,
+      BodyPairHash>
+      body_pair_to_X_AB_multilinear;
+  for (int plane_index = 0;
+       plane_index < static_cast<int>(separating_planes_.size());
+       ++plane_index) {
+    const auto& separating_plane = separating_planes_[plane_index];
+    if (filtered_collision_pairs.count(
+            SortedPair(separating_plane.positive_side_geometry->id(),
+                       separating_plane.negative_side_geometry->id())) == 0) {
+      // Compute X_AB for both side of the geometries.
+      std::vector<symbolic::RationalFunction> rationals;
+      std::vector<VectorX<symbolic::Polynomial>> unit_length_vectors;
+      for (const PlaneSide plane_side :
+           {PlaneSide::kPositive, PlaneSide::kNegative}) {
+        const CollisionGeometry* link_geometry =
+            separating_plane.geometry(plane_side);
+
+        const BodyPair expressed_to_link(separating_plane.expressed_body,
+                                         link_geometry->body_index());
+        auto it = body_pair_to_X_AB_multilinear.find(expressed_to_link);
+        if (it == body_pair_to_X_AB_multilinear.end()) {
+          it = body_pair_to_X_AB_multilinear.emplace_hint(
+              it, expressed_to_link,
+              rational_forward_kin_.CalcBodyPoseAsMultilinearPolynomial(
+                  q_star, link_geometry->body_index(),
+                  separating_plane.expressed_body));
+        }
+        const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&
+            X_AB_multilinear = it->second;
+        std::optional<VectorX<symbolic::Polynomial>> unit_length_vec;
+        link_geometry->OnPlaneSide(separating_plane.a, separating_plane.b,
+                                   X_AB_multilinear, rational_forward_kin_,
+                                   separating_margin, plane_side, &rationals,
+                                   &unit_length_vec);
+
+        if (unit_length_vec.has_value()) {
+          if (unit_length_vectors.empty()) {
+            unit_length_vectors.push_back(unit_length_vec.value());
+          } else {
+            // The unit length vector for the positive side geometry might be
+            // the same as the unit length vector for the negative side
+            // geometry, for example if both geometries are spheres. So we check
+            // if unit_length_vec is the same as the one in unit_length_vectors;
+            // if they are the same, then we don't add it.
+            bool existing_unit_length_vec = false;
+            for (const auto& vec : unit_length_vectors) {
+              bool match = true;
+              if (vec.rows() == unit_length_vec->rows()) {
+                for (int i = 0; i < vec.rows(); ++i) {
+                  if (!vec(i).EqualTo((*unit_length_vec)(i))) {
+                    match = false;
+                    break;
+                  }
+                }
+              } else {
+                match = false;
+              }
+              if (match) {
+                existing_unit_length_vec = true;
+                break;
+              }
+            }
+            if (!existing_unit_length_vec) {
+              unit_length_vectors.push_back(unit_length_vec.value());
+            }
+          }
+        }
+      }
+      ret.emplace_back(rationals, unit_length_vectors, plane_index);
+    }
+  }
+  return ret;
 }
 
 std::map<multibody::BodyIndex, std::vector<std::unique_ptr<CollisionGeometry>>>

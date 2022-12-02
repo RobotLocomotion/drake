@@ -13,6 +13,13 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+enum class GeometryType {
+  kSphere,
+  kPolytope,
+  kCylinder,
+  kCapsule,
+};
+
 enum class PlaneSide {
   kPositive,
   kNegative,
@@ -91,6 +98,14 @@ class CollisionGeometry {
       const std::optional<symbolic::Variable>& separating_margin,
       PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
       std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) const;
+
+  [[nodiscard]] GeometryType type() const;
+
+  /**
+   Returns the number of rationals in the condition "this geometry is on one
+   side of the plane."
+   */
+  [[nodiscard]] int num_rationals_per_side() const;
 
  private:
   const Shape* geometry_;
