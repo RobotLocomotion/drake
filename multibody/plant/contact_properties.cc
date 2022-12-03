@@ -24,7 +24,7 @@ T GetPointContactStiffness(geometry::GeometryId id, double default_value,
   const geometry::ProximityProperties* prop =
       inspector.GetProximityProperties(id);
   DRAKE_DEMAND(prop != nullptr);
-  return prop->template GetPropertyOrDefault<T>(
+  return prop->template GetPropertyOrDefault<double>(
       geometry::internal::kMaterialGroup, geometry::internal::kPointStiffness,
       default_value);
 }
@@ -43,9 +43,9 @@ T GetHydroelasticModulus(geometry::GeometryId id, double default_value,
       geometry::internal::HydroelasticType::kRigid) {
     return std::numeric_limits<double>::infinity();
   }
-  return prop->GetPropertyOrDefault(geometry::internal::kHydroGroup,
-                                    geometry::internal::kElastic,
-                                    default_value);
+  return prop->template GetPropertyOrDefault<double>(
+      geometry::internal::kHydroGroup, geometry::internal::kElastic,
+      default_value);
 }
 
 template <typename T>
@@ -56,7 +56,7 @@ T GetHuntCrossleyDissipation(
   const geometry::ProximityProperties* prop =
       inspector.GetProximityProperties(id);
   DRAKE_DEMAND(prop != nullptr);
-  return prop->template GetPropertyOrDefault<T>(
+  return prop->template GetPropertyOrDefault<double>(
       geometry::internal::kMaterialGroup, geometry::internal::kHcDissipation,
       default_value);
 }
