@@ -260,7 +260,7 @@ GTEST_TEST(TriangleSurfaceMassPropertiesTest, ExactPolyhedron) {
     // tolerance.
     EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(mesh, kDensity),
                                      volume * kDensity, p_BcmMcm, G_MMo_M,
-                                     2 * kTol));
+                                     8 * kTol));
   }
 }
 
