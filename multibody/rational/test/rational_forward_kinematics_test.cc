@@ -91,6 +91,21 @@ TEST_F(FinalizedIiwaTest, CalcBodyPose1) {
                         Eigen::VectorXd::Zero(kNumJoints),
                         Eigen::VectorXd::Zero(kNumJoints), iiwa_link_[i]);
   }
+  const auto& tree = internal::GetInternalTree(*iiwa_);
+  EXPECT_EQ(dut.map_mobilizer_to_s_index().size(), tree.num_mobilizers());
+  // Make sure the s indices are unique (except those with value -1) and all in
+  // the range of [-1, dut.s().size()-1]
+  std::unordered_set<int> s_index_set;
+  for (int s_index : dut.map_mobilizer_to_s_index()) {
+    EXPECT_GE(s_index, -1);
+    EXPECT_LT(s_index, dut.s().rows());
+    if (s_index >= 0) {
+      EXPECT_EQ(s_index_set.count(s_index), 0);
+    }
+    s_index_set.emplace_hint(s_index_set.end(), s_index);
+  }
+  // There is one welded joint hence one of s_index is -1.
+  EXPECT_EQ(s_index_set.count(-1), 1);
 }
 
 TEST_F(FinalizedIiwaTest, CalcBodyPose2) {

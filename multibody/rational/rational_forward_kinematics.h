@@ -115,6 +115,15 @@ class RationalForwardKinematics {
     return Eigen::Map<const VectorX<symbolic::Variable>>(s_.data(), s_.size());
   }
 
+  /** map_mobilizer_to_s_index_[mobilizer_index] returns the starting index of
+   the mobilizer's variable in s_ (the variable will be contiguous in s for
+   the same mobilizer). If this mobilizer doesn't have a variable in s_ (like
+   the weld joint), then the s index is set to -1.
+   */
+  [[nodiscard]] const std::vector<int> map_mobilizer_to_s_index() const {
+    return map_mobilizer_to_s_index_;
+  }
+
  private:
   /* Computes the pose of a body, connected to its parent body through a
   revolute joint.
