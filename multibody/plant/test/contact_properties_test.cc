@@ -1,7 +1,10 @@
 #include "drake/multibody/plant/contact_properties.h"
 
+#include <exception>
+
 #include <gtest/gtest.h>
 
+#include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/scene_graph.h"
 
@@ -63,6 +66,10 @@ class ContactPropertiesTest : public ::testing::Test {
     g_B_ = scene_graph_.RegisterGeometry(s_id, f_id, move(geometry_B));
     g_C_ = scene_graph_.RegisterGeometry(s_id, f_id, move(geometry_C));
     g_D_ = scene_graph_.RegisterGeometry(s_id, f_id, move(geometry_D));
+
+    scene_graph_ad_ =
+        dynamic_pointer_cast<SceneGraph<AutoDiffXd>>(
+            scene_graph_.ToAutoDiffXd());
   }
 
   // mu  = Coulomb friction
@@ -113,14 +120,43 @@ class ContactPropertiesTest : public ::testing::Test {
     return result;
   }
 
+  /*
+  Compares `extract_from_inspector` for both `T=double` and `T=AutoDiffXd`.
+  The function should be of the form:
+      extract_from_inspector(T{}, const SceneGraphInspector<T>&)
+  The `T{}` argument is for lambda-based argument deduction (pending lambda
+  template arguments in C++20).
+  */
+  template <typename Lambda>
+  void CompareAcrossScalarTypes(const Lambda& extract_from_inspector) {
+    const double value = extract_from_inspector(double{}, inspector());
+    AutoDiffXd value_ad;
+    try {
+      value_ad = extract_from_inspector(
+          AutoDiffXd{}, scene_graph_ad_->model_inspector());
+    } catch (...) {
+      // N.B. SCOPED_TRACE does not help when an exception occurs.
+      drake::log()->error(
+          "Exception encountered when trying to extract value from "
+          "SceneGraphInspector<AutoDiffXd>");
+      std::rethrow_exception(std::current_exception());
+    }
+    EXPECT_EQ(value_ad, value);
+  }
+
  private:
   SceneGraph<double> scene_graph_{};
+  std::unique_ptr<SceneGraph<AutoDiffXd>> scene_graph_ad_{};
 };
 
 TEST_F(ContactPropertiesTest, GetPointContactStiffness) {
   EXPECT_EQ(GetPointContactStiffness(g_A_, kKDefault, inspector()), kKA);
   EXPECT_EQ(GetPointContactStiffness(g_B_, kKDefault, inspector()), kKDefault);
   EXPECT_EQ(GetPointContactStiffness(g_C_, kKDefault, inspector()), kKC);
+  CompareAcrossScalarTypes(
+      [this](auto T_dummy, const auto& inspector) {
+        return GetPointContactStiffness(g_A_, kKDefault, inspector);
+      });
 }
 
 TEST_F(ContactPropertiesTest, GetHydroelasticModulus) {
@@ -132,6 +168,10 @@ TEST_F(ContactPropertiesTest, GetHydroelasticModulus) {
             kHydroModulusC);
   EXPECT_EQ(GetHydroelasticModulus(g_D_, kHydroModulusDefault, inspector()),
             kHydroModulusDefault);
+  CompareAcrossScalarTypes(
+      [this](auto T_dummy, const auto& inspector) {
+        return GetHydroelasticModulus(g_A_, kHydroModulusDefault, inspector);
+      });
 }
 
 TEST_F(ContactPropertiesTest, GetHuntCrossleyDissipation) {
@@ -144,6 +184,11 @@ TEST_F(ContactPropertiesTest, GetHuntCrossleyDissipation) {
   EXPECT_EQ(GetHuntCrossleyDissipation(g_C_, kHuntCrossleyDissipationDefault,
                                        inspector()),
             kHuntCrossleyDissipationDefault);
+  CompareAcrossScalarTypes(
+      [this](auto T_dummy, const auto& inspector) {
+        return GetHuntCrossleyDissipation(
+            g_A_, kHuntCrossleyDissipationDefault, inspector);
+      });
 }
 
 TEST_F(ContactPropertiesTest, GetCombinedHuntCrossleyDissipation) {
@@ -163,6 +208,13 @@ TEST_F(ContactPropertiesTest, GetCombinedHuntCrossleyDissipation) {
                 g_A_, g_C_, kHydroModulusA, kHydroModulusDefault,
                 kHuntCrossleyDissipationDefault, inspector()),
             dAC);
+  CompareAcrossScalarTypes(
+      [this](auto T_dummy, const auto& inspector) {
+        using T = decltype(T_dummy);
+        return GetCombinedHuntCrossleyDissipation(
+            g_A_, g_B_, T(kHydroModulusA), T(kInfinity),
+            kHuntCrossleyDissipationDefault, inspector);
+      });
 }
 
 TEST_F(ContactPropertiesTest, GetDissipationTimeConstant) {
@@ -173,10 +225,22 @@ TEST_F(ContactPropertiesTest, GetDissipationTimeConstant) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       GetDissipationTimeConstant(g_D_, kTauDefault, inspector(), "D"),
       ".*relaxation_time = -0.2.*D.*");
+  CompareAcrossScalarTypes(
+      [this](auto T_dummy, const auto& inspector) {
+        return GetDissipationTimeConstant(g_A_, kTauDefault, inspector, "A");
+      });
 }
 
 TEST_F(ContactPropertiesTest, GetCoulombFriction) {
   EXPECT_EQ(GetCoulombFriction(g_A_, inspector()), kMuA);
+  CompareAcrossScalarTypes(
+      [this](auto T_dummy, const auto& inspector) {
+        using T = decltype(T_dummy);
+        const auto data = GetCoulombFriction(g_A_, inspector);
+        // Sum the values as a *very* naive way to check general convresion.
+        T sum = data.static_friction() + data.dynamic_friction();
+        return sum;
+      });
 }
 
 TEST_F(ContactPropertiesTest, GetCombinedPointContactStiffness) {
@@ -186,6 +250,11 @@ TEST_F(ContactPropertiesTest, GetCombinedPointContactStiffness) {
   EXPECT_EQ(
       GetCombinedPointContactStiffness(g_A_, g_B_, kKDefault, inspector()),
       kKA * kKDefault / (kKA + kKDefault));
+  CompareAcrossScalarTypes(
+      [this](auto T_dummy, const auto& inspector) {
+        return GetCombinedPointContactStiffness(
+            g_A_, g_C_, kKDefault, inspector);
+      });
 }
 
 TEST_F(ContactPropertiesTest, GetCombinedDissipationTimeConstant) {
@@ -199,12 +268,21 @@ TEST_F(ContactPropertiesTest, GetCombinedDissipationTimeConstant) {
       GetCombinedDissipationTimeConstant(g_A_, g_D_, kTauDefault, "A", "D",
                                          inspector()),
       ".*relaxation_time = -0.2.*D.*");
+  CompareAcrossScalarTypes(
+      [this](auto T_dummy, const auto& inspector) {
+        return GetCombinedDissipationTimeConstant(
+            g_A_, g_B_, kTauDefault, "A", "B", inspector);
+      });
 }
 
 TEST_F(ContactPropertiesTest, GetCombinedDynamicCoulombFriction) {
   EXPECT_EQ(
       GetCombinedDynamicCoulombFriction(g_A_, g_D_, inspector()),
       CalcContactFrictionFromSurfaceProperties(kMuA, kMuD).dynamic_friction());
+  CompareAcrossScalarTypes(
+      [this](auto T_dummy, const auto& inspector) {
+        return GetCombinedDynamicCoulombFriction(g_A_, g_D_, inspector);
+      });
 }
 
 }  // namespace
