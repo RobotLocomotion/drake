@@ -539,6 +539,11 @@ GTEST_TEST(testNonlinearProgram, CallbackTest) {
   }
 }
 
+TEST_F(DuplicatedVariableNonlinearProgram1, Test) {
+  SnoptSolver snopt_solver;
+  CheckSolution(snopt_solver, Eigen::Vector2d(0.5, 0.5), std::nullopt, 1E-6);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
