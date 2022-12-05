@@ -3,7 +3,7 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
@@ -16,9 +16,9 @@ constexpr RobotCollisionType kEnvironmentAndSelfCollision =
     RobotCollisionType::kEnvironmentAndSelfCollision;
 
 struct Case {
-  RobotCollisionType input;
-  bool in_collision;
-  RobotCollisionType output;
+  RobotCollisionType input{RobotCollisionType::kNoCollision};
+  bool in_collision{};
+  RobotCollisionType output{RobotCollisionType::kNoCollision};
 
   std::string to_string() const {
     return fmt::format("input {}, in_collision {}, output {}",
@@ -71,4 +71,4 @@ GTEST_TEST(CollisionCheckerTest, SelfCollisionBits) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

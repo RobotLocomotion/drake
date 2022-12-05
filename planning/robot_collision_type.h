@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** Enumerates these predicates (and their combinations):
@@ -12,7 +12,7 @@ enum class RobotCollisionType : uint8_t {
   kNoCollision = 0x00,
   kEnvironmentCollision = 0x01,
   kSelfCollision = 0x02,
-  kEnvironmentAndSelfCollision = 0x03
+  kEnvironmentAndSelfCollision = kEnvironmentCollision | kSelfCollision
 };
 
 /** @returns a RobotCollisionType where the environment-collision value is that
@@ -40,4 +40,4 @@ inline RobotCollisionType SetInSelfCollision(RobotCollisionType collision_type,
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
