@@ -1041,6 +1041,46 @@ TEST_F(RenderEngineGlTest, ConvexTest) {
   PerformCenterShapeTest(renderer_.get());
 }
 
+// Performs the test to cast non-8-bit textures with a box. It depends on the
+// non-8-bit image being converted to the 8-bit image losslessly. A 16-bit image
+// is loaded to prove the existence of the conversion, but this test doesn't
+// guarantee universal conversion success.
+TEST_F(RenderEngineGlTest, Non8bitTextures) {
+  const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
+  const auto& intrinsics = camera.core().intrinsics();
+  const Box box(1.999, 0.55, 0.75);
+  expected_label_ = RenderLabel(1);
+
+  // Render a box with an 8-bit PNG texture.
+  ImageRgba8U color_8bit_texture(intrinsics.width(), intrinsics.height());
+  {
+    RenderEngineGl renderer;
+    InitializeRenderer(X_WR_, false /* add terrain */, &renderer);
+
+    const GeometryId id = GeometryId::get_new_id();
+    PerceptionProperties props = simple_material(true);
+    renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
+    renderer.RenderColorImage(camera, &color_8bit_texture);
+  }
+
+  // Render a box with a 16-bit PNG texture.
+  ImageRgba8U color_16bit_texture(intrinsics.width(), intrinsics.height());
+  {
+    RenderEngineGl renderer;
+    InitializeRenderer(X_WR_, false /* add terrain */, &renderer);
+
+    const GeometryId id = GeometryId::get_new_id();
+    PerceptionProperties props = simple_material(false);
+    props.AddProperty(
+        "phong", "diffuse_map",
+        FindResourceOrThrow("drake/geometry/render/test/meshes/box16u.png"));
+    renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
+    renderer.RenderColorImage(camera, &color_16bit_texture);
+  }
+
+  EXPECT_EQ(color_8bit_texture, color_16bit_texture);
+}
+
 // This confirms that geometries are correctly removed from the render engine.
 // We add two new geometries (testing the rendering after each addition).
 // By removing the first of the added geometries, we can confirm that the
