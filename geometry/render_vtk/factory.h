@@ -23,7 +23,7 @@ namespace geometry {
  | Group name | Property Name | Required |  Property Type  | Property Description |
  | :--------: | :-----------: | :------: | :-------------: | :------------------- |
  |    phong   | diffuse       | no¹      | Eigen::Vector4d | The rgba value of the object surface. |
- |    phong   | diffuse_map   | no²      | std::string     | The path to a texture to apply to the geometry.³ |
+ |    phong   | diffuse_map   | no²      | std::string     | The path to a texture to apply to the geometry.³⁴ |
 
  ¹ If no diffuse value is given, a default rgba value will be applied. The
    default color is a bright orange. This default value can be changed to a
@@ -36,6 +36,8 @@ namespace geometry {
    %RenderEngineVtk will search for a file `/path/to/mesh.png` (replacing "obj"
    with "png"). If that image exists, it will be used as a texture on the mesh
    object.
+ ⁴ The render engine uses 8-bit pngs. Pngs with different bit depth will be
+   converted to 8-bit.
 
  @note RenderEngineVtk does not support the OBJ format `usemtl`
  directive. Instead, it has two ways to associate a color texture with an obj
