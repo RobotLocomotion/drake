@@ -66,6 +66,13 @@ TEST_F(UnboundedLinearProgramTest0, TestSnopt) {
   }
 }
 
+TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
+  SnoptSolver solver;
+  if (solver.available()) {
+    CheckSolution(solver);
+  }
+}
+
 TEST_P(QuadraticProgramTest, TestQP) {
   SnoptSolver solver;
   prob()->RunProblem(&solver);

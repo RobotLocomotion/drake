@@ -247,6 +247,18 @@ class SnoptUserFunInfo {
     return nonlinear_cost_gradient_indices_;
   }
 
+  std::vector<int>& duplicate_to_G_index_map() {
+    return duplicate_to_G_index_map_;
+  }
+
+  const std::vector<int>& duplicate_to_G_index_map() const {
+    return duplicate_to_G_index_map_;
+  }
+
+  void set_lenG(int lenG) { lenG_ = lenG; }
+
+  [[nodiscard]] int lenG() const { return lenG_; }
+
   // If and only if the userfun experiences an exception, the exception message
   // will be stashed here. All callers of snOptA or similar must check this to
   // find out if there were any errors.
@@ -297,6 +309,17 @@ class SnoptUserFunInfo {
   const std::array<int, kIntCount> this_pointer_as_int_array_;
   const MathematicalProgram& prog_;
   std::set<int> nonlinear_cost_gradient_indices_;
+  // When evaluating the nonlinear costs/constraints, the Binding could contain
+  // duplicated variables. We need to sum up the entries in the gradient vector
+  // corresponding to the same constraint and variables. We first evaluate all
+  // costs and constraints, not accounting for duplicated variable. We denote
+  // this gradient vector as G_w_duplicate. We then sum up the entries in
+  // G_w_duplicate that correspond to the same constraint and gradient, and
+  // denote the resulting gradient vector as G.
+  // duplicate_to_G_index_map_ has the same length as G_w_duplicate. We add
+  // G_w_duplicate[i] to G[duplicate_to_G_index_map[i]].
+  std::vector<int> duplicate_to_G_index_map_;
+  int lenG_;
 
   std::optional<std::string> userfun_error_message_;
 };
@@ -384,8 +407,9 @@ void EvaluateSingleNonlinearConstraint<LinearComplementarityConstraint>(
 template <typename C>
 void EvaluateNonlinearConstraints(
     const MathematicalProgram& prog,
-    const std::vector<Binding<C>>& constraint_list, double F[], double G[],
-    size_t* constraint_index, size_t* grad_index, const Eigen::VectorXd& xvec) {
+    const std::vector<Binding<C>>& constraint_list, double F[],
+    std::vector<double>* G_w_duplicate, size_t* constraint_index,
+    size_t* grad_index, const Eigen::VectorXd& xvec) {
   const auto & scale_map = prog.GetVariableScaling();
   Eigen::VectorXd this_x;
   for (const auto& binding : constraint_list) {
@@ -425,7 +449,7 @@ void EvaluateNonlinearConstraints(
             binding.evaluator()->gradient_sparsity_pattern();
     if (gradient_sparsity_pattern.has_value()) {
       for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
-        G[(*grad_index)++] =
+        (*G_w_duplicate)[(*grad_index)++] =
             ty(nonzero_entry.first).derivatives().size() > 0
                 ? ty(nonzero_entry.first).derivatives()(nonzero_entry.second)
                 : 0.0;
@@ -434,11 +458,11 @@ void EvaluateNonlinearConstraints(
       for (int i = 0; i < num_constraints; i++) {
         if (ty(i).derivatives().size() > 0) {
           for (int j = 0; j < num_variables; ++j) {
-            G[(*grad_index)++] = ty(i).derivatives()(j);
+            (*G_w_duplicate)[(*grad_index)++] = ty(i).derivatives()(j);
           }
         } else {
           for (int j = 0; j < num_variables; ++j) {
-            G[(*grad_index)++] = 0.0;
+            (*G_w_duplicate)[(*grad_index)++] = 0.0;
           }
         }
       }
@@ -530,7 +554,7 @@ void EvaluateAndAddNonlinearCosts(
 void EvaluateAllNonlinearCosts(
     const MathematicalProgram& prog, const Eigen::VectorXd& xvec,
     const std::set<int>& nonlinear_cost_gradient_indices, double F[],
-    double G[], size_t* grad_index) {
+    std::vector<double>* G_w_duplicate, size_t* grad_index) {
   std::vector<double> cost_gradients(prog.num_vars(), 0);
   // Quadratic costs.
   EvaluateAndAddNonlinearCosts(prog, prog.quadratic_costs(), xvec, &(F[0]),
@@ -543,7 +567,7 @@ void EvaluateAllNonlinearCosts(
                                &cost_gradients);
 
   for (const int cost_gradient_index : nonlinear_cost_gradient_indices) {
-    G[*grad_index] = cost_gradients[cost_gradient_index];
+    (*G_w_duplicate)[*grad_index] = cost_gradients[cost_gradient_index];
     ++(*grad_index);
   }
 }
@@ -559,7 +583,8 @@ void EvaluateCostsConstraints(
   }
 
   F[0] = 0.0;
-  memset(G, 0, n * sizeof(double));
+  memset(G, 0, info.lenG() * sizeof(double));
+  std::vector<double> G_w_duplicate(info.duplicate_to_G_index_map().size(), 0);
 
   size_t grad_index = 0;
 
@@ -571,25 +596,30 @@ void EvaluateCostsConstraints(
   current_problem.EvalVisualizationCallbacks(xvec_scaled);
 
   EvaluateAllNonlinearCosts(current_problem, xvec,
-                            info.nonlinear_cost_gradient_indices(), F, G,
-                            &grad_index);
+                            info.nonlinear_cost_gradient_indices(), F,
+                            &G_w_duplicate, &grad_index);
 
   // The constraint index starts at 1 because the cost is the
   // first row.
   size_t constraint_index = 1;
   // The gradient_index also starts after the cost.
-  EvaluateNonlinearConstraints(current_problem,
-                               current_problem.generic_constraints(), F, G,
-                               &constraint_index, &grad_index, xvec);
-  EvaluateNonlinearConstraints(current_problem,
-                               current_problem.lorentz_cone_constraints(), F, G,
-                               &constraint_index, &grad_index, xvec);
   EvaluateNonlinearConstraints(
-      current_problem, current_problem.rotated_lorentz_cone_constraints(), F, G,
+      current_problem, current_problem.generic_constraints(), F, &G_w_duplicate,
       &constraint_index, &grad_index, xvec);
   EvaluateNonlinearConstraints(
+      current_problem, current_problem.lorentz_cone_constraints(), F,
+      &G_w_duplicate, &constraint_index, &grad_index, xvec);
+  EvaluateNonlinearConstraints(
+      current_problem, current_problem.rotated_lorentz_cone_constraints(), F,
+      &G_w_duplicate, &constraint_index, &grad_index, xvec);
+  EvaluateNonlinearConstraints(
       current_problem, current_problem.linear_complementarity_constraints(), F,
-      G, &constraint_index, &grad_index, xvec);
+      &G_w_duplicate, &constraint_index, &grad_index, xvec);
+
+  for (int i = 0; i < static_cast<int>(info.duplicate_to_G_index_map().size());
+       ++i) {
+    G[info.duplicate_to_G_index_map()[i]] += G_w_duplicate[i];
+  }
 }
 
 // This function is what SNOPT calls to compute the values and derivatives.
@@ -663,8 +693,9 @@ template <typename C>
 void UpdateConstraintBoundsAndGradients(
     const MathematicalProgram& prog,
     const std::vector<Binding<C>>& constraint_list, std::vector<double>* Flow,
-    std::vector<double>* Fupp, std::vector<int>* iGfun, std::vector<int>* jGvar,
-    size_t* constraint_index, size_t* grad_index) {
+    std::vector<double>* Fupp, std::vector<int>* iGfun_w_duplicate,
+    std::vector<int>* jGvar_w_duplicate, size_t* constraint_index,
+    size_t* grad_index) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.evaluator();
     int n = c->num_constraints();
@@ -685,8 +716,9 @@ void UpdateConstraintBoundsAndGradients(
     if (gradient_sparsity_pattern.has_value()) {
       for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
         // Fortran is 1-indexed.
-        (*iGfun)[*grad_index] = 1 + *constraint_index + nonzero_entry.first;
-        (*jGvar)[*grad_index] =
+        (*iGfun_w_duplicate)[*grad_index] =
+            1 + *constraint_index + nonzero_entry.first;
+        (*jGvar_w_duplicate)[*grad_index] =
             1 + bound_var_indices_in_prog[nonzero_entry.second];
         (*grad_index)++;
       }
@@ -694,8 +726,9 @@ void UpdateConstraintBoundsAndGradients(
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
           // Fortran is 1-indexed.
-          (*iGfun)[*grad_index] = 1 + *constraint_index + i;  // row order
-          (*jGvar)[*grad_index] = 1 + bound_var_indices_in_prog[j];
+          (*iGfun_w_duplicate)[*grad_index] =
+              1 + *constraint_index + i;  // row order
+          (*jGvar_w_duplicate)[*grad_index] = 1 + bound_var_indices_in_prog[j];
           (*grad_index)++;
         }
       }
@@ -716,15 +749,15 @@ void UpdateConstraintBoundsAndGradients<LinearComplementarityConstraint>(
     const std::vector<Binding<LinearComplementarityConstraint>>&
         constraint_list,
     std::vector<double>* Flow, std::vector<double>* Fupp,
-    std::vector<int>* iGfun, std::vector<int>* jGvar, size_t* constraint_index,
-    size_t* grad_index) {
+    std::vector<int>* iGfun_w_duplicate, std::vector<int>* jGvar_w_duplicate,
+    size_t* constraint_index, size_t* grad_index) {
   for (const auto& binding : constraint_list) {
     (*Flow)[*constraint_index] = 0;
     (*Fupp)[*constraint_index] = 0;
     for (int j = 0; j < binding.evaluator()->M().rows(); ++j) {
       // Fortran is 1-indexed.
-      (*iGfun)[*grad_index] = 1 + *constraint_index;
-      (*jGvar)[*grad_index] =
+      (*iGfun_w_duplicate)[*grad_index] = 1 + *constraint_index;
+      (*jGvar_w_duplicate)[*grad_index] =
           1 + prog.FindDecisionVariableIndex(binding.variables()(j));
       (*grad_index)++;
     }
@@ -1047,6 +1080,36 @@ void UpdateNumConstraintsAndGradients(
   }
 }
 
+// The pair (iGfun_w_duplicate[i], jGvar_w_duplicate[i]) might contain
+// duplicated entries. We move the duplication, such that (iGfun[i], jGvar[i])
+// don't contain duplicated variables, and iGfun_w_duplicate[i] =
+// iGfun[duplicate_to_G_index_map[i]], jGvar_w_duplicate[i] =
+// jGvar[duplicate_to_G_index_map[i]].
+void PruneGradientDuplication(int nx, const std::vector<int>& iGfun_w_duplicate,
+                              const std::vector<int>& jGvar_w_duplicate,
+                              std::vector<int>* duplicate_to_G_index_map,
+                              std::vector<int>* iGfun,
+                              std::vector<int>* jGvar) {
+  auto gradient_index = [nx](int row, int col) { return row * nx + col; };
+  std::unordered_map<int, int> gradient_index_to_G;
+  duplicate_to_G_index_map->reserve(iGfun_w_duplicate.size());
+  iGfun->reserve(iGfun_w_duplicate.size());
+  jGvar->reserve(jGvar_w_duplicate.size());
+  for (int i = 0; i < static_cast<int>(iGfun_w_duplicate.size()); ++i) {
+    const int index =
+        gradient_index(iGfun_w_duplicate[i], jGvar_w_duplicate[i]);
+    auto it = gradient_index_to_G.find(index);
+    if (it == gradient_index_to_G.end()) {
+      duplicate_to_G_index_map->push_back(iGfun->size());
+      gradient_index_to_G.emplace_hint(it, index, iGfun->size());
+      iGfun->push_back(iGfun_w_duplicate[i]);
+      jGvar->push_back(jGvar_w_duplicate[i]);
+    } else {
+      duplicate_to_G_index_map->push_back(it->second);
+    }
+  }
+}
+
 void SolveWithGivenOptions(
     const MathematicalProgram& prog,
     const Eigen::Ref<const Eigen::VectorXd>& x_init,
@@ -1133,32 +1196,32 @@ void SolveWithGivenOptions(
   std::vector<int> Fstate(nF, 0);
 
   // Set up the gradient sparsity pattern.
-  int lenG = max_num_gradients;
-  std::vector<int> iGfun(lenG, 0);
-  std::vector<int> jGvar(lenG, 0);
+  int lenG_w_duplicate = max_num_gradients;
+  std::vector<int> iGfun_w_duplicate(lenG_w_duplicate, 0);
+  std::vector<int> jGvar_w_duplicate(lenG_w_duplicate, 0);
   size_t grad_index = 0;
   for (const auto cost_gradient_index :
          user_info.nonlinear_cost_gradient_indices()) {
     // Fortran is 1-indexed.
-    iGfun[grad_index] = 1;
-    jGvar[grad_index] = 1 + cost_gradient_index;
+    iGfun_w_duplicate[grad_index] = 1;
+    jGvar_w_duplicate[grad_index] = 1 + cost_gradient_index;
     ++grad_index;
   }
 
   // constraint_index starts at 1 because row 0 is the cost.
   size_t constraint_index = 1;
-  UpdateConstraintBoundsAndGradients(prog, prog.generic_constraints(), &Flow,
-                                     &Fupp, &iGfun, &jGvar, &constraint_index,
-                                     &grad_index);
-  UpdateConstraintBoundsAndGradients(prog, prog.lorentz_cone_constraints(),
-                                     &Flow, &Fupp, &iGfun, &jGvar,
-                                     &constraint_index, &grad_index);
   UpdateConstraintBoundsAndGradients(
-      prog, prog.rotated_lorentz_cone_constraints(), &Flow, &Fupp, &iGfun,
-      &jGvar, &constraint_index, &grad_index);
+      prog, prog.generic_constraints(), &Flow, &Fupp, &iGfun_w_duplicate,
+      &jGvar_w_duplicate, &constraint_index, &grad_index);
   UpdateConstraintBoundsAndGradients(
-      prog, prog.linear_complementarity_constraints(), &Flow, &Fupp, &iGfun,
-      &jGvar, &constraint_index, &grad_index);
+      prog, prog.lorentz_cone_constraints(), &Flow, &Fupp, &iGfun_w_duplicate,
+      &jGvar_w_duplicate, &constraint_index, &grad_index);
+  UpdateConstraintBoundsAndGradients(
+      prog, prog.rotated_lorentz_cone_constraints(), &Flow, &Fupp,
+      &iGfun_w_duplicate, &jGvar_w_duplicate, &constraint_index, &grad_index);
+  UpdateConstraintBoundsAndGradients(
+      prog, prog.linear_complementarity_constraints(), &Flow, &Fupp,
+      &iGfun_w_duplicate, &jGvar_w_duplicate, &constraint_index, &grad_index);
 
   // Now find the sparsity pattern of the linear constraints/costs, and also
   // update Flow and Fupp corresponding to the linear constraints.
@@ -1189,8 +1252,12 @@ void SolveWithGivenOptions(
     }
   }
 
+  Eigen::SparseMatrix<double> linear_constraints_A(nF - 1, prog.num_vars());
+  // setFromTriplets sums up the duplicated entries.
+  linear_constraints_A.setFromTriplets(linear_constraints_triplets.begin(),
+                                       linear_constraints_triplets.end());
   int lenA = variable_to_linear_cost_coefficient.size() +
-             linear_constraints_triplets.size();
+             linear_constraints_A.nonZeros();
   std::vector<double> A(lenA, 0.0);
   std::vector<int> iAfun(lenA, 0);
   std::vector<int> jAvar(lenA, 0);
@@ -1202,13 +1269,24 @@ void SolveWithGivenOptions(
     jAvar[A_index] = it.first + 1;
     A_index++;
   }
-  for (const auto& it : linear_constraints_triplets) {
-    A[A_index] = it.value();
-    // Fortran is 1-indexed.
-    iAfun[A_index] = 2 + num_nonlinear_constraints + it.row();
-    jAvar[A_index] = 1 + it.col();
-    A_index++;
+  for (int i = 0; i < linear_constraints_A.outerSize(); ++i) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(linear_constraints_A, i);
+         it; ++it) {
+      A[A_index] = it.value();
+      // Fortran uses 1-index
+      iAfun[A_index] = num_nonlinear_constraints + it.row() + 2;
+      jAvar[A_index] = it.col() + 1;
+      A_index++;
+    }
   }
+
+  std::vector<int> iGfun;
+  std::vector<int> jGvar;
+  auto& duplicate_to_G_index_map = user_info.duplicate_to_G_index_map();
+  PruneGradientDuplication(nx, iGfun_w_duplicate, jGvar_w_duplicate,
+                           &duplicate_to_G_index_map, &iGfun, &jGvar);
+  const int lenG = iGfun.size();
+  user_info.set_lenG(lenG);
 
   for (const auto& it : snopt_options_double) {
     int errors = 0;
