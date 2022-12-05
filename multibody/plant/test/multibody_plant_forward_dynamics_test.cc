@@ -127,7 +127,7 @@ class KukaIiwaModelForwardDynamicsTests : public test::KukaIiwaModelTests {
 // the computation for an arbitrary set of robot states.
 TEST_F(KukaIiwaModelForwardDynamicsTests, ForwardDynamicsTest) {
   // Joint angles and velocities.
-  VectorX<double> q(kNumJoints), qdot(kNumJoints);
+  VectorX<double> q(kNumJoints - 1), qdot(kNumJoints - 1);
   double q30 = M_PI / 6, q45 = M_PI / 4, q60 = M_PI / 3;
 
   // Test 1: Static configuration.
