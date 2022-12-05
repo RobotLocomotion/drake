@@ -849,6 +849,88 @@ void TestL2NormCost(const SolverInterface& solver, double tol) {
   EXPECT_NEAR(result.GetSolution(x[1]), 0.2, tol);
 }
 
+class DummyConstraint : public Constraint {
+  // 0.5x² + 0.5*y² + z² = 1
+ public:
+  DummyConstraint() : Constraint(1, 3, Vector1d(1), Vector1d(1)) {}
+
+ protected:
+  template <typename T>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
+                     VectorX<T>* y) const {
+    y->resize(1);
+    (*y)(0) = 0.5 * x(0) * x(0) + 0.5 * x(1) * x(1) + x(2) * x(2);
+  }
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override {
+    DoEvalGeneric<double>(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override {
+    DoEvalGeneric<AutoDiffXd>(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
+    DoEvalGeneric<symbolic::Expression>(x.cast<symbolic::Expression>(), y);
+  }
+};
+
+class DummyCost : public Cost {
+  // -x²-2xy - 2xz - y² - 3z²
+ public:
+  DummyCost() : Cost(3) {}
+
+ protected:
+  template <typename T>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
+                     VectorX<T>* y) const {
+    y->resize(1);
+    (*y)(0) = -x(0) * x(0) - 2 * x(0) * x(1) - 2 * x(0) * x(2) - x(1) * x(1) -
+              3 * x(2) * x(2);
+  }
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override {
+    DoEvalGeneric<double>(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override {
+    DoEvalGeneric<AutoDiffXd>(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
+    DoEvalGeneric<symbolic::Expression>(x.cast<symbolic::Expression>(), y);
+  }
+};
+
+DuplicatedVariableNonlinearProgram1::DuplicatedVariableNonlinearProgram1()
+    : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<2>()} {
+  prog_->AddBoundingBoxConstraint(0, kInf, x_);
+  prog_->AddCost(std::make_shared<DummyCost>(),
+                 Vector3<symbolic::Variable>(x_(0), x_(1), x_(1)));
+  prog_->AddConstraint(std::make_shared<DummyConstraint>(),
+                       Vector3<symbolic::Variable>(x_(0), x_(0), x_(1)));
+}
+
+void DuplicatedVariableNonlinearProgram1::CheckSolution(
+    const SolverInterface& solver, const Eigen::Vector2d& x_init,
+    const std::optional<SolverOptions>& solver_options, double tol) const {
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(*prog_, x_init, solver_options, &result);
+    ASSERT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(
+        result.GetSolution(x_),
+        Eigen::Vector2d(1 / std::sqrt(5), 2 / std::sqrt(5)), tol));
+    EXPECT_NEAR(result.get_optimal_cost(), -5, tol);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -954,6 +954,26 @@ std::set<CostForm> linear_cost_form();
 std::set<CostForm> quadratic_cost_form();
 
 std::set<ConstraintForm> linear_constraint_form();
+
+// Test a nonlinear program whose costs and constraints are intentionally
+// imposed using duplicated variables.
+class DuplicatedVariableNonlinearProgram1 : public ::testing::Test {
+  // max x0² + 4x0x1 + 4x1²
+  // s.t x0² + x1² = 1
+  //     x0 >= 0
+  // The optimal solution is x0 = 1/sqrt(5), x1 = 2/sqrt(5).
+ public:
+  DuplicatedVariableNonlinearProgram1();
+
+  void CheckSolution(
+      const SolverInterface& solver, const Eigen::Vector2d& x_init,
+      const std::optional<SolverOptions>& solver_options = std::nullopt,
+      double tol = 1E-7) const;
+
+ protected:
+  std::unique_ptr<MathematicalProgram> prog_;
+  Vector2<symbolic::Variable> x_;
+};
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
