@@ -120,6 +120,7 @@ drake_cc_googletest(
         "//common/test_utilities",
         "//geometry/test_utilities:dummy_render_engine",
         "//math:geometric_transform",
+        "@vtk//:vtkIOImage",
     ],
 )
 

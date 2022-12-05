@@ -5,6 +5,9 @@
 #include <unordered_map>
 
 #include <gtest/gtest.h>
+#include <vtkImageData.h>
+#include <vtkNew.h>
+#include <vtkPNGReader.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -1039,6 +1042,52 @@ TEST_F(RenderEngineGlTest, ConvexTest) {
 
   SCOPED_TRACE("Mesh test");
   PerformCenterShapeTest(renderer_.get());
+}
+
+// Performs the test to cast non-8-bit textures with a box. It depends on the
+// non-8-bit image being converted to the 8-bit image losslessly. A 16-bit image
+// is loaded to prove the existence of the conversion, but this test doesn't
+// guarantee universal conversion success.
+TEST_F(RenderEngineGlTest, Non8bitTextures) {
+  const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
+  const auto& intrinsics = camera.core().intrinsics();
+  const Box box(1.999, 0.55, 0.75);
+  expected_label_ = RenderLabel(1);
+
+  // Ensure the texture is indeed non-8-bit.
+  vtkNew<vtkPNGReader> reader;
+  const std::string file_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box16u.png");
+  reader->SetFileName(file_path.c_str());
+  reader->Update();
+  DRAKE_DEMAND(reader->GetOutput()->GetScalarType() == VTK_UNSIGNED_SHORT);
+
+  // Render a box with an 8-bit PNG texture.
+  ImageRgba8U color_8bit_texture(intrinsics.width(), intrinsics.height());
+  {
+    RenderEngineGl renderer;
+    InitializeRenderer(X_WR_, false /* add terrain */, &renderer);
+
+    const GeometryId id = GeometryId::get_new_id();
+    PerceptionProperties props = simple_material(true);
+    renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
+    renderer.RenderColorImage(camera, &color_8bit_texture);
+  }
+
+  // Render a box with a 16-bit PNG texture.
+  ImageRgba8U color_16bit_texture(intrinsics.width(), intrinsics.height());
+  {
+    RenderEngineGl renderer;
+    InitializeRenderer(X_WR_, false /* add terrain */, &renderer);
+
+    const GeometryId id = GeometryId::get_new_id();
+    PerceptionProperties props = simple_material(false);
+    props.AddProperty("phong", "diffuse_map", file_path);
+    renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
+    renderer.RenderColorImage(camera, &color_16bit_texture);
+  }
+
+  EXPECT_EQ(color_8bit_texture, color_16bit_texture);
 }
 
 // This confirms that geometries are correctly removed from the render engine.
