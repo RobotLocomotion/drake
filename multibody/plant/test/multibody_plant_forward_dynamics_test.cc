@@ -320,38 +320,38 @@ class ConnectedRigidBodiesTest : public ::testing::Test {
   // @param[in] jointA_type_name joint that connects a newly constructed bodyA
   //   to world at the world origin Wo.
   // @param[in] mA mass of link A (1ˢᵗ link in the multibody plant).
-  // @param[in] LA length of uniform-density link A.
+  // @param[in] lA length of uniform-density link A.
   // @param[in] jointB_type_name joint that connects a newly constructed bodyB
   //   to bodyA at the x-distal end of bodyA (similarly for jointC_type_name).
   // @param[in] mB mass of link B (2ⁿᵈ link in the multibody plant).
-  // @param[in] LB length of uniform-density link B.
+  // @param[in] lB length of uniform-density link B.
   // @throws std::exception if a joint_type_name is not "revolute", "prismatic",
   //   or "FreeJoint".
   void MakePlant(const std::string& jointA_type_name,
-                 const double mA, const double LA,
+                 const double mA, const double lA,
                  const std::string* jointB_type_name = nullptr,
-                 const double mB = 0, const double LB = 0,
+                 const double mB = 0, const double lB = 0,
                  const std::string* jointC_type_name = nullptr,
-                 const double mC = 0, const double LC = 0) {
-    // Connect bodyA to world W at world origin with the designate joint type.
-    bodyA_ = &(AddCubicalLink(&plant_, "bodyA", mA, LA));
+                 const double mC = 0, const double lC = 0) {
+    // Connect bodyA to world W at world origin with the designated joint type.
+    bodyA_ = &(AddCubicalLink(&plant_, "bodyA", mA, lA));
     const RigidBody<double>& world_body = plant_.world_body();
     const RigidTransform<double> X_WF;  // Identity rigid transform.
     jointWA_ = AddJointToTestPlant(jointA_type_name, world_body, X_WF, *bodyA_);
 
-    // Connect bodyB to bodyA with the designate joint type. Create a "fixed"
+    // Connect bodyB to bodyA with the designated joint type. Create a "fixed"
     // frame F at the x-distal end of link A that connects to link B.
     if (jointB_type_name != nullptr) {
-      bodyB_ = &AddCubicalLink(&plant_, "bodyB", mB, LB);
-      const RigidTransform<double> X_AF(Vector3<double>(LA, 0, 0));
+      bodyB_ = &AddCubicalLink(&plant_, "bodyB", mB, lB);
+      const RigidTransform<double> X_AF(Vector3<double>(lA, 0, 0));
       jointAB_ = AddJointToTestPlant(*jointB_type_name, *bodyA_, X_AF, *bodyB_);
     }
 
-    // Connect bodyC to bodyB with the designate joint type. Create a "fixed"
+    // Connect bodyC to bodyB with the designated joint type. Create a "fixed"
     // frame F at the x-distal end of link B that connects to link C.
     if (jointC_type_name != nullptr) {
-      bodyC_ = &AddCubicalLink(&plant_, "bodyC", mC, LC);
-      const RigidTransform<double> X_BF(Vector3<double>(LB, 0, 0));
+      bodyC_ = &AddCubicalLink(&plant_, "bodyC", mC, lC);
+      const RigidTransform<double> X_BF(Vector3<double>(lB, 0, 0));
       jointBC_ = AddJointToTestPlant(*jointB_type_name, *bodyB_, X_BF, *bodyC_);
     }
 
@@ -383,7 +383,7 @@ class ConnectedRigidBodiesTest : public ::testing::Test {
   // @param[in] bodyB outboard body to be connected to the joint.
   // @note A joint_type_name of prismatic allows translation in the Fx direction
   //   (Fx is a unit vector of the fixed_frame F). A joint_type_name of revolute
-  //   allows rotation in the Fz direction.
+  //   allows rotation about the Fz direction.
   // @throws std::exception if joint_type_name is not "revolute", "prismatic",
   //   or "FreeJoint".
   // @returns pointer to a revolute joint (if one is created), otherwise null.
@@ -418,8 +418,8 @@ class ConnectedRigidBodiesTest : public ::testing::Test {
 // 𝟏 𝐭𝐫𝐚𝐧𝐬𝐥𝐚𝐭𝐢𝐨𝐧𝐚𝐥 (prismatic) degree-of-freedom.
 TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroMassTranslatingBody) {
   const double mA = 0;  // Mass of link A.
-  const double LA = 3;  // Length of uniform-density link (arbitrary > 0).
-  MakePlant(PrismaticJoint<double>::kTypeName, mA, LA);
+  const double lA = 3;  // Length of uniform-density link (arbitrary > 0).
+  MakePlant(PrismaticJoint<double>::kTypeName, mA, lA);
 
   // Verify assertion is thrown if mA = 0 since articulated body hinge
   // inertia matrix = [0] which is not positive definite.
@@ -437,8 +437,8 @@ TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroMassTranslatingBody) {
 // 𝟏 𝐫𝐨𝐭𝐚𝐭𝐢𝐨𝐧𝐚𝐥 (revolute) degree-of-freedom.
 TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroInertiaRotatingBody) {
   const double mA = 0;  // Mass of link A.
-  const double LA = 1;  // Length of uniform-density link (arbitrary > 0).
-  MakePlant(RevoluteJoint<double>::kTypeName, mA, LA);
+  const double lA = 1;  // Length of uniform-density link (arbitrary > 0).
+  MakePlant(RevoluteJoint<double>::kTypeName, mA, lA);
 
   // Verify assertion is thrown if mA = 0 since articulated body hinge
   // inertia matrix = [0] which is not positive definite.
@@ -457,9 +457,9 @@ TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroInertiaRotatingBody) {
 // body is at the end of the topological chain).
 TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroMassTranslating2Bodies) {
   const double mA = 1, mB = 0;  // Mass of links A and B.
-  const double LA = 1, LB = 1;  // Length of uniform-density links.
+  const double lA = 1, lB = 1;  // Length of uniform-density links.
   const std::string prismatic(PrismaticJoint<double>::kTypeName);
-  MakePlant(prismatic, mA, LA, &prismatic, mB, LB);
+  MakePlant(prismatic, mA, lA, &prismatic, mB, lB);
 
   // Verify assertion is thrown if mA = 1, mB = 0 (zero-mass distal body) since
   // articulated body hinge inertia matrix = [0] which is not positive definite.
@@ -551,8 +551,8 @@ TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroInertiaRotating3Bodies) {
 // Note: This tests a 𝟔 x 𝟔 articulated body hinge inertia matrix.
 TEST_F(ConnectedRigidBodiesTest, ThrowErrorForZeroMassInertiaFreeBody) {
   const double mA = 0;    // Mass of link A.
-  const double LA = 0.3;  // Length of uniform-density link (arbitrary > 0).
-  MakePlant("FreeJoint", mA, LA);  // Link A is a "free body".
+  const double lA = 0.3;  // Length of uniform-density link (arbitrary > 0).
+  MakePlant("FreeJoint", mA, lA);  // Link A is a "free body".
 
   // Verify assertion is thrown if mA = 0 since articulated body hinge inertia
   // matrix is a 𝟔 x 𝟔 zero matrix (albeit with NaN in upper-triangular part).
