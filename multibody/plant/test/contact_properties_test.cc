@@ -72,15 +72,17 @@ class ContactPropertiesTest : public ::testing::Test {
             scene_graph_.ToAutoDiffXd());
   }
 
-  // mu  = Coulomb friction
-  // k   = stiffness
-  // tau = relaxation time
-  // Eh  = hydroelastic modulus
-  // d   = dissipation
-  GeometryId g_A_;  // Has mu, k, tau, dA, Eh_A.
-  GeometryId g_B_;  // Has mu,    tau,     Eh_B and "rigid hydroelastic".
-  GeometryId g_C_;  // Has mu, k,          Eh_C and "compliant hydroelastic".
-  GeometryId g_D_;  // Has mu,    invalid tau.
+  /*
+  mu  = Coulomb friction
+  k   = stiffness
+  tau = relaxation time
+  Eh  = hydroelastic modulus
+  d   = dissipation
+  */
+  GeometryId g_A_;  /* Has mu, k, tau, dA, Eh_A */
+  GeometryId g_B_;  /* Has mu,    tau,     Eh_B and "rigid hydroelastic" */
+  GeometryId g_C_;  /* Has mu, k,          Eh_C and "compliant hydroelastic" */
+  GeometryId g_D_;  /* Has mu,    invalid tau */
 
   const SceneGraphInspector<double>& inspector() const {
     return scene_graph_.model_inspector();
@@ -237,7 +239,7 @@ TEST_F(ContactPropertiesTest, GetCoulombFriction) {
       [this](auto T_dummy, const auto& inspector) {
         using T = decltype(T_dummy);
         const auto data = GetCoulombFriction(g_A_, inspector);
-        // Sum the values as a *very* naive way to check general convresion.
+        // Sum the values as a *very* naive way to check general conversion.
         T sum = data.static_friction() + data.dynamic_friction();
         return sum;
       });
