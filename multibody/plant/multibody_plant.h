@@ -2390,6 +2390,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// multibody state vector. For such applications,
   /// Body::floating_positions_start() and Body::floating_velocities_start()
   /// offer the additional level of introspection needed.
+  ///
+  /// It is sometimes convenient for users to perform operations on Bodies
+  /// ubiquitously through the APIs of the Joint class. For that reason we
+  /// implicitly construct a 6-dof joint, QuaternionFloatingJoint, for all free
+  /// bodies at the time of Finalize(). Using Joint APIs to affect a free body
+  /// (setting  state, changing parameters, etc.) has the same effect as using
+  /// the free body APIs below. Each implicitly created joint is named
+  /// "$world_<bodyname>" where "<bodyname>" is the name of the free body, given
+  /// by `Body::name()`.
   /// @{
 
   /// Returns the set of body indexes corresponding to the free (floating)

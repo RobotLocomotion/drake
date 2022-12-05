@@ -657,7 +657,7 @@ void MultibodyTree<T>::CreateJointImplementations() {
     const Body<T>& body = get_body(body_index);
     const BodyTopology& body_topology = get_topology().get_body(body.index());
     if (!body_topology.inboard_mobilizer.is_valid()) {
-      this->AddJoint<QuaternionFloatingJoint>("world_" + body.name(),
+      this->AddJoint<QuaternionFloatingJoint>("$world_" + body.name(),
                                               world_body(), {}, body, {});
     }
   }
