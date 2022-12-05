@@ -32,8 +32,9 @@ using math::RotationMatrixd;
 int do_main() {
   auto meshcat = std::make_shared<Meshcat>();
 
+  Vector3d sphere_home{-4, 0, 0};
   meshcat->SetObject("sphere", Sphere(.25), Rgba(1.0, 0, 0, 1));
-  meshcat->SetTransform("sphere", RigidTransformd(Vector3d{-4, 0, 0}));
+  meshcat->SetTransform("sphere", RigidTransformd(sphere_home));
 
   meshcat->SetObject("cylinder", Cylinder(.25, .5), Rgba(0.0, 1.0, 0, 1));
   meshcat->SetTransform("cylinder", RigidTransformd(Vector3d{-3, 0, 0}));
@@ -41,8 +42,9 @@ int do_main() {
   meshcat->SetObject("ellipsoid", Ellipsoid(.25, .25, .5), Rgba(1., 0, 1, .5));
   meshcat->SetTransform("ellipsoid", RigidTransformd(Vector3d{-2, 0, 0}));
 
+  Vector3d box_home{-1, 0, 0};
   meshcat->SetObject("box", Box(.25, .25, .5), Rgba(0, 0, 1, 1));
-  meshcat->SetTransform("box", RigidTransformd(Vector3d{-1, 0, 0}));
+  meshcat->SetTransform("box", RigidTransformd(box_home));
 
   meshcat->SetObject("capsule", Capsule(.25, .5), Rgba(0, 1, 1, 1));
   meshcat->SetTransform("capsule", RigidTransformd(Vector3d{0, 0, 0}));
@@ -104,9 +106,9 @@ int do_main() {
     const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
     std::vector<SurfaceTriangle> faces;
     for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
-    const Eigen::Vector3d vertex_data[4] = {
+    const Vector3d vertex_data[4] = {
         {0, 0, 0}, {0.5, 0, 0}, {0.5, 0.5, 0}, {0, 0.5, 0.5}};
-    std::vector<Eigen::Vector3d> vertices;
+    std::vector<Vector3d> vertices;
     for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
     TriangleSurfaceMesh<double> surface_mesh(
         std::move(faces), std::move(vertices));
@@ -176,17 +178,21 @@ Open up your browser to the URL above.
   std::cout << "Animations:\n";
   MeshcatAnimation animation;
   std::cout << "- the red sphere should move up and down in z.\n";
-  animation.SetTransform(0, "sphere", RigidTransformd(Vector3d{-3, 0, 0}));
-  animation.SetTransform(20, "sphere", RigidTransformd(Vector3d{-3, 0, 1}));
-  animation.SetTransform(40, "sphere", RigidTransformd(Vector3d{-3, 0, 0}));
+  animation.SetTransform(0, "sphere", RigidTransformd(sphere_home));
+  animation.SetTransform(20, "sphere", RigidTransformd(sphere_home +
+                                                       Vector3d::UnitZ()));
+  animation.SetTransform(40, "sphere", RigidTransformd(sphere_home));
 
   std::cout << "- the blue box should spin clockwise about the +z axis.\n";
   animation.SetTransform(0, "box",
-                         RigidTransformd(RotationMatrixd::MakeZRotation(0)));
+                         RigidTransformd(RotationMatrixd::MakeZRotation(0),
+                                         box_home));
   animation.SetTransform(20, "box",
-                         RigidTransformd(RotationMatrixd::MakeZRotation(M_PI)));
+                         RigidTransformd(RotationMatrixd::MakeZRotation(M_PI),
+                                         box_home));
   animation.SetTransform(
-      40, "box", RigidTransformd(RotationMatrixd::MakeZRotation(2 * M_PI)));
+      40, "box", RigidTransformd(RotationMatrixd::MakeZRotation(2 * M_PI),
+                                 box_home));
   animation.set_repetitions(4);
 
   std::cout << "- the green cylinder should appear and disappear.\n";
@@ -208,7 +214,7 @@ Open up your browser to the URL above.
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-  meshcat->Set2dRenderMode(math::RigidTransform(Eigen::Vector3d{0, -3, 0}), -4,
+  meshcat->Set2dRenderMode(math::RigidTransform(Vector3d{0, -3, 0}), -4,
                            4, -2, 2);
 
   std::cout << "- The scene should have switched to 2D rendering mode.\n";
@@ -217,7 +223,7 @@ Open up your browser to the URL above.
 
   meshcat->Set2dRenderMode(
       math::RigidTransform(math::RotationMatrixd::MakeZRotation(-M_PI / 2.0),
-                           Eigen::Vector3d{-3, 0, 0}),
+                           sphere_home),
       -2, 2, -2, 2);
 
   std::cout << "- Now 2D rendering along the +x axis (red sphere in front).\n";
@@ -266,11 +272,11 @@ Open up your browser to the URL above.
     const auto& body1 = plant.GetBodyByName("body1");
     plant.AddJoint<multibody::PrismaticJoint>("body1", plant.world_body(),
                                               std::nullopt, body1, std::nullopt,
-                                              Eigen::Vector3d::UnitZ());
+                                              Vector3d::UnitZ());
     const auto& body2 = plant.GetBodyByName("body2");
     plant.AddJoint<multibody::PrismaticJoint>("body2", plant.world_body(),
                                               std::nullopt, body2, std::nullopt,
-                                              Eigen::Vector3d::UnitX());
+                                              Vector3d::UnitX());
     plant.Finalize();
 
     MeshcatVisualizerParams params;
