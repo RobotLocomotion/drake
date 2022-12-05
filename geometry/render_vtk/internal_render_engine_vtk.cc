@@ -8,6 +8,7 @@
 
 #include <vtkCamera.h>
 #include <vtkCylinderSource.h>
+#include <vtkImageData.h>
 #include <vtkOBJReader.h>
 #include <vtkOpenGLPolyDataMapper.h>
 #include <vtkOpenGLShaderProperty.h>
@@ -545,6 +546,12 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
     vtkNew<vtkPNGReader> texture_reader;
     texture_reader->SetFileName(texture_name.c_str());
     texture_reader->Update();
+
+    vtkImageData* image_data = texture_reader->GetOutput();
+    // Each channel should be an unsigned byte.
+    DRAKE_DEMAND(image_data != nullptr &&
+                 image_data->GetScalarType() == VTK_UNSIGNED_CHAR);
+
     vtkNew<vtkOpenGLTexture> texture;
     texture->SetInputConnection(texture_reader->GetOutputPort());
     const bool need_repeat = uv_scale[0] > 1 || uv_scale[1] > 1;
