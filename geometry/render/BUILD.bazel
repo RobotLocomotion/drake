@@ -75,6 +75,7 @@ filegroup(
         "test/meshes/box.obj",
         "test/meshes/box.obj.mtl",
         "test/meshes/box.png",
+        "test/meshes/box16u.png",
     ],
 )
 
