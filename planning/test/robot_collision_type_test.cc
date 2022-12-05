@@ -3,7 +3,7 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
@@ -71,4 +71,4 @@ GTEST_TEST(CollisionCheckerTest, SelfCollisionBits) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

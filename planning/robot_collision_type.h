@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** Enumerates these predicates (and their combinations):
@@ -40,4 +40,4 @@ inline RobotCollisionType SetInSelfCollision(RobotCollisionType collision_type,
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

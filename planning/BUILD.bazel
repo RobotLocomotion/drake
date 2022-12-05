@@ -14,9 +14,15 @@ drake_cc_package_library(
     name = "planning",
     visibility = ["//visibility:public"],
     deps = [
+        ":robot_collision_type",
         ":robot_diagram",
         ":robot_diagram_builder",
     ],
+)
+
+drake_cc_library(
+    name = "robot_collision_type",
+    hdrs = ["robot_collision_type.h"],
 )
 
 drake_cc_library(
@@ -43,6 +49,13 @@ drake_cc_library(
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "robot_collision_type_test",
+    deps = [
+        ":robot_collision_type",
     ],
 )
 
