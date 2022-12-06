@@ -5,13 +5,17 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/render_vtk/factory.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/math/spatial_force.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
+#include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
@@ -40,10 +44,14 @@ using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RotationMatrix;
+using multibody::Body;
+using multibody::ExternallyAppliedSpatialForce;
 using multibody::Joint;
+using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
 using multibody::PrismaticJoint;
 using multibody::RevoluteJoint;
+using multibody::SpatialForce;
 using multibody::SpatialInertia;
 
 namespace internal {
@@ -173,6 +181,80 @@ MakeD415CameraModel(const std::string& renderer_name) {
 }
 
 }  // namespace internal
+
+ExternalGeneralizedForcesComputer::ExternalGeneralizedForcesComputer(
+                                  multibody::MultibodyPlant<double>* plant,
+                                  ManipulationStation<double>* station,
+                                  int num_iiwa_positions,
+                                  systems::System<double>* input_force_system)
+  : plant_(plant),
+    station_(station),
+    num_iiwa_joints_(num_iiwa_positions),
+    applied_spatial_force_system_(input_force_system) {
+  external_generalized_force_output_port_ =
+    this->DeclareVectorOutputPort(
+            "external_generalized_force", num_iiwa_positions,
+            &ExternalGeneralizedForcesComputer::CalcGeneralizedForceOutput)
+        .get_index();
+}
+
+void ExternalGeneralizedForcesComputer::SetRootContext(
+    systems::Context<double>* root_context)
+{
+  DRAKE_DEMAND(root_context != nullptr);
+  root_context_ = root_context;
+}
+
+VectorX<double>
+ExternalGeneralizedForcesComputer::CalcExternalGeneralizedForces(
+    const drake::systems::Context<double>& context) const {
+  DRAKE_DEMAND(root_context_ != nullptr);
+  const systems::Context<double>& input_context = station_->GetSubsystemContext(
+      *applied_spatial_force_system_, *root_context_);
+  const systems::Context<double>& plant_context =
+    station_->GetSubsystemContext(*plant_, *root_context_);
+
+  const auto& externally_applied_spatial_forces =
+    applied_spatial_force_system_->get_output_port()
+        .Eval<std::vector<ExternallyAppliedSpatialForce<double>>>(
+            input_context);
+  multibody::MultibodyForces<double> forces(*plant_);
+  for (const ExternallyAppliedSpatialForce<double>& a_force :
+       externally_applied_spatial_forces) {
+    const Body<double>& body = plant_->get_body(a_force.body_index);
+
+    // Get the pose for this body in the world frame.
+    const RigidTransform<double>& X_WB = body.EvalPoseInWorld(plant_context);
+    // Get the position vector from the body origin (Bo) to the point of
+    // force application (Bq), expressed in the world frame (W).
+    const Vector3<double> p_BoBq_W = X_WB.rotation() * a_force.p_BoBq_B;
+
+    // Shift the spatial force from Bq to Bo.
+    const SpatialForce<double> F_Bo_W = a_force.F_Bq_W.Shift(-p_BoBq_W);
+
+    // Add contribution.
+    body.AddInForceInWorld(context, F_Bo_W, &forces);
+  }
+  VectorX<double> generalized_forces(plant_->num_velocities());
+  plant_->CalcGeneralizedForces(plant_context, forces, &generalized_forces);
+  const auto& base_joint =
+      plant_->GetJointByName<multibody::RevoluteJoint>("iiwa_joint_1");
+  const int iiwa_velocity_start = base_joint.velocity_start();
+  return generalized_forces.segment(iiwa_velocity_start, num_iiwa_joints_);
+}
+
+void ExternalGeneralizedForcesComputer::CalcGeneralizedForceOutput(
+  const drake::systems::Context<double>& context,
+  drake::systems::BasicVector<double>* output_vector) const {
+output_vector->SetFromVector(CalcExternalGeneralizedForces(context));
+}
+
+const systems::OutputPort<double>&
+    ExternalGeneralizedForcesComputer::
+      get_external_generalized_force_output_port() const {
+  return get_output_port(external_generalized_force_output_port_);
+}
+
 
 template <typename T>
 ManipulationStation<T>::ManipulationStation(double time_step)
@@ -554,8 +636,7 @@ void ManipulationStation<T>::Finalize(
   builder.ExportOutput(iiwa_position->get_output_port(),
                        "iiwa_position_commanded");
 
-  builder.ExportInput(plant_->get_applied_spatial_force_input_port(),
-                      "applied_spatial_force");
+
 
   // Export iiwa "state" outputs.
   {
@@ -669,9 +750,30 @@ void ManipulationStation<T>::Finalize(
                          "wsg_force_measured");
   }
 
-  builder.ExportOutput(plant_->get_generalized_contact_forces_output_port(
-                           iiwa_model_.model_instance),
-                       "iiwa_torque_external");
+
+  systems::System<double>* applied_spatial_force_system = builder
+      .template AddSystem<systems::PassThrough<double>>(
+          Value<std::vector<ExternallyAppliedSpatialForce<double>>>());
+  computer_ = builder
+    .template AddSystem<ExternalGeneralizedForcesComputer>(
+        plant_, this, num_iiwa_positions, applied_spatial_force_system);
+  systems::Adder<double>* external_forces_adder = builder
+    .template AddSystem<systems::Adder<double>>(2, num_iiwa_positions);
+
+  builder.Connect(plant_->get_generalized_contact_forces_output_port(
+                  iiwa_model_.model_instance),
+                  external_forces_adder->get_input_port(0));
+  builder.Connect(computer_->get_external_generalized_force_output_port(),
+                  external_forces_adder->get_input_port(1));
+  builder.ExportInput(
+      applied_spatial_force_system->get_input_port(),
+      "applied_spatial_force");
+  builder.Connect(
+      applied_spatial_force_system->get_output_port(),
+      plant_->get_applied_spatial_force_input_port());
+  builder.ExportOutput(
+      external_forces_adder->get_output_port(),
+      "iiwa_torque_external");
 
   {  // RGB-D Cameras
     if (render_engines.size() > 0) {

@@ -107,6 +107,16 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia() {
   return M_CGo_G;
 }
 
+void FixGripper(const ManipulationStation<double>& station,
+                Context<double>* context)
+{
+  // All ports must be connected if later on we'll ask questions like: "what's
+  // the external contact torque?". We therefore fix the gripper related ports.
+  double wsg_position = station.GetWsgPosition(*context);
+  station.GetInputPort("wsg_position").FixValue(context, wsg_position);
+  station.GetInputPort("wsg_force_limit").FixValue(context, 40.);
+}
+
 void SetArbitraryState(const ManipulationStation<double>& station,
                        Context<double>* context,
                        const VectorXd& iiwa_position,
@@ -117,9 +127,7 @@ void SetArbitraryState(const ManipulationStation<double>& station,
   station.GetInputPort("iiwa_position").FixValue(context, iiwa_position);
   station.GetInputPort("iiwa_feedforward_torque").FixValue(context,
                                                            VectorXd::Zero(7));
-  double wsg_position = station.GetWsgPosition(*context);
-  station.GetInputPort("wsg_position").FixValue(context, wsg_position);
-  station.GetInputPort("wsg_force_limit").FixValue(context, 40.);
+  FixGripper(station, context);
 
   // Set desired position to actual position and the desired velocity to the
   // actual velocity.
@@ -170,7 +178,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   multibody::Parser parser(&station.get_mutable_multibody_plant(),
                            &station.get_mutable_scene_graph());
   parser.AddModels(FindResourceOrThrow(
-      "drake/examples/manipulation_station/models/061_foam_brick.sdf"));
+   "drake/examples/manipulation_station/models/061_foam_brick.sdf"));
   station.Finalize();
 
   auto& plant = station.get_multibody_plant();
@@ -240,11 +248,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                                   .Eval<BasicVector<double>>(*context)
                                   .get_value()));
 
-  // All ports must be connected if later on we'll ask questions like: "what's
-  // the external contact torque?". We therefore fix the gripper related ports.
-  double wsg_position = station.GetWsgPosition(*context);
-  station.GetInputPort("wsg_position").FixValue(context.get(), wsg_position);
-  station.GetInputPort("wsg_force_limit").FixValue(context.get(), 40.);
+  FixGripper(station, context.get());
 
   // Check iiwa_torque_commanded == iiwa_torque_measured.
   EXPECT_TRUE(CompareMatrices(station.GetOutputPort("iiwa_torque_commanded")
@@ -254,11 +258,6 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                                   .Eval<BasicVector<double>>(*context)
                                   .get_value()));
 
-  // Check that iiwa_torque_external == 0 (no contact).
-  EXPECT_TRUE(station.GetOutputPort("iiwa_torque_external")
-                  .Eval<BasicVector<double>>(*context)
-                  .get_value()
-                  .isZero());
 
   // Check that the additional output ports exist and are spelled correctly.
   DRAKE_EXPECT_NO_THROW(station.GetOutputPort("contact_results"));
@@ -285,6 +284,33 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   const Matrix6<double> M6_expected = M_SGo_G_expected.CopyToFullMatrix6();
   constexpr double ktol = 32 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(M6_actual, M6_expected, ktol));
+}
+
+GTEST_TEST(ManipulationStationTest, CheckIiwaTorqueExternal) {
+  ManipulationStation<double> station(0.001);
+  station.SetupManipulationClassStation();
+  station.Finalize();
+
+  auto context = station.CreateDefaultContext();
+  FixGripper(station, context.get());
+  station.GetInputPort("iiwa_feedforward_torque")
+      .FixValue(context.get(), VectorXd::Zero(7));
+
+  // Check that iiwa_torque_external == 0 (no contact or applied_spatial_force).
+  EXPECT_TRUE(station.GetOutputPort("iiwa_torque_external")
+                  .Eval<BasicVector<double>>(*context)
+                  .get_value()
+                  .isZero());
+
+  // Check that iiwa_torque_external != 0 if spatial force is applied externally
+  const VectorXd iiwa_position = VectorXd::LinSpaced(7, 0.735, 0.983);
+  const VectorXd iiwa_velocity = VectorXd::Zero(7);
+  SetArbitraryState(station, context.get(), iiwa_position, iiwa_velocity);
+  ApplyExternalForceToManipulator(&station, context.get());
+  EXPECT_FALSE(station.GetOutputPort("iiwa_torque_external")
+                  .Eval<BasicVector<double>>(*context)
+                  .get_value()
+                  .isZero());
 }
 
 // Partially check M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external
