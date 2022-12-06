@@ -30,6 +30,8 @@ struct VisualizationConfig {
     a->Visit(DRAKE_NVP(publish_proximity));
     a->Visit(DRAKE_NVP(default_proximity_color));
     a->Visit(DRAKE_NVP(publish_contacts));
+    a->Visit(DRAKE_NVP(enable_meshcat_creation));
+    a->Visit(DRAKE_NVP(delete_on_initialization_event));
   }
 
   /** Which LCM URL to use.
@@ -58,6 +60,14 @@ struct VisualizationConfig {
 
   /** Whether to show contact forces. */
   bool publish_contacts{true};
+
+  /** Whether to create a Meshcat object if needed. */
+  bool enable_meshcat_creation{true};
+
+  /** Determines whether to send a Meshcat::Delete() messages to the Meshcat
+   object (if any) on an initialization event to remove any visualizations,
+   e.g., from a previous simulation, to . */
+  bool delete_on_initialization_event{true};
 };
 
 }  // namespace visualization
