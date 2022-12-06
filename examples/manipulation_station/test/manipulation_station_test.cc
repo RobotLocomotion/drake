@@ -170,7 +170,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   multibody::Parser parser(&station.get_mutable_multibody_plant(),
                            &station.get_mutable_scene_graph());
   parser.AddModels(FindResourceOrThrow(
-      "drake/examples/manipulation_station/models/061_foam_brick.sdf"));
+   "drake/examples/manipulation_station/models/061_foam_brick.sdf"));
   station.Finalize();
 
   auto& plant = station.get_multibody_plant();
@@ -254,11 +254,6 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                                   .Eval<BasicVector<double>>(*context)
                                   .get_value()));
 
-  // Check that iiwa_torque_external == 0 (no contact).
-  EXPECT_TRUE(station.GetOutputPort("iiwa_torque_external")
-                  .Eval<BasicVector<double>>(*context)
-                  .get_value()
-                  .isZero());
 
   // Check that the additional output ports exist and are spelled correctly.
   DRAKE_EXPECT_NO_THROW(station.GetOutputPort("contact_results"));
