@@ -1,0 +1,12 @@
+directives:
+
+# N.B. The namespacing features are only available for RBT.
+
+# Left.
+- add_model_instance:
+    # `model_namespace` requires a corresponding model instance so that frames
+    # can be added to it.
+    name: model_instance
+- add_directives:
+    file: package://model_directives_to_sdformat_files/hidden_frame.yaml
+    model_namespace: model_instance

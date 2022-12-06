@@ -16,14 +16,10 @@ import argparse
 import lxml.etree as ET
 import os
 import sys
-from typing import Any, Dict, List
-import warnings
+from typing import Any, Dict
 
 from pydrake.common.yaml import yaml_load_file
-from pydrake.multibody.parsing import Parser
-from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
-from pydrake.systems.framework import DiagramBuilder
-
+from pydrake.multibody.parsing import PackageMap
 
 SDF_VERSION = '1.9'
 SCOPE_DELIMITER = '::'
@@ -66,7 +62,8 @@ class ModelDirectivesToSdf:
 
     def find_frame(self, name: str) -> str:
         """Finds and returns a frame if it exists in all directives,
-           if 0 or more than one are found it returns None."""
+           if 0 or more than one are found it throws a ConversionError
+           exception."""
         frame = None
         for directive in self.all_directives:
             if 'add_frame' in directive:
@@ -105,7 +102,8 @@ class ModelDirectivesToSdf:
         split_scoped_name.append(frame_name)
         return SCOPE_DELIMITER.join(split_scoped_name)
 
-    def add_directives(self, root: ET, directive: Dict[str, Any]) -> bool:
+    def add_directives(self, root: ET, directive: Dict[str, Any],
+                       nofollow: bool, packages_path: str) -> bool:
         include_elem = None
         if 'model_namespace' in directive:
             model_ns = directive['model_namespace']
@@ -131,21 +129,38 @@ class ModelDirectivesToSdf:
             include_elem = ET.SubElement(root, 'include', merge='true')
 
         file_path = directive['file']
-        result_tree = self.convert_directive(file_path)
         sdformat_file_path = file_path.replace('.yaml', '.sdf')
 
-        if result_tree is not None:
-            if sdformat_file_path:
-                result_tree.write(
-                    sdformat_file_path,
-                    pretty_print=True,
-                    encoding="unicode")
+        if not nofollow:
+            if file_path.startswith("package://"):
+                package_map = PackageMap()
+                if packages_path:
+                    package_map.PopulateFromFolder(packages_path)
+                else:
+                    package_map.PopulateFromFolder('.')
+                suffix = file_path[len("package://"):]
+                package, relative_path = suffix.split("/", maxsplit=1)
+                if package_map.Contains(package):
+                    file_path = os.path.join(package_map.GetPath(package), relative_path)
+                else:
+                    raise ConversionError(
+                        f'Failed to find package [{package}] in the provided path:')
+            result_tree = self.convert_directive(file_path, nofollow, packages_path)
+            sdformat_file_path = file_path.replace('.yaml', '.sdf')
+            if result_tree is not None:
+                if sdformat_file_path:
+                    result_tree.write(
+                        sdformat_file_path,
+                        pretty_print=True,
+                        encoding="unicode")
+                else:
+                    raise ConversionError(
+                        'Error trying to guess SDFormat file name '
+                        f'for add_directives: {directive}')
             else:
                 raise ConversionError(
-                    'Error trying to guess SDFormat file name '
-                    f'for add_directives: {directive}')
-        else:
-            return False
+                    'Failed converting the file included through '
+                    f' add_directives: {directive}')
 
         uri_elem = ET.SubElement(include_elem, 'uri')
         uri_elem.text = sdformat_file_path
@@ -380,7 +395,8 @@ class ModelDirectivesToSdf:
             split_child_name[0]] = directive
         return True
 
-    def convert_directive(self, input_path: str) -> str:
+    def convert_directive(self, input_path: str, nofollow: bool = False,
+                          packages_path: str = None) -> str:
         # Initialize the sdformat XML root
         root = ET.Element('sdf', version=SDF_VERSION)
         root_model_name = os.path.splitext(os.path.basename(input_path))[0]
@@ -440,7 +456,7 @@ class ModelDirectivesToSdf:
 
             elif 'add_directives' in directive:
                 success = self.add_directives(
-                    root_model_elem, directive['add_directives'])
+                    root_model_elem, directive['add_directives'], nofollow, packages_path)
 
             if not success:
                 raise ConversionError(
@@ -466,7 +482,7 @@ class ModelDirectivesToSdf:
         return ET.ElementTree(root)
 
 
-def main() -> None:
+def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '-m', '--model-directives', type=str,
@@ -474,11 +490,16 @@ def main() -> None:
     parser.add_argument(
         '-o', '--output', type=str,
         help='Output path for converted SDFormat file.')
-    args = parser.parse_args()
+    parser.add_argument(
+        '-nf', '--nofollow', action='store_true',
+        help='Do not convert files included through [add_directives].')
+    parser.add_argument(
+        '-p', '--packages-path', type=str, help='Path used to find packages.')
+    args = parser.parse_args(argv)
 
     model_directives_to_sdformat = ModelDirectivesToSdf()
     result_tree = model_directives_to_sdformat.convert_directive(
-        args.model_directives)
+        args.model_directives, args.nofollow, args.packages_path)
 
     if result_tree is not None:
         if args.output:
