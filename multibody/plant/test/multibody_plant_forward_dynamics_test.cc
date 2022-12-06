@@ -317,14 +317,15 @@ class ConnectedRigidBodiesTest : public ::testing::Test {
  public:
   // Create a MultibodyPlant and a Context with at least one rigid body
   // connected to world and maybe other interconnected rigid bodies thereafter.
-  // @param[in] jointA_type_name joint that connects a newly constructed bodyA
-  //   to world at the world origin Wo.
-  // @param[in] mA mass of link A (1ˢᵗ link in the multibody plant).
-  // @param[in] lA length of uniform-density link A.
-  // @param[in] jointB_type_name joint that connects a newly constructed bodyB
-  //   to bodyA at the x-distal end of bodyA (similarly for jointC_type_name).
-  // @param[in] mB mass of link B (2ⁿᵈ link in the multibody plant).
-  // @param[in] lB length of uniform-density link B.
+  // @param[in] jointA_type_name name of joint that connects a newly constructed
+  //   bodyA to world at the world origin Wo. Similarly for
+  //   jointB_type_name connecting a newly constructed bodyB to bodyA and
+  //   jointC_type_name connecting a newly constructed bodyC to bodyB.
+  // @param[in] mA mass of link A (1ˢᵗ link in the multibody plant). Similarly
+  //     mB is the mass of link B (2ⁿᵈ link in the multibody plant) and
+  //     mC is the mass of link C (3ʳᵈ link in the multibody plant).
+  // @param[in] lA length of uniform-density link A. Similarly, lB and lC are
+  //   the lengths of uniform-density links B and C, respectively.
   // @throws std::exception if a joint_type_name is not "revolute", "prismatic",
   //   or "FreeJoint".
   void MakePlant(const std::string& jointA_type_name,
@@ -352,7 +353,7 @@ class ConnectedRigidBodiesTest : public ::testing::Test {
     if (jointC_type_name != nullptr) {
       bodyC_ = &AddCubicalLink(&plant_, "bodyC", mC, lC);
       const RigidTransform<double> X_BF(Vector3<double>(lB, 0, 0));
-      jointBC_ = AddJointToTestPlant(*jointB_type_name, *bodyB_, X_BF, *bodyC_);
+      jointBC_ = AddJointToTestPlant(*jointC_type_name, *bodyB_, X_BF, *bodyC_);
     }
 
     // Signal that we are done building the test model.
