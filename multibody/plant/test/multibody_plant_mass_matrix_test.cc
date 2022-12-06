@@ -115,8 +115,9 @@ TEST_F(MultibodyPlantMassMatrixTests, AtlasRobot) {
   for (JointIndex joint_index(0); joint_index < plant_.num_joints();
        ++joint_index) {
     const Joint<double>& joint = plant_.get_joint(joint_index);
-    // This model only has weld and revolute joints. Weld joints have zero DOFs.
-    if (joint.num_velocities() != 0) {
+    // This model has weld, revolute, and floating joints. Set the revolute
+    // joints to an arbitrary angle.
+    if (joint.type_name() == RevoluteJoint<double>::kTypeName) {
       const RevoluteJoint<double>& revolute_joint =
           dynamic_cast<const RevoluteJoint<double>&>(joint);
       // Arbitrary non-zero angle.
@@ -140,8 +141,9 @@ TEST_F(MultibodyPlantMassMatrixTests, AtlasRobotWithFixedJoints) {
   for (JointIndex joint_index(0); joint_index < plant_.num_joints();
        ++joint_index) {
     const Joint<double>& joint = plant_.get_joint(joint_index);
-    // This model only has weld and revolute joints. Weld joints have zero DOFs.
-    if (joint.num_velocities() != 0) {
+    // This model has weld, revolute, and floating joints. Set the revolute
+    // joints to an arbitrary angle.
+    if (joint.type_name() == RevoluteJoint<double>::kTypeName) {
       const RevoluteJoint<double>& revolute_joint =
           dynamic_cast<const RevoluteJoint<double>&>(joint);
       // Arbitrary non-zero angle.
@@ -162,12 +164,12 @@ TEST_F(MultibodyPlantMassMatrixTests, IiwaWithWeldedGripper) {
        ++joint_index) {
     const Joint<double>& joint = plant_.get_joint(joint_index);
     // This model only has weld, prismatic, and revolute joints.
-    if (joint.type_name() == "revolute") {
+    if (joint.type_name() == RevoluteJoint<double>::kTypeName) {
       const RevoluteJoint<double>& revolute_joint =
           dynamic_cast<const RevoluteJoint<double>&>(joint);
       // Arbitrary non-zero angle.
       revolute_joint.set_angle(context.get(), 0.5 * joint_index);
-    } else if (joint.type_name() == "prismatic") {
+    } else if (joint.type_name() == PrismaticJoint<double>::kTypeName) {
        const PrismaticJoint<double>& prismatic_joint =
           dynamic_cast<const PrismaticJoint<double>&>(joint);
       // Arbitrary non-zero joint translation.

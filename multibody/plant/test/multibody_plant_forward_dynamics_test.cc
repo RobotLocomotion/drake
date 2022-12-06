@@ -127,7 +127,7 @@ class KukaIiwaModelForwardDynamicsTests : public test::KukaIiwaModelTests {
 // the computation for an arbitrary set of robot states.
 TEST_F(KukaIiwaModelForwardDynamicsTests, ForwardDynamicsTest) {
   // Joint angles and velocities.
-  VectorX<double> q(kNumJoints), qdot(kNumJoints);
+  VectorX<double> q(kNumJoints - 1), qdot(kNumJoints - 1);
   double q30 = M_PI / 6, q45 = M_PI / 4, q60 = M_PI / 3;
 
   // Test 1: Static configuration.
@@ -173,8 +173,9 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
   for (JointIndex joint_index(0); joint_index < plant.num_joints();
        ++joint_index) {
     const Joint<double>& joint = plant.get_joint(joint_index);
-    // This model only has weld and revolute joints. Weld joints have zero DOFs.
-    if (joint.num_velocities() != 0) {
+    // This model only has weld, revolute, and floating joints. Set the revolute
+    // joints to an arbitrary angle.
+    if (joint.type_name() == RevoluteJoint<double>::kTypeName) {
       const RevoluteJoint<double>& revolute_joint =
           dynamic_cast<const RevoluteJoint<double>&>(joint);
       // Arbitrary non-zero angle.

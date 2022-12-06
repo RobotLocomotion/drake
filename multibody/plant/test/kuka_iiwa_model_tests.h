@@ -86,15 +86,16 @@ class KukaIiwaModelTests : public ::testing::Test {
   // velocity of the base is set arbitrarily to a non-identity pose and non-zero
   // spatial velocity.
   void SetState(const VectorX<double>& x_joints) {
-    EXPECT_EQ(plant_->num_joints(), 7);
-    for (JointIndex joint_index(0); joint_index < plant_->num_joints();
+    EXPECT_EQ(plant_->num_joints(), kNumJoints);
+    // The last joint is the free body's joint so we skip it.
+    for (JointIndex joint_index(0); joint_index < kNumJoints - 1;
          ++joint_index) {
       const RevoluteJoint<double>& joint =
           dynamic_cast<const RevoluteJoint<double>&>(
               plant_->get_joint(joint_index));
       joint.set_angle(context_.get(), x_joints[joint_index]);
       joint.set_angular_rate(context_.get(),
-                             x_joints[kNumJoints + joint_index]);
+                             x_joints[kNumJoints + joint_index - 1]);
     }
 
     // Set an arbitrary (though non-identity) pose of the floating base link.
@@ -113,7 +114,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   // Get an arm state associated with an arbitrary configuration that avoids
   // in-plane motion and in which joint angles and rates are non-zero.
   VectorX<double> GetArbitraryJointAnglesAndRates() {
-    VectorX<double> x(2 * kNumJoints);
+    VectorX<double> x(2 * (kNumJoints - 1));
 
     // These joint angles avoid in-plane motion, but are otherwise arbitrary.
     const double q30 = M_PI / 6, q60 = M_PI / 3;
@@ -139,7 +140,7 @@ class KukaIiwaModelTests : public ::testing::Test {
 
  protected:
   // Problem sizes.
-  const int kNumJoints = 7;
+  const int kNumJoints = 8;
   const int kNumPositions = 14;
   const int kNumVelocities = 13;
 
