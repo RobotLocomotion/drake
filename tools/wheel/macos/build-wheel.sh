@@ -97,6 +97,8 @@ declare -a bazel_args=(
     --define NO_DREAL=ON
     --define WITH_MOSEK=ON
     --define WITH_SNOPT=ON
+    # See tools/wheel/wheel_builder/macos.py for more on this env variable.
+    --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
 )
 
 bazel build "${bazel_args[@]}" //tools/wheel:strip_rpath

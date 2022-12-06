@@ -84,6 +84,20 @@ def build(options):
     environment.pop('PYTHONPATH')
     environment.pop('RUNFILES_MANIFEST_FILE')
 
+    # Xcode updates may change the default -mmacosx-version-min when not
+    # specified.  For example, Xcode 14.1 on monterey (macOS 12.x) was using a
+    # deployment target of 13.0 (ventura), resulting in a wheel that could not
+    # be used on monterey.  This environment variable controls:
+    # - The majority of the apple and python tooling behind the scenes.
+    # - The tools/wheel/image/dependencies/* CMake projects
+    #   (CMAKE_OSX_DEPLOYMENT_TARGET initializes to this environment variable).
+    # - The value for the bazel argument --macos_minimum_os used in
+    #   tools/wheel/macos/build-wheel.sh.
+    # We always target the macOS that is building the wheel, so to define the
+    # deployment target we use the macOS product version X.Y.Z and set X.0.
+    deployment_target = f'{platform.mac_ver()[0].split(".")[0]}.0'
+    environment['MACOSX_DEPLOYMENT_TARGET'] = deployment_target
+
     # Build the wheel.
     build_script = os.path.join(resource_root, 'macos', 'build-wheel.sh')
     build_command = ['bash', build_script]
