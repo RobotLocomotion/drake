@@ -209,6 +209,84 @@ class OnPlaneSideReifier : public ShapeReifier {
   const Shape* geometry_;
   math::RigidTransformd X_BG_;
 };
+
+class GeometryTypeReifier : public ShapeReifier {
+ public:
+  explicit GeometryTypeReifier(const geometry::Shape* shape) : shape_{shape} {}
+
+  GeometryType ProcessData() {
+    GeometryType type;
+    shape_->Reify(this, &type);
+    return type;
+  }
+
+ private:
+  using ShapeReifier::ImplementGeometry;
+  void ImplementGeometry(const Box&, void* data) {
+    auto* type = static_cast<GeometryType*>(data);
+    *type = GeometryType::kPolytope;
+  }
+
+  void ImplementGeometry(const Convex&, void* data) {
+    auto* type = static_cast<GeometryType*>(data);
+    *type = GeometryType::kPolytope;
+  }
+
+  void ImplementGeometry(const Sphere&, void* data) {
+    auto* type = static_cast<GeometryType*>(data);
+    *type = GeometryType::kSphere;
+  }
+
+  void ImplementGeometry(const Capsule&, void* data) {
+    auto* type = static_cast<GeometryType*>(data);
+    *type = GeometryType::kCapsule;
+  }
+
+  void ImplementGeometry(const Cylinder&, void* data) {
+    auto* type = static_cast<GeometryType*>(data);
+    *type = GeometryType::kCylinder;
+  }
+
+  const Shape* shape_;
+};
+
+class NumRationalsPerPlaneSideReifier : public ShapeReifier {
+ public:
+  explicit NumRationalsPerPlaneSideReifier(const Shape* shape)
+      : shape_{shape} {}
+
+  int ProcessData() {
+    int ret;
+    shape_->Reify(this, &ret);
+    return ret;
+  }
+
+ private:
+  using ShapeReifier::ImplementGeometry;
+
+  void ImplementGeometry(const Box&, void* data) {
+    auto* num = static_cast<int*>(data);
+    *num = 8;
+  }
+
+  void ImplementGeometry(const Convex& convex, void* data) {
+    auto* num = static_cast<int*>(data);
+    const Eigen::Matrix3Xd p_GV = GetVertices(convex);
+    *num = p_GV.cols();
+  }
+
+  void ImplementGeometry(const Sphere&, void* data) {
+    auto* num = static_cast<int*>(data);
+    *num = 1;
+  }
+
+  void ImplementGeometry(const Capsule&, void* data) {
+    auto* num = static_cast<int*>(data);
+    *num = 2;
+  }
+
+  const Shape* shape_;
+};
 }  // namespace
 
 void CollisionGeometry::OnPlaneSide(
@@ -225,6 +303,15 @@ void CollisionGeometry::OnPlaneSide(
                       unit_length_vector);
 }
 
+GeometryType CollisionGeometry::type() const {
+  GeometryTypeReifier reifier(geometry_);
+  return reifier.ProcessData();
+}
+
+int CollisionGeometry::num_rationals_per_side() const {
+  NumRationalsPerPlaneSideReifier reifier(geometry_);
+  return reifier.ProcessData();
+}
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
