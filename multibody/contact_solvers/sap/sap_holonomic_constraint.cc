@@ -86,7 +86,7 @@ VectorX<T> SapHolonomicConstraint<T>::CalcBiasTerm(const T& time_step,
     // regime. Here we clamp relaxation time to the time step. Refer to Section
     // V of [Castro et al., 2022] for further details.
     if (R(e) < R_near_rigid) {
-      tau(e) = min(time_step, tau(e));
+      tau(e) = time_step;
     }
   }
 
