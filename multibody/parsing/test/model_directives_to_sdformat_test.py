@@ -302,18 +302,15 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
     def test_add_model_instance_add_directives(self):
         converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         expected_xml = '<sdf version="1.9">'\
-        '<model name="add_directives">'\
-            '<model name="model_instance">'\
-                '<include merge="true">'\
-                    '<uri>package://model_directives_to_sdformat_files/hidden_frame.sdf</uri>'\
-                '</include>'\
-           '</model>'\
-        '</model>'\
-        '</sdf>'
+            '<model name="add_directives"><model name="model_instance">'\
+            '<include merge="true">'\
+            '<uri>package://model_directives_to_sdformat_files/'\
+            'hidden_frame.sdf</uri>'\
+            '</include></model></model></sdf>'
         result = converter.convert_directive(
                 'multibody/parsing/test/'
-                'model_directives_to_sdformat_files/add_directives.yaml'
-                , True)
+                'model_directives_to_sdformat_files/add_directives.yaml',
+                True)
         self.assertEqual(expected_xml, ET.tostring(result, encoding="unicode"))
 
     def test_main(self):
