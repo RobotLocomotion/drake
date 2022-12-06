@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/scene_graph.h"
 
@@ -63,6 +64,9 @@ class ContactPropertiesTest : public ::testing::Test {
     g_B_ = scene_graph_.RegisterGeometry(s_id, f_id, move(geometry_B));
     g_C_ = scene_graph_.RegisterGeometry(s_id, f_id, move(geometry_C));
     g_D_ = scene_graph_.RegisterGeometry(s_id, f_id, move(geometry_D));
+
+    scene_graph_ad_ = dynamic_pointer_cast<SceneGraph<AutoDiffXd>>(
+        scene_graph_.ToAutoDiffXd());
   }
 
   // mu  = Coulomb friction
@@ -75,8 +79,12 @@ class ContactPropertiesTest : public ::testing::Test {
   GeometryId g_C_;  // Has mu, k,          Eh_C and "compliant hydroelastic".
   GeometryId g_D_;  // Has mu,    invalid tau.
 
-  const SceneGraphInspector<double>& inspector() const {
+  const SceneGraphInspector<double>& inspector_d() const {
     return scene_graph_.model_inspector();
+  }
+
+  const SceneGraphInspector<AutoDiffXd>& inspector_ad() const {
+    return scene_graph_ad_->model_inspector();
   }
 
   unique_ptr<GeometryInstance> MakeGeometryInstance(
@@ -113,47 +121,71 @@ class ContactPropertiesTest : public ::testing::Test {
     return result;
   }
 
+
  private:
   SceneGraph<double> scene_graph_{};
+  std::unique_ptr<SceneGraph<AutoDiffXd>> scene_graph_ad_{};
 };
 
+/* TODO(SeanCurtis-TRI): These tests don't actually *confirm* scalar conversion.
+ They merely confirm that I can invoke the method on inspectors of two scalar
+ types and successfully compare the result. That would pass if the return value
+ were always doubles. We need to beef these up to confirm the *type*. */
+
+/* These APIs implicitly convert stored double-value to T-values upon request.
+ These tests verify that behavior - the last test clause in each function. When
+ the GeometryProperties get scalar converted automatically, that extra test
+ can go away. Each API must include this scalar test. */
+
 TEST_F(ContactPropertiesTest, GetPointContactStiffness) {
-  EXPECT_EQ(GetPointContactStiffness(g_A_, kKDefault, inspector()), kKA);
-  EXPECT_EQ(GetPointContactStiffness(g_B_, kKDefault, inspector()), kKDefault);
-  EXPECT_EQ(GetPointContactStiffness(g_C_, kKDefault, inspector()), kKC);
+  EXPECT_EQ(GetPointContactStiffness(g_A_, kKDefault, inspector_d()), kKA);
+  EXPECT_EQ(GetPointContactStiffness(g_B_, kKDefault, inspector_d()),
+            kKDefault);
+  EXPECT_EQ(GetPointContactStiffness(g_C_, kKDefault, inspector_d()), kKC);
+
+  EXPECT_EQ(GetPointContactStiffness(g_A_, kKDefault, inspector_d()),
+            GetPointContactStiffness(g_A_, kKDefault, inspector_ad()));
 }
 
 TEST_F(ContactPropertiesTest, GetHydroelasticModulus) {
-  EXPECT_EQ(GetHydroelasticModulus(g_A_, kHydroModulusDefault, inspector()),
+  EXPECT_EQ(GetHydroelasticModulus(g_A_, kHydroModulusDefault, inspector_d()),
             kHydroModulusA);
-  EXPECT_EQ(GetHydroelasticModulus(g_B_, kHydroModulusDefault, inspector()),
+  EXPECT_EQ(GetHydroelasticModulus(g_B_, kHydroModulusDefault, inspector_d()),
             kInfinity);
-  EXPECT_EQ(GetHydroelasticModulus(g_C_, kHydroModulusDefault, inspector()),
+  EXPECT_EQ(GetHydroelasticModulus(g_C_, kHydroModulusDefault, inspector_d()),
             kHydroModulusC);
-  EXPECT_EQ(GetHydroelasticModulus(g_D_, kHydroModulusDefault, inspector()),
+  EXPECT_EQ(GetHydroelasticModulus(g_D_, kHydroModulusDefault, inspector_d()),
             kHydroModulusDefault);
+
+  EXPECT_EQ(GetHydroelasticModulus(g_A_, kHydroModulusDefault, inspector_d()),
+            GetHydroelasticModulus(g_A_, kHydroModulusDefault, inspector_ad()));
 }
 
 TEST_F(ContactPropertiesTest, GetHuntCrossleyDissipation) {
   EXPECT_EQ(GetHuntCrossleyDissipation(g_A_, kHuntCrossleyDissipationDefault,
-                                       inspector()),
+                                       inspector_d()),
             kHuntCrossleyDissipationA);
   EXPECT_EQ(GetHuntCrossleyDissipation(g_B_, kHuntCrossleyDissipationDefault,
-                                       inspector()),
+                                       inspector_d()),
             kHuntCrossleyDissipationDefault);
   EXPECT_EQ(GetHuntCrossleyDissipation(g_C_, kHuntCrossleyDissipationDefault,
-                                       inspector()),
+                                       inspector_d()),
             kHuntCrossleyDissipationDefault);
+
+  EXPECT_EQ(GetHuntCrossleyDissipation(g_A_, kHuntCrossleyDissipationDefault,
+                                       inspector_d()),
+            GetHuntCrossleyDissipation(g_A_, kHuntCrossleyDissipationDefault,
+                                       inspector_ad()));
 }
 
 TEST_F(ContactPropertiesTest, GetCombinedHuntCrossleyDissipation) {
   EXPECT_EQ(GetCombinedHuntCrossleyDissipation(
                 g_A_, g_B_, kHydroModulusA, kInfinity,
-                kHuntCrossleyDissipationDefault, inspector()),
+                kHuntCrossleyDissipationDefault, inspector_d()),
             kHuntCrossleyDissipationA);
   EXPECT_EQ(GetCombinedHuntCrossleyDissipation(
                 g_B_, g_A_, kInfinity, kHydroModulusA,
-                kHuntCrossleyDissipationDefault, inspector()),
+                kHuntCrossleyDissipationDefault, inspector_d()),
             kHuntCrossleyDissipationA);
   const double dAC = (kHydroModulusC / (kHydroModulusA + kHydroModulusC)) *
                          kHuntCrossleyDissipationA +
@@ -161,50 +193,75 @@ TEST_F(ContactPropertiesTest, GetCombinedHuntCrossleyDissipation) {
                          kHuntCrossleyDissipationDefault;
   EXPECT_EQ(GetCombinedHuntCrossleyDissipation(
                 g_A_, g_C_, kHydroModulusA, kHydroModulusDefault,
-                kHuntCrossleyDissipationDefault, inspector()),
+                kHuntCrossleyDissipationDefault, inspector_d()),
             dAC);
+
+  EXPECT_EQ(GetCombinedHuntCrossleyDissipation(
+                g_A_, g_B_, kHydroModulusA, kInfinity,
+                kHuntCrossleyDissipationDefault, inspector_d()),
+            GetCombinedHuntCrossleyDissipation<AutoDiffXd>(
+                g_A_, g_B_, kHydroModulusA, kInfinity,
+                kHuntCrossleyDissipationDefault, inspector_ad()));
 }
 
 TEST_F(ContactPropertiesTest, GetDissipationTimeConstant) {
-  EXPECT_EQ(GetDissipationTimeConstant(g_A_, kTauDefault, inspector(), "A"),
+  EXPECT_EQ(GetDissipationTimeConstant(g_A_, kTauDefault, inspector_d(), "A"),
             kTauA);
-  EXPECT_EQ(GetDissipationTimeConstant(g_C_, kTauDefault, inspector(), "C"),
+  EXPECT_EQ(GetDissipationTimeConstant(g_C_, kTauDefault, inspector_d(), "C"),
             kTauDefault);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      GetDissipationTimeConstant(g_D_, kTauDefault, inspector(), "D"),
+      GetDissipationTimeConstant(g_D_, kTauDefault, inspector_d(), "D"),
       ".*relaxation_time = -0.2.*D.*");
+
+  EXPECT_EQ(GetDissipationTimeConstant(g_A_, kTauDefault, inspector_d(), "A"),
+            GetDissipationTimeConstant(g_A_, kTauDefault, inspector_ad(), "A"));
 }
 
 TEST_F(ContactPropertiesTest, GetCoulombFriction) {
-  EXPECT_EQ(GetCoulombFriction(g_A_, inspector()), kMuA);
+  EXPECT_EQ(GetCoulombFriction(g_A_, inspector_d()), kMuA);
+
+  EXPECT_EQ(GetCoulombFriction(g_A_, inspector_d()),
+            GetCoulombFriction(g_A_, inspector_ad()));
 }
 
 TEST_F(ContactPropertiesTest, GetCombinedPointContactStiffness) {
   EXPECT_EQ(
-      GetCombinedPointContactStiffness(g_A_, g_C_, kKDefault, inspector()),
+      GetCombinedPointContactStiffness(g_A_, g_C_, kKDefault, inspector_d()),
       kKA * kKC / (kKA + kKC));
   EXPECT_EQ(
-      GetCombinedPointContactStiffness(g_A_, g_B_, kKDefault, inspector()),
+      GetCombinedPointContactStiffness(g_A_, g_B_, kKDefault, inspector_d()),
       kKA * kKDefault / (kKA + kKDefault));
+
+  EXPECT_EQ(
+      GetCombinedPointContactStiffness(g_A_, g_C_, kKDefault, inspector_d()),
+      GetCombinedPointContactStiffness(g_A_, g_C_, kKDefault, inspector_ad()));
 }
 
 TEST_F(ContactPropertiesTest, GetCombinedDissipationTimeConstant) {
   EXPECT_EQ(GetCombinedDissipationTimeConstant(g_A_, g_B_, kTauDefault, "A",
-                                               "B", inspector()),
+                                               "B", inspector_d()),
             kTauA + kTauB);
   EXPECT_EQ(GetCombinedDissipationTimeConstant(g_A_, g_C_, kTauDefault, "A",
-                                               "C", inspector()),
+                                               "C", inspector_d()),
             kTauA + kTauDefault);
   DRAKE_EXPECT_THROWS_MESSAGE(
       GetCombinedDissipationTimeConstant(g_A_, g_D_, kTauDefault, "A", "D",
-                                         inspector()),
+                                         inspector_d()),
       ".*relaxation_time = -0.2.*D.*");
+
+  EXPECT_EQ(GetCombinedDissipationTimeConstant(g_A_, g_B_, kTauDefault, "A",
+                                               "B", inspector_d()),
+            GetCombinedDissipationTimeConstant(g_A_, g_B_, kTauDefault, "A",
+                                               "B", inspector_ad()));
 }
 
 TEST_F(ContactPropertiesTest, GetCombinedDynamicCoulombFriction) {
   EXPECT_EQ(
-      GetCombinedDynamicCoulombFriction(g_A_, g_D_, inspector()),
+      GetCombinedDynamicCoulombFriction(g_A_, g_D_, inspector_d()),
       CalcContactFrictionFromSurfaceProperties(kMuA, kMuD).dynamic_friction());
+
+  EXPECT_EQ(GetCombinedDynamicCoulombFriction(g_A_, g_D_, inspector_d()),
+            GetCombinedDynamicCoulombFriction(g_A_, g_D_, inspector_ad()));
 }
 
 }  // namespace
