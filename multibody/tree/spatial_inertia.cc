@@ -16,6 +16,16 @@ SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::MakeSolidBox(const T& density,
+    const T& width, const T& depth, const T& height) {
+  const T volume = width * depth * height;
+  const T mass = volume * density;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();  // Position from Bo to Bcm.
+  const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidBox(width, depth, height);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+}
+
+template <typename T>
 void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
   std::string error_message = fmt::format(
           "Spatial inertia fails SpatialInertia::IsPhysicallyValid().");
