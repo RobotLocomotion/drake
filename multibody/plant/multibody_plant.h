@@ -3066,7 +3066,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Computes the generalized forces result of a set of MultibodyForces applied
   /// to this model.
   ///
-  /// MultibodyForces store applied forces as both generalized forces τₐₚₚ and
+  /// MultibodyForces stores applied forces as both generalized forces τₐₚₚ and
   /// spatial forces F on each body, refer to documentation in MultibodyForces
   /// for details. Users of MultibodyForces will use
   /// MultibodyForces::mutable_generalized_forces() to mutate the stored
