@@ -38,6 +38,7 @@ from pydrake.multibody.tree import (
     MultibodyForces_,
     PlanarJoint_,
     PrismaticJoint_,
+    PrismaticSpring_,
     RevoluteJoint_,
     ScrewJoint,
     ScrewJoint_,
@@ -719,6 +720,7 @@ class TestPlant(unittest.TestCase):
     def test_multibody_force_element(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         LinearSpringDamper = LinearSpringDamper_[T]
+        PrismaticSpring = PrismaticSpring_[T]
         RevoluteSpring = RevoluteSpring_[T]
         DoorHinge = DoorHinge_[T]
         LinearBushingRollPitchYaw = LinearBushingRollPitchYaw_[T]
@@ -735,6 +737,8 @@ class TestPlant(unittest.TestCase):
         body_a = plant.AddRigidBody(name="body_a",
                                     M_BBo_B=spatial_inertia)
         body_b = plant.AddRigidBody(name="body_b",
+                                    M_BBo_B=spatial_inertia)
+        body_c = plant.AddRigidBody(name="body_c",
                                     M_BBo_B=spatial_inertia)
         linear_spring_index = ForceElementIndex(plant.num_force_elements())
         linear_spring = plant.AddForceElement(LinearSpringDamper(
@@ -754,6 +758,12 @@ class TestPlant(unittest.TestCase):
         door_hinge_config = DoorHingeConfig()
         door_hinge = plant.AddForceElement(DoorHinge(
             joint=revolute_joint, config=door_hinge_config))
+        prismatic_joint = plant.AddJoint(PrismaticJoint_[T](
+                name="prismatic_joint", frame_on_parent=body_b.body_frame(),
+                frame_on_child=body_c.body_frame(), axis=[0, 0, 1],
+                damping=0.))
+        prismatic_spring = plant.AddForceElement(PrismaticSpring(
+            joint=prismatic_joint, nominal_position=0.1, stiffness=100.))
 
         torque_stiffness = np.array([10.0, 11.0, 12.0])
         torque_damping = np.array([1.0, 1.1, 1.2])
@@ -804,6 +814,11 @@ class TestPlant(unittest.TestCase):
                 angle=0.01), -2.265)
             self.assertEqual(door_hinge.CalcHingeTorque(
                 angle=0.01, angular_rate=0.0), -2.265)
+
+        # Test PrismaticSpring accessors
+        self.assertEqual(prismatic_spring.joint(), prismatic_joint)
+        self.assertEqual(prismatic_spring.nominal_position(), 0.1)
+        self.assertEqual(prismatic_spring.stiffness(), 100.)
 
         # Test LinearBushingRollPitchYaw accessors.
         self.assertIs(bushing.link0(), body_a)
