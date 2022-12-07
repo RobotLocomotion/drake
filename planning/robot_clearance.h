@@ -5,9 +5,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "planning/robot_collision_type.h"
+#include "drake/planning/robot_collision_type.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** A summary of the clearance -- a collection of distance measurements --
@@ -80,12 +80,12 @@ class RobotClearance {
   // TODO(sean.curtis) Provide a guaranteed order on the rows, based on body
   // index.
   /** @returns the vector of *robot* body indices. */
-  const std::vector<drake::multibody::BodyIndex>& robot_indices() const {
+  const std::vector<multibody::BodyIndex>& robot_indices() const {
     return robot_indices_;
   }
 
   /** @returns the vector of *other* body indices. */
-  const std::vector<drake::multibody::BodyIndex>& other_indices() const {
+  const std::vector<multibody::BodyIndex>& other_indices() const {
     return other_indices_;
   }
 
@@ -118,14 +118,14 @@ class RobotClearance {
   void Reserve(int size);
 
   /** Appends one measurement to this table. */
-  void Append(drake::multibody::BodyIndex robot_index,
-              drake::multibody::BodyIndex other_index,
+  void Append(multibody::BodyIndex robot_index,
+              multibody::BodyIndex other_index,
               RobotCollisionType collision_type, double distance,
               const Eigen::Ref<const Eigen::RowVectorXd>& jacobian);
 
  private:
-  std::vector<drake::multibody::BodyIndex> robot_indices_;
-  std::vector<drake::multibody::BodyIndex> other_indices_;
+  std::vector<multibody::BodyIndex> robot_indices_;
+  std::vector<multibody::BodyIndex> other_indices_;
   std::vector<RobotCollisionType> collision_types_;
   std::vector<double> distances_;
   std::vector<double> jacobians_;  // Stored in row-major order.
@@ -133,4 +133,4 @@ class RobotClearance {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
