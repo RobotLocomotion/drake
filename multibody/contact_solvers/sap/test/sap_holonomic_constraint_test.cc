@@ -37,6 +37,23 @@ class SapHolonomicConstraintTests : public ::testing::Test {
         std::move(stiffnesses), std::move(relaxation_times), beta);
   }
 
+  // Makes the same arbitrary set of parameters as MakeArbitraryParameters(),
+  // but with an infinite stiffness.
+  static SapHolonomicConstraint<double>::Parameters
+  MakeArbitraryParametersWithInfiniteStiffness(double beta = 0) {
+    const SapHolonomicConstraint<double>::Parameters params =
+        MakeArbitraryParameters(beta);
+    VectorXd stiffnesses =
+        Vector3d::Constant(std::numeric_limits<double>::infinity());
+    // For a finite value of dissipation c, the dissipation time scale
+    // defined as tau_d = c / k (with k the stiffness), is zero in the limit to
+    // infinite stiffness.
+    VectorXd relaxation_times = Vector3d::Zero();
+    return SapHolonomicConstraint<double>::Parameters(
+        params.impulse_lower_limits(), params.impulse_upper_limits(),
+        std::move(stiffnesses), std::move(relaxation_times), beta);
+  }
+
  protected:
   int clique1_{12};
   MatrixXd J_{1.5 * MatrixXd::Ones(3, 3)};
@@ -192,6 +209,41 @@ TEST_F(SapHolonomicConstraintTests, CalcDiagonalRegularization) {
 
   EXPECT_TRUE(
       CompareMatrices(R, R_expected, kEps, MatrixCompareType::relative));
+}
+
+TEST_F(SapHolonomicConstraintTests,
+       RegularizationAndBiasFromInfiniteStiffness) {
+  // We set a non-zero beta in order to test CalcDiagonalRegularization() for
+  // parameters within the near-rigid regime.
+  const double beta = 1.5;
+  SapHolonomicConstraint<double>::Parameters parameters =
+      MakeArbitraryParametersWithInfiniteStiffness(beta);
+  dut_ = std::make_unique<SapHolonomicConstraint<double>>(clique1_, g_, J_,
+                                                          parameters);
+
+  const double time_step = 0.01;
+  const double delassus_inverse_approximation = 2.0;
+  const Vector3d R = dut_->CalcDiagonalRegularization(
+      time_step, delassus_inverse_approximation);
+  const Vector3d vhat =
+      dut_->CalcBiasTerm(time_step, delassus_inverse_approximation);
+
+  // Near-rigid regularization.
+  const double R_near_rigid =
+      beta * beta / (4.0 * M_PI * M_PI) * delassus_inverse_approximation;
+
+  // Since stiffness is infinite, the expected compliance is R_near_rigid for
+  // all components.
+  const VectorXd R_expected = Vector3d::Constant(R_near_rigid);
+  EXPECT_TRUE(
+      CompareMatrices(R, R_expected, kEps, MatrixCompareType::relative));
+
+  // Since the stiffness is infinite, the bias term is expected to match the
+  // near-rigid regime limit.
+  const VectorXd& g0 = dut_->constraint_function();
+  const VectorXd vhat_expected = -g0 / (2.0 * time_step);
+  EXPECT_TRUE(
+      CompareMatrices(vhat, vhat_expected, kEps, MatrixCompareType::relative));
 }
 
 TEST_F(SapHolonomicConstraintTests, CalcBiasTerm) {
