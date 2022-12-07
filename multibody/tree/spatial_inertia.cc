@@ -16,12 +16,12 @@ SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
 }
 
 template <typename T>
-SpatialInertia<T> SpatialInertia<T>::MakeSolidBox(const T& density,
-    const T& width, const T& depth, const T& height) {
-  const T volume = width * depth * height;
+SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(const T& density,
+    const T& lx, const T& ly, const T& lz) {
+  const T volume = lx * ly * lz;
   const T mass = volume * density;
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();  // Position from Bo to Bcm.
-  const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidBox(width, depth, height);
+  const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidBox(lx, ly, lz);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
 }
 
