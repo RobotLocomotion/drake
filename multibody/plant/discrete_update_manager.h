@@ -235,6 +235,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   const std::vector<int>& EvalJointLockingIndices(
       const systems::Context<T>& context) const;
+
+  const std::vector<internal::DistanceConstraintSpecs>&
+  distance_constraints_specs() const;
   /* @} */
 
   /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to

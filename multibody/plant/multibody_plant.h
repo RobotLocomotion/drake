@@ -1192,7 +1192,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @{
 
   /// Returns the total number of constraints specified by the user.
-  int num_constraints() const { return coupler_constraints_specs_.size(); }
+  int num_constraints() const {
+    return static_cast<int>(coupler_constraints_specs_.size() +
+           distance_constraints_specs_.size());
+  }
 
   /// Defines a holonomic constraint between two single-dof joints `joint0`
   /// and `joint1` with positions q₀ and q₁, respectively, such that q₀ = ρ⋅q₁ +
@@ -1226,6 +1229,52 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                       ExtractDoubleOrThrow(gear_ratio),
                                       ExtractDoubleOrThrow(offset));
   }
+
+  /// Defines a distance constraint between a point P on a body A and a point Q
+  /// on a body B.
+  ///
+  /// This constraint can be compliant, modeling a spring with free length
+  /// `distance` and given `stiffness` and `damping` parameters between points P
+  /// and Q. For d = ‖p_PQ‖, then a compliant distance constraint models a
+  /// spring with force along p_PQ given by:
+  ///
+  ///    f = −stiffness ⋅ d − damping ⋅ ḋ
+  ///
+  /// @param[in] body_A Body to which point P is rigidly attached.
+  /// @param[in] p_AP Position of point P in body A's frame.
+  /// @param[in] body_B Body to which point Q is rigidly attached.
+  /// @param[in] p_BQ Position of point Q in body B's frame.
+  /// @param[in] distance Fixed length of the distance constraint, in meters. It
+  /// must be strictly positive.
+  /// @param[in] stiffness For modeling a spring with free length equal to
+  /// `distance`, the stiffness parameter in N/m. Optional, with its default
+  /// value being infinite to model a rigid massless rod of length `distance`
+  /// connecting points A and B.
+  /// @param[in] damping For modeling a spring with free length equal to
+  /// `distance`, damping parameter in N⋅s/m. Optional, with its default value
+  /// being zero for a non-dissipative constraint.
+  /// @returns the index to the newly added constraint.
+  ///
+  /// @warning Currently, it is the user's responsibility to initialize the
+  /// model's context in a configuration compatible with the newly added
+  /// constraint.
+  ///
+  /// @warning A distance constraint is the wrong modeling choice if the
+  /// distance needs to go through zero. To constrain two points to be
+  /// coincident we need a 3-dof ball constraint, the 1-dof distance constraint
+  /// is singular in this case. Therefore we require the distance parameter to
+  /// be strictly positive.
+  ///
+  /// @throws std::exception if bodies A and B are the same body.
+  /// @throws std::exception if `distance` is not strictly positive.
+  /// @throws std::exception if `stiffness` is not positive or zero.
+  /// @throws std::exception if `damping` is not positive or zero.
+  /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  ConstraintIndex AddDistanceConstraint(
+      const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
+      const Vector3<double>& p_BQ, double distance,
+      double stiffness = std::numeric_limits<double>::infinity(),
+      double damping = 0.0);
 
   /// <!-- TODO(xuchenhan-tri): Add getters to interrogate existing constraints.
   /// -->
@@ -5188,6 +5237,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Vector of coupler constraints specifications.
   std::vector<internal::CouplerConstraintSpecs> coupler_constraints_specs_;
+
+  // Vector of distance constraints specifications.
+  std::vector<internal::DistanceConstraintSpecs> distance_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
