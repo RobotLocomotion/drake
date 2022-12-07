@@ -67,23 +67,18 @@ GTEST_TEST(SpatialInertia, MakeUnitary) {
 }
 
 // Tests the static method for the spatial inertia of a solid box.
-GTEST_TEST(SpatialInertia, MakeSolidBox) {
+GTEST_TEST(SpatialInertia, SolidBoxWithDensity) {
   const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
-  const double Lx = 1.0;
-  const double Ly = 2.0;
-  const double Lz = 3.0;
-  const double volume = Lx * Ly * Lz;
+  const double lx = 1.0;
+  const double ly = 2.0;
+  const double lz = 3.0;
+  const double volume = lx * ly * lz;
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  const double Lx2 = Lx * Lx, Ly2 = Ly * Ly, Lz2 = Lz * Lz;
-  const double Ixx = mass * (Ly2 + Lz2) / 12.0;
-  const double Iyy = mass * (Lx2 + Lz2) / 12.0;
-  const double Izz = mass * (Lx2 + Ly2) / 12.0;
-  const RotationalInertia<double> I_BBcm_B(Ixx, Iyy, Izz);
-  const SpatialInertia<double> M_expected =
-      SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B);
-  const SpatialInertia<double> M = SpatialInertia<double>::MakeSolidBox(density,
-      Lx, Ly, Lz);
+  const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidBox(lx, ly, lz);
+  const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
+  const SpatialInertia<double> M = SpatialInertia<double>::SolidBoxWithDensity(
+      density, lx, ly, lz);
   EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
                                        M.CopyToFullMatrix6()));
 }
