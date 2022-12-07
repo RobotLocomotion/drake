@@ -42,6 +42,11 @@ targets = (
         test_platform=Platform('ubuntu', '22.04', 'jammy'),
         python_version_tuple=(3, 10, 6),
         python_sha='f795ff87d11d4b0c7c33bc8851b0c28648d8a4583aa2100a98c22b4326b6d3f3'),  # noqa
+    Target(
+        build_platform=Platform('ubuntu', '20.04', 'focal'),
+        test_platform=Platform('ubuntu', '22.04', 'jammy'),
+        python_version_tuple=(3, 11, 1),
+        python_sha='85879192f2cffd56cb16c092905949ebf3e5e394b7f764723529637901dfb58f'),  # noqa
 )
 glibc_versions = {
     'focal': '2_31',
