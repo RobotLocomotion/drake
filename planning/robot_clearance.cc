@@ -1,11 +1,11 @@
-#include "planning/robot_clearance.h"
+#include "drake/planning/robot_clearance.h"
 
 #include "drake/common/drake_throw.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
-using drake::multibody::BodyIndex;
+using multibody::BodyIndex;
 
 RobotClearance::~RobotClearance() = default;
 
@@ -32,4 +32,4 @@ void RobotClearance::Append(
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

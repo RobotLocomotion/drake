@@ -1,4 +1,4 @@
-#include "planning/robot_clearance.h"
+#include "drake/planning/robot_clearance.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -6,12 +6,11 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
-using drake::CompareMatrices;
-using drake::multibody::BodyIndex;
+using multibody::BodyIndex;
 using testing::ElementsAre;
 
 GTEST_TEST(RobotClearanceTest, Empty) {
@@ -75,4 +74,4 @@ GTEST_TEST(RobotClearanceTest, AppendThrow) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

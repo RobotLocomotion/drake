@@ -14,9 +14,21 @@ drake_cc_package_library(
     name = "planning",
     visibility = ["//visibility:public"],
     deps = [
+        ":robot_clearance",
         ":robot_collision_type",
         ":robot_diagram",
         ":robot_diagram_builder",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_clearance",
+    srcs = ["robot_clearance.cc"],
+    hdrs = ["robot_clearance.h"],
+    deps = [
+        ":robot_collision_type",
+        "//common:essential",
+        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
@@ -49,6 +61,15 @@ drake_cc_library(
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "robot_clearance_test",
+    deps = [
+        ":robot_clearance",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
