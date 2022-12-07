@@ -280,10 +280,10 @@ class ModelVisualizer:
         # Wait for the user to cancel us.
         button_name = "Stop Running"
         if not loop_once:
-            print(f"Use Ctrl-C or click '{button_name}' to quit")
+            print(f"Click '{button_name}' or press Esc to quit")
 
         try:
-            self._meshcat.AddButton(button_name)
+            self._meshcat.AddButton(button_name, "Escape")
 
             sliders_context = self._sliders.GetMyContextFromRoot(self._context)
             while True:
