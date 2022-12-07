@@ -20,6 +20,7 @@ from pydrake.multibody.tree import (
     BodyIndex,
     CalcSpatialInertia,
     ConstraintIndex,
+    default_model_instance,
     DoorHinge_,
     DoorHingeConfig,
     FixedOffsetFrame_,
@@ -40,11 +41,11 @@ from pydrake.multibody.tree import (
     PrismaticJoint_,
     PrismaticSpring_,
     RevoluteJoint_,
+    RevoluteSpring_,
+    RigidBody_,
+    RotationalInertia_,
     ScrewJoint,
     ScrewJoint_,
-    RevoluteSpring_,
-    RotationalInertia_,
-    RigidBody_,
     SpatialInertia_,
     UniformGravityFieldElement_,
     UnitInertia_,
@@ -53,7 +54,6 @@ from pydrake.multibody.tree import (
     world_frame_index,
     world_index,
     world_model_instance,
-    default_model_instance
 )
 from pydrake.multibody.math import (
     SpatialForce_,
@@ -1652,6 +1652,26 @@ class TestPlant(unittest.TestCase):
                 damping=damping,
             )
 
+        def make_revolute_joint(plant, P, C):
+            # First, check that the sans-limits overload works.
+            RevoluteJoint_[T](
+                name="revolute",
+                frame_on_parent=P,
+                frame_on_child=C,
+                axis=x_axis,
+                damping=damping,
+            )
+            # Then, create one using limits.
+            return RevoluteJoint_[T](
+                name="revolute",
+                frame_on_parent=P,
+                frame_on_child=C,
+                axis=x_axis,
+                pos_lower_limit=-1.5,
+                pos_upper_limit=1.5,
+                damping=damping,
+            )
+
         def make_screw_joint(plant, P, C):
             # First, check that the deprecated overload works.
             with catch_drake_warnings(expected_count=1):
@@ -1678,26 +1698,6 @@ class TestPlant(unittest.TestCase):
                 damping=damping,
             )
 
-        def make_revolute_joint(plant, P, C):
-            # First, check that the sans-limits overload works.
-            RevoluteJoint_[T](
-                name="revolute",
-                frame_on_parent=P,
-                frame_on_child=C,
-                axis=x_axis,
-                damping=damping,
-            )
-            # Then, create one using limits.
-            return RevoluteJoint_[T](
-                name="revolute",
-                frame_on_parent=P,
-                frame_on_child=C,
-                axis=x_axis,
-                pos_lower_limit=-1.5,
-                pos_upper_limit=1.5,
-                damping=damping,
-            )
-
         def make_universal_joint(plant, P, C):
             return UniversalJoint_[T](
                 name="universal",
@@ -1717,9 +1717,9 @@ class TestPlant(unittest.TestCase):
         make_joint_list = [
             make_ball_rpy_joint,
             make_planar_joint,
-            make_screw_joint,
             make_prismatic_joint,
             make_revolute_joint,
+            make_screw_joint,
             make_universal_joint,
             make_weld_joint,
         ]
