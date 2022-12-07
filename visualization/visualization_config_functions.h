@@ -1,8 +1,11 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/geometry/drake_visualizer_params.h"
+#include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_visualizer_params.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -63,6 +66,10 @@ When provided, it must be a System that's been added to the the given `builder`.
 When not provided, visualizes the system named "scene_graph" in the given
 `builder`.
 
+@param[in] meshcat (Optional) A Meshcat object for visualization message
+publication. When not provided, a Meshcat object will be created unless
+`config.enable_meshcat_creation` is set to false.
+
 @param[in] lcm (Optional) The LCM interface used for visualization message
 publication. When not provided, uses the `config.lcm_bus` value to look up
 the appropriate interface from `lcm_buses`.
@@ -89,6 +96,7 @@ void ApplyVisualizationConfig(
     const systems::lcm::LcmBuses* lcm_buses = nullptr,
     const multibody::MultibodyPlant<double>* plant = nullptr,
     const geometry::SceneGraph<double>* scene_graph = nullptr,
+    std::shared_ptr<geometry::Meshcat> meshcat = nullptr,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
 /** Adds LCM visualization publishers to communicate to drake_visualizer
@@ -128,7 +136,11 @@ namespace internal {
 
 // (For unit testing only.)
 std::vector<geometry::DrakeVisualizerParams>
-ConvertVisualizationConfigToParams(const VisualizationConfig&);
+ConvertVisualizationConfigToDrakeParams(const VisualizationConfig&);
+
+// (For unit testing only.)
+std::vector<geometry::MeshcatVisualizerParams>
+ConvertVisualizationConfigToMeshcatParams(const VisualizationConfig&);
 
 }  // namespace internal
 }  // namespace visualization
