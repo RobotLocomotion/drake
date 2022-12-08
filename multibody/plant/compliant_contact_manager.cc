@@ -796,6 +796,7 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   std::vector<std::vector<HydroelasticQuadraturePointData<T>>> quadrature_data;
   quadrature_data.reserve(num_surfaces);
   for (int isurface = 0; isurface < num_surfaces; ++isurface) {
+    quadrature_data.emplace_back();
     quadrature_data[isurface].reserve(all_surfaces[isurface].num_faces());
   }
 
@@ -804,7 +805,6 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   // point contact forces.
   for (int icontact = num_point_contacts; icontact < num_contacts; ++icontact) {
     const auto& pair = discrete_pairs[icontact];
-
     // Quadrature point Q.
     const Vector3<T>& p_WQ = pair.p_WC;
     const RotationMatrix<T>& R_WC = contact_kinematics[icontact].R_WC;
@@ -836,9 +836,7 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
     const int face_index = pair.face_index.value();
     const Vector3<T> traction_Aq_W = f_Aq_W / s.area(face_index);
 
-    quadrature_data[surface_index].emplace_back(
-        HydroelasticQuadraturePointData<T>{p_WQ, face_index, vt_BqAq_W,
-                                           traction_Aq_W});
+    quadrature_data[surface_index].emplace_back(p_WQ, face_index, vt_BqAq_W, traction_Aq_W);
   }
 
   // Update contact info to include the correct contact forces.

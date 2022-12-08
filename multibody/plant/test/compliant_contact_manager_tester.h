@@ -44,6 +44,13 @@ class CompliantContactManagerTester {
     return manager.CalcContactKinematics(context);
   }
 
+  static void DoCalcContactResults(
+      const CompliantContactManager<double>& manager,
+      const drake::systems::Context<double>& context,
+      ContactResults<double>* contact_results) {
+    return manager.DoCalcContactResults(context, contact_results);
+  }
+
   static const DeformableDriver<double>* deformable_driver(
       const CompliantContactManager<double>& manager) {
     return manager.deformable_driver_.get();

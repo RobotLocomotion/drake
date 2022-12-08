@@ -20,6 +20,7 @@
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 #include "drake/multibody/plant/test/spheres_stack.h"
+#include "drake/multibody/plant/test_utilities/rigid_body_on_compliant_ground.h"
 #include "drake/multibody/tree/joint_actuator.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -639,6 +640,65 @@ TEST_F(AlgebraicLoopDetection, VerifyNoFalsePositivesWhenCachingIsDisabled) {
   VerifyNoLoopIsDetected();
 }
 
+// This test verifies contact results in the equilibrium configuration.
+TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
+  std::unique_ptr<ContactResults<double>> contact_results =
+      std::make_unique<ContactResults<double>>();
+  CompliantContactManagerTester::DoCalcContactResults(
+      *manager_, *plant_context_, contact_results.get());
+  const ContactTestConfig& config = GetParam();
+
+  if (config.point_contact) {
+    // Test point contact.
+    EXPECT_EQ(contact_results->num_point_pair_contacts(), 1);
+    EXPECT_EQ(contact_results->num_hydroelastic_contacts(), 0);
+
+    const PointPairContactInfo<double>& contact_info =
+        contact_results->point_pair_contact_info(0);
+
+    // PointPairContactInfo expresses the contact force acting on body B of the
+    // pair. Flip the sign of the contact force if `body_` is not body B.
+    double scale = (contact_info.bodyB_index() == body_->index() ? 1 : -1);
+
+    EXPECT_EQ(scale * contact_info.contact_force(),
+              -kMass_ * plant_->gravity_field().gravity_vector());
+    EXPECT_EQ(contact_info.contact_point().z(),
+              CalcEquilibriumZPosition() - kPointContactSphereRadius_);
+    EXPECT_EQ(contact_info.slip_speed(), 0);
+    EXPECT_EQ(contact_info.separation_speed(), 0);
+  } else {
+    // Test hydroelastic contact.
+    EXPECT_EQ(contact_results->num_point_pair_contacts(), 0);
+    EXPECT_EQ(contact_results->num_hydroelastic_contacts(), 1);
+
+    const HydroelasticContactInfo<double>& contact_info =
+        contact_results->hydroelastic_contact_info(0);
+
+    EXPECT_TRUE(contact_info.F_Ac_W().IsApprox(SpatialForce<double>(
+        Vector3d::Zero(), -kMass_ * plant_->gravity_field().gravity_vector())));
+
+    Vector3d f_Ac_W = contact_info.F_Ac_W().translational();
+
+    for (const HydroelasticQuadraturePointData<double>& data :
+         contact_info.quadrature_point_data()) {
+      EXPECT_EQ(data.vt_BqAq_W, Vector3d::Zero());
+      EXPECT_EQ(data.traction_Aq_W, f_Ac_W / kArea_);
+    }
+  }
+}
+
+// Setup test cases using point and hydroelastic contact.
+std::vector<ContactTestConfig> MakeTestCases() {
+  return std::vector<ContactTestConfig>{
+      {.description = "HydroelasticContact", .point_contact = false},
+      {.description = "PointContact", .point_contact = true},
+  };
+}
+
+INSTANTIATE_TEST_SUITE_P(CompliantContactManagerTests,
+                         RigidBodyOnCompliantGround,
+                         testing::ValuesIn(MakeTestCases()),
+                         testing::PrintToStringParamName());
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
