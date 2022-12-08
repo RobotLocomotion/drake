@@ -17,8 +17,7 @@ using geometry::Shape;
 using geometry::ShapeReifier;
 using std::pow;
 
-/* The spatial inertia documented in the header file. See documentation there
- for semantics and notation. */
+// SpatialInertia semantics and notation are documented in spatial_inertia.h.
 class SpatialInertiaCalculator final : public ShapeReifier {
  public:
   SpatialInertia<double> Calculate(const Shape& shape, double density) {

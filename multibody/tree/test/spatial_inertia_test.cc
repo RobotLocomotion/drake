@@ -77,10 +77,10 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensity) {
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
   const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidBox(lx, ly, lz);
   const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
-  const SpatialInertia<double> M = SpatialInertia<double>::SolidBoxWithDensity(
-      density, lx, ly, lz);
-  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
-                                       M.CopyToFullMatrix6()));
+  const SpatialInertia<double> M =
+      SpatialInertia<double>::SolidBoxWithDensity(density, lx, ly, lz);
+  EXPECT_TRUE(
+      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 }
 
 // Test the construction from the mass, center of mass, and unit inertia of a
