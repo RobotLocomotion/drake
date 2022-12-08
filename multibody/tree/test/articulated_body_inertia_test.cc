@@ -149,9 +149,9 @@ GTEST_TEST(ArticulatedBodyInertia, PlusEqualOperator) {
 GTEST_TEST(ArticulatedBodyInertia, TimesOperator) {
   // Spatial inertia for a cube C.
   double Lx = 1.0, Ly = 1.0, Lz = 1.0;  // Cube's lengths.
-  double mass = 1.0;  // Cube's mass
-  const SpatialInertia<double> M(  // First computed about its centroid.
-      mass, Vector3d::Zero(), UnitInertia<double>::SolidBox(Lx, Ly, Lz));
+  double density = 1.0;                 // Cube's density per unit volume.
+  const SpatialInertia<double> M =      // First computed about its centroid.
+      SpatialInertia<double>::SolidBoxWithDensity(density, Lx, Ly, Lz);
 
   // Articulated body inertia from spatial inertia.
   const ArticulatedBodyInertia<double> P(M);
