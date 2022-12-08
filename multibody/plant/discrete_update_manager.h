@@ -140,6 +140,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcContactResults(const systems::Context<T>& context,
                           ContactResults<T>* contact_results) const {
     DRAKE_DEMAND(contact_results != nullptr);
+    plant().ValidateContext(context);
     DoCalcContactResults(context, contact_results);
   }
 

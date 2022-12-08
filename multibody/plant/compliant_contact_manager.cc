@@ -101,10 +101,20 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
           this, &CompliantContactManager<T>::CalcHydroelasticContactInfo),
       // Compliant contact forces due to hydroelastics with Hunt &
       // Crosseley are function of the kinematic variables q & v only.
-      {systems::System<T>::kinematics_ticket(),
+      {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.hydroelastic_contact_info =
       hydroelastic_contact_info_cache_entry.cache_index();
+
+  // Cache contact kinematics.
+  const auto& contact_kinematics_cache_entry = this->DeclareCacheEntry(
+      "Contact kinematics.",
+      systems::ValueProducer(
+          this, &CompliantContactManager::CalcContactKinematics),
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket()});
+  cache_indexes_.contact_kinematics =
+      contact_kinematics_cache_entry.cache_index();
 
   // Accelerations due to non-contact forces.
   // We cache non-contact forces, ABA forces and accelerations into a
@@ -369,8 +379,8 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
     const T fn0 = k * pair.depth;  // Used by TAMSI, ignored by SAP.
 
     contact_pairs.push_back({pair.id_A, pair.id_B, p_WC, pair.nhat_BA_W, phi0,
-                             fn0, k, d, tau, mu, -1 /* invalid surface index */,
-                             -1 /* invalid face index */});
+                             fn0, k, d, tau, mu, {} /* no surface index */,
+                             {} /* no face index */});
   }
 }
 
@@ -669,7 +679,7 @@ void CompliantContactManager<T>::DoCalcDiscreteValues(
 }
 
 template <typename T>
-void CompliantContactManager<T>::AppendContactResultsPoint(
+void CompliantContactManager<T>::AppendContactResultsForPointContact(
     const drake::systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
@@ -713,7 +723,7 @@ void CompliantContactManager<T>::AppendContactResultsPoint(
 
     // Contact forces applied on B at contact point C.
     const Vector3<T> f_Bc_C(ft(2 * icontact), ft(2 * icontact + 1),
-                            -fn(icontact));
+                            fn(icontact));
     const Vector3<T> f_Bc_W = R_WC * f_Bc_C;
 
     // Slip velocity.
@@ -730,7 +740,7 @@ void CompliantContactManager<T>::AppendContactResultsPoint(
 }
 
 template <typename T>
-void CompliantContactManager<T>::AppendContactResultsHydroelastic(
+void CompliantContactManager<T>::AppendContactResultsForHydroelasticContact(
     const drake::systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   const std::vector<HydroelasticContactInfo<T>>& contact_info =
@@ -777,13 +787,10 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   DRAKE_DEMAND(vn.size() == num_contacts);
   DRAKE_DEMAND(vt.size() == 2 * num_contacts);
 
-  int num_point_contacts = 0;
-  for (auto pair : discrete_pairs) {
-    if (pair.surface_index == -1) ++num_point_contacts;
-  }
+  int num_point_contacts = plant().EvalPointPairPenetrations(context).size();
   const int num_surfaces = all_surfaces.size();
 
-  std::vector<SpatialForce<T>> contact_surface_forces(num_surfaces,
+  std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,
                                                       SpatialForce<T>::Zero());
 
   std::vector<std::vector<HydroelasticQuadraturePointData<T>>> quadrature_data;
@@ -793,7 +800,8 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   }
 
   // We only scan discrete pairs corresponding to hydroelastic quadrature
-  // points. These are appended at the end of the point contact forces.
+  // points. These are appended by CalcDiscreteContactPairs() at the end of the
+  // point contact forces.
   for (int icontact = num_point_contacts; icontact < num_contacts; ++icontact) {
     const auto& pair = discrete_pairs[icontact];
 
@@ -801,43 +809,42 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
     const Vector3<T>& p_WQ = pair.p_WC;
     const RotationMatrix<T>& R_WC = contact_kinematics[icontact].R_WC;
 
-    // Contact forces applied on B at quadrature point Q.
+    // Contact forces applied on A at quadrature point Q.
     const Vector3<T> f_Bq_C(ft(2 * icontact), ft(2 * icontact + 1),
-                            -fn(icontact));
-    const Vector3<T> f_Bq_W = R_WC * f_Bq_C;
+                            fn(icontact));
+    const Vector3<T> f_Aq_W = -(R_WC * f_Bq_C);
 
-    const auto& s = all_surfaces[pair.surface_index];
+    const int surface_index = pair.surface_index.value();
+    const auto& s = all_surfaces[surface_index];
     // Surface's centroid point O.
     const Vector3<T>& p_WO = s.is_triangle() ? s.tri_mesh_W().centroid()
                                              : s.poly_mesh_W().centroid();
 
-    // Torque about the centroid.
-    const Vector3<T> p_OQ_W = p_WQ - p_WO;
-    const Vector3<T> t_Bo_W = p_OQ_W.cross(f_Bq_W);
-
+    // Spatial force
+    const Vector3<T> p_QO_W = p_WO - p_WQ;
+    const SpatialForce<T> Fq_Ao_W =
+        SpatialForce<T>(Vector3<T>::Zero(), f_Aq_W).Shift(p_QO_W);
     // Accumulate force for the corresponding contact surface.
-    contact_surface_forces[pair.surface_index] +=
-        SpatialForce<T>(t_Bo_W, f_Bq_W);
+    F_Ao_W_per_surface[surface_index] += Fq_Ao_W;
 
     // Velocity of Bq relative to Aq in the tangent direction.
-    // TODO(joemasterjohn): Ask Alejandro do I have the sign of the relative
-    // velocity correct with respect to A and B?
     const Vector3<T> vt_BqAq_C(vt(2 * icontact), vt(2 * icontact + 1), 0);
     const Vector3<T> vt_BqAq_W = R_WC * vt_BqAq_C;
 
     // Traction vector applied to body A at point Aq (Aq and Bq are coincident)
     // expressed in the world frame.
-    const Vector3<T> traction_Aq_W = -f_Bq_W / s.area(pair.face_index);
+    const int face_index = pair.face_index.value();
+    const Vector3<T> traction_Aq_W = f_Aq_W / s.area(face_index);
 
-    quadrature_data[pair.surface_index].emplace_back(
-        HydroelasticQuadraturePointData<T>{p_WQ, pair.face_index, vt_BqAq_W,
+    quadrature_data[surface_index].emplace_back(
+        HydroelasticQuadraturePointData<T>{p_WQ, face_index, vt_BqAq_W,
                                            traction_Aq_W});
   }
 
   // Update contact info to include the correct contact forces.
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
     contact_info->emplace_back(
-        &all_surfaces[surface_index], contact_surface_forces[surface_index],
+        &all_surfaces[surface_index], F_Ao_W_per_surface[surface_index],
         std::move(quadrature_data[surface_index]));
   }
 }
@@ -863,15 +870,14 @@ void CompliantContactManager<T>::DoCalcContactResults(
 
   switch (plant().get_contact_model()) {
     case ContactModel::kPoint:
-      AppendContactResultsPoint(context, contact_results);
+      AppendContactResultsForPointContact(context, contact_results);
       break;
     case ContactModel::kHydroelastic:
-      AppendContactResultsHydroelastic(context, contact_results);
+      AppendContactResultsForHydroelasticContact(context, contact_results);
       break;
     case ContactModel::kHydroelasticWithFallback:
-      AppendContactResultsPoint(context, contact_results);
-      AppendContactResultsHydroelastic(context, contact_results);
-
+      AppendContactResultsForPointContact(context, contact_results);
+      AppendContactResultsForHydroelasticContact(context, contact_results);
       break;
   }
 }

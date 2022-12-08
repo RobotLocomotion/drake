@@ -120,6 +120,7 @@ class CompliantContactManager final
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
+    systems::CacheIndex contact_kinematics;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex hydroelastic_contact_info;
     systems::CacheIndex non_contact_forces_accelerations;
@@ -184,6 +185,10 @@ class CompliantContactManager final
   std::vector<ContactPairKinematics<T>> CalcContactKinematics(
       const systems::Context<T>& context) const;
 
+  // Eval version of CalcContactKinematics().
+  const std::vector<ContactPairKinematics<T>>& EvalContactKinematics(
+      const systems::Context<T>& context) const;
+
   // Given the configuration stored in `context`, this method appends discrete
   // pairs corresponding to point contact into `pairs`.
   // @pre pairs != nullptr.
@@ -211,10 +216,14 @@ class CompliantContactManager final
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const final;
 
+  // Computes per-face contact information for the hydroelastic model (slip
+  // velocity, traction, etc). On return contact_info->size() will equal the
+  // number of faces discretizing the contact surface.
   void CalcHydroelasticContactInfo(
       const systems::Context<T>& context,
       std::vector<HydroelasticContactInfo<T>>* contact_info) const;
 
+  // Eval version of CalcHydroelasticContactInfo() .
   const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
       const systems::Context<T>& context) const;
 
@@ -238,15 +247,16 @@ class CompliantContactManager final
       const systems::Context<T>& context) const;
 
   // Helper method to fill in contact_results with point contact information
-  // for the given state stored in context.
+  // for the given state stored in `context`.
   // @param[in,out] contact_results is appended to
-  void AppendContactResultsPoint(
+  void AppendContactResultsForPointContact(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
+
   // Helper method to fill in `contact_results` with hydroelastic contact
-  // information.
+  // information for the given state stored in `context`.
   // @param[in,out] contact_results is appended to
-  void AppendContactResultsHydroelastic(
+  void AppendContactResultsForHydroelasticContact(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 

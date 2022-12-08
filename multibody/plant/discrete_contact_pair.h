@@ -45,12 +45,12 @@ struct DiscreteContactPair {
    set to NAN if unused. */
   T friction_coefficient{NAN};
   /* For mesh contact, the index of the surface this discrete pair corresponds
-   * to. Negative if the pair does not correspond to mesh contact. */
-  int surface_index{-1};
+   * to. No value if the pair does not correspond to mesh contact.*/
+  std::optional<int> surface_index{};
   /* For mesh contact, the index of the face in the surface given by
-   * surface_index this discrete pair corresponds to. Negative if the pair does
+   * surface_index this discrete pair corresponds to. No value if the pair does
    * not correspond to mesh contact. */
-  int face_index{-1};
+  std::optional<int> face_index{};
 };
 
 }  // namespace internal
