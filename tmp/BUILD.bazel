@@ -1,0 +1,10 @@
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
+
+drake_py_binary(
+    name = "parsing_toy",
+    srcs = ["parsing_toy.py"],
+    add_test_rule = 1,
+)
