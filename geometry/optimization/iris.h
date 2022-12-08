@@ -62,6 +62,8 @@ struct IrisOptions {
   pass in such configuration space obstacles. */
   ConvexSets configuration_obstacles{};
 
+  std::optional<Hyperellipsoid> starting_ellipse{};
+
   /** By default, IRIS in configuration space certifies regions for collision
   avoidance constraints and joint limits. This option can be used to pass
   additional constraints that should be satisfied by the IRIS region. We accept
