@@ -259,7 +259,7 @@ def _test_wheel(target, identifier, options):
     if options.tag_stages:
         base_image = _tagname(target, TEST, 'test')
     else:
-        base_image = test_container
+        base_image = test_image
     test_dir = os.path.join(resource_root, 'test')
 
     # Build the test base image.
@@ -309,13 +309,10 @@ def build(options):
         die('Nothing to do! (Platform and/or Python version selection '
             'resulted in an empty set of wheels)')
 
-    # Generate a unique identifier for this build, if needed.
-    if options.tag_stages:
-        identifier = None
-    else:
-        salt = os.urandom(8).hex()
-        time = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
-        identifier = f'{time}-{salt}'
+    # Generate a unique identifier for this build.
+    salt = os.urandom(8).hex()
+    time = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
+    identifier = f'{time}-{salt}'
 
     # Generate the repository source archive.
     source_tar = os.path.join(resource_root, 'image', 'drake-src.tar.xz')
