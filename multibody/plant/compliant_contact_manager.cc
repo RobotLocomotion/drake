@@ -688,8 +688,8 @@ void CompliantContactManager<T>::AppendContactResultsForPointContact(
       plant().EvalPointPairPenetrations(context);
   const std::vector<internal::DiscreteContactPair<T>>& discrete_pairs =
       this->EvalDiscreteContactPairs(context);
-  std::vector<ContactPairKinematics<T>> contact_kinematics =
-      this->CalcContactKinematics(context);
+  const std::vector<ContactPairKinematics<T>>& contact_kinematics =
+      this->EvalContactKinematics(context);
   const contact_solvers::internal::ContactSolverResults<T>& solver_results =
       this->EvalContactSolverResults(context);
 
@@ -769,8 +769,8 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
 
   const std::vector<internal::DiscreteContactPair<T>>& discrete_pairs =
       this->EvalDiscreteContactPairs(context);
-  std::vector<ContactPairKinematics<T>> contact_kinematics =
-      this->CalcContactKinematics(context);
+  const std::vector<ContactPairKinematics<T>>& contact_kinematics =
+      this->EvalContactKinematics(context);
 
   const contact_solvers::internal::ContactSolverResults<T>& solver_results =
       this->EvalContactSolverResults(context);
