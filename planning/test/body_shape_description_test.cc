@@ -8,18 +8,15 @@
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
-using drake::geometry::GeometryId;
-using drake::geometry::SceneGraph;
-using drake::geometry::Sphere;
-using drake::math::RigidTransformd;
-using drake::math::RollPitchYaw;
-using drake::multibody::AddMultibodyPlantSceneGraph;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
+using geometry::GeometryId;
+using geometry::Sphere;
+using math::RigidTransformd;
+using math::RollPitchYaw;
+using multibody::MultibodyPlant;
 
 GTEST_TEST(BodyShapeDescriptionTest, Arbitrary) {
   const Sphere sphere{1.23};
@@ -35,8 +32,25 @@ GTEST_TEST(BodyShapeDescriptionTest, Arbitrary) {
   EXPECT_EQ(dut.body_name(), body);
 }
 
+GTEST_TEST(BodyShapeDescriptionTest, MovedFrom) {
+  const Sphere sphere{1.23};
+  const RigidTransformd pose(RollPitchYaw<double>{1, 3, 5},
+                             Eigen::Vector3d{7, 9, 11});
+  const std::string model{"acme_arm"};
+  const std::string body{"link1"};
+  BodyShapeDescription dut(sphere, pose, model, body);
+  BodyShapeDescription receiver{std::move(dut)};
+
+  // We don't really care what the moved-from object contains, but we do want
+  // behavior to be defined.
+  EXPECT_THROW(dut.shape(), std::exception);
+  EXPECT_TRUE(dut.pose_in_body().IsExactlyEqualTo(pose));
+  EXPECT_TRUE(dut.model_instance_name().empty());
+  EXPECT_TRUE(dut.body_name().empty());
+}
+
 GTEST_TEST(BodyShapeDescriptionTest, FromPlant) {
-  drake::planning::RobotDiagramBuilder<double> builder;
+  planning::RobotDiagramBuilder<double> builder;
   const std::string model = R"""(
 <?xml version='1.0'?>
 <sdf version='1.7'>
@@ -68,19 +82,21 @@ GTEST_TEST(BodyShapeDescriptionTest, FromPlant) {
   EXPECT_EQ(dut.body_name(), "link");
 
   // Wrong context throws.
-  EXPECT_THROW(MakeBodyShapeDescription(plant, *diagram_context, geometries[0]),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeBodyShapeDescription(plant, *diagram_context, geometries[0]),
+      ".*instead of the appropriate subsystem Context.*\n.*");
   // Invalid GeometryId throws.
-  EXPECT_THROW(MakeBodyShapeDescription(plant, plant_context, {}),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeBodyShapeDescription(plant, plant_context, {}),
+      ".*is_valid.*failed.*");
   // GeometryId for nonexistent geometry throws.
-  EXPECT_THROW(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       MakeBodyShapeDescription(plant, plant_context, GeometryId::get_new_id()),
-      std::exception);
+      ".*geometry.*has not been registered.*");
 }
 
 GTEST_TEST(BodyShapeDescriptionTest, NoSceneGraphThrows) {
-  drake::systems::DiagramBuilder<double> builder;
+  systems::DiagramBuilder<double> builder;
   auto plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
   plant->Finalize();
   auto diagram = builder.Build();
@@ -89,9 +105,9 @@ GTEST_TEST(BodyShapeDescriptionTest, NoSceneGraphThrows) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeBodyShapeDescription(*plant, plant_context, {}),
-      ".*Port.*geometry_query.*not connected.*");
+      ".*geometry_source_is_registered.*failed.*");
 }
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
