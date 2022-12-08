@@ -285,8 +285,13 @@ drake_py_unittest(
     data = [
         ":client_demo",
         ":server_demo",
-        ":test/ground_truth.gltf",
+        ":test/test_color_scene.gltf",
+        ":test/test_depth_scene.gltf",
+        ":test/test_label_scene.gltf",
     ],
+    # The image differencing fails occasionally in macOS CI, but it's not
+    # reproducible locally. See 18134 for more details.
+    flaky = True,
     tags = [
         "cpu:2",
     ],
