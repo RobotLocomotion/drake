@@ -14,9 +14,22 @@ drake_cc_package_library(
     name = "planning",
     visibility = ["//visibility:public"],
     deps = [
+        ":body_shape_description",
         ":robot_collision_type",
         ":robot_diagram",
         ":robot_diagram_builder",
+    ],
+)
+
+drake_cc_library(
+    name = "body_shape_description",
+    srcs = ["body_shape_description.cc"],
+    hdrs = ["body_shape_description.h"],
+    deps = [
+        "@common_robotics_utilities",
+        "@drake//common:essential",
+        "@drake//geometry",
+        "@drake//multibody/plant",
     ],
 )
 
@@ -49,6 +62,17 @@ drake_cc_library(
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "body_shape_description_test",
+    deps = [
+        ":body_shape_description",
+        "@drake//common/test_utilities:expect_throws_message",
+        "@drake//multibody/parsing",
+        "@drake//multibody/plant",
+        "@drake//planning:robot_diagram_builder",
     ],
 )
 

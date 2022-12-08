@@ -8,7 +8,7 @@
 #include "drake/geometry/shape_specification.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /** %BodyShapeDescription captures all the information necessary to describe a
 SceneGraph collision shape associated with a MultibodyPlant Body: a shape
@@ -28,17 +28,17 @@ class BodyShapeDescription final {
   /** Constructs a description with the given attributes. Does not check or
   enforce correctness; callers are responsible for providing consistent
   input. */
-  BodyShapeDescription(const drake::geometry::Shape& shape,
-                       const drake::math::RigidTransformd& X_BS,
+  BodyShapeDescription(const geometry::Shape& shape,
+                       const math::RigidTransformd& X_BS,
                        std::string model_instance_name, std::string body_name);
 
   /** @returns the shape passed at construction.
       @throws std::exception if this object was default constructed. */
-  const drake::geometry::Shape& shape() const { return *shape_; }
+  const geometry::Shape& shape() const { return *shape_; }
 
   /** @returns the transform X_BS passed at construction.
       @throws std::exception if this object was default constructed. */
-  const drake::math::RigidTransformd& pose_in_body() const { return X_BS_; }
+  const math::RigidTransformd& pose_in_body() const { return X_BS_; }
 
   /** @returns the model instance name passed at construction.
       @throws std::exception if this object was default constructed. */
@@ -51,8 +51,8 @@ class BodyShapeDescription final {
   const std::string& body_name() const { return body_name_; }
 
  private:
-  drake::copyable_unique_ptr<drake::geometry::Shape> shape_;
-  drake::math::RigidTransformd X_BS_;
+  copyable_unique_ptr<geometry::Shape> shape_;
+  math::RigidTransformd X_BS_;
   std::string model_instance_name_;
   std::string body_name_;
 };
@@ -65,9 +65,9 @@ associated with the provided geometry_id.
 @throws std::exception if @p geometry_id  doesn't refer to a geometry rigidly
                        affixed to a body of @p plant. */
 BodyShapeDescription MakeBodyShapeDescription(
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const drake::systems::Context<double>& plant_context,
-    const drake::geometry::GeometryId& geometry_id);
+    const multibody::MultibodyPlant<double>& plant,
+    const systems::Context<double>& plant_context,
+    const geometry::GeometryId& geometry_id);
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
