@@ -487,11 +487,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "tamsi_driver_test",
-    data = ["test/square_surface.obj"],
     deps = [
-        ":compliant_contact_manager_tester",
-        ":plant",
-        "//common:find_resource",
+        "//multibody/plant/test_utilities:rigid_body_on_compliant_ground",
     ],
 )
 
