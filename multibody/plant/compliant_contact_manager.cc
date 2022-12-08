@@ -256,6 +256,15 @@ CompliantContactManager<T>::CalcContactKinematics(
   return contact_kinematics;
 }
 
+template <typename T>
+const std::vector<ContactPairKinematics<T>>&
+CompliantContactManager<T>::EvalContactKinematics(
+    const systems::Context<T>& context) const {
+  return plant()
+      .get_cache_entry(cache_indexes_.contact_kinematics)
+      .template Eval<std::vector<ContactPairKinematics<T>>>(context);
+}
+
 template <>
 void CompliantContactManager<symbolic::Expression>::CalcDiscreteContactPairs(
     const drake::systems::Context<symbolic::Expression>&,
