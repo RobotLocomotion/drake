@@ -40,6 +40,7 @@ from pydrake.multibody.tree import (
     PlanarJoint_,
     PrismaticJoint_,
     PrismaticSpring_,
+    QuaternionFloatingJoint_,
     RevoluteJoint_,
     RevoluteSpring_,
     RigidBody_,
@@ -90,6 +91,7 @@ from pydrake.multibody.benchmarks.acrobot import (
 from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
+from pydrake.common.eigen_geometry import Quaternion_
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
@@ -1652,6 +1654,15 @@ class TestPlant(unittest.TestCase):
                 damping=damping,
             )
 
+        def make_quaternion_floating_joint(plant, P, C):
+            return QuaternionFloatingJoint_[T](
+                name="quaternion_floating",
+                frame_on_parent=P,
+                frame_on_child=C,
+                angular_damping=damping,
+                translational_damping=damping,
+            )
+
         def make_revolute_joint(plant, P, C):
             # First, check that the sans-limits overload works.
             RevoluteJoint_[T](
@@ -1718,6 +1729,7 @@ class TestPlant(unittest.TestCase):
             make_ball_rpy_joint,
             make_planar_joint,
             make_prismatic_joint,
+            make_quaternion_floating_joint,
             make_revolute_joint,
             make_screw_joint,
             make_universal_joint,
@@ -1835,6 +1847,32 @@ class TestPlant(unittest.TestCase):
                 joint.acceleration_upper_limit()
                 joint.get_default_translation()
                 joint.set_default_translation(translation=0.0)
+            elif joint.name() == "quaternion_floating":
+                self.assertEqual(joint.angular_damping(), damping)
+                self.assertEqual(joint.translational_damping(), damping)
+                joint.get_quaternion(context=context)
+                joint.get_position(context=context)
+                joint.get_pose(context=context)
+                joint.get_angular_velocity(context=context)
+                joint.get_translational_velocity(context=context)
+                joint.set_quaternion(context=context, q_FM=Quaternion_[T]())
+                joint.SetFromRotationMatrix(context=context,
+                                            R_FM=RotationMatrix_[T]())
+                joint.set_position(context=context, p_FM=[0, 0, 0])
+                joint.set_pose(context=context, X_FM=RigidTransform_[T]())
+                joint.set_angular_velocity(context=context, w_FM=[0, 0, 0])
+                joint.set_translational_velocity(context=context,
+                                                 v_FM=[0, 0, 0])
+                joint.set_random_position_distribution(p_FM=[0, 0, 0])
+                joint.set_random_quaternion_distribution(
+                    q_FM=Quaternion_[Expression]())
+                joint.set_random_quaternion_distribution_to_uniform()
+                joint.get_default_quaternion()
+                joint.get_default_position()
+                joint.get_default_pose()
+                joint.set_default_quaternion(q_FM=Quaternion_[float]())
+                joint.set_default_position(p_FM=[0, 0, 0])
+                joint.SetDefaultPose(X_FM=RigidTransform_[float]())
             elif joint.name() == "revolute":
                 numpy_compare.assert_equal(joint.revolute_axis(), x_axis)
                 self.assertEqual(joint.damping(), damping)
