@@ -8,18 +8,15 @@
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
-using drake::geometry::GeometryId;
-using drake::geometry::SceneGraph;
-using drake::geometry::Sphere;
-using drake::math::RigidTransformd;
-using drake::math::RollPitchYaw;
-using drake::multibody::AddMultibodyPlantSceneGraph;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
+using geometry::GeometryId;
+using geometry::Sphere;
+using math::RigidTransformd;
+using math::RollPitchYaw;
+using multibody::MultibodyPlant;
 
 GTEST_TEST(BodyShapeDescriptionTest, Arbitrary) {
   const Sphere sphere{1.23};
@@ -36,7 +33,7 @@ GTEST_TEST(BodyShapeDescriptionTest, Arbitrary) {
 }
 
 GTEST_TEST(BodyShapeDescriptionTest, FromPlant) {
-  drake::planning::RobotDiagramBuilder<double> builder;
+  planning::RobotDiagramBuilder<double> builder;
   const std::string model = R"""(
 <?xml version='1.0'?>
 <sdf version='1.7'>
@@ -80,7 +77,7 @@ GTEST_TEST(BodyShapeDescriptionTest, FromPlant) {
 }
 
 GTEST_TEST(BodyShapeDescriptionTest, NoSceneGraphThrows) {
-  drake::systems::DiagramBuilder<double> builder;
+  systems::DiagramBuilder<double> builder;
   auto plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
   plant->Finalize();
   auto diagram = builder.Build();
@@ -94,4 +91,4 @@ GTEST_TEST(BodyShapeDescriptionTest, NoSceneGraphThrows) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
