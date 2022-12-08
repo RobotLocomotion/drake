@@ -15,7 +15,7 @@
 #include "drake/common/unused.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/tree/body_node_welded.h"
+#include "drake/multibody/tree/body_node_world.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
@@ -28,7 +28,7 @@ namespace multibody {
 namespace internal {
 
 using internal::BodyNode;
-using internal::BodyNodeWelded;
+using internal::BodyNodeWorld;
 using math::RigidTransform;
 using math::RotationMatrix;
 
@@ -774,7 +774,7 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
 
   std::unique_ptr<BodyNode<T>> body_node;
   if (body_index == world_index()) {
-    body_node = std::make_unique<BodyNodeWelded<T>>(&world_body());
+    body_node = std::make_unique<BodyNodeWorld<T>>(&world_body());
   } else {
     // The mobilizer should be valid if not at the root (the world).
     DRAKE_ASSERT(node_topology.mobilizer.is_valid());
