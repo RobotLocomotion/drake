@@ -1,8 +1,5 @@
 directives:
 
-# N.B. The namespacing features are only available for RBT.
-
-# Left.
 - add_model_instance:
     # `model_namespace` requires a corresponding model instance so that frames
     # can be added to it.

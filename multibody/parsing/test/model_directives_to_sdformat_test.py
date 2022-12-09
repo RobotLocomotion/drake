@@ -43,6 +43,8 @@ from pydrake.common.test_utilities.meta import (
 import drake.multibody.parsing.model_directives_to_sdformat \
     as model_directives_to_sdformat
 
+_SCOPE_DELIMITER = '::'
+
 
 def _get_plant_aggregate(num_func, get_func, index_cls, model_instances=None):
     items = []
@@ -157,7 +159,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
 
         for i in range(3, directives_plant.num_model_instances()):
             model_scoped_name = file_name \
-                + model_directives_to_sdformat.SCOPE_DELIMITER \
+                + model_directives_to_sdformat._SCOPE_DELIMITER \
                 + directives_plant.GetModelInstanceName(
                     ModelInstanceIndex(i))
 
@@ -317,5 +319,5 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         self.assertEqual(0, model_directives_to_sdformat.main(
             ['-m',
              'multibody/parsing/test/'
-             'model_directives_to_sdformat_files/add_directives.yaml',
-             '-nf', '-p', '.']))
+             'model_directives_to_sdformat_files/hidden_frame.yaml',
+             '-n', '-c', '-p', '.']))

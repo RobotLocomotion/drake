@@ -69,6 +69,7 @@ drake_py_binary(
     name = "model_directives_to_sdformat",
     srcs = ["model_directives_to_sdformat.py"],
     deps = [
+        "//bindings/pydrake",
     ],
 )
 

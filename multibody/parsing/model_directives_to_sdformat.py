@@ -19,11 +19,15 @@ import sys
 from typing import Any, Dict
 
 from pydrake.common.yaml import yaml_load_file
-from pydrake.multibody.parsing import PackageMap
+from pydrake.multibody.parsing import (
+  PackageMap,
+  Parser,
+)
+from pydrake.multibody.plant import MultibodyPlant
 
-SDF_VERSION = '1.9'
-SCOPE_DELIMITER = '::'
-WORLD_FRAME = 'world'
+_SDF_VERSION = '1.9'
+_SCOPE_DELIMITER = '::'
+_WORLD_FRAME = 'world'
 
 
 class ConversionError(Exception):
@@ -32,43 +36,39 @@ class ConversionError(Exception):
 
 class ModelDirectivesToSdf:
 
-    # TODO(aaronchongth): Check for simple validity of output model XML,
-    # whether the model just has a single joint or something, without any
-    # other mandatory model elements.
-
     def __init__(self):
         # model_elem_map has the scoped model name as the key and its
         # corresponding XML element root as the value. This is used in
         # add_directives where model namespaces is defined, in add_model,
         # as well as when model elements are constructed due to implicit
         # or explicit frame names.
-        self.__model_elem_map = {}
+        self._model_elem_map = {}
 
         # incomplete_models is a list that contains all model names of model
         # elements that have been constructed but not yet valid (completed).
         # This is for keeping track that all model elements are properly
         # populated and not left empty. They are constructed using
         # add_model_instance or add_frame with scoped names.
-        self.__incomplete_models = []
+        self._incomplete_models = []
 
         # child_frame_model_name_to_weld_map maps the top model instance name
         # of the child frame (in each weld) to the weld directive itself.
         # This map is used for posturing frames as the placement_frame and
         # pose combination is needed.
-        self.__child_frame_model_name_to_weld_map = {}
+        self._child_frame_model_name_to_weld_map = {}
 
         # incomplete_models contains all directives found in the main yaml file
-        self.__all_directives = []
+        self._all_directives = []
 
-    def __find_frame(self, name: str) -> str:
+    def _find_frame(self, name: str) -> str:
         """Finds and returns a frame if it exists in all directives,
            if 0 or more than one are found it throws a ConversionError
            exception."""
         frame = None
-        for directive in self.__all_directives:
+        for directive in self._all_directives:
             if 'add_frame' in directive:
                 add_frame_name = directive[
-                    'add_frame']['name'].split(SCOPE_DELIMITER)[-1]
+                    'add_frame']['name'].split(_SCOPE_DELIMITER)[-1]
                 if name == add_frame_name:
                     if frame is None:
                         frame = directive['add_frame']
@@ -78,9 +78,9 @@ class ModelDirectivesToSdf:
                             f' name: [{name}], could not resolve the scope.')
         return frame
 
-    def __resolve_and_scope_frame(self, frame_name: str) -> str:
+    def _resolve_and_scope_frame(self, frame_name: str) -> str:
         """Returns the frame scoped, None if the scope could not be found."""
-        frame = self.__find_frame(frame_name)
+        frame = self._find_frame(frame_name)
         # Frame with the same name as base frame are not supported
         if frame is not None and frame_name == frame['X_PF']['base_frame']:
             raise ConversionError(
@@ -91,39 +91,42 @@ class ModelDirectivesToSdf:
         final_frame = frame
         while frame is not None:
             final_frame = frame
-            frame = self.__find_frame(frame['X_PF']['base_frame'])
+            frame = self._find_frame(frame['X_PF']['base_frame'])
 
         if final_frame is not None:
             base_frame = final_frame['X_PF']['base_frame']
         else:
             return None
 
-        split_scoped_name = base_frame.split(SCOPE_DELIMITER)[:-1]
+        split_scoped_name = base_frame.split(_SCOPE_DELIMITER)[:-1]
         split_scoped_name.append(frame_name)
-        return SCOPE_DELIMITER.join(split_scoped_name)
+        return _SCOPE_DELIMITER.join(split_scoped_name)
 
-    def __add_directives(self, root: ET, directive: Dict[str, Any],
-                         nofollow: bool, packages_path: str) -> bool:
+    def _is_unscoped(self, directive_path):
+        return len(directive_path.split(_SCOPE_DELIMITER)) == 1
+
+    def _add_directives(self, root: ET, directive: Dict[str, Any],
+                        nofollow: bool, packages_path: str) -> bool:
         include_elem = None
         if 'model_namespace' in directive:
             model_ns = directive['model_namespace']
-            if model_ns not in self.__incomplete_models:
+            if model_ns not in self._incomplete_models:
                 raise ConversionError(f'Requested model namespace {model_ns} '
                                       'has not been constructed.')
 
-            if model_ns not in self.__model_elem_map:
+            if model_ns not in self._model_elem_map:
                 raise ConversionError(
                     'The XML element of the requested model'
                     f' namespace [{model_ns}] has not been constructed.')
 
-            self.__incomplete_models.remove(model_ns)
-            model_elem = self.__model_elem_map[model_ns]
+            self._incomplete_models.remove(model_ns)
+            model_elem = self._model_elem_map[model_ns]
             include_elem = ET.SubElement(model_elem, 'include', merge='true')
 
-            if model_ns in self.__child_frame_model_name_to_weld_map:
-                weld = self.__child_frame_model_name_to_weld_map.pop(model_ns)
+            if model_ns in self._child_frame_model_name_to_weld_map:
+                weld = self._child_frame_model_name_to_weld_map.pop(model_ns)
                 placement_frame_name = \
-                    weld['child'][len(model_ns) + len(SCOPE_DELIMITER):]
+                    weld['child'][len(model_ns) + len(_SCOPE_DELIMITER):]
                 include_elem.set('placement_frame', placement_frame_name)
         else:
             include_elem = ET.SubElement(root, 'include', merge='true')
@@ -169,7 +172,7 @@ class ModelDirectivesToSdf:
         uri_elem.text = sdformat_file_path
         return True
 
-    def __add_model(self, root: ET, directive: Dict[str, Any]) -> bool:
+    def _add_model(self, root: ET, directive: Dict[str, Any]) -> bool:
         model_root = root
         model_name = directive['name']
         file_name = directive['file']
@@ -178,12 +181,12 @@ class ModelDirectivesToSdf:
 
         # If the model element has already been constructed due to add_frame,
         # the file is merge included.
-        if model_name in self.__model_elem_map:
-            model_root = self.__model_elem_map[model_name]
+        if model_name in self._model_elem_map:
+            model_root = self._model_elem_map[model_name]
             include_elem = ET.SubElement(model_root, 'include', merge='true')
             merge_include = True
-            if model_name in self.__incomplete_models:
-                self.__incomplete_models.remove(model_name)
+            if model_name in self._incomplete_models:
+                self._incomplete_models.remove(model_name)
         else:
             include_elem = ET.SubElement(model_root, 'include')
 
@@ -193,26 +196,31 @@ class ModelDirectivesToSdf:
         uri_elem = ET.SubElement(include_elem, 'uri')
         uri_elem.text = file_name
 
-        if model_name not in self.__child_frame_model_name_to_weld_map:
+        if model_name not in self._child_frame_model_name_to_weld_map:
             return True
 
         # If this model contains a frame used in an add_weld instance, we
         # use the placement_frame and pose combination to posture it.
-        weld = self.__child_frame_model_name_to_weld_map.pop(model_name)
+        weld = self._child_frame_model_name_to_weld_map.pop(model_name)
         scoped_parent_name_str = weld['parent']
         # Resolve frame name if implicit:
-        if len(weld['parent'].split(SCOPE_DELIMITER)) == 1:
-            scoped_parent_name_str = self.__resolve_and_scope_frame(
+        if self._is_unscoped(weld['parent']):
+            scoped_parent_name_str = self._resolve_and_scope_frame(
                 weld['parent'])
             if scoped_parent_name_str is None:
                 raise ConversionError(
                     'Failed trying to find scope for frame: '
                     f'[{weld["parent"]}]. When tring to solve the '
                     f'placement_frame for model: [{model_name}].')
+
+        split_weld_child = weld['child'].split(_SCOPE_DELIMITER)
+        if len(split_weld_child) == 1:
+            placement_frame_value = split_weld_child[0]
+        else:
+            placement_frame_value = _SCOPE_DELIMITER.join(
+                weld['child'].split(_SCOPE_DELIMITER)[1:])
         if merge_include:
-            model_root.set('placement_frame',
-                           SCOPE_DELIMITER.join(
-                               weld['child'].split(SCOPE_DELIMITER)[1:]))
+            model_root.set('placement_frame', placement_frame_value)
             ET.SubElement(
                 model_root,
                 'pose',
@@ -220,8 +228,7 @@ class ModelDirectivesToSdf:
         else:
             placement_frame_elem = ET.SubElement(
                 include_elem, 'placement_frame')
-            placement_frame_elem.text = \
-                SCOPE_DELIMITER.join(weld['child'].split(SCOPE_DELIMITER)[1:])
+            placement_frame_elem.text = placement_frame_value
             ET.SubElement(
                 include_elem,
                 'pose',
@@ -244,27 +251,27 @@ class ModelDirectivesToSdf:
     # * in the implicit case, (name: name, base_frame: A::B::frame), the
     # frame will be constructed as
     # (name: A::B::name, base_frame: A::B::frame).
-    def __add_frame(self, root: ET, directive: Dict[str, Any]) -> bool:
+    def _add_frame(self, root: ET, directive: Dict[str, Any]) -> bool:
         x_pf = directive['X_PF']
         base_frame = x_pf['base_frame']
-        if base_frame == WORLD_FRAME:
+        if base_frame == _WORLD_FRAME:
             raise ConversionError(
-                f'Adding a frame using base_frame=[{WORLD_FRAME}] is '
+                f'Adding a frame using base_frame=[{_WORLD_FRAME}] is '
                 'not supported.')
 
-        split_base_frame = base_frame.split(SCOPE_DELIMITER)
+        split_base_frame = base_frame.split(_SCOPE_DELIMITER)
         # Resolve frame name if implicit:
         if len(split_base_frame) == 1:
-            base_frame = self.__resolve_and_scope_frame(base_frame)
-            if base_frame is None:
+            resolved_base_frame = self._resolve_and_scope_frame(base_frame)
+            if resolved_base_frame is None:
                 raise ConversionError(
                     'Failed trying to find scope for frame: '
                     f'[{x_pf["base_frame"]}] when trying to add frame: '
                     f'[{directive["name"]}].')
-            split_base_frame = base_frame.split(SCOPE_DELIMITER)
+            split_base_frame = resolved_base_frame.split(_SCOPE_DELIMITER)
 
         # If name and base_frame are scoped both should have a common scope
-        split_frame_name = directive['name'].split(SCOPE_DELIMITER)
+        split_frame_name = directive['name'].split(_SCOPE_DELIMITER)
         if len(split_base_frame) > 1 and len(split_frame_name) > 1:
             if split_base_frame[:-1] != split_frame_name[:-1]:
                 raise ConversionError(
@@ -273,31 +280,17 @@ class ModelDirectivesToSdf:
                     f'[{x_pf["base_frame"]}].')
 
         # Construct the necessary model scopes.
-        current_model_scope = None
         model_root = root
-        for scope in split_base_frame[:-1]:
-            if current_model_scope is None:
-                current_model_scope = scope
-            else:
-                current_model_scope += SCOPE_DELIMITER + scope
-
-            # Check if the scope already exists, if it is change model_root
-            # and move on.
-            if current_model_scope in self.__model_elem_map:
-                model_root = self.__model_elem_map[current_model_scope]
-                continue
-
-            # If not, we create it, save it to map and incomplete.
-            new_model_root = ET.SubElement(model_root, 'model', name=scope)
-            self.__model_elem_map[current_model_scope] = new_model_root
+        model_name = split_base_frame[-2]
+        if model_name in self._model_elem_map:
+            model_root = self._model_elem_map[model_name]
+        else:
+            new_model_root = ET.SubElement(
+                model_root, 'model', name=model_name)
+            self._model_elem_map[model_name] = new_model_root
             model_root = new_model_root
-
-            # We only consider the most nested model scope as incomplete, since
-            # all the parent model instances will be considered valid when the
-            # nested model is valid.
-            if current_model_scope is not None and \
-                    current_model_scope not in self.__incomplete_models:
-                self.__incomplete_models.append(current_model_scope)
+            if model_name not in self._incomplete_models:
+                self._incomplete_models.append(model_name)
 
         # Start constructing the frame in the model instance.
         translation_str = '0 0 0'
@@ -315,11 +308,12 @@ class ModelDirectivesToSdf:
                     f"Rotation of type {rot['_tag']} not suported.")
             rotation_str = f"{rot['deg'][0]} {rot['deg'][1]} {rot['deg'][2]}"
 
-        frame_name = directive['name'].split(SCOPE_DELIMITER)[-1]
-        frame_elem = ET.SubElement(model_root, 'frame', name=frame_name)
+        frame_name = directive['name'].split(_SCOPE_DELIMITER)[-1]
+        frame_elem = ET.SubElement(model_root, 'frame', name=frame_name,
+                                   attached_to=split_base_frame[-1])
 
         pose_elem = ET.SubElement(
-            frame_elem, 'pose', relative_to=split_base_frame[-1])
+            frame_elem, 'pose', degrees='true')
         pose_elem.text = f'{translation_str}   {rotation_str}'
         return True
 
@@ -354,14 +348,14 @@ class ModelDirectivesToSdf:
     # referred to obviously, this conversion will fail. In the unsupported
     # example above, it is unclear where simple_model is located, hence the
     # placement_frame and pose combination cannot be applied for posturing.
-    def __add_weld_fixed_joint(
+    def _add_weld_fixed_joint(
             self, root: ET, directive: Dict[str, Any]) -> bool:
         """Welding fixes two frames in the same global pose, and adds a fixed
         joint between them"""
         parent_name = directive['parent']
         # Resolve scope if the frame is implicit
-        if len(directive['parent'].split(SCOPE_DELIMITER)) == 1:
-            parent_name = self.__resolve_and_scope_frame(parent_name)
+        if self._is_unscoped(directive['parent']):
+            parent_name = self._resolve_and_scope_frame(parent_name)
             if parent_name is None:
                 raise ConversionError(
                     f'Failed trying to find scope for '
@@ -370,8 +364,8 @@ class ModelDirectivesToSdf:
                     f'[{directive["child"]}].')
 
         child_name = directive['child']
-        if len(directive['child'].split(SCOPE_DELIMITER)) == 1:
-            child_name = self.__resolve_and_scope_frame(directive['child'])
+        if self._is_unscoped(directive['child']):
+            child_name = self._resolve_and_scope_frame(directive['child'])
             if child_name is None:
                 raise ConversionError(
                     f'Failed trying to find scope for '
@@ -380,8 +374,8 @@ class ModelDirectivesToSdf:
                     f'[{directive["child"]}].')
 
         joint_name = \
-            f'{parent_name.replace(SCOPE_DELIMITER, "__")}___to___' \
-            f'{child_name.replace(SCOPE_DELIMITER, "__")}___weld_joint'
+            f'{parent_name.replace(_SCOPE_DELIMITER, "__")}___to___' \
+            f'{child_name.replace(_SCOPE_DELIMITER, "__")}___weld_joint'
 
         joint_elem = ET.SubElement(root, 'joint', name=joint_name)
         joint_elem.set('type', 'fixed')
@@ -393,15 +387,16 @@ class ModelDirectivesToSdf:
         child_elem.text = child_name
 
         # Bookkeeping for posturing models that are added later.
-        split_child_name = child_name.split(SCOPE_DELIMITER)
-        self.__child_frame_model_name_to_weld_map[
+        split_child_name = child_name.split(_SCOPE_DELIMITER)
+        self._child_frame_model_name_to_weld_map[
             split_child_name[0]] = directive
         return True
 
     def convert_directive(self, input_path: str, nofollow: bool = False,
-                          packages_path: str = None) -> str:
+                          packages_path: str = None,
+                          check_sdf: bool = False) -> str:
         # Initialize the sdformat XML root
-        root = ET.Element('sdf', version=SDF_VERSION)
+        root = ET.Element('sdf', version=_SDF_VERSION)
         root_model_name = os.path.splitext(os.path.basename(input_path))[0]
         root_model_elem = ET.SubElement(root, 'model', name=root_model_name)
 
@@ -413,29 +408,29 @@ class ModelDirectivesToSdf:
                                   'the yaml file, exiting.')
 
         # Obtain the list of directives
-        self.__all_directives = directives['directives']
+        self._all_directives = directives['directives']
 
         # Construct all new model instances and start keeping track of welds
         # to be added.
         leftover_directives = []
-        for directive in self.__all_directives:
+        for directive in self._all_directives:
             if 'add_model_instance' in directive:
                 new_model_name = directive['add_model_instance']['name']
-                if new_model_name in self.__model_elem_map or \
-                        new_model_name in self.__incomplete_models:
+                if new_model_name in self._model_elem_map or \
+                        new_model_name in self._incomplete_models:
                     raise ConversionError(f'Model instance [{new_model_name}]'
                                           ' already added')
 
                 new_model_elem = ET.SubElement(root_model_elem, 'model',
                                                name=new_model_name)
-                self.__model_elem_map[new_model_name] = new_model_elem
-                self.__incomplete_models.append(new_model_name)
+                self._model_elem_map[new_model_name] = new_model_elem
+                self._incomplete_models.append(new_model_name)
             elif 'add_weld' in directive:
                 weld = directive['add_weld']
                 weld_child = weld['child']
-                weld_child_scopes = weld_child.split(SCOPE_DELIMITER)
+                weld_child_scopes = weld_child.split(_SCOPE_DELIMITER)
 
-                self.__add_weld_fixed_joint(root_model_elem, weld)
+                self._add_weld_fixed_joint(root_model_elem, weld)
             else:
                 leftover_directives.append(directive)
 
@@ -446,7 +441,7 @@ class ModelDirectivesToSdf:
         leftover_directives = []
         for directive in directives:
             if 'add_frame' in directive:
-                self.__add_frame(root_model_elem, directive['add_frame'])
+                self._add_frame(root_model_elem, directive['add_frame'])
             leftover_directives.append(directive)
 
         # Go through each directive add to XML as needed.
@@ -454,11 +449,11 @@ class ModelDirectivesToSdf:
         for directive in directives:
             success = True
             if 'add_model' in directive:
-                success = self.__add_model(
+                success = self._add_model(
                     root_model_elem, directive['add_model'])
 
             elif 'add_directives' in directive:
-                success = self.__add_directives(
+                success = self._add_directives(
                     root_model_elem, directive['add_directives'],
                     nofollow, packages_path)
 
@@ -468,20 +463,34 @@ class ModelDirectivesToSdf:
 
         # Check if all the welds and incomplete model instances are taken
         # care of.
-        if self.__child_frame_model_name_to_weld_map:
+        if self._child_frame_model_name_to_weld_map:
             error_string = \
                 'There are welds that are still not postured properly:\n'
-            for key in self.__child_frame_model_name_to_weld_map:
+            for key in self._child_frame_model_name_to_weld_map:
                 error_string += \
-                    f'    {self.__child_frame_model_name_to_weld_map[key]}\n'
+                    f'    {self._child_frame_model_name_to_weld_map[key]}\n'
             raise ConversionError(error_string)
 
-        if len(self.__incomplete_models) != 0:
+        if len(self._incomplete_models) != 0:
             error_string = \
                 'There are models that are generated but not used:\n'
-            for m in self.__incomplete_models:
+            for m in self._incomplete_models:
                 error_string += f'    {m}\n'
             raise ConversionError(error_string)
+
+        # Check model validity by loading it through the SDFormat parser
+        if check_sdf:
+            try:
+                directives_plant = MultibodyPlant(time_step=0.01)
+                parser = Parser(plant=directives_plant)
+                if packages_path:
+                    parser.package_map().PopulateFromFolder(packages_path)
+                else:
+                    parser.package_map().PopulateFromFolder('.')
+                parser.AddModelsFromString(ET.tostring(root), "sdf")
+            except RuntimeError as e:
+                raise ConversionError(
+                    'Failed to validate resulting SDFormat XML.') from e
 
         return ET.ElementTree(root)
 
@@ -489,21 +498,25 @@ class ModelDirectivesToSdf:
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        '-m', '--model-directives', type=str,
+        '-c', '--check-sdf', action='store_true',
+        help='Chack and validate resulting SDFormat.')
+    parser.add_argument(
+        '-m', '--model-directives', type=str, required=True,
         help='Path to model directives file to be converted.')
+    parser.add_argument(
+        '-n', '--nofollow', action='store_true',
+        help='Do not convert files included through [add_directives].')
     parser.add_argument(
         '-o', '--output', type=str,
         help='Output path for converted SDFormat file.')
-    parser.add_argument(
-        '-nf', '--nofollow', action='store_true',
-        help='Do not convert files included through [add_directives].')
     parser.add_argument(
         '-p', '--packages-path', type=str, help='Path used to find packages.')
     args = parser.parse_args(argv)
 
     model_directives_to_sdformat = ModelDirectivesToSdf()
     result_tree = model_directives_to_sdformat.convert_directive(
-        args.model_directives, args.nofollow, args.packages_path)
+        args.model_directives, args.nofollow, args.packages_path,
+        args.check_sdf)
 
     if result_tree is not None:
         if args.output:
