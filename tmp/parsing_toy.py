@@ -16,9 +16,6 @@ To cover this, we create our toy dataclass format, and denote the (parse,
 operate) steps among the two modes as is currently done (via resolution
 callbacks).
 
-AT PRESENT: This doesn't capture the nuance, because we're not using
-`placement_frame` which I (Eric) think induces the parsing complexity we're
-facing?
 """
 
 import dataclasses as dc
@@ -47,6 +44,7 @@ class FrameSchema:
 class IncludeSchema:
     name: str
     file: str
+    placement_frame: str
     pose: PoseSchema
 
 
@@ -56,12 +54,13 @@ MOCK_FILESYSTEM = {
             name="base",
             pose=PoseSchema(
                 relative_to="world",
-                position=[1.0, 2.0 ,3.0],
+                position=[1.0, 2.0, 3.0],
             ),
         ),
         IncludeSchema(
             name="included",
             file="sub.model",
+            placement_frame="included_frame",
             pose=PoseSchema(
                 relative_to="base",
                 position=[0, 0, 0],
@@ -90,15 +89,11 @@ EXPECTED_POSITION_W_MAP = {
     "world": [0, 0, 0],
     "top::__model__": [0, 0, 0],
     "top::base": [1.0, 2.0, 3.0],
-    "top::included::__model__": [1.0, 2.0, 3.0],
-    "top::included::included_frame": [1.5, 2.25, 3.125],
-    "top::top_frame": [11.5, 22.25, 33.125],
+    "top::included::__model__": [0.5, 1.75, 2.875],
+    "top::included::included_frame": [1.0, 2.0, 3.0],
+    "top::top_frame": [11, 22, 33],
 
 }
-
-
-# TODO: Add in placement_frame functionality to show (or maybe resolve?)
-# parsing difficulty?
 
 
 class Model:
@@ -118,6 +113,20 @@ class Model:
 
     def resolve_position_W(self, relative_to, position):
         return self.position_W_map[relative_to] + position
+
+    def reposture_frame(self, name, position):
+        assert name in self.position_W_map
+        originial_position = self.position_W_map[name].copy()
+        position_adjustment = position - originial_position
+
+        for frame, pos in self.position_W_map.items():
+            if frame != "world":
+                pos += position_adjustment
+
+    def add_nested(self, model):
+        for frame, pos in model.position_W_map.items():
+            if frame != "world":
+                self.position_W_map[frame] = pos
 
 
 def scope(prefix, name):
@@ -151,12 +160,17 @@ def mock_parse(model, schema, model_name, model_position_W):
             sub_schema = MOCK_FILESYSTEM[directive.file]
             sub_position_W = resolve_position_W(directive.pose)
             sub_name = scope(model_name, directive.name)
-            mock_parse(model, sub_schema, sub_name, sub_position_W)
+            sub_model = Model()
+            mock_parse(sub_model, sub_schema, sub_name, sub_position_W)
+            # adjust for placement frame
+            sub_model.reposture_frame(
+                scope(sub_name, directive.placement_frame), sub_position_W)
+            model.add_nested(sub_model)
 
 
 class Test(unittest.TestCase):
     def test_expected(self):
-        model= Model()
+        model = Model()
         top_schema = MOCK_FILESYSTEM["top.model"]
         mock_parse(model, top_schema, "top", [0, 0, 0])
         np.testing.assert_equal(model.position_W_map, EXPECTED_POSITION_W_MAP)
