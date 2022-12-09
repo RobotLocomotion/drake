@@ -3,12 +3,12 @@
 #include <memory>
 #include <utility>
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
-using drake::geometry::QueryObject;
-using drake::systems::Context;
+using geometry::QueryObject;
 using std::unique_ptr;
+using systems::Context;
 
 namespace {
 template <typename T>
@@ -49,4 +49,4 @@ CollisionCheckerContext::CollisionCheckerContext(
           &model_.mutable_scene_graph_context(model_context_.get())) {}
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

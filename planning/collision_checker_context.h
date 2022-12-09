@@ -3,9 +3,9 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
-#include "planning/robot_diagram.h"
+#include "drake/planning/robot_diagram.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** This class represents the data necessary for CollisionChecker to operate
@@ -42,38 +42,34 @@ class CollisionCheckerContext {
   std::unique_ptr<CollisionCheckerContext> Clone() const { return DoClone(); }
 
   /** Gets the contained model context. */
-  const drake::systems::Context<double>& model_context() const {
+  const systems::Context<double>& model_context() const {
     return *model_context_;
   }
 
   /** Gets the contained plant context. */
-  const drake::systems::Context<double>& plant_context() const {
+  const systems::Context<double>& plant_context() const {
     return *plant_context_;
   }
 
   /** Gets the contained scene graph context. */
-  const drake::systems::Context<double>& scene_graph_context() const {
+  const systems::Context<double>& scene_graph_context() const {
     return *scene_graph_context_;
   }
 
   /** Gets the scene graph geometry query object. */
-  const drake::geometry::QueryObject<double>& GetQueryObject() const;
+  const geometry::QueryObject<double>& GetQueryObject() const;
 
-  // TODO(sean.curtis) Eliminate these public members that provide access to
+  // TODO(SeanCurtis-TRI) Eliminate these public members that provide access to
   // mutable sub-contexts.
 
   /* (Internal use only) Gets the contained model context. */
-  drake::systems::Context<double>& mutable_model_context() {
-    return *model_context_;
-  }
+  systems::Context<double>& mutable_model_context() { return *model_context_; }
 
   /* (Internal use only) Gets the contained plant context. */
-  drake::systems::Context<double>& mutable_plant_context() {
-    return *plant_context_;
-  }
+  systems::Context<double>& mutable_plant_context() { return *plant_context_; }
 
   /* (Internal use only) Gets the contained scene graph context. */
-  drake::systems::Context<double>& mutable_scene_graph_context() {
+  systems::Context<double>& mutable_scene_graph_context() {
     return *scene_graph_context_;
   }
 
@@ -90,15 +86,15 @@ class CollisionCheckerContext {
    have a lifetime greater than the constructed object. */
   CollisionCheckerContext(
       const RobotDiagram<double>* model,
-      std::unique_ptr<drake::systems::Context<double>> model_context);
+      std::unique_ptr<systems::Context<double>> model_context);
 
   const RobotDiagram<double>& model_;
 
-  std::unique_ptr<drake::systems::Context<double>> model_context_;
+  std::unique_ptr<systems::Context<double>> model_context_;
   /* These are aliases into model_context_. */
-  drake::systems::Context<double>* const plant_context_;
-  drake::systems::Context<double>* const scene_graph_context_;
+  systems::Context<double>* const plant_context_;
+  systems::Context<double>* const scene_graph_context_;
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

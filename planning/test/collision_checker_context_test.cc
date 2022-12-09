@@ -1,14 +1,14 @@
-#include "planning/collision_checker_context.h"
+#include "drake/planning/collision_checker_context.h"
 
 #include <gtest/gtest.h>
 
-#include "planning/robot_diagram_builder.h"
+#include "drake/planning/robot_diagram_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
-using drake::systems::Context;
+using systems::Context;
 
 /* Simple derived context; it adds a value and is cloneable. */
 class DummyContext final : public CollisionCheckerContext {
@@ -108,4 +108,4 @@ GTEST_TEST(CollisionCheckerContextTest, Derived) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
