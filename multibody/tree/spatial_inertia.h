@@ -124,6 +124,7 @@ class SpatialInertia {
   /// moments of inertia of 1 and products of inertia of 0.
   static SpatialInertia<T> MakeUnitary();
 
+  // TODO(Mitiguy) Python-bind this function when related functions are done.
   /// (Internal use only)
   /// Creates a spatial inertia for a solid box B of uniform density about its
   /// geometric center Bo (which is coincident with B's center of mass Bcm).
@@ -135,9 +136,8 @@ class SpatialInertia {
   /// @param[in] lx The length of the box edge in the Bx direction.
   /// @param[in] ly The length of the box edge in the By direction.
   /// @param[in] lz The length of the box edge in the Bz direction.
-  /// @retval M_BBo_B, B's spatial inertia about Bo, expressed in B.
+  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
   /// @throws std::exception if any of lx, ly, lz are negative.
-  // TODO(Mitiguy) Python-bind this function when related functions are done.
   static SpatialInertia<T> SolidBoxWithDensity(const T& density,
       const T& lx, const T& ly, const T& lz);
 
