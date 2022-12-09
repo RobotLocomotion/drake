@@ -586,7 +586,7 @@ void MakeGuessFeasible(const HPolyhedron& P, const IrisOptions& options,
                            A.row(N - 1).normalized().transpose();
     // If this causes a different constraint to be violated, then just
     // go back to the "center" of the set.
-    if (!P.PointInSet(*guess, 1e-12)) {
+    if (!P.PointInSet(*guess)) {
       *guess = P.ChebyshevCenter();
     }
   }
