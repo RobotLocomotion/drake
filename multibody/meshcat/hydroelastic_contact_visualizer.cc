@@ -36,7 +36,7 @@ void HydroelasticContactVisualizer::Delete() {
 }
 
 void HydroelasticContactVisualizer::Update(
-    const std::vector<HydroelasticContactVisualizerItem>& items) {
+    double time, const std::vector<HydroelasticContactVisualizerItem>& items) {
   // Set all contacts to be inactive. They will be re-activated as we loop over
   // `items`, below. Anything that is not re-activated will be set to invisible
   // in a final clean-up pass at the end.
@@ -64,51 +64,54 @@ void HydroelasticContactVisualizer::Update(
 
     // Update this active contact's transforms.
     // Position the centroid.
-    meshcat_->SetTransform(path, RigidTransformd(item.centroid_W));
+    meshcat_->SetTransform(path, RigidTransformd(item.centroid_W), time);
 
     // Force vector.
     if (force_norm >= params_.force_threshold) {
       meshcat_->SetTransform(path + "/force_C_W",
                              RigidTransformd(RotationMatrixd::MakeFromOneVector(
-                                 item.force_C_W, 2)));
+                                 item.force_C_W, 2)), time);
 
       // Stretch the cylinder in z.
       const double height = force_norm / params_.newtons_per_meter;
-      // clang-format off
-      meshcat_->SetTransform(path + "/force_C_W/cylinder",
-          (Matrix4d() <<  1, 0, 0, 0,
-                          0, 1, 0, 0,
-                          0, 0, height, 0.5*height,
-                          0, 0, 0, 1).finished());
-      // clang-format on
+      meshcat_->SetProperty(path + "/force_C_W/cylinder", "position",
+                            {0, 0, 0.5 * height}, time);
+      // Note: Meshcat does not fully support non-uniform scaling (see #18095).
+      // We get away with it here since there is no rotation on this frame and
+      // no children in the kinematic tree.
+      meshcat_->SetProperty(path + "/force_C_W/cylinder", "scale",
+                            {1, 1, height}, time);
       // Translate the arrowheads.
       const double arrowhead_height = params_.radius * 2.0;
       meshcat_->SetTransform(
           path + "/force_C_W/head",
           RigidTransformd(RotationMatrixd::MakeXRotation(M_PI),
-                          Vector3d{0, 0, height + arrowhead_height}));
+                          Vector3d{0, 0, height + arrowhead_height}),
+          time);
     }
     // Moment vector.
     if (moment_norm >= params_.moment_threshold) {
       meshcat_->SetTransform(path + "/moment_C_W",
                              RigidTransformd(RotationMatrixd::MakeFromOneVector(
-                                 item.moment_C_W, 2)));
+                                 item.moment_C_W, 2)),
+                             time);
 
       // Stretch the cylinder in z.
       const double height = moment_norm / params_.newton_meters_per_meter;
-      // clang-format off
-      meshcat_->SetTransform(path + "/moment_C_W/cylinder",
-          (Matrix4d() <<  1, 0, 0, 0,
-                          0, 1, 0, 0,
-                          0, 0, height, 0.5*height,
-                          0, 0, 0, 1).finished());
-      // clang-format on
+      meshcat_->SetProperty(path + "/moment_C_W/cylinder", "position",
+                            {0, 0, 0.5 * height}, time);
+      // Note: Meshcat does not fully support non-uniform scaling (see #18095).
+      // We get away with it here since there is no rotation on this frame and
+      // no children in the kinematic tree.
+      meshcat_->SetProperty(path + "/moment_C_W/cylinder", "scale",
+                            {1, 1, height}, time);
       // Translate the arrowheads.
       const double arrowhead_height = params_.radius * 2.0;
       meshcat_->SetTransform(
           path + "/moment_C_W/head",
           RigidTransformd(RotationMatrixd::MakeXRotation(M_PI),
-                          Vector3d{0, 0, height + arrowhead_height}));
+                          Vector3d{0, 0, height + arrowhead_height}),
+          time);
     }
 
     // Contact surface
@@ -139,6 +142,8 @@ void HydroelasticContactVisualizer::Update(
         }
       }
 
+      // TODO(russt): Support animations of the mesh, too.
+
       // TODO(#17682): Applying color map values as *vertex colors* produces
       // terrible visual artifacts. See the referenced issue for discussion.
       meshcat_->SetTriangleColorMesh(path + "/contact_surface", item.p_WV,
@@ -151,7 +156,7 @@ void HydroelasticContactVisualizer::Update(
   // Update meshcat visibility to match the active status.
   for (auto& [path, status] : path_visibility_status_) {
     if (status.visible != status.active) {
-      meshcat_->SetProperty(path, "visible", status.active);
+      meshcat_->SetProperty(path, "visible", status.active, time);
       status.visible = status.active;
     }
   }
@@ -166,7 +171,7 @@ HydroelasticContactVisualizer::FindOrAdd(const std::string& path) {
 
   // Start with it being invisible, to prevent flickering at the origin.
   iter = path_visibility_status_.insert({path, {false, false}}).first;
-  meshcat_->SetProperty(path, "visible", false);
+  meshcat_->SetProperty(path, "visible", false, 0);
 
   // Add the geometry to meshcat.
   // Set radius 1.0 so that it can be scaled later by the force/moment norm in

@@ -351,7 +351,7 @@ class _ContactApplet:
                 body_B=lcm_item.body2_name,
                 contact_force=lcm_item.contact_force,
                 contact_point=lcm_item.contact_point))
-        self._point_helper.Update(viz_items)
+        self._point_helper.Update(0, viz_items)
 
         # Handle hydroelastic contact pairs
         viz_items = []
@@ -366,7 +366,7 @@ class _ContactApplet:
                 p_WV=self.convert_verts(lcm_item.p_WV),
                 faces=self.convert_faces(lcm_item.poly_data),
                 pressure=lcm_item.pressure))
-        self._hydro_helper.Update(viz_items)
+        self._hydro_helper.Update(0, viz_items)
 
 
 class _PointCloudApplet:

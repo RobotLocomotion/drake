@@ -36,7 +36,7 @@ void PointContactVisualizer::Delete() {
 }
 
 void PointContactVisualizer::Update(
-      const std::vector<PointContactVisualizerItem>& items) {
+    double time, const std::vector<PointContactVisualizerItem>& items) {
   // Set all contacts to be inactive. They will be re-activated as we loop over
   // `items`, below. Anything that is not re-activated will be set to invisible
   // in a final clean-up pass at the end.
@@ -61,32 +61,33 @@ void PointContactVisualizer::Update(
 
     // Update this active contact's transforms.
     // Position the center.
-    meshcat_->SetTransform(
-        path,
-        RigidTransformd(
-            RotationMatrixd::MakeFromOneVector(item.contact_force, 2),
-            item.contact_point));
+    meshcat_->SetTransform(path,
+                           RigidTransformd(RotationMatrixd::MakeFromOneVector(
+                                               item.contact_force, 2),
+                                           item.contact_point),
+                           time);
     // Stretch the cylinder in z.
     const double height = force_norm / params_.newtons_per_meter;
-    meshcat_->SetTransform(
-        path + "/cylinder",
-        Matrix4d(Vector4d{1, 1, height, 1}.asDiagonal()));
+    // Note: Meshcat does not fully support non-uniform scaling (see #18095).
+    // We get away with it here since there is no rotation on this frame and no
+    // children in the kinematic tree.
+    meshcat_->SetProperty(path + "/cylinder", "scale", {1, 1, height}, time);
     // Translate the arrowheads.
     const double arrowhead_height = params_.radius * 2.0;
     meshcat_->SetTransform(
         path + "/head",
-        RigidTransformd(Vector3d{0, 0, -height - arrowhead_height}));
+        RigidTransformd(Vector3d{0, 0, -height - arrowhead_height}), time);
     meshcat_->SetTransform(
         path + "/tail",
-        RigidTransformd(
-            RotationMatrixd::MakeXRotation(M_PI),
-            Vector3d{0, 0, height + arrowhead_height}));
+        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI),
+                        Vector3d{0, 0, height + arrowhead_height}),
+        time);
   }
 
   // Update meshcat visibility to match the active status.
   for (auto& [path, status] : path_visibility_status_) {
     if (status.visible != status.active) {
-      meshcat_->SetProperty(path, "visible", status.active);
+      meshcat_->SetProperty(path, "visible", status.active, time);
       status.visible = status.active;
     }
   }
@@ -101,7 +102,7 @@ PointContactVisualizer::VisibilityStatus& PointContactVisualizer::FindOrAdd(
 
   // Start with it invisible, to prevent flickering at the origin.
   iter = path_visibility_status_.insert({path, {false, false}}).first;
-  meshcat_->SetProperty(path, "visible", false);
+  meshcat_->SetProperty(path, "visible", false, 0);
 
   // Add the geometry to meshcat. The height of the cylinder is 2 and gets
   // scaled to twice the contact force length because we draw both (equal

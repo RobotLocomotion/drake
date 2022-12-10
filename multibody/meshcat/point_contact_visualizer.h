@@ -50,7 +50,8 @@ class PointContactVisualizer {
 
   /* Update meshcat to show _only_ the given contact pairs.
   Any previously-visualized contact points will no longer be visible. */
-  void Update(const std::vector<PointContactVisualizerItem>& items);
+  void Update(double time,
+              const std::vector<PointContactVisualizerItem>& items);
 
   /* Calls geometry::Meshcat::Delete(path), with the path set to params.prefix.
   Since this visualizer will only ever add geometry under this prefix, this will

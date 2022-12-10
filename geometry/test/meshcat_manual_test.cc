@@ -344,7 +344,7 @@ Open up your browser to the URL above.
 
     multibody::meshcat::ContactVisualizerParams cparams;
     cparams.newtons_per_meter = 60.0;
-    auto& contact = multibody::meshcat::ContactVisualizerd::AddToBuilder(
+    multibody::meshcat::ContactVisualizerd::AddToBuilder(
         &builder, plant, meshcat, std::move(cparams));
 
     auto diagram = builder.Build();
@@ -369,12 +369,10 @@ Open up your browser to the URL above.
     visualizer.StartRecording();
     simulator.AdvanceTo(4.0);
     visualizer.PublishRecording();
-    contact.Delete();
 
     std::cout
         << "The recorded simulation results should now be available as an "
-           "animation.  Use the animation GUI to confirm.  The contact "
-           "forces are not recorded (yet)."
+           "animation.  Use the animation GUI to confirm."
         << std::endl;
 
     std::cout << "[Press RETURN to continue]." << std::endl;
