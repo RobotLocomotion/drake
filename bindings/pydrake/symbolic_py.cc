@@ -928,6 +928,37 @@ PYBIND11_MODULE(symbolic, m) {
           },
           py::arg("vars"), doc.Polynomial.Jacobian.doc);
 
+  // Bind CalcPolynomialWLowerTriangularPart
+  m.def(
+       "CalcPolynomialWLowerTriangularPart",
+       [](const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+           const Eigen::Ref<const Eigen::VectorXd>& gram_lower) {
+         return CalcPolynomialWLowerTriangularPart(monomial_basis, gram_lower);
+       },
+       py::arg("monomial_basis"), py::arg("gram_lower"),
+       doc.CalcPolynomialWLowerTriangularPart.doc)
+      .def(
+          "CalcPolynomialWLowerTriangularPart",
+          [](const Eigen::Ref<const VectorX<symbolic::Monomial>>&
+                  monomial_basis,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>& gram_lower) {
+            return CalcPolynomialWLowerTriangularPart(
+                monomial_basis, gram_lower);
+          },
+          py::arg("monomial_basis"), py::arg("gram_lower"),
+          doc.CalcPolynomialWLowerTriangularPart.doc)
+      .def(
+          "CalcPolynomialWLowerTriangularPart",
+          [](const Eigen::Ref<const VectorX<symbolic::Monomial>>&
+                  monomial_basis,
+              const Eigen::Ref<const VectorX<symbolic::Expression>>&
+                  gram_lower) {
+            return CalcPolynomialWLowerTriangularPart(
+                monomial_basis, gram_lower);
+          },
+          py::arg("monomial_basis"), py::arg("gram_lower"),
+          doc.CalcPolynomialWLowerTriangularPart.doc);
+
   py::class_<RationalFunction> rat_fun_cls(
       m, "RationalFunction", doc.RationalFunction.doc);
   rat_fun_cls.def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
