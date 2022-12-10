@@ -67,7 +67,8 @@ class HydroelasticContactVisualizer {
 
   /* Update meshcat to show _only_ the given contacts.
   Any previously-visualized contacts will no longer be visible. */
-  void Update(const std::vector<HydroelasticContactVisualizerItem>& items);
+  void Update(double time,
+              const std::vector<HydroelasticContactVisualizerItem>& items);
 
   /* Calls geometry::Meshcat::Delete(path), with the path set to params.prefix.
   Since this visualizer will only ever add geometry under this prefix, this will
