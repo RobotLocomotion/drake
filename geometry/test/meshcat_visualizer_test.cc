@@ -208,15 +208,17 @@ bool has_iiwa_frame(const MeshcatAnimation& animation, int frame) {
 TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
   MeshcatVisualizerParams params;
   SetUpDiagram(params);
-  auto animation = visualizer_->get_mutable_recording();
+  DRAKE_EXPECT_THROWS_MESSAGE(visualizer_->get_mutable_recording(),
+                              ".*You must create a recording.*");
 
   // Publish once without recording and confirm that we don't have the iiwa
   // frame.
   diagram_->ForcedPublish(*context_);
+  visualizer_->StartRecording();
+  auto animation = visualizer_->get_mutable_recording();
   EXPECT_FALSE(has_iiwa_frame(*animation, 0));
 
   // Publish again *with* recording and confirm that we do now have the frame.
-  visualizer_->StartRecording();
   diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(has_iiwa_frame(*animation, 0));
 

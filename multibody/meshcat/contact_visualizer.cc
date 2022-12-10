@@ -148,16 +148,17 @@ const ContactVisualizer<T>& ContactVisualizer<T>::AddToBuilder(
 template <typename T>
 EventStatus ContactVisualizer<T>::UpdateMeshcat(
     const Context<T>& context) const {
+  double time = ExtractDoubleOrThrow(context.get_time());
   const auto& point_contacts =
       this->get_cache_entry(point_contacts_cache_)
           .template Eval<std::vector<PointContactVisualizerItem>>(context);
-  point_visualizer_->Update(point_contacts);
+  point_visualizer_->Update(time, point_contacts);
 
   const auto& hydroelastic_contacts =
       this->get_cache_entry(hydroelastic_contacts_cache_)
           .template Eval<std::vector<HydroelasticContactVisualizerItem>>(
               context);
-  hydroelastic_visualizer_->Update(hydroelastic_contacts);
+  hydroelastic_visualizer_->Update(time, hydroelastic_contacts);
   return EventStatus::Succeeded();
 }
 
