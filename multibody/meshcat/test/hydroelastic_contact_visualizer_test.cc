@@ -50,7 +50,7 @@ GTEST_TEST(HydroelasticContactVisualizer, TestZeroForceOrMoment) {
     items.push_back({"body_A", "body_B", centroid_W,
                      non_zero_force_C_W, zero_moment_C_W,
                      p_WV, faces, pressure});
-    DRAKE_EXPECT_NO_THROW(visualizer.Update(items));
+    DRAKE_EXPECT_NO_THROW(visualizer.Update(0, items));
   }
   // Zero force / non-zero moment
   {
@@ -58,7 +58,7 @@ GTEST_TEST(HydroelasticContactVisualizer, TestZeroForceOrMoment) {
     items.push_back({"body_A", "body_B", centroid_W,
                      zero_force_C_W, non_zero_moment_C_W,
                      p_WV, faces, pressure});
-    DRAKE_EXPECT_NO_THROW(visualizer.Update(items));
+    DRAKE_EXPECT_NO_THROW(visualizer.Update(0, items));
   }
 }
 

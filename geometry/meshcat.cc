@@ -2116,8 +2116,15 @@ void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
 }
 
 void Meshcat::SetTransform(std::string_view path,
-                           const RigidTransformd& X_ParentPath) {
-  impl().SetTransform(path, X_ParentPath);
+                           const RigidTransformd& X_ParentPath,
+                           const std::optional<double>& time) {
+  if (recording_ && time) {
+    animation_->SetTransform(animation_->frame(*time), std::string(path),
+                             X_ParentPath);
+  }
+  if (!recording_ || set_visualizations_while_recording_) {
+    impl().SetTransform(path, X_ParentPath);
+  }
 }
 
 void Meshcat::SetTransform(std::string_view path,
@@ -2134,18 +2141,37 @@ void Meshcat::SetRealtimeRate(double rate) {
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
-                          bool value) {
-  impl().SetProperty(path, std::move(property), value);
+                          bool value, const std::optional<double>& time) {
+  if (recording_ && time) {
+    animation_->SetProperty(animation_->frame(*time), std::string(path),
+                            property, value);
+  }
+  if (!recording_ || set_visualizations_while_recording_) {
+    impl().SetProperty(path, std::move(property), value);
+  }
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
-                          double value) {
-  impl().SetProperty(path, std::move(property), value);
+                          double value, const std::optional<double>& time) {
+  if (recording_ && time) {
+    animation_->SetProperty(animation_->frame(*time), std::string(path),
+                            property, value);
+  }
+  if (!recording_ || set_visualizations_while_recording_) {
+    impl().SetProperty(path, std::move(property), value);
+  }
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
-                          const std::vector<double>& value) {
-  impl().SetProperty(path, std::move(property), value);
+                          const std::vector<double>& value,
+                          const std::optional<double>& time) {
+  if (recording_ && time) {
+    animation_->SetProperty(animation_->frame(*time), std::string(path),
+                            property, value);
+  }
+  if (!recording_ || set_visualizations_while_recording_) {
+    impl().SetProperty(path, std::move(property), value);
+  }
 }
 
 void Meshcat::SetAnimation(const MeshcatAnimation& animation) {
@@ -2202,6 +2228,34 @@ Meshcat::Gamepad Meshcat::GetGamepad() const {
 
 std::string Meshcat::StaticHtml() {
   return impl().StaticHtml();
+}
+
+void Meshcat::StartRecording(double frames_per_second,
+                             bool set_visualizations_while_recording) {
+  animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
+  recording_ = true;
+  set_visualizations_while_recording_ = set_visualizations_while_recording;
+}
+
+void Meshcat::PublishRecording() {
+  impl().SetAnimation(*animation_);
+}
+
+void Meshcat::DeleteRecording() {
+  if (animation_) {
+    // Reset the recording.
+    double frames_per_second = animation_->frames_per_second();
+    animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
+  }
+}
+
+MeshcatAnimation& Meshcat::get_mutable_recording() {
+  if (!animation_) {
+    throw std::runtime_error(
+        "You must create a recording (via StartRecording) before calling "
+        "get_mutable_recording");
+  }
+  return *animation_;
 }
 
 bool Meshcat::HasPath(std::string_view path) const {

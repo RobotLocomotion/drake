@@ -384,15 +384,20 @@ class Meshcat {
   parent path. An object's pose is the concatenation of all of the transforms
   along its path, so setting the transform of "/foo" will move the objects at
   "/foo/box1" and "/foo/robots/HAL9000".
-  @param path a "/"-delimited string indicating the path in the scene tree.
-              See @ref meshcat_path "Meshcat paths" for the semantics.
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
   @param X_ParentPath the relative transform from the path to its immediate
-  parent.
+              parent.
+  @param time_in_recording (optional) the time at which this transform should
+              be applied, if Meshcat is current recording (see
+              StartRecording()). If Meshcat is not currently recording, then
+              this value is simply ignored.
 
   @pydrake_mkdoc_identifier{RigidTransform}
   */
-  void SetTransform(std::string_view path,
-                    const math::RigidTransformd& X_ParentPath);
+  void SetTransform(
+      std::string_view path, const math::RigidTransformd& X_ParentPath,
+      const std::optional<double>& time_in_recording = std::nullopt);
 
   /** Set the homogeneous transform for a given path in the scene tree relative
   to its parent path. An object's pose is the concatenation of all of the
@@ -406,6 +411,9 @@ class Meshcat {
   Note: Prefer to use the overload which takes a RigidTransformd unless you need
   the fully parameterized homogeneous transform (which additionally allows
   scale and sheer).
+
+  Note: Meshcat does not properly support non-uniform scaling. See Drake issue
+  #18095.
 
   @pydrake_mkdoc_identifier{matrix}
   */
@@ -437,10 +445,16 @@ class Meshcat {
               See @ref meshcat_path for the semantics.
   @param property the string name of the property to set
   @param value the new value.
+  @param time_in_recording (optional) the time at which this property should
+              be applied, if Meshcat is current recording (see
+              StartRecording()). If Meshcat is not currently recording, then
+              this value is simply ignored.
 
   @pydrake_mkdoc_identifier{bool}
   */
-  void SetProperty(std::string_view path, std::string property, bool value);
+  void SetProperty(
+      std::string_view path, std::string property, bool value,
+      const std::optional<double>& time_in_recording = std::nullopt);
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim
@@ -453,10 +467,16 @@ class Meshcat {
               See @ref meshcat_path for the semantics.
   @param property the string name of the property to set
   @param value the new value.
+  @param time_in_recording (optional) the time at which this property should
+              be applied, if Meshcat is current recording (see
+              StartRecording()). If Meshcat is not currently recording, then
+              this value is simply ignored.
 
   @pydrake_mkdoc_identifier{double}
   */
-  void SetProperty(std::string_view path, std::string property, double value);
+  void SetProperty(
+      std::string_view path, std::string property, double value,
+      const std::optional<double>& time_in_recording = std::nullopt);
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim
@@ -469,16 +489,26 @@ class Meshcat {
               See @ref meshcat_path for the semantics.
   @param property the string name of the property to set
   @param value the new value.
+  @param time_in_recording (optional) the time at which this property should
+              be applied, if Meshcat is current recording (see
+              StartRecording()). If Meshcat is not currently recording, then
+              this value is simply ignored.
 
   @pydrake_mkdoc_identifier{vector_double}
   */
-  void SetProperty(std::string_view path, std::string property,
-                   const std::vector<double>& value);
+  void SetProperty(
+      std::string_view path, std::string property,
+      const std::vector<double>& value,
+      const std::optional<double>& time_in_recording = std::nullopt);
 
   // TODO(russt): Support multiple animations, by name.  Currently "default" is
   // hard-coded in the meshcat javascript.
   /** Sets the MeshcatAnimation, which creates a slider interface element to
-  play/pause/rewind through a series of animation frames in the visualizer. */
+  play/pause/rewind through a series of animation frames in the visualizer.
+
+  See also StartRecording(), which records supported calls to `this` into a
+  MeshcatAnimation, and PublishRecording(), which calls SetAnimation() with the
+  recording. */
   void SetAnimation(const MeshcatAnimation& animation);
 
   /** @name Meshcat Controls
@@ -642,6 +672,51 @@ class Meshcat {
   output, because their usefulness relies on a connection to the server. */
   std::string StaticHtml();
 
+  /** Sets a flag indicating that subsequent calls to SetTransform and
+  SetProperty should also be "recorded" into a MeshcatAnimation when their
+  optional time_in_recording argument is supplied.  The data in these events
+  will be combined with any frames previously added to the animation; if the
+  same transform/property is set at the same time, then it will overwrite the
+  existing frame in the animation.
+
+  @param set_visualizations_while_recording if true, then each method will send
+  the visualization immediately to Meshcat *and* record the visualization in
+  the animation.  Set to false to avoid updating the visualization during
+  recording. Note that animations do not support SetObject, so the objects must
+  still be sent to the visualizer during the recording.
+  */
+  void StartRecording(double frames_per_second = 32.0,
+                      bool set_visualizations_while_recording = true);
+
+  /** Sets a flag to pause/stop recording.  When stopped, publish events will
+  not add frames to the animation. */
+  void StopRecording() { recording_ = false; }
+
+  /** Sends the recording to Meshcat as an animation. The published animation
+  only includes transforms and properties; the objects that they modify must be
+  sent to the visualizer separately (e.g. by calling Publish()). */
+  void PublishRecording();
+
+  /** Deletes the current animation holding the recorded frames.  Animation
+  options (autoplay, repetitions, etc) will also be reset, and any pointers
+  obtained from get_mutable_recording() will be rendered invalid. This does
+  *not* currently remove the animation from Meshcat. */
+  void DeleteRecording();
+
+  /** Returns a mutable pointer to this MeshcatVisualizer's unique
+  MeshcatAnimation object, if it exists, in which the frames will be recorded.
+  This pointer can be used to set animation properties (like autoplay, the loop
+  mode, number of repetitions, etc), and can be passed to supporting
+  visualizers (e.g. MeshcatPointCloudVisualizer and MeshcatContactVisualizer)
+  so that they record into the same animation.
+
+  The MeshcatAnimation object will only remain valid for the lifetime of `this`
+  or until DeleteRecording() is called.
+
+  @throws std::exception if meshcat does not have a recording.
+  */
+  MeshcatAnimation& get_mutable_recording();
+
   /* These remaining public methods are intended to primarily for testing. These
   calls must safely acquire the data from the websocket thread and will block
   execution waiting for that data to be acquired. They are intentionally
@@ -696,6 +771,15 @@ class Meshcat {
   // Always a non-nullptr Impl, but stored as void* to enforce that the
   // impl() accessors are always used.
   void* const impl_{};
+
+  /* MeshcatAnimation object for recording. It must be mutable to allow the set
+  methods to be otherwise const. */
+  std::unique_ptr<MeshcatAnimation> animation_;
+
+  /* Recording status.  True means that each new Publish event will record a
+  frame in the animation. */
+  bool recording_{false};
+  bool set_visualizations_while_recording_{true};
 };
 
 }  // namespace geometry

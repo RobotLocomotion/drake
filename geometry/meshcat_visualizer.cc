@@ -18,9 +18,7 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
                                         MeshcatVisualizerParams params)
     : systems::LeafSystem<T>(systems::SystemTypeTag<MeshcatVisualizer>{}),
       meshcat_(std::move(meshcat)),
-      params_(std::move(params)),
-      animation_(
-          std::make_unique<MeshcatAnimation>(1.0 / params_.publish_period)) {
+      params_(std::move(params)) {
   DRAKE_DEMAND(meshcat_ != nullptr);
   DRAKE_DEMAND(params_.publish_period >= 0.0);
   if (params_.role == Role::kUnassigned) {
@@ -56,13 +54,31 @@ void MeshcatVisualizer<T>::Delete() const {
 }
 
 template <typename T>
+MeshcatAnimation* MeshcatVisualizer<T>::StartRecording(
+    bool set_transforms_while_recording) {
+  meshcat_->StartRecording(1.0 / params_.publish_period,
+                            set_transforms_while_recording);
+  return &meshcat_->get_mutable_recording();
+}
+
+template <typename T>
+void MeshcatVisualizer<T>::StopRecording() {
+  meshcat_->StopRecording();
+}
+
+template <typename T>
 void MeshcatVisualizer<T>::PublishRecording() const {
-  meshcat_->SetAnimation(*animation_);
+    meshcat_->PublishRecording();
 }
 
 template <typename T>
 void MeshcatVisualizer<T>::DeleteRecording() {
-  animation_ = std::make_unique<MeshcatAnimation>(1.0 / params_.publish_period);
+  meshcat_->DeleteRecording();
+}
+
+template <typename T>
+MeshcatAnimation* MeshcatVisualizer<T>::get_mutable_recording() {
+  return &meshcat_->get_mutable_recording();
 }
 
 template <typename T>
@@ -173,14 +189,8 @@ void MeshcatVisualizer<T>::SetTransforms(
   for (const auto& [frame_id, path] : dynamic_frames_) {
     const math::RigidTransformd X_WF =
         internal::convert_to_double(query_object.GetPoseInWorld(frame_id));
-    if (!recording_ || set_transforms_while_recording_) {
-      meshcat_->SetTransform(path, X_WF);
-    }
-    if (recording_) {
-      animation_->SetTransform(
-          animation_->frame(ExtractDoubleOrThrow(context.get_time())), path,
-          X_WF);
-    }
+    meshcat_->SetTransform(path, X_WF,
+                           ExtractDoubleOrThrow(context.get_time()));
   }
 }
 

@@ -913,6 +913,122 @@ GTEST_TEST(MeshcatTest, SetAnimation) {
   })""");
 }
 
+bool has_frame(const MeshcatAnimation& animation, int frame) {
+  return animation.get_key_frame<std::vector<double>>(0, "frame", "position")
+      .has_value();
+}
+
+GTEST_TEST(MeshcatTest, Recording) {
+  Meshcat meshcat;
+  DRAKE_EXPECT_THROWS_MESSAGE(meshcat.get_mutable_recording(),
+                              ".*You must create a recording.*");
+
+  const RigidTransformd X_ParentPath{math::RollPitchYawd(.5, .26, -3),
+                                     Vector3d{.9, -2., .12}};
+  meshcat.SetTransform("frame", X_ParentPath, 0);
+  meshcat.StartRecording();
+  MeshcatAnimation* animation = &meshcat.get_mutable_recording();
+  // No transforms have been published since recording started.
+  EXPECT_FALSE(has_frame(*animation, 0));
+
+  meshcat.SetTransform("frame", X_ParentPath, 0);
+  EXPECT_TRUE(has_frame(*animation, 0));
+
+  // Deleting the recording removes that frame.
+  meshcat.DeleteRecording();
+  animation = &meshcat.get_mutable_recording();
+  EXPECT_FALSE(has_frame(*animation, 0));
+
+  // We are still recording, so SetTransform *will* add it.
+  meshcat.SetTransform("frame", X_ParentPath, 0);
+  EXPECT_TRUE(has_frame(*animation, 0));
+
+  // But if we stop recording, then it's not added.
+  meshcat.StopRecording();
+  meshcat.DeleteRecording();
+  animation = &meshcat.get_mutable_recording();
+  EXPECT_FALSE(has_frame(*animation, 0));
+  meshcat.SetTransform("frame", X_ParentPath, 0);
+  EXPECT_FALSE(has_frame(*animation, 0));
+
+  // Now publish a time 0.0 and time = 1.0 and confirm we have the frames.
+  const double kFrameRate = 64.0;
+  meshcat.StartRecording(kFrameRate);
+  animation = &meshcat.get_mutable_recording();
+  meshcat.SetTransform("frame", X_ParentPath, 0);
+  meshcat.SetTransform("frame", X_ParentPath, 1);
+  EXPECT_TRUE(has_frame(*animation, 0));
+  EXPECT_TRUE(has_frame(*animation, std::floor(kFrameRate)));
+
+  const double kTime = 0.5;
+  const int kFrame = std::floor(kFrameRate * kTime);
+  EXPECT_FALSE(
+      animation->get_key_frame<bool>(kFrame, "bool_property", "visible")
+          .has_value());
+  meshcat.SetProperty("bool_property", "visible", false, kTime);
+  EXPECT_TRUE(
+      animation->get_key_frame<bool>(kFrame, "bool_property", "visible")
+          .has_value());
+
+  EXPECT_FALSE(
+      animation
+          ->get_key_frame<double>(kFrame, "double_property", "material.opacity")
+          .has_value());
+  meshcat.SetProperty("double_property", "material.opacity", 0.5, kTime);
+  EXPECT_TRUE(
+      animation
+          ->get_key_frame<double>(kFrame, "double_property", "material.opacity")
+          .has_value());
+
+  EXPECT_FALSE(animation
+                   ->get_key_frame<std::vector<double>>(
+                       kFrame, "vector_double_property", "position")
+                   .has_value());
+  meshcat.SetProperty("vector_double_property", "position", {0.1, 0.2, 0.3},
+                      kTime);
+  EXPECT_TRUE(animation
+                  ->get_key_frame<std::vector<double>>(
+                      kFrame, "vector_double_property", "position")
+                  .has_value());
+
+  // Confirm that PublishRecording runs.  Its correctness is established by
+  // meshcat_manual_test.
+  meshcat.PublishRecording();
+}
+
+GTEST_TEST(MeshcatTest, RecordingWithoutSetTransform) {
+  Meshcat meshcat;
+
+  const RigidTransformd X_0{math::RollPitchYawd(.5, .26, -3),
+                            Vector3d{.9, -2., .12}};
+  const RigidTransformd X_1{math::RollPitchYawd(.75, .21, 2.4),
+                            Vector3d{6.9, -2.2, 1.12}};
+
+  const double kFrameRate = 64.0;
+  bool set_visualizations_while_recording = false;
+  meshcat.SetTransform("frame", X_0);
+  std::string X_0_message = meshcat.GetPackedTransform("frame");
+
+  meshcat.StartRecording(kFrameRate, set_visualizations_while_recording);
+  // This SetTransform should *not* change the transform in the Meshcat scene
+  // tree.
+  meshcat.SetTransform("frame", X_1, 0);
+  EXPECT_EQ(meshcat.GetPackedTransform("frame"), X_0_message);
+
+  // This SetTransform should also *not* change the transform in the Meshcat
+  // scene tree, even though it doesn't pass the time_in_recording argument.
+  meshcat.SetTransform("frame", X_1);
+  EXPECT_EQ(meshcat.GetPackedTransform("frame"), X_0_message);
+
+  set_visualizations_while_recording = true;
+  meshcat.SetTransform("frame", X_0);
+  EXPECT_EQ(meshcat.GetPackedTransform("frame"), X_0_message);
+  meshcat.StartRecording(kFrameRate, set_visualizations_while_recording);
+  // This publish *should* change the transform in the Meshcat scene tree.
+  meshcat.SetTransform("frame", X_1, 0);
+  EXPECT_NE(meshcat.GetPackedTransform("frame"), X_0_message);
+}
+
 GTEST_TEST(MeshcatTest, Set2dRenderMode) {
   Meshcat meshcat;
   meshcat.Set2dRenderMode();
@@ -971,6 +1087,8 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
   EXPECT_THAT(html, ::testing::Not(HasSubstr("CONNECTION BLOCK")));
 }
+
+
 
 // Check MeshcatParams.hide_stats_plot sends a hide_realtime_rate message
 GTEST_TEST(MeshcatTest, RealtimeRatePlot) {
