@@ -928,6 +928,35 @@ PYBIND11_MODULE(symbolic, m) {
           },
           py::arg("vars"), doc.Polynomial.Jacobian.doc);
 
+  // Bind CalcPolynomialWGramLower
+  m.def(
+       "CalcPolynomialWGramLower",
+       [](const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+           const Eigen::Ref<const Eigen::VectorXd>& gram_lower) {
+         return CalcPolynomialWGramLower(monomial_basis, gram_lower);
+       },
+       py::arg("monomial_basis"), py::arg("gram_lower"),
+       doc.CalcPolynomialWGramLower.doc)
+      .def(
+          "CalcPolynomialWGramLower",
+          [](const Eigen::Ref<const VectorX<symbolic::Monomial>>&
+                  monomial_basis,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>& gram_lower) {
+            return CalcPolynomialWGramLower(monomial_basis, gram_lower);
+          },
+          py::arg("monomial_basis"), py::arg("gram_lower"),
+          doc.CalcPolynomialWGramLower.doc)
+      .def(
+          "CalcPolynomialWGramLower",
+          [](const Eigen::Ref<const VectorX<symbolic::Monomial>>&
+                  monomial_basis,
+              const Eigen::Ref<const VectorX<symbolic::Expression>>&
+                  gram_lower) {
+            return CalcPolynomialWGramLower(monomial_basis, gram_lower);
+          },
+          py::arg("monomial_basis"), py::arg("gram_lower"),
+          doc.CalcPolynomialWGramLower.doc);
+
   py::class_<RationalFunction> rat_fun_cls(
       m, "RationalFunction", doc.RationalFunction.doc);
   rat_fun_cls.def(py::init<>(), doc.RationalFunction.ctor.doc_0args)
