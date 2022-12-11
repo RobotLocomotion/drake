@@ -658,7 +658,8 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
 
     // PointPairContactInfo expresses the contact force acting on body B of the
     // pair. Flip the sign of the contact force if `body_` is not body B.
-    double scale = (contact_info.bodyB_index() == body_->index() ? 1 : -1);
+    const double scale =
+        (contact_info.bodyB_index() == body_->index() ? 1 : -1);
 
     EXPECT_EQ(scale * contact_info.contact_force(),
               -kMass_ * plant_->gravity_field().gravity_vector());
@@ -674,10 +675,17 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
     const HydroelasticContactInfo<double>& contact_info =
         contact_results->hydroelastic_contact_info(0);
 
-    EXPECT_TRUE(contact_info.F_Ac_W().IsApprox(SpatialForce<double>(
+    // HydroelasticContactInfo expresses the contact force acting on body A of
+    // the pair. Flip the sign of the contact force if `body_` is not body A.
+    BodyIndex bodyA_index = CompliantContactManagerTester::FindBodyByGeometryId(
+        *manager_, contact_info.contact_surface().id_M());
+    const double scale = (bodyA_index == body_->index() ? 1 : -1);
+    const SpatialForce<double> F_Ac_W = scale * contact_info.F_Ac_W();
+
+    EXPECT_TRUE(F_Ac_W.IsApprox(SpatialForce<double>(
         Vector3d::Zero(), -kMass_ * plant_->gravity_field().gravity_vector())));
 
-    Vector3d f_Ac_W = contact_info.F_Ac_W().translational();
+    Vector3d f_Ac_W = F_Ac_W.translational();
 
     for (const HydroelasticQuadraturePointData<double>& data :
          contact_info.quadrature_point_data()) {
@@ -687,11 +695,73 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
   }
 }
 
+TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInStiction) {
+  ApplyTangentialForceForBodyInStiction();
+  std::unique_ptr<ContactResults<double>> contact_results =
+      std::make_unique<ContactResults<double>>();
+  CompliantContactManagerTester::DoCalcContactResults(
+      *manager_, *plant_context_, contact_results.get());
+  const ContactTestConfig& config = GetParam();
+
+  Simulate(100);
+
+  if (config.point_contact) {
+    // Test point contact.
+    EXPECT_EQ(contact_results->num_point_pair_contacts(), 1);
+    EXPECT_EQ(contact_results->num_hydroelastic_contacts(), 0);
+
+    const PointPairContactInfo<double>& contact_info =
+        contact_results->point_pair_contact_info(0);
+
+    // PointPairContactInfo expresses the contact force acting on body B of the
+    // pair. Flip the sign of the contact force if `body_` is not body B.
+    double scale = (contact_info.bodyB_index() == body_->index() ? 1 : -1);
+
+    EXPECT_EQ(scale * contact_info.contact_force().x(),
+              -kTangentialForce_.translational().x());
+
+    std::cout << "contact_force:\n" << scale * contact_info.contact_force() << std::endl
+              << std::endl;
+  } else {
+    // Test hydroelastic contact.
+    EXPECT_EQ(contact_results->num_point_pair_contacts(), 0);
+    EXPECT_EQ(contact_results->num_hydroelastic_contacts(), 1);
+
+    const HydroelasticContactInfo<double>& contact_info =
+        contact_results->hydroelastic_contact_info(0);
+
+    // HydroelasticContactInfo expresses the contact force acting on body A of
+    // the pair. Flip the sign of the contact force if `body_` is not body A.
+    BodyIndex bodyA_index = CompliantContactManagerTester::FindBodyByGeometryId(
+        *manager_, contact_info.contact_surface().id_M());
+    const double scale = (bodyA_index == body_->index() ? 1 : -1);
+    const SpatialForce<double> F_Ac_W = scale * contact_info.F_Ac_W();
+
+    EXPECT_EQ(F_Ac_W.translational().x(),
+              -kTangentialForce_.translational().x());
+
+    std::cout << "F_Ac_W:\n"
+              << F_Ac_W << std::endl
+              << std::endl;
+  }
+  std::cout << "vdot:\n"
+            << plant_->get_generalized_acceleration_output_port().Eval(
+                   *plant_context_)
+            << std::endl
+            << std::endl;
+  std::cout << "(q, v):\n"
+            << plant_->get_state_output_port().Eval(*plant_context_)
+            << std::endl
+            << std::endl;
+}
+
 // Setup test cases using point and hydroelastic contact.
 std::vector<ContactTestConfig> MakeTestCases() {
   return std::vector<ContactTestConfig>{
-      {.description = "HydroelasticContact", .point_contact = false},
-      {.description = "PointContact", .point_contact = true},
+      {.description = "HydroelasticContact_TAMSI", .point_contact = false, .contact_solver = DiscreteContactSolver::kTamsi},
+      {.description = "PointContact_TAMSI", .point_contact = true, .contact_solver = DiscreteContactSolver::kTamsi},
+      {.description = "HydroelasticContact_SAP", .point_contact = false, .contact_solver = DiscreteContactSolver::kSap},
+      {.description = "PointContact_SAP", .point_contact = true, .contact_solver = DiscreteContactSolver::kSap},
   };
 }
 

@@ -818,9 +818,12 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
     const Vector3<T>& p_WQ = pair.p_WC;
     const RotationMatrix<T>& R_WC = contact_kinematics[icontact].R_WC;
 
-    // Contact forces applied on A at quadrature point Q.
+    // Contact forces applied on B at quadrature point Q expressed in the
+    // contact frame.
     const Vector3<T> f_Bq_C(ft(2 * icontact), ft(2 * icontact + 1),
                             fn(icontact));
+    // Contact force applied on A at quadrature point Q expressed in the world
+    // frame.
     const Vector3<T> f_Aq_W = -(R_WC * f_Bq_C);
 
     const int surface_index = pair.surface_index.value();

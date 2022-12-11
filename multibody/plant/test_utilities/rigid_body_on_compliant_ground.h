@@ -6,10 +6,12 @@
 #include "drake/geometry/proximity_properties.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/tamsi_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -24,12 +26,14 @@ using math::RigidTransformd;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::Simulator;
 
 struct ContactTestConfig {
   // This is a gtest test suffix; no underscores or spaces.
   std::string description;
   // Model with point contact if `true` or with hydroelastic contact if `false`.
   bool point_contact{};
+  DiscreteContactSolver contact_solver{DiscreteContactSolver::kTamsi};
 };
 
 // This provides the suffix for each test parameter: the test config
@@ -57,10 +61,11 @@ class RigidBodyOnCompliantGround
   // model of the rigid body will consist of either a point contact sphere or a
   // rigid hydroelastic mesh of a square plate.
   void SetUp() override {
+    const ContactTestConfig& config = GetParam();
     DiagramBuilder<double> builder;
-    auto items = AddMultibodyPlantSceneGraph(&builder, 0.001 /* time_step */);
+    auto items = AddMultibodyPlantSceneGraph(&builder,  kTimeStep_);
     plant_ = &items.plant;
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
+    plant_->set_discrete_contact_solver(config.contact_solver);
 
     // We change the default gravity magnitude so that numbers are simpler to
     // work with.
@@ -77,10 +82,9 @@ class RigidBodyOnCompliantGround
     body_ = &plant_->AddRigidBody("body", M_Bo);
 
     geometry::ProximityProperties body_props;
-    geometry::AddContactMaterial(0.0, 1.0e40, CoulombFriction<double>(),
+    geometry::AddContactMaterial(0.0, 1.0e40, CoulombFriction<double>(kMu_, kMu_),
                                  &body_props);
 
-    const ContactTestConfig& config = GetParam();
     if (config.point_contact) {
       plant_->RegisterCollisionGeometry(
           *body_, RigidTransformd::Identity(),
@@ -98,7 +102,7 @@ class RigidBodyOnCompliantGround
     // Ground geometry.
     geometry::ProximityProperties ground_props;
     geometry::AddContactMaterial(kHcDissipation_, kStiffness_,
-                                 CoulombFriction<double>(), &ground_props);
+                                 CoulombFriction<double>(kMu_, kMu_), &ground_props);
     geometry::AddCompliantHydroelasticPropertiesForHalfSpace(
         kGroundThickness_, kHydroelasticModulus_, &ground_props);
     plant_->RegisterCollisionGeometry(
@@ -150,6 +154,28 @@ class RigidBodyOnCompliantGround
     }
   }
 
+  void ApplyTangentialForceForBodyInStiction() const {
+    // Normal force exactly opposes weight for the body in equilibrium.
+    // Applying a force fₜ, perpendicular to fₙ with |fₜ| < kMu_ * |fₙ|
+    // should keep the body in stiction. In particular:
+    //  fₙ = (0, 0, kMass_ * kGravity_)
+    // so we set:
+    //  f_Bq_W = kScale_ * kMu_ * kMass_ * kGravity * (1, 0, 0)
+    // where kScale < 1.
+    std::vector<ExternallyAppliedSpatialForce<double>> forces(1);
+    forces[0].body_index = body_->index();
+    forces[0].p_BoBq_B = body_->CalcCenterOfMassInBodyFrame(*plant_context_);
+    forces[0].F_Bq_W = kTangentialForce_;
+    plant_->get_applied_spatial_force_input_port().FixValue(plant_context_,
+                                                            forces);
+  }
+
+  void Simulate(int num_timesteps) {
+    simulator_.reset(new Simulator<double>(*diagram_, std::move(context_)));
+    simulator_->Initialize();
+    simulator_->AdvanceTo(num_timesteps * kTimeStep_);
+  }
+
   std::unique_ptr<Diagram<double>> diagram_;
   MultibodyPlant<double>* plant_{nullptr};
   const RigidBody<double>* body_{nullptr};
@@ -158,15 +184,22 @@ class RigidBodyOnCompliantGround
   Context<double>* plant_context_{nullptr};
   std::unique_ptr<TamsiDriver<double>> tamsi_driver_;
   std::unique_ptr<SapDriver<double>> sap_driver_;
+  std::unique_ptr<Simulator<double>> simulator_;
 
   // Parameters of the problem.
-  const double kGravity_{10.0};  // Acceleration of gravity, in m/s².
-  const double kMass_{10.0};     // Mass of the rigid body, in kg.
+  const double kTimeStep_{0.001}; // Discrete timestep of the plant.
+  const double kGravity_{10.0};   // Acceleration of gravity, in m/s².
+  const double kMass_{10.0};      // Mass of the rigid body, in kg.
   const double kPointContactSphereRadius_{0.02};  // In m.
   const double kStiffness_{1.0e4};                // In N/m.
   const double kHydroelasticModulus_{250.0};      // In Pa.
   const double kHcDissipation_{0.2};              // In s/m.
   const double kGroundThickness_{0.1};            // In m.
+  const double kMu_{0.5};                         // Coefficient of friction.
+  const double kScale_{0.2};                      // Scale factor for tangential force.
+  // Horizontal force on the body that should be completely opposed by stiction.
+  const SpatialForce<double> kTangentialForce_{
+      Vector3d::Zero(), Vector3d{kScale_ * kMu_ * kMass_ * kGravity_, 0.0, 0.0}};
   // Number of triangles and area of the plate must be kept in sync with the
   // mesh file square_surface.obj.
   const int kNumberOfTriangles_{2};  // Number of triangles in the hydro mesh.

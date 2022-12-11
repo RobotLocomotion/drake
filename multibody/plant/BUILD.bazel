@@ -166,6 +166,7 @@ drake_cc_library(
     deps = [
         ":multibody_plant_core",
         "//common:essential",
+        "//geometry:geometry_ids"
     ],
 )
 

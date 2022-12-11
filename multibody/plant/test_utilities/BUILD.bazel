@@ -29,6 +29,7 @@ drake_cc_library(
     deps = [
         "//multibody/plant:compliant_contact_manager_tester",
         "//multibody/plant:plant",
+        "//systems/analysis:simulator",
         "//common:find_resource",
         "@gtest//:without_main",
     ],

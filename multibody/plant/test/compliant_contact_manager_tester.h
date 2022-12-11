@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/geometry_ids.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 
 namespace drake {
@@ -17,6 +18,12 @@ class CompliantContactManagerTester {
   static const internal::MultibodyTreeTopology& topology(
       const CompliantContactManager<double>& manager) {
     return manager.tree_topology();
+  }
+
+  static BodyIndex FindBodyByGeometryId(
+      const CompliantContactManager<double>& manager,
+      geometry::GeometryId id) {
+    return manager.FindBodyByGeometryId(id);
   }
 
   static const std::vector<geometry::ContactSurface<double>>&
