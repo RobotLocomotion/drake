@@ -1323,8 +1323,22 @@ void System<T>::AddExternalConstraints(
     AddExternalConstraint(item);
   }
 }
+
+// Blech.
+template <typename T>
+std::unique_ptr<AbstractValue> InputPort<T>::Allocate() const {
+  if (get_data_type() == kAbstractValued) {
+    return get_system().AllocateInputAbstract(*this);
+  } else {
+    auto basic_vector = get_system().AllocateInputVector(*this);
+    return std::make_unique<Value<BasicVector<T>>>(std::move(basic_vector));
+  }
+}
+
 }  // namespace systems
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::System)
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&::drake::systems::InputPort<T>::Allocate))

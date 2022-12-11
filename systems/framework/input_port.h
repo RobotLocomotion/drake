@@ -157,6 +157,9 @@ class InputPort final : public InputPortBase {
     return DoEvalOptional(context);
   }
 
+  /** Allocates a value the same as OutputPort::Allocate(). */
+  std::unique_ptr<AbstractValue> Allocate() const;
+
   /** Returns a reference to the System that owns this input port. Note that
   for a Diagram input port this will be the Diagram, not the LeafSystem whose
   input port was exported. */

@@ -350,6 +350,20 @@ GTEST_TEST(InputPortTest, ContextForEmbeddedSystem) {
       ".*Context.*was not created for this InputPort.*");
 }
 
+GTEST_TEST(InputPortTest, Allocate) {
+  SystemWithInputPorts system;
+  // Check allocate.
+  const auto vec_abstract_value = system.basic_vec_port.Allocate();
+  const auto& basic_vector =
+      vec_abstract_value->get_value<BasicVector<double>>();
+  EXPECT_EQ(basic_vector.size(), 3);
+
+  // Check allocate.
+  const auto int_abstract_value = system.int_port.Allocate();
+  const int int_value = int_abstract_value->get_value<int>();
+  EXPECT_EQ(int_value, 5);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
