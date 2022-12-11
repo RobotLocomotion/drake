@@ -381,6 +381,10 @@ struct Impl {
         .def("SetRandomContext", &System<T>::SetRandomContext,
             py::arg("context"), py::arg("generator"),
             doc.System.SetRandomContext.doc)
+        .def("AllocateInputVector", &System<T>::AllocateInputVector,
+            py::arg("input_port"), doc.System.AllocateInputVector.doc)
+        .def("AllocateInputAbstract", &System<T>::AllocateInputAbstract,
+            py::arg("input_port"), doc.System.AllocateInputAbstract.doc)
         .def("AllocateOutput",
             overload_cast_explicit<unique_ptr<SystemOutput<T>>>(
                 &System<T>::AllocateOutput),
