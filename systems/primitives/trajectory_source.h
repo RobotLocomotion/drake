@@ -42,6 +42,10 @@ class TrajectorySource final : public SingleOutputVectorSource<T> {
 
   ~TrajectorySource() final = default;
 
+  /// Updates the stored trajectory. @p trajectory must have the same size as
+  /// the trajectory passed to the constructor.
+  void UpdateTrajectory(const trajectories::Trajectory<T>& trajectory);
+
  private:
   /// Outputs a vector of values evaluated at the context time of the trajectory
   /// and up to its Nth derivatives, where the trajectory and N are passed to
@@ -52,7 +56,7 @@ class TrajectorySource final : public SingleOutputVectorSource<T> {
       const Context<T>& context,
       Eigen::VectorBlock<VectorX<T>>* output) const final;
 
-  const std::unique_ptr<trajectories::Trajectory<T>> trajectory_;
+  std::unique_ptr<trajectories::Trajectory<T>> trajectory_;
   const bool clamp_derivatives_;
   std::vector<std::unique_ptr<trajectories::Trajectory<T>>> derivatives_;
 };

@@ -362,6 +362,13 @@ class TestGeneral(unittest.TestCase):
         mytest(0.5, (2.5, 1.5))
         mytest(1.0, (3.0, 1.0))
 
+        ppt2 = PiecewisePolynomial.FirstOrderHold(
+            [0., 1.], [[4., 6.], [4., 2.]])
+        system.UpdateTrajectory(trajectory=ppt2)
+        mytest(0.0, (4.0, 4.0))
+        mytest(0.5, (5.0, 3.0))
+        mytest(1.0, (6.0, 2.0))
+
     def test_symbolic_vector_system(self):
         t = Variable("t")
         x = [Variable("x0"), Variable("x1")]

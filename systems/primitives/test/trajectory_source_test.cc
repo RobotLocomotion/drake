@@ -34,7 +34,7 @@ class TrajectorySourceTest : public ::testing::Test {
   }
 
   std::unique_ptr<PiecewisePolynomial<double>> kppTraj_;
-  std::unique_ptr<System<double>> source_;
+  std::unique_ptr<TrajectorySource<double>> source_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<BasicVector<double>> input_;
 };
@@ -50,7 +50,7 @@ TEST_F(TrajectorySourceTest, OutputTest) {
   const double kTestTime = 1.75;
   context_->SetTime(kTestTime);
 
-  const auto& output = source_->get_output_port(0).Eval(*context_);
+  const auto& output = source_->get_output_port().Eval(*context_);
 
   int len = kppTraj_->rows();
   EXPECT_EQ(kppTraj_->value(kTestTime), output.segment(0, len));
@@ -65,6 +65,22 @@ TEST_F(TrajectorySourceTest, OutputTest) {
   // Test first derivative (which is in second segment):
   // f`(yyyy) = f`(y^4) = 4 * y^3.  y = kTestTime.
   EXPECT_NEAR(output.segment(len, len)(0), 21.4375, 1e-6);
+
+  Eigen::MatrixXd samples(1, 2);
+  samples << 0, 1;
+  PiecewisePolynomial<double> pp = PiecewisePolynomial<double>::FirstOrderHold(
+      Eigen::Vector2d(0, 2), samples);
+  source_->UpdateTrajectory(pp);
+  context_->SetTime(kTestTime);  // Set the time again to invalidate the cache.
+
+  const auto& output2 = source_->get_output_port().Eval(*context_);
+  EXPECT_EQ(pp.value(kTestTime), output2.segment(0, len));
+  for (size_t i = 1; i <= kDerivativeOrder; ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(pp.derivative(i).value(kTestTime),
+                        output2.segment(len * i, len), 1e-10,
+                        MatrixCompareType::absolute));
+  }
 }
 
 // Tests that ConstantVectorSource allocates no state variables in the context_.

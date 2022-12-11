@@ -30,6 +30,21 @@ TrajectorySource<T>::TrajectorySource(const Trajectory<T>& trajectory,
 }
 
 template <typename T>
+void TrajectorySource<T>::UpdateTrajectory(
+    const trajectories::Trajectory<T>& trajectory) {
+  DRAKE_DEMAND(trajectory.rows() == trajectory_->rows());
+  DRAKE_DEMAND(trajectory.cols() == 1);
+
+  trajectory_ = trajectory.Clone();
+  for (int i = 0; i < static_cast<int>(derivatives_.size()); i++) {
+    if (i == 0)
+      derivatives_[i] = trajectory_->MakeDerivative();
+    else
+      derivatives_[i] = derivatives_[i - 1]->MakeDerivative();
+  }
+}
+
+template <typename T>
 void TrajectorySource<T>::DoCalcVectorOutput(
     const Context<T>& context, Eigen::VectorBlock<VectorX<T>>* output) const {
   int len = trajectory_->rows();
