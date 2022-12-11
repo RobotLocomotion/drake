@@ -717,7 +717,9 @@ PYBIND11_MODULE(primitives, m) {
       .def(py::init<const trajectories::Trajectory<double>&, int, bool>(),
           py::arg("trajectory"), py::arg("output_derivative_order") = 0,
           py::arg("zero_derivatives_beyond_limits") = true,
-          doc.TrajectorySource.ctor.doc);
+          doc.TrajectorySource.ctor.doc)
+      .def("UpdateTrajectory", &TrajectorySource<double>::UpdateTrajectory,
+          py::arg("trajectory"), doc.TrajectorySource.UpdateTrajectory.doc);
 
   m.def("AddRandomInputs", &AddRandomInputs<double>,
        py::arg("sampling_interval_sec"), py::arg("builder"),
