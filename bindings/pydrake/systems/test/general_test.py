@@ -122,6 +122,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(u1.get_index(), 1)
         self.assertEqual(u1.size(), 10)
         self.assertIsNotNone(u1.ticket())
+        self.assertIsInstance(u1.Allocate(), Value[BasicVector])
         self.assertIs(u1.get_system(), system)
         y = system.GetOutputPort("sum")
         self.assertEqual(y.get_name(), "sum")
