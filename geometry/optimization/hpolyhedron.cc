@@ -412,6 +412,23 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(const HPolyhedron& other,
 }
 
 HPolyhedron HPolyhedron::ReduceInequalities(double tol) const {
+  const std::set<int> redundant_indices = FindRedundant(tol);
+  const int num_vars = A_.cols();
+
+  MatrixXd A_new(A_.rows() - redundant_indices.size(), num_vars);
+  VectorXd b_new(A_new.rows());
+  int i = 0;
+  for (int j = 0; j < A_.rows(); ++j) {
+    if (redundant_indices.count(j) == 0) {
+      A_new.row(i) = A_.row(j);
+      b_new.row(i) = b_.row(j);
+      ++i;
+    }
+  }
+  return {A_new, b_new};
+}
+
+std::set<int> HPolyhedron::FindRedundant(double tol) const {
   const int num_inequalities = A_.rows();
   const int num_vars = A_.cols();
 
@@ -460,16 +477,13 @@ HPolyhedron HPolyhedron::ReduceInequalities(double tol) const {
       }
     }
   }
-
-  MatrixXd A_new(kept_indices.size(), num_vars);
-  VectorXd b_new(kept_indices.size());
-  int i = 0;
-  for (const int ind : kept_indices) {
-    A_new.row(i) = A_.row(ind);
-    b_new.row(i) = b_.row(ind);
-    ++i;
+  std::set<int> redundant_indices;
+  for (int i = 0; i < num_inequalities; ++i) {
+    if (kept_indices.count(i) == 0) {
+      redundant_indices.emplace(i);
+    }
   }
-  return {A_new, b_new};
+  return redundant_indices;
 }
 
 bool HPolyhedron::IsEmpty() const { return DoIsEmpty(A_, b_); }

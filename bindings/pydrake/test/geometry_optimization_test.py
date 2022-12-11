@@ -137,8 +137,13 @@ class TestGeometryOptimization(unittest.TestCase):
             other=h_unit_box,
             check_for_redundancy=False)
         # Check that the ReduceInequalities binding works.
+        redundant_indices = h_half_box_intersect_unit_box.FindRedundant(
+            tol=1E-9)
+        # Check FindRedundant with default tol.
+        h_half_box_intersect_unit_box.FindRedundant()
         h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities(
             tol=1E-9)
+        
 
         # This polyhedron is intentionally constructed to be an empty set.
         A_empty = np.vstack([np.eye(3), -np.eye(3)])
