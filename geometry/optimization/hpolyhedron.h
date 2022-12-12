@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -77,6 +78,16 @@ class HPolyhedron final : public ConvexSet {
   [[nodiscard]] HPolyhedron Intersection(const HPolyhedron& other,
                                          bool check_for_redundancy = false,
                                          double tol = 1E-9) const;
+
+  /** Finds the redundant inequalities in this polyhedron.
+   Returns a set ℑ, such that if we remove the rows of A * x <= b in ℑ, the
+   remaining inequalities still define the same polyhedron, namely {x | A*x<=b}
+   = {x | A.row(i)*x<=b(i), ∀i ∉ ℑ}. This function solves a series of linear
+   programs. We say the jᵗʰ row A.row(j)*x <= b(j) is redundant, if {x |
+   A.row(i) * x <= b(i), ∀i ∉ ℑ} implies that A.row(j) * x <= b(j) + tol.
+   Note that we do NOT guarantee that we find all the redundant rows.
+   */
+  [[nodiscard]] std::set<int> FindRedundant(double tol = 1E-9) const;
 
   /** Reduces some (not necessarily all) redundant inequalities in the
   HPolyhedron.  This is not guaranteed to give the minimal representation of
