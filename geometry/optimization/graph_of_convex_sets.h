@@ -494,52 +494,6 @@ class GraphOfConvexSets {
       const GraphOfConvexSetsOptions& options =
           GraphOfConvexSetsOptions()) const;
 
-  /** Formulates and solves the mixed-integer convex formulation of the
-  shortest path problem on the graph, as discussed in detail in
-
-  "Shortest Paths in Graphs of Convex Sets" by Tobia Marcucci, Jack
-  Umenberger, Pablo A. Parrilo, Russ Tedrake. https://arxiv.org/abs/2101.11565
-
-  @param source specifies the source set.  The solver will choose any point in
-  that set; to start at a particular continuous state consider adding a Point
-  set to the graph and using that as the source.
-  @param target specifies the target set.  The solver will choose any point in
-  that set.
-  @param convex_relaxation will solve the relaxed version of the problem.  As
-  discussed in the paper, we know that this relaxation cannot solve the original
-  NP-hard problem for all instances, but there are also many instances for which
-  the convex relaxation is tight.
-  @param solver provides the optimizer to be used to solve the shortest path
-  optimization problem. If not set, the best solver for the given problem is
-  selected. Note that if the solver cannot handle the type of optimization
-  problem generated, it will throw.
-  @param solver_options are passed to the solver once the problem is generated
-  to set the solver settings.
-
-  @throws std::exception if any of the costs or constraints in the graph are
-  incompatible with the shortest path formulation or otherwise unsupported.
-  All costs must be non-negative for all values of the continuous variables.
-
-  @pydrake_mkdoc_identifier{deprecated_by_id}
-  */
-  DRAKE_DEPRECATED("2022-12-01", "Use version with GraphOfConvexSetsOptions")
-  solvers::MathematicalProgramResult SolveShortestPath(
-      VertexId source_id, VertexId target_id, bool convex_relaxation,
-      const solvers::SolverInterface* solver = nullptr,
-      const std::optional<solvers::SolverOptions>& solver_options =
-          std::nullopt) const;
-
-  /** Convenience overload that takes const reference arguments for source and
-  target.
-  @pydrake_mkdoc_identifier{deprecated_by_reference}
-  */
-  DRAKE_DEPRECATED("2022-12-01", "Use version with GraphOfConvexSetsOptions")
-  solvers::MathematicalProgramResult SolveShortestPath(
-      const Vertex& source, const Vertex& target, bool convex_relaxation,
-      const solvers::SolverInterface* solver = nullptr,
-      const std::optional<solvers::SolverOptions>& solver_options =
-          std::nullopt) const;
-
  private:
   /* Facilitates testing. */
   friend class PreprocessShortestPathTest;

@@ -29,7 +29,6 @@ drake_cc_package_library(
     deps = [
         ":aggregate_costs_constraints",
         ":augmented_lagrangian",
-        ":bilinear_product_util",
         ":binding",
         ":branch_and_bound",
         ":choose_best_solver",
@@ -441,18 +440,6 @@ drake_cc_library(
     deps = [
         ":solve",
         "//math:quadratic_form",
-    ],
-)
-
-drake_cc_library(
-    name = "bilinear_product_util",
-    srcs = ["bilinear_product_util.cc"],
-    hdrs = ["bilinear_product_util.h"],
-    interface_deps = [
-        ":decision_variable",
-    ],
-    deps = [
-        "//common/symbolic:replace_bilinear_terms",
     ],
 )
 
@@ -1099,14 +1086,6 @@ drake_cc_library(
 )
 
 # === test/ ===
-
-drake_cc_googletest(
-    name = "bilinear_product_util_test",
-    deps = [
-        ":bilinear_product_util",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
 
 drake_cc_googletest(
     name = "binding_test",
