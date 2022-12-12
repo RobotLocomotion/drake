@@ -882,6 +882,18 @@ class TestGeneral(unittest.TestCase):
             # type-erased Value objects are incompatible.
             input_port.FixValue(context, AbstractValue.Make("string"))
 
+    @numpy_compare.check_all_types
+    def test_allocate_input_vector(self, T):
+        system = PassThrough_[T](1)
+        value = system.AllocateInputVector(system.get_input_port())
+        self.assertIsInstance(value, BasicVector_[T])
+
+    @numpy_compare.check_all_types
+    def test_allocate_input_abstract(self, T):
+        system = PassThrough_[T](AbstractValue.Make("a"))
+        value = system.AllocateInputAbstract(system.get_input_port())
+        self.assertIsInstance(value, Value[str])
+
     def test_event_status(self):
         system = ZeroOrderHold(period_sec=0.1, vector_size=1)
         # Existence check.
