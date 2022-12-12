@@ -23,7 +23,15 @@ template<typename T> class Joint;
 /// PD controller gains. This enables the modeling of a simple low level PD
 /// controllers, see JointActuator::set_controller_gains().
 struct PdControllerGains {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PdControllerGains)
+
+  // Gains for a PD controller.
+  PdControllerGains(double p, double d)
+      : proportional_gain(p), derivative_gain(d) {}
+
+  // Proportional gain of the controller.
   double proportional_gain{0.0};
+  // Derivative gain of the controller.
   double derivative_gain{0.0};
 };
 

@@ -147,6 +147,21 @@ void DoScalarIndependentDefinitions(py::module m) {
         .value("kQDot", Enum::kQDot, enum_doc.kQDot.doc)
         .value("kV", Enum::kV, enum_doc.kV.doc);
   }
+
+  {
+    using Class = PdControllerGains;
+    constexpr auto& cls_doc = doc.PdControllerGains;
+    py::class_<Class> cls(m, "PdControllerGains", cls_doc.doc);
+    cls  // BR
+        .def(py::init<double, double>(), py::arg("p"), py::arg("d"),
+            cls_doc.ctor.doc);
+    cls  // BR
+        .def_readwrite("proportional_gain", &Class::proportional_gain,
+            cls_doc.proportional_gain.doc)
+        .def_readwrite("derivative_gain", &Class::derivative_gain,
+            cls_doc.derivative_gain.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
 }
 
 /**
@@ -835,7 +850,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_actuation_vector.doc)
         .def("input_start", &Class::input_start, cls_doc.input_start.doc)
         .def("num_inputs", &Class::num_inputs, cls_doc.num_inputs.doc)
-        .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc);
+        .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc)
+        .def("set_controller_gains", &Class::set_controller_gains,
+            py::arg("gains"), cls_doc.set_controller_gains.doc)
+        .def("has_controller", &Class::has_controller,
+            cls_doc.has_controller.doc);
   }
 
   // Force Elements.
