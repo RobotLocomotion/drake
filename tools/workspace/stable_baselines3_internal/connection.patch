@@ -1,0 +1,11 @@
+diff --git a/stable_baselines3/common/vec_env/subproc_vec_env.py b/stable_baselines3/common/vec_env/subproc_vec_env.py
+index f723c71..43fa394 100644
+--- stable_baselines3/common/vec_env/subproc_vec_env.py
++++ stable_baselines3/common/vec_env/subproc_vec_env.py
+@@ -1,5 +1,6 @@
+ import multiprocessing as mp
+ from collections import OrderedDict
++from multiprocessing import connection
+ from typing import Any, Callable, List, Optional, Sequence, Tuple, Type, Union
+ 
+ import gym
