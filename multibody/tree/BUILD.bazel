@@ -142,7 +142,7 @@ drake_cc_library(
         "body.h",
         "body_node.h",
         "body_node_impl.h",
-        "body_node_welded.h",
+        "body_node_world.h",
         "door_hinge.h",
         "fixed_offset_frame.h",
         "force_element.h",

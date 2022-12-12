@@ -279,7 +279,8 @@ the dynamics of a multibody system modeled with %MultibodyPlant are
          q̇ = N(q)v
   (1)    M(q)v̇ + C(q, v)v = τ
 </pre>
-where `M(q)` is the mass matrix of the multibody system, `C(q, v)v`
+where `M(q)` is the mass matrix of the multibody system (including rigid body
+mass properties and @ref reflected_inertia "reflected inertias"), `C(q, v)v`
 contains Coriolis, centripetal, and gyroscopic terms and
 `N(q)` is the kinematic coupling matrix describing the relationship between
 q̇ (the time derivatives of the generalized positions) and the generalized
@@ -2999,14 +3000,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Mathematically, this method computes: <pre>
   ///   tau = M(q)v̇ + C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W
   /// </pre>
-  /// where `M(q)` is the model's mass matrix, `C(q, v)v` is the bias
-  /// term containing Coriolis and gyroscopic effects and `tau_app` consists
+  /// where `M(q)` is the model's mass matrix (including rigid body mass
+  /// properties and @ref reflected_inertia "reflected inertias"), `C(q, v)v` is
+  /// the bias term for Coriolis and gyroscopic effects and `tau_app` consists
   /// of a vector applied generalized forces. The last term is a summation over
   /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
   /// body B at `Bo` which gets projected into the space of generalized forces
   /// with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB` is B's spatial
   /// velocity Jacobian in W with respect to generalized velocities v).
   /// Note: B's spatial velocity in W can be written as `V_WB = Jv_V_WB * v`.
+  ///
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
@@ -3223,20 +3226,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// gyroscopic "bias" terms, and a variety of Jacobian and actuation matrices.
   /// @{
 
-  /// Performs the computation of the mass matrix `M(q)` of the model using
-  /// inverse dynamics, where the generalized positions q are stored in
-  /// `context`. See CalcInverseDynamics().
+  /// Computes the mass matrix `M(q)` of the model using a slow method (inverse
+  /// dynamics). The generalized positions q are taken from the given `context`.
+  /// M includes the mass properties of rigid bodies and @ref reflected_inertia
+  /// "reflected inertias" as provided with JointActuator specifications.
   ///
-  /// Use CalcMassMatrix() for a faster implementation using the Composite Body
+  /// Use CalcMassMatrix() for a faster implementation using the Composite %Body
   /// Algorithm.
   ///
   /// @param[in] context
-  ///   The context containing the state of the model.
+  ///   The Context containing the state of the model from which generalized
+  ///   coordinates q are extracted.
   /// @param[out] M
-  ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
-  ///   number of generalized velocities (num_velocities()) of the model.
-  ///   This method aborts if H is nullptr or if it does not have the proper
-  ///   size.
+  ///   A pointer to a square matrix in `ℛⁿˣⁿ` with n the number of generalized
+  ///   velocities (num_velocities()) of the model. Although symmetric, the
+  ///   matrix is filled in completely on return.
+  ///
+  /// @pre M is non-null and has the right size.
   ///
   /// The algorithm used to build `M(q)` consists in computing one column of
   /// `M(q)` at a time using inverse dynamics. The result from inverse dynamics,
@@ -3256,6 +3262,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @warning This is an O(n²) algorithm. Avoid the explicit computation of the
   /// mass matrix whenever possible.
+  /// @see CalcMassMatrix(), CalcInverseDynamics()
   void CalcMassMatrixViaInverseDynamics(
       const systems::Context<T>& context, EigenPtr<MatrixX<T>> M) const {
     this->ValidateContext(context);
@@ -3263,21 +3270,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().CalcMassMatrixViaInverseDynamics(context, M);
   }
 
-  /// Performs the computation of the mass matrix `M(q)` of the model, as a
-  /// function of the generalized positions q stored in `context`.
-  /// This method employs the Composite Body Algorithm, which is known to be the
-  /// fastest O(n²) algorithm to compute the mass matrix of a multibody system.
+  /// Efficiently computes the mass matrix `M(q)` of the model. The generalized
+  /// positions q are taken from the given `context`. M includes the mass
+  /// properties of rigid bodies and @ref reflected_inertia "reflected inertias"
+  /// as provided with JointActuator specifications.
+  ///
+  /// This method employs the Composite %Body Algorithm, which we believe to be
+  /// the fastest O(n²) algorithm to compute the mass matrix of a multibody
+  /// system.
   ///
   /// @param[in] context
-  ///   The context containing the state of the model.
+  ///   The Context containing the state of the model from which generalized
+  ///   coordinates q are extracted.
   /// @param[out] M
-  ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
-  ///   number of generalized velocities (num_velocities()) of the model.
-  ///   This method aborts if M is nullptr or if it does not have the proper
-  ///   size.
+  ///   A pointer to a square matrix in `ℛⁿˣⁿ` with n the number of generalized
+  ///   velocities (num_velocities()) of the model. Although symmetric, the
+  ///   matrix is filled in completely on return.
+  ///
+  /// @pre M is non-null and has the right size.
   ///
   /// @warning This is an O(n²) algorithm. Avoid the explicit computation of the
   /// mass matrix whenever possible.
+  /// @see CalcMassMatrixViaInverseDynamics() (slower)
   void CalcMassMatrix(const systems::Context<T>& context,
                       EigenPtr<MatrixX<T>> M) const {
     this->ValidateContext(context);
@@ -3289,11 +3303,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// gyroscopic effects in the multibody equations of motion: <pre>
   ///   M(q) v̇ + C(q, v) v = tau_app + ∑ (Jv_V_WBᵀ(q) ⋅ Fapp_Bo_W)
   /// </pre>
-  /// where `M(q)` is the multibody model's mass matrix and `tau_app` is a
-  /// vector of generalized forces. The last term is a summation over all bodies
-  /// of the dot-product of `Fapp_Bo_W` (applied spatial force on body B at Bo)
-  /// with `Jv_V_WB(q)` (B's spatial Jacobian in world W with respect to
-  /// generalized velocities v).
+  /// where `M(q)` is the multibody model's mass matrix (including rigid body
+  /// mass properties and @ref reflected_inertia "reflected inertias") and
+  /// `tau_app` is a vector of applied generalized forces. The last term is a
+  /// summation over all bodies of the dot-product of `Fapp_Bo_W` (applied
+  /// spatial force on body B at Bo) with `Jv_V_WB(q)` (B's spatial Jacobian in
+  /// world W with respect to generalized velocities v).
   /// Note: B's spatial velocity in W can be written `V_WB = Jv_V_WB * v`.
   ///
   /// @param[in] context
