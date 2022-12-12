@@ -289,19 +289,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
 #pragma GCC diagnostic pop
     }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    constexpr char kWeldFramesDeprecated[] =
-        "Deprecated:\n    Frame notation for `WeldFrames` has changed. Use the "
-        "version that uses `frame_on_parent_F`, `frame_on_child_M`, and "
-        "`X_FM`. The deprecated code will be removed from Drake on or after "
-        "2022-12-01.";
-    cls.def("WeldFrames",
-        WrapDeprecated(kWeldFramesDeprecated, &Class::WeldFrames),
-        py::arg("frame_on_parent_P"), py::arg("frame_on_child_C"),
-        py::arg("X_PC") = RigidTransform<double>::Identity(),
-        py_rvp::reference_internal, kWeldFramesDeprecated);
-#pragma GCC diagnostic pop
     // Mathy bits
     cls  // BR
         .def(
