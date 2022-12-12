@@ -1351,6 +1351,51 @@ TEST_F(SymbolicPolynomialTest, Expand) {
   EXPECT_TRUE(p3.Expand().monomial_to_coefficient_map().empty());
 }
 
+TEST_F(SymbolicPolynomialTest, CalcPolynomialWLowerTriangularPart) {
+  // Q is a matrix of double.
+  const Vector2<symbolic::Monomial> monomial_basis1(
+      symbolic::Monomial({{var_x_, 2}, {var_y_, 1}}),
+      symbolic::Monomial({{var_x_, 1}}));
+  Eigen::Vector3d Q1_lower(1, 2, 3);
+  const auto poly1 =
+      CalcPolynomialWLowerTriangularPart(monomial_basis1, Q1_lower);
+  EXPECT_PRED2(
+      test::PolyEqual, poly1,
+      symbolic::Polynomial(pow(var_x_, 4) * pow(var_y_, 2) +
+                           4 * pow(var_x_, 3) * var_y_ + 3 * var_x_ * var_x_));
+
+  // Q is a matrix of symbolic variable.
+  const Vector3<symbolic::Monomial> monomial_basis2(
+      symbolic::Monomial({{var_x_, 2}}),
+      symbolic::Monomial({{var_x_, 1}, {var_y_, 1}}),
+      symbolic::Monomial({{var_y_, 2}}));
+  Vector6<symbolic::Variable> Q2_lower;
+  for (int i = 0; i < 6; ++i) {
+    Q2_lower(i) = symbolic::Variable("Q2_lower" + std::to_string(i));
+  }
+  const auto poly2 =
+      CalcPolynomialWLowerTriangularPart(monomial_basis2, Q2_lower);
+  const symbolic::Polynomial poly2_expected = symbolic::Polynomial(
+      Q2_lower(0) * pow(var_x_, 4) + 2 * Q2_lower(1) * pow(var_x_, 3) * var_y_ +
+          (2 * Q2_lower(2) + Q2_lower(3)) * pow(var_x_, 2) * pow(var_y_, 2) +
+          2 * Q2_lower(4) * var_x_ * pow(var_y_, 3) +
+          Q2_lower(5) * pow(var_y_, 4),
+      var_xy_);
+  EXPECT_PRED2(test::PolyEqualAfterExpansion, poly2, poly2_expected);
+
+  // Q is a matrix of expression.
+  Vector6<symbolic::Expression> Q3_lower;
+  Q3_lower << var_a_, 1, var_a_ + var_b_, 2, 0, var_a_ * var_b_;
+  const auto poly3 =
+      CalcPolynomialWLowerTriangularPart(monomial_basis2, Q3_lower);
+  const symbolic::Polynomial poly3_expected = symbolic::Polynomial(
+      var_a_ * pow(var_x_, 4) + 2 * pow(var_x_, 3) * var_y_ +
+          (2 * var_a_ + 2 * var_b_ + 2) * pow(var_x_, 2) * pow(var_y_, 2) +
+          var_a_ * var_b_ * pow(var_y_, 4),
+      var_xy_);
+  EXPECT_PRED2(test::PolyEqualAfterExpansion, poly3, poly3_expected);
+}
+
 }  // namespace
 
 }  // namespace symbolic
