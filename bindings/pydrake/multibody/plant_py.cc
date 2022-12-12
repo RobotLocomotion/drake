@@ -289,6 +289,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
 #pragma GCC diagnostic pop
     }
 
+    cls.def("AddDistanceConstraint", &Class::AddDistanceConstraint,
+        py::arg("body_A"), py::arg("p_AP"), py::arg("body_B"), py::arg("p_BQ"),
+        py::arg("distance"),
+        py::arg("stiffness") = std::numeric_limits<double>::infinity(),
+        py::arg("damping") = 0.0, py_rvp::reference_internal,
+        cls_doc.AddDistanceConstraint.doc);
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     constexpr char kWeldFramesDeprecated[] =
