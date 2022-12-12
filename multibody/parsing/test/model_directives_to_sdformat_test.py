@@ -301,6 +301,17 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                     'multibody/parsing/test/'
                     'model_directives_to_sdformat_files/frames_same_name.yaml')
 
+    def test_error_too_many_model_scopes(self):
+        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
+        with self.assertRaisesRegex(
+                model_directives_to_sdformat.ConversionError,
+                'Too many nested models in frame: '
+                r'\[top_level_model::inner_model::base\]. Only one level of '
+                'nesting is allowed.'):
+            converter.convert_directive(
+                    'multibody/parsing/test/'
+                    'model_directives_to_sdformat_files/too_many_models.yaml')
+
     def test_add_model_instance_add_directives(self):
         converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         expected_xml = '<sdf version="1.9">'\
@@ -314,6 +325,82 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                 'model_directives_to_sdformat_files/add_directives.yaml',
                 True)
         self.assertEqual(expected_xml, ET.tostring(result, encoding="unicode"))
+
+    def test_resulting_xml_and_weld_structures(self):
+        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
+        result = converter.convert_directive(
+                'multibody/parsing/test/'
+                'model_directives_to_sdformat_files/inject_frames.yaml',
+                True)
+        root = result.getroot()
+        self.assertEqual(len(root.getchildren()), 1)
+        root_model = root.getchildren()[0]
+
+        # Check inject_frames model
+        self.assertEqual(root_model.tag, 'model')
+        self.assertEqual(root.getchildren()[0].attrib['name'], 'inject_frames')
+
+        # Check fixed joints
+        self.assertEqual(len(root_model.findall('joint')), 2)
+        joint1 = root_model.findall('joint')[0]
+        self.assertEqual(joint1.attrib['type'], 'fixed')
+        self.assertEqual(joint1.find('parent').text,
+                         'top_level_model::top_injected_frame')
+        self.assertEqual(joint1.find('child').text, 'mid_level_model::base')
+        joint2 = root_model.findall('joint')[1]
+        self.assertEqual(joint2.attrib['type'], 'fixed')
+        self.assertEqual(joint2.find('parent').text,
+                         'mid_level_model::mid_injected_frame')
+        self.assertEqual(joint2.find('child').text, 'bottom_level_model::base')
+
+        # Check top_level_model
+        self.assertEqual(len(root_model.findall('model')), 2)
+        model1 = root_model.findall('model')[0]
+        self.assertEqual(model1.attrib['name'], 'top_level_model')
+        self.assertEqual(len(model1.findall('frame')), 1)
+        model1_frame = model1.findall('frame')[0]
+        self.assertEqual(model1_frame.attrib['name'], 'top_injected_frame')
+        self.assertEqual(model1_frame.attrib['attached_to'], 'base')
+        self.assertEqual(model1_frame.find('pose').attrib['degrees'], 'true')
+        self.assertEqual(len(model1.findall('include')), 1)
+        model1_include = model1.findall('include')[0]
+        self.assertEqual(model1_include.attrib['merge'], 'true')
+        self.assertEqual(model1_include.find('name').text, 'top_level_model')
+        self.assertEqual(model1_include.find('uri').text,
+                         'package://process_model_directives_test/'
+                         'simple_model.sdf')
+
+        # Check mid_level_model
+        model2 = root_model.findall('model')[1]
+        self.assertEqual(model2.attrib['name'], 'mid_level_model')
+        self.assertEqual(model2.attrib['placement_frame'], 'base')
+        self.assertEqual(len(model2.findall('frame')), 1)
+        model2_frame = model2.findall('frame')[0]
+        self.assertEqual(model2_frame.attrib['name'], 'mid_injected_frame')
+        self.assertEqual(model2_frame.attrib['attached_to'], 'base')
+        self.assertEqual(model2_frame.find('pose').attrib['degrees'], 'true')
+        self.assertEqual(len(model2.findall('include')), 1)
+        model2_include = model2.findall('include')[0]
+        self.assertEqual(model2_include.attrib['merge'], 'true')
+        self.assertEqual(model2_include.find('name').text, 'mid_level_model')
+        self.assertEqual(model2_include.find('uri').text,
+                         'package://process_model_directives_test/'
+                         'simple_model.sdf')
+        self.assertEqual(len(model2.findall('pose')), 1)
+        model2_pose = model2.findall('pose')[0]
+        self.assertEqual(model2_pose.attrib['relative_to'],
+                         'top_level_model::top_injected_frame')
+
+        # Check bottom_levelmodel
+        self.assertEqual(len(root_model.findall('include')), 1)
+        include = root_model.findall('include')[0]
+        self.assertEqual(include.find('name').text, 'bottom_level_model')
+        self.assertEqual(include.find('uri').text,
+                         'package://process_model_directives_test/'
+                         'simple_model.sdf')
+        self.assertEqual(include.find('placement_frame').text, 'base')
+        self.assertEqual(include.find('pose').attrib['relative_to'],
+                         'mid_level_model::mid_injected_frame')
 
     def test_main(self):
         self.assertEqual(0, model_directives_to_sdformat.main(

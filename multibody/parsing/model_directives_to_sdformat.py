@@ -235,22 +235,6 @@ class ModelDirectivesToSdf:
                 relative_to=scoped_parent_name_str)
         return True
 
-    # NOTE(aaronchongth):
-    # * we can create scopes all the way down both implicit based on
-    # X_PF base_frame, as well as explicit based on the scoped names,
-    # how do we make sure that there is no scope violation? The base_frame
-    # could be on A, however the explicit scope could be in A::B::C, the
-    # frame element will then be constructed in a nested manner but
-    # referencing a frame that is at the top.
-    # * one solution would be comparing the explicit scoped name's scope,
-    # with the scope of the base_frame, only if the base_frame lives
-    # beneath the scoped_name's scope
-    # (name: A::B::name, base_frame: A::B::C::frame)
-    # or on the same level
-    # (name: A::B::name, base_frame: A::B::frame), will it be allowed.
-    # * in the implicit case, (name: name, base_frame: A::B::frame), the
-    # frame will be constructed as
-    # (name: A::B::name, base_frame: A::B::frame).
     def _add_frame(self, root: ET, directive: Dict[str, Any]) -> bool:
         x_pf = directive['X_PF']
         base_frame = x_pf['base_frame']
@@ -279,7 +263,12 @@ class ModelDirectivesToSdf:
                     'scope in its name and its base_frame: '
                     f'[{x_pf["base_frame"]}].')
 
-        # Construct the necessary model scopes.
+        # Construct the model scope if necessary.
+        # Only one level of nesting is allowed for models.
+        if len(split_base_frame) > 2:
+            raise ConversionError(
+                f'Too many nested models in frame: [{x_pf["base_frame"]}]. '
+                'Only one level of nesting is allowed.')
         model_root = root
         model_name = split_base_frame[-2]
         if model_name in self._model_elem_map:
@@ -427,9 +416,6 @@ class ModelDirectivesToSdf:
                 self._incomplete_models.append(new_model_name)
             elif 'add_weld' in directive:
                 weld = directive['add_weld']
-                weld_child = weld['child']
-                weld_child_scopes = weld_child.split(_SCOPE_DELIMITER)
-
                 self._add_weld_fixed_joint(root_model_elem, weld)
             else:
                 leftover_directives.append(directive)
