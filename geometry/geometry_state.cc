@@ -530,13 +530,6 @@ const math::RigidTransform<double>& GeometryState<T>::GetPoseInFrame(
 }
 
 template <typename T>
-const math::RigidTransform<double>& GeometryState<T>::GetPoseInParent(
-    GeometryId geometry_id) const {
-  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
-  return geometry.X_PG();
-}
-
-template <typename T>
 std::variant<std::monostate, const TriangleSurfaceMesh<double>*,
              const VolumeMesh<double>*>
 GeometryState<T>::maybe_get_hydroelastic_mesh(GeometryId geometry_id) const {
@@ -895,51 +888,6 @@ void GeometryState<T>::ChangeShape(SourceId source_id, GeometryId geometry_id,
 }
 
 template <typename T>
-GeometryId GeometryState<T>::RegisterGeometryWithParent(
-    SourceId source_id, GeometryId parent_id,
-    std::unique_ptr<GeometryInstance> geometry) {
-  // There are three error conditions in the doxygen:
-  //    1. geometry == nullptr,
-  //    2. source_id is not a registered source, and
-  //    3. parent_id doesn't belong to source_id.
-  //
-  // Only #1 is tested directly. #2 and #3 are tested implicitly during the act
-  // of registering the geometry.
-
-  if (geometry == nullptr) {
-    throw std::logic_error(
-        "Registering null geometry to geometry " + to_string(parent_id) +
-            ", on source " + to_string(source_id) + ".");
-  }
-
-  // This confirms that parent_id exists at all.
-  InternalGeometry& parent_geometry =
-      GetMutableValueOrThrow(parent_id, &geometries_);
-  FrameId frame_id = parent_geometry.frame_id();
-
-  // This implicitly confirms that source_id is registered (condition #2) and
-  // that frame_id belongs to source_id. By construction, parent_id must
-  // belong to the same source as frame_id, so this tests condition #3.
-  GeometryId new_id = RegisterGeometry(source_id, frame_id, move(geometry));
-
-  // RegisterGeometry stores X_PG into X_FG_ (having assumed that  the
-  // parent was a frame). This replaces the stored X_PG value with the
-  // semantically correct value X_FG by concatenating X_FP with X_PG.
-
-  // Transform pose relative to geometry, to pose relative to frame.
-  InternalGeometry& new_geometry = geometries_[new_id];
-  // The call to `RegisterGeometry()` above stashed the pose X_PG into the
-  // X_FG_ vector assuming the parent was the frame. Replace it by concatenating
-  // its pose in parent, with its parent's pose in frame. NOTE: the pose is no
-  // longer available from geometry because of the `move(geometry)`.
-  const RigidTransform<double>& X_PG = new_geometry.X_FG();
-  const RigidTransform<double>& X_FP = parent_geometry.X_FG();
-  new_geometry.set_geometry_parent(parent_id, X_FP * X_PG);
-  parent_geometry.add_child(new_id);
-  return new_id;
-}
-
-template <typename T>
 GeometryId GeometryState<T>::RegisterAnchoredGeometry(
     SourceId source_id,
     std::unique_ptr<GeometryInstance> geometry) {
@@ -956,7 +904,21 @@ void GeometryState<T>::RemoveGeometry(SourceId source_id,
             "source " + to_string(source_id) + ", but the geometry doesn't "
             "belong to that source.");
   }
-  RemoveGeometryUnchecked(geometry_id, RemoveGeometryOrigin::kGeometry);
+
+  const InternalGeometry& geometry = GetValueOrThrow(geometry_id, geometries_);
+  auto& frame = GetMutableValueOrThrow(geometry.frame_id(), &frames_);
+  frame.remove_child(geometry_id);
+
+  RemoveProximityRole(geometry_id);
+  RemovePerceptionRole(geometry_id);
+  RemoveIllustrationRole(geometry_id);
+
+  // Clean up state collections.
+  kinematics_data_.X_WGs.erase(geometry_id);
+  kinematics_data_.q_WGs.erase(geometry_id);
+
+  // Remove from the geometries.
+  geometries_.erase(geometry_id);
 }
 
 template <typename T>
@@ -1432,49 +1394,6 @@ SourceId GeometryState<T>::get_source_id(GeometryId id) const {
                            " does not map to a registered geometry");
   }
   return geometry->source_id();
-}
-
-template <typename T>
-void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
-                                               RemoveGeometryOrigin caller) {
-  const InternalGeometry& geometry = GetValueOrThrow(geometry_id, geometries_);
-
-  // TODO(SeanCurtis-TRI): When this gets invoked by RemoveFrame(), this
-  // recursive action will not be necessary, as all child geometries will
-  // automatically get removed. I've put it into a block so for future
-  // reference; simply add an if statement to determine if this is coming from
-  // frame removal.
-  {
-    for (auto child_id : geometry.child_geometry_ids()) {
-      RemoveGeometryUnchecked(child_id, RemoveGeometryOrigin::kRecurse);
-    }
-    // Remove the geometry from its frame's list of geometries.
-    auto& frame = GetMutableValueOrThrow(geometry.frame_id(), &frames_);
-    frame.remove_child(geometry_id);
-  }
-
-  RemoveProximityRole(geometry_id);
-  RemovePerceptionRole(geometry_id);
-  RemoveIllustrationRole(geometry_id);
-
-  if (caller == RemoveGeometryOrigin::kGeometry) {
-    // Only the geometry that this function is *directly* invoked on needs to
-    // remove itself from its possible parent geometry. If called recursively,
-    // it is because the parent geometry is being deleted anyways and removal
-    // is implicit in the deletion of that parent geometry.
-    if (std::optional<GeometryId> parent_id = geometry.parent_id()) {
-      auto& parent_geometry =
-          GetMutableValueOrThrow(*parent_id, &geometries_);
-      parent_geometry.remove_child(geometry_id);
-    }
-  }
-
-  // Clean up state collections.
-  kinematics_data_.X_WGs.erase(geometry_id);
-  kinematics_data_.q_WGs.erase(geometry_id);
-
-  // Remove from the geometries.
-  geometries_.erase(geometry_id);
 }
 
 template <typename T>

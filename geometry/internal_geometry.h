@@ -26,6 +26,7 @@ namespace internal {
 // geometry being the parent of another geometry while all deformable
 // geometries' immediate parent is the frame the geometry is expressed in. Right
 // now we are manually disabling incompatible features.
+
 /* The internal representation of the fixed portion of the scene graph
  geometry. This includes those aspects that do *not* depend on computed values.
  It includes things like the topology (which frame is a geometry attached to),
@@ -43,7 +44,7 @@ class InternalGeometry {
   InternalGeometry() {}
 
   /* Constructs a rigid internal geometry without any assigned roles defined as
-   an *immediate* child of the frame. Therefore, it is assumed that X_FG = X_PG.
+   a child of the indicated frame.
    @param source_id     The id for the source that registered this geometry.
    @param shape         The shape specification for this instance.
    @param frame_id      The id of the frame this belongs to.
@@ -55,9 +56,7 @@ class InternalGeometry {
                    math::RigidTransform<double> X_FG);
 
   /* Constructs a deformable internal geometry in its reference configuration
-   without any assigned roles defined in the given frame. Every deformable
-   geometry is an immediate child of the frame; X_PG = X_FG is required and
-   enforced (see set_geometry_parent()).
+   without any assigned roles defined in the given frame.
    @param source_id         The id for the source that registered this geometry.
    @param shape             The shape specification for this instance.
    @param frame_id          The id of the frame this belongs to.
@@ -118,83 +117,13 @@ class InternalGeometry {
     return frame_id == frame_id_;
   }
 
-  // 2023-04-01 X_PG() and related functionality should be removed with the
-  // completed deprecation of the public aspects of this API.
-  /* Returns the pose of this geometry in the declared *parent* frame -- note
-   if this geometry was registered as a child of another geometry it will *not*
-   be the same as X_FG().  */
-  const math::RigidTransform<double>& X_PG() const { return X_PG_; }
-
   /* Returns the pose of this geometry in the frame to which it is ultimately
-   rigidly attached. This is in contrast to X_PG().  */
+   rigidly attached.  */
   const math::RigidTransform<double>& X_FG() const { return X_FG_; }
 
-  // 2023-04-01 Simply set X_FG when the deprecation of X_PG is complete.
   /* Changes the geometry's pose with respect to its frame from the old pose to
-   `X_FG`. However that pose changes, the same change is applied to X_PG. */
-  void set_pose(const math::RigidTransform<double>& X_FG) {
-    const math::RigidTransform<double> X_GoldF = X_FG_.inverse();
-    const math::RigidTransform<double> X_GoldG = X_GoldF * X_FG;
-    X_FG_ = X_FG;
-    const math::RigidTransform<double>& x_PGold = X_PG_;
-    X_PG_ = x_PGold * X_GoldG;
-  }
-
-  // TODO(SeanCurtis-TRI): Determine if tracking this parent geometry is
-  // necessary for now or if that only exists to facilitate removal later on.
-  /* Returns the declared parent geometry (if one exists).  */
-  std::optional<GeometryId> parent_id() const { return parent_geometry_id_; }
-
-  /* Sets this geometry to have *another* geometry as parent. In this case,
-   the pose set in the constructor is assumed to be X_PG and the X_FG value must
-   be updated.
-   @param id    The id of the parent geometry.
-   @param X_FG  The new value for X_FG (assuming the constructed value is to be
-                interpreted as X_PG).
-   @pre this geometry is rigid. Deformable geometries don't have parent or child
-   geometries. */
-  void set_geometry_parent(GeometryId id, math::RigidTransform<double> X_FG) {
-    DRAKE_DEMAND(!is_deformable());
-    parent_geometry_id_ = id;
-    X_FG_ = std::move(X_FG);
-  }
-
-  /* Returns true if this geometry has a geometry parent and the parent has the
-   given `geometry_id`.  */
-  bool is_child_of_geometry(GeometryId geometry_id) const {
-    return parent_geometry_id_ && *parent_geometry_id_ == geometry_id;
-  }
-
-  /* Returns a list of identifiers of geometries that have *this* geometry as
-   a parent. In other words, for an internal geometry `g`, `g.index()`
-   appears in this list iff `this->is_child_of_geometry(g.index())` returns
-   true.  */
-  const std::unordered_set<GeometryId>& child_geometry_ids() const {
-    return child_geometry_ids_;
-  }
-
-  /* Returns true if this geometry has a child geometry with the given
-   `geometry_id`.  */
-  bool has_child(GeometryId geometry_id) const {
-    return child_geometry_ids_.find(geometry_id) != child_geometry_ids_.end();
-  }
-
-  /* Adds a geometry with the given `geometry_id` to this geometry's set of
-   children.
-   @pre this geometry is rigid. Deformable geometries don't have parent or child
-   geometries. */
-  void add_child(GeometryId geometry_id) {
-    DRAKE_DEMAND(!is_deformable());
-    child_geometry_ids_.insert(geometry_id);
-  }
-
-  /* Removes the given `geometry_id` from the set of geometries that this frame
-   considers to be children. If the id is not in the set of children, nothing
-   happens.  */
-  void remove_child(GeometryId geometry_id) {
-    DRAKE_ASSERT(child_geometry_ids_.count(geometry_id) > 0);
-    child_geometry_ids_.erase(geometry_id);
-  }
+   `X_FG`. */
+  void set_pose(const math::RigidTransform<double>& X_FG) { X_FG_ = X_FG; }
 
   /* A geometry is deformable iff an internal mesh representation is required to
    define its topology. For example, geometries participating in hydroelastic
@@ -323,21 +252,10 @@ class InternalGeometry {
   // The identifier of the frame to which this geometry belongs.
   FrameId frame_id_;
 
-  // The pose of this geometry in the registered parent frame. The parent may be
-  // a frame or another registered geometry if the geometry is rigid. The parent
-  // of a deformable geometry is always the frame.
-  math::RigidTransform<double> X_PG_;
-
-  // The pose of this geometry in the ultimate frame to which this geometry is
-  // rigidly affixed. If there is no parent geometry, X_PG_ == X_FG_. In
-  // particular, deformable geometries have no parent geometries.
+  // The pose of this geometry in the frame to which this geometry is rigidly
+  // affixed. For deformable geometries, this is the pose of the reference
+  // geometry.
   math::RigidTransform<double> X_FG_;
-
-  // The identifier for this frame's parent frame.
-  std::optional<GeometryId> parent_geometry_id_{};
-
-  // The identifiers for the geometry hung on this frame.
-  std::unordered_set<GeometryId> child_geometry_ids_;
 
   // TODO(SeanCurtis-TRI): Consider introducing a mechanism where these are
   // defined at the frame level, and all child geometries inherit.

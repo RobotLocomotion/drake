@@ -488,48 +488,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
                               FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry) const;
 
-  /** Registers a new rigid geometry G for this source. This hangs geometry G on
-   a previously registered geometry P (indicated by `geometry_id`). The pose of
-   the geometry is defined in a fixed pose relative to geometry P (i.e.,
-   `X_PG`). By induction, this geometry is effectively rigidly affixed to the
-   frame that P is affixed to. Returns the corresponding unique geometry id.
-
-   Roles will be assigned to the registered geometry if the corresponding
-   GeometryInstance `geometry` has had properties assigned.
-
-   This method modifies the underlying model and requires a new Context to be
-   allocated. Potentially modifies proximity, perception, and illustration
-   versions based on the roles assigned to the geometry (see @ref
-   scene_graph_versioning).
-
-   @param source_id    The id for the source registering the geometry.
-   @param geometry_id  The id for the parent geometry P.
-   @param geometry     The geometry G to add.
-   @return A unique identifier for the added geometry.
-   @throws std::exception if a) the `source_id` does _not_ map to a registered
-                          source,
-                          b) the `geometry_id` doesn't belong to the source,
-                          c) the `geometry` is equal to `nullptr`, or
-                          d) the geometry's name doesn't satisfy the
-                          requirements outlined in GeometryInstance.  */
-  DRAKE_DEPRECATED("2023-04-01",
-                   "Geometries are no longer posed with respect to other "
-                   "geometries; use RegisterGeometry(frame_id) instead.")
-  GeometryId RegisterGeometry(SourceId source_id, GeometryId geometry_id,
-                              std::unique_ptr<GeometryInstance> geometry);
-
-  /** systems::Context-modifying variant of RegisterGeometry(). Rather than
-   modifying %SceneGraph's model, it modifies the copy of the model stored in
-   the provided context.
-   @pydrake_mkdoc_identifier{4args_context_source_id_geometry_id_geometry}
-     */
-  DRAKE_DEPRECATED("2023-04-01",
-                   "Geometries are no longer posed with respect to other "
-                   "geometries -- only frames.")
-  GeometryId RegisterGeometry(systems::Context<T>* context, SourceId source_id,
-                              GeometryId geometry_id,
-                              std::unique_ptr<GeometryInstance> geometry) const;
-
   /** Registers a new _anchored_ geometry G for this source. This hangs geometry
    G from the world frame (W). Its pose is defined in that frame (i.e., `X_WG`).
    Returns the corresponding unique geometry id.
