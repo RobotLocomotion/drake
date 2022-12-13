@@ -4,12 +4,12 @@
 
      These files are an adaptation of the original Strandbeest example in
      Drake, written by Robin Deits:
-       
+
      https://github.com/RobotLocomotion/drake/blob/last_sha_with_original_matlab/drake/examples/Strandbeest/
 -->
 <robot xmlns:drake="http://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xacro="http://ros.org/wiki/xacro" xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="LegAssembly">
   <xacro:include filename="Macros.xacro"/>
-  <xacro:macro name="strandbeest_leg" params="prefix">
+  <xacro:macro name="strandbeest_leg" params="prefix with_constraints">
     <!-- Links -->
     <link name="${prefix}_bar_j">
       <xacro:strandbeest_cylinder xyz="0 0 0.25" rpy="0 0 0" length="0.50" radius="0.01" material="tri_grey"/>
@@ -114,26 +114,44 @@
       <origin rpy="0 0 0" xyz="0 0 0.558"/>
       <limit lower="-1.7" upper="0.4" effort="0" velocity="1000"/>
     </joint>
-    <!-- Custom Bushing Elements -->
-    <frame name="${prefix}_loop_f_g_bushing_frameA" link="${prefix}_bar_f" rpy="${-pi/2} 0 0" xyz="0 0 0.394"/>
-    <frame name="${prefix}_loop_f_g_bushing_frameC" link="${prefix}_bar_g" rpy="${-pi/2} 0 0" xyz="0.3624 0 -0.0582"/>
-    <drake:linear_bushing_rpy>
-      <drake:bushing_frameA name="${prefix}_loop_f_g_bushing_frameA"/>
-      <drake:bushing_frameC name="${prefix}_loop_f_g_bushing_frameC"/>
-      <drake:bushing_torque_stiffness value="${torque_stiffness} ${torque_stiffness} 0"/>
-      <drake:bushing_torque_damping value="${torque_damping} ${torque_damping} 0"/>
-      <drake:bushing_force_stiffness value="${force_stiffness} ${force_stiffness} ${force_stiffness}"/>
-      <drake:bushing_force_damping value="${force_damping} ${force_damping} ${force_damping}"/>
-    </drake:linear_bushing_rpy>
-    <frame name="${prefix}_loop_b_c_bushing_frameA" link="${prefix}_bar_b" rpy="${-pi/2} 0 0" xyz="-0.2978 0 0.2892"/>
-    <frame name="${prefix}_loop_b_c_bushing_frameC" link="${prefix}_bar_c" rpy="${-pi/2} 0 0" xyz="0 0 0.393"/>
-    <drake:linear_bushing_rpy>
-      <drake:bushing_frameA name="${prefix}_loop_b_c_bushing_frameA"/>
-      <drake:bushing_frameC name="${prefix}_loop_b_c_bushing_frameC"/>
-      <drake:bushing_torque_stiffness value="${torque_stiffness} ${torque_stiffness} 0"/>
-      <drake:bushing_torque_damping value="${torque_damping} ${torque_damping} 0"/>
-      <drake:bushing_force_stiffness value="${force_stiffness} ${force_stiffness} ${force_stiffness}"/>
-      <drake:bushing_force_damping value="${force_damping} ${force_damping} ${force_damping}"/>
-    </drake:linear_bushing_rpy>
+
+    <xacro:if value="${with_constraints}">
+      <!-- Custom Ball Constraint Elements -->
+      <drake:ball_constraint>
+        <drake:ball_constraint_body_A name="${prefix}_bar_f"/>
+        <drake:ball_constraint_p_AP value="0 0 0.394"/>
+        <drake:ball_constraint_body_B name="${prefix}_bar_g"/>
+        <drake:ball_constraint_p_BQ value="0.3624 0 -0.0582"/>
+      </drake:ball_constraint>
+      <drake:ball_constraint>
+        <drake:ball_constraint_body_A name="${prefix}_bar_b"/>
+        <drake:ball_constraint_p_AP value="-0.2978 0 0.2892"/>
+        <drake:ball_constraint_body_B name="${prefix}_bar_c"/>
+        <drake:ball_constraint_p_BQ value="0 0 0.393"/>
+      </drake:ball_constraint>
+    </xacro:if>
+    <xacro:unless value="${with_constraints}">
+      <!-- Custom Bushing Elements -->
+      <frame name="${prefix}_loop_f_g_bushing_frameA" link="${prefix}_bar_f" rpy="${-pi/2} 0 0" xyz="0 0 0.394"/>
+      <frame name="${prefix}_loop_f_g_bushing_frameC" link="${prefix}_bar_g" rpy="${-pi/2} 0 0" xyz="0.3624 0 -0.0582"/>
+      <drake:linear_bushing_rpy>
+        <drake:bushing_frameA name="${prefix}_loop_f_g_bushing_frameA"/>
+        <drake:bushing_frameC name="${prefix}_loop_f_g_bushing_frameC"/>
+        <drake:bushing_torque_stiffness value="${torque_stiffness} ${torque_stiffness} 0"/>
+        <drake:bushing_torque_damping value="${torque_damping} ${torque_damping} 0"/>
+        <drake:bushing_force_stiffness value="${force_stiffness} ${force_stiffness} ${force_stiffness}"/>
+        <drake:bushing_force_damping value="${force_damping} ${force_damping} ${force_damping}"/>
+      </drake:linear_bushing_rpy>
+      <frame name="${prefix}_loop_b_c_bushing_frameA" link="${prefix}_bar_b" rpy="${-pi/2} 0 0" xyz="-0.2978 0 0.2892"/>
+      <frame name="${prefix}_loop_b_c_bushing_frameC" link="${prefix}_bar_c" rpy="${-pi/2} 0 0" xyz="0 0 0.393"/>
+      <drake:linear_bushing_rpy>
+        <drake:bushing_frameA name="${prefix}_loop_b_c_bushing_frameA"/>
+        <drake:bushing_frameC name="${prefix}_loop_b_c_bushing_frameC"/>
+        <drake:bushing_torque_stiffness value="${torque_stiffness} ${torque_stiffness} 0"/>
+        <drake:bushing_torque_damping value="${torque_damping} ${torque_damping} 0"/>
+        <drake:bushing_force_stiffness value="${force_stiffness} ${force_stiffness} ${force_stiffness}"/>
+        <drake:bushing_force_damping value="${force_damping} ${force_damping} ${force_damping}"/>
+      </drake:linear_bushing_rpy>
+    </xacro:unless>
   </xacro:macro>
 </robot>
