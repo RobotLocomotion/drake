@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -43,6 +44,7 @@ using render::RenderLabel;
 using std::make_unique;
 using std::map;
 using std::move;
+using std::optional;
 using std::pair;
 using std::set;
 using std::string;
@@ -634,6 +636,9 @@ class GeometryStateTestBase {
   void AssignProximityToSingleSourceTree() {
     ASSERT_TRUE(source_id_.is_valid());
     ProximityProperties properties;
+    // Add an arbitrary, meaningless property so we can detect if the properties
+    // get thrown out.
+    properties.AddProperty("test", "value", 17);
     AssignRoleToSingleSourceTree(properties);
   }
 
@@ -644,6 +649,9 @@ class GeometryStateTestBase {
     IllustrationProperties properties;
     properties.AddProperty("phong", "diffuse",
                            Vector4<double>{0.8, 0.8, 0.8, 1.0});
+    // Add an arbitrary, meaningless property so we can detect if the properties
+    // get thrown out.
+    properties.AddProperty("test", "value", 17);
     AssignRoleToSingleSourceTree(properties);
   }
 
@@ -659,6 +667,9 @@ class GeometryStateTestBase {
     properties.AddProperty("phong", "diffuse",
                            Vector4<double>{0.8, 0.8, 0.8, 1.0});
     properties.AddProperty("label", "id", RenderLabel::kDontCare);
+    // Add an arbitrary, meaningless property so we can detect if the properties
+    // get thrown out.
+    properties.AddProperty("test", "value", 17);
     AssignRoleToSingleSourceTree(properties);
   }
 
@@ -1743,6 +1754,223 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
       geometry_state_.GetAllDeformableGeometryIds();
   ASSERT_EQ(deformable_ids.size(), 1);
   EXPECT_EQ(deformable_ids[0], g_id);
+}
+
+/* This test covers the data maintenance *within* GeometryState. It confirms
+ that shape and pose change, but all other InternalGeometry fields remain the
+ same.
+
+ There are per-role tests below that provide coverage for the unchanged
+ role properties and confirm that the shape has changed in the various engines.
+
+ This test makes a simplifying assumption: multiple roles don't interfere in
+ the process. So, we can test a single geometry with all three roles and don't
+ have to test geometries with all possible role configurations. */
+TEST_F(GeometryStateTest, ChangeShapeInternals) {
+  const SourceId s_id = SetUpSingleSourceTree(
+      Assign::kProximity | Assign::kPerception | Assign::kIllustration);
+
+  const GeometryId g_id = geometries_[0];
+  const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
+  const InternalGeometry original_geo(*geometry);
+  const RigidTransformd X_GG2(Vector3d(1, 2, 3));
+  const RigidTransformd X_FG2 = X_GG2 * geometry->X_FG();
+
+  // Changing from sphere to box.
+  ASSERT_EQ(ShapeName(geometry->shape()).name(), ShapeName(Sphere(1.0)).name());
+  const Box new_shape(1.0, 2.0, 3.0);
+
+  geometry_state_.ChangeShape(s_id, g_id, new_shape, X_FG2);
+
+  // We've modified it in place; the address hasn't changed.
+  ASSERT_EQ(geometry, gs_tester_.GetGeometry(g_id));
+
+  // Shape and pose have changed.
+  EXPECT_EQ(ShapeName(geometry->shape()).name(),
+            ShapeName(Box(1, 1, 1)).name());
+  EXPECT_TRUE(
+      CompareMatrices(X_FG2.GetAsMatrix34(), geometry->X_FG().GetAsMatrix34()));
+
+  // Nothing else has.
+  EXPECT_EQ(original_geo.id(), geometry->id());
+  EXPECT_EQ(original_geo.name(), geometry->name());
+  EXPECT_EQ(original_geo.source_id(), geometry->source_id());
+  EXPECT_EQ(original_geo.frame_id(), geometry->frame_id());
+  EXPECT_EQ(original_geo.is_deformable(), geometry->is_deformable());
+  EXPECT_EQ(original_geo.is_dynamic(), geometry->is_dynamic());
+}
+
+/* Changes a shape with the illustration role. The only observable indications
+ of a successful change is that the shape and pose have changed *and* that the
+ illustration version has changed. */
+TEST_F(GeometryStateTest, ChangeShapeIllustration) {
+  const SourceId s_id = SetUpSingleSourceTree(Assign::kIllustration);
+
+  const GeometryId g_id = geometries_[0];
+  const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
+  const InternalGeometry original_geo(*geometry);
+
+  // Changing from sphere to box.
+  ASSERT_EQ(ShapeName(geometry->shape()).name(), ShapeName(Sphere(1.0)).name());
+  const Box new_shape(1.0, 2.0, 3.0);
+
+  const GeometryVersion pre_version = geometry_state_.geometry_version();
+  geometry_state_.ChangeShape(s_id, g_id, new_shape, geometry->X_FG());
+  const GeometryVersion post_version = geometry_state_.geometry_version();
+
+  // Only illustration version has changed.
+  EXPECT_FALSE(post_version.IsSameAs(pre_version, Role::kIllustration));
+  EXPECT_TRUE(post_version.IsSameAs(pre_version, Role::kPerception));
+  EXPECT_TRUE(post_version.IsSameAs(pre_version, Role::kProximity));
+
+  // IllustrationProperties haven't changed. In this test, every property gets
+  // this arbitrary (test, value) property; we'll confirm that it's still there
+  // as *evidence* that the properties haven't changed.
+  EXPECT_EQ(
+      original_geo.illustration_properties()->GetProperty<int>("test", "value"),
+      geometry->illustration_properties()->GetProperty<int>("test", "value"));
+}
+
+// Engine to test the ChangeShape() API. Change shape registers a new shape,
+// and passes a new pose. This render engine records the last geometry id
+// registered and removed. We'll confirm that both happen in response to a call
+// to ChangeShape().
+class ChangeShapeRenderEngine : public DummyRenderEngine {
+ public:
+  ChangeShapeRenderEngine() : DummyRenderEngine() {}
+
+  optional<GeometryId> get_and_clear_last_registered_id() {
+    optional<GeometryId> last_value = registered_id_;
+    registered_id_ = std::nullopt;
+    return last_value;
+  }
+
+  optional<GeometryId> get_and_clear_last_removed_id() {
+    optional<GeometryId> last_value = removed_id_;
+    removed_id_ = std::nullopt;
+    return last_value;
+  }
+
+ protected:
+  bool DoRegisterVisual(GeometryId id, const Shape&,
+                        const PerceptionProperties&,
+                        const math::RigidTransformd&) override {
+    registered_id_ = id;
+    return true;
+  }
+
+  bool DoRemoveGeometry(GeometryId id) override {
+    removed_id_ = id;
+    return true;
+  }
+
+ private:
+  optional<GeometryId> registered_id_{};
+  optional<GeometryId> removed_id_{};
+};
+
+ChangeShapeRenderEngine* AddRenderer(const char* name,
+                                     GeometryState<double>* state) {
+  state->AddRenderer(name, make_unique<ChangeShapeRenderEngine>());
+  auto* engine =
+      const_cast<render::RenderEngine*>(state->GetRenderEngineByName(name));
+  auto* test_engine = dynamic_cast<ChangeShapeRenderEngine*>(engine);
+  DRAKE_DEMAND(test_engine != nullptr);
+  return test_engine;
+}
+
+/* Changes a shape with the perception role. In this case, we'll confirm that
+ the shape in the render engine has changed by using a custom render engine
+ implementation that will report that its APIs have been called. */
+TEST_F(GeometryStateTest, ChangeShapePerception) {
+  // We'll add to render engines to make sure that all render engines get
+  // processed.
+  ChangeShapeRenderEngine* renderer1 =
+      AddRenderer("renderer1", &geometry_state_);
+  ChangeShapeRenderEngine* renderer2 =
+      AddRenderer("renderer2", &geometry_state_);
+
+  const SourceId s_id = SetUpSingleSourceTree(Assign::kPerception);
+
+  const GeometryId g_id = geometries_[0];
+  const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
+  const InternalGeometry original_geo(*geometry);
+
+  // Confirm pre-test conditions; neither reports g_id as last registered or
+  // removed.
+  ASSERT_NE(renderer1->get_and_clear_last_registered_id(), g_id);
+  ASSERT_NE(renderer2->get_and_clear_last_registered_id(), g_id);
+  ASSERT_NE(renderer1->get_and_clear_last_removed_id(), g_id);
+  ASSERT_NE(renderer2->get_and_clear_last_removed_id(), g_id);
+
+  ASSERT_EQ(ShapeName(geometry->shape()).name(), ShapeName(Sphere(1.0)).name());
+  const Box new_shape(0.1, 0.2, 0.3);
+
+  const GeometryVersion pre_version = geometry_state_.geometry_version();
+  geometry_state_.ChangeShape(s_id, g_id, new_shape, geometry->X_FG());
+  const GeometryVersion post_version = geometry_state_.geometry_version();
+
+  // Only illustration version has changed.
+  EXPECT_TRUE(post_version.IsSameAs(pre_version, Role::kIllustration));
+  EXPECT_FALSE(post_version.IsSameAs(pre_version, Role::kPerception));
+  EXPECT_TRUE(post_version.IsSameAs(pre_version, Role::kProximity));
+
+  // PerceptionProperties haven't changed. In this test, every property gets
+  // this arbitrary (test, value) property; we'll confirm that it's still
+  // there as *evidence* that the properties haven't changed.
+  EXPECT_EQ(
+      original_geo.perception_properties()->GetProperty<int>("test", "value"),
+      geometry->perception_properties()->GetProperty<int>("test", "value"));
+
+  // Each render engine now reports that the changed geometry id was both
+  // removed and registered (presumably in the correct order).
+  ASSERT_EQ(renderer1->get_and_clear_last_registered_id(), g_id);
+  ASSERT_EQ(renderer2->get_and_clear_last_registered_id(), g_id);
+  ASSERT_EQ(renderer1->get_and_clear_last_removed_id(), g_id);
+  ASSERT_EQ(renderer2->get_and_clear_last_removed_id(), g_id);
+}
+
+/* Changes a shape with the proximity role. In this case, we'll confirm that the
+ shape in the proximity engine has changed by performing a query before and
+ after, showing that the query result changes as expected. */
+TEST_F(GeometryStateTest, ChangeShapeProximity) {
+  const SourceId s_id = SetUpSingleSourceTree(Assign::kProximity);
+
+  const GeometryId g_id = geometries_[0];
+  const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
+  const InternalGeometry original_geo(*geometry);
+
+  // Record the old distance.
+  const SignedDistancePair<double> old_distance =
+      geometry_state_.ComputeSignedDistancePairClosestPoints(g_id,
+                                                             geometries_[2]);
+
+  // Changing from sphere to a *small* box (should be smaller than the sphere).
+  // The distance between the two shapes should get *larger*.
+  ASSERT_EQ(ShapeName(geometry->shape()).name(), ShapeName(Sphere(1.0)).name());
+  const Box new_shape(0.1, 0.2, 0.3);
+
+  const GeometryVersion pre_version = geometry_state_.geometry_version();
+  geometry_state_.ChangeShape(s_id, g_id, new_shape, geometry->X_FG());
+  const GeometryVersion post_version = geometry_state_.geometry_version();
+
+  // Only proximity version has changed.
+  EXPECT_TRUE(post_version.IsSameAs(pre_version, Role::kIllustration));
+  EXPECT_TRUE(post_version.IsSameAs(pre_version, Role::kPerception));
+  EXPECT_FALSE(post_version.IsSameAs(pre_version, Role::kProximity));
+
+  // ProximityProperties haven't changed. In this test, every property gets
+  // this arbitrary (test, value) property; we'll confirm that it's still there
+  // as *evidence* that the properties haven't changed.
+  EXPECT_EQ(
+      original_geo.proximity_properties()->GetProperty<int>("test", "value"),
+      geometry->proximity_properties()->GetProperty<int>("test", "value"));
+
+  // Now confirm an increase in distance.
+  const SignedDistancePair<double> new_distance =
+      geometry_state_.ComputeSignedDistancePairClosestPoints(g_id,
+                                                             geometries_[2]);
+  EXPECT_GT(new_distance.distance, old_distance.distance);
 }
 
 /* This tests for two things:

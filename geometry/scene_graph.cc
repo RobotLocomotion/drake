@@ -244,6 +244,21 @@ GeometryId SceneGraph<T>::RegisterDeformableGeometry(
 }
 
 template <typename T>
+void SceneGraph<T>::ChangeShape(
+    SourceId source_id, GeometryId geometry_id, const Shape& shape,
+    std::optional<math::RigidTransform<double>> X_FG) {
+  return model_.ChangeShape(source_id, geometry_id, shape, X_FG);
+}
+
+template <typename T>
+void SceneGraph<T>::ChangeShape(
+    Context<T>* context, SourceId source_id, GeometryId geometry_id,
+    const Shape& shape, std::optional<math::RigidTransform<double>> X_FG) {
+  auto& g_state = mutable_geometry_state(context);
+  return g_state.ChangeShape(source_id, geometry_id, shape, X_FG);
+}
+
+template <typename T>
 void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
   model_.RemoveGeometry(source_id, geometry_id);
 }

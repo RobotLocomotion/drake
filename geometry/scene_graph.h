@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -596,6 +597,44 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterDeformableGeometry(
       systems::Context<T>* context, SourceId source_id, FrameId frame_id,
       std::unique_ptr<GeometryInstance> geometry, double resolution_hint) const;
+
+  /** Changes the `shape` of the geometry indicated by the given `geometry_id`.
+
+   The geometry is otherwise unchanged -- same geometry_id, same assigned roles,
+   same pose with respect to the parent (unless a new value for `X_FG` is
+   given).
+
+   This method modifies the underlying model and requires a new Context to be
+   allocated. Potentially modifies proximity, perception, and illustration
+   versions based on the roles assigned to the geometry (see @ref
+   scene_graph_versioning).
+
+   @param source_id    The id for the source modifying the geometry.
+   @param geometry_id  The id for the geometry whose shape is being modified.
+   @param shape        The new shape to use.
+   @param X_FG         The (optional) new pose of the geometry in its frame. If
+                       omitted, the old pose is used.
+
+   @throws std::exception if a) the `source_id` does _not_ map to a
+                           registered source,
+                           b) the `geometry_id` does not map to a valid
+                           geometry,
+                           c) the `geometry_id` maps to a geometry that does
+                           not belong to the indicated source, or
+                           d) the geometry is deformable.
+   @pydrake_mkdoc_identifier{model} */
+  void ChangeShape(
+      SourceId source_id, GeometryId geometry_id, const Shape& shape,
+      std::optional<math::RigidTransform<double>> X_FG = std::nullopt);
+
+  /** systems::Context-modifying variant of ChangeShape(). Rather than modifying
+   %SceneGraph's model, it modifies the copy of the model stored in the provided
+   context.
+   @pydrake_mkdoc_identifier{context} */
+  void ChangeShape(
+      systems::Context<T>* context, SourceId source_id, GeometryId geometry_id,
+      const Shape& shape,
+      std::optional<math::RigidTransform<double>> X_FG = std::nullopt);
 
   /** Removes the given geometry G (indicated by `geometry_id`) from the given
    source's registered geometries. All registered geometries hanging from
