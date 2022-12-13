@@ -38,6 +38,9 @@ drake_cc_library(
     deps = [
         ":collision_geometry",
         ":separating_plane",
+        "//common/symbolic:monomial_util",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
     ],
 )
 
@@ -74,6 +77,8 @@ drake_cc_googletest(
     deps = [
         ":c_iris_test_utilities",
         ":cspace_free_polytope",
+        "//common/test_utilities:symbolic_test_util",
+        "//solvers:mosek_solver",
     ],
 )
 
