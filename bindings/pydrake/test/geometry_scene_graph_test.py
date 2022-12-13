@@ -43,11 +43,15 @@ class TestGeometrySceneGraph(unittest.TestCase):
                                           shape=mut.Sphere(1.),
                                           name="sphere1"))
         # We'll explicitly give sphere_2 a rigid hydroelastic representation.
-        sphere_2 = scene_graph.RegisterGeometry(
-            source_id=global_source, geometry_id=global_geometry,
-            geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
-                                          shape=mut.Sphere(1.),
-                                          name="sphere2"))
+        with catch_drake_warnings(expected_count=1):
+            # 2023-04-01 Deprecation removal. Upon removal, register sphere_2
+            # against global_frame and keep it around for the hydroelastic
+            # tests.
+            sphere_2 = scene_graph.RegisterGeometry(
+                source_id=global_source, geometry_id=global_geometry,
+                geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                              shape=mut.Sphere(1.),
+                                              name="sphere2"))
         props = mut.ProximityProperties()
         mut.AddRigidHydroelasticProperties(resolution_hint=1, properties=props)
         scene_graph.AssignRole(source_id=global_source, geometry_id=sphere_2,
@@ -227,9 +231,11 @@ class TestGeometrySceneGraph(unittest.TestCase):
             inspector.GetName(geometry_id=global_geometry), "sphere1")
         self.assertIsInstance(inspector.GetShape(geometry_id=global_geometry),
                               mut.Sphere)
-        self.assertIsInstance(
-            inspector.GetPoseInParent(geometry_id=global_geometry),
-            RigidTransform_[float])
+        with catch_drake_warnings(expected_count=1):
+            # 2023-04-01 Deprecation removal.
+            self.assertIsInstance(
+                inspector.GetPoseInParent(geometry_id=global_geometry),
+                RigidTransform_[float])
         self.assertIsInstance(
             inspector.GetPoseInFrame(geometry_id=global_geometry),
             RigidTransform_[float])
