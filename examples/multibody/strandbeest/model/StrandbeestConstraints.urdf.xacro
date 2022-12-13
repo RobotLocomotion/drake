@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- @author: Joseph Masterjohn (github: @joemasterjohn)
+     @author: Robin Deits (github: @rdeits)
+
+     These files are an adaptation of the original Strandbeest example in
+     Drake, written by Robin Deits:
+
+     https://github.com/RobotLocomotion/drake/blob/last_sha_with_original_matlab/drake/examples/Strandbeest/
+-->
+<robot xmlns:drake="http://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xacro="http://ros.org/wiki/xacro" xsi:schemaLocation="../../doc/drakeURDF.xsd" name="Strandbeest">
+  <xacro:include filename="Strandbeest.xacro"/>
+  <xacro:strandbeest with_constraints="true" />
+</robot>

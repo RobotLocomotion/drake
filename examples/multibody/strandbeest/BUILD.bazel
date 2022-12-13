@@ -1,22 +1,26 @@
 load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
-load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
+load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_filegroup")
 load("@drake//tools/lint:lint.bzl", "add_lint_tests")
 
-xacro_file(
-    name = "Strandbeest.urdf",
-    src = "model/Strandbeest.xacro",
+xacro_filegroup(
+    name = "StrandbeestModels",
+    srcs = [
+        "model/StrandbeestBushings.urdf.xacro",
+        "model/StrandbeestConstraints.urdf.xacro",
+    ],
     data = [
         "model/LegAssembly.xacro",
         "model/LegPair.xacro",
         "model/Macros.xacro",
+        "model/Strandbeest.xacro",
     ],
 )
 
 drake_cc_binary(
     name = "run_with_motor",
     srcs = ["run_with_motor.cc"],
-    data = [":Strandbeest.urdf"],
+    data = [":StrandbeestModels"],
     deps = [
         "//common:add_text_logging_gflags",
         "//multibody/inverse_kinematics",
