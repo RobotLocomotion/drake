@@ -128,11 +128,7 @@ class SpatialInertia {
   /// (Internal use only)
   /// Creates a spatial inertia for a solid box B of uniform density about its
   /// geometric center Bo (which is coincident with B's center of mass Bcm).
-  /// If one length is zero, the spatial inertia corresponds to a thin
-  /// rectangular plate.  If two lengths are zero, the spatial inertia
-  /// corresponds to a thin rod in the remaining non-zero length direction.
-  /// @param[in] density mass per volume (kg/m³). If one length is zero, density
-  /// is mass per area. If two lengths are zero, density is mass per length.
+  /// @param[in] density mass per volume (kg/m³).
   /// @param[in] lx The length of the box edge in the Bx direction.
   /// @param[in] ly The length of the box edge in the By direction.
   /// @param[in] lz The length of the box edge in the Bz direction.
