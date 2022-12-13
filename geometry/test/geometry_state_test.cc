@@ -1109,15 +1109,21 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
       EXPECT_EQ(geometry.name(), geometry_names_[i]);
       EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
 
+      // 2023-04-01 Also modify this documentation with the removal of
+      // GetPoseInParent().
       // Note: There are no geometries parented to other geometries. The results
       // of GetPoseInFrame() and GetPoseInParent() must be the identical (as
       // the documentation for GeometryState::GetPoseInParent() indicates).
       EXPECT_TRUE(CompareMatrices(
           geometry_state_.GetPoseInFrame(geometry.id()).GetAsMatrix34(),
           X_FGs_[i].GetAsMatrix34()));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      // 2023-04-01 Deprecation removal.
       EXPECT_TRUE(CompareMatrices(
           geometry_state_.GetPoseInParent(geometry.id()).GetAsMatrix34(),
           X_FGs_[i].GetAsMatrix34()));
+#pragma GCC diagnostic pop
     }
   }
   EXPECT_EQ(static_cast<int>(gs_tester_.get_geometry_world_poses().size()),
@@ -1507,6 +1513,9 @@ TEST_F(GeometryStateTest, RegisterNullGeometry) {
       "Registering null geometry to frame \\d+, on source \\d+.");
 }
 
+// 2023-04-01 Simply remove all of the RegisterGeometryOn*Geometry tests.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests the logic for hanging a geometry on another geometry. This confirms
 // topology and pose values.
 TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
@@ -1577,6 +1586,7 @@ TEST_F(GeometryStateTest, RegisterNullGeometryonGeometry) {
                                                  move(instance)),
       "Registering null geometry to geometry \\d+, on source \\d+.");
 }
+#pragma GCC diagnostic pop
 
 // Tests the registration of anchored geometry.
 TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
@@ -1598,6 +1608,9 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
       CompareMatrices(g->X_FG().GetAsMatrix34(), g->X_PG().GetAsMatrix34()));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// 2023-04-01 Deprecation removal.
 // Tests the registration of a new geometry on another geometry.
 TEST_F(GeometryStateTest, RegisterAnchoredOnAnchoredGeometry) {
   // Add an anchored geometry.
@@ -1625,6 +1638,7 @@ TEST_F(GeometryStateTest, RegisterAnchoredOnAnchoredGeometry) {
                               child->X_FG().GetAsMatrix34()));
   EXPECT_EQ(InternalFrame::world_frame_id(), parent->frame_id());
 }
+#pragma GCC diagnostic pop
 
 // Confirms that registering two geometries with the same id causes failure.
 TEST_F(GeometryStateTest, RegisterDuplicateAnchoredGeometry) {
@@ -1702,7 +1716,11 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
 
   // Querying the _reference_ pose is fine.
   EXPECT_TRUE(geometry_state_.GetPoseInFrame(g_id).IsExactlyEqualTo(X_WG));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // 2023-04-01 Deprecation removal.
   EXPECT_TRUE(geometry_state_.GetPoseInParent(g_id).IsExactlyEqualTo(X_WG));
+#pragma GCC diagnostic pop
   // Querying _current_ pose on deformable geometry throws. (Deformable
   // geometries are characterized by vertex positions via
   // get_configurations_in_world.)
@@ -1853,6 +1871,9 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   DRAKE_EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // 2023-04-01 Deprecation removal.
 // Tests the RemoveGeometry functionality in which the geometry removed has
 // geometry children.
 TEST_F(GeometryStateTest, RemoveGeometryTree) {
@@ -1928,6 +1949,7 @@ TEST_F(GeometryStateTest, RemoveChildLeaf) {
   EXPECT_TRUE(gs_tester_.get_frames().at(frame_id).has_child(parent_id));
   EXPECT_FALSE(gs_tester_.get_geometries().at(parent_id).has_child(g_id));
 }
+#pragma GCC diagnostic pop
 
 // Tests the response to invalid use of RemoveGeometry.
 TEST_F(GeometryStateTest, RemoveGeometryInvalid) {
@@ -2036,9 +2058,13 @@ TEST_F(GeometryStateTest, GetPoseForBadGeometryId) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.GetPoseInFrame(GeometryId::get_new_id()),
       "Referenced geometry \\d+ has not been registered.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // 2023-04-01 Deprecation removal.
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.GetPoseInParent(GeometryId::get_new_id()),
       "Referenced geometry \\d+ has not been registered.");
+#pragma GCC diagnostic pop
 }
 
 // This tests the source ownership functionality - a function which reports if
@@ -3752,11 +3778,15 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
       &GeometryState<double>::RegisterGeometry, new_source, new_frame_0,
       std::make_unique<GeometryInstance>(
           RigidTransformd(), make_unique<Sphere>(1), "new_geometry_0"));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // 2023-04-01 Deprecation removal.
   VerifyVersionUnchanged(
       &GeometryState<double>::RegisterGeometryWithParent, new_source,
       new_geometry_0,
       std::make_unique<GeometryInstance>(
           RigidTransformd(), make_unique<Sphere>(1), "new_geometry_1"));
+#pragma GCC diagnostic pop
   VerifyVersionUnchanged(
       &GeometryState<double>::RegisterAnchoredGeometry, new_source,
       std::make_unique<GeometryInstance>(

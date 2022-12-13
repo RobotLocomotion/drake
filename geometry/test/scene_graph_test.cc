@@ -236,8 +236,12 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
       scene_graph_.RegisterFrame(id, parent_frame_id, GeometryFrame("child"));
   GeometryId parent_geometry_id = scene_graph_.RegisterGeometry(
       id, parent_frame_id, make_sphere_instance());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // 2023-04-01 Deprecation removal; delete all references to child_geometry_id.
   GeometryId child_geometry_id = scene_graph_.RegisterGeometry(
       id, parent_geometry_id, make_sphere_instance());
+#pragma GCC diagnostic pop
   GeometryId anchored_id =
       scene_graph_.RegisterAnchoredGeometry(id, make_sphere_instance());
   scene_graph_.RemoveGeometry(id, old_geometry_id);
@@ -754,12 +758,17 @@ GTEST_TEST(SceneGraphContextModifier, RegisterGeometry) {
   EXPECT_EQ(1, inspector.NumGeometriesForFrame(frame_id));
   EXPECT_EQ(frame_id, inspector.GetFrameId(sphere_id_1));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // 2023-04-01 Deprecation removal.
   // Test registration of geometry onto _geometry_.
   GeometryId sphere_id_2 = scene_graph.RegisterGeometry(
       context.get(), source_id, sphere_id_1, make_sphere_instance());
   EXPECT_EQ(2, inspector.NumGeometriesForFrame(frame_id));
   EXPECT_EQ(frame_id, inspector.GetFrameId(sphere_id_2));
+#pragma GCC diagnostic pop
 
+  // 2023-04-01 Change from sphere_id_2 to sphere_id_1.
   // Remove the geometry.
   DRAKE_EXPECT_NO_THROW(
       scene_graph.RemoveGeometry(context.get(), source_id, sphere_id_2));

@@ -273,7 +273,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   const double kMarsSize = 0.24;
   RigidTransformd X_OmM{
       Translation3d{kMarsOrbitRadius, 0, -orrery_bottom}};
-  GeometryId mars_geometry_id = scene_graph->RegisterGeometry(
+  scene_graph->RegisterGeometry(
       source_id_, planet_id,
       MakeShape<Sphere>(X_OmM, "Mars", Vector4d(0.9, 0.1, 0, 1), kMarsSize));
 
@@ -282,8 +282,8 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   Vector3d axis = Vector3d(1, 1, 1).normalized();
   RigidTransformd X_MR(AngleAxisd(M_PI / 3, axis), Vector3d{0, 0, 0});
   scene_graph->RegisterGeometry(
-      source_id_, mars_geometry_id,
-      MakeShape<Mesh>(X_MR, "MarsRings", Vector4d(0.45, 0.9, 0, 1),
+      source_id_, planet_id,
+      MakeShape<Mesh>(X_OmM * X_MR, "MarsRings", Vector4d(0.45, 0.9, 0, 1),
                       rings_absolute_path, kMarsSize));
 
   // Mars's orrery arm.

@@ -512,6 +512,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
                           c) the `geometry` is equal to `nullptr`, or
                           d) the geometry's name doesn't satisfy the
                           requirements outlined in GeometryInstance.  */
+  DRAKE_DEPRECATED("2023-04-01",
+                   "Geometries are no longer posed with respect to other "
+                   "geometries; use RegisterGeometry(frame_id) instead.")
   GeometryId RegisterGeometry(SourceId source_id, GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
@@ -520,6 +523,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
    the provided context.
    @pydrake_mkdoc_identifier{4args_context_source_id_geometry_id_geometry}
      */
+  DRAKE_DEPRECATED("2023-04-01",
+                   "Geometries are no longer posed with respect to other "
+                   "geometries -- only frames.")
   GeometryId RegisterGeometry(systems::Context<T>* context, SourceId source_id,
                               GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry) const;
