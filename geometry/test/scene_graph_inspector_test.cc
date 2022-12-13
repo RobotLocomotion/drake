@@ -89,11 +89,6 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.GetFrameId(geometry_id);
   inspector.GetName(geometry_id);
   inspector.GetShape(geometry_id);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // 2023-04-01 Deprecation removal.
-  inspector.GetPoseInParent(geometry_id);
-#pragma GCC diagnostic pop
   inspector.GetPoseInFrame(geometry_id);
   inspector.maybe_get_hydroelastic_mesh(geometry_id);
   inspector.GetProximityProperties(geometry_id);

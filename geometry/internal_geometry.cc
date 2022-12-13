@@ -20,9 +20,7 @@ InternalGeometry::InternalGeometry(
       name_(std::move(name)),
       source_id_(source_id),
       frame_id_(frame_id),
-      X_PG_(move(X_FG)),
-      X_FG_(X_PG_),
-      parent_geometry_id_(std::nullopt) {}
+      X_FG_(move(X_FG)) {}
 
 InternalGeometry::InternalGeometry(SourceId source_id,
                                    std::unique_ptr<Shape> shape,
@@ -35,9 +33,7 @@ InternalGeometry::InternalGeometry(SourceId source_id,
       name_(std::move(name)),
       source_id_(source_id),
       frame_id_(frame_id),
-      X_PG_(move(X_FG)),
-      X_FG_(X_PG_),
-      parent_geometry_id_(std::nullopt) {
+      X_FG_(move(X_FG)) {
   MeshBuilderForDeformable mesh_builder;
   // The mesh_builder builds the mesh in frame G.
   reference_mesh_ = mesh_builder.Build(*shape_spec_, resolution_hint);
