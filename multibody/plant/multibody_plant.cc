@@ -392,6 +392,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 
     coupler_constraints_specs_ = other.coupler_constraints_specs_;
     distance_constraints_specs_ = other.distance_constraints_specs_;
+    ball_constraints_specs_ = other.ball_constraints_specs_;
 
     // cache_indexes_ is set in DeclareCacheEntries() in
     // DeclareStateCacheAndPorts() in FinalizePlantOnly().
@@ -500,6 +501,50 @@ ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
   const ConstraintIndex constraint_index(num_constraints());
 
   distance_constraints_specs_.push_back(spec);
+
+  return constraint_index;
+}
+
+template <typename T>
+ConstraintIndex MultibodyPlant<T>::AddBallConstraint(
+    const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
+    const Vector3<double>& p_BQ) {
+  // N.B. The manager is setup at Finalize() and therefore we must require
+  // constraints to be added pre-finalize.
+  DRAKE_MBP_THROW_IF_FINALIZED();
+
+  if (!is_discrete()) {
+    throw std::runtime_error(
+        "Currently distance constraints are only supported for discrete "
+        "MultibodyPlant models.");
+  }
+
+  // TAMSI does not support distance constraints. For all other solvers, we let
+  // the discrete update manger throw an exception at finalize time.
+  if (contact_solver_enum_ == DiscreteContactSolver::kTamsi) {
+    throw std::runtime_error(
+        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
+        "does not support ball constraints. Use "
+        "set_discrete_contact_solver(DiscreteContactSolver::kSap) to use the "
+        "SAP solver instead. For other solvers, refer to "
+        "DiscreteContactSolver.");
+  }
+
+  DRAKE_THROW_UNLESS(body_A.index() != body_B.index());
+
+  internal::BallConstraintSpecs spec{body_A.index(), p_AP, body_B.index(),
+                                     p_BQ};
+  if (!spec.IsValid()) {
+    const std::string msg = fmt::format(
+        "Invalid set of parameters for constraint between bodies '{}' and "
+        "'{}'.",
+        body_A.name(), body_B.name());
+    throw std::runtime_error(msg);
+  }
+
+  const ConstraintIndex constraint_index(num_constraints());
+
+  ball_constraints_specs_.push_back(spec);
 
   return constraint_index;
 }
