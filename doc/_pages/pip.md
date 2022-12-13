@@ -70,32 +70,6 @@ env/bin/pip install drake
 (2) Drake requires certain basic runtime libraries
 from the host Linux distribution.
 
-<!-- TODO(mwoehlke-kitware)
-On or after 2022-12-01 (once Drake 1.10.0 is released),
-remove these instructions and point to INSTALLATION instead.
--->
-
-For Ubuntu 20.04, install these additional libraries:
-
-```bash
-sudo apt-get install --no-install-recommends \
-  libpython3.8 libx11-6 libsm6 libxt6 libglib2.0-0
-```
-
-For Ubuntu 22.04, install these additional libraries:
-```bash
-sudo apt-get install --no-install-recommends \
-  libx11-6 libsm6 libglib2.0-0
-```
-
-For macOS, ensure that you're using Homebrew Python (not Apple's system Python).
-
-(3) Activate the virtual environment:
-
-```bash
-source env/bin/activate
-````
-
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
