@@ -197,7 +197,10 @@ template <typename T>
 const math::RigidTransform<double>& SceneGraphInspector<T>::GetPoseInParent(
     GeometryId geometry_id) const {
   DRAKE_DEMAND(state_ != nullptr);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return state_->GetPoseInParent(geometry_id);
+#pragma GCC diagnostic pop
 }
 
 template <typename T>

@@ -285,6 +285,9 @@ class GeometryState {
       GeometryId geometry_id) const;
 
   /** Implementation of SceneGraphInspector::X_PG().  */
+  DRAKE_DEPRECATED("2023-04-01",
+                   "Geometries are no longer posed with respect to other "
+                   "geometries -- only frames; use GetPoseInFrame().")
   const math::RigidTransform<double>& GetPoseInParent(
       GeometryId geometry_id) const;
 
@@ -369,6 +372,9 @@ class GeometryState {
    @ref SceneGraph::RegisterGeometry(SourceId,GeometryId,
    std::unique_ptr<GeometryInstance>) "SceneGraph::RegisterGeometry()" with
    parent GeometryId.  */
+  DRAKE_DEPRECATED("2023-04-01",
+                   "Geometries are no longer posed with respect to other "
+                   "geometries -- only frames.")
   GeometryId RegisterGeometryWithParent(
       SourceId source_id, GeometryId parent_id,
       std::unique_ptr<GeometryInstance> geometry);
