@@ -17,8 +17,7 @@ using geometry::Shape;
 using geometry::ShapeReifier;
 using std::pow;
 
-/* The spatial inertia documented in the header file. See documentation there
- for semantics and notation. */
+// SpatialInertia semantics and notation are documented in spatial_inertia.h.
 class SpatialInertiaCalculator final : public ShapeReifier {
  public:
   SpatialInertia<double> Calculate(const Shape& shape, double density) {
@@ -31,12 +30,8 @@ class SpatialInertiaCalculator final : public ShapeReifier {
 
  private:
   void ImplementGeometry(const geometry::Box& box, void*) final {
-    const double volume = box.width() * box.depth() * box.height();
-    const double mass = volume * density_;
-    const Vector3d p_SoScm_S = Vector3d::Zero();
-    const UnitInertia<double> G_SSo_S =
-        UnitInertia<double>::SolidBox(box.width(), box.depth(), box.height());
-    spatial_inertia_ = SpatialInertia<double>{mass, p_SoScm_S, G_SSo_S};
+    spatial_inertia_ = SpatialInertia<double>::SolidBoxWithDensity(density_,
+        box.width(), box.depth(), box.height());
   }
 
   void ImplementGeometry(const geometry::Capsule& capsule, void*) final {

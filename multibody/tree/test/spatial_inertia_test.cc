@@ -66,6 +66,23 @@ GTEST_TEST(SpatialInertia, MakeUnitary) {
   EXPECT_EQ(M_unit_products, Vector3<double>::Zero());
 }
 
+// Tests the static method for the spatial inertia of a solid box.
+GTEST_TEST(SpatialInertia, SolidBoxWithDensity) {
+  const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
+  const double lx = 1.0;
+  const double ly = 2.0;
+  const double lz = 3.0;
+  const double volume = lx * ly * lz;
+  const double mass = density * volume;
+  const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
+  const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidBox(lx, ly, lz);
+  const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
+  const SpatialInertia<double> M =
+      SpatialInertia<double>::SolidBoxWithDensity(density, lx, ly, lz);
+  EXPECT_TRUE(
+      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+}
+
 // Test the construction from the mass, center of mass, and unit inertia of a
 // body. Also tests:
 //   - Getters.
