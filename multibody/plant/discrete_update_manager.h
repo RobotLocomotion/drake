@@ -238,6 +238,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   const std::vector<internal::DistanceConstraintSpecs>&
   distance_constraints_specs() const;
+
+  const std::vector<internal::BallConstraintSpecs>&
+  ball_constraints_specs() const;
   /* @} */
 
   /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to

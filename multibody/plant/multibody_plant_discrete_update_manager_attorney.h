@@ -118,6 +118,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
   distance_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.distance_constraints_specs_;
   }
+
+  static const std::vector<internal::BallConstraintSpecs>&
+  ball_constraints_specs(const MultibodyPlant<T>& plant) {
+    return plant.ball_constraints_specs_;
+  }
 };
 }  // namespace internal
 }  // namespace multibody
