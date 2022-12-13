@@ -715,8 +715,6 @@ class TestPlant(unittest.TestCase):
         i = ModelInstanceIndex(0)
         RigidBody(body_name="body_name", M_BBo_B=M)
         RigidBody(body_name="body_name", model_instance=i, M_BBo_B=M)
-        with catch_drake_warnings(expected_count=1):
-            RigidBody(M_BBo_B=M)
 
     @numpy_compare.check_all_types
     def test_multibody_force_element(self, T):
@@ -1954,15 +1952,6 @@ class TestPlant(unittest.TestCase):
             name="body2",
             M_BBo_B=SpatialInertia_[float]())
 
-        # Old keyword arguments raise a warning.
-        with catch_drake_warnings(expected_count=1) as w:
-            world_body1 = WeldJoint_[float](
-                name="world_body1",
-                frame_on_parent_P=plant.world_frame(),
-                frame_on_child_C=body1.body_frame(),
-                X_PC=RigidTransform_[float].Identity())
-            self.assertIn("2022-12-01", str(w[0].message))
-
         # No keywords defaults to the first constructor defined in the binding.
         # No warning.
         world_body2 = WeldJoint_[float](
@@ -1979,14 +1968,6 @@ class TestPlant(unittest.TestCase):
         body2 = plant.AddRigidBody(
             name="body2",
             M_BBo_B=SpatialInertia_[float]())
-
-        # Old keyword arguments raise a warning.
-        with catch_drake_warnings(expected_count=1) as w:
-            plant.WeldFrames(
-                frame_on_parent_P=plant.world_frame(),
-                frame_on_child_C=body1.body_frame(),
-                X_PC=RigidTransform_[float].Identity())
-            self.assertIn("2022-12-01", str(w[0].message))
 
         # No keywords defaults to the first function named `WeldFrames` defined
         # in the binding. No warning.
@@ -2110,10 +2091,6 @@ class TestPlant(unittest.TestCase):
         X = RigidTransform_[float].Identity()
         FixedOffsetFrame(name="name", P=P, X_PF=X, model_instance=None)
         FixedOffsetFrame(name="name", bodyB=B, X_BF=X)
-        with catch_drake_warnings(expected_count=1):
-            FixedOffsetFrame(P=P, X_PF=X)
-        with catch_drake_warnings(expected_count=1):
-            FixedOffsetFrame(bodyB=B, X_BF=X)
 
     @numpy_compare.check_all_types
     def test_coupler_constraint_api(self, T):

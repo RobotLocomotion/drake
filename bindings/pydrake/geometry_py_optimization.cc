@@ -496,34 +496,6 @@ void DefineGeometryOptimization(py::module m) {
                 py::arg("source"), py::arg("target"),
                 py::arg("options") = GraphOfConvexSetsOptions(),
                 cls_doc.SolveShortestPath.doc_by_reference);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    graph_of_convex_sets
-        .def("SolveShortestPath",
-            WrapDeprecated(cls_doc.SolveShortestPath.doc_deprecated_by_id,
-                overload_cast_explicit<solvers::MathematicalProgramResult,
-                    GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
-                    bool, const solvers::SolverInterface*,
-                    const std::optional<solvers::SolverOptions>&>(
-                    &GraphOfConvexSets::SolveShortestPath)),
-            py::arg("source_id"), py::arg("target_id"),
-            py::arg("convex_relaxation"), py::arg("solver") = nullptr,
-            py::arg("solver_options") = std::nullopt,
-            cls_doc.SolveShortestPath.doc_deprecated_by_id)
-        .def("SolveShortestPath",
-            WrapDeprecated(
-                cls_doc.SolveShortestPath.doc_deprecated_by_reference,
-                overload_cast_explicit<solvers::MathematicalProgramResult,
-                    const GraphOfConvexSets::Vertex&,
-                    const GraphOfConvexSets::Vertex&, bool,
-                    const solvers::SolverInterface*,
-                    const std::optional<solvers::SolverOptions>&>(
-                    &GraphOfConvexSets::SolveShortestPath)),
-            py::arg("source"), py::arg("target"), py::arg("convex_relaxation"),
-            py::arg("solver") = nullptr,
-            py::arg("solver_options") = std::nullopt,
-            cls_doc.SolveShortestPath.doc_deprecated_by_reference);
-#pragma GCC diagnostic pop
 
     BindIdentifier<GraphOfConvexSets::VertexId>(
         graph_of_convex_sets, "VertexId", doc.GraphOfConvexSets.VertexId.doc);

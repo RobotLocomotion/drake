@@ -51,20 +51,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_elements", &Class::num_elements, cls_doc.num_elements.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<std::vector<int>, std::vector<Vector3<T>>>(),
-            py::arg("face_data"), py::arg("vertices"), cls_doc.ctor.doc_2args);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    constexpr char kRemoved[] =
-        "Deprecated:\n    This function is strictly for internal use and will "
-        "be removed from Drake on or after 2022-12-01.";
-    cls  // BR
-        .def("TransformVertices",
-            WrapDeprecated(kRemoved, &Class::TransformVertices),
-            py::arg("X_NM"), kRemoved)
-        .def("ReverseFaceWinding",
-            WrapDeprecated(kRemoved, &Class::ReverseFaceWinding), kRemoved);
-#pragma GCC diagnostic pop
-    cls  // BR
+            py::arg("face_data"), py::arg("vertices"), cls_doc.ctor.doc_2args)
         .def("num_faces", &Class::num_faces, cls_doc.num_faces.doc)
         .def("area", &Class::area, py::arg("f"), cls_doc.area.doc)
         .def("total_area", &Class::total_area, cls_doc.total_area.doc)

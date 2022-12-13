@@ -55,12 +55,6 @@ class FixedOffsetFrame final : public Frame<T> {
       const math::RigidTransform<double>& X_PF,
       std::optional<ModelInstanceIndex> model_instance = {});
 
-  DRAKE_DEPRECATED("2022-12-01",
-      "The name parameter to the FixedOffsetFrame constructor is now required.")
-  FixedOffsetFrame(
-      const Frame<T>& P, const math::RigidTransform<double>& X_PF)
-      : FixedOffsetFrame("", P, X_PF) {}
-
   /// Creates a material Frame F whose pose is fixed with respect to the
   /// BodyFrame B of the given Body, which serves as F's parent frame.
   /// The pose is given by a spatial transform `X_BF`; see class documentation
@@ -72,11 +66,6 @@ class FixedOffsetFrame final : public Frame<T> {
   FixedOffsetFrame(
       const std::string& name, const Body<T>& bodyB,
       const math::RigidTransform<double>& X_BF);
-
-  DRAKE_DEPRECATED("2022-12-01", "FixedOffsetFrame must always have name")
-  FixedOffsetFrame(
-      const Body<T>& bodyB, const math::RigidTransform<double>& X_BF)
-      : FixedOffsetFrame("", bodyB, X_BF) {}
 
   math::RigidTransform<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const override {

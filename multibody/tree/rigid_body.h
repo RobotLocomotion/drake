@@ -60,10 +60,6 @@ class RigidBody : public Body<T> {
   RigidBody(const std::string& body_name,
             const SpatialInertia<double>& M_BBo_B);
 
-  DRAKE_DEPRECATED("2022-12-01",
-      "The body_name parameter to the RigidBody constructor is now required.")
-  explicit RigidBody(const SpatialInertia<double>& M_BBo_B);
-
   /// Constructs a %RigidBody named `body_name` with the given default
   /// SpatialInertia.
   ///
