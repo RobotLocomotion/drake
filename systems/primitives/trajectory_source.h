@@ -12,9 +12,13 @@
 namespace drake {
 namespace systems {
 
-/// A source block that generates the value of a Trajectory for a given time.
-/// The output is vector values, and may vary with the time (as reflected in
-/// the context) at which the output is evaluated.
+/// Given a Trajectory, this System provides an output port with the value of
+/// the trajectory evaluated at the current time.
+///
+/// If the particular Trajectory is not available at the time the System /
+/// Diagram is being constructed, one can create a TrajectorySource with a
+/// placeholder trajectory (e.g. PiecewisePolynomimal(Eigen::VectorXd)) with the
+/// correct number of rows, and then use UpdateTrajectory().
 ///
 /// @system
 /// name: TrajectorySource
@@ -42,17 +46,21 @@ class TrajectorySource final : public SingleOutputVectorSource<T> {
 
   ~TrajectorySource() final = default;
 
+  /// Updates the stored trajectory. @p trajectory must have the same number of
+  /// rows as the trajectory passed to the constructor.
+  void UpdateTrajectory(const trajectories::Trajectory<T>& trajectory);
+
  private:
-  /// Outputs a vector of values evaluated at the context time of the trajectory
-  /// and up to its Nth derivatives, where the trajectory and N are passed to
-  /// the constructor. The size of the vector is:
-  /// (1 + output_derivative_order) * rows of the trajectory passed to the
-  /// constructor.
+  // Outputs a vector of values evaluated at the context time of the trajectory
+  // and up to its Nth derivatives, where the trajectory and N are passed to
+  // the constructor. The size of the vector is:
+  // (1 + output_derivative_order) * rows of the trajectory passed to the
+  // constructor.
   void DoCalcVectorOutput(
       const Context<T>& context,
       Eigen::VectorBlock<VectorX<T>>* output) const final;
 
-  const std::unique_ptr<trajectories::Trajectory<T>> trajectory_;
+  std::unique_ptr<trajectories::Trajectory<T>> trajectory_;
   const bool clamp_derivatives_;
   std::vector<std::unique_ptr<trajectories::Trajectory<T>>> derivatives_;
 };
