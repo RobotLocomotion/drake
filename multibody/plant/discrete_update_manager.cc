@@ -166,6 +166,13 @@ DiscreteUpdateManager<T>::distance_constraints_specs() const {
 }
 
 template <typename T>
+const std::vector<internal::BallConstraintSpecs>&
+DiscreteUpdateManager<T>::ball_constraints_specs() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::ball_constraints_specs(
+      *plant_);
+}
+
+template <typename T>
 BodyIndex DiscreteUpdateManager<T>::FindBodyByGeometryId(
     geometry::GeometryId geometry_id) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::FindBodyByGeometryId(
