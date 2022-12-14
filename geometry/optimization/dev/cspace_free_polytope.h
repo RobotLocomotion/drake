@@ -92,6 +92,10 @@ class CspaceFreePolytope {
     return separating_planes_;
   }
 
+  [[nodiscard]] const VectorX<symbolic::Variable>& y_slack() const {
+    return y_slack_;
+  }
+
   /**
    Generate all the conditions (certain rationals being non-negative, and
    certain vectors with length <= 1) such that the robot configuration is
@@ -129,6 +133,37 @@ class CspaceFreePolytope {
   };
 
   /**
+   When searching for the separating plane, sometimes we want to certify that a
+   vector of polynomials has length <= 1 in the C-space region {s | C*s<=d,
+   s_lower<=s<=s_upper}. To this end, we will impose a matrix-sos constraint,
+   that certain polynomial p(y, s) >=0 in the polytope, namely
+   p(y, s) - λ₁(y, s)ᵀ(d−Cs) − λ₂(y, s)ᵀ(s−s_lower) − λ₃(y, s)ᵀ(s_upper−s) -
+   ν₄(y, s)(1−yᵀy) is sos.
+   λ₁(y, s), λ₂(y, s), λ₃(y, s) are all sos.
+   ν₄(y, s) is a free polynomial.
+   Notice that we add the extra restriction yᵀy=1 through the term λ₄(y,
+   s)(1−yᵀy). This restriction makes the semialgebraic set of y being compact,
+   enabling us using stronger Positivstellensatz theorem. For more explanation
+   on this term, refer to the documentation in the private function
+   AddUnitLengthConstraint.
+
+   This struct records the Lagrangian multipliers λ₁(y,
+   s), λ₂(y, s), λ₃(y, s) and ν₄(y, s).
+   */
+  struct UnitLengthLagrangians {
+    UnitLengthLagrangians(int C_rows, int s_size)
+        : polytope(C_rows), s_lower(s_size), s_upper(s_size) {}
+    // λ₁(y, s) in the documentation.
+    VectorX<symbolic::Polynomial> polytope;
+    // λ₂(y, s) in the documentation.
+    VectorX<symbolic::Polynomial> s_lower;
+    // λ₃(y, s) in the documentation.
+    VectorX<symbolic::Polynomial> s_upper;
+    // ν₄(y, s) in the documentation.
+    symbolic::Polynomial y_square;
+  };
+
+  /**
    This struct stores the necessary information to search for the separating
    plane for the polytopic C-space region C*s <= d, s_lower <= s <= s_upper.
    We need to impose that N rationals are non-negative in this C-space polytope.
@@ -151,6 +186,10 @@ class CspaceFreePolytope {
     /// negative_side_lagrangians[i] is the Lagrangian multipliers for
     /// PlaneSeparatesGeometries::negative_side_rationals[i].
     std::vector<SeparatingPlaneLagrangians> negative_side_lagrangians;
+
+    // unit_length_lagrangians[i] is the Lagrangian multipliers for
+    // PlaneSeparatesGeometries::unit_length_vectors[i].
+    std::vector<UnitLengthLagrangians> unit_length_lagrangians;
   };
 
  private:
@@ -212,6 +251,40 @@ class CspaceFreePolytope {
                          VectorX<symbolic::Monomial>>*
           map_body_to_monomial_basis) const;
 
+  // Impose the condition that |a(s)| <= 1 in the polytope
+  // {s | C*s <= d, s_lower <= s <= s_upper}. where a(s) is a vector of
+  // polynomials. This can be imposed using matrix-sos condition
+  // ⌈ 1   a(s)ᵀ⌉ is psd in the polytope.
+  // ⌊a(s)    I ⌋
+  // Namely the polynomial of (y, s)
+  // yᵀ * ⌈ 1   a(s)ᵀ⌉ * y >= 0 in the polytope.
+  //      ⌊a(s)    I ⌋
+  // If we denote p(y, s) = yᵀ * ⌈ 1   a(s)ᵀ⌉ * y
+  //                             ⌊a(s)    I ⌋
+  // We want p(y, s) >= 0 on the polytope.
+  //
+  // Note that this polytope is NOT a compact set on y (it is a compact set on
+  // s). We wish to make this set compact so that we can use a stronger
+  // Positivstellensatz. To do so, we notice that p(y, s) is homogeneous in y,
+  // hence p(y, s) >= 0 on the polytope if and only if we further restrain y to
+  // be on the unit circle. Namely we consider the condition p(y, s) >= 0 if (y,
+  // s) ∈ {s | C*s<=d, s_lower<=s<=s_upper} ∩ {y | yᵀy=1}
+  //
+  // Then we impose the condition
+  // p(y, s) - λ₁(y, s)ᵀ(d−Cs) − λ₂(y, s)ᵀ(s−s_lower) − λ₃(y, s)ᵀ(s_upper−s) -
+  // ν₄(y, s)(1−yᵀy) is sos.
+  // λ₁(y, s), λ₂(y, s), λ₃(y, s) are all sos.
+  // ν₄(y, s) is a free polynomial.
+  [[nodiscard]] UnitLengthLagrangians AddUnitLengthConstraint(
+      solvers::MathematicalProgram* prog,
+      const VectorX<symbolic::Polynomial>& unit_length_vec,
+      const VectorX<symbolic::Polynomial>& d_minus_Cs,
+      const VectorX<symbolic::Polynomial>& s_minus_s_lower,
+      const VectorX<symbolic::Polynomial>& s_upper_minus_s,
+      const std::unordered_set<int>& C_redundant_indices,
+      const std::unordered_set<int>& s_lower_redundant_indices,
+      const std::unordered_set<int>& s_upper_redundant_indices) const;
+
   multibody::RationalForwardKinematics rational_forward_kin_;
   const geometry::SceneGraph<double>& scene_graph_;
   std::map<multibody::BodyIndex,
@@ -222,6 +295,13 @@ class CspaceFreePolytope {
   std::vector<SeparatingPlane<symbolic::Variable>> separating_planes_;
   std::unordered_map<SortedPair<geometry::GeometryId>, int>
       map_geometries_to_separating_planes_;
+
+  // Sometimes we need to impose that a certain matrix of polynomials are always
+  // psd (for example with sphere or capsule collision geometries). We will use
+  // this slack variable to help us impose the matrix-sos constraint.
+  VectorX<symbolic::Variable> y_slack_;
+
+  symbolic::Variables s_set_;
 };
 
 /**
