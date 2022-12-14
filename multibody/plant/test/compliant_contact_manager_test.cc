@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <memory>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -697,8 +698,19 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
 
     const Vector3d f_Ac_W = F_Ac_W.translational();
 
+    const std::vector<HydroelasticQuadraturePointData<double>>&
+        quadrature_point_data = contact_info.quadrature_point_data();
+
+    // Sanity check the face indices.
+    EXPECT_EQ(quadrature_point_data.size(), 2);
+    EXPECT_NE(quadrature_point_data[0].face_index,
+              quadrature_point_data[1].face_index);
+
     for (const HydroelasticQuadraturePointData<double>& data :
-         contact_info.quadrature_point_data()) {
+         quadrature_point_data) {
+      // Sanity check the face indices.
+      EXPECT_THAT(std::vector<int>{data.face_index},
+                  testing::IsSubsetOf({0, 1}));
       EXPECT_EQ(data.vt_BqAq_W, Vector3d::Zero());
       // Each of the 2 faces have area kArea_ / 2 and exist in a plane of
       // constant pressure within the compliant halfspace, thus they each
@@ -767,24 +779,17 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInStiction) {
 }
 
 TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
-  const double kTolerance = 1e-5;
   const ContactTestConfig& config = GetParam();
 
   ApplyTangentialForceForBodyInSlip();
 
-  // Simulate the plant for 50 timesteps, long enough to reach steady state.
-  Simulate(5);
+  // Simulate the plant for 10 timesteps, long enough to reach steady state.
+  Simulate(10);
 
   std::unique_ptr<ContactResults<double>> contact_results =
       std::make_unique<ContactResults<double>>();
   CompliantContactManagerTester::DoCalcContactResults(
       *manager_, *plant_context_, contact_results.get());
-
-  // Body should be sliding so we expect the contact force to oppose
-  // gravity and for the tangential component
-  const Vector3d expected_contact_force =
-      -(kTangentialSlipForce_ +
-        kMass_ * plant_->gravity_field().gravity_vector());
 
   if (config.point_contact) {
     // Test point contact.
@@ -799,14 +804,13 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
     const double scale =
         (contact_info.bodyB_index() == body_->index() ? 1 : -1);
 
-    EXPECT_TRUE(CompareMatrices(scale * contact_info.contact_force(),
-                                expected_contact_force, kTolerance));
-    EXPECT_NEAR(contact_info.contact_point().z(),
-                CalcEquilibriumZPosition() - kPointContactSphereRadius_,
-                kTolerance);
+    const Vector3d f_Bc_W = scale * contact_info.contact_force();
+
+    // Verify that the contact force lies exactly on the boundary of the
+    // friction cone. i.e. |fₜ| = μ|fₙ|
+    EXPECT_EQ(-f_Bc_W.x(), kMu_ * f_Bc_W.z());
     // Should be slipping but still at equilibrium penetration.
     EXPECT_GT(contact_info.slip_speed(), 0);
-    EXPECT_NEAR(contact_info.separation_speed(), 0, kTolerance);
   } else {
     // Test hydroelastic contact.
     EXPECT_EQ(contact_results->num_point_pair_contacts(), 0);
@@ -822,10 +826,15 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
     const double scale = (bodyA_index == body_->index() ? 1 : -1);
     const SpatialForce<double> F_Ac_W = scale * contact_info.F_Ac_W();
 
-    EXPECT_TRUE(CompareMatrices(F_Ac_W.translational(), expected_contact_force,
-                                kTolerance));
-    EXPECT_TRUE(
-        CompareMatrices(F_Ac_W.rotational(), Vector3d::Zero(), kTolerance));
+    // Verify that the contact force lies exactly on the boundary of the
+    // friction cone. i.e. |fₜ| = μ|fₙ|
+    EXPECT_EQ(-F_Ac_W.translational().x(), kMu_ * F_Ac_W.translational().z());
+
+    for (const HydroelasticQuadraturePointData<double>& data :
+         contact_info.quadrature_point_data()) {
+      // Check that the slip velocity has the correct sign.
+      EXPECT_LT(data.vt_BqAq_W.dot(F_Ac_W.translational()), 0);
+    }
   }
 }
 
