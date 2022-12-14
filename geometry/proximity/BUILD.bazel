@@ -54,6 +54,7 @@ drake_cc_package_library(
         ":tessellation_strategy",
         ":triangle_surface_mesh",
         ":volume_mesh",
+        ":volume_mesh_refiner",
         ":volume_to_surface_mesh",
         ":vtk_to_volume_mesh",
     ],
@@ -802,6 +803,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "volume_mesh_refiner",
+    srcs = ["volume_mesh_refiner.cc"],
+    hdrs = ["volume_mesh_refiner.h"],
+    deps = [
+        ":detect_zero_simplex",
+        ":volume_mesh",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "volume_to_surface_mesh",
     srcs = [
         "volume_to_surface_mesh.cc",
@@ -1407,6 +1419,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "volume_mesh_refiner_test",
+    deps = [
+        ":mesh_to_vtk",
+        ":volume_mesh_refiner",
     ],
 )
 
