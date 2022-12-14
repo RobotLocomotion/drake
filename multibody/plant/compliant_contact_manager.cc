@@ -838,8 +838,8 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
     // Accumulate force for the corresponding contact surface.
     F_Ao_W_per_surface[surface_index] += Fq_Ao_W;
 
-    // Velocity of Bq relative to Aq in the tangent direction.
-    const Vector3<T> vt_BqAq_C(vt(2 * icontact), vt(2 * icontact + 1), 0);
+    // Velocity of Aq relative to Bq in the tangent direction.
+    const Vector3<T> vt_BqAq_C(-vt(2 * icontact), -vt(2 * icontact + 1), 0);
     const Vector3<T> vt_BqAq_W = R_WC * vt_BqAq_C;
 
     // Traction vector applied to body A at point Aq (Aq and Bq are coincident)

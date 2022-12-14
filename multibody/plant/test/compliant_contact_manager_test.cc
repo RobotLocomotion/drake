@@ -642,7 +642,7 @@ TEST_F(AlgebraicLoopDetection, VerifyNoFalsePositivesWhenCachingIsDisabled) {
 
 // This test verifies contact results in the equilibrium configuration.
 TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
-  const double epsilon = 1e-15;
+  const double kTolerance = 1e-15;
 
   std::unique_ptr<ContactResults<double>> contact_results =
       std::make_unique<ContactResults<double>>();
@@ -670,10 +670,10 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
 
     EXPECT_TRUE(CompareMatrices(
         scale * contact_info.contact_force(),
-        expected_contact_force, epsilon));
+        expected_contact_force, kTolerance));
     EXPECT_NEAR(contact_info.contact_point().z(),
                 CalcEquilibriumZPosition() - kPointContactSphereRadius_,
-                epsilon);
+                kTolerance);
     EXPECT_EQ(contact_info.slip_speed(), 0);
     EXPECT_EQ(contact_info.separation_speed(), 0);
   } else {
@@ -693,7 +693,7 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
 
     EXPECT_TRUE(F_Ac_W.IsApprox(
         SpatialForce<double>(Vector3d::Zero(), expected_contact_force),
-        epsilon));
+        kTolerance));
 
     const Vector3d f_Ac_W = F_Ac_W.translational();
 
@@ -710,12 +710,12 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
 }
 
 TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInStiction) {
-  const double epsilon = 1e-5;
+  const double kTolerance = 1e-5;
   const ContactTestConfig& config = GetParam();
 
   ApplyTangentialForceForBodyInStiction();
 
-  // Simulate the plant for 50 timesteps.
+  // Simulate the plant for 50 timesteps, long enough to reach steady state.
   Simulate(50);
 
   std::unique_ptr<ContactResults<double>> contact_results =
@@ -726,7 +726,8 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInStiction) {
   // Body should be in stiction so we expect the contact force to oppose both
   // gravity and the externally applied tangential force.
   const Vector3d expected_contact_force =
-      -(kTangentialForce_ + kMass_ * plant_->gravity_field().gravity_vector());
+      -(kTangentialStictionForce_ +
+        kMass_ * plant_->gravity_field().gravity_vector());
 
   if (config.point_contact) {
     // Test point contact.
@@ -736,13 +737,13 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInStiction) {
     const PointPairContactInfo<double>& contact_info =
         contact_results->point_pair_contact_info(0);
 
-    // PointPairContactInfo expresses the contact force acting on body B of the
+    // PointPairContactInfo reports the contact force acting on body B of the
     // pair. Flip the sign of the contact force if `body_` is not body B.
     const double scale =
         (contact_info.bodyB_index() == body_->index() ? 1 : -1);
 
     EXPECT_TRUE(CompareMatrices(scale * contact_info.contact_force(),
-                                expected_contact_force, epsilon));
+                                expected_contact_force, kTolerance));
   } else {
     // Test hydroelastic contact.
     EXPECT_EQ(contact_results->num_point_pair_contacts(), 0);
@@ -751,7 +752,7 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInStiction) {
     const HydroelasticContactInfo<double>& contact_info =
         contact_results->hydroelastic_contact_info(0);
 
-    // HydroelasticContactInfo expresses the contact force acting on body A of
+    // HydroelasticContactInfo reports the contact force acting on body A of
     // the pair. Flip the sign of the contact force if `body_` is not body A.
     BodyIndex bodyA_index = CompliantContactManagerTester::FindBodyByGeometryId(
         *manager_, contact_info.contact_surface().id_M());
@@ -759,9 +760,72 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInStiction) {
     const SpatialForce<double> F_Ac_W = scale * contact_info.F_Ac_W();
 
     EXPECT_TRUE(CompareMatrices(F_Ac_W.translational(), expected_contact_force,
-                                epsilon));
+                                kTolerance));
     EXPECT_TRUE(
-        CompareMatrices(F_Ac_W.rotational(), Vector3d::Zero(), epsilon));
+        CompareMatrices(F_Ac_W.rotational(), Vector3d::Zero(), kTolerance));
+  }
+}
+
+TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
+  const double kTolerance = 1e-5;
+  const ContactTestConfig& config = GetParam();
+
+  ApplyTangentialForceForBodyInSlip();
+
+  // Simulate the plant for 50 timesteps, long enough to reach steady state.
+  Simulate(5);
+
+  std::unique_ptr<ContactResults<double>> contact_results =
+      std::make_unique<ContactResults<double>>();
+  CompliantContactManagerTester::DoCalcContactResults(
+      *manager_, *plant_context_, contact_results.get());
+
+  // Body should be sliding so we expect the contact force to oppose
+  // gravity and for the tangential component
+  const Vector3d expected_contact_force =
+      -(kTangentialSlipForce_ +
+        kMass_ * plant_->gravity_field().gravity_vector());
+
+  if (config.point_contact) {
+    // Test point contact.
+    EXPECT_EQ(contact_results->num_point_pair_contacts(), 1);
+    EXPECT_EQ(contact_results->num_hydroelastic_contacts(), 0);
+
+    const PointPairContactInfo<double>& contact_info =
+        contact_results->point_pair_contact_info(0);
+
+    // PointPairContactInfo reports the contact force acting on body B of the
+    // pair. Flip the sign of the contact force if `body_` is not body B.
+    const double scale =
+        (contact_info.bodyB_index() == body_->index() ? 1 : -1);
+
+    EXPECT_TRUE(CompareMatrices(scale * contact_info.contact_force(),
+                                expected_contact_force, kTolerance));
+    EXPECT_NEAR(contact_info.contact_point().z(),
+                CalcEquilibriumZPosition() - kPointContactSphereRadius_,
+                kTolerance);
+    // Should be slipping but still at equilibrium penetration.
+    EXPECT_GT(contact_info.slip_speed(), 0);
+    EXPECT_NEAR(contact_info.separation_speed(), 0, kTolerance);
+  } else {
+    // Test hydroelastic contact.
+    EXPECT_EQ(contact_results->num_point_pair_contacts(), 0);
+    EXPECT_EQ(contact_results->num_hydroelastic_contacts(), 1);
+
+    const HydroelasticContactInfo<double>& contact_info =
+        contact_results->hydroelastic_contact_info(0);
+
+    // HydroelasticContactInfo reports the contact force acting on body A of
+    // the pair. Flip the sign of the contact force if `body_` is not body A.
+    BodyIndex bodyA_index = CompliantContactManagerTester::FindBodyByGeometryId(
+        *manager_, contact_info.contact_surface().id_M());
+    const double scale = (bodyA_index == body_->index() ? 1 : -1);
+    const SpatialForce<double> F_Ac_W = scale * contact_info.F_Ac_W();
+
+    EXPECT_TRUE(CompareMatrices(F_Ac_W.translational(), expected_contact_force,
+                                kTolerance));
+    EXPECT_TRUE(
+        CompareMatrices(F_Ac_W.rotational(), Vector3d::Zero(), kTolerance));
   }
 }
 

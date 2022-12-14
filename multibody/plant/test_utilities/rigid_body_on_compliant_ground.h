@@ -87,6 +87,11 @@ class RigidBodyOnCompliantGround
 
     body_ = &plant_->AddRigidBody("body", M_Bo);
 
+    // N.B. We add an intermediate zero mass body so that we can use separate
+    // prismatic joints for the x and z directions. Even though the intermediate
+    // body has zero mass, a non-zero velocity in z leads to the motion of the
+    // non-zero mass of `body_`. Therefore kinetic energy still is positive and
+    // the mass matrix is positive-definite.
     const auto& intermediate_body = plant_->AddRigidBody(
         "intermediate_body",
         SpatialInertia<double>(0.0, Vector3d::Zero(),
@@ -170,19 +175,41 @@ class RigidBodyOnCompliantGround
     }
   }
 
+  // Normal force exactly opposes weight for the body in equilibrium.
+  // Applying a force fₜ, perpendicular to fₙ with |fₜ| < kMu_ * |fₙ|
+  // should keep the body in stiction. We assume that `plant_context_`
+  // stores the static equilibrium condition and therefore:
+  //  fₙ = (0, 0, kMass_ * kGravity_)
+  // so we set:
+  //  f_Bq_W = kScale_ * kMu_ * kMass_ * kGravity * (1, 0, 0)
+  // where kScale < 1.
   void ApplyTangentialForceForBodyInStiction() const {
-    // Normal force exactly opposes weight for the body in equilibrium.
-    // Applying a force fₜ, perpendicular to fₙ with |fₜ| < kMu_ * |fₙ|
-    // should keep the body in stiction. In particular:
-    //  fₙ = (0, 0, kMass_ * kGravity_)
-    // so we set:
-    //  f_Bq_W = kScale_ * kMu_ * kMass_ * kGravity * (1, 0, 0)
-    // where kScale < 1.
     std::vector<ExternallyAppliedSpatialForce<double>> forces(1);
     forces[0].body_index = body_->index();
     forces[0].p_BoBq_B = body_->CalcCenterOfMassInBodyFrame(*plant_context_);
     forces[0].F_Bq_W =
-        SpatialForce<double>(Vector3d::Zero(), kTangentialForce_);
+        SpatialForce<double>(Vector3d::Zero(), kTangentialStictionForce_);
+    plant_->get_applied_spatial_force_input_port().FixValue(plant_context_,
+                                                            forces);
+  }
+
+  // Normal force exactly opposes weight for the body in equilibrium.
+  // Applying a force fₜ, perpendicular to fₙ with |fₜ| >= kMu_ * |fₙ|
+  // should result in a body slipping with a friction force of magnitude:
+  //   |fₛ| = kMu_ * |fₙ|
+  // We assume that `plant_context_` stores the static equilibrium condition and
+  // therefore:
+  //  fₙ = (0, 0, kMass_ * kGravity_)
+  // so we set:
+  //  f_Bq_W = (kMu_ + 0.05) * kMass_ * kGravity * (1, 0, 0)
+  // such that the net tangential force on the body produces an acceleration
+  // that is 5% of that due to gravity on the body.
+  void ApplyTangentialForceForBodyInSlip() const {
+    std::vector<ExternallyAppliedSpatialForce<double>> forces(1);
+    forces[0].body_index = body_->index();
+    forces[0].p_BoBq_B = body_->CalcCenterOfMassInBodyFrame(*plant_context_);
+    forces[0].F_Bq_W = SpatialForce<double>(
+        Vector3d::Zero(), kTangentialSlipForce_ + kTangentialExtraForce_);
     plant_->get_applied_spatial_force_input_port().FixValue(plant_context_,
                                                             forces);
   }
@@ -217,8 +244,14 @@ class RigidBodyOnCompliantGround
   const double kMu_{0.5};                         // Coefficient of friction.
   const double kScale_{0.1};  // Scale factor for tangential force.
   // Horizontal force on the body that should be completely opposed by stiction.
-  const Vector3d kTangentialForce_{kScale_ * kMu_ * kMass_ * kGravity_, 0.0,
-                                   0.0};
+  const Vector3d kTangentialStictionForce_{kScale_ * kMu_ * kMass_ * kGravity_,
+                                           0.0, 0.0};
+  // Expected horizontal friction force on the body when in slip.
+  const Vector3d kTangentialSlipForce_{kMu_ * kMass_ * kGravity_, 0.0, 0.0};
+  // Applied force added such that the resulting net tangential force on the
+  // body produces an acceleration that is 5% of that due to gravity on the
+  // body.
+  const Vector3d kTangentialExtraForce_{0.05 * kMass_ * kGravity_, 0.0, 0.0};
   // Number of triangles and area of the plate must be kept in sync with the
   // mesh file square_surface.obj.
   const int kNumberOfTriangles_{2};  // Number of triangles in the hydro mesh.
