@@ -50,6 +50,7 @@ load("@drake//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
 load("@drake//tools/workspace/liblapack:repository.bzl", "liblapack_repository")  # noqa
 load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
 load("@drake//tools/workspace/liblzma:repository.bzl", "liblzma_repository")
+load("@drake//tools/workspace/libpfm:repository.bzl", "libpfm_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
@@ -217,6 +218,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         liblz4_repository(name = "liblz4")
     if "liblzma" not in excludes:
         liblzma_repository(name = "liblzma")
+    if "libpfm" not in excludes:
+        libpfm_repository(name = "libpfm")
     if "libpng" not in excludes:
         libpng_repository(name = "libpng")
     if "libtiff" not in excludes:
