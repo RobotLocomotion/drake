@@ -24,7 +24,6 @@ libmsgpack-dev
 libmumps-seq-dev
 libnlopt-cxx-dev
 libopengl-dev
-libpfm4-dev
 libpng-dev
 libsuitesparse-dev
 libtiff-dev
