@@ -291,8 +291,8 @@ class UnitInertia : public RotationalInertia<T> {
   ///   - Length L is negative.
   ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ ≤ ε`, where ε is the
   ///     machine epsilon.
-  static UnitInertia<T> SolidCylinder(
-      const T& r, const T& L, const Vector3<T>& b_E = Vector3<T>::UnitZ()) {
+  static UnitInertia<T> SolidCylinder(const T& r, const T& L,
+      const Vector3<T>& b_E = Vector3<T>::UnitZ()) {
     DRAKE_THROW_UNLESS(r >= 0);
     DRAKE_THROW_UNLESS(L >= 0);
     DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
@@ -305,10 +305,11 @@ class UnitInertia : public RotationalInertia<T> {
   /// whose axis of revolution is along the z-axis.
   /// @param[in] r The radius of the cylinder/half-sphere part of the capsule.
   /// @param[in] L The length of the cylindrical part of the capsule.
-  /// @throws std::exception
-  ///   - Radius r is negative.
-  ///   - Length L is negative.
-  static UnitInertia<T> SolidCapsule(const T& r, const T& L);
+  /// @param[in] unit_vector unit vector defining the direction of the
+  ///   cylindrical part of the capsule. It defaults to `Vector3<T>::UnitZ()`.
+  /// @throws std::exception if r or L is negative or ‖unit_vector‖ ≉ 1.
+  static UnitInertia<T> SolidCapsule(const T& r, const T& L,
+      const Vector3<T>& unit_vector = Vector3<T>::UnitZ());
 
   /// Computes the unit inertia for a unit-mass cylinder of uniform density
   /// oriented along the z-axis computed about a point at the center of

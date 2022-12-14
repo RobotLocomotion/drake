@@ -83,6 +83,76 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensity) {
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 }
 
+// Tests the static method for the spatial inertia of a solid capsule.
+GTEST_TEST(SpatialInertia, SolidCapsuleWithDensity) {
+  const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
+  const double r = 1.0;
+  const double L = 2.0;
+  const double volume = 4.0/3.0 * M_PI * std::pow(r, 3) + M_PI * r * r * L;
+  const double mass = density * volume;
+  const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
+
+  // Test a solid capsule B whose unit_vector is in the z-direction.
+  Vector3<double> unit_vec(0, 0, 1);
+  UnitInertia<double>G_BBo_B =
+      UnitInertia<double>::SolidCapsule(r, L, unit_vec);
+  SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
+  SpatialInertia<double> M =
+      SpatialInertia<double>::SolidCapsuleWithDensity(density, r, L, unit_vec);
+  EXPECT_TRUE(
+      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+
+  // Test a solid capsule B with a different unit vector direction.
+  unit_vec = Vector3<double>(0.5, -0.5, 1.0 / std::sqrt(2));
+  G_BBo_B = UnitInertia<double>::SolidCapsule(r, L, unit_vec);
+  M_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBo_B);
+  M = SpatialInertia<double>::SolidCapsuleWithDensity(density, r, L, unit_vec);
+  EXPECT_TRUE(
+      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+
+  // Ensure a bad unit vector throws an exception.
+  const Vector3<double> bad_vec(1, 0.1, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCapsuleWithDensity(density, r, L, bad_vec),
+      "[^]* The unit_vector argument is not a unit vector. "
+      "Consider normalizing it.");
+}
+
+// Tests the static method for the spatial inertia of a solid cylinder.
+GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
+  const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
+  const double r = 1.0;
+  const double L = 2.0;
+  const double volume = M_PI * r * r * L;
+  const double mass = density * volume;
+  const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
+
+  // Test a solid cylinder B whose unit_vector is in the z-direction.
+  Vector3<double> unit_vec(0, 0, 1);
+  UnitInertia<double>G_BBo_B =
+      UnitInertia<double>::SolidCylinder(r, L, unit_vec);
+  SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
+  SpatialInertia<double> M =
+      SpatialInertia<double>::SolidCylinderWithDensity(density, r, L, unit_vec);
+  EXPECT_TRUE(
+      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+
+  // Test a solid cylinder B with a different unit vector direction.
+  unit_vec = Vector3<double>(0.5, -0.5, 1.0 / std::sqrt(2));
+  G_BBo_B = UnitInertia<double>::SolidCylinder(r, L, unit_vec);
+  M_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBo_B);
+  M = SpatialInertia<double>::SolidCylinderWithDensity(density, r, L, unit_vec);
+  EXPECT_TRUE(
+      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+
+  // Ensure a bad unit vector throws an exception.
+  const Vector3<double> bad_vec(1, 0.1, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCylinderWithDensity(density, r, L, bad_vec),
+      "[^]* The unit_vector argument is not a unit vector. "
+      "Consider normalizing it.");
+}
+
 // Test the construction from the mass, center of mass, and unit inertia of a
 // body. Also tests:
 //   - Getters.

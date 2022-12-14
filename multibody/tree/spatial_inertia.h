@@ -124,18 +124,45 @@ class SpatialInertia {
   /// moments of inertia of 1 and products of inertia of 0.
   static SpatialInertia<T> MakeUnitary();
 
-  // TODO(Mitiguy) Python-bind this function when related functions are done.
+  // TODO(Mitiguy) Python-bind this and related function when they are done.
   /// (Internal use only)
-  /// Creates a spatial inertia for a solid box B of uniform density about its
-  /// geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// Creates a spatial inertia for a solid box B of uniform density about
+  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] lx The length of the box edge in the Bx direction.
-  /// @param[in] ly The length of the box edge in the By direction.
-  /// @param[in] lz The length of the box edge in the Bz direction.
+  /// @param[in] lx length of the box in the Bx direction.
+  /// @param[in] ly length of the box in the By direction.
+  /// @param[in] lz length of the box in the Bz direction.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
   /// @throws std::exception if any of lx, ly, lz are negative.
   static SpatialInertia<T> SolidBoxWithDensity(const T& density,
       const T& lx, const T& ly, const T& lz);
+
+  /// (Internal use only)
+  /// Creates a spatial inertia for a solid capsule B of uniform density about
+  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] density mass per volume (kg/m³).
+  /// @param[in] r radius of the cylinder/half-sphere part of the capsule.
+  /// @param[in] L length of the cylindrical part of the capsule.
+  /// @param[in] unit_vector unit vector defining the direction of the
+  ///   cylindrical part of the capsule.
+  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
+  /// @note B's rotational inertia about Bo is axially symmetric.
+  /// @throws std::exception if r or L is negative or ‖unit_vector‖ ≉ 1.
+  static SpatialInertia<T> SolidCapsuleWithDensity(const T& density,
+      const T& r, const T& L, const Vector3<T>& unit_vector);
+
+  /// (Internal use only)
+  /// Creates a spatial inertia for a solid cylinder B of uniform density about
+  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] density mass per volume (kg/m³).
+  /// @param[in] r radius of the cylinder.
+  /// @param[in] L length of the cylinder in the unit_vector direction.
+  /// @param[in] unit_vector unit vector defining the direction of the cylinder.
+  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
+  /// @note B's rotational inertia about Bo is axially symmetric.
+  /// @throws std::exception if r or L is negative or ‖unit_vector‖ ≉ 1.
+  static SpatialInertia<T> SolidCylinderWithDensity(const T& density,
+      const T& r, const T& L, const Vector3<T>& unit_vector);
 
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of
