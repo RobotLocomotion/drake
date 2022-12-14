@@ -136,6 +136,52 @@ class TwoFreeSpheresTest : public ::testing::Test {
   systems::Context<AutoDiffXd>* plant_context_autodiff_{nullptr};
 };
 
+template <typename T>
+class NFreeSpheres {
+ public:
+  NFreeSpheres(int num_spheres);
+
+  double radius() const { return radius_; }
+
+  const systems::Diagram<T>& diagram() const { return *diagram_; }
+
+  geometry::GeometryId GetSphereGeometryId(FrameIndex sphere_index) const {
+    return plant_->GetCollisionGeometriesForBody(
+        plant_->get_frame(sphere_index).body())[0];
+  }
+
+  const MultibodyPlant<T>& plant() const { return *plant_; }
+
+  const geometry::SceneGraph<T>& scene_graph() const { return *scene_graph_; }
+
+  const std::vector<FrameIndex>& sphere_frame_indices() const {
+    return sphere_frame_indices_;
+  }
+
+  const math::RigidTransformd& X_BS() const { return X_BS_; }
+
+  systems::Context<T>& get_mutable_diagram_context() {
+    return *diagram_context_;
+  }
+
+  systems::Context<T>& get_mutable_plant_context() { return *plant_context_; }
+
+ private:
+  int num_spheres_;
+  double radius_{0.01};
+  std::unique_ptr<systems::Diagram<T>> diagram_;
+  MultibodyPlant<T>* plant_{nullptr};
+  geometry::SceneGraph<T>* scene_graph_{nullptr};
+
+  std::vector<FrameIndex> sphere_frame_indices_;
+
+  // The pose of sphere i's collision geometry in sphere i's body frame.
+  math::RigidTransformd X_BS_;
+
+  std::unique_ptr<systems::Context<T>> diagram_context_;
+  systems::Context<T>* plant_context_{nullptr};
+};
+
 /**
  * Compute the signed distance between a box and a sphere.
  * @param box_size The size of the box.

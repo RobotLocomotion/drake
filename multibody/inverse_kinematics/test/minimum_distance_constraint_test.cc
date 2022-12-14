@@ -307,5 +307,36 @@ TEST_F(BoxSphereTest, Test) {
                                 gradient_tol);
   }
 }
+
+GTEST_TEST(ThreeSpheresTest, SomeLargerThanInfluenceSomeSmallerThanMinimum) {
+  // Test the case with three spheres. Some pair of spheres have distance >
+  // d_influence, and some pairs have distance < d_min.
+  NFreeSpheres<double> three_spheres(3);
+  const double d_min = 0.05;
+  const double d_influence = 0.06;
+  Eigen::VectorXd q = three_spheres.plant().GetPositions(
+      three_spheres.get_mutable_plant_context());
+  q.segment<3>(4) << 0, 0, 0;
+  q.segment<3>(11) << 0, 0, 0.05;
+  q.segment<3>(18) << 0, 0, 0.1;
+  // Make sure that a pair of spheres has distance < d_min.
+  ASSERT_LT(
+      (q.segment<3>(4) - q.segment<3>(11)).norm() - 2 * three_spheres.radius(),
+      d_min);
+  // Make sure a pair of spheres has distance > d_influence.
+  ASSERT_GT(
+      (q.segment<3>(18) - q.segment<3>(4)).norm() - 2 * three_spheres.radius(),
+      d_influence);
+  for (MinimumDistancePenaltyFunction penalty_function :
+       {QuadraticallySmoothedHingeLoss, ExponentiallySmoothedHingeLoss}) {
+    MinimumDistanceConstraint dut(&(three_spheres.plant()), d_min,
+                                  &(three_spheres.get_mutable_plant_context()),
+                                  penalty_function, d_influence - d_min);
+    Eigen::VectorXd y_val;
+    dut.Eval(q, &y_val);
+    EXPECT_TRUE((y_val.array() < dut.lower_bound().array()).any() ||
+                (y_val.array() > dut.upper_bound().array()).any());
+  }
+}
 }  // namespace multibody
 }  // namespace drake
