@@ -110,6 +110,24 @@ set_target_properties(pybind11::opt_size PROPERTIES
 set(pybind11_LIBRARIES "pybind11::pybind11")
 set(pybind11_INCLUDE_DIRS "")
 
+# Simulate `pybind11_strip` per drake-external-examples#216, extracting code from
+# https://github.com/pybind/pybind11/blob/v2.7.0/tools/pybind11Common.cmake#L383-L397
+# Begin code excerpt.
+function(pybind11_strip target_name)
+  # Strip unnecessary sections of the binary on Linux/macOS
+  if(CMAKE_STRIP)
+    if(APPLE)
+      set(x_opt -x)
+    endif()
+
+    add_custom_command(
+      TARGET ${target_name}
+      POST_BUILD
+      COMMAND ${CMAKE_STRIP} ${x_opt} $<TARGET_FILE:${target_name}>)
+  endif()
+endfunction()
+# End code excerpt.
+
 include(${CMAKE_CURRENT_LIST_DIR}/pybind11Tools.cmake)
 
 unset(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX)
