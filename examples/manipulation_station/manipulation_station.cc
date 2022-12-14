@@ -199,8 +199,7 @@ ExternalGeneralizedForcesComputer::ExternalGeneralizedForcesComputer(
 }
 
 void ExternalGeneralizedForcesComputer::SetRootContext(
-    systems::Context<double>* root_context)
-{
+    systems::Context<double>* root_context) {
   DRAKE_DEMAND(root_context != nullptr);
   root_context_ = root_context;
 }
@@ -208,7 +207,10 @@ void ExternalGeneralizedForcesComputer::SetRootContext(
 VectorX<double>
 ExternalGeneralizedForcesComputer::CalcExternalGeneralizedForces(
     const drake::systems::Context<double>& context) const {
-  DRAKE_DEMAND(root_context_ != nullptr);
+  VectorX<double> generalized_forces(num_iiwa_joints_);
+  if (root_context_ == nullptr) {
+    return generalized_forces;
+  }
   const systems::Context<double>& input_context = station_->GetSubsystemContext(
       *applied_spatial_force_system_, *root_context_);
   const systems::Context<double>& plant_context =
@@ -235,7 +237,6 @@ ExternalGeneralizedForcesComputer::CalcExternalGeneralizedForces(
     // Add contribution.
     body.AddInForceInWorld(context, F_Bo_W, &forces);
   }
-  VectorX<double> generalized_forces(plant_->num_velocities());
   plant_->CalcGeneralizedForces(plant_context, forces, &generalized_forces);
   const auto& base_joint =
       plant_->GetJointByName<multibody::RevoluteJoint>("iiwa_joint_1");

@@ -108,8 +108,7 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia() {
 }
 
 void FixGripper(const ManipulationStation<double>& station,
-                Context<double>* context)
-{
+                Context<double>* context) {
   // All ports must be connected if later on we'll ask questions like: "what's
   // the external contact torque?". We therefore fix the gripper related ports.
   double wsg_position = station.GetWsgPosition(*context);
@@ -178,7 +177,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   multibody::Parser parser(&station.get_mutable_multibody_plant(),
                            &station.get_mutable_scene_graph());
   parser.AddModels(FindResourceOrThrow(
-   "drake/examples/manipulation_station/models/061_foam_brick.sdf"));
+    "drake/examples/manipulation_station/models/061_foam_brick.sdf"));
   station.Finalize();
 
   auto& plant = station.get_multibody_plant();
