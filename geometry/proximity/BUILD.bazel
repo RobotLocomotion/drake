@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":deformable_contact_internal",
         ":deformable_mesh_intersection",
         ":deformable_volume_mesh",
+        ":detect_null_simplex",
         ":field_intersection",
         ":hydroelastic_internal",
         ":make_box_field",
@@ -53,6 +54,7 @@ drake_cc_package_library(
         ":tessellation_strategy",
         ":triangle_surface_mesh",
         ":volume_mesh",
+        ":volume_mesh_refiner",
         ":volume_to_surface_mesh",
         ":vtk_to_volume_mesh",
     ],
@@ -215,6 +217,17 @@ drake_cc_library(
         ":bvh_updater",
         ":mesh_deformer",
         ":volume_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "detect_null_simplex",
+    srcs = ["detect_null_simplex.cc"],
+    hdrs = ["detect_null_simplex.h"],
+    deps = [
+        ":volume_mesh",
+        ":volume_to_surface_mesh",
+        "//common:sorted_pair",
     ],
 )
 
@@ -789,6 +802,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "volume_mesh_refiner",
+    srcs = ["volume_mesh_refiner.cc"],
+    hdrs = ["volume_mesh_refiner.h"],
+    deps = [
+        ":detect_null_simplex",
+        ":volume_mesh",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "volume_to_surface_mesh",
     srcs = [
         "volume_to_surface_mesh.cc",
@@ -963,6 +987,15 @@ drake_cc_googletest(
         ":deformable_volume_mesh",
         ":make_box_mesh",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detect_null_simplex_test",
+    deps = [
+        ":detect_null_simplex",
+        ":make_cylinder_mesh",
+        ":mesh_to_vtk",
     ],
 )
 
@@ -1383,6 +1416,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "volume_mesh_refiner_test",
+    deps = [
+        ":mesh_to_vtk",
+        ":volume_mesh_refiner",
     ],
 )
 
