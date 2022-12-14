@@ -67,6 +67,8 @@ install_files(
     dest = "lib/cmake/pybind11",
     files = [
         "tools/FindPythonLibsNew.cmake",
+        # N.B. We explicitly exclude pybind11Common.cmake because Drake's
+        # `pybind11-config.cmake` covers its functionality.
         "tools/pybind11Tools.cmake",
     ],
     strip_prefix = ["**/"],
