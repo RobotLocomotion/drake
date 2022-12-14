@@ -103,9 +103,12 @@ class RigidBodyOnCompliantGround
     x_axis_ = &plant_->AddJoint<PrismaticJoint>("x_axis", intermediate_body, {},
                                                 *body_, {}, Vector3d::UnitX());
 
+    // Make body_ very stiff (1e40). The effective stiffness of the contact
+    // between body_ and the ground will be kStiffness_, by the combination rule
+    // in GetCombinedPointContactStiffness().
     geometry::ProximityProperties body_props;
     geometry::AddContactMaterial(
-        0.0, 1.0e40, CoulombFriction<double>(kMu_, kMu_), &body_props);
+        0.0, 1e40, CoulombFriction<double>(kMu_, kMu_), &body_props);
 
     if (config.point_contact) {
       plant_->RegisterCollisionGeometry(

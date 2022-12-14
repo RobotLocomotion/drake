@@ -773,6 +773,8 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
 
   // Reserve memory here to keep from repeatedly allocating heap storage in
   // the loop below.
+  // TODO(joemasterjohn): Consider caching this vector and the quadrature
+  // point data vectors to avoid this dynamic allocation.
   contact_info->clear();
   contact_info->reserve(all_surfaces.size());
 
@@ -839,6 +841,10 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
     F_Ao_W_per_surface[surface_index] += Fq_Ao_W;
 
     // Velocity of Aq relative to Bq in the tangent direction.
+    // N.B. CompliantContactManager<T>::CalcContactKinematics() uses the
+    // convention of computing J_AcBc_C and thus J_AcBc_C * v = v_AcBc_W (i.e.
+    // relative velocity of Bc with respect to Ac). Thus we flip the sign here
+    // for the convention used by HydroelasticQuadratureData.
     const Vector3<T> vt_BqAq_C(-vt(2 * icontact), -vt(2 * icontact + 1), 0);
     const Vector3<T> vt_BqAq_W = R_WC * vt_BqAq_C;
 
