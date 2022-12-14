@@ -6,6 +6,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 using drake::geometry::SceneGraph;
@@ -140,6 +141,33 @@ TwoFreeSpheresTest::TwoFreeSpheresTest() {
 }
 
 template <typename T>
+NFreeSpheresModel<T>::NFreeSpheresModel(int num_spheres)
+    : num_spheres_{num_spheres}, X_BS_{Eigen::Vector3d(0.0, 0.0, 0.0)} {
+  systems::DiagramBuilder<T> builder;
+  std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const double mass{1};
+  const Eigen::Vector3d p_AoAcm_A = X_BS_.translation();
+  const RotationalInertia<double> I_AAcm_A =
+      UnitInertia<double>::SolidSphere(radius_);
+  const SpatialInertia<double> M_AAo_A =
+      SpatialInertia<double>::MakeFromCentralInertia(mass, p_AoAcm_A, I_AAcm_A);
+  for (int i = 0; i < num_spheres; ++i) {
+    auto& body = plant_->AddRigidBody("sphere" + std::to_string(i), M_AAo_A);
+    plant_->RegisterCollisionGeometry(body, X_BS_, geometry::Sphere(radius_),
+                                      fmt::format("sphere{}_collision", i),
+                                      multibody::CoulombFriction<double>());
+    sphere_frame_indices_.push_back(body.body_frame().index());
+  }
+  plant_->Finalize();
+
+  diagram_ = builder.Build();
+
+  diagram_context_ = diagram_->CreateDefaultContext();
+  plant_context_ =
+      &(plant_->GetMyMutableContextFromRoot(diagram_context_.get()));
+}
+
+template <typename T>
 std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
     const Eigen::Vector3d& box_size, double radius,
     const math::RigidTransformd& X_BGb, MultibodyPlant<T>** plant,
@@ -230,6 +258,9 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
     &ConstructTwoFreeBodiesPlant<T>,
     &BoxSphereSignedDistance<T>
 ))
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class NFreeSpheresModel)
 
 }  // namespace multibody
 }  // namespace drake

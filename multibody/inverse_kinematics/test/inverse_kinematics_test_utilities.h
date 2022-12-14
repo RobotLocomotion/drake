@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -134,6 +135,46 @@ class TwoFreeSpheresTest : public ::testing::Test {
   std::unique_ptr<systems::Context<AutoDiffXd>> diagram_context_autodiff_;
   systems::Context<double>* plant_context_double_{nullptr};
   systems::Context<AutoDiffXd>* plant_context_autodiff_{nullptr};
+};
+
+/**
+ Constructs a diagram that contains N free-floating spheres. This is useful when
+ we test kinematic constraints involving several bodies.
+ */
+template <typename T>
+class NFreeSpheresModel {
+ public:
+  explicit NFreeSpheresModel(int num_spheres);
+
+  double radius() const { return radius_; }
+
+  const systems::Diagram<T>& diagram() const { return *diagram_; }
+
+  const MultibodyPlant<T>& plant() const { return *plant_; }
+
+  const geometry::SceneGraph<T>& scene_graph() const { return *scene_graph_; }
+
+  const math::RigidTransformd& X_BS() const { return X_BS_; }
+
+  const systems::Context<T>& plant_context() const { return *plant_context_; }
+
+  systems::Context<T>& get_mutable_plant_context() { return *plant_context_; }
+
+ private:
+  int num_spheres_;
+  const double radius_{0.01};
+  std::unique_ptr<systems::Diagram<T>> diagram_;
+  MultibodyPlant<T>* plant_{nullptr};
+  geometry::SceneGraph<T>* scene_graph_{nullptr};
+
+  std::vector<FrameIndex> sphere_frame_indices_;
+
+  // The pose of sphere i's collision geometry in sphere i's body frame, every
+  // sphere share the same pose.
+  math::RigidTransformd X_BS_;
+
+  std::unique_ptr<systems::Context<T>> diagram_context_;
+  systems::Context<T>* plant_context_{nullptr};
 };
 
 /**

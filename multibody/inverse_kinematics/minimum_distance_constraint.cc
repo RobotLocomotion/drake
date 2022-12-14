@@ -34,32 +34,26 @@ VectorX<S> Distances(const MultibodyPlant<T>& plant,
       query_object.ComputeSignedDistancePairwiseClosestPoints(
           influence_distance);
   VectorX<S> distances(signed_distance_pairs.size());
-  int distance_count{0};
-  for (const auto& signed_distance_pair : signed_distance_pairs) {
-    if (signed_distance_pair.distance < influence_distance) {
-      const geometry::SceneGraphInspector<T>& inspector =
-          query_object.inspector();
-      const geometry::FrameId frame_A_id =
-          inspector.GetFrameId(signed_distance_pair.id_A);
-      const geometry::FrameId frame_B_id =
-          inspector.GetFrameId(signed_distance_pair.id_B);
-      const Frame<T>& frameA =
-          plant.GetBodyFromFrameId(frame_A_id)->body_frame();
-      const Frame<T>& frameB =
-          plant.GetBodyFromFrameId(frame_B_id)->body_frame();
-      internal::CalcDistanceDerivatives(
-          plant, *context, frameA, frameB,
-          // GetPoseInFrame() returns RigidTransform<double> -- we can't
-          // multiply across heterogeneous scalar types; so we cast the double
-          // to T.
-          inspector.GetPoseInFrame(signed_distance_pair.id_A)
-                  .template cast<T>() *
-              signed_distance_pair.p_ACa,
-          signed_distance_pair.distance, signed_distance_pair.nhat_BA_W, q,
-          &distances(distance_count++));
-    }
+  for (int i = 0; i < static_cast<int>(signed_distance_pairs.size()); ++i) {
+    const geometry::SceneGraphInspector<T>& inspector =
+        query_object.inspector();
+    const geometry::FrameId frame_A_id =
+        inspector.GetFrameId(signed_distance_pairs[i].id_A);
+    const geometry::FrameId frame_B_id =
+        inspector.GetFrameId(signed_distance_pairs[i].id_B);
+    const Frame<T>& frameA = plant.GetBodyFromFrameId(frame_A_id)->body_frame();
+    const Frame<T>& frameB = plant.GetBodyFromFrameId(frame_B_id)->body_frame();
+    internal::CalcDistanceDerivatives(
+        plant, *context, frameA, frameB,
+        // GetPoseInFrame() returns RigidTransform<double> -- we can't
+        // multiply across heterogeneous scalar types; so we cast the double
+        // to T.
+        inspector.GetPoseInFrame(signed_distance_pairs[i].id_A)
+                .template cast<T>() *
+            signed_distance_pairs[i].p_ACa,
+        signed_distance_pairs[i].distance, signed_distance_pairs[i].nhat_BA_W,
+        q, &distances(i));
   }
-  distances.resize(distance_count);
   return distances;
 }
 
