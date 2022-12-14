@@ -78,6 +78,8 @@ TEST_P(ParseTest, Quantities) {
   auto diagram = builder.Build();
   ScopeExit guard([&visualizer]() {
     visualizer.Delete();
+    std::shared_ptr<Meshcat> meshcat = GetTestEnvironmentMeshcat();
+    meshcat->DeleteAddedControls();
   });
 
   // MultibodyPlant always creates at least two model instances, one for the
