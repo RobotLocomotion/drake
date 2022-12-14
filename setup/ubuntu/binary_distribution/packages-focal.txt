@@ -28,6 +28,7 @@ libmsgpackc2
 libmumps-seq-5.2.1
 libnetcdf15
 libnlopt-cxx0
+libpfm4-dev
 libogg0
 libopengl0
 libpng16-16

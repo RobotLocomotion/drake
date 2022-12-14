@@ -27,6 +27,7 @@ liblzma5
 libmsgpackc2
 libmumps-seq-5.4
 libnetcdf19
+libpfm4-dev
 libnlopt-cxx0
 libogg0
 libopengl0
