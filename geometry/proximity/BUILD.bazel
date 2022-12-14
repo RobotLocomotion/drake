@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":bvh_updater",
         ":collision_filter",
         ":contact_surface_utility",
+        ":create_submesh",
         ":deformable_contact_geometries",
         ":deformable_contact_internal",
         ":deformable_mesh_intersection",
@@ -160,6 +161,17 @@ drake_cc_library(
         ":polygon_surface_mesh",
         ":triangle_surface_mesh",
         "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "create_submesh",
+    srcs = ["create_submesh.cc"],
+    hdrs = ["create_submesh.h"],
+    deps = [
+        ":volume_mesh",
+        ":volume_to_surface_mesh",
+        "//common:sorted_pair",
     ],
 )
 
@@ -944,6 +956,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "create_submesh_test",
+    deps = [
+        ":create_submesh",
+        ":detect_null_simplex",
+        ":make_cylinder_mesh",
+        ":mesh_to_vtk",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "deformable_contact_geometries_test",
     deps = [
         ":deformable_contact_geometries",
@@ -1406,6 +1429,33 @@ drake_cc_googletest(
     name = "sorted_triplet_test",
     deps = [
         ":sorted_triplet",
+    ],
+)
+
+# TODO(DamrongGuoy) Remove teddy_vtk_files and teddy_mesh_refiner_test.
+#  They must not go into master.
+filegroup(
+    name = "teddy_vtk_files",
+    testonly = 1,
+    srcs = [
+        "test/MeshImprovement/teddy.vtk",
+    ],
+)
+
+drake_cc_googletest(
+    name = "teddy_mesh_refiner_test",
+    data = [
+        ":teddy_vtk_files",
+    ],
+    deps = [
+        ":create_submesh",
+        ":make_cylinder_mesh",
+        ":make_mesh_field",
+        ":mesh_to_vtk",
+        ":volume_mesh_refiner",
+        ":vtk_to_volume_mesh",
+        "//common:find_resource",
+        "//common/test_utilities",
     ],
 )
 
