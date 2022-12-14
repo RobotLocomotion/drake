@@ -118,6 +118,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Roles) {
           fmt::format("visualizer/iiwa14/iiwa_link_7/{}", geom_id)));
     }
     meshcat_->Delete();
+    meshcat_->DeleteAddedControls();
   }
 
   params.role = Role::kUnassigned;
@@ -148,6 +149,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
 TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   MeshcatVisualizerParams params;
   params.delete_on_initialization_event = true;
+  params.enable_alpha_sliders = false;
   SetUpDiagram(params);
   // Scribble a transform onto the scene tree beneath the visualizer prefix.
   meshcat_->SetTransform("/drake/visualizer/my_random_path",
@@ -268,7 +270,9 @@ TEST_F(MeshcatVisualizerWithIiwaTest, RecordingWithoutSetTransform) {
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {
-  SetUpDiagram();
+  MeshcatVisualizerParams params;
+  params.enable_alpha_sliders = false;
+  SetUpDiagram(params);
 
   auto ad_diagram = diagram_->ToAutoDiffXd();
   auto ad_context = ad_diagram->CreateDefaultContext();
