@@ -241,7 +241,6 @@ class TestGeometryVisualizers(unittest.TestCase):
         params.default_color = mut.Rgba(0.5, 0.5, 0.5)
         params.prefix = "py_visualizer"
         params.delete_on_initialization_event = False
-        params.enable_alpha_sliders = False
         self.assertIn("publish_period", repr(params))
         copy.copy(params)
         vis = mut.MeshcatVisualizer_[T](meshcat=meshcat, params=params)
@@ -268,9 +267,7 @@ class TestGeometryVisualizers(unittest.TestCase):
 
     def test_meshcat_visualizer_scalar_conversion(self):
         meshcat = mut.Meshcat()
-        params = mut.MeshcatVisualizerParams()
-        params.enable_alpha_sliders = False
-        vis = mut.MeshcatVisualizer(meshcat, params)
+        vis = mut.MeshcatVisualizer(meshcat)
         vis_autodiff = vis.ToAutoDiffXd()
         self.assertIsInstance(vis_autodiff,
                               mut.MeshcatVisualizer_[AutoDiffXd])
