@@ -12,7 +12,7 @@ licenses(["by_exception_only"])  # Gurobi
 genrule(
     name = "error-message",
     outs = ["error-message.h"],
-    cmd = "echo 'error: Gurobi 9.5.1 is not installed at {gurobi_home}, export GUROBI_HOME to the correct value' && false",  # noqa
+    cmd = "echo 'error: Gurobi 9.5 is not installed at {gurobi_home}, export GUROBI_HOME to the correct value' && false",  # noqa
     visibility = ["//visibility:private"],
 )
 
@@ -42,7 +42,7 @@ GUROBI_CXX_SRCS = glob([
 ]) or [":error-message.h"]
 
 GUROBI_INSTALL_LIBRARIES = glob([
-    "gurobi-distro/lib/libgurobi.so.9.5.1",
+    "gurobi-distro/lib/libgurobi.so.9.5.*",
     "gurobi-distro/lib/libgurobi95.so",
 ]) or [":error-message.h"]
 

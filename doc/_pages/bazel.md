@@ -169,18 +169,18 @@ bazel build //tools/lint:buildifier
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
-* Gurobi 9.5.1
+* Gurobi 9.5
 * MOSEK™ 10.0
 * SNOPT 7.4
 
-## Gurobi 9.5.1
+## Gurobi 9.5
 
 ### Install on Ubuntu
 
 1. Register for an account on [https://www.gurobi.com](https://www.gurobi.com).
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
-4. Download ``gurobi9.5.1_linux64.tar.gz``. You may need to manually edit the URL to get the correct minor version.
+4. Download ``gurobi9.5.1_linux64.tar.gz``. You may need to manually edit the URL to get the correct version.
 5. Unzip it.  We suggest that you use ``/opt/gurobi951`` to simplify working with Drake installations.
 6. If you unzipped into a location other than ``/opt/gurobi951``, then call ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used, where in ``GUROBI_HOME`` folder you can find ``bin`` folder.
 

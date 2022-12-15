@@ -4,7 +4,7 @@
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-# Ubuntu only: GUROBI_HOME should be the linux64 directory in the Gurobi 9.5.1
+# Ubuntu only: GUROBI_HOME should be the linux64 directory in the Gurobi 9.5
 # release.
 #
 def _gurobi_impl(repo_ctx):
