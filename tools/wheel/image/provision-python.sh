@@ -28,6 +28,10 @@ fi
 
 ${PREFIX}/bin/${PYTHON} -m venv /usr/local
 
+# Python 3.11 venv creates an empty directory here, which prevents us creating
+# a symlink to the real directory, so remove it if present.
+rmdir /usr/local/include/${PYTHON} || true
+
 ln -s ${PREFIX}/bin/${PYTHON}-config /usr/bin/python3-config
 ln -s ${PREFIX}/bin/${PYTHON}-config /usr/local/bin/python-config
 ln -s ${PREFIX}/include/${PYTHON} /usr/local/include/

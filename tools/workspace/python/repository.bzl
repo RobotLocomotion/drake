@@ -55,7 +55,7 @@ _VERSION_SUPPORT_MATRIX = {
     # - Update URLs on doc/_pages/pip.md (`cpXY-cpXY` components), and
     # - Tables on from_source.md and installation.md (python version number).
     "macos_wheel": ["3.10"],
-    "manylinux": ["3.8", "3.9", "3.10"],
+    "manylinux": ["3.8", "3.9", "3.10", "3.11"],
 }
 
 def repository_python_info(repository_ctx):
