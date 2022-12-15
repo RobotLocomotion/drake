@@ -94,7 +94,7 @@ namespace internal {
 //
 // @tparam_default_scalar
 template <typename T>
-class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
+class BodyNode : public MultibodyElement<T, BodyNodeIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyNode)
 
@@ -117,8 +117,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // for this node, which must outlive `this` BodyNode.
   BodyNode(const BodyNode<T>* parent_node,
            const Body<T>* body, const Mobilizer<T>* mobilizer)
-      : MultibodyElement<BodyNode, T, BodyNodeIndex>(
-            body->model_instance()),
+      : MultibodyElement<T, BodyNodeIndex>(body->model_instance()),
         parent_node_(parent_node),
         body_(body),
         mobilizer_(mobilizer) {
