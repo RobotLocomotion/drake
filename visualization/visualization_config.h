@@ -31,7 +31,6 @@ struct VisualizationConfig {
     a->Visit(DRAKE_NVP(publish_contacts));
     a->Visit(DRAKE_NVP(enable_meshcat_creation));
     a->Visit(DRAKE_NVP(delete_on_initialization_event));
-    a->Visit(DRAKE_NVP(enable_alpha_sliders));
   }
 
   /** Which LCM URL to use.
@@ -68,9 +67,6 @@ struct VisualizationConfig {
    object (if any) on an initialization event to remove any visualizations,
    e.g., from a previous simulation, to . */
   bool delete_on_initialization_event{true};
-
-  /** Determines whether to enable alpha sliders for geometry display. */
-  bool enable_alpha_sliders{true};
 };
 
 }  // namespace visualization

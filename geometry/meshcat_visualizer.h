@@ -135,7 +135,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
       systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
       std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {});
 
-  /** Adds a MeshcatVisualizer and connects it to the given QueryObject-valued
+  /** Adds a MescatVisualizer and connects it to the given QueryObject-valued
    output port. See MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
    MeshcatVisualizerParams) for details. */
   static MeshcatVisualizer<T>& AddToBuilder(
@@ -160,9 +160,6 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    */
   void SetTransforms(const systems::Context<T>& context,
                      const QueryObject<T>& query_object) const;
-
-  /* Makes calls to Meshcat::SetProperty to update color alphas. */
-  void SetColorAlphas() const;
 
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
@@ -195,9 +192,6 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    new geometry version appears that does not contain them. */
   mutable std::map<GeometryId, std::string> geometries_{};
 
-  /* A store of the original colors for the objects in geometries_. */
-  mutable std::map<GeometryId, Rgba> colors_{};
-
   /* The parameters for the visualizer.  */
   MeshcatVisualizerParams params_;
 
@@ -224,12 +218,6 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   run Meshcat multithreaded */
   mutable systems::internal::InstantaneousRealtimeRateCalculator
       realtime_rate_calculator_{};
-
-  /* The name of the alpha slider, if any. */
-  std::string alpha_slider_name_;
-
-  /* The last alpha value applied to geometry. */
-  mutable double alpha_value_{1.0};
 };
 
 /** A convenient alias for the MeshcatVisualizer class when using the `double`
