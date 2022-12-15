@@ -27,17 +27,15 @@ namespace multibody {
 class MultibodyElementTester {
  public:
   MultibodyElementTester() = delete;
-  template <template <typename> class ElementType, typename T,
-      typename ElementIndexType>
+  template <typename T, typename ElementIndexType>
   static bool has_parent_tree(
-      const MultibodyElement<ElementType, T, ElementIndexType>& element) {
+      const MultibodyElement<T, ElementIndexType>& element) {
     return element.has_parent_tree();
   }
 
-  template <template <typename> class ElementType, typename T,
-      typename ElementIndexType>
+  template <typename T, typename ElementIndexType>
   static const internal::MultibodyTree<T>& get_parent_tree(
-      const MultibodyElement<ElementType, T, ElementIndexType>& element) {
+      const MultibodyElement<T, ElementIndexType>& element) {
     return element.get_parent_tree();
   }
 };

@@ -28,15 +28,11 @@ class JointImplementationBuilder;
 /// this class as:
 /// @code{.cpp}
 /// template <typename T>
-/// class MultibodyThing :
-///     public MultibodyElement<MultibodyThing, T, MultibodyThingIndex> {
+/// class MultibodyThing : public MultibodyElement<T, MultibodyThingIndex> {
 ///  ...
 /// };
 /// @endcode
 ///
-/// @tparam ElementType The type of the specific multibody element, for
-///     instance, a body or a mobilizer. It must be a template class that can
-///     be templatized by scalar type T.
 /// @tparam_default_scalar
 /// @tparam ElementIndexType The type-safe index used for this element type.
 ///
@@ -44,11 +40,9 @@ class JointImplementationBuilder;
 /// as a multibody element. This is accomplished with:
 /// @code{.cpp}
 ///   template <typename T>
-///   class ForceElement :
-///       public MultibodyElement<ForceElement, T, ForceElementIndex>;
+///   class ForceElement : public MultibodyElement<T, ForceElementIndex>;
 /// @endcode
-template <template <typename> class ElementType,
-    typename T, typename ElementIndexType>
+template <typename T, typename ElementIndexType>
 class MultibodyElement {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyElement)

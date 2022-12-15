@@ -209,7 +209,7 @@ template<typename T> class BodyNode;
 //
 // @tparam_default_scalar
 template <typename T>
-class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
+class Mobilizer : public MultibodyElement<T, MobilizerIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Mobilizer)
 
@@ -706,8 +706,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   void DoDeclareParameters(
       internal::MultibodyTreeSystem<T>* tree_system) override {
     // Declare parent class's parameters
-    MultibodyElement<Mobilizer, T, MobilizerIndex>::DoDeclareParameters(
-        tree_system);
+    MultibodyElement<T, MobilizerIndex>::DoDeclareParameters(tree_system);
 
     is_locked_parameter_index_ =
         this->DeclareAbstractParameter(tree_system, Value<bool>(false));
