@@ -279,6 +279,23 @@ TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {
   ad_diagram->ForcedPublish(*ad_context);
 }
 
+TEST_F(MeshcatVisualizerWithIiwaTest, UpdateAlphaSliders) {
+  MeshcatVisualizerParams params;
+  params.enable_alpha_sliders = true;
+  SetUpDiagram(params);
+  systems::Simulator<double> simulator(*diagram_);
+
+  // Simulate for a moment and publish to populate the visualizer.
+  simulator.AdvanceTo(0.1);
+  diagram_->ForcedPublish(*context_);
+
+  meshcat_->SetSliderValue("visualizer α", 0.5);
+
+  // Simulate and publish again to cause an update.
+  simulator.AdvanceTo(0.1);
+  diagram_->ForcedPublish(*context_);
+}
+
 GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
   auto meshcat = std::make_shared<Meshcat>();
 
